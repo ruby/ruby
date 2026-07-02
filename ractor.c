@@ -1363,7 +1363,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
             rb_ary_cancel_sharing(obj);
 
             for (int i = 0; i < RARRAY_LENINT(obj); i++) {
-                VALUE e = rb_ary_entry(obj, i);
+                VALUE e = RARRAY_AREF(obj, i);
                 if (obj_traverse_i(e, data)) return 1;
             }
         }
@@ -1601,7 +1601,7 @@ make_shareable_check_shareable(VALUE obj)
 static enum obj_traverse_iterator_result
 mark_shareable(VALUE obj)
 {
-    if (RB_TYPE_P(obj, T_STRING)) {
+    if (RB_BUILTIN_TYPE(obj) == T_STRING) {
         rb_str_make_independent(obj);
     }
 
@@ -1939,7 +1939,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             rb_ary_cancel_sharing(obj);
 
             for (int i = 0; i < RARRAY_LENINT(obj); i++) {
-                VALUE e = rb_ary_entry(obj, i);
+                VALUE e = RARRAY_AREF(obj, i);
 
                 if (obj_traverse_replace_i(e, data)) {
                     return 1;
