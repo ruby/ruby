@@ -22,6 +22,7 @@
 #include "id.h"
 #include "internal.h"
 #include "internal/class.h"
+#include "internal/cont.h"
 #include "internal/enumerator.h"
 #include "internal/error.h"
 #include "internal/hash.h"
@@ -193,6 +194,7 @@ extern ID ruby_static_id_cause;
 #define id_size idSize
 
 VALUE rb_eStopIteration;
+static VALUE rb_eEnumClosedError;
 
 struct enumerator {
     VALUE obj;
@@ -207,6 +209,7 @@ struct enumerator {
     VALUE procs;
     rb_enumerator_size_func *size_fn;
     int kw_splat;
+    bool closed;
 };
 
 RUBY_REFERENCES(enumerator_refs) = {
@@ -293,6 +296,14 @@ enumerator_ptr(VALUE obj)
         rb_raise(rb_eArgError, "uninitialized enumerator");
     }
     return ptr;
+}
+
+static void
+enumerator_check_closed(const struct enumerator *ptr)
+{
+    if (ptr->closed) {
+        rb_raise(rb_eEnumClosedError, "closed enumerator");
+    }
 }
 
 static void
@@ -436,6 +447,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
     RB_OBJ_WRITE(enum_obj, &ptr->size, size);
     ptr->size_fn = size_fn;
     ptr->kw_splat = kw_splat;
+    ptr->closed = false;
 
     return enum_obj;
 }
@@ -523,6 +535,8 @@ enumerator_init_copy(VALUE obj, VALUE orig)
     ptr1->feedvalue  = Qundef;
     RB_OBJ_WRITE(obj, &ptr1->size, ptr0->size);
     ptr1->size_fn  = ptr0->size_fn;
+    ptr1->kw_splat = ptr0->kw_splat;
+    ptr1->closed = ptr0->closed;
 
     return obj;
 }
@@ -568,6 +582,8 @@ enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
     const VALUE *argv = 0;
     const struct enumerator *e = enumerator_ptr(obj);
     ID meth = e->meth;
+
+    enumerator_check_closed(e);
 
     VALUE args = e->args;
     if (args) {
@@ -623,6 +639,8 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
 
+    enumerator_check_closed(e);
+
     if (argc > 0) {
         VALUE args = (e = enumerator_ptr(obj = rb_obj_dup(obj)))->args;
         if (args) {
@@ -639,6 +657,7 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
         RB_OBJ_WRITE(obj, &e->args, args);
         e->size = Qnil;
         e->size_fn = 0;
+        e->closed = false;
     }
     if (!rb_block_given_p()) return obj;
 
@@ -876,6 +895,7 @@ enumerator_next_values(VALUE obj)
     VALUE vs;
 
     rb_check_frozen(obj);
+    enumerator_check_closed(e);
 
     if (!UNDEF_P(e->lookahead)) {
         vs = e->lookahead;
@@ -939,6 +959,7 @@ enumerator_peek_values(VALUE obj)
     struct enumerator *e = enumerator_ptr(obj);
 
     rb_check_frozen(obj);
+    enumerator_check_closed(e);
 
     if (UNDEF_P(e->lookahead)) {
         RB_OBJ_WRITE(obj, &e->lookahead, get_next_values(obj, e));
@@ -1066,6 +1087,7 @@ enumerator_feed(VALUE obj, VALUE v)
     struct enumerator *e = enumerator_ptr(obj);
 
     rb_check_frozen(obj);
+    enumerator_check_closed(e);
 
     if (!UNDEF_P(e->feedvalue)) {
         rb_raise(rb_eTypeError, "feed value already set");
@@ -1090,6 +1112,7 @@ enumerator_rewind(VALUE obj)
     struct enumerator *e = enumerator_ptr(obj);
 
     rb_check_frozen(obj);
+    enumerator_check_closed(e);
 
     rb_check_funcall(e->obj, id_rewind, 0, 0);
 
@@ -1099,6 +1122,33 @@ enumerator_rewind(VALUE obj)
     e->feedvalue = Qundef;
     e->stop_exc = Qfalse;
     return obj;
+}
+
+/*
+ * call-seq:
+ *   e.close   -> nil
+ *
+ * Closes the enumerator and releases internal resources used by external
+ * iteration.  Further iteration raises Enumerator::ClosedError.
+ */
+static VALUE
+enumerator_close(VALUE obj)
+{
+    struct enumerator *e = enumerator_ptr(obj);
+
+    if (!e->closed) {
+        if (e->fib && rb_fiber_alive_p(e->fib)) {
+            rb_fiber_kill(e->fib);
+        }
+        e->fib = 0;
+        e->dst = Qnil;
+        e->lookahead = Qundef;
+        e->feedvalue = Qundef;
+        e->stop_exc = Qfalse;
+        e->closed = true;
+    }
+
+    return Qnil;
 }
 
 static struct generator *generator_ptr(VALUE obj);
@@ -4594,6 +4644,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cEnumerator, "peek", enumerator_peek, 0);
     rb_define_method(rb_cEnumerator, "feed", enumerator_feed, 1);
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
+    rb_define_method(rb_cEnumerator, "close", enumerator_close, 0);
     rb_define_method(rb_cEnumerator, "inspect", enumerator_inspect, 0);
     rb_define_method(rb_cEnumerator, "size", enumerator_size, 0);
     rb_define_method(rb_cEnumerator, "+", enumerator_plus, 1);
@@ -4705,6 +4756,7 @@ InitVM_Enumerator(void)
 
     rb_eStopIteration = rb_define_class("StopIteration", rb_eIndexError);
     rb_define_method(rb_eStopIteration, "result", stop_result, 0);
+    rb_eEnumClosedError = rb_define_class_under(rb_cEnumerator, "ClosedError", rb_eStopIteration);
 
     /* :nodoc: Generator */
     rb_cGenerator = rb_define_class_under(rb_cEnumerator, "Generator", rb_cObject);

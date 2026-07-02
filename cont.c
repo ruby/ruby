@@ -3437,8 +3437,8 @@ rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)
  *
  *  Raises FiberError if called on a fiber belonging to another thread.
  */
-static VALUE
-rb_fiber_m_kill(VALUE self)
+VALUE
+rb_fiber_kill(VALUE self)
 {
     rb_fiber_t *fiber = fiber_ptr(self);
 
@@ -3458,6 +3458,12 @@ rb_fiber_m_kill(VALUE self)
     }
 
     return self;
+}
+
+static VALUE
+rb_fiber_m_kill(VALUE self)
+{
+    return rb_fiber_kill(self);
 }
 
 /*

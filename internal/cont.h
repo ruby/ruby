@@ -21,6 +21,7 @@ void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(VALUE), VALUE (
 void rb_jit_cont_init(void);
 void rb_jit_cont_each_iseq(rb_iseq_callback callback, void *data);
 void rb_jit_cont_finish(void);
+VALUE rb_fiber_kill(VALUE fiber);
 
 /* vm.c */
 void rb_free_shared_fiber_pool(void);
