@@ -21,9 +21,19 @@ describe "Set#&" do
     -> { @set & Object.new }.should.raise(ArgumentError)
   end
 
-  it "does not retain compare_by_identity flag" do
-    @set.compare_by_identity
-    (@set & Set[:b, :c, :d, :e]).compare_by_identity?.should == false
-    (@set & [:b, :c, :d]).compare_by_identity?.should == false
+  ruby_version_is "4.0" do
+    it "retains compare_by_identity flag" do
+      @set.compare_by_identity
+      (@set & Set[:b, :c, :d, :e]).compare_by_identity?.should == true
+      (@set & [:b, :c, :d]).compare_by_identity?.should == true
+    end
+  end
+
+  ruby_version_is ""..."4.0" do
+    it "does not retain compare_by_identity flag" do
+      @set.compare_by_identity
+      (@set & Set[:b, :c, :d, :e]).compare_by_identity?.should == false
+      (@set & [:b, :c, :d]).compare_by_identity?.should == false
+    end
   end
 end
