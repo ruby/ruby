@@ -175,26 +175,6 @@ RSpec.configure do |config|
     reset!
   end
 
-  # Opt-in per-example runtime log (set BUNDLER_SPEC_RUNTIME_LOG to a file path).
-  # Each parallel worker appends one "<seconds>\t<file>" line per example to its
-  # own "<path>.<TEST_ENV_NUMBER>" file (a single shared file would hit Windows
-  # cross-process sharing violations), so the heaviest specs can be found after a
-  # full run. turbo_tests only writes its own --runtime-log when invoked with the
-  # bare "spec" path, which the build never does, so it produces no log otherwise.
-  if (runtime_log = ENV["BUNDLER_SPEC_RUNTIME_LOG"])
-    worker = ENV["TEST_ENV_NUMBER"].to_s
-    worker = "1" if worker.empty?
-    runtime_log = "#{runtime_log}.#{worker}"
-    config.before(:each) { @__runtime_start = Process.clock_gettime(Process::CLOCK_MONOTONIC) }
-    config.after(:each) do |example|
-      next unless @__runtime_start
-      dt = Process.clock_gettime(Process::CLOCK_MONOTONIC) - @__runtime_start
-      File.write(runtime_log, "#{format("%.4f", dt)}\t#{example.metadata[:file_path]}\n", mode: "a")
-    rescue StandardError
-      # never let runtime logging break a test run
-    end
-  end
-
   Spec::Shards::EXAMPLE_MAPPINGS.each do |tag, file_paths|
     file_pattern = Regexp.union(file_paths.map {|path| Regexp.new(Regexp.escape(path) + "$") })
 
