@@ -945,6 +945,82 @@ class TestRubyOptimization < Test::Unit::TestCase
     END
   end
 
+  def bptest_call(&b) = b.call(1, 2)
+  def bptest_aref(&b) = b[1, 2]
+  def bptest_dot_yield(&b) = b.yield(1, 2)
+  def bptest_eqq(&b) = b === 2
+
+  def test_block_param_proxy_aref_yield_and_eqq
+    %i[bptest_call bptest_aref bptest_dot_yield bptest_eqq].each do |name|
+      assert_include(RubyVM::InstructionSequence.of(method(name)).disasm,
+                     "getblockparamproxy", "#{name} should use the block param proxy")
+    end
+    assert_equal(3, bptest_call {|a, b| a + b})
+    assert_equal(3, bptest_aref {|a, b| a + b})
+    assert_equal(3, bptest_dot_yield {|a, b| a + b})
+    assert_equal(3, bptest_eqq {|a| a + 1})
+  end
+
+  def test_block_param_proxy_should_not_create_objects
+    assert_separately [], <<-END
+      def viacall(&b) = b.call
+      def viaaref(&b) = b[]
+      def viayield(&b) = b.yield
+      def viaeqq(&b) = b === 1
+      viacall{}; viaaref{}; viayield{}; viaeqq{} # warm up caches
+      h1 = {}; h2 = {}
+      ObjectSpace.count_objects(h1)
+      GC.start; GC.disable
+      ObjectSpace.count_objects(h1)
+      1000.times { viacall{}; viaaref{}; viayield{}; viaeqq{} }
+      ObjectSpace.count_objects(h2)
+
+      # The proxy avoids materializing a Proc (T_DATA), so allocations must
+      # not scale with the number of calls.
+      assert_operator(h2[:T_DATA] - h1[:T_DATA], :<, 1000)
+    END
+  end
+
+  def test_block_param_proxy_honors_redefinition
+    assert_separately [], <<-END
+      $VERBOSE = nil # silence "method redefined" warnings
+      def viacall(&b) = b.call
+      def viaaref(&b) = b[]
+      def viayield(&b) = b.yield
+      def viaeqq(&b) = b === 1
+
+      assert_equal(:orig, viacall { :orig })
+      assert_equal(:orig, viaaref { :orig })
+      assert_equal(:orig, viayield { :orig })
+      assert_equal(:orig, viaeqq { :orig })
+
+      class Proc
+        def [](*) = :redef_aref
+      end
+      assert_equal(:redef_aref, viaaref { :orig }, "redefining Proc#[] must deopt blk[]")
+      assert_equal(:orig, viacall { :orig }, "Proc#[] redefinition must not affect blk.call")
+      assert_equal(:orig, viayield { :orig }, "Proc#[] redefinition must not affect blk.yield")
+      assert_equal(:orig, viaeqq { :orig }, "Proc#[] redefinition must not affect blk === x")
+
+      class Proc
+        def yield(*) = :redef_yield
+      end
+      assert_equal(:redef_yield, viayield { :orig }, "redefining Proc#yield must deopt blk.yield")
+      assert_equal(:orig, viacall { :orig }, "Proc#yield redefinition must not affect blk.call")
+
+      class Proc
+        def ===(*) = :redef_eqq
+      end
+      assert_equal(:redef_eqq, viaeqq { :orig }, "redefining Proc#=== must deopt blk === x")
+      assert_equal(:orig, viacall { :orig }, "Proc#=== redefinition must not affect blk.call")
+
+      class Proc
+        def call(*) = :redef_call
+      end
+      assert_equal(:redef_call, viacall { :orig }, "redefining Proc#call must deopt blk.call")
+    END
+  end
+
   def test_peephole_optimization_without_trace
     assert_ruby_status [], <<-END
       RubyVM::InstructionSequence.compile_option = {trace_instruction: false}

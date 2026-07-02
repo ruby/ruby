@@ -7500,7 +7500,7 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
         PUSH_INSN(ret, location, putself);
     }
     else {
-        if (method_id == idCall && PM_NODE_TYPE_P(node->receiver, PM_LOCAL_VARIABLE_READ_NODE)) {
+        if ((method_id == idCall || method_id == idAREF || method_id == idYield || method_id == idEqq) && PM_NODE_TYPE_P(node->receiver, PM_LOCAL_VARIABLE_READ_NODE)) {
             const pm_local_variable_read_node_t *read_node_cast = (const pm_local_variable_read_node_t *) node->receiver;
             uint32_t node_id = node->receiver->node_id;
             int idx, level;

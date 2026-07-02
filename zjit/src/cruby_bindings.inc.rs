@@ -439,7 +439,8 @@ pub const BOP_CMP: ruby_basic_operators = 31;
 pub const BOP_DEFAULT: ruby_basic_operators = 32;
 pub const BOP_PACK: ruby_basic_operators = 33;
 pub const BOP_INCLUDE_P: ruby_basic_operators = 34;
-pub const BOP_LAST_: ruby_basic_operators = 35;
+pub const BOP_YIELD: ruby_basic_operators = 35;
+pub const BOP_LAST_: ruby_basic_operators = 36;
 pub type ruby_basic_operators = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
 #[repr(C)]
