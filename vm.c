@@ -2292,7 +2292,7 @@ short ruby_vm_redefined_flag[BOP_LAST_];
 static st_table *vm_opt_method_def_table = 0;
 static st_table *vm_opt_mid_table = 0;
 
-void
+static void
 rb_free_vm_opt_tables(void)
 {
     st_free_table(vm_opt_method_def_table);
