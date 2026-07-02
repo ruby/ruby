@@ -1312,7 +1312,27 @@ set_reset_table_with_type(VALUE set, const struct st_hash_type *type)
  *  call-seq:
  *    compare_by_identity -> self
  *
- *  Makes the set compare its elements by their identity and returns self.
+ *  Sets +self+ to compare by object identity
+ *  (rather than by object content, which is the initial setting);
+ *  returns +self+:
+ *
+ *    set = Set.new
+ *    set.compare_by_identity
+ *    str = +"foo"
+ *    set.add(str)
+ *    # =>  Set["foo"]
+ *    set.include?(str)
+ *    # => true
+ *    set.add(str)
+ *    # => Set["foo"])
+ *    set.include?(+"foo")
+ *    # => false
+ *    set.add(+"foo")
+ *    # => Set["foo", "foo"])
+ *
+ *  Once set, the compare-by-identity property may not be unset.
+ *
+ *  Related: #compare_by_identity?.
  */
 static VALUE
 set_i_compare_by_identity(VALUE set)
@@ -1330,8 +1350,16 @@ set_i_compare_by_identity(VALUE set)
  *  call-seq:
  *    compare_by_identity? -> true or false
  *
- *  Returns true if the set will compare its elements by their
- *  identity.  Also see Set#compare_by_identity.
+ *  Returns whether +self+ compares elements by object identity
+ *  (rather than by content):
+ *
+ *    set = Set[]
+ *    set.compare_by_identity? # => false
+ *    set.compare_by_identity
+ *    set.compare_by_identity? # => true
+ *
+ *  Related: #compare_by_identity;
+ *  see also {Methods for Querying}[rdoc-ref:Set@Methods+for+Querying].
  */
 static VALUE
 set_i_compare_by_identity_p(VALUE set)
@@ -2352,12 +2380,12 @@ rb_set_size(VALUE set)
  *   or greater than a given object.
  * - #==: Returns whether +self+ and a given enumerable are equal,
  *   as determined by Object#eql?.
- * - #compare_by_identity?:
- *   Returns whether the set considers only identity
- *   when comparing elements.
  *
  * === Methods for Querying
  *
+ * - #compare_by_identity?:
+ *   Returns whether the set considers only identity
+ *   when comparing elements.
  * - #length (aliased as #size):
  *   Returns the count of elements.
  * - #empty?:
@@ -2378,9 +2406,6 @@ rb_set_size(VALUE set)
  * - #intersect?:
  *   Returns +true+ if the set and a given enumerable:
  *   have any common elements, +false+ otherwise.
- * - #compare_by_identity?:
- *   Returns whether the set considers only identity
- *   when comparing elements.
  *
  * === Methods for Assigning
  *
@@ -2447,6 +2472,8 @@ rb_set_size(VALUE set)
  *
  * === Other Methods
  *
+ * - #compare_by_identity:
+ *   Sets +self+ to compare by object identity (rather than by object content).
  * - #reset:
  *   Resets the internal state; useful if an element
  *   has been modified while an element in the set.
