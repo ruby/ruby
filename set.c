@@ -2169,7 +2169,7 @@ rb_set_size(VALUE set)
  * - #add?:
  *   Like #add, but returns +nil+ if the given object is already in +self+.
  * - #merge:
- *   Adds    the elements of the given enumerables to +self+; returns +self+.
+ *   Adds the elements of the given enumerables to +self+; returns +self+.
  * - #replace:
  *   Replaces the contents of +self+ with the contents of the given enumerable;
  *   returns +self+.
