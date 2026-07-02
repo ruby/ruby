@@ -29,6 +29,14 @@ Note: We're only listing outstanding class updates.
       given names, raising `KeyError` for missing names unless a block is
       given. [[Feature #21781]]
 
+* Fiber
+
+    * `Fiber.exit` is added. It terminates the current fiber and, if a fiber is
+      given, transfers control to it (passing any arguments). Unlike falling off
+      the end of a fiber, it performs a directed transfer to a specific fiber,
+      which is useful for fiber schedulers that drive tasks using
+      `Fiber#transfer`. [[Bug #20081]]
+
 * Kernel
 
     * `Kernel#autoload_relative` and `Module#autoload_relative` are added.
@@ -192,6 +200,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ## JIT
 
+[Bug #20081]: https://bugs.ruby-lang.org/issues/20081
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
