@@ -647,10 +647,12 @@ set_to_a_i(st_data_t key, st_data_t arg)
  *  call-seq:
  *    to_a -> array
  *
- *  Returns an array containing all elements in the set.
+ *  Returns an array containing the elements of +self+:
  *
- *    Set[1, 2].to_a                    #=> [1, 2]
- *    Set[1, 'c', :s].to_a              #=> [1, "c", :s]
+ *    Set[1, 2].to_a       # => [1, 2]
+ *    Set[1, 'c', :s].to_a # => [1, "c", :s]
+ *
+ *  Related: {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
  */
 static VALUE
 set_i_to_a(VALUE set)
