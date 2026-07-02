@@ -32,7 +32,8 @@ class LogProcessor
     @type_id_name = {}
     @start_time = nil
     @results = []
-    @current = Hash.new { |hash, key| hash[key] = {} }
+    # @current maps [pid, tid, block_name] to block.
+    @current = {}
     @started = false
   end
 
@@ -99,13 +100,16 @@ class LogProcessor
 
     if ph == 'B' || ph == 'E'
       # Register the current block so that other events can "enrich" it.
-      set_current_block(tid, result)
+      set_current_block(pid, tid, result)
     end
 
     # Some results need special treatment.
     case vis_name
+    when 'GCEnterExit'
+      # Register to the virtual :global TID, too.
+      set_current_block(pid, :global, result)
     when 'gc_mark_stacked_objects'
-      enrich([:global, 'GCEnterExit'], [tid, 'gc_mark']) do |old_result|
+      enrich([pid, :global, 'GCEnterExit'], [pid, tid, 'gc_mark']) do |old_result|
         old_result[:args].fetch_store(:gc_mark_stacked_objects) do
           { popped_count: 0 }
         end[:popped_count] += args[:popped_count]
@@ -113,8 +117,9 @@ class LogProcessor
     when 'rts_set_running'
       sched = args[:sched]
       sched_hex = sched.to_s(16)
+      # A virtual TID for the rb_thread_sched instance.
       sched_id = "sched-0x#{sched_hex}"
-      prev = get_current(sched_id, 'RTS')
+      prev = get_current(pid, sched_id, 'RTS')
       if !prev.nil?
         block_end = result.dup.update({
           name: 'RTS',
@@ -123,7 +128,7 @@ class LogProcessor
           args: {}
         })
         @results << block_end
-        clear_current(sched_id, 'RTS')
+        clear_current(pid, sched_id, 'RTS')
       end
 
       if args[:new_thread] != 0
@@ -138,7 +143,7 @@ class LogProcessor
           }
         })
         @results << block_begin
-        set_current(sched_id, 'RTS', block_begin)
+        set_current(pid, sched_id, 'RTS', block_begin)
       end
     end
 
@@ -154,24 +159,24 @@ class LogProcessor
     (ts - @start_time) / 1000.0
   end
 
-  def set_current(tid, key, value)
-    @current[tid][key] = value
+  def set_current(pid, tid, key, value)
+    @current[[pid, tid, key]] = value
   end
 
-  def get_current(tid, key)
-    @current[tid][key]
+  def get_current(pid, tid, key)
+    @current[[pid, tid, key]]
   end
 
-  def clear_current(tid, key)
-    @current[tid].delete(key)
+  def clear_current(pid, tid, key)
+    @current.delete([pid, tid, key])
   end
 
-  def set_current_block(tid, result)
+  def set_current_block(pid, tid, result)
     case result[:ph]
     when 'B'
-      set_current(tid, result[:name], result)
+      set_current(pid, tid, result[:name], result)
     when 'E'
-      clear_current(tid, result[:name])
+      clear_current(pid, tid, result[:name])
     else
       raise "unexpected ph: #{result}"
     end
@@ -182,8 +187,8 @@ class LogProcessor
   def enrich(*targets)
     targets.each do |target|
       case target
-      in [tid, key]
-        result = @current[tid][key]
+      in [pid, tid, key]
+        result = get_current(pid, tid, key)
         if !result.nil?
           yield result
         end
