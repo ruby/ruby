@@ -2462,6 +2462,7 @@ vm_init_redefined_flag(void)
     OP(Min, MIN), (C(Array));
     OP(Hash, HASH), (C(Array));
     OP(Call, CALL), (C(Proc));
+    OP(Yield, YIELD), (C(Proc));
     OP(And, AND), (C(Integer));
     OP(Or, OR), (C(Integer));
     OP(NilP, NIL_P), (C(NilClass));
@@ -2502,6 +2503,7 @@ vm_redefinition_bop_for_id(ID mid)
     OP(Min, MIN);
     OP(Hash, HASH);
     OP(Call, CALL);
+    OP(Yield, YIELD);
     OP(And, AND);
     OP(Or, OR);
     OP(NilP, NIL_P);
@@ -4621,8 +4623,11 @@ Init_VM(void)
     vm_init_redefined_flag();
 
     rb_block_param_proxy = rb_obj_alloc(rb_cObject);
-    rb_add_method_optimized(rb_singleton_class(rb_block_param_proxy), idCall,
-                            OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
+    VALUE proxy_singleton = rb_singleton_class(rb_block_param_proxy);
+    rb_add_method_optimized(proxy_singleton, idCall,  OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
+    rb_add_method_optimized(proxy_singleton, idAREF,  OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
+    rb_add_method_optimized(proxy_singleton, idYield, OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
+    rb_add_method_optimized(proxy_singleton, idEqq,   OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
     rb_obj_freeze(rb_block_param_proxy);
     rb_vm_register_global_object(rb_block_param_proxy);
 

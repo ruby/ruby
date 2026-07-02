@@ -4652,7 +4652,15 @@ vm_call_opt_block_call(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
     VALUE block_handler = VM_ENV_BLOCK_HANDLER(VM_CF_LEP(reg_cfp));
     const struct rb_callinfo *ci = calling->cd->ci;
 
-    if (BASIC_OP_UNREDEFINED_P(BOP_CALL, PROC_REDEFINED_OP_FLAG)) {
+    enum ruby_basic_operators bop;
+    switch (vm_ci_mid(ci)) {
+      case idAREF:  bop = BOP_AREF;  break;
+      case idYield: bop = BOP_YIELD; break;
+      case idEqq:   bop = BOP_EQQ;   break;
+      default:      bop = BOP_CALL;  break;
+    }
+
+    if (BASIC_OP_UNREDEFINED_P(bop, PROC_REDEFINED_OP_FLAG)) {
         return vm_invoke_block_opt_call(ec, reg_cfp, calling, ci, block_handler);
     }
     else {
