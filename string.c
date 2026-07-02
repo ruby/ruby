@@ -12624,20 +12624,6 @@ sym_length(VALUE sym)
 
 /*
  *  call-seq:
- *    empty? -> true or false
- *
- *  Returns +true+ if +self+ is <tt>:''</tt>, +false+ otherwise.
- *
- */
-
-static VALUE
-sym_empty(VALUE sym)
-{
-    return rb_str_empty(rb_sym2str(sym));
-}
-
-/*
- *  call-seq:
  *    upcase(mapping) -> symbol
  *
  *  Equivalent to <tt>sym.to_s.upcase.to_sym</tt>.
@@ -13072,7 +13058,6 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "slice", sym_aref, -1);
     rb_define_method(rb_cSymbol, "length", sym_length, 0);
     rb_define_method(rb_cSymbol, "size", sym_length, 0);
-    rb_define_method(rb_cSymbol, "empty?", sym_empty, 0);
     rb_define_method(rb_cSymbol, "match", sym_match_m, -1);
     rb_define_method(rb_cSymbol, "match?", sym_match_m_p, -1);
 
