@@ -614,6 +614,20 @@ prepare-vcpkg::
 		if not %%~nI == readline mklink %%~nxI %%I \
 	)
 
+!ifndef VCPKG_INSTALLED
+VCPKG_INSTALLED = $(srcdir)/vcpkg_installed/$(VCPKG_DEFAULT_TRIPLET)
+!endif
+BINARY_PACKAGE_NAME = $(RUBY_BASE_NAME)-$(RUBY_PROGRAM_VERSION)-$(arch)
+BINARY_PACKAGE_STAGE = binary-package-stage
+
+binary-package:
+	@if exist $(BINARY_PACKAGE_STAGE)\. rd /s /q $(BINARY_PACKAGE_STAGE)
+	@$(MAKE) DESTDIR="$(MAKEDIR)\$(BINARY_PACKAGE_STAGE)" install-nodoc
+	$(RUNRUBY) "$(tooldir)/binary-package.rb" --stage=$(BINARY_PACKAGE_STAGE) \
+		--name=$(BINARY_PACKAGE_NAME) --arch=$(ARCH) --srcdir="$(srcdir)" \
+		--vcpkg-dir="$(VCPKG_INSTALLED)" \
+		--output=$(BINARY_PACKAGE_NAME).zip
+
 .PHONY: reconfig
 reconfig $(MKFILES): $(srcdir)/common.mk $(srcdir)/version.h \
 	    $(hdrdir)/ruby/version.h $(ABI_VERSION_HDR) \
