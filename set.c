@@ -926,7 +926,7 @@ set_classify_i(st_data_t key, st_data_t tmp)
     VALUE hash_key = rb_yield(key);
     VALUE set = rb_hash_lookup2(hash, hash_key, Qundef);
     if (set == Qundef) {
-        set = set_alloc_with_size(args[1], 0);
+        set = set_s_alloc(args[1]);
         if (RTEST(args[2])) {
             set_i_compare_by_identity(set);
         }
@@ -1026,7 +1026,7 @@ set_divide_arity2(VALUE set)
         long root = set_divide_union_find_root(uf_parents, i, tmp_array);
         VALUE subset = rb_hash_aref(hash, LONG2FIX(root));
         if (subset == Qnil) {
-            subset = set_alloc_with_size(set_class, 0);
+            subset = set_s_alloc(set_class);
             if (RSET_COMPARE_BY_IDENTITY(set)) {
                 set_i_compare_by_identity(subset);
             }
@@ -1175,7 +1175,7 @@ set_intersection_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, data))
 static VALUE
 set_i_intersection(VALUE set, VALUE other)
 {
-    VALUE new_set = set_alloc_with_size(rb_obj_class(set), 0);
+    VALUE new_set = set_s_alloc(rb_obj_class(set));
     if (RSET_COMPARE_BY_IDENTITY(set)) {
         set_i_compare_by_identity(new_set);
     }
@@ -1484,7 +1484,7 @@ set_i_xor(VALUE set, VALUE other)
         set_iter(other, set_xor_i, (st_data_t)new_set);
     }
     else {
-        VALUE tmp = set_alloc_with_size(rb_obj_class(new_set), 0);
+        VALUE tmp = set_s_alloc(rb_obj_class(new_set));
         if (RSET_COMPARE_BY_IDENTITY(new_set)) {
             set_i_compare_by_identity(tmp);
         }
@@ -1647,7 +1647,7 @@ set_i_collect(VALUE set)
     RETURN_SIZED_ENUMERATOR(set, 0, 0, set_enum_size);
     rb_check_frozen(set);
 
-    VALUE new_set = set_alloc_with_size(rb_obj_class(set), 0);
+    VALUE new_set = set_s_alloc(rb_obj_class(set));
     if (RSET_COMPARE_BY_IDENTITY(set)) {
         set_i_compare_by_identity(new_set);
     }
@@ -1852,7 +1852,7 @@ set_flatten_merge(VALUE set, VALUE from, VALUE hash)
 static VALUE
 set_i_flatten(VALUE set)
 {
-    VALUE new_set = set_alloc_with_size(rb_obj_class(set), 0);
+    VALUE new_set = set_s_alloc(rb_obj_class(set));
     if (RSET_COMPARE_BY_IDENTITY(set)) {
         set_i_compare_by_identity(new_set);
     }
