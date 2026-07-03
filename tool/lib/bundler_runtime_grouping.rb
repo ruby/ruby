@@ -78,7 +78,7 @@ module BundlerRuntimeGrouping
       recorder = File.expand_path("bundler_runtime_recorder.rb", __dir__)
       ENV["RSPEC_EXECUTABLE"] = "#{ENV["RSPEC_EXECUTABLE"]} -r#{recorder}"
     end
-  rescue StandardError => e
+  rescue StandardError, LoadError => e
     warn "parallel_rspec: runtime-based grouping disabled (#{e.class}: #{e.message})"
   end
 
