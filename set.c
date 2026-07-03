@@ -1394,7 +1394,11 @@ set_i_compare_by_identity_p(VALUE set)
  *  call-seq:
  *    size -> integer
  *
- *  Returns the number of elements.
+ *  Returns the number of elements in +self+:
+ *
+ *    Set[*0..9].size # => 10
+ *
+ *  Related: see {Methods for Querying}[rdoc-ref:Set@Methods+for+Querying].
  */
 static VALUE
 set_i_size(VALUE set)
@@ -2439,7 +2443,7 @@ rb_set_size(VALUE set)
  * - #compare_by_identity?:
  *   Returns whether the set considers only identity
  *   when comparing elements.
- * - #length (aliased as #size):
+ * - #size (aliased as #length):
  *   Returns the count of elements.
  * - #empty?:
  *   Returns whether the set has no elements.
