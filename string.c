@@ -4510,6 +4510,20 @@ str_casecmp_p(VALUE str1, VALUE str2)
         return Qnil;
     }
 
+    if (is_ascii_string(str1) && is_ascii_string(str2)) {
+        if (RSTRING_LEN(str1) != RSTRING_LEN(str2)) return Qfalse;
+        const char *p1 = RSTRING_PTR(str1), *p1end = RSTRING_END(str1);
+        const char *p2 = RSTRING_PTR(str2);
+        while (p1 < p1end) {
+            if (*p1 != *p2 && TOLOWER((unsigned char)*p1) != TOLOWER((unsigned char)*p2)) {
+                return Qfalse;
+            }
+            p1++;
+            p2++;
+        }
+        return Qtrue;
+    }
+
     folded_str1 = rb_str_downcase(1, &fold_opt, str1);
     folded_str2 = rb_str_downcase(1, &fold_opt, str2);
 
@@ -7836,7 +7850,8 @@ case_option_single_p(OnigCaseFoldType flags, rb_encoding *enc, VALUE str)
 {
     if ((flags & ONIGENC_CASE_ASCII_ONLY) && (enc==rb_utf8_encoding() || rb_enc_mbmaxlen(enc) == 1))
         return true;
-    return !(flags & ONIGENC_CASE_FOLD_TURKISH_AZERI) && ENC_CODERANGE(str) == ENC_CODERANGE_7BIT;
+    return !(flags & ONIGENC_CASE_FOLD_TURKISH_AZERI) &&
+           (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT || rb_is_ascii8bit_enc(enc));
 }
 
 /* 16 should be long enough to absorb any kind of single character length increase */
@@ -7868,7 +7883,7 @@ mapping_buffer_free(void *p)
 static const rb_data_type_t mapping_buffer_type = {
     "mapping_buffer",
     {0, mapping_buffer_free,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 static VALUE
@@ -8176,6 +8191,33 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
     return ret;
 }
 
+static bool
+capitalize_single(VALUE str)
+{
+    char *s = RSTRING_PTR(str), *send = RSTRING_END(str);
+    bool modified = false;
+
+    if (s < send) {
+        unsigned int c = (unsigned char)*s;
+
+        if ('a' <= c && c <= 'z') {
+            *s = 'A' + (c - 'a');
+            modified = true;
+        }
+        s++;
+    }
+    while (s < send) {
+        unsigned int c = (unsigned char)*s;
+
+        if ('A' <= c && c <= 'Z') {
+            *s = 'a' + (c - 'A');
+            modified = true;
+        }
+        s++;
+    }
+
+    return modified;
+}
 
 /*
  *  call-seq:
@@ -8199,7 +8241,11 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
     str_modify_keep_cr(str);
     enc = str_true_enc(str);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
-    if (flags&ONIGENC_CASE_ASCII_ONLY)
+    if (case_option_single_p(flags, enc, str)) {
+        if (capitalize_single(str))
+            flags |= ONIGENC_CASE_MODIFIED;
+    }
+    else if (flags&ONIGENC_CASE_ASCII_ONLY)
         rb_str_ascii_casemap(str, str, &flags, enc);
     else
         str_shared_replace(str, rb_str_casemap(str, &flags, enc));
@@ -8227,7 +8273,12 @@ rb_str_capitalize(int argc, VALUE *argv, VALUE str)
     flags = check_case_options(argc, argv, flags);
     enc = str_true_enc(str);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return str;
-    if (flags&ONIGENC_CASE_ASCII_ONLY) {
+    if (case_option_single_p(flags, enc, str)) {
+        ret = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
+        str_enc_copy_direct(ret, str);
+        capitalize_single(ret);
+    }
+    else if (flags&ONIGENC_CASE_ASCII_ONLY) {
         ret = rb_str_new(0, RSTRING_LEN(str));
         rb_str_ascii_casemap(str, ret, &flags, enc);
     }
@@ -11704,14 +11755,7 @@ rb_str_b(VALUE str)
     return str2;
 }
 
-/*
- *  call-seq:
- *    valid_encoding? -> true or false
- *
- *  :include: doc/string/valid_encoding_p.rdoc
- *
- */
-
+/* Defined as a leaf builtin in string.rb, so this must never raise or call into Ruby. */
 static VALUE
 rb_str_valid_encoding_p(VALUE str)
 {
@@ -11720,18 +11764,7 @@ rb_str_valid_encoding_p(VALUE str)
     return RBOOL(cr != ENC_CODERANGE_BROKEN);
 }
 
-/*
- *  call-seq:
- *    ascii_only? -> true or false
- *
- *  Returns whether +self+ contains only ASCII characters:
- *
- *    'abc'.ascii_only?         # => true
- *    "abc\u{6666}".ascii_only? # => false
- *
- *  Related: see {Querying}[rdoc-ref:String@Querying].
- */
-
+/* Defined as a leaf builtin in string.rb, so this must never raise or call into Ruby. */
 static VALUE
 rb_str_is_ascii_only_p(VALUE str)
 {
@@ -12610,20 +12643,6 @@ sym_length(VALUE sym)
 
 /*
  *  call-seq:
- *    empty? -> true or false
- *
- *  Returns +true+ if +self+ is <tt>:''</tt>, +false+ otherwise.
- *
- */
-
-static VALUE
-sym_empty(VALUE sym)
-{
-    return rb_str_empty(rb_sym2str(sym));
-}
-
-/*
- *  call-seq:
  *    upcase(mapping) -> symbol
  *
  *  Equivalent to <tt>sym.to_s.upcase.to_sym</tt>.
@@ -13021,8 +13040,6 @@ Init_String(void)
     rb_define_method(rb_cString, "encoding", rb_obj_encoding, 0); /* in encoding.c */
     rb_define_method(rb_cString, "force_encoding", rb_str_force_encoding, 1);
     rb_define_method(rb_cString, "b", rb_str_b, 0);
-    rb_define_method(rb_cString, "valid_encoding?", rb_str_valid_encoding_p, 0);
-    rb_define_method(rb_cString, "ascii_only?", rb_str_is_ascii_only_p, 0);
 
     /* define UnicodeNormalize module here so that we don't have to look it up */
     mUnicodeNormalize          = rb_define_module("UnicodeNormalize");
@@ -13060,7 +13077,6 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "slice", sym_aref, -1);
     rb_define_method(rb_cSymbol, "length", sym_length, 0);
     rb_define_method(rb_cSymbol, "size", sym_length, 0);
-    rb_define_method(rb_cSymbol, "empty?", sym_empty, 0);
     rb_define_method(rb_cSymbol, "match", sym_match_m, -1);
     rb_define_method(rb_cSymbol, "match?", sym_match_m_p, -1);
 
@@ -13074,3 +13090,5 @@ Init_String(void)
 
     rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
 }
+
+#include "string.rbinc"

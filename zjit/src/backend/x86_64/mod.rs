@@ -298,8 +298,8 @@ impl Assembler {
                     };
                     asm.push_insn(insn);
                 },
-                Insn::CCall { opnds, .. } => {
-                    assert!(opnds.len() <= C_ARG_OPNDS.len());
+                Insn::CCall { data } => {
+                    assert!(data.opnds.len() <= C_ARG_OPNDS.len());
                     // CCall argument setup is handled by handle_caller_saved_regs.
                     asm.push_insn(insn);
                 },
@@ -350,14 +350,14 @@ impl Assembler {
 
         /// If a given operand is Opnd::Mem and it uses MemBase::Stack, lower it to MemBase::Reg(NATIVE_BASE_PTR).
         /// In general, `out` operand is a `VReg`, so it may use MemBase::Stack, but not MemBase::StackIndirect.
-        fn lower_stack_membase(opnd: Opnd, stack_state: &StackState) -> Opnd {
+        fn lower_stack_membase(asm: &Assembler, opnd: Opnd) -> Opnd {
             match opnd {
                 Opnd::Mem(Mem { base: stack_membase @ MemBase::Stack { .. }, disp: opnd_disp, num_bits: opnd_num_bits }) => {
                     // Convert MemBase::Stack to MemBase::Reg(NATIVE_BASE_PTR) with the
                     // correct stack displacement. The stack slot value lives directly at
                     // [NATIVE_BASE_PTR + stack_disp], so we just adjust the base and
                     // combine displacements -- no indirection needed.
-                    let Mem { base, disp: stack_disp, .. } = stack_state.stack_membase_to_mem(stack_membase);
+                    let Mem { base, disp: stack_disp, .. } = asm.stack_state.stack_membase_to_mem(stack_membase);
                     Opnd::Mem(Mem { base, disp: stack_disp + opnd_disp, num_bits: opnd_num_bits })
                 }
                 Opnd::Mem(Mem { base: MemBase::StackIndirect { .. }, .. }) => {
@@ -369,13 +369,13 @@ impl Assembler {
 
         /// If a given operand is Opnd::Mem and it uses MemBase::Stack, lower it to MemBase::Reg(NATIVE_BASE_PTR).
         /// For MemBase::StackIndirect, load the pointer from the stack slot into a scratch register.
-        fn split_stack_membase(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd, stack_state: &StackState) -> Opnd {
+        fn split_stack_membase(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd) -> Opnd {
             match opnd {
-                Opnd::Mem(Mem { base: MemBase::Stack { .. }, .. }) => lower_stack_membase(opnd, stack_state),
+                Opnd::Mem(Mem { base: MemBase::Stack { .. }, .. }) => lower_stack_membase(asm, opnd),
                 Opnd::Mem(Mem { base: MemBase::StackIndirect { stack_idx }, disp: opnd_disp, num_bits: opnd_num_bits }) => {
                     // The spilled value (a pointer) lives at a stack slot. Load it
                     // into a scratch register, then use the register as the base.
-                    let stack_mem = stack_state.stack_membase_to_mem(MemBase::Stack { stack_idx, num_bits: 64 });
+                    let stack_mem = asm.stack_state.stack_membase_to_mem(MemBase::Stack { stack_idx, num_bits: 64 });
                     asm.load_into(scratch_opnd, Opnd::Mem(stack_mem));
                     Opnd::Mem(Mem {
                         base: MemBase::Reg(scratch_opnd.unwrap_reg().reg_no),
@@ -434,14 +434,8 @@ impl Assembler {
             }
         }
 
-        // Prepare StackState to lower MemBase::Stack
-        let stack_state = StackState::new(self.stack_base_idx);
-
-        let mut asm_local = Assembler::new();
+        let mut asm_local = Assembler::new_with_asm_without_blocks(&self);
         asm_local.accept_scratch_reg = true;
-        asm_local.stack_base_idx = self.stack_base_idx;
-        asm_local.label_names = self.label_names.clone();
-        asm_local.num_vregs = self.num_vregs;
 
         // Create one giant block to linearize everything into
         asm_local.new_block_without_id("linearized");
@@ -468,16 +462,16 @@ impl Assembler {
                     // since we'll overwrite out when moving left into it.
                     // Compare before lowering (Stack membases change during lowering).
                     let right_eq_out = out == right;
-                    *out = lower_stack_membase(*out, &stack_state);
+                    *out = lower_stack_membase(asm, *out);
                     if right_eq_out {
                         asm.mov(SCRATCH1_OPND, *out);
                         *right = SCRATCH1_OPND;
                     }
 
                     // Phase 2: Lower stack memory bases
-                    *left = split_stack_membase(asm, *left, SCRATCH0_OPND, &stack_state);
+                    *left = split_stack_membase(asm, *left, SCRATCH0_OPND);
                     if !right_eq_out {
-                        *right = split_stack_membase(asm, *right, SCRATCH1_OPND, &stack_state);
+                        *right = split_stack_membase(asm, *right, SCRATCH1_OPND);
                     }
 
                     // Phase 3: If right is a Mem whose base register equals the out
@@ -512,11 +506,11 @@ impl Assembler {
                 Insn::Mul { left, right, out } => {
                     assert_out_is_phys_reg_or_stack_mem(*out);
 
-                    *left = split_stack_membase(asm, *left, SCRATCH0_OPND, &stack_state);
+                    *left = split_stack_membase(asm, *left, SCRATCH0_OPND);
                     *left = split_if_both_memory(asm, *left, *right, SCRATCH0_OPND);
-                    *right = split_stack_membase(asm, *right, SCRATCH1_OPND, &stack_state);
+                    *right = split_stack_membase(asm, *right, SCRATCH1_OPND);
                     *right = split_64bit_immediate(asm, *right, SCRATCH1_OPND);
-                    *out = lower_stack_membase(*out, &stack_state);
+                    *out = lower_stack_membase(asm, *out);
 
                     // imul doesn't have (Mem, Reg) encoding. Swap left and right in that case.
                     if let (Opnd::Mem(_), Opnd::Reg(_)) = (&left, &right) {
@@ -536,8 +530,8 @@ impl Assembler {
                 }
                 Insn::Test { left, right } |
                 Insn::Cmp { left, right } => {
-                    *left = split_stack_membase(asm, *left, SCRATCH1_OPND, &stack_state);
-                    *right = split_stack_membase(asm, *right, SCRATCH0_OPND, &stack_state);
+                    *left = split_stack_membase(asm, *left, SCRATCH1_OPND);
+                    *right = split_stack_membase(asm, *right, SCRATCH0_OPND);
                     *right = split_if_both_memory(asm, *right, *left, SCRATCH0_OPND);
 
                     let num_bits = match right {
@@ -559,11 +553,11 @@ impl Assembler {
                     asm.push_insn(insn);
                 }
                 // For compile_exits, support splitting simple C arguments here
-                Insn::CCall { opnds, .. } if !opnds.is_empty() => {
-                    for (i, opnd) in opnds.iter().enumerate() {
+                Insn::CCall { data } if !data.opnds.is_empty() => {
+                    for (i, opnd) in data.opnds.iter().enumerate() {
                         asm.load_into(C_ARG_OPNDS[i], *opnd);
                     }
-                    *opnds = vec![];
+                    data.opnds = vec![];
                     asm.push_insn(insn);
                 }
                 Insn::CSelZ { truthy: left, falsy: right, out } |
@@ -574,10 +568,10 @@ impl Assembler {
                 Insn::CSelLE { truthy: left, falsy: right, out } |
                 Insn::CSelG { truthy: left, falsy: right, out } |
                 Insn::CSelGE { truthy: left, falsy: right, out } => {
-                    *left = split_stack_membase(asm, *left, SCRATCH1_OPND, &stack_state);
-                    *right = split_stack_membase(asm, *right, SCRATCH0_OPND, &stack_state);
+                    *left = split_stack_membase(asm, *left, SCRATCH1_OPND);
+                    *right = split_stack_membase(asm, *right, SCRATCH0_OPND);
                     *right = split_if_both_memory(asm, *right, *left, SCRATCH0_OPND);
-                    *out = lower_stack_membase(*out, &stack_state);
+                    *out = lower_stack_membase(asm, *out);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
                     asm.push_insn(insn);
                     if let Some(mem_out) = mem_out {
@@ -585,8 +579,8 @@ impl Assembler {
                     }
                 }
                 Insn::Lea { opnd, out } => {
-                    *opnd = split_stack_membase(asm, *opnd, SCRATCH0_OPND, &stack_state);
-                    *out = lower_stack_membase(*out, &stack_state);
+                    *opnd = split_stack_membase(asm, *opnd, SCRATCH0_OPND);
+                    *out = lower_stack_membase(asm, *out);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
                     asm.push_insn(insn);
                     if let Some(mem_out) = mem_out {
@@ -601,9 +595,9 @@ impl Assembler {
                 }
                 Insn::Load { out, opnd } |
                 Insn::LoadInto { dest: out, opnd } => {
-                    *opnd = split_stack_membase(asm, *opnd, SCRATCH0_OPND, &stack_state);
+                    *opnd = split_stack_membase(asm, *opnd, SCRATCH0_OPND);
                     // Split stack membase on out before checking for memory write
-                    *out = lower_stack_membase(*out, &stack_state);
+                    *out = lower_stack_membase(asm, *out);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
                     asm.push_insn(insn);
                     if let Some(mem_out) = mem_out {
@@ -618,15 +612,15 @@ impl Assembler {
                     asm.incr_counter(Opnd::mem(64, SCRATCH0_OPND, 0), value);
                 }
                 &mut Insn::Mov { dest, src } => {
-                    let dest = split_stack_membase(asm, dest, SCRATCH1_OPND, &stack_state);
-                    let src = split_stack_membase(asm, src, SCRATCH0_OPND, &stack_state);
+                    let dest = split_stack_membase(asm, dest, SCRATCH1_OPND);
+                    let src = split_stack_membase(asm, src, SCRATCH0_OPND);
                     asm_mov(asm, dest, src, SCRATCH0_OPND);
                 }
                 // Handle various operand combinations for spills on compile_exits.
                 &mut Insn::Store { dest, src } => {
                     let num_bits = dest.rm_num_bits();
-                    let src = split_stack_membase(asm, src, SCRATCH0_OPND, &stack_state);
-                    let dest = split_stack_membase(asm, dest, SCRATCH1_OPND, &stack_state);
+                    let src = split_stack_membase(asm, src, SCRATCH0_OPND);
+                    let dest = split_stack_membase(asm, dest, SCRATCH1_OPND);
 
                     let src = match src {
                         Opnd::Reg(_) => src,
@@ -664,8 +658,8 @@ impl Assembler {
                     };
                     asm.store(dest, src);
                 }
-                &mut Insn::PatchPoint { ref target, invariant, version } => {
-                    split_patch_point(asm, target, invariant, version);
+                &mut Insn::PatchPoint(ref data) => {
+                    split_patch_point(asm, &data.target, data.invariant, data.version);
                 }
                 _ => {
                     asm.push_insn(insn);
@@ -923,7 +917,8 @@ impl Assembler {
                 },
 
                 // C function call
-                Insn::CCall { fptr, .. } => {
+                Insn::CCall { data, .. } => {
+                    let fptr = &data.fptr;
                     match fptr {
                         Opnd::UImm(fptr) => {
                             call_ptr(cb, RAX, *fptr as *const u8);
@@ -964,7 +959,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jmp_ptr(cb, code_ptr),
                         Target::Label(label) => jmp_label(cb, label),
                         Target::Block(ref edge) => jmp_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
@@ -973,7 +968,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => je_ptr(cb, code_ptr),
                         Target::Label(label) => je_label(cb, label),
                         Target::Block(ref edge) => je_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
@@ -982,7 +977,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jne_ptr(cb, code_ptr),
                         Target::Label(label) => jne_label(cb, label),
                         Target::Block(ref edge) => jne_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
@@ -991,7 +986,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jl_ptr(cb, code_ptr),
                         Target::Label(label) => jl_label(cb, label),
                         Target::Block(ref edge) => jl_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
@@ -1000,7 +995,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jg_ptr(cb, code_ptr),
                         Target::Label(label) => jg_label(cb, label),
                         Target::Block(ref edge) => jg_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
@@ -1009,7 +1004,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jge_ptr(cb, code_ptr),
                         Target::Label(label) => jge_label(cb, label),
                         Target::Block(ref edge) => jge_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
@@ -1018,7 +1013,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jbe_ptr(cb, code_ptr),
                         Target::Label(label) => jbe_label(cb, label),
                         Target::Block(ref edge) => jbe_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
@@ -1027,7 +1022,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jb_ptr(cb, code_ptr),
                         Target::Label(label) => jb_label(cb, label),
                         Target::Block(ref edge) => jb_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
@@ -1036,7 +1031,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jz_ptr(cb, code_ptr),
                         Target::Label(label) => jz_label(cb, label),
                         Target::Block(ref edge) => jz_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
@@ -1045,7 +1040,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jnz_ptr(cb, code_ptr),
                         Target::Label(label) => jnz_label(cb, label),
                         Target::Block(ref edge) => jnz_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
@@ -1055,13 +1050,13 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jo_ptr(cb, code_ptr),
                         Target::Label(label) => jo_label(cb, label),
                         Target::Block(ref edge) => jo_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
                 Insn::Joz(..) | Insn::Jonz(..) => unreachable!("Joz/Jonz should be unused for now"),
 
-                Insn::PatchPoint { .. } => unreachable!("PatchPoint should have been lowered to PadPatchPoint in x86_scratch_split"),
+                Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PadPatchPoint in x86_scratch_split"),
                 Insn::PadPatchPoint => {
                     // If patch points are too close to each other or the end of the block, fill nop instructions
                     if let Some(last_patch_pos) = last_patch_pos {
@@ -1156,8 +1151,9 @@ impl Assembler {
             let preferred_registers = trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&intervals));
             let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(intervals.clone(), regs.len(), &preferred_registers));
 
-            let total_stack_slots = asm.stack_base_idx + num_stack_slots;
-            if total_stack_slots > Self::MAX_FRAME_STACK_SLOTS {
+            asm.stack_state.num_spill_slots = num_stack_slots;
+            let stack_slot_count = asm.stack_state.stack_slot_count();
+            if stack_slot_count > Self::MAX_FRAME_STACK_SLOTS {
                 return Err(CompileError::NativeStackTooLarge);
             }
 
@@ -1181,21 +1177,20 @@ impl Assembler {
                 }
             }
 
-            // Update FrameSetup slot_count to account for:
-            // 1) stack slots reserved for block params (stack_base_idx), and
-            // 2) register allocator spills (num_stack_slots).
+            // Update FrameSetup slot_count now that StackState knows the
+            // register allocator spill count.
             trace_compile_phase("count_stack_slots", || {
                 for block in asm.basic_blocks.iter_mut() {
                     for insn in block.insns.iter_mut() {
                         if let Insn::FrameSetup { slot_count, .. } = insn {
-                            *slot_count = total_stack_slots;
+                            *slot_count = stack_slot_count;
                         }
                     }
                 }
             });
 
             trace_compile_phase("resolve_ssa", || {
-                asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS, total_stack_slots);
+                asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
                 asm.resolve_ssa(&intervals, &assignments);
             });
 
@@ -1265,7 +1260,7 @@ mod tests {
         (asm, CodeBlock::new_dummy())
     }
 
-    fn stack_mem(stack_idx: usize) -> Opnd {
+    fn stack_mem(stack_idx: StackIdx) -> Opnd {
         Opnd::Mem(Mem {
             base: MemBase::Stack { stack_idx, num_bits: 64 },
             disp: 0,
@@ -1273,7 +1268,7 @@ mod tests {
         })
     }
 
-    fn stack_indirect_mem(stack_idx: usize) -> Opnd {
+    fn stack_indirect_mem(stack_idx: StackIdx) -> Opnd {
         Opnd::Mem(Mem {
             base: MemBase::StackIndirect { stack_idx },
             disp: 0,
@@ -1384,7 +1379,7 @@ mod tests {
 
         let mut asm = Assembler::new();
         asm.new_block_without_id("test");
-        asm.stack_base_idx = 1;
+        asm.stack_state.stack_base_idx = 1;
 
         let label = asm.new_label("bb0");
         asm.write_label(label.clone());
@@ -1393,7 +1388,7 @@ mod tests {
 
         let val64 = asm.add(CFP, Opnd::UImm(64));
         asm.store(Opnd::mem(64, SP, 0x10), val64);
-        let side_exit = Target::SideExit { reason: SideExitReason::Interrupt, exit: SideExit { pc: 0.into(), iseq: std::ptr::null(), stack: vec![], locals: vec![], recompile: None } };
+        let side_exit = Target::SideExit(Box::new(SideExitTarget { reason: SideExitReason::Interrupt, exit: SideExit { pc: 0.into(), iseq: std::ptr::null(), stack: vec![], locals: vec![], recompile: None } }));
         asm.push_insn(Insn::Joz(val64, side_exit));
         asm.mov(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32));
         asm.mov(C_ARG_OPNDS[1], Opnd::mem(64, SP, -8));
@@ -2123,7 +2118,7 @@ mod tests {
     #[test]
     fn frame_setup_teardown_stack_base_idx() {
         let (mut asm, mut cb) = setup_asm();
-        asm.stack_base_idx = 5;
+        asm.stack_state.stack_base_idx = 5;
         asm.frame_setup(&[]);
         asm.frame_teardown(&[]);
         asm.compile_with_num_regs(&mut cb, 0);

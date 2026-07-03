@@ -25,11 +25,16 @@ pub const DEFAULT_CALL_THRESHOLD: CallThreshold = 30;
 pub type CallThreshold = u64;
 
 /// Default --zjit-inline-threshold
-pub const DEFAULT_INLINE_THRESHOLD: InlineThreshold = 0;
+/// TODO (nirvdrum 2026-06-25): 30 has proven to work well with ruby-bench, but we should finely
+/// tune across more workloads.
+pub const DEFAULT_INLINE_THRESHOLD: InlineThreshold = 30;
 pub type InlineThreshold = usize;
 
 /// Default --zjit-inline-budget
-pub const DEFAULT_INLINE_BUDGET: InlineBudget = 500;
+/// TODO (nirvdrum 2026-06-25): 200 has proven to strike a good balance between memory usage and
+/// run time performance on ruby-bench, but we should finely tune across more workloads.
+pub const DEFAULT_INLINE_BUDGET: InlineBudget = 200;
+pub const INLINE_BUDGET_UNLIMITED: InlineBudget = 0;
 pub type InlineBudget = usize;
 
 /// Default --zjit-inline-max-iterations
@@ -145,8 +150,8 @@ pub struct Options {
     /// `inline_methods` inside the `optimize()` fixed-point loop). Once a caller has
     /// grown past this many HIR instructions, `should_inline` rejects further callees,
     /// bounding runaway code-size growth from depth-N inlining (and providing the
-    /// optimization fixed-point loop's effective terminating condition). 0 disables
-    /// the budget.
+    /// optimization fixed-point loop's effective terminating condition).
+    /// `INLINE_BUDGET_UNLIMITED` disables the budget.
     ///
     /// Caveat on the unit: `self.insns` is append-only across the whole pipeline —
     /// `InsnId`s are stable indices into it, so passes never shrink it. `len()` is
@@ -177,9 +182,12 @@ pub struct Options {
     /// Upper bound on how many times the `optimize` fixed-point loop will iterate
     /// before giving up. Each iteration runs `type_specialize` → `inline` →
     /// `inline_methods` → the rest of the HIR pipeline; in steady state the loop
-    /// terminates as soon as an iteration fails to inline anything new. The cap
-    /// exists to bound compile time when something pathological prevents the loop
-    /// from reaching a fixed point.
+    /// terminates as soon as an iteration fails to inline anything new. If the
+    /// cap is hit while inlining is still ongoing, the optimizer runs one final
+    /// specialization/cleanup round without `inline_methods`, so the callee HIR
+    /// inserted by the last iteration does not keep unspecialized `Send`s. The
+    /// cap exists to bound compile time when something pathological prevents the
+    /// loop from reaching a fixed point.
     pub inline_max_iterations: InlineDepth,
 }
 
@@ -630,7 +638,6 @@ pub fn set_call_threshold(call_threshold: CallThreshold) {
     update_profile_threshold();
 }
 
-/// Update --zjit-inline-threshold for testing
 #[cfg(test)]
 pub fn set_inline_threshold(inline_threshold: InlineThreshold) {
     rb_zjit_prepare_options();

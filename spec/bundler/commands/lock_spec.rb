@@ -704,8 +704,9 @@ RSpec.describe "bundle lock" do
         build_gem "qux", %w[1.0.0 1.0.1 1.1.0 2.0.0]
       end
 
-      # establish a lockfile set to 1.4.3
-      install_gemfile <<-G
+      # establish a lockfile set to 1.4.3 (these examples only assert on the
+      # generated lockfile, so resolve-and-lock without the install)
+      lock_gemfile <<-G
         source "https://gem.repo4"
         gem 'foo', '1.4.3'
         gem 'bar', '2.0.3'
@@ -988,7 +989,7 @@ RSpec.describe "bundle lock" do
     end
 
     simulate_platform "x86_64-darwin-22" do
-      install_gemfile <<~G
+      lock_gemfile <<~G
         source "https://gem.repo4"
 
         gem "nokogiri"
@@ -1299,6 +1300,11 @@ RSpec.describe "bundle lock" do
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw-ucrt"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
+      end
+
+      build_gem "raygun-apm", "1.0.78" do |s|
+        s.platform = "x64-mswin64"
         s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
     end

@@ -153,9 +153,10 @@ RSpec.describe "bundle add" do
 
   describe "with --git and --ref" do
     it "adds dependency with specified git source and branch" do
-      bundle "add foo --git=#{lib_path("foo-2.0")} --ref=#{revision_for(lib_path("foo-2.0"))}"
+      ref = revision_for(lib_path("foo-2.0"))
+      bundle "add foo --git=#{lib_path("foo-2.0")} --ref=#{ref}"
 
-      expect(bundled_app_gemfile.read).to match(/gem "foo", ">= 2\.0", git: "#{lib_path("foo-2.0")}", ref: "#{revision_for(lib_path("foo-2.0"))}"/)
+      expect(bundled_app_gemfile.read).to match(/gem "foo", ">= 2\.0", git: "#{lib_path("foo-2.0")}", ref: "#{ref}"/)
       expect(the_bundle).to include_gems "foo 2.0"
     end
   end
@@ -229,9 +230,10 @@ RSpec.describe "bundle add" do
 
   describe "with --git and --ref and --glob" do
     it "adds dependency with specified git source and branch" do
-      bundle "add foo --git=#{lib_path("foo-2.0")} --ref=#{revision_for(lib_path("foo-2.0"))} --glob='./*.gemspec'"
+      ref = revision_for(lib_path("foo-2.0"))
+      bundle "add foo --git=#{lib_path("foo-2.0")} --ref=#{ref} --glob='./*.gemspec'"
 
-      expect(bundled_app_gemfile.read).to match(%r{gem "foo", ">= 2\.0", git: "#{lib_path("foo-2.0")}", ref: "#{revision_for(lib_path("foo-2.0"))}", glob: "\./\*\.gemspec"})
+      expect(bundled_app_gemfile.read).to match(%r{gem "foo", ">= 2\.0", git: "#{lib_path("foo-2.0")}", ref: "#{ref}", glob: "\./\*\.gemspec"})
       expect(the_bundle).to include_gems "foo 2.0"
     end
   end
@@ -397,7 +399,7 @@ RSpec.describe "bundle add" do
 
   describe "when a gem is added which is already specified in Gemfile with version" do
     it "shows an error when added with different version requirement" do
-      install_gemfile <<-G
+      lock_gemfile <<-G
         source "https://gem.repo2"
         gem "myrack", "1.0"
       G
@@ -409,7 +411,7 @@ RSpec.describe "bundle add" do
     end
 
     it "shows error when added without version requirements" do
-      install_gemfile <<-G
+      lock_gemfile <<-G
         source "https://gem.repo2"
         gem "myrack", "1.0"
       G
@@ -424,7 +426,7 @@ RSpec.describe "bundle add" do
 
   describe "when a gem is added which is already specified in Gemfile without version" do
     it "shows an error when added with different version requirement" do
-      install_gemfile <<-G
+      lock_gemfile <<-G
         source "https://gem.repo2"
         gem "myrack"
       G

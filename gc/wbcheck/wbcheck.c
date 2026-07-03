@@ -309,6 +309,19 @@ wbcheck_report_error(void *objspace_ptr, VALUE parent_obj, wbcheck_object_list_t
     objspace->missed_write_barrier_children += missed_refs->count;
 }
 
+// Fail if a verification sweep reported any missed write barriers. Called at
+// each sweep boundary so every offender in the sweep is printed before we fail.
+static void
+wbcheck_abort_if_errors(rb_wbcheck_objspace_t *objspace)
+{
+    if (objspace->missed_write_barrier_parents > 0) {
+        fflush(stderr);
+        rb_bug("wbcheck: missed write barrier detected (%zu object(s), %zu reference(s))",
+               objspace->missed_write_barrier_parents,
+               objspace->missed_write_barrier_children);
+    }
+}
+
 static void
 wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_list_t *current_refs, wbcheck_object_list_t *gc_mark_snapshot, wbcheck_object_list_t *writebarrier_children)
 {
@@ -999,10 +1012,7 @@ gc_step(void *objspace_ptr, bool force)
         // Clear the list after processing
         objspace->objects_to_verify->count = 0;
 
-        // If any new errors were detected during verification, exit immediately
-        if (objspace->missed_write_barrier_parents > 0) {
-            rb_bug("wbcheck: missed write barrier detected during immediate verification (WBCHECK_VERIFY_AFTER_WB=1)");
-        }
+        wbcheck_abort_if_errors(objspace);
     }
 
     // Process all objects that need initial reference capture
@@ -1020,6 +1030,7 @@ gc_step(void *objspace_ptr, bool force)
          (objspace->gc_enabled &&
           (objspace->gc_stress || st_table_size(objspace->object_table) >= objspace->gc_threshold)))) {
         wbcheck_full_gc(objspace);
+        wbcheck_abort_if_errors(objspace);
     }
 
 }
@@ -1722,16 +1733,8 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     WBCHECK_DEBUG("wbcheck: finished verifying all object references\n");
     RB_GC_VM_UNLOCK(verify_lev);
 
-    // Print summary and exit with error code if violations were found
-    if (objspace->missed_write_barrier_parents > 0 || objspace->missed_write_barrier_children > 0) {
-        fprintf(stderr, "WBCHECK SUMMARY: Found %zu objects with missed write barriers (%zu total violations)\n",
-                objspace->missed_write_barrier_parents, objspace->missed_write_barrier_children);
-
-
-        exit(1);  // Exit with error code to indicate violations were found
-    } else {
-        WBCHECK_DEBUG("wbcheck: no write barrier violations detected\n");
-    }
+    wbcheck_abort_if_errors(objspace);
+    WBCHECK_DEBUG("wbcheck: no write barrier violations detected\n");
 
     // Call rb_gc_obj_free on objects that need shutdown finalization (File, Data with dfree, etc.)
     unsigned int lev = RB_GC_VM_LOCK();
@@ -1750,7 +1753,12 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 void
 rb_gc_impl_before_fork(void *objspace_ptr)
 {
-    // Stub implementation
+    // Verify all objects at the fork point so a pre-fork missed barrier is caught
+    // once here, rather than in every forked child.
+    unsigned int lev = RB_GC_VM_LOCK();
+    rb_gc_vm_barrier();
+    force_gc(objspace_ptr);
+    RB_GC_VM_UNLOCK(lev);
 }
 
 void

@@ -34,7 +34,7 @@ describe "Kernel#require" do
       features -= %w[java.rb jruby/util.rb]
     when "ruby"
       so = RbConfig::CONFIG['DLEXT']
-      features -= ["windows_1252.#{so}", "windows_31.#{so}"]
+      features.reject! { |feature| feature.end_with?("windows_1252.#{so}", "windows_31j.#{so}") }
       features.reject! { |feature| feature.end_with? "encdb.#{so}" }
       features.reject! { |feature| feature.end_with? "transdb.#{so}" }
       features.reject! { |feature| feature.include?('-fake') }

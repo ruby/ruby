@@ -1077,7 +1077,7 @@ rb_ec_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, size_t siz
     return rb_newobj(ec, klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, true, size);
 }
 
-VALUE
+static VALUE
 rb_newobj_of_with_shape(VALUE klass, VALUE flags, shape_id_t shape_id, size_t size)
 {
     return rb_newobj(GET_EC(), klass, flags, shape_id, true, size);
@@ -1193,7 +1193,7 @@ VALUE
 rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type)
 {
     if (RB_DATA_TYPE_EMBEDDABLE_P(type)) {
-        if (!(type->flags & RUBY_TYPED_FREE_IMMEDIATELY)) {
+        if (!(type->flags & (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_THREAD_SAFE_FREE))) {
             rb_raise(rb_eTypeError, "Embeddable TypedData must be freed immediately");
         }
 
@@ -1474,7 +1474,7 @@ rb_data_free(void *objspace, VALUE obj)
 
         if (dfree) {
             bool embedded = RTYPEDDATA_EMBEDDED_P(obj);
-            int free_immediately = (type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
+            int free_immediately = (type->flags & (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_THREAD_SAFE_FREE)) != 0;
             bool free_embeddable_data = RB_DATA_TYPE_EMBEDDABLE_P(type) && !embedded;
 
             if (dfree == RUBY_DEFAULT_FREE) {
@@ -3762,7 +3762,7 @@ rb_gc_unregister_address(VALUE *addr)
         for (index = 0; index < vm->global_object_list_size; index++) {
             if (addr == vm->global_object_list[index]) {
                 MEMMOVE(
-                    vm->global_object_list[index],
+                    &vm->global_object_list[index],
                     &vm->global_object_list[index + 1],
                     VALUE *,
                     vm->global_object_list_size - index - 1
@@ -5788,24 +5788,6 @@ rb_gc_checking_shareable(void)
  *
  *     Finalizer two on 537763470
  *     Finalizer one on 537763480
- */
-
-/*  Document-class: GC::Profiler
- *
- *  The GC profiler provides access to information on GC runs including time,
- *  length and object space size.
- *
- *  Example:
- *
- *    GC::Profiler.enable
- *
- *    require 'rdoc/rdoc'
- *
- *    GC::Profiler.report
- *
- *    GC::Profiler.disable
- *
- *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
  */
 
 #include "gc.rbinc"

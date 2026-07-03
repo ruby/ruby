@@ -215,7 +215,6 @@ RSHAPE(shape_id_t shape_id)
 int32_t rb_shape_id_offset(void);
 
 RUBY_FUNC_EXPORTED shape_id_t rb_obj_shape_id(VALUE obj);
-shape_id_t rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id);
 bool rb_shape_get_iv_index(shape_id_t shape_id, ID id, attr_index_t *value);
 bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value, shape_id_t *shape_id_hint);
 bool rb_shape_find_ivar(shape_id_t shape_id, ID id, shape_id_t *ivar_shape);

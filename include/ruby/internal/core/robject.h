@@ -116,32 +116,4 @@ struct RObject {
     } as;
 };
 
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-/**
- * Queries the instance variables.
- *
- * @param[in]  obj  Object in question.
- * @return     Its instance variables, in C array.
- * @pre        `obj` must be an instance of ::RObject.
- *
- * @internal
- *
- * @shyouhei finds no reason for this to be visible from extension libraries.
- */
-static inline VALUE *
-ROBJECT_FIELDS(VALUE obj)
-{
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-
-    struct RObject *const ptr = ROBJECT(obj);
-
-    if (RB_UNLIKELY(RB_FL_ANY_RAW(obj, ROBJECT_HEAP))) {
-        return ptr->as.heap.fields;
-    }
-    else {
-        return ptr->as.ary;
-    }
-}
-
 #endif /* RBIMPL_ROBJECT_H */

@@ -1,9 +1,10 @@
 #include <psych.h>
 
+#ifndef PSYCH_USE_LIBFYAML
+
 VALUE cPsychParser;
 
 static ID id_read;
-static ID id_path;
 static ID id_empty;
 static ID id_start_stream;
 static ID id_end_stream;
@@ -559,7 +560,6 @@ void Init_psych_parser(void)
     rb_define_method(cPsychParser, "mark", mark, 0);
 
     id_read            = rb_intern("read");
-    id_path            = rb_intern("path");
     id_empty           = rb_intern("empty");
     id_start_stream    = rb_intern("start_stream");
     id_end_stream      = rb_intern("end_stream");
@@ -573,3 +573,5 @@ void Init_psych_parser(void)
     id_end_mapping     = rb_intern("end_mapping");
     id_event_location  = rb_intern("event_location");
 }
+
+#endif /* PSYCH_USE_LIBFYAML */

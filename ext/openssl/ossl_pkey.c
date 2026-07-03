@@ -1514,6 +1514,122 @@ ossl_pkey_derive(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+#ifdef HAVE_EVP_PKEY_ENCAPSULATE_INIT
+/*
+ * call-seq:
+ *    pkey.encapsulate -> [ciphertext, shared_secret]
+ *
+ * Performs a key encapsulation operation using the public components of
+ * _pkey_.
+ *
+ * See also the man page EVP_PKEY_encapsulate(3).
+ */
+static VALUE
+ossl_pkey_encapsulate(VALUE self)
+{
+    EVP_PKEY *pkey;
+    EVP_PKEY_CTX *ctx;
+    VALUE ciphertext, shared_secret;
+    size_t ciphertextlen, shared_secretlen;
+    int state;
+
+    GetPKey(self, pkey);
+    ctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
+    if (!ctx)
+        ossl_raise(ePKeyError, "EVP_PKEY_CTX_new");
+    if (EVP_PKEY_encapsulate_init(ctx, NULL) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_encapsulate_init");
+    }
+    if (EVP_PKEY_encapsulate(ctx, NULL, &ciphertextlen, NULL, &shared_secretlen) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_encapsulate");
+    }
+    if (ciphertextlen > LONG_MAX || shared_secretlen > LONG_MAX) {
+        EVP_PKEY_CTX_free(ctx);
+        rb_raise(ePKeyError, "encapsulated data would be too large");
+    }
+    ciphertext = ossl_str_new(NULL, (long)ciphertextlen, &state);
+    if (state) {
+        EVP_PKEY_CTX_free(ctx);
+        rb_jump_tag(state);
+    }
+    shared_secret = ossl_str_new(NULL, (long)shared_secretlen, &state);
+    if (state) {
+        EVP_PKEY_CTX_free(ctx);
+        rb_jump_tag(state);
+    }
+    if (EVP_PKEY_encapsulate(ctx,
+                             (unsigned char *)RSTRING_PTR(ciphertext),
+                             &ciphertextlen,
+                             (unsigned char *)RSTRING_PTR(shared_secret),
+                             &shared_secretlen) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_encapsulate");
+    }
+    EVP_PKEY_CTX_free(ctx);
+    rb_str_set_len(ciphertext, ciphertextlen);
+    rb_str_set_len(shared_secret, shared_secretlen);
+    return rb_assoc_new(ciphertext, shared_secret);
+}
+
+/*
+ * call-seq:
+ *    pkey.decapsulate(ciphertext) -> shared_secret
+ *
+ * Performs a key decapsulation operation using the private components of
+ * _pkey_.
+ *
+ * See also the man page EVP_PKEY_decapsulate(3).
+ */
+static VALUE
+ossl_pkey_decapsulate(VALUE self, VALUE ciphertext)
+{
+    EVP_PKEY *pkey;
+    EVP_PKEY_CTX *ctx;
+    VALUE shared_secret;
+    size_t shared_secretlen;
+    int state;
+
+    GetPKey(self, pkey);
+    StringValue(ciphertext);
+
+    ctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
+    if (!ctx)
+        ossl_raise(ePKeyError, "EVP_PKEY_CTX_new");
+    if (EVP_PKEY_decapsulate_init(ctx, NULL) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_decapsulate_init");
+    }
+    if (EVP_PKEY_decapsulate(ctx, NULL, &shared_secretlen,
+                             (unsigned char *)RSTRING_PTR(ciphertext),
+                             RSTRING_LEN(ciphertext)) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_decapsulate");
+    }
+    if (shared_secretlen > LONG_MAX) {
+        EVP_PKEY_CTX_free(ctx);
+        rb_raise(ePKeyError, "decapsulated data would be too large");
+    }
+    shared_secret = ossl_str_new(NULL, (long)shared_secretlen, &state);
+    if (state) {
+        EVP_PKEY_CTX_free(ctx);
+        rb_jump_tag(state);
+    }
+    if (EVP_PKEY_decapsulate(ctx,
+                             (unsigned char *)RSTRING_PTR(shared_secret),
+                             &shared_secretlen,
+                             (unsigned char *)RSTRING_PTR(ciphertext),
+                             RSTRING_LEN(ciphertext)) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_decapsulate");
+    }
+    EVP_PKEY_CTX_free(ctx);
+    rb_str_set_len(shared_secret, shared_secretlen);
+    return shared_secret;
+}
+#endif
+
 /*
  * call-seq:
  *    pkey.encrypt(data [, options]) -> string
@@ -1769,6 +1885,10 @@ Init_ossl_pkey(void)
     rb_define_method(cPKey, "verify_raw", ossl_pkey_verify_raw, -1);
     rb_define_method(cPKey, "verify_recover", ossl_pkey_verify_recover, -1);
     rb_define_method(cPKey, "derive", ossl_pkey_derive, -1);
+#ifdef HAVE_EVP_PKEY_ENCAPSULATE_INIT
+    rb_define_method(cPKey, "encapsulate", ossl_pkey_encapsulate, 0);
+    rb_define_method(cPKey, "decapsulate", ossl_pkey_decapsulate, 1);
+#endif
     rb_define_method(cPKey, "encrypt", ossl_pkey_encrypt, -1);
     rb_define_method(cPKey, "decrypt", ossl_pkey_decrypt, -1);
 

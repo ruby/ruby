@@ -2292,7 +2292,7 @@ short ruby_vm_redefined_flag[BOP_LAST_];
 static st_table *vm_opt_method_def_table = 0;
 static st_table *vm_opt_mid_table = 0;
 
-void
+static void
 rb_free_vm_opt_tables(void)
 {
     st_free_table(vm_opt_method_def_table);
@@ -3561,7 +3561,7 @@ vm_memsize(const void *ptr)
 const rb_data_type_t ruby_vm_data_type = {
     "VM",
     {0, 0, vm_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 #define vm_data_type ruby_vm_data_type
@@ -3924,7 +3924,7 @@ const rb_data_type_t ruby_threadptr_data_type = {
         thread_memsize,
         thread_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 VALUE
@@ -4751,7 +4751,7 @@ static const rb_data_type_t pin_array_list_type = {
         .dsize = pin_array_list_memsize,
         .dcompact = pin_array_list_update_references,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE

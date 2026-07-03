@@ -4529,6 +4529,141 @@ fn test_getspecial_number_in_jit_to_jit_callee() {
     assert_snapshot!(assert_compiles("caller_method"), @"nil");
 }
 
+#[cfg(all(
+    any(target_os = "linux", target_os = "macos"),
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+))]
+mod signal_profiler {
+    use super::*;
+    use std::ptr::null_mut;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+    use std::thread::{self, JoinHandle};
+    use std::time::Duration;
+
+    use libc::{self, c_int};
+
+    const PROFILE_FRAMES_LIMIT: usize = 128;
+
+    static SAMPLES: AtomicUsize = AtomicUsize::new(0);
+    static IN_HANDLER: AtomicBool = AtomicBool::new(false);
+
+    extern "C" fn sample_profile_frames(signum: c_int) {
+        if signum != libc::SIGPROF || IN_HANDLER.swap(true, Ordering::Relaxed) {
+            return;
+        }
+
+        let mut frames = [VALUE(0); PROFILE_FRAMES_LIMIT];
+        let mut lines = [0; PROFILE_FRAMES_LIMIT];
+        let collected_size = unsafe {
+            rb_profile_frames(
+                0,
+                PROFILE_FRAMES_LIMIT as c_int,
+                frames.as_mut_ptr(),
+                lines.as_mut_ptr(),
+            )
+        };
+        if collected_size > 0 {
+            SAMPLES.fetch_add(1, Ordering::Relaxed);
+        }
+
+        IN_HANDLER.store(false, Ordering::Relaxed);
+    }
+
+    struct TargetThread(libc::pthread_t);
+
+    // pthread_t is valid to pass to pthread_kill from another thread.
+    unsafe impl Send for TargetThread {}
+
+    pub struct Profiler {
+        old_sigprof: libc::sigaction,
+        stop_sampler: Arc<AtomicBool>,
+        sampler: Option<JoinHandle<()>>,
+    }
+
+    impl Profiler {
+        pub fn start(interval_usec: u64) -> Self {
+            assert!(interval_usec > 0);
+            SAMPLES.store(0, Ordering::Relaxed);
+            IN_HANDLER.store(false, Ordering::Relaxed);
+
+            let mut handler: libc::sigaction = unsafe { std::mem::zeroed() };
+            assert_eq!(unsafe { libc::sigemptyset(&mut handler.sa_mask) }, 0, "sigemptyset failed");
+            handler.sa_sigaction = sample_profile_frames as libc::sighandler_t;
+            handler.sa_flags = libc::SA_RESTART;
+
+            let mut old_sigprof: libc::sigaction = unsafe { std::mem::zeroed() };
+            assert_eq!(
+                unsafe { libc::sigaction(libc::SIGPROF, &handler, &mut old_sigprof) },
+                0,
+                "sigaction failed",
+            );
+
+            let target_thread = TargetThread(unsafe { libc::pthread_self() });
+            let stop_sampler = Arc::new(AtomicBool::new(false));
+            let sampler_stop = Arc::clone(&stop_sampler);
+            let interval = Duration::from_micros(interval_usec);
+            let sampler = thread::spawn(move || {
+                while !sampler_stop.load(Ordering::Relaxed) {
+                    unsafe {
+                        libc::pthread_kill(target_thread.0, libc::SIGPROF);
+                    }
+                    thread::sleep(interval);
+                }
+            });
+
+            Self {
+                old_sigprof,
+                stop_sampler,
+                sampler: Some(sampler),
+            }
+        }
+
+        pub fn samples(&self) -> usize {
+            SAMPLES.load(Ordering::Relaxed)
+        }
+    }
+
+    impl Drop for Profiler {
+        fn drop(&mut self) {
+            self.stop_sampler.store(true, Ordering::Relaxed);
+            if let Some(sampler) = self.sampler.take() {
+                let _ = sampler.join();
+            }
+            unsafe {
+                libc::sigaction(libc::SIGPROF, &self.old_sigprof, null_mut());
+            }
+        }
+    }
+}
+
+// Simulate sampling profilers such as stackprof/vernier: a SIGPROF handler
+// interrupts a JIT frame and calls rb_profile_frames().
+#[cfg(all(
+    any(target_os = "linux", target_os = "macos"),
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+))]
+#[test]
+fn test_profile_frames_from_signal_handler() {
+    eval(r#"
+        def profiled_leaf_loop(n)
+          i = 0
+          while i < n
+            i += 1
+          end
+          i
+        end
+
+        # Compile the method before arming the timer so samples land in JIT code.
+        profiled_leaf_loop(1)
+        profiled_leaf_loop(1)
+    "#);
+
+    let profiler = signal_profiler::Profiler::start(100);
+    assert_snapshot!(assert_compiles("profiled_leaf_loop(20_000_000)"), @"20000000");
+    assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
+}
+
 #[test]
 fn test_profile_under_nested_jit_call() {
     assert_snapshot!(inspect("
@@ -6054,6 +6189,80 @@ fn test_inlined_method_with_keyword_default_using_prior_param() {
             test(2)
             test(2)
         "), @"202");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_invokeblock() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def callee(x)
+              yield x
+            end
+            def test(n)
+              callee(n) { |x| x + 2 }
+            end
+
+            test(10)
+            test(10)
+            test(10)
+        "), @"12");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_block_param() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def callee(x, &block)
+              block.call(x)
+            end
+            def test(n)
+              callee(n) { |x| x + 2 }
+            end
+
+            test(10)
+            test(10)
+            test(10)
+        "), @"12");
+    });
+}
+
+#[test]
+fn test_inlined_method_that_forwards_block_arg() {
+    // The callee captures a literal block in `&block` and forwards it on to
+    // `inner`. While `callee` is inlined, the forwarded call stays a dynamic send.
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def inner(x)
+              yield x
+            end
+            def callee(x, &block)
+              inner(x, &block)
+            end
+            def test(n)
+              callee(n) { |x| x + 2 }
+            end
+
+            test(10)
+            test(10)
+            test(10)
+        "), @"12");
+    });
+}
+
+#[test]
+fn test_inlined_stack_map_materializes_before_rescue() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
+            def callee(left, receiver, other)
+              left + (receiver << other rescue "b")
+            end
+            def test = callee("a", "x".freeze, "y")
+
+            test
+            test
+        "#), @r#""ab""#);
     });
 }
 

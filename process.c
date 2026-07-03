@@ -597,7 +597,7 @@ static const rb_data_type_t rb_process_status_type = {
         .dfree = RUBY_DEFAULT_FREE,
         .dsize = NULL,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE
@@ -1740,7 +1740,7 @@ memsize_exec_arg(const void *ptr)
 static const rb_data_type_t exec_arg_data_type = {
     "exec_arg",
     {mark_exec_arg, RUBY_TYPED_DEFAULT_FREE, memsize_exec_arg},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
 #ifdef _WIN32

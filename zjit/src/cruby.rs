@@ -83,11 +83,6 @@
 #![allow(non_upper_case_globals)]
 #![allow(clippy::upper_case_acronyms)]
 
-// Some of this code may not be used yet
-#![allow(dead_code)]
-#![allow(unused_macros)]
-#![allow(unused_imports)]
-
 use std::convert::From;
 use std::ffi::{c_void, CString, CStr};
 use std::fmt::{Debug, Display, Formatter};
@@ -120,7 +115,6 @@ pub use autogened::*;
 // These are functions we expose from C files, not in any header.
 // Parsing it would result in a lot of duplicate definitions.
 // Use bindgen for functions that are defined in headers or in zjit.c.
-#[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 unsafe extern "C" {
     pub fn rb_check_overloaded_cme(
         me: *const rb_callable_method_entry_t,
@@ -181,10 +175,7 @@ pub use rb_get_ec_cfp as get_ec_cfp;
 pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
 pub use rb_get_cfp_sp as get_cfp_sp;
-pub use rb_get_cfp_self as get_cfp_self;
-pub use rb_get_cfp_ep as get_cfp_ep;
 pub use rb_get_cfp_ep_level as get_cfp_ep_level;
-pub use rb_vm_base_ptr as get_cfp_bp;
 pub use rb_get_cme_def_type as get_cme_def_type;
 pub use rb_get_cme_def_body_attr_id as get_cme_def_body_attr_id;
 pub use rb_get_cme_def_body_optimized_type as get_cme_def_body_optimized_type;
@@ -196,26 +187,19 @@ pub use rb_get_mct_argc as get_mct_argc;
 pub use rb_get_mct_func as get_mct_func;
 pub use rb_get_def_iseq_ptr as get_def_iseq_ptr;
 pub use rb_iseq_encoded_size as get_iseq_encoded_size;
-pub use rb_get_iseq_body_local_iseq as get_iseq_body_local_iseq;
 pub use rb_get_iseq_body_iseq_encoded as get_iseq_body_iseq_encoded;
 pub use rb_get_iseq_body_stack_max as get_iseq_body_stack_max;
 pub use rb_get_iseq_body_type as get_iseq_body_type;
 pub use rb_get_iseq_body_local_table_size as get_iseq_body_local_table_size;
 pub use rb_get_cikw_keyword_len as get_cikw_keyword_len;
 pub use rb_get_cikw_keywords_idx as get_cikw_keywords_idx;
-pub use rb_get_call_data_ci as get_call_data_ci;
-pub use rb_FL_TEST as FL_TEST;
 pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
-pub use rb_BASIC_OP_UNREDEFINED_P as BASIC_OP_UNREDEFINED_P;
 pub use rb_vm_ci_argc as vm_ci_argc;
 pub use rb_vm_ci_mid as vm_ci_mid;
 pub use rb_vm_ci_flag as vm_ci_flag;
-pub use rb_vm_ci_kwarg as vm_ci_kwarg;
 pub use rb_METHOD_ENTRY_VISI as METHOD_ENTRY_VISI;
 pub use rb_RCLASS_ORIGIN as RCLASS_ORIGIN;
-pub use rb_vm_get_special_object as vm_get_special_object;
-pub use rb_jit_fix_div_fix as rb_fix_div_fix;
 pub use rb_jit_fix_mod_fix as rb_fix_mod_fix;
 
 /// Helper so we can get a Rust string for insn_name()
@@ -320,17 +304,26 @@ pub fn iseq_opcode_at_idx(iseq: IseqPtr, insn_idx: u32) -> u32 {
     unsafe { rb_iseq_opcode_at_pc(iseq, pc) as u32 }
 }
 
-/// Return true if a given ISEQ is known to escape EP to the heap on entry.
+/// Return true if a given ISEQ starts with EP escaped to the heap on entry.
 ///
 /// As of vm_push_frame(), EP is always equal to BP. However, after pushing
 /// a frame, some ISEQ setups call vm_bind_update_env(), which redirects EP.
-pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
+pub fn iseq_ep_starts_escaped(iseq: IseqPtr) -> bool {
     match unsafe { get_iseq_body_type(iseq) } {
         // The EP of the <main> frame points to TOPLEVEL_BINDING
         ISEQ_TYPE_MAIN |
         // eval frames point to the EP of another frame or scope
         ISEQ_TYPE_EVAL => true,
         _ => false,
+    }
+}
+
+/// Return true if ZJIT may directly call this ISEQ from another JIT-compiled ISEQ.
+pub fn iseq_supports_jit_entry(iseq: IseqPtr) -> bool {
+    match unsafe { get_iseq_body_type(iseq) } {
+        // These ISEQs are only entered by the interpreter.
+        ISEQ_TYPE_MAIN | ISEQ_TYPE_EVAL => false,
+        _ => true,
     }
 }
 
@@ -658,7 +651,7 @@ impl VALUE {
         i.try_into().unwrap()
     }
 
-    pub fn as_usize(self) -> usize {
+    pub const fn as_usize(self) -> usize {
         let VALUE(us) = self;
         us
     }
@@ -748,7 +741,6 @@ pub trait IseqAccess {
 impl IseqAccess for IseqPtr {
     /// Get a description of the ISEQ's signature. Analogous to `ISEQ_BODY(iseq)->param` in C.
     unsafe fn params<'a>(self) -> &'a IseqParameters {
-        use crate::cast::IntoUsize;
         unsafe { &*((*self).body.byte_add(ISEQ_BODY_OFFSET_PARAM.to_usize()) as *const IseqParameters) }
     }
 }
@@ -959,7 +951,7 @@ pub fn ruby_sym_to_rust_string(v: VALUE) -> String {
 }
 
 pub fn ruby_call_method_id(cd: *const rb_call_data) -> ID {
-    let call_info = unsafe { rb_get_call_data_ci(cd) };
+    let call_info = unsafe { (*cd).ci };
     unsafe { rb_vm_ci_mid(call_info) }
 }
 
@@ -996,17 +988,6 @@ macro_rules! src_loc {
 }
 
 pub(crate) use src_loc;
-
-/// Run GC write barrier. Required after making a new edge in the object reference
-/// graph from `old` to `young`.
-macro_rules! obj_written {
-    ($old: expr, $young: expr) => {
-        let (old, young): (VALUE, VALUE) = ($old, $young);
-        let src_loc = $crate::cruby::src_loc!();
-        unsafe { rb_yjit_obj_written(old, young, src_loc.file.as_ptr(), src_loc.line) };
-    };
-}
-pub(crate) use obj_written;
 
 /// Acquire the VM lock, make sure all other Ruby threads are asleep then run
 /// some code while holding the lock. Returns whatever `func` returns.
@@ -1305,6 +1286,7 @@ pub mod test_utils {
     }
 
     /// Like inspect, but also asserts that all compilations triggered by this program succeed.
+    #[track_caller]
     pub fn assert_compiles_allowing_exits(program: &str) -> String {
         use crate::state::ZJITState;
         ZJITState::enable_assert_compiles();
@@ -1315,6 +1297,7 @@ pub mod test_utils {
 
     /// Like inspect, but also asserts that all compilations triggered by this program succeed and
     /// no side exits occurr during the program.
+    #[track_caller]
     pub fn assert_compiles(program: &str) -> String {
         use crate::state::ZJITState;
         let exits_before = crate::stats::total_exit_count();

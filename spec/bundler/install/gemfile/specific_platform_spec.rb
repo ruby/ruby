@@ -352,6 +352,45 @@ RSpec.describe "bundle install with specific platforms" do
         bundle "install --verbose", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
         expect(exitstatus).not_to eq(0)
         expect(err).to include("nokogiri-1.18.10-x86_64-linux requires ruby version < #{Gem.ruby_version}")
+        expect(err).to include("The lockfile only includes the x86_64-linux variant of nokogiri")
+        expect(err).to include("run `bundle install` outside of frozen/deployment mode")
+      end
+    end
+
+    it "does not suggest a ruby fallback variant when the locked incompatible variant is already the ruby variant" do
+      build_repo4 do
+        build_gem "nokogiri", "1.18.10" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "nokogiri"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            nokogiri (1.18.10)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          nokogiri
+
+        BUNDLED WITH
+          #{Bundler::VERSION}
+      L
+
+      simulate_platform "x86_64-linux" do
+        bundle "install --verbose", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+        expect(exitstatus).not_to eq(0)
+        expect(err).to include("nokogiri-1.18.10 requires ruby version < #{Gem.ruby_version}")
+        expect(err).not_to include("The lockfile only includes")
       end
     end
   end
@@ -519,7 +558,7 @@ RSpec.describe "bundle install with specific platforms" do
     it "adds the foreign platform" do
       simulate_platform "x86_64-darwin-15" do
         setup_multiplatform_gem
-        install_gemfile(google_protobuf)
+        lock_gemfile(google_protobuf)
         bundle "lock --add-platform=x64-mingw-ucrt"
 
         expect(the_bundle.locked_platforms).to include("x64-mingw-ucrt", "universal-darwin")
@@ -533,7 +572,7 @@ RSpec.describe "bundle install with specific platforms" do
     it "falls back on plain ruby when that version doesn't have a platform-specific gem" do
       simulate_platform "x86_64-darwin-15" do
         setup_multiplatform_gem
-        install_gemfile(google_protobuf)
+        lock_gemfile(google_protobuf)
         bundle "lock --add-platform=java"
 
         expect(the_bundle.locked_platforms).to include("java", "universal-darwin")
@@ -899,7 +938,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     simulate_platform "x86_64-linux" do
-      install_gemfile <<~G
+      lock_gemfile <<~G
         source "https://gem.repo4"
 
         gem "native_tool"

@@ -80,11 +80,13 @@ fn main() {
         .allowlist_type("ruby_preserved_encindex")
         .allowlist_function("rb_class2name")
 
+        // Coderange constants (ENC_CODERANGE_*) for inlining String predicates
+        .allowlist_type("ruby_coderange_type")
+
         // This struct is public to Ruby C extensions
         .allowlist_type("RBasic")
 
         .allowlist_type("ruby_rstring_flags")
-        .allowlist_type("rbimpl_typeddata_flags")
 
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_raw_obj_info")
@@ -419,7 +421,6 @@ fn main() {
         .allowlist_function("rb_get_iseq_body_param_opt_table")
         .allowlist_function("rb_get_cikw_keyword_len")
         .allowlist_function("rb_get_cikw_keywords_idx")
-        .allowlist_function("rb_get_call_data_ci")
         .allowlist_function("rb_yarv_str_eql_internal")
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")

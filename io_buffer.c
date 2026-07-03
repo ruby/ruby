@@ -20,6 +20,7 @@
 #include "internal/numeric.h"
 #include "internal/string.h"
 #include "internal/io.h"
+#include "internal/io_buffer.h"
 
 VALUE rb_cIOBuffer;
 VALUE rb_eIOBufferLockedError;
@@ -332,7 +333,7 @@ static const rb_data_type_t rb_io_buffer_type = {
         .dcompact = rb_io_buffer_type_compact,
     },
     .data = NULL,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static struct rb_io_buffer *
@@ -554,6 +555,105 @@ io_buffer_for_yield_instance_ensure(VALUE _arguments)
     }
 
     return Qnil;
+}
+
+struct io_buffer_for_callback_arguments {
+    VALUE klass;
+    VALUE string;
+    VALUE instance;
+    enum rb_io_buffer_flags flags;
+    int locked;
+    VALUE (*callback)(VALUE, VALUE);
+    VALUE argument;
+};
+
+static VALUE
+io_buffer_for_callback_call(VALUE _arguments)
+{
+    struct io_buffer_for_callback_arguments *arguments = (struct io_buffer_for_callback_arguments *)_arguments;
+
+    arguments->instance = io_buffer_for_make_instance(arguments->klass, arguments->string, arguments->flags);
+
+    if (!RB_OBJ_FROZEN(arguments->string)) {
+        rb_str_locktmp(arguments->string);
+        arguments->locked = 1;
+    }
+
+    return arguments->callback(arguments->instance, arguments->argument);
+}
+
+static VALUE
+io_buffer_for_callback_ensure(VALUE _arguments)
+{
+    struct io_buffer_for_callback_arguments *arguments = (struct io_buffer_for_callback_arguments *)_arguments;
+
+    if (arguments->instance != Qnil) {
+        rb_io_buffer_free(arguments->instance);
+    }
+
+    if (arguments->locked) {
+        rb_str_unlocktmp(arguments->string);
+    }
+
+    return Qnil;
+}
+
+VALUE
+rb_io_buffer_for_reading(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE), VALUE argument)
+{
+    if (rb_obj_is_kind_of(string_or_buffer, rb_cIOBuffer)) {
+        return callback(string_or_buffer, argument);
+    }
+    else if (RB_TYPE_P(string_or_buffer, T_STRING)) {
+        StringValue(string_or_buffer);
+        struct io_buffer_for_callback_arguments arguments = {
+            .klass = rb_cIOBuffer,
+            .string = string_or_buffer,
+            .instance = Qnil,
+            .flags = RB_IO_BUFFER_READONLY,
+            .locked = 0,
+            .callback = callback,
+            .argument = argument,
+        };
+        return rb_ensure(io_buffer_for_callback_call, (VALUE)&arguments,
+                         io_buffer_for_callback_ensure, (VALUE)&arguments);
+    }
+    else {
+        rb_raise(rb_eTypeError, "expected String or IO::Buffer, not %"PRIsVALUE,
+                 rb_obj_class(string_or_buffer));
+    }
+}
+
+/* Forward declaration: rb_io_buffer_readonly_p is defined later in this file. */
+int rb_io_buffer_readonly_p(VALUE self);
+
+VALUE
+rb_io_buffer_for_writing(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE), VALUE argument)
+{
+    if (rb_obj_is_kind_of(string_or_buffer, rb_cIOBuffer)) {
+        if (rb_io_buffer_readonly_p(string_or_buffer)) {
+            rb_raise(rb_eArgError, "buffer is read-only");
+        }
+        return callback(string_or_buffer, argument);
+    }
+    else if (RB_TYPE_P(string_or_buffer, T_STRING)) {
+        StringValue(string_or_buffer);
+        struct io_buffer_for_callback_arguments arguments = {
+            .klass = rb_cIOBuffer,
+            .string = string_or_buffer,
+            .instance = Qnil,
+            .flags = 0,
+            .locked = 0,
+            .callback = callback,
+            .argument = argument,
+        };
+        return rb_ensure(io_buffer_for_callback_call, (VALUE)&arguments,
+                         io_buffer_for_callback_ensure, (VALUE)&arguments);
+    }
+    else {
+        rb_raise(rb_eTypeError, "expected String or IO::Buffer, not %"PRIsVALUE,
+                 rb_obj_class(string_or_buffer));
+    }
 }
 
 /*

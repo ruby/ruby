@@ -119,22 +119,40 @@ module Bundler
     end
 
     def with_jobserver
-      r, w = IO.pipe
-      r.close_on_exec = false
-      w.close_on_exec = false
-      w.write("*" * @size)
+      # The jobserver hands tokens to child `make` processes through MAKEFLAGS
+      # using the GNU make `--jobserver-auth` protocol. nmake, the default make
+      # on mswin, instead reads MAKEFLAGS as bare option letters and aborts
+      # every native extension build with `fatal error U1065: invalid option
+      # '-'`. Skip the jobserver when nmake is in use. Other Windows toolchains
+      # such as mingw use GNU make and keep working through the inherited pipe.
+      return yield if nmake?
 
-      old_makeflags = ENV["MAKEFLAGS"]
-      ENV["MAKEFLAGS"] = [old_makeflags, "--jobserver-auth=#{r.fileno},#{w.fileno}"].compact.join(" ")
+      begin
+        r, w = IO.pipe
+        r.close_on_exec = false
+        w.close_on_exec = false
+        w.write("*" * @size)
 
-      yield
-    ensure
-      # Restore MAKEFLAGS before closing the pipe so a close failure can't
-      # leave the process with descriptors that point at a closed pipe.
-      old_makeflags ? ENV["MAKEFLAGS"] = old_makeflags : ENV.delete("MAKEFLAGS")
+        old_makeflags = ENV["MAKEFLAGS"]
+        ENV["MAKEFLAGS"] = [old_makeflags, "--jobserver-auth=#{r.fileno},#{w.fileno}"].compact.join(" ")
 
-      r&.close
-      w&.close
+        yield
+      ensure
+        # Restore MAKEFLAGS before closing the pipe so a close failure can't
+        # leave the process with descriptors that point at a closed pipe.
+        old_makeflags ? ENV["MAKEFLAGS"] = old_makeflags : ENV.delete("MAKEFLAGS")
+
+        r&.close
+        w&.close
+      end
+    end
+
+    # Mirror how RubyGems' extension builder picks the make program so the
+    # jobserver is only set up when a GNU-compatible make will consume it.
+    def nmake?
+      make = ENV["MAKE"] || ENV["make"]
+      make ||= "nmake" if RUBY_PLATFORM.include?("mswin")
+      /\bnmake/i.match?(make.to_s)
     end
 
     def install_serially

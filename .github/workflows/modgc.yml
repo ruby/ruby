@@ -20,6 +20,11 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Work around transient crates.io download failures (curl HTTP/2 framing / partial transfer)
+  CARGO_NET_RETRY: 10
+  CARGO_HTTP_MULTIPLEXING: false
+
 jobs:
   check:
     strategy:
@@ -48,7 +53,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -62,7 +67,7 @@ jobs:
         uses: ./.github/actions/setup/ubuntu
         if: ${{ contains(matrix.os, 'ubuntu') }}
 
-      - uses: ruby/setup-ruby@89f90524b88a01fe6e0b732220432cc6142926af # v1.313.0
+      - uses: ruby/setup-ruby@d45b1a4e94b71acab930e56e79c6aa188764e7f9 # v1.316.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -105,7 +110,7 @@ jobs:
           ${SETARCH} ../src/configure -C --disable-install-doc --with-modular-gc="${MODULAR_GC_DIR}" \
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
 
-      - uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6 # v1.16.1
+      - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
         with:
           cache-bin: false
       - name: Set MMTk environment variables

@@ -244,6 +244,16 @@ pub unsafe extern "C" fn mmtk_init_binding(
 }
 
 #[no_mangle]
+pub extern "C" fn mmtk_get_vo_bit_log_region_size() -> usize {
+    mmtk::util::is_mmtk_object::VO_BIT_REGION_SIZE.trailing_zeros() as usize
+}
+
+#[no_mangle]
+pub extern "C" fn mmtk_get_vo_bit_base_addr() -> usize {
+    mmtk::util::metadata::side_metadata::vo_bit_side_metadata_addr().as_usize()
+}
+
+#[no_mangle]
 pub extern "C" fn mmtk_initialize_collection(tls: VMThread) {
     memory_manager::initialize_collection(mmtk(), tls)
 }

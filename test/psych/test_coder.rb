@@ -196,6 +196,7 @@ module Psych
     end
 
     def test_dump_with_tag
+      omit 'libfyaml emits the flow mapping multi-line' if libfyaml?
       foo = TaggingCoder.new
       assert_match(/hello/, Psych.dump(foo))
       assert_match(/\{aa/, Psych.dump(foo))
@@ -240,6 +241,7 @@ module Psych
     end
 
     def test_coder_style_map_flow
+      omit 'libfyaml emits flow collections multi-line' if libfyaml?
       pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
 
       foo = Psych.dump CustomEncode.new \
@@ -271,6 +273,7 @@ module Psych
     end
 
     def test_coder_style_seq_flow
+      omit 'libfyaml emits flow collections multi-line' if libfyaml?
       foo = Psych.dump CustomEncode.new \
         seq: [ 1, 2, 3 ],
         style: Psych::Nodes::Sequence::FLOW,
@@ -300,6 +303,7 @@ module Psych
     end
 
     def test_coder_style_scalar_single_quoted
+      omit 'libfyaml does not synthesize the non-specific ! tag' if libfyaml?
       foo = Psych.dump CustomEncode.new \
         scalar: 'some scalar',
         style: Psych::Nodes::Scalar::SINGLE_QUOTED,
@@ -308,6 +312,7 @@ module Psych
     end
 
     def test_coder_style_scalar_double_quoted
+      omit 'libfyaml does not synthesize the non-specific ! tag' if libfyaml?
       foo = Psych.dump CustomEncode.new \
         scalar: 'some scalar',
         style: Psych::Nodes::Scalar::DOUBLE_QUOTED,
@@ -316,6 +321,7 @@ module Psych
     end
 
     def test_coder_style_scalar_literal
+      omit 'libfyaml does not synthesize the non-specific ! tag' if libfyaml?
       foo = Psych.dump CustomEncode.new \
         scalar: 'some scalar',
         style: Psych::Nodes::Scalar::LITERAL,
@@ -324,6 +330,7 @@ module Psych
     end
 
     def test_coder_style_scalar_folded
+      omit 'libfyaml does not synthesize the non-specific ! tag' if libfyaml?
       foo = Psych.dump CustomEncode.new \
         scalar: 'some scalar',
         style: Psych::Nodes::Scalar::FOLDED,
