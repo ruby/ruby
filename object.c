@@ -3358,13 +3358,9 @@ rb_check_convert_type(VALUE val, int type, const char *tname, const char *method
 
 /*! \private */
 VALUE
-rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
+rb_check_convert_type_with_id_slow(VALUE val, int type, const char *tname, ID method)
 {
-    VALUE v;
-
-    /* always convert T_DATA */
-    if (TYPE(val) == type && type != T_DATA) return val;
-    v = convert_type_with_id(val, tname, method, FALSE, -1);
+    VALUE v = convert_type_with_id(val, tname, method, FALSE, -1);
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
         rb_cant_convert_invalid_return(val, tname, rb_id2name(method), v);
