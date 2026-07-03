@@ -4293,6 +4293,19 @@ AC_ARG_ENABLE(debug-env,
        AS_HELP_STRING([--enable-debug-env], [enable RUBY_DEBUG environment variable]),
        [AC_SUBST(ENABLE_DEBUG_ENV, yes)])
 
+AC_ARG_ENABLE(parallel-sweep,
+       AS_HELP_STRING([--enable-parallel-sweep],
+                      [enable background sweep thread in the default GC (requires pthread target, [[disabled by default]])]),
+       [parallel_sweep=$enableval], [parallel_sweep=no])
+AS_IF([test "x$parallel_sweep" = xyes], [
+    AS_IF([test "x$THREAD_MODEL" != xpthread], [
+        AC_MSG_ERROR([--enable-parallel-sweep requires the pthread thread model (got: $THREAD_MODEL)])
+    ])
+    RUBY_APPEND_OPTIONS(CPPFLAGS, -DUSE_PARALLEL_SWEEP=1)
+], [
+    RUBY_APPEND_OPTIONS(CPPFLAGS, -DUSE_PARALLEL_SWEEP=0)
+])
+
 AS_IF([test "$gnumake" = yes], [ NULLCMD=: ], [
     AC_MSG_CHECKING([for safe null command for ${MAKE-make}])
     mkdir conftest.dir

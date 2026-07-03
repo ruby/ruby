@@ -217,6 +217,12 @@ void rb_gc_initial_stress_set(VALUE flag);
 void rb_gc_before_fork(void);
 void rb_gc_after_fork(rb_pid_t pid);
 
+#if USE_PARALLEL_SWEEP
+void rb_gc_parallel_sweep_start(void);
+bool is_sweep_thread_p(void);
+void wait_for_background_sweeping_to_finish(struct rb_objspace*, bool, const char*);
+#endif
+
 #define rb_gc_mark_and_move_ptr(ptr) do { \
     VALUE _obj = (VALUE)*(ptr); \
     rb_gc_mark_and_move(&_obj); \

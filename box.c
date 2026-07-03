@@ -328,7 +328,7 @@ static const rb_data_type_t rb_box_data_type = {
         box_entry_memsize,
         rb_box_gc_update_references,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
 };
 
 static const rb_data_type_t rb_master_box_data_type = {
@@ -791,7 +791,7 @@ box_ext_cleanup_free(void *p)
 static const rb_data_type_t box_ext_cleanup_type = {
     "box_ext_cleanup",
     {box_ext_cleanup_mark, box_ext_cleanup_free},
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE,
 };
 
 void

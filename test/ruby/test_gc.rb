@@ -176,7 +176,7 @@ class TestGc < Test::Unit::TestCase
       ObjectSpace.count_objects(count)
     }
     assert_equal(count[:TOTAL]-count[:FREE], stat[:heap_live_slots])
-    assert_equal(count[:FREE], stat[:heap_free_slots])
+    assert_equal(count[:FREE], stat[:heap_free_slots]) # FIXME: psweep (failure)
 
     # measure again without GC.start
     2.times{ # to ignore const cache imemo creation

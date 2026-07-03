@@ -65,7 +65,7 @@ const rb_data_type_t rb_memory_view_exported_object_registry_data_type = {
         exported_object_registry_free,
         0,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 static int

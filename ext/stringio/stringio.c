@@ -119,7 +119,7 @@ static const rb_data_type_t strio_data_type = {
 	strio_free,
 	strio_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED // uses reference count, not concurrent free safe
 };
 
 #define check_strio(self) ((struct StringIO*)rb_check_typeddata((self), &strio_data_type))

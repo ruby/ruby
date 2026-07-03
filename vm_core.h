@@ -804,6 +804,7 @@ typedef struct rb_vm_struct {
             void *data;
             void (*mark_func)(VALUE v, void *data);
         } *mark_func_data;
+        pthread_t sweep_thread;
     } gc;
 
     rb_at_exit_list *at_exit;
@@ -1636,10 +1637,17 @@ VM_ENV_BOX_UNCHECKED(const VALUE *ep)
 int rb_vm_ep_in_heap_p(const VALUE *ep);
 #endif
 
+static rb_execution_context_t *rb_current_execution_context(bool expect_ec);
+
 static inline int
 VM_ENV_ESCAPED_P(const VALUE *ep)
 {
-    VM_ASSERT(rb_vm_ep_in_heap_p(ep) == !!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED));
+#if VM_CHECK_MODE > 0
+    if (rb_current_execution_context(false)) {
+        // Can be called from background sweep thread, and this uses GET_EC()
+        VM_ASSERT(rb_vm_ep_in_heap_p(ep) == !!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED));
+    }
+#endif
     return VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) ? 1 : 0;
 }
 
@@ -2167,11 +2175,6 @@ rb_current_ractor_raw(bool expect)
     }
 }
 
-static inline rb_ractor_t *
-rb_current_ractor(void)
-{
-    return rb_current_ractor_raw(true);
-}
 
 static inline rb_vm_t *
 rb_current_vm(void)
@@ -2185,6 +2188,16 @@ rb_current_vm(void)
 #endif
 
     return ruby_current_vm_ptr;
+}
+
+static inline rb_ractor_t *
+rb_current_ractor(void)
+{
+    rb_vm_t *vm = GET_VM();
+    if (vm) {
+        VM_ASSERT(vm->gc.sweep_thread != pthread_self());
+    }
+    return rb_current_ractor_raw(true);
 }
 
 void rb_ec_vm_lock_rec_release(const rb_execution_context_t *ec,
