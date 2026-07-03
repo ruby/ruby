@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Loaded into each parallel worker (via -r appended to RSPEC_EXECUTABLE by
-# tool/lib/bundler_parallel_rspec.rb) to record per-example runtimes that the
+# BundlerRuntimeGrouping.install!) to record per-example runtimes that the
 # next run groups by. Kept in tool/ so recording does not depend on
 # spec/bundler/spec_helper.rb (which is synced from rubygems/rubygems).
 
