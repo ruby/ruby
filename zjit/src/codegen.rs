@@ -3866,6 +3866,9 @@ pub fn perf_symbol_range_end_at_block_end(asm: &mut Assembler, perf_symbol: &Per
         if let Some((start, name)) = current.borrow_mut().take() {
             let start_addr = start.raw_addr(cb);
             let end_addr = end.raw_addr(cb);
+            // A terminator's jump can be removed when it targets the next
+            // linear block, leaving no code between the range start and the
+            // block-end marker. Skip zero-sized perf map entries.
             if start_addr < end_addr {
                 register_with_perf(name, start_addr, end_addr - start_addr);
             }
