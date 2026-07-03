@@ -677,10 +677,31 @@ set_i_to_a(VALUE set)
 
 /*
  *  call-seq:
- *    to_set(&block) -> self or new_set
+ *    to_set {|element| ... } -> new_set
+ *    to_set -> self or new_set
  *
- *  Without a block, if +self+ is an instance of +Set+, returns +self+.
- *  Otherwise, calls <tt>Set.new(self, &block)</tt>.
+ *  With a block given, creates and returns a new set;
+ *  calls the block with each element of +self+,
+ *  and adds the block's returns value to the new set:
+ *
+ *    set = Set[*0..9]        # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    set.to_set {|i| i * 2 } # => Set[0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+ *
+ *  With no block given, when +self+ is an instance of +Set+,
+ *  returns +self+:
+ *
+ *    set = Set[*0..9]
+ *    set.to_set
+ *    set.to_set.equal?(set) # => true
+ *
+ *  With no block given, when +self+ is an instance of a subclass of +Set+,
+ *  returns a \Set object containing the elements of +self+:
+ *
+ *    class MySet < Set; end
+ *    my_set = MySet[*0..9] # => #<MySet: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}>
+ *    set = my_set.to_set   # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
  */
 static VALUE
 set_i_to_set(VALUE set)
