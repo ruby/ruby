@@ -325,6 +325,22 @@ Pathname('.').glob('\[k-m][h-j][a-c]') # => []
 Pathname('.').glob('\**/*.rb')         # => []
 ```
 
+Note that the backslash escapes the following character on Windows as well,
+and therefore cannot be used as a path separator in the pattern;
+`Dir.glob('C:\Users\*')` matches nothing.
+Write the pattern with forward slashes instead:
+
+```ruby
+Dir.glob('C:/Users/*')
+```
+
+A Windows path taken from an external source (such as an environment variable)
+may be converted for use as a pattern:
+
+```ruby
+pattern = path.tr('\\', '/')
+```
+
 ## Keyword Arguments
 
 | Keyword           | Value                    | Default | Meaning                                 |
@@ -416,6 +432,11 @@ Pathname('.').glob('*').size                      # => 241
 Pathname('.').glob('\*').size                     # => 0
 Pathname('.').glob('\*', File::FNM_NOESCAPE).size # => 0
 ```
+
+Note that on Windows this flag does not make the backslash usable
+as a path separator in the pattern;
+the backslash is then matched as an ordinary character,
+which cannot occur in an entry name.
 
 #### Constant File::FNM_SHORTNAME
 
