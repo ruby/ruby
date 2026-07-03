@@ -48,7 +48,7 @@ if "%sub:\=%" == "%sub%" goto :remove_plain
 goto :remove_end
 :remove_plain
     set p=%2%1
-    if not exist "%1" goto :remove_end
+    if not exist "%p%" goto :remove_end
     if not "%dryrun%" == "" (
         echo Removing %p:\=/%
         goto :remove_end
