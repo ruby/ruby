@@ -41,5 +41,31 @@ module JSON
     end
   end
 
+  if defined?(ResumableParser) # Not yet available on JRuby
+    class ResumableParser
+      # Returns whether the parser is entirely done: no unconsumed bytes in
+      # the buffer, no document under construction and no parsed value
+      # awaiting retrieval.
+      #
+      # The main use case is detecting a truncated stream once the input is
+      # exhausted:
+      #
+      #   loop do
+      #     begin
+      #       parser << socket.readpartial(4096)
+      #     rescue EOFError
+      #       break
+      #     end
+      #     while parser.parse
+      #       process(parser.value)
+      #     end
+      #   end
+      #   warn "stream was truncated" unless parser.empty?
+      def empty?
+        eos? && !partial_value? && !value?
+      end
+    end
+  end
+
   JSON_LOADED = true unless defined?(JSON::JSON_LOADED)
 end

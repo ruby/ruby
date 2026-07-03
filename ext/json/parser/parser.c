@@ -2745,6 +2745,41 @@ static VALUE cResumableParser_eos_p(VALUE self)
 }
 
 /*
+ * call-seq: partial_value? -> true or false
+ *
+ * Returns whether a document is currently under construction: an unclosed
+ * container, a key awaiting its value, etc.
+ *
+ * It answers the same question as <tt>!partial_value.nil?</tt>, but as a
+ * cheap predicate on the parser's internal state, without materializing the
+ * partially parsed Ruby objects:
+ *   parser << '{"a":1,'
+ *   parser.parse # => false
+ *   parser.partial_value? # => true
+ *
+ * A fully parsed document whose value hasn't been retrieved yet is not under
+ * construction: #value? returns true and #partial_value? returns false.
+ */
+static VALUE cResumableParser_partial_value_p(VALUE self)
+{
+    JSON_ResumableParser *parser = cResumableParser_get(self);
+
+    // Mirror of #value?: values on the stack while the document isn't DONE
+    // belong to a partially built document. A container whose first key or
+    // element hasn't been parsed yet has no frame nor value registered (the
+    // tokenizer rewinds to the container start on EOS), so that state is
+    // observable through the buffer (#eos?/#rest) instead, keeping this
+    // predicate consistent with #partial_value returning nil.
+    if (parser->value_stack.head > 0) {
+        json_frame *frame = json_frame_stack_peek(&parser->frames);
+        if (frame->phase != JSON_PHASE_DONE) {
+            return Qtrue;
+        }
+    }
+    return Qfalse;
+}
+
+/*
  * call-seq: parsed_bytes -> integer
  *
  * Returns the number of bytes parsed since the start of the current partial value.
@@ -2800,6 +2835,7 @@ void Init_parser(void)
     rb_define_method(cResumableParser, "value", cResumableParser_value, 0);
     rb_define_method(cResumableParser, "value?", cResumableParser_value_p, 0);
     rb_define_method(cResumableParser, "partial_value", cResumableParser_partial_value, 0);
+    rb_define_method(cResumableParser, "partial_value?", cResumableParser_partial_value_p, 0);
     rb_define_method(cResumableParser, "clear", cResumableParser_clear, 0);
     rb_define_method(cResumableParser, "rest", cResumableParser_rest, 0);
     rb_define_method(cResumableParser, "eos?", cResumableParser_eos_p, 0);
