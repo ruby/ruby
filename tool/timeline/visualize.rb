@@ -118,8 +118,9 @@ class LogProcessor
       args[:free_slots] = args[:freed_slots] + args[:empty_slots]
       enrich([pid, :global, 'GCEnterExit'], [pid, tid, 'gc_sweep']) do |old_result|
         old_dict = old_result[:args].fetch_store(:gc_sweep_page) do
-          { final_slots: 0, freed_slots: 0, empty_slots: 0, free_slots: 0 }
+          { swept_pages: 0, final_slots: 0, freed_slots: 0, empty_slots: 0, free_slots: 0 }
         end
+        old_dict[:swept_pages] += 1
         old_dict[:final_slots] += args[:final_slots]
         old_dict[:freed_slots] += args[:freed_slots]
         old_dict[:empty_slots] += args[:empty_slots]
@@ -127,9 +128,9 @@ class LogProcessor
       end
     when 'rts_set_running'
       sched = args[:sched]
-      sched_hex = sched.to_s(16)
+      sched_hex = "0x#{sched.to_s(16)}"
       # A virtual TID for the rb_thread_sched instance.
-      sched_id = "sched-0x#{sched_hex}"
+      sched_id = "sched-#{sched_hex}"
       prev = get_current(pid, sched_id, 'RTS')
       if !prev.nil?
         block_end = result.dup.update({
