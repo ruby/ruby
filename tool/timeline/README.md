@@ -17,17 +17,33 @@ visualize other events, such as the acquisition of the global VM lock, and can b
 
 ### Prepare and build
 
-You need to use the tool on Linux.  It also needs the `bpftrace` command line tool which is provided
-by most major distributions.
+You need to run the tool on a Linux distribution, and you need the following command line tools.
+
+-   `bpftrace`: The `capture.rb` script uses `bpftrace` to capture events.
+-   `dtrace` from [SystemTap]: CRuby uses the `dtrace` command line tool during build time to
+    generate USDT trace points.  Because `bpftrace` can only work with SystemTap's USDT format, you
+    need to install the `dtrace` command line tool from SystemTap, not the [`dtrace` tool from
+    Oracle][dtrace-oracle]
+
+    CAUTION: Ubuntu 26.04 provides both the `dtrace` from SystemTap (package name is
+    `systemtap-sdt-dev`) and the `dtrace` from Oracle (package name is `dtrace`), and they can
+    coexist (installed as `/usr/bin/dtrace` and `/usr/sbin/dtrace`, respectively). Make sure CRuby
+    is using the one from SystemTap.
+
+[SystemTap]: https://sourceware.org/systemtap/
+[dtrace-oracle]: https://github.com/oracle/dtrace
+
+On Ubuntu, you can use the following commands:
 
 ```shell
-sudo apt install bpftrace
+sudo apt install bpftrace systemtap-sdt-dev
+sudo apt remove dtrace
 ```
 
-Build the `ruby` executable.  Make sure the `ruby` executable is built with DTrace support (which
-inserts the USDT trace points).  It should be enabled by default.  If not, add `--with-dtrace` to
-the `configure` command.  You can use the `readelf -n` command to check if the trace points exist.
-It should show `stapstd` entries with `Provider: ruby`.
+Build the `ruby` executable.  Make sure the `ruby` executable is built with USDT trace points.  If
+the `configure` command detectes the `dtrace` command line tool, it should be enabled by default. If
+not, add `--with-dtrace` to the `configure` command.  You can use the `readelf -n` command to check
+if the trace points exist. It should show `stapstd` entries with `Provider: ruby`.
 
 ```shell
 $ readelf -n /path/to/ruby
@@ -46,7 +62,7 @@ Displaying notes found in: .note.stapsdt
 Open one terminal and run
 
 ```shell
-/path/to/capture.bt -r /path/to/ruby
+/path/to/capture.rb -r /path/to/ruby
 ```
 
 The `-r` option points to the `ruby` executable.  You will be prompted to enter the sudo password.
@@ -94,7 +110,7 @@ underlying `bpftrace` program which `capture.rb` invoked.)
 If everything went as expected, we repeat the `capture.rb`, but pipe the output into a log file.
 
 ```shell
-/path/to/capture.bt -r /path/to/ruby > running_some_script.log
+/path/to/capture.rb -r /path/to/ruby > running_some_script.log
 ```
 
 Then use the other terminal to run the script again
@@ -119,6 +135,21 @@ Open a browser and go to <https://www.ui.perfetto.dev/>.  Click "open trace file
 events, such as `GCEnterExit`, `gc_mark` and `gc_sweep`, are displayed as bars, and instant events
 are displayed as arrows.  Some events, such as `GCEnterExit` and `gc_mark`, have arguments.  If you
 click an event, the arguments will be shown on the bottom part of the window.
+
+### Enabling additional probes
+
+The supported USDT trace points are organized into groups, and the default group is enabled by
+default.  To enable additional groups of trace points, use the `-g` option of `capture.rb`.  For
+example, if you want to monitor the number of objects swept during sweeping, you can enable the
+`sweep_details` group.
+
+```shell
+/path/to/capture.rb -r /path/to/ruby -g sweep_details > running_some_script_with_sweep_details.log
+```
+
+There is no additional options needed for the `visualize.rb` script.  Just run it as usual.
+
+See `lib/tracepoint_defs.rb` for a complete list of groups and their trace points.
 
 ### Working with GC modules
 

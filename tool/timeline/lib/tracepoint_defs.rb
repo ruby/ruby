@@ -55,6 +55,7 @@ module RubyTimelineTool
   #     There are some converters defined in `converter_defs.rb`.
   USDT_DEFS = {
     'default' => [
+      # The default group visualizes the duration of each GC, each marking and each sweeping event.
       tp('gc__mark__begin',   'default',  'gc_mark',          'B'),
       tp('gc__mark__end',     'default',  'gc_mark',          'E'),
       tp('gc__sweep__begin',  'default',  'gc_sweep',         'B'),
@@ -63,29 +64,38 @@ module RubyTimelineTool
       tp('gc__exit',          'default',  'GCEnterExit',      'E', args: {event: GCEnterEvent}),
     ].freeze,
     'mark_details' => [
+      # This group collects more detals of marking events, such as the number of objects visited.
       tp('gc__mark_stacked_objects', 'default', 'gc_mark_stacked_objects', 'meta', args: {popped_count: :to_i}),
     ].freeze,
     'sweep_details' => [
+      # This group collects more detals of sweeping events, such as the number of objects swept.
       tp('gc__sweep_page',    'default',  'gc_sweep_page',    'i', args: {slot_size: :to_i, final_slots: :to_i, freed_slots: :to_i, empty_slots: :to_i}),
     ].freeze,
     'obj_new' => [
+      # This group traces the creation of GC-managed objects.
       tp('gc__obj_new',       'ruby',     'gc_obj_new',       'i', args: {obj: :to_i, flags: RubyFlags}),
     ].freeze,
     'obj_free' => [
+      # This group traces the invocation of `rb_gc_obj_free` which finalizes the objects when they are swept.
       tp('gc__obj_free',      'ruby',     'gc_obj_free',      'i', args: {obj: :to_i, flags: RubyFlags}),
     ].freeze,
     'xmalloc' => [
+      # This group traces the invocation of `xmalloc` and `xcalloc`.
       tp('gc__xmalloc',       'ruby',     'gc_xmalloc',       'i', args: {n: :to_i, size: :to_i}),
       tp('gc__xcalloc',       'ruby',     'gc_xcalloc',       'i', args: {n: :to_i, size: :to_i}),
     ].freeze,
     'xfree' => [
+      # This group traces the invocation of `xfree`.
       tp('gc__xfree',         'ruby',     'gc_xfree',         'i', args: {obj: :to_i, size: :to_i}),
     ].freeze,
     'gvl' => [
+      # This group visualizes the durations in which a thread holds the global VM lock.
       tp('gvl__acquire',      'ruby',     'GVL',              'B'),
       tp('gvl__release',      'ruby',     'GVL',              'E'),
     ].freeze,
-    'rts' => [ # ractor.thread.sched
+    'rts' => [
+      # This group visualizes the event where a thread is scheduled on or off a Ractor.
+      # "RTS" stands for `ractor.thread.sched`.
       tp('rts__set_running',  'ruby',     'rts_set_running',  'i', args: {sched: :to_i, old_thread: :to_i, new_thread: :to_i}),
     ].freeze
   }.freeze
