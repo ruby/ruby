@@ -197,6 +197,7 @@ module Spec
         "spec/install/gemfile/override_spec.rb",
         "spec/install/path_spec.rb",
         "spec/bundler/fetcher/gem_remote_fetcher_local_ssl_server_spec.rb",
+        "spec/bundler/plugin/unloaded_source_spec.rb",
       ],
     }.freeze
   end
