@@ -4636,6 +4636,17 @@ primary		: inline_primary
                      * p->exits = 0 for the shared `for` prefix. */
                     init_block_exit(p);
                 }[dyna]<vars>
+              max_numparam numparam it_id
+                {
+                    /* The synthesized flat_map/map/filter blocks each take the
+                     * loop variable as an ordinary parameter, so `it` and
+                     * numbered parameters can never be implicit parameters of the
+                     * comprehension body, guard or later iterators: mark the
+                     * scope as having an ordinary parameter so they are rejected
+                     * with "ordinary parameter is defined", as in any such block.
+                     * A nested block in the body resets this around itself. */
+                    p->max_numparam = ORDINAL_PARAM;
+                }
               for_guard[for_guard]
               for_iters[for_iters] keyword_then
               compstmt(stmts)[compstmt]
@@ -4661,9 +4672,12 @@ primary		: inline_primary
                      *  `break` is rejected: in the desugaring it would escape
                      *  only one synthesized block, not the whole comprehension.
                      */
+                    p->max_numparam = $max_numparam;
+                    p->it_id = $it_id;
                     reject_comprehension_break(p);
                     restore_block_exit(p, $k_for);
                     $$ = new_for_comprehension(p, $for_var, $expr_value, $for_guard, $for_iters, $compstmt, &@$);
+                    numparam_pop(p, $numparam);
                     dyna_pop(p, $dyna);
                     fixpos($$, $for_var);
                 /*% ripper: [$:for_var, $:expr_value, $:for_guard, $:for_iters, $:compstmt] %*/

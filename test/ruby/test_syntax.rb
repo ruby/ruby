@@ -1535,6 +1535,30 @@ eom
     assert_equal(3, eval("for @z in [1, 2, 3] do end; @z"))
   end
 
+  def test_for_comprehension_it_and_numbered_parameters
+    omit if ParserSupport.prism_enabled?
+
+    # the synthesized flat_map/map/filter blocks take the loop variable as an
+    # ordinary parameter, so `it` and numbered parameters cannot be implicit
+    # parameters of the comprehension body, guard, or later iterators
+    msg = /ordinary parameter is defined/
+    assert_in_out_err(%w[--parser=parse.y -e] + ["for x in [1] then it end"], "", [], msg)
+    assert_raise(SyntaxError) { eval("for x in [1, 2] then it end") }
+    assert_raise(SyntaxError) { eval("for x in [1, 2] then _1 end") }
+    assert_raise(SyntaxError) { eval("for x in [1, 2] then _2 end") }
+    assert_raise(SyntaxError) { eval("for x in [1, 2] when it.odd? then x end") }
+    assert_raise(SyntaxError) { eval("for x in [1], y in it then [x, y] end") }
+
+    # `it`/numbered parameters inside a nested block in the body bind to that
+    # block, as usual
+    assert_equal([[10], [20]], eval("for x in [1, 2] then [x * 10].map { it } end"))
+    assert_equal([[5], [10]], eval("for x in [1, 2] then [x * 5].map { _1 } end"))
+    # `it` in the first iterator's expression belongs to the enclosing block
+    assert_equal([[1], [2], [3]], eval("[1, 2, 3].each_slice(1).map { for y in it then y end }"))
+    # `it` remains usable as an ordinary method call
+    assert_equal([10, 20, 30], eval("def self.it(n) = n * 10; for x in [1, 2, 3] then it(x) end"))
+  end
+
   def test_for_comprehension_no_bogus_unused_warning
     omit if ParserSupport.prism_enabled?
 
