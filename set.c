@@ -2463,15 +2463,14 @@ rb_set_size(VALUE set)
  * === Methods for Assigning
  *
  * - #add (aliased as #<<):
- *   Adds a given object to the set; returns +self+.
+ *   Adds the given object to +self+, returns +self+.
  * - #add?:
- *   If the given object is not an element in the set,
- *   adds it and returns +self+; otherwise, returns +nil+.
+ *   Like #add, but returns +nil+ if the given object is already in +self+.
  * - #merge:
- *   Merges the elements of each given enumerable object to the set; returns +self+.
+ *   Adds the elements of the given enumerables to +self+; returns +self+.
  * - #replace:
- *   Replaces the contents of the set with the contents
- *   of a given enumerable.
+ *   Replaces the contents of +self+ with the contents of the given enumerable;
+ *   returns +self+.
  *
  * === Methods for Deleting
  *
