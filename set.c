@@ -2411,11 +2411,10 @@ rb_set_size(VALUE set)
  * === Methods for Creating a \Set
  *
  * - ::[]:
- *   Returns a new set containing the given objects.
+ *   Returns a new set populated with the given objects.
  * - ::new:
- *   Returns a new set containing either the given objects
- *   (if no block given) or the return values from the called block
- *   (if a block given).
+ *   Returns a new set based on the given object (if no block given),
+ *   or on the return values from the called block (if a block given).
  *
  * === Methods for \Set Operations
  *
