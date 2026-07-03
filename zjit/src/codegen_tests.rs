@@ -5,7 +5,8 @@ use crate::asm::CodeBlock;
 use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
-use crate::hir::{Insn, iseq_to_hir};
+use crate::hir::{BlockId, Insn, iseq_to_hir};
+use crate::hir_type::types;
 use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
@@ -4090,6 +4091,80 @@ fn test_attr_writer() {
     ");
     assert_contains_opcode("test", YARVINSN_opt_send_without_block);
     assert_snapshot!(assert_compiles("c = C.new; [test(c), test(c)]"), @"[5, 5]");
+}
+
+#[test]
+fn test_inlined_setivar_shape_profile_mismatch() {
+    with_inlining_threshold(100, || {
+        set_call_threshold(4);
+        eval(r#"
+            class SetivarShapeProfileMismatch
+              def f(first, second, third)
+                return :skipped if $skip_setivar_shape_profile_mismatch
+
+                if first
+                  @a = 1
+                end
+                return unless second || third
+
+                if second
+                  @b = 2
+                end
+                return unless third
+
+                if third
+                  @a = 3
+                end
+              end
+            end
+
+            # Profile the first setivar as an @a shape transition from the empty shape.
+            SetivarShapeProfileMismatch.new.f(true, false, false)
+
+            # Profile the second setivar on an object that already has @b, so it expects
+            # a different shape and does not emit a shape transition of its own.
+            second = SetivarShapeProfileMismatch.new
+            second.instance_variable_set(:@b, :existing)
+            second.f(false, true, false)
+
+            # Profile the third setivar as the same @a shape transition as the first one.
+            SetivarShapeProfileMismatch.new.f(false, false, true)
+
+            SETIVAR_SHAPE_PROFILE_MISMATCH_RECEIVER = SetivarShapeProfileMismatch.new
+            def test_inlined_setivar_shape_profile_mismatch = SETIVAR_SHAPE_PROFILE_MISMATCH_RECEIVER.f(true, true, true)
+        "#);
+
+        // Profile the caller's send without executing the all-sites path, so the
+        // setivar profiles above stay deliberately inconsistent until the inlined compile.
+        set_call_threshold(5);
+        eval("$skip_setivar_shape_profile_mismatch = true; test_inlined_setivar_shape_profile_mismatch");
+        eval("$skip_setivar_shape_profile_mismatch = false");
+
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", "test_inlined_setivar_shape_profile_mismatch"));
+        let mut function = iseq_to_hir(iseq).unwrap();
+        function.optimize();
+
+        let mut empty_guard_bit_equals = vec![];
+        for block_idx in 0..function.num_blocks() {
+            for &insn_id in function.block(BlockId(block_idx)).insns() {
+                if matches!(function.find(insn_id), Insn::GuardBitEquals { .. })
+                    && function.type_of(insn_id).bit_equal(types::Empty)
+                {
+                    empty_guard_bit_equals.push(insn_id);
+                }
+            }
+        }
+        assert!(
+            empty_guard_bit_equals.is_empty(),
+            "impossible GuardBitEquals should have become a SideExit, got Empty-typed guards: {empty_guard_bit_equals:?}",
+        );
+
+        set_call_threshold(2);
+        assert_snapshot!(
+            assert_inlines_allowing_exits("test_inlined_setivar_shape_profile_mismatch"),
+            @"3"
+        );
+    });
 }
 
 #[test]

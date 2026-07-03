@@ -5587,9 +5587,11 @@ impl Function {
                             _ => insn_id,
                         }
                     },
-                    Insn::GuardBitEquals { val, expected, .. } => {
+                    Insn::GuardBitEquals { val, expected, state, reason, recompile } => {
                         let recv_type = self.type_of(val);
-                        if recv_type.has_value(expected) {
+                        if !recv_type.could_be(Type::from_const(expected)) {
+                            self.new_insn(Insn::SideExit { state, reason, recompile })
+                        } else if recv_type.has_value(expected) {
                             self.make_equal_to(insn_id, val);
                             continue;
                         } else {
