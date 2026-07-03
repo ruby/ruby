@@ -55,10 +55,13 @@ goto :remove_end
     )
     ::- Try `rd` first for symlink to a directory; `del` attemps to remove all
     ::- files under the target directory, instead of the symlink itself.
-    (rd /q "%p%" || del /q "%p%") 2> nul && goto :remove_end
+    rd /q "%p%" 2> nul && goto :remove_end
 
+    ::- `del` exits with 0 even when nothing matched, so its result cannot
+    ::- tell whether directories remain; remove them first.
     if "%recursive%" == "-r" for /D %%I in (%p%) do (
         rd /s /q %%I || call set error=%%ERRORLEVEL%%
     )
+    if exist "%p%" del /q "%p%" 2> nul
 :remove_end
 endlocal & set "error=%error%" & goto :EOF
