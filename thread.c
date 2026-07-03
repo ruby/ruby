@@ -5023,6 +5023,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     /* may be held by any thread in parent */
     rb_native_mutex_initialize(&th->interrupt_lock);
     ccan_list_head_init(&th->interrupt_exec_tasks);
+    ccan_list_head_init(&th->blocking_fibers);
 
     vm->fork_gen++;
     rb_ractor_sleeper_threads_clear(th->ractor);

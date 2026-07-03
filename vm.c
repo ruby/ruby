@@ -3858,6 +3858,15 @@ thread_mark(void *ptr)
     RUBY_ASSERT(th->ec == NULL || th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
     rb_gc_mark(th->last_status);
     rb_gc_mark(th->locking_mutex);
+
+    /* Keep fibers parked in Fiber::Scheduler#block alive */
+    {
+        struct rb_fiber_blocking_node *blocking_node;
+        ccan_list_for_each(&th->blocking_fibers, blocking_node, node) {
+            rb_gc_mark(blocking_node->fiber);
+        }
+    }
+
     rb_gc_mark(th->name);
 
     rb_gc_mark(th->scheduler);
@@ -3991,6 +4000,7 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->self = self;
 
     ccan_list_head_init(&th->interrupt_exec_tasks);
+    ccan_list_head_init(&th->blocking_fibers);
 
     rb_threadptr_root_fiber_setup(th);
 
