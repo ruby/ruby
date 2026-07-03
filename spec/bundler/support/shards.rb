@@ -57,6 +57,8 @@ module Spec
       ],
       shard_b: [
         "spec/install/gemfile/git_spec.rb",
+        "spec/install/gemfile/git_overrides_spec.rb",
+        "spec/install/gemfile/git_extensions_spec.rb",
         "spec/install/gems/standalone_spec.rb",
         "spec/commands/lock_spec.rb",
         "spec/cache/gems_spec.rb",
