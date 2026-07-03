@@ -19816,6 +19816,18 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                 }
             }
 
+            /* If a missing terminator left this heredoc's lex mode on the
+             * stack, it still points at our stack-local common_whitespace.
+             * Clear the pointer so that subsequent lexing cannot read from
+             * this function's dead stack frame. */
+            pm_lex_mode_t *whitespace_mode = parser->lex_modes.current;
+            do {
+                if (whitespace_mode->mode == PM_LEX_HEREDOC && whitespace_mode->as.heredoc.common_whitespace == &common_whitespace) {
+                    whitespace_mode->as.heredoc.common_whitespace = NULL;
+                }
+                whitespace_mode = whitespace_mode->prev;
+            } while (whitespace_mode != NULL);
+
             if (match1(parser, PM_TOKEN_STRING_BEGIN)) {
                 return parse_strings(parser, node, false, (uint16_t) (depth + 1));
             }
