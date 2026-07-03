@@ -198,6 +198,8 @@ $bits["Truthy"] = ["BasicObject & !Falsy"]
 $numeric_bits["Truthy"] = $numeric_bits["BasicObject"] & ~$numeric_bits["Falsy"]
 $bits["NotNil"] = ["BasicObject & !NilClass"]
 $numeric_bits["NotNil"] = $numeric_bits["BasicObject"] & ~$numeric_bits["NilClass"]
+$bits["NotString"] = ["BasicObject & !String"]
+$numeric_bits["NotString"] = $numeric_bits["BasicObject"] & ~$numeric_bits["String"]
 
 # ===== Finished generating the DAG; write Rust code =====
 

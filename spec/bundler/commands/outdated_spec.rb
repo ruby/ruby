@@ -86,8 +86,10 @@ RSpec.describe "bundle outdated" do
         end
       G
 
-      update_repo2 { build_gem "activesupport", "3.0" }
-      update_repo2 { build_gem "terranova", "9" }
+      update_repo2 do
+        build_gem "activesupport", "3.0"
+        build_gem "terranova", "9"
+      end
 
       bundle "outdated", raise_on_error: false
 
@@ -122,8 +124,10 @@ RSpec.describe "bundle outdated" do
     it "shows the location of the latest version's gemspec if installed" do
       bundle_config "clean false"
 
-      update_repo2 { build_gem "activesupport", "3.0" }
-      update_repo2 { build_gem "terranova", "9" }
+      update_repo2 do
+        build_gem "activesupport", "3.0"
+        build_gem "terranova", "9"
+      end
 
       install_gemfile <<-G
         source "https://gem.repo2"

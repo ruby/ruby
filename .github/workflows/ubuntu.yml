@@ -20,6 +20,11 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Work around transient crates.io download failures (curl HTTP/2 framing / partial transfer)
+  CARGO_NET_RETRY: 10
+  CARGO_HTTP_MULTIPLEXING: false
+
 jobs:
   make:
     strategy:
@@ -64,7 +69,7 @@ jobs:
       )}}
 
     steps: &make-steps
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -74,7 +79,7 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
 
-      - uses: ruby/setup-ruby@89f90524b88a01fe6e0b732220432cc6142926af # v1.313.0
+      - uses: ruby/setup-ruby@0dafeac902942906541bc140009cdbf32665b601 # v1.315.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -89,6 +94,7 @@ jobs:
           makeup: true
           clean: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          bundled-gems-src-cache: ${{ matrix.test_task == 'test-bundled-gems' }}
           # Set fetch-depth: 10 so that Launchable can receive commits information.
           fetch-depth: 10
 
@@ -136,6 +142,17 @@ jobs:
       - name: Disable DFLTCC
         run: echo "DFLTCC=0" >> $GITHUB_ENV
         if: ${{ endsWith(matrix.os, 's390x') }}
+
+      # Emulated ppc64le/s390x runners are slow enough that subprocess
+      # assertion timeouts (e.g. assert_separately) flake. Scale them up, as
+      # macos.yml does for slower/contended runners. SYNTAX_SUGGEST_TIMEOUT
+      # covers syntax_suggest's own internal search timeout, which
+      # RUBY_TEST_TIMEOUT_SCALE does not affect.
+      - name: Set timeout scale for emulated runners
+        run: |
+          echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV
+          echo "SYNTAX_SUGGEST_TIMEOUT=10" >> $GITHUB_ENV
+        if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
 
       - name: make ${{ matrix.test_task }}
         run: |
@@ -226,7 +243,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
@@ -244,7 +261,7 @@ jobs:
       - run: make install
 
       - name: Checkout ruby-bench
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: ruby/ruby-bench
           persist-credentials: false

@@ -32,6 +32,30 @@
 #include "ruby/util.h"
 #include "ractor_core.h"
 
+/* Flags of RRegexp
+ *
+ * 4:     KCODE_FIXED
+ *            The regexp has "fixed encoding", meaning it can't be match against any ASCII-compatible string.
+ * 6:     REG_ENCODING_NONE
+ *            The regexp has no encoding. Means the `n` modifier was used.
+ */
+
+#define KCODE_FIXED FL_USER4
+#define REG_ENCODING_NONE FL_USER6
+
+/* Flags of RMatch
+ *
+ * 0:     MATCH_BUSY
+ *            The match is currently in use or may have escaped and can no longer be recycled.
+ * 1:     RMATCH_ONIG
+ *            TBD.
+ * 2:     RMATCH_OFFSETS_EXTERNAL
+ *            The match layout isn't fully embedded, offsets are stored in an external buffer,
+ *            which will need to be freed during sweep.
+ */
+
+#define MATCH_BUSY FL_USER0
+
 VALUE rb_eRegexpError, rb_eRegexpTimeoutError;
 
 typedef char onig_errmsg_buffer[ONIG_MAX_ERROR_MESSAGE_LEN];
@@ -284,10 +308,6 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
     }
     return rb_memsearch_qs(x0, m, y0, n);
 }
-
-#define REG_ENCODING_NONE FL_USER6
-
-#define KCODE_FIXED FL_USER4
 
 static int
 char_to_option(int c)
@@ -1527,8 +1547,6 @@ match_nth_length(VALUE match, VALUE n)
         &RMATCH(match)->char_offset[i];
     return LONG2NUM(ofs->end - ofs->beg);
 }
-
-#define MATCH_BUSY FL_USER2
 
 void
 rb_match_busy(VALUE match)
@@ -3633,11 +3651,15 @@ rb_reg_equal(VALUE re1, VALUE re2)
     if (re1 == re2) return Qtrue;
     if (!RB_TYPE_P(re2, T_REGEXP)) return Qfalse;
     rb_reg_check(re1); rb_reg_check(re2);
+
+    // src is a fstring, so a pointer comparison is enough
+    RUBY_ASSERT(FL_TEST_RAW(RREGEXP_SRC(re1), RSTRING_FSTR));
+    RUBY_ASSERT(FL_TEST_RAW(RREGEXP_SRC(re2), RSTRING_FSTR));
+    if (RREGEXP_SRC(re1) != RREGEXP_SRC(re2)) return Qfalse;
+
     if (FL_TEST(re1, KCODE_FIXED) != FL_TEST(re2, KCODE_FIXED)) return Qfalse;
     if (RREGEXP_PTR(re1)->options != RREGEXP_PTR(re2)->options) return Qfalse;
-    if (RREGEXP_SRC_LEN(re1) != RREGEXP_SRC_LEN(re2)) return Qfalse;
-    if (ENCODING_GET(re1) != ENCODING_GET(re2)) return Qfalse;
-    return RBOOL(memcmp(RREGEXP_SRC_PTR(re1), RREGEXP_SRC_PTR(re2), RREGEXP_SRC_LEN(re1)) == 0);
+    return RBOOL(ENCODING_GET(re1) == ENCODING_GET(re2));
 }
 
 /*

@@ -1,0 +1,3 @@
+def m; yield(a,); end
+              ^ unexpected ')'; expected an argument
+

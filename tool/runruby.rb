@@ -140,6 +140,24 @@ end
 # See: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=271490
 env['LD_BIND_NOW'] = 'yes' if /freebsd/ =~ RUBY_PLATFORM
 
+# On Windows the freshly built ruby often has no usable default CA bundle (its
+# OpenSSL's OPENSSLDIR does not exist), which breaks HTTPS in tests such as
+# test-bundler. Fall back to the CA bundle of baseruby (the installed ruby the
+# build was bootstrapped with, recorded in the fake script), unless the caller
+# already configured one.
+if /mswin|mingw/ =~ RUBY_PLATFORM and !ENV["SSL_CERT_FILE"] and !ENV["SSL_CERT_DIR"]
+  fake = File.join(abs_archdir, "#{config['arch']}-fake.rb")
+  if File.exist?(fake) and /^baseruby\s*=\s*"([^"\n]+)"/ =~ File.read(fake)
+    baseruby = $1
+    script = "f = OpenSSL::X509::DEFAULT_CERT_FILE; print f if File.exist?(f)"
+    begin
+      cert = IO.popen([baseruby, "-ropenssl", "-e", script], err: File::NULL, &:read)
+      env["SSL_CERT_FILE"] = cert if $?.success? and !cert.empty?
+    rescue SystemCallError
+    end
+  end
+end
+
 ENV.update env
 
 if debugger

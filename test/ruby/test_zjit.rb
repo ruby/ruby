@@ -2,6 +2,11 @@
 #
 # This set of tests can be run with:
 # make test-all TESTS=test/ruby/test_zjit.rb
+#
+# Instead of adding new tests here, you should probably
+# be adding tests that run under the Rust test harness,
+# say, in `codegen_tests.rs`. It parallelizes better and
+# allows for easy inspection of VM internal states.
 
 require 'test/unit'
 require 'envutil'
@@ -380,6 +385,23 @@ class TestZJIT < Test::Unit::TestCase
 
       test
     }, call_threshold: 14, num_profiles: 5
+  end
+
+  def test_regression_gc_stress_with_lazy_block_code
+    assert_compiles ':ok', %q{
+      def allocate_array
+        [1, 2, 3]
+      end
+
+      begin
+        GC.stress = true
+        allocate_array
+        allocate_array
+        :ok
+      ensure
+        GC.stress = false
+      end
+    }
   end
 
   def test_exit_tracing

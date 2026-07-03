@@ -2,6 +2,7 @@
 
 require 'tempfile'
 require 'rbconfig/sizeof'
+require '-test-/io_buffer'
 
 class TestIOBuffer < Test::Unit::TestCase
   experimental = Warning[:experimental]
@@ -29,6 +30,58 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 64, IO::Buffer::PRIVATE
 
     assert_equal 128, IO::Buffer::READONLY
+  end
+
+  def test_internal_for_reading_with_string
+    string = "hello"
+
+    assert_equal "hello", Bug::IOBuffer.for_reading_get_string(string)
+    assert_equal true, Bug::IOBuffer.for_reading_readonly?(string)
+  end
+
+  def test_internal_for_reading_with_io_buffer
+    buffer = IO::Buffer.for("hello")
+
+    assert_equal buffer.object_id, Bug::IOBuffer.for_reading_object_id(buffer)
+  end
+
+  def test_internal_for_writing_with_string
+    string = "hello"
+
+    Bug::IOBuffer.for_writing_set_string(string, "world")
+
+    assert_equal "world", string
+    assert_equal false, Bug::IOBuffer.for_writing_readonly?(string)
+  end
+
+  def test_internal_for_writing_rejects_readonly_buffer
+    buffer = IO::Buffer.for("hello")
+
+    assert_raise(ArgumentError) do
+      Bug::IOBuffer.for_writing_set_string(buffer, "world")
+    end
+  end
+
+  def test_internal_for_writing_unlocks_after_callback_exception
+    string = "hello"
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.for_writing_modify_string(string)
+    end
+
+    string << "!"
+    assert_equal "hello!", string
+  end
+
+  def test_internal_for_reading_unlocks_after_callback_exception
+    string = "hello"
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.for_reading_raise(string)
+    end
+
+    string << "!"
+    assert_equal "hello!", string
   end
 
   def test_endian

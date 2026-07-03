@@ -50,3 +50,13 @@ test_new(RegexpSingletonTest)
 # Errno::ENOENT: No such file or directory - bundle
 test_collection_install__pathname_set(RBS::CliTest)
 test_collection_install__set_pathname__manifest(RBS::CliTest)
+
+# RBS 4.0.3's RDoc plugin is incompatible with the RDoc 7.2.0 development revision
+test_attr_decl_1(RDocPluginParserTest)
+test_attr_decl_2(RDocPluginParserTest)
+test_instance_method_1(RDocPluginParserTest)
+test_instance_method_comment_and_tokens(RDocPluginParserTest)
+test_instance_method_generic(RDocPluginParserTest)
+test_instance_method_with_block(RDocPluginParserTest)
+test_method_alias_decl_1(RDocPluginParserTest)
+test_method_alias_decl_2(RDocPluginParserTest)

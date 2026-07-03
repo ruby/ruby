@@ -120,6 +120,7 @@ static inline VALUE rbimpl_check_external_typeddata(VALUE obj);
  * Macros to see if each corresponding flag is defined.
  */
 #define RUBY_TYPED_FREE_IMMEDIATELY  RUBY_TYPED_FREE_IMMEDIATELY
+#define RUBY_TYPED_THREAD_SAFE_FREE  RUBY_TYPED_THREAD_SAFE_FREE
 #define RUBY_TYPED_FROZEN_SHAREABLE  RUBY_TYPED_FROZEN_SHAREABLE
 #define RUBY_TYPED_WB_PROTECTED      RUBY_TYPED_WB_PROTECTED
 #define RUBY_TYPED_EMBEDDABLE        RUBY_TYPED_EMBEDDABLE
@@ -147,6 +148,19 @@ rbimpl_typeddata_flags {
      * would better leave it unspecified.
      */
     RUBY_TYPED_FREE_IMMEDIATELY = 1,
+
+    /**
+     * This flag declares that the dfree function is thread-safe.  With it set,
+     * the garbage collector MAY invoke dfree on any thread (Ruby or native), in
+     * parallel with calls to the same or other dfree functions, and
+     * concurrently with other Ruby code.  Do not set it on dfree functions that
+     * touch shared state in a thread-unsafe way; a dfree that only calls xfree
+     * on the struct and memory it exclusively owns is thread-safe.
+     *
+     * This implies RUBY_TYPED_FREE_IMMEDIATELY, since a thread-safe dfree is
+     * also safe to invoke immediately.
+     */
+    RUBY_TYPED_THREAD_SAFE_FREE = 4,
 
     /**
      * This flag indicate to Ruby that the associated C struct may be embedded

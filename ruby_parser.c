@@ -508,7 +508,7 @@ static const rb_data_type_t ruby_parser_data_type = {
         parser_free,
         parser_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 #ifdef UNIVERSAL_PARSER
@@ -736,7 +736,7 @@ static const rb_data_type_t ast_data_type = {
         ast_free,
         NULL, // No dsize() because this object does not appear in ObjectSpace.
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 static VALUE

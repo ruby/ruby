@@ -135,7 +135,6 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_reachable_objects_during_iteration
-    omit 'flaky on Visual Studio with: [BUG] Unnormalized Fixnum value' if /mswin/ =~ RUBY_PLATFORM
     opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
     assert_ruby_status opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     begin;
@@ -849,7 +848,7 @@ class TestObjSpace < Test::Unit::TestCase
           Tempfile.create do |f|
             ObjectSpace.dump_all(output: f)
             f.close
-            File.readlines(f.path).each do |line|
+            File.foreach(f.path) do |line|
               JSON.parse(line)
             end
           end

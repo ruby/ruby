@@ -241,11 +241,11 @@ module SyncDefaultGems
       ["lib/rubygems.rb", "lib/rubygems.rb"],
       ["lib/rubygems", "lib/rubygems"],
       ["test/rubygems", "test/rubygems"],
-      ["bundler/lib/bundler.rb", "lib/bundler.rb"],
-      ["bundler/lib/bundler", "lib/bundler"],
-      ["bundler/exe/bundle", "libexec/bundle"],
-      ["bundler/exe/bundler", "libexec/bundler"],
-      ["bundler/bundler.gemspec", "lib/bundler/bundler.gemspec"],
+      ["lib/bundler.rb", "lib/bundler.rb"],
+      ["lib/bundler", "lib/bundler"],
+      ["exe/bundle", "libexec/bundle"],
+      ["exe/bundler", "libexec/bundler"],
+      ["bundler.gemspec", "lib/bundler/bundler.gemspec"],
       ["spec", "spec/bundler"],
       *["bundle", "parallel_rspec", "rspec"].map {|binstub|
         ["bin/#{binstub}", "spec/bin/#{binstub}"]
@@ -344,9 +344,10 @@ module SyncDefaultGems
     changed |= src.gsub!(%r[\[\Khttps://docs\.ruby-lang\.org/en/master(?:/doc)?/(([A-Z]\w+(?:/[A-Z]\w+)*)|\w+_rdoc)\.html(\#\S+)?(?=\])]) do
       name, mod, label = $1, $2, $3
       mod &&= mod.gsub('/', '::')
-      if label && (m = label.match(/\A\#(?:method-([ci])|(?:(?:class|module)-#{mod}-)?label)-([-+\w]+)\z/))
+      if label && (m = label.match(/\A\#(?:(?:method|attribute)-([ci])|(?:(?:class|module)-#{mod}-)?label)-(.+)\z/))
         scope, label = m[1], m[2]
         scope = scope ? scope.tr('ci', '.#') : '@'
+        label.gsub!(/-(\h\h)/) {$1.to_i(16).chr(Encoding::ASCII_8BIT)}
       end
       "rdoc-ref:#{mod || name.chomp("_rdoc") + ".rdoc"}#{scope}#{label}"
     end
@@ -369,12 +370,15 @@ module SyncDefaultGems
   end
 
   def rubygems_do_fixup
-    gemspec_content = File.readlines("lib/bundler/bundler.gemspec").map do |line|
-      next if line =~ /LICENSE\.md/
+    gemspec = "lib/bundler/bundler.gemspec"
+    if File.exist?(gemspec)
+      gemspec_content = File.readlines(gemspec).map do |line|
+        next if line =~ /LICENSE\.md/
 
-      line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec")
-    end.compact.join
-    File.write("lib/bundler/bundler.gemspec", gemspec_content)
+        line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec")
+      end.compact.join
+      File.write(gemspec, gemspec_content)
+    end
 
     ["bundle", "parallel_rspec", "rspec"].each do |binstub|
       path = "spec/bin/#{binstub}"

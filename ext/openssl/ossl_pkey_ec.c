@@ -199,7 +199,8 @@ static VALUE
 ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 {
     EVP_PKEY *pkey;
-    EC_KEY *ec, *ec_new;
+    const EC_KEY *ec;
+    EC_KEY *ec_new;
 
     TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
     if (pkey)
@@ -231,7 +232,7 @@ ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 static VALUE
 ossl_ec_key_get_group(VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
     const EC_GROUP *group;
 
     GetEC(self, ec);
@@ -276,7 +277,7 @@ ossl_ec_key_set_group(VALUE self, VALUE group_v)
  */
 static VALUE ossl_ec_key_get_private_key(VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
     const BIGNUM *bn;
 
     GetEC(self, ec);
@@ -327,7 +328,7 @@ static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
  */
 static VALUE ossl_ec_key_get_public_key(VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
     const EC_POINT *point;
 
     GetEC(self, ec);
@@ -379,7 +380,7 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
  */
 static VALUE ossl_ec_key_is_public(VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
 
     GetEC(self, ec);
 
@@ -395,7 +396,7 @@ static VALUE ossl_ec_key_is_public(VALUE self)
  */
 static VALUE ossl_ec_key_is_private(VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
 
     GetEC(self, ec);
 
@@ -463,7 +464,7 @@ static VALUE ossl_ec_key_is_private(VALUE self)
 static VALUE
 ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
 
     GetEC(self, ec);
     if (EC_KEY_get0_public_key(ec) == NULL)
@@ -491,7 +492,7 @@ ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_ec_key_to_der(VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
 
     GetEC(self, ec);
     if (EC_KEY_get0_public_key(ec) == NULL)
@@ -566,7 +567,7 @@ static VALUE ossl_ec_key_check_key(VALUE self)
 
     EVP_PKEY_CTX_free(pctx);
 #else
-    EC_KEY *ec;
+    const EC_KEY *ec;
 
     GetEC(self, ec);
     if (EC_KEY_check_key(ec) != 1)

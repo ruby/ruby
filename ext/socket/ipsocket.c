@@ -1448,7 +1448,7 @@ rsock_revlookup_flag(VALUE revlookup, int *norevlookup)
         id = SYM2ID(revlookup);
         if (id == id_numeric) return_norevlookup(1);
         if (id == id_hostname) return_norevlookup(0);
-        rb_raise(rb_eArgError, "invalid reverse_lookup flag: :%s", rb_id2name(id));
+        rb_raise(rb_eArgError, "invalid reverse_lookup flag: :%"PRIsVALUE, rb_sym2str(revlookup));
     }
     return 0;
 #undef return_norevlookup

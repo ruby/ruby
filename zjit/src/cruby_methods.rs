@@ -222,9 +222,6 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "<<", inline_string_append);
     annotate!(rb_cString, "==", inline_string_eq);
     // Not elidable; has a side effect of setting the encoding if ENC_CODERANGE_UNKNOWN.
-    // TOOD(max): Turn this into a load/compare. Will need to side-exit or do the full call if
-    // ENC_CODERANGE_UNKNOWN.
-    annotate!(rb_cString, "ascii_only?", types::BoolExact, no_gc, leaf);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", inline_module_eqq, types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", inline_array_length, types::Fixnum, no_gc, leaf, elidable);
@@ -291,6 +288,9 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_mKernel, "frozen?", types::BoolExact);
     annotate_builtin!(rb_cSymbol, "name", types::StringExact);
     annotate_builtin!(rb_cSymbol, "to_s", types::StringExact);
+    annotate_builtin!(rb_cString, "ascii_only?", inline_string_ascii_only_p, types::BoolExact, no_gc, leaf);
+    annotate_builtin!(rb_cString, "valid_encoding?", inline_string_valid_encoding_p, types::BoolExact, no_gc, leaf);
+    annotate_builtin!(rb_cSymbol, "empty?", types::BoolExact);
 
     // Array iteration builtins (used in with_jit Array#each, map, select, find)
     builtin_funcs.insert(rb_jit_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
@@ -321,13 +321,13 @@ fn inline_thread_current(fun: &mut hir::Function, block: hir::BlockId, _recv: hi
     let thread_ptr = fun.push_insn(block, hir::Insn::LoadField {
         recv: ec,
         id: FieldName::thread_ptr,
-        offset: RUBY_OFFSET_EC_THREAD_PTR as i32,
+        offset: RUBY_OFFSET_EC_THREAD_PTR,
         return_type: types::CPtr,
     });
     let thread_self = fun.push_insn(block, hir::Insn::LoadField {
         recv: thread_ptr,
         id: FieldName::SelfParam,
-        offset: RUBY_OFFSET_THREAD_SELF as i32,
+        offset: RUBY_OFFSET_THREAD_SELF,
         // TODO(max): Add Thread type. But Thread.current is not guaranteed to be an exact Thread.
         // You can make subclasses...
         return_type: types::BasicObject,
@@ -467,7 +467,7 @@ fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hi
         let len = fun.push_insn(block, hir::Insn::LoadField {
             recv,
             id: FieldName::len,
-            offset: RUBY_OFFSET_RSTRING_LEN as i32,
+            offset: RUBY_OFFSET_RSTRING_LEN,
             return_type: types::CInt64,
         });
 
@@ -491,7 +491,7 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let len = fun.push_insn(block, hir::Insn::LoadField {
             recv,
             id: FieldName::len,
-            offset: RUBY_OFFSET_RSTRING_LEN as i32,
+            offset: RUBY_OFFSET_RSTRING_LEN,
             return_type: types::CInt64,
         });
         // TODO(max): Find a way to mark these guards as not needed for correctness... as in, once
@@ -519,7 +519,7 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let len = fun.push_insn(block, hir::Insn::LoadField {
             recv,
             id: FieldName::len,
-            offset: RUBY_OFFSET_RSTRING_LEN as i32,
+            offset: RUBY_OFFSET_RSTRING_LEN,
             return_type: types::CInt64,
         });
         let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, reason: SideExitReason::GuardLess, state });
@@ -542,13 +542,43 @@ fn inline_string_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     let len = fun.push_insn(block, hir::Insn::LoadField {
         recv,
         id: FieldName::len,
-        offset: RUBY_OFFSET_RSTRING_LEN as i32,
+        offset: RUBY_OFFSET_RSTRING_LEN,
         return_type: types::CInt64,
     });
     let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
     let is_zero = fun.push_insn(block, hir::Insn::IsBitEqual { left: len, right: zero });
     let result = fun.push_insn(block, hir::Insn::BoxBool { val: is_zero });
     Some(result)
+}
+
+// Load self's cached coderange (flags & MASK), guarding it's been computed
+// (UNKNOWN is 0, so side-exit there and let the builtin scan the string).
+fn guard_string_coderange(fun: &mut hir::Function, block: hir::BlockId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    use crate::hir::SideExitReason;
+    let &[recv] = args else { return None; };
+    if !fun.likely_a(recv, types::String, state) { return None; }
+    let recv = fun.coerce_to(block, recv, types::String, state);
+    let flags = fun.load_rbasic_flags(block, recv);
+    let mask = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CUInt64(RUBY_ENC_CODERANGE_MASK.into()) });
+    let cr = fun.push_insn(block, hir::Insn::IntAnd { left: flags, right: mask });
+    let min_known = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(RUBY_ENC_CODERANGE_7BIT.into()) });
+    Some(fun.push_insn(block, hir::Insn::GuardGreaterEq { left: cr, right: min_known, reason: SideExitReason::GuardGreaterEq, state }))
+}
+
+// Inlines String#ascii_only? (rb_str_is_ascii_only_p): coderange == 7BIT.
+fn inline_string_ascii_only_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let cr = guard_string_coderange(fun, block, args, state)?;
+    let seven_bit = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(RUBY_ENC_CODERANGE_7BIT.into()) });
+    let is_7bit = fun.push_insn(block, hir::Insn::IsBitEqual { left: cr, right: seven_bit });
+    Some(fun.push_insn(block, hir::Insn::BoxBool { val: is_7bit }))
+}
+
+// Inlines String#valid_encoding? (rb_str_valid_encoding_p): coderange != BROKEN.
+fn inline_string_valid_encoding_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let cr = guard_string_coderange(fun, block, args, state)?;
+    let broken = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(RUBY_ENC_CODERANGE_BROKEN.into()) });
+    let is_valid = fun.push_insn(block, hir::Insn::IsBitNotEqual { left: cr, right: broken });
+    Some(fun.push_insn(block, hir::Insn::BoxBool { val: is_valid }))
 }
 
 fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {

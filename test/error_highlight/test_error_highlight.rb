@@ -1752,6 +1752,69 @@ missing keywords: :shop_id, :param1 (ArgumentError)
     end
   end
 
+  def def_with_required_keyword(x:)
+    x
+  end
+
+  def test_spot_with_args_point_type_on_def_node_returns_nil
+    # A method with a required keyword argument called without it raises an
+    # ArgumentError whose first backtrace location maps to the `def` node.
+    # ErrorHighlight.spot defaults point_type to :args for ArgumentError, and
+    # there is no way to highlight "the arguments" of a definition, so spot
+    # must return nil instead of raising NotImplementedError.
+    begin
+      def_with_required_keyword
+    rescue ArgumentError => exc
+    end
+
+    assert_nil(ErrorHighlight.spot(exc))
+  end
+
+  def test_spot_with_args_point_type_on_lambda_node_returns_nil
+    l = lambda { |x:| x }
+    begin
+      l.call
+    rescue ArgumentError => exc
+    end
+
+    assert_nil(ErrorHighlight.spot(exc))
+  end
+
+  define_method(:block_with_required_keyword) { |x:| x }
+
+  def test_spot_with_args_point_type_on_block_node_returns_nil
+    begin
+      block_with_required_keyword
+    rescue ArgumentError => exc
+    end
+
+    assert_nil(ErrorHighlight.spot(exc))
+  end
+
+  def test_detailed_message_does_not_raise_when_argument_error_is_rewrapped
+    # This reproduces a real-world crash: an ArgumentError originating from a
+    # missing required keyword (which maps to the `def` node) is re-raised with
+    # a custom message. The custom message no longer matches the keyword regex
+    # in CoreExt#generate_snippet, so the :args branch is taken. The spotter
+    # must not raise NotImplementedError (which is not a StandardError and would
+    # escape detailed_message / full_message).
+    begin
+      def_with_required_keyword
+    rescue ArgumentError => original
+      exc = original.exception("a custom message that is not a keyword error")
+    end
+
+    msg = nil
+    assert_nothing_raised do
+      msg = exc.detailed_message(highlight: false)
+    end
+    assert_match("a custom message that is not a keyword error", msg)
+
+    assert_nothing_raised do
+      exc.full_message(highlight: false)
+    end
+  end
+
   private
 
   def find_node_by_id(node, node_id)

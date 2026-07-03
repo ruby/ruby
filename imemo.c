@@ -57,6 +57,7 @@ rb_imemo_tmpbuf_new(void)
 
     rb_gc_register_pinning_obj((VALUE)obj);
 
+    obj->marked = false;
     obj->ptr = NULL;
     obj->size = 0;
 
@@ -64,7 +65,7 @@ rb_imemo_tmpbuf_new(void)
 }
 
 void *
-rb_alloc_tmp_buffer(volatile VALUE *store, long len)
+rb_alloc_tmp_buffer(volatile VALUE *store, long len, bool marked)
 {
     if (len < 0) {
         rb_raise(rb_eArgError, "negative buffer size (or size too big)");
@@ -75,16 +76,11 @@ rb_alloc_tmp_buffer(volatile VALUE *store, long len)
     rb_imemo_tmpbuf_t *tmpbuf = (rb_imemo_tmpbuf_t *)rb_imemo_tmpbuf_new();
     *store = (VALUE)tmpbuf;
     void *ptr = ruby_xmalloc(len);
+    tmpbuf->marked = marked;
     tmpbuf->ptr = ptr;
     tmpbuf->size = len;
 
     return ptr;
-}
-
-void *
-rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
-{
-    return rb_alloc_tmp_buffer(store, (long)size);
 }
 
 void
@@ -336,12 +332,6 @@ rb_imemo_memsize(VALUE obj)
  * mark
  * ========================================================================= */
 
-static bool
-moved_or_living_object_strictly_p(VALUE obj)
-{
-    return !SPECIAL_CONST_P(obj) && (!rb_objspace_garbage_object_p(obj) || BUILTIN_TYPE(obj) == T_MOVED);
-}
-
 static void
 mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
 {
@@ -424,17 +414,12 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
              */
         }
         else if (reference_updating) {
-            if (moved_or_living_object_strictly_p((VALUE)cc->cme_)) {
-                *((VALUE *)&cc->klass) = rb_gc_location(cc->klass);
-                *((struct rb_callable_method_entry_struct **)&cc->cme_) =
-                    (struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cc->cme_);
+            *((VALUE *)&cc->klass) = rb_gc_location(cc->klass);
+            *((struct rb_callable_method_entry_struct **)&cc->cme_) =
+                (struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cc->cme_);
 
-                RUBY_ASSERT(RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
-                RUBY_ASSERT(IMEMO_TYPE_P((VALUE)cc->cme_, imemo_ment));
-            }
-            else {
-                vm_cc_invalidate(cc);
-            }
+            RUBY_ASSERT(RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
+            RUBY_ASSERT(IMEMO_TYPE_P((VALUE)cc->cme_, imemo_ment));
         }
         else {
             RUBY_ASSERT(RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
@@ -556,7 +541,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
       case imemo_tmpbuf: {
         const rb_imemo_tmpbuf_t *m = (const rb_imemo_tmpbuf_t *)obj;
 
-        if (!reference_updating) {
+        if (m->marked && !reference_updating) {
             rb_gc_mark_locations(m->ptr, m->ptr + (m->size / sizeof(VALUE)));
         }
 
@@ -660,11 +645,7 @@ rb_imemo_free(VALUE obj)
       case imemo_callinfo:{
         const struct rb_callinfo *ci = ((const struct rb_callinfo *)obj);
 
-        if (ci->kwarg) {
-            if (RUBY_ATOMIC_FETCH_SUB(((struct rb_callinfo_kwarg *)ci->kwarg)->references, 1) == 1) {
-                ruby_xfree_sized((void *)ci->kwarg, rb_callinfo_kwarg_bytes(ci->kwarg->keyword_len));
-            }
-        }
+        rb_callinfo_kwarg_release((struct rb_callinfo_kwarg *)ci->kwarg);
         RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
 
         break;

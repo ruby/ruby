@@ -10,7 +10,7 @@ RSpec.describe "the lockfile format" do
       c.checksum(gem_repo2, "myrack", "1.0.0")
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2"
 
       gem "myrack"
@@ -149,7 +149,7 @@ RSpec.describe "the lockfile format" do
         myrack
     L
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2"
 
       gem "myrack", "> 0"
@@ -220,7 +220,7 @@ RSpec.describe "the lockfile format" do
   end
 
   it "generates a simple lockfile for a single source, gem with dependencies" do
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
 
       gem "myrack-obama"
@@ -251,7 +251,7 @@ RSpec.describe "the lockfile format" do
   end
 
   it "generates a simple lockfile for a single source, gem with a version requirement" do
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
 
       gem "myrack-obama", ">= 1.0"
@@ -477,7 +477,7 @@ RSpec.describe "the lockfile format" do
   it "generates a simple lockfile for a single pinned source, gem with a version requirement" do
     git = build_git "foo"
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo1"
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
@@ -554,7 +554,7 @@ RSpec.describe "the lockfile format" do
       c.no_checksum "foo", "1.0"
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo1"
       git "#{lib_path("foo-1.0")}" do
         gem "foo"
@@ -591,7 +591,7 @@ RSpec.describe "the lockfile format" do
       c.no_checksum "foo", "1.0"
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo1"
       gem "foo", :git => "#{lib_path("foo-1.0")}", :branch => "omg"
     G
@@ -627,7 +627,7 @@ RSpec.describe "the lockfile format" do
       c.no_checksum "foo", "1.0"
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo1"
       gem "foo", :git => "#{lib_path("foo-1.0")}", :tag => "omg"
     G
@@ -748,7 +748,7 @@ RSpec.describe "the lockfile format" do
       c.no_checksum "foo", "1.0"
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo1"
       gem "foo", :path => "#{lib_path("foo-1.0")}"
     G
@@ -820,7 +820,7 @@ RSpec.describe "the lockfile format" do
       c.checksum gem_repo2, "myrack", "1.0.0"
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
 
       gem "myrack"
@@ -859,7 +859,7 @@ RSpec.describe "the lockfile format" do
   end
 
   it "removes redundant sources" do
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
 
       gem "myrack", :source => "https://gem.repo2/"
@@ -887,7 +887,7 @@ RSpec.describe "the lockfile format" do
   end
 
   it "lists gems alphabetically" do
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
 
       gem "thin"
@@ -930,7 +930,7 @@ RSpec.describe "the lockfile format" do
   end
 
   it "orders dependencies' dependencies in alphabetical order" do
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
 
       gem "rails"
@@ -989,7 +989,7 @@ RSpec.describe "the lockfile format" do
       end
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2"
       gem 'double_deps'
     G
@@ -1020,7 +1020,7 @@ RSpec.describe "the lockfile format" do
   end
 
   it "does not add the :require option to the lockfile" do
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
 
       gem "myrack-obama", ">= 1.0", :require => "myrack/obama"
@@ -1051,7 +1051,7 @@ RSpec.describe "the lockfile format" do
   end
 
   it "does not add the :group option to the lockfile" do
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
 
       gem "myrack-obama", ">= 1.0", :group => :test
@@ -1088,7 +1088,7 @@ RSpec.describe "the lockfile format" do
       c.no_checksum "foo", "1.0"
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo1"
       path "foo" do
         gem "foo"
@@ -1123,7 +1123,7 @@ RSpec.describe "the lockfile format" do
       c.no_checksum "foo", "1.0"
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo1"
       path "../foo" do
         gem "foo"
@@ -1154,7 +1154,7 @@ RSpec.describe "the lockfile format" do
   it "stores relative paths when the path is provided in an absolute fashion but is relative" do
     build_lib "foo", path: bundled_app("foo")
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo1"
       path File.expand_path("foo", __dir__) do
         gem "foo"
@@ -1193,7 +1193,7 @@ RSpec.describe "the lockfile format" do
       c.no_checksum "foo", "1.0"
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo1"
       gemspec :path => "../foo"
     G
@@ -1240,7 +1240,7 @@ RSpec.describe "the lockfile format" do
         #{Bundler::VERSION}
     G
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
 
       gem "myrack"
@@ -1318,12 +1318,13 @@ RSpec.describe "the lockfile format" do
     end
 
     simulate_platform "universal-java-16" do
-      install_gemfile <<-G
+      lock_gemfile <<-G
         source "https://gem.repo2"
         gem "platform_specific"
       G
 
       checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo2, "platform_specific", "1.0"
         c.checksum gem_repo2, "platform_specific", "1.0", "universal-java-16"
       end
 
@@ -1331,6 +1332,7 @@ RSpec.describe "the lockfile format" do
         GEM
           remote: https://gem.repo2/
           specs:
+            platform_specific (1.0)
             platform_specific (1.0-universal-java-16)
 
         PLATFORMS
@@ -1351,12 +1353,12 @@ RSpec.describe "the lockfile format" do
       c.checksum(gem_repo2, "myrack", "1.0.0")
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
       gem "myrack"
     G
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
       gem "myrack"
       gem "activesupport"
@@ -1386,7 +1388,7 @@ RSpec.describe "the lockfile format" do
       c.checksum(gem_repo2, "myrack", "1.0.0")
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
       gem "myrack"
       gem "myrack"
@@ -1414,7 +1416,7 @@ RSpec.describe "the lockfile format" do
       c.checksum(gem_repo2, "myrack", "1.0.0")
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
       gem "myrack", "1.0"
       gem "myrack", "1.0"
@@ -1442,7 +1444,7 @@ RSpec.describe "the lockfile format" do
       c.checksum(gem_repo2, "myrack", "1.0.0")
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
       gem "myrack", "1.0", :group => :one
       gem "myrack", "1.0", :group => :two
@@ -1492,7 +1494,7 @@ RSpec.describe "the lockfile format" do
       c.checksum(gem_repo2, "myrack", "0.9.1")
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
       gem "myrack", "> 0.9", "< 1.0"
     G
@@ -1519,7 +1521,7 @@ RSpec.describe "the lockfile format" do
       c.checksum(gem_repo2, "myrack", "0.9.1")
     end
 
-    install_gemfile <<-G
+    lock_gemfile <<-G
       source "https://gem.repo2/"
       ruby '#{Gem.ruby_version}'
       gem "myrack", "> 0.9", "< 1.0"
@@ -2333,9 +2335,7 @@ RSpec.describe "the lockfile format" do
         expect(the_bundle).to include_gems "myrack 1.2"
       end
 
-      it "preserves Gemfile.lock \\n\\r line endings" do
-        skip "needs to be adapted" if Gem.win_platform?
-
+      it "preserves Gemfile.lock \\r\\n line endings" do
         update_repo2 do
           build_gem "myrack", "1.2" do |s|
             s.executables = "myrackup"
@@ -2347,7 +2347,7 @@ RSpec.describe "the lockfile format" do
         set_lockfile_mtime_to_known_value
 
         expect { bundle "update", all: true }.to change { File.mtime(bundled_app_lock) }
-        expect(File.read(bundled_app_lock)).to match("\r\n")
+        expect(File.binread(bundled_app_lock)).to match("\r\n")
 
         expect(the_bundle).to include_gems "myrack 1.2"
       end
@@ -2363,7 +2363,7 @@ RSpec.describe "the lockfile format" do
         end.not_to change { File.mtime(bundled_app_lock) }
       end
 
-      it "preserves Gemfile.lock \\n\\r line endings" do
+      it "preserves Gemfile.lock \\r\\n line endings" do
         win_lock = File.read(bundled_app_lock).gsub(/\n/, "\r\n")
         File.open(bundled_app_lock, "wb") {|f| f.puts(win_lock) }
         set_lockfile_mtime_to_known_value

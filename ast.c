@@ -45,7 +45,7 @@ static const rb_data_type_t rb_node_type = {
     "AST/node",
     {node_gc_mark, RUBY_TYPED_DEFAULT_FREE, node_memsize,},
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    RUBY_TYPED_THREAD_SAFE_FREE,
 };
 
 struct ASTLocationData {
@@ -70,7 +70,7 @@ static const rb_data_type_t rb_location_type = {
     "AST/location",
     {location_gc_mark, RUBY_TYPED_DEFAULT_FREE, location_memsize,},
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    RUBY_TYPED_THREAD_SAFE_FREE,
 };
 
 

@@ -97,7 +97,7 @@ RSpec.describe "major deprecations" do
 
   context "bundle check --path" do
     before do
-      install_gemfile <<-G
+      gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G
@@ -117,7 +117,7 @@ RSpec.describe "major deprecations" do
 
   context "bundle check --path=" do
     before do
-      install_gemfile <<-G
+      gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G
@@ -137,7 +137,7 @@ RSpec.describe "major deprecations" do
 
   context "bundle binstubs --path=" do
     before do
-      install_gemfile <<-G
+      gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G
@@ -157,7 +157,7 @@ RSpec.describe "major deprecations" do
 
   context "bundle cache --all" do
     before do
-      install_gemfile <<-G
+      gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G
@@ -177,7 +177,7 @@ RSpec.describe "major deprecations" do
 
   context "bundle cache --no-all" do
     before do
-      install_gemfile <<-G
+      gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G
@@ -197,7 +197,7 @@ RSpec.describe "major deprecations" do
 
   context "bundle cache --path" do
     before do
-      install_gemfile <<-G
+      gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G
@@ -217,7 +217,7 @@ RSpec.describe "major deprecations" do
 
   context "bundle cache --path=" do
     before do
-      install_gemfile <<-G
+      gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G
@@ -237,7 +237,7 @@ RSpec.describe "major deprecations" do
 
   context "bundle cache --frozen" do
     before do
-      install_gemfile <<-G
+      gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G
@@ -257,7 +257,7 @@ RSpec.describe "major deprecations" do
 
   context "bundle cache --no-prune" do
     before do
-      install_gemfile <<-G
+      gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G
@@ -437,7 +437,7 @@ RSpec.describe "major deprecations" do
     before do
       bundle_config "path vendor/bundle"
 
-      install_gemfile <<-G
+      gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G

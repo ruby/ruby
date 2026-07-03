@@ -370,6 +370,24 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_raise(NoMethodError) { ctx.dup }
   end
 
+  def test_flags_clear
+    store = OpenSSL::X509::Store.new
+    assert_equal(0, store.flags)
+    store.flags = OpenSSL::X509::V_FLAG_CRL_CHECK
+    assert_equal(OpenSSL::X509::V_FLAG_CRL_CHECK, store.flags)
+    assert_warning(/clear_flags/) {
+      store.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
+    }
+    assert_equal(
+      OpenSSL::X509::V_FLAG_CRL_CHECK|OpenSSL::X509::V_FLAG_CRL_CHECK_ALL,
+      store.flags
+    )
+    store.clear_flags(OpenSSL::X509::V_FLAG_CRL_CHECK_ALL)
+    assert_equal(OpenSSL::X509::V_FLAG_CRL_CHECK, store.flags)
+    store.clear_flags
+    assert_equal(0, store.flags)
+  end
+
   def test_ctx_cleanup
     # Deprecated in Ruby 1.9.3
     cert  = OpenSSL::X509::Certificate.new

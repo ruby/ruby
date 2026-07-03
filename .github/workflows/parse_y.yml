@@ -51,7 +51,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -59,7 +59,7 @@ jobs:
 
       - uses: ./.github/actions/setup/ubuntu
 
-      - uses: ruby/setup-ruby@89f90524b88a01fe6e0b732220432cc6142926af # v1.313.0
+      - uses: ruby/setup-ruby@0dafeac902942906541bc140009cdbf32665b601 # v1.315.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -71,6 +71,7 @@ jobs:
           makeup: true
           clean: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          bundled-gems-src-cache: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc cppflags=-DRUBY_DEBUG --with-parser=parse.y

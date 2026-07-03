@@ -1137,16 +1137,14 @@ $(STUBPROGRAM):	rubystub.$(OBJEXT) $(LIBRUBY) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME)
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
 !endif
 
-!if "$(LIBRUBY_SO_UPDATE)" == ""
+!if "$(EXTSTATIC)" != "" && "$(LIBRUBY_SO_UPDATE)" == ""
 PRE_LIBRUBY_UPDATE = $(RM) $(LIBRUBY_EXTS)
 !else
 PRE_LIBRUBY_UPDATE =
 !endif
 
 $(LIBRUBY_A):	$(OBJS) $(INITOBJS)
-!if "$(EXTSTATIC)" != ""
 		@-$(PRE_LIBRUBY_UPDATE)
-!endif
 		$(ECHO) linking static-library $(@:\=/)
 		$(Q) $(AR) $(ARFLAGS)$@ $(OBJS) $(INITOBJS)
 
@@ -1156,9 +1154,7 @@ $(LIBRUBY):	$(RUBYDEF)
 
 $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		@echo $(DLDOBJS)
-!if "$(EXTSTATIC)" == ""
 		@-$(PRE_LIBRUBY_UPDATE)
-!endif
 		$(ECHO) linking shared-library $(@:\=/)
 		$(Q) $(LDSHARED) $(DLDOBJS) $(LIBRUBY_A) \
 			$(RUBY_SO_NAME).res $(SOLIBS) $(EXTSOLIBS) $(LIBS) \

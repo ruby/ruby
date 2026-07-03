@@ -135,7 +135,7 @@ static const rb_data_type_t cc_table_type = {
         .dcompact = vm_cc_table_compact,
     },
     .parent = &rb_managed_id_table_type,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 VALUE
@@ -798,7 +798,7 @@ static const rb_data_type_t cc_refinement_set_type = {
         cc_refinement_set_compact,
         cc_refinement_set_handle_weak_references,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 VALUE
@@ -850,7 +850,6 @@ rb_clear_all_refinement_method_cache(void)
 
             // All objects should be live as weak references are pruned in
             // cc_refinement_set_handle_weak_references
-            VM_ASSERT(rb_gc_pointer_to_heap_p(v));
             VM_ASSERT(!rb_objspace_garbage_object_p(v));
 
             const struct rb_callcache *cc = (const struct rb_callcache *)v;

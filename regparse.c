@@ -114,6 +114,7 @@ extern void onig_set_warn_func(OnigWarnFunc f)
 extern void onig_set_verb_warn_func(OnigWarnFunc f)
 {
   onig_verb_warn = f;
+  (void)onig_verb_warn;
 }
 
 static void CC_DUP_WARN(ScanEnv *env, OnigCodePoint from, OnigCodePoint to);

@@ -322,14 +322,14 @@ $(PROGRAM):
 
 $(PROGRAM): @XRUBY_LIBPATHENV_WRAPPER@
 
-PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(gnumake:yes=exec) $(RM) $(LIBRUBY_EXTS)
+PRE_LIBRUBY_UPDATE = [ -z "$(EXTSTATIC)" -o -n "$(LIBRUBY_SO_UPDATE)" ] || $(gnumake:yes=exec) $(RM) $(LIBRUBY_EXTS)
 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
 # supported.
 $(LIBRUBY_A):
 		@$(RM) $@
-		@-[ -z "$(EXTSTATIC)" ] || $(PRE_LIBRUBY_UPDATE)
+		@-$(PRE_LIBRUBY_UPDATE)
 		$(ECHO) linking static-library $@
 		$(Q) $(AR) $(ARFLAGS) $@ $(LIBRUBY_A_OBJS) $(INITOBJS)
 		@-$(RANLIB) $@ 2> /dev/null || true
@@ -340,7 +340,7 @@ verify-static-library: $(LIBRUBY_A)
 		@$(RMALL) conftest$(EXEEXT) conftest.c conftest.dSYM
 
 $(LIBRUBY_SO):
-		@-[ -n "$(EXTSTATIC)" ] || $(PRE_LIBRUBY_UPDATE)
+		@-$(PRE_LIBRUBY_UPDATE)
 		$(ECHO) linking shared-library $@
 		$(Q) $(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) $(EXTSOLIBS) $(OUTFLAG)$@
 		-$(Q) $(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)InitVM_*' \
@@ -350,9 +350,6 @@ $(LIBRUBY_SO):
 		@-$(MINIRUBY) -e 'so, *aliases = ARGV; aliases.uniq!; aliases.delete(File.basename(so)); \
 				  aliases.each { |link| File.delete link rescue nil; File.symlink so, link }' \
 				$(LIBRUBY_SO) $(LIBRUBY_ALIASES) || true
-
-LIBRUBY_WITH_EXT = @LIBRUBY_WITH_EXT@
-$(LIBRUBY_$(LIBRUBY_WITH_EXT)): $(LIBRUBY_SO_UPDATE)
 
 PKG_CONFIG = @PKG_CONFIG@
 ruby_pc = @ruby_pc@
@@ -732,31 +729,6 @@ yes-test-leaked-globals: yes-test-leaked-globals-precheck
 	  PLATFORM=$(hdrdir)/ruby/$(PLATFORM_DIR).h $(srcdir)/configure.ac \
 	  $(COMMONOBJS) $(LIBRUBY_FOR_LEAKED_GLOBALS:yes=$(LIBRUBY_SO))
 	$(ACTIONS_ENDGROUP)
-
-test-syntax-suggest-precheck: $(TEST_RUNNABLE)-test-syntax-suggest-precheck
-no-test-syntax-suggest-precheck:
-yes-test-syntax-suggest-precheck: main
-
-test-syntax-suggest-prepare: $(TEST_RUNNABLE)-test-syntax-suggest-prepare
-no-test-syntax-suggest-prepare: no-test-syntax-suggest-precheck
-yes-test-syntax-suggest-prepare: yes-test-syntax-suggest-precheck
-	$(ACTIONS_GROUP)
-	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "rspec:~> 3"
-	$(ACTIONS_ENDGROUP)
-
-RSPECOPTS =
-SYNTAX_SUGGEST_SPECS =
-PREPARE_SYNTAX_SUGGEST = $(TEST_RUNNABLE)-test-syntax-suggest-prepare
-test-syntax-suggest: $(TEST_RUNNABLE)-test-syntax-suggest
-yes-test-syntax-suggest: $(PREPARE_SYNTAX_SUGGEST)
-	$(ACTIONS_GROUP)
-	$(XRUBY) -C $(srcdir) -Ispec/syntax_suggest:spec/lib .bundle/bin/rspec \
-		--require rspec/expectations \
-		--require spec_helper --require formatter_overrides --require spec_coverage \
-		$(RSPECOPTS) spec/syntax_suggest/$(SYNTAX_SUGGEST_SPECS)
-	$(ACTIONS_ENDGROUP)
-no-test-syntax-suggest:
 
 yesterday:
 	$(GIT_IN_SRC) reset --hard `TZ=UTC-9 $(GIT_LOG_FORMAT)%H -1 --before=00:00`
