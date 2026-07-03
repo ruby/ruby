@@ -213,18 +213,29 @@ class Dir
   end
 
   # call-seq:
-  #   Dir[patterns, base: nil, sort: true] -> array
+  #   Dir[*patterns, base: nil, sort: true] -> array
   #
-  # Like Dir.glob, but does not accept keyword argument +flags+.
+  # Like Dir.glob, but does not accept keyword argument +flags+,
+  # and may take multiple patterns as arguments:
+  #
+  #   Dir['*.rb', '*.h'].take(3) # => ["KNOWNBUGS.rb", "array.rb", "ast.rb"]
+  #
   def self.[](*args, base: nil, sort: true)
     Primitive.dir_s_aref(args, base, sort)
   end
 
   # call-seq:
   #   Dir.glob(patterns, flags: 0, base: '.', sort: true) -> array_of_entries
+  #   Dir.glob(patterns, flags: 0, base: '.', sort: true) {|entry_name| ... } -> nil
   #
   # Returns an array of filesystem entries;
   # see {Filename Globbing}[rdoc-ref:file/filename_globbing.md].
+  #
+  # With a block given, calls the block with each of the selected entry names
+  # and returns +nil+:
+  #
+  #   Dir.glob('*.rb') {|entry_name| puts entry_name } # => nil
+  #
   def self.glob(pattern, _flags = 0, flags: _flags, base: nil, sort: true)
     Primitive.attr! :use_block
     Primitive.dir_s_glob(pattern, flags, base, sort)

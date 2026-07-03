@@ -33,7 +33,10 @@ Inputs to the filename-globbing methods:
 
 Their return values:
 
-- Each of the methods `Dir[]` and Dir.glob returns an array of the selected string entries.
+- \Method `Dir[]` returns an array of the selected string entries.
+- \Method Dir.glob with no block returns an array of the selected string entries.
+- \Method Dir.glob with a block calls the block with each selected string entry
+  and returns `nil`.
 - \Method Pathname#glob with no block returns an array of Pathname objects
   each based on a selected string entry.
 - \Method Pathname#glob with a block calls the block with each pathname
@@ -44,8 +47,13 @@ Examples:
 ```ruby
 Dir['*'].take(3)
 # => ["BSDL", "CONTRIBUTING.md", "COPYING"]
+Dir['*.rb', '*.h'].take(3)
+# => ["KNOWNBUGS.rb", "array.rb", "ast.rb"]
 Dir.glob('*').take(3)
 # => ["BSDL", "CONTRIBUTING.md", "COPYING"]
+Dir.glob(['*.rb', '*.h']).take(3)
+# => ["KNOWNBUGS.rb", "array.rb", "ast.rb"]
+Dir.glob('*.rb') {|entry_name| puts entry_name } # => nil
 Pathname('.').glob('*').take(3)
 # => [#<Pathname:BSDL>, #<Pathname:CONTRIBUTING.md>, #<Pathname:COPYING>]
 a = []
@@ -297,6 +305,25 @@ Pathname('.').glob('test/ruby/**/*.rb').take(3)
 # [#<Pathname:test/ruby/allpairs.rb>,
 #     #<Pathname:test/ruby/beginmainend.rb>,
 #     #<Pathname:test/ruby/box/a.1_1_0.rb>]
+```
+
+The double-asterisk pattern matches directories recursively
+only when followed by the slash character `'/'`;
+otherwise it is equivalent to pattern `'*'`:
+
+```ruby
+Dir.glob('**') == Dir.glob('*') # => true
+```
+
+A pattern ending with `'/'` matches directory names only;
+each matched name ends with `'/'`:
+
+```ruby
+# Find the directories at the top level.
+Dir.glob('*/').take(3)  # => ["basictest/", "benchmark/", "bin/"]
+
+# Find all directories everywhere.
+Dir.glob('**/').take(3) # => ["basictest/", "benchmark/", "benchmark/gc/"]
 ```
 
 The pattern may be escaped:
