@@ -2419,17 +2419,13 @@ rb_set_size(VALUE set)
  *
  * === Methods for \Set Operations
  *
- * - #| (aliased as #union and #+):
- *   Returns a new set containing all elements from +self+
- *   and all elements from a given enumerable (no duplicates).
  * - #& (aliased as #intersection):
- *   Returns a new set containing all elements common to +self+
- *   and a given enumerable.
+ *   Returns a new set containing the intersection of +self+ and the given enumerable.
  * - #- (aliased as #difference):
- *   Returns a copy of +self+ with all elements
- *   in a given enumerable removed.
- * - #^: Returns a new set containing all elements from +self+
- *   and a given enumerable except those common to both.
+ *   Returns a new set containing the difference of +self+ and the given enumerable.
+ * - #^: Returns a new set containing the exclusive OR of +self+ and the given enumerable.
+ * - #| (aliased as #union and #+):
+ *   Returns a new set containing the union of +self+ and the given enumerable.
  *
  * === Methods for Comparing
  *
