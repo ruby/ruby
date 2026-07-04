@@ -126,6 +126,11 @@ errors:
   - EXPRESSION_NOT_WRITABLE_TRUE
   - FLOAT_PARSE
   - FOR_COLLECTION
+  - FOR_COMP_BREAK
+  - FOR_COMP_CIRCULAR
+  - FOR_COMP_EXPECT_THEN
+  - FOR_COMP_GUARD
+  - FOR_COMP_INDEX_NOT_LOCAL
   - FOR_IN
   - FOR_INDEX
   - FOR_TERM
@@ -2540,6 +2545,131 @@ nodes:
 
           1.0
           ^^^
+  - name: ForComprehensionIteratorNode
+    fields:
+      - name: locals
+        type: constant[]
+        comment: |
+          The loop variables bound by this iterator, followed by the
+          temporaries assigned in guards or the body (which every iterator
+          carries so that each synthesized block has its own binding). These
+          become the locals of the blocks the iterator compiles into.
+
+              for x in xs, y in ys then [x, y] end # locals: [:x] and [:y]
+      - name: index
+        type: node
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
+        comment: |
+          The loop variable bound by this iterator. Only local variables (or
+          destructuring of local variables) are valid; other targets are
+          rejected with a parse error.
+
+              for x in xs, y in ys then x + y end
+                  ^        ^
+      - name: collection
+        type: node
+        kind: non-void expression
+        comment: |
+          The collection this iterator draws elements from.
+
+              for x in xs, y in ys then x + y end
+                       ^^        ^^
+      - name: guard
+        type: node?
+        kind: non-void expression
+        comment: |
+          The optional `when` guard expression filtering this iterator's
+          collection.
+
+              for x in xs when x.even? then x * 2 end
+                               ^^^^^^^
+      - name: in_keyword_loc
+        type: location
+        comment: |
+          The Location of the `in` keyword.
+
+              for x in xs then x end
+                    ^^
+      - name: when_keyword_loc
+        type: location?
+        comment: |
+          The Location of the `when` keyword, if a guard is present.
+
+              for x in xs when x.even? then x * 2 end
+                          ^^^^
+    comment: |
+      Represents a single `variable in collection [when guard]` iterator of a
+      for-comprehension.
+
+          for x in xs when x.even?, y in ys then [x, y] end
+              ^^^^^^^^^^^^^^^^^^^^  ^^^^^^^
+  - name: ForComprehensionNode
+    fields:
+      - name: locals
+        type: constant[]
+        comment: |
+          The local variables of the comprehension scope: the loop variables
+          of all iterators plus any temporaries assigned in guards or the
+          body. These do not leak outside the comprehension.
+
+              for x in xs, y in ys then z = x + y; z end # locals: [:x, :y, :z]
+      - name: iterators
+        type: node[]
+        kind: ForComprehensionIteratorNode
+        comment: |
+          The iterators of the comprehension, in source order. All but the
+          last compile to `flat_map` calls; the last compiles to `map`.
+
+              for x in xs, y in ys then [x, y] end
+                  ^^^^^^^  ^^^^^^^
+      - name: statements
+        type: node?
+        kind: StatementsNode
+        comment: |
+          The body of the comprehension; its value becomes the mapped element.
+
+              for x in xs then x * 2 end
+                               ^^^^^
+      - name: for_keyword_loc
+        type: location
+        comment: |
+          The Location of the `for` keyword.
+
+              for x in xs then x end
+              ^^^
+      - name: then_keyword_loc
+        type: location
+        comment: |
+          The Location of the `then` keyword.
+
+              for x in xs then x end
+                          ^^^^
+      - name: end_keyword_loc
+        type: location
+        comment: |
+          The Location of the `end` keyword.
+
+              for x in xs then x end
+                                 ^^^
+    comment: |
+      Represents a Scala-style for-comprehension, which flattens nested
+      `flat_map`/`map` (and `filter` for guards) calls.
+
+          for x in xs, y in ys when y > x then [x, y] end
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+      This is equivalent to:
+
+          xs.flat_map { |x| ys.filter { |y| y > x }.map { |y| [x, y] } }
   - name: ForNode
     fields:
       - name: index

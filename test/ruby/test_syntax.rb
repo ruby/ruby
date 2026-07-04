@@ -1380,8 +1380,6 @@ eom
 
   def test_for_comprehension
     # Scala-style `for ... then` comprehension desugars nested flat_map/map.
-    # Only implemented in the parse.y parser.
-    omit if ParserSupport.prism_enabled?
 
     # single iterator => map
     assert_equal([2, 4, 6], eval("for x in [1, 2, 3] then x * 2 end"))
@@ -1406,7 +1404,6 @@ eom
 
   def test_for_comprehension_when_guard
     # a `when` guard filters the iterator's expression (desugars to filter)
-    omit if ParserSupport.prism_enabled?
 
     # single iterator with a guard
     assert_equal([20, 40], eval("for x in [1, 2, 3, 4] when x.even? then x * 10 end"))
@@ -1428,8 +1425,6 @@ eom
   end
 
   def test_for_comprehension_does_not_break_for_loop
-    omit if ParserSupport.prism_enabled?
-
     # the legacy `for` loop is unchanged: it iterates and returns the collection
     a = [1, 2, 3]
     seen = []
@@ -1446,7 +1441,6 @@ eom
   def test_for_comprehension_scopes_loop_variables
     # unlike the legacy `for` loop, comprehension loop variables are scoped to
     # the synthesized blocks and do not leak into the surrounding scope.
-    omit if ParserSupport.prism_enabled?
 
     assert_nil(eval("for x in [1, 2, 3] then x end; defined?(x)"))
     # every iterator's variable is scoped
@@ -1462,20 +1456,21 @@ eom
   end
 
   def test_for_comprehension_circular_reference
-    omit if ParserSupport.prism_enabled?
-
     # a freshly introduced loop variable cannot be referenced in its own
     # iterator expression: it is not bound yet and never denotes a value
     circular = /circular reference of loop variable - x/
-    assert_in_out_err(%w[--parser=parse.y -e] + ["for x in [x] then x end"], "", [], circular)
-    assert_in_out_err(%w[--parser=parse.y -e] + ["for x in [x, 2] then x end"], "", [], circular)
-    assert_in_out_err(%w[--parser=parse.y -e] + ["for x in ([x] rescue [2]) then x end"], "", [], circular)
-    assert_in_out_err(%w[--parser=parse.y -e] + ['for x in ["#{x}"] then x end'], "", [], circular)
-    assert_in_out_err(%w[--parser=parse.y -e] + ["for (a, b) in [[a, b]] then 0 end"], "", [],
-                      /circular reference of loop variable - a/)
-    # in an eval scope the reference is a dynamic variable and the specific
-    # message is not available, but it is still a SyntaxError
+    %w[parse.y prism].each do |parser|
+      assert_in_out_err(["--parser=#{parser}", "-e", "for x in [x] then x end"], "", [], circular)
+      assert_in_out_err(["--parser=#{parser}", "-e", "for x in [x, 2] then x end"], "", [], circular)
+      assert_in_out_err(["--parser=#{parser}", "-e", "for x in ([x] rescue [2]) then x end"], "", [], circular)
+      assert_in_out_err(["--parser=#{parser}", "-e", 'for x in ["#{x}"] then x end'], "", [], circular)
+      assert_in_out_err(["--parser=#{parser}", "-e", "for (a, b) in [[a, b]] then 0 end"], "", [],
+                        /circular reference of loop variable - a/)
+    end
+    # in an eval scope (or, in parse.y, in a later iterator) the specific
+    # message is not always available, but it is still a SyntaxError
     assert_raise(SyntaxError) { eval("for x in [x] then x end") }
+    assert_raise(SyntaxError) { eval("for x in [1], y in [y] then [x, y] end") }
     # a same-named outer variable in the iterator expression is not circular
     assert_equal([[6], 5], eval("x = 5; r = for x in [x + 1] then x end; [r, x]"))
     # nor is a nested block's own same-named variable
@@ -1483,12 +1478,12 @@ eom
   end
 
   def test_for_comprehension_break_not_allowed
-    omit if ParserSupport.prism_enabled?
-
     # a bare `break` would desugar into one synthesized flat_map/map block and
     # escape only that innermost block, so it is rejected
     msg = /Invalid break in for-comprehension/
-    assert_in_out_err(%w[--parser=parse.y -e] + ["for x in [1, 2] then break end"], "", [], msg)
+    %w[parse.y prism].each do |parser|
+      assert_in_out_err(["--parser=#{parser}", "-e", "for x in [1, 2] then break end"], "", [], msg)
+    end
     assert_raise(SyntaxError) { eval("for x in [1, 2] then break end") }
     assert_raise(SyntaxError) { eval("for x in [1, 2] then break 9 if x == 1; x end") }
     # break in a `when` guard is rejected too
@@ -1510,13 +1505,13 @@ eom
   end
 
   def test_for_comprehension_loop_variable_must_be_local
-    omit if ParserSupport.prism_enabled?
-
     # a comprehension loop variable must be a local variable: assigning to an
     # ivar/gvar/cvar/constant or an attribute/index setter on each iteration is
     # a side effect with no role in the mapped result
     msg = /for-comprehension loop variable must be a local variable/
-    assert_in_out_err(%w[--parser=parse.y -e] + ["for @x in [1] then @x end"], "", [], msg)
+    %w[parse.y prism].each do |parser|
+      assert_in_out_err(["--parser=#{parser}", "-e", "for @x in [1] then @x end"], "", [], msg)
+    end
     assert_raise(SyntaxError) { eval("for @x in [1, 2] then @x end") }
     assert_raise(SyntaxError) { eval("for $g in [1, 2] then $g end") }
     assert_raise(SyntaxError) { eval("for K in [1, 2] then K end") }
@@ -1536,13 +1531,13 @@ eom
   end
 
   def test_for_comprehension_it_and_numbered_parameters
-    omit if ParserSupport.prism_enabled?
-
     # the synthesized flat_map/map/filter blocks take the loop variable as an
     # ordinary parameter, so `it` and numbered parameters cannot be implicit
     # parameters of the comprehension body, guard, or later iterators
     msg = /ordinary parameter is defined/
-    assert_in_out_err(%w[--parser=parse.y -e] + ["for x in [1] then it end"], "", [], msg)
+    %w[parse.y prism].each do |parser|
+      assert_in_out_err(["--parser=#{parser}", "-e", "for x in [1] then it end"], "", [], msg)
+    end
     assert_raise(SyntaxError) { eval("for x in [1, 2] then it end") }
     assert_raise(SyntaxError) { eval("for x in [1, 2] then _1 end") }
     assert_raise(SyntaxError) { eval("for x in [1, 2] then _2 end") }
@@ -1560,12 +1555,11 @@ eom
   end
 
   def test_for_comprehension_no_bogus_unused_warning
-    omit if ParserSupport.prism_enabled?
-
     # the relocated first-iterator variable must not trigger a spurious
-    # "assigned but unused variable" warning for its renamed internal slot
+    # "assigned but unused variable" warning for its renamed internal slot,
+    # and an unused loop variable behaves like a block parameter (no warning)
     assert_warning("") do
-      eval("def _fcw1; for x in [1, 2] then x end; end", nil, __FILE__, __LINE__)
+      eval("def _fcw1; for x in [1, 2], y in [3] then x end; end", nil, __FILE__, __LINE__)
     end
   ensure
     self.class.remove_method(:_fcw1) if self.class.method_defined?(:_fcw1)

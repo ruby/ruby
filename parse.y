@@ -11675,10 +11675,11 @@ for_var_bind(struct parser_params *p, NODE *var, rb_node_args_aux_t *m,
  * loop variables in a single dynamic-variable scope, so letting local_tbl() run
  * would put every iterator's variable (and the body's temporaries) into one
  * flat block table.  Instead each block's table holds only its own internal
- * parameter plus the loop variable(s) bound here; `extra_ids` carries the body's
- * own temporaries, placed in the innermost (map) block.  Because the loop
- * variables are dynamic vars (DASGN/DVAR), references from inner blocks resolve
- * outward to the binding block and the names do not leak. */
+ * parameter plus the loop variable(s) bound here; `extra_ids` carries the
+ * comprehension's temporaries (assigned in guards or the body), which every
+ * block carries as its own binding.  Because the loop variables are dynamic
+ * vars (DASGN/DVAR), references from inner blocks resolve outward to the
+ * binding block and the names do not leak. */
 static NODE *
 new_for_comp_iter(struct parser_params *p, NODE *var, NODE *recv, NODE *body, ID mid,
                  ID *extra_ids, int extra_cnt, const YYLTYPE *loc)
@@ -11760,22 +11761,23 @@ dup_for_var(struct parser_params *p, NODE *var, const YYLTYPE *loc)
  *   recv[.filter {|var| guard}].<flat_map|map> {|var| body }
  *
  * A guard filters recv before the flat_map/map.  The last iterator uses map,
- * every earlier one uses flat_map.  `extra_ids` (the body's own temporaries) is
- * only meaningful for the last iterator's map block. */
+ * every earlier one uses flat_map.  `extra_ids` (the comprehension's
+ * temporaries, assigned in guards or the body) goes into every synthesized
+ * block's table, so that a reference from any of them resolves; the blocks
+ * are siblings, so each gets its own binding. */
 static NODE *
 build_for_iter(struct parser_params *p, NODE *var, NODE *recv, NODE *guard, NODE *body,
               int is_last, ID *extra_ids, int extra_cnt, const YYLTYPE *loc)
 {
     if (guard) {
-        recv = new_for_comp_iter(p, dup_for_var(p, var, loc), recv, guard, rb_intern("filter"), 0, 0, loc);
+        recv = new_for_comp_iter(p, dup_for_var(p, var, loc), recv, guard, rb_intern("filter"), extra_ids, extra_cnt, loc);
     }
     return new_for_comp_iter(p, var, recv, body, is_last ? rb_intern("map") : rb_intern("flat_map"),
-                            is_last ? extra_ids : 0, is_last ? extra_cnt : 0, loc);
+                            extra_ids, extra_cnt, loc);
 }
 
 /* Fold a list of iterators (iters: a list of [var, expr] or [var, expr, guard]
- * sublists) plus the result body into nested flat_map/map (and filter) calls.
- * The innermost (last) iterator's map block gets the body temporaries. */
+ * sublists) plus the result body into nested flat_map/map (and filter) calls. */
 static NODE *
 for_comp_fold(struct parser_params *p, NODE *iters, NODE *result, ID *extra_ids, int extra_cnt, const YYLTYPE *loc)
 {
@@ -11792,8 +11794,14 @@ for_comp_fold(struct parser_params *p, NODE *iters, NODE *result, ID *extra_ids,
     }
     else {
         NODE *inner = for_comp_fold(p, rest, result, extra_ids, extra_cnt, loc);
-        return build_for_iter(p, var, expr, guard, inner, FALSE, 0, 0, loc);
+        return build_for_iter(p, var, expr, guard, inner, FALSE, extra_ids, extra_cnt, loc);
     }
+}
+
+static void
+for_comp_mark_used_cb(struct parser_params *p, NODE *leaf, void *arg)
+{
+    mark_lvar_used(p, leaf);
 }
 
 /* Collect every comprehension loop-variable id (across all iterators) into
@@ -11828,15 +11836,19 @@ new_for_comprehension(struct parser_params *p, NODE *first_var, NODE *first_expr
     all = NEW_LIST(first, loc);
     if (iters) all = list_concat(all, iters);
 
-    /* Every iterator's loop variable must be a local variable. */
+    /* Every iterator's loop variable must be a local variable.  Loop
+     * variables behave like block parameters, which are exempt from
+     * unused-variable warnings, so mark them used. */
     for (NODE *n = all; n; n = RNODE_LIST(n)->nd_next) {
         NODE *sub = RNODE_LIST(n)->nd_head;
         for_comp_reject_nonlocal_var(p, RNODE_LIST(sub)->nd_head);
+        for_var_each_local(p, RNODE_LIST(sub)->nd_head, for_comp_mark_used_cb, 0);
     }
 
-    /* The dyna scope holds every loop variable plus the body's temporaries.
-     * Whatever is not a loop variable is a body temporary, and belongs in the
-     * innermost (map) block so it does not leak. */
+    /* The dyna scope holds every loop variable plus the temporaries assigned
+     * in guards or the body.  Whatever is not a loop variable is a temporary,
+     * and goes into every synthesized block's table (each block gets its own
+     * binding) so it does not leak. */
     n_loop = for_comp_collect_loop_ids(p, all, loop_ids);
     for (i = 0; i < dn; i++) {
         ID vid = dv->tbl[i];
