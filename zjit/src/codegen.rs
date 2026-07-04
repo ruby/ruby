@@ -648,11 +648,11 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Send { cd, block: Some(BlockHandler::BlockArg), state, reason, .. } => gen_send(jit, asm, function, cd, std::ptr::null(), &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, function, cd, blockiseq, &function.frame_state(state), reason),
         Insn::SendDirect(insn) => {
-            let SendDirectData { cme, iseq, recv, args, kw_bits, block, state, .. } = &**insn;
+            let SendDirectData { cme, iseq, recv, args, kw_bits, jit_entry_idx, block, state, .. } = &**insn;
             gen_send_iseq_direct(
                 cb, jit, asm,
                 function, *cme, *iseq, opnd!(recv), opnds!(args),
-                *kw_bits, &function.frame_state(*state), *block,
+                *kw_bits, *jit_entry_idx, &function.frame_state(*state), *block,
             )
         }
         Insn::PushInlineFrame { cme, iseq, recv, args, blockiseq, state, .. } => {
@@ -1685,6 +1685,7 @@ fn gen_send_iseq_direct(
     recv: Opnd,
     args: Vec<Opnd>,
     kw_bits: u32,
+    jit_entry_idx: u16,
     state: &FrameState,
     block: Option<BlockHandler>,
 ) -> lir::Opnd {
@@ -1788,25 +1789,8 @@ fn gen_send_iseq_direct(
         }
     }
 
-    let num_optionals_passed = if params.flags.has_opt() != 0 {
-        // See vm_call_iseq_setup_normal_opt_start in vm_inshelper.c
-        let lead_num = params.lead_num as u32;
-        let opt_num = params.opt_num as u32;
-        let post_num = params.post_num as u32;
-        let keyword = params.keyword;
-        let kw_total_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).num } } as u32;
-        assert!(args.len() as u32 <= lead_num + opt_num + post_num + kw_total_num);
-        // For computing optional positional entry point, only count positional args
-        // and exclude the always-present lead and post slots.
-        let positional_argc = args.len() as u32 - kw_total_num;
-        let num_optionals_passed = positional_argc.saturating_sub(lead_num + post_num);
-        num_optionals_passed
-    } else {
-        0
-    };
-
     // Make a method call. The target address will be rewritten once compiled.
-    let iseq_call = IseqCall::new(iseq, num_optionals_passed.try_into().expect("checked in HIR"), args.len().try_into().expect("checked in HIR"));
+    let iseq_call = IseqCall::new(iseq, jit_entry_idx, args.len().try_into().expect("checked in HIR"));
     let dummy_ptr = cb.get_write_ptr().raw_ptr(cb);
     jit.iseq_calls.push(iseq_call.clone());
     let ret = asm.ccall_with_iseq_call(dummy_ptr, c_args, &iseq_call);
