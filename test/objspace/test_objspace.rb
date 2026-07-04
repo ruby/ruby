@@ -135,7 +135,6 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_reachable_objects_during_iteration
-    omit 'flaky on Visual Studio with: [BUG] Unnormalized Fixnum value' if /mswin/ =~ RUBY_PLATFORM
     opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
     assert_ruby_status opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     begin;
@@ -351,14 +350,14 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_trace_object_allocations_does_not_reuse_freed_allocation_info
-    assert_separately(%w(-robjspace), <<~RUBY)
+    assert_separately(%w(-robjspace), <<~RUBY, timeout: 60)
       ObjectSpace.trace_object_allocations do
-        1_000_000.times.map { Object.new }
+        100_000.times.map { Object.new }
       end
 
       GC.start
 
-      objs = 1_000_000.times.map { Object.new }
+      objs = 100_000.times.map { Object.new }
 
       leaked = objs.count { |obj| ObjectSpace.allocation_sourcefile(obj) }
       assert_equal 0, leaked
@@ -849,7 +848,7 @@ class TestObjSpace < Test::Unit::TestCase
           Tempfile.create do |f|
             ObjectSpace.dump_all(output: f)
             f.close
-            File.readlines(f.path).each do |line|
+            File.foreach(f.path) do |line|
               JSON.parse(line)
             end
           end

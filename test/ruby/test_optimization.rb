@@ -1119,6 +1119,13 @@ class TestRubyOptimization < Test::Unit::TestCase
       '@c = :b; [:a, :b].include?(@c)',
       '@c = "b"; %i[a b].include?(@c.to_sym)',
       '[:a, :b].include?(self) == false',
+      "[:a, :b].include?(:a)",
+      "[true, false].include?(false)",
+      "[1, nil].include?(nil)",
+      "# frozen_string_literal: true\n['a', 'b'].include?('a')",
+      "# frozen_string_literal: true\n['a', 'b'].include?('c') == false",
+      "# frozen_string_literal: true\n['a', 'b'].include?(2) == false",
+      "# frozen_string_literal: true\n['a', 'b'].include?(/a/) == false",
     ].each do |code|
       iseq = RubyVM::InstructionSequence.compile(code)
       insn = iseq.disasm

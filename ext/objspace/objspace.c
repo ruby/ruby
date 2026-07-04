@@ -510,7 +510,25 @@ iow_newobj(VALUE obj)
     return TypedData_Wrap_Struct(rb_cInternalObjectWrapper, &iow_data_type, (void *)obj);
 }
 
-/* Returns the type of the internal object. */
+/*
+ *  call-seq:
+ *     type -> symbol
+ *
+ *  Returns the type of the wrapped internal object as a symbol.
+ *
+ *  For example, an included module is represented internally as a +T_ICLASS+
+ *  object:
+ *
+ *    require 'objspace'
+ *
+ *    module M; end
+ *    class A; include M; end
+ *
+ *    iclass = ObjectSpace.internal_super_of(A)
+ *    iclass.type # => :T_ICLASS
+ *
+ *  The exact set of returned symbols is implementation specific.
+ */
 static VALUE
 iow_type(VALUE self)
 {
@@ -528,7 +546,16 @@ iow_inspect(VALUE self)
     return rb_sprintf("#<InternalObject:%p %"PRIsVALUE">", (void *)obj, rb_sym2str(type));
 }
 
-/* Returns the Object#object_id of the internal object. */
+/*
+ *  call-seq:
+ *     internal_object_id -> integer
+ *
+ *  Returns the Object#object_id of the wrapped internal object.
+ *
+ *  This value identifies the wrapped internal object, not the
+ *  ObjectSpace::InternalObjectWrapper instance. Use it only for debugging and
+ *  introspection; object ids of internal objects are implementation specific.
+ */
 static VALUE
 iow_internal_object_id(VALUE self)
 {
@@ -777,12 +804,27 @@ objspace_internal_class_of(VALUE self, VALUE obj)
 
 /*
  *  call-seq:
- *     ObjectSpace.internal_super_of(cls) -> Class or Module
+ *     ObjectSpace.internal_super_of(cls) -> class or module
  *
- *  [MRI specific feature] Return internal super class of cls (Class or Module).
- *  obj can be an instance of InternalObjectWrapper.
+ *  Returns the immediate superclass of +cls+, including any hidden class such
+ *  as an included module's iclass.
+ *
+ *  Unlike Class#superclass, this does not skip over the iclasses that Ruby
+ *  inserts for included modules:
+ *
+ *    require 'objspace'
+ *
+ *    module M; end
+ *    class A; include M; end
+ *    A.superclass                       # => Object
+ *    ObjectSpace.internal_super_of(A)   # => #<InternalObject:0x... T_ICLASS>
+ *
+ *  +cls+ must be a Class or Module, or an ObjectSpace::InternalObjectWrapper
+ *  that wraps one.
  *
  *  Note that you should not use this method in your application.
+ *
+ *  This method is only expected to work with C Ruby.
  */
 static VALUE
 objspace_internal_super_of(VALUE self, VALUE obj)
@@ -849,13 +891,18 @@ Init_objspace(void)
     rb_define_module_function(rb_mObjSpace, "internal_super_of", objspace_internal_super_of, 1);
 
     /*
-     * This class is used as a return value from
-     * ObjectSpace::reachable_objects_from.
+     *  ObjectSpace::InternalObjectWrapper wraps objects that are internal to
+     *  the CRuby implementation and usually not directly visible in Ruby code.
      *
-     * When ObjectSpace::reachable_objects_from returns an object with
-     * references to an internal object, an instance of this class is returned.
+     *  ObjectSpace.reachable_objects_from and
+     *  ObjectSpace.reachable_objects_from_root return instances of this class
+     *  when a reachable object is an internal object. Some other ObjectSpace
+     *  methods, such as ObjectSpace.internal_super_of, may also return wrapped
+     *  internal objects.
      *
-     * You can use the #type method to check the type of the internal object.
+     *  An InternalObjectWrapper is a debugging and introspection object. Do not
+     *  use it in application code. The wrapped object and the exact details of
+     *  this class are implementation specific and may change in future versions.
      */
     rb_cInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
     rb_undef_alloc_func(rb_cInternalObjectWrapper);

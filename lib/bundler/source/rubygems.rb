@@ -11,7 +11,7 @@ module Bundler
       API_REQUEST_SIZE = 100
       REQUIRE_MUTEX = Mutex.new
 
-      attr_accessor :remotes
+      attr_accessor :remotes, :remote_cooldowns
 
       def initialize(options = {})
         @options = options
@@ -25,6 +25,7 @@ module Bundler
         @checksum_store = Checksum::Store.new
         @gem_installers = {}
         @gem_installers_mutex = Mutex.new
+        @remote_specs_mutex = Mutex.new
 
         cooldown = options["cooldown"]
         Array(options["remotes"]).reverse_each {|r| add_remote(r, cooldown: cooldown) }
@@ -243,7 +244,7 @@ module Bundler
       def cached_built_in_gem(spec, local: false)
         cached_path = cached_gem(spec)
         if cached_path.nil? && !local
-          remote_spec = remote_specs.search(spec).first
+          remote_spec = remote_spec_for(spec)
           if remote_spec
             cached_path = fetch_gem(remote_spec)
             spec.remote = remote_spec.remote
@@ -337,6 +338,12 @@ module Bundler
         @cached_specs = nil
       end
 
+      def release_resolution_memory!
+        @specs = nil
+        @remote_specs_mutex.synchronize { @remote_specs = nil }
+        @fetchers&.each(&:release_resolution_memory!)
+      end
+
       protected
 
       def remote_names
@@ -414,15 +421,28 @@ module Bundler
       end
 
       def remote_specs
-        @remote_specs ||= Index.build do |idx|
-          index_fetchers = fetchers - api_fetchers
+        @remote_specs ||= @remote_specs_mutex.synchronize do
+          @remote_specs ||= Index.build do |idx|
+            index_fetchers = fetchers - api_fetchers
 
-          if index_fetchers.empty?
-            fetch_names(api_fetchers, dependency_names, idx)
-          else
-            fetch_names(fetchers, nil, idx)
+            if index_fetchers.empty?
+              fetch_names(api_fetchers, dependency_names, idx)
+            else
+              fetch_names(fetchers, nil, idx)
+            end
           end
         end
+      end
+
+      # Looks up a single spec in the remote sources, fetching only its own
+      # name when the full remote index is not already materialized.
+      def remote_spec_for(spec)
+        return remote_specs.search(spec).first if @remote_specs || api_fetchers.empty?
+
+        index = Index.build do |idx|
+          fetch_names(api_fetchers, [spec.name], idx)
+        end
+        index.search(spec).first
       end
 
       def fetch_names(fetchers, dependency_names, index)

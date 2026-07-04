@@ -243,6 +243,7 @@ typedef struct {
     struct wbcheck_final_job *finalizer_jobs; // Linked list of finalizer jobs
     rb_nativethread_lock_t finalizer_lock;   // Protects finalizer_jobs list
     rb_postponed_job_handle_t finalizer_postponed_job; // Postponed job handle for finalizers
+    struct rb_gc_vm_context vm_context;
 } rb_wbcheck_objspace_t;
 
 // Global objspace pointer for accessing from obj_slot_size function
@@ -306,6 +307,19 @@ wbcheck_report_error(void *objspace_ptr, VALUE parent_obj, wbcheck_object_list_t
     fprintf(stderr, "\n");
     objspace->missed_write_barrier_parents++;
     objspace->missed_write_barrier_children += missed_refs->count;
+}
+
+// Fail if a verification sweep reported any missed write barriers. Called at
+// each sweep boundary so every offender in the sweep is printed before we fail.
+static void
+wbcheck_abort_if_errors(rb_wbcheck_objspace_t *objspace)
+{
+    if (objspace->missed_write_barrier_parents > 0) {
+        fflush(stderr);
+        rb_bug("wbcheck: missed write barrier detected (%zu object(s), %zu reference(s))",
+               objspace->missed_write_barrier_parents,
+               objspace->missed_write_barrier_children);
+    }
 }
 
 static void
@@ -522,12 +536,6 @@ rb_gc_impl_init(void)
     // Stub implementation
 }
 
-size_t *
-rb_gc_impl_heap_sizes(void *objspace_ptr)
-{
-    return heap_sizes;
-}
-
 // Shutdown
 void
 rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
@@ -629,6 +637,14 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
 {
 }
 
+struct rb_gc_vm_context *
+rb_gc_impl_get_vm_context(void *objspace_ptr)
+{
+    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+
+    return &objspace->vm_context;
+}
+
 static wbcheck_object_list_t *
 wbcheck_collect_references_from_object(VALUE obj, rb_wbcheck_object_info_t *info)
 {
@@ -645,6 +661,7 @@ wbcheck_collect_references_from_object(VALUE obj, rb_wbcheck_object_info_t *info
     objspace->current_refs = new_list;
     objspace->current_maybe_refs = NULL;
     objspace->phase = WBCHECK_PHASE_SNAPSHOT;
+    rb_gc_initialize_vm_context(&objspace->vm_context);
 
     // Use the marking infrastructure to collect references
     rb_gc_mark_children(objspace, obj);
@@ -787,6 +804,7 @@ wbcheck_mark_phase(rb_wbcheck_objspace_t *objspace)
     WBCHECK_DEBUG("wbcheck: starting GC mark phase\n");
 
     objspace->phase = WBCHECK_PHASE_FULL_GC;
+    rb_gc_initialize_vm_context(&objspace->vm_context);
 
     // Clear mark queue and reset all objects to white
     objspace->mark_queue->count = 0;
@@ -988,10 +1006,7 @@ gc_step(void *objspace_ptr, bool force)
         // Clear the list after processing
         objspace->objects_to_verify->count = 0;
 
-        // If any new errors were detected during verification, exit immediately
-        if (objspace->missed_write_barrier_parents > 0) {
-            rb_bug("wbcheck: missed write barrier detected during immediate verification (WBCHECK_VERIFY_AFTER_WB=1)");
-        }
+        wbcheck_abort_if_errors(objspace);
     }
 
     // Process all objects that need initial reference capture
@@ -1009,6 +1024,7 @@ gc_step(void *objspace_ptr, bool force)
          (objspace->gc_enabled &&
           (objspace->gc_stress || st_table_size(objspace->object_table) >= objspace->gc_threshold)))) {
         wbcheck_full_gc(objspace);
+        wbcheck_abort_if_errors(objspace);
     }
 
 }
@@ -1053,7 +1069,7 @@ lock_and_maybe_gc(void *objspace_ptr)
 }
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size)
 {
     unsigned int lev = RB_GC_VM_LOCK();
     rb_gc_vm_barrier();
@@ -1062,11 +1078,13 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     maybe_gc(objspace_ptr);
 
     // Ensure minimum allocation size of BASE_SLOT_SIZE
-    alloc_size = heap_sizes[rb_gc_impl_heap_id_for_size(objspace_ptr, alloc_size)];
+    alloc_size = rb_gc_impl_size_slot_size(objspace_ptr, alloc_size);
 
     // Allocate memory for the object
     VALUE *mem = malloc(alloc_size);
     if (!mem) rb_bug("FIXME: malloc failed");
+
+    *actual_alloc_size = alloc_size;
 
     // Initialize the object
     VALUE obj = (VALUE)mem;
@@ -1097,10 +1115,10 @@ rb_gc_impl_obj_slot_size(VALUE obj)
 }
 
 size_t
-rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
+rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
 {
     for (int i = 0; i < HEAP_COUNT; i++) {
-        if (size <= heap_sizes[i]) return i;
+        if (size <= heap_sizes[i]) return heap_sizes[i];
     }
     rb_bug("size too big");
 }
@@ -1204,7 +1222,7 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
 {
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
 
-    if (!rb_gc_impl_pointer_to_heap_p(objspace_ptr, (void *)obj)) return;
+    if (!rb_gc_impl_live_object_p(objspace_ptr, (void *)obj)) return;
 
     switch (objspace->phase) {
         case WBCHECK_PHASE_SNAPSHOT:
@@ -1711,16 +1729,8 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     WBCHECK_DEBUG("wbcheck: finished verifying all object references\n");
     RB_GC_VM_UNLOCK(verify_lev);
 
-    // Print summary and exit with error code if violations were found
-    if (objspace->missed_write_barrier_parents > 0 || objspace->missed_write_barrier_children > 0) {
-        fprintf(stderr, "WBCHECK SUMMARY: Found %zu objects with missed write barriers (%zu total violations)\n",
-                objspace->missed_write_barrier_parents, objspace->missed_write_barrier_children);
-
-
-        exit(1);  // Exit with error code to indicate violations were found
-    } else {
-        WBCHECK_DEBUG("wbcheck: no write barrier violations detected\n");
-    }
+    wbcheck_abort_if_errors(objspace);
+    WBCHECK_DEBUG("wbcheck: no write barrier violations detected\n");
 
     // Call rb_gc_obj_free on objects that need shutdown finalization (File, Data with dfree, etc.)
     unsigned int lev = RB_GC_VM_LOCK();
@@ -1739,7 +1749,12 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 void
 rb_gc_impl_before_fork(void *objspace_ptr)
 {
-    // Stub implementation
+    // Verify all objects at the fork point so a pre-fork missed barrier is caught
+    // once here, rather than in every forked child.
+    unsigned int lev = RB_GC_VM_LOCK();
+    rb_gc_vm_barrier();
+    force_gc(objspace_ptr);
+    RB_GC_VM_UNLOCK(lev);
 }
 
 void
@@ -1890,7 +1905,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 }
 
 bool
-rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
+rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr)
 {
     GC_ASSERT(wbcheck_global_objspace);
 
@@ -1933,4 +1948,3 @@ rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
     }
     rb_gc_impl_copy_finalizer(objspace_ptr, dest, obj);
 }
-

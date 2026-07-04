@@ -135,7 +135,7 @@ static const rb_data_type_t cc_table_type = {
         .dcompact = vm_cc_table_compact,
     },
     .parent = &rb_managed_id_table_type,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 VALUE
@@ -798,7 +798,7 @@ static const rb_data_type_t cc_refinement_set_type = {
         cc_refinement_set_compact,
         cc_refinement_set_handle_weak_references,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 VALUE
@@ -850,7 +850,6 @@ rb_clear_all_refinement_method_cache(void)
 
             // All objects should be live as weak references are pruned in
             // cc_refinement_set_handle_weak_references
-            VM_ASSERT(rb_gc_pointer_to_heap_p(v));
             VM_ASSERT(!rb_objspace_garbage_object_p(v));
 
             const struct rb_callcache *cc = (const struct rb_callcache *)v;
@@ -2006,6 +2005,18 @@ static const rb_callable_method_entry_t *
 callable_method_entry_or_negative(VALUE klass, ID mid, VALUE *defined_class_ptr)
 {
     const rb_callable_method_entry_t *cme;
+
+    VM_ASSERT(!SPECIAL_CONST_P(klass));
+
+    if (RB_BUILTIN_TYPE(klass) == T_NONE) {
+      // If we find a T_NONE here, it's most likely we called CLASS_OF(obj) on a
+      // garbage collected object (the freelist is stored in the class pointer),
+      // but it's possible that just the class was GC'd.
+      // This message intentionally tries to imply the former, but make an
+      // accurate statement for either case.
+      rb_bug("attempted to search method '%s' on a garbage collected object",
+             rb_id2name(mid));
+    }
 
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 

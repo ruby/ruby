@@ -1133,7 +1133,7 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
         if (sign == ' ') value = QUOTE(value);
     }
     enc = rb_enc_compatible(result, value);
-    if (enc) {
+    if (enc && rb_enc_asciicompat(enc)) {
         rb_enc_associate(result, enc);
     }
     else {
@@ -1183,6 +1183,15 @@ ruby_vsprintf0(VALUE result, char *p, const char *fmt, va_list ap)
 #undef f
 }
 
+static rb_encoding *
+enc_check(rb_encoding *enc)
+{
+    if (!rb_enc_asciicompat(enc)) {
+        rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
+    }
+    return enc;
+}
+
 VALUE
 rb_enc_vsprintf(rb_encoding *enc, const char *fmt, va_list ap)
 {
@@ -1191,12 +1200,7 @@ rb_enc_vsprintf(rb_encoding *enc, const char *fmt, va_list ap)
 
     result = rb_str_buf_new(initial_len);
     if (enc) {
-        if (rb_enc_mbminlen(enc) > 1) {
-            /* the implementation deeply depends on plain char */
-            rb_raise(rb_eArgError, "cannot construct wchar_t based encoding string: %s",
-                     rb_enc_name(enc));
-        }
-        rb_enc_associate(result, enc);
+        rb_enc_associate(result, enc_check(enc));
     }
     ruby_vsprintf0(result, RSTRING_PTR(result), fmt, ap);
     return result;
@@ -1238,6 +1242,7 @@ VALUE
 rb_str_vcatf(VALUE str, const char *fmt, va_list ap)
 {
     StringValue(str);
+    enc_check(rb_enc_get(str));
     rb_str_modify(str);
     ruby_vsprintf0(str, RSTRING_END(str), fmt, ap);
 

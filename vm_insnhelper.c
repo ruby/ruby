@@ -1404,7 +1404,7 @@ vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache cache)
     }
 
     shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
-    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, cache);
+    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, RBASIC_SHAPE_ID(fields_obj), cache);
     if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
         return Qundef;
     }
@@ -1426,14 +1426,17 @@ NOINLINE(static VALUE vm_setivar_default(VALUE obj, ID id, VALUE val, rb_setivar
 static VALUE
 vm_setivar_default(VALUE obj, ID id, VALUE val, rb_setivar_cache cache)
 {
+    VALUE fields_obj = rb_obj_fields(obj, id);
+    if (UNLIKELY(!fields_obj)) {
+        return Qundef;
+    }
+
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, cache);
+    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, RBASIC_SHAPE_ID(fields_obj), cache);
     if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
         return Qundef;
     }
 
-    VALUE fields_obj = rb_obj_fields(obj, id);
-    RUBY_ASSERT(fields_obj);
     RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
 
     if (shape_id != dest_shape_id) {
@@ -1458,7 +1461,7 @@ vm_setivar(VALUE obj, VALUE val, rb_setivar_cache cache)
             VM_ASSERT(!rb_ractor_shareable_p(obj) || rb_obj_frozen_p(obj));
 
             shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-            shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, cache);
+            shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, shape_id, cache);
             if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
                 break;
             }
@@ -2177,6 +2180,18 @@ const struct rb_callcache *
 rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 {
     const struct rb_callcache *cc;
+
+    VM_ASSERT(!SPECIAL_CONST_P(klass));
+
+    if (RB_BUILTIN_TYPE(klass) == T_NONE) {
+      // If we find a T_NONE here, it's most likely we called CLASS_OF(obj) on a
+      // garbage collected object (the freelist is stored in the class pointer),
+      // but it's possible that just the class was GC'd.
+      // This message intentionally tries to imply the former, but make an
+      // accurate statement for either case.
+      rb_bug("attempted to search method '%s' on a garbage collected object",
+             rb_id2name(vm_ci_mid(ci)));
+    }
 
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 

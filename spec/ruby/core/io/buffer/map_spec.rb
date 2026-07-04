@@ -163,10 +163,17 @@ describe "IO::Buffer.map" do
       it "is undefined behavior if size is larger than file size"
     end
 
-    ruby_version_is "4.0" do
+    ruby_version_is "4.0"..."4.1" do
       it "raises ArgumentError if size is larger than file size" do
         @file = open_fixture
         -> { IO::Buffer.map(@file, 8192) }.should.raise(ArgumentError, "Size can't be larger than file size!")
+      end
+    end
+
+    ruby_version_is "4.1" do
+      it "raises ArgumentError if size is larger than file size" do
+        @file = open_fixture
+        -> { IO::Buffer.map(@file, 8192) }.should.raise(ArgumentError, "Size (8192) can't be larger than file size (#{@file.size})")
       end
     end
   end
@@ -233,10 +240,22 @@ describe "IO::Buffer.map" do
       it "is undefined behavior if offset+size is larger than file size"
     end
 
-    ruby_version_is "4.0" do
+    ruby_version_is "4.0"..."4.1" do
       it "raises ArgumentError if offset+size is larger than file size" do
         @file = open_big_file_fixture
         -> { IO::Buffer.map(@file, 17, IO::Buffer::PAGE_SIZE) }.should.raise(ArgumentError, "Offset too large!")
+      ensure
+        # Windows requires the file to be closed before deletion.
+        @file.close unless @file.closed?
+      end
+    end
+
+    ruby_version_is "4.1" do
+      it "raises ArgumentError if offset+size is larger than file size" do
+        @file = open_big_file_fixture
+        size = 17
+        maximum_page_size = 0
+        -> { IO::Buffer.map(@file, size, IO::Buffer::PAGE_SIZE) }.should.raise(ArgumentError, "Offset (#{IO::Buffer::PAGE_SIZE}) can't be larger than #{maximum_page_size} for requested size (#{size})")
       ensure
         # Windows requires the file to be closed before deletion.
         @file.close unless @file.closed?
@@ -249,10 +268,17 @@ describe "IO::Buffer.map" do
       -> { IO::Buffer.map(@file, 4, nil) }.should.raise(TypeError, /no implicit conversion/)
     end
 
-    ruby_version_is "4.0" do
+    ruby_version_is "4.0"..."4.1" do
       it "raises ArgumentError if offset is negative" do
         @file = open_fixture
         -> { IO::Buffer.map(@file, 4, -1) }.should.raise(ArgumentError, "Offset can't be negative!")
+      end
+    end
+
+    ruby_version_is "4.1" do
+      it "raises ArgumentError if offset is negative" do
+        @file = open_fixture
+        -> { IO::Buffer.map(@file, 4, -1) }.should.raise(ArgumentError, "Offset (-1) can't be negative!")
       end
     end
   end

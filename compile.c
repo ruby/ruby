@@ -3149,41 +3149,56 @@ find_destination(INSN *i)
 static int
 remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
-    LINK_ELEMENT *first = i, *end;
+    LINK_ELEMENT *first = i, *end, *scan;
     int *unref_counts = 0, nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
 
     if (!i) return 0;
     unref_counts = ALLOCA_N(int, nlabels);
     MEMZERO(unref_counts, int, nlabels);
-    end = i;
+
+    scan = i;
     do {
         LABEL *lab;
-        if (IS_INSN(i)) {
-            if (IS_INSN_ID(i, leave)) {
-                end = i;
+        if (IS_INSN(scan)) {
+            if (IS_INSN_ID(scan, leave)) {
                 break;
             }
-            else if ((lab = find_destination((INSN *)i)) != 0) {
+            else if ((lab = find_destination((INSN *)scan)) != 0) {
                 unref_counts[lab->label_no]++;
             }
         }
-        else if (IS_LABEL(i)) {
-            lab = (LABEL *)i;
+        else if (IS_LABEL(scan)) {
+            lab = (LABEL *)scan;
             if (lab->unremovable) return 0;
+        }
+        else if (IS_ADJUST(scan)) {
+            return 0;
+        }
+    } while ((scan = scan->next) != 0);
+
+    end = i;
+    scan = i;
+    do {
+        LABEL *lab;
+        if (IS_INSN(scan)) {
+            if (IS_INSN_ID(scan, leave)) {
+                end = scan;
+                break;
+            }
+        }
+        else if (IS_LABEL(scan)) {
+            lab = (LABEL *)scan;
             if (lab->refcnt > unref_counts[lab->label_no]) {
-                if (i == first) return 0;
+                if (scan == first) return 0;
                 break;
             }
             continue;
         }
-        else if (IS_TRACE(i)) {
-            /* do nothing */
-        }
-        else if (IS_ADJUST(i)) {
+        else if (IS_ADJUST(scan)) {
             return 0;
         }
-        end = i;
-    } while ((i = i->next) != 0);
+        end = scan;
+    } while ((scan = scan->next) != 0);
     i = first;
     do {
         if (IS_INSN(i)) {
@@ -3365,6 +3380,22 @@ ci_argc_set(const rb_iseq_t *iseq, const struct rb_callinfo *ci, int argc)
 }
 
 #define vm_ci_simple(ci) (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE)
+
+static VALUE
+iseq_reg_compile(rb_iseq_t *iseq, VALUE str, int options, const char *sourcefile, int sourceline)
+{
+    VALUE errinfo = rb_errinfo();
+    VALUE re = rb_reg_compile(str, options, sourcefile, sourceline);
+    if (NIL_P(re)) {
+        VALUE message = rb_attr_get(rb_errinfo(), idMesg);
+        rb_set_errinfo(errinfo);
+        COMPILE_ERROR(iseq, sourceline, "%" PRIsVALUE, message);
+    }
+    else {
+        RB_OBJ_SET_SHAREABLE(re);
+    }
+    return re;
+}
 
 static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
@@ -3937,16 +3968,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 int opt = (int)FIX2LONG(OPERAND_AT(next, 0));
                 VALUE path = rb_iseq_path(iseq);
                 int line = iobj->insn_info.line_no;
-                VALUE errinfo = rb_errinfo();
-                VALUE re = rb_reg_compile(src, opt, RSTRING_PTR(path), line);
-                if (NIL_P(re)) {
-                    VALUE message = rb_attr_get(rb_errinfo(), idMesg);
-                    rb_set_errinfo(errinfo);
-                    COMPILE_ERROR(iseq, line, "%" PRIsVALUE, message);
-                }
-                else {
-                    RB_OBJ_SET_SHAREABLE(re);
-                }
+                VALUE re = iseq_reg_compile(iseq, src, opt, RSTRING_PTR(path), line);
+                /* The folded operand is a Regexp, so the instruction must be
+                 * putobject: dupstring/dupchilledstring would resurrect the
+                 * Regexp as a String at run time (e.g. for a /o regexp whose
+                 * interpolation folds to a constant, such as /#{"a"}/o). */
+                iobj->insn_id = BIN(putobject);
                 RB_OBJ_WRITE(iseq, &OPERAND_AT(iobj, 0), re);
                 ELEM_REMOVE(iobj->link.next);
             }
@@ -4330,7 +4357,9 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
         INSN *niobj = (INSN *)iobj->link.next;
         if ((IS_INSN_ID(niobj, getlocal) ||
              IS_INSN_ID(niobj, getinstancevariable) ||
-             IS_INSN_ID(niobj, putself)) &&
+             IS_INSN_ID(niobj, putself) ||
+             IS_INSN_ID(niobj, putobject) ||
+             IS_INSN_ID(niobj, putnil)) &&
             IS_NEXT_INSN_ID(&niobj->link, send)) {
 
             LINK_ELEMENT *sendobj = &(niobj->link); // Below we call ->next;
@@ -4779,8 +4808,7 @@ compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     if (!RNODE_DREGX(node)->nd_next) {
         if (!popped) {
             VALUE src = rb_node_dregx_string_val(node);
-            VALUE match = rb_reg_compile(src, cflag, NULL, 0);
-            RB_OBJ_SET_SHAREABLE(match);
+            VALUE match = iseq_reg_compile(iseq, src, cflag, NULL, 0);
             ADD_INSN1(ret, node, putobject, match);
             RB_OBJ_WRITTEN(iseq, Qundef, match);
         }
@@ -12371,7 +12399,7 @@ static const rb_data_type_t labels_wrapper_type = {
         .dmark = (RUBY_DATA_FUNC)rb_mark_set,
         .dfree = (RUBY_DATA_FUNC)st_free_table,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 void
@@ -12632,7 +12660,7 @@ static const rb_data_type_t pinned_list_type = {
         RUBY_DEFAULT_FREE,
         NULL, // No external memory to report,
     },
-    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -14816,7 +14844,7 @@ ibf_dump_memsize(const void *ptr)
 static const rb_data_type_t ibf_dump_type = {
     "ibf_dump",
     {ibf_dump_mark, ibf_dump_free, ibf_dump_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
 static void
@@ -15053,7 +15081,7 @@ ibf_loader_memsize(const void *ptr)
 static const rb_data_type_t ibf_load_type = {
     "ibf_loader",
     {ibf_loader_mark, ibf_loader_free, ibf_loader_memsize,},
-    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 const rb_iseq_t *

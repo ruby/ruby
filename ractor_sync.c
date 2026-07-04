@@ -36,7 +36,7 @@ static const rb_data_type_t ractor_port_data_type = {
         NULL, // memsize
         NULL, // update
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_EMBEDDABLE,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_EMBEDDABLE,
 };
 
 static st_data_t
@@ -144,13 +144,27 @@ static VALUE
 ractor_port_closed_p(rb_execution_context_t *ec, VALUE self)
 {
     const struct ractor_port *rp = RACTOR_PORT_PTR(self);
+    rb_ractor_t *r = rp->r;
+    bool closed;
 
-    if (ractor_closed_port_p(ec, rp->r, rp)) {
-        return Qtrue;
+    if (rb_ec_ractor_ptr(ec) == r) {
+        /* The owner's threads are serialized by the ractor GVL, so the ports
+         * table can't change under this lookup. */
+        closed = ractor_closed_port_p(ec, r, rp);
     }
     else {
-        return Qfalse;
+        /* A foreign Ractor races the owner's st_insert/st_delete on the ports
+         * table; take the lock like every other foreign reader. ractor_closed_port_p
+         * asserts the lock is held for foreign access, and Port#closed? was the
+         * only path reaching it without the lock. */
+        RACTOR_LOCK(r);
+        {
+            closed = ractor_closed_port_p(ec, r, rp);
+        }
+        RACTOR_UNLOCK(r);
     }
+
+    return closed ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -1255,7 +1269,7 @@ static const rb_data_type_t ractor_selector_data_type = {
         ractor_selector_memsize,
         NULL, // update
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static struct ractor_selector *

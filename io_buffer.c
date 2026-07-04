@@ -20,6 +20,7 @@
 #include "internal/numeric.h"
 #include "internal/string.h"
 #include "internal/io.h"
+#include "internal/io_buffer.h"
 
 VALUE rb_cIOBuffer;
 VALUE rb_eIOBufferLockedError;
@@ -332,8 +333,16 @@ static const rb_data_type_t rb_io_buffer_type = {
         .dcompact = rb_io_buffer_type_compact,
     },
     .data = NULL,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
+
+static struct rb_io_buffer *
+get_io_buffer(VALUE self)
+{
+    struct rb_io_buffer *buffer;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    return buffer;
+}
 
 static inline enum rb_io_buffer_flags
 io_buffer_extract_flags(VALUE argument)
@@ -429,8 +438,7 @@ io_buffer_default_length(const struct rb_io_buffer *buffer, size_t offset)
 static inline struct rb_io_buffer *
 io_buffer_extract_length_offset(VALUE self, int argc, VALUE argv[], size_t *length, size_t *offset)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     if (argc >= 2 && !NIL_P(argv[1])) {
         *offset = io_buffer_extract_offset(argv[1]);
@@ -461,8 +469,7 @@ io_buffer_extract_length_offset(VALUE self, int argc, VALUE argv[], size_t *leng
 static inline struct rb_io_buffer *
 io_buffer_extract_offset_length(VALUE self, int argc, VALUE argv[], size_t *offset, size_t *length)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     if (argc >= 1 && !NIL_P(argv[0])) {
         *offset = io_buffer_extract_offset(argv[0]);
@@ -498,8 +505,7 @@ static VALUE io_buffer_for_make_instance(VALUE klass, VALUE string, enum rb_io_b
 {
     VALUE instance = rb_io_buffer_type_allocate(klass);
 
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(instance);
 
     flags |= RB_IO_BUFFER_EXTERNAL;
 
@@ -549,6 +555,105 @@ io_buffer_for_yield_instance_ensure(VALUE _arguments)
     }
 
     return Qnil;
+}
+
+struct io_buffer_for_callback_arguments {
+    VALUE klass;
+    VALUE string;
+    VALUE instance;
+    enum rb_io_buffer_flags flags;
+    int locked;
+    VALUE (*callback)(VALUE, VALUE);
+    VALUE argument;
+};
+
+static VALUE
+io_buffer_for_callback_call(VALUE _arguments)
+{
+    struct io_buffer_for_callback_arguments *arguments = (struct io_buffer_for_callback_arguments *)_arguments;
+
+    arguments->instance = io_buffer_for_make_instance(arguments->klass, arguments->string, arguments->flags);
+
+    if (!RB_OBJ_FROZEN(arguments->string)) {
+        rb_str_locktmp(arguments->string);
+        arguments->locked = 1;
+    }
+
+    return arguments->callback(arguments->instance, arguments->argument);
+}
+
+static VALUE
+io_buffer_for_callback_ensure(VALUE _arguments)
+{
+    struct io_buffer_for_callback_arguments *arguments = (struct io_buffer_for_callback_arguments *)_arguments;
+
+    if (arguments->instance != Qnil) {
+        rb_io_buffer_free(arguments->instance);
+    }
+
+    if (arguments->locked) {
+        rb_str_unlocktmp(arguments->string);
+    }
+
+    return Qnil;
+}
+
+VALUE
+rb_io_buffer_for_reading(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE), VALUE argument)
+{
+    if (rb_obj_is_kind_of(string_or_buffer, rb_cIOBuffer)) {
+        return callback(string_or_buffer, argument);
+    }
+    else if (RB_TYPE_P(string_or_buffer, T_STRING)) {
+        StringValue(string_or_buffer);
+        struct io_buffer_for_callback_arguments arguments = {
+            .klass = rb_cIOBuffer,
+            .string = string_or_buffer,
+            .instance = Qnil,
+            .flags = RB_IO_BUFFER_READONLY,
+            .locked = 0,
+            .callback = callback,
+            .argument = argument,
+        };
+        return rb_ensure(io_buffer_for_callback_call, (VALUE)&arguments,
+                         io_buffer_for_callback_ensure, (VALUE)&arguments);
+    }
+    else {
+        rb_raise(rb_eTypeError, "expected String or IO::Buffer, not %"PRIsVALUE,
+                 rb_obj_class(string_or_buffer));
+    }
+}
+
+/* Forward declaration: rb_io_buffer_readonly_p is defined later in this file. */
+int rb_io_buffer_readonly_p(VALUE self);
+
+VALUE
+rb_io_buffer_for_writing(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE), VALUE argument)
+{
+    if (rb_obj_is_kind_of(string_or_buffer, rb_cIOBuffer)) {
+        if (rb_io_buffer_readonly_p(string_or_buffer)) {
+            rb_raise(rb_eArgError, "buffer is read-only");
+        }
+        return callback(string_or_buffer, argument);
+    }
+    else if (RB_TYPE_P(string_or_buffer, T_STRING)) {
+        StringValue(string_or_buffer);
+        struct io_buffer_for_callback_arguments arguments = {
+            .klass = rb_cIOBuffer,
+            .string = string_or_buffer,
+            .instance = Qnil,
+            .flags = 0,
+            .locked = 0,
+            .callback = callback,
+            .argument = argument,
+        };
+        return rb_ensure(io_buffer_for_callback_call, (VALUE)&arguments,
+                         io_buffer_for_callback_ensure, (VALUE)&arguments);
+    }
+    else {
+        rb_raise(rb_eTypeError, "expected String or IO::Buffer, not %"PRIsVALUE,
+                 rb_obj_class(string_or_buffer));
+    }
 }
 
 /*
@@ -645,8 +750,7 @@ rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags)
 {
     VALUE instance = rb_io_buffer_type_allocate(rb_cIOBuffer);
 
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(instance);
 
     io_buffer_initialize(instance, buffer, base, size, flags, Qnil);
 
@@ -658,8 +762,7 @@ rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags
 {
     VALUE instance = rb_io_buffer_type_allocate(rb_cIOBuffer);
 
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(instance);
 
     int descriptor = rb_io_descriptor(io);
 
@@ -737,7 +840,11 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
             rb_raise(rb_eArgError, "Size can't be zero!");
         }
         if (UNLIKELY(size > (size_t)file_size)) {
-            rb_raise(rb_eArgError, "Size can't be larger than file size!");
+            rb_raise(rb_eArgError,
+                     "Size (%" PRIuSIZE ") can't be larger than "
+                     "file size (%" PRIuSIZE ")",
+                     size,
+                     (size_t)file_size);
         }
     }
     else {
@@ -750,17 +857,32 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
     if (argc >= 3) {
         offset = NUM2OFFT(argv[2]);
         if (UNLIKELY(offset < 0)) {
-            rb_raise(rb_eArgError, "Offset can't be negative!");
+            rb_raise(rb_eArgError,
+                     "Offset (%" PRIsVALUE ") can't be negative!",
+                     argv[2]);
         }
         if (UNLIKELY(offset >= file_size)) {
-            rb_raise(rb_eArgError, "Offset too large!");
+            rb_raise(rb_eArgError,
+                     "Offset (%" PRIsVALUE ") can't be larger than "
+                     "file size (%" PRIuSIZE ")",
+                     argv[2],
+                     (size_t)file_size);
         }
         if (RB_NIL_P(argv[1])) {
             // Decrease size if it's set from the actual file size:
             size = (size_t)(file_size - offset);
         }
         else if (UNLIKELY((size_t)(file_size - offset) < size)) {
-            rb_raise(rb_eArgError, "Offset too large!");
+            size_t maximum_page_count =
+                (file_size - size) / RUBY_IO_BUFFER_PAGE_SIZE;
+            size_t maximum_offset =
+                RUBY_IO_BUFFER_PAGE_SIZE * maximum_page_count;
+            rb_raise(rb_eArgError,
+                     "Offset (%" PRIsVALUE ") can't be larger than "
+                     "%" PRIuSIZE " for requested size (%" PRIuSIZE ")",
+                     argv[2],
+                     maximum_offset,
+                     size);
         }
     }
 
@@ -812,8 +934,7 @@ rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 2);
 
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     size_t size;
     if (argc > 0) {
@@ -880,8 +1001,7 @@ io_buffer_validate(struct rb_io_buffer *buffer)
 enum rb_io_buffer_flags
 rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     if (io_buffer_validate(buffer)) {
         if (buffer->base) {
@@ -899,8 +1019,8 @@ rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size)
 }
 
 // Internal function for accessing bytes for writing, wil
-static inline void
-io_buffer_get_bytes_for_writing(struct rb_io_buffer *buffer, void **base, size_t *size)
+static void
+io_buffer_validate_for_writing(struct rb_io_buffer *buffer)
 {
     if (buffer->flags & RB_IO_BUFFER_READONLY ||
         (!NIL_P(buffer->source) && OBJ_FROZEN(buffer->source))) {
@@ -910,6 +1030,20 @@ io_buffer_get_bytes_for_writing(struct rb_io_buffer *buffer, void **base, size_t
     if (!io_buffer_validate(buffer)) {
         rb_raise(rb_eIOBufferInvalidatedError, "Buffer is invalid!");
     }
+}
+
+static struct rb_io_buffer *
+get_io_buffer_for_writing(VALUE self)
+{
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+    io_buffer_validate_for_writing(buffer);
+    return buffer;
+}
+
+static inline void
+io_buffer_get_bytes_for_writing(struct rb_io_buffer *buffer, void **base, size_t *size)
+{
+    io_buffer_validate_for_writing(buffer);
 
     if (buffer->base) {
         *base = buffer->base;
@@ -923,18 +1057,23 @@ io_buffer_get_bytes_for_writing(struct rb_io_buffer *buffer, void **base, size_t
 void
 rb_io_buffer_get_bytes_for_writing(VALUE self, void **base, size_t *size)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     io_buffer_get_bytes_for_writing(buffer, base, size);
 }
 
 static void
-io_buffer_get_bytes_for_reading(struct rb_io_buffer *buffer, const void **base, size_t *size)
+io_buffer_validate_for_reading(struct rb_io_buffer *buffer)
 {
     if (!io_buffer_validate(buffer)) {
         rb_raise(rb_eIOBufferInvalidatedError, "Buffer has been invalidated!");
     }
+}
+
+static void
+io_buffer_get_bytes_for_reading(struct rb_io_buffer *buffer, const void **base, size_t *size)
+{
+    io_buffer_validate_for_reading(buffer);
 
     if (buffer->base) {
         *base = buffer->base;
@@ -948,8 +1087,7 @@ io_buffer_get_bytes_for_reading(struct rb_io_buffer *buffer, const void **base, 
 void
 rb_io_buffer_get_bytes_for_reading(VALUE self, const void **base, size_t *size)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     io_buffer_get_bytes_for_reading(buffer, base, size);
 }
@@ -966,8 +1104,7 @@ rb_io_buffer_get_bytes_for_reading(VALUE self, const void **base, size_t *size)
 VALUE
 rb_io_buffer_to_s(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     VALUE result = rb_str_new_cstr("#<");
 
@@ -1101,8 +1238,7 @@ io_buffer_hexdump(VALUE string, size_t width, const char *base, size_t length, s
 VALUE
 rb_io_buffer_inspect(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     VALUE result = rb_io_buffer_to_s(self);
 
@@ -1135,8 +1271,7 @@ rb_io_buffer_inspect(VALUE self)
 VALUE
 rb_io_buffer_size(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     return SIZET2NUM(buffer->size);
 }
@@ -1152,8 +1287,7 @@ rb_io_buffer_size(VALUE self)
 static VALUE
 rb_io_buffer_valid_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     return RBOOL(io_buffer_validate(buffer));
 }
@@ -1175,8 +1309,7 @@ rb_io_buffer_valid_p(VALUE self)
 static VALUE
 rb_io_buffer_null_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     return RBOOL(buffer->base == NULL);
 }
@@ -1191,8 +1324,7 @@ rb_io_buffer_null_p(VALUE self)
 static VALUE
 rb_io_buffer_empty_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     return RBOOL(buffer->size == 0);
 }
@@ -1211,8 +1343,7 @@ rb_io_buffer_empty_p(VALUE self)
 static VALUE
 rb_io_buffer_external_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     return RBOOL(buffer->flags & RB_IO_BUFFER_EXTERNAL);
 }
@@ -1236,8 +1367,7 @@ rb_io_buffer_external_p(VALUE self)
 static VALUE
 rb_io_buffer_internal_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     return RBOOL(buffer->flags & RB_IO_BUFFER_INTERNAL);
 }
@@ -1258,8 +1388,7 @@ rb_io_buffer_internal_p(VALUE self)
 static VALUE
 rb_io_buffer_mapped_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     return RBOOL(buffer->flags & RB_IO_BUFFER_MAPPED);
 }
@@ -1290,8 +1419,7 @@ rb_io_buffer_mapped_p(VALUE self)
 static VALUE
 rb_io_buffer_shared_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     return RBOOL(buffer->flags & RB_IO_BUFFER_SHARED);
 }
@@ -1313,8 +1441,7 @@ rb_io_buffer_shared_p(VALUE self)
 static VALUE
 rb_io_buffer_locked_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     return RBOOL(buffer->flags & RB_IO_BUFFER_LOCKED);
 }
@@ -1344,8 +1471,7 @@ rb_io_buffer_locked_p(VALUE self)
 static VALUE
 rb_io_buffer_private_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     return RBOOL(buffer->flags & RB_IO_BUFFER_PRIVATE);
 }
@@ -1353,8 +1479,7 @@ rb_io_buffer_private_p(VALUE self)
 int
 rb_io_buffer_readonly_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     return buffer->flags & RB_IO_BUFFER_READONLY;
 }
@@ -1373,21 +1498,29 @@ io_buffer_readonly_p(VALUE self)
     return RBOOL(rb_io_buffer_readonly_p(self));
 }
 
-static void
-io_buffer_lock(struct rb_io_buffer *buffer)
+static int
+io_buffer_try_lock(struct rb_io_buffer *buffer)
 {
     if (buffer->flags & RB_IO_BUFFER_LOCKED) {
-        rb_raise(rb_eIOBufferLockedError, "Buffer already locked!");
+        return 0;
     }
 
     buffer->flags |= RB_IO_BUFFER_LOCKED;
+    return 1;
+}
+
+static void
+io_buffer_lock(struct rb_io_buffer *buffer)
+{
+    if (!io_buffer_try_lock(buffer)) {
+        rb_raise(rb_eIOBufferLockedError, "Buffer already locked!");
+    }
 }
 
 VALUE
 rb_io_buffer_lock(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     io_buffer_lock(buffer);
 
@@ -1407,8 +1540,7 @@ io_buffer_unlock(struct rb_io_buffer *buffer)
 VALUE
 rb_io_buffer_unlock(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     io_buffer_unlock(buffer);
 
@@ -1418,8 +1550,7 @@ rb_io_buffer_unlock(VALUE self)
 int
 rb_io_buffer_try_unlock(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     if (buffer->flags & RB_IO_BUFFER_LOCKED) {
         buffer->flags &= ~RB_IO_BUFFER_LOCKED;
@@ -1432,8 +1563,7 @@ rb_io_buffer_try_unlock(VALUE self)
 static VALUE
 rb_io_buffer_locked_ensure(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     buffer->flags &= ~RB_IO_BUFFER_LOCKED;
 
@@ -1473,8 +1603,7 @@ rb_io_buffer_locked_ensure(VALUE self)
 VALUE
 rb_io_buffer_locked(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     if (buffer->flags & RB_IO_BUFFER_LOCKED) {
         rb_raise(rb_eIOBufferLockedError, "Buffer already locked!");
@@ -1513,8 +1642,7 @@ rb_io_buffer_locked(VALUE self)
 VALUE
 rb_io_buffer_free(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     if (buffer->flags & RB_IO_BUFFER_LOCKED) {
         rb_raise(rb_eIOBufferLockedError, "Buffer is locked!");
@@ -1527,8 +1655,7 @@ rb_io_buffer_free(VALUE self)
 
 VALUE rb_io_buffer_free_locked(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     io_buffer_unlock(buffer);
     io_buffer_free(buffer);
@@ -1548,6 +1675,8 @@ size_sum_is_bigger_than(size_t a, size_t b, size_t x)
 static inline void
 io_buffer_validate_range(struct rb_io_buffer *buffer, size_t offset, size_t length)
 {
+    io_buffer_validate_for_reading(buffer);
+
     if (size_sum_is_bigger_than(offset, length, buffer->size)) {
         rb_raise(rb_eArgError, "Specified offset+length is bigger than the buffer size!");
     }
@@ -1602,8 +1731,7 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
     io_buffer_validate_range(buffer, offset, length);
 
     VALUE instance = rb_io_buffer_type_allocate(rb_class_of(self));
-    struct rb_io_buffer *slice = NULL;
-    TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, slice);
+    struct rb_io_buffer *slice = get_io_buffer(instance);
 
     slice->flags |= (buffer->flags & RB_IO_BUFFER_READONLY);
     slice->base = (char*)buffer->base + offset;
@@ -1702,8 +1830,7 @@ io_buffer_slice(int argc, VALUE *argv, VALUE self)
 VALUE
 rb_io_buffer_transfer(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     if (buffer->flags & RB_IO_BUFFER_LOCKED) {
         rb_raise(rb_eIOBufferLockedError, "Cannot transfer ownership of locked buffer!");
@@ -1749,8 +1876,9 @@ io_buffer_resize_copy(VALUE self, struct rb_io_buffer *buffer, size_t size)
 void
 rb_io_buffer_resize(VALUE self, size_t size)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    io_buffer_validate_for_reading(buffer);
 
     if (buffer->flags & RB_IO_BUFFER_LOCKED) {
         rb_raise(rb_eIOBufferLockedError, "Cannot resize locked buffer!");
@@ -1954,6 +2082,10 @@ ruby_swap128_int(rb_int128_t x)
     return conversion.int128;
 }
 
+#define IO_BUFFER_VALIDATE_TYPE_FOR_WRITING(buffer, base, size, offset, type) \
+    (io_buffer_get_bytes_for_writing(buffer, &(base), &(size)), \
+     io_buffer_validate_type(size, offset, sizeof(type)))
+
 #define IO_BUFFER_DECLARE_TYPE(name, type, endian, wrap, unwrap, swap) \
 static ID RB_IO_BUFFER_DATA_TYPE_##name; \
 \
@@ -1969,10 +2101,12 @@ io_buffer_read_##name(const void* base, size_t size, size_t *offset) \
 } \
 \
 static void \
-io_buffer_write_##name(const void* base, size_t size, size_t *offset, VALUE _value) \
+io_buffer_write_##name(struct rb_io_buffer* buffer, size_t *offset, VALUE _value) \
 { \
-    io_buffer_validate_type(size, *offset, sizeof(type)); \
+    void* base; size_t size; \
+    IO_BUFFER_VALIDATE_TYPE_FOR_WRITING(buffer, base, size, *offset, type); \
     type value = unwrap(_value); \
+    IO_BUFFER_VALIDATE_TYPE_FOR_WRITING(buffer, base, size, *offset, type); \
     if (endian != RB_IO_BUFFER_HOST_ENDIAN) value = swap(value); \
     memcpy((char*)base + *offset, &value, sizeof(type)); \
     *offset += sizeof(type); \
@@ -2042,6 +2176,15 @@ io_buffer_buffer_type_size(ID buffer_type)
     rb_raise(rb_eArgError, "Invalid type name!");
 }
 
+static inline ID
+io_buffer_type_id(VALUE name)
+{
+    Check_Type(name, T_SYMBOL);
+    if (!STATIC_SYM_P(name)) return 0;
+    return rb_sym2id(name);
+}
+#define TYPE_ID(name) io_buffer_type_id(name)
+
 /*
  *  call-seq:
  *    size_of(buffer_type) -> byte size
@@ -2058,12 +2201,12 @@ io_buffer_size_of(VALUE klass, VALUE buffer_type)
     if (RB_TYPE_P(buffer_type, T_ARRAY)) {
         size_t total = 0;
         for (long i = 0; i < RARRAY_LEN(buffer_type); i++) {
-            total += io_buffer_buffer_type_size(RB_SYM2ID(RARRAY_AREF(buffer_type, i)));
+            total += io_buffer_buffer_type_size(TYPE_ID(RARRAY_AREF(buffer_type, i)));
         }
         return SIZET2NUM(total);
     }
     else {
-        return SIZET2NUM(io_buffer_buffer_type_size(RB_SYM2ID(buffer_type)));
+        return SIZET2NUM(io_buffer_buffer_type_size(TYPE_ID(buffer_type)));
     }
 }
 
@@ -2150,7 +2293,7 @@ io_buffer_get_value(VALUE self, VALUE type, VALUE _offset)
 
     rb_io_buffer_get_bytes_for_reading(self, &base, &size);
 
-    return rb_io_buffer_get_value(base, size, RB_SYM2ID(type), &offset);
+    return rb_io_buffer_get_value(base, size, TYPE_ID(type), &offset);
 }
 
 /*
@@ -2180,7 +2323,7 @@ io_buffer_get_values(VALUE self, VALUE buffer_types, VALUE _offset)
 
     for (long i = 0; i < RARRAY_LEN(buffer_types); i++) {
         VALUE type = rb_ary_entry(buffer_types, i);
-        VALUE value = rb_io_buffer_get_value(base, size, RB_SYM2ID(type), &offset);
+        VALUE value = rb_io_buffer_get_value(base, size, TYPE_ID(type), &offset);
         rb_ary_push(array, value);
     }
 
@@ -2249,7 +2392,7 @@ io_buffer_each(int argc, VALUE *argv, VALUE self)
 
     ID buffer_type;
     if (argc >= 1) {
-        buffer_type = RB_SYM2ID(argv[0]);
+        buffer_type = TYPE_ID(argv[0]);
     }
     else {
         buffer_type = RB_IO_BUFFER_DATA_TYPE_U8;
@@ -2287,7 +2430,7 @@ io_buffer_values(int argc, VALUE *argv, VALUE self)
 
     ID buffer_type;
     if (argc >= 1) {
-        buffer_type = RB_SYM2ID(argv[0]);
+        buffer_type = TYPE_ID(argv[0]);
     }
     else {
         buffer_type = RB_IO_BUFFER_DATA_TYPE_U8;
@@ -2347,9 +2490,10 @@ io_buffer_each_byte(int argc, VALUE *argv, VALUE self)
 }
 
 static inline void
-rb_io_buffer_set_value(const void* base, size_t size, ID buffer_type, size_t *offset, VALUE value)
+rb_io_buffer_set_value(struct rb_io_buffer *buffer, VALUE buffer_type, size_t *offset, VALUE value)
 {
-#define IO_BUFFER_SET_VALUE(name) if (buffer_type == RB_IO_BUFFER_DATA_TYPE_##name) {io_buffer_write_##name(base, size, offset, value); return;}
+    ID type = TYPE_ID(buffer_type);
+#define IO_BUFFER_SET_VALUE(name) if (type == RB_IO_BUFFER_DATA_TYPE_##name) {io_buffer_write_##name(buffer, offset, value); return;}
     IO_BUFFER_SET_VALUE(U8);
     IO_BUFFER_SET_VALUE(S8);
 
@@ -2381,6 +2525,12 @@ rb_io_buffer_set_value(const void* base, size_t size, ID buffer_type, size_t *of
 
     rb_raise(rb_eArgError, "Invalid type name!");
 }
+
+struct io_buffer_set_value_arguments {
+    struct rb_io_buffer *buffer;
+    size_t offset;
+    VALUE type, value;
+};
 
 /*
  *  call-seq: set_value(type, offset, value) -> offset
@@ -2415,14 +2565,9 @@ rb_io_buffer_set_value(const void* base, size_t size, ID buffer_type, size_t *of
 static VALUE
 io_buffer_set_value(VALUE self, VALUE type, VALUE _offset, VALUE value)
 {
-    void *base;
-    size_t size;
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
     size_t offset = io_buffer_extract_offset(_offset);
-
-    rb_io_buffer_get_bytes_for_writing(self, &base, &size);
-
-    rb_io_buffer_set_value(base, size, RB_SYM2ID(type), &offset, value);
-
+    rb_io_buffer_set_value(buffer, type, &offset, value);
     return SIZET2NUM(offset);
 }
 
@@ -2443,9 +2588,13 @@ io_buffer_set_value(VALUE self, VALUE type, VALUE _offset, VALUE value)
 static VALUE
 io_buffer_set_values(VALUE self, VALUE buffer_types, VALUE _offset, VALUE values)
 {
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
+
     if (!RB_TYPE_P(buffer_types, T_ARRAY)) {
         rb_raise(rb_eArgError, "Argument buffer_types should be an array!");
     }
+
+    size_t offset = io_buffer_extract_offset(_offset);
 
     if (!RB_TYPE_P(values, T_ARRAY)) {
         rb_raise(rb_eArgError, "Argument values should be an array!");
@@ -2455,16 +2604,10 @@ io_buffer_set_values(VALUE self, VALUE buffer_types, VALUE _offset, VALUE values
         rb_raise(rb_eArgError, "Argument buffer_types and values should have the same length!");
     }
 
-    size_t offset = io_buffer_extract_offset(_offset);
-
-    void *base;
-    size_t size;
-    rb_io_buffer_get_bytes_for_writing(self, &base, &size);
-
     for (long i = 0; i < RARRAY_LEN(buffer_types); i++) {
         VALUE type = rb_ary_entry(buffer_types, i);
         VALUE value = rb_ary_entry(values, i);
-        rb_io_buffer_set_value(base, size, RB_SYM2ID(type), &offset, value);
+        rb_io_buffer_set_value(buffer, type, &offset, value);
     }
 
     return SIZET2NUM(offset);
@@ -2579,8 +2722,7 @@ io_buffer_copy_from(struct rb_io_buffer *buffer, const void *source_base, size_t
 static VALUE
 rb_io_buffer_initialize_copy(VALUE self, VALUE source)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     const void *source_base;
     size_t source_size;
@@ -2667,8 +2809,7 @@ io_buffer_copy(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 1, 4);
 
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     VALUE source = argv[0];
     const void *source_base;
@@ -2748,8 +2889,7 @@ io_buffer_set_string(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 1, 4);
 
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     VALUE string = rb_str_to_str(argv[0]);
 
@@ -2764,8 +2904,7 @@ io_buffer_set_string(int argc, VALUE *argv, VALUE self)
 void
 rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     void *base;
     size_t size;
@@ -2953,8 +3092,7 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
         }
     }
 
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     io_buffer_validate_range(buffer, offset, length);
 
@@ -3072,8 +3210,7 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
         }
     }
 
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     io_buffer_validate_range(buffer, offset, length);
 
@@ -3194,8 +3331,7 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
         }
     }
 
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     io_buffer_validate_range(buffer, offset, length);
 
@@ -3306,8 +3442,7 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
         }
     }
 
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     io_buffer_validate_range(buffer, offset, length);
 
@@ -3407,11 +3542,9 @@ memory_and(unsigned char * restrict output, const unsigned char * restrict base,
 static VALUE
 io_buffer_and(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    struct rb_io_buffer *mask_buffer = NULL;
-    TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_buffer);
+    struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
 
     const void *base;
     size_t size;
@@ -3424,8 +3557,7 @@ io_buffer_and(VALUE self, VALUE mask)
     io_buffer_check_mask_size(mask_size);
 
     VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
-    struct rb_io_buffer *output_buffer = NULL;
-    TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_buffer);
+    struct rb_io_buffer *output_buffer = get_io_buffer(output);
 
     memory_and(output_buffer->base, base, size, mask_base, mask_size);
 
@@ -3455,11 +3587,9 @@ memory_or(unsigned char * restrict output, const unsigned char * restrict base, 
 static VALUE
 io_buffer_or(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    struct rb_io_buffer *mask_buffer = NULL;
-    TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_buffer);
+    struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
 
     const void *base;
     size_t size;
@@ -3472,8 +3602,7 @@ io_buffer_or(VALUE self, VALUE mask)
     io_buffer_check_mask_size(mask_size);
 
     VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
-    struct rb_io_buffer *output_buffer = NULL;
-    TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_buffer);
+    struct rb_io_buffer *output_buffer = get_io_buffer(output);
 
     memory_or(output_buffer->base, base, size, mask_base, mask_size);
 
@@ -3503,11 +3632,9 @@ memory_xor(unsigned char * restrict output, const unsigned char * restrict base,
 static VALUE
 io_buffer_xor(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    struct rb_io_buffer *mask_buffer = NULL;
-    TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_buffer);
+    struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
 
     const void *base;
     size_t size;
@@ -3520,8 +3647,7 @@ io_buffer_xor(VALUE self, VALUE mask)
     io_buffer_check_mask_size(mask_size);
 
     VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
-    struct rb_io_buffer *output_buffer = NULL;
-    TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_buffer);
+    struct rb_io_buffer *output_buffer = get_io_buffer(output);
 
     memory_xor(output_buffer->base, base, size, mask_base, mask_size);
 
@@ -3551,16 +3677,14 @@ memory_not(unsigned char * restrict output, const unsigned char * restrict base,
 static VALUE
 io_buffer_not(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     const void *base;
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
     VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
-    struct rb_io_buffer *output_buffer = NULL;
-    TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_buffer);
+    struct rb_io_buffer *output_buffer = get_io_buffer(output);
 
     memory_not(output_buffer->base, base, size);
 
@@ -3612,11 +3736,9 @@ memory_and_inplace(unsigned char * restrict base, size_t size, unsigned char * r
 static VALUE
 io_buffer_and_inplace(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    struct rb_io_buffer *mask_buffer = NULL;
-    TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_buffer);
+    struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
 
     io_buffer_check_mask_size(mask_buffer->size);
     io_buffer_check_overlaps(buffer, mask_buffer);
@@ -3662,11 +3784,9 @@ memory_or_inplace(unsigned char * restrict base, size_t size, unsigned char * re
 static VALUE
 io_buffer_or_inplace(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    struct rb_io_buffer *mask_buffer = NULL;
-    TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_buffer);
+    struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
 
     io_buffer_check_mask_size(mask_buffer->size);
     io_buffer_check_overlaps(buffer, mask_buffer);
@@ -3712,11 +3832,9 @@ memory_xor_inplace(unsigned char * restrict base, size_t size, unsigned char * r
 static VALUE
 io_buffer_xor_inplace(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    struct rb_io_buffer *mask_buffer = NULL;
-    TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_buffer);
+    struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
 
     io_buffer_check_mask_size(mask_buffer->size);
     io_buffer_check_overlaps(buffer, mask_buffer);
@@ -3762,8 +3880,7 @@ memory_not_inplace(unsigned char * restrict base, size_t size)
 static VALUE
 io_buffer_not_inplace(VALUE self)
 {
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     void *base;
     size_t size;

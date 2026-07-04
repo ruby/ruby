@@ -33,6 +33,25 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert package.spec
   end
 
+  def test_class_new_old_format_forwards_security_policy
+    pend "jruby can't require the simple_gem file" if Gem.java_platform?
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
+    require_relative "simple_gem"
+    File.open "old_format.gem", "wb" do |io|
+      io.write SIMPLE_GEM
+    end
+
+    package = Gem::Package.new "old_format.gem", Gem::Security::HighSecurity
+
+    e = assert_raise Gem::Security::Exception do
+      package.verify
+    end
+
+    assert_equal "old format gems do not contain signatures " \
+                 "and cannot be verified",
+                 e.message
+  end
+
   def test_add_checksums
     gem_io = StringIO.new
 
@@ -816,79 +835,100 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
   end
 
-  def test_install_location
+  # The following tests exercise install_location's path resolution and
+  # traversal protection through the real extraction path (extract_tar_gz)
+  # rather than calling the private helper directly. The absolute-path case is
+  # already covered by test_extract_tar_gz_absolute.
+
+  def test_extract_tar_gz_basic_file
     package = Gem::Package.new @gem
 
-    file = "file.rb".dup
-
-    destination = package.install_location file, @destination
-
-    assert_equal File.join(@destination, "file.rb"), destination
-  end
-
-  def test_install_location_absolute
-    package = Gem::Package.new @gem
-
-    e = assert_raise Gem::Package::PathError do
-      package.install_location "/absolute.rb", @destination
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "file.rb", 0o644 do |io|
+        io.write "hi"
+      end
     end
 
-    assert_equal("installing into parent path /absolute.rb of " \
-                 "#{@destination} is not allowed", e.message)
+    package.extract_tar_gz tgz_io, @destination
+
+    extracted = File.join @destination, "file.rb"
+    assert_path_exist extracted
+    assert_equal "hi", File.read(extracted)
   end
 
-  def test_install_location_dots
+  def test_extract_tar_gz_collapses_parent_dots
     package = Gem::Package.new @gem
 
-    file = "file.rb"
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "foo/../bar/file.rb", 0o644 do |io|
+        io.write "hi"
+      end
+    end
 
-    destination = File.join @destination, "foo", "..", "bar"
+    package.extract_tar_gz tgz_io, @destination
 
-    FileUtils.mkdir_p File.join @destination, "foo"
-    FileUtils.mkdir_p File.expand_path destination
-
-    destination = package.install_location file, destination
-
-    # this test only fails on ruby missing File.realpath
-    assert_equal File.join(@destination, "bar", "file.rb"), destination
+    extracted = File.join @destination, "bar", "file.rb"
+    assert_path_exist extracted
+    assert_equal "hi", File.read(extracted)
+    assert_path_not_exist File.join(@destination, "foo")
   end
 
-  def test_install_location_extra_slash
+  def test_extract_tar_gz_collapses_extra_slash
     package = Gem::Package.new @gem
 
-    file = "foo//file.rb".dup
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "foo//file.rb", 0o644 do |io|
+        io.write "hi"
+      end
+    end
 
-    destination = package.install_location file, @destination
+    package.extract_tar_gz tgz_io, @destination
 
-    assert_equal File.join(@destination, "foo", "file.rb"), destination
+    extracted = File.join @destination, "foo", "file.rb"
+    assert_path_exist extracted
+    assert_equal "hi", File.read(extracted)
   end
 
-  def test_install_location_relative
+  def test_extract_tar_gz_rejects_relative_escape
     package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "../relative.rb", 0o644 do |io|
+        io.write "hi"
+      end
+    end
 
     e = assert_raise Gem::Package::PathError do
-      package.install_location "../relative.rb", @destination
+      package.extract_tar_gz tgz_io, @destination
     end
 
     parent = File.expand_path File.join @destination, "../relative.rb"
 
     assert_equal("installing into parent path #{parent} of " \
                  "#{@destination} is not allowed", e.message)
+    assert_path_not_exist parent
   end
 
-  def test_install_location_suffix
+  def test_extract_tar_gz_rejects_suffix_escape
     package = Gem::Package.new @gem
 
     filename = "../#{File.basename(@destination)}suffix.rb"
 
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file filename, 0o644 do |io|
+        io.write "hi"
+      end
+    end
+
     e = assert_raise Gem::Package::PathError do
-      package.install_location filename, @destination
+      package.extract_tar_gz tgz_io, @destination
     end
 
     parent = File.expand_path File.join @destination, filename
 
     assert_equal("installing into parent path #{parent} of " \
                  "#{@destination} is not allowed", e.message)
+    assert_path_not_exist parent
   end
 
   def test_load_spec_from_metadata

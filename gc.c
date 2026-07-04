@@ -209,12 +209,21 @@ rb_gc_event_hook(VALUE obj, rb_event_flag_t event)
 {
     if (LIKELY(!rb_gc_event_hook_required_p(event))) return;
 
-    rb_execution_context_t *ec = rb_gc_get_ec();
-    if (!ec->cfp) return;
+    /* Event hooks run user code in the context of the currently running
+     * thread, so they must use the current EC.  rb_gc_get_ec() may instead
+     * return the GC's snapshot (vm_context.ec, taken at marking), which can
+     * belong to a different thread once lazy sweep is continued from another
+     * thread's allocation; running the hook on it would set trace_arg on the
+     * wrong EC and break get_trace_arg() (GET_EC()->trace_arg would be NULL). */
+    rb_execution_context_t *ec = GET_EC();
 
 #if USE_MODULAR_GC
     bool gc_thread_p = false;
-    if (!GET_EC()) {
+    if (!ec) {
+        /* A dedicated GC thread has no mutator EC: borrow the GC's snapshot and
+         * install it as the current EC so GET_EC() stays consistent inside the
+         * hook (e.g. for get_trace_arg()). */
+        ec = rb_gc_get_ec();
         gc_thread_p = true;
 
 # ifdef RB_THREAD_LOCAL_SPECIFIER
@@ -225,7 +234,9 @@ rb_gc_event_hook(VALUE obj, rb_event_flag_t event)
     }
 #endif
 
-    EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, obj);
+    if (RB_LIKELY(ec->cfp != NULL)) {
+        EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, obj);
+    }
 
 #if USE_MODULAR_GC
     if (gc_thread_p) {
@@ -364,11 +375,11 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
 }
 
 void
-rb_gc_obj_changed_pool(VALUE obj, size_t heap_id)
+rb_gc_obj_changed_slot_size(VALUE obj, size_t slot_size)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
 
-    RBASIC_SET_SHAPE_ID(obj, rb_obj_shape_transition_heap(obj, heap_id));
+    RBASIC_SET_SHAPE_ID_WITH_CAPACITY(obj, rb_obj_shape_transition_capacity(obj, rb_shape_capacity_for_slot_size(slot_size)));
 }
 
 void rb_vm_update_references(void *ptr);
@@ -593,7 +604,6 @@ typedef struct gc_function_map {
     void *(*ractor_cache_alloc)(void *objspace_ptr, void *ractor);
     void (*set_params)(void *objspace_ptr);
     void (*init)(void);
-    size_t *(*heap_sizes)(void *objspace_ptr);
     // Shutdown
     void (*shutdown_free_objects)(void *objspace_ptr);
     void (*objspace_free)(void *objspace_ptr);
@@ -611,9 +621,9 @@ typedef struct gc_function_map {
     VALUE (*stress_get)(void *objspace_ptr);
     struct rb_gc_vm_context *(*get_vm_context)(void *objspace_ptr);
     // Object allocation
-    VALUE (*new_obj)(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size);
+    VALUE (*new_obj)(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size);
     size_t (*obj_slot_size)(VALUE obj);
-    size_t (*heap_id_for_size)(void *objspace_ptr, size_t size);
+    size_t (*size_slot_size)(void *objspace_ptr, size_t size);
     bool (*size_allocatable_p)(size_t size);
     // Malloc
     void *(*malloc)(void *objspace_ptr, size_t size, bool gc_allowed);
@@ -660,7 +670,7 @@ typedef struct gc_function_map {
     const char *(*active_gc_name)(void);
     // Miscellaneous
     struct rb_gc_object_metadata_entry *(*object_metadata)(void *objspace_ptr, VALUE obj);
-    bool (*pointer_to_heap_p)(void *objspace_ptr, const void *ptr);
+    bool (*live_object_p)(void *objspace_ptr, const void *ptr);
     bool (*garbage_object_p)(void *objspace_ptr, VALUE obj);
     void (*set_event_hook)(void *objspace_ptr, const rb_event_flag_t event);
     void (*copy_attributes)(void *objspace_ptr, VALUE dest, VALUE obj);
@@ -772,7 +782,6 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(ractor_cache_alloc);
     load_modular_gc_func(set_params);
     load_modular_gc_func(init);
-    load_modular_gc_func(heap_sizes);
     // Shutdown
     load_modular_gc_func(shutdown_free_objects);
     load_modular_gc_func(objspace_free);
@@ -792,7 +801,7 @@ ruby_modular_gc_init(void)
     // Object allocation
     load_modular_gc_func(new_obj);
     load_modular_gc_func(obj_slot_size);
-    load_modular_gc_func(heap_id_for_size);
+    load_modular_gc_func(size_slot_size);
     load_modular_gc_func(size_allocatable_p);
     // Malloc
     load_modular_gc_func(malloc);
@@ -839,7 +848,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(active_gc_name);
     // Miscellaneous
     load_modular_gc_func(object_metadata);
-    load_modular_gc_func(pointer_to_heap_p);
+    load_modular_gc_func(live_object_p);
     load_modular_gc_func(garbage_object_p);
     load_modular_gc_func(set_event_hook);
     load_modular_gc_func(copy_attributes);
@@ -860,7 +869,6 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_ractor_cache_alloc rb_gc_functions.ractor_cache_alloc
 # define rb_gc_impl_set_params rb_gc_functions.set_params
 # define rb_gc_impl_init rb_gc_functions.init
-# define rb_gc_impl_heap_sizes rb_gc_functions.heap_sizes
 // Shutdown
 # define rb_gc_impl_shutdown_free_objects rb_gc_functions.shutdown_free_objects
 # define rb_gc_impl_objspace_free rb_gc_functions.objspace_free
@@ -880,7 +888,7 @@ ruby_modular_gc_init(void)
 // Object allocation
 # define rb_gc_impl_new_obj rb_gc_functions.new_obj
 # define rb_gc_impl_obj_slot_size rb_gc_functions.obj_slot_size
-# define rb_gc_impl_heap_id_for_size rb_gc_functions.heap_id_for_size
+# define rb_gc_impl_size_slot_size rb_gc_functions.size_slot_size
 # define rb_gc_impl_size_allocatable_p rb_gc_functions.size_allocatable_p
 // Malloc
 # define rb_gc_impl_malloc rb_gc_functions.malloc
@@ -927,7 +935,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_active_gc_name rb_gc_functions.active_gc_name
 // Miscellaneous
 # define rb_gc_impl_object_metadata rb_gc_functions.object_metadata
-# define rb_gc_impl_pointer_to_heap_p rb_gc_functions.pointer_to_heap_p
+# define rb_gc_impl_live_object_p rb_gc_functions.live_object_p
 # define rb_gc_impl_garbage_object_p rb_gc_functions.garbage_object_p
 # define rb_gc_impl_set_event_hook rb_gc_functions.set_event_hook
 # define rb_gc_impl_copy_attributes rb_gc_functions.copy_attributes
@@ -1022,7 +1030,11 @@ rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape
 {
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-    VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, wb_protected, size);
+    size_t actual_alloc_size;
+    VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, wb_protected, size, &actual_alloc_size);
+
+    GC_ASSERT(actual_alloc_size >= size);
+    shape_id = (shape_id & ~SHAPE_ID_CAPACITY_MASK) | rb_shape_id_with_capacity(rb_shape_capacity_for_slot_size(actual_alloc_size));
 
 #if RACTOR_CHECK_MODE
     void rb_ractor_setup_belonging(VALUE obj);
@@ -1066,7 +1078,7 @@ rb_ec_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, size_t siz
     return rb_newobj(ec, klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, true, size);
 }
 
-VALUE
+static VALUE
 rb_newobj_of_with_shape(VALUE klass, VALUE flags, shape_id_t shape_id, size_t size)
 {
     return rb_newobj(GET_EC(), klass, flags, shape_id, true, size);
@@ -1081,7 +1093,7 @@ rb_newobj_of(VALUE klass, VALUE flags, size_t size)
 static
 VALUE class_allocate_complex_instance(VALUE klass, uint32_t capacity)
 {
-    shape_id_t initial_shape_id = rb_shape_id_with_robject_layout(rb_shape_root(rb_gc_heap_id_for_size(sizeof(struct RObject))));
+    shape_id_t initial_shape_id = rb_shape_id_with_robject_layout(0);
     VALUE obj = rb_newobj_of_with_shape(klass, T_OBJECT, initial_shape_id, sizeof(struct RObject));
     rb_obj_init_complex(obj, rb_st_init_numtable_with_size(capacity));
     return obj;
@@ -1094,8 +1106,8 @@ rb_class_allocate_instance(VALUE klass)
     VALUE obj;
 
     // Directly start as COMPLEX if we know we're over the limit.
-    RUBY_ASSERT(rb_shape_tree.max_capacity > 0);
-    if (RB_UNLIKELY(index_tbl_num_entries > rb_shape_tree.max_capacity)) {
+    RUBY_ASSERT(SHAPE_MAX_CAPACITY > 0);
+    if (RB_UNLIKELY(index_tbl_num_entries > SHAPE_MAX_CAPACITY)) {
         obj = class_allocate_complex_instance(klass, index_tbl_num_entries);
     }
     else {
@@ -1106,7 +1118,7 @@ rb_class_allocate_instance(VALUE klass)
 
         // There might be a NEWOBJ tracepoint callback, and it may set fields.
         // So the shape must be passed to `NEWOBJ_OF`.
-        obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_id_with_robject_layout(rb_shape_root(rb_gc_heap_id_for_size(size))), size);
+        obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_id_with_robject_layout(0), size);
 
         #if RUBY_DEBUG
             VALUE *ptr = ROBJECT_FIELDS(obj);
@@ -1182,7 +1194,7 @@ VALUE
 rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type)
 {
     if (RB_DATA_TYPE_EMBEDDABLE_P(type)) {
-        if (!(type->flags & RUBY_TYPED_FREE_IMMEDIATELY)) {
+        if (!(type->flags & (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_THREAD_SAFE_FREE))) {
             rb_raise(rb_eTypeError, "Embeddable TypedData must be freed immediately");
         }
 
@@ -1458,22 +1470,23 @@ rb_data_free(void *objspace, VALUE obj)
 {
     void *data = RTYPEDDATA_GET_DATA(obj);
     if (data) {
-        int free_immediately = false;
-        void (*dfree)(void *);
-
-        free_immediately = (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
-        dfree = RTYPEDDATA_TYPE(obj)->function.dfree;
+        const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+        void (*dfree)(void *) = type->function.dfree;
 
         if (dfree) {
+            bool embedded = RTYPEDDATA_EMBEDDED_P(obj);
+            int free_immediately = (type->flags & (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_THREAD_SAFE_FREE)) != 0;
+            bool free_embeddable_data = RB_DATA_TYPE_EMBEDDABLE_P(type) && !embedded;
+
             if (dfree == RUBY_DEFAULT_FREE) {
-                if (!RTYPEDDATA_EMBEDDED_P(obj)) {
+                if (!embedded) {
                     xfree(data);
                     RB_DEBUG_COUNTER_INC(obj_data_xfree);
                 }
             }
             else if (free_immediately) {
                 (*dfree)(data);
-                if (RTYPEDDATA_EMBEDDABLE_P(obj) && !RTYPEDDATA_EMBEDDED_P(obj)) {
+                if (free_embeddable_data) {
                     xfree(data);
                 }
 
@@ -1806,18 +1819,21 @@ os_obj_of(VALUE of)
 
 /*
  *  call-seq:
- *     ObjectSpace.each_object([module]) {|obj| ... } -> integer
- *     ObjectSpace.each_object([module])              -> an_enumerator
+ *     ObjectSpace.each_object         {|obj| ... } -> integer
+ *     ObjectSpace.each_object(module) {|obj| ... } -> integer
+ *     ObjectSpace.each_object                      -> enumerator
+ *     ObjectSpace.each_object(module)              -> enumerator
  *
- *  Calls the block once for each living, nonimmediate object in this
- *  Ruby process. If <i>module</i> is specified, calls the block
- *  for only those classes or modules that match (or are a subclass of)
- *  <i>module</i>. Returns the number of objects found. Immediate
- *  objects (such as <code>Fixnum</code>s, static <code>Symbol</code>s
- *  <code>true</code>, <code>false</code> and <code>nil</code>) are
- *  never returned.
+ *  Calls the block once for each living, non-immediate object in this Ruby
+ *  process, and returns the number of objects found.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If +module+ is given, calls the block only for objects that are an instance
+ *  of +module+ or one of its subclasses.
+ *
+ *  Immediate objects (such as small integers, static symbols, +true+, +false+,
+ *  and +nil+) are never yielded.
+ *
+ *  With no block given, returns a new Enumerator.
  *
  *     Job = Class.new
  *     jobs = [Job.new, Job.new]
@@ -1828,18 +1844,21 @@ os_obj_of(VALUE of)
  *
  *    #<Job:0x000000011d6cbbf0>
  *    #<Job:0x000000011d6cbc68>
- *     Total count: 2
+ *    Total count: 2
+ *
+ *  Because every live object is visited, this method is mainly useful for
+ *  debugging, profiling, and introspecting a running process.
  *
  *  Due to a current Ractor implementation issue, this method does not yield
- *  Ractor-unshareable objects when the process is in multi-Ractor mode. Multi-ractor
- *  mode is enabled when <code>Ractor.new</code> has been called for the first time.
- *  See https://bugs.ruby-lang.org/issues/19387 for more information.
+ *  Ractor-unshareable objects when the process is in multi-Ractor mode.
+ *  Multi-Ractor mode is enabled when Ractor.new has been called for the first
+ *  time. See https://bugs.ruby-lang.org/issues/19387 for more information.
  *
  *     a = 12345678987654321 # shareable
- *     b = [].freeze # shareable
- *     c = {} # not shareable
+ *     b = [].freeze         # shareable
+ *     c = {}                # not shareable
  *     ObjectSpace.each_object {|x| x } # yields a, b, and c
- *     Ractor.new {} # enter multi-Ractor mode
+ *     Ractor.new {}                    # enter multi-Ractor mode
  *     ObjectSpace.each_object {|x| x } # does not yield c
  *
  */
@@ -2020,12 +2039,6 @@ rb_objspace_garbage_object_p(VALUE obj)
     return !SPECIAL_CONST_P(obj) && rb_gc_impl_garbage_object_p(rb_gc_get_objspace(), obj);
 }
 
-bool
-rb_gc_pointer_to_heap_p(VALUE obj)
-{
-    return rb_gc_impl_pointer_to_heap_p(rb_gc_get_objspace(), (void *)obj);
-}
-
 #define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
 #define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
 static VALUE id2ref_value = 0;
@@ -2175,7 +2188,6 @@ object_id0(VALUE obj)
     id = generate_next_object_id();
     rb_obj_field_set(obj, object_id_shape_id, 0, id);
 
-    RUBY_ASSERT(RBASIC_SHAPE_ID(obj) == object_id_shape_id);
     RUBY_ASSERT(rb_obj_shape_has_id(obj));
 
     if (RB_UNLIKELY(id2ref_tbl)) {
@@ -2874,7 +2886,7 @@ ruby_stack_check(void)
             (func)(objspace, (obj_or_ptr)); \
         } \
         else if (check_obj ? \
-                rb_gc_impl_pointer_to_heap_p(objspace, (const void *)obj) && \
+                rb_gc_impl_live_object_p(objspace, (const void *)obj) && \
                     !rb_gc_impl_garbage_object_p(objspace, obj) : \
                 true) { \
             GC_ASSERT(!rb_gc_impl_during_gc_p(objspace)); \
@@ -3120,8 +3132,6 @@ gc_location_internal(void *objspace, VALUE value)
     if (SPECIAL_CONST_P(value)) {
         return value;
     }
-
-    GC_ASSERT(rb_gc_impl_pointer_to_heap_p(objspace, (void *)value));
 
     return rb_gc_impl_location(objspace, value);
 }
@@ -3575,7 +3585,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         if (BUILTIN_TYPE(obj) == T_ZOMBIE) rb_bug("rb_gc_mark(): %p is T_ZOMBIE", (void *)obj);
         rb_bug("rb_gc_mark(): unknown data type 0x%x(%p) %s",
                BUILTIN_TYPE(obj), (void *)obj,
-               rb_gc_impl_pointer_to_heap_p(objspace, (void *)obj) ? "corrupted object" : "non object");
+               rb_gc_impl_live_object_p(objspace, (void *)obj) ? "corrupted object" : "non object");
     }
 }
 
@@ -3704,10 +3714,14 @@ rb_gc_ractor_cache_free(void *cache)
 void
 rb_gc_register_mark_object(VALUE obj)
 {
-    if (!rb_gc_impl_pointer_to_heap_p(rb_gc_get_objspace(), (void *)obj))
-        return;
-
-    rb_vm_register_global_object(obj);
+    /* rb_gc_impl_live_object_p() walks objspace->heap_pages.sorted, which
+     * another ractor may mutate while allocating heap pages under the VM lock,
+     * so the lookup must be done under the VM lock as well. */
+    RB_VM_LOCKING() {
+        if (rb_gc_impl_live_object_p(rb_gc_get_objspace(), (void *)obj)) {
+            rb_vm_register_global_object(obj);
+        }
+    }
 }
 
 void
@@ -3748,7 +3762,7 @@ rb_gc_unregister_address(VALUE *addr)
         for (index = 0; index < vm->global_object_list_size; index++) {
             if (addr == vm->global_object_list[index]) {
                 MEMMOVE(
-                    vm->global_object_list[index],
+                    &vm->global_object_list[index],
                     &vm->global_object_list[index + 1],
                     VALUE *,
                     vm->global_object_list_size - index - 1
@@ -3975,9 +3989,9 @@ rb_gc_prepare_heap(void)
 }
 
 size_t
-rb_gc_heap_id_for_size(size_t size)
+rb_gc_size_slot_size(size_t size)
 {
-    return rb_gc_impl_heap_id_for_size(rb_gc_get_objspace(), size);
+    return rb_gc_impl_size_slot_size(rb_gc_get_objspace(), size);
 }
 
 bool
@@ -4690,12 +4704,6 @@ rb_gc_initial_stress_set(VALUE flag)
     initial_stress = flag;
 }
 
-size_t *
-rb_gc_heap_sizes(void)
-{
-    return rb_gc_impl_heap_sizes(rb_gc_get_objspace());
-}
-
 VALUE
 rb_gc_enable(void)
 {
@@ -4936,7 +4944,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
     else {
         // const int age = RVALUE_AGE_GET(obj);
 
-        if (rb_gc_impl_pointer_to_heap_p(rb_gc_get_objspace(), (void *)obj)) {
+        if (rb_gc_impl_live_object_p(rb_gc_get_objspace(), (void *)obj)) {
             APPEND_F("%p %s/", (void *)obj, obj_type_name(obj));
             // TODO: fixme
             // APPEND_F("%p [%d%s%s%s%s%s%s] %s ",
@@ -5216,7 +5224,7 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
     if (SPECIAL_CONST_P(obj)) {
         raw_obj_info(buff, buff_size, obj);
     }
-    else if (!rb_gc_impl_pointer_to_heap_p(objspace, (const void *)obj)) {
+    else if (!rb_gc_impl_live_object_p(objspace, (const void *)obj)) {
         snprintf(buff, buff_size, "out-of-heap:%p", (void *)obj);
     }
 #if 0 // maybe no need to check it?
@@ -5774,24 +5782,6 @@ rb_gc_checking_shareable(void)
  *
  *     Finalizer two on 537763470
  *     Finalizer one on 537763480
- */
-
-/*  Document-class: GC::Profiler
- *
- *  The GC profiler provides access to information on GC runs including time,
- *  length and object space size.
- *
- *  Example:
- *
- *    GC::Profiler.enable
- *
- *    require 'rdoc/rdoc'
- *
- *    GC::Profiler.report
- *
- *    GC::Profiler.disable
- *
- *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
  */
 
 #include "gc.rbinc"

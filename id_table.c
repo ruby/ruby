@@ -349,7 +349,7 @@ const rb_data_type_t rb_managed_id_table_type = {
         .dfree = managed_id_table_free,
         .dsize = managed_id_table_memsize,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static inline struct rb_id_table *
@@ -390,6 +390,10 @@ rb_managed_id_table_dup(VALUE old_table)
 {
     struct rb_id_table *new_tbl;
     VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, RTYPEDDATA_TYPE(old_table), new_tbl);
+    /* A managed id table hangs off VM-global state (e.g. a shape tree's edge
+     * table grows via this dup) and is reachable from every Ractor, so mark it
+     * shareable. */
+    RB_OBJ_SET_SHAREABLE(obj);
     struct rb_id_table *old_tbl = managed_id_table_ptr(old_table);
     rb_id_table_init(new_tbl, old_tbl->num + 1);
     rb_id_table_foreach(old_tbl, managed_id_table_dup_i, new_tbl);
@@ -478,7 +482,7 @@ const rb_data_type_t rb_marked_id_table_type = {
         .dcompact = marked_id_table_compact,
     },
     .parent = &rb_managed_id_table_type,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 VALUE

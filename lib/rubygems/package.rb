@@ -161,7 +161,7 @@ class Gem::Package
     return super unless gem.start
     return super unless gem.start.include? "MD5SUM ="
 
-    Gem::Package::Old.new gem
+    Gem::Package::Old.new gem, security_policy
   end
 
   ##
@@ -510,24 +510,6 @@ EOM
     gz_io.close
   end
 
-  ##
-  # Returns the full path for installing +filename+.
-  #
-  # If +filename+ is not inside +destination_dir+ an exception is raised.
-
-  def install_location(filename, destination_dir) # :nodoc:
-    raise Gem::Package::PathError.new(filename, destination_dir) if
-      filename.start_with? "/"
-
-    destination_dir = File.realpath(destination_dir)
-    destination = File.expand_path(filename, destination_dir)
-
-    raise Gem::Package::PathError.new(destination, destination_dir) unless
-      normalize_path(destination).start_with? normalize_path(destination_dir + "/")
-
-    destination
-  end
-
   if Gem.win_platform?
     def normalize_path(pathname) # :nodoc:
       pathname.downcase
@@ -661,6 +643,24 @@ EOM
   end
 
   private
+
+  ##
+  # Returns the full path for installing +filename+ into +destination_dir+,
+  # which must already be resolved with File.realpath by the caller.
+  #
+  # If +filename+ is not inside +destination_dir+ an exception is raised.
+
+  def install_location(filename, destination_dir) # :nodoc:
+    raise Gem::Package::PathError.new(filename, destination_dir) if
+      filename.start_with? "/"
+
+    destination = File.expand_path(filename, destination_dir)
+
+    raise Gem::Package::PathError.new(destination, destination_dir) unless
+      normalize_path(destination).start_with? normalize_path(destination_dir + "/")
+
+    destination
+  end
 
   ##
   # Verifies the +checksums+ against the +digests+.  This check is not

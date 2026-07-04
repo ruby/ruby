@@ -3,6 +3,31 @@ require 'test/unit'
 require '-test-/postponed_job'
 
 class TestPostponed_job < Test::Unit::TestCase
+  def test_trigger_for_ractor
+    omit 'Ractor not defined' unless defined?(Ractor)
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      require '-test-/postponed_job'
+      Warning[:experimental] = false
+
+      executed_in = []
+      Bug.postponed_job_preregister_for_ractor(executed_in)
+
+      # trigger from a sub-Ractor, targeting the main Ractor
+      r = Ractor.new(Ractor.current) do |main|
+        Bug.postponed_job_trigger_for_ractor(main)
+        :done
+      end
+      assert_equal :done, r.value
+
+      # main picks the job up at one of its next interrupt checks
+      50.times do
+        break unless executed_in.empty?
+        sleep 0.02
+      end
+      assert_equal [Ractor.current], executed_in
+    RUBY
+  end
+
   def test_preregister_and_trigger
     assert_separately([], __FILE__, __LINE__, <<-'RUBY')
       require '-test-/postponed_job'

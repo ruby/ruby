@@ -2,6 +2,7 @@
 #include "internal/gc.h"
 #include "internal/concurrent_set.h"
 #include "ruby/atomic.h"
+#include "ruby/ractor.h"
 #include "vm_sync.h"
 
 #define CONCURRENT_SET_CONTINUATION_BIT ((VALUE)1 << (sizeof(VALUE) * CHAR_BIT - 1))
@@ -91,7 +92,7 @@ static const rb_data_type_t concurrent_set_type = {
         .dsize = concurrent_set_size,
     },
     /* Hack: NOT WB_PROTECTED on purpose (see above) */
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
 VALUE
@@ -102,6 +103,9 @@ rb_concurrent_set_new(const struct rb_concurrent_set_funcs *funcs, int capacity)
     set->funcs = funcs;
     set->entries = ZALLOC_N(struct concurrent_set_entry, capacity);
     set->capacity = capacity;
+    /* The set is reachable from every Ractor (e.g. via C globals such as the
+     * frozen-string and symbol tables), so mark it shareable. */
+    RB_OBJ_SET_SHAREABLE(obj);
     return obj;
 }
 

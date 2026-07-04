@@ -145,11 +145,11 @@ require 'json/common'
 #   # warning: detected duplicate keys in JSON object.
 #   # This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`
 #
-# When set to `+true+`
+# When set to +true+:
 #   # The last value is used.
 #   JSON.parse('{"a": 1, "a":2}') => {"a" => 2}
 #
-# When set to `+false+`, the future default:
+# When set to +false+, the future default:
 #   JSON.parse('{"a": 1, "a":2}') => duplicate key at line 1 column 1 (JSON::ParserError)
 #
 # ---
@@ -181,6 +181,20 @@ require 'json/common'
 #
 # When enabled:
 #   JSON.parse('[1,]', allow_trailing_comma: true) # => [1]
+#
+# ---
+#
+# Option +allow_comments+ (boolean) specifies whether to allow
+# JavaScript style comments (either <tt>// comment</tt> or <tt>/* comment */</tt>);
+# defaults to +false+.
+#
+# When not specified, a deprecation warning is emitted if a comment is encountered.
+#
+# When set to +true+, comments are ignored:
+#   JSON.parse('/* comment */ {"a": 1, "a":2}') # => {"a" => 2}
+#
+# When set to +false+, the future default:
+#   JSON.parse('/* comment */ {"a": 1, "a":2}') # unexpected character: '/' at line 1 column 1 (JSON::ParserError)
 #
 # ---
 #
@@ -394,7 +408,6 @@ require 'json/common'
 #   to be inserted after each \JSON object; defaults to the empty \String, <tt>''</tt>.
 # - Option +indent+ (\String) specifies the string (usually spaces) to be
 #   used for indentation; defaults to the empty \String, <tt>''</tt>;
-#   defaults to the empty \String, <tt>''</tt>;
 #   has no effect unless options +array_nl+ or +object_nl+ specify newlines.
 # - Option +space+ (\String) specifies a string (usually a space) to be
 #   inserted after the colon in each \JSON object's pair;
@@ -402,6 +415,11 @@ require 'json/common'
 # - Option +space_before+ (\String) specifies a string (usually a space) to be
 #   inserted before the colon in each \JSON object's pair;
 #   defaults to the empty \String, <tt>''</tt>.
+# - Option +sort_keys+ (boolean or \Proc) controls whether and how the keys of a
+#   hash are sorted when generating the output; defaults to <tt>false</tt>.
+#   When +true+, keys are sorted lexicographically. When a \Proc, it receives
+#   the entire \Hash and must return a \Hash with its pairs in the desired
+#   order, allowing for arbitrary sort orders.
 #
 # In this example, +obj+ is used first to generate the shortest
 # \JSON data (no whitespace), then again with all formatting options

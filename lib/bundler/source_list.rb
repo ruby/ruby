@@ -140,6 +140,10 @@ module Bundler
       rubygems_sources.each(&:clear_cache)
     end
 
+    def release_resolution_memory!
+      rubygems_sources.each(&:release_resolution_memory!)
+    end
+
     private
 
     def map_sources(replacement_sources)
@@ -168,6 +172,10 @@ module Bundler
       replace_source(replacement_sources, gemfile_source) do |replacement_source|
         # locked sources never include credentials so always prefer remotes from the gemfile
         replacement_source.remotes = gemfile_source.remotes
+
+        # cooldowns are only ever declared in the Gemfile, so carry them over
+        # along with the remotes they apply to
+        replacement_source.remote_cooldowns = gemfile_source.remote_cooldowns
 
         yield replacement_source if block_given?
 

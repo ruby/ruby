@@ -38,7 +38,6 @@ GC_IMPL_FN void rb_gc_impl_objspace_init(void *objspace_ptr);
 GC_IMPL_FN void *rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor);
 GC_IMPL_FN void rb_gc_impl_set_params(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_init(void);
-GC_IMPL_FN size_t *rb_gc_impl_heap_sizes(void *objspace_ptr);
 // Shutdown
 GC_IMPL_FN void rb_gc_impl_shutdown_free_objects(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_objspace_free(void *objspace_ptr);
@@ -56,9 +55,9 @@ GC_IMPL_FN VALUE rb_gc_impl_config_get(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_config_set(void *objspace_ptr, VALUE hash);
 GC_IMPL_FN struct rb_gc_vm_context *rb_gc_impl_get_vm_context(void *objspace_ptr);
 // Object allocation
-GC_IMPL_FN VALUE rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size);
+GC_IMPL_FN VALUE rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size);
 GC_IMPL_FN size_t rb_gc_impl_obj_slot_size(VALUE obj);
-GC_IMPL_FN size_t rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size);
+GC_IMPL_FN size_t rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size);
 GC_IMPL_FN bool rb_gc_impl_size_allocatable_p(size_t size);
 // Malloc
 /*
@@ -117,7 +116,7 @@ GC_IMPL_FN VALUE rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE
 GC_IMPL_FN const char *rb_gc_impl_active_gc_name(void);
 // Miscellaneous
 GC_IMPL_FN struct rb_gc_object_metadata_entry *rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj);
-GC_IMPL_FN bool rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr);
+GC_IMPL_FN bool rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr);
 GC_IMPL_FN bool rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN void rb_gc_impl_set_event_hook(void *objspace_ptr, const rb_event_flag_t event);
 GC_IMPL_FN void rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj);

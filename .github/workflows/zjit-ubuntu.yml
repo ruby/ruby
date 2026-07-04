@@ -26,6 +26,11 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Work around transient crates.io download failures (curl HTTP/2 framing / partial transfer)
+  CARGO_NET_RETRY: 10
+  CARGO_HTTP_MULTIPLEXING: false
+
 jobs:
   lint:
     name: cargo clippy
@@ -41,7 +46,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
@@ -54,13 +59,14 @@ jobs:
       matrix:
         include:
           - test_task: 'check'
-            run_opts: '--zjit-call-threshold=1'
-            specopts: '-T --zjit-call-threshold=1'
-            configure: '--enable-zjit=dev'
-
-          - test_task: 'check'
             run_opts: '--zjit-disable-hir-opt --zjit-call-threshold=1'
             specopts: '-T --zjit-disable-hir-opt -T --zjit-call-threshold=1'
+            configure: '--enable-zjit=dev'
+
+          ## Run with default options (inliner enabled) ##
+          - test_task: 'check'
+            run_opts: '--zjit-call-threshold=1'
+            specopts: '-T --zjit-call-threshold=1'
             configure: '--enable-zjit=dev'
 
             # The optimizer benefits from at least 1 iteration of profiling. Also, many
@@ -68,6 +74,26 @@ jobs:
           - test_task: 'btest'
             run_opts: '--zjit-call-threshold=2'
             configure: '--enable-zjit=dev'
+
+          - test_task: 'test-bundled-gems'
+            configure: '--enable-zjit=dev'
+            run_opts: '--zjit-call-threshold=1'
+
+          ## Run with inliner disabled ##
+          - test_task: 'check'
+            run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=1'
+            specopts: '-T --zjit-inline-threshold=0 -T --zjit-call-threshold=1'
+            configure: '--enable-zjit=dev'
+
+            # The optimizer benefits from at least 1 iteration of profiling. Also, many
+            # regression tests in bootstraptest/test_yjit.rb assume call-threshold=2.
+          - test_task: 'btest'
+            run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=2'
+            configure: '--enable-zjit=dev'
+
+          - test_task: 'test-bundled-gems'
+            configure: '--enable-zjit=dev'
+            run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=1'
 
           - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit.rb
             configure: '--enable-yjit --enable-zjit=dev'
@@ -79,10 +105,6 @@ jobs:
             configure: '--enable-zjit=dev --enable-yjit --with-gcc=clang-16'
             clang_path: '/usr/bin/clang-16'
             runs-on: 'ubuntu-24.04' # for clang-16
-
-          - test_task: 'test-bundled-gems'
-            configure: '--enable-zjit=dev'
-            run_opts: '--zjit-call-threshold=1'
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -106,7 +128,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -114,12 +136,12 @@ jobs:
 
       - uses: ./.github/actions/setup/ubuntu
 
-      - uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f # v1.310.0
+      - uses: ruby/setup-ruby@d45b1a4e94b71acab930e56e79c6aa188764e7f9 # v1.316.0
         with:
           ruby-version: '3.1'
           bundler: none
 
-      - uses: taiki-e/install-action@4bc351f7f2614e48088386e2a0ad917ca3a7e4ba # v2.81.5
+      - uses: taiki-e/install-action@16b05812d776ae1dfaabc8277e421fb6d2506419 # v2.82.7
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
@@ -130,6 +152,7 @@ jobs:
           builddir: build
           makeup: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          bundled-gems-src-cache: ${{ matrix.test_task == 'test-bundled-gems' }}
           # Set fetch-depth: 10 so that Launchable can receive commits information.
           fetch-depth: 10
 
@@ -234,11 +257,14 @@ jobs:
     strategy:
       matrix:
         include:
-          # Test --call-threshold=2 with 2 iterations in total
+          # Test --call-threshold=2 with 2 iterations in total (inlining enabled)
           - ruby_opts: '--zjit-call-threshold=2'
             bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
             configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
-
+          # Test --call-threshold=2 with 2 iterations in total (inlining disabled)
+          - ruby_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=2'
+            bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
+            configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
     runs-on: ubuntu-24.04
 
     if: >-
@@ -250,7 +276,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
@@ -268,7 +294,7 @@ jobs:
       - run: make install
 
       - name: Checkout ruby-bench
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: ruby/ruby-bench
           persist-credentials: false

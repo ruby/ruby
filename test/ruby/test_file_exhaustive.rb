@@ -715,6 +715,28 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_raise(Errno::EEXIST) { File.symlink(utf8_file, utf8_file) }
   end
 
+  def test_symlink_to_relative_directory
+    # A relative target is interpreted relative to the link's directory, not the
+    # current directory.  A relative target pointing at a directory must produce
+    # a directory symlink even when the current directory differs from the link's
+    # directory; otherwise Dir operations on the link fail (Windows).
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      Dir.chdir(tmpdir) do
+        Dir.mkdir("subdir")
+        Dir.mkdir(File.join("subdir", "target"))
+        link = File.join("subdir", "link")
+        begin
+          File.symlink("target", link)
+        rescue NotImplementedError, Errno::EACCES, Errno::EPERM => e
+          omit e.message
+        end
+        assert_file.symlink?(link)
+        assert_file.directory?(link)
+        assert(Dir.exist?(link), "relative directory symlink should be a directory")
+      end
+    end
+  end
+
   def test_utime
     t = Time.local(2000)
     File.utime(t + 1, t + 2, zerofile)
@@ -805,10 +827,11 @@ class TestFileExhaustive < Test::Unit::TestCase
     def test_realpath_mount_point
       vol = IO.popen(["mountvol", DRIVE, "/l"], &:read).strip
       Dir.mkdir(mnt = File.join(@dir, mntpnt = "mntpnt"))
-      system("mountvol", mntpnt, vol, chdir: @dir)
+      err = IO.popen(%W"mountvol #{mntpnt} #{vol}", chdir: @dir, err: %i[child out], &:read)
+      omit err unless $?.success?
       assert_equal(mnt, File.realpath(mnt))
     ensure
-      system("mountvol", mntpnt, "/d", chdir: @dir)
+      system("mountvol", mntpnt, "/d", chdir: @dir, out: IO::NULL, err: IO::NULL)
     end
   end
 

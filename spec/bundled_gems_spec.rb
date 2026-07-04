@@ -92,6 +92,30 @@ RSpec.describe "bundled_gems.rb" do
     expect(err).to include(/-e:18/)
   end
 
+  it "Show warning to contact the author when the require is issued from a gem" do
+    # Install the gem under the system gem path so its require shows up as
+    # coming from `<gem_path>/gems/tinygem-1.0.0`, the same shape as the
+    # childprocess-5.0.0 case the attribution logic targets.
+    gem_dir = system_gem_path("gems/tinygem-1.0.0")
+    build_lib "tinygem", "1.0.0", path: gem_dir do |s|
+      s.write "lib/tinygem.rb", "require 'openssl'"
+    end
+
+    script <<-RUBY
+      gemfile do
+        source "https://rubygems.org"
+        path "#{gem_dir}" do
+          gem "tinygem", "1.0.0"
+        end
+      end
+
+      require "tinygem"
+    RUBY
+
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
+    expect(err).to include("Also please contact the author of tinygem-1.0.0 to request adding openssl into its gemspec.")
+  end
+
   it "Show warning when bundled gems called as dependency" do
     build_lib "activesupport", "7.0.7.2" do |s|
       s.write "lib/active_support/all.rb", "require 'openssl'"
@@ -364,6 +388,12 @@ RSpec.describe "bundled_gems.rb" do
     end
 
     context "with bundle environment" do
+      # Windows has no executable bit or shebang dispatch, so running the
+      # script directly is rejected by bundler as "not executable". Invoke it
+      # through ruby there. What matters here is force_activate's behavior under
+      # the bundle environment, not shebang execution (covered by another spec).
+      let(:exec_command) { Gem.win_platform? ? "exec ruby ./script.rb" : "exec ./script.rb" }
+
       before do
         code = <<-RUBY
           #!/usr/bin/env ruby
@@ -376,13 +406,13 @@ RSpec.describe "bundled_gems.rb" do
 
       it "lockfile is available" do
         bundle "install"
-        bundle "exec ./script.rb"
+        bundle exec_command
 
         expect(err).to include("gem install csv")
       end
 
       it "lockfile is not available" do
-        bundle "exec ./script.rb"
+        bundle exec_command
 
         expect(err).to include("gem install csv")
       end

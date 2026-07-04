@@ -59,12 +59,6 @@
       (LIBRESSL_VERSION_NUMBER >= ((maj << 28) | (min << 20) | (pat << 12)))
 #endif
 
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
-# define OSSL_3_const const
-#else
-# define OSSL_3_const /* const */
-#endif
-
 #if !defined(OPENSSL_NO_ENGINE) && !OSSL_OPENSSL_PREREQ(3, 0, 0)
 # define OSSL_USE_ENGINE
 #endif
@@ -192,6 +186,7 @@ extern VALUE dOSSL;
 #include "ossl_digest.h"
 #include "ossl_engine.h"
 #include "ossl_hmac.h"
+#include "ossl_hpke.h"
 #include "ossl_kdf.h"
 #include "ossl_ns_spki.h"
 #include "ossl_ocsp.h"

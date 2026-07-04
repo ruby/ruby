@@ -24,9 +24,21 @@ module Psych
     # "ambiguity" in the emitted document
 
     def test_all_yaml_1_1_booleans_are_quoted
+      # The YAML 1.2 libfyaml backend does not treat yes/no/on/off as booleans,
+      # so it has no reason to quote them.
+      omit 'YAML 1.1 booleans are not special on the libfyaml backend' if libfyaml?
       yaml_1_1_booleans = %w[y Y yes Yes YES n N no No NO true True TRUE false False FALSE on On ON off Off OFF] # from https://yaml.org/type/bool.html
       yaml_1_1_booleans.each do |boolean|
         assert_match(/"#{boolean}"|'#{boolean}'/, Psych.dump(boolean))
+      end
+    end
+
+    def test_yaml_1_1_booleans_are_not_quoted_on_libfyaml
+      omit 'YAML 1.1 booleans are plain strings on the libfyaml backend' unless libfyaml?
+      %w[yes no on off].each do |boolean|
+        # Unquoted plain scalar, allowing an optional document end marker.
+        assert_match(/\A--- #{boolean}\n(?:\.\.\.\n)?\z/, Psych.dump(boolean))
+        assert_equal boolean, Psych.load(Psych.dump(boolean))
       end
     end
 
@@ -60,6 +72,17 @@ module Psych
       RUBY
     end
 
+    def test_datetime_string_with_tab_separator
+      str = "2023-12-31\t12:00:00"
+      assert_cycle str
+    end
+
+    def test_datetime_string_with_whitespace_separators
+      ["\v", "\r", "\f", " \t", "\t "].each do |sep|
+        assert_cycle "2023-12-31#{sep}12:00:00"
+      end
+    end
+
     def test_plain_when_shorten_than_line_width_and_no_final_line_break
       str = "Lorem ipsum"
       yaml = Psych.dump str, line_width: 12
@@ -75,6 +98,7 @@ module Psych
     end
 
     def test_folded_when_longer_than_line_width_and_with_final_line_break
+      omit 'libfyaml uses a different block chomping indicator' if libfyaml?
       str = "Lorem ipsum dolor sit\n"
       yaml = Psych.dump str, line_width: 12
       assert_match(/---\s*>\n(.*\n){2}\Z/, yaml)
@@ -90,6 +114,7 @@ module Psych
     end
 
     def test_literal_when_inner_and_final_line_break
+      omit 'libfyaml uses a different block chomping indicator' if libfyaml?
       [
         "Lorem ipsum\ndolor\n",
         "Lorem ipsum\nZolor\n",
@@ -180,6 +205,18 @@ string: &70121654388580 !ruby/string
       y = Psych.unsafe_load Psych.dump Y.new.tap {|o| o.val = 1}
       assert_equal Y, y.class
       assert_equal 1, y.val
+    end
+
+    class NotAString
+    end
+
+    def test_string_tag_rejects_non_string_class
+      assert_raise(ArgumentError) do
+        Psych.unsafe_load "--- !ruby/string:#{NotAString} foo\n"
+      end
+      assert_raise(ArgumentError) do
+        Psych.unsafe_load "--- !ruby/string:#{NotAString}\nstr: foo\n"
+      end
     end
 
     def test_string_with_base_60

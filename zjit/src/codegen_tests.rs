@@ -6,11 +6,64 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{rb_zjit_prepare_options, set_call_threshold};
+use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
 use insta::assert_snapshot;
+
+/// Run the Ruby fragment with the inliner enabled with the default inline
+/// threshold for tests. Most inliner tests should use this. `with_inlining_threshold`
+/// exists if you need to customize the inline threshold for a given test.
+#[track_caller]
+fn with_inlining<T>(ruby_fragment: impl FnMut() -> T) -> T {
+    // 30 will compile common, smaller methods while not compiling the whole world.
+    with_inlining_threshold(30, ruby_fragment)
+}
+
+/// Run the Ruby fragment with the inliner enabled with the given inline `threshold`.
+#[track_caller]
+fn with_inlining_threshold<T>(threshold: usize, mut ruby_fragment: impl FnMut() -> T) -> T {
+    with_rubyvm(|| {
+        let old_inline_threshold = get_option!(inline_threshold);
+        let old_call_threshold = unsafe { crate::options::rb_zjit_call_threshold };
+
+        set_inline_threshold(threshold);
+        set_call_threshold(2);
+        let result = ruby_fragment();
+        set_call_threshold(old_call_threshold);
+        set_inline_threshold(old_inline_threshold);
+
+        result
+    })
+}
+
+/// Like `assert_compiles`, but also asserts that the program inlined at least one method
+/// while running. Inliner tests must call the entry method enough times to cross the call
+/// threshold, otherwise the method is never compiled and the test code ends up running in
+/// interpreter. Asserting on `inline_method_count` fails the test in that case.
+#[track_caller]
+fn assert_inlines(program: &str) -> String {
+    let counters = crate::state::ZJITState::get_counters();
+    let inline_count_before = counters.inline_method_count;
+    let result = assert_compiles(program);
+    assert!(counters.inline_method_count > inline_count_before,
+        "expected the program to inline at least one method, but inline_method_count did not increase");
+    result
+}
+
+/// Like `assert_inlines`, but tolerates side exits. Use for inliner tests whose
+/// inlined body legitimately exits at runtime, such as a `break` that unwinds out
+/// of a literal block.
+#[track_caller]
+fn assert_inlines_allowing_exits(program: &str) -> String {
+    let counters = crate::state::ZJITState::get_counters();
+    let inline_count_before = counters.inline_method_count;
+    let result = assert_compiles_allowing_exits(program);
+    assert!(counters.inline_method_count > inline_count_before,
+        "expected the program to inline at least one method, but inline_method_count did not increase");
+    result
+}
 
 #[test]
 fn test_breakpoint_hir_codegen() {
@@ -459,6 +512,35 @@ fn test_getblockparamproxy_polymorphic_none_and_iseq() {
     ");
     assert_contains_opcode("test", YARVINSN_getblockparamproxy);
     assert_snapshot!(assert_compiles("test { 2 }"), @"2");
+}
+
+#[test]
+fn test_getblockparamproxy_proc() {
+    eval("
+        val = proc { 1 }
+        def test(&block)
+          0.then(&block)
+        end
+        test(&val)
+    ");
+    assert_contains_opcode("test", YARVINSN_getblockparamproxy);
+    assert_snapshot!(assert_compiles("val = proc { 2 }; test(&val)"), @"2");
+}
+
+#[test]
+fn test_getblockparamproxy_polymorphic_none_and_iseq_and_proc() {
+    set_call_threshold(4);
+    eval("
+        val = proc { 3 }
+        def test(&block)
+          0.then(&block)
+        end
+        test
+        test { 1 }
+        test(&val)
+    ");
+    assert_contains_opcode("test", YARVINSN_getblockparamproxy);
+    assert_snapshot!(assert_compiles("val = proc { 2 }; test(&val)"), @"2");
 }
 
 #[test]
@@ -1254,6 +1336,69 @@ fn test_invokesuper_to_cfunc_with_too_many_args_exits() {
     "#), @"[1, 2, 3, 4, 5, 6]");
 }
 
+// Repro for the production "Failed to get_opnd(vN)" panic
+// (PriceRs::PricingService#build_rust_adjustment_from_row, introduced by #17186).
+//
+// A regular send to a C method with 7 fixed args is reduced to a CCallWithFrame
+// with recv + 7 = 8 operands, which exceeds C_ARG_OPNDS.len() (6). gen_insn bails
+// with `return Err(*state)`; the caller emits a side exit and `break`s out of the
+// block. But the call's *result* is stored in a local and used in a *later* basic
+// block (the `if` arm here). Because codegen bailed before assigning a LIR operand
+// to the result, compiling that later block calls get_opnd(result) on a None entry
+// and panics. The existing `test_invokesuper_to_cfunc_with_too_many_args_exits` does
+// not catch this because there the call result is the method's tail value and is not
+// referenced past the bailed block.
+//
+// NOTE: This currently ABORTS with `Failed to get_opnd(vN)` (the bug). The snapshot
+// below is the expected behavior once the backend exits cleanly: `flag` is true so
+// `test` returns the cfunc's result, the array [1, 2, 3, 4, 5, 6, 7].
+#[test]
+fn test_ccall_with_frame_too_many_args_result_used_in_later_block() {
+    unsafe extern "C" fn test_seven_args(
+        _self: VALUE,
+        a: VALUE,
+        b: VALUE,
+        c: VALUE,
+        d: VALUE,
+        e: VALUE,
+        f: VALUE,
+        g: VALUE,
+    ) -> VALUE {
+        unsafe { rb_ary_new_from_args(7, a, b, c, d, e, f, g) }
+    }
+
+    with_rubyvm(|| {
+        let klass = define_class("ZJITSevenArgs", unsafe { rb_cObject });
+        unsafe {
+            rb_define_method(
+                klass,
+                c"seven".as_ptr(),
+                Some(std::mem::transmute::<
+                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                    unsafe extern "C" fn(VALUE) -> VALUE,
+                >(test_seven_args)),
+                7,
+            );
+        }
+    });
+
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        def test(obj, flag)
+          priceable = obj.seven(1, 2, 3, 4, 5, 6, 7)
+          if flag
+            priceable
+          else
+            nil
+          end
+        end
+
+        obj = ZJITSevenArgs.new
+        test(obj, true)  # profile receiver class
+        test(obj, true)  # compile -> currently panics: Failed to get_opnd(vN)
+        test(obj, true)
+    "#), @"[1, 2, 3, 4, 5, 6, 7]");
+}
+
 #[test]
 fn test_string_new_preserves_string_arg() {
     assert_snapshot!(inspect(r#"
@@ -1997,6 +2142,38 @@ fn test_opt_mult_overflow() {
 
         [r1, r2, r3, r4, r5]
     "), @"[6, -6, 9671406556917033397649408, -9671406556917033397649408, 21267647932558653966460912964485513216]");
+}
+
+#[test]
+fn test_opt_plus_overflow() {
+    assert_snapshot!(inspect("
+        def test(a, b)
+          a + b
+        end
+        test(1, 2) # profile opt_plus
+
+        r1 = test(2, 3)
+        r2 = test(4611686018427387903, 1)    # FIXNUM_MAX + 1 overflows
+        r3 = test(-4611686018427387904, -1)  # FIXNUM_MIN - 1 overflows
+
+        [r1, r2, r3]
+    "), @"[5, 4611686018427387904, -4611686018427387905]");
+}
+
+#[test]
+fn test_opt_minus_overflow() {
+    assert_snapshot!(inspect("
+        def test(a, b)
+          a - b
+        end
+        test(6, 4) # profile opt_minus
+
+        r1 = test(6, 4)
+        r2 = test(4611686018427387903, -1)   # FIXNUM_MAX - (-1) overflows
+        r3 = test(-4611686018427387904, 1)   # FIXNUM_MIN - 1 overflows
+
+        [r1, r2, r3]
+    "), @"[2, 4611686018427387904, -4611686018427387905]");
 }
 
 #[test]
@@ -4352,6 +4529,141 @@ fn test_getspecial_number_in_jit_to_jit_callee() {
     assert_snapshot!(assert_compiles("caller_method"), @"nil");
 }
 
+#[cfg(all(
+    any(target_os = "linux", target_os = "macos"),
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+))]
+mod signal_profiler {
+    use super::*;
+    use std::ptr::null_mut;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+    use std::thread::{self, JoinHandle};
+    use std::time::Duration;
+
+    use libc::{self, c_int};
+
+    const PROFILE_FRAMES_LIMIT: usize = 128;
+
+    static SAMPLES: AtomicUsize = AtomicUsize::new(0);
+    static IN_HANDLER: AtomicBool = AtomicBool::new(false);
+
+    extern "C" fn sample_profile_frames(signum: c_int) {
+        if signum != libc::SIGPROF || IN_HANDLER.swap(true, Ordering::Relaxed) {
+            return;
+        }
+
+        let mut frames = [VALUE(0); PROFILE_FRAMES_LIMIT];
+        let mut lines = [0; PROFILE_FRAMES_LIMIT];
+        let collected_size = unsafe {
+            rb_profile_frames(
+                0,
+                PROFILE_FRAMES_LIMIT as c_int,
+                frames.as_mut_ptr(),
+                lines.as_mut_ptr(),
+            )
+        };
+        if collected_size > 0 {
+            SAMPLES.fetch_add(1, Ordering::Relaxed);
+        }
+
+        IN_HANDLER.store(false, Ordering::Relaxed);
+    }
+
+    struct TargetThread(libc::pthread_t);
+
+    // pthread_t is valid to pass to pthread_kill from another thread.
+    unsafe impl Send for TargetThread {}
+
+    pub struct Profiler {
+        old_sigprof: libc::sigaction,
+        stop_sampler: Arc<AtomicBool>,
+        sampler: Option<JoinHandle<()>>,
+    }
+
+    impl Profiler {
+        pub fn start(interval_usec: u64) -> Self {
+            assert!(interval_usec > 0);
+            SAMPLES.store(0, Ordering::Relaxed);
+            IN_HANDLER.store(false, Ordering::Relaxed);
+
+            let mut handler: libc::sigaction = unsafe { std::mem::zeroed() };
+            assert_eq!(unsafe { libc::sigemptyset(&mut handler.sa_mask) }, 0, "sigemptyset failed");
+            handler.sa_sigaction = sample_profile_frames as libc::sighandler_t;
+            handler.sa_flags = libc::SA_RESTART;
+
+            let mut old_sigprof: libc::sigaction = unsafe { std::mem::zeroed() };
+            assert_eq!(
+                unsafe { libc::sigaction(libc::SIGPROF, &handler, &mut old_sigprof) },
+                0,
+                "sigaction failed",
+            );
+
+            let target_thread = TargetThread(unsafe { libc::pthread_self() });
+            let stop_sampler = Arc::new(AtomicBool::new(false));
+            let sampler_stop = Arc::clone(&stop_sampler);
+            let interval = Duration::from_micros(interval_usec);
+            let sampler = thread::spawn(move || {
+                while !sampler_stop.load(Ordering::Relaxed) {
+                    unsafe {
+                        libc::pthread_kill(target_thread.0, libc::SIGPROF);
+                    }
+                    thread::sleep(interval);
+                }
+            });
+
+            Self {
+                old_sigprof,
+                stop_sampler,
+                sampler: Some(sampler),
+            }
+        }
+
+        pub fn samples(&self) -> usize {
+            SAMPLES.load(Ordering::Relaxed)
+        }
+    }
+
+    impl Drop for Profiler {
+        fn drop(&mut self) {
+            self.stop_sampler.store(true, Ordering::Relaxed);
+            if let Some(sampler) = self.sampler.take() {
+                let _ = sampler.join();
+            }
+            unsafe {
+                libc::sigaction(libc::SIGPROF, &self.old_sigprof, null_mut());
+            }
+        }
+    }
+}
+
+// Simulate sampling profilers such as stackprof/vernier: a SIGPROF handler
+// interrupts a JIT frame and calls rb_profile_frames().
+#[cfg(all(
+    any(target_os = "linux", target_os = "macos"),
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+))]
+#[test]
+fn test_profile_frames_from_signal_handler() {
+    eval(r#"
+        def profiled_leaf_loop(n)
+          i = 0
+          while i < n
+            i += 1
+          end
+          i
+        end
+
+        # Compile the method before arming the timer so samples land in JIT code.
+        profiled_leaf_loop(1)
+        profiled_leaf_loop(1)
+    "#);
+
+    let profiler = signal_profiler::Profiler::start(100);
+    assert_snapshot!(assert_compiles("profiled_leaf_loop(20_000_000)"), @"20000000");
+    assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
+}
+
 #[test]
 fn test_profile_under_nested_jit_call() {
     assert_snapshot!(inspect("
@@ -5749,6 +6061,348 @@ fn test_send_block_unused_warning_emitted_from_jit() {
         test
         test
     "#), @"true");
+}
+
+#[test]
+fn test_inlined_method_returns_correct_value() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def add_one(x) = x + 1
+            def test(n) = add_one(n)
+
+            test(2)
+            test(2)
+        "), @"3");
+    });
+}
+
+#[test]
+fn test_inlined_method_deoptimizes_on_redefinition() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def callee(x) = x + 1
+            def test(n) = callee(n)
+
+            test(1)
+            test(1)
+
+            def callee(x) = x * 100
+
+            test(1)
+        "), @"100");
+    });
+}
+
+#[test]
+fn test_inlined_method_survives_compact_between_calls() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def callee(x) = x + 1
+            def test(n) = callee(n)
+
+            test(1)
+            test(1)
+
+            GC.compact
+
+            test(1)
+        "), @"2");
+    });
+}
+
+#[test]
+fn test_inlined_method_survives_compact_during_call() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def trigger_compact = GC.compact
+            def callee(x)
+              trigger_compact
+              x + 1
+            end
+            def test(n) = callee(n)
+
+            test(1)
+            test(1)
+        "), @"2");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_required_keyword() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def callee(x, y:) = x + y
+            def test(n) = callee(n, y: 10)
+
+            test(2)
+            test(2)
+        "), @"12");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_optional_keyword_supplied() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def callee(x, y: 100) = x + y
+            def test(n) = callee(n, y: 5)
+
+            test(2)
+            test(2)
+        "), @"7");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_optional_keyword_omitted() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def callee(x, y: 100) = x + y
+            def test(n) = callee(n)
+
+            test(2)
+            test(2)
+        "), @"102");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_reordered_keywords() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def callee(a:, b:) = a - b
+            def test = callee(b: 1, a: 10)
+
+            test
+            test
+        "), @"9");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_keyword_default_using_prior_param() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def callee(x, y: x * 100) = x + y
+            def test(n) = callee(n)
+
+            test(2)
+            test(2)
+        "), @"202");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_invokeblock() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def callee(x)
+              yield x
+            end
+            def test(n)
+              callee(n) { |x| x + 2 }
+            end
+
+            test(10)
+            test(10)
+            test(10)
+        "), @"12");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_block_param() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def callee(x, &block)
+              block.call(x)
+            end
+            def test(n)
+              callee(n) { |x| x + 2 }
+            end
+
+            test(10)
+            test(10)
+            test(10)
+        "), @"12");
+    });
+}
+
+#[test]
+fn test_inlined_method_that_forwards_block_arg() {
+    // The callee captures a literal block in `&block` and forwards it on to
+    // `inner`. While `callee` is inlined, the forwarded call stays a dynamic send.
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def inner(x)
+              yield x
+            end
+            def callee(x, &block)
+              inner(x, &block)
+            end
+            def test(n)
+              callee(n) { |x| x + 2 }
+            end
+
+            test(10)
+            test(10)
+            test(10)
+        "), @"12");
+    });
+}
+
+#[test]
+fn test_inlined_stack_map_materializes_before_rescue() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
+            def callee(left, receiver, other)
+              left + (receiver << other rescue "b")
+            end
+            def test = callee("a", "x".freeze, "y")
+
+            test
+            test
+        "#), @r#""ab""#);
+    });
+}
+
+#[test]
+fn test_inlined_method_with_rescue_caught_in_callee() {
+    // The callee's begin/rescue catches an exception raised inside the same
+    // callee. The runtime exception walker must find the rescue clause via the
+    // inlined callee's CFP.
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines(r#"
+            def callee(x)
+              begin
+                raise "boom" if x.negative?
+                0
+              rescue
+                42
+              end
+            end
+            def test(n) = callee(n)
+
+            test(-1)
+            test(-1)
+        "#), @"42");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_rescue_caught_in_caller() {
+    // The callee re-raises and the caller catches the exception after unwinding
+    // the inlined callee frame.
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines(r#"
+            def callee(x)
+              raise "boom" if x.negative?
+              0
+            end
+            def test(n)
+              begin
+                callee(n)
+              rescue
+                99
+              end
+            end
+
+            test(-1)
+            test(-1)
+        "#), @"99");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_ensure_runs_on_propagation() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines(r##"
+            $log = []
+            def callee(x)
+              begin
+                raise "boom" if x.negative?
+                $log << "no_raise"
+              ensure
+                $log << "ensured"
+              end
+            end
+            def test(n)
+              begin
+                callee(n)
+                "no_rescue"
+              rescue
+                "caught"
+              end
+            end
+
+            test(-1)
+            result = test(-1)
+            "#{$log.first}: #{result}"
+        "##), @r#""ensured: caught""#);
+    });
+}
+
+#[test]
+fn test_inlined_method_with_retry_resumes_begin_block() {
+    // The begin/rescue/retry callee is larger than the default test inline budget,
+    // so raise the threshold enough for it to be inlined.
+    with_inlining_threshold(100, || {
+        assert_snapshot!(assert_inlines(r#"
+            def callee(counter)
+              begin
+                counter[0] += 1
+                raise "boom" if counter[0] < 2
+                counter[0]
+              rescue
+                retry
+              end
+            end
+            def test(c) = callee(c)
+
+            test([0])
+            test([0])
+        "#), @"2");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_super_call() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            class Parent
+              def greet = 'hi'
+            end
+
+            class Child < Parent
+              def greet = super + '!'
+            end
+
+            def test(c) = c.greet
+
+            child = Child.new
+            test(child)
+            test(child)
+        "), @r#""hi!""#);
+    });
+}
+
+#[test]
+fn test_inlined_method_with_block_break_across_inlined_boundary() {
+    // A `break` from the literal block unwinds to the inlined callee's CFP,
+    // where the callee's CATCH_TYPE_BREAK entry must match.
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def callee(arr)
+              arr.each do |x|
+                break 7 if x > 5
+              end
+            end
+            def test(a) = callee(a)
+
+            test([1, 6, 99])
+            test([1, 6, 99])
+        "), @"7");
+    });
 }
 
 #[test]

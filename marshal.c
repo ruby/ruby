@@ -99,7 +99,7 @@ shortlen(size_t len, BDIGIT *ds)
 #define TYPE_LINK	'@'
 
 static ID s_dump, s_load, s_mdump, s_mload;
-static ID s_dump_data, s_load_data, s_alloc, s_call;
+static ID s_dump_data, s_load_data, s_call;
 static ID s_getbyte, s_read, s_write, s_binmode;
 static ID s_encoding_short, s_ruby2_keywords_flag;
 #define s_encoding_long rb_id_encoding()
@@ -110,7 +110,6 @@ static ID s_encoding_short, s_ruby2_keywords_flag;
 #define name_s_mload	"marshal_load"
 #define name_s_dump_data "_dump_data"
 #define name_s_load_data "_load_data"
-#define name_s_alloc	"_alloc"
 #define name_s_call	"call"
 #define name_s_getbyte	"getbyte"
 #define name_s_read	"read"
@@ -237,7 +236,7 @@ memsize_dump_arg(const void *ptr)
 static const rb_data_type_t dump_arg_data = {
     "dump_arg",
     {mark_dump_arg, free_dump_arg, memsize_dump_arg,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -1301,7 +1300,7 @@ memsize_load_arg(const void *ptr)
 static const rb_data_type_t load_arg_data = {
     "load_arg",
     {mark_load_arg, free_load_arg, memsize_load_arg,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
 #define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
@@ -2577,7 +2576,6 @@ Init_marshal(void)
     set_id(s_mload);
     set_id(s_dump_data);
     set_id(s_load_data);
-    set_id(s_alloc);
     set_id(s_call);
     set_id(s_getbyte);
     set_id(s_read);
@@ -2638,7 +2636,7 @@ static const rb_data_type_t marshal_compat_type = {
         .dsize = marshal_compat_table_memsize,
         .dcompact = marshal_compat_table_mark_and_move,
     },
-    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY,
+    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE,
 };
 
 static st_table *

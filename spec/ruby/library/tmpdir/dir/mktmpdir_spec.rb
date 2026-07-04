@@ -57,7 +57,12 @@ describe "Dir.mktmpdir when passed a block" do
     Dir.stub!(:mkdir)
     Dir.mktmpdir do |path|
       @tmpdir = path
-      FileUtils.should_receive(:remove_entry).with(path)
+      ruby_version_is ""..."4.1" do
+        FileUtils.should_receive(:remove_entry).with(path)
+      end
+      ruby_version_is "4.1" do
+        FileUtils.should_receive(:remove_entry).with(path, true)
+      end
     end
   end
 

@@ -405,6 +405,9 @@ CODE
     assert_equal(S("   hello   "), S("hello").center(11))
     assert_equal(S("ababaababa"), S("").center(10, "ab"), Bug2463)
     assert_equal(S("ababaababab"), S("").center(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).center(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_chomp
@@ -1479,6 +1482,16 @@ CODE
     assert_equal("abcdX", S("abcd").insert(4, 'X'))
     assert_equal("abXcd", S("abcd").insert(-3, 'X'))
     assert_equal("abcdX", S("abcd").insert(-1, 'X'))
+    assert_equal("Xabcd", S("abcd").insert(-5, 'X'))
+    assert_equal("こんbarにちは", S("こんにちは").insert(2, 'bar'))
+
+    str = S("abcd")
+    assert_same(str, str.insert(2, 'X'))
+
+    assert_raise(IndexError) { S("abcd").insert(5, 'X') }
+    assert_raise(IndexError) { S("abcd").insert(-6, 'X') }
+    assert_raise(TypeError) { S("abcd").insert(2, 42) }
+    assert_raise(FrozenError) { S("abcd").freeze.insert(2, 'X') }
   end
 
   def test_intern
@@ -1498,6 +1511,9 @@ CODE
     assert_equal(S("hello      "), S("hello").ljust(11))
     assert_equal(S("ababababab"), S("").ljust(10, "ab"), Bug2463)
     assert_equal(S("abababababa"), S("").ljust(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).ljust(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_next
@@ -1675,6 +1691,9 @@ CODE
     assert_equal(S("      hello"), S("hello").rjust(11))
     assert_equal(S("ababababab"), S("").rjust(10, "ab"), Bug2463)
     assert_equal(S("abababababa"), S("").rjust(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).rjust(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_scan

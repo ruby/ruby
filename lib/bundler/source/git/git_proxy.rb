@@ -144,6 +144,12 @@ module Bundler
                 FileUtils.rm_rf(p)
               end
               git "clone", "--no-checkout", "--quiet", path.to_s, destination.to_s
+              # The copy is cloned from the local bare cache, which holds no Git LFS
+              # objects, so point origin back at the real remote and let git-lfs derive
+              # its endpoint from there when checking out. Use the credential-filtered
+              # URI to avoid persisting secrets in the copy's .git/config; auth is left
+              # to git's credential helper.
+              git "remote", "set-url", "origin", credential_filtered_uri, dir: destination
               File.chmod((File.stat(destination).mode | 0o777) & ~File.umask, destination)
             rescue Errno::EEXIST => e
               file_path = e.message[%r{.*?((?:[a-zA-Z]:)?/.*)}, 1]

@@ -3820,9 +3820,6 @@ AS_CASE(["${enable_dtrace}"],
 ], [
     rb_cv_dtrace_available=no
 ])
-AS_CASE(["$target_os"],[freebsd*],[
-         rb_cv_dtrace_available=no
-	 ])
 AS_IF([test "${enable_dtrace}" = yes], [dnl
     AS_IF([test -z "$DTRACE"], [dnl
 	AC_MSG_ERROR([dtrace(1) is missing])
@@ -4163,7 +4160,7 @@ AC_SUBST(JIT_CARGO_SUPPORT)dnl "no" or the cargo profile of the rust code
 [begin]_group "build section" && {
 AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[extern void conftest_external(void) {}]], [[]])],[
-	rb_cv_symbol_prefix=`$NM conftest.$ac_objext |
+	rb_cv_symbol_prefix=`$NM conftest.$ac_objext 2>/dev/null |
 			     sed -n ['/.*T[ 	]\([^ 	]*\)conftest_external.*/!d;s//\1/p;q']`
 	],
 	[rb_cv_symbol_prefix=''])

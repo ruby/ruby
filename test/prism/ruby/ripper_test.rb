@@ -230,6 +230,28 @@ module Prism
       assert_equal(Ripper.sexp(source), Translation::Ripper.sexp(source))
     end
 
+    def test_encoding_method
+      source = "foo"
+      assert_equal(Ripper.new(source).tap(&:parse).encoding, Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
+
+      source = "foo".b
+      assert_equal(Ripper.new(source).tap(&:parse).encoding, Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
+
+      source = "# encoding: shift_jis"
+      assert_equal(Ripper.new(source).tap(&:parse).encoding, Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
+
+      source = "# encoding: shift_jis".b
+      assert_equal(Ripper.new(source).tap(&:parse).encoding, Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
+    end
+
+    def test_end_seen
+      source = ""
+      assert_equal(Ripper.new(source).tap(&:parse).end_seen?, Prism::Translation::Ripper.new(source).tap(&:parse).end_seen?)
+
+      source = "__END__"
+      assert_equal(Ripper.new(source).tap(&:parse).end_seen?, Prism::Translation::Ripper.new(source).tap(&:parse).end_seen?)
+    end
+
     def test_sexp_coercion
       string_like = Object.new
       def string_like.to_str

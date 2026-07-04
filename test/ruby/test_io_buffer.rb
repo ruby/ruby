@@ -2,6 +2,7 @@
 
 require 'tempfile'
 require 'rbconfig/sizeof'
+require '-test-/io_buffer'
 
 class TestIOBuffer < Test::Unit::TestCase
   experimental = Warning[:experimental]
@@ -29,6 +30,58 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 64, IO::Buffer::PRIVATE
 
     assert_equal 128, IO::Buffer::READONLY
+  end
+
+  def test_internal_for_reading_with_string
+    string = "hello"
+
+    assert_equal "hello", Bug::IOBuffer.for_reading_get_string(string)
+    assert_equal true, Bug::IOBuffer.for_reading_readonly?(string)
+  end
+
+  def test_internal_for_reading_with_io_buffer
+    buffer = IO::Buffer.for("hello")
+
+    assert_equal buffer.object_id, Bug::IOBuffer.for_reading_object_id(buffer)
+  end
+
+  def test_internal_for_writing_with_string
+    string = "hello"
+
+    Bug::IOBuffer.for_writing_set_string(string, "world")
+
+    assert_equal "world", string
+    assert_equal false, Bug::IOBuffer.for_writing_readonly?(string)
+  end
+
+  def test_internal_for_writing_rejects_readonly_buffer
+    buffer = IO::Buffer.for("hello")
+
+    assert_raise(ArgumentError) do
+      Bug::IOBuffer.for_writing_set_string(buffer, "world")
+    end
+  end
+
+  def test_internal_for_writing_unlocks_after_callback_exception
+    string = "hello"
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.for_writing_modify_string(string)
+    end
+
+    string << "!"
+    assert_equal "hello!", string
+  end
+
+  def test_internal_for_reading_unlocks_after_callback_exception
+    string = "hello"
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.for_reading_raise(string)
+    end
+
+    string << "!"
+    assert_equal "hello!", string
   end
 
   def test_endian
@@ -91,11 +144,11 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_file_mapped_size_too_large
-    assert_raise ArgumentError do
-      File.open(__FILE__) {|file| IO::Buffer.map(file, 200_000, 0, IO::Buffer::READONLY)}
-    end
-    assert_raise ArgumentError do
-      File.open(__FILE__) {|file| IO::Buffer.map(file, File.size(__FILE__) + 1, 0, IO::Buffer::READONLY)}
+    size = File.size(__FILE__) + 1
+    file_size = File.size(__FILE__)
+    message = "Size (#{size}) can't be larger than file size (#{file_size})"
+    assert_raise_with_message ArgumentError, message do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, size, 0, IO::Buffer::READONLY)}
     end
   end
 
@@ -105,12 +158,34 @@ class TestIOBuffer < Test::Unit::TestCase
     }
   end
 
-  def test_file_mapped_offset_too_large
-    assert_raise ArgumentError do
-      File.open(__FILE__) {|file| IO::Buffer.map(file, nil, IO::Buffer::PAGE_SIZE * 100, IO::Buffer::READONLY)}
+  def test_file_mapped_offset_negative
+    offset = -1
+    message = "Offset (#{offset}) can't be negative!"
+    assert_raise_with_message ArgumentError, message do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, nil, offset, IO::Buffer::READONLY)}
     end
-    assert_raise ArgumentError do
-      File.open(__FILE__) {|file| IO::Buffer.map(file, 20, IO::Buffer::PAGE_SIZE * 100, IO::Buffer::READONLY)}
+  end
+
+  def test_file_mapped_offset_too_large
+    file_size = File.size(__FILE__)
+    page_count = file_size / IO::Buffer::PAGE_SIZE
+    offset = IO::Buffer::PAGE_SIZE * (page_count + 1)
+    message = "Offset (#{offset}) can't be larger than file size (#{file_size})"
+    assert_raise_with_message ArgumentError, message do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, nil, offset, IO::Buffer::READONLY)}
+    end
+
+    if page_count > 0
+      offset = IO::Buffer::PAGE_SIZE * page_count
+      available_size = file_size - offset
+      size = available_size + 1
+      maximum_page_count = (file_size - size) / IO::Buffer::PAGE_SIZE
+      maximum_offset = IO::Buffer::PAGE_SIZE * maximum_page_count
+      message = "Offset (#{offset}) can't be larger than #{maximum_offset} " +
+                "for requested size (#{size})"
+      assert_raise_with_message ArgumentError, message do
+        File.open(__FILE__) {|file| IO::Buffer.map(file, size, offset, IO::Buffer::READONLY)}
+      end
     end
   end
 
@@ -239,6 +314,16 @@ class TestIOBuffer < Test::Unit::TestCase
 
     assert_raise IO::Buffer::AccessError do
       buffer.resize(0)
+    end
+  end
+
+  def test_resize_invalidated_slice
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    slice = inner.slice(0, 8)
+    inner.free
+
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.resize(16)
     end
   end
 
@@ -376,6 +461,17 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /Offset can't be negative/) do
       buffer.get_string(-1)
     end
+
+    encoding = Struct.new(:buffer) do
+      def to_str
+        buffer.free
+        "BINARY"
+      end
+    end.new(buffer.dup)
+    slice = encoding.buffer.slice(0, 8)
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.get_string(0, 8, encoding)
+    end
   end
 
   def test_zero_length_get_string
@@ -447,6 +543,26 @@ class TestIOBuffer < Test::Unit::TestCase
       buffer.set_values(format, 0, values)
       assert_equal values, buffer.get_values(format, 0), "Converting #{values} as #{format}."
     end
+  end
+
+  def test_set_values_invalidated_slice
+    to_int = Struct.new(:buffer) do
+      def to_int
+        buffer.free
+        0x41
+      end
+    end
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 8)
+    value = to_int.new(buffer)
+    assert_raise(IO::Buffer::InvalidatedError) {slice.set_value(:U8, 0, value)}
+
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 8)
+    value = to_int.new(buffer)
+    assert_raise(IO::Buffer::InvalidatedError) {
+      slice.set_values([:U8, :U8], 0, [0, value])
+    }
   end
 
   def test_zero_length_get_set_values

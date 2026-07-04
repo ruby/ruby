@@ -211,6 +211,7 @@ module Spec
     RSpec::Matchers.alias_matcher :include_gem, :include_gems
 
     def plugin_should_be_installed(*names)
+      Bundler::Plugin.instance_variable_set(:@index, nil)
       names.each do |name|
         expect(Bundler::Plugin).to be_installed(name)
         path = Pathname.new(Bundler::Plugin.installed?(name))
@@ -218,7 +219,17 @@ module Spec
       end
     end
 
+    def plugin_should_be_installed_with_version(name, version)
+      Bundler::Plugin.instance_variable_set(:@index, nil)
+      expect(Bundler::Plugin).to be_installed(name)
+      path = Pathname.new(Bundler::Plugin.installed?(name))
+
+      expect(File.basename(path)).to eq("#{name}-#{version}")
+      expect(path + "plugins.rb").to exist
+    end
+
     def plugin_should_not_be_installed(*names)
+      Bundler::Plugin.instance_variable_set(:@index, nil)
       names.each do |name|
         expect(Bundler::Plugin).not_to be_installed(name)
       end

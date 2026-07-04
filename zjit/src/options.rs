@@ -24,6 +24,29 @@ pub type NumProfiles = u16;
 pub const DEFAULT_CALL_THRESHOLD: CallThreshold = 30;
 pub type CallThreshold = u64;
 
+/// Default --zjit-inline-threshold
+/// TODO (nirvdrum 2026-06-25): 30 has proven to work well with ruby-bench, but we should finely
+/// tune across more workloads.
+pub const DEFAULT_INLINE_THRESHOLD: InlineThreshold = 30;
+pub type InlineThreshold = usize;
+
+/// Default --zjit-inline-budget
+/// TODO (nirvdrum 2026-06-25): 200 has proven to strike a good balance between memory usage and
+/// run time performance on ruby-bench, but we should finely tune across more workloads.
+pub const DEFAULT_INLINE_BUDGET: InlineBudget = 200;
+pub const INLINE_BUDGET_UNLIMITED: InlineBudget = 0;
+pub type InlineBudget = usize;
+
+/// Default --zjit-inline-max-iterations
+pub const DEFAULT_INLINE_MAX_ITERATIONS: InlineDepth = 10;
+/// Inlining nesting depth. Shared by `FrameState::depth` and the
+/// `inline_max_iterations` cap: the inliner adds at most one level per
+/// fixed-point iteration, so the maximum reachable depth equals
+/// `inline_max_iterations` and the two share this exact domain. A `usize`
+/// because depth is consumed as a JITFrame stack-slot index and as a term in
+/// native stack size computations, where every consumer is already `usize`.
+pub type InlineDepth = usize;
+
 /// Number of calls to start profiling YARV instructions.
 /// They are profiled `rb_zjit_call_threshold - rb_zjit_profile_threshold` times,
 /// which is equal to --zjit-num-profiles.
@@ -114,6 +137,58 @@ pub struct Options {
 
     /// Maximum number of versions per ISEQ
     pub max_versions: usize,
+
+    /// Per-callee size threshold for inlining, measured as the callee's YARV bytecode size
+    /// (see `get_iseq_encoded_size`). Callees larger than this are rejected by `should_inline`.
+    /// 0 disables inlining entirely.
+    ///
+    /// Note: this is a different unit than `inline_budget`; see that field's doc comment.
+    pub inline_threshold: InlineThreshold,
+
+    /// Per-caller cumulative size budget for inlining, measured as the caller
+    /// `Function`'s `insns.len()` at the moment `should_inline` is consulted (during
+    /// `inline_methods` inside the `optimize()` fixed-point loop). Once a caller has
+    /// grown past this many HIR instructions, `should_inline` rejects further callees,
+    /// bounding runaway code-size growth from depth-N inlining (and providing the
+    /// optimization fixed-point loop's effective terminating condition).
+    /// `INLINE_BUDGET_UNLIMITED` disables the budget.
+    ///
+    /// Caveat on the unit: `self.insns` is append-only across the whole pipeline —
+    /// `InsnId`s are stable indices into it, so passes never shrink it. `len()` is
+    /// therefore a high-water mark of total HIR instructions ever allocated for the
+    /// function, including ones that later optimization passes mark dead via
+    /// `eliminate_dead_code` or alias away via `union_find`. By the time
+    /// `should_inline` runs in a given fixed-point iteration, `self.insns.len()` has
+    /// already been bumped by `iseq_to_hir`'s initial build, then by `type_specialize`
+    /// and the trivial `inline` pass, and (in iterations 2+) by every prior pass in
+    /// the loop including the previous round's `inline_methods`. It is a useful proxy
+    /// for "compile work done" but not for "size of the compiled output".
+    ///
+    /// Note: this is a different unit than `inline_threshold` — that field is callee
+    /// YARV bytecode words; this one is caller HIR instructions, allocation high-water
+    /// mark. They aren't directly comparable; YARV → HIR typically expands roughly 1-3x.
+    pub inline_budget: InlineBudget,
+
+    /// Set of qualified method names (e.g. `Class#method`, `Module::Class.method`) that
+    /// `should_inline` will refuse to inline. Populated from `--zjit-inline-deny=…` as a
+    /// comma-separated list. Used as a debugging/experimentation knob: callees on this
+    /// list are rejected before any of the other `should_inline` checks run, so we can
+    /// isolate the contribution of specific methods to the inliner's overall effect.
+    /// Empty by default; matching uses the same string format produced by
+    /// `qualified_method_name`. Only named methods are matched today; anonymous code
+    /// (blocks, procs without a stable method binding) cannot be denied this way.
+    pub inline_deny: HashSet<String>,
+
+    /// Upper bound on how many times the `optimize` fixed-point loop will iterate
+    /// before giving up. Each iteration runs `type_specialize` → `inline` →
+    /// `inline_methods` → the rest of the HIR pipeline; in steady state the loop
+    /// terminates as soon as an iteration fails to inline anything new. If the
+    /// cap is hit while inlining is still ongoing, the optimizer runs one final
+    /// specialization/cleanup round without `inline_methods`, so the callee HIR
+    /// inserted by the last iteration does not keep unspecialized `Send`s. The
+    /// cap exists to bound compile time when something pathological prevents the
+    /// loop from reaching a fixed point.
+    pub inline_max_iterations: InlineDepth,
 }
 
 impl Default for Options {
@@ -142,6 +217,10 @@ impl Default for Options {
             allowed_iseqs: None,
             log_compiled_iseqs: None,
             max_versions: 2,
+            inline_threshold: DEFAULT_INLINE_THRESHOLD,
+            inline_budget: DEFAULT_INLINE_BUDGET as InlineBudget,
+            inline_deny: HashSet::new(),
+            inline_max_iterations: DEFAULT_INLINE_MAX_ITERATIONS,
         }
     }
 }
@@ -361,6 +440,35 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             Err(_) => return None,
         },
 
+        ("inline-threshold", _) => match opt_val.parse() {
+            Ok(n) => { options.inline_threshold = n; },
+            Err(_) => return None,
+        },
+
+        ("inline-budget", _) => match opt_val.parse() {
+            Ok(n) => { options.inline_budget = n; },
+            Err(_) => return None,
+        },
+
+        ("inline-max-iterations", _) => match opt_val.parse() {
+            Ok(n) => { options.inline_max_iterations = n; },
+            Err(_) => return None,
+        },
+
+        ("inline-deny", csv) => {
+            // Comma-separated list of qualified method names to refuse to inline,
+            // matching the format produced by `qualified_method_name`. Whitespace
+            // around entries is trimmed; empty entries are skipped so trailing or
+            // duplicated commas don't introduce a "" sentinel into the set.
+            for entry in csv.split(',') {
+                let trimmed = entry.trim();
+                if !trimmed.is_empty() {
+                    options.inline_deny.insert(trimmed.to_string());
+                }
+            }
+        }
+
+
         ("stats-quiet", _) => {
             options.stats = true;
             options.print_stats = false;
@@ -528,6 +636,12 @@ pub fn set_call_threshold(call_threshold: CallThreshold) {
     unsafe { rb_zjit_call_threshold = call_threshold; }
     rb_zjit_prepare_options();
     update_profile_threshold();
+}
+
+#[cfg(test)]
+pub fn set_inline_threshold(inline_threshold: InlineThreshold) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().inline_threshold = inline_threshold; }
 }
 
 /// Enable --zjit-stats for testing

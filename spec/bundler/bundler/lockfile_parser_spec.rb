@@ -118,7 +118,7 @@ RSpec.describe Bundler::LockfileParser do
     let(:platforms) { [Gem::Platform::RUBY] }
     let(:bundler_version) { Gem::Version.new("1.12.0.rc.2") }
     let(:ruby_version) { "ruby 2.1.3p242" }
-    let(:lockfile_path) { Bundler.default_lockfile.relative_path_from(Dir.pwd) }
+    let(:lockfile_path) { Bundler::SharedHelpers.relative_lockfile_path }
     let(:rake_sha256_checksum) do
       Bundler::Checksum.from_lock(
         "sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8",
@@ -249,6 +249,25 @@ RSpec.describe Bundler::LockfileParser do
       it "does not raise and is valid" do
         expect { subject }.not_to raise_error
         expect(subject.valid?).to be(true)
+      end
+    end
+
+    context "when a plugin source's plugin is not installed" do
+      let(:lockfile_contents) { <<~L + super().sub("DEPENDENCIES\n", "DEPENDENCIES\n  private_gem!\n") }
+        PLUGIN SOURCE
+          remote: https://example.com/private
+          type: not_installed_plugin_type
+          specs:
+            private_gem (1.2.3)
+
+      L
+
+      it "parses dependencies and specs using a placeholder source" do
+        expect(subject.valid?).to be(true)
+        expect(subject.dependencies.keys).to include("private_gem", "peiji-san", "rake")
+        private_spec = subject.specs.find {|s| s.name == "private_gem" }
+        expect(private_spec.version).to eq(v("1.2.3"))
+        expect(private_spec.source).to be_a(Bundler::Plugin::UnloadedSource)
       end
     end
 

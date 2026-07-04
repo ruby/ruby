@@ -10,6 +10,7 @@ module Psych
     end
 
     def test_dump
+      omit 'libfyaml formats the dump differently (data still round-trips)' if libfyaml?
       assert_equal <<~YAML, Psych.dump(@set)
         --- !ruby/object:Set
         hash:

@@ -25,6 +25,7 @@ struct rb_box_struct {
     VALUE load_path_snapshot;
     VALUE load_path_check_cache;
     VALUE expanded_load_path;
+    long expanded_load_path_maxlen;
     VALUE loaded_features;
     VALUE loaded_features_snapshot;
     VALUE loaded_features_realpaths;

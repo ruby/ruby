@@ -138,14 +138,54 @@ pjob_preregister_calls_with_last_argument(VALUE self)
     return ary;
 }
 
+/* internal (vm_trace.c); exported for this test */
+void rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE ractor);
+
+static rb_postponed_job_handle_t pjob_for_ractor_handle = POSTPONED_JOB_HANDLE_INVALID;
+
+static void
+pjob_for_ractor_callback(void *data)
+{
+    VALUE ary = (VALUE)data;
+    Check_Type(ary, T_ARRAY);
+
+    /* record which Ractor executed the job */
+    rb_ary_push(ary, rb_funcall(rb_path2class("Ractor"), rb_intern("current"), 0));
+}
+
+static VALUE
+pjob_preregister_for_ractor(VALUE self, VALUE ary)
+{
+    pjob_for_ractor_handle = rb_postponed_job_preregister(0, pjob_for_ractor_callback, (void *)ary);
+    if (pjob_for_ractor_handle == POSTPONED_JOB_HANDLE_INVALID) {
+        rb_raise(rb_eRuntimeError, "preregister failed");
+    }
+    return self;
+}
+
+static VALUE
+pjob_trigger_for_ractor(VALUE self, VALUE ractor)
+{
+    if (pjob_for_ractor_handle == POSTPONED_JOB_HANDLE_INVALID) {
+        rb_raise(rb_eRuntimeError, "not preregistered");
+    }
+    rb_postponed_job_trigger_for_ractor(pjob_for_ractor_handle, ractor);
+    return self;
+}
+
 void
 Init_postponed_job(VALUE self)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
     VALUE mBug = rb_define_module("Bug");
     rb_define_module_function(mBug, "postponed_job_call_direct", pjob_call_direct, 1);
     rb_define_module_function(mBug, "postponed_job_preregister_and_call_with_sleep", pjob_preregister_and_call_with_sleep, 1);
     rb_define_module_function(mBug, "postponed_job_preregister_and_call_without_sleep", pjob_preregister_and_call_without_sleep, 1);
     rb_define_module_function(mBug, "postponed_job_preregister_multiple_times", pjob_preregister_multiple_times, 0);
     rb_define_module_function(mBug, "postponed_job_preregister_calls_with_last_argument", pjob_preregister_calls_with_last_argument, 0);
+    rb_define_module_function(mBug, "postponed_job_preregister_for_ractor", pjob_preregister_for_ractor, 1);
+    rb_define_module_function(mBug, "postponed_job_trigger_for_ractor", pjob_trigger_for_ractor, 1);
 }
 

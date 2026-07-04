@@ -83,7 +83,7 @@ jobs:
       )}}
 
     steps:
-      - uses: msys2/setup-msys2@e9898307ac31d1a803454791be09ab9973336e1c # v2.31.1
+      - uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2.32.0
         id: msys2
         with:
           msystem: ${{ matrix.msystem }}
@@ -168,7 +168,7 @@ jobs:
           [ ${#failed[@]} -eq 0 ]
         shell: sh
 
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github

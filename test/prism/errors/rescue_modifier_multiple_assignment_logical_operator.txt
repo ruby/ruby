@@ -1,0 +1,3 @@
+a rescue b, c = d and e
+                  ^~~ unexpected 'and', expecting end-of-input
+

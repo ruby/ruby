@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
 require "optparse"
-require "nkf"
 require "shellwords"
 
 CommitEmailInfo = Struct.new(
@@ -207,7 +206,13 @@ class << CommitEmail
   private
 
   def b_encode(str)
-    NKF.nkf('-WwM', str)
+    str.gsub(/\S+/) do |sub|
+      if sub.ascii_only?
+        sub
+      else
+        "=?#{str.encoding}?B?#{[sub].pack("m0")}?="
+      end
+    end
   end
 
   def make_body(info, viewer_uri:)
@@ -341,7 +346,7 @@ class << CommitEmail
       escaped_name = name.gsub(/["\\\n]/) { |c| "\\#{c}" }
       %Q["#{escaped_name}" <#{email}>]
     else
-      escaped_name = "=?UTF-8?B?#{NKF.nkf('-WwMB', name)}?="
+      escaped_name = "=?UTF-8?B?#{[name].pack("m0")}?="
       %Q[#{escaped_name} <#{email}>]
     end
   end

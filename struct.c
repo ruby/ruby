@@ -1016,7 +1016,7 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
         slot = RARRAY_AREF(members, i);
         id = SYM2ID(slot);
         if (rb_is_local_id(id) || rb_is_const_id(id)) {
-            rb_str_append(str, rb_id2str(id));
+            rb_str_append(str, rb_sym2str(slot));
         }
         else {
             rb_str_append(str, rb_inspect(slot));

@@ -906,7 +906,7 @@ static const rb_data_type_t tp_data_type = {
         NULL, // Nothing allocated externally, so don't need a memsize function
         tp_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -1863,9 +1863,12 @@ rb_vm_postponed_job_atfork(void)
 {
     rb_postponed_job_queues_t *pjq = &postponed_job_queue;
     /* make sure we set the interrupt flag on _this_ thread if we carried any pjobs over
-     * from the other side of the fork */
-    if (pjq->triggered_bitset) {
-        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(GET_VM()));
+     * from the other side of the fork (including jobs that targeted the
+     * forking Ractor, which is the child's main Ractor now; jobs targeted
+     * at any other Ractor die with it) */
+    rb_execution_context_t *ec = get_valid_ec(GET_VM());
+    if (pjq->triggered_bitset || rb_ec_ractor_ptr(ec)->postponed_job_triggered_bits) {
+        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
     }
 
 }
@@ -1922,6 +1925,37 @@ rb_postponed_job_trigger(rb_postponed_job_handle_t h)
     RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(GET_VM()));
 }
 
+/* Like rb_postponed_job_trigger(), but run the job on running_ractor
+ * instead of the caller's or the main Ractor: set the handle's bit in that
+ * Ractor's mask and post a POSTPONED_JOB interrupt to its running EC (or
+ * its main thread's EC before it starts). Delivery is lazy: the target is
+ * not unblocked, and a job for a Ractor that exits first is discarded.
+ *
+ * rb_postponed_job_trigger() is safe from a signal handler or any thread
+ * because it only touches the VM-global queue and the caller's or main EC.
+ * This one dereferences running_ractor and its EC, so the caller must keep
+ * running_ractor alive and running for the whole call: holding its VALUE
+ * is not enough, and a terminated Ractor is unsafe. The main Ractor is
+ * always safe. */
+void
+rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor)
+{
+    VM_ASSERT(rb_ractor_p(running_ractor));
+    rb_ractor_t *r = (rb_ractor_t *)DATA_PTR(running_ractor);
+
+    RUBY_ATOMIC_OR(r->postponed_job_triggered_bits, (((rb_atomic_t)1UL) << h));
+
+    /* The racy running_ec read is benign: whichever of the target's threads
+     * checks interrupts first drains the whole per-Ractor mask. */
+    rb_execution_context_t *target_ec = r->threads.running_ec;
+    if (target_ec == NULL && r->threads.main) {
+        target_ec = r->threads.main->ec;
+    }
+    if (target_ec) {
+        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(target_ec);
+    }
+}
+
 void
 rb_postponed_job_flush(rb_vm_t *vm)
 {
@@ -1940,6 +1974,9 @@ rb_postponed_job_flush(rb_vm_t *vm)
 
     rb_atomic_t triggered_bits = RUBY_ATOMIC_EXCHANGE(pjq->triggered_bitset, 0);
 
+    /* jobs targeted at this Ractor (rb_postponed_job_trigger_for_ractor) */
+    triggered_bits |= RUBY_ATOMIC_EXCHANGE(rb_ec_ractor_ptr(ec)->postponed_job_triggered_bits, 0);
+
     ec->errinfo = Qnil;
     /* mask POSTPONED_JOB dispatch */
     ec->interrupt_mask |= block_mask;
@@ -1950,8 +1987,10 @@ rb_postponed_job_flush(rb_vm_t *vm)
             while (triggered_bits) {
                 unsigned int i = bit_length(triggered_bits) - 1;
                 triggered_bits ^= ((1UL) << i); /* toggle ith bit off */
-                rb_postponed_job_func_t func = pjq->table[i].func;
-                void *data = pjq->table[i].data;
+                /* Read atomically to pair with the atomic CAS/EXCHANGE stores in
+                 * rb_postponed_job_preregister, which can run on another thread. */
+                rb_postponed_job_func_t func = (rb_postponed_job_func_t)(uintptr_t)RUBY_ATOMIC_PTR_LOAD(pjq->table[i].func);
+                void *data = RUBY_ATOMIC_PTR_LOAD(pjq->table[i].data);
                 (func)(data);
             }
 

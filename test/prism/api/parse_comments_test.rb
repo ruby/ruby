@@ -9,6 +9,8 @@ module Prism
 
       assert_kind_of Array, comments
       assert_equal 1, comments.length
+      assert_equal 1, comments[0].location.start_line
+      assert_equal "# foo", comments[0].slice
     end
 
     def test_parse_file_comments

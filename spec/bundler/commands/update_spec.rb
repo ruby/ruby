@@ -744,6 +744,23 @@ RSpec.describe "bundle update" do
       expect(the_bundle).not_to include_gems "myrack 1.2"
     end
 
+    it "doesn't fail when a gem was added to the group but is not in the lockfile yet" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "activesupport", :group => :development
+      G
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        gem "activesupport", :group => :development
+        gem "myrack", :group => :development
+      G
+
+      bundle "update --group development"
+
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
     context "when conservatively updating a group with non-group sub-deps" do
       it "should update only specified group gems" do
         install_gemfile <<-G
@@ -1565,8 +1582,11 @@ RSpec.describe "bundle update --bundler" do
         999.0.0
     L
 
-    expect(the_bundle).to include_gems "bundler 999.0.0"
-    expect(the_bundle).to include_gems "myrack 1.0"
+    bundle "--version"
+    expect(out).to include("999.0.0")
+
+    bundle "list"
+    expect(out).to include("myrack (1.0)")
   end
 
   it "does not claim to update to Bundler version to a wrong version when cached gems are present" do
@@ -1648,8 +1668,11 @@ RSpec.describe "bundle update --bundler" do
         9.9.9
     L
 
-    expect(the_bundle).to include_gems "bundler 9.9.9"
-    expect(the_bundle).to include_gems "myrack 1.0"
+    bundle "--version"
+    expect(out).to include("9.9.9")
+
+    bundle "list"
+    expect(out).to include("myrack (1.0)")
   end
 
   it "errors if the explicit target version does not exist" do

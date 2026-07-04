@@ -1722,7 +1722,13 @@ VM_BH_ISEQ_BLOCK_P(VALUE block_handler)
     if ((block_handler & 0x03) == 0x01) {
 #if VM_CHECK_MODE > 0
         struct rb_captured_block *captured = VM_TAGGED_PTR_REF(block_handler, 0x03);
-        VM_ASSERT(imemo_type_p(captured->code.val, imemo_iseq));
+        if (!imemo_type_p(captured->code.val, imemo_iseq)) {
+            rb_bug("not imemo_iseq. captured:%p IMEMO_P(captured->code.val):%d, "
+                   "flags:%.*" PRIxVALUE,
+                   captured,
+                   RB_TYPE_P(captured->code.val, T_IMEMO),
+                   (int)(sizeof(VALUE) * CHAR_BIT / 4), RBASIC(captured->code.val)->flags);
+        }
 #endif
         return 1;
     }
@@ -2413,6 +2419,7 @@ extern void rb_resume_coverages(void);
 extern void rb_suspend_coverages(void);
 
 void rb_postponed_job_flush(rb_vm_t *vm);
+void rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor);
 
 // ractor.c
 RUBY_EXTERN VALUE rb_eRactorUnsafeError;

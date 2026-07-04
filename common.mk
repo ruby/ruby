@@ -414,6 +414,8 @@ $(LIBRUBY_A):	$(LIBRUBY_A_OBJS) $(MAINOBJ) $(INITOBJS) $(ARCHFILE)
 
 $(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(BUILTIN_ENCOBJS)
 
+$(LIBRUBY_A) $(LIBRUBY_SO): $(LIBRUBY_SO_UPDATE)
+
 $(LIBRUBY_EXTS):
 	@$(NULLCMD) > $@
 
@@ -1199,6 +1201,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/pathname_builtin.rb \
 		$(srcdir)/ractor.rb \
+		$(srcdir)/string.rb \
 		$(srcdir)/symbol.rb \
 		$(srcdir)/timev.rb \
 		$(srcdir)/thread_sync.rb \
@@ -1585,10 +1588,10 @@ no-test-bundled-gems-precheck:
 yes-update-default-gemspecs no-update-default-gemspecs: update-default-gemspecs
 update-default-gemspecs: $(PREP) $(RBCONFIG)
 	@$(MAKEDIRS) $(srcdir)/.bundle/specifications
-	$(Q)$(MINIRUBY) -W0 -C "$(srcdir)" -I tool/lib -roptparse -routput -rbundled_gem \
+	$(Q)$(MINIRUBY) -W0 -I "$(srcdir)/tool/lib" -roptparse -routput -rbundled_gem \
 	    -e "(out = Output.new).def_options(ARGV.options)" \
 	    -e "BundledGem.update_default_gemspecs(ARGV.parse!, out, quiet: $(V).zero?)" \
-	    -- -c -o .bundle/specifications lib ext
+	    -- -c -o "$(srcdir)/.bundle/specifications" "$(srcdir)/lib" "$(srcdir)/ext"
 
 install-for-test-bundled-gems: $(TEST_RUNNABLE)-install-for-test-bundled-gems
 no-install-for-test-bundled-gems: no-update-default-gemspecs
@@ -1648,7 +1651,30 @@ yes-test-bundled-gems-spec: yes-test-all-precheck $(PREPARE_BUNDLED_GEMS)
 no-test-bundled-gems-spec:
 
 
-test-syntax-suggest:
+test-syntax-suggest-precheck: $(TEST_RUNNABLE)-test-syntax-suggest-precheck
+no-test-syntax-suggest-precheck:
+yes-test-syntax-suggest-precheck: main
+
+test-syntax-suggest-prepare: $(TEST_RUNNABLE)-test-syntax-suggest-prepare
+no-test-syntax-suggest-prepare: no-test-syntax-suggest-precheck
+yes-test-syntax-suggest-prepare: yes-test-syntax-suggest-precheck
+	$(ACTIONS_GROUP)
+	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
+		--install-dir .bundle --conservative "rspec:~> 3"
+	$(ACTIONS_ENDGROUP)
+
+RSPECOPTS =
+SYNTAX_SUGGEST_SPECS =
+PREPARE_SYNTAX_SUGGEST = $(TEST_RUNNABLE)-test-syntax-suggest-prepare
+test-syntax-suggest: $(TEST_RUNNABLE)-test-syntax-suggest
+yes-test-syntax-suggest: $(PREPARE_SYNTAX_SUGGEST)
+	$(ACTIONS_GROUP)
+	$(XRUBY) -C $(srcdir) -Ispec/syntax_suggest$(PATH_SEPARATOR)spec/lib .bundle/bin/rspec \
+		--require rspec/expectations \
+		--require spec_helper --require formatter_overrides --require spec_coverage \
+		$(RSPECOPTS) spec/syntax_suggest/$(SYNTAX_SUGGEST_SPECS)
+	$(ACTIONS_ENDGROUP)
+no-test-syntax-suggest:
 
 check: $(DOT_WAIT) $(PREPARE_SYNTAX_SUGGEST) test-syntax-suggest
 
@@ -1690,10 +1716,13 @@ yes-test-bundler-parallel: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
 		-r./$(arch)-fake \
 		-r$(tooldir)/lib/_tmpdir \
+		-r$(tooldir)/lib/bundler_runtime_grouping \
 		-I$(srcdir)/spec/bundler \
 		-e "ruby = ENV['RUBY']" \
 		-e "ARGV[-1] = File.expand_path(ARGV[-1])" \
 		-e "ENV['RSPEC_EXECUTABLE'] = ruby + ARGV.shift" \
+		-e "require 'support/setup'" \
+		-e "BundlerRuntimeGrouping.install!" \
 		-e "load ARGV.shift" \
 		-s -- -no-report-tmpdir -- \
 		" -C $(srcdir) -Ispec/bundler -Ispec/lib .bundle/bin/rspec -r spec_helper" \
@@ -1974,8 +2003,10 @@ gc/distclean gc/realclean::
 	-$(Q) $(RM) gc/Makefile
 
 modular-gc-precheck:
-modular-gc: probes.h gc/Makefile
-	$(Q) $(RUNRUBY) $(srcdir)/ext/extmk.rb \
+modular-gc: probes.h gc/Makefile $(PROGRAM) $(RBCONFIG)
+	$(Q) DTRACE='$(DTRACE)' DTRACE_EXT='$(DTRACE_EXT)' \
+		DTRACE_OBJ='$(DTRACE_OBJ)' DTRACE_REBUILD='$(DTRACE_REBUILD)' \
+		$(RUNRUBY) $(srcdir)/ext/extmk.rb \
 		$(SCRIPT_ARGS) \
 		--make='$(MAKE)' --make-flags="V=$(V) MINIRUBY='$(MINIRUBY)'" \
 		--gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \

@@ -60,7 +60,8 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal(-23,      parse('-23'))
     assert_equal(23,       parse('23'))
     assert_in_delta(0.23,  parse('0.23'), 1e-2)
-    assert_in_delta(0.0,   parse('0e0'), 1e-2)
+    assert_equal(0.0,      parse('0e0'))
+    assert_equal(-0.0,     parse('-0e0'))
     assert_equal("",       parse('""'))
     assert_equal("foobar", parse('"foobar"'))
   end
@@ -219,7 +220,9 @@ class JSONParserTest < Test::Unit::TestCase
   def test_parse_json_primitive_values
     assert_raise(JSON::ParserError) { parse('') }
     assert_raise(TypeError) { parse(nil) }
-    assert_raise(JSON::ParserError) { parse('  /* foo */ ') }
+    EnvUtil.suppress_warning do # still no warning in JRuby verions
+      assert_raise(JSON::ParserError) { parse('  /* foo */ ') }
+    end
     assert_equal nil, parse('null')
     assert_equal false, parse('false')
     assert_equal true, parse('true')
@@ -489,7 +492,7 @@ class JSONParserTest < Test::Unit::TestCase
     JSON
     assert_equal(
       { "key1" => "value1", "key2" => "value2", "key3" => "value3" },
-      parse(json))
+      parse(json, allow_comments: true))
     json = <<~JSON
       {
         "key1":"value1"  /* multi line
@@ -498,7 +501,7 @@ class JSONParserTest < Test::Unit::TestCase
                           *  comment */
       }
     JSON
-    assert_raise(ParserError) { parse(json) }
+    assert_raise(ParserError) { parse(json, allow_comments: true) }
     json = <<~JSON
       {
         "key1":"value1"  /* multi line
@@ -506,7 +509,7 @@ class JSONParserTest < Test::Unit::TestCase
                           /* legal nested multi line comment start sequence */
       }
     JSON
-    assert_equal({ "key1" => "value1" }, parse(json))
+    assert_equal({ "key1" => "value1" }, parse(json, allow_comments: true))
     json = <<~JSON
       {
         "key1":"value1"  /* multi line
@@ -515,18 +518,29 @@ class JSONParserTest < Test::Unit::TestCase
                          and again, throw an Error */
       }
     JSON
-    assert_raise(ParserError) { parse(json) }
+    assert_raise(ParserError) { parse(json, allow_comments: true) }
     json = <<~JSON
       {
         "key1":"value1"  /*/*/
       }
     JSON
-    assert_equal({ "key1" => "value1" }, parse(json))
-    assert_equal({}, parse('{} /**/'))
-    assert_raise(ParserError) { parse('{} /* comment not closed') }
-    assert_raise(ParserError) { parse('{} /*/') }
-    assert_raise(ParserError) { parse('{} /x wrong comment') }
-    assert_raise(ParserError) { parse('{} /') }
+    assert_equal({ "key1" => "value1" }, parse(json, allow_comments: true))
+    assert_equal({}, parse('{} /**/', allow_comments: true))
+    assert_equal({}, parse('{} // eol comment ending at eof', allow_comments: true))
+    assert_raise(ParserError) { parse('{} /* comment not closed', allow_comments: true) }
+    assert_raise(ParserError) { parse('{} /*/', allow_comments: true) }
+    assert_raise(ParserError) { parse('{} /x wrong comment', allow_comments: true) }
+    assert_raise(ParserError) { parse('{} /', allow_comments: true) }
+  end
+
+  def test_parse_comments_deprecation
+    assert_equal({}, parse('/**/ {}', allow_comments: true))
+    assert_raise(ParserError) { parse('/**/ {}', allow_comments: false) }
+    if RUBY_ENGINE == 'ruby'
+      assert_deprecated_warning(/Encountered comment in JSON/) do
+        parse('/**/ {}')
+      end
+    end
   end
 
   def test_nesting
@@ -849,7 +863,7 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_parse_error_snippet
-    omit "C ext only test" unless RUBY_ENGINE == "ruby"
+    omit "JRuby errors don't contain positions" if RUBY_ENGINE == "jruby"
 
     error = assert_raise(JSON::ParserError) { JSON.parse("あああああああああああああああああああああああ") }
     assert_equal "unexpected character: 'ああああああああああ' at line 1 column 1", error.message
@@ -862,6 +876,15 @@ class JSONParserTest < Test::Unit::TestCase
 
     error = assert_raise(JSON::ParserError) { JSON.parse("abcあああああああああああああああああああああああ") }
     assert_equal "unexpected character: 'abcあああああああああ' at line 1 column 1", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("[1,\n@") }
+    assert_equal "unexpected character: '@' at line 2 column 1", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("[\n  1,\n  @\n]") }
+    assert_equal "unexpected character: '@' at line 3 column 3", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("@") }
+    assert_equal "unexpected character: '@' at line 1 column 1", error.message
   end
 
   def test_parse_leading_slash
