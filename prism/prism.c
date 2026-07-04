@@ -17077,6 +17077,34 @@ parse_pattern_hash_key(pm_parser_t *parser, pm_static_literals_t *keys, pm_node_
 }
 
 /**
+ * Parse a capture target after => has already been consumed. Expects an
+ * identifier and returns a CapturePatternNode wrapping the given pattern node.
+ */
+static pm_node_t *
+parse_pattern_capture_target(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node_t *node) {
+
+    pm_token_t operator = parser->previous;
+    expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_PATTERN_IDENT_AFTER_HROCKET);
+    pm_constant_id_t constant_id = pm_parser_constant_id_token(parser, &parser->previous);
+
+    int depth;
+    if ((depth = pm_parser_local_depth_constant_id(parser, constant_id)) == -1) {
+        pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end, 0);
+    }
+
+    parse_pattern_capture(parser, captures, constant_id, &TOK2LOC(parser, &parser->previous));
+
+    pm_local_variable_target_node_t *target = pm_local_variable_target_node_create(
+        parser,
+        &TOK2LOC(parser, &parser->previous),
+        constant_id,
+        (uint32_t) (depth == -1 ? 0 : depth)
+    );
+
+    return UP(pm_capture_pattern_node_create(parser, node, target, &operator));
+}
+
+/**
  * Parse a hash pattern.
  */
 static pm_hash_pattern_node_t *
@@ -17123,25 +17151,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
             pm_node_t *key = first_node;
 
             if (accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
-                pm_token_t operator = parser->previous;
-                expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_PATTERN_IDENT_AFTER_HROCKET);
-                pm_constant_id_t constant_id = pm_parser_constant_id_token(parser, &parser->previous);
-
-                int depth;
-                if ((depth = pm_parser_local_depth_constant_id(parser, constant_id)) == -1) {
-                    pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end, 0);
-                }
-
-                parse_pattern_capture(parser, captures, constant_id, &TOK2LOC(parser, &parser->previous));
-
-                pm_local_variable_target_node_t *target = pm_local_variable_target_node_create(
-                    parser,
-                    &TOK2LOC(parser, &parser->previous),
-                    constant_id,
-                    (uint32_t) (depth == -1 ? 0 : depth)
-                );
-
-                key = UP(pm_capture_pattern_node_create(parser, first_node, target, &operator));
+                key = parse_pattern_capture_target(parser, captures, first_node);
             }
 
             if (accept1(parser, PM_TOKEN_COLON)) {
@@ -17223,25 +17233,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
                 key = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_LABEL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1));
 
                 if (accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
-                    pm_token_t operator = parser->previous;
-                    expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_PATTERN_IDENT_AFTER_HROCKET);
-                    pm_constant_id_t constant_id = pm_parser_constant_id_token(parser, &parser->previous);
-
-                    int depth;
-                    if ((depth = pm_parser_local_depth_constant_id(parser, constant_id)) == -1) {
-                        pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end, 0);
-                    }
-
-                    parse_pattern_capture(parser, captures, constant_id, &TOK2LOC(parser, &parser->previous));
-
-                    pm_local_variable_target_node_t *target = pm_local_variable_target_node_create(
-                        parser,
-                        &TOK2LOC(parser, &parser->previous),
-                        constant_id,
-                        (uint32_t) (depth == -1 ? 0 : depth)
-                    );
-
-                    key = UP(pm_capture_pattern_node_create(parser, key, target, &operator));
+                    key = parse_pattern_capture_target(parser, captures, key);
                 }
 
                 if (accept1(parser, PM_TOKEN_COLON)) {
@@ -17705,25 +17697,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
     // If we have an =>, then we are assigning this pattern to a variable.
     // In this case we should create an assignment node.
     while (accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
-        pm_token_t operator = parser->previous;
-        expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_PATTERN_IDENT_AFTER_HROCKET);
-
-        pm_constant_id_t constant_id = pm_parser_constant_id_token(parser, &parser->previous);
-        int depth;
-
-        if ((depth = pm_parser_local_depth_constant_id(parser, constant_id)) == -1) {
-            pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end, 0);
-        }
-
-        parse_pattern_capture(parser, captures, constant_id, &TOK2LOC(parser, &parser->previous));
-        pm_local_variable_target_node_t *target = pm_local_variable_target_node_create(
-            parser,
-            &TOK2LOC(parser, &parser->previous),
-            constant_id,
-            (uint32_t) (depth == -1 ? 0 : depth)
-        );
-
-        node = UP(pm_capture_pattern_node_create(parser, node, target, &operator));
+        node = parse_pattern_capture_target(parser, captures, node);
     }
 
     return node;
