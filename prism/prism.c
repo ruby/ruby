@@ -17120,17 +17120,40 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
         }
         PRISM_FALLTHROUGH
         default: {
-            if (match1(parser, PM_TOKEN_COLON)) {
-                parser_lex(parser);
+            pm_node_t *key = first_node;
+
+            if (accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
+                pm_token_t operator = parser->previous;
+                expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_PATTERN_IDENT_AFTER_HROCKET);
+                pm_constant_id_t constant_id = pm_parser_constant_id_token(parser, &parser->previous);
+
+                int depth;
+                if ((depth = pm_parser_local_depth_constant_id(parser, constant_id)) == -1) {
+                    pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end, 0);
+                }
+
+                parse_pattern_capture(parser, captures, constant_id, &TOK2LOC(parser, &parser->previous));
+
+                pm_local_variable_target_node_t *target = pm_local_variable_target_node_create(
+                    parser,
+                    &TOK2LOC(parser, &parser->previous),
+                    constant_id,
+                    (uint32_t) (depth == -1 ? 0 : depth)
+                );
+
+                key = UP(pm_capture_pattern_node_create(parser, first_node, target, &operator));
+            }
+
+            if (accept1(parser, PM_TOKEN_COLON)) {
                 pm_node_t *value = parse_pattern(parser, captures, PM_PARSE_PATTERN_SINGLE, PM_ERR_PATTERN_EXPRESSION_AFTER_KEY, (uint16_t) (depth + 1));
-                pm_node_t *assoc = UP(pm_assoc_node_create(parser, first_node, NULL, value));
+                pm_node_t *assoc = UP(pm_assoc_node_create(parser, key, NULL, value));
                 pm_node_list_append(parser->arena, &assocs, assoc);
             } else {
                 pm_diagnostic_id_t diag_id = PM_NODE_TYPE_P(first_node, PM_INTERPOLATED_SYMBOL_NODE) ? PM_ERR_PATTERN_HASH_KEY_INTERPOLATED : PM_ERR_PATTERN_HASH_KEY_LABEL;
-                pm_parser_err_node(parser, first_node, diag_id);
+                pm_parser_err_node(parser, key, diag_id);
 
                 pm_node_t *value = UP(pm_error_recovery_node_create(parser, PM_NODE_START(first_node), PM_NODE_LENGTH(first_node)));
-                pm_node_t *assoc = UP(pm_assoc_node_create(parser, first_node, NULL, value));
+                pm_node_t *assoc = UP(pm_assoc_node_create(parser, key, NULL, value));
 
                 pm_node_list_append(parser->arena, &assocs, assoc);
             }
@@ -17179,11 +17202,50 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
             } else if (accept1(parser, PM_TOKEN_LABEL)) {
                 key = UP(pm_symbol_node_label_create(parser, &parser->previous));
                 is_label = true;
+            } else if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
+                pm_token_t opening = parser->current;
+                parser_lex(parser);
+
+                key = parse_pattern(parser, captures, PM_PARSE_PATTERN_SINGLE, PM_ERR_PATTERN_EXPRESSION_AFTER_PAREN, (uint16_t) (depth + 1));
+                accept1(parser, PM_TOKEN_NEWLINE);
+                expect1_opening(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN, &opening);
+
+                if (accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
+                    key = parse_pattern_capture_target(parser, captures, key);
+                }
+
+                if (accept1(parser, PM_TOKEN_COLON)) {
+                    // Key-value separator found.
+                } else {
+                    pm_parser_err_node(parser, key, PM_ERR_PATTERN_HASH_KEY_LABEL);
+                }
             } else {
                 key = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_LABEL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1));
 
-                if (match1(parser, PM_TOKEN_COLON)) {
-                    parser_lex(parser);
+                if (accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
+                    pm_token_t operator = parser->previous;
+                    expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_PATTERN_IDENT_AFTER_HROCKET);
+                    pm_constant_id_t constant_id = pm_parser_constant_id_token(parser, &parser->previous);
+
+                    int depth;
+                    if ((depth = pm_parser_local_depth_constant_id(parser, constant_id)) == -1) {
+                        pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end, 0);
+                    }
+
+                    parse_pattern_capture(parser, captures, constant_id, &TOK2LOC(parser, &parser->previous));
+
+                    pm_local_variable_target_node_t *target = pm_local_variable_target_node_create(
+                        parser,
+                        &TOK2LOC(parser, &parser->previous),
+                        constant_id,
+                        (uint32_t) (depth == -1 ? 0 : depth)
+                    );
+
+                    key = UP(pm_capture_pattern_node_create(parser, key, target, &operator));
+                }
+
+                if (accept1(parser, PM_TOKEN_COLON)) {
+                    // Key-value separator found.
                 } else {
                     pm_parser_err_node(parser, key, PM_ERR_PATTERN_HASH_KEY_LABEL);
                 }
@@ -17331,14 +17393,50 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                         first_node = UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous)));
                         break;
                     }
+                    case PM_TOKEN_CARET:
+                        first_node = parse_pattern_primitive(parser, captures, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1));
+                        break;
+                    case PM_TOKEN_PARENTHESIS_LEFT: {
+                        pm_token_t opening = parser->current;
+                        parser_lex(parser);
+
+                        pm_node_t *body = parse_pattern(parser, captures, PM_PARSE_PATTERN_SINGLE, PM_ERR_PATTERN_EXPRESSION_AFTER_PAREN, (uint16_t) (depth + 1));
+                        accept1(parser, PM_TOKEN_NEWLINE);
+                        expect1_opening(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN, &opening);
+                        first_node = body;
+                        break;
+                    }
                     default:
-                        /*
-                         * Use parse_expression here because this token is not
-                         * a label or **, so we parse it as an expression first.
-                         * parse_pattern_hash will then re-interpret it as a
-                         * hash pattern key, potentially followed by : or =>.
-                         */
-                        first_node = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_LABEL, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1));
+                        first_node = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_LABEL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1));
+                        // parse_expression handles => as rightward assignment
+                        // (MatchRequiredNode), but in hash pattern keys it should be
+                        // a capture pattern (CapturePatternNode). Convert here.
+                        {
+                            pm_node_t *inner = first_node;
+
+                            // Unwrap ParenthesesNode if present
+                            if (PM_NODE_TYPE_P(inner, PM_PARENTHESES_NODE)) {
+                                inner = ((const pm_parentheses_node_t *) inner)->body;
+                                if (PM_NODE_TYPE_P(inner, PM_STATEMENTS_NODE) && ((const pm_statements_node_t *) inner)->body.size == 1) {
+                                    inner = ((const pm_statements_node_t *) inner)->body.nodes[0];
+                                }
+                            }
+
+                            if (PM_NODE_TYPE_P(inner, PM_MATCH_REQUIRED_NODE)) {
+                                const pm_match_required_node_t *match = (const pm_match_required_node_t *) inner;
+                                if (PM_NODE_TYPE_P(match->pattern, PM_LOCAL_VARIABLE_TARGET_NODE)) {
+                                    const pm_local_variable_target_node_t *target = (const pm_local_variable_target_node_t *) match->pattern;
+                                    parse_pattern_capture(parser, captures, target->name, &((const pm_node_t *) match->pattern)->location);
+                                    first_node = UP(pm_capture_pattern_node_new(
+                                        parser->arena, ++parser->node_id, 0,
+                                        PM_LOCATION_INIT_NODES(match->value, match->pattern),
+                                        match->value,
+                                        (pm_local_variable_target_node_t *) match->pattern,
+                                        match->operator_loc
+                                    ));
+                                }
+                            }
+                        }
                         break;
                 }
 
@@ -17361,6 +17459,9 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
 
             parser->pattern_matching_newlines = previous_pattern_matching_newlines;
             return UP(node);
+        }
+        case PM_TOKEN_PARENTHESIS_LEFT: {
+            return parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_LABEL | PM_PARSE_ACCEPTS_DO_BLOCK, diag_id, (uint16_t) (depth + 1));
         }
         case PM_TOKEN_UDOT_DOT:
         case PM_TOKEN_UDOT_DOT_DOT: {

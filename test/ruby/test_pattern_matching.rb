@@ -1331,7 +1331,7 @@ END
       end
     end
 
-    assert_raise_with_message(NoMatchingPatternError, %[{"x" => 1}: ]) do
+    assert_raise_with_message(NoMatchingPatternError, %[{"x" => 1}: key not found]) do
       case {"x" => 1}
       in {"y" : Integer}
         true
@@ -1449,6 +1449,51 @@ END
       end
     end
 
+    assert_block do
+      hash = {200 => "ok"}
+      case hash
+      in {Integer => k : String}
+        k == 200
+      else false
+      end
+    end
+
+    assert_block do
+      hash = {200 => "ok"}
+      case hash
+      in {Integer => k : String => v}
+        k == 200 && v == "ok"
+      else false
+      end
+    end
+
+    assert_block do
+      hash = {200 => "ok"}
+      case hash
+      in {(200..300) => k : String}
+        k == 200
+      else false
+      end
+    end
+
+    assert_block do
+      hash = {a: 1, 200 => "ok"}
+      case hash
+      in {a: Integer, Integer => k : String}
+        k == 200
+      else false
+      end
+    end
+
+    assert_block do
+      [{200 => 42}, {"a" => "ok"}].all? do |hash|
+        case hash
+        in {Integer => k : String}
+          false
+        else true
+        end
+      end
+    end
   end
 
   def test_paren

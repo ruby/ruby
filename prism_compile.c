@@ -3069,9 +3069,38 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
                     CHECK(pm_compile_pattern_match(iseq, scope_node, value, match_values, match_failed_label, in_single_pattern, false, base_index + 1));
                 }
                 else {
+                    const pm_node_t *key_pattern;
+                    const pm_capture_pattern_node_t *key_capture = NULL;
+
+                    if (PM_NODE_TYPE_P(key, PM_CAPTURE_PATTERN_NODE)) {
+                        key_capture = (const pm_capture_pattern_node_t *) key;
+                        key_pattern = key_capture->value;
+                    } else {
+                        key_pattern = key;
+                    }
+
                     PUSH_INSN(ret, location, dup);
                     PUSH_SEND(ret, location, rb_intern("keys"), INT2FIX(0));
-                    pm_compile_node(iseq, key, ret, false, scope_node);
+
+                    if (PM_NODE_TYPE_P(key_pattern, PM_PINNED_VARIABLE_NODE)) {
+                        const pm_pinned_variable_node_t *pinned = (const pm_pinned_variable_node_t *) key_pattern;
+                        const pm_node_t *inner = pinned->variable;
+                        if (PM_NODE_TYPE_P(inner, PM_LOCAL_VARIABLE_TARGET_NODE)) {
+                            const pm_local_variable_target_node_t *target = (const pm_local_variable_target_node_t *) inner;
+                            pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, target->name, target->depth);
+                            PUSH_GETLOCAL(ret, location, local_index.index, local_index.level);
+                        }
+                        else {
+                            pm_compile_node(iseq, inner, ret, false, scope_node);
+                        }
+                    }
+                    else if (PM_NODE_TYPE_P(key_pattern, PM_PINNED_EXPRESSION_NODE)) {
+                        const pm_pinned_expression_node_t *pinned = (const pm_pinned_expression_node_t *) key_pattern;
+                        pm_compile_node(iseq, pinned->expression, ret, false, scope_node);
+                    }
+                    else {
+                        pm_compile_node(iseq, key_pattern, ret, false, scope_node);
+                    }
                     PUSH_SEND(ret, location, rb_intern("grep"), INT2FIX(1));
                     PUSH_SEND(ret, location, rb_intern("first"), INT2FIX(0));
 
@@ -3082,14 +3111,33 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
                         LABEL *match_succeeded_label = NEW_LABEL(location.line);
                         PUSH_INSN(ret, location, dup);
                         PUSH_INSNL(ret, location, branchunless, match_succeeded_label);
-                        CHECK(pm_compile_pattern_generic_error(iseq, scope_node, node, ret, rb_fstring_lit("key not found"), base_index + 2));
+                        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                        {
+                            VALUE operand = rb_fstring_lit("key not found");
+                            PUSH_INSN1(ret, location, putobject, operand);
+                        }
+                        PUSH_INSN1(ret, location, topn, INT2FIX(3));
+                        PUSH_SEND(ret, location, id_core_sprintf, INT2FIX(2));
+                        PUSH_INSN1(ret, location, setn, INT2FIX(base_index + 2 + PM_PATTERN_BASE_INDEX_OFFSET_ERROR_STRING + 1));
+                        PUSH_INSN1(ret, location, putobject, Qfalse);
+                        PUSH_INSN1(ret, location, setn, INT2FIX(base_index + 2 + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_P + 2));
+                        PUSH_INSN(ret, location, pop);
+                        PUSH_INSN(ret, location, pop);
                         PUSH_LABEL(ret, match_succeeded_label);
                     }
 
                     LABEL *nil_key_label = NEW_LABEL(location.line);
                     PUSH_INSNL(ret, location, branchif, nil_key_label);
 
-                    // Key found. Get value using the matched key.
+                    // Key found. Capture the matched key into the local variable if a capture is present.
+                    // Stack: [hash, first_key]
+                    if (key_capture != NULL) {
+                        pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, key_capture->target->name, key_capture->target->depth);
+                        PUSH_INSN(ret, location, dup);
+                        PUSH_SETLOCAL(ret, location, local_index.index, local_index.level);
+                    }
+
+                    // Get value using the matched key.
                     // Stack: [hash, first_key]
                     PUSH_INSN1(ret, location, topn, INT2FIX(1));
                     PUSH_INSN(ret, location, swap);
