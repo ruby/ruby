@@ -1494,6 +1494,72 @@ END
         end
       end
     end
+
+    assert_block do
+      key = 200
+      hash = {200 => "ok"}
+      case hash
+      in {^key : String}
+        true
+      else false
+      end
+    end
+
+    assert_block do
+      key = 999
+      hash = {200 => "ok"}
+      case hash
+      in {^key : String}
+        false
+      else true
+      end
+    end
+
+    assert_block do
+      key = 200
+      hash = {200 => "ok"}
+      case hash
+      in {^key => k : String}
+        k == 200
+      else false
+      end
+    end
+
+    assert_block do
+      hash = {200 => "ok"}
+      case hash
+      in {^(200) : String}
+        true
+      else false
+      end
+    end
+
+    assert_block do
+      hash = { "two hundred" => "ok"}
+      case hash
+      in {/^two/ : String}
+        true
+      else false
+      end
+    end
+
+    assert_block do
+      hash = {200 => "ok", 300 => "bar"}
+      case hash
+      in {Integer => k : String, **rest}
+        k == 200 && rest == {300 => "bar"}
+      else false
+      end
+    end
+
+    assert_block do
+      hash = {200 => "ok", 300 => "bar"}
+      case hash
+      in {Integer => k : String => v, **rest}
+        k == 200 && v == "ok" && rest == {300 => "bar"}
+      else false
+      end
+    end
   end
 
   def test_paren
