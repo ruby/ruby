@@ -17120,16 +17120,20 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
         }
         PRISM_FALLTHROUGH
         default: {
-            // If we get anything else, then this is an error. For this we'll
-            // create a missing node for the value and create an assoc node for
-            // the first node in the list.
-            pm_diagnostic_id_t diag_id = PM_NODE_TYPE_P(first_node, PM_INTERPOLATED_SYMBOL_NODE) ? PM_ERR_PATTERN_HASH_KEY_INTERPOLATED : PM_ERR_PATTERN_HASH_KEY_LABEL;
-            pm_parser_err_node(parser, first_node, diag_id);
+            if (match1(parser, PM_TOKEN_COLON)) {
+                parser_lex(parser);
+                pm_node_t *value = parse_pattern(parser, captures, PM_PARSE_PATTERN_SINGLE, PM_ERR_PATTERN_EXPRESSION_AFTER_KEY, (uint16_t) (depth + 1));
+                pm_node_t *assoc = UP(pm_assoc_node_create(parser, first_node, NULL, value));
+                pm_node_list_append(parser->arena, &assocs, assoc);
+            } else {
+                pm_diagnostic_id_t diag_id = PM_NODE_TYPE_P(first_node, PM_INTERPOLATED_SYMBOL_NODE) ? PM_ERR_PATTERN_HASH_KEY_INTERPOLATED : PM_ERR_PATTERN_HASH_KEY_LABEL;
+                pm_parser_err_node(parser, first_node, diag_id);
 
-            pm_node_t *value = UP(pm_error_recovery_node_create(parser, PM_NODE_START(first_node), PM_NODE_LENGTH(first_node)));
-            pm_node_t *assoc = UP(pm_assoc_node_create(parser, first_node, NULL, value));
+                pm_node_t *value = UP(pm_error_recovery_node_create(parser, PM_NODE_START(first_node), PM_NODE_LENGTH(first_node)));
+                pm_node_t *assoc = UP(pm_assoc_node_create(parser, first_node, NULL, value));
 
-            pm_node_list_append(parser->arena, &assocs, assoc);
+                pm_node_list_append(parser->arena, &assocs, assoc);
+            }
             break;
         }
     }
@@ -17157,29 +17161,42 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
             }
         } else {
             pm_node_t *key;
+            bool is_label = false;
 
             if (match1(parser, PM_TOKEN_STRING_BEGIN)) {
                 key = parse_strings(parser, NULL, true, (uint16_t) (depth + 1));
 
                 if (PM_NODE_TYPE_P(key, PM_INTERPOLATED_SYMBOL_NODE)) {
                     pm_parser_err_node(parser, key, PM_ERR_PATTERN_HASH_KEY_INTERPOLATED);
-                } else if (!pm_symbol_node_label_p(parser, key)) {
+                    is_label = true;
+                } else if (pm_symbol_node_label_p(parser, key)) {
+                    is_label = true;
+                } else if (match1(parser, PM_TOKEN_COLON)) {
+                    parser_lex(parser);
+                } else {
                     pm_parser_err_node(parser, key, PM_ERR_PATTERN_LABEL_AFTER_COMMA);
                 }
             } else if (accept1(parser, PM_TOKEN_LABEL)) {
                 key = UP(pm_symbol_node_label_create(parser, &parser->previous));
+                is_label = true;
             } else {
-                expect1(parser, PM_TOKEN_LABEL, PM_ERR_PATTERN_LABEL_AFTER_COMMA);
+                key = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_LABEL, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1));
 
-                pm_token_t label = { .type = PM_TOKEN_LABEL, .start = parser->previous.end, .end = parser->previous.end };
-                key = UP(pm_symbol_node_create(parser, NULL, &label, NULL));
+                if (match1(parser, PM_TOKEN_COLON)) {
+                    parser_lex(parser);
+                } else {
+                    pm_parser_err_node(parser, key, PM_ERR_PATTERN_HASH_KEY_LABEL);
+                }
             }
 
-            parse_pattern_hash_key(parser, &keys, key);
+            if (is_label) {
+                parse_pattern_hash_key(parser, &keys, key);
+            }
+
             pm_node_t *value = NULL;
 
             if (match8(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_EOF)) {
-                if (PM_NODE_TYPE_P(key, PM_SYMBOL_NODE)) {
+                if (is_label && PM_NODE_TYPE_P(key, PM_SYMBOL_NODE)) {
                     value = parse_pattern_hash_implicit_value(parser, captures, (pm_symbol_node_t *) key);
                 } else {
                     value = UP(pm_error_recovery_node_create(parser, PM_NODE_END(key), 0));
@@ -17307,16 +17324,16 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                     case PM_TOKEN_USTAR_STAR:
                         first_node = parse_pattern_keyword_rest(parser, captures);
                         break;
-                    case PM_TOKEN_STRING_BEGIN:
-                        first_node = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_LABEL, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1));
-                        break;
-                    default: {
+                    case PM_TOKEN_HEREDOC_START: {
                         PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_PATTERN_HASH_KEY, pm_token_str(parser->current.type));
                         parser_lex(parser);
 
                         first_node = UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous)));
                         break;
                     }
+                    default:
+                        first_node = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_LABEL, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1));
+                        break;
                 }
 
                 node = parse_pattern_hash(parser, captures, first_node, (uint16_t) (depth + 1));
@@ -17658,15 +17675,37 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
             }
         }
         PRISM_FALLTHROUGH
-        default:
+        default: {
             node = parse_pattern_primitives(parser, captures, NULL, diag_id, (uint16_t) (depth + 1));
             break;
+        }
     }
 
     // If we got a dynamic label symbol, then we need to treat it like the
     // beginning of a hash pattern.
     if (pm_symbol_node_label_p(parser, node)) {
         return UP(parse_pattern_hash(parser, captures, node, (uint16_t) (depth + 1)));
+    }
+
+    // If we got an expression followed by :, then we need to treat it like
+    // the beginning of a hash pattern.
+    if (match1(parser, PM_TOKEN_COLON)) {
+        if (PM_NODE_TYPE_P(node, PM_ARRAY_PATTERN_NODE)) {
+            pm_array_pattern_node_t *array_pat = (pm_array_pattern_node_t *) node;
+            pm_array_node_t *array_expr = pm_array_node_create(parser, NULL);
+            for (size_t i = 0; i < array_pat->requireds.size; i++) {
+                pm_array_node_elements_append(parser->arena, array_expr, array_pat->requireds.nodes[i]);
+            }
+            node = UP(array_expr);
+        }
+
+        node = UP(parse_pattern_hash(parser, captures, node, (uint16_t) (depth + 1)));
+
+        if (!(flags & PM_PARSE_PATTERN_TOP)) {
+            pm_parser_err_node(parser, node, PM_ERR_PATTERN_HASH_IMPLICIT);
+        }
+
+        return node;
     }
 
     if ((flags & PM_PARSE_PATTERN_MULTI) && match1(parser, PM_TOKEN_COMMA)) {
