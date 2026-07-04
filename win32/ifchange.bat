@@ -113,7 +113,11 @@ if exist %dest% (
 )
 for %%I in (%1) do echo %%~I updated
 del /f %dest% 2> nul
-copy %src% %dest% > nul
+copy %src% %dest% > nul || (
+    echo %progname%: failed to copy %src% to %dest% 1>&2
+    del %src%
+    exit /b 1
+)
 del %src%
 
 :nt_end
