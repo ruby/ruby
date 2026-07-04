@@ -521,7 +521,21 @@ _PREFIXED_SYMBOL = TOKEN_PASTE($(SYMBOL_PREFIX),name)
 	shift; \
 	$(Q1:0=:) set -x; \
 	$(DTRACE) "$$@" -s $<
-	$(Q) sed -e 's/RUBY_/RUBY_DTRACE_/g' -e 's/PROBES_H_TMP/RUBY_PROBES_H/' -e 's/(char \*/(const char */g' -e 's/, char \*/, const char */g' $@.tmp > $@
+	$(Q) { \
+	echo '#ifdef __clang__'; \
+	echo '#pragma clang diagnostic push'; \
+	echo '#pragma clang diagnostic ignored "-Wdollar-in-identifier-extension"'; \
+	echo '#pragma clang diagnostic ignored "-Wgnu-statement-expression-from-macro-expansion"'; \
+	echo '#endif'; \
+	sed  -e 's/RUBY_/RUBY_DTRACE_/g' \
+	     -e 's/PROBES_H_TMP/RUBY_PROBES_H/' \
+	     -e 's/(char \*/(const char */g' -e 's/, char \*/, const char */g' \
+	     -e 's/({/RB_GNUC_EXTENSION&/g' \
+	     $@.tmp; \
+	echo '#ifdef __clang__'; \
+	echo '#pragma clang diagnostic pop'; \
+	echo '#endif'; \
+	} > $@
 	$(Q) $(RM) $@.tmp
 
 .dmyh.h:

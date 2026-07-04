@@ -648,8 +648,8 @@ vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t 
 
         fprintf(stderr, "iseq_overload:%d, cme:%p (def:%p), cm_cc_cme(cc):%p (def:%p)\n",
                 (int)cme->def->iseq_overload,
-                cme, cme->def,
-                vm_cc_cme(cc), vm_cc_cme(cc)->def);
+                (void *)cme, (void *)cme->def,
+                (void *)vm_cc_cme(cc), (void *)vm_cc_cme(cc)->def);
         rp(cme);
         rp(vm_cc_cme(cc));
         rp(rb_vm_lookup_overloaded_cme(cme));

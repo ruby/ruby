@@ -1736,7 +1736,7 @@ VM_BH_ISEQ_BLOCK_P(VALUE block_handler)
         if (!imemo_type_p(captured->code.val, imemo_iseq)) {
             rb_bug("not imemo_iseq. captured:%p IMEMO_P(captured->code.val):%d, "
                    "flags:%.*" PRIxVALUE,
-                   captured,
+                   (void *)captured,
                    RB_TYPE_P(captured->code.val, T_IMEMO),
                    (int)(sizeof(VALUE) * CHAR_BIT / 4), RBASIC(captured->code.val)->flags);
         }
