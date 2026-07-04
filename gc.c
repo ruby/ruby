@@ -3802,6 +3802,12 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
  *
  * If callback() returns non-zero, the iteration will be stopped.
  *
+ * This takes the VM barrier for the whole walk, stopping every other
+ * Ractor: the set of heap pages must not change under the callback, and a
+ * GC is stop-the-world.  Because of that, the callback must not wait on
+ * another Ractor (e.g. send/receive) -- they are all suspended and it
+ * would deadlock.
+ *
  * This is a sample callback code to iterate liveness objects:
  *
  *   static int
@@ -3829,7 +3835,10 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
 void
 rb_objspace_each_objects(int (*callback)(void *, void *, size_t, void *), void *data)
 {
-    rb_gc_impl_each_objects(rb_gc_get_objspace(), callback, data);
+    RB_VM_LOCKING() {
+        rb_vm_barrier();
+        rb_gc_impl_each_objects(rb_gc_get_objspace(), callback, data);
+    }
 }
 
 static void
