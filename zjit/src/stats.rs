@@ -434,7 +434,6 @@ make_counters! {
     unspecialized_super_def_type_null,
 
     // Unsupported parameter features
-    complex_arg_pass_param_rest,
     complex_arg_pass_param_post,
     complex_arg_pass_param_kwrest,
     complex_arg_pass_param_block,
@@ -451,6 +450,9 @@ make_counters! {
     complex_arg_pass_caller_super,
     complex_arg_pass_caller_zsuper,
     complex_arg_pass_caller_forwarding,
+
+    // Unsupported argument conversions
+    complex_arg_pass_keyword_to_positional_hash,
 
     // Writes to the VM frame
     vm_write_jit_frame_count,

@@ -4009,11 +4009,10 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn dont_specialize_call_to_iseq_with_rest() {
-        enable_zjit_stats();
+    fn specialize_call_to_iseq_with_rest() {
         eval("
-            def foo(*args) = 1
-            def test = foo 1
+            def foo(*args) = args.length
+            def test = foo 1, 2, 3
             test
             test
         ");
@@ -4026,18 +4025,240 @@ mod hir_opt_tests {
         bb2():
           EntryPoint JIT(0)
           v4:BasicObject = LoadArg :self@0
-          IncrCounterPtr
           Jump bb3(v4)
-        bb3(v7:BasicObject):
-          IncrCounter zjit_insn_count
-          IncrCounter zjit_insn_count
-          v14:Fixnum[1] = Const Value(1)
-          IncrCounter zjit_insn_count
-          IncrCounter complex_arg_pass_param_rest
-          v17:BasicObject = Send v7, :foo, v14 # SendFallbackReason: Complex argument passing
-          IncrCounter zjit_insn_count
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          v15:Fixnum[3] = Const Value(3)
+          v23:ArrayExact = NewArray v11, v13, v15
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v26:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v27:BasicObject = SendDirect v26, 0x1038, :foo (0x1048), v23
           CheckInterrupts
-          Return v17
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_many_rest_arguments() {
+        eval("
+            def foo(*args) = args.length
+            def test = foo 1, 2, 3, 4, 5, 6, 7
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          v15:Fixnum[3] = Const Value(3)
+          v17:Fixnum[4] = Const Value(4)
+          v19:Fixnum[5] = Const Value(5)
+          v21:Fixnum[6] = Const Value(6)
+          v23:Fixnum[7] = Const Value(7)
+          v31:ArrayExact = NewArray v11, v13, v15, v17, v19, v21, v23
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v34:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v35:BasicObject = SendDirect v34, 0x1038, :foo (0x1048), v31
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_rest_and_block_literal() {
+        eval("
+            def foo(*args) = yield args.length
+            def test = foo(1, 2, 3) { |n| n + 1 }
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          v15:Fixnum[3] = Const Value(3)
+          v23:ArrayExact = NewArray v11, v13, v15
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v26:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v27:BasicObject = SendDirect v26, 0x1038, :foo (0x1048), v23
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_rest_and_block_param() {
+        eval("
+            def foo(*args, &block) = block.call(args.length)
+            def test = foo(1, 2, 3) { |n| n + 1 }
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          v15:Fixnum[3] = Const Value(3)
+          v23:ArrayExact = NewArray v11, v13, v15
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v26:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v27:BasicObject = SendDirect v26, 0x1038, :foo (0x1048), v23
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_rest_and_post() {
+        eval("
+            def foo(a, *args, z) = args.length + a + z
+            def test = foo 1, 2, 3, 4
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          v15:Fixnum[3] = Const Value(3)
+          v17:Fixnum[4] = Const Value(4)
+          v25:ArrayExact = NewArray v13, v15
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v28:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v29:BasicObject = SendDirect v28, 0x1038, :foo (0x1048), v11, v25, v17
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_rest_and_keyword() {
+        eval("
+            def foo(*args, k:) = args.length + k
+            def test = foo 1, 2, k: 40
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          v15:Fixnum[40] = Const Value(40)
+          v23:ArrayExact = NewArray v11, v13
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v26:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v27:BasicObject = SendDirect v26, 0x1038, :foo (0x1048), v23, v15
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_rest_and_optional_keyword_default() {
+        eval("
+            def foo(*args, k: 40) = args.length + k
+            def test = foo 1, 2
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          v21:Fixnum[40] = Const Value(40)
+          v22:ArrayExact = NewArray v11, v13
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v26:BasicObject = SendDirect v25, 0x1038, :foo (0x1048), v22, v21
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_optional_and_rest() {
+        eval("
+            def foo(a, b = 1, *rest) = [a, b, rest]
+            def test = foo(10, 20, 30, 40)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[10] = Const Value(10)
+          v13:Fixnum[20] = Const Value(20)
+          v15:Fixnum[30] = Const Value(30)
+          v17:Fixnum[40] = Const Value(40)
+          v25:ArrayExact = NewArray v15, v17
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v28:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v29:BasicObject = SendDirect v28, 0x1038, :foo (0x1048), jit_entry_idx=1, v11, v13, v25
+          CheckInterrupts
+          Return v29
         ");
     }
 
@@ -4349,7 +4570,7 @@ mod hir_opt_tests {
           v20:Fixnum[30] = Const Value(30)
           v22:Fixnum[6] = Const Value(6)
           PatchPoint MethodRedefined(Object@0x1000, target@0x1008, cme:0x1010)
-          v52:BasicObject = SendDirect v48, 0x1038, :target (0x1048), v16, v18, v20, v22
+          v52:BasicObject = SendDirect v48, 0x1038, :target (0x1048), jit_entry_idx=3, v16, v18, v20, v22
           v27:Fixnum[10] = Const Value(10)
           v29:Fixnum[20] = Const Value(20)
           v31:Fixnum[30] = Const Value(30)
@@ -4360,6 +4581,39 @@ mod hir_opt_tests {
           v41:ArrayExact = NewArray v49, v52, v39
           CheckInterrupts
           Return v41
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_call_to_rest_with_keyword_to_positional_hash() {
+        enable_zjit_stats();
+        eval("
+            def foo(*args) = args
+            def test = foo(k: 1)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          IncrCounterPtr
+          Jump bb3(v4)
+        bb3(v7:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v14:Fixnum[1] = Const Value(1)
+          IncrCounter zjit_insn_count
+          IncrCounter complex_arg_pass_keyword_to_positional_hash
+          v17:BasicObject = Send v7, :foo, v14 # SendFallbackReason: Complex argument passing
+          IncrCounter zjit_insn_count
+          CheckInterrupts
+          Return v17
         ");
     }
 
