@@ -14972,7 +14972,7 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
             fprintf(stderr, "ibf_load_iseq: new iseq=%p\n", (void *)iseq);
 #endif
             FL_SET((VALUE)iseq, ISEQ_NOT_LOADED_YET);
-            iseq->aux.loader.obj = load->loader_obj;
+            RB_OBJ_WRITE((VALUE)iseq, &iseq->aux.loader.obj, load->loader_obj);
             iseq->aux.loader.index = iseq_index;
 #if IBF_ISEQ_DEBUG
             fprintf(stderr, "ibf_load_iseq: iseq=%p loader_obj=%p index=%d\n",
