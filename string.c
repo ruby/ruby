@@ -83,6 +83,11 @@ VALUE rb_cSymbol;
 
 /* Flags of RString
  *
+ * RUBY_FL_UNUSED10: STR_NO_TERM
+ *            The string's buffer is not NUL terminated: ptr[len] belongs to a
+ *            shared parent buffer, letting mid-buffer "views" avoid copying.
+ *            The C API will materialize the NUL terminator, for backwards
+ *            compatibility, except for the RSTRING_PTR_NO_TERM function.
  * 0:     STR_SHARED (equal to ELTS_SHARED)
  *            The string is shared. The buffer this string points to is owned by
  *            another string (the shared root).
@@ -133,11 +138,13 @@ VALUE rb_cSymbol;
 #define STR_NOFREE FL_USER18
 #define STR_FAKESTR FL_USER19
 
+#define STR_NO_TERM RUBY_FL_UNUSED10
+
 #define STR_SET_NOEMBED(str) do {\
     FL_SET((str), STR_NOEMBED);\
     FL_UNSET((str), STR_SHARED | STR_SHARED_ROOT | STR_BORROWED);\
 } while (0)
-#define STR_SET_EMBED(str) FL_UNSET((str), STR_NOEMBED | STR_SHARED | STR_NOFREE)
+#define STR_SET_EMBED(str) FL_UNSET((str), STR_NOEMBED | STR_SHARED | STR_NOFREE | STR_NO_TERM)
 
 #define STR_SET_LEN(str, n) do { \
     RSTRING(str)->len = (n); \
@@ -205,7 +212,7 @@ zero_filled(const char *s, int n)
 }
 
 #if !defined SHARABLE_MIDDLE_SUBSTRING
-# define SHARABLE_MIDDLE_SUBSTRING 0
+# define SHARABLE_MIDDLE_SUBSTRING 1
 #endif
 
 static inline bool
@@ -1674,6 +1681,11 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
                 RUBY_ASSERT(!STR_EMBED_P(str));
                 RSTRING(str)->as.heap.ptr += ofs;
                 STR_SET_LEN(str, RSTRING_LEN(str) - (ofs + rest));
+
+                if (rest > 0 &&
+                    !zero_filled(RSTRING_PTR_NO_TERM(str) + RSTRING_LEN(str), termlen)) {
+                    str_make_independent_expand(str, RSTRING_LEN(str), 0L, termlen);
+                }
             }
             else {
                 if (RBASIC_CLASS(shared) == 0)
@@ -1833,11 +1845,14 @@ str_shared_replace(VALUE str, VALUE str2)
 
         STR_SET_NOEMBED(str);
         FL_UNSET(str, STR_SHARED);
-        RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
+        RSTRING(str)->as.heap.ptr = RSTRING_PTR_NO_TERM(str2);
 
         if (FL_TEST(str2, STR_SHARED)) {
             VALUE shared = RSTRING(str2)->as.heap.aux.shared;
             STR_SET_SHARED(str, shared);
+            if (FL_TEST_RAW(str2, STR_NO_TERM)) {
+                FL_SET_RAW(str, STR_NO_TERM);
+            }
         }
         else {
             RSTRING(str)->as.heap.aux.capa = RSTRING(str2)->as.heap.aux.capa;
@@ -1883,8 +1898,11 @@ str_replace(VALUE str, VALUE str2)
         RUBY_ASSERT(OBJ_FROZEN(shared));
         STR_SET_NOEMBED(str);
         STR_SET_LEN(str, len);
-        RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
+        RSTRING(str)->as.heap.ptr = RSTRING_PTR_NO_TERM(str2);
         STR_SET_SHARED(str, shared);
+        if (FL_TEST_RAW(str2, STR_NO_TERM)) {
+            FL_SET_RAW(str, STR_NO_TERM);
+        }
         rb_enc_cr_str_exact_copy(str, str2);
     }
     else {
@@ -1962,10 +1980,13 @@ str_duplicate_setup_heap(VALUE klass, VALUE str, VALUE dup)
     RUBY_ASSERT(!STR_SHARED_P(root));
     RUBY_ASSERT(RB_OBJ_FROZEN_RAW(root));
 
-    RSTRING(dup)->as.heap.ptr = RSTRING_PTR(str);
+    RSTRING(dup)->as.heap.ptr = RSTRING_PTR_NO_TERM(str);
     FL_SET_RAW(dup, RSTRING_NOEMBED);
     STR_SET_SHARED(dup, root);
     flags |= RSTRING_NOEMBED | STR_SHARED;
+    if (FL_TEST_RAW(str, STR_NO_TERM)) {
+        flags |= STR_NO_TERM;
+    }
 
     STR_SET_LEN(dup, RSTRING_LEN(str));
     return str_duplicate_setup_encoding(str, dup, flags);
@@ -2718,7 +2739,7 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
     }
 
     ptr = ALLOC_N(char, (size_t)capa + termlen);
-    oldptr = RSTRING_PTR(str);
+    oldptr = RSTRING_PTR_NO_TERM(str);
     if (oldptr) {
         memcpy(ptr, oldptr, len);
     }
@@ -2726,7 +2747,7 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
         SIZED_FREE_N(oldptr, STR_HEAP_SIZE(str));
     }
     STR_SET_NOEMBED(str);
-    FL_UNSET(str, STR_SHARED|STR_NOFREE);
+    FL_UNSET(str, STR_SHARED|STR_NOFREE|STR_NO_TERM);
     TERM_FILL(ptr + len, termlen);
     RSTRING(str)->as.heap.ptr = ptr;
     STR_SET_LEN(str, len);
@@ -2816,6 +2837,9 @@ rb_string_value(volatile VALUE *ptr)
         s = rb_str_to_str(s);
         *ptr = s;
     }
+    if (RB_UNLIKELY(FL_TEST_RAW(s, STR_NO_TERM))) {
+        rb_str_terminate(s);
+    }
     return s;
 }
 
@@ -2852,6 +2876,14 @@ str_fill_term(VALUE str, char *s, long len, int termlen)
         return s;
     }
     return RSTRING_PTR(str);
+}
+
+char *
+rb_str_terminate(VALUE str)
+{
+    FL_UNSET_RAW(str, STR_NO_TERM);
+    char *s = RSTRING_PTR_NO_TERM(str);
+    return str_fill_term(str, s, RSTRING_LEN(str), TERM_LEN(str));
 }
 
 void
@@ -3178,6 +3210,10 @@ str_subseq(VALUE str, long beg, long len)
         if (RSTRING_LEN(str2) > len) {
             STR_SET_LEN(str2, len);
         }
+
+        if (!zero_filled(RSTRING_PTR_NO_TERM(str2) + len, termlen)) {
+            FL_SET_RAW(str2, STR_NO_TERM);
+        }
     }
 
     return str2;
@@ -3316,6 +3352,7 @@ rb_str_freeze(VALUE str)
     }
 
     if (OBJ_FROZEN(str)) return str;
+    if (FL_TEST_RAW(str, STR_NO_TERM)) rb_str_terminate(str);
     rb_str_resize(str, RSTRING_LEN(str));
     return rb_obj_freeze(str);
 }
