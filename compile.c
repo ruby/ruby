@@ -1751,6 +1751,12 @@ get_dyna_var_idx(const rb_iseq_t *iseq, ID id, int *level, int *ls)
     if (idx < 0) {
         COMPILE_ERROR(topmost_iseq, ISEQ_LAST_LINE(topmost_iseq),
                       "get_dyna_var_idx: -1");
+        /* COMPILE_ERROR only records the error; iseq is NULL here (the walk
+         * exhausted the chain), so return before dereferencing it.  Callers
+         * check for a negative index. */
+        *level = 0;
+        *ls = 0;
+        return -1;
     }
 
     *level = lv;
