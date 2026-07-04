@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'test/unit'
-require_relative '../lib/parser_support'
 
 class TestSyntax < Test::Unit::TestCase
   using Module.new {

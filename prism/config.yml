@@ -2568,6 +2568,7 @@ nodes:
           - CallTargetNode
           - IndexTargetNode
           - MultiTargetNode
+          - SplatNode
         comment: |
           The loop variable bound by this iterator. Only local variables (or
           destructuring of local variables) are valid; other targets are
