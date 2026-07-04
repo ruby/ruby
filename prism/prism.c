@@ -19097,9 +19097,10 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
 
             if (context_p(parser, PM_CONTEXT_MULTI_TARGET)) {
                 /* All set, this is explicitly allowed by the parent context. */
-            } else if (context_p(parser, PM_CONTEXT_FOR_INDEX) && match1(parser, PM_TOKEN_KEYWORD_IN)) {
+            } else if (context_p(parser, PM_CONTEXT_FOR_INDEX) && match2(parser, PM_TOKEN_KEYWORD_IN, PM_TOKEN_COMMA)) {
                 /* All set, we're inside a for loop and we're parsing multiple
-                 * targets. */
+                 * targets. A comma continues the index target list, as in
+                 * `for (a, b), c in ...`. */
             } else if (flags & PM_PARSE_ACCEPTS_STATEMENT) {
                 /* The rescue-modifier value parser promotes this target on a
                  * following `=` or comma. Reject any other binary operator that
