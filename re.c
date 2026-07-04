@@ -34,12 +34,17 @@
 
 /* Flags of RRegexp
  *
+ * 0:     REG_INTERNED
+ *            The regexp is present in the re_cache_table.
  * 4:     KCODE_FIXED
  *            The regexp has "fixed encoding", meaning it can't be match against any ASCII-compatible string.
  * 6:     REG_ENCODING_NONE
  *            The regexp has no encoding. Means the `n` modifier was used.
+ * 10-16: ENCODING
+ *            Stores the encoding of the regexp.
  */
 
+#define REG_INTERNED FL_USER0
 #define KCODE_FIXED FL_USER4
 #define REG_ENCODING_NONE FL_USER6
 
@@ -1721,7 +1726,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     RSTRING_GETMEM(unescaped, ptr, len);
 
     /* If there are no other users of this regex, then we can directly overwrite it. */
-    if (ruby_single_main_ractor && RREGEXP(re)->usecnt == 0) {
+    if (ruby_single_main_ractor && !FL_TEST_RAW(re, REG_INTERNED) && RREGEXP(re)->usecnt == 0) {
         regex_t tmp_reg;
         r = onig_new_without_alloc(&tmp_reg, (UChar *)ptr, (UChar *)(ptr + len),
                                    reg->options, enc,
@@ -3400,6 +3405,8 @@ rb_reg_initialize_check(VALUE obj)
     }
 }
 
+static st_index_t do_reg_hash(VALUE re);
+
 static int
 rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
                   int options, onig_errmsg_buffer err,
@@ -3447,11 +3454,14 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
     re->ptr = make_regexp(RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
                           options & ARG_REG_OPTION_MASK, err,
                           sourcefile, sourceline);
+
     if (!re->ptr) return -1;
+
     if (RBASIC_CLASS(obj) == rb_cRegexp) {
         OBJ_FREEZE(obj);
     }
     RB_GC_GUARD(unescaped);
+
     return 0;
 }
 
@@ -3466,6 +3476,8 @@ reg_set_source(VALUE reg, VALUE str, rb_encoding *enc)
     }
     str = rb_fstring(str);
     RB_OBJ_WRITE(reg, &RREGEXP(reg)->src, str);
+
+    RREGEXP(reg)->hash = do_reg_hash(reg);
 }
 
 static int
@@ -3569,6 +3581,8 @@ rb_reg_new(const char *s, long len, int options)
     return rb_enc_reg_new(s, len, rb_ascii8bit_encoding(), options);
 }
 
+static VALUE rb_re_dedup(VALUE);
+
 VALUE
 rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
 {
@@ -3580,7 +3594,8 @@ rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
         rb_set_errinfo(rb_reg_error_desc(str, options, err));
         return Qnil;
     }
-    return re;
+    // TODO: we should be able to do the lookup before compiling.
+    return rb_re_dedup(re);
 }
 
 static VALUE reg_cache;
@@ -3601,7 +3616,14 @@ rb_reg_regcomp(VALUE str)
     }
 }
 
-static st_index_t reg_hash(VALUE re);
+
+static st_index_t
+reg_hash(VALUE re)
+{
+    rb_reg_check(re);
+    return RREGEXP(re)->hash;
+}
+
 /*
  *  call-seq:
  *    hash -> integer
@@ -3620,7 +3642,7 @@ rb_reg_hash(VALUE re)
 }
 
 static st_index_t
-reg_hash(VALUE re)
+do_reg_hash(VALUE re)
 {
     st_index_t hashval;
 
@@ -4963,6 +4985,72 @@ rb_reg_timeout_get(VALUE re)
     double d = hrtime2double(RREGEXP_PTR(re)->timelimit);
     if (d == 0.0) return Qnil;
     return DBL2NUM(d);
+}
+
+int
+rb_re_cache_equal(st_data_t _re1, st_data_t _re2)
+{
+    VALUE re1 = (VALUE)_re1;
+    VALUE re2 = (VALUE)_re2;
+
+    if (re1 == re2) return true;
+
+    // If we're called from GC sweep, `src` may have been sweeped already.
+    // We only compare references as `src` should be a fstring.
+    if (RREGEXP(re1)->src != RREGEXP(re2)->src) return 1;
+
+    if (FL_TEST_RAW(re1, KCODE_FIXED|REG_ENCODING_NONE) != FL_TEST_RAW(re2, KCODE_FIXED|REG_ENCODING_NONE)) return 1;
+    if (RREGEXP_PTR(re1)->options != RREGEXP_PTR(re2)->options) return 1;
+    if (ENCODING_GET(re1) != ENCODING_GET(re2)) return 1;
+
+    return 0;
+}
+
+st_index_t
+rb_re_cache_hash(st_data_t re)
+{
+    st_index_t hashval = rb_st_hash_start(RREGEXP((VALUE)re)->hash);
+    hashval = st_hash_uint(hashval, ENCODING_GET(re));
+    hashval = st_hash_uint(hashval, FL_TEST_RAW(re, KCODE_FIXED|REG_ENCODING_NONE));
+    return rb_hash_end(hashval);
+}
+
+static VALUE
+rb_re_dedup(VALUE re)
+{
+    // We could use the same concurrent_set as for fstrings,
+    // but since for now this is only intended for regexp literals,
+    // it's unlikely to happen outside the main ractor.
+    if (rb_ractor_main_p()) {
+        VALUE cached_re;
+        if (set_table_get(&GET_VM()->re_cache_table, re, &cached_re)) {
+            if (rb_objspace_garbage_object_p(cached_re)) {
+                // Since `re_cache_table` is a weak reference, `cached_re` might
+                // be about to be sweeped.
+                FL_UNSET_RAW(cached_re, REG_INTERNED);
+                if (!set_table_delete(&GET_VM()->re_cache_table, (st_data_t *)&cached_re)) {
+                    rb_bug("RRegexp marked with REG_INTERNED but not in vm->re_cache_table");
+                }
+            }
+            else {
+                return cached_re;
+            }
+        }
+
+        set_insert(&GET_VM()->re_cache_table, re);
+        FL_SET_RAW(re, REG_INTERNED);
+    }
+    return re;
+}
+
+void
+rb_gc_free_regexp(VALUE re)
+{
+    if (FL_TEST_RAW(re, REG_INTERNED)) {
+        if (!set_table_delete(&GET_VM()->re_cache_table, (st_data_t *)&re)) {
+            rb_bug("RRegexp marked with REG_INTERNED but not in vm->re_cache_table");
+        }
+    }
 }
 
 /*

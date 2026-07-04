@@ -73,6 +73,8 @@ struct RRegexp {
     /** Source code of this expression. */
     const VALUE src;
 
+    st_index_t hash;
+
     /**
      * Reference count.  A  regexp match can take extraordinarily  long time to
      * run.  Ruby's  regular expression is  heavily extended and not  a regular
@@ -87,7 +89,7 @@ struct RRegexp {
      * @warning  Of course, touching this field from extension libraries causes
      *           catastrophic effects.  Just leave it.
      */
-    unsigned long usecnt;
+    unsigned long usecnt; // TODO: move into flags
 };
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()

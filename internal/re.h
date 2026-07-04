@@ -70,6 +70,15 @@ void rb_match_unbusy(VALUE);
 int rb_match_count(VALUE match);
 VALUE rb_reg_new_from_values(long cnt, const VALUE *elements, int opt);
 VALUE rb_reg_last_defined(VALUE match);
+void rb_gc_free_regexp(VALUE re);
+
+int rb_re_cache_equal(st_data_t _re1, st_data_t _re2);
+st_index_t rb_re_cache_hash(st_data_t re);
+
+static const struct st_hash_type rb_re_cache_hash_type = {
+    rb_re_cache_equal,
+    rb_re_cache_hash,
+};
 
 #define ARG_REG_OPTION_MASK \
     (ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND)
