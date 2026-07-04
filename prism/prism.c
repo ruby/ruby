@@ -17180,7 +17180,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
                 key = UP(pm_symbol_node_label_create(parser, &parser->previous));
                 is_label = true;
             } else {
-                key = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_LABEL, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1));
+                key = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_LABEL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1));
 
                 if (match1(parser, PM_TOKEN_COLON)) {
                     parser_lex(parser);
@@ -17332,11 +17332,21 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                         break;
                     }
                     default:
+                        /*
+                         * Use parse_expression here because this token is not
+                         * a label or **, so we parse it as an expression first.
+                         * parse_pattern_hash will then re-interpret it as a
+                         * hash pattern key, potentially followed by : or =>.
+                         */
                         first_node = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_LABEL, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1));
                         break;
                 }
 
-                node = parse_pattern_hash(parser, captures, first_node, (uint16_t) (depth + 1));
+                if (PM_NODE_TYPE_P(first_node, PM_HASH_PATTERN_NODE)) {
+                    node = (pm_hash_pattern_node_t *) first_node;
+                } else {
+                    node = parse_pattern_hash(parser, captures, first_node, (uint16_t) (depth + 1));
+                }
 
                 accept1(parser, PM_TOKEN_NEWLINE);
                 expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_PATTERN_TERM_BRACE, &opening);
@@ -17374,8 +17384,8 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
         case PM_CASE_PRIMITIVE: {
             pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_LABEL | PM_PARSE_ACCEPTS_DO_BLOCK, diag_id, (uint16_t) (depth + 1));
 
-            // If we found a label, we need to immediately return to the caller.
-            if (pm_symbol_node_label_p(parser, node)) return node;
+                // If we found a label, we need to immediately return to the caller.
+                if (pm_symbol_node_label_p(parser, node)) return node;
 
             // Call nodes (arithmetic operations) are not allowed in patterns
             if (PM_NODE_TYPE(node) == PM_CALL_NODE) {
@@ -17589,6 +17599,8 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
         }
     }
 
+    // If we have an =>, then we are assigning this pattern to a variable.
+    // In this case we should create an assignment node.
     // If we have an =>, then we are assigning this pattern to a variable.
     // In this case we should create an assignment node.
     while (accept1(parser, PM_TOKEN_EQUAL_GREATER)) {

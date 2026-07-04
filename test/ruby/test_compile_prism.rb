@@ -2540,11 +2540,23 @@ end
         assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} b: 2, c: 3, **foo #{suffix}")
         assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} a: 1, b: 2, c: 3, **foo #{suffix}")
 
-        assert_prism_eval("{ a: 1 } => #{prefix} a: 1, **nil #{suffix}")
+          assert_prism_eval("{ a: 1 } => #{prefix} a: 1, **nil #{suffix}")
         assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} a: 1, b: 2, c: 3, **nil #{suffix}")
       end
 
       assert_prism_eval("{ a: { b: { c: 1 } } } => { a: { b: { c: 1 } } }")
+
+      code = "case {200 => \"ok\"}; in {Integer : String}; :ok; else :fail; end"
+      assert_equal :ok, RubyVM::InstructionSequence.compile_prism(code).eval
+
+      code = "case {200 => 42}; in {Integer : String}; :ok; else :fail; end"
+      assert_equal :fail, RubyVM::InstructionSequence.compile_prism(code).eval
+
+      code = "case {\"hel\" => \"lo\"}; in {/hel/ : String}; :ok; else :fail; end"
+      assert_equal :ok, RubyVM::InstructionSequence.compile_prism(code).eval
+
+      code = "case {a: 1, 200 => \"ok\"}; in {a: Integer, Integer : String}; :ok; else :fail; end"
+      assert_equal :ok, RubyVM::InstructionSequence.compile_prism(code).eval
     end
 
     def test_MatchPredicateNode

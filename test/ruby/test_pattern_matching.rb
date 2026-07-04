@@ -1331,7 +1331,7 @@ END
       end
     end
 
-    assert_raise_with_message(NoMatchingPatternKeyError, %[{"x" => 1}: ]) do
+    assert_raise_with_message(NoMatchingPatternError, %[{"x" => 1}: ]) do
       case {"x" => 1}
       in {"y" : Integer}
         true
@@ -1410,6 +1410,47 @@ END
     end
   end
 
+  def test_hash_expression_key_pattern
+    assert_block do
+      [{200 => "ok"}, C.new({200 => "ok"})].all? do |i|
+        case i
+        in {Integer : String}
+          true
+        else false
+        end
+      end
+    end
+
+    assert_block do
+      [{200 => 42}, C.new({200 => 42}), {"a" => "ok"}, {}].all? do |i|
+        case i
+        in {Integer : String}
+          false
+        else true
+        end
+      end
+    end
+
+    assert_block do
+      [{a: 1, 200 => "ok"}, C.new({a: 1, 200 => "ok"})].all? do |i|
+        case i
+        in {a: Integer, Integer : String}
+          true
+        else false
+        end
+      end
+    end
+
+    assert_block do
+      hash = {200 => "ok", 300 => "fail"}
+      case hash
+      in {Integer : String => v, **rest}
+        v == "ok" && rest == {300 => "fail"}
+      end
+    end
+
+  end
+
   def test_paren
     assert_block do
       case 0
@@ -1442,11 +1483,6 @@ END
       end
     }, /expecting ':'|expected a label as the key/)
 
-    assert_syntax_error(%q{
-      case 0
-      in {0 => a}
-      end
-    }, /expecting ':'|expected a label as the key/)
   end
 
   ################################################################
