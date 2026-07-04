@@ -3081,26 +3081,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
 
                     PUSH_INSN(ret, location, dup);
                     PUSH_SEND(ret, location, rb_intern("keys"), INT2FIX(0));
-
-                    if (PM_NODE_TYPE_P(key_pattern, PM_PINNED_VARIABLE_NODE)) {
-                        const pm_pinned_variable_node_t *pinned = (const pm_pinned_variable_node_t *) key_pattern;
-                        const pm_node_t *inner = pinned->variable;
-                        if (PM_NODE_TYPE_P(inner, PM_LOCAL_VARIABLE_TARGET_NODE)) {
-                            const pm_local_variable_target_node_t *target = (const pm_local_variable_target_node_t *) inner;
-                            pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, target->name, target->depth);
-                            PUSH_GETLOCAL(ret, location, local_index.index, local_index.level);
-                        }
-                        else {
-                            pm_compile_node(iseq, inner, ret, false, scope_node);
-                        }
-                    }
-                    else if (PM_NODE_TYPE_P(key_pattern, PM_PINNED_EXPRESSION_NODE)) {
-                        const pm_pinned_expression_node_t *pinned = (const pm_pinned_expression_node_t *) key_pattern;
-                        pm_compile_node(iseq, pinned->expression, ret, false, scope_node);
-                    }
-                    else {
-                        pm_compile_node(iseq, key_pattern, ret, false, scope_node);
-                    }
+                    pm_compile_node(iseq, key_pattern, ret, false, scope_node);
                     PUSH_SEND(ret, location, rb_intern("grep"), INT2FIX(1));
                     PUSH_SEND(ret, location, rb_intern("first"), INT2FIX(0));
 
@@ -10648,6 +10629,26 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_SEND_WITH_FLAG(ret, location, idBackquote, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
         if (popped) PUSH_INSN(ret, location, pop);
 
+        return;
+      }
+      case PM_PINNED_EXPRESSION_NODE: {
+        // ^(expr)
+        const pm_pinned_expression_node_t *cast = (const pm_pinned_expression_node_t *) node;
+        pm_compile_node(iseq, cast->expression, ret, popped, scope_node);
+        return;
+      }
+      case PM_PINNED_VARIABLE_NODE: {
+        // ^var
+        const pm_pinned_variable_node_t *cast = (const pm_pinned_variable_node_t *) node;
+        if (PM_NODE_TYPE_P(cast->variable, PM_LOCAL_VARIABLE_TARGET_NODE)) {
+            const pm_local_variable_target_node_t *target = (const pm_local_variable_target_node_t *) cast->variable;
+            if (!popped) {
+                pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, target->name, target->depth);
+                PUSH_GETLOCAL(ret, location, index.index, index.level);
+            }
+            return;
+        }
+        pm_compile_node(iseq, cast->variable, ret, popped, scope_node);
         return;
       }
       case PM_YIELD_NODE:
