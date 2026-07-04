@@ -96,6 +96,7 @@ if not "%src%" == "-" goto :srcfile
     ) else (
         set src=.\ifchange%RANDOM%.tmp
     )
+    set src=%src:/=\%
     findstr -r -c:"^" > "%src%"
 :srcfile
 
