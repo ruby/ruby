@@ -5194,15 +5194,6 @@ usage_analysis_register_clear(VALUE self)
     return usage_analysis_clear(self, usage_hash);
 }
 
-#else
-
-MAYBE_UNUSED(static void (*ruby_vm_collect_usage_func_insn)(int insn)) = 0;
-MAYBE_UNUSED(static void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op)) = 0;
-MAYBE_UNUSED(static void (*ruby_vm_collect_usage_func_register)(int reg, int isset)) = 0;
-
-#endif
-
-#if VM_COLLECT_USAGE_DETAILS
 /* @param insn instruction number */
 static void
 vm_collect_usage_insn(int insn)
