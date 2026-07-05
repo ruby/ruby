@@ -7405,6 +7405,42 @@ pm_do_loop_stack_p(pm_parser_t *parser) {
     return pm_state_stack_p(&parser->do_loop_stack);
 }
 
+/**
+ * When the lexer finds an opening delimiter (`(`, `[`, `{`, or `#{`) it pushes
+ * an enclosure frame onto both bit-stacks that gate how a subsequent `do` is
+ * lexed: the do-loop stack (so a `do` inside is not read as a `while`/`until`
+ * loop body) and the accepts-block stack (so a `do` inside is accepted as a
+ * block rather than binding to an enclosing command). The matching close pops
+ * both. This mirrors parse.y's paired `COND_PUSH(0); CMDARG_PUSH(0)`. Keep the
+ * following in mind before touching either stack:
+ *
+ * - The LEXER owns the frame for delimiter-bound stuff. Every token that opens
+ *   a matched pair calls this on the open and `pm_enclosure_frame_pop` on the
+ *   close. The exhaustive push sites are the `(`, `[`, `{` cases in
+ *   `parser_lex` and the `#{` case in `lex_interpolation`; the pop sites are
+ *   the matching `)`, `]`, `}` (including `}` as `EMBEXPR_END`).
+ * - The PARSER owns the frame for keyword-bounded blocks, where there is no
+ *   delimiter token to hang it on: the `do`/`end` forms in `parse_block` and
+ *   the lambda push `accepts_block` directly (and pop before consuming `end`).
+ * - The `parse_arguments_list` command-args branch juggles ONLY `accepts_block`
+ *   (never through this helper), because the lexer has pushed a delimiter frame
+ *   one token early and the command-args frame must be threaded beneath it. Its
+ *   match lookahead sets must stay in sync with the lexer push sites above.
+ *   This matches parse.y, whose `command_args` rule juggles CMDARG but not
+ *   COND.
+ */
+static PRISM_INLINE void
+pm_enclosure_frame_push(pm_parser_t *parser) {
+    pm_do_loop_stack_push(parser, false);
+    pm_accepts_block_stack_push(parser, true);
+}
+
+static PRISM_INLINE void
+pm_enclosure_frame_pop(pm_parser_t *parser) {
+    pm_do_loop_stack_pop(parser);
+    pm_accepts_block_stack_pop(parser);
+}
+
 /******************************************************************************/
 /* Lexer check helpers                                                        */
 /******************************************************************************/
@@ -8578,11 +8614,40 @@ lex_identifier(pm_parser_t *parser, bool previous_command_start) {
 
     if (parser->lex_state != PM_LEX_STATE_DOT) {
         pm_token_type_t type;
+
+        /* The lex state from before lex_keyword transitions it, mirroring the
+         * `state = p->lex.state` capture in parse.y's keyword handling. */
+        pm_lex_state_t previous_lex_state = parser->lex_state;
+
         switch (width) {
             case 2:
                 if (lex_keyword(parser, current_start, "do", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_DO, PM_TOKEN_EOF) != PM_TOKEN_EOF) {
-                    if (parser->enclosure_nesting == parser->lambda_enclosure_nesting) {
+                    /* In FNAME position (a symbol like `:do` or a method name
+                     * like `def do`), `do` is a plain name rather than a
+                     * block, loop, or lambda opener, so none of the
+                     * discrimination below applies. This mirrors parse.y,
+                     * whose EXPR_FNAME early-return precedes all of the
+                     * keyword_do special-casing (and never touches
+                     * lpar_beg). */
+                    if (previous_lex_state & PM_LEX_STATE_FNAME) {
                         return PM_TOKEN_KEYWORD_DO;
+                    }
+                    if (parser->enclosure_nesting == parser->lambda_enclosure_nesting) {
+                        // At the bare nesting level of a lambda literal (no
+                        // delimiter opened since `->`), a `do` opens the lambda
+                        // body. This is a distinct token so that a command in a
+                        // parameter default cannot consume it as its own block
+                        // (`-> a = foo do end` is `->(a = foo) do end`). It
+                        // mirrors CRuby's keyword_do_LAMBDA.
+                        //
+                        // Clear the nesting so that no token within the
+                        // `do`/`end` body is considered to be at the beginning
+                        // of a lambda; the parser restores the enclosing value
+                        // once the lambda has been fully parsed. This mirrors
+                        // parse.y setting `p->lex.lpar_beg = -1` when lexing
+                        // keyword_do_LAMBDA.
+                        parser->lambda_enclosure_nesting = -1;
+                        return PM_TOKEN_KEYWORD_DO_LAMBDA;
                     }
                     if (pm_do_loop_stack_p(parser)) {
                         return PM_TOKEN_KEYWORD_DO_LOOP;
@@ -8789,7 +8854,7 @@ lex_interpolation(pm_parser_t *parser, const uint8_t *pound) {
             lex_mode_push(parser, (pm_lex_mode_t) { .mode = PM_LEX_EMBEXPR });
             parser->current.end = pound + 2;
             parser->command_start = true;
-            pm_do_loop_stack_push(parser, false);
+            pm_enclosure_frame_push(parser);
             return PM_TOKEN_EMBEXPR_BEGIN;
         default:
             // In this case we've hit a # that doesn't constitute interpolation. We'll
@@ -10394,7 +10459,7 @@ parser_lex(pm_parser_t *parser) {
 
                     parser->enclosure_nesting++;
                     lex_state_set(parser, PM_LEX_STATE_BEG | PM_LEX_STATE_LABEL);
-                    pm_do_loop_stack_push(parser, false);
+                    pm_enclosure_frame_push(parser);
                     LEX(type);
                 }
 
@@ -10402,7 +10467,7 @@ parser_lex(pm_parser_t *parser) {
                 case ')':
                     parser->enclosure_nesting--;
                     lex_state_set(parser, PM_LEX_STATE_ENDFN);
-                    pm_do_loop_stack_pop(parser);
+                    pm_enclosure_frame_pop(parser);
                     LEX(PM_TOKEN_PARENTHESIS_RIGHT);
 
                 // ;
@@ -10432,14 +10497,14 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     lex_state_set(parser, PM_LEX_STATE_BEG | PM_LEX_STATE_LABEL);
-                    pm_do_loop_stack_push(parser, false);
+                    pm_enclosure_frame_push(parser);
                     LEX(type);
 
                 // ]
                 case ']':
                     parser->enclosure_nesting--;
                     lex_state_set(parser, PM_LEX_STATE_END);
-                    pm_do_loop_stack_pop(parser);
+                    pm_enclosure_frame_pop(parser);
                     LEX(PM_TOKEN_BRACKET_RIGHT);
 
                 // {
@@ -10469,7 +10534,7 @@ parser_lex(pm_parser_t *parser) {
 
                     parser->enclosure_nesting++;
                     parser->brace_nesting++;
-                    pm_do_loop_stack_push(parser, false);
+                    pm_enclosure_frame_push(parser);
 
                     LEX(type);
                 }
@@ -10477,7 +10542,7 @@ parser_lex(pm_parser_t *parser) {
                 // }
                 case '}':
                     parser->enclosure_nesting--;
-                    pm_do_loop_stack_pop(parser);
+                    pm_enclosure_frame_pop(parser);
 
                     if ((parser->lex_modes.current->mode == PM_LEX_EMBEXPR) && (parser->brace_nesting == 0)) {
                         lex_mode_pop(parser);
@@ -12824,6 +12889,7 @@ token_begins_expression_p(pm_token_type_t type) {
         case PM_TOKEN_LAMBDA_BEGIN:
         case PM_TOKEN_KEYWORD_DO:
         case PM_TOKEN_KEYWORD_DO_BLOCK:
+        case PM_TOKEN_KEYWORD_DO_LAMBDA:
         case PM_TOKEN_KEYWORD_DO_LOOP:
         case PM_TOKEN_KEYWORD_END:
         case PM_TOKEN_KEYWORD_ELSE:
@@ -15264,7 +15330,12 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
     pm_token_t opening = parser->previous;
     accept1(parser, PM_TOKEN_NEWLINE);
 
-    pm_accepts_block_stack_push(parser, true);
+    /* A brace block is delimited by `{`/`}`, whose block-accepting frame is
+     * managed by the lexer. A `do`/`end` block is delimited by keywords, so we
+     * push the frame here (covering the block parameters and body) and pop it
+     * before consuming `end`, mirroring parse.y's `do_body` rule. */
+    bool do_block = opening.type != PM_TOKEN_BRACE_LEFT;
+    if (do_block) pm_accepts_block_stack_push(parser, true);
     pm_parser_scope_push(parser, false);
 
     pm_block_parameters_node_t *block_parameters = NULL;
@@ -15293,19 +15364,11 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
             statements = UP(parse_statements(parser, PM_CONTEXT_BLOCK_BRACES, (uint16_t) (depth + 1)));
         }
 
-        /* Pop before consuming the closing `}` so the following token (e.g. a
-         * `do`) is lexed in the enclosing context rather than as a block
-         * belonging to this block's interior. Otherwise a `do` block would
-         * wrongly bind to a command whose argument ends in a brace block, as in
-         * `foo(m a { } do end)`. */
-        pm_accepts_block_stack_pop(parser);
         expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_BLOCK_TERM_BRACE, &opening);
     } else {
         if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
             if (!match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_ENSURE)) {
-                pm_accepts_block_stack_push(parser, true);
                 statements = UP(parse_statements(parser, PM_CONTEXT_BLOCK_KEYWORDS, (uint16_t) (depth + 1)));
-                pm_accepts_block_stack_pop(parser);
             }
 
             if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
@@ -15314,7 +15377,8 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
             }
         }
 
-        /* As with the brace case above, pop before consuming `end`. */
+        /* Pop the `do`/`end` frame before consuming `end` so the token
+         * following the block is lexed in the enclosing context. */
         pm_accepts_block_stack_pop(parser);
         expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_BLOCK_TERM_END, &opening);
     }
@@ -15324,7 +15388,6 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
     pm_node_t *parameters = parse_blocklike_parameters(parser, UP(block_parameters), &opening, &parser->previous);
 
     pm_parser_scope_pop(parser);
-
     return pm_block_node_create(parser, &locals, &opening, parameters, statements, &parser->previous);
 }
 
@@ -15361,7 +15424,6 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
         if (accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
             arguments->closing_loc = TOK2LOC(parser, &parser->previous);
         } else {
-            pm_accepts_block_stack_push(parser, true);
             parse_arguments(parser, arguments, full_arguments, PM_TOKEN_PARENTHESIS_RIGHT, (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK), (uint16_t) (depth + 1));
 
             // `yield` parses its arguments through the restricted `call_args`
@@ -15380,13 +15442,24 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
                 parser->previous.type = 0;
             }
 
-            pm_accepts_block_stack_pop(parser);
             arguments->closing_loc = TOK2LOC(parser, &parser->previous);
         }
     } else if ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR, PM_TOKEN_UAMPERSAND)) && !match1(parser, PM_TOKEN_BRACE_LEFT)) {
         found |= true;
         parsed_command_args = true;
+
+        /* The command-args frame does not accept blocks, so that a trailing
+         * `do` binds to this command rather than to an argument. Mirroring
+         * parse.y's `command_args` rule: when the first argument begins with an
+         * opening delimiter, the lexer has already pushed that delimiter's
+         * (block-accepting) frame. We must push the command-args frame beneath
+         * it, so pop the delimiter frame, push the command-args frame, and then
+         * restore the delimiter frame on top (the delimiter's closing token
+         * will pop it back off during argument parsing). */
+        bool lookahead_delimiter = match4(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES, PM_TOKEN_BRACKET_LEFT, PM_TOKEN_BRACKET_LEFT_ARRAY);
+        if (lookahead_delimiter) pm_accepts_block_stack_pop(parser);
         pm_accepts_block_stack_push(parser, false);
+        if (lookahead_delimiter) pm_accepts_block_stack_push(parser, true);
 
         // If we get here, then the subsequent token cannot be used as an infix
         // operator. In this case we assume the subsequent token is part of an
@@ -15400,7 +15473,15 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
             PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, PM_ERR_EXPECT_ARGUMENT, pm_token_str(parser->current.type));
         }
 
+        /* Symmetrically, if the command arguments are followed by a brace block
+         * (`m args { }`), the lexer has already pushed that block's frame. Pop
+         * it, pop the command-args frame beneath it, and restore the block
+         * frame so the block's `}` still pops it. This mirrors the `tLBRACE_ARG`
+         * lookahead handling in parse.y's `command_args` rule. */
+        bool lookahead_brace = match1(parser, PM_TOKEN_BRACE_LEFT);
+        if (lookahead_brace) pm_accepts_block_stack_pop(parser);
         pm_accepts_block_stack_pop(parser);
+        if (lookahead_brace) pm_accepts_block_stack_push(parser, true);
     }
 
     // If we're at the end of the arguments, we can now check if there is a block
@@ -15841,7 +15922,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
 #define PM_CASE_KEYWORD PM_TOKEN_KEYWORD___ENCODING__: case PM_TOKEN_KEYWORD___FILE__: case PM_TOKEN_KEYWORD___LINE__: \
     case PM_TOKEN_KEYWORD_ALIAS: case PM_TOKEN_KEYWORD_AND: case PM_TOKEN_KEYWORD_BEGIN: case PM_TOKEN_KEYWORD_BEGIN_UPCASE: \
     case PM_TOKEN_KEYWORD_BREAK: case PM_TOKEN_KEYWORD_CASE: case PM_TOKEN_KEYWORD_CLASS: case PM_TOKEN_KEYWORD_DEF: \
-    case PM_TOKEN_KEYWORD_DEFINED: case PM_TOKEN_KEYWORD_DO: case PM_TOKEN_KEYWORD_DO_BLOCK: case PM_TOKEN_KEYWORD_DO_LOOP: case PM_TOKEN_KEYWORD_ELSE: \
+    case PM_TOKEN_KEYWORD_DEFINED: case PM_TOKEN_KEYWORD_DO: case PM_TOKEN_KEYWORD_DO_BLOCK: case PM_TOKEN_KEYWORD_DO_LAMBDA: case PM_TOKEN_KEYWORD_DO_LOOP: case PM_TOKEN_KEYWORD_ELSE: \
     case PM_TOKEN_KEYWORD_ELSIF: case PM_TOKEN_KEYWORD_END: case PM_TOKEN_KEYWORD_END_UPCASE: case PM_TOKEN_KEYWORD_ENSURE: \
     case PM_TOKEN_KEYWORD_FALSE: case PM_TOKEN_KEYWORD_FOR: case PM_TOKEN_KEYWORD_IF: case PM_TOKEN_KEYWORD_IN: \
     case PM_TOKEN_KEYWORD_MODULE: case PM_TOKEN_KEYWORD_NEXT: case PM_TOKEN_KEYWORD_NIL: case PM_TOKEN_KEYWORD_NOT: \
@@ -15964,9 +16045,7 @@ parse_string_part(pm_parser_t *parser, uint16_t depth) {
             pm_statements_node_t *statements = NULL;
 
             if (!match3(parser, PM_TOKEN_EMBEXPR_END, PM_TOKEN_HEREDOC_END, PM_TOKEN_EOF)) {
-                pm_accepts_block_stack_push(parser, true);
                 statements = parse_statements(parser, PM_CONTEXT_EMBEXPR, (uint16_t) (depth + 1));
-                pm_accepts_block_stack_pop(parser);
             }
 
             parser->brace_nesting = brace_nesting;
@@ -19031,7 +19110,6 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
 
     /* Otherwise, we're going to parse the first statement in the list of
      * statements within the parentheses. */
-    pm_accepts_block_stack_push(parser, true);
     context_push(parser, PM_CONTEXT_PARENS);
     pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, (uint16_t) (depth + 1));
     context_pop(parser);
@@ -19065,10 +19143,6 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
             lex_state_set(parser, PM_LEX_STATE_ENDARG);
         }
 
-        /* Pop before consuming the closing `)` so the following token (e.g. a
-         * `do`) is lexed in the enclosing context rather than as a block
-         * belonging to the parenthesized expression. */
-        pm_accepts_block_stack_pop(parser);
         parser_lex(parser);
         pop_block_exits(parser, previous_block_exits);
 
@@ -19181,7 +19255,6 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
     }
 
     context_pop(parser);
-    pm_accepts_block_stack_pop(parser);
     expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
 
     /* When we're parsing multi targets, we allow them to be followed by a right
@@ -19243,7 +19316,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             parser_lex(parser);
 
             pm_array_node_t *array = pm_array_node_create(parser, &parser->previous);
-            pm_accepts_block_stack_push(parser, true);
             bool parsed_bare_hash = false;
 
             while (!match2(parser, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_EOF)) {
@@ -19341,13 +19413,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
             accept1(parser, PM_TOKEN_NEWLINE);
 
-            /* Pop before consuming the closing `]` so the following token (e.g.
-             * a `do`) is lexed in the enclosing context rather than as a block
-             * belonging to the array's interior. Otherwise a `do` block would
-             * wrongly bind to a command with an array argument, as in
-             * `foo(m [] do end)`. */
-            pm_accepts_block_stack_pop(parser);
-
             if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
                 PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_ARRAY_TERM, pm_token_str(parser->current.type));
                 parser->previous.start = parser->previous.end;
@@ -19372,7 +19437,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             pm_static_literals_t *current_hash_keys = parser->current_hash_keys;
             parser->current_hash_keys = NULL;
 
-            pm_accepts_block_stack_push(parser, true);
             parser_lex(parser);
 
             pm_token_t opening = parser->previous;
@@ -19390,7 +19454,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                 accept1(parser, PM_TOKEN_NEWLINE);
             }
 
-            pm_accepts_block_stack_pop(parser);
             expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_HASH_TERM, &opening);
             pm_hash_node_closing_loc_set(parser, node, &parser->previous);
 
@@ -20624,7 +20687,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             parser->lambda_enclosure_nesting = parser->enclosure_nesting;
 
             size_t opening_newline_index = token_newline_index(parser);
-            pm_accepts_block_stack_push(parser, true);
             parser_lex(parser);
 
             pm_token_t operator = parser->previous;
@@ -20650,9 +20712,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                     break;
                 }
                 case PM_CASE_PARAMETER: {
-                    pm_accepts_block_stack_push(parser, false);
                     block_parameters = parse_block_parameters(parser, false, NULL, true, false, (uint16_t) (depth + 1));
-                    pm_accepts_block_stack_pop(parser);
                     break;
                 }
                 default: {
@@ -20663,7 +20723,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
             pm_token_t opening;
             pm_node_t *body = NULL;
-            parser->lambda_enclosure_nesting = previous_lambda_enclosure_nesting;
 
             if (accept1(parser, PM_TOKEN_LAMBDA_BEGIN)) {
                 opening = parser->previous;
@@ -20674,14 +20733,30 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
                 parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false, false);
 
-                /* Pop before consuming the closing `}` so the following token
-                 * (e.g. a `do`) is lexed in the enclosing context rather than
-                 * as a block belonging to the lambda's interior. */
-                pm_accepts_block_stack_pop(parser);
+                /* Restore the enclosing lambda's nesting now that the body has
+                 * been parsed, so that the token following the closing `}` is
+                 * lexed in the enclosing context. During the body the nesting
+                 * held this lambda's own level, which every token inside the
+                 * braces sits above. This mirrors parse.y restoring
+                 * `p->lex.lpar_beg` after `lambda_body`. */
+                parser->lambda_enclosure_nesting = previous_lambda_enclosure_nesting;
                 expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_LAMBDA_TERM_BRACE, &opening);
             } else {
-                expect1(parser, PM_TOKEN_KEYWORD_DO, PM_ERR_LAMBDA_OPEN);
+                /* A `-> { }` body is delimited by `{`/`}`, whose block-accepting
+                 * frame the lexer manages. A `-> do end` body is delimited by
+                 * keywords, so push the frame here and pop it before `end`. The
+                 * push must precede consuming the `do`, which lexes the first
+                 * token of the body; this matches parse.y's CMDARG_PUSH(0)
+                 * before `lambda_body`. */
+                pm_accepts_block_stack_push(parser, true);
+                expect1(parser, PM_TOKEN_KEYWORD_DO_LAMBDA, PM_ERR_LAMBDA_OPEN);
                 opening = parser->previous;
+
+                /* The lexer cleared the nesting when it produced the `do`. If
+                 * it was missing entirely, clear it here so that the body is
+                 * recovered the same way it would have been parsed: no token
+                 * within it sits at the beginning of a lambda. */
+                parser->lambda_enclosure_nesting = -1;
 
                 if (!match3(parser, PM_TOKEN_KEYWORD_END, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
                     body = UP(parse_statements(parser, PM_CONTEXT_LAMBDA_DO_END, (uint16_t) (depth + 1)));
@@ -20694,8 +20769,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                     parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false, false);
                 }
 
-                /* As with the brace case above, pop before consuming `end`. */
                 pm_accepts_block_stack_pop(parser);
+
+                /* As with the brace branch above, restore the nesting before
+                 * consuming the closing `end`, which lexes the token that
+                 * follows it. */
+                parser->lambda_enclosure_nesting = previous_lambda_enclosure_nesting;
                 expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_LAMBDA_TERM_END, &operator);
             }
 
@@ -22138,9 +22217,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             arguments.opening_loc = TOK2LOC(parser, &parser->previous);
 
             if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
-                pm_accepts_block_stack_push(parser, true);
                 parse_arguments(parser, &arguments, false, PM_TOKEN_BRACKET_RIGHT, (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK), (uint16_t) (depth + 1));
-                pm_accepts_block_stack_pop(parser);
                 expect1(parser, PM_TOKEN_BRACKET_RIGHT, PM_ERR_EXPECT_RBRACKET);
             }
 
@@ -22279,9 +22356,9 @@ parse_expression_terminator(pm_parser_t *parser, pm_node_t *node) {
             if (pm_command_call_value_p(parser, node)) {
                 return left > PM_BINDING_POWER_COMPOSITION;
             }
+
             /* A super carrying a do-block is a block call, so it may also be
-             * followed by call chaining (`.`, `::`, `&.`).
-             */
+             * followed by call chaining (`.`, `::`, `&.`). */
             if (pm_block_call_p(node)) {
                 return left > PM_BINDING_POWER_COMPOSITION && left < PM_BINDING_POWER_CALL;
             }

@@ -141,6 +141,7 @@ module Prism
       KEYWORD_DEFINED: :on_kw,
       KEYWORD_DO: :on_kw,
       KEYWORD_DO_BLOCK: :on_kw,
+      KEYWORD_DO_LAMBDA: :on_kw,
       KEYWORD_DO_LOOP: :on_kw,
       KEYWORD_ELSE: :on_kw,
       KEYWORD_ELSIF: :on_kw,
