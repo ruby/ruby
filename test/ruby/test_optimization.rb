@@ -1047,6 +1047,21 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal(:ok, x.bug)
   end
 
+  def test_peephole_branch_dup_with_label_after_dup
+    assert_ruby_status [], <<-END
+      src = <<~'SRC'
+        $g&.call&.to_s
+        [*d, [__dir__].each(&:each), C1.value(/ab/o, &b)].each {}
+        begin
+          ((-243 != qux) ? (1..2) : 8i&.value) => ^([1].select(&:to_s))
+        rescue
+          ((-243 != qux) ? (1..2) : 8i&.value) => ^([1].select(&:to_s))
+        end
+      SRC
+      RubyVM::InstructionSequence.compile(src)
+    END
+  end
+
   def test_peephole_jump_after_newarray
     i = 0
     %w(1) || 2 while (i += 1) < 100
