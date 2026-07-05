@@ -938,6 +938,13 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(false, /../ === nil)
   end
 
+  def test_eql
+    require '-test-/regexp'
+  rescue LoadError
+  else
+    assert_equal(/^[0-9]/, Bug::Regexp.new_binary("^[0-9]"))
+  end
+
   def test_quote
     assert_equal("\xff", Regexp.quote([0xff].pack("C")))
     assert_equal("\\ ", Regexp.quote("\ "))

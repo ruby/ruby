@@ -3655,11 +3655,15 @@ rb_reg_equal(VALUE re1, VALUE re2)
     // src is a fstring, so a pointer comparison is enough
     RUBY_ASSERT(FL_TEST_RAW(RREGEXP_SRC(re1), RSTRING_FSTR));
     RUBY_ASSERT(FL_TEST_RAW(RREGEXP_SRC(re2), RSTRING_FSTR));
-    if (RREGEXP_SRC(re1) != RREGEXP_SRC(re2)) return Qfalse;
 
     if (FL_TEST(re1, KCODE_FIXED) != FL_TEST(re2, KCODE_FIXED)) return Qfalse;
     if (RREGEXP_PTR(re1)->options != RREGEXP_PTR(re2)->options) return Qfalse;
-    return RBOOL(ENCODING_GET(re1) == ENCODING_GET(re2));
+    if (RREGEXP_SRC_LEN(re1) != RREGEXP_SRC_LEN(re2)) return Qfalse;
+    if (ENCODING_GET(re1) != ENCODING_GET(re2)) return Qfalse;
+
+    if (RREGEXP_SRC(re1) == RREGEXP_SRC(re2)) return Qtrue;
+    if (RREGEXP_SRC_PTR(re1) == RREGEXP_SRC_PTR(re2)) return Qtrue;
+    return RBOOL(memcmp(RREGEXP_SRC_PTR(re1), RREGEXP_SRC_PTR(re2), RREGEXP_SRC_LEN(re1)) == 0);
 }
 
 /*
