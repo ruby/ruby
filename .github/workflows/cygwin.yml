@@ -47,9 +47,14 @@ jobs:
       - name: Setup Cygwin
         uses: cygwin/cygwin-install-action@3f0a3f9f988f7e96b8c18098ae05eaec175f5b52 # v6.1
         with:
-          packages: ruby gcc-core make autoconf libtool libssl-devel libyaml-devel libffi-devel zlib-devel rubygems
+          packages: ruby gcc-core make autoconf libtool libssl-devel libyaml-devel libffi-devel zlib-devel rubygems ruby-devel
           site: |
             https://cygwin.osuosl.org/
+
+      - name: Install fiddle
+        run: |
+          gem install fiddle
+        shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
 
       - name: configure
         run: |
