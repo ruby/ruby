@@ -3686,8 +3686,9 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 if (IS_INSN(&nobj->link) && IS_INSN_ID(nobj, jump)) {
                     if (!replace_destination(iobj, nobj)) break;
                 }
-                else if (prev_dup && IS_INSN_ID(nobj, dup) &&
+                else if (prev_dup && IS_INSN(&nobj->link) && IS_INSN_ID(nobj, dup) &&
                          !!(nobj = (INSN *)nobj->link.next) &&
+                         IS_INSN(&nobj->link) &&
                          /* basic blocks, with no labels in the middle */
                          nobj->insn_id == iobj->insn_id) {
                     /*
@@ -3774,7 +3775,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                     break;
                 }
                 else break;
-                nobj = (INSN *)get_destination_insn(nobj);
+                {
+                    LINK_ELEMENT *dest = get_destination_insn(nobj);
+                    if (!dest || !IS_INSN(dest)) break;
+                    nobj = (INSN *)dest;
+                }
             }
         }
     }
