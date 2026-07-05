@@ -116,10 +116,9 @@ static void
 ossl_x509store_mark(void *ptr)
 {
     X509_STORE *store = ptr;
-    // Note: this reference is stored as @verify_callback so we don't need to mark it.
-    // However we do need to ensure GC compaction won't move it, hence why
-    // we call rb_gc_mark here.
-    rb_gc_mark((VALUE)X509_STORE_get_ex_data(store, store_ex_verify_cb_idx));
+    VALUE verify_cb =
+        (VALUE)X509_STORE_get_ex_data(store, store_ex_verify_cb_idx);
+    rb_gc_mark_movable(verify_cb);
 }
 
 static void
@@ -128,12 +127,26 @@ ossl_x509store_free(void *ptr)
     X509_STORE_free(ptr);
 }
 
+static void
+ossl_x509store_compact(void *ptr)
+{
+    X509_STORE *store = ptr;
+    VALUE verify_cb =
+        (VALUE)X509_STORE_get_ex_data(store, store_ex_verify_cb_idx);
+    if (verify_cb) {
+        (void)X509_STORE_set_ex_data(store, store_ex_verify_cb_idx,
+                                     (void *)rb_gc_location(verify_cb));
+    }
+}
+
 static const rb_data_type_t ossl_x509store_type = {
-    "OpenSSL/X509/STORE",
-    {
-        ossl_x509store_mark, ossl_x509store_free,
+    .wrap_struct_name = "OpenSSL/X509/STORE",
+    .function = {
+        .dmark = ossl_x509store_mark,
+        .dfree = ossl_x509store_free,
+        .dcompact = ossl_x509store_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -570,10 +583,9 @@ static void
 ossl_x509stctx_mark(void *ptr)
 {
     X509_STORE_CTX *ctx = ptr;
-    // Note: this reference is stored as @verify_callback so we don't need to mark it.
-    // However we do need to ensure GC compaction won't move it, hence why
-    // we call rb_gc_mark here.
-    rb_gc_mark((VALUE)X509_STORE_CTX_get_ex_data(ctx, stctx_ex_verify_cb_idx));
+    VALUE verify_cb =
+        (VALUE)X509_STORE_CTX_get_ex_data(ctx, stctx_ex_verify_cb_idx);
+    rb_gc_mark_movable(verify_cb);
 }
 
 static void
@@ -585,12 +597,26 @@ ossl_x509stctx_free(void *ptr)
     X509_STORE_CTX_free(ctx);
 }
 
+static void
+ossl_x509stctx_compact(void *ptr)
+{
+    X509_STORE_CTX *ctx = ptr;
+    VALUE verify_cb =
+        (VALUE)X509_STORE_CTX_get_ex_data(ctx, stctx_ex_verify_cb_idx);
+    if (verify_cb) {
+        (void)X509_STORE_CTX_set_ex_data(ctx, stctx_ex_verify_cb_idx,
+                                         (void *)rb_gc_location(verify_cb));
+    }
+}
+
 static const rb_data_type_t ossl_x509stctx_type = {
-    "OpenSSL/X509/STORE_CTX",
-    {
-        ossl_x509stctx_mark, ossl_x509stctx_free,
+    .wrap_struct_name = "OpenSSL/X509/STORE_CTX",
+    .function = {
+        .dmark = ossl_x509stctx_mark,
+        .dfree = ossl_x509stctx_free,
+        .dcompact = ossl_x509stctx_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
