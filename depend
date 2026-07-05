@@ -11694,6 +11694,7 @@ prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/arena.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/ast.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/buffer.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/compiler/align.h
+prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/compiler/assume.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/compiler/exported.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/compiler/flex_array.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/compiler/force_inline.h
