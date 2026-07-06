@@ -23,11 +23,8 @@ use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NAT
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
 use crate::hir_type::{types, Type};
-use crate::options::{get_option, InlineDepth, PerfMap};
+use crate::options::{get_option, InlineDepth, PerfMap, DEFAULT_MAX_VERSIONS};
 use crate::cast::IntoUsize;
-
-/// Default maximum number of compiled versions per ISEQ.
-const DEFAULT_MAX_VERSIONS: usize = 2;
 
 /// Maximum number of compiled versions per ISEQ.
 /// Configurable via --zjit-max-versions (default: 2).
