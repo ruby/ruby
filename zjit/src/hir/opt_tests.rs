@@ -4618,6 +4618,32 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn dont_classify_keyword_to_positional_hash_argc_mismatch_as_complex_arg_pass() {
+        eval("
+            def foo(a, b) = a
+            def test = foo(k: 1)
+            begin; test; rescue ArgumentError; end
+            begin; test; rescue ArgumentError; end
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:BasicObject = Send v6, :foo, v11 # SendFallbackReason: Argument count does not match parameter count
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
     fn test_send_call_to_iseq_with_optional_kw() {
         eval("
             def foo(a: 1) = a
