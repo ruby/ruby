@@ -2503,6 +2503,15 @@ vm_init_redefined_flag(void)
             rb_method_entry_at(rb_cString, mid)->def->no_redef_warning = true;
         }
         vm_fresh_register_ary_bops();
+        static const char *const fresh_hash_mids[] = {
+            "merge", "transform_values", "select", "reject", "compact",
+        };
+        ruby_vm_redefined_flag[BOP_HASH_FRESH] = 0;
+        for (size_t i = 0; i < numberof(fresh_hash_mids); i++) {
+            ID mid = rb_intern(fresh_hash_mids[i]);
+            add_opt_method(rb_cHash, mid, BOP_HASH_FRESH);
+            rb_method_entry_at(rb_cHash, mid)->def->no_redef_warning = true;
+        }
         vm_fresh_init_table();
     }
 }

@@ -7412,6 +7412,38 @@ static const rb_data_type_t env_data_type = {
  *
  */
 
+/* Destructive variants for proven-fresh receivers (vm_insnhelper.c). */
+VALUE
+rb_hash_fresh_merge(int argc, VALUE *argv, VALUE self)
+{
+    return rb_hash_update(argc, argv, self);
+}
+
+VALUE
+rb_hash_fresh_transform_values(VALUE hash)
+{
+    return rb_hash_transform_values_bang(hash);
+}
+
+VALUE
+rb_hash_fresh_select(VALUE hash)
+{
+    return rb_hash_keep_if(hash);
+}
+
+VALUE
+rb_hash_fresh_reject(VALUE hash)
+{
+    return rb_hash_delete_if(hash);
+}
+
+VALUE
+rb_hash_fresh_compact(VALUE hash)
+{
+    rb_hash_compact_bang(hash);
+    return hash;
+}
+
 void
 Init_Hash(void)
 {

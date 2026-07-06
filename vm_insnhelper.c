@@ -3818,6 +3818,12 @@ static VALUE vm_call_cfunc_fresh_reverse(rb_execution_context_t *ec, rb_control_
 static VALUE vm_call_cfunc_fresh_take(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
 static VALUE vm_call_cfunc_fresh_drop(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
 static VALUE vm_call_cfunc_fresh_ary_produce(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_hashfresh_merge(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_hashfresh_transform_values(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_hashfresh_select(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_hashfresh_reject(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_hashfresh_compact(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_fresh_hash_produce(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
 
 /* called once at boot: read-only afterwards, no ractor synchronization */
 static void
@@ -3869,6 +3875,12 @@ vm_fresh_init_table(void)
     ENTRY_P(rb_cArray, "&", vm_call_cfunc_fresh_ary_produce);
     ENTRY_P(rb_cArray, "|", vm_call_cfunc_fresh_ary_produce);
     ENTRY_P(rb_cArray, "rotate", vm_call_cfunc_fresh_ary_produce);
+    ENTRY(rb_cHash, "merge", vm_call_cfunc_hashfresh_merge);
+    ENTRY(rb_cHash, "transform_values", vm_call_cfunc_hashfresh_transform_values);
+    ENTRY(rb_cHash, "select", vm_call_cfunc_hashfresh_select);
+    ENTRY(rb_cHash, "reject", vm_call_cfunc_hashfresh_reject);
+    ENTRY(rb_cHash, "compact", vm_call_cfunc_hashfresh_compact);
+    ENTRY_P(rb_cHash, "invert", vm_call_cfunc_fresh_hash_produce);
 #undef ENTRY0
 #undef ENTRY
 #undef ENTRY_P
@@ -4040,6 +4052,60 @@ vm_call_cfunc_fresh_ary_produce(rb_execution_context_t *ec, rb_control_frame_t *
     VALUE *argv = &stack_bottom[1];
     VALUE val = vm_call_cfunc_with_frame_core(ec, reg_cfp, calling, argc, argv, stack_bottom, NULL);
     if (vm_ci_flag(calling->cd->ci) & VM_CALL_FRESH_PROD) rb_vm_fresh_ary_arm(val);
+    return val;
+}
+
+void
+rb_vm_fresh_hash_arm(VALUE val)
+{
+    if (LIKELY(RB_TYPE_P(val, T_HASH)) &&
+        !RB_OBJ_FROZEN_RAW(val) && !FL_TEST_RAW(val, RHASH_PROC_DEFAULT) &&
+        LIKELY(!ruby_vm_event_flags) &&
+        BASIC_OP_UNREDEFINED_P(BOP_HASH_FRESH, HASH_REDEFINED_OP_FLAG)) {
+        FL_SET_RAW(val, HASH_FRESH);
+    }
+}
+
+/* Hash twin of FRESH_STR_FASTPATH */
+#define FRESH_HASH_FASTPATH(name, fn, needs_block) \
+static VALUE \
+vm_call_cfunc_hashfresh_##name(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling) \
+{ \
+    int argc = calling->argc; \
+    VALUE *stack_bottom = reg_cfp->sp - argc - 1; \
+    VALUE *argv = &stack_bottom[1]; \
+    unsigned int ci_flag = vm_ci_flag(calling->cd->ci); \
+    VALUE recv = calling->recv; \
+    VALUE (*fresh_fn)(VALUE) = NULL; \
+    if ((ci_flag & VM_CALL_FRESH_CONS) && \
+        (RBASIC(recv)->flags & (HASH_FRESH | FL_FREEZE)) == HASH_FRESH) { \
+        FL_UNSET_RAW(recv, HASH_FRESH); \
+        if ((!needs_block || calling->block_handler != VM_BLOCK_HANDLER_NONE) && \
+            LIKELY(!ruby_vm_event_flags) && \
+            BASIC_OP_UNREDEFINED_P(BOP_HASH_FRESH, HASH_REDEFINED_OP_FLAG)) { \
+            fresh_fn = (VALUE (*)(VALUE))fn; \
+        } \
+    } \
+    VALUE val = vm_call_cfunc_with_frame_core(ec, reg_cfp, calling, argc, argv, stack_bottom, fresh_fn); \
+    if (ci_flag & VM_CALL_FRESH_PROD) rb_vm_fresh_hash_arm(val); \
+    return val; \
+}
+
+FRESH_HASH_FASTPATH(merge, rb_hash_fresh_merge, false)
+FRESH_HASH_FASTPATH(transform_values, rb_hash_fresh_transform_values, true)
+FRESH_HASH_FASTPATH(select, rb_hash_fresh_select, true)
+FRESH_HASH_FASTPATH(reject, rb_hash_fresh_reject, true)
+FRESH_HASH_FASTPATH(compact, rb_hash_fresh_compact, false)
+#undef FRESH_HASH_FASTPATH
+
+static VALUE
+vm_call_cfunc_fresh_hash_produce(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
+{
+    int argc = calling->argc;
+    VALUE *stack_bottom = reg_cfp->sp - argc - 1;
+    VALUE *argv = &stack_bottom[1];
+    VALUE val = vm_call_cfunc_with_frame_core(ec, reg_cfp, calling, argc, argv, stack_bottom, NULL);
+    if (vm_ci_flag(calling->cd->ci) & VM_CALL_FRESH_PROD) rb_vm_fresh_hash_arm(val);
     return val;
 }
 

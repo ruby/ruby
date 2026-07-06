@@ -42,6 +42,7 @@ enum ruby_basic_operators {
     BOP_INCLUDE_P,
     BOP_ARY_FRESH,
     BOP_STR_FRESH,
+    BOP_HASH_FRESH,
 
     BOP_LAST_
 };

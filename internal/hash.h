@@ -210,4 +210,10 @@ RHASH_AR_TABLE_BOUND(VALUE h)
     return bound;
 }
 
+VALUE rb_hash_fresh_merge(int argc, VALUE *argv, VALUE self);
+VALUE rb_hash_fresh_transform_values(VALUE hash);
+VALUE rb_hash_fresh_select(VALUE hash);
+VALUE rb_hash_fresh_reject(VALUE hash);
+VALUE rb_hash_fresh_compact(VALUE hash);
+
 #endif /* INTERNAL_HASH_H */
