@@ -363,7 +363,7 @@ pub fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
     local_idx.try_into().unwrap()
 }
 
-/// Inverse of ep_offset_to_local_idx(). See ep_offset_to_local_idx() for details.
+/// Inverse of ep_offset_to_local_idx(). See [`ep_offset_to_local_idx`] for details.
 pub fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
     let local_size = unsafe { get_iseq_body_local_table_size(iseq) };
     local_size_and_idx_to_ep_offset(local_size.to_usize(), local_idx)
