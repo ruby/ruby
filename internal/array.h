@@ -20,6 +20,8 @@
 
 #define RARRAY_SHARED_FLAG      ELTS_SHARED
 #define RARRAY_SHARED_ROOT_FLAG FL_USER12
+/* fresh chain temporary: exactly one reference, on a value stack */
+#define ARY_FRESH               FL_USER13
 #define RARRAY_PTR_IN_USE_FLAG  FL_USER14
 
 /* array.c */

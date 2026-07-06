@@ -28,6 +28,9 @@ enum ruby_rhash_flags {
     RHASH_AR_TABLE_BOUND_MASK = (FL_USER8|FL_USER9|FL_USER10|FL_USER11), /* FL 8..11 */
     RHASH_AR_TABLE_BOUND_SHIFT = (FL_USHIFT+8),
 
+    /* fresh chain temporary: exactly one reference, on a value stack */
+    HASH_FRESH = FL_USER12,
+
     // we can not put it in "enum" because it can exceed "int" range.
 #define RHASH_LEV_MASK (FL_USER13 | FL_USER14 | FL_USER15 |                /* FL 13..19 */ \
                         FL_USER16 | FL_USER17 | FL_USER18 | FL_USER19)

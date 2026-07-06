@@ -21,6 +21,8 @@
 #define STR_CHILLED                 (FL_USER2 | FL_USER3)
 #define STR_CHILLED_LITERAL         FL_USER2
 #define STR_CHILLED_SYMBOL_TO_S     FL_USER3
+/* fresh chain temporary; shared with STR_PRECOMPUTED_HASH, so tests must exclude frozen */
+#define STR_FRESH                   FL_USER4
 
 enum ruby_rstring_private_flags {
     RSTRING_CHILLED = STR_CHILLED,
