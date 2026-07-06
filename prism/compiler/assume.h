@@ -10,7 +10,7 @@
  * range analysis so it can prune impossible paths. Use it to communicate an
  * invariant the caller guarantees but that the compiler cannot otherwise prove.
  */
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L /* C23 or later */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L /* C23 or later */ && !defined(__APPLE__)
     #define PRISM_ASSUME(expr_) [[assume(expr_)]]
 #elif defined(__clang__)
     #define PRISM_ASSUME(expr_) __builtin_assume(expr_)
