@@ -2030,10 +2030,261 @@ pub(crate) mod hir_build_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v15:BasicObject = Send v10, 0x1008, :each # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
-          v18:CPtr = LoadSP
-          v19:BasicObject = LoadField v18, :a@0x1000
           CheckInterrupts
           Return v15
+        ");
+    }
+
+    #[test]
+    fn test_send_with_block_reloads_only_written_locals() {
+        eval("
+            def foo = yield
+            def test
+              a = 1
+              b = 2
+              foo { a = 3 }
+              a + b
+            end
+            test
+        ");
+        // Only `a` is reloaded after the call; `b` is never written by the block,
+        // so it keeps its SSA value (the Fixnum constant) and is not reloaded.
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb3(v1, v2, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb3(v6, v7, v8)
+        bb3(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          v20:Fixnum[2] = Const Value(2)
+          v25:BasicObject = Send v10, 0x1000, :foo # SendFallbackReason: Uncategorized(send)
+          PatchPoint NoEPEscape(test)
+          v28:CPtr = LoadSP
+          v29:BasicObject = LoadField v28, :a@0x1028
+          PatchPoint NoEPEscape(test)
+          v38:BasicObject = Send v29, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
+          CheckInterrupts
+          Return v38
+        ");
+    }
+
+    #[test]
+    fn test_send_with_block_does_not_reload_read_only_local() {
+        eval("
+            def foo = yield
+            def test
+              a = 1
+              foo { a }
+              a
+            end
+            test
+        ");
+        // The block only reads `a`; it never assigns it, so `a` keeps its SSA value
+        // and is not reloaded after the call.
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          Jump bb3(v5, v6)
+        bb3(v8:BasicObject, v9:NilClass):
+          v13:Fixnum[1] = Const Value(1)
+          v18:BasicObject = Send v8, 0x1000, :foo # SendFallbackReason: Uncategorized(send)
+          PatchPoint NoEPEscape(test)
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
+    fn test_send_reloads_referenced_block_param() {
+        eval("
+            def take(x) = x
+            def consume = yield
+            def test(&block)
+              consume { take(block) }
+              ::RubyVM::ZJIT.induce_side_exit!
+            end
+            test { 1 }
+        ");
+        // The block reads `block` (passed as a regular argument), so it references the
+        // block param. `getblockparam` is recorded as a read, but reading the block param
+        // materializes the captured block into its slot, so the block param must be
+        // reloaded after the call (this is the lazy_load_hooks miscompile scenario).
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:BasicObject = Send v9, 0x1008, :consume # SendFallbackReason: Uncategorized(send)
+          PatchPoint NoEPEscape(test)
+          v18:CPtr = LoadSP
+          v19:BasicObject = LoadField v18, :block@0x1000
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1030, ::RubyVM::ZJIT)
+          v25:ModuleSubclass[RubyVM::ZJIT@0x1038] = Const Value(VALUE(0x1038))
+          SideExit DirectiveInduced
+        ");
+    }
+
+    #[test]
+    fn test_send_does_not_reload_unreferenced_block_param() {
+        eval("
+            def consume = yield
+            def test(&block)
+              a = 1
+              consume { a }
+              ::RubyVM::ZJIT.induce_side_exit!
+            end
+            test { 1 }
+        ");
+        // The block only references `a`, never the block param, so the block param
+        // cannot have been materialized by the call and is not reloaded. (Before the
+        // reload filter was refined, the block param was reloaded after every
+        // send-with-block, even when the block could not have touched it.)
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :block@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          v17:Fixnum[1] = Const Value(1)
+          v22:BasicObject = Send v11, 0x1008, :consume # SendFallbackReason: Uncategorized(send)
+          PatchPoint NoEPEscape(test)
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1030, ::RubyVM::ZJIT)
+          v30:ModuleSubclass[RubyVM::ZJIT@0x1038] = Const Value(VALUE(0x1038))
+          SideExit DirectiveInduced
+        ");
+    }
+
+    #[test]
+    fn test_send_with_anonymous_block_param() {
+        eval("
+            def consume = yield
+            def test(&)
+              consume { consume(&) }
+              consume(&)
+            end
+            test { 1 }
+        ");
+        assert_contains_opcode("test", YARVINSN_send);
+        // An anonymous `&` block param can only be forwarded with `&`, which compiles to
+        // `getblockparamproxy` and reads the block from the EP. It never materializes the
+        // param into its slot, so the block param is read directly from the EP after the
+        // call and is not reloaded -- there is nothing a reload could recover.
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :&@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :&@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:BasicObject = Send v9, 0x1008, :consume # SendFallbackReason: Uncategorized(send)
+          PatchPoint NoEPEscape(test)
+          v24:CPtr = GetEP 0
+          v25:CUInt64 = LoadField v24, :VM_ENV_DATA_INDEX_FLAGS@0x1030
+          v26:CBool = IsBlockParamModified v25
+          CondBranch v26, bb4(), bb5()
+        bb4():
+          v28:BasicObject = LoadField v24, :&@0x1031
+          Jump bb6(v28, v28)
+        bb5():
+          v30:CInt64 = LoadField v24, :VM_ENV_DATA_INDEX_SPECVAL@0x1032
+          v31:CInt64 = GuardAnyBitSet v30, CUInt64(1) recompile
+          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1038))
+          Jump bb6(v32, v10)
+        bb6(v22:BasicObject, v23:BasicObject):
+          v35:BasicObject = Send v9, &block, :consume, v22 # SendFallbackReason: Uncategorized(send)
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
+    fn test_send_reloads_local_written_by_nested_block() {
+        eval("
+            def foo = yield
+            def test
+              a = 1
+              b = 2
+              foo { foo { a = 3 } }
+              a + b
+            end
+            test
+        ");
+        assert_contains_opcode("test", YARVINSN_send);
+        // `a` is assigned only from a block nested inside the block argument, but the
+        // outer block's outer_variables table still records that write (the compiler
+        // aggregates writes up the nesting chain), so `a` is reloaded while the
+        // untouched `b` keeps its SSA value.
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb3(v1, v2, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb3(v6, v7, v8)
+        bb3(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          v20:Fixnum[2] = Const Value(2)
+          v25:BasicObject = Send v10, 0x1000, :foo # SendFallbackReason: Uncategorized(send)
+          PatchPoint NoEPEscape(test)
+          v28:CPtr = LoadSP
+          v29:BasicObject = LoadField v28, :a@0x1028
+          PatchPoint NoEPEscape(test)
+          v38:BasicObject = Send v29, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
+          CheckInterrupts
+          Return v38
         ");
     }
 
@@ -2323,8 +2574,6 @@ pub(crate) mod hir_build_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v16:BasicObject = InvokeSuperForward v9, 0x1008, v10 # SendFallbackReason: InvokeSuperForward: not yet specialized
           PatchPoint NoEPEscape(test)
-          v19:CPtr = LoadSP
-          v20:BasicObject = LoadField v19, :...@0x1000
           CheckInterrupts
           Return v16
         ");

@@ -419,17 +419,10 @@ pub const BOP_LAST_: ruby_basic_operators = 35;
 pub type ruby_basic_operators = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_id_item {
-    _unused: [u8; 0],
-}
-#[repr(C)]
+#[repr(align(8))]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_id_table {
-    pub capa: ::std::os::raw::c_int,
-    pub num: ::std::os::raw::c_int,
-    pub used: ::std::os::raw::c_int,
-    pub items: *mut rb_id_item,
+    pub _bindgen_opaque_blob: [u64; 3usize],
 }
 pub const imemo_env: imemo_type = 0;
 pub const imemo_cref: imemo_type = 1;
@@ -1931,6 +1924,7 @@ pub struct zjit_jit_frame {
     pub stack: __IncompleteArrayField<VALUE>,
 }
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
+pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 288;
 pub type zjit_struct_offsets = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
 pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
@@ -2082,6 +2076,11 @@ unsafe extern "C" {
     ) -> VALUE;
     pub fn rb_vm_top_self() -> VALUE;
     pub static mut rb_vm_insn_count: u64;
+    pub fn rb_id_table_lookup(
+        tbl: *mut rb_id_table,
+        id: ID,
+        valp: *mut VALUE,
+    ) -> ::std::os::raw::c_int;
     pub fn rb_method_entry_at(obj: VALUE, id: ID) -> *const rb_method_entry_t;
     pub fn rb_callable_method_entry(klass: VALUE, id: ID) -> *const rb_callable_method_entry_t;
     pub fn rb_callable_method_entry_or_negative(
