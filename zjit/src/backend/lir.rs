@@ -2073,8 +2073,9 @@ impl Assembler
                 } else {
                     if let Some(allocation) = assignment[active_interval.id] {
                         if let Some(reg) = allocation.alloc_pool_index(num_registers) {
+                            let was_not_there_before = free_registers.insert(reg);
                             assert!(
-                                free_registers.insert(reg),
+                                was_not_there_before,
                                 "attempted to return allocator register {:?} to the free pool more than once",
                                 allocation.assigned_reg().unwrap(),
                             );
