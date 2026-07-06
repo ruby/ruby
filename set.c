@@ -2502,19 +2502,19 @@ rb_set_size(VALUE set)
  *   as determined by the given block.
  * - #flatten:
  *   Returns a new set that is a recursive flattening of +self+.
- * - #flatten!:
- *   Replaces each nested set in +self+ with the elements from that set.
+ * - #flatten!: Like #flatten, but if any changes were made
+ *   replaces +self+ with the result and returns self.
  * - #inspect (aliased as #to_s):
- *   Returns a string displaying the elements.
+ *   Returns a string representation of +self+.
  * - #join:
- *   Returns a string containing all elements, converted to strings
- *   as needed, and joined by the given record separator.
+ *   Returns the string formed by joining the string-converted elements of +self+
+ *   with the given separator.
  * - #to_a:
- *   Returns an array containing all set elements.
+ *   Returns an array containing the elements of +self+.
  * - #to_set:
- *   Returns +self+ if given no arguments and no block;
- *   with a block given, returns a new set consisting of block
- *   return values.
+ *   With a block given, creates and returns a new set;
+ *   calls the block with each element of +self+,
+ *   and adds the block’s returns value to the new set.
  *
  * === Methods for Iterating
  *
