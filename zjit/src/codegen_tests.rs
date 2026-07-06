@@ -736,6 +736,26 @@ fn test_send_with_local_written_by_blockiseq() {
 }
 
 #[test]
+fn test_send_does_not_reload_local_untouched_by_blockiseq() {
+    // https://github.com/Shopify/ruby/issues/976: a call with a block must not
+    // reload locals the block never assigns, otherwise it reads a stale stack
+    // slot and clobbers the correct SSA value (here, `a`).
+    eval("
+        def foo(&block) = 1
+
+        def test
+          a = 1
+          foo {}
+          a
+        end
+
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_send);
+    assert_snapshot!(assert_compiles("test"), @"1");
+}
+
+#[test]
 fn test_no_ep_escape_patch_point_after_send_does_not_repeat_send() {
     eval(r#"
         $send_count = 0
