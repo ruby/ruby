@@ -3767,6 +3767,59 @@ pm_compile_plus_chain(rb_iseq_t *iseq, LINK_ANCHOR *const ret, INSN *producer)
     else {
         return;
     }
+
+    /* mark the consumer + so the JITs can tell it apart (the interpreter's
+     * opt_plus checks the receiver's flag unconditionally and ignores this) */
+    consumer->operands[0] = (VALUE)new_callinfo(iseq, idPLUS, 1,
+                                                vm_ci_flag(ci) | VM_CALL_FRESH_CONS, NULL, false);
+}
+
+/* Mark producer/consumer send pairs: any send whose result is directly
+ * the receiver of another send.  The bits are advisory; whether anything
+ * happens is decided at method resolution against the builtin table and
+ * re-checked at execution time. */
+static void
+pm_compile_fresh_recv_chain(rb_iseq_t *iseq, LINK_ANCHOR *const ret, INSN *producer)
+{
+    INSN *consumer = (INSN *)LAST_ELEMENT(ret);
+    if (!IS_INSN(&consumer->link) || !IS_INSN_ID(consumer, send)) return;
+    const struct rb_callinfo *ci = (const struct rb_callinfo *)OPERAND_AT(consumer, 0);
+    if (vm_ci_kwarg(ci) ||
+        (vm_ci_flag(ci) & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING))) {
+        return;
+    }
+    int cblk = OPERAND_AT(consumer, 1) != 0;
+
+    if (!rb_vm_fresh_consumer_mid_p(vm_ci_mid(ci))) {
+        /* the pairing is what guarantees an armed object always reaches a
+         * flag-processing callee: only mark covered consumers */
+        return;
+    }
+
+    if (IS_INSN_ID(producer, send)) {
+        const struct rb_callinfo *pci = (const struct rb_callinfo *)OPERAND_AT(producer, 0);
+        if (vm_ci_kwarg(pci) ||
+            (vm_ci_flag(pci) & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING))) {
+            return;
+        }
+        if (!rb_vm_fresh_producer_mid_p(vm_ci_mid(pci))) return;
+        int pblk = OPERAND_AT(producer, 1) != 0;
+        producer->operands[0] = (VALUE)new_callinfo(iseq, vm_ci_mid(pci), vm_ci_argc(pci),
+                                                    vm_ci_flag(pci) | VM_CALL_FRESH_PROD,
+                                                    NULL, pblk);
+    }
+    else if (IS_INSN_ID(producer, dupstring) || IS_INSN_ID(producer, dupchilledstring)) {
+        producer->insn_id = BIN(dupstring_fresh);
+    }
+    else if (IS_INSN_ID(producer, concatstrings)) {
+        producer->insn_id = BIN(concatstrings_fresh);
+    }
+    else {
+        return;
+    }
+    consumer->operands[0] = (VALUE)new_callinfo(iseq, vm_ci_mid(ci), vm_ci_argc(ci),
+                                                vm_ci_flag(ci) | VM_CALL_FRESH_CONS,
+                                                NULL, cblk);
 }
 
 /**
@@ -3840,6 +3893,17 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
     int flags = 0;
     struct rb_callinfo_kwarg *kw_arg = NULL;
+
+    INSN *fresh_recv_producer = NULL;
+    if (ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction &&
+        call_node->receiver != NULL &&
+        (PM_NODE_TYPE_P(call_node->receiver, PM_CALL_NODE) ||
+         PM_NODE_TYPE_P(call_node->receiver, PM_STRING_NODE) ||
+         PM_NODE_TYPE_P(call_node->receiver, PM_INTERPOLATED_STRING_NODE)) &&
+        !PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
+        method_id != idPLUS && IS_INSN(LAST_ELEMENT(ret))) {
+        fresh_recv_producer = (INSN *)LAST_ELEMENT(ret);
+    }
 
     INSN *plus_producer = NULL;
     if (ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction &&
@@ -3953,6 +4017,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         // Fall back to normal send
         PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
         if (plus_producer != NULL) pm_compile_plus_chain(iseq, ret, plus_producer);
+        if (fresh_recv_producer != NULL) pm_compile_fresh_recv_chain(iseq, ret, fresh_recv_producer);
         PUSH_INSN(ret, location, swap);
 
         PUSH_LABEL(ret, not_basic_new_finish);
@@ -3963,6 +4028,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     else {
         PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
         if (plus_producer != NULL) pm_compile_plus_chain(iseq, ret, plus_producer);
+        if (fresh_recv_producer != NULL) pm_compile_fresh_recv_chain(iseq, ret, fresh_recv_producer);
     }
 
     if (block_iseq && ISEQ_BODY(block_iseq)->catch_table) {

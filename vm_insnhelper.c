@@ -2608,6 +2608,7 @@ static inline VALUE vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_c
 static VALUE vm_call_super_method(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
 static VALUE vm_call_method_nome(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling);
 static VALUE vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling);
+static void vm_fresh_clear_recv(VALUE recv);
 static inline VALUE vm_call_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling);
 
 static vm_call_handler vm_call_iseq_setup_func(const struct rb_callinfo *ci, const int param_size, const int local_size);
@@ -3780,9 +3781,184 @@ vm_method_cfunc_entry(const rb_callable_method_entry_t *me)
     return UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
 }
 
+/* Fused builtin send chains (s.strip.downcase etc.): compile-marked
+ * producer sites arm the fresh flag on their result, and the directly
+ * following marked send consumes it with a destructive implementation. */
+
+struct vm_fresh_entry {
+    VALUE owner;
+    ID mid;                     /* original_id: aliases resolve to it */
+    vm_call_handler fastpath;
+    bool consumes;              /* false: arm-only producer */
+};
+
+static struct vm_fresh_entry vm_fresh_table[64];
+
+static VALUE vm_call_cfunc_strfresh_upcase(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_strfresh_downcase(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_strfresh_capitalize(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_strfresh_swapcase(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_strfresh_strip(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_strfresh_lstrip(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_strfresh_rstrip(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_strfresh_chomp(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_strfresh_squeeze(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_strfresh_chop(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_strfresh_sub(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_strfresh_tr(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_strfresh_delete(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_fresh_str_produce(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+
+/* called once at boot: read-only afterwards, no ractor synchronization */
+static void
+vm_fresh_init_table(void)
+{
+    int i = 0;
+#define ENTRY0(klass, name, fp, cons) \
+    (vm_fresh_table[i].owner = klass, \
+     vm_fresh_table[i].mid = rb_intern(name), \
+     vm_fresh_table[i].fastpath = fp, \
+     vm_fresh_table[i].consumes = cons, i++)
+#define ENTRY(klass, name, fp) ENTRY0(klass, name, fp, true)
+#define ENTRY_P(klass, name, fp) ENTRY0(klass, name, fp, false)
+    ENTRY(rb_cString, "upcase", vm_call_cfunc_strfresh_upcase);
+    ENTRY(rb_cString, "downcase", vm_call_cfunc_strfresh_downcase);
+    ENTRY(rb_cString, "capitalize", vm_call_cfunc_strfresh_capitalize);
+    ENTRY(rb_cString, "swapcase", vm_call_cfunc_strfresh_swapcase);
+    ENTRY(rb_cString, "strip", vm_call_cfunc_strfresh_strip);
+    ENTRY(rb_cString, "lstrip", vm_call_cfunc_strfresh_lstrip);
+    ENTRY(rb_cString, "rstrip", vm_call_cfunc_strfresh_rstrip);
+    ENTRY(rb_cString, "chomp", vm_call_cfunc_strfresh_chomp);
+    ENTRY(rb_cString, "squeeze", vm_call_cfunc_strfresh_squeeze);
+    ENTRY(rb_cString, "chop", vm_call_cfunc_strfresh_chop);
+    ENTRY(rb_cString, "sub", vm_call_cfunc_strfresh_sub);
+    ENTRY_P(rb_cString, "gsub", vm_call_cfunc_fresh_str_produce);
+    ENTRY(rb_cString, "tr", vm_call_cfunc_strfresh_tr);
+    ENTRY(rb_cString, "delete", vm_call_cfunc_strfresh_delete);
+    ENTRY_P(rb_cString, "*", vm_call_cfunc_fresh_str_produce);
+    ENTRY_P(rb_cString, "%", vm_call_cfunc_fresh_str_produce);
+    ENTRY_P(rb_cString, "ljust", vm_call_cfunc_fresh_str_produce);
+    ENTRY_P(rb_cString, "rjust", vm_call_cfunc_fresh_str_produce);
+    ENTRY_P(rb_cString, "center", vm_call_cfunc_fresh_str_produce);
+#undef ENTRY0
+#undef ENTRY
+#undef ENTRY_P
+    VM_ASSERT(i < (int)numberof(vm_fresh_table));
+
+    /* mark the builtin method entries: resolution then only needs
+     * "callinfo bit && method entry bit" to opt in */
+    for (int k = 0; k < i; k++) {
+        const rb_method_entry_t *me = rb_method_entry_at(vm_fresh_table[k].owner, vm_fresh_table[k].mid);
+        if (!me) continue;
+        me->def->fresh_producer = 1;
+        me->def->fresh_consumer = vm_fresh_table[k].consumes;
+    }
+}
+
+static const struct vm_fresh_entry *
+vm_fresh_lookup(const rb_callable_method_entry_t *me)
+{
+    if (me->def->type != VM_METHOD_TYPE_CFUNC) return NULL;
+    ID mid = me->def->original_id;
+    for (int i = 0; vm_fresh_table[i].mid; i++) {
+        if (vm_fresh_table[i].mid == mid && vm_fresh_table[i].owner == me->owner) {
+            return &vm_fresh_table[i];
+        }
+    }
+    return NULL;
+}
+
+/* compile-time pairing gates, derived from the one table: a producer may
+ * only arm when the consumer is covered (its fastpath or the kill switch
+ * will always process the flag) */
+bool
+rb_vm_fresh_producer_mid_p(ID mid)
+{
+    for (int i = 0; vm_fresh_table[i].mid; i++) {
+        if (vm_fresh_table[i].mid == mid) return true;
+    }
+    return false;
+}
+
+bool
+rb_vm_fresh_consumer_mid_p(ID mid)
+{
+    for (int i = 0; vm_fresh_table[i].mid; i++) {
+        if (vm_fresh_table[i].mid == mid && vm_fresh_table[i].consumes) return true;
+    }
+    return false;
+}
+
+void
+rb_vm_fresh_str_arm(VALUE val)
+{
+    if (LIKELY(RB_TYPE_P(val, T_STRING)) &&
+        !RB_OBJ_FROZEN_RAW(val) && !STR_SHARED_P(val) &&
+        LIKELY(!ruby_vm_event_flags) &&
+        BASIC_OP_UNREDEFINED_P(BOP_STR_FRESH, STRING_REDEFINED_OP_FLAG)) {
+        FL_SET_RAW(val, STR_FRESH);
+    }
+}
+
+ALWAYS_INLINE(static VALUE vm_call_cfunc_with_frame_core(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, int argc, VALUE *argv, VALUE *stack_bottom, VALUE (*fresh_fn)(VALUE)));
+
+/* One fastpath per registered method, selected once per call cache in
+ * vm_call_cfunc_other() -- only for compile-marked sites, so unmarked
+ * call sites pay nothing at all. */
+#define FRESH_STR_FASTPATH(name, fn) \
+static VALUE \
+vm_call_cfunc_strfresh_##name(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling) \
+{ \
+    int argc = calling->argc; \
+    VALUE *stack_bottom = reg_cfp->sp - argc - 1; \
+    VALUE *argv = &stack_bottom[1]; \
+    unsigned int ci_flag = vm_ci_flag(calling->cd->ci); \
+    VALUE recv = calling->recv; \
+    VALUE (*fresh_fn)(VALUE) = NULL; \
+    if ((ci_flag & VM_CALL_FRESH_CONS) && \
+        (RBASIC(recv)->flags & (STR_FRESH | FL_FREEZE)) == STR_FRESH) { \
+        /* consume-on-entry: no user code ever sees the flag */ \
+        FL_UNSET_RAW(recv, STR_FRESH); \
+        if (LIKELY(!ruby_vm_event_flags) && \
+            BASIC_OP_UNREDEFINED_P(BOP_STR_FRESH, STRING_REDEFINED_OP_FLAG)) { \
+            fresh_fn = (VALUE (*)(VALUE))fn; \
+        } \
+    } \
+    VALUE val = vm_call_cfunc_with_frame_core(ec, reg_cfp, calling, argc, argv, stack_bottom, fresh_fn); \
+    if (ci_flag & VM_CALL_FRESH_PROD) rb_vm_fresh_str_arm(val); \
+    return val; \
+}
+
+FRESH_STR_FASTPATH(upcase, rb_str_fresh_upcase)
+FRESH_STR_FASTPATH(downcase, rb_str_fresh_downcase)
+FRESH_STR_FASTPATH(capitalize, rb_str_fresh_capitalize)
+FRESH_STR_FASTPATH(swapcase, rb_str_fresh_swapcase)
+FRESH_STR_FASTPATH(strip, rb_str_fresh_strip)
+FRESH_STR_FASTPATH(lstrip, rb_str_fresh_lstrip)
+FRESH_STR_FASTPATH(rstrip, rb_str_fresh_rstrip)
+FRESH_STR_FASTPATH(chomp, rb_str_fresh_chomp)
+FRESH_STR_FASTPATH(squeeze, rb_str_fresh_squeeze)
+FRESH_STR_FASTPATH(chop, rb_str_fresh_chop)
+FRESH_STR_FASTPATH(sub, rb_str_fresh_sub)
+FRESH_STR_FASTPATH(tr, rb_str_fresh_tr)
+FRESH_STR_FASTPATH(delete, rb_str_fresh_delete)
+#undef FRESH_STR_FASTPATH
+
+/* producer-only sites (String#sub etc.): plain call, then arm */
 static VALUE
-vm_call_cfunc_with_frame_(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling,
-                          int argc, VALUE *argv, VALUE *stack_bottom)
+vm_call_cfunc_fresh_str_produce(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
+{
+    int argc = calling->argc;
+    VALUE *stack_bottom = reg_cfp->sp - argc - 1;
+    VALUE *argv = &stack_bottom[1];
+    VALUE val = vm_call_cfunc_with_frame_core(ec, reg_cfp, calling, argc, argv, stack_bottom, NULL);
+    if (vm_ci_flag(calling->cd->ci) & VM_CALL_FRESH_PROD) rb_vm_fresh_str_arm(val);
+    return val;
+}
+
+static VALUE
+vm_call_cfunc_with_frame_core(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling,
+                              int argc, VALUE *argv, VALUE *stack_bottom, VALUE (*fresh_fn)(VALUE))
 {
     RB_DEBUG_COUNTER_INC(ccf_cfunc_with_frame);
     const struct rb_callinfo *ci = calling->cd->ci;
@@ -3812,7 +3988,10 @@ vm_call_cfunc_with_frame_(rb_execution_context_t *ec, rb_control_frame_t *reg_cf
     if (len >= 0) rb_check_arity(argc, len, len);
 
     reg_cfp->sp = stack_bottom;
-    val = (*cfunc->invoker)(recv, argc, argv, cfunc->func);
+    /* fresh_fn substitutes the destructive variant for a proven-unaliased
+     * receiver; same arity, so the invoker is reusable as-is. */
+    val = (*cfunc->invoker)(recv, argc, argv,
+                            UNLIKELY(fresh_fn != NULL) ? (VALUE (*)(ANYARGS))fresh_fn : cfunc->func);
 
     CHECK_CFP_CONSISTENCY("vm_call_cfunc");
 
@@ -3824,6 +4003,15 @@ vm_call_cfunc_with_frame_(rb_execution_context_t *ec, rb_control_frame_t *reg_cf
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
 
     return val;
+}
+
+/* regular cfunc callers keep the pre-fresh 6-arg ABI and code layout;
+ * only the registered fastpaths inline the core with a fresh_fn */
+static VALUE
+vm_call_cfunc_with_frame_(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling,
+                          int argc, VALUE *argv, VALUE *stack_bottom)
+{
+    return vm_call_cfunc_with_frame_core(ec, reg_cfp, calling, argc, argv, stack_bottom, NULL);
 }
 
 // Push a C method frame for a given cme. This is called when JIT code skipped
@@ -3882,9 +4070,15 @@ vm_call_cfunc_other(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, str
         return vm_call_cfunc_with_frame_(ec, reg_cfp, calling, argc, argv, stack_bottom);
     }
     else {
-        CC_SET_FASTPATH(calling->cc, vm_call_cfunc_with_frame, !rb_splat_or_kwargs_p(ci) && !calling->kw_splat && !(vm_ci_flag(ci) & VM_CALL_FORWARDING));
+        vm_call_handler cfunc_handler = vm_call_cfunc_with_frame;
+        if (UNLIKELY(vm_ci_flag(ci) & (VM_CALL_FRESH_PROD | VM_CALL_FRESH_CONS)) &&
+            (vm_cc_cme(calling->cc)->def->fresh_producer | vm_cc_cme(calling->cc)->def->fresh_consumer)) {
+            const struct vm_fresh_entry *e = vm_fresh_lookup(vm_cc_cme(calling->cc));
+            if (e) cfunc_handler = e->fastpath;
+        }
+        CC_SET_FASTPATH(calling->cc, cfunc_handler, !rb_splat_or_kwargs_p(ci) && !calling->kw_splat && !(vm_ci_flag(ci) & VM_CALL_FORWARDING));
 
-        return vm_call_cfunc_with_frame(ec, reg_cfp, calling);
+        return cfunc_handler(ec, reg_cfp, calling);
     }
 }
 
@@ -4782,6 +4976,13 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 
     VM_ASSERT(! METHOD_ENTRY_INVALIDATED(cme));
 
+    /* a marked consumer site resolving to anything but a marked builtin
+     * exposes the receiver (e.g. a consumer redefined by the argument
+     * expression of this very call): drop any freshness first */
+    if (UNLIKELY(vm_ci_flag(ci) & VM_CALL_FRESH_CONS) && !cme->def->fresh_consumer) {
+        vm_fresh_clear_recv(calling->recv);
+    }
+
     switch (cme->def->type) {
       case VM_METHOD_TYPE_ISEQ:
         if (ISEQ_BODY(def_iseq_ptr(cme->def))->param.flags.forwardable) {
@@ -4874,6 +5075,16 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
     rb_bug("vm_call_method: unsupported method type (%d)", vm_cc_cme(cc)->def->type);
 }
 
+static void
+vm_fresh_clear_recv(VALUE recv)
+{
+    if (!SPECIAL_CONST_P(recv) && !RB_OBJ_FROZEN_RAW(recv)) {
+        if (RB_TYPE_P(recv, T_ARRAY)) FL_UNSET_RAW(recv, ARY_FRESH);
+        else if (RB_TYPE_P(recv, T_STRING)) FL_UNSET_RAW(recv, STR_FRESH);
+        else if (RB_TYPE_P(recv, T_HASH)) FL_UNSET_RAW(recv, HASH_FRESH);
+    }
+}
+
 NORETURN(static void vm_raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE obj, int call_status));
 
 static VALUE
@@ -4882,6 +5093,12 @@ vm_call_method_nome(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct 
     /* method missing */
     const struct rb_callinfo *ci = calling->cd->ci;
     const int stat = ci_missing_reason(ci);
+
+    /* a marked consumer site dispatching to method_missing exposes the
+     * receiver to user code: drop any freshness first */
+    if (UNLIKELY(vm_ci_flag(ci) & VM_CALL_FRESH_CONS)) {
+        vm_fresh_clear_recv(calling->recv);
+    }
 
     if (vm_ci_mid(ci) == idMethodMissing) {
         if (UNLIKELY(calling->heap_argv)) {
@@ -6736,6 +6953,24 @@ vm_opt_plus(VALUE recv, VALUE obj, bool fresh)
         vm_plus_unmark_recv(recv);
         return Qundef;
     }
+}
+
+/* JIT entry points: gen_send_cfunc substitutes these for rb_str_plus /
+ * rb_ary_plus at opt_plus / opt_plus_fresh call sites (see codegen.rs). */
+VALUE
+rb_vm_opt_plus_consume(VALUE recv, VALUE obj)
+{
+    VALUE val = vm_opt_plus(recv, obj, false);
+    if (!UNDEF_P(val)) return val;
+    return RB_TYPE_P(recv, T_ARRAY) ? rb_ary_plus(recv, obj) : rb_str_plus(recv, obj);
+}
+
+VALUE
+rb_vm_opt_plus_fresh(VALUE recv, VALUE obj)
+{
+    VALUE val = vm_opt_plus(recv, obj, true);
+    if (!UNDEF_P(val)) return val;
+    return RB_TYPE_P(recv, T_ARRAY) ? rb_ary_plus(recv, obj) : rb_str_plus(recv, obj);
 }
 
 static VALUE

@@ -189,6 +189,8 @@ struct rb_method_definition_struct {
     unsigned int iseq_overload: 1;
     unsigned int no_redef_warning: 1;
     unsigned int aliased : 1;
+    unsigned int fresh_producer : 1;
+    unsigned int fresh_consumer : 1;
 
     rb_atomic_t reference_count;
 

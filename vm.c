@@ -2360,12 +2360,14 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
         if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
             int flag = vm_redefinition_check_flag(klass);
             if (flag != 0) {
-                rb_category_warn(
-                    RB_WARN_CATEGORY_PERFORMANCE,
-                    "Redefining '%s#%s' disables interpreter and JIT optimizations",
-                    rb_class2name(me->owner),
-                    rb_id2name(me->called_id)
-                );
+                if (!me->def->no_redef_warning) {
+                    rb_category_warn(
+                        RB_WARN_CATEGORY_PERFORMANCE,
+                        "Redefining '%s#%s' disables interpreter and JIT optimizations",
+                        rb_class2name(me->owner),
+                        rb_id2name(me->called_id)
+                    );
+                }
                 rb_yjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 rb_zjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 ruby_vm_redefined_flag[bop] |= flag;
@@ -2470,6 +2472,23 @@ vm_init_redefined_flag(void)
     OP(IncludeP, INCLUDE_P), (C(Array));
 #undef C
 #undef OP
+
+    /* Kill switch for the fresh-flag chains: tampering with any
+     * participating consumer stops all arming (vm_insnhelper.c). */
+    {
+        static const char *const fresh_str_mids[] = {
+            "upcase", "downcase", "capitalize", "swapcase",
+            "strip", "lstrip", "rstrip", "chomp", "squeeze", "chop", "sub", "tr", "delete",
+        };
+        ruby_vm_redefined_flag[BOP_STR_FRESH] = 0;
+        for (size_t i = 0; i < numberof(fresh_str_mids); i++) {
+            ID mid = rb_intern(fresh_str_mids[i]);
+            add_opt_method(rb_cString, mid, BOP_STR_FRESH);
+            /* these were never warning-tracked before this patch */
+            rb_method_entry_at(rb_cString, mid)->def->no_redef_warning = true;
+        }
+        vm_fresh_init_table();
+    }
 }
 
 static enum ruby_basic_operators

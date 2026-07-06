@@ -12970,6 +12970,54 @@ fstring_set_class_i(VALUE *str, void *data)
     return ST_CONTINUE;
 }
 
+/* Destructive variants for proven-fresh receivers (vm_insnhelper.c):
+ * same as the bangs except the receiver itself is returned. */
+#define FRESH_STR_WRAP(name) \
+VALUE \
+rb_str_fresh_##name(int argc, VALUE *argv, VALUE str) \
+{ \
+    rb_str_##name##_bang(argc, argv, str); \
+    return str; \
+}
+FRESH_STR_WRAP(upcase)
+FRESH_STR_WRAP(downcase)
+FRESH_STR_WRAP(capitalize)
+FRESH_STR_WRAP(swapcase)
+FRESH_STR_WRAP(strip)
+FRESH_STR_WRAP(lstrip)
+FRESH_STR_WRAP(rstrip)
+FRESH_STR_WRAP(chomp)
+FRESH_STR_WRAP(squeeze)
+#undef FRESH_STR_WRAP
+
+VALUE
+rb_str_fresh_chop(VALUE str)
+{
+    rb_str_chop_bang(str);
+    return str;
+}
+
+VALUE
+rb_str_fresh_sub(int argc, VALUE *argv, VALUE str)
+{
+    rb_str_sub_bang(argc, argv, str);
+    return str;
+}
+
+VALUE
+rb_str_fresh_tr(VALUE str, VALUE src, VALUE repl)
+{
+    rb_str_tr_bang(str, src, repl);
+    return str;
+}
+
+VALUE
+rb_str_fresh_delete(int argc, VALUE *argv, VALUE str)
+{
+    rb_str_delete_bang(argc, argv, str);
+    return str;
+}
+
 void
 Init_String(void)
 {

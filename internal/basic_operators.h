@@ -40,6 +40,7 @@ enum ruby_basic_operators {
     BOP_DEFAULT,
     BOP_PACK,
     BOP_INCLUDE_P,
+    BOP_STR_FRESH,
 
     BOP_LAST_
 };

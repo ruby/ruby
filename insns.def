@@ -1788,6 +1788,18 @@ dupstring_fresh
     val = rb_ec_str_resurrect_fresh(ec, str);
 }
 
+/* concatstrings whose fresh result feeds the directly following call */
+DEFINE_INSN
+concatstrings_fresh
+(rb_num_t num)
+(...)
+(VALUE val)
+// attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
+{
+    val = rb_str_concat_literals(num, STACK_ADDR_FROM_TOP(num));
+    if (BASIC_OP_UNREDEFINED_P(BOP_STR_FRESH, STRING_REDEFINED_OP_FLAG)) FL_SET_RAW(val, STR_FRESH);
+}
+
 /* BLT */
 DEFINE_INSN_IF(SUPPORT_JOKE)
 bitblt

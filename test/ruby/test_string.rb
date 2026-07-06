@@ -361,6 +361,21 @@ CODE
     end
   end
 
+  def test_fresh_builtin_chain
+    s = "  Ab "
+    assert_equal("ab", s.strip.downcase)
+    assert_equal("  Ab ", s)
+    t = s.strip
+    assert_equal("ab", t.downcase)
+    assert_equal("Ab", t)
+    assert_equal("  AB X", "#{s}X".upcase)
+    assert_equal("xb", s.sub("A", "x").strip)
+    # a produced value flowing into a non-consuming method must carry no
+    # freshness (STR_FRESH shares its bit with STR_PRECOMPUTED_HASH)
+    x = s.upcase.freeze
+    assert_equal(x.dup.hash, x.hash)
+  end
+
   def test_MUL # '*'
     assert_equal(S("XXX"),  S("X") * 3)
     assert_equal(S("HOHO"), S("HO") * 2)
