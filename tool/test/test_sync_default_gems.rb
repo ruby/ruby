@@ -369,8 +369,8 @@ module Test_SyncDefaultGems
           lib/net/https.rb
       ])
       expected = {
-        "un" => %w[lib/un.rb],
-        "net-http" => %w[lib/net/https.rb],
+        "ruby/un" => %w[lib/un.rb],
+        "ruby/net-http" => %w[lib/net/https.rb],
         nil => %w[lib/unicode_normalize/normalize.rb lib/unicode_normalize/tables.rb],
       }
       assert_equal(expected, group)
