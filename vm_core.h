@@ -2269,6 +2269,11 @@ void rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE erri
 void rb_execution_context_update(rb_execution_context_t *ec);
 void rb_execution_context_mark(const rb_execution_context_t *ec);
 void rb_fiber_close(rb_fiber_t *fib);
+#ifndef RB_THREAD_LOCAL_SPECIFIER
+void Init_thread_local_key(void);
+#else
+#define Init_thread_local_key() ((void)0)
+#endif
 void Init_native_thread(rb_thread_t *th);
 int rb_vm_check_ints_blocking(rb_execution_context_t *ec);
 
