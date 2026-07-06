@@ -12,6 +12,8 @@
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/re.h"            /* for struct RMatch and struct re_registers */
 
+#define RREGEXP_INITIALIZED FL_USER5
+
 #define RMATCH_ONIG FL_USER1
 #define RMATCH_OFFSETS_EXTERNAL FL_USER2
 

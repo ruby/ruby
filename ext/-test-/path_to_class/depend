@@ -156,6 +156,7 @@ path_to_class.o: $(hdrdir)/ruby/internal/variable.h
 path_to_class.o: $(hdrdir)/ruby/internal/warning_push.h
 path_to_class.o: $(hdrdir)/ruby/internal/xmalloc.h
 path_to_class.o: $(hdrdir)/ruby/missing.h
+path_to_class.o: $(hdrdir)/ruby/onigmo.h
 path_to_class.o: $(hdrdir)/ruby/ruby.h
 path_to_class.o: $(hdrdir)/ruby/st.h
 path_to_class.o: $(hdrdir)/ruby/subst.h

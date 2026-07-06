@@ -156,6 +156,7 @@ usrcompat.o: $(hdrdir)/ruby/internal/variable.h
 usrcompat.o: $(hdrdir)/ruby/internal/warning_push.h
 usrcompat.o: $(hdrdir)/ruby/internal/xmalloc.h
 usrcompat.o: $(hdrdir)/ruby/missing.h
+usrcompat.o: $(hdrdir)/ruby/onigmo.h
 usrcompat.o: $(hdrdir)/ruby/ruby.h
 usrcompat.o: $(hdrdir)/ruby/st.h
 usrcompat.o: $(hdrdir)/ruby/subst.h

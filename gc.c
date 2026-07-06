@@ -1625,8 +1625,8 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         rb_hash_free(obj);
         break;
       case T_REGEXP:
-        if (RREGEXP(obj)->ptr) {
-            onig_free(RREGEXP(obj)->ptr);
+        if (FL_TEST_RAW(obj, RREGEXP_INITIALIZED)) {
+            onig_free_body(RREGEXP_PTR(obj));
             RB_DEBUG_COUNTER_INC(obj_regexp_ptr);
         }
         break;

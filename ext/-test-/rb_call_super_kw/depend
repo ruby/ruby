@@ -156,6 +156,7 @@ rb_call_super_kw.o: $(hdrdir)/ruby/internal/variable.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/warning_push.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/xmalloc.h
 rb_call_super_kw.o: $(hdrdir)/ruby/missing.h
+rb_call_super_kw.o: $(hdrdir)/ruby/onigmo.h
 rb_call_super_kw.o: $(hdrdir)/ruby/ruby.h
 rb_call_super_kw.o: $(hdrdir)/ruby/st.h
 rb_call_super_kw.o: $(hdrdir)/ruby/subst.h

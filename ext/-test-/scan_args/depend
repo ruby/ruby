@@ -156,6 +156,7 @@ scan_args.o: $(hdrdir)/ruby/internal/variable.h
 scan_args.o: $(hdrdir)/ruby/internal/warning_push.h
 scan_args.o: $(hdrdir)/ruby/internal/xmalloc.h
 scan_args.o: $(hdrdir)/ruby/missing.h
+scan_args.o: $(hdrdir)/ruby/onigmo.h
 scan_args.o: $(hdrdir)/ruby/ruby.h
 scan_args.o: $(hdrdir)/ruby/st.h
 scan_args.o: $(hdrdir)/ruby/subst.h

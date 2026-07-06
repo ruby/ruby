@@ -156,6 +156,7 @@ core_ext.o: $(hdrdir)/ruby/internal/variable.h
 core_ext.o: $(hdrdir)/ruby/internal/warning_push.h
 core_ext.o: $(hdrdir)/ruby/internal/xmalloc.h
 core_ext.o: $(hdrdir)/ruby/missing.h
+core_ext.o: $(hdrdir)/ruby/onigmo.h
 core_ext.o: $(hdrdir)/ruby/ruby.h
 core_ext.o: $(hdrdir)/ruby/st.h
 core_ext.o: $(hdrdir)/ruby/subst.h
@@ -328,6 +329,7 @@ init.o: $(hdrdir)/ruby/internal/variable.h
 init.o: $(hdrdir)/ruby/internal/warning_push.h
 init.o: $(hdrdir)/ruby/internal/xmalloc.h
 init.o: $(hdrdir)/ruby/missing.h
+init.o: $(hdrdir)/ruby/onigmo.h
 init.o: $(hdrdir)/ruby/ruby.h
 init.o: $(hdrdir)/ruby/st.h
 init.o: $(hdrdir)/ruby/subst.h
@@ -489,6 +491,7 @@ my_integer.o: $(hdrdir)/ruby/internal/variable.h
 my_integer.o: $(hdrdir)/ruby/internal/warning_push.h
 my_integer.o: $(hdrdir)/ruby/internal/xmalloc.h
 my_integer.o: $(hdrdir)/ruby/missing.h
+my_integer.o: $(hdrdir)/ruby/onigmo.h
 my_integer.o: $(hdrdir)/ruby/ruby.h
 my_integer.o: $(hdrdir)/ruby/st.h
 my_integer.o: $(hdrdir)/ruby/subst.h
