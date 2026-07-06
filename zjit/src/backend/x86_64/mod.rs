@@ -1559,7 +1559,7 @@ mod tests {
     fn test_emit_cmp_64_bits() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.cmp(Opnd::reg(RAX_REG), Opnd::uimm(0xFFFF_FFFF_FFFF_FFFF));
+        asm.cmp(Opnd::reg(RAX_REG), asm.intern_uimm(0xFFFF_FFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: cmp rax, -1");
