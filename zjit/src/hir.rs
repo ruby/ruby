@@ -5522,19 +5522,6 @@ impl Function {
             let mut new_insns = vec![];
             for insn_id in old_insns {
                 let replacement_id = match self.find(insn_id) {
-                    // TODO (nirvdrum 2026-06-26): Folding the guard to a SideExit is a workaround,
-                    // not a proper fix. It relies on constant folding to keep an Empty-typed value
-                    // (see below) from reaching codegen; disabling this pass would let that value
-                    // through and the program would fail to compile on x86-64. Compilation correctness
-                    // should not depend on an optimization pass, so this should be replaced by a
-                    // comprehensive fix.
-                    Insn::GuardType { val, guard_type, state, recompile } if !self.type_of(val).could_be(guard_type) => {
-                        // The value's type is disjoint from the guard type, so the guard can never
-                        // pass. Every execution would side-exit here, so we replace the guard with an
-                        // unconditional exit. The terminator handling below then drops the rest of
-                        // the block, which is now unreachable.
-                        self.new_insn(Insn::SideExit { state, reason: Box::new(SideExitReason::GuardType(guard_type)), recompile })
-                    }
                     Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
                         self.make_equal_to(insn_id, val);
                         // Don't bother re-inferring the type of val; we already know it.
