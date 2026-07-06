@@ -1067,6 +1067,52 @@ pm_locals_reads(pm_locals_t *locals, pm_constant_id_t name) {
 }
 
 /**
+ * Delete the local with the given name from the set, compacting the indices of
+ * the surviving locals so that pm_locals_order produces a dense list with no
+ * gap. The surviving locals are snapshotted in their original relative order
+ * and re-inserted, which reassigns indices and rebuilds the hash placement and
+ * bloom filter so all invariants of the set are preserved.
+ *
+ * This is used to relocate a for-comprehension's first loop variable out of
+ * the enclosing scope, where the shared `for` prefix registered it before the
+ * comprehension was recognized, so that it does not leak into that scope.
+ */
+static void
+pm_locals_delete(pm_locals_t *locals, pm_constant_id_t name) {
+    if (pm_locals_find(locals, name) == UINT32_MAX) return;
+
+    uint32_t size = locals->size;
+    pm_local_t *ordered = xcalloc(size, sizeof(pm_local_t));
+    if (ordered == NULL) abort();
+
+    // Snapshot the surviving locals into their index-ordered positions. This
+    // leaves a hole (a zeroed, PM_CONSTANT_ID_UNSET entry) at the deleted
+    // local's index.
+    uint32_t capacity = locals->capacity < PM_LOCALS_HASH_THRESHOLD ? size : locals->capacity;
+    for (uint32_t index = 0; index < capacity; index++) {
+        pm_local_t *local = &locals->locals[index];
+        if (local->name != PM_CONSTANT_ID_UNSET && local->name != name) {
+            ordered[local->index] = *local;
+        }
+    }
+
+    // Reset the set and re-insert the survivors in order. Skipping the hole
+    // reassigns dense indices to the remaining locals.
+    memset(locals->locals, 0, locals->capacity * sizeof(pm_local_t));
+    locals->size = 0;
+    locals->bloom = 0;
+
+    for (uint32_t index = 0; index < size; index++) {
+        pm_local_t *local = &ordered[index];
+        if (local->name != PM_CONSTANT_ID_UNSET) {
+            pm_locals_write(locals, local->name, local->location.start, local->location.length, local->reads);
+        }
+    }
+
+    xfree(ordered);
+}
+
+/**
  * Write out the locals into the given list of constant ids in the correct
  * order. This is used to set the list of locals on the nodes in the tree once
  * we're sure no additional locals will be added to the set.
@@ -15179,6 +15225,25 @@ static const char * const pm_numbered_parameter_names[] = {
 };
 
 /**
+ * When a scope has ordinary (explicit) parameters, it cannot also use implicit
+ * parameters (`it` or numbered parameters). Report the appropriate error for
+ * the first implicit parameter, if any is present.
+ */
+static void
+pm_parser_err_implicit_parameters_with_ordinary(pm_parser_t *parser, pm_node_list_t *implicit_parameters) {
+    if (implicit_parameters->size == 0) return;
+
+    pm_node_t *node = implicit_parameters->nodes[0];
+    if (PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_READ_NODE)) {
+        pm_parser_err_node(parser, node, PM_ERR_NUMBERED_PARAMETER_ORDINARY);
+    } else if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
+        pm_parser_err_node(parser, node, PM_ERR_IT_NOT_ALLOWED_ORDINARY);
+    } else {
+        assert(false && "unreachable");
+    }
+}
+
+/**
  * Return the node that should be used in the parameters field of a block-like
  * (block or lambda) node, depending on the kind of parameters that were
  * declared in the current scope.
@@ -15191,18 +15256,7 @@ parse_blocklike_parameters(pm_parser_t *parser, pm_node_t *parameters, const pm_
     // parameters.
     if (parameters != NULL) {
         // If we also have implicit parameters, then this is an error.
-        if (implicit_parameters->size > 0) {
-            pm_node_t *node = implicit_parameters->nodes[0];
-
-            if (PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_READ_NODE)) {
-                pm_parser_err_node(parser, node, PM_ERR_NUMBERED_PARAMETER_ORDINARY);
-            } else if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
-                pm_parser_err_node(parser, node, PM_ERR_IT_NOT_ALLOWED_ORDINARY);
-            } else {
-                assert(false && "unreachable");
-            }
-        }
-
+        pm_parser_err_implicit_parameters_with_ordinary(parser, implicit_parameters);
         return parameters;
     }
 
@@ -19283,21 +19337,17 @@ parse_for_comp_bind(pm_parser_t *parser, pm_node_t *node, uint32_t locals_base, 
                 }
 
                 if (first) {
-                    // Hide the stale enclosing-scope entry behind a synthetic
-                    // name that no source code can reference. The '_' prefix
-                    // exempts the slot from unused-variable warnings, and the
-                    // source offset makes the name unique.
-                    char buffer[24];
-                    int length = snprintf(buffer, sizeof(buffer), "_$%lu", (unsigned long) node->location.start);
-                    uint8_t *memory = (uint8_t *) pm_arena_alloc(parser->arena, (size_t) length, 1);
-                    memcpy(memory, buffer, (size_t) length);
-
-                    local->name = pm_constant_pool_insert_owned(&parser->metadata_arena, &parser->constant_pool, memory, (size_t) length);
+                    // The shared `for` prefix registered this fresh loop
+                    // variable in the enclosing scope before the comprehension
+                    // was recognized. Remove it so it does not leak; the real
+                    // binding is created in the comprehension scope below.
+                    // (`local` is invalidated by this call.)
+                    pm_locals_delete(&check_scope->locals, cast->name);
+                } else {
+                    // Loop variables behave like block parameters, which are
+                    // exempt from unused-variable warnings.
+                    local->reads = 1;
                 }
-
-                // Loop variables behave like block parameters, which are
-                // exempt from unused-variable warnings.
-                local->reads = 1;
             }
 
             // Bind the name in the comprehension scope (shadowing any outer
@@ -19442,16 +19492,7 @@ parse_for_comprehension(pm_parser_t *parser, uint8_t flags, const pm_token_t *fo
     // The synthesized blocks take the loop variables as ordinary parameters,
     // so implicit parameters (`it` and numbered parameters) are not allowed
     // anywhere in the comprehension.
-    pm_node_list_t *implicit_parameters = &parser->current_scope->implicit_parameters;
-    if (implicit_parameters->size > 0) {
-        pm_node_t *implicit = implicit_parameters->nodes[0];
-
-        if (PM_NODE_TYPE_P(implicit, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
-            pm_parser_err_node(parser, implicit, PM_ERR_IT_NOT_ALLOWED_ORDINARY);
-        } else {
-            pm_parser_err_node(parser, implicit, PM_ERR_NUMBERED_PARAMETER_ORDINARY);
-        }
-    }
+    pm_parser_err_implicit_parameters_with_ordinary(parser, &parser->current_scope->implicit_parameters);
 
     pm_constant_id_list_t locals;
     pm_locals_order(parser, &parser->current_scope->locals, &locals, pm_parser_scope_toplevel_p(parser));
@@ -20320,8 +20361,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             pm_do_loop_stack_pop(parser);
 
             // A `when`, `,`, or `then` after the collection (all syntax
-            // errors in a legacy for loop) marks a for-comprehension.
-            if (match3(parser, PM_TOKEN_KEYWORD_WHEN, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN)) {
+            // errors in a legacy for loop) marks a for-comprehension. This is
+            // an experimental feature, so it is gated on the latest version;
+            // parsing with an older, released version rejects it as before.
+            if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_1 && match3(parser, PM_TOKEN_KEYWORD_WHEN, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN)) {
                 return parse_for_comprehension(parser, flags, &for_keyword, &in_keyword, index, collection, locals_base, opening_newline_index, (uint16_t) (depth + 1));
             }
 

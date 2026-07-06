@@ -791,6 +791,18 @@ module Prism
           )
         end
 
+        # for x in xs then x end
+        # ^^^^^^^^^^^^^^^^^^^^^^^
+        def visit_for_comprehension_node(node)
+          raise CompilationError, "Cannot compile for-comprehension nodes"
+        end
+
+        # x in xs when y
+        # ^^^^^^^^^^^^^^
+        def visit_for_comprehension_iterator_node(node)
+          raise CompilationError, "Cannot compile for-comprehension iterator nodes"
+        end
+
         # def foo(...); bar(...); end
         #                   ^^^
         def visit_forwarding_arguments_node(node)
