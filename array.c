@@ -456,6 +456,67 @@ ary_shrink_capa(VALUE ary)
     ary_verify(ary);
 }
 
+/* rb_ary_plus for a + chain head: the result gets growth headroom */
+VALUE
+rb_ary_plus_chain_head(VALUE x, VALUE y)
+{
+    long len1 = RARRAY_LEN(x), len2 = RARRAY_LEN(y);
+    long total = len1 + len2;
+    VALUE z = rb_ary_new_capa(total * 2);
+    ary_memcpy(z, 0, len1, RARRAY_CONST_PTR(x));
+    ary_memcpy(z, len1, len2, RARRAY_CONST_PTR(y));
+    ARY_SET_LEN(z, total);
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
+    return z;
+}
+
+/* fused + onto a fresh receiver: in-place append when it fits, else the copying + */
+VALUE
+rb_ary_fresh_concat(VALUE ary, VALUE obj)
+{
+    long len1 = RARRAY_LEN(ary), len2 = RARRAY_LEN(obj);
+
+    if (len1 + len2 <= ARY_CAPA(ary) && !ARY_SHARED_P(ary)) {
+        ary_memcpy(ary, len1, len2, RARRAY_CONST_PTR(obj));
+        ARY_SET_LEN(ary, len1 + len2);
+        RB_GC_GUARD(obj);
+        return ary;
+    }
+    return rb_ary_plus(ary, obj);
+}
+
+/* restore Array#+'s exact-capacity result at the chain end */
+void
+rb_ary_chain_shrink_capa(VALUE ary)
+{
+    if (!ARY_EMBED_P(ary) && !ARY_SHARED_P(ary) && !ARY_SHARED_ROOT_P(ary)) {
+        ary_shrink_capa(ary);
+    }
+}
+
+/* literal + chain head: an appendable private copy while it fits a VWA slot */
+VALUE
+rb_ary_new_chain_head_values(long n, const VALUE *elts)
+{
+    VALUE ary = rb_ary_new_capa(n * 2);
+    ary_memcpy(ary, 0, n, elts);
+    ARY_SET_LEN(ary, n);
+    return ary;
+}
+
+VALUE
+rb_ary_resurrect_chain_head(VALUE ary)
+{
+    long n = RARRAY_LEN(ary);
+    if (ary_embeddable_p(n)) {
+        VALUE copy = rb_ary_new_chain_head_values(n, RARRAY_CONST_PTR(ary));
+        FL_SET_RAW(copy, ARY_FRESH);
+        return copy;
+    }
+    return rb_ary_resurrect(ary);
+}
+
 static void
 ary_double_capa(VALUE ary, long min)
 {

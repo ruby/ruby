@@ -3698,6 +3698,20 @@ class TestArray < Test::Unit::TestCase
   end
 end
 
+class TestArrayFreshChain < Test::Unit::TestCase
+  def test_plus_fresh_chain
+    a, b, c = [1, 2], [3], [4, 5]
+    assert_equal([1, 2, 3, 4, 5], a + b + c)
+    assert_equal([1, 2], a)
+    assert_equal([0, 1, 2], [0] + a)
+    assert_equal([1, 2], [] + a)
+
+    t = a + b
+    assert_equal([1, 2, 3, 4, 5], t + c)
+    assert_equal([1, 2, 3], t)
+  end
+end
+
 class TestArraySubclass < TestArray
   def setup
     @verbose = $VERBOSE

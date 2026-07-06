@@ -6711,6 +6711,25 @@ vm_opt_plus(VALUE recv, VALUE obj, bool fresh)
     else if (RBASIC_CLASS(recv) == rb_cArray &&
              RBASIC_CLASS(obj) == rb_cArray &&
              BASIC_OP_UNREDEFINED_P(BOP_PLUS, ARRAY_REDEFINED_OP_FLAG)) {
+        VALUE result;
+        if (UNLIKELY((RBASIC(recv)->flags & (ARY_FRESH | FL_FREEZE)) == ARY_FRESH)) {
+            result = rb_ary_fresh_concat(recv, obj);
+            if (result != recv) FL_UNSET_RAW(recv, ARY_FRESH);
+            if (fresh) {
+                FL_SET_RAW(result, ARY_FRESH);
+            }
+            else {
+                /* chain end: drop the headroom, restoring +'s exact capacity */
+                FL_UNSET_RAW(result, ARY_FRESH);
+                rb_ary_chain_shrink_capa(result);
+            }
+            return result;
+        }
+        if (fresh) {
+            result = rb_ary_plus_chain_head(recv, obj);
+            FL_SET_RAW(result, ARY_FRESH);
+            return result;
+        }
         return rb_ary_plus(recv, obj);
     }
     else {
