@@ -1022,10 +1022,10 @@ pub enum Insn {
     LoadSP,
     /// Load cfp->self
     LoadSelf,
-    LoadField { recv: InsnId, id: FieldName, offset: i32, return_type: Type },
+    LoadField { recv: InsnId, id: FieldName, offset: i32, return_type: Type, num_bits: u8 },
     /// Write `val` at an offset of `recv`.
     /// When writing a Ruby object to a Ruby object, one must use GuardNotFrozen (or equivalent) before and WriteBarrier after.
-    StoreField { recv: InsnId, id: FieldName, offset: i32, val: InsnId },
+    StoreField { recv: InsnId, id: FieldName, offset: i32, val: InsnId, num_bits: u8 },
     WriteBarrier { recv: InsnId, val: InsnId },
 
     /// Check whether VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set in the (already loaded) environment flags.
@@ -2268,10 +2268,10 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::LoadSP => write!(f, "LoadSP"),
             &Insn::GetEP { level } => write!(f, "GetEP {level}"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
-            &Insn::LoadField { recv, id, offset, return_type: _ } => {
+            &Insn::LoadField { recv, id, offset, return_type: _, num_bits: _ } => {
                 write!(f, "LoadField {recv}, :{id}@{:#x}", self.ptr_map.map_offset(offset))
             }
-            &Insn::StoreField { recv, id, offset, val } => write!(f, "StoreField {recv}, :{id}@{:#x}, {val}", self.ptr_map.map_offset(offset)),
+            &Insn::StoreField { recv, id, offset, val, num_bits: _ } => write!(f, "StoreField {recv}, :{id}@{:#x}, {val}", self.ptr_map.map_offset(offset)),
             &Insn::WriteBarrier { recv, val } => write!(f, "WriteBarrier {recv}, {val}"),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
@@ -2789,7 +2789,8 @@ impl Function {
     }
 
     pub fn load_field(&mut self, block: BlockId, recv: InsnId, id: FieldName, offset: i32, return_type: Type) -> InsnId {
-        self.push_insn(block, Insn::LoadField { recv, id, offset, return_type })
+        let num_bits = return_type.num_bits();
+        self.push_insn(block, Insn::LoadField { recv, id, offset, return_type, num_bits })
     }
 
     pub fn load_string_length(&mut self, block: BlockId, str: InsnId) -> InsnId {
@@ -4099,7 +4100,7 @@ impl Function {
                                     };
 
                                     let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
-                                        self.push_insn(block, Insn::StoreField { recv: target, id: mid.into(), offset, val });
+                                        self.push_insn(block, Insn::StoreField { recv: target, id: mid.into(), offset, val, num_bits: types::BasicObject.num_bits() });
                                         self.push_insn(block, Insn::WriteBarrier { recv, val });
                                         val
                                     } else { // StructAref
@@ -5221,13 +5222,13 @@ impl Function {
             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
             (as_heap, offset)
         };
-        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val });
+        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val, num_bits: types::BasicObject.num_bits() });
         self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
         if next_shape_id != profiled_type.shape() {
             // Write the new shape ID
             let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
             let shape_id_offset = unsafe { rb_shape_id_offset() };
-            self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id });
+            self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id, num_bits: types::CShape.num_bits() });
         }
         Ok(())
     }
@@ -8170,6 +8171,7 @@ fn add_iseq_to_hir(
                         id: FieldName::VM_ENV_DATA_INDEX_FLAGS,
                         offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32),
                         val: modified,
+                        num_bits: types::CInt64.num_bits(),
                     });
                 }
                 YARVINSN_getblockparamproxy => {
@@ -9421,6 +9423,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
                 id: local_id.into(),
                 offset: -(SIZEOF_VALUE_I32 * ep_offset),
                 val: local,
+                num_bits: types::BasicObject.num_bits(),
             });
         }
     }
