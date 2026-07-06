@@ -314,7 +314,7 @@ module SyncDefaultGems
       return if NO_UPSTREAM.any? {|dst| file.start_with?(dst) }
       REPOSITORIES.find do |repo_name, repository|
         if repository.mappings.any? {|_src, dst| file.start_with?(dst) }
-          break repo_name
+          break repository.upstream
         end
       end
     end
