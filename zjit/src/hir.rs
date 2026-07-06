@@ -2322,7 +2322,7 @@ impl std::fmt::Display for Insn {
     }
 }
 
-/// An extended basic block in a [`Function`].
+/// A basic block in a [`Function`].
 #[derive(Default, Debug)]
 pub struct Block {
     /// The index of the first YARV instruction for the Block in the ISEQ
