@@ -38,6 +38,8 @@
  *            The regexp has "fixed encoding", meaning it can't be match against any ASCII-compatible string.
  * 6:     REG_ENCODING_NONE
  *            The regexp has no encoding. Means the `n` modifier was used.
+ * 10-16: ENCODING
+ *            Stores the encoding of the regexp.
  */
 
 #define KCODE_FIXED FL_USER4
