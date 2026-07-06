@@ -776,7 +776,7 @@ set_i_add(VALUE set, VALUE item)
  *  call-seq:
  *    add?(object) -> self or nil
  *
- *  Like #add, but returns +nil+ if +object+ is already in +self+:
+ *  Like #add, but returns +nil+ if the given +object+ is already in +self+:
  *
  *    set = Set[0, 1, 2]
  *    set.add?(:foo)   # => Set[0, 1, 2, :foo]
@@ -2462,11 +2462,11 @@ rb_set_size(VALUE set)
  * === Methods for Assigning
  *
  * - #add (aliased as #<<):
- *   Adds the given object to +self+, returns +self+.
+ *   Adds the given object to +self+; returns +self+.
  * - #add?:
  *   Like #add, but returns +nil+ if the given object is already in +self+.
  * - #merge:
- *   Adds the elements of the given enumerables to +self+; returns +self+.
+ *   Adds each element of each of the given enumerables to +self+; returns +self+.
  * - #replace:
  *   Replaces the contents of +self+ with the contents of the given enumerable;
  *   returns +self+.
