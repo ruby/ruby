@@ -2458,10 +2458,16 @@ heap_slot_size(unsigned char pool_id)
     return pool_slot_sizes[pool_id] - RVALUE_OVERHEAD;
 }
 
+size_t
+rb_gc_impl_max_allocation_size(void)
+{
+    return heap_slot_size(HEAP_COUNT - 1);
+}
+
 bool
 rb_gc_impl_size_allocatable_p(size_t size)
 {
-    return size + RVALUE_OVERHEAD <= pool_slot_sizes[HEAP_COUNT - 1];
+    return size <= rb_gc_impl_max_allocation_size();
 }
 
 static const size_t ALLOCATED_COUNT_STEP = 1024;
@@ -10332,7 +10338,7 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_BITMAP_SIZE")), SIZET2NUM(HEAP_PAGE_BITMAP_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_SIZE")), SIZET2NUM(HEAP_PAGE_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_COUNT")), LONG2FIX(HEAP_COUNT));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(heap_slot_size(HEAP_COUNT - 1)));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), SIZET2NUM(rb_gc_impl_max_allocation_size()));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), LONG2FIX(RVALUE_OLD_AGE));
     if (RB_BUG_INSTEAD_OF_RB_MEMERROR+0) {
         rb_hash_aset(gc_constants, ID2SYM(rb_intern("RB_BUG_INSTEAD_OF_RB_MEMERROR")), Qtrue);

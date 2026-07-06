@@ -89,17 +89,8 @@ typedef uint32_t redblack_id_t;
 
 #define SHAPE_MAX_VARIATIONS 8
 
-// TODO: Fix this so that the max capacity does not depend on the CPU architecture
-#if RBASIC_SHAPE_ID_FIELD
-# define SHAPE_MAX_CAPACITY 125
-#else
-# define SHAPE_MAX_CAPACITY 126
-#endif
-
 #define INVALID_SHAPE_ID (SHAPE_BUFFER_SIZE - 1)
 #define ATTR_INDEX_NOT_SET ((attr_index_t)-1)
-
-STATIC_ASSERT(shape_max_capacity, SHAPE_MAX_CAPACITY <= SHAPE_ID_CAPACITY_MAX);
 
 #define ROOT_SHAPE_ID                   0x0
 #define ROOT_SHAPE_WITH_OBJ_ID          0x1
@@ -134,6 +125,7 @@ enum shape_flags {
 
 typedef struct {
     rb_shape_t *shape_list;
+    attr_index_t max_capacity;
 } rb_shape_tree_t;
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -142,6 +134,12 @@ RUBY_SYMBOL_EXPORT_END
 
 size_t rb_shapes_cache_size(void);
 size_t rb_shapes_count(void);
+
+static inline attr_index_t
+rb_shape_max_capacity(void)
+{
+    return rb_shape_tree.max_capacity;
+}
 
 static inline shape_id_t
 RBASIC_SHAPE_ID(VALUE obj)

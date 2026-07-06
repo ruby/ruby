@@ -625,6 +625,7 @@ typedef struct gc_function_map {
     size_t (*obj_slot_size)(VALUE obj);
     size_t (*size_slot_size)(void *objspace_ptr, size_t size);
     bool (*size_allocatable_p)(size_t size);
+    size_t (*max_allocation_size)(void);
     // Malloc
     void *(*malloc)(void *objspace_ptr, size_t size, bool gc_allowed);
     void *(*calloc)(void *objspace_ptr, size_t size, bool gc_allowed);
@@ -803,6 +804,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(obj_slot_size);
     load_modular_gc_func(size_slot_size);
     load_modular_gc_func(size_allocatable_p);
+    load_modular_gc_func(max_allocation_size);
     // Malloc
     load_modular_gc_func(malloc);
     load_modular_gc_func(calloc);
@@ -890,6 +892,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_obj_slot_size rb_gc_functions.obj_slot_size
 # define rb_gc_impl_size_slot_size rb_gc_functions.size_slot_size
 # define rb_gc_impl_size_allocatable_p rb_gc_functions.size_allocatable_p
+# define rb_gc_impl_max_allocation_size rb_gc_functions.max_allocation_size
 // Malloc
 # define rb_gc_impl_malloc rb_gc_functions.malloc
 # define rb_gc_impl_calloc rb_gc_functions.calloc
@@ -1106,8 +1109,8 @@ rb_class_allocate_instance(VALUE klass)
     VALUE obj;
 
     // Directly start as COMPLEX if we know we're over the limit.
-    RUBY_ASSERT(SHAPE_MAX_CAPACITY > 0);
-    if (RB_UNLIKELY(index_tbl_num_entries > SHAPE_MAX_CAPACITY)) {
+    RUBY_ASSERT(rb_shape_max_capacity() > 0);
+    if (RB_UNLIKELY(index_tbl_num_entries > rb_shape_max_capacity())) {
         obj = class_allocate_complex_instance(klass, index_tbl_num_entries);
     }
     else {
@@ -4007,6 +4010,12 @@ bool
 rb_gc_size_allocatable_p(size_t size)
 {
     return rb_gc_impl_size_allocatable_p(size);
+}
+
+size_t
+rb_gc_max_allocation_size(void)
+{
+    return rb_gc_impl_max_allocation_size();
 }
 
 static enum rb_id_table_iterator_result

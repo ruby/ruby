@@ -206,6 +206,7 @@ void rb_gc_ractor_cache_free(void *cache);
 
 bool rb_gc_size_allocatable_p(size_t size);
 size_t rb_gc_size_slot_size(size_t size);
+size_t rb_gc_max_allocation_size(void);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
