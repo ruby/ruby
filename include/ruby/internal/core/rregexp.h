@@ -64,6 +64,9 @@ struct RRegexp {
     /** Source code of this expression. */
     const VALUE src;
 
+    /** Deprecated, for backward compatibility only) */
+    struct re_pattern_buffer *ptr;
+
     /**
      * Reference count.  A  regexp match can take extraordinarily  long time to
      * run.  Ruby's  regular expression is  heavily extended and not  a regular
@@ -79,6 +82,8 @@ struct RRegexp {
      *           catastrophic effects.  Just leave it.
      */
     unsigned long usecnt;
+
+    VALUE alternate;
 
    /**
     * The pattern buffer.   This is a quasi-opaque struct  that holds compiled
