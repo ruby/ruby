@@ -768,8 +768,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::LoadSP => gen_load_sp(),
         &Insn::GetEP { level } => gen_get_ep(asm, level),
         Insn::LoadSelf => gen_load_self(asm),
-        &Insn::LoadField { recv, id, offset, return_type } => gen_load_field(asm, opnd!(recv), id, offset, return_type),
-        &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), function.type_of(val))),
+        &Insn::LoadField { recv, id, offset, return_type: _, num_bits } => gen_load_field(asm, opnd!(recv), id, offset, num_bits),
+        &Insn::StoreField { recv, id, offset, val, num_bits } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), num_bits)),
         &Insn::WriteBarrier { recv, val } => no_output!(gen_write_barrier(jit, asm, opnd!(recv), opnd!(val), function.type_of(val))),
         &Insn::IsBlockGiven { lep } => gen_is_block_given(asm, opnd!(lep)),
         Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, function, opnds!(elements), opnd!(target), &function.frame_state(*state)),
@@ -1370,18 +1370,18 @@ fn gen_load_self(asm: &mut Assembler) -> Opnd {
     asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF))
 }
 
-fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: FieldName, offset: i32, return_type: Type) -> Opnd {
+fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: FieldName, offset: i32, num_bits: u8) -> Opnd {
     gen_incr_counter(asm, Counter::load_field_count);
     asm_comment!(asm, "Load field id={id} offset={offset}");
     let recv = asm.load_mem(recv);
-    asm.load(Opnd::mem(return_type.num_bits(), recv, offset))
+    asm.load(Opnd::mem(num_bits, recv, offset))
 }
 
-fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: FieldName, offset: i32, val: Opnd, val_type: Type) {
+fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: FieldName, offset: i32, val: Opnd, num_bits: u8) {
     gen_incr_counter(asm, Counter::store_field_count);
     asm_comment!(asm, "Store field id={id} offset={offset}");
     let recv = asm.load_mem(recv);
-    asm.store(Opnd::mem(val_type.num_bits(), recv, offset), val);
+    asm.store(Opnd::mem(num_bits, recv, offset), val);
 }
 
 fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type) {
