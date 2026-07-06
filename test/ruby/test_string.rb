@@ -343,6 +343,24 @@ CODE
     assert_equal(S(' hi 123 %foo   456 0A3.1 1011 ab AB 0b1011 0xab 0XAB'), x)
   end
 
+  def test_plus_fresh_chain
+    a, b, c = "foo", "bar", "baz"
+    assert_equal("foobarbaz", a + b + c)
+    assert_equal("foo", a)
+    assert_equal("bar", b)
+    assert_equal("litbar", "lit" + b)
+
+    # a named intermediate must never be mutated
+    t = a + b
+    assert_equal("foobarbaz", t + c)
+    assert_equal("foobar", t)
+
+    # incompatible encodings raise, whether fused or not
+    assert_raise(Encoding::CompatibilityError) do
+      a + "\u3042" + "\xff".dup.force_encoding("ASCII-8BIT")
+    end
+  end
+
   def test_MUL # '*'
     assert_equal(S("XXX"),  S("X") * 3)
     assert_equal(S("HOHO"), S("HO") * 2)

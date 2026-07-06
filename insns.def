@@ -1373,7 +1373,7 @@ opt_plus
 (VALUE val)
 // attr bool zjit_profile = true;
 {
-    val = vm_opt_plus(recv, obj);
+    val = vm_opt_plus(recv, obj, false);
 
     if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
@@ -1759,6 +1759,33 @@ opt_invokebuiltin_delegate_leave
     else {
         RESTORE_REGS();
     }
+}
+
+/* opt_plus at a compiler-verified chain-producer position: the fresh
+   result is consumed solely as the receiver of the directly following
+   optimized call, so it is marked FRESH for in-place reuse. */
+DEFINE_INSN
+opt_plus_fresh
+(CALL_DATA cd)
+(VALUE recv, VALUE obj)
+(VALUE val)
+{
+    val = vm_opt_plus(recv, obj, true);
+
+    if (UNDEF_P(val)) {
+        CALL_SIMPLE_METHOD();
+    }
+}
+
+/* dupstring whose fresh, headroom-padded copy feeds the directly
+   following + */
+DEFINE_INSN
+dupstring_fresh
+(VALUE str)
+()
+(VALUE val)
+{
+    val = rb_ec_str_resurrect_fresh(ec, str);
 }
 
 /* BLT */

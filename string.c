@@ -2056,6 +2056,24 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str, bool chil
     return new_str;
 }
 
+/* dupstring for a + chain head: request twice the length so the size-pool
+ * rounding leaves in-place headroom for the appends that follow.  The copy
+ * is consumed by the + and never observable, so chilled bookkeeping and
+ * exact sizing can both be skipped.  Too-long literals fall back to the
+ * plain (sharing) duplication, unarmed. */
+VALUE
+rb_ec_str_resurrect_fresh(struct rb_execution_context_struct *ec, VALUE str)
+{
+    if (STR_EMBED_P(str) && STR_EMBEDDABLE_P(2 * RSTRING_LEN(str), TERM_LEN(str))) {
+        RUBY_DTRACE_CREATE_HOOK(STRING, RSTRING_LEN(str));
+        VALUE new_str = ec_str_alloc_embed(ec, rb_cString, 2 * RSTRING_LEN(str) + TERM_LEN(str));
+        str_duplicate_setup_embed(rb_cString, str, new_str);
+        FL_SET_RAW(new_str, STR_FRESH);
+        return new_str;
+    }
+    return rb_ec_str_resurrect(ec, str, false);
+}
+
 VALUE
 rb_str_with_debug_created_info(VALUE str, VALUE path, int line)
 {
@@ -2515,6 +2533,79 @@ rb_str_plus(VALUE str1, VALUE str2)
         rb_raise(rb_eArgError, "string size too big");
     }
     str3 = str_enc_new(rb_cString, 0, len1+len2, enc);
+    ptr3 = RSTRING_PTR(str3);
+    memcpy(ptr3, ptr1, len1);
+    memcpy(ptr3+len1, ptr2, len2);
+    TERM_FILL(&ptr3[len1+len2], termlen);
+
+    ENCODING_CODERANGE_SET(str3, rb_enc_to_index(enc),
+                           ENC_CODERANGE_AND(ENC_CODERANGE(str1), ENC_CODERANGE(str2)));
+    RB_GC_GUARD(str1);
+    RB_GC_GUARD(str2);
+    return str3;
+}
+
+/* in-place append when the encodings match and the receiver has room,
+ * otherwise the ordinary copying + */
+VALUE
+rb_str_fresh_concat(VALUE str, VALUE str2)
+{
+    long len = RSTRING_LEN(str), len2 = RSTRING_LEN(str2);
+
+    if (ENCODING_GET_INLINED(str) == ENCODING_GET_INLINED(str2) &&
+        !STR_SHARED_P(str)) {
+        if (len + len2 > (long)str_capacity(str, TERM_LEN(str))) {
+            /* out of room: reallocate like a chain head (embedded when it
+             * fits a slot), abandoning the old fresh copy */
+            return rb_str_plus_chain_head(str, str2);
+        }
+        memcpy(RSTRING_PTR(str) + len, RSTRING_PTR(str2), len2);
+        STR_SET_LEN(str, len + len2);
+        TERM_FILL(RSTRING_PTR(str) + len + len2, TERM_LEN(str));
+        ENC_CODERANGE_SET(str, ENC_CODERANGE_AND(ENC_CODERANGE(str), ENC_CODERANGE(str2)));
+        RB_GC_GUARD(str2);
+        return str;
+    }
+    return rb_str_opt_plus(str, str2); /* non-raising: Qundef falls back to dispatch */
+}
+
+/* restore String#+'s exact-capacity result at the chain end, so that later
+ * dup/sub/freeze can share its buffer like an ordinary + result */
+void
+rb_str_fresh_shrink(VALUE str)
+{
+    if (STR_EMBED_P(str) || FL_TEST_RAW(str, STR_SHARED | STR_NOFREE)) return;
+    long len = RSTRING_LEN(str);
+    long capa = RSTRING(str)->as.heap.aux.capa;
+    int termlen = TERM_LEN(str);
+    if (capa > len) {
+        SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char, (size_t)len + termlen, (size_t)capa + termlen);
+        RSTRING(str)->as.heap.aux.capa = len;
+    }
+}
+
+/* rb_str_plus for a + chain head: the result is about to be appended to,
+ * so allocate it with growth headroom */
+VALUE
+rb_str_plus_chain_head(VALUE str1, VALUE str2)
+{
+    VALUE str3;
+    rb_encoding *enc;
+    const char *ptr1, *ptr2;
+    char *ptr3;
+    long len1, len2;
+    int termlen;
+
+    StringValue(str2);
+    enc = rb_enc_check_str(str1, str2);
+    RSTRING_GETMEM(str1, ptr1, len1);
+    RSTRING_GETMEM(str2, ptr2, len2);
+    termlen = rb_enc_mbminlen(enc);
+    if (len1 > LONG_MAX / 4 - len2) {
+        return Qundef; /* headroom would overflow: fall back to dispatch */
+    }
+    str3 = str_enc_buf_new(rb_cString, (len1 + len2) * 2, enc);
+    STR_SET_LEN(str3, len1 + len2);
     ptr3 = RSTRING_PTR(str3);
     memcpy(ptr3, ptr1, len1);
     memcpy(ptr3+len1, ptr2, len2);

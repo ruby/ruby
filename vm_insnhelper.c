@@ -6642,8 +6642,22 @@ vm_stack_consistency_error(const rb_execution_context_t *ec,
 #endif
 }
 
+/* every opt_plus consumes a FRESH receiver in place; `fresh` (compile-time
+ * constant) marks the fresh result of a verified chain-producer position */
+NOINLINE(static void vm_plus_unmark_recv(VALUE recv));
+static void
+vm_plus_unmark_recv(VALUE recv)
+{
+    /* the receiver escapes to generic dispatch: drop freshness first */
+    if (!SPECIAL_CONST_P(recv) && !RB_OBJ_FROZEN_RAW(recv)) {
+        if (RB_TYPE_P(recv, T_STRING)) FL_UNSET_RAW(recv, STR_FRESH);
+        else if (RB_TYPE_P(recv, T_ARRAY)) FL_UNSET_RAW(recv, ARY_FRESH);
+    }
+}
+
+ALWAYS_INLINE(static VALUE vm_opt_plus(VALUE recv, VALUE obj, bool fresh));
 static VALUE
-vm_opt_plus(VALUE recv, VALUE obj)
+vm_opt_plus(VALUE recv, VALUE obj, bool fresh)
 {
     if (FIXNUM_2_P(recv, obj) &&
         BASIC_OP_UNREDEFINED_P(BOP_PLUS, INTEGER_REDEFINED_OP_FLAG)) {
@@ -6654,6 +6668,7 @@ vm_opt_plus(VALUE recv, VALUE obj)
         return DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
+        vm_plus_unmark_recv(recv);
         return Qundef;
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
@@ -6664,6 +6679,33 @@ vm_opt_plus(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cString &&
              RBASIC_CLASS(obj) == rb_cString &&
              BASIC_OP_UNREDEFINED_P(BOP_PLUS, STRING_REDEFINED_OP_FLAG)) {
+        VALUE result;
+        if (UNLIKELY((RBASIC(recv)->flags & (STR_FRESH | FL_FREEZE)) == STR_FRESH)) {
+            result = rb_str_fresh_concat(recv, obj);
+            if (result != recv) FL_UNSET_RAW(recv, STR_FRESH);
+            if (!UNDEF_P(result)) {
+                if (fresh) {
+                    FL_SET_RAW(result, STR_FRESH);
+                }
+                else {
+                    /* chain end: drop the headroom, restoring +'s exact capacity */
+                    FL_UNSET_RAW(result, STR_FRESH);
+                    rb_str_fresh_shrink(result);
+                }
+            }
+            return result;
+        }
+        if (fresh) {
+            /* chain head: allocate with headroom for the appends that follow */
+            if (rb_enc_get_index(recv) == rb_enc_get_index(obj) && rb_enc_get_index(recv) > 0) {
+                result = rb_str_plus_chain_head(recv, obj);
+                if (!UNDEF_P(result)) FL_SET_RAW(result, STR_FRESH);
+                return result;
+            }
+            result = rb_str_opt_plus(recv, obj);
+            if (!UNDEF_P(result)) FL_SET_RAW(result, STR_FRESH);
+            return result;
+        }
         return rb_str_opt_plus(recv, obj);
     }
     else if (RBASIC_CLASS(recv) == rb_cArray &&
@@ -6672,6 +6714,7 @@ vm_opt_plus(VALUE recv, VALUE obj)
         return rb_ary_plus(recv, obj);
     }
     else {
+        vm_plus_unmark_recv(recv);
         return Qundef;
     }
 }

@@ -3744,6 +3744,31 @@ retry:;
     return COMPILE_OK;
 }
 
+/* `A + B` where A is `x + y` or a string literal: A's fresh result is
+ * provably consumed by the + just emitted, so rewrite A's final
+ * instruction to its FRESH-marking twin (the + itself always consumes). */
+static void
+pm_compile_plus_chain(rb_iseq_t *iseq, LINK_ANCHOR *const ret, INSN *producer)
+{
+    INSN *consumer = (INSN *)LAST_ELEMENT(ret);
+    if (!IS_INSN(&consumer->link) || !IS_INSN_ID(consumer, send)) return;
+
+    const struct rb_callinfo *ci = (const struct rb_callinfo *)OPERAND_AT(consumer, 0);
+    if (vm_ci_mid(ci) != idPLUS || vm_ci_argc(ci) != 1 || !vm_ci_simple(ci)) return;
+
+    if (IS_INSN_ID(producer, send)) {
+        const struct rb_callinfo *pci = (const struct rb_callinfo *)OPERAND_AT(producer, 0);
+        if (vm_ci_mid(pci) != idPLUS || vm_ci_argc(pci) != 1 || !vm_ci_simple(pci)) return;
+        insn_set_specialized_instruction(iseq, producer, BIN(opt_plus_fresh));
+    }
+    else if (IS_INSN_ID(producer, dupstring) || IS_INSN_ID(producer, dupchilledstring)) {
+        producer->insn_id = BIN(dupstring_fresh);
+    }
+    else {
+        return;
+    }
+}
+
 /**
  * Compile a call node into the given iseq.
  */
@@ -3815,6 +3840,26 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
     int flags = 0;
     struct rb_callinfo_kwarg *kw_arg = NULL;
+
+    INSN *plus_producer = NULL;
+    if (ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction &&
+        method_id == idPLUS && call_node->block == NULL && call_node->receiver != NULL &&
+        !PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
+        bool head = false;
+        if (PM_NODE_TYPE_P(call_node->receiver, PM_CALL_NODE)) {
+            const pm_call_node_t *rc = (const pm_call_node_t *)call_node->receiver;
+            head = rc->block == NULL && rc->receiver != NULL &&
+                !PM_NODE_FLAG_P(rc, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
+                pm_constant_id_lookup(scope_node, rc->name) == idPLUS;
+        }
+        else if (PM_NODE_TYPE_P(call_node->receiver, PM_STRING_NODE)) {
+            head = true;
+        }
+        /* the receiver's code was just emitted; its final instruction is the producer */
+        if (head && IS_INSN(LAST_ELEMENT(ret))) {
+            plus_producer = (INSN *)LAST_ELEMENT(ret);
+        }
+    }
 
     int orig_argc = pm_setup_args(call_node->arguments, call_node->block, &flags, &kw_arg, iseq, ret, scope_node, &location);
     const rb_iseq_t *previous_block = ISEQ_COMPILE_DATA(iseq)->current_block;
@@ -3907,6 +3952,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         PUSH_LABEL(ret, not_basic_new);
         // Fall back to normal send
         PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+        if (plus_producer != NULL) pm_compile_plus_chain(iseq, ret, plus_producer);
         PUSH_INSN(ret, location, swap);
 
         PUSH_LABEL(ret, not_basic_new_finish);
@@ -3916,6 +3962,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     }
     else {
         PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+        if (plus_producer != NULL) pm_compile_plus_chain(iseq, ret, plus_producer);
     }
 
     if (block_iseq && ISEQ_BODY(block_iseq)->catch_table) {
