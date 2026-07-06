@@ -895,7 +895,7 @@ rb_io_set_timeout(VALUE self, VALUE timeout)
 
     rb_io_t *fptr = rb_io_get_fptr(self);
 
-    fptr->timeout = timeout;
+    RB_OBJ_WRITE(self, &fptr->timeout, timeout);
 
     return self;
 }
