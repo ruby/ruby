@@ -5381,81 +5381,97 @@ impl Function {
         }
     }
 
-    /// Convert maximal SSA (constructed from YARV with `add_iseq_to_hir`) to minimal SSA
-    /// We implement the SSA construction described by Braun et al.
-    /// SSA Paper reference: <https://c9x.me/compile/bib/braun13cc.pdf>
-    fn minify_ssa(&mut self) {
-        // This PR is _very_ much an early draft. I've spent some time reading the paper, and isolating some of the concepts.
-        // There will be lots of lengthy comments that get removed and reworked. There are concepts in ZJIT that are identical but named different things.
-        // We need to map these to each other. It probably makes sense to keep some reference comments performing this mapping for the future too.
-        //
-        // Important difference: Braun et al construct SSA from scratch. We already have a maximal SSA representation. We may be able to get away with only the pruning parts of the paper
-        // Alternatively, we may just need to overhaul our entire SSA construction. I'm not sure what makes sense yet.
-        //
-        // TODO: Make tests for single blocks and multiple block constructions of minimal SSA
-        // It would be great to faithfully recreate examples from the paper but with ZJIT specifics. If there's a way to construct ruby code that maps to this HIR, that would be awesome but jury is still out
-        //
-        // First Test Idea for LVN (page 3):
-        // This first version isn't entirely implementable because `d` and `v?` are intentionally unspecified but it's a good starting point
-        // source (make into ruby)    SSA (make into ZJIT)
-        // a <- 42                    v1: 42
-        // b <- a
-        // c <- a + b                 v2: v1 + v1
-        //                            v3: 23
-        // a <- c + 23                v4: v2 + v3
-        // c <- a + d                 v5: v4 + v?
+    fn try_remove_trivial_phi(BlockId: block_id) {
 
-        // ------------ SINGLE BLOCK ----------------
-        // This section contains all the tech we need for single blocks. For implementation, let's pass tests for this part first before adding in the rest
-        // These two functions handle local value numbering. I don't know if this is something that Max landed in a PR, nor what can / should be repurposed vs written from scratch
-        fn read_variable() {
-            // TODO: Specify and define arguments
-            // TODO: Figure out if this already exists in ZJIT. Likely this uses find or chase_insn?
-        }
+    }
 
-        fn write_variable() {
-            // TODO: Specify and define arguments
-            // TODO: Figure out if this already exists in ZJIT. Likely this uses find or chase_insn?
+    fn remove_trivial_phis(&mut self) {
+        let mut fixpoint = False;
+        while not fixpoint {
+            for block in self.reverse_post_order() {
+                // TODO: Figure out where the predecessors come from
+                predecessors = vec![];
+                try_remove_trivial_phi(block);
+            }
         }
-        //
-        // ------------ MULTIPLE BLOCKS ----------------
-        // When we get to multiple blocks, we need to deal with phi nodes. It seems that in ZJIT, these are referred to as block arguments or block params
-        // It would be really nice to check my knowledge on this, and potentially rename them if so
-        fn read_variable_recursive() {
-            // TODO: fill out
-            // This function is the global value numbering version of the single block variant
-        }
+    }
 
-        fn add_phi_operands() {
-            // See comments in try_remove_triival_phi
-        }
+    // TODO: Probably throw this next big comment away
+    // /// Convert maximal SSA (constructed from YARV with `add_iseq_to_hir`) to minimal SSA
+    // /// We implement the SSA construction described by Braun et al.
+    // /// SSA Paper reference: <https://c9x.me/compile/bib/braun13cc.pdf>
+    // fn minify_ssa(&mut self) {
+    //     // This PR is _very_ much an early draft. I've spent some time reading the paper, and isolating some of the concepts.
+    //     // There will be lots of lengthy comments that get removed and reworked. There are concepts in ZJIT that are identical but named different things.
+    //     // We need to map these to each other. It probably makes sense to keep some reference comments performing this mapping for the future too.
+    //     //
+    //     // Important difference: Braun et al construct SSA from scratch. We already have a maximal SSA representation. We may be able to get away with only the pruning parts of the paper
+    //     // Alternatively, we may just need to overhaul our entire SSA construction. I'm not sure what makes sense yet.
+    //     //
+    //     // TODO: Make tests for single blocks and multiple block constructions of minimal SSA
+    //     // It would be great to faithfully recreate examples from the paper but with ZJIT specifics. If there's a way to construct ruby code that maps to this HIR, that would be awesome but jury is still out
+    //     //
+    //     // First Test Idea for LVN (page 3):
+    //     // This first version isn't entirely implementable because `d` and `v?` are intentionally unspecified but it's a good starting point
+    //     // source (make into ruby)    SSA (make into ZJIT)
+    //     // a <- 42                    v1: 42
+    //     // b <- a
+    //     // c <- a + b                 v2: v1 + v1
+    //     //                            v3: 23
+    //     // a <- c + 23                v4: v2 + v3
+    //     // c <- a + d                 v5: v4 + v?
 
-        fn try_remove_trivial_phi() {
-            // TODO: fill out
-            // This function cleans up the opportunistic phis that get added in Braun's algorithm.
-            // If we didn't add such phis, we run into all sorts of recursion issues. This is a key idea in the algorithm we are implementing
-        }
+    //     // ------------ SINGLE BLOCK ----------------
+    //     // This section contains all the tech we need for single blocks. For implementation, let's pass tests for this part first before adding in the rest
+    //     // These two functions handle local value numbering. I don't know if this is something that Max landed in a PR, nor what can / should be repurposed vs written from scratch
+    //     fn read_variable() {
+    //         // TODO: Specify and define arguments
+    //         // TODO: Figure out if this already exists in ZJIT. Likely this uses find or chase_insn?
+    //     }
 
-        // ---------- INCOMPLETE CFGS --------------
-        // While technically part of the multiple blocks section, the next functions are even more complicated so they get their own section
-        fn seal_block() {
-            // We call a block "sealed" when we know there will not be predecessors added to the block.
-            // This function adds all necessary phis to incomplete blocks and adds this block to the sealed list
-        }
+    //     fn write_variable() {
+    //         // TODO: Specify and define arguments
+    //         // TODO: Figure out if this already exists in ZJIT. Likely this uses find or chase_insn?
+    //     }
+    //     //
+    //     // ------------ MULTIPLE BLOCKS ----------------
+    //     // When we get to multiple blocks, we need to deal with phi nodes. It seems that in ZJIT, these are referred to as block arguments or block params
+    //     // It would be really nice to check my knowledge on this, and potentially rename them if so
+    //     fn read_variable_recursive() {
+    //         // TODO: fill out
+    //         // This function is the global value numbering version of the single block variant
+    //     }
 
-        // I don't yet know which optimizations we want to include during construction. Pages 8 and 9 of the paper show why this is non-trivial and important for us to figure out
-        // However, the following tools are definitely necessary
-        fn remove_redundant_phis() {
-            // In the paper, they innovate by considering irreducible control flow from the perspective of the strongly connected component that _must_ exist if there are redundant phis
-            // By computing this strongly connected component, we can figure out what to remove (with the following function)
-        }
+    //     fn add_phi_operands() {
+    //         // See comments in try_remove_triival_phi
+    //     }
 
-        fn process_strongly_connected_component() {
-            // Do some fancy logic to iterate across all the phis in the SCC, tracking "inner" and "outer" operations
-        }
+    //     fn try_remove_trivial_phi() {
+    //         // TODO: fill out
+    //         // This function cleans up the opportunistic phis that get added in Braun's algorithm.
+    //         // If we didn't add such phis, we run into all sorts of recursion issues. This is a key idea in the algorithm we are implementing
+    //     }
 
-        // TODO: Close reading of page 11 after implementing everything else to see if there are further optimizations to be made
-        // Key issue: we construct a lot of phis and then remove a lot of phis. Can we construct fewer in the first place?
+    //     // ---------- INCOMPLETE CFGS --------------
+    //     // While technically part of the multiple blocks section, the next functions are even more complicated so they get their own section
+    //     fn seal_block() {
+    //         // We call a block "sealed" when we know there will not be predecessors added to the block.
+    //         // This function adds all necessary phis to incomplete blocks and adds this block to the sealed list
+    //     }
+
+    //     // I don't yet know which optimizations we want to include during construction. Pages 8 and 9 of the paper show why this is non-trivial and important for us to figure out
+    //     // However, the following tools are definitely necessary
+    //     fn remove_redundant_phis() {
+    //         // In the paper, they innovate by considering irreducible control flow from the perspective of the strongly connected component that _must_ exist if there are redundant phis
+    //         // By computing this strongly connected component, we can figure out what to remove (with the following function)
+    //     }
+
+    //     fn process_strongly_connected_component() {
+    //         // Do some fancy logic to iterate across all the phis in the SCC, tracking "inner" and "outer" operations
+    //     }
+
+    //     // TODO: Close reading of page 11 after implementing everything else to see if there are further optimizations to be made
+    //     // Key issue: we construct a lot of phis and then remove a lot of phis. Can we construct fewer in the first place?
 
     }
 
@@ -6246,7 +6262,7 @@ impl Function {
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
             (inline_methods) => { Counter::compile_hir_inline_methods_time_ns };
-            (minify_ssa) => { Counter::compile_hir_minify_ssa_time_ns };
+            (remove_trivial_phis) => { Counter::compile_hir_remove_trivial_phis_time_ns };
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
             (canonicalize) => { Counter::compile_hir_canonicalize_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
@@ -6300,7 +6316,7 @@ impl Function {
             // TODO: Figure out where the pass should go and remove these comments
             // It's not clear where converting to minimal SSA should occur
             // We need it for a global optimize_load_store, so this is a good starting point
-            run_pass!(minify_ssa);
+            run_pass!(remove_trivial_phis);
             run_pass!(optimize_load_store);
             run_pass!(canonicalize);
             run_pass!(fold_constants);
