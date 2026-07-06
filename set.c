@@ -2519,7 +2519,7 @@ rb_set_size(VALUE set)
  * === Methods for Iterating
  *
  * - #each:
- *   Calls the block with each successive element; returns +self+.
+ *   Calls the block with each successive element of +self+; returns +self+.
  *
  * === Other Methods
  *
