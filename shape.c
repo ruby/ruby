@@ -516,7 +516,7 @@ shape_grow_capa(attr_index_t current_capa)
 {
     size_t next_size = rb_obj_embedded_size(current_capa + 1);
     if (UNLIKELY(!rb_gc_size_allocatable_p(next_size))) {
-        return SHAPE_MAX_CAPACITY;
+        return rb_shape_max_capacity();
     }
 
     attr_index_t next_capa = rb_shape_capacity_for_slot_size(rb_gc_size_slot_size(next_size));
@@ -700,7 +700,7 @@ rb_shape_transition_object_id(shape_id_t original_shape_id)
 
     bool dont_care;
     rb_shape_t *shape = NULL;
-    if (LIKELY(original_shape->next_field_index < SHAPE_MAX_CAPACITY)) {
+    if (LIKELY(original_shape->next_field_index < rb_shape_max_capacity())) {
         shape = get_next_shape_internal(original_shape, id_object_id, SHAPE_OBJ_ID, &dont_care, true);
     }
     if (!shape) {
@@ -765,8 +765,9 @@ shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE klass, ID id
     }
 #endif
 
-    RUBY_ASSERT(SHAPE_MAX_CAPACITY > 0);
-    if (UNLIKELY(shape->next_field_index >= SHAPE_MAX_CAPACITY)) {
+    RUBY_ASSERT(SHAPE_ID_CAPACITY_MAX > 0);
+    RUBY_ASSERT(rb_shape_max_capacity() > 0);
+    if (UNLIKELY(shape->next_field_index >= rb_shape_max_capacity())) {
         return NULL;
     }
 
@@ -1558,6 +1559,10 @@ rb_shape_find_by_id(VALUE mod, VALUE id)
 void
 Init_default_shapes(void)
 {
+    attr_index_t max_capacity = (attr_index_t)((rb_gc_max_allocation_size() - sizeof(struct RBasic)) / sizeof(VALUE));
+    if (max_capacity > SHAPE_ID_CAPACITY_MAX) max_capacity = SHAPE_ID_CAPACITY_MAX;
+    rb_shape_tree.max_capacity = max_capacity;
+
 #ifdef HAVE_MMAP
     size_t shape_list_mmap_size = rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError);
     rb_shape_tree.shape_list = (rb_shape_t *)mmap(NULL, shape_list_mmap_size,
@@ -1651,7 +1656,7 @@ Init_shape(void)
     rb_define_const(rb_cShape, "SHAPE_ID_NUM_BITS", INT2NUM(SHAPE_ID_NUM_BITS));
     rb_define_const(rb_cShape, "SHAPE_FLAG_SHIFT", INT2NUM(SHAPE_FLAG_SHIFT));
     rb_define_const(rb_cShape, "SHAPE_MAX_VARIATIONS", INT2NUM(SHAPE_MAX_VARIATIONS));
-    rb_define_const(rb_cShape, "SHAPE_MAX_FIELDS", INT2NUM(SHAPE_MAX_CAPACITY));
+    rb_define_const(rb_cShape, "SHAPE_MAX_FIELDS", INT2NUM(rb_shape_max_capacity()));
     rb_define_const(rb_cShape, "SIZEOF_RB_SHAPE_T", INT2NUM(sizeof(rb_shape_t)));
     rb_define_const(rb_cShape, "SIZEOF_REDBLACK_NODE_T", INT2NUM(sizeof(redblack_node_t)));
     rb_define_const(rb_cShape, "SHAPE_BUFFER_SIZE", INT2NUM(sizeof(rb_shape_t) * SHAPE_BUFFER_SIZE));

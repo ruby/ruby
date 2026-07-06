@@ -59,6 +59,7 @@ GC_IMPL_FN VALUE rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE k
 GC_IMPL_FN size_t rb_gc_impl_obj_slot_size(VALUE obj);
 GC_IMPL_FN size_t rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size);
 GC_IMPL_FN bool rb_gc_impl_size_allocatable_p(size_t size);
+GC_IMPL_FN size_t rb_gc_impl_max_allocation_size(void);
 // Malloc
 /*
  * BEWARE: These functions may or may not run under GVL.

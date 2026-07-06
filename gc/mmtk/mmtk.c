@@ -670,7 +670,7 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(SIZEOF_VALUE >= 8 ? 64 : 32));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(MMTK_MAX_OBJ_SIZE));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), SIZET2NUM(rb_gc_impl_max_allocation_size()));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_COUNT")), LONG2FIX(MMTK_HEAP_COUNT));
     // TODO: correctly set RVALUE_OLD_AGE when we have generational GC support
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), INT2FIX(0));
@@ -969,7 +969,13 @@ rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
 bool
 rb_gc_impl_size_allocatable_p(size_t size)
 {
-    return size <= MMTK_MAX_OBJ_SIZE;
+    return size <= rb_gc_impl_max_allocation_size();
+}
+
+size_t
+rb_gc_impl_max_allocation_size(void)
+{
+    return MMTK_MAX_OBJ_SIZE;
 }
 
 // Malloc
