@@ -159,6 +159,7 @@ md5.o: $(hdrdir)/ruby/internal/variable.h
 md5.o: $(hdrdir)/ruby/internal/warning_push.h
 md5.o: $(hdrdir)/ruby/internal/xmalloc.h
 md5.o: $(hdrdir)/ruby/missing.h
+md5.o: $(hdrdir)/ruby/onigmo.h
 md5.o: $(hdrdir)/ruby/ruby.h
 md5.o: $(hdrdir)/ruby/st.h
 md5.o: $(hdrdir)/ruby/subst.h
@@ -322,6 +323,7 @@ md5init.o: $(hdrdir)/ruby/internal/variable.h
 md5init.o: $(hdrdir)/ruby/internal/warning_push.h
 md5init.o: $(hdrdir)/ruby/internal/xmalloc.h
 md5init.o: $(hdrdir)/ruby/missing.h
+md5init.o: $(hdrdir)/ruby/onigmo.h
 md5init.o: $(hdrdir)/ruby/ruby.h
 md5init.o: $(hdrdir)/ruby/st.h
 md5init.o: $(hdrdir)/ruby/subst.h

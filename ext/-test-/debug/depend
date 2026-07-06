@@ -156,6 +156,7 @@ init.o: $(hdrdir)/ruby/internal/variable.h
 init.o: $(hdrdir)/ruby/internal/warning_push.h
 init.o: $(hdrdir)/ruby/internal/xmalloc.h
 init.o: $(hdrdir)/ruby/missing.h
+init.o: $(hdrdir)/ruby/onigmo.h
 init.o: $(hdrdir)/ruby/ruby.h
 init.o: $(hdrdir)/ruby/st.h
 init.o: $(hdrdir)/ruby/subst.h
@@ -317,6 +318,7 @@ inspector.o: $(hdrdir)/ruby/internal/variable.h
 inspector.o: $(hdrdir)/ruby/internal/warning_push.h
 inspector.o: $(hdrdir)/ruby/internal/xmalloc.h
 inspector.o: $(hdrdir)/ruby/missing.h
+inspector.o: $(hdrdir)/ruby/onigmo.h
 inspector.o: $(hdrdir)/ruby/ruby.h
 inspector.o: $(hdrdir)/ruby/st.h
 inspector.o: $(hdrdir)/ruby/subst.h
@@ -478,6 +480,7 @@ profile_frames.o: $(hdrdir)/ruby/internal/variable.h
 profile_frames.o: $(hdrdir)/ruby/internal/warning_push.h
 profile_frames.o: $(hdrdir)/ruby/internal/xmalloc.h
 profile_frames.o: $(hdrdir)/ruby/missing.h
+profile_frames.o: $(hdrdir)/ruby/onigmo.h
 profile_frames.o: $(hdrdir)/ruby/ruby.h
 profile_frames.o: $(hdrdir)/ruby/st.h
 profile_frames.o: $(hdrdir)/ruby/subst.h

@@ -155,6 +155,7 @@ at_exit.o: $(hdrdir)/ruby/internal/variable.h
 at_exit.o: $(hdrdir)/ruby/internal/warning_push.h
 at_exit.o: $(hdrdir)/ruby/internal/xmalloc.h
 at_exit.o: $(hdrdir)/ruby/missing.h
+at_exit.o: $(hdrdir)/ruby/onigmo.h
 at_exit.o: $(hdrdir)/ruby/ruby.h
 at_exit.o: $(hdrdir)/ruby/st.h
 at_exit.o: $(hdrdir)/ruby/subst.h

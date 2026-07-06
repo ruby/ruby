@@ -508,6 +508,7 @@ date_strftime.o: $(hdrdir)/ruby/internal/variable.h
 date_strftime.o: $(hdrdir)/ruby/internal/warning_push.h
 date_strftime.o: $(hdrdir)/ruby/internal/xmalloc.h
 date_strftime.o: $(hdrdir)/ruby/missing.h
+date_strftime.o: $(hdrdir)/ruby/onigmo.h
 date_strftime.o: $(hdrdir)/ruby/ruby.h
 date_strftime.o: $(hdrdir)/ruby/st.h
 date_strftime.o: $(hdrdir)/ruby/subst.h

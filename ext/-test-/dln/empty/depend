@@ -156,6 +156,7 @@ empty.o: $(hdrdir)/ruby/internal/variable.h
 empty.o: $(hdrdir)/ruby/internal/warning_push.h
 empty.o: $(hdrdir)/ruby/internal/xmalloc.h
 empty.o: $(hdrdir)/ruby/missing.h
+empty.o: $(hdrdir)/ruby/onigmo.h
 empty.o: $(hdrdir)/ruby/ruby.h
 empty.o: $(hdrdir)/ruby/st.h
 empty.o: $(hdrdir)/ruby/subst.h

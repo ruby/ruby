@@ -156,6 +156,7 @@ stringify_target.o: $(hdrdir)/ruby/internal/variable.h
 stringify_target.o: $(hdrdir)/ruby/internal/warning_push.h
 stringify_target.o: $(hdrdir)/ruby/internal/xmalloc.h
 stringify_target.o: $(hdrdir)/ruby/missing.h
+stringify_target.o: $(hdrdir)/ruby/onigmo.h
 stringify_target.o: $(hdrdir)/ruby/ruby.h
 stringify_target.o: $(hdrdir)/ruby/st.h
 stringify_target.o: $(hdrdir)/ruby/subst.h

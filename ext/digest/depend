@@ -156,6 +156,7 @@ digest.o: $(hdrdir)/ruby/internal/variable.h
 digest.o: $(hdrdir)/ruby/internal/warning_push.h
 digest.o: $(hdrdir)/ruby/internal/xmalloc.h
 digest.o: $(hdrdir)/ruby/missing.h
+digest.o: $(hdrdir)/ruby/onigmo.h
 digest.o: $(hdrdir)/ruby/ruby.h
 digest.o: $(hdrdir)/ruby/st.h
 digest.o: $(hdrdir)/ruby/subst.h

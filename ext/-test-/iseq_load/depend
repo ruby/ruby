@@ -156,6 +156,7 @@ iseq_load.o: $(hdrdir)/ruby/internal/variable.h
 iseq_load.o: $(hdrdir)/ruby/internal/warning_push.h
 iseq_load.o: $(hdrdir)/ruby/internal/xmalloc.h
 iseq_load.o: $(hdrdir)/ruby/missing.h
+iseq_load.o: $(hdrdir)/ruby/onigmo.h
 iseq_load.o: $(hdrdir)/ruby/ruby.h
 iseq_load.o: $(hdrdir)/ruby/st.h
 iseq_load.o: $(hdrdir)/ruby/subst.h
