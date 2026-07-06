@@ -2571,16 +2571,12 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         }
     };
 
-    // When the callee has no keyword parameter table, VM dispatch may convert
-    // caller keywords into a positional hash. DirectSend only models explicit
-    // keyword slots for now, so leave that conversion to VM dispatch.
-    if caller_kw_count != 0 && keyword.is_null() {
-        function.count(block, complex_arg_pass_keyword_to_positional_hash);
-        function.set_dynamic_send_reason(send_insn, ComplexArgPass);
-        return false;
-    }
-
-    let caller_positional_i32 = match c_int::try_from(caller_positional) {
+    // Match vm_args.c's setup_parameters_complex via args_kw_argv_to_hash:
+    // keywords passed to a method with no keyword parameters can become one
+    // positional hash before the argument count check.
+    let keywords_as_positional_hash = caller_kw_count != 0 && keyword.is_null();
+    let effective_positional = caller_positional + usize::from(keywords_as_positional_hash);
+    let caller_positional_i32 = match c_int::try_from(effective_positional) {
         Ok(argc) => argc,
         Err(_) => {
             function.set_dynamic_send_reason(send_insn, ArgcParamMismatch);
@@ -2593,11 +2589,25 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     } else {
         (min_positional..=min_positional + opt_num).contains(&caller_positional_i32)
     };
+    if !positional_ok {
+        function.set_dynamic_send_reason(send_insn, ArgcParamMismatch);
+        return false
+    }
+
+    // When the callee has no keyword parameter table, VM dispatch may convert
+    // caller keywords into a positional hash. SendDirect only models explicit
+    // keyword slots for now, so leave that conversion to VM dispatch.
+    if keywords_as_positional_hash {
+        function.count(block, complex_arg_pass_keyword_to_positional_hash);
+        function.set_dynamic_send_reason(send_insn, ComplexArgPass);
+        return false;
+    }
+
     let keyword_ok = c_int::try_from(caller_kw_count)
         .as_ref()
         .map(|argc| (kw_req_num..=kw_total_num).contains(argc))
         .unwrap_or(false);
-    if !positional_ok || !keyword_ok {
+    if !keyword_ok {
         function.set_dynamic_send_reason(send_insn, ArgcParamMismatch);
         return false
     }
