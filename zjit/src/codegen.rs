@@ -61,7 +61,7 @@ struct JITState {
     iseq_calls: Vec<IseqCallRef>,
 
     /// The number of native stack slots reserved for JITFrame, one per
-    /// simultaneously live frame (`inlining_depth() + 1`). gen_save_pc_for_gc()
+    /// simultaneously live frame (`inlining_depth() + 1`). gen_write_jit_frame()
     /// and the inlined frame push write a JITFrame into the slot selected by the
     /// current frame's depth.
     jit_frame_size: usize,
@@ -402,7 +402,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
         // Reserve one JITFrame slot per simultaneously live frame. The top-level
         // frame is depth 0, and each level of inlining adds another frame that
         // can be on the CFP chain at the same time, so we need
-        // `inlining_depth() + 1` slots. gen_save_pc_for_gc() and the inlined
+        // `inlining_depth() + 1` slots. gen_write_jit_frame() and the inlined
         // frame push select among these slots by the frame's depth, keeping each
         // frame's `cfp->jit_return` pointed at its own slot rather than a shared
         // one.
@@ -1036,7 +1036,7 @@ fn gen_ccall_with_frame(
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
     // to account for the receiver and arguments (and block arguments if any)
-    gen_save_pc_for_gc(asm, state, 0);
+    gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, caller_stack_size);
     gen_spill_stack(jit, asm, state);
     gen_spill_locals(jit, asm, state);
@@ -1130,7 +1130,7 @@ fn gen_ccall_variadic(
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
     // to account for the receiver and arguments (like gen_ccall_with_frame does)
-    gen_save_pc_for_gc(asm, state, 0);
+    gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, caller_stack_size);
     gen_spill_stack(jit, asm, state);
     gen_spill_locals(jit, asm, state);
@@ -1549,7 +1549,7 @@ fn gen_push_inline_frame(
     // Save cfp->pc and cfp->sp for the caller frame.
     // Cannot use gen_prepare_non_leaf_call because we need special SP math.
     let stack_size = state.stack().len() - args.len() - 1; // -1 for receiver
-    gen_save_pc_for_gc(asm, state, 0);
+    gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, stack_size);
 
     gen_spill_locals(jit, asm, state);
@@ -1589,14 +1589,14 @@ fn gen_push_inline_frame(
 
     // Publish the inlined callee's entry JITFrame before the inlined body runs.
     // Frame walking functions such as rb_profile_frames can inspect the new
-    // CFP between this frame push and the first inlined gen_save_pc_for_gc, so
+    // CFP between this frame push and the first inlined gen_write_jit_frame, so
     // cfp->jit_return must already reference a valid JITFrame slot. Leaving it
     // stale or uninitialized is unsafe because CFP_ZJIT_FRAME has no independent
     // way to tell whether it points at a valid JITFrame slot.
     //
     // We install a pre-baked JITFrame for the callee's entry by writing its address into
     // the callee's own JITFrame slot and pointing the callee's cfp->jit_return at that
-    // slot, matching the protocol established by gen_entry_point + gen_save_pc_for_gc.
+    // slot, matching the protocol established by gen_entry_point + gen_write_jit_frame.
     // The callee runs one level deeper than the caller, so it uses the slot for
     // `state.depth + 1` (state is the caller's FrameState). Giving each inlining depth a
     // distinct slot keeps the caller's and callee's cfp->jit_return from aliasing the same
@@ -1604,7 +1604,7 @@ fn gen_push_inline_frame(
     // one frame's PC/ISEQ into every aliased CFP on the chain. CFP_ZJIT_FRAME in zjit.h
     // reads the JITFrame via ((VALUE *)cfp->jit_return)[-1], so the field must be the
     // slot's address, not the JITFrame pointer itself. Once the inlined body runs its
-    // first gen_save_pc_for_gc, that call overwrites the same slot with a JITFrame
+    // first gen_write_jit_frame, that call overwrites the same slot with a JITFrame
     // carrying the current PC, just as the non-inlined path does.
     //
     // cfp->sp is left stale at frame push, matching the non-inlined gen_push_frame, which
@@ -1686,7 +1686,7 @@ fn gen_send_iseq_direct(
     // Save cfp->pc and cfp->sp for the caller frame
     // Can't use gen_prepare_non_leaf_call because we need special SP math.
     let stack_size = state.stack().len() - args.len() - 1; // -1 for receiver
-    let jit_frame = gen_save_pc_for_gc(asm, state, stack_size);
+    let jit_frame = gen_write_jit_frame(asm, state, stack_size);
     gen_save_sp(asm, stack_size);
 
     gen_spill_locals(jit, asm, state);
@@ -2913,7 +2913,7 @@ fn cfp_jit_return_for_depth(asm: &mut Assembler, depth: InlineDepth) -> Opnd {
 /// Save only the PC to CFP. Use this when you need to call gen_save_sp()
 /// immediately after with a custom stack size (e.g., gen_ccall_with_frame
 /// adjusts SP to exclude receiver and arguments).
-fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState, stack_map_size: usize) -> *const zjit_jit_frame {
+fn gen_write_jit_frame(asm: &mut Assembler, state: &FrameState, stack_map_size: usize) -> *const zjit_jit_frame {
     let opcode: usize = state.get_opcode().try_into().unwrap();
     let next_pc: *const VALUE = unsafe { state.pc.offset(insn_len(opcode) as isize) };
 
@@ -2941,7 +2941,7 @@ fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState, stack_map_size: u
 /// However, to avoid marking uninitialized stack slots, this also updates SP,
 /// which may have cfp->sp for a past frame or a past non-leaf call.
 fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState, leaf: bool, stack_map_size: usize) -> *const zjit_jit_frame {
-    let jit_frame = gen_save_pc_for_gc(asm, state, stack_map_size);
+    let jit_frame = gen_write_jit_frame(asm, state, stack_map_size);
     gen_save_sp(asm, state.stack_size());
     if leaf {
         asm.expect_leaf_ccall(state.stack_size());
@@ -3006,7 +3006,7 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
 /// writing stack slots. Otherwise spilling the stack can overwrite frame
 /// metadata below the real VM-stack base.
 fn gen_prepare_fallback_call(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
-    gen_save_pc_for_gc(asm, state, 0);
+    gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, state.stack_size());
     gen_spill_locals(jit, asm, state);
     gen_spill_stack(jit, asm, state);
@@ -3091,7 +3091,7 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
             asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
         }
     } else {
-        // C frames don't have a PC and ISEQ in normal operation. ISEQ frames set PC on gen_save_pc_for_gc().
+        // C frames don't have a PC and ISEQ in normal operation. ISEQ frames set PC on gen_write_jit_frame().
         // When runtime checks are enabled we poison the PC for C frames so accidental reads stand out.
         if let (None, Some(pc)) = (frame.iseq, PC_POISON) {
             asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
