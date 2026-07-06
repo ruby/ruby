@@ -90,6 +90,16 @@ RSpec.configure do |config|
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["GEMRC"] = nil
 
+    # Disable git background maintenance. Since Git 2.46, commands like
+    # `git commit` spawn a detached `git maintenance run --auto` process,
+    # which briefly creates `.git/objects/maintenance.lock`. That races with
+    # specs copying repositories with FileUtils.cp_r, causing flaky ENOENT
+    # failures. GIT_CONFIG_COUNT is available since Git 2.31 and silently
+    # ignored by older versions.
+    ENV["GIT_CONFIG_COUNT"] = "1"
+    ENV["GIT_CONFIG_KEY_0"] = "maintenance.auto"
+    ENV["GIT_CONFIG_VALUE_0"] = "false"
+
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
 
