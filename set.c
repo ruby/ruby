@@ -2432,32 +2432,30 @@ rb_set_size(VALUE set)
  *   or greater than a given object.
  * - #==: Returns whether +self+ and a given enumerable are equal,
  *   as determined by Object#eql?.
+ * - #compare_by_identity?:
+ *   Returns whether +self+ considers only identity
+ *   when comparing elements.
+ * - #proper_subset? (aliased as #<):
+ *   Returns whether the given enumerable is a proper subset of +self+.
+ * - #proper_superset? (aliased as #>):
+ *   Returns whether the given enumerable is a proper superset of +self+.
+ * - #subset? (aliased as #<=):
+ *   Returns whether the given object is a subset of +self+.
+ * - #superset? (aliased as #>=):
+ *   Returns whether the given enumerable is a superset of +self+.
  *
  * === Methods for Querying
  *
- * - #compare_by_identity?:
- *   Returns whether the set considers only identity
- *   when comparing elements.
- * - #size (aliased as #length):
- *   Returns the count of elements.
- * - #empty?:
- *   Returns whether the set has no elements.
- * - #include? (aliased as #member? and #===):
- *   Returns whether a given object is an element in the set.
- * - #subset? (aliased as #<=):
- *   Returns whether a given object is a subset of the set.
- * - #proper_subset? (aliased as #<):
- *   Returns whether a given enumerable is a proper subset of the set.
- * - #superset? (aliased as #>=):
- *   Returns whether a given enumerable is a superset of the set.
- * - #proper_superset? (aliased as #>):
- *   Returns whether a given enumerable is a proper superset of the set.
  * - #disjoint?:
- *   Returns +true+ if the set and a given enumerable
- *   have no common elements, +false+ otherwise.
+ *   Returns whether no element of the given enumerable is present in +self+.
+ * - #empty?:
+ *   Returns whether +self+ contains no elements.
+ * - #include? (aliased as #member? and #===):
+ *   Returns whether the given object is an element of +self+.
  * - #intersect?:
- *   Returns +true+ if the set and a given enumerable:
- *   have any common elements, +false+ otherwise.
+ *   Returns whether +self+ and the given enumerable have any elements in common.
+ * - #size (aliased as #length):
+ *   Returns the number of elements in +self+.
  *
  * === Methods for Assigning
  *
