@@ -7497,6 +7497,27 @@ vtable_pop_gen(struct parser_params *p, int line, const char *name,
     }
     tbl->pos -= n;
 }
+
+/* Remove the entry at idx (1-based, as returned by vtable_included), shifting
+ * later entries down.  Entries hold IDs, and references in the AST are by ID,
+ * so compacting the table is safe; only a parallel vtable (such as lvtbl->used
+ * alongside lvtbl->vars) must be compacted in step by the caller. */
+static void
+vtable_remove_gen(struct parser_params *p, int line, const char *name,
+                  struct vtable *tbl, int idx)
+{
+    if (p->debug) {
+        rb_parser_printf(p, "vtable_remove:%d: %s(%p), %d\n",
+                         line, name, (void *)tbl, idx);
+    }
+    if (idx < 1 || tbl->pos < idx) {
+        rb_parser_fatal(p, "vtable_remove: unreachable (%d < %d)", tbl->pos, idx);
+        return;
+    }
+    MEMMOVE(&tbl->tbl[idx-1], &tbl->tbl[idx], ID, tbl->pos - idx);
+    tbl->pos--;
+}
+#define vtable_remove(tbl, idx) vtable_remove_gen(p, __LINE__, #tbl, tbl, idx)
 #define vtable_pop(tbl, n) vtable_pop_gen(p, __LINE__, #tbl, tbl, n)
 
 static int
@@ -11611,12 +11632,13 @@ struct for_comp_relocate_arg { int base; const struct for_cond_mark *mark; };
  * The first loop variable is parsed in the shared `for` prefix, before we know
  * the construct is a comprehension, so it is registered in the enclosing frame
  * (as a method-frame local, like the legacy `for`).  For each freshly introduced
- * name we (a) rename the now-stale enclosing slot to an internal id so the name
- * does not leak, (b) register the name as a dynamic var in the new scope so that
- * later references resolve as DVAR, and (c) flip the assignment node to DASGN so
- * the binding writes the block-local copy.  Names that already existed in the
- * enclosing scope (index <= base) are left alone: the comprehension shadows them
- * without disturbing the outer variable. */
+ * name we (a) remove the now-stale enclosing slot so the name neither leaks nor
+ * wastes an anonymous slot in the enclosing frame's local table (prism likewise
+ * deletes the leaked local), (b) register the name as a dynamic var in the new
+ * scope so that later references resolve as DVAR, and (c) flip the assignment
+ * node to DASGN so the binding writes the block-local copy.  Names that already
+ * existed in the enclosing scope (index <= base) are left alone: the
+ * comprehension shadows them without disturbing the outer variable. */
 static void
 for_comp_relocate_cb(struct parser_params *p, NODE *leaf, void *arg)
 {
@@ -11625,18 +11647,15 @@ for_comp_relocate_cb(struct parser_params *p, NODE *leaf, void *arg)
     struct vtable *enc = p->lvtbl->vars->prev; /* enclosing frame, below the new scope */
     int idx = vtable_included(enc, vid);
     if (idx > a->base) {
-        enc->tbl[idx-1] = internal_id(p);
-        /* The stale enclosing slot now holds an anonymous internal id.  Mark its
-         * parallel `used` entry (dyna_push pushed a matching used vtable, so the
-         * enclosing one is p->lvtbl->used->prev) so that, under -w, warn_unused_var
-         * does not emit a bogus "assigned but unused variable" for the nameless id
-         * (rb_id2str would return 0 and print it as "false"). */
-        if (p->lvtbl->used) {
-            p->lvtbl->used->prev->tbl[idx-1] |= LVAR_USED;
-        }
         /* A reference to the fresh variable in its own iterator expression
-         * would now dangle; report it as an error. */
+         * would dangle; report it as an error. */
         for_comp_check_circular_ref(p, vid, a->mark);
+        vtable_remove(enc, idx);
+        /* dyna_push pushed a matching used vtable, so the enclosing one is
+         * p->lvtbl->used->prev; keep it in step. */
+        if (p->lvtbl->used) {
+            vtable_remove(p->lvtbl->used->prev, idx);
+        }
     }
     local_var(p, vid);
     nd_set_type(leaf, NODE_DASGN);
