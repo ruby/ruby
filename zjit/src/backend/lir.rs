@@ -311,23 +311,196 @@ impl fmt::Debug for Mem {
     }
 }
 
-/// Operand to an IR instruction
+/// Operand to an IR instruction, packed into a single 64-bit word.
+///
+/// The low [`TAG_BITS`] bits hold the kind tag; the upper [`OPND_PAYLOAD_BITS`]
+/// bits hold the payload. Operands that fit are encoded inline; constants too
+/// wide for the payload live out-of-line in the [`Assembler`]'s [`Pool`] and are
+/// referenced by an [`Opnd::pool`] index. Match on the logical variant with
+/// [`Opnd::decode`] rather than on the bits directly.
+///
+/// Equality and hashing operate on the raw word, so the encoding is canonical:
+/// every constructor zeroes all unused payload bits.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Opnd
-{
-    None,               // For insns with no output
+pub struct Opnd(u64);
 
-    // Immediate Ruby value, may be GC'd, movable
+/// Number of low bits in a packed [`Opnd`] reserved for the kind tag.
+const TAG_BITS: u32 = 3;
+/// Mask selecting the kind tag of a packed [`Opnd`].
+const TAG_MASK: u64 = (1 << TAG_BITS) - 1;
+
+// Kind tags (3 bits, all 8 slots used). `None` is the all-zero word, so zeroed
+// memory and `Opnd::NONE` decode to `Decoded::None`.
+const TAG_NONE:  u64 = 0;
+const TAG_VREG:  u64 = 1;
+const TAG_REG:   u64 = 2;
+const TAG_IMM:   u64 = 3;
+const TAG_UIMM:  u64 = 4;
+const TAG_MEM:   u64 = 5;
+const TAG_VALUE: u64 = 6;
+const TAG_POOL:  u64 = 7;
+
+/// A constant that does not fit in the packed [`Opnd`]'s inline payload.
+/// Stored out-of-line in the [`Pool`] and referenced by an [`Opnd::Pool`] index.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum Pooled {
+    Imm(i64),
+    UImm(u64),
     Value(VALUE),
+}
 
-    /// Virtual register. Lowered to Reg or Mem during register assignment.
-    VReg{ idx: VRegId, num_bits: u8 },
+impl Pooled {
+    /// The raw 64 bits to materialize into a register. All pooled constants are
+    /// non-GC (heap pointers fit inline), so this is always loaded with a plain
+    /// load, never the GC-aware path.
+    pub fn bits(self) -> u64 {
+        match self {
+            Pooled::Imm(v) => v as u64,
+            Pooled::UImm(v) => v,
+            Pooled::Value(v) => v.as_u64(),
+        }
+    }
+}
 
-    // Low-level operands, for lowering
-    Imm(i64),           // Raw signed immediate
-    UImm(u64),          // Raw unsigned immediate
-    Mem(Mem),           // Memory location
-    Reg(Reg),           // Machine register
+/// Side table of wide constants, carried on the [`Assembler`] across lowering
+/// passes (cloned forward by `new_with_asm_without_blocks`). Append-only so
+/// indices baked into operands stay valid as the table is copied between passes.
+#[derive(Clone, Default, Debug)]
+pub struct Pool(Vec<Pooled>);
+
+impl Pool {
+    fn intern(&mut self, entry: Pooled) -> u32 {
+        let idx = self.0.len();
+        debug_assert!(u32::try_from(idx).is_ok(), "Opnd pool overflow");
+        self.0.push(entry);
+        idx as u32
+    }
+
+    pub(super) fn get(&self, idx: u32) -> Pooled {
+        self.0[idx as usize]
+    }
+}
+
+/// Whether a Ruby [`VALUE`] fits in the packed operand's 61-bit inline payload.
+/// Wide values (e.g. flonums, large Fixnums) must be pooled instead.
+#[inline]
+pub const fn fits_inline_value(value: VALUE) -> bool {
+    (value.0 as u64) < (1 << OPND_PAYLOAD_BITS)
+}
+
+/// Whether an unsigned immediate fits in the packed operand's 61-bit payload.
+#[inline]
+pub const fn fits_inline_uimm(value: u64) -> bool {
+    value < (1 << OPND_PAYLOAD_BITS)
+}
+
+/// Whether a signed immediate fits, sign-extended, in the 61-bit payload.
+#[inline]
+pub const fn fits_inline_imm(value: i64) -> bool {
+    let min = -(1 << (OPND_PAYLOAD_BITS - 1));
+    let max = (1 << (OPND_PAYLOAD_BITS - 1)) - 1;
+    value >= min && value <= max
+}
+
+/// Number of payload bits in a packed [`Opnd`] (64 bits minus the 3-bit tag).
+pub const OPND_PAYLOAD_BITS: u32 = 64 - TAG_BITS;
+
+/// Encode an operand byte-width (8/16/32/64) into a 2-bit code (0..=3).
+#[inline]
+pub(crate) const fn num_bits_to_code(num_bits: u8) -> u64 {
+    match num_bits {
+        8 => 0,
+        16 => 1,
+        32 => 2,
+        64 => 3,
+        _ => panic!("invalid operand num_bits"),
+    }
+}
+
+/// Decode a 2-bit width code (0..=3) back into a byte-width (8/16/32/64).
+#[inline]
+pub(crate) const fn code_to_num_bits(code: u64) -> u8 {
+    8u8 << code
+}
+
+// Mem payload layout, relative to the payload word (`word >> TAG_BITS`):
+//   [0:2)   Mem.num_bits code
+//   [2:4)   MemBase tag
+//   [4:36)  disp (i32 bit pattern, 32 bits)
+//   [36:59) base field (23 bits): reg_no / VReg idx / stack_idx,
+//           or for Stack: [36:38) stack num_bits code + [38:59) stack_idx
+const MEM_NB_SHIFT: u32 = 0;
+const MEMBASE_TAG_SHIFT: u32 = 2;
+const MEM_DISP_SHIFT: u32 = 4;
+const MEM_BASE_SHIFT: u32 = 36;
+const MEM_BASE_BITS: u32 = 23;
+const MEM_BASE_MASK: u64 = (1 << MEM_BASE_BITS) - 1;
+const STACK_IDX_BITS: u32 = MEM_BASE_BITS - 2; // 2 bits of the base field hold num_bits
+
+const MEMBASE_TAG_REG: u64 = 0;
+const MEMBASE_TAG_VREG: u64 = 1;
+const MEMBASE_TAG_STACK: u64 = 2;
+const MEMBASE_TAG_STACKINDIRECT: u64 = 3;
+
+/// Pack a [`Mem`] into the 61-bit inline payload of a packed [`Opnd`].
+fn mem_to_payload(mem: Mem) -> u64 {
+    let nb = num_bits_to_code(mem.num_bits);
+    let disp = (mem.disp as u32) as u64;
+    let (base_tag, base_field) = match mem.base {
+        MemBase::Reg(reg_no) => (MEMBASE_TAG_REG, reg_no as u64),
+        MemBase::VReg(idx) => {
+            debug_assert!((idx.0 as u64) <= MEM_BASE_MASK, "VReg idx too large for Mem base");
+            (MEMBASE_TAG_VREG, idx.0 as u64)
+        }
+        MemBase::Stack { stack_idx, num_bits } => {
+            debug_assert!((stack_idx as u64) < (1 << STACK_IDX_BITS), "stack_idx too large for Mem base");
+            (MEMBASE_TAG_STACK, num_bits_to_code(num_bits) | ((stack_idx as u64) << 2))
+        }
+        MemBase::StackIndirect { stack_idx } => {
+            debug_assert!((stack_idx as u64) <= MEM_BASE_MASK, "stack_idx too large for Mem base");
+            (MEMBASE_TAG_STACKINDIRECT, stack_idx as u64)
+        }
+    };
+    debug_assert!(base_field <= MEM_BASE_MASK, "Mem base field overflow");
+    (nb << MEM_NB_SHIFT)
+        | (base_tag << MEMBASE_TAG_SHIFT)
+        | (disp << MEM_DISP_SHIFT)
+        | ((base_field & MEM_BASE_MASK) << MEM_BASE_SHIFT)
+}
+
+/// Unpack a [`Mem`] from the inline payload of a packed [`Opnd`].
+fn mem_from_payload(payload: u64) -> Mem {
+    let num_bits = code_to_num_bits((payload >> MEM_NB_SHIFT) & 0b11);
+    let disp = ((payload >> MEM_DISP_SHIFT) as u32) as i32;
+    let base_field = (payload >> MEM_BASE_SHIFT) & MEM_BASE_MASK;
+    let base = match (payload >> MEMBASE_TAG_SHIFT) & 0b11 {
+        MEMBASE_TAG_REG => MemBase::Reg(base_field as u8),
+        MEMBASE_TAG_VREG => MemBase::VReg(VRegId(base_field as VRegIdBase)),
+        MEMBASE_TAG_STACK => MemBase::Stack {
+            stack_idx: (base_field >> 2) as StackIdx,
+            num_bits: code_to_num_bits(base_field & 0b11),
+        },
+        MEMBASE_TAG_STACKINDIRECT => MemBase::StackIndirect { stack_idx: base_field as StackIdx },
+        _ => unreachable!(),
+    };
+    Mem { base, disp, num_bits }
+}
+
+/// Decoded, match-able view of an [`Opnd`]. `Opnd` is moving toward a packed
+/// single-word representation; matching on it directly will stop working once
+/// the representation flips, so new code should `match opnd.decode() { .. }`
+/// instead of `match opnd { .. }`. During the shim phase this mirrors `Opnd`'s
+/// logical variants one-to-one.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum Decoded {
+    None,
+    Value(VALUE),
+    VReg { idx: VRegId, num_bits: u8 },
+    Imm(i64),
+    UImm(u64),
+    Mem(Mem),
+    Reg(Reg),
+    Pool(u32),
 }
 
 impl PartialOrd for Opnd {
@@ -338,90 +511,178 @@ impl PartialOrd for Opnd {
 
 impl Ord for Opnd {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        fn case_order(opnd: &Opnd) -> u8 {
-            match opnd {
-                Opnd::None => 0,
-                Opnd::Value(_) => 1,
-                Opnd::VReg { .. } => 2,
-                Opnd::Imm(_) => 3,
-                Opnd::UImm(_) => 4,
-                Opnd::Mem(_) => 5,
-                Opnd::Reg(_) => 6,
+        fn case_order(d: &Decoded) -> u8 {
+            match d {
+                Decoded::None => 0,
+                Decoded::Value(_) => 1,
+                Decoded::VReg { .. } => 2,
+                Decoded::Imm(_) => 3,
+                Decoded::UImm(_) => 4,
+                Decoded::Mem(_) => 5,
+                Decoded::Reg(_) => 6,
+                Decoded::Pool(_) => 7,
             }
         }
-        match (self, other) {
-            (Opnd::None, Opnd::None) => std::cmp::Ordering::Equal,
-            (Opnd::Value(l), Opnd::Value(r)) => l.0.cmp(&r.0),
-            (Opnd::VReg { idx: lidx, num_bits: lnum_bits }, Opnd::VReg { idx: ridx, num_bits: rnum_bits }) => (lidx, lnum_bits).cmp(&(ridx, rnum_bits)),
-            (Opnd::Imm(l), Opnd::Imm(r)) => l.cmp(&r),
-            (Opnd::UImm(l), Opnd::UImm(r)) => l.cmp(&r),
-            (Opnd::Mem(l), Opnd::Mem(r)) => l.cmp(&r),
-            (Opnd::Reg(l), Opnd::Reg(r)) => l.cmp(&r),
-            (l, r) => {
-                case_order(l).cmp(&case_order(r))
-            }
+        let (l, r) = (self.decode(), other.decode());
+        match (l, r) {
+            (Decoded::None, Decoded::None) => std::cmp::Ordering::Equal,
+            (Decoded::Value(a), Decoded::Value(b)) => a.0.cmp(&b.0),
+            (Decoded::VReg { idx: ai, num_bits: an }, Decoded::VReg { idx: bi, num_bits: bn }) => (ai, an).cmp(&(bi, bn)),
+            (Decoded::Imm(a), Decoded::Imm(b)) => a.cmp(&b),
+            (Decoded::UImm(a), Decoded::UImm(b)) => a.cmp(&b),
+            (Decoded::Mem(a), Decoded::Mem(b)) => a.cmp(&b),
+            (Decoded::Reg(a), Decoded::Reg(b)) => a.cmp(&b),
+            (Decoded::Pool(a), Decoded::Pool(b)) => a.cmp(&b),
+            (a, b) => case_order(&a).cmp(&case_order(&b)),
         }
     }
 }
 
 impl fmt::Display for Opnd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use Opnd::*;
-        match self {
-            None => write!(f, "None"),
-            Value(VALUE(value)) if *value < 10 => write!(f, "Value({value:x})"),
-            Value(VALUE(value)) => write!(f, "Value(0x{value:x})"),
-            VReg { idx, num_bits } if *num_bits == 64 => write!(f, "{idx}"),
-            VReg { idx, num_bits } => write!(f, "VReg{num_bits}({idx})"),
-            Imm(value) if value.abs() < 10 => write!(f, "Imm({value:x})"),
-            Imm(value) => write!(f, "Imm(0x{value:x})"),
-            UImm(value) if *value < 10 => write!(f, "{value:x}"),
-            UImm(value) => write!(f, "0x{value:x}"),
-            Mem(mem) => write!(f, "{mem}"),
-            Reg(reg) => write!(f, "{reg}"),
+        match self.decode() {
+            Decoded::None => write!(f, "None"),
+            Decoded::Value(VALUE(value)) if value < 10 => write!(f, "Value({value:x})"),
+            Decoded::Value(VALUE(value)) => write!(f, "Value(0x{value:x})"),
+            Decoded::VReg { idx, num_bits } if num_bits == 64 => write!(f, "{idx}"),
+            Decoded::VReg { idx, num_bits } => write!(f, "VReg{num_bits}({idx})"),
+            Decoded::Imm(value) if value.abs() < 10 => write!(f, "Imm({value:x})"),
+            Decoded::Imm(value) => write!(f, "Imm(0x{value:x})"),
+            Decoded::UImm(value) if value < 10 => write!(f, "{value:x}"),
+            Decoded::UImm(value) => write!(f, "0x{value:x}"),
+            Decoded::Mem(mem) => write!(f, "{mem}"),
+            Decoded::Reg(reg) => write!(f, "{reg}"),
+            Decoded::Pool(idx) => write!(f, "Pool({idx})"),
         }
     }
 }
 
 impl fmt::Debug for Opnd {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        use Opnd::*;
-        match self {
-            Self::None => write!(fmt, "None"),
-            Value(val) => write!(fmt, "Value({val:?})"),
-            VReg { idx, num_bits } if *num_bits == 64 => write!(fmt, "VReg({})", idx.0),
-            VReg { idx, num_bits } => write!(fmt, "VReg{num_bits}({})", idx.0),
-            Imm(signed) => write!(fmt, "{signed:x}_i64"),
-            UImm(unsigned) => write!(fmt, "{unsigned:x}_u64"),
+        match self.decode() {
+            Decoded::None => write!(fmt, "None"),
+            Decoded::Value(val) => write!(fmt, "Value({val:?})"),
+            Decoded::VReg { idx, num_bits } if num_bits == 64 => write!(fmt, "VReg({})", idx.0),
+            Decoded::VReg { idx, num_bits } => write!(fmt, "VReg{num_bits}({})", idx.0),
+            Decoded::Imm(signed) => write!(fmt, "{signed:x}_i64"),
+            Decoded::UImm(unsigned) => write!(fmt, "{unsigned:x}_u64"),
             // Say Mem and Reg only once
-            Mem(mem) => write!(fmt, "{mem:?}"),
-            Reg(reg) => write!(fmt, "{reg:?}"),
+            Decoded::Mem(mem) => write!(fmt, "{mem:?}"),
+            Decoded::Reg(reg) => write!(fmt, "{reg:?}"),
+            Decoded::Pool(idx) => write!(fmt, "Pool({idx})"),
         }
     }
 }
 
 impl Opnd
 {
+    /// The empty operand, for insns with no output. Decodes to [`Decoded::None`].
+    /// The empty operand, for insns with no output. The all-zero word.
+    pub const NONE: Opnd = Opnd(TAG_NONE);
+
+    /// Decode into a match-able [`Decoded`] view. Match `opnd.decode()` rather
+    /// than the packed bits directly.
+    #[inline]
+    pub fn decode(self) -> Decoded {
+        let payload = self.0 >> TAG_BITS;
+        match self.0 & TAG_MASK {
+            TAG_NONE => Decoded::None,
+            TAG_VREG => Decoded::VReg {
+                idx: VRegId(((payload >> 2) & 0xffff_ffff) as VRegIdBase),
+                num_bits: code_to_num_bits(payload & 0b11),
+            },
+            TAG_REG => Decoded::Reg(crate::backend::current::reg_from_bits(payload)),
+            // Arithmetic shift recovers the sign of the 61-bit immediate.
+            TAG_IMM => Decoded::Imm((self.0 as i64) >> TAG_BITS),
+            TAG_UIMM => Decoded::UImm(payload),
+            TAG_MEM => Decoded::Mem(mem_from_payload(payload)),
+            TAG_VALUE => Decoded::Value(VALUE(payload as usize)),
+            TAG_POOL => Decoded::Pool(payload as u32),
+            _ => unreachable!(),
+        }
+    }
+
+    /// Re-encode a [`Decoded`] view into an `Opnd` (inverse of [`Opnd::decode`]).
+    /// Only valid for inline-encodable views; wide constants must be interned
+    /// into the [`Pool`] and referenced via [`Decoded::Pool`].
+    #[inline]
+    pub fn encode(d: Decoded) -> Opnd {
+        match d {
+            Decoded::None => Opnd::NONE,
+            Decoded::Value(v) => Opnd::value(v),
+            Decoded::VReg { idx, num_bits } => Opnd::vreg(idx, num_bits),
+            Decoded::Imm(v) => Opnd::imm(v),
+            Decoded::UImm(v) => Opnd::uimm(v),
+            Decoded::Mem(m) => Opnd::from(m),
+            Decoded::Reg(r) => Opnd::reg(r),
+            Decoded::Pool(idx) => Opnd::pool(idx),
+        }
+    }
+
+    /// Construct a register operand.
+    #[inline]
+    pub const fn reg(reg: Reg) -> Opnd {
+        Opnd((crate::backend::current::reg_to_bits(reg) << TAG_BITS) | TAG_REG)
+    }
+
+    /// Construct a virtual-register operand.
+    #[inline]
+    pub const fn vreg(idx: VRegId, num_bits: u8) -> Opnd {
+        let payload = num_bits_to_code(num_bits) | ((idx.0 as u64) << 2);
+        Opnd((payload << TAG_BITS) | TAG_VREG)
+    }
+
+    /// Construct a signed-immediate operand. The value must fit, sign-extended,
+    /// in the inline payload; wider immediates must go through the [`Pool`].
+    #[inline]
+    pub const fn imm(value: i64) -> Opnd {
+        debug_assert!(fits_inline_imm(value), "Opnd::imm value too wide; route through Assembler::intern_imm");
+        Opnd(((value as u64) << TAG_BITS) | TAG_IMM)
+    }
+
+    /// Construct an unsigned-immediate operand. The value must fit in the inline
+    /// payload; wider immediates must go through the [`Pool`].
+    #[inline]
+    pub const fn uimm(value: u64) -> Opnd {
+        debug_assert!(fits_inline_uimm(value), "Opnd::uimm value too wide; route through Assembler::intern_uimm");
+        Opnd((value << TAG_BITS) | TAG_UIMM)
+    }
+
+    /// Construct a Ruby-value operand. The value must fit in the inline payload;
+    /// wider values (flonums, large Fixnums) must go through the [`Pool`].
+    #[inline]
+    pub const fn value(value: VALUE) -> Opnd {
+        debug_assert!(fits_inline_value(value), "Opnd::value too wide; route through Assembler::intern_value");
+        Opnd(((value.0 as u64) << TAG_BITS) | TAG_VALUE)
+    }
+
+    /// Construct a pool-reference operand pointing at a wide constant interned in
+    /// the [`Assembler`]'s [`Pool`].
+    #[inline]
+    pub(super) const fn pool(idx: u32) -> Opnd {
+        Opnd(((idx as u64) << TAG_BITS) | TAG_POOL)
+    }
+
     /// Returns true if this operand is a virtual register
     pub fn is_vreg(&self) -> bool {
-        matches!(self, Opnd::VReg { .. })
+        matches!(self.decode(), Decoded::VReg { .. })
     }
 
     /// Convenience constructor for memory operands
     pub fn mem(num_bits: u8, base: Opnd, disp: i32) -> Self {
-        match base {
-            Opnd::Reg(base_reg) => {
+        match base.decode() {
+            Decoded::Reg(base_reg) => {
                 assert!(base_reg.num_bits == 64);
-                Opnd::Mem(Mem {
+                Opnd::from(Mem {
                     base: MemBase::Reg(base_reg.reg_no),
                     disp,
                     num_bits,
                 })
             },
 
-            Opnd::VReg{idx, num_bits: out_num_bits } => {
+            Decoded::VReg { idx, num_bits: out_num_bits } => {
                 assert!(num_bits <= out_num_bits);
-                Opnd::Mem(Mem {
+                Opnd::from(Mem {
                     base: MemBase::VReg(idx),
                     disp,
                     num_bits,
@@ -434,21 +695,27 @@ impl Opnd
 
     /// Constructor for constant pointer operand
     pub fn const_ptr<T>(ptr: *const T) -> Self {
-        Opnd::UImm(ptr as u64)
+        let bits = ptr as u64;
+        // Pointers are inline-encoded in the packed Opnd's 61-bit UImm payload.
+        // User-space pointers fit in 48 bits on every platform we support, so they
+        // always fit. If this ever fires we must pool wide pointers instead of
+        // assuming they're inline-encodable.
+        debug_assert!(bits < (1 << 48), "const_ptr {bits:#x} exceeds 48 bits; wide pointers need pooling");
+        Opnd::uimm(bits)
     }
 
     /// Unwrap a register operand
     pub fn unwrap_reg(&self) -> Reg {
-        match self {
-            Opnd::Reg(reg) => *reg,
+        match self.decode() {
+            Decoded::Reg(reg) => reg,
             _ => unreachable!("trying to unwrap {:?} into reg", self)
         }
     }
 
     /// Unwrap the index of a VReg
     pub fn vreg_idx(&self) -> VRegId {
-        match self {
-            Opnd::VReg { idx, .. } => *idx,
+        match self.decode() {
+            Decoded::VReg { idx, .. } => idx,
             _ => unreachable!("trying to unwrap {self:?} into VReg"),
         }
     }
@@ -462,9 +729,9 @@ impl Opnd
     /// Returns an iterator over all VRegIds referenced by this operand.
     pub fn vreg_ids(&self) -> impl Iterator<Item = VRegId> {
         let mut ids = [None, None];
-        match self {
-            Opnd::VReg { idx, .. } => { ids[0] = Some(*idx); }
-            Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => { ids[0] = Some(*idx); }
+        match self.decode() {
+            Decoded::VReg { idx, .. } => { ids[0] = Some(idx); }
+            Decoded::Mem(Mem { base: MemBase::VReg(idx), .. }) => { ids[0] = Some(idx); }
             _ => {}
         }
         ids.into_iter().flatten()
@@ -472,10 +739,10 @@ impl Opnd
 
     /// Get the size in bits for this operand if there is one.
     pub fn num_bits(&self) -> Option<u8> {
-        match *self {
-            Opnd::Reg(Reg { num_bits, .. }) => Some(num_bits),
-            Opnd::Mem(Mem { num_bits, .. }) => Some(num_bits),
-            Opnd::VReg { num_bits, .. } => Some(num_bits),
+        match self.decode() {
+            Decoded::Reg(Reg { num_bits, .. }) => Some(num_bits),
+            Decoded::Mem(Mem { num_bits, .. }) => Some(num_bits),
+            Decoded::VReg { num_bits, .. } => Some(num_bits),
             _ => None
         }
     }
@@ -484,10 +751,10 @@ impl Opnd
     #[track_caller]
     pub fn with_num_bits(&self, num_bits: u8) -> Opnd {
         assert!(num_bits == 8 || num_bits == 16 || num_bits == 32 || num_bits == 64);
-        match *self {
-            Opnd::Reg(reg) => Opnd::Reg(reg.with_num_bits(num_bits)),
-            Opnd::Mem(Mem { base, disp, .. }) => Opnd::Mem(Mem { base, disp, num_bits }),
-            Opnd::VReg { idx, .. } => Opnd::VReg { idx, num_bits },
+        match self.decode() {
+            Decoded::Reg(reg) => Opnd::reg(reg.with_num_bits(num_bits)),
+            Decoded::Mem(Mem { base, disp, .. }) => Opnd::from(Mem { base, disp, num_bits }),
+            Decoded::VReg { idx, .. } => Opnd::vreg(idx, num_bits),
             _ => unreachable!("with_num_bits should not be used for: {self:?}"),
         }
     }
@@ -500,12 +767,12 @@ impl Opnd
     /// Maps the indices from a previous list of instructions to a new list of
     /// instructions.
     pub fn map_index(self, indices: &[usize]) -> Opnd {
-        match self {
-            Opnd::VReg { idx, num_bits } => {
-                Opnd::VReg { idx: indices[idx].into(), num_bits }
+        match self.decode() {
+            Decoded::VReg { idx, num_bits } => {
+                Opnd::vreg(indices[idx].into(), num_bits)
             }
-            Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
-                Opnd::Mem(Mem { base: MemBase::VReg(indices[idx].into()), disp, num_bits })
+            Decoded::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
+                Opnd::from(Mem { base: MemBase::VReg(indices[idx].into()), disp, num_bits })
             },
             _ => self
         }
@@ -545,37 +812,43 @@ impl Opnd
 
 impl From<usize> for Opnd {
     fn from(value: usize) -> Self {
-        Opnd::UImm(value.try_into().unwrap())
+        Opnd::uimm(value.try_into().unwrap())
     }
 }
 
 impl From<u64> for Opnd {
     fn from(value: u64) -> Self {
-        Opnd::UImm(value)
+        Opnd::uimm(value)
     }
 }
 
 impl From<i64> for Opnd {
     fn from(value: i64) -> Self {
-        Opnd::Imm(value)
+        Opnd::imm(value)
     }
 }
 
 impl From<i32> for Opnd {
     fn from(value: i32) -> Self {
-        Opnd::Imm(value.into())
+        Opnd::imm(value.into())
     }
 }
 
 impl From<u32> for Opnd {
     fn from(value: u32) -> Self {
-        Opnd::UImm(value as u64)
+        Opnd::uimm(value as u64)
     }
 }
 
 impl From<VALUE> for Opnd {
     fn from(value: VALUE) -> Self {
-        Opnd::Value(value)
+        Opnd::value(value)
+    }
+}
+
+impl From<Mem> for Opnd {
+    fn from(mem: Mem) -> Self {
+        Opnd((mem_to_payload(mem) << TAG_BITS) | TAG_MEM)
     }
 }
 
@@ -1311,7 +1584,7 @@ impl fmt::Debug for Insn {
             write!(fmt, " target={target:?}")?;
         }
 
-        write!(fmt, " -> {:?}", self.out_opnd().unwrap_or(&Opnd::None))
+        write!(fmt, " -> {:?}", self.out_opnd().unwrap_or(&Opnd::NONE))
     }
 }
 
@@ -1617,6 +1890,11 @@ pub struct Assembler {
     /// consumes this through Insn::CCall, after it knows whether each live VReg
     /// is in a saved register or an allocator spill slot.
     stack_map: Option<StackMap>,
+
+    /// Out-of-line storage for constants too wide for the packed [`Opnd`]'s
+    /// inline payload, referenced by [`Opnd::Pool`] index. Cloned forward across
+    /// lowering passes (see `new_with_asm_without_blocks`) and read at emit time.
+    pub(super) pool: Pool,
 }
 
 impl Assembler
@@ -1633,6 +1911,7 @@ impl Assembler
             num_vregs: 0,
             idx: 0,
             stack_map: None,
+            pool: Pool::default(),
         }
     }
 
@@ -1645,6 +1924,43 @@ impl Assembler
     /// This should be called only through [`Self::new_with_scratch_reg`].
     pub(super) fn new_with_accept_scratch_reg(accept_scratch_reg: bool) -> Self {
         Self { accept_scratch_reg, ..Self::new() }
+    }
+
+    /// Construct an operand for a Ruby [`VALUE`], pooling it if it is too wide
+    /// for the packed operand's inline payload (e.g. flonums, large Fixnums).
+    pub fn intern_value(&mut self, value: VALUE) -> Opnd {
+        if fits_inline_value(value) {
+            Opnd::value(value)
+        } else {
+            Opnd::pool(self.pool.intern(Pooled::Value(value)))
+        }
+    }
+
+    /// Construct an unsigned-immediate operand, pooling it if it is too wide.
+    pub fn intern_uimm(&mut self, value: u64) -> Opnd {
+        if fits_inline_uimm(value) {
+            Opnd::uimm(value)
+        } else {
+            Opnd::pool(self.pool.intern(Pooled::UImm(value)))
+        }
+    }
+
+    /// Construct a signed-immediate operand, pooling it if it is too wide.
+    pub fn intern_imm(&mut self, value: i64) -> Opnd {
+        if fits_inline_imm(value) {
+            Opnd::imm(value)
+        } else {
+            Opnd::pool(self.pool.intern(Pooled::Imm(value)))
+        }
+    }
+
+    /// Resolve a pooled operand to its underlying wide constant. Panics if the
+    /// operand is not [`Opnd::Pool`].
+    pub fn resolve_pool(&self, opnd: Opnd) -> Pooled {
+        match opnd.decode() {
+            Decoded::Pool(idx) => self.pool.get(idx),
+            _ => panic!("resolve_pool called on non-pool operand: {opnd:?}"),
+        }
     }
 
     /// Create an Assembler with parameters of another Assembler and empty instructions.
@@ -1667,6 +1983,9 @@ impl Assembler
             label_names: old_asm.label_names.clone(),
             accept_scratch_reg: old_asm.accept_scratch_reg,
             stack_state: old_asm.stack_state.clone(),
+            // Carry the wide-constant pool forward. Indices are append-only, so
+            // operands referencing the old pool stay valid against this copy.
+            pool: old_asm.pool.clone(),
             ..Self::new()
         };
 
@@ -1745,9 +2064,9 @@ impl Assembler
 
     /// Return true if `opnd` is or depends on `reg`
     pub fn has_reg(opnd: Opnd, reg: Reg) -> bool {
-        match opnd {
-            Opnd::Reg(opnd_reg) => opnd_reg == reg,
-            Opnd::Mem(Mem { base: MemBase::Reg(reg_no), .. }) => reg_no == reg.reg_no,
+        match opnd.decode() {
+            Decoded::Reg(opnd_reg) => opnd_reg == reg,
+            Decoded::Mem(Mem { base: MemBase::Reg(reg_no), .. }) => reg_no == reg.reg_no,
             _ => false,
         }
     }
@@ -1904,7 +2223,10 @@ impl Assembler
             if let Some(stack_size) = self.leaf_ccall_stack_size.take() {
                 let canary_addr = self.lea(Opnd::mem(64, SP, (stack_size as i32) * SIZEOF_VALUE_I32));
                 let canary_opnd = Opnd::mem(64, canary_addr, 0);
-                self.mov(canary_opnd, vm_stack_canary().into());
+                // The canary is a random 64-bit poison value, almost always too
+                // wide for the inline UImm payload, so intern it into the Pool.
+                let canary = self.intern_uimm(vm_stack_canary());
+                self.mov(canary_opnd, canary);
                 return Some(canary_opnd)
             }
         }
@@ -1919,7 +2241,7 @@ impl Assembler
 
     /// Build an Opnd::VReg
     pub fn new_vreg(&mut self, num_bits: u8) -> Opnd {
-        let vreg = Opnd::VReg { idx: self.num_vregs.into(), num_bits };
+        let vreg = Opnd::vreg(self.num_vregs.into(), num_bits);
         self.num_vregs += 1;
         vreg
     }
@@ -1963,8 +2285,8 @@ impl Assembler
             moves.iter().enumerate().find(|&(_, &(dst, src))| {
                 // Check if `dst` is used in other moves. If `dst` is not used elsewhere, it's safe to write into `dst` now.
                 moves.iter().filter(|&&other_move| other_move != (dst, src)).all(|&(other_dst, other_src)|
-                    match dst {
-                        Opnd::Reg(reg) => !Assembler::has_reg(other_dst, reg) && !Assembler::has_reg(other_src, reg),
+                    match dst.decode() {
+                        Decoded::Reg(reg) => !Assembler::has_reg(other_dst, reg) && !Assembler::has_reg(other_src, reg),
                         _ => other_dst != dst && other_src != dst,
                     }
                 )
@@ -2012,20 +2334,15 @@ impl Assembler
                 let Some(insn_id) = insn_id else { continue; };
 
                 if !matches!(insn, Insn::Label(_)) {
-                    if let (
-                        Some((prev_id, prev)),
-                        Insn::Mov {
-                            dest: Opnd::Reg(dest_reg),
-                            src: Opnd::VReg { idx, .. },
-                        },
-                    ) = (prev_insn, insn)
-                    {
-                        if let Some(Opnd::VReg { idx: out_idx, .. }) = prev.out_opnd() {
-                            if out_idx == idx
-                                && intervals[*idx].born_at(prev_id.0)
-                                && intervals[*idx].dies_at(insn_id.0)
-                            {
-                                preferred[*idx].get_or_insert(*dest_reg);
+                    if let (Some((prev_id, prev)), Insn::Mov { dest, src }) = (prev_insn, insn) {
+                        if let (Decoded::Reg(dest_reg), Decoded::VReg { idx, .. }) = (dest.decode(), src.decode()) {
+                            if let Some(Decoded::VReg { idx: out_idx, .. }) = prev.out_opnd().map(|o| o.decode()) {
+                                if out_idx == idx
+                                    && intervals[idx].born_at(prev_id.0)
+                                    && intervals[idx].dies_at(insn_id.0)
+                                {
+                                    preferred[idx].get_or_insert(dest_reg);
+                                }
                             }
                         }
                     }
@@ -2209,11 +2526,11 @@ impl Assembler
                 // parcopy algorithm can detect physical register conflicts.
                 debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
                     "parcopy must operate on physical registers, not VRegs");
-                let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
+                let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::reg(SCRATCH_REG));
                 let moves: Vec<Insn> = sequentialized
                     .iter()
-                    .map(|copy| match copy.source {
-                        Opnd::Value(_) => Insn::LoadInto { dest: copy.destination, opnd: copy.source },
+                    .map(|copy| match copy.source.decode() {
+                        Decoded::Value(_) => Insn::LoadInto { dest: copy.destination, opnd: copy.source },
                         _ => Insn::Mov { dest: copy.destination, src: copy.source },
                     })
                     .collect();
@@ -2300,11 +2617,11 @@ impl Assembler
 
             debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
                 "parcopy must operate on physical registers, not VRegs");
-            let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
+            let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::reg(SCRATCH_REG));
             let moves: Vec<Insn> = sequentialized
                 .iter()
-                .map(|copy| match copy.source {
-                    Opnd::Value(_) => Insn::LoadInto {
+                .map(|copy| match copy.source.decode() {
+                    Decoded::Value(_) => Insn::LoadInto {
                         dest: copy.destination,
                         opnd: copy.source,
                     },
@@ -2375,8 +2692,8 @@ impl Assembler
 
                     // Build a set of VRegIds that can be referenced by JITFrame for materializing the VM stack
                     let stack_vreg_ids: HashSet<VRegId> = if let Some(StackMap { stack, .. }) = &stack_map {
-                        stack.iter().filter_map(|opnd| match opnd {
-                            Opnd::VReg { idx, .. } => Some(*idx),
+                        stack.iter().filter_map(|opnd| match opnd.decode() {
+                            Decoded::VReg { idx, .. } => Some(idx),
                             _ => None,
                         }).collect()
                     } else {
@@ -2402,8 +2719,8 @@ impl Assembler
 
                     let survivor_regs: Vec<Opnd> = survivors.iter()
                         .map(|&s| match assignments[s].unwrap() {
-                            Allocation::Reg(n) => Opnd::Reg(ALLOC_REGS[n]),
-                            Allocation::Fixed(reg) => Opnd::Reg(reg),
+                            Allocation::Reg(n) => Opnd::reg(ALLOC_REGS[n]),
+                            Allocation::Fixed(reg) => Opnd::reg(reg),
                             _ => unreachable!(),
                         })
                         .collect();
@@ -2421,17 +2738,17 @@ impl Assembler
                     if let Some(StackMap { stack, jit_frame, frame_depth }) = stack_map {
                         assert_eq!(unsafe { (*jit_frame).stack_size } as usize, stack.len());
                         for (idx, stack_opnd) in stack.iter().enumerate() {
-                            let entry = match stack_opnd {
-                                Opnd::UImm(value) => {
-                                    let value = VALUE(*value as usize);
+                            let entry = match stack_opnd.decode() {
+                                Decoded::UImm(value) => {
+                                    let value = VALUE(value as usize);
                                     // TODO: Investigate using a constant pool to track any value reference in the stack map
                                     assert!(value.special_const_p(), "StackMap should only materialize immediate VALUEs, but got: {value:?}");
                                     value
                                 }
-                                Opnd::VReg { idx: vreg, .. } => {
-                                    let vreg_stack_index = match assignments[*vreg].expect("StackMap VReg should have an allocation") {
+                                Decoded::VReg { idx: vreg, .. } => {
+                                    let vreg_stack_index = match assignments[vreg].expect("StackMap VReg should have an allocation") {
                                         Allocation::Reg(_) | Allocation::Fixed(_) => {
-                                            let caller_saved_reg_idx = survivors.iter().position(|&survivor_id| survivor_id == *vreg).unwrap();
+                                            let caller_saved_reg_idx = survivors.iter().position(|&survivor_id| survivor_id == vreg).unwrap();
                                             let stack_idx = self.stack_state.stack_idx_for_caller_saved_reg(caller_saved_reg_idx);
                                             self.stack_state.stack_map_index_for_spill(stack_idx, frame_depth)
                                         }
@@ -2460,7 +2777,7 @@ impl Assembler
                         .iter()
                         .zip(regs.iter())
                         .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> {
-                            destination: Opnd::Reg(*param),
+                            destination: Opnd::reg(*param),
                             source: Self::rewritten_opnd(*arg, assignments),
                         })
                         .filter(|copy| copy.source != copy.destination)
@@ -2468,11 +2785,11 @@ impl Assembler
 
                     debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
                         "parcopy must operate on physical registers, not VRegs");
-                    let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
+                    let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::reg(SCRATCH_REG));
 
                     for copy in sequentialized {
-                        new_insns.push(match copy.source {
-                            Opnd::Value(_) => Insn::LoadInto { dest: copy.destination, opnd: copy.source },
+                        new_insns.push(match copy.source.decode() {
+                            Decoded::Value(_) => Insn::LoadInto { dest: copy.destination, opnd: copy.source },
                             _ => Insn::Mov { dest: copy.destination, src: copy.source },
                         });
                         new_ids.push(None);
@@ -2517,7 +2834,7 @@ impl Assembler
                         if call_result_live {
                             // Save CCall result to scratch immediately, before pops
                             // can clobber either C_RET or the output register.
-                            new_insns.push(Insn::Mov { dest: Opnd::Reg(SCRATCH_REG), src: C_RET_OPND });
+                            new_insns.push(Insn::Mov { dest: Opnd::reg(SCRATCH_REG), src: C_RET_OPND });
                             new_ids.push(None);
                         }
 
@@ -2534,7 +2851,7 @@ impl Assembler
                         if call_result_live {
                             // Move result from scratch to output AFTER all pops.
                             let out = Self::rewritten_opnd(out, assignments);
-                            new_insns.push(Insn::Mov { dest: out, src: Opnd::Reg(SCRATCH_REG) });
+                            new_insns.push(Insn::Mov { dest: out, src: Opnd::reg(SCRATCH_REG) });
                             new_ids.push(None);
                         }
                     }
@@ -2574,22 +2891,21 @@ impl Assembler
         use crate::backend::current::ALLOC_REGS;
         let regs = &ALLOC_REGS;
 
-        match opnd {
-            Opnd::VReg { idx, num_bits } => {
-                if let Some(assignment) = assignments[*idx] {
+        match opnd.decode() {
+            Decoded::VReg { idx, num_bits } => {
+                if let Some(assignment) = assignments[idx] {
                     match assignment {
                         Allocation::Reg(n) => {
                             let mut reg = regs[n];
-                            reg.num_bits = *num_bits;
-                            *opnd = Opnd::Reg(reg);
+                            reg.num_bits = num_bits;
+                            *opnd = Opnd::reg(reg);
                         }
                         Allocation::Fixed(mut reg) => {
-                            reg.num_bits = *num_bits;
-                            *opnd = Opnd::Reg(reg);
+                            reg.num_bits = num_bits;
+                            *opnd = Opnd::reg(reg);
                         }
                         Allocation::Stack(n) => {
-                            let num_bits = *num_bits;
-                            *opnd = Opnd::Mem(Mem {
+                            *opnd = Opnd::from(Mem {
                                 base: MemBase::Stack { stack_idx: n.try_into().unwrap(), num_bits },
                                 disp: 0,
                                 num_bits,
@@ -2600,27 +2916,16 @@ impl Assembler
                     panic!("Expected assignment for {opnd}");
                 }
             }
-            Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
-                match assignments[*idx].unwrap() {
-                    Allocation::Reg(n) => {
-                        if let Opnd::Mem(mem) = opnd {
-                            mem.base = MemBase::Reg(regs[n].reg_no);
-                        }
-                    }
-                    Allocation::Fixed(reg) => {
-                        if let Opnd::Mem(mem) = opnd {
-                            mem.base = MemBase::Reg(reg.reg_no);
-                        }
-                    }
-                    Allocation::Stack(n) => {
-                        // The VReg used as a memory base was spilled to a stack slot.
-                        // Mark it as StackIndirect so arm64_scratch_split can load
-                        // the pointer from the stack into a scratch register.
-                        if let Opnd::Mem(mem) = opnd {
-                            mem.base = MemBase::StackIndirect { stack_idx: n.try_into().unwrap() };
-                        }
-                    }
-                }
+            Decoded::Mem(mut mem @ Mem { base: MemBase::VReg(idx), .. }) => {
+                mem.base = match assignments[idx].unwrap() {
+                    Allocation::Reg(n) => MemBase::Reg(regs[n].reg_no),
+                    Allocation::Fixed(reg) => MemBase::Reg(reg.reg_no),
+                    // The VReg used as a memory base was spilled to a stack slot.
+                    // Mark it as StackIndirect so arm64_scratch_split can load
+                    // the pointer from the stack into a scratch register.
+                    Allocation::Stack(n) => MemBase::StackIndirect { stack_idx: n.try_into().unwrap() },
+                };
+                *opnd = Opnd::from(mem);
             }
             _ => {}
         }
@@ -2965,7 +3270,7 @@ impl Assembler
             for insn in block.insns.iter().rev() {
                 // If the instruction has an output that is a VReg, add to kill set
                 if let Some(out) = insn.out_opnd() {
-                    if let Opnd::VReg { idx, .. } = out {
+                    if let Decoded::VReg { idx, .. } = out.decode() {
                         kill_set.insert(idx.to_usize());
                     }
                 }
@@ -2981,7 +3286,7 @@ impl Assembler
 
             // Add block parameters to kill set
             for param in &block.parameters {
-                if let Opnd::VReg { idx, .. } = param {
+                if let Decoded::VReg { idx, .. } = param.decode() {
                     kill_set.insert(idx.to_usize());
                 }
             }
@@ -3030,8 +3335,8 @@ impl Assembler
                 let Some(insn_id) = insn_id else { continue; };
                 // If instruction has VReg output, set_from
                 if let Some(out) = insn.out_opnd() {
-                    if let Opnd::VReg { idx, .. } = out {
-                        intervals[*idx].set_from(insn_id.0);
+                    if let Decoded::VReg { idx, .. } = out.decode() {
+                        intervals[idx].set_from(insn_id.0);
                     }
                 }
 
@@ -3487,7 +3792,7 @@ impl Assembler {
     }
 
     pub fn add_into(&mut self, left: Opnd, right: Opnd) {
-        assert!(matches!(left, Opnd::Reg(_)), "Destination of add_into must be Opnd::Reg, but got: {left:?}");
+        assert!(matches!(left.decode(), Decoded::Reg(_)), "Destination of add_into must be Opnd::Reg, but got: {left:?}");
         self.push_insn(Insn::Add { left, right, out: left });
     }
 
@@ -3537,7 +3842,7 @@ impl Assembler {
 
     /// Call a C function stored in a register
     pub fn ccall_reg(&mut self, fptr: Opnd, num_bits: u8) -> Opnd {
-        assert!(matches!(fptr, Opnd::Reg(_)), "ccall_reg must be called with Opnd::Reg: {fptr:?}");
+        assert!(matches!(fptr.decode(), Decoded::Reg(_)), "ccall_reg must be called with Opnd::Reg: {fptr:?}");
         let out = self.new_vreg(num_bits);
         let stack_map = self.stack_map.take();
         self.push_insn(Insn::CCall { data: Box::new(CCallData { opnds: vec![], stack_map, fptr, start_marker: None, end_marker: None, out }) });
@@ -3591,14 +3896,14 @@ impl Assembler {
     }
 
     pub fn cpop_into(&mut self, opnd: Opnd) {
-        assert!(matches!(opnd, Opnd::Reg(_)), "Destination of cpop_into must be a register, got: {opnd:?}");
+        assert!(matches!(opnd.decode(), Decoded::Reg(_)), "Destination of cpop_into must be a register, got: {opnd:?}");
         self.push_insn(Insn::CPopInto(opnd));
     }
 
     #[track_caller]
     pub fn cpop_pair_into(&mut self, opnd0: Opnd, opnd1: Opnd) {
-        assert!(matches!(opnd0, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpop_pair_into must be a register, got: {opnd0:?}");
-        assert!(matches!(opnd1, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpop_pair_into must be a register, got: {opnd1:?}");
+        assert!(matches!(opnd0.decode(), Decoded::Reg(_) | Decoded::VReg{ .. }), "Destination of cpop_pair_into must be a register, got: {opnd0:?}");
+        assert!(matches!(opnd1.decode(), Decoded::Reg(_) | Decoded::VReg{ .. }), "Destination of cpop_pair_into must be a register, got: {opnd1:?}");
         self.push_insn(Insn::CPopPairInto(opnd0, opnd1));
     }
 
@@ -3608,8 +3913,8 @@ impl Assembler {
 
     #[track_caller]
     pub fn cpush_pair(&mut self, opnd0: Opnd, opnd1: Opnd) {
-        assert!(matches!(opnd0, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpush_pair must be a register, got: {opnd0:?}");
-        assert!(matches!(opnd1, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpush_pair must be a register, got: {opnd1:?}");
+        assert!(matches!(opnd0.decode(), Decoded::Reg(_) | Decoded::VReg{ .. }), "Destination of cpush_pair must be a register, got: {opnd0:?}");
+        assert!(matches!(opnd1.decode(), Decoded::Reg(_) | Decoded::VReg{ .. }), "Destination of cpush_pair must be a register, got: {opnd1:?}");
         self.push_insn(Insn::CPushPair(opnd0, opnd1));
     }
 
@@ -3714,7 +4019,7 @@ impl Assembler {
     }
 
     pub fn lea_into(&mut self, out: Opnd, opnd: Opnd) {
-        assert!(matches!(out, Opnd::Reg(_) | Opnd::Mem(_)), "Destination of lea_into must be a register or memory, got: {out:?}");
+        assert!(matches!(out.decode(), Decoded::Reg(_) | Decoded::Mem(_)), "Destination of lea_into must be a register or memory, got: {out:?}");
         self.push_insn(Insn::Lea { opnd, out });
     }
 
@@ -3733,9 +4038,9 @@ impl Assembler {
     }
 
     pub fn load_into(&mut self, dest: Opnd, opnd: Opnd) {
-        assert!(matches!(dest, Opnd::Reg(_)), "Destination of load_into must be a register, got: {dest:?}");
-        match (dest, opnd) {
-            (Opnd::Reg(dest), Opnd::Reg(opnd)) if dest == opnd => {}, // skip if noop
+        assert!(matches!(dest.decode(), Decoded::Reg(_)), "Destination of load_into must be a register, got: {dest:?}");
+        match (dest.decode(), opnd.decode()) {
+            (Decoded::Reg(dest), Decoded::Reg(opnd)) if dest == opnd => {}, // skip if noop
             _ => self.push_insn(Insn::LoadInto { dest, opnd }),
         }
     }
@@ -3755,7 +4060,7 @@ impl Assembler {
     }
 
     pub fn mov(&mut self, dest: Opnd, src: Opnd) {
-        assert!(!matches!(dest, Opnd::VReg { .. }), "Destination of mov must not be Opnd::VReg, got: {dest:?}");
+        assert!(!matches!(dest.decode(), Decoded::VReg { .. }), "Destination of mov must not be Opnd::VReg, got: {dest:?}");
         self.push_insn(Insn::Mov { dest, src });
     }
 
@@ -3807,7 +4112,7 @@ impl Assembler {
     }
 
     pub fn store(&mut self, dest: Opnd, src: Opnd) {
-        assert!(!matches!(dest, Opnd::VReg { .. }), "Destination of store must not be Opnd::VReg, got: {dest:?}");
+        assert!(!matches!(dest.decode(), Decoded::VReg { .. }), "Destination of store must not be Opnd::VReg, got: {dest:?}");
         self.push_insn(Insn::Store { dest, src });
     }
 
@@ -3819,7 +4124,7 @@ impl Assembler {
     }
 
     pub fn sub_into(&mut self, left: Opnd, right: Opnd) {
-        assert!(matches!(left, Opnd::Reg(_)), "Destination of sub_into must be Opnd::Reg, but got: {left:?}");
+        assert!(matches!(left.decode(), Decoded::Reg(_)), "Destination of sub_into must be Opnd::Reg, but got: {left:?}");
         self.push_insn(Insn::Sub { left, right, out: left });
     }
 
@@ -3924,10 +4229,11 @@ mod tests {
     #[test]
     fn test_size_of_insn() {
         // PatchPoint (PatchPointData), CCall (CCallData), and Target (Block/SideExit
-        // payloads) are all boxed, so none dominates the enum. The floor is now the
-        // 3-operand arithmetic/CSel variants: 3 * Opnd (48) + 8 discriminant (Opnd has
-        // no niche to absorb it) = 56. Going lower means boxing the hottest insns.
-        assert_eq!(std::mem::size_of::<Insn>(), 56);
+        // payloads) are all boxed, so none dominates the enum. With `Opnd` packed into
+        // a single 64-bit word, the floor is the 3-operand arithmetic/CSel variants:
+        // 3 * Opnd (24) + 8 discriminant (Opnd has no niche to absorb it) = 32. Going
+        // lower means boxing the hottest insns.
+        assert_eq!(std::mem::size_of::<Insn>(), 32);
     }
 
     #[test]
@@ -3935,32 +4241,33 @@ mod tests {
         assert_eq!(std::mem::size_of::<VRegId>(), 4);
         assert_eq!(std::mem::size_of::<MemBase>(), 8);
         assert_eq!(std::mem::size_of::<Mem>(), 16);
-        assert_eq!(std::mem::size_of::<Opnd>(), 16);
+        assert_eq!(std::mem::size_of::<Opnd>(), 8);
         assert_eq!(std::mem::size_of::<Target>(), 16);
     }
 
     #[test]
     fn test_for_each_operand() {
-        let insn = Insn::Add { left: Opnd::None, right: Opnd::None, out: Opnd::None };
+        let insn = Insn::Add { left: Opnd::NONE, right: Opnd::NONE, out: Opnd::NONE };
 
         let mut result = vec![];
         insn.for_each_operand(|opnd| result.push(opnd));
-        assert_eq!(result, vec![Opnd::None, Opnd::None]);
+        assert_eq!(result, vec![Opnd::NONE, Opnd::NONE]);
     }
 
     #[test]
     fn test_for_each_operand_mut() {
-        let mut insn = Insn::Add { left: Opnd::None, right: Opnd::None, out: Opnd::None };
+        let mut insn = Insn::Add { left: Opnd::NONE, right: Opnd::NONE, out: Opnd::NONE };
 
         let mut counter = 0;
         insn.for_each_operand_mut(|opnd| {
-            *opnd = Opnd::Imm(counter);
+            *opnd = Opnd::imm(counter);
             counter += 1;
         });
-        assert!(matches!(insn, Insn::Add { left: Opnd::Imm(0), right: Opnd::Imm(1), out: Opnd::None }));
+        let Insn::Add { left, right, out } = insn else { panic!("expected Add") };
+        assert_eq!((left, right, out), (Opnd::imm(0), Opnd::imm(1), Opnd::NONE));
         let mut result = vec![];
         insn.for_each_operand(|opnd| result.push(opnd));
-        assert_eq!(result, vec![Opnd::Imm(0), Opnd::Imm(1)]);
+        assert_eq!(result, vec![Opnd::imm(0), Opnd::imm(1)]);
     }
 
     #[test]
@@ -4110,7 +4417,7 @@ mod tests {
         asm.basic_blocks[b1.0].add_parameter(r11);
         asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge {
             target: b2,
-            args: vec![Opnd::UImm(1), r11],
+            args: vec![Opnd::uimm(1), r11],
         }))));
 
         // Build b2: define(r12, r13) { cmp(r13, imm(1)); blt(...) }
@@ -4119,7 +4426,7 @@ mod tests {
         asm.write_label(label_b2);
         asm.basic_blocks[b2.0].add_parameter(r12);
         asm.basic_blocks[b2.0].add_parameter(r13);
-        asm.basic_blocks[b2.0].push_insn(Insn::Cmp { left: r13, right: Opnd::UImm(1) });
+        asm.basic_blocks[b2.0].push_insn(Insn::Cmp { left: r13, right: Opnd::uimm(1) });
         asm.basic_blocks[b2.0].push_insn(Insn::Jl(Target::Block(Box::new(BranchEdge { target: b4, args: vec![] }))));
         asm.basic_blocks[b2.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge { target: b3, args: vec![] }))));
 
@@ -4130,7 +4437,7 @@ mod tests {
         let r14 = asm.new_vreg(64);
         let r15 = asm.new_vreg(64);
         asm.basic_blocks[b3.0].push_insn(Insn::Mul { left: r12, right: r13, out: r14 });
-        asm.basic_blocks[b3.0].push_insn(Insn::Sub { left: r13, right: Opnd::UImm(1), out: r15 });
+        asm.basic_blocks[b3.0].push_insn(Insn::Sub { left: r13, right: Opnd::uimm(1), out: r15 });
         asm.basic_blocks[b3.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge {
             target: b2,
             args: vec![r14, r15],
@@ -4318,12 +4625,12 @@ mod tests {
         let intervals = asm.build_intervals(live_in);
 
         // Extract vreg indices
-        let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
-        let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
-        let r12_idx = if let Opnd::VReg { idx, .. } = r12 { idx } else { panic!() };
-        let r13_idx = if let Opnd::VReg { idx, .. } = r13 { idx } else { panic!() };
-        let r14_idx = if let Opnd::VReg { idx, .. } = r14 { idx } else { panic!() };
-        let r15_idx = if let Opnd::VReg { idx, .. } = r15 { idx } else { panic!() };
+        let r10_idx = if let Decoded::VReg { idx, .. } = r10.decode() { idx } else { panic!() };
+        let r11_idx = if let Decoded::VReg { idx, .. } = r11.decode() { idx } else { panic!() };
+        let r12_idx = if let Decoded::VReg { idx, .. } = r12.decode() { idx } else { panic!() };
+        let r13_idx = if let Decoded::VReg { idx, .. } = r13.decode() { idx } else { panic!() };
+        let r14_idx = if let Decoded::VReg { idx, .. } = r14.decode() { idx } else { panic!() };
+        let r15_idx = if let Decoded::VReg { idx, .. } = r15.decode() { idx } else { panic!() };
 
         // Assert expected ranges
         // Note: Rust CFG differs from Ruby due to conditional branches requiring two instructions (Jl + Jmp)
@@ -4365,12 +4672,12 @@ mod tests {
         let (assignments, num_stack_slots) = asm.linear_scan(intervals, 5, &preferred_registers);
 
         // Extract vreg indices
-        let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
-        let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
-        let r12_idx = if let Opnd::VReg { idx, .. } = r12 { idx } else { panic!() };
-        let r13_idx = if let Opnd::VReg { idx, .. } = r13 { idx } else { panic!() };
-        let r14_idx = if let Opnd::VReg { idx, .. } = r14 { idx } else { panic!() };
-        let r15_idx = if let Opnd::VReg { idx, .. } = r15 { idx } else { panic!() };
+        let r10_idx = if let Decoded::VReg { idx, .. } = r10.decode() { idx } else { panic!() };
+        let r11_idx = if let Decoded::VReg { idx, .. } = r11.decode() { idx } else { panic!() };
+        let r12_idx = if let Decoded::VReg { idx, .. } = r12.decode() { idx } else { panic!() };
+        let r13_idx = if let Decoded::VReg { idx, .. } = r13.decode() { idx } else { panic!() };
+        let r14_idx = if let Decoded::VReg { idx, .. } = r14.decode() { idx } else { panic!() };
+        let r15_idx = if let Decoded::VReg { idx, .. } = r15.decode() { idx } else { panic!() };
 
         // 5 registers is enough for all intervals, no spills needed
         assert_eq!(num_stack_slots, 0);
@@ -4402,12 +4709,12 @@ mod tests {
         let preferred_registers = asm.preferred_register_assignments(&intervals);
         let (assignments, num_stack_slots) = asm.linear_scan(intervals, 3, &preferred_registers);
 
-        let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
-        let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
-        let r12_idx = if let Opnd::VReg { idx, .. } = r12 { idx } else { panic!() };
-        let r13_idx = if let Opnd::VReg { idx, .. } = r13 { idx } else { panic!() };
-        let r14_idx = if let Opnd::VReg { idx, .. } = r14 { idx } else { panic!() };
-        let r15_idx = if let Opnd::VReg { idx, .. } = r15 { idx } else { panic!() };
+        let r10_idx = if let Decoded::VReg { idx, .. } = r10.decode() { idx } else { panic!() };
+        let r11_idx = if let Decoded::VReg { idx, .. } = r11.decode() { idx } else { panic!() };
+        let r12_idx = if let Decoded::VReg { idx, .. } = r12.decode() { idx } else { panic!() };
+        let r13_idx = if let Decoded::VReg { idx, .. } = r13.decode() { idx } else { panic!() };
+        let r14_idx = if let Decoded::VReg { idx, .. } = r14.decode() { idx } else { panic!() };
+        let r15_idx = if let Decoded::VReg { idx, .. } = r15.decode() { idx } else { panic!() };
 
         assert_eq!(num_stack_slots, 1);
         assert_eq!(assignments[r10_idx], Some(Allocation::Stack(0)));
@@ -4430,12 +4737,12 @@ mod tests {
         let preferred_registers = asm.preferred_register_assignments(&intervals);
         let (assignments, num_stack_slots) = asm.linear_scan(intervals, 1, &preferred_registers);
 
-        let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
-        let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
-        let r12_idx = if let Opnd::VReg { idx, .. } = r12 { idx } else { panic!() };
-        let r13_idx = if let Opnd::VReg { idx, .. } = r13 { idx } else { panic!() };
-        let r14_idx = if let Opnd::VReg { idx, .. } = r14 { idx } else { panic!() };
-        let r15_idx = if let Opnd::VReg { idx, .. } = r15 { idx } else { panic!() };
+        let r10_idx = if let Decoded::VReg { idx, .. } = r10.decode() { idx } else { panic!() };
+        let r11_idx = if let Decoded::VReg { idx, .. } = r11.decode() { idx } else { panic!() };
+        let r12_idx = if let Decoded::VReg { idx, .. } = r12.decode() { idx } else { panic!() };
+        let r13_idx = if let Decoded::VReg { idx, .. } = r13.decode() { idx } else { panic!() };
+        let r14_idx = if let Decoded::VReg { idx, .. } = r14.decode() { idx } else { panic!() };
+        let r15_idx = if let Decoded::VReg { idx, .. } = r15.decode() { idx } else { panic!() };
 
         assert_eq!(num_stack_slots, 3);
         assert_eq!(assignments[r10_idx], Some(Allocation::Stack(0)));
@@ -4514,9 +4821,9 @@ mod tests {
         let b1_insns = &asm.basic_blocks[b1.0].insns;
         assert_eq!(b1_insns.len(), 4);
         assert!(matches!(&b1_insns[1], Insn::Mov { dest, src }
-            if *dest == Opnd::Reg(regs[2]) && *src == Opnd::Reg(regs[1])));
+            if *dest == Opnd::reg(regs[2]) && *src == Opnd::reg(regs[1])));
         assert!(matches!(&b1_insns[2], Insn::Mov { dest, src }
-            if *dest == Opnd::Reg(regs[1]) && *src == Opnd::UImm(1)));
+            if *dest == Opnd::reg(regs[1]) && *src == Opnd::uimm(1)));
 
         // Edge b3->b2 (single succ): args=[v4, v5], params=[v2, v3]
         // v4->Reg(3), v5->Reg(2), v2->Reg(1), v3->Reg(2)
@@ -4526,15 +4833,15 @@ mod tests {
         let b3_insns = &asm.basic_blocks[b3.0].insns;
         assert_eq!(b3_insns.len(), 5);
         assert!(matches!(&b3_insns[3], Insn::Mov { dest, src }
-            if *dest == Opnd::Reg(regs[1]) && *src == Opnd::Reg(regs[3])));
+            if *dest == Opnd::reg(regs[1]) && *src == Opnd::reg(regs[3])));
 
         // Verify original instructions in b3 are rewritten to physical registers.
         // b3: Mul { left: r12, right: r13, out: r14 }, Sub { left: r13, right: UImm(1), out: r15 }
         // r12->Reg(1), r13->Reg(2), r14->Reg(3), r15->Reg(2)
         assert!(matches!(&b3_insns[1], Insn::Mul { left, right, out }
-            if *left == Opnd::Reg(regs[1]) && *right == Opnd::Reg(regs[2]) && *out == Opnd::Reg(regs[3])));
+            if *left == Opnd::reg(regs[1]) && *right == Opnd::reg(regs[2]) && *out == Opnd::reg(regs[3])));
         assert!(matches!(&b3_insns[2], Insn::Sub { left, right, out }
-            if *left == Opnd::Reg(regs[2]) && *right == Opnd::UImm(1) && *out == Opnd::Reg(regs[2])));
+            if *left == Opnd::reg(regs[2]) && *right == Opnd::uimm(1) && *out == Opnd::reg(regs[2])));
     }
 
     #[test]
@@ -4586,7 +4893,7 @@ mod tests {
             let param = asm.new_vreg(64);
             asm.basic_blocks[block.0].add_parameter(param);
         }
-        asm.basic_blocks[block.0].push_insn(Insn::CRet(Opnd::UImm(0)));
+        asm.basic_blocks[block.0].push_insn(Insn::CRet(Opnd::uimm(0)));
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(0);
@@ -4615,9 +4922,9 @@ mod tests {
         asm.write_label(label_b1);
         let v0 = asm.new_vreg(64);
         let v1 = asm.new_vreg(64);
-        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: Opnd::UImm(123), right: Opnd::UImm(0), out: v0 });
-        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: v0, right: Opnd::UImm(456), out: v1 });
-        asm.basic_blocks[b1.0].push_insn(Insn::Cmp { left: v1, right: Opnd::UImm(0) });
+        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: Opnd::uimm(123), right: Opnd::uimm(0), out: v0 });
+        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: v0, right: Opnd::uimm(456), out: v1 });
+        asm.basic_blocks[b1.0].push_insn(Insn::Cmp { left: v1, right: Opnd::uimm(0) });
         asm.basic_blocks[b1.0].push_insn(Insn::Jl(Target::Block(Box::new(BranchEdge { target: b2, args: vec![v0] }))));
         asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge { target: b3, args: vec![v1] }))));
 
@@ -4628,7 +4935,7 @@ mod tests {
         let v2 = asm.new_block_param(64);
         asm.basic_blocks[b2.0].add_parameter(v2);
         let v3 = asm.new_vreg(64);
-        asm.basic_blocks[b2.0].push_insn(Insn::Add { left: v2, right: Opnd::UImm(789), out: v3 });
+        asm.basic_blocks[b2.0].push_insn(Insn::Add { left: v2, right: Opnd::uimm(789), out: v3 });
         asm.basic_blocks[b2.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge { target: b3, args: vec![v3] }))));
 
         // b3(v4): CRet(v4)
@@ -4719,11 +5026,11 @@ mod tests {
 
         // v1 = Load(UImm(5))
         let v1 = asm.new_vreg(64);
-        asm.basic_blocks[b1.0].push_insn(Insn::Load { opnd: Opnd::UImm(5), out: v1 });
+        asm.basic_blocks[b1.0].push_insn(Insn::Load { opnd: Opnd::uimm(5), out: v1 });
 
         // v2 = Add(v1, UImm(1))
         let v2 = asm.new_vreg(64);
-        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: v1, right: Opnd::UImm(1), out: v2 });
+        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: v1, right: Opnd::uimm(1), out: v2 });
 
         // v3 = CCall { fptr: UImm(0xF00), opnds: [v2] }
         let v3 = asm.new_vreg(64);
@@ -4731,7 +5038,7 @@ mod tests {
             data: Box::new(CCallData {
                 opnds: vec![v2],
                 stack_map: None,
-                fptr: Opnd::UImm(0xF00),
+                fptr: Opnd::uimm(0xF00),
                 start_marker: None,
                 end_marker: None,
                 out: v3,
@@ -4781,8 +5088,8 @@ mod tests {
 
         // The survivor register should match v1's allocation
         let v1_reg = match assignments[v1.vreg_idx()].unwrap() {
-            Allocation::Reg(n) => Opnd::Reg(regs[n]),
-            Allocation::Fixed(reg) => Opnd::Reg(reg),
+            Allocation::Reg(n) => Opnd::reg(regs[n]),
+            Allocation::Fixed(reg) => Opnd::reg(reg),
             _ => unreachable!(),
         };
         let pushed_v1 = pushes.iter().any(|insn| matches!(**insn, Insn::CPushPair(first, second) if first == v1_reg || second == v1_reg));
@@ -4799,8 +5106,8 @@ mod tests {
         // v0 should be rewritten to a Stack operand
         // Find an Add that uses a Stack operand (the v0+v4 add)
         let has_stack_opnd = insns.iter().any(|i| {
-            if let Insn::Add { left: Opnd::Mem(Mem { base: MemBase::Stack { .. }, .. }), .. } = i {
-                true
+            if let Insn::Add { left, .. } = i {
+                matches!(left.decode(), Decoded::Mem(Mem { base: MemBase::Stack { .. }, .. }))
             } else {
                 false
             }

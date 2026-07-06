@@ -1031,7 +1031,7 @@ pub fn movabs(cb: &mut CodeBlock, dst: X86Opnd, value: u64) {
             write_opcode(cb, 0xb8, reg);
             cb.write_int(value, 64);
         },
-        _ => unreachable!()
+        _ => unreachable!("cannot movabs to non-reg dst {dst}")
     }
 }
 

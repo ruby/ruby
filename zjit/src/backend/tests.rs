@@ -8,8 +8,8 @@ use crate::options::rb_zjit_prepare_options;
 fn test_add() {
     let mut asm = Assembler::new();
     asm.new_block_without_id("test");
-    let out = asm.add(SP, Opnd::UImm(1));
-    let _ = asm.add(out, Opnd::UImm(2));
+    let out = asm.add(SP, Opnd::uimm(1));
+    let _ = asm.add(out, Opnd::uimm(2));
 }
 
 fn setup_asm() -> (Assembler, CodeBlock) {
@@ -26,8 +26,8 @@ fn test_compile()
     let (mut asm, mut cb) = setup_asm();
     let regs = Assembler::get_alloc_regs();
 
-    let out = asm.add(Opnd::Reg(regs[0]), Opnd::UImm(2));
-    let out2 = asm.add(out, Opnd::UImm(2));
+    let out = asm.add(Opnd::reg(regs[0]), Opnd::uimm(2));
+    let out2 = asm.add(out, Opnd::uimm(2));
     asm.store(Opnd::mem(64, SP, 0), out2);
 
     asm.compile_with_num_regs(&mut cb, 1);
@@ -66,7 +66,7 @@ fn test_load_value()
     let gcd_value = VALUE(0xFFFFFFFFFFFF00);
     assert!(!gcd_value.special_const_p());
 
-    let out = asm.load(Opnd::Value(gcd_value));
+    let out = asm.load(Opnd::value(gcd_value));
     asm.mov(Opnd::mem(64, SP, 0), out);
 
     asm.compile_with_num_regs(&mut cb, 1);
@@ -78,10 +78,10 @@ fn test_reuse_reg()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    let v0 = asm.add(Opnd::mem(64, SP, 0), Opnd::UImm(1));
-    let v1 = asm.add(Opnd::mem(64, SP, 8), Opnd::UImm(1));
+    let v0 = asm.add(Opnd::mem(64, SP, 0), Opnd::uimm(1));
+    let v1 = asm.add(Opnd::mem(64, SP, 8), Opnd::uimm(1));
 
-    let v2 = asm.add(v1, Opnd::UImm(1)); // Reuse v1 register
+    let v2 = asm.add(v1, Opnd::uimm(1)); // Reuse v1 register
     let v3 = asm.add(v0, v2);
 
     asm.store(Opnd::mem(64, SP, 0), v2);
@@ -96,7 +96,8 @@ fn test_reuse_reg()
 fn test_store_u64()
 {
     let (mut asm, mut cb) = setup_asm();
-    asm.store(Opnd::mem(64, SP, 0), u64::MAX.into());
+    let val = asm.intern_uimm(u64::MAX);
+    asm.store(Opnd::mem(64, SP, 0), val);
 
     asm.compile_with_num_regs(&mut cb, 1);
 }
@@ -134,7 +135,7 @@ fn test_c_call()
 
     let ret_val = asm.ccall(
         dummy_c_fun as *const u8,
-        vec![Opnd::mem(64, SP, 0), Opnd::UImm(1)]
+        vec![Opnd::mem(64, SP, 0), Opnd::uimm(1)]
     );
 
     // Make sure that the call's return value is usable
@@ -214,7 +215,7 @@ fn test_jo()
     let arg1 = Opnd::mem(64, SP, 0);
     let arg0 = Opnd::mem(64, SP, 8);
 
-    let arg0_untag = asm.sub(arg0, Opnd::Imm(1));
+    let arg0_untag = asm.sub(arg0, Opnd::imm(1));
     let out_val = asm.add(arg0_untag, arg1);
     asm.push_insn(Insn::Jo(side_exit));
 
@@ -235,7 +236,7 @@ fn test_bake_string() {
 fn test_cmp_8_bit() {
     let (mut asm, mut cb) = setup_asm();
     let reg = Assembler::get_alloc_regs()[0];
-    asm.cmp(Opnd::Reg(reg).with_num_bits(8), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+    asm.cmp(Opnd::reg(reg).with_num_bits(8), Opnd::uimm(RUBY_SYMBOL_FLAG as u64));
 
     asm.compile_with_num_regs(&mut cb, 1);
 }
