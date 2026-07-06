@@ -541,9 +541,19 @@ class Pathname
   end
   private :cleanpath_conservative
 
-  # Returns the parent directory.
+  # :markup: markdown
   #
-  # This is same as <code>self + '..'</code>.
+  # call-seq:
+  #   parent -> new_pathname
+  #
+  # Returns a new pathname representing the parent directory
+  # of the entry represented by `self`:
+  #
+  # ```ruby
+  # pn = Pathname('/etc/passwd') # => #<Pathname:/etc/passwd>
+  # pn.parent                    # => #<Pathname:/etc>
+  # ```
+  #
   def parent
     self + '..'
   end
@@ -1885,7 +1895,26 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.socket?</tt>.
   def socket?() FileTest.socket?(@path) end
 
-  # See <tt>FileTest.owned?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   owned? -> true or false
+  #
+  # Returns whether the entry at the path represented by `self`
+  # exists and is owned by the user of the current process:
+  #
+  # ```ruby
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('foo')
+  # pn.owned?               # => true
+  # pn.delete
+  # pn = Pathname('doc/tmp')
+  # pn.mkdir
+  # pn.owned?               # => true
+  # pn.rmdir
+  # Pathname('/etc').owned? # => false
+  # ```
+  #
   def owned?() FileTest.owned?(@path) end
 
   # See <tt>FileTest.readable?</tt>.
@@ -2067,7 +2096,32 @@ class Pathname
   # See <tt>Dir.rmdir</tt>.  Remove the referenced directory.
   def rmdir() Dir.rmdir(@path) end
 
-  # See <tt>Dir.open</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   opendir {|dir| ... } -> object
+  #   opendir -> dir
+  #
+  # Creates a Dir object `dir` for the directory at the path represented by `self`;
+  # opens `dir`.
+  #
+  # With a block given, calls the block with `dir`;
+  # on block exit, closes `dir` and returns the block's return value:
+  #
+  # ```ruby
+  # pn = Pathname('.')
+  # pn.opendir {|dir| dir.entries.take(3) }
+  # # => ["README.md", "html", ".git"]
+  # ```
+  #
+  # With no block given, returns the open directory `dir`:
+  #
+  # ```ruby
+  # dir = pn.opendir    # => #<Dir:.>
+  # dir.entries.take(3) # => ["README.md", "html", ".git"]
+  # dir.close
+  # ```
+  #
   def opendir(&block) # :yield: dir
     Dir.open(@path, &block)
   end

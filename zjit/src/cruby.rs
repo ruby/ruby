@@ -83,16 +83,12 @@
 #![allow(non_upper_case_globals)]
 #![allow(clippy::upper_case_acronyms)]
 
-// Some of this code may not be used yet
-#![allow(dead_code)]
-#![allow(unused_macros)]
-#![allow(unused_imports)]
-
 use std::convert::From;
 use std::ffi::{c_void, CString, CStr};
 use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::{c_char, c_int, c_long, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
+use std::ptr::NonNull;
 
 use crate::cast::IntoUsize as _;
 
@@ -120,7 +116,6 @@ pub use autogened::*;
 // These are functions we expose from C files, not in any header.
 // Parsing it would result in a lot of duplicate definitions.
 // Use bindgen for functions that are defined in headers or in zjit.c.
-#[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 unsafe extern "C" {
     pub fn rb_check_overloaded_cme(
         me: *const rb_callable_method_entry_t,
@@ -181,10 +176,7 @@ pub use rb_get_ec_cfp as get_ec_cfp;
 pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
 pub use rb_get_cfp_sp as get_cfp_sp;
-pub use rb_get_cfp_self as get_cfp_self;
-pub use rb_get_cfp_ep as get_cfp_ep;
 pub use rb_get_cfp_ep_level as get_cfp_ep_level;
-pub use rb_vm_base_ptr as get_cfp_bp;
 pub use rb_get_cme_def_type as get_cme_def_type;
 pub use rb_get_cme_def_body_attr_id as get_cme_def_body_attr_id;
 pub use rb_get_cme_def_body_optimized_type as get_cme_def_body_optimized_type;
@@ -196,26 +188,19 @@ pub use rb_get_mct_argc as get_mct_argc;
 pub use rb_get_mct_func as get_mct_func;
 pub use rb_get_def_iseq_ptr as get_def_iseq_ptr;
 pub use rb_iseq_encoded_size as get_iseq_encoded_size;
-pub use rb_get_iseq_body_local_iseq as get_iseq_body_local_iseq;
 pub use rb_get_iseq_body_iseq_encoded as get_iseq_body_iseq_encoded;
 pub use rb_get_iseq_body_stack_max as get_iseq_body_stack_max;
 pub use rb_get_iseq_body_type as get_iseq_body_type;
 pub use rb_get_iseq_body_local_table_size as get_iseq_body_local_table_size;
 pub use rb_get_cikw_keyword_len as get_cikw_keyword_len;
 pub use rb_get_cikw_keywords_idx as get_cikw_keywords_idx;
-pub use rb_get_call_data_ci as get_call_data_ci;
-pub use rb_FL_TEST as FL_TEST;
 pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
-pub use rb_BASIC_OP_UNREDEFINED_P as BASIC_OP_UNREDEFINED_P;
 pub use rb_vm_ci_argc as vm_ci_argc;
 pub use rb_vm_ci_mid as vm_ci_mid;
 pub use rb_vm_ci_flag as vm_ci_flag;
-pub use rb_vm_ci_kwarg as vm_ci_kwarg;
 pub use rb_METHOD_ENTRY_VISI as METHOD_ENTRY_VISI;
 pub use rb_RCLASS_ORIGIN as RCLASS_ORIGIN;
-pub use rb_vm_get_special_object as vm_get_special_object;
-pub use rb_jit_fix_div_fix as rb_fix_div_fix;
 pub use rb_jit_fix_mod_fix as rb_fix_mod_fix;
 
 /// Helper so we can get a Rust string for insn_name()
@@ -351,6 +336,49 @@ pub fn iseq_rest_param_idx(params: &IseqParameters) -> Option<i32> {
     } else {
         None
     }
+}
+
+/// Compute the index of a local variable from its slot index
+pub fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
+    // Layout illustration
+    // This is an array of VALUE
+    //                                           | VM_ENV_DATA_SIZE |
+    //                                           v                  v
+    // low addr <+-------+-------+-------+-------+------------------+
+    //           |local 0|local 1|  ...  |local n|       ....       |
+    //           +-------+-------+-------+-------+------------------+
+    //           ^       ^                       ^                  ^
+    //           +-------+---local_table_size----+         cfp->ep--+
+    //                   |                                          |
+    //                   +------------------ep_offset---------------+
+    //
+    // See usages of local_var_name() from iseq.c for similar calculation.
+
+    // Equivalent of iseq->body->local_table_size
+    let local_table_size: i32 = unsafe { get_iseq_body_local_table_size(iseq) }
+        .try_into()
+        .unwrap();
+    let op = (ep_offset - VM_ENV_DATA_SIZE) as i32;
+    let local_idx = local_table_size - op - 1;
+    assert!(local_idx >= 0 && local_idx < local_table_size);
+    local_idx.try_into().unwrap()
+}
+
+/// Inverse of ep_offset_to_local_idx(). See [`ep_offset_to_local_idx`] for details.
+pub fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq) };
+    local_size_and_idx_to_ep_offset(local_size.to_usize(), local_idx)
+}
+
+/// Convert the number of locals and a local index to an offset from the EP
+pub fn local_size_and_idx_to_ep_offset(local_size: usize, local_idx: usize) -> i32 {
+    local_size as i32 - local_idx as i32 - 1 + VM_ENV_DATA_SIZE as i32
+}
+
+/// Convert the number of locals and a local index to an offset from the BP.
+/// We don't move the SP register after entry, so we often use SP as BP.
+pub fn local_size_and_idx_to_bp_offset(local_size: usize, local_idx: usize) -> i32 {
+    local_size_and_idx_to_ep_offset(local_size, local_idx) + 1
 }
 
 /// Iterate over all existing ISEQs
@@ -667,7 +695,7 @@ impl VALUE {
         i.try_into().unwrap()
     }
 
-    pub fn as_usize(self) -> usize {
+    pub const fn as_usize(self) -> usize {
         let VALUE(us) = self;
         us
     }
@@ -749,16 +777,55 @@ impl VALUE {
 
 pub type IseqParameters = rb_iseq_constant_body_rb_iseq_parameters;
 
+/// How a block iseq refers to a variable in an enclosing scope, as recorded in
+/// `ISEQ_BODY(blockiseq)->outer_variables`. `compile.c` aggregates accesses from
+/// nested blocks up the chain, and the same table backs `Ractor.shareable_proc`'s
+/// isolation checks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OuterLocalAccess {
+    /// The variable is read but never assigned to.
+    ReadOnly,
+    /// The variable is assigned to and maybe also read.
+    ReadWrite,
+}
+
+/// Wrapper over an iseq's `outer_variables` table, which describes
+/// how a block iseq refers to a variable in an enclosing scope.
+#[derive(Clone, Copy)]
+pub struct OuterVariables(Option<NonNull<rb_id_table>>);
+
+impl OuterVariables {
+    /// Look up how the enclosing-scope local `id` is accessed by the iseq (or any
+    /// iseq nested within it). Returns `None` when the variable isn't referenced.
+    pub fn local_access(self, id: ID) -> Option<OuterLocalAccess> {
+        let table = self.0?;
+        let mut write = Qfalse;
+        // Non-zero return means there's a table entry, i.e. the variable is referenced.
+        if unsafe { rb_id_table_lookup(table.as_ptr(), id, &mut write) } == 0 {
+            return None;
+        }
+        // Truthy means write
+        Some(if write.test() { OuterLocalAccess::ReadWrite } else { OuterLocalAccess::ReadOnly })
+    }
+}
+
 /// Extension trait to enable method calls on [`IseqPtr`]
 pub trait IseqAccess {
     unsafe fn params<'a>(self) -> &'a IseqParameters;
+    unsafe fn outer_variables(self) -> OuterVariables;
 }
 
 impl IseqAccess for IseqPtr {
     /// Get a description of the ISEQ's signature. Analogous to `ISEQ_BODY(iseq)->param` in C.
     unsafe fn params<'a>(self) -> &'a IseqParameters {
-        use crate::cast::IntoUsize;
         unsafe { &*((*self).body.byte_add(ISEQ_BODY_OFFSET_PARAM.to_usize()) as *const IseqParameters) }
+    }
+
+    /// The iseq's `outer_variables` table. See [`OuterVariables`].
+    unsafe fn outer_variables(self) -> OuterVariables {
+        use crate::cast::IntoUsize;
+        let field = unsafe { (*self).body.byte_add(ISEQ_BODY_OFFSET_OUTER_VARIABLES.to_usize()) } as *const *mut rb_id_table;
+        OuterVariables(NonNull::new(unsafe { *field }))
     }
 }
 
@@ -968,7 +1035,7 @@ pub fn ruby_sym_to_rust_string(v: VALUE) -> String {
 }
 
 pub fn ruby_call_method_id(cd: *const rb_call_data) -> ID {
-    let call_info = unsafe { rb_get_call_data_ci(cd) };
+    let call_info = unsafe { (*cd).ci };
     unsafe { rb_vm_ci_mid(call_info) }
 }
 
@@ -1005,17 +1072,6 @@ macro_rules! src_loc {
 }
 
 pub(crate) use src_loc;
-
-/// Run GC write barrier. Required after making a new edge in the object reference
-/// graph from `old` to `young`.
-macro_rules! obj_written {
-    ($old: expr, $young: expr) => {
-        let (old, young): (VALUE, VALUE) = ($old, $young);
-        let src_loc = $crate::cruby::src_loc!();
-        unsafe { rb_yjit_obj_written(old, young, src_loc.file.as_ptr(), src_loc.line) };
-    };
-}
-pub(crate) use obj_written;
 
 /// Acquire the VM lock, make sure all other Ruby threads are asleep then run
 /// some code while holding the lock. Returns whatever `func` returns.
@@ -1314,6 +1370,7 @@ pub mod test_utils {
     }
 
     /// Like inspect, but also asserts that all compilations triggered by this program succeed.
+    #[track_caller]
     pub fn assert_compiles_allowing_exits(program: &str) -> String {
         use crate::state::ZJITState;
         ZJITState::enable_assert_compiles();
@@ -1324,6 +1381,7 @@ pub mod test_utils {
 
     /// Like inspect, but also asserts that all compilations triggered by this program succeed and
     /// no side exits occurr during the program.
+    #[track_caller]
     pub fn assert_compiles(program: &str) -> String {
         use crate::state::ZJITState;
         let exits_before = crate::stats::total_exit_count();

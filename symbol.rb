@@ -29,6 +29,15 @@ class Symbol
   end
 
   # call-seq:
+  #   empty? -> true or false
+  #
+  # Returns +true+ if +self+ is <tt>:''</tt>, +false+ otherwise.
+  def empty?
+    Primitive.attr! :leaf
+    Primitive.cexpr! 'RBOOL(RSTRING_LEN(rb_sym2str(self)) == 0)'
+  end
+
+  # call-seq:
   #   to_sym -> self
   #
   # Returns +self+.

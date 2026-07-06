@@ -736,6 +736,26 @@ fn test_send_with_local_written_by_blockiseq() {
 }
 
 #[test]
+fn test_send_does_not_reload_local_untouched_by_blockiseq() {
+    // https://github.com/Shopify/ruby/issues/976: a call with a block must not
+    // reload locals the block never assigns, otherwise it reads a stale stack
+    // slot and clobbers the correct SSA value (here, `a`).
+    eval("
+        def foo(&block) = 1
+
+        def test
+          a = 1
+          foo {}
+          a
+        end
+
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_send);
+    assert_snapshot!(assert_compiles("test"), @"1");
+}
+
+#[test]
 fn test_no_ep_escape_patch_point_after_send_does_not_repeat_send() {
     eval(r#"
         $send_count = 0
@@ -4527,6 +4547,141 @@ fn test_getspecial_number_in_jit_to_jit_callee() {
     "#);
     assert_contains_opcode("callee", YARVINSN_getspecial);
     assert_snapshot!(assert_compiles("caller_method"), @"nil");
+}
+
+#[cfg(all(
+    any(target_os = "linux", target_os = "macos"),
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+))]
+mod signal_profiler {
+    use super::*;
+    use std::ptr::null_mut;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+    use std::thread::{self, JoinHandle};
+    use std::time::Duration;
+
+    use libc::{self, c_int};
+
+    const PROFILE_FRAMES_LIMIT: usize = 128;
+
+    static SAMPLES: AtomicUsize = AtomicUsize::new(0);
+    static IN_HANDLER: AtomicBool = AtomicBool::new(false);
+
+    extern "C" fn sample_profile_frames(signum: c_int) {
+        if signum != libc::SIGPROF || IN_HANDLER.swap(true, Ordering::Relaxed) {
+            return;
+        }
+
+        let mut frames = [VALUE(0); PROFILE_FRAMES_LIMIT];
+        let mut lines = [0; PROFILE_FRAMES_LIMIT];
+        let collected_size = unsafe {
+            rb_profile_frames(
+                0,
+                PROFILE_FRAMES_LIMIT as c_int,
+                frames.as_mut_ptr(),
+                lines.as_mut_ptr(),
+            )
+        };
+        if collected_size > 0 {
+            SAMPLES.fetch_add(1, Ordering::Relaxed);
+        }
+
+        IN_HANDLER.store(false, Ordering::Relaxed);
+    }
+
+    struct TargetThread(libc::pthread_t);
+
+    // pthread_t is valid to pass to pthread_kill from another thread.
+    unsafe impl Send for TargetThread {}
+
+    pub struct Profiler {
+        old_sigprof: libc::sigaction,
+        stop_sampler: Arc<AtomicBool>,
+        sampler: Option<JoinHandle<()>>,
+    }
+
+    impl Profiler {
+        pub fn start(interval_usec: u64) -> Self {
+            assert!(interval_usec > 0);
+            SAMPLES.store(0, Ordering::Relaxed);
+            IN_HANDLER.store(false, Ordering::Relaxed);
+
+            let mut handler: libc::sigaction = unsafe { std::mem::zeroed() };
+            assert_eq!(unsafe { libc::sigemptyset(&mut handler.sa_mask) }, 0, "sigemptyset failed");
+            handler.sa_sigaction = sample_profile_frames as libc::sighandler_t;
+            handler.sa_flags = libc::SA_RESTART;
+
+            let mut old_sigprof: libc::sigaction = unsafe { std::mem::zeroed() };
+            assert_eq!(
+                unsafe { libc::sigaction(libc::SIGPROF, &handler, &mut old_sigprof) },
+                0,
+                "sigaction failed",
+            );
+
+            let target_thread = TargetThread(unsafe { libc::pthread_self() });
+            let stop_sampler = Arc::new(AtomicBool::new(false));
+            let sampler_stop = Arc::clone(&stop_sampler);
+            let interval = Duration::from_micros(interval_usec);
+            let sampler = thread::spawn(move || {
+                while !sampler_stop.load(Ordering::Relaxed) {
+                    unsafe {
+                        libc::pthread_kill(target_thread.0, libc::SIGPROF);
+                    }
+                    thread::sleep(interval);
+                }
+            });
+
+            Self {
+                old_sigprof,
+                stop_sampler,
+                sampler: Some(sampler),
+            }
+        }
+
+        pub fn samples(&self) -> usize {
+            SAMPLES.load(Ordering::Relaxed)
+        }
+    }
+
+    impl Drop for Profiler {
+        fn drop(&mut self) {
+            self.stop_sampler.store(true, Ordering::Relaxed);
+            if let Some(sampler) = self.sampler.take() {
+                let _ = sampler.join();
+            }
+            unsafe {
+                libc::sigaction(libc::SIGPROF, &self.old_sigprof, null_mut());
+            }
+        }
+    }
+}
+
+// Simulate sampling profilers such as stackprof/vernier: a SIGPROF handler
+// interrupts a JIT frame and calls rb_profile_frames().
+#[cfg(all(
+    any(target_os = "linux", target_os = "macos"),
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+))]
+#[test]
+fn test_profile_frames_from_signal_handler() {
+    eval(r#"
+        def profiled_leaf_loop(n)
+          i = 0
+          while i < n
+            i += 1
+          end
+          i
+        end
+
+        # Compile the method before arming the timer so samples land in JIT code.
+        profiled_leaf_loop(1)
+        profiled_leaf_loop(1)
+    "#);
+
+    let profiler = signal_profiler::Profiler::start(100);
+    assert_snapshot!(assert_compiles("profiled_leaf_loop(20_000_000)"), @"20000000");
+    assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
 }
 
 #[test]

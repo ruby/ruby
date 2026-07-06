@@ -17,11 +17,8 @@
         ossl_raise(rb_eRuntimeError, NULL); \
     RTYPEDDATA_DATA(obj) = (ctx); \
 } while (0)
-#define GetCipherInit(obj, ctx) do { \
-    TypedData_Get_Struct((obj), EVP_CIPHER_CTX, &ossl_cipher_type, (ctx)); \
-} while (0)
 #define GetCipher(obj, ctx) do { \
-    GetCipherInit((obj), (ctx)); \
+    TypedData_Get_Struct((obj), EVP_CIPHER_CTX, &ossl_cipher_type, (ctx)); \
     if (!(ctx)) { \
         ossl_raise(rb_eRuntimeError, "Cipher not initialized!"); \
     } \
@@ -147,10 +144,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     const EVP_CIPHER *cipher;
     VALUE cipher_holder;
 
-    GetCipherInit(self, ctx);
-    if (ctx) {
-        ossl_raise(rb_eRuntimeError, "Cipher already initialized!");
-    }
+    ossl_want_uninitialized(self, &ossl_cipher_type);
     cipher = ossl_evp_cipher_fetch(str, &cipher_holder);
     AllocCipher(self, ctx);
     if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
@@ -166,14 +160,10 @@ ossl_cipher_copy(VALUE self, VALUE other)
 {
     EVP_CIPHER_CTX *ctx1, *ctx2;
 
-    rb_check_frozen(self);
-    if (self == other) return self;
-
-    GetCipherInit(self, ctx1);
-    if (!ctx1) {
-        AllocCipher(self, ctx1);
-    }
+    ossl_want_uninitialized(self, &ossl_cipher_type);
     GetCipher(other, ctx2);
+
+    AllocCipher(self, ctx1);
     if (EVP_CIPHER_CTX_copy(ctx1, ctx2) != 1)
         ossl_raise(eCipherError, NULL);
 

@@ -411,6 +411,7 @@ typedef enum {
 
 typedef struct gc_profile_record {
     unsigned int flags;
+    size_t sequence;
 
     double gc_time;
     double gc_invoke_time;
@@ -630,6 +631,9 @@ typedef struct rb_objspace {
         gc_profile_record *current_record;
         size_t next_index;
         size_t size;
+        size_t record_count;
+        size_t max_records;
+        size_t record_sequence;
 
 #if GC_PROFILE_MORE_DETAIL
         double prepare_time;
@@ -2606,24 +2610,9 @@ heap_idx_for_size(size_t size)
 }
 
 size_t
-rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
+rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
 {
-    return heap_idx_for_size(size);
-}
-
-
-static size_t heap_sizes[HEAP_COUNT + 1] = { 0 };
-
-size_t *
-rb_gc_impl_heap_sizes(void *objspace_ptr)
-{
-    if (heap_sizes[0] == 0) {
-        for (unsigned char i = 0; i < HEAP_COUNT; i++) {
-            heap_sizes[i] = heap_slot_size(i);
-        }
-    }
-
-    return heap_sizes;
+    return heap_slot_size((unsigned char)heap_idx_for_size(size));
 }
 
 NOINLINE(static VALUE newobj_cache_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx, bool vm_locked));
@@ -2736,7 +2725,7 @@ newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace
 }
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size)
 {
     VALUE obj;
     rb_objspace_t *objspace = objspace_ptr;
@@ -2751,6 +2740,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     }
 
     size_t heap_idx = heap_idx_for_size(alloc_size);
+    *actual_alloc_size = heap_slot_size((unsigned char)heap_idx);
 
     rb_ractor_newobj_cache_t *cache = (rb_ractor_newobj_cache_t *)cache_ptr;
 
@@ -7479,7 +7469,7 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, struct heap_page *src_pa
     memcpy((void *)dest, (void *)src, MIN(src_slot_size, slot_size));
 
     if (src_slot_size != slot_size && RB_TYPE_P(src, T_OBJECT)) {
-        rb_gc_obj_changed_pool(dest, dest_page->heap - heaps);
+        rb_gc_obj_changed_slot_size(dest, slot_size - RVALUE_OVERHEAD);
     }
 
     if (RVALUE_OVERHEAD > 0) {
@@ -8964,6 +8954,8 @@ rb_gc_impl_adjust_memory_usage(void *objspace_ptr, ssize_t diff)
 */
 
 #define GC_PROFILE_RECORD_DEFAULT_SIZE 100
+#define GC_PROFILE_RECORD_DEFAULT_MAX_RECORDS 4096
+#define GC_PROFILE_RECORD_UNBOUNDED 0
 
 static bool
 current_process_time(struct timespec *ts)
@@ -9037,35 +9029,80 @@ elapsed_hrtime_from(rb_hrtime_t start)
 }
 
 
+static inline size_t
+gc_profile_record_count(rb_objspace_t *objspace)
+{
+    return objspace->profile.record_count;
+}
+
+static inline size_t
+gc_profile_record_index(rb_objspace_t *objspace, size_t logical_index)
+{
+    if (objspace->profile.max_records != GC_PROFILE_RECORD_UNBOUNDED &&
+            objspace->profile.record_count == objspace->profile.size) {
+        return (objspace->profile.next_index + logical_index) % objspace->profile.size;
+    }
+    else {
+        return logical_index;
+    }
+}
+
+static void
+gc_profile_records_free(rb_objspace_t *objspace)
+{
+    void *p = objspace->profile.records;
+    objspace->profile.records = NULL;
+    objspace->profile.size = 0;
+    objspace->profile.next_index = 0;
+    objspace->profile.record_count = 0;
+    objspace->profile.current_record = 0;
+    free(p);
+}
+
 static inline void
 gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason)
 {
     if (objspace->profile.run) {
-        size_t index = objspace->profile.next_index;
+        size_t index;
         gc_profile_record *record;
 
-        /* create new record */
-        objspace->profile.next_index++;
+        if (objspace->profile.max_records == GC_PROFILE_RECORD_UNBOUNDED) {
+            index = objspace->profile.record_count++;
+            objspace->profile.next_index = objspace->profile.record_count;
 
-        if (!objspace->profile.records) {
-            objspace->profile.size = GC_PROFILE_RECORD_DEFAULT_SIZE;
-            objspace->profile.records = malloc(xmalloc2_size(sizeof(gc_profile_record), objspace->profile.size));
+            if (!objspace->profile.records) {
+                objspace->profile.size = GC_PROFILE_RECORD_DEFAULT_SIZE;
+                objspace->profile.records = malloc(xmalloc2_size(sizeof(gc_profile_record), objspace->profile.size));
+            }
+            if (index >= objspace->profile.size) {
+                void *ptr;
+                objspace->profile.size += 1000;
+                ptr = realloc(objspace->profile.records, xmalloc2_size(sizeof(gc_profile_record), objspace->profile.size));
+                if (!ptr) rb_memerror();
+                objspace->profile.records = ptr;
+            }
         }
-        if (index >= objspace->profile.size) {
-            void *ptr;
-            objspace->profile.size += 1000;
-            ptr = realloc(objspace->profile.records, xmalloc2_size(sizeof(gc_profile_record), objspace->profile.size));
-            if (!ptr) rb_memerror();
-            objspace->profile.records = ptr;
+        else {
+            if (!objspace->profile.records) {
+                objspace->profile.size = objspace->profile.max_records;
+                objspace->profile.records = malloc(xmalloc2_size(sizeof(gc_profile_record), objspace->profile.size));
+            }
+            index = objspace->profile.next_index;
+            objspace->profile.next_index = (objspace->profile.next_index + 1) % objspace->profile.size;
+            if (objspace->profile.record_count < objspace->profile.size) {
+                objspace->profile.record_count++;
+            }
         }
+
         if (!objspace->profile.records) {
             rb_bug("gc_profile malloc or realloc miss");
         }
-        record = objspace->profile.current_record = &objspace->profile.records[objspace->profile.next_index - 1];
+        record = objspace->profile.current_record = &objspace->profile.records[index];
         MEMZERO(record, gc_profile_record, 1);
 
         /* setup before-GC parameter */
         record->flags = reason | (ruby_gc_stressful ? GPR_FLAG_STRESS : 0);
+        record->sequence = objspace->profile.record_sequence++;
         record->gc_invoke_wall_time = rb_hrtime_sub(rb_hrtime_now(),
                 objspace->profile.invoke_wall_time);
 #if MALLOC_ALLOCATED_SIZE
@@ -9246,21 +9283,70 @@ static VALUE
 gc_profile_clear(VALUE _)
 {
     rb_objspace_t *objspace = rb_gc_get_objspace();
-    void *p = objspace->profile.records;
-    objspace->profile.records = NULL;
-    objspace->profile.size = 0;
-    objspace->profile.next_index = 0;
-    objspace->profile.current_record = 0;
-    free(p);
+    gc_profile_records_free(objspace);
     return Qnil;
 }
 
 /*
  *  call-seq:
- *     GC::Profiler.raw_data	-> [Hash, ...]
+ *     GC::Profiler.configure(max_records: 4096) -> nil
  *
- *  Returns an Array of individual raw profile data Hashes ordered
- *  from earliest to latest by +:GC_INVOKE_TIME+.
+ *  Configures how many raw profile records are retained by
+ *  GC::Profiler.raw_data.
+ *
+ *  The profiler keeps at most +max_records+ records in a bounded ring buffer.
+ *  When the buffer is full, newer GC records overwrite the oldest retained
+ *  records.  The default limit is 4096 records.
+ *
+ *  Pass +nil+ to restore the historical unbounded behavior:
+ *
+ *    GC::Profiler.configure(max_records: nil)
+ *
+ *  Changing +max_records+ clears existing raw profile data.  This method does
+ *  not enable or disable the profiler; use GC::Profiler.enable and
+ *  GC::Profiler.disable for that.
+ */
+
+static VALUE
+gc_profile_configure(int argc, VALUE *argv, VALUE _)
+{
+    static ID keywords[1] = {0};
+    VALUE options, max_records;
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+
+    if (!keywords[0]) {
+        keywords[0] = rb_intern("max_records");
+    }
+
+    rb_scan_args_kw(rb_keyword_given_p(), argc, argv, ":", &options);
+    rb_get_kwargs(options, keywords, 0, 1, &max_records);
+
+    if (max_records == Qundef) {
+        return Qnil;
+    }
+    else if (NIL_P(max_records)) {
+        objspace->profile.max_records = GC_PROFILE_RECORD_UNBOUNDED;
+    }
+    else {
+        long value = NUM2LONG(max_records);
+        if (value <= 0) {
+            rb_raise(rb_eArgError, "max_records must be positive or nil");
+        }
+        objspace->profile.max_records = (size_t)value;
+    }
+
+    gc_profile_records_free(objspace);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     GC::Profiler.raw_data(limit: nil, since: nil) -> [Hash, ...]
+ *
+ *  Returns an Array of retained raw profile data Hashes ordered from earliest
+ *  to latest by +:GC_INVOKE_TIME+.  +limit:+ returns at most the newest
+ *  retained records.  +since:+ returns records with +:GC_SEQUENCE+ greater
+ *  than the given sequence.
  *
  *  For example:
  *
@@ -9286,6 +9372,8 @@ gc_profile_clear(VALUE _)
  *
  *  The keys mean:
  *
+ *  +:GC_SEQUENCE+::
+ *	Monotonically increasing sequence number for this profiler record.
  *  +:GC_TIME+::
  *	CPU time elapsed in seconds for this GC run.  This is process CPU time,
  *	not elapsed wall-clock time.
@@ -9356,22 +9444,70 @@ gc_profile_clear(VALUE _)
  */
 
 static VALUE
-gc_profile_record_get(VALUE _)
+gc_profile_record_get(int argc, VALUE *argv, VALUE _)
 {
-    VALUE prof;
+    static ID keywords[2] = {0};
+    VALUE prof, options, limit_value, since_value;
     VALUE gc_profile = rb_ary_new();
-    size_t i;
+    size_t i, count, matching = 0, skip = 0, limit = SIZE_MAX, since = 0;
+    bool use_since = false;
     rb_objspace_t *objspace = rb_gc_get_objspace();
+
+    if (!keywords[0]) {
+        keywords[0] = rb_intern("limit");
+        keywords[1] = rb_intern("since");
+    }
+
+    rb_scan_args_kw(rb_keyword_given_p(), argc, argv, ":", &options);
+    VALUE values[2] = {Qundef, Qundef};
+    rb_get_kwargs(options, keywords, 0, 2, values);
+    limit_value = values[0];
+    since_value = values[1];
+
+    if (limit_value != Qundef && !NIL_P(limit_value)) {
+        long value = NUM2LONG(limit_value);
+        if (value < 0) {
+            rb_raise(rb_eArgError, "limit must be non-negative");
+        }
+        limit = (size_t)value;
+    }
+    if (since_value != Qundef && !NIL_P(since_value)) {
+        long value = NUM2LONG(since_value);
+        if (value < 0) {
+            rb_raise(rb_eArgError, "since must be non-negative");
+        }
+        since = (size_t)value;
+        use_since = true;
+    }
 
     if (!objspace->profile.run) {
         return Qnil;
     }
 
-    for (i =0; i < objspace->profile.next_index; i++) {
-        gc_profile_record *record = &objspace->profile.records[i];
+    count = gc_profile_record_count(objspace);
+    for (i = 0; i < count; i++) {
+        gc_profile_record *record = &objspace->profile.records[gc_profile_record_index(objspace, i)];
+        if (!use_since || record->sequence > since) {
+            matching++;
+        }
+    }
+    if (limit < matching) {
+        skip = matching - limit;
+    }
+
+    for (i = 0; i < count; i++) {
+        gc_profile_record *record = &objspace->profile.records[gc_profile_record_index(objspace, i)];
+        if (use_since && record->sequence <= since) {
+            continue;
+        }
+        if (skip > 0) {
+            skip--;
+            continue;
+        }
 
         prof = rb_hash_new();
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_FLAGS")), gc_info_decode(objspace, rb_hash_new(), record->flags));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_SEQUENCE")), SIZET2NUM(record->sequence));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_TIME")), DBL2NUM(record->gc_time));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_INVOKE_TIME")), DBL2NUM(record->gc_invoke_time));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_WALL_TIME")),
@@ -9459,7 +9595,7 @@ static void
 gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 {
     rb_objspace_t *objspace = rb_gc_get_objspace();
-    size_t count = objspace->profile.next_index;
+    size_t count = gc_profile_record_count(objspace);
 #ifdef MAJOR_REASON_MAX
     char reason_str[MAJOR_REASON_MAX];
 #endif
@@ -9472,7 +9608,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
         append(out, rb_str_new_cstr("Index    Invoke Time(sec)       Use Size(byte)     Total Size(byte)         Total Object                    GC Time(ms)\n"));
 
         for (i = 0; i < count; i++) {
-            record = &objspace->profile.records[i];
+            record = &objspace->profile.records[gc_profile_record_index(objspace, i)];
             append(out, rb_sprintf("%5"PRIuSIZE" %19.3f %20"PRIuSIZE" %20"PRIuSIZE" %20"PRIuSIZE" %30.20f\n",
                                    i+1, record->gc_invoke_time, record->heap_use_size,
                                    record->heap_total_size, record->heap_total_objects, record->gc_time*1000));
@@ -9497,7 +9633,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
         append(out, rb_str_new_cstr(str));
 
         for (i = 0; i < count; i++) {
-            record = &objspace->profile.records[i];
+            record = &objspace->profile.records[gc_profile_record_index(objspace, i)];
             append(out, rb_sprintf("%5"PRIuSIZE" %4s/%c/%6s%c %13"PRIuSIZE" %15"PRIuSIZE
 #if CALC_EXACT_MALLOC_SIZE
                                    " %15"PRIuSIZE
@@ -9603,12 +9739,12 @@ gc_profile_total_time(VALUE self)
     double time = 0;
     rb_objspace_t *objspace = rb_gc_get_objspace();
 
-    if (objspace->profile.run && objspace->profile.next_index > 0) {
+    if (objspace->profile.run && gc_profile_record_count(objspace) > 0) {
         size_t i;
-        size_t count = objspace->profile.next_index;
+        size_t count = gc_profile_record_count(objspace);
 
         for (i = 0; i < count; i++) {
-            time += objspace->profile.records[i].gc_time;
+            time += objspace->profile.records[gc_profile_record_index(objspace, i)].gc_time;
         }
     }
     return DBL2NUM(time);
@@ -10176,6 +10312,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 
     objspace->profile.invoke_time = getrusage_time();
     objspace->profile.invoke_wall_time = rb_hrtime_now();
+    objspace->profile.max_records = GC_PROFILE_RECORD_DEFAULT_MAX_RECORDS;
     finalizer_table = st_init_numtable();
 }
 
@@ -10260,9 +10397,10 @@ rb_gc_impl_init(void)
     VALUE rb_mProfiler = rb_define_module_under(rb_mGC, "Profiler");
     rb_define_singleton_method(rb_mProfiler, "enabled?", gc_profile_enable_get, 0);
     rb_define_singleton_method(rb_mProfiler, "enable", gc_profile_enable, 0);
-    rb_define_singleton_method(rb_mProfiler, "raw_data", gc_profile_record_get, 0);
+    rb_define_singleton_method(rb_mProfiler, "raw_data", gc_profile_record_get, -1);
     rb_define_singleton_method(rb_mProfiler, "disable", gc_profile_disable, 0);
     rb_define_singleton_method(rb_mProfiler, "clear", gc_profile_clear, 0);
+    rb_define_singleton_method(rb_mProfiler, "configure", gc_profile_configure, -1);
     rb_define_singleton_method(rb_mProfiler, "result", gc_profile_result, 0);
     rb_define_singleton_method(rb_mProfiler, "report", gc_profile_report, -1);
     rb_define_singleton_method(rb_mProfiler, "total_time", gc_profile_total_time, 0);

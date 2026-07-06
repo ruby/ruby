@@ -9,14 +9,6 @@
  */
 #include "ossl.h"
 
-#define NewX509CRL(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_x509crl_type, 0)
-#define SetX509CRL(obj, crl) do { \
-    if (!(crl)) { \
-        ossl_raise(rb_eRuntimeError, "CRL wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (crl); \
-} while (0)
 #define GetX509CRL(obj, crl) do { \
     TypedData_Get_Struct((obj), X509_CRL, &ossl_x509crl_type, (crl)); \
     if (!(crl)) { \
@@ -44,6 +36,12 @@ static const rb_data_type_t ossl_x509crl_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
+static VALUE
+ossl_x509crl_alloc(VALUE klass)
+{
+    return TypedData_Wrap_Struct(klass, &ossl_x509crl_type, NULL);
+}
+
 /*
  * PUBLIC
  */
@@ -63,30 +61,12 @@ ossl_x509crl_new(const X509_CRL *crl)
     X509_CRL *tmp;
     VALUE obj;
 
-    obj = NewX509CRL(cX509CRL);
+    obj = ossl_x509crl_alloc(cX509CRL);
     /* OpenSSL 1.1.1 takes a non-const pointer */
     tmp = X509_CRL_dup((X509_CRL *)crl);
     if (!tmp)
         ossl_raise(eX509CRLError, "X509_CRL_dup");
-    SetX509CRL(obj, tmp);
-
-    return obj;
-}
-
-/*
- * PRIVATE
- */
-static VALUE
-ossl_x509crl_alloc(VALUE klass)
-{
-    X509_CRL *crl;
-    VALUE obj;
-
-    obj = NewX509CRL(klass);
-    if (!(crl = X509_CRL_new())) {
-        ossl_raise(eX509CRLError, NULL);
-    }
-    SetX509CRL(obj, crl);
+    RTYPEDDATA_DATA(obj) = tmp;
 
     return obj;
 }
@@ -95,11 +75,16 @@ static VALUE
 ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
-    X509_CRL *crl, *crl_orig = RTYPEDDATA_DATA(self);
+    X509_CRL *crl;
     VALUE arg;
 
-    rb_check_frozen(self);
-    if (rb_scan_args(argc, argv, "01", &arg) == 0) {
+    rb_scan_args(argc, argv, "01", &arg);
+    ossl_want_uninitialized(self, &ossl_x509crl_type);
+    if (argc == 0) {
+        crl = X509_CRL_new();
+        if (!crl)
+            ossl_raise(eX509CRLError, "X509_CRL_new");
+        RTYPEDDATA_DATA(self) = crl;
         return self;
     }
     arg = ossl_to_der_if_possible(arg);
@@ -112,9 +97,7 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
     BIO_free(in);
     if (!crl)
         ossl_raise(eX509CRLError, "PEM_read_bio_X509_CRL");
-
     RTYPEDDATA_DATA(self) = crl;
-    X509_CRL_free(crl_orig);
 
     return self;
 }
@@ -123,17 +106,14 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_x509crl_copy(VALUE self, VALUE other)
 {
-    X509_CRL *a, *b, *crl;
+    X509_CRL *b, *crl;
 
-    rb_check_frozen(self);
-    if (self == other) return self;
-    GetX509CRL(self, a);
+    ossl_want_uninitialized(self, &ossl_x509crl_type);
     GetX509CRL(other, b);
     if (!(crl = X509_CRL_dup(b))) {
         ossl_raise(eX509CRLError, NULL);
     }
-    X509_CRL_free(a);
-    DATA_PTR(self) = crl;
+    RTYPEDDATA_DATA(self) = crl;
 
     return self;
 }

@@ -158,7 +158,7 @@ enc_list_update(int index, rb_raw_encoding *encoding)
         /* initialize encoding data */
         rb_ary_store(new_list, index, enc_new(encoding));
         rb_ary_freeze(new_list);
-        FL_SET_RAW(new_list, RUBY_FL_SHAREABLE);
+        RB_OBJ_SET_SHAREABLE(new_list);
         RUBY_ATOMIC_VALUE_SET(rb_encoding_list, new_list);
     }
 }

@@ -1461,11 +1461,29 @@ allow_frozen_shareable_p(VALUE obj)
     return false;
 }
 
+static void
+make_shareable_freeze(VALUE obj)
+{
+    VALUE klass = RBASIC_CLASS(obj);
+    if (klass == rb_cString && BASIC_OP_UNREDEFINED_P(BOP_FREEZE, STRING_REDEFINED_OP_FLAG)) {
+        rb_str_freeze(obj);
+    }
+    else if (klass == rb_cArray && BASIC_OP_UNREDEFINED_P(BOP_FREEZE, ARRAY_REDEFINED_OP_FLAG)) {
+        rb_ary_freeze(obj);
+    }
+    else if (klass == rb_cHash && BASIC_OP_UNREDEFINED_P(BOP_FREEZE, HASH_REDEFINED_OP_FLAG)) {
+        rb_hash_freeze(obj);
+    }
+    else {
+        rb_funcall(obj, idFreeze, 0);
+    }
+}
+
 static enum obj_traverse_iterator_result
 make_shareable_check_shareable_freeze(VALUE obj, enum obj_traverse_iterator_result result)
 {
     if (!RB_OBJ_FROZEN_RAW(obj)) {
-        rb_funcall(obj, idFreeze, 0);
+        make_shareable_freeze(obj);
 
         if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
             rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");

@@ -156,6 +156,7 @@ fcntl.o: $(hdrdir)/ruby/internal/variable.h
 fcntl.o: $(hdrdir)/ruby/internal/warning_push.h
 fcntl.o: $(hdrdir)/ruby/internal/xmalloc.h
 fcntl.o: $(hdrdir)/ruby/missing.h
+fcntl.o: $(hdrdir)/ruby/onigmo.h
 fcntl.o: $(hdrdir)/ruby/ruby.h
 fcntl.o: $(hdrdir)/ruby/st.h
 fcntl.o: $(hdrdir)/ruby/subst.h

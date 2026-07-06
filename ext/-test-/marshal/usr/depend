@@ -156,6 +156,7 @@ usrmarshal.o: $(hdrdir)/ruby/internal/variable.h
 usrmarshal.o: $(hdrdir)/ruby/internal/warning_push.h
 usrmarshal.o: $(hdrdir)/ruby/internal/xmalloc.h
 usrmarshal.o: $(hdrdir)/ruby/missing.h
+usrmarshal.o: $(hdrdir)/ruby/onigmo.h
 usrmarshal.o: $(hdrdir)/ruby/ruby.h
 usrmarshal.o: $(hdrdir)/ruby/st.h
 usrmarshal.o: $(hdrdir)/ruby/subst.h

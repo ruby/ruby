@@ -558,7 +558,7 @@ RSpec.describe "bundle install with specific platforms" do
     it "adds the foreign platform" do
       simulate_platform "x86_64-darwin-15" do
         setup_multiplatform_gem
-        install_gemfile(google_protobuf)
+        lock_gemfile(google_protobuf)
         bundle "lock --add-platform=x64-mingw-ucrt"
 
         expect(the_bundle.locked_platforms).to include("x64-mingw-ucrt", "universal-darwin")
@@ -572,7 +572,7 @@ RSpec.describe "bundle install with specific platforms" do
     it "falls back on plain ruby when that version doesn't have a platform-specific gem" do
       simulate_platform "x86_64-darwin-15" do
         setup_multiplatform_gem
-        install_gemfile(google_protobuf)
+        lock_gemfile(google_protobuf)
         bundle "lock --add-platform=java"
 
         expect(the_bundle.locked_platforms).to include("java", "universal-darwin")
@@ -938,7 +938,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     simulate_platform "x86_64-linux" do
-      install_gemfile <<~G
+      lock_gemfile <<~G
         source "https://gem.repo4"
 
         gem "native_tool"

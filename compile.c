@@ -3698,8 +3698,9 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 if (IS_INSN(&nobj->link) && IS_INSN_ID(nobj, jump)) {
                     if (!replace_destination(iobj, nobj)) break;
                 }
-                else if (prev_dup && IS_INSN_ID(nobj, dup) &&
+                else if (prev_dup && IS_INSN(&nobj->link) && IS_INSN_ID(nobj, dup) &&
                          !!(nobj = (INSN *)nobj->link.next) &&
+                         IS_INSN(&nobj->link) &&
                          /* basic blocks, with no labels in the middle */
                          nobj->insn_id == iobj->insn_id) {
                     /*
@@ -3786,7 +3787,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                     break;
                 }
                 else break;
-                nobj = (INSN *)get_destination_insn(nobj);
+                {
+                    LINK_ELEMENT *dest = get_destination_insn(nobj);
+                    if (!dest || !IS_INSN(dest)) break;
+                    nobj = (INSN *)dest;
+                }
             }
         }
     }
@@ -14972,7 +14977,7 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
             fprintf(stderr, "ibf_load_iseq: new iseq=%p\n", (void *)iseq);
 #endif
             FL_SET((VALUE)iseq, ISEQ_NOT_LOADED_YET);
-            iseq->aux.loader.obj = load->loader_obj;
+            RB_OBJ_WRITE((VALUE)iseq, &iseq->aux.loader.obj, load->loader_obj);
             iseq->aux.loader.index = iseq_index;
 #if IBF_ISEQ_DEBUG
             fprintf(stderr, "ibf_load_iseq: iseq=%p loader_obj=%p index=%d\n",

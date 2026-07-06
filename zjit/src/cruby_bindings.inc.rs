@@ -419,17 +419,10 @@ pub const BOP_LAST_: ruby_basic_operators = 35;
 pub type ruby_basic_operators = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_id_item {
-    _unused: [u8; 0],
-}
-#[repr(C)]
+#[repr(align(8))]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_id_table {
-    pub capa: ::std::os::raw::c_int,
-    pub num: ::std::os::raw::c_int,
-    pub used: ::std::os::raw::c_int,
-    pub items: *mut rb_id_item,
+    pub _bindgen_opaque_blob: [u64; 3usize],
 }
 pub const imemo_env: imemo_type = 0;
 pub const imemo_cref: imemo_type = 1;
@@ -1488,17 +1481,17 @@ pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
 pub type attr_index_t = u8;
 pub type shape_id_t = u32;
-pub const SHAPE_ID_HEAP_INDEX_MASK: shape_id_fl_type = 7864320;
-pub const SHAPE_ID_FL_COMPLEX: shape_id_fl_type = 8388608;
-pub const SHAPE_ID_FL_FROZEN: shape_id_fl_type = 16777216;
-pub const SHAPE_ID_FL_HAS_OBJECT_ID: shape_id_fl_type = 33554432;
+pub const SHAPE_ID_CAPACITY_MASK: shape_id_fl_type = 66584576;
+pub const SHAPE_ID_FL_COMPLEX: shape_id_fl_type = 67108864;
+pub const SHAPE_ID_FL_FROZEN: shape_id_fl_type = 134217728;
+pub const SHAPE_ID_FL_HAS_OBJECT_ID: shape_id_fl_type = 268435456;
 pub const SHAPE_ID_LAYOUT_ROBJECT: shape_id_fl_type = 0;
-pub const SHAPE_ID_LAYOUT_RCLASS: shape_id_fl_type = 67108864;
-pub const SHAPE_ID_LAYOUT_RDATA: shape_id_fl_type = 134217728;
-pub const SHAPE_ID_LAYOUT_OTHER: shape_id_fl_type = 201326592;
-pub const SHAPE_ID_LAYOUT_MASK: shape_id_fl_type = 201326592;
-pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 50331648;
-pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 267911168;
+pub const SHAPE_ID_LAYOUT_RCLASS: shape_id_fl_type = 536870912;
+pub const SHAPE_ID_LAYOUT_RDATA: shape_id_fl_type = 1073741824;
+pub const SHAPE_ID_LAYOUT_OTHER: shape_id_fl_type = 1610612736;
+pub const SHAPE_ID_LAYOUT_MASK: shape_id_fl_type = 1610612736;
+pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 402653184;
+pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 2146959360;
 pub type shape_id_fl_type = u32;
 pub const CONST_DEPRECATED: rb_const_flag_t = 256;
 pub const CONST_VISIBILITY_MASK: rb_const_flag_t = 255;
@@ -1931,6 +1924,7 @@ pub struct zjit_jit_frame {
     pub stack: __IncompleteArrayField<VALUE>,
 }
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
+pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 288;
 pub type zjit_struct_offsets = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
 pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
@@ -2082,6 +2076,11 @@ unsafe extern "C" {
     ) -> VALUE;
     pub fn rb_vm_top_self() -> VALUE;
     pub static mut rb_vm_insn_count: u64;
+    pub fn rb_id_table_lookup(
+        tbl: *mut rb_id_table,
+        id: ID,
+        valp: *mut VALUE,
+    ) -> ::std::os::raw::c_int;
     pub fn rb_method_entry_at(obj: VALUE, id: ID) -> *const rb_method_entry_t;
     pub fn rb_callable_method_entry(klass: VALUE, id: ID) -> *const rb_callable_method_entry_t;
     pub fn rb_callable_method_entry_or_negative(
@@ -2287,7 +2286,6 @@ unsafe extern "C" {
     pub fn rb_FL_TEST(obj: VALUE, flags: VALUE) -> VALUE;
     pub fn rb_FL_TEST_RAW(obj: VALUE, flags: VALUE) -> VALUE;
     pub fn rb_RB_TYPE_P(obj: VALUE, t: ruby_value_type) -> bool;
-    pub fn rb_get_call_data_ci(cd: *const rb_call_data) -> *const rb_callinfo;
     pub fn rb_BASIC_OP_UNREDEFINED_P(bop: ruby_basic_operators, klass: u32) -> bool;
     pub fn rb_RCLASS_ORIGIN(c: VALUE) -> VALUE;
     pub fn rb_assert_iseq_handle(handle: VALUE);

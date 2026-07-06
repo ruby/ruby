@@ -92,6 +92,7 @@ releases.
 * prism 1.9.0
   * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
 * psych 5.4.0
+  * 5.3.1 to [v5.4.0][psych-v5.4.0]
 * resolv 0.7.1
   * 0.7.0 to [v0.7.1][resolv-v0.7.1]
 * stringio 3.2.1.dev
@@ -131,7 +132,7 @@ releases.
 * pstore 0.2.1
   * 0.2.0 to [v0.2.1][pstore-v0.2.1]
 * rdoc 8.0.0
-  * 7.0.3 to [v7.0.4][rdoc-v7.0.4], [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0]
+  * 7.0.3 to [v7.0.4][rdoc-v7.0.4], [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0], [v8.0.0][rdoc-v8.0.0]
 * win32ole 1.9.3
   * 1.9.2 to [v1.9.3][win32ole-v1.9.3]
 * irb 1.18.0
@@ -250,6 +251,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
 [prism-v1.8.1]: https://github.com/ruby/prism/releases/tag/v1.8.1
 [prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
+[psych-v5.4.0]: https://github.com/ruby/psych/releases/tag/v5.4.0
 [resolv-v0.7.1]: https://github.com/ruby/resolv/releases/tag/v0.7.1
 [strscan-v3.1.7]: https://github.com/ruby/strscan/releases/tag/v3.1.7
 [strscan-v3.1.8]: https://github.com/ruby/strscan/releases/tag/v3.1.8
@@ -286,6 +288,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [rdoc-v7.0.4]: https://github.com/ruby/rdoc/releases/tag/v7.0.4
 [rdoc-v7.1.0]: https://github.com/ruby/rdoc/releases/tag/v7.1.0
 [rdoc-v7.2.0]: https://github.com/ruby/rdoc/releases/tag/v7.2.0
+[rdoc-v8.0.0]: https://github.com/ruby/rdoc/releases/tag/v8.0.0
 [win32ole-v1.9.3]: https://github.com/ruby/win32ole/releases/tag/v1.9.3
 [irb-v1.17.0]: https://github.com/ruby/irb/releases/tag/v1.17.0
 [irb-v1.18.0]: https://github.com/ruby/irb/releases/tag/v1.18.0

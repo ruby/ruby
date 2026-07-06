@@ -11043,7 +11043,10 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     if (lex_state_spcarg_p(parser, space_seen)) {
-                        pm_parser_warn_token(parser, &parser->current, PM_WARN_AMBIGUOUS_SLASH);
+                        // https://bugs.ruby-lang.org/issues/21994
+                        if (parser->version <= PM_OPTIONS_VERSION_CRUBY_4_0) {
+                            pm_parser_warn_token(parser, &parser->current, PM_WARN_AMBIGUOUS_SLASH);
+                        }
                         lex_mode_push_regexp(parser, '\0', '/');
                         LEX(PM_TOKEN_REGEXP_BEGIN);
                     }
@@ -19097,9 +19100,10 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
 
             if (context_p(parser, PM_CONTEXT_MULTI_TARGET)) {
                 /* All set, this is explicitly allowed by the parent context. */
-            } else if (context_p(parser, PM_CONTEXT_FOR_INDEX) && match1(parser, PM_TOKEN_KEYWORD_IN)) {
+            } else if (context_p(parser, PM_CONTEXT_FOR_INDEX) && match2(parser, PM_TOKEN_KEYWORD_IN, PM_TOKEN_COMMA)) {
                 /* All set, we're inside a for loop and we're parsing multiple
-                 * targets. */
+                 * targets. A comma continues the index target list, as in
+                 * `for (a, b), c in ...`. */
             } else if (flags & PM_PARSE_ACCEPTS_STATEMENT) {
                 /* The rescue-modifier value parser promotes this target on a
                  * following `=` or comma. Reject any other binary operator that

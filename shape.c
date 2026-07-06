@@ -317,7 +317,7 @@ rb_shape_tree_t rb_shape_tree = { 0 };
 // Should be on its own cache line
 static RUBY_ALIGNAS(128) rb_atomic_t shape_next_id;
 
-rb_shape_t *
+static rb_shape_t *
 rb_shape_get_root_shape(void)
 {
     return rb_shape_tree.shape_list;
@@ -411,12 +411,13 @@ rb_obj_shape_id(VALUE obj)
         VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
         shape_id_t base = ROOT_SHAPE_ID;
         if (fields_obj) {
-            // Remove the layout from the fields object.  We want to
-            // combine the shape of the fields object with the layout of the
-            // class / module object.
-            base = RBASIC_SHAPE_ID(fields_obj) & ~SHAPE_ID_LAYOUT_MASK;
+            // Remove the layout and capacity from the fields object. We want to
+            // combine the shape tree state of the fields object with the layout
+            // and object slot capacity of the class / module object.
+            base = RBASIC_SHAPE_ID(fields_obj) & ~(SHAPE_ID_LAYOUT_MASK | SHAPE_ID_CAPACITY_MASK);
         }
-        return rb_shape_layout(RBASIC_SHAPE_ID(obj)) | base;
+        shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+        return rb_shape_layout(shape_id) | (shape_id & SHAPE_ID_CAPACITY_MASK) | base;
     }
     return RBASIC_SHAPE_ID(obj);
 }
@@ -513,17 +514,14 @@ redblack_cache_ancestors(rb_shape_t *shape)
 static attr_index_t
 shape_grow_capa(attr_index_t current_capa)
 {
-    const attr_index_t *capacities = rb_shape_tree.capacities;
-    size_t heaps_count = rb_shape_tree.heaps_count;
-
-    // First try to use the next size that will be embeddable in a larger object slot.
-    for (size_t i = 0; i < heaps_count; i++) {
-        attr_index_t capa = capacities[i];
-        if (capa > current_capa) {
-            return capa;
-        }
+    size_t next_size = rb_obj_embedded_size(current_capa + 1);
+    if (UNLIKELY(!rb_gc_size_allocatable_p(next_size))) {
+        return SHAPE_MAX_CAPACITY;
     }
-    return capacities[rb_shape_tree.heaps_count - 1];
+
+    attr_index_t next_capa = rb_shape_capacity_for_slot_size(rb_gc_size_slot_size(next_size));
+    RUBY_ASSERT(next_capa > current_capa);
+    return next_capa;
 }
 
 static rb_shape_t *
@@ -702,7 +700,7 @@ rb_shape_transition_object_id(shape_id_t original_shape_id)
 
     bool dont_care;
     rb_shape_t *shape = NULL;
-    if (LIKELY(original_shape->next_field_index < rb_shape_tree.max_capacity)) {
+    if (LIKELY(original_shape->next_field_index < SHAPE_MAX_CAPACITY)) {
         shape = get_next_shape_internal(original_shape, id_object_id, SHAPE_OBJ_ID, &dont_care, true);
     }
     if (!shape) {
@@ -727,29 +725,6 @@ rb_shape_object_id(shape_id_t original_shape_id)
     }
 
     return SHAPE_ID(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID;
-}
-
-/*
- * This function is used for assertions where we don't want to increment
- * max_iv_count
- */
-static inline rb_shape_t *
-shape_get_next_iv_shape(rb_shape_t *shape, ID id)
-{
-    RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
-    bool dont_care;
-    return get_next_shape_internal(shape, id, SHAPE_IVAR, &dont_care, true);
-}
-
-shape_id_t
-rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id)
-{
-    rb_shape_t *shape = RSHAPE(shape_id);
-    rb_shape_t *next_shape = shape_get_next_iv_shape(shape, id);
-    if (!next_shape) {
-        return INVALID_SHAPE_ID;
-    }
-    return SHAPE_OFFSET(next_shape);
 }
 
 static bool
@@ -790,8 +765,8 @@ shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE klass, ID id
     }
 #endif
 
-    RUBY_ASSERT(rb_shape_tree.max_capacity > 0);
-    if (UNLIKELY(shape->next_field_index >= rb_shape_tree.max_capacity)) {
+    RUBY_ASSERT(SHAPE_MAX_CAPACITY > 0);
+    if (UNLIKELY(shape->next_field_index >= SHAPE_MAX_CAPACITY)) {
         return NULL;
     }
 
@@ -1099,9 +1074,11 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
     }
 
     switch ((enum shape_type)dest_shape->type) {
-      case SHAPE_IVAR:
-        midway_shape = shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
+      case SHAPE_IVAR: {
+        bool dont_care;
+        midway_shape = get_next_shape_internal(midway_shape, dest_shape->edge_name, SHAPE_IVAR, &dont_care, true);
         break;
+      }
       case SHAPE_OBJ_ID:
       case SHAPE_ROOT:
         break;
@@ -1327,19 +1304,14 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         }
     }
 
-    uint8_t flags_heap_index = rb_shape_heap_index(shape_id);
+    attr_index_t shape_id_capacity = rb_shape_capacity(shape_id);
     if (RB_TYPE_P(obj, T_OBJECT)) {
-        RUBY_ASSERT(flags_heap_index > 0);
-        size_t shape_id_slot_size = rb_shape_tree.capacities[flags_heap_index - 1] * sizeof(VALUE) + sizeof(struct RBasic);
+        RUBY_ASSERT(shape_id_capacity > 0);
+        size_t shape_id_slot_size = shape_id_capacity * sizeof(VALUE) + sizeof(struct RBasic);
         size_t actual_slot_size = rb_gc_obj_slot_size(obj);
 
         if (shape_id_slot_size != actual_slot_size) {
-            rb_bug("shape_id heap_index flags mismatch: shape_id_slot_size=%zu, gc_slot_size=%zu\n", shape_id_slot_size, actual_slot_size);
-        }
-    }
-    else {
-        if (flags_heap_index) {
-            rb_bug("shape_id indicate heap_index > 0 but object is not T_OBJECT: %s", rb_obj_info(obj));
+            rb_bug("shape_id capacity flags mismatch: shape_id_slot_size=%zu, gc_slot_size=%zu\n", shape_id_slot_size, actual_slot_size);
         }
     }
 
@@ -1416,7 +1388,7 @@ shape_id_t_to_rb_cShape(shape_id_t shape_id)
             INT2NUM(shape->parent_offset),
             rb_shape_edge_name(shape),
             INT2NUM(shape->next_field_index),
-            INT2NUM(rb_shape_heap_index(shape_id)),
+            INT2NUM(rb_shape_capacity(shape_id)),
             INT2NUM(shape->type),
             INT2NUM(RSHAPE_CAPACITY(shape_id)));
     rb_obj_freeze(obj);
@@ -1586,30 +1558,6 @@ rb_shape_find_by_id(VALUE mod, VALUE id)
 void
 Init_default_shapes(void)
 {
-    size_t *heap_sizes = rb_gc_heap_sizes();
-    size_t heaps_count = 0;
-    while (heap_sizes[heaps_count]) {
-        heaps_count++;
-    }
-
-    if (heaps_count > SHAPE_ID_HEAP_INDEX_MAX) {
-        rb_bug("Init_default_shapes initialized with %zu heaps, only up to %u are supported", heaps_count, SHAPE_ID_HEAP_INDEX_MAX);
-    }
-
-    size_t index;
-    for (index = 0; index < heaps_count; index++) {
-        if (heap_sizes[index] > sizeof(struct RBasic)) {
-            size_t capa = (heap_sizes[index] - sizeof(struct RBasic)) / sizeof(VALUE);
-            RUBY_ASSERT(capa < ATTR_INDEX_NOT_SET);
-            rb_shape_tree.capacities[index] = (attr_index_t)capa;
-        }
-        else {
-            rb_shape_tree.capacities[index] = 0;
-        }
-    }
-    rb_shape_tree.heaps_count = heaps_count;
-    rb_shape_tree.max_capacity = rb_shape_tree.capacities[heaps_count - 1];
-
 #ifdef HAVE_MMAP
     size_t shape_list_mmap_size = rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError);
     rb_shape_tree.shape_list = (rb_shape_t *)mmap(NULL, shape_list_mmap_size,
@@ -1685,7 +1633,7 @@ Init_shape(void)
             "parent_offset",
             "edge_name",
             "next_field_index",
-            "heap_index",
+            "embedded_capacity",
             "type",
             "capacity",
             NULL);
@@ -1703,7 +1651,7 @@ Init_shape(void)
     rb_define_const(rb_cShape, "SHAPE_ID_NUM_BITS", INT2NUM(SHAPE_ID_NUM_BITS));
     rb_define_const(rb_cShape, "SHAPE_FLAG_SHIFT", INT2NUM(SHAPE_FLAG_SHIFT));
     rb_define_const(rb_cShape, "SHAPE_MAX_VARIATIONS", INT2NUM(SHAPE_MAX_VARIATIONS));
-    rb_define_const(rb_cShape, "SHAPE_MAX_FIELDS", INT2NUM(rb_shape_tree.max_capacity));
+    rb_define_const(rb_cShape, "SHAPE_MAX_FIELDS", INT2NUM(SHAPE_MAX_CAPACITY));
     rb_define_const(rb_cShape, "SIZEOF_RB_SHAPE_T", INT2NUM(sizeof(rb_shape_t)));
     rb_define_const(rb_cShape, "SIZEOF_REDBLACK_NODE_T", INT2NUM(sizeof(redblack_node_t)));
     rb_define_const(rb_cShape, "SHAPE_BUFFER_SIZE", INT2NUM(sizeof(rb_shape_t) * SHAPE_BUFFER_SIZE));

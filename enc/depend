@@ -5243,6 +5243,7 @@ enc/trans/big5.$(OBJEXT): internal/variable.h
 enc/trans/big5.$(OBJEXT): internal/warning_push.h
 enc/trans/big5.$(OBJEXT): internal/xmalloc.h
 enc/trans/big5.$(OBJEXT): missing.h
+enc/trans/big5.$(OBJEXT): onigmo.h
 enc/trans/big5.$(OBJEXT): st.h
 enc/trans/big5.$(OBJEXT): subst.h
 enc/trans/cesu_8.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -5403,6 +5404,7 @@ enc/trans/cesu_8.$(OBJEXT): internal/variable.h
 enc/trans/cesu_8.$(OBJEXT): internal/warning_push.h
 enc/trans/cesu_8.$(OBJEXT): internal/xmalloc.h
 enc/trans/cesu_8.$(OBJEXT): missing.h
+enc/trans/cesu_8.$(OBJEXT): onigmo.h
 enc/trans/cesu_8.$(OBJEXT): st.h
 enc/trans/cesu_8.$(OBJEXT): subst.h
 enc/trans/chinese.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -5563,6 +5565,7 @@ enc/trans/chinese.$(OBJEXT): internal/variable.h
 enc/trans/chinese.$(OBJEXT): internal/warning_push.h
 enc/trans/chinese.$(OBJEXT): internal/xmalloc.h
 enc/trans/chinese.$(OBJEXT): missing.h
+enc/trans/chinese.$(OBJEXT): onigmo.h
 enc/trans/chinese.$(OBJEXT): st.h
 enc/trans/chinese.$(OBJEXT): subst.h
 enc/trans/ebcdic.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -5723,6 +5726,7 @@ enc/trans/ebcdic.$(OBJEXT): internal/variable.h
 enc/trans/ebcdic.$(OBJEXT): internal/warning_push.h
 enc/trans/ebcdic.$(OBJEXT): internal/xmalloc.h
 enc/trans/ebcdic.$(OBJEXT): missing.h
+enc/trans/ebcdic.$(OBJEXT): onigmo.h
 enc/trans/ebcdic.$(OBJEXT): st.h
 enc/trans/ebcdic.$(OBJEXT): subst.h
 enc/trans/emoji.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -5883,6 +5887,7 @@ enc/trans/emoji.$(OBJEXT): internal/variable.h
 enc/trans/emoji.$(OBJEXT): internal/warning_push.h
 enc/trans/emoji.$(OBJEXT): internal/xmalloc.h
 enc/trans/emoji.$(OBJEXT): missing.h
+enc/trans/emoji.$(OBJEXT): onigmo.h
 enc/trans/emoji.$(OBJEXT): st.h
 enc/trans/emoji.$(OBJEXT): subst.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -6043,6 +6048,7 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/variable.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/warning_push.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/xmalloc.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): missing.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): onigmo.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): st.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): subst.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -6203,6 +6209,7 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/variable.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/warning_push.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/xmalloc.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): missing.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): onigmo.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): st.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): subst.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -6363,6 +6370,7 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/variable.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/warning_push.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/xmalloc.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): missing.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): onigmo.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): st.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): subst.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -6523,6 +6531,7 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/variable.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/warning_push.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/xmalloc.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): missing.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): onigmo.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): st.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): subst.h
 enc/trans/escape.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -6683,6 +6692,7 @@ enc/trans/escape.$(OBJEXT): internal/variable.h
 enc/trans/escape.$(OBJEXT): internal/warning_push.h
 enc/trans/escape.$(OBJEXT): internal/xmalloc.h
 enc/trans/escape.$(OBJEXT): missing.h
+enc/trans/escape.$(OBJEXT): onigmo.h
 enc/trans/escape.$(OBJEXT): st.h
 enc/trans/escape.$(OBJEXT): subst.h
 enc/trans/gb18030.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -6843,6 +6853,7 @@ enc/trans/gb18030.$(OBJEXT): internal/variable.h
 enc/trans/gb18030.$(OBJEXT): internal/warning_push.h
 enc/trans/gb18030.$(OBJEXT): internal/xmalloc.h
 enc/trans/gb18030.$(OBJEXT): missing.h
+enc/trans/gb18030.$(OBJEXT): onigmo.h
 enc/trans/gb18030.$(OBJEXT): st.h
 enc/trans/gb18030.$(OBJEXT): subst.h
 enc/trans/gbk.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -7003,6 +7014,7 @@ enc/trans/gbk.$(OBJEXT): internal/variable.h
 enc/trans/gbk.$(OBJEXT): internal/warning_push.h
 enc/trans/gbk.$(OBJEXT): internal/xmalloc.h
 enc/trans/gbk.$(OBJEXT): missing.h
+enc/trans/gbk.$(OBJEXT): onigmo.h
 enc/trans/gbk.$(OBJEXT): st.h
 enc/trans/gbk.$(OBJEXT): subst.h
 enc/trans/iso2022.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -7164,6 +7176,7 @@ enc/trans/iso2022.$(OBJEXT): internal/variable.h
 enc/trans/iso2022.$(OBJEXT): internal/warning_push.h
 enc/trans/iso2022.$(OBJEXT): internal/xmalloc.h
 enc/trans/iso2022.$(OBJEXT): missing.h
+enc/trans/iso2022.$(OBJEXT): onigmo.h
 enc/trans/iso2022.$(OBJEXT): st.h
 enc/trans/iso2022.$(OBJEXT): subst.h
 enc/trans/japanese.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -7324,6 +7337,7 @@ enc/trans/japanese.$(OBJEXT): internal/variable.h
 enc/trans/japanese.$(OBJEXT): internal/warning_push.h
 enc/trans/japanese.$(OBJEXT): internal/xmalloc.h
 enc/trans/japanese.$(OBJEXT): missing.h
+enc/trans/japanese.$(OBJEXT): onigmo.h
 enc/trans/japanese.$(OBJEXT): st.h
 enc/trans/japanese.$(OBJEXT): subst.h
 enc/trans/japanese_euc.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -7484,6 +7498,7 @@ enc/trans/japanese_euc.$(OBJEXT): internal/variable.h
 enc/trans/japanese_euc.$(OBJEXT): internal/warning_push.h
 enc/trans/japanese_euc.$(OBJEXT): internal/xmalloc.h
 enc/trans/japanese_euc.$(OBJEXT): missing.h
+enc/trans/japanese_euc.$(OBJEXT): onigmo.h
 enc/trans/japanese_euc.$(OBJEXT): st.h
 enc/trans/japanese_euc.$(OBJEXT): subst.h
 enc/trans/japanese_sjis.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -7644,6 +7659,7 @@ enc/trans/japanese_sjis.$(OBJEXT): internal/variable.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/warning_push.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/xmalloc.h
 enc/trans/japanese_sjis.$(OBJEXT): missing.h
+enc/trans/japanese_sjis.$(OBJEXT): onigmo.h
 enc/trans/japanese_sjis.$(OBJEXT): st.h
 enc/trans/japanese_sjis.$(OBJEXT): subst.h
 enc/trans/korean.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -7804,6 +7820,7 @@ enc/trans/korean.$(OBJEXT): internal/variable.h
 enc/trans/korean.$(OBJEXT): internal/warning_push.h
 enc/trans/korean.$(OBJEXT): internal/xmalloc.h
 enc/trans/korean.$(OBJEXT): missing.h
+enc/trans/korean.$(OBJEXT): onigmo.h
 enc/trans/korean.$(OBJEXT): st.h
 enc/trans/korean.$(OBJEXT): subst.h
 enc/trans/newline.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -7963,6 +7980,7 @@ enc/trans/newline.$(OBJEXT): internal/variable.h
 enc/trans/newline.$(OBJEXT): internal/warning_push.h
 enc/trans/newline.$(OBJEXT): internal/xmalloc.h
 enc/trans/newline.$(OBJEXT): missing.h
+enc/trans/newline.$(OBJEXT): onigmo.h
 enc/trans/newline.$(OBJEXT): st.h
 enc/trans/newline.$(OBJEXT): subst.h
 enc/trans/single_byte.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -8123,6 +8141,7 @@ enc/trans/single_byte.$(OBJEXT): internal/variable.h
 enc/trans/single_byte.$(OBJEXT): internal/warning_push.h
 enc/trans/single_byte.$(OBJEXT): internal/xmalloc.h
 enc/trans/single_byte.$(OBJEXT): missing.h
+enc/trans/single_byte.$(OBJEXT): onigmo.h
 enc/trans/single_byte.$(OBJEXT): st.h
 enc/trans/single_byte.$(OBJEXT): subst.h
 enc/trans/transdb.$(OBJEXT): $(hdrdir)/ruby.h
@@ -8283,6 +8302,7 @@ enc/trans/transdb.$(OBJEXT): internal/variable.h
 enc/trans/transdb.$(OBJEXT): internal/warning_push.h
 enc/trans/transdb.$(OBJEXT): internal/xmalloc.h
 enc/trans/transdb.$(OBJEXT): missing.h
+enc/trans/transdb.$(OBJEXT): onigmo.h
 enc/trans/transdb.$(OBJEXT): st.h
 enc/trans/transdb.$(OBJEXT): subst.h
 enc/trans/transdb.$(OBJEXT): transdb.h
@@ -8444,6 +8464,7 @@ enc/trans/utf8_mac.$(OBJEXT): internal/variable.h
 enc/trans/utf8_mac.$(OBJEXT): internal/warning_push.h
 enc/trans/utf8_mac.$(OBJEXT): internal/xmalloc.h
 enc/trans/utf8_mac.$(OBJEXT): missing.h
+enc/trans/utf8_mac.$(OBJEXT): onigmo.h
 enc/trans/utf8_mac.$(OBJEXT): st.h
 enc/trans/utf8_mac.$(OBJEXT): subst.h
 enc/trans/utf_16_32.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -8604,6 +8625,7 @@ enc/trans/utf_16_32.$(OBJEXT): internal/variable.h
 enc/trans/utf_16_32.$(OBJEXT): internal/warning_push.h
 enc/trans/utf_16_32.$(OBJEXT): internal/xmalloc.h
 enc/trans/utf_16_32.$(OBJEXT): missing.h
+enc/trans/utf_16_32.$(OBJEXT): onigmo.h
 enc/trans/utf_16_32.$(OBJEXT): st.h
 enc/trans/utf_16_32.$(OBJEXT): subst.h
 enc/unicode.$(OBJEXT): $(UNICODE_HDR_DIR)/casefold.h

@@ -680,6 +680,13 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
             r->r_stdin = rb_io_prep_stdin();
             r->r_stdout = rb_io_prep_stdout();
             r->r_stderr = rb_io_prep_stderr();
+
+            /* Build the interrupt queue and mask stack here, on the new Ractor's
+             * own main thread, instead of carrying over the ones the creating
+             * thread made. The mask stack starts empty so a new Ractor does not
+             * inherit the creating thread's Thread.handle_interrupt state. */
+            th->pending_interrupt_queue = rb_ary_hidden_new(0);
+            th->pending_interrupt_mask_stack = rb_ary_hidden_new(0);
         }
         RB_VM_UNLOCK();
     }
@@ -845,7 +852,12 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
                  "can't start a new thread (frozen ThreadGroup)");
     }
 
-    rb_fiber_inherit_storage(ec, th->ec->fiber_ptr);
+    /* A new Ractor must not inherit the creating thread's fiber storage: its
+     * entries may be objects owned by the creating Ractor. Only threads created
+     * within the same Ractor inherit it. */
+    if (params->type != thread_invoke_type_ractor_proc) {
+        rb_fiber_inherit_storage(ec, th->ec->fiber_ptr);
+    }
 
     switch (params->type) {
       case thread_invoke_type_proc:
@@ -882,10 +894,19 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
     th->priority = current_th->priority;
     th->thgroup = current_th->thgroup;
 
-    th->pending_interrupt_queue = rb_ary_hidden_new(0);
-    th->pending_interrupt_queue_checked = 0;
-    th->pending_interrupt_mask_stack = rb_ary_dup(current_th->pending_interrupt_mask_stack);
-    RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
+    if (th->invoke_type == thread_invoke_type_ractor_proc) {
+        /* A new Ractor's main thread builds these on start
+         * (thread_start_func_2); leave them unset until then. */
+        th->pending_interrupt_queue = 0;
+        th->pending_interrupt_mask_stack = 0;
+        th->pending_interrupt_queue_checked = 0;
+    }
+    else {
+        th->pending_interrupt_queue = rb_ary_hidden_new(0);
+        th->pending_interrupt_queue_checked = 0;
+        th->pending_interrupt_mask_stack = rb_ary_dup(current_th->pending_interrupt_mask_stack);
+        RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
+    }
 
     rb_native_mutex_initialize(&th->interrupt_lock);
 

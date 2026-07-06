@@ -156,6 +156,7 @@ funcall.o: $(hdrdir)/ruby/internal/variable.h
 funcall.o: $(hdrdir)/ruby/internal/warning_push.h
 funcall.o: $(hdrdir)/ruby/internal/xmalloc.h
 funcall.o: $(hdrdir)/ruby/missing.h
+funcall.o: $(hdrdir)/ruby/onigmo.h
 funcall.o: $(hdrdir)/ruby/ruby.h
 funcall.o: $(hdrdir)/ruby/st.h
 funcall.o: $(hdrdir)/ruby/subst.h

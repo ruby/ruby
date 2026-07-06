@@ -59,19 +59,14 @@ jobs:
       matrix:
         include:
           - test_task: 'check'
-            run_opts: '--zjit-call-threshold=1'
-            specopts: '-T --zjit-call-threshold=1'
-            configure: '--enable-zjit=dev'
-
-          - test_task: 'check'
-            run_opts: '--zjit-call-threshold=1 --zjit-inline-threshold=30'
-            specopts: '-T --zjit-call-threshold=1 -T --zjit-inline-threshold=30'
-            configure: '--enable-zjit=dev'
-            continue-on-test_task: true
-
-          - test_task: 'check'
             run_opts: '--zjit-disable-hir-opt --zjit-call-threshold=1'
             specopts: '-T --zjit-disable-hir-opt -T --zjit-call-threshold=1'
+            configure: '--enable-zjit=dev'
+
+          ## Run with default options (inliner enabled) ##
+          - test_task: 'check'
+            run_opts: '--zjit-call-threshold=1'
+            specopts: '-T --zjit-call-threshold=1'
             configure: '--enable-zjit=dev'
 
             # The optimizer benefits from at least 1 iteration of profiling. Also, many
@@ -79,6 +74,26 @@ jobs:
           - test_task: 'btest'
             run_opts: '--zjit-call-threshold=2'
             configure: '--enable-zjit=dev'
+
+          - test_task: 'test-bundled-gems'
+            configure: '--enable-zjit=dev'
+            run_opts: '--zjit-call-threshold=1'
+
+          ## Run with inliner disabled ##
+          - test_task: 'check'
+            run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=1'
+            specopts: '-T --zjit-inline-threshold=0 -T --zjit-call-threshold=1'
+            configure: '--enable-zjit=dev'
+
+            # The optimizer benefits from at least 1 iteration of profiling. Also, many
+            # regression tests in bootstraptest/test_yjit.rb assume call-threshold=2.
+          - test_task: 'btest'
+            run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=2'
+            configure: '--enable-zjit=dev'
+
+          - test_task: 'test-bundled-gems'
+            configure: '--enable-zjit=dev'
+            run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=1'
 
           - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit.rb
             configure: '--enable-yjit --enable-zjit=dev'
@@ -91,15 +106,11 @@ jobs:
             clang_path: '/usr/bin/clang-16'
             runs-on: 'ubuntu-24.04' # for clang-16
 
-          - test_task: 'test-bundled-gems'
-            configure: '--enable-zjit=dev'
-            run_opts: '--zjit-call-threshold=1'
-
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.run_opts }}
       YJIT_BENCH_OPTS: ${{ matrix.yjit_bench_opts }}
-      SPECOPTS: ${{ matrix.specopts }}
+      SPECOPTS: ${{ matrix.specopts }} -B../src/spec/zjit.mspec
       TESTOPTS: ${{ matrix.testopts }}
       RUBY_DEBUG: ci
       BUNDLE_JOBS: 8 # for yjit-bench
@@ -125,12 +136,12 @@ jobs:
 
       - uses: ./.github/actions/setup/ubuntu
 
-      - uses: ruby/setup-ruby@9eb537ca036ebaed86729dcb9309076e4c5c3b74 # v1.314.0
+      - uses: ruby/setup-ruby@d45b1a4e94b71acab930e56e79c6aa188764e7f9 # v1.316.0
         with:
           ruby-version: '3.1'
           bundler: none
 
-      - uses: taiki-e/install-action@9bcaee1dcae34154180f412e2fa69355a7cda9f6 # v2.82.6
+      - uses: taiki-e/install-action@4684b8405694ae9dd42c9f39ba901a70ae83f4a3 # v2.82.9
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
@@ -246,11 +257,14 @@ jobs:
     strategy:
       matrix:
         include:
-          # Test --call-threshold=2 with 2 iterations in total
+          # Test --call-threshold=2 with 2 iterations in total (inlining enabled)
           - ruby_opts: '--zjit-call-threshold=2'
             bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
             configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
-
+          # Test --call-threshold=2 with 2 iterations in total (inlining disabled)
+          - ruby_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=2'
+            bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
+            configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
     runs-on: ubuntu-24.04
 
     if: >-

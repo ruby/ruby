@@ -231,6 +231,16 @@ VALUE mOSSL;
  */
 VALUE eOSSLError;
 
+void
+ossl_want_uninitialized(VALUE self, const rb_data_type_t *type)
+{
+    if (rb_check_typeddata(self, type)) {
+        rb_raise(rb_eTypeError, "%"PRIsVALUE" already initialized",
+                 rb_obj_class(self));
+    }
+    rb_check_frozen(self);
+}
+
 /*
  * Convert to DER string
  */

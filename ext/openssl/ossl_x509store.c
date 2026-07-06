@@ -9,14 +9,6 @@
  */
 #include "ossl.h"
 
-#define NewX509Store(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_x509store_type, 0)
-#define SetX509Store(obj, st) do { \
-    if (!(st)) { \
-        ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (st); \
-} while (0)
 #define GetX509Store(obj, st) do { \
     TypedData_Get_Struct((obj), X509_STORE, &ossl_x509store_type, (st)); \
     if (!(st)) { \
@@ -24,14 +16,6 @@
     } \
 } while (0)
 
-#define NewX509StCtx(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_x509stctx_type, 0)
-#define SetX509StCtx(obj, ctx) do { \
-    if (!(ctx)) { \
-        ossl_raise(rb_eRuntimeError, "STORE_CTX wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (ctx); \
-} while (0)
 #define GetX509StCtx(obj, ctx) do { \
     TypedData_Get_Struct((obj), X509_STORE_CTX, &ossl_x509stctx_type, (ctx)); \
     if (!(ctx)) { \
@@ -116,10 +100,9 @@ static void
 ossl_x509store_mark(void *ptr)
 {
     X509_STORE *store = ptr;
-    // Note: this reference is stored as @verify_callback so we don't need to mark it.
-    // However we do need to ensure GC compaction won't move it, hence why
-    // we call rb_gc_mark here.
-    rb_gc_mark((VALUE)X509_STORE_get_ex_data(store, store_ex_verify_cb_idx));
+    VALUE verify_cb =
+        (VALUE)X509_STORE_get_ex_data(store, store_ex_verify_cb_idx);
+    rb_gc_mark_movable(verify_cb);
 }
 
 static void
@@ -128,12 +111,26 @@ ossl_x509store_free(void *ptr)
     X509_STORE_free(ptr);
 }
 
+static void
+ossl_x509store_compact(void *ptr)
+{
+    X509_STORE *store = ptr;
+    VALUE verify_cb =
+        (VALUE)X509_STORE_get_ex_data(store, store_ex_verify_cb_idx);
+    if (verify_cb) {
+        (void)X509_STORE_set_ex_data(store, store_ex_verify_cb_idx,
+                                     (void *)rb_gc_location(verify_cb));
+    }
+}
+
 static const rb_data_type_t ossl_x509store_type = {
-    "OpenSSL/X509/STORE",
-    {
-        ossl_x509store_mark, ossl_x509store_free,
+    .wrap_struct_name = "OpenSSL/X509/STORE",
+    .function = {
+        .dmark = ossl_x509store_mark,
+        .dfree = ossl_x509store_free,
+        .dcompact = ossl_x509store_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -170,15 +167,7 @@ x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
 static VALUE
 ossl_x509store_alloc(VALUE klass)
 {
-    X509_STORE *store;
-    VALUE obj;
-
-    obj = NewX509Store(klass);
-    if ((store = X509_STORE_new()) == NULL)
-        ossl_raise(eX509StoreError, "X509_STORE_new");
-    SetX509Store(obj, store);
-
-    return obj;
+    return TypedData_Wrap_Struct(klass, &ossl_x509store_type, NULL);
 }
 
 /*
@@ -210,9 +199,14 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 {
     X509_STORE *store;
 
-    GetX509Store(self, store);
     if (argc != 0)
         rb_warn("OpenSSL::X509::Store.new does not take any arguments");
+    ossl_want_uninitialized(self, &ossl_x509store_type);
+
+    store = X509_STORE_new();
+    if (!store)
+        ossl_raise(eX509StoreError, "X509_STORE_new");
+    RTYPEDDATA_DATA(self) = store;
     X509_STORE_set_verify_cb(store, x509store_verify_cb);
     ossl_x509store_set_vfy_cb(self, Qnil);
 
@@ -570,10 +564,9 @@ static void
 ossl_x509stctx_mark(void *ptr)
 {
     X509_STORE_CTX *ctx = ptr;
-    // Note: this reference is stored as @verify_callback so we don't need to mark it.
-    // However we do need to ensure GC compaction won't move it, hence why
-    // we call rb_gc_mark here.
-    rb_gc_mark((VALUE)X509_STORE_CTX_get_ex_data(ctx, stctx_ex_verify_cb_idx));
+    VALUE verify_cb =
+        (VALUE)X509_STORE_CTX_get_ex_data(ctx, stctx_ex_verify_cb_idx);
+    rb_gc_mark_movable(verify_cb);
 }
 
 static void
@@ -585,37 +578,38 @@ ossl_x509stctx_free(void *ptr)
     X509_STORE_CTX_free(ctx);
 }
 
+static void
+ossl_x509stctx_compact(void *ptr)
+{
+    X509_STORE_CTX *ctx = ptr;
+    VALUE verify_cb =
+        (VALUE)X509_STORE_CTX_get_ex_data(ctx, stctx_ex_verify_cb_idx);
+    if (verify_cb) {
+        (void)X509_STORE_CTX_set_ex_data(ctx, stctx_ex_verify_cb_idx,
+                                         (void *)rb_gc_location(verify_cb));
+    }
+}
+
 static const rb_data_type_t ossl_x509stctx_type = {
-    "OpenSSL/X509/STORE_CTX",
-    {
-        ossl_x509stctx_mark, ossl_x509stctx_free,
+    .wrap_struct_name = "OpenSSL/X509/STORE_CTX",
+    .function = {
+        .dmark = ossl_x509stctx_mark,
+        .dfree = ossl_x509stctx_free,
+        .dcompact = ossl_x509stctx_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
 ossl_x509stctx_alloc(VALUE klass)
 {
-    X509_STORE_CTX *ctx;
-    VALUE obj;
-
-    obj = NewX509StCtx(klass);
-    if ((ctx = X509_STORE_CTX_new()) == NULL)
-        ossl_raise(eX509StoreError, "X509_STORE_CTX_new");
-    SetX509StCtx(obj, ctx);
-
-    return obj;
+    return TypedData_Wrap_Struct(klass, &ossl_x509stctx_type, NULL);
 }
 
 static VALUE
 ossl_x509stctx_new(X509_STORE_CTX *ctx)
 {
-    VALUE obj;
-
-    obj = NewX509StCtx(cX509StoreContext);
-    SetX509StCtx(obj, ctx);
-
-    return obj;
+    return TypedData_Wrap_Struct(cX509StoreContext, &ossl_x509stctx_type, ctx);
 }
 
 static VALUE ossl_x509stctx_set_flags(VALUE, VALUE);
@@ -639,7 +633,13 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
     int state;
 
     rb_scan_args(argc, argv, "12", &store, &cert, &chain);
-    GetX509StCtx(self, ctx);
+    ossl_want_uninitialized(self, &ossl_x509stctx_type);
+
+    ctx = X509_STORE_CTX_new();
+    if (!ctx)
+        ossl_raise(eX509StoreError, "X509_STORE_CTX_new");
+    RTYPEDDATA_DATA(self) = ctx;
+
     GetX509Store(store, x509st);
     if (!NIL_P(cert))
         x509 = DupX509CertPtr(cert); /* NEED TO DUP */

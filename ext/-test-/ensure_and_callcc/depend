@@ -156,6 +156,7 @@ ensure_and_callcc.o: $(hdrdir)/ruby/internal/variable.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/warning_push.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/xmalloc.h
 ensure_and_callcc.o: $(hdrdir)/ruby/missing.h
+ensure_and_callcc.o: $(hdrdir)/ruby/onigmo.h
 ensure_and_callcc.o: $(hdrdir)/ruby/ruby.h
 ensure_and_callcc.o: $(hdrdir)/ruby/st.h
 ensure_and_callcc.o: $(hdrdir)/ruby/subst.h

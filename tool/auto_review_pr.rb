@@ -155,7 +155,7 @@ class AutoReviewPR
     comment << "#{UPSTREAM_COMMENT_PREFIX}\n\n"
 
     upstream_repos.each do |upstream_repo, files|
-      comment << "* https://github.com/ruby/#{upstream_repo}\n"
+      comment << "* https://github.com/#{upstream_repo}\n"
       files.each do |file|
         comment << "    * #{file}\n"
       end

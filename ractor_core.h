@@ -80,6 +80,12 @@ struct rb_ractor_struct {
         rb_thread_t *main;
     } threads;
 
+    /* Postponed jobs targeted at this Ractor
+     * (rb_postponed_job_trigger_for_ractor): bits index the VM-wide
+     * preregistration table; any of this Ractor's threads drains them
+     * in rb_postponed_job_flush. */
+    rb_atomic_t postponed_job_triggered_bits;
+
     VALUE thgroup_default;
 
     VALUE name;

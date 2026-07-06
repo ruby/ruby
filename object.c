@@ -453,13 +453,13 @@ rb_immutable_obj_clone(int argc, VALUE *argv, VALUE obj)
 VALUE
 rb_get_freeze_opt(int argc, VALUE *argv)
 {
-    static ID keyword_ids[1];
+    /* idFreeze (== :freeze) is preinterned before any Ruby code runs, so use it
+     * directly instead of lazily initializing a shared static, which races when
+     * Ractors run this concurrently. */
+    const ID keyword_ids[1] = { idFreeze };
     VALUE opt;
     VALUE kwfreeze = Qnil;
 
-    if (!keyword_ids[0]) {
-        CONST_ID(keyword_ids[0], "freeze");
-    }
     rb_scan_args(argc, argv, "0:", &opt);
     if (!NIL_P(opt)) {
         rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
@@ -476,6 +476,29 @@ immutable_obj_clone(VALUE obj, VALUE kwfreeze)
         rb_raise(rb_eArgError, "can't unfreeze %"PRIsVALUE,
                  rb_obj_class(obj));
     return obj;
+}
+
+/* Cache of the `{freeze: true/false}` keyword hash passed to #initialize_clone.
+ * Ractors may reach this concurrently, so build a fully populated, frozen and
+ * pinned hash locally and publish it with a single atomic CAS: any value another
+ * thread can observe in the static is already complete, and a builder that loses
+ * the CAS just discards its hash. (The old lazy init published an empty hash that
+ * a second thread could read and freeze before the first finished filling it.) */
+static VALUE freeze_true_hash, freeze_false_hash;
+
+static VALUE
+clone_freeze_kwarg_hash(VALUE *cache, VALUE freeze_value)
+{
+    VALUE h = RUBY_ATOMIC_VALUE_LOAD(*cache);
+    if (!h) {
+        h = rb_hash_new();
+        rb_hash_aset(h, ID2SYM(idFreeze), freeze_value);
+        rb_obj_freeze(h);
+        rb_vm_register_global_object(h); /* pin before publishing */
+        VALUE prev = RUBY_ATOMIC_VALUE_CAS(*cache, 0, h);
+        if (prev) h = prev; /* lost the race; our h becomes garbage */
+    }
+    return h;
 }
 
 VALUE
@@ -506,31 +529,15 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         }
         break;
       case Qtrue: {
-        static VALUE freeze_true_hash;
-        if (!freeze_true_hash) {
-            freeze_true_hash = rb_hash_new();
-            rb_vm_register_global_object(freeze_true_hash);
-            rb_hash_aset(freeze_true_hash, ID2SYM(idFreeze), Qtrue);
-            rb_obj_freeze(freeze_true_hash);
-        }
-
         argv[0] = obj;
-        argv[1] = freeze_true_hash;
+        argv[1] = clone_freeze_kwarg_hash(&freeze_true_hash, Qtrue);
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         OBJ_FREEZE(clone);
         break;
       }
       case Qfalse: {
-        static VALUE freeze_false_hash;
-        if (!freeze_false_hash) {
-            freeze_false_hash = rb_hash_new();
-            rb_vm_register_global_object(freeze_false_hash);
-            rb_hash_aset(freeze_false_hash, ID2SYM(idFreeze), Qfalse);
-            rb_obj_freeze(freeze_false_hash);
-        }
-
         argv[0] = obj;
-        argv[1] = freeze_false_hash;
+        argv[1] = clone_freeze_kwarg_hash(&freeze_false_hash, Qfalse);
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         break;
       }

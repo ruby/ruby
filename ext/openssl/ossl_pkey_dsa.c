@@ -91,12 +91,10 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     VALUE arg, pass;
     int type;
 
-    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
-    if (pkey)
-        rb_raise(rb_eTypeError, "pkey already initialized");
+    rb_scan_args(argc, argv, "02", &arg, &pass);
+    ossl_want_uninitialized(self, &ossl_evp_pkey_type);
 
     /* The DSA.new(size, generator) form is handled by lib/openssl/pkey.rb */
-    rb_scan_args(argc, argv, "02", &arg, &pass);
     if (argc == 0) {
 #ifdef OSSL_HAVE_IMMUTABLE_PKEY
         rb_raise(rb_eArgError, "OpenSSL::PKey::DSA.new cannot be called " \
@@ -155,9 +153,7 @@ ossl_dsa_initialize_copy(VALUE self, VALUE other)
     const DSA *dsa;
     DSA *dsa_new;
 
-    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
-    if (pkey)
-        rb_raise(rb_eTypeError, "pkey already initialized");
+    ossl_want_uninitialized(self, &ossl_evp_pkey_type);
     GetDSA(other, dsa);
 
     dsa_new = (DSA *)ASN1_dup((i2d_of_void *)i2d_DSAPrivateKey,

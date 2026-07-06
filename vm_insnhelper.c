@@ -1404,7 +1404,7 @@ vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache cache)
     }
 
     shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
-    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, cache);
+    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, RBASIC_SHAPE_ID(fields_obj), cache);
     if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
         return Qundef;
     }
@@ -1426,14 +1426,17 @@ NOINLINE(static VALUE vm_setivar_default(VALUE obj, ID id, VALUE val, rb_setivar
 static VALUE
 vm_setivar_default(VALUE obj, ID id, VALUE val, rb_setivar_cache cache)
 {
+    VALUE fields_obj = rb_obj_fields(obj, id);
+    if (UNLIKELY(!fields_obj)) {
+        return Qundef;
+    }
+
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, cache);
+    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, RBASIC_SHAPE_ID(fields_obj), cache);
     if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
         return Qundef;
     }
 
-    VALUE fields_obj = rb_obj_fields(obj, id);
-    RUBY_ASSERT(fields_obj);
     RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
 
     if (shape_id != dest_shape_id) {
@@ -1458,7 +1461,7 @@ vm_setivar(VALUE obj, VALUE val, rb_setivar_cache cache)
             VM_ASSERT(!rb_ractor_shareable_p(obj) || rb_obj_frozen_p(obj));
 
             shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-            shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, cache);
+            shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, shape_id, cache);
             if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
                 break;
             }

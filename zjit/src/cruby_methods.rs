@@ -290,6 +290,7 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_cSymbol, "to_s", types::StringExact);
     annotate_builtin!(rb_cString, "ascii_only?", inline_string_ascii_only_p, types::BoolExact, no_gc, leaf);
     annotate_builtin!(rb_cString, "valid_encoding?", inline_string_valid_encoding_p, types::BoolExact, no_gc, leaf);
+    annotate_builtin!(rb_cSymbol, "empty?", types::BoolExact);
 
     // Array iteration builtins (used in with_jit Array#each, map, select, find)
     builtin_funcs.insert(rb_jit_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });

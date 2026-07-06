@@ -157,6 +157,7 @@ postponed_job.o: $(hdrdir)/ruby/internal/variable.h
 postponed_job.o: $(hdrdir)/ruby/internal/warning_push.h
 postponed_job.o: $(hdrdir)/ruby/internal/xmalloc.h
 postponed_job.o: $(hdrdir)/ruby/missing.h
+postponed_job.o: $(hdrdir)/ruby/onigmo.h
 postponed_job.o: $(hdrdir)/ruby/ruby.h
 postponed_job.o: $(hdrdir)/ruby/st.h
 postponed_job.o: $(hdrdir)/ruby/subst.h

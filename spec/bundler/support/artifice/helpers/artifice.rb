@@ -12,13 +12,18 @@ module Artifice
   def self.activate_with(endpoint)
     require_relative "rack_request"
 
+    # Preserve the original on first activation only. Without ||=, a second
+    # activate_with call saves the already-replaced Artifice::Net::HTTP, so
+    # deactivate would fail to restore the real Gem::Net::HTTP.
+    @original_net_http ||= ::Gem::Net::HTTP
     Net::HTTP.endpoint = endpoint
     replace_net_http(Artifice::Net::HTTP)
   end
 
   # Deactivate the Artifice replacement.
   def self.deactivate
-    replace_net_http(::Gem::Net::HTTP)
+    replace_net_http(@original_net_http) if @original_net_http
+    @original_net_http = nil
   end
 
   def self.replace_net_http(value)
