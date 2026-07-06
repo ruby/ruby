@@ -3128,24 +3128,6 @@ fn gen_stack_overflow_check(jit: &mut JITState, asm: &mut Assembler, state: &Fra
     asm.jbe(jit, side_exit(jit, state, StackOverflow));
 }
 
-
-/// Inverse of ep_offset_to_local_idx(). See ep_offset_to_local_idx() for details.
-pub fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
-    let local_size = unsafe { get_iseq_body_local_table_size(iseq) };
-    local_size_and_idx_to_ep_offset(local_size.to_usize(), local_idx)
-}
-
-/// Convert the number of locals and a local index to an offset from the EP
-pub fn local_size_and_idx_to_ep_offset(local_size: usize, local_idx: usize) -> i32 {
-    local_size as i32 - local_idx as i32 - 1 + VM_ENV_DATA_SIZE as i32
-}
-
-/// Convert the number of locals and a local index to an offset from the BP.
-/// We don't move the SP register after entry, so we often use SP as BP.
-pub fn local_size_and_idx_to_bp_offset(local_size: usize, local_idx: usize) -> i32 {
-    local_size_and_idx_to_ep_offset(local_size, local_idx) + 1
-}
-
 /// Convert ISEQ into High-level IR
 fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
     // Convert ZJIT instructions back to bare instructions

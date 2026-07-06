@@ -7,7 +7,7 @@
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
     backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::{local_idx_to_ep_offset, max_iseq_versions}, cruby::*, invariants::{self, iseq_seen_ep_escape}, payload::get_or_create_iseq_payload, options::{debug, get_option, DumpHIR, InlineDepth}, state::ZJITState, json::Json,
+    cast::IntoUsize, codegen::{max_iseq_versions}, cruby::*, invariants::{self, iseq_seen_ep_escape}, payload::get_or_create_iseq_payload, options::{debug, get_option, DumpHIR, InlineDepth}, state::ZJITState, json::Json,
     state,
 };
 use std::{
@@ -6828,32 +6828,6 @@ impl FrameState {
 pub struct FrameStatePrinter<'a> {
     inner: &'a FrameState,
     ptr_map: &'a PtrPrintMap,
-}
-
-/// Compute the index of a local variable from its slot index
-fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
-    // Layout illustration
-    // This is an array of VALUE
-    //                                           | VM_ENV_DATA_SIZE |
-    //                                           v                  v
-    // low addr <+-------+-------+-------+-------+------------------+
-    //           |local 0|local 1|  ...  |local n|       ....       |
-    //           +-------+-------+-------+-------+------------------+
-    //           ^       ^                       ^                  ^
-    //           +-------+---local_table_size----+         cfp->ep--+
-    //                   |                                          |
-    //                   +------------------ep_offset---------------+
-    //
-    // See usages of local_var_name() from iseq.c for similar calculation.
-
-    // Equivalent of iseq->body->local_table_size
-    let local_table_size: i32 = unsafe { get_iseq_body_local_table_size(iseq) }
-        .try_into()
-        .unwrap();
-    let op = (ep_offset - VM_ENV_DATA_SIZE) as i32;
-    let local_idx = local_table_size - op - 1;
-    assert!(local_idx >= 0 && local_idx < local_table_size);
-    local_idx.try_into().unwrap()
 }
 
 impl FrameState {
