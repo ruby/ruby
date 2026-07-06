@@ -1056,6 +1056,35 @@ empty_str_alloc(VALUE klass)
     return str;
 }
 
+/* an empty string with `capa` capacity; the buffer is left uninitialized */
+ALWAYS_INLINE(static VALUE str_enc_buf_new0(VALUE klass, long capa, rb_encoding *enc, int termlen));
+static VALUE
+str_enc_buf_new0(VALUE klass, long capa, rb_encoding *enc, int termlen)
+{
+    VALUE str;
+
+    if (STR_EMBEDDABLE_P(capa, termlen)) {
+        str = str_alloc_embed(klass, capa + termlen);
+    }
+    else {
+        str = str_alloc_heap(klass);
+        RSTRING(str)->as.heap.aux.capa = capa;
+        /* :FIXME: @shyouhei guesses `len + termlen` is guaranteed to never
+         * integer overflow.  If we can STATIC_ASSERT that, the following
+         * mul_add_mul can be reverted to a simple ALLOC_N. */
+        RSTRING(str)->as.heap.ptr =
+            rb_xmalloc_mul_add_mul(sizeof(char), capa, sizeof(char), termlen);
+    }
+    rb_enc_raw_set(str, enc);
+    return str;
+}
+
+static VALUE
+str_enc_buf_new(VALUE klass, long capa, rb_encoding *enc)
+{
+    return str_enc_buf_new0(klass, capa, enc, rb_enc_mbminlen(enc));
+}
+
 static VALUE
 str_enc_new(VALUE klass, const char *ptr, long len, rb_encoding *enc)
 {
@@ -1072,24 +1101,10 @@ str_enc_new(VALUE klass, const char *ptr, long len, rb_encoding *enc)
     RUBY_DTRACE_CREATE_HOOK(STRING, len);
 
     int termlen = rb_enc_mbminlen(enc);
-
-    if (STR_EMBEDDABLE_P(len, termlen)) {
-        str = str_alloc_embed(klass, len + termlen);
-        if (len == 0) {
-            ENC_CODERANGE_SET(str, rb_enc_asciicompat(enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID);
-        }
+    str = str_enc_buf_new0(klass, len, enc, termlen);
+    if (len == 0) {
+        ENC_CODERANGE_SET(str, rb_enc_asciicompat(enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID);
     }
-    else {
-        str = str_alloc_heap(klass);
-        RSTRING(str)->as.heap.aux.capa = len;
-        /* :FIXME: @shyouhei guesses `len + termlen` is guaranteed to never
-         * integer overflow.  If we can STATIC_ASSERT that, the following
-         * mul_add_mul can be reverted to a simple ALLOC_N. */
-        RSTRING(str)->as.heap.ptr =
-            rb_xmalloc_mul_add_mul(sizeof(char), len, sizeof(char), termlen);
-    }
-
-    rb_enc_raw_set(str, enc);
 
     if (ptr) {
         memcpy(RSTRING_PTR(str), ptr, len);
