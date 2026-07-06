@@ -9070,6 +9070,24 @@ rb_ary_fresh_drop(VALUE ary, VALUE n)
     return ary;
 }
 
+/* JIT twins of duparray_fresh / newarray_fresh (insns.def) */
+VALUE
+rb_yjitf_ary_resurrect_fresh(VALUE ary)
+{
+    if (BASIC_OP_UNREDEFINED_P(BOP_ARY_FRESH, ARRAY_REDEFINED_OP_FLAG)) {
+        return rb_ary_resurrect_chain_head(ary);
+    }
+    return rb_ary_resurrect(ary);
+}
+
+VALUE
+rb_yjitf_ary_new_fresh(rb_execution_context_t *ec, long n, const VALUE *elts)
+{
+    VALUE val = rb_ary_new_chain_head_values(n, elts);
+    if (BASIC_OP_UNREDEFINED_P(BOP_ARY_FRESH, ARRAY_REDEFINED_OP_FLAG)) FL_SET_RAW(val, ARY_FRESH);
+    return val;
+}
+
 void
 Init_Array(void)
 {

@@ -13018,6 +13018,15 @@ rb_str_fresh_delete(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
+/* JIT twin of concatstrings_fresh (insns.def) */
+VALUE
+rb_yjitf_str_concat_literals_fresh(size_t n, const VALUE *strings)
+{
+    VALUE val = rb_str_concat_literals(n, strings);
+    if (BASIC_OP_UNREDEFINED_P(BOP_STR_FRESH, STRING_REDEFINED_OP_FLAG)) FL_SET_RAW(val, STR_FRESH);
+    return val;
+}
+
 void
 Init_String(void)
 {

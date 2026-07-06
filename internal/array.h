@@ -50,6 +50,8 @@ VALUE rb_ary_fresh_reverse(VALUE ary);
 VALUE rb_ary_fresh_take(VALUE ary, VALUE n);
 VALUE rb_ary_fresh_drop(VALUE ary, VALUE n);
 struct rb_execution_context_struct;
+VALUE rb_yjitf_ary_resurrect_fresh(VALUE ary);
+VALUE rb_yjitf_ary_new_fresh(struct rb_execution_context_struct *ec, long n, const VALUE *elts);
 size_t rb_ary_size_as_embedded(VALUE ary);
 void rb_ary_make_embedded(VALUE ary);
 bool rb_ary_embeddable_p(VALUE ary);

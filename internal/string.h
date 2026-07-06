@@ -142,6 +142,7 @@ VALUE rb_str_fresh_chop(VALUE str);
 VALUE rb_str_fresh_sub(int argc, VALUE *argv, VALUE str);
 VALUE rb_str_fresh_tr(VALUE str, VALUE src, VALUE repl);
 VALUE rb_str_fresh_delete(int argc, VALUE *argv, VALUE str);
+VALUE rb_yjitf_str_concat_literals_fresh(size_t n, const VALUE *strings);
 struct rb_execution_context_struct;
 VALUE rb_ec_str_resurrect_fresh(struct rb_execution_context_struct *ec, VALUE str);
 void rb_str_fresh_shrink(VALUE str);
