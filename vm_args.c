@@ -36,6 +36,18 @@ enum arg_setup_type {
     arg_setup_block
 };
 
+/* a fresh kw-splat operand may be handed over instead of copied */
+static inline void
+vm_kw_splat_fresh_take(VALUE keyword_hash, unsigned int *kw_flag)
+{
+    if (!(*kw_flag & VM_CALL_KW_SPLAT_MUT) &&
+        RB_TYPE_P(keyword_hash, T_HASH) &&
+        (RBASIC(keyword_hash)->flags & (HASH_FRESH | FL_FREEZE)) == HASH_FRESH) {
+        FL_UNSET_RAW(keyword_hash, HASH_FRESH);
+        *kw_flag |= VM_CALL_KW_SPLAT_MUT;
+    }
+}
+
 static inline void
 arg_rest_dup(struct args_info *args)
 {
@@ -634,6 +646,15 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     given_argc = args->argc = calling->argc;
     args->argv = locals;
     args->rest_dupped = ci_flag & VM_CALL_ARGS_SPLAT_MUT;
+    /* a fresh splat operand may be handed over instead of copied */
+    if (!args->rest_dupped && (ci_flag & VM_CALL_ARGS_SPLAT) && args->argc > 0) {
+        VALUE splat = locals[args->argc - 1 - ((ci_flag & VM_CALL_KW_SPLAT) ? 1 : 0)];
+        if (RB_TYPE_P(splat, T_ARRAY) &&
+            (RBASIC(splat)->flags & (ARY_FRESH | FL_FREEZE)) == ARY_FRESH) {
+            FL_UNSET_RAW(splat, ARY_FRESH);
+            args->rest_dupped = TRUE;
+        }
+    }
 
     if (UNLIKELY(ISEQ_BODY(iseq)->param.flags.anon_rest)) {
         if ((ci_flag & VM_CALL_ARGS_SPLAT) &&
@@ -689,6 +710,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         // f(*a, **kw)
         args->rest_index = 0;
         keyword_hash = locals[--args->argc];
+        vm_kw_splat_fresh_take(keyword_hash, &kw_flag);
         args->rest = locals[--args->argc];
 
         if (ignore_keyword_hash_p(keyword_hash, iseq, &kw_flag, &converted_keyword_hash)) {
@@ -814,6 +836,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         if (args->argc > 0 && (kw_flag & VM_CALL_KW_SPLAT)) {
             // f(**kw)
             VALUE last_arg = args->argv[args->argc-1];
+            vm_kw_splat_fresh_take(last_arg, &kw_flag);
             if (ignore_keyword_hash_p(last_arg, iseq, &kw_flag, &converted_keyword_hash)) {
                 args->argc--;
                 given_argc--;

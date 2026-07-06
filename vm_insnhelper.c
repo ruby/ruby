@@ -2766,12 +2766,13 @@ vm_caller_setup_keyword_hash(const struct rb_callinfo *ci, VALUE keyword_hash)
         }
     }
     else if (!IS_ARGS_KW_SPLAT_MUT(ci) && !RHASH_EMPTY_P(keyword_hash)) {
-        /* Convert a hash keyword splat to a new hash unless
-         * a mutable keyword splat was passed.
-         * Skip allocating new hash for empty keyword splat, as empty
-         * keyword splat will be ignored by both callers.
-         */
-        keyword_hash = rb_hash_dup(keyword_hash);
+        /* a fresh kw-splat operand may be handed over instead of copied */
+        if (UNLIKELY((RBASIC(keyword_hash)->flags & (HASH_FRESH | FL_FREEZE)) == HASH_FRESH)) {
+            FL_UNSET_RAW(keyword_hash, HASH_FRESH);
+        }
+        else {
+            keyword_hash = rb_hash_dup(keyword_hash);
+        }
     }
     return keyword_hash;
 }
@@ -6030,6 +6031,11 @@ vm_splat_array(VALUE flag, VALUE ary)
         return rb_ary_new3(1, ary);
     }
     else if (RTEST(flag)) {
+        /* a fresh splat operand may be handed over instead of copied */
+        if (UNLIKELY((RBASIC(tmp)->flags & (ARY_FRESH | FL_FREEZE)) == ARY_FRESH)) {
+            FL_UNSET_RAW(tmp, ARY_FRESH);
+            return tmp;
+        }
         return rb_ary_dup(tmp);
     }
     else {
