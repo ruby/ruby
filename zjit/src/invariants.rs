@@ -12,7 +12,7 @@ use crate::gc::remove_gc_offsets;
 
 macro_rules! compile_patch_points {
     ($cb:expr, $patch_points:expr, $cause:ident, $($comment_args:tt)*) => {
-        trace_invalidation(&format!($($comment_args)*), || with_time_stat(invalidation_time_ns, || {
+        trace_invalidation(|| format!($($comment_args)*), || with_time_stat(invalidation_time_ns, || {
             for patch_point in $patch_points {
                 let written_range = $cb.with_write_ptr(patch_point.patch_point_ptr, |cb| {
                     let mut asm = Assembler::new();
