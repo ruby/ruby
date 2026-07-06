@@ -1078,6 +1078,7 @@ static rb_node_until_t *rb_node_until_new(struct parser_params *p, NODE *nd_cond
 static rb_node_iter_t *rb_node_iter_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_for_t *rb_node_for_new(struct parser_params *p, NODE *nd_iter, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *for_keyword_loc, const YYLTYPE *in_keyword_loc, const YYLTYPE *do_keyword_loc, const YYLTYPE *end_keyword_loc);
 static rb_node_for_masgn_t *rb_node_for_masgn_new(struct parser_params *p, NODE *nd_var, const YYLTYPE *loc);
+static rb_node_for_comp_t *rb_node_for_comp_new(struct parser_params *p, NODE *nd_iter, NODE *nd_guard, NODE *nd_body, long nd_last, const YYLTYPE *loc);
 static rb_node_retry_t *rb_node_retry_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_begin_t *rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_rescue_t *rb_node_rescue_new(struct parser_params *p, NODE *nd_head, NODE *nd_resq, NODE *nd_else, const YYLTYPE *loc);
@@ -1186,6 +1187,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_ITER(a,b,loc) (NODE *)rb_node_iter_new(p,a,b,loc)
 #define NEW_FOR(i,b,loc,f_loc,i_loc,d_loc,e_loc) (NODE *)rb_node_for_new(p,i,b,loc,f_loc,i_loc,d_loc,e_loc)
 #define NEW_FOR_MASGN(v,loc) (NODE *)rb_node_for_masgn_new(p,v,loc)
+#define NEW_FOR_COMP(i,g,b,l,loc) (NODE *)rb_node_for_comp_new(p,i,g,b,l,loc)
 #define NEW_RETRY(loc) (NODE *)rb_node_retry_new(p,loc)
 #define NEW_BEGIN(b,loc) (NODE *)rb_node_begin_new(p,b,loc)
 #define NEW_RESCUE(b,res,e,loc) (NODE *)rb_node_rescue_new(p,b,res,e,loc)
@@ -11445,6 +11447,18 @@ rb_node_for_masgn_new(struct parser_params *p, NODE *nd_var, const YYLTYPE *loc)
     return n;
 }
 
+static rb_node_for_comp_t *
+rb_node_for_comp_new(struct parser_params *p, NODE *nd_iter, NODE *nd_guard, NODE *nd_body, long nd_last, const YYLTYPE *loc)
+{
+    rb_node_for_comp_t *n = NODE_NEWNODE(NODE_FOR_COMP, rb_node_for_comp_t, loc);
+    n->nd_iter = nd_iter;
+    n->nd_guard = nd_guard;
+    n->nd_body = nd_body;
+    n->nd_last = nd_last;
+
+    return n;
+}
+
 /* The size of the enclosing frame's local-variable table, recorded by the
  * `for_var_base` grammar marker before the first loop variable is parsed. */
 static int
@@ -11640,7 +11654,7 @@ for_comp_relocate(struct parser_params *p, NODE *var, int base, const struct for
 /* Bind a `for` loop variable to a synthesized block's internal parameter by
  * filling the NODE_ARGS_AUX pre_init assignment (executed at block entry).
  * Shared by the legacy `for` desugaring (the k_for rule) and the comprehension
- * desugaring (new_for_comp_iter).  `internal`/`internal_var` are the internal
+ * desugaring (for_comp_scope).  `internal`/`internal_var` are the internal
  * parameter's id and its NODE_DVAR reference.  Returns the rest-argument id for
  * new_args: 0 for a single simple assignment (the sole ordinary parameter binds
  * directly), otherwise `internal` (a `*internal` splat parameter). */
@@ -11665,31 +11679,31 @@ for_var_bind(struct parser_params *p, NODE *var, rb_node_args_aux_t *m,
     return internal;
 }
 
-/* Desugar a single comprehension iterator into a flat_map/map call:
+/* Build the block scope for a single comprehension iterator:
  *
- *   recv.<mid> {|internal| var = internal; body }
+ *   {|internal| var = internal; body }
  *
- * This mirrors the legacy `for` desugaring (see the k_for rule), but emits a
- * flat_map/map send instead of NODE_FOR/each.  The block is built with an
- * explicit id table via NEW_SCOPE2 (NOT NEW_ITER): the comprehension parses its
- * loop variables in a single dynamic-variable scope, so letting local_tbl() run
- * would put every iterator's variable (and the body's temporaries) into one
- * flat block table.  Instead each block's table holds only its own internal
- * parameter plus the loop variable(s) bound here; `extra_ids` carries the
- * comprehension's temporaries (assigned in guards or the body), which every
- * block carries as its own binding.  Because the loop variables are dynamic
- * vars (DASGN/DVAR), references from inner blocks resolve outward to the
- * binding block and the names do not leak. */
+ * This mirrors the block-scope part of the legacy `for` desugaring (see the
+ * k_for rule); the enclosing NODE_FOR_COMP defers the flat_map/map/filter send
+ * to compile.c, just as NODE_FOR defers the `each` send.  The block is built
+ * with an explicit id table via NEW_SCOPE2 (NOT NEW_ITER): the comprehension
+ * parses its loop variables in a single dynamic-variable scope, so letting
+ * local_tbl() run would put every iterator's variable (and the body's
+ * temporaries) into one flat block table.  Instead each block's table holds
+ * only its own internal parameter plus the loop variable(s) bound here;
+ * `extra_ids` carries the comprehension's temporaries (assigned in guards or
+ * the body), which every block carries as its own binding.  Because the loop
+ * variables are dynamic vars (DASGN/DVAR), references from inner blocks
+ * resolve outward to the binding block and the names do not leak. */
 static NODE *
-new_for_comp_iter(struct parser_params *p, NODE *var, NODE *recv, NODE *body, ID mid,
-                 ID *extra_ids, int extra_cnt, const YYLTYPE *loc)
+for_comp_scope(struct parser_params *p, NODE *var, NODE *body,
+               ID *extra_ids, int extra_cnt, const YYLTYPE *loc)
 {
     ID id = internal_id(p);
     ID internal = id;
     rb_node_args_aux_t *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
     rb_node_args_t *args;
-    rb_node_iter_t *iter;
-    NODE *scope, *call, *internal_var = NEW_DVAR(id, loc);
+    NODE *internal_var = NEW_DVAR(id, loc);
     int nloop = for_var_count_ids(p, var);
     struct for_var_collect_arg ca;
     int i;
@@ -11702,17 +11716,7 @@ new_for_comp_iter(struct parser_params *p, NODE *var, NODE *recv, NODE *body, ID
 
     id = for_var_bind(p, var, m, id, internal_var, loc);
     args = new_args(p, m, 0, id, 0, new_empty_args_tail(p, loc), loc);
-    scope = NEW_SCOPE2(tbl, args, body, NULL, loc);
-
-    /* Wrap the hand-built SCOPE in NODE_ITER without going through NEW_ITER
-     * (which calls local_tbl() on the current, surrounding scope). */
-    iter = NODE_NEWNODE(NODE_ITER, rb_node_iter_t, loc);
-    RNODE_SCOPE(scope)->nd_parent = (NODE *)iter;
-    iter->nd_body = scope;
-    iter->nd_iter = 0;
-
-    call = NEW_CALL(recv, mid, 0, loc);
-    return method_add_block(p, call, (NODE *)iter, loc);
+    return NEW_SCOPE2(tbl, args, body, NULL, loc);
 }
 
 /* Build a fresh copy of a `for` loop variable (an assignment node), so the same
@@ -11756,24 +11760,33 @@ dup_for_var(struct parser_params *p, NODE *var, const YYLTYPE *loc)
     }
 }
 
-/* Build one comprehension iterator with an optional guard:
+/* Build one comprehension iterator with an optional guard, as a NODE_FOR_COMP:
  *
  *   recv[.filter {|var| guard}].<flat_map|map> {|var| body }
  *
- * A guard filters recv before the flat_map/map.  The last iterator uses map,
- * every earlier one uses flat_map.  `extra_ids` (the comprehension's
- * temporaries, assigned in guards or the body) goes into every synthesized
- * block's table, so that a reference from any of them resolves; the blocks
- * are siblings, so each gets its own binding. */
+ * The sends themselves are emitted by compile.c (compile_for_comp), like the
+ * `each` send of the legacy `for` loop; the node carries the collection
+ * expression and the pre-built block scopes.  A guard filters recv before the
+ * flat_map/map.  The last iterator uses map, every earlier one uses flat_map.
+ * `extra_ids` (the comprehension's temporaries, assigned in guards or the
+ * body) goes into every synthesized block's table, so that a reference from
+ * any of them resolves; the blocks are siblings, so each gets its own
+ * binding.  The loop variable is bound in both the guard's and the body's
+ * block, which needs two copies of the assignment node (dup_for_var). */
 static NODE *
 build_for_iter(struct parser_params *p, NODE *var, NODE *recv, NODE *guard, NODE *body,
               int is_last, ID *extra_ids, int extra_cnt, const YYLTYPE *loc)
 {
+    NODE *guard_scope = 0, *scope, *node;
+
     if (guard) {
-        recv = new_for_comp_iter(p, dup_for_var(p, var, loc), recv, guard, rb_intern("filter"), extra_ids, extra_cnt, loc);
+        guard_scope = for_comp_scope(p, dup_for_var(p, var, loc), guard, extra_ids, extra_cnt, loc);
     }
-    return new_for_comp_iter(p, var, recv, body, is_last ? rb_intern("map") : rb_intern("flat_map"),
-                            extra_ids, extra_cnt, loc);
+    scope = for_comp_scope(p, var, body, extra_ids, extra_cnt, loc);
+    node = NEW_FOR_COMP(recv, guard_scope, scope, is_last, loc);
+    if (guard_scope) RNODE_SCOPE(guard_scope)->nd_parent = node;
+    RNODE_SCOPE(scope)->nd_parent = node;
+    return node;
 }
 
 /* Fold a list of iterators (iters: a list of [var, expr] or [var, expr, guard]

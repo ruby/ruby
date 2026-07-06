@@ -93,6 +93,7 @@ enum node_type {
     NODE_ITER,
     NODE_FOR,
     NODE_FOR_MASGN,
+    NODE_FOR_COMP,
     NODE_BREAK,
     NODE_NEXT,
     NODE_REDO,
@@ -345,6 +346,15 @@ typedef struct RNode_FOR_MASGN {
 
     struct RNode *nd_var;
 } rb_node_for_masgn_t;
+
+typedef struct RNode_FOR_COMP {
+    NODE node;
+
+    struct RNode *nd_iter;   /* collection expression (the receiver) */
+    struct RNode *nd_guard;  /* NODE_SCOPE for the filter block, or NULL */
+    struct RNode *nd_body;   /* NODE_SCOPE for the map/flat_map block */
+    long nd_last;            /* 1: innermost iterator (map), 0: flat_map */
+} rb_node_for_comp_t;
 
 typedef struct RNode_EXITS {
     NODE node;
@@ -1051,6 +1061,7 @@ typedef struct RNode_ERROR {
 #define RNODE_ITER(node) ((rb_node_iter_t *)(node))
 #define RNODE_FOR(node) ((rb_node_for_t *)(node))
 #define RNODE_FOR_MASGN(node) ((rb_node_for_masgn_t *)(node))
+#define RNODE_FOR_COMP(node) ((rb_node_for_comp_t *)(node))
 #define RNODE_BREAK(node) ((rb_node_break_t *)(node))
 #define RNODE_NEXT(node) ((rb_node_next_t *)(node))
 #define RNODE_REDO(node) ((rb_node_redo_t *)(node))

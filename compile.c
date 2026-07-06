@@ -8578,6 +8578,46 @@ compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 }
 
 static int
+compile_for_comp(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    /* One for-comprehension iterator (see NODE_FOR_COMP in parse.y):
+     *
+     *   collection[.filter {|var| guard}].<flat_map|map> {|var| body }
+     *
+     * The block scopes are pre-built by the parser; only the sends are
+     * emitted here, like the `each` send of NODE_FOR.  `break` is rejected
+     * at parse time, so no break catch table is needed. */
+    const int line = nd_line(node);
+    const NODE *line_node = node;
+    const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
+    const rb_iseq_t *block_iseq;
+
+    CHECK(COMPILE(ret, "for-comp collection", RNODE_FOR_COMP(node)->nd_iter));
+
+    if (RNODE_FOR_COMP(node)->nd_guard) {
+        ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq =
+            NEW_CHILD_ISEQ(RNODE_FOR_COMP(node)->nd_guard, make_name_for_block(iseq),
+                           ISEQ_TYPE_BLOCK, line);
+        ADD_SEND_WITH_BLOCK(ret, line_node, rb_intern("filter"), INT2FIX(0), block_iseq);
+    }
+
+    ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq =
+        NEW_CHILD_ISEQ(RNODE_FOR_COMP(node)->nd_body, make_name_for_block(iseq),
+                       ISEQ_TYPE_BLOCK, line);
+    ADD_SEND_WITH_BLOCK(ret, line_node,
+                        RNODE_FOR_COMP(node)->nd_last ? rb_intern("map") : rb_intern("flat_map"),
+                        INT2FIX(0), block_iseq);
+
+    if (popped) {
+        ADD_INSN(ret, line_node, pop);
+    }
+
+    ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
+
+    return COMPILE_OK;
+}
+
+static int
 compile_for_masgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     /* massign to var in "for"
@@ -10973,6 +11013,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       case NODE_FOR_MASGN:
         CHECK(compile_for_masgn(iseq, ret, node, popped));
+        break;
+      case NODE_FOR_COMP:
+        CHECK(compile_for_comp(iseq, ret, node, popped));
         break;
       case NODE_BREAK:
         CHECK(compile_break(iseq, ret, node, popped));
