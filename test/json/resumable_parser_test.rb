@@ -241,6 +241,105 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_equal [[1], [3]], values
   end
 
+  def test_trailing_comma_split_across_feed_boundary
+    # With allow_trailing_comma the closing bracket may arrive in a later chunk
+    # than the comma; consuming the comma must not lose the ability to close.
+    parser = new_parser(allow_trailing_comma: true)
+    parser << '[1,'
+    refute parser.parse
+    parser << ']'
+    assert parser.parse
+    assert_equal [1], parser.value
+
+    parser = new_parser(allow_trailing_comma: true)
+    parser << '{"a":1,'
+    refute parser.parse
+    parser << '}'
+    assert parser.parse
+    assert_equal({ "a" => 1 }, parser.value)
+
+    # The boundary can also fall after an inner comma, then after the outer one.
+    parser = new_parser(allow_trailing_comma: true)
+    parser << '[[1,'
+    refute parser.parse
+    parser << '],]'
+    assert parser.parse
+    assert_equal [[1]], parser.value
+  end
+
+  def test_trailing_comma_byte_by_byte
+    parser = new_parser(allow_trailing_comma: true)
+    '[1, 2, ]'.each_char { |c| parser << c; parser.parse }
+    assert_equal [1, 2], parser.value
+
+    parser = new_parser(allow_trailing_comma: true)
+    '{ "a": 1, }'.each_char { |c| parser << c; parser.parse }
+    assert_equal({ "a" => 1 }, parser.value)
+  end
+
+  def test_comment_after_comma_split_across_feed_boundary
+    # A comment right after a ',' straddling a feed boundary must not drop the
+    # comma: the value/key it separates must still be parsed on resume.
+    # The array case needs allow_trailing_comma: without it the array comma path
+    # commits its phase before eating the comment, so only the trailing-comma
+    # path exercises the eat-before-commit bug (the object path always did).
+    parser = new_parser(allow_comments: true, allow_trailing_comma: true)
+    parser << '[1,/*'
+    refute parser.parse
+    parser << '*/2]'
+    assert parser.parse
+    assert_equal [1, 2], parser.value
+
+    parser = new_parser(allow_comments: true)
+    parser << '{"a":1,/*'
+    refute parser.parse
+    parser << '*/"b":2}'
+    assert parser.parse
+    assert_equal({ "a" => 1, "b" => 2 }, parser.value)
+  end
+
+  def test_comment_after_container_open_split_across_feed_boundary
+    # A comment right after '[' or '{' straddling a feed boundary must not drop
+    # the opening token: it is consumed before its frame is pushed, so the
+    # suspension must resume from the bracket, not from inside the comment.
+    parser = new_parser(allow_comments: true)
+    parser << '[/*'
+    refute parser.parse
+    parser << '*/1]'
+    assert parser.parse
+    assert_equal [1], parser.value
+
+    parser = new_parser(allow_comments: true)
+    parser << '{/*'
+    refute parser.parse
+    parser << '*/"a":1}'
+    assert parser.parse
+    assert_equal({ "a" => 1 }, parser.value)
+
+    parser = new_parser(allow_comments: true)
+    parser << '[ /*'
+    refute parser.parse
+    parser << '*/ ]'
+    assert parser.parse
+    assert_equal [], parser.value
+
+    # The boundary can even split the comment marker itself.
+    parser = new_parser(allow_comments: true)
+    parser << '[/'
+    refute parser.parse
+    parser << '**/1]'
+    assert parser.parse
+    assert_equal [1], parser.value
+
+    # Line comments suspend the same way when their newline hasn't arrived.
+    parser = new_parser(allow_comments: true)
+    parser << '[//'
+    refute parser.parse
+    parser << "x\n1]"
+    assert parser.parse
+    assert_equal [1], parser.value
+  end
+
   def test_rest
     @parser << '[1, 2, 3, "unterminated string'
     refute @parser.parse

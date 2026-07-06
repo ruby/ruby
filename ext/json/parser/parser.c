@@ -768,13 +768,18 @@ static const rb_data_type_t JSON_ParserConfig_type;
 
 const char *COMMENT_DEPRECATION_MESSAGE = "Encountered comment in JSON. This will raise an error in json 3.0 unless enabled via `allow_comments: true`";
 NOINLINE(static) void
-json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
+json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config, const char *resume_pos)
 {
     if (config->on_comment == JSON_RAISE) {
         raise_syntax_error("unexpected token %s", state);
     }
 
     const char *start = state->cursor;
+    // An incomplete comment suspends a resumable parse by rewinding the cursor
+    // and throwing. Callers that already consumed a token not yet committed to
+    // the frame stack pass resume_pos so the rewind re-reads that token too.
+    // Non-resumable error positions keep pointing at the comment either way.
+    const char *rewind_pos = (state->parser && resume_pos) ? resume_pos : start;
     state->cursor++;
 
     switch (peek(state)) {
@@ -786,7 +791,7 @@ json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
                 // the comment unterminated instead of consuming to end as a one-shot
                 // parse would.
                 if (state->parser) {
-                    raise_eos_error_at("unterminated comment, expected end of line", state, start);
+                    raise_eos_error_at("unterminated comment, expected end of line", state, rewind_pos);
                 }
                 state->cursor = state->end;
             } else {
@@ -800,7 +805,7 @@ json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
             while (true) {
                 const char *next_match = memchr(state->cursor, '*', state->end - state->cursor);
                 if (!next_match) {
-                    raise_eos_error_at("unterminated comment, expected closing '*/'", state, start);
+                    raise_eos_error_at("unterminated comment, expected closing '*/'", state, rewind_pos);
                 }
 
                 state->cursor = next_match + 1;
@@ -812,7 +817,7 @@ json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
             break;
         }
         default:
-            raise_parse_error_at("unexpected token %s", state, start, eos(state));
+            raise_parse_error_at("unexpected token %s", state, eos(state) ? rewind_pos : start, eos(state));
             break;
     }
 
@@ -823,7 +828,7 @@ json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
 }
 
 ALWAYS_INLINE(static) void
-json_eat_whitespace(JSON_ParserState *state, JSON_ParserConfig *config, bool include_comments)
+json_eat_whitespace_resume_at(JSON_ParserState *state, JSON_ParserConfig *config, bool include_comments, const char *resume_pos)
 {
     while (true) {
         switch (peek(state)) {
@@ -858,13 +863,19 @@ json_eat_whitespace(JSON_ParserState *state, JSON_ParserConfig *config, bool inc
                     return;
                 }
 
-                json_eat_comments(state, config);
+                json_eat_comments(state, config, resume_pos);
                 break;
 
             default:
                 return;
         }
     }
+}
+
+ALWAYS_INLINE(static) void
+json_eat_whitespace(JSON_ParserState *state, JSON_ParserConfig *config, bool include_comments)
+{
+    json_eat_whitespace_resume_at(state, config, include_comments, NULL);
 }
 
 static inline VALUE build_string(const char *start, const char *end, bool intern, bool symbolize)
@@ -1580,6 +1591,13 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
     JSON_PHASE_VALUE: {
         json_eat_whitespace(state, config, true);
 
+        // A trailing comma lands us here expecting an element but finding the
+        // closing bracket; hand off to ARRAY_COMMA to close. An empty array
+        // closes inline at '[', so this position is only reached after a ','.
+        if (config->allow_trailing_comma && frame->type == JSON_FRAME_ARRAY && peek(state) == ']') {
+            goto JSON_PHASE_ARRAY_COMMA;
+        }
+
         VALUE value;
         const char *value_start = state->cursor;
 
@@ -1675,7 +1693,9 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
 
             case '[': {
                 state->cursor++;
-                json_eat_whitespace(state, config, true);
+                // The '[' is consumed but its frame is only pushed below, so a
+                // comment suspending here must resume from the bracket.
+                json_eat_whitespace_resume_at(state, config, true, value_start);
 
                 const char next = peek(state);
                 if (next == ']') {
@@ -1704,7 +1724,8 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
 
             case '{': {
                 state->cursor++;
-                json_eat_whitespace(state, config, true);
+                // Same as '[': the frame is only pushed below.
+                json_eat_whitespace_resume_at(state, config, true, value_start);
 
                 if (peek(state) == '}') {
                     state->cursor++;
@@ -1761,6 +1782,13 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
         JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
 
         json_eat_whitespace(state, config, true);
+
+        // A trailing comma lands us here expecting a key but finding the closing
+        // brace; hand off to OBJECT_COMMA to close. An empty object closes inline
+        // at '{', so this position is only reached after a ','.
+        if (config->allow_trailing_comma && peek(state) == '}') {
+            goto JSON_PHASE_OBJECT_COMMA;
+        }
 
         const char *start = state->cursor;
 
@@ -1824,13 +1852,10 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
 
         if (RB_LIKELY(next_char == ',')) {
             state->cursor++;
-            if (config->allow_trailing_comma) {
-                json_eat_whitespace(state, config, true);
-                if (peek(state) == ']') {
-                    // Trailing comma: stay in COMMA to close on the next iteration.
-                    goto JSON_PHASE_ARRAY_COMMA;
-                }
-            }
+            // Commit the phase before eating the whitespace that follows: an
+            // incomplete comment there would suspend the parse, and a phase not
+            // yet advanced past the ',' would drop it on resume. A trailing comma
+            // is recognized in JSON_PHASE_VALUE once the ']' is in the buffer.
             frame->phase = JSON_PHASE_VALUE;
             goto JSON_PHASE_VALUE;
         } else if (next_char == ']') {
@@ -1869,15 +1894,10 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
 
         if (RB_LIKELY(next_char == ',')) {
             state->cursor++;
-            json_eat_whitespace(state, config, true);
-
-            if (config->allow_trailing_comma) {
-                if (peek(state) == '}') {
-                    // Trailing comma: stay in COMMA to close on the next iteration.
-                    goto JSON_PHASE_OBJECT_COMMA;
-                }
-            }
-
+            // Commit the phase before eating the whitespace that follows: an
+            // incomplete comment there would suspend the parse, and a phase not
+            // yet advanced past the ',' would drop it on resume. A trailing comma
+            // is recognized in JSON_PHASE_OBJECT_KEY once the '}' is in the buffer.
             frame->phase = JSON_PHASE_OBJECT_KEY;
             goto JSON_PHASE_OBJECT_KEY;
         } else if (next_char == '}') {
