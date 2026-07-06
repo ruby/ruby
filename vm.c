@@ -2415,6 +2415,21 @@ add_opt_method(VALUE klass, ID mid, enum ruby_basic_operators bop)
     }
 }
 
+static void
+vm_fresh_register_ary_bops(void)
+{
+    static const char *const fresh_ary_mids[] = {
+        "map", "collect", "select", "filter", "reject",
+        "sort", "compact", "uniq", "reverse", "take", "drop",
+    };
+    ruby_vm_redefined_flag[BOP_ARY_FRESH] = 0;
+    for (size_t i = 0; i < numberof(fresh_ary_mids); i++) {
+        ID mid = rb_intern(fresh_ary_mids[i]);
+        add_opt_method(rb_cArray, mid, BOP_ARY_FRESH);
+        rb_method_entry_at(rb_cArray, mid)->def->no_redef_warning = true;
+    }
+}
+
 static enum ruby_basic_operators vm_redefinition_bop_for_id(ID mid);
 
 static void
@@ -2487,6 +2502,7 @@ vm_init_redefined_flag(void)
             /* these were never warning-tracked before this patch */
             rb_method_entry_at(rb_cString, mid)->def->no_redef_warning = true;
         }
+        vm_fresh_register_ary_bops();
         vm_fresh_init_table();
     }
 }

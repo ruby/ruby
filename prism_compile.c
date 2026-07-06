@@ -3814,6 +3814,12 @@ pm_compile_fresh_recv_chain(rb_iseq_t *iseq, LINK_ANCHOR *const ret, INSN *produ
     else if (IS_INSN_ID(producer, concatstrings)) {
         producer->insn_id = BIN(concatstrings_fresh);
     }
+    else if (IS_INSN_ID(producer, duparray)) {
+        producer->insn_id = BIN(duparray_fresh);
+    }
+    else if (IS_INSN_ID(producer, newarray)) {
+        producer->insn_id = BIN(newarray_fresh);
+    }
     else {
         return;
     }
@@ -3898,6 +3904,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     if (ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction &&
         call_node->receiver != NULL &&
         (PM_NODE_TYPE_P(call_node->receiver, PM_CALL_NODE) ||
+         PM_NODE_TYPE_P(call_node->receiver, PM_ARRAY_NODE) ||
          PM_NODE_TYPE_P(call_node->receiver, PM_STRING_NODE) ||
          PM_NODE_TYPE_P(call_node->receiver, PM_INTERPOLATED_STRING_NODE)) &&
         !PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&

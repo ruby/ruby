@@ -1800,6 +1800,33 @@ concatstrings_fresh
     if (BASIC_OP_UNREDEFINED_P(BOP_STR_FRESH, STRING_REDEFINED_OP_FLAG)) FL_SET_RAW(val, STR_FRESH);
 }
 
+/* duparray/newarray whose fresh copy feeds the directly following optimized call */
+DEFINE_INSN
+duparray_fresh
+(VALUE ary)
+()
+(VALUE val)
+{
+    RUBY_DTRACE_CREATE_HOOK(ARRAY, RARRAY_LEN(ary));
+    if (BASIC_OP_UNREDEFINED_P(BOP_ARY_FRESH, ARRAY_REDEFINED_OP_FLAG)) {
+        val = rb_ary_resurrect_chain_head(ary);
+    }
+    else {
+        val = rb_ary_resurrect(ary);
+    }
+}
+
+DEFINE_INSN
+newarray_fresh
+(rb_num_t num)
+(...)
+(VALUE val)
+// attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
+{
+    val = rb_ary_new_chain_head_values(num, STACK_ADDR_FROM_TOP(num));
+    if (BASIC_OP_UNREDEFINED_P(BOP_ARY_FRESH, ARRAY_REDEFINED_OP_FLAG)) FL_SET_RAW(val, ARY_FRESH);
+}
+
 /* BLT */
 DEFINE_INSN_IF(SUPPORT_JOKE)
 bitblt

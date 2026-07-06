@@ -3808,6 +3808,16 @@ static VALUE vm_call_cfunc_strfresh_sub(rb_execution_context_t *ec, rb_control_f
 static VALUE vm_call_cfunc_strfresh_tr(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
 static VALUE vm_call_cfunc_strfresh_delete(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
 static VALUE vm_call_cfunc_fresh_str_produce(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_fresh_map(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_fresh_select(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_fresh_reject(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_fresh_sort(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_fresh_compact(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_fresh_uniq(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_fresh_reverse(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_fresh_take(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_fresh_drop(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+static VALUE vm_call_cfunc_fresh_ary_produce(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
 
 /* called once at boot: read-only afterwards, no ractor synchronization */
 static void
@@ -3840,6 +3850,25 @@ vm_fresh_init_table(void)
     ENTRY_P(rb_cString, "ljust", vm_call_cfunc_fresh_str_produce);
     ENTRY_P(rb_cString, "rjust", vm_call_cfunc_fresh_str_produce);
     ENTRY_P(rb_cString, "center", vm_call_cfunc_fresh_str_produce);
+    ENTRY(rb_cArray, "map", vm_call_cfunc_fresh_map);
+    ENTRY(rb_cArray, "select", vm_call_cfunc_fresh_select);
+    ENTRY(rb_cArray, "reject", vm_call_cfunc_fresh_reject);
+    ENTRY(rb_cArray, "sort", vm_call_cfunc_fresh_sort);
+    ENTRY(rb_cArray, "compact", vm_call_cfunc_fresh_compact);
+    ENTRY(rb_cArray, "uniq", vm_call_cfunc_fresh_uniq);
+    ENTRY(rb_cArray, "reverse", vm_call_cfunc_fresh_reverse);
+    ENTRY(rb_cArray, "take", vm_call_cfunc_fresh_take);
+    ENTRY(rb_cArray, "drop", vm_call_cfunc_fresh_drop);
+    ENTRY_P(rb_cString, "split", vm_call_cfunc_fresh_ary_produce);
+    ENTRY_P(rb_cString, "chars", vm_call_cfunc_fresh_ary_produce);
+    ENTRY_P(rb_cString, "lines", vm_call_cfunc_fresh_ary_produce);
+    ENTRY_P(rb_cRange, "to_a", vm_call_cfunc_fresh_ary_produce);
+    ENTRY_P(rb_mEnumerable, "flat_map", vm_call_cfunc_fresh_ary_produce);
+    ENTRY_P(rb_mEnumerable, "sort_by", vm_call_cfunc_fresh_ary_produce);
+    ENTRY_P(rb_cArray, "-", vm_call_cfunc_fresh_ary_produce);
+    ENTRY_P(rb_cArray, "&", vm_call_cfunc_fresh_ary_produce);
+    ENTRY_P(rb_cArray, "|", vm_call_cfunc_fresh_ary_produce);
+    ENTRY_P(rb_cArray, "rotate", vm_call_cfunc_fresh_ary_produce);
 #undef ENTRY0
 #undef ENTRY
 #undef ENTRY_P
@@ -3953,6 +3982,64 @@ vm_call_cfunc_fresh_str_produce(rb_execution_context_t *ec, rb_control_frame_t *
     VALUE *argv = &stack_bottom[1];
     VALUE val = vm_call_cfunc_with_frame_core(ec, reg_cfp, calling, argc, argv, stack_bottom, NULL);
     if (vm_ci_flag(calling->cd->ci) & VM_CALL_FRESH_PROD) rb_vm_fresh_str_arm(val);
+    return val;
+}
+
+void
+rb_vm_fresh_ary_arm(VALUE val)
+{
+    if (LIKELY(RB_TYPE_P(val, T_ARRAY)) &&
+        !FL_ANY_RAW(val, RARRAY_SHARED_FLAG | RARRAY_SHARED_ROOT_FLAG | FL_FREEZE) &&
+        LIKELY(!ruby_vm_event_flags) &&
+        BASIC_OP_UNREDEFINED_P(BOP_ARY_FRESH, ARRAY_REDEFINED_OP_FLAG)) {
+        FL_SET_RAW(val, ARY_FRESH);
+    }
+}
+
+/* Array twin of FRESH_STR_FASTPATH */
+#define FRESH_ARY_FASTPATH(name, fn, needs_block) \
+static VALUE \
+vm_call_cfunc_fresh_##name(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling) \
+{ \
+    int argc = calling->argc; \
+    VALUE *stack_bottom = reg_cfp->sp - argc - 1; \
+    VALUE *argv = &stack_bottom[1]; \
+    unsigned int ci_flag = vm_ci_flag(calling->cd->ci); \
+    VALUE recv = calling->recv; \
+    VALUE (*fresh_fn)(VALUE) = NULL; \
+    if ((ci_flag & VM_CALL_FRESH_CONS) && \
+        (RBASIC(recv)->flags & (ARY_FRESH | FL_FREEZE)) == ARY_FRESH) { \
+        FL_UNSET_RAW(recv, ARY_FRESH); \
+        if ((!needs_block || calling->block_handler != VM_BLOCK_HANDLER_NONE) && \
+            LIKELY(!ruby_vm_event_flags) && \
+            BASIC_OP_UNREDEFINED_P(BOP_ARY_FRESH, ARRAY_REDEFINED_OP_FLAG)) { \
+            fresh_fn = (VALUE (*)(VALUE))fn; \
+        } \
+    } \
+    VALUE val = vm_call_cfunc_with_frame_core(ec, reg_cfp, calling, argc, argv, stack_bottom, fresh_fn); \
+    if (ci_flag & VM_CALL_FRESH_PROD) rb_vm_fresh_ary_arm(val); \
+    return val; \
+}
+
+FRESH_ARY_FASTPATH(map, rb_ary_fresh_map, true)
+FRESH_ARY_FASTPATH(select, rb_ary_fresh_select, true)
+FRESH_ARY_FASTPATH(reject, rb_ary_fresh_reject, true)
+FRESH_ARY_FASTPATH(sort, rb_ary_fresh_sort, false)
+FRESH_ARY_FASTPATH(compact, rb_ary_fresh_compact, false)
+FRESH_ARY_FASTPATH(uniq, rb_ary_fresh_uniq, false)
+FRESH_ARY_FASTPATH(reverse, rb_ary_fresh_reverse, false)
+FRESH_ARY_FASTPATH(take, rb_ary_fresh_take, false)
+FRESH_ARY_FASTPATH(drop, rb_ary_fresh_drop, false)
+#undef FRESH_ARY_FASTPATH
+
+static VALUE
+vm_call_cfunc_fresh_ary_produce(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
+{
+    int argc = calling->argc;
+    VALUE *stack_bottom = reg_cfp->sp - argc - 1;
+    VALUE *argv = &stack_bottom[1];
+    VALUE val = vm_call_cfunc_with_frame_core(ec, reg_cfp, calling, argc, argv, stack_bottom, NULL);
+    if (vm_ci_flag(calling->cd->ci) & VM_CALL_FRESH_PROD) rb_vm_fresh_ary_arm(val);
     return val;
 }
 

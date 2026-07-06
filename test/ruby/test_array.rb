@@ -3712,6 +3712,106 @@ class TestArrayFreshChain < Test::Unit::TestCase
   end
 end
 
+class TestArrayFreshChain < Test::Unit::TestCase
+  def test_chain_results
+    xs = [3, 1, 2, nil, 2, 1]
+    assert_equal([1, 2, 3], xs.compact.uniq.sort)
+    assert_equal([4, 2], xs.compact.map { |v| v * 2 }.select { |v| v < 5 }.uniq.reverse)
+    assert_equal([1, 2, 3], [3, 1, 2].sort)
+    assert_equal([1, 2], [5, 1, 4, 2].sort.take(2))
+    assert_equal([2, 1], xs.compact.drop(3))
+    assert_equal(["a", "b"], "a,b,a".split(",").uniq)
+    assert_equal([5, 4, 3], (3..5).to_a.reverse)
+  end
+
+  def test_named_receiver_not_destroyed
+    xs = [3, 1, 2, 2, 1]
+    ys = xs.map { |v| v }
+    assert_equal([1, 1, 2, 2, 3], ys.sort)
+    assert_equal([3, 1, 2, 2, 1], ys)
+  end
+
+  def test_blockless_consumer_returns_enumerator
+    e = [3, 1, 2].sort.map
+    assert_kind_of(Enumerator, e)
+    assert_equal([1, 3, 5], e.with_index.map { |v, i| v + i })
+  end
+
+  def test_break_out_of_fused_block
+    r = [1, 2, 3].map { |v| v }.select { |v| break :broke if v == 2; true }
+    assert_equal(:broke, r)
+  end
+
+  def test_subclass_returns_plain_array
+    cls = Class.new(Array)
+    assert_equal(Array, cls[3, 1, 2].sort.map { |v| v }.class)
+  end
+
+  def test_tracepoint_observes_distinct_objects
+    # uniq/sort/reverse stay cfuncs under JIT (map/select do not: array.rb with_jit)
+    ids = []
+    tp = TracePoint.new(:c_return) do |t|
+      ids << t.return_value.object_id if %i[uniq sort reverse].include?(t.method_id)
+    end
+    tp.enable { [3, 1, 2, 3].uniq.sort.reverse }
+    assert_equal(3, ids.size)
+    assert_equal(ids, ids.uniq, "fused chain must not be observable under c_return")
+  end
+
+  def test_redefinition_stops_arming
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      xs = [3, 1, 2]
+      f = ->(a) { a.map { |v| v }.select { |v| true }.sort }
+      10.times { f.call(xs) }   # warm the fused fastpaths
+      $seen = nil
+      class Array
+        alias_method :__orig_select, :select
+        def select(&b); $seen = self; __orig_select(&b); end
+      end
+      assert_equal([1, 2, 3], f.call(xs))
+      saved = $seen
+      snapshot = saved.dup
+      20.times { f.call(xs) }
+      assert_equal(snapshot, saved, "a receiver leaked to user code must never be destroyed")
+    end;
+  end
+
+  def test_consumer_redefined_during_argument_evaluation
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      xs = [3, 1, 2]
+      f = ->(a, narg) { a.map { |v| v }.take(narg.call) }
+      10.times { f.call(xs, -> { 2 }) }   # warm the marked pair
+      evil = -> {
+        class Array
+          alias_method :__orig_take, :take
+          def take(n) = ($leak = self; __orig_take(n))
+        end
+        2
+      }
+      assert_equal([3, 1], f.call(xs, evil))
+      # the receiver leaked into the redefined take must carry no freshness:
+      # a later splat has to copy defensively instead of adopting it
+      g = ->(*rest) { rest << :mutated }
+      g.call(*$leak)
+      assert_equal([3, 1, 2], $leak, "a leaked receiver must never be adopted destructively")
+    end;
+  end
+
+  def test_family_mismatch_is_safe
+    r = nil
+    begin
+      [1].map { |v| v }.merge({})
+    rescue NoMethodError => e
+      r = e.receiver
+    end
+    r2 = r + [9]
+    assert_not_same(r, r2)
+    assert_equal([1], r)
+  end
+end
+
 class TestArraySubclass < TestArray
   def setup
     @verbose = $VERBOSE

@@ -8982,6 +8982,94 @@ rb_ary_deconstruct(VALUE ary)
  *  - #sum: Returns a sum of elements according to either <tt>+</tt> or a given block.
  */
 
+/* Destructive variants for proven-fresh receivers (vm_insnhelper.c).
+ * The receiver is unshared, unfrozen and unaliased, and the VM has
+ * already checked block presence, so the bangs' modify check,
+ * enumerator form and exception repair are unnecessary. */
+VALUE
+rb_ary_fresh_map(VALUE ary)
+{
+    for (long i = 0; i < RARRAY_LEN(ary); i++) {
+        ARY_SET(ary, i, rb_yield(RARRAY_AREF(ary, i)));
+    }
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_select(VALUE ary)
+{
+    long i1, i2;
+    for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); i1++) {
+        VALUE v = RARRAY_AREF(ary, i1);
+        if (!RTEST(rb_yield(v))) continue;
+        if (i1 != i2) ARY_SET(ary, i2, v);
+        i2++;
+    }
+    if (i2 != RARRAY_LEN(ary)) ary_resize_smaller(ary, i2);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_reject(VALUE ary)
+{
+    long i1, i2;
+    for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); i1++) {
+        VALUE v = RARRAY_AREF(ary, i1);
+        if (RTEST(rb_yield(v))) continue;
+        if (i1 != i2) ARY_SET(ary, i2, v);
+        i2++;
+    }
+    if (i2 != RARRAY_LEN(ary)) ary_resize_smaller(ary, i2);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_sort(VALUE ary)
+{
+    rb_ary_sort_bang(ary);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_compact(VALUE ary)
+{
+    rb_ary_compact_bang(ary);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_uniq(VALUE ary)
+{
+    rb_ary_uniq_bang(ary);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_reverse(VALUE ary)
+{
+    rb_ary_reverse_bang(ary);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_take(VALUE ary, VALUE n)
+{
+    long len = NUM2LONG(n);
+    if (len < 0) rb_raise(rb_eArgError, "attempt to take negative size");
+    if (len < RARRAY_LEN(ary)) rb_ary_resize(ary, len);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_drop(VALUE ary, VALUE n)
+{
+    long len = NUM2LONG(n);
+    if (len < 0) rb_raise(rb_eArgError, "attempt to drop negative size");
+    if (len > RARRAY_LEN(ary)) len = RARRAY_LEN(ary);
+    rb_ary_behead(ary, len);
+    return ary;
+}
+
 void
 Init_Array(void)
 {

@@ -69,6 +69,8 @@ const char *rb_type_str(enum ruby_value_type type);
 VALUE rb_vm_opt_plus_consume(VALUE recv, VALUE obj);
 VALUE rb_vm_opt_plus_fresh(VALUE recv, VALUE obj);
 void rb_vm_fresh_str_arm(VALUE val);
+void rb_vm_fresh_ary_arm(VALUE val);
+void rb_vm_fresh_hash_arm(VALUE val);
 bool rb_vm_fresh_producer_mid_p(ID mid);
 bool rb_vm_fresh_consumer_mid_p(ID mid);
 struct rb_callable_method_entry_struct;
