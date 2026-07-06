@@ -5913,12 +5913,12 @@ impl Function {
 
     /// Return a traversal of the `Function`'s `BlockId`s in reverse post-order.
     pub fn reverse_post_order(&self) -> Vec<BlockId> {
-        let mut result = self.po_from(self.entries_block);
+        let mut result = self.post_order_from(self.entries_block);
         result.reverse();
         result
     }
 
-    fn po_from(&self, start: BlockId) -> Vec<BlockId> {
+    fn post_order_from(&self, start: BlockId) -> Vec<BlockId> {
         #[derive(PartialEq)]
         enum Action {
             VisitEdges,
