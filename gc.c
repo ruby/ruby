@@ -194,7 +194,6 @@ rb_gc_get_ractor_newobj_cache(void)
 void
 rb_gc_initialize_vm_context(struct rb_gc_vm_context *context)
 {
-    rb_native_mutex_initialize(&context->lock);
     context->ec = GET_EC();
 }
 

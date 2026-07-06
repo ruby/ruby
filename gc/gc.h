@@ -38,8 +38,6 @@ struct rb_gc_obj_suffix {
 #endif
 
 struct rb_gc_vm_context {
-    rb_nativethread_lock_t lock;
-
     struct rb_execution_context_struct *ec;
 };
 
