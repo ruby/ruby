@@ -2792,6 +2792,10 @@ impl Function {
         self.push_insn(block, Insn::LoadField { recv, id, offset, return_type })
     }
 
+    pub fn load_string_length(&mut self, block: BlockId, str: InsnId) -> InsnId {
+        self.load_field(block, str, FieldName::len, RUBY_OFFSET_RSTRING_LEN, types::CInt64)
+    }
+
     // Add an instruction to an SSA block
     fn push_insn_id(&mut self, block: BlockId, insn_id: InsnId) -> InsnId {
         self.blocks[block.0].insns.push(insn_id);
