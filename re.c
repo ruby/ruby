@@ -40,6 +40,8 @@
  *            The regexp has been fully initialized and can be used.
  * 6:     REG_ENCODING_NONE
  *            The regexp has no encoding. Means the `n` modifier was used.
+ * 10-16: ENCODING
+ *            Stores the encoding of the regexp.
  */
 
 #define KCODE_FIXED FL_USER4
