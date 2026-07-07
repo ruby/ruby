@@ -2311,7 +2311,7 @@ rb_set_size(VALUE set)
 /*
  *  Document-class: Set
  *
- * An instance of class \Set contains an unordered collection
+ * An instance of class \Set contains a collection
  * of objects (elements), with no duplicates.
  *
  * By default, \Set determines equality via Object#eql? and Object#hash,
