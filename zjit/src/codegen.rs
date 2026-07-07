@@ -745,7 +745,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumBitCheck { val, index } => gen_fixnum_bit_check(asm, opnd!(val), *index),
         Insn::SideExit { state, reason, recompile } => no_output!(gen_side_exit(jit, asm, function, reason, *recompile, &function.frame_state(*state))),
         Insn::PutSpecialObject { value_type, state } => gen_putspecialobject(jit, asm, function, *value_type, &function.frame_state(*state)),
-        Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state)),
+        Insn::AnyToString { val, state } => gen_anytostring(asm, opnd!(val), &function.frame_state(*state)),
         Insn::Defined { op_type, obj, pushval, v, lep_level, state } => gen_defined(jit, asm, function, *op_type, *obj, *pushval, opnd!(v), *lep_level, &function.frame_state(*state)),
         Insn::CheckMatch { target, pattern, flag, state } => gen_checkmatch(jit, asm, function, opnd!(target), opnd!(pattern), *flag, &function.frame_state(*state)),
         Insn::GetSpecialSymbol { symbol_type, state } => gen_getspecial_symbol(asm, *symbol_type, &function.frame_state(*state)),
@@ -2604,10 +2604,10 @@ fn gen_box_fixnum(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
     asm.or(shifted, Opnd::UImm(RUBY_FIXNUM_FLAG as u64))
 }
 
-fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, str: lir::Opnd, state: &FrameState) -> lir::Opnd {
+fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
     gen_prepare_leaf_call_with_gc(asm, state);
 
-    asm_ccall!(asm, rb_obj_as_string_result, str, val)
+    asm_ccall!(asm, rb_any_to_s, val)
 }
 
 /// Evaluate if a value is truthy
