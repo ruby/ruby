@@ -2514,7 +2514,7 @@ rb_set_size(VALUE set)
  * - #to_set:
  *   With a block given, creates and returns a new set;
  *   calls the block with each element of +self+,
- *   and adds the block’s returns value to the new set.
+ *   and adds the block's returns value to the new set.
  *
  * === Methods for Iterating
  *
