@@ -336,6 +336,9 @@ macro_rules! get_option {
     ($option_name:ident) => {
         unsafe { crate::options::OPTIONS.as_ref() }.unwrap().$option_name
     };
+    ($option_name:ident, $default:expr) => {
+        unsafe { crate::options::OPTIONS.as_ref() }.map(|opts| opts.$option_name).unwrap_or($default)
+    };
 }
 pub(crate) use get_option;
 
