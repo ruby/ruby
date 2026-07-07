@@ -1024,7 +1024,7 @@ pub fn zjit_alloc_bytes() -> usize {
 /// Record a Perfetto duration event spanning the execution of `func`.
 /// Uses Begin/End pairs so nested calls produce properly nested slices.
 pub fn trace_compile_phase<F, R>(name: &str, func: F) -> R where F: FnOnce() -> R {
-    if !get_option!(trace_compiles) {
+    if !get_option!(trace_compiles, /*default=*/false) {
         return func();
     }
     if let Some(tracer) = ZJITState::get_tracer() {
