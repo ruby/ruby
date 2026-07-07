@@ -2474,7 +2474,7 @@ rb_set_size(VALUE set)
  * === Methods for Deleting
  *
  * - #clear:
- *   Removes +self+ with all elements removed.
+ *   Removes all elements from +self+; returns +self+.
  * - #delete:
  *   Removes the given object from +self+ if +self+ includes the object; returns +self+.
  * - #delete?:
