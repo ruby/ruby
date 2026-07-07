@@ -6966,9 +6966,9 @@ mod hir_opt_tests {
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v13:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v14:StringExact = StringCopy v13
-          v28:StringExact = StringConcat v10, v14
+          v35:StringExact = StringConcat v10, v14
           CheckInterrupts
-          Return v28
+          Return v35
         ");
     }
 
@@ -6991,10 +6991,10 @@ mod hir_opt_tests {
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, to_s@0x1010, cme:0x1018)
-          v34:StringExact = CCallVariadic v12, :Integer#to_s@0x1040
-          v26:StringExact = StringConcat v10, v34
+          v41:StringExact = CCallVariadic v12, :Integer#to_s@0x1040
+          v33:StringExact = StringConcat v10, v41
           CheckInterrupts
-          Return v26
+          Return v33
         ");
     }
 
@@ -7024,9 +7024,9 @@ mod hir_opt_tests {
           v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(String@0x1010)
           v19:String = GuardType v10, String
-          v23:StringExact = StringConcat v14, v19
+          v30:StringExact = StringConcat v14, v19
           CheckInterrupts
-          Return v23
+          Return v30
         ");
     }
 
@@ -7059,9 +7059,9 @@ mod hir_opt_tests {
           v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(MyString@0x1010)
           v19:String = GuardType v10, String
-          v23:StringExact = StringConcat v14, v19
+          v30:StringExact = StringConcat v14, v19
           CheckInterrupts
-          Return v23
+          Return v30
         ");
     }
 
@@ -7092,11 +7092,20 @@ mod hir_opt_tests {
           v18:ArrayExact = GuardType v10, ArrayExact
           PatchPoint NoSingletonClass(Array@0x1010)
           PatchPoint MethodRedefined(Array@0x1010, to_s@0x1018, cme:0x1020)
-          v33:BasicObject = CCallWithFrame v18, :Array#to_s@0x1048
-          v21:String = AnyToString v18, str: v33
-          v23:StringExact = StringConcat v14, v21
+          v40:BasicObject = CCallWithFrame v18, :Array#to_s@0x1048
+          v21:CBool = HasType v40, String
+          CondBranch v21, bb4(), bb5()
+        bb4():
+          v23:String = RefineType v40, String
+          Jump bb6(v23)
+        bb5():
+          v25:NotString = RefineType v40, NotString
+          v26:String = AnyToString v10, str: v25
+          Jump bb6(v26)
+        bb6(v28:String):
+          v30:StringExact = StringConcat v14, v28
           CheckInterrupts
-          Return v23
+          Return v30
         ");
     }
 
@@ -10366,10 +10375,10 @@ mod hir_opt_tests {
           v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v18:Fixnum = GuardType v10, Fixnum
           PatchPoint MethodRedefined(Integer@0x1010, to_s@0x1018, cme:0x1020)
-          v32:StringExact = CCallVariadic v18, :Integer#to_s@0x1048
-          v23:StringExact = StringConcat v14, v32
+          v39:StringExact = CCallVariadic v18, :Integer#to_s@0x1048
+          v30:StringExact = StringConcat v14, v39
           CheckInterrupts
-          Return v23
+          Return v30
         ");
     }
 
