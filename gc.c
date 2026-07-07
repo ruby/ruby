@@ -3547,6 +3547,14 @@ rb_gc_mark_children(void *objspace, VALUE obj)
 
       case T_REGEXP:
         gc_mark_internal(RREGEXP(obj)->src);
+        if (!rb_gc_checking_shareable()) {
+            if (RREGEXP(obj)->usecnt) {
+                gc_mark_and_pin_internal(RREGEXP(obj)->alternate);
+            }
+            else {
+                gc_mark_internal(RREGEXP(obj)->alternate);
+            }
+        }
         break;
 
       case T_MATCH:
@@ -4499,6 +4507,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
         break;
       case T_REGEXP:
         UPDATE_IF_MOVED(objspace, RREGEXP(obj)->src);
+        UPDATE_IF_MOVED(objspace, RREGEXP(obj)->alternate);
         break;
 
       case T_SYMBOL:

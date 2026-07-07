@@ -1694,17 +1694,25 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
     return enc;
 }
 
-regex_t *
-rb_reg_prepare_re(VALUE re, VALUE str)
+static void reg_set_source(VALUE re, VALUE src, rb_encoding *enc);
+
+static VALUE
+rb_reg_prepare_re_internal(VALUE re, VALUE str)
 {
-    int r;
-    OnigErrorInfo einfo;
-    VALUE unescaped;
-    rb_encoding *fixed_enc = 0;
     rb_encoding *enc = rb_reg_prepare_enc(re, str, 1);
 
-    regex_t *reg = RREGEXP_PTR(re);
-    if (reg->enc == enc) return reg;
+    VALUE alternate_re = re;
+    while (true) {
+        if (RREGEXP_PTR(alternate_re)->enc == enc) {
+            return alternate_re;
+        }
+
+        VALUE next_re = RUBY_ATOMIC_VALUE_LOAD(RREGEXP(alternate_re)->alternate);
+        if (!next_re) {
+            break;
+        }
+        alternate_re = next_re;
+    }
 
     rb_reg_check(re);
 
@@ -1712,54 +1720,64 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     const char *pattern = RSTRING_PTR(src_str);
 
     onig_errmsg_buffer err = "";
-    unescaped = rb_reg_preprocess(
+    rb_encoding *fixed_enc;
+    VALUE unescaped = rb_reg_preprocess(
         pattern, pattern + RSTRING_LEN(src_str), enc,
         &fixed_enc, err, 0);
 
-    if (NIL_P(unescaped)) {
-        rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
-    }
+    VALUE new_re = rb_reg_alloc();
+    reg_set_source(new_re, RREGEXP_SRC(re), enc);
+    FL_SET_RAW(new_re, FL_TEST_RAW(re, KCODE_FIXED|REG_ENCODING_NONE));
 
     // inherit the timeout settings
-    rb_hrtime_t timelimit = reg->timelimit;
+    RREGEXP_PTR(new_re)->timelimit = RREGEXP_PTR(re)->timelimit;
 
     const char *ptr;
     long len;
     RSTRING_GETMEM(unescaped, ptr, len);
 
-    /* If there are no other users of this regex, then we can directly overwrite it. */
-    if (ruby_single_main_ractor && RREGEXP(re)->usecnt == 0) {
-        regex_t tmp_reg;
-        r = onig_new_without_alloc(&tmp_reg, (UChar *)ptr, (UChar *)(ptr + len),
-                                   reg->options, enc,
+    OnigErrorInfo einfo;
+    int r = onig_new_without_alloc(RREGEXP_PTR(new_re), (UChar *)ptr, (UChar *)(ptr + len),
+                                   RREGEXP_PTR(re)->options, enc,
                                    OnigDefaultSyntax, &einfo);
-
-        if (r) {
-            /* There was an error so perform cleanups. */
-            onig_free_body(&tmp_reg);
-        }
-        else {
-            onig_free_body(reg);
-            /* There are no errors so set reg to tmp_reg. */
-            *reg = tmp_reg;
-        }
-    }
-    else {
-        r = onig_new(&reg, (UChar *)ptr, (UChar *)(ptr + len),
-                     reg->options, enc,
-                     OnigDefaultSyntax, &einfo);
-    }
 
     if (r) {
         onig_error_code_to_str((UChar*)err, r, &einfo);
-        rb_reg_raise(err, re);
+        rb_reg_raise(err, new_re);
     }
 
-    reg->timelimit = timelimit;
+    FL_SET_RAW(new_re, RREGEXP_INITIALIZED);
 
     RB_GC_GUARD(unescaped);
-    RB_GC_GUARD(src_str);
-    return reg;
+
+    while (true) {
+        VALUE previous_re = RUBY_ATOMIC_VALUE_CAS(RREGEXP(alternate_re)->alternate, 0, new_re);
+        if (previous_re) {
+            if (RREGEXP_PTR(previous_re)->enc == enc) {
+                // Another thread built the same regexp and registered it.
+                // drop ours and use that one.
+                new_re = previous_re;
+                break;
+            }
+            alternate_re = previous_re; // Lost the race
+        }
+        else {
+            RB_OBJ_WRITTEN(alternate_re, Qundef, new_re);
+            break;
+        }
+    }
+
+    return new_re;
+}
+
+regex_t *
+rb_reg_prepare_re(VALUE re, VALUE str)
+{
+    // HACK: A bunch of very old gems copied the pattern from `strscan`
+    //
+    //   regexp_t *reg = rb_reg_prepare_re(re, str);
+    //   int tmpreg = reg != RREGEXP(re)->ptr;
+    return RREGEXP(re)->ptr = RREGEXP_PTR(rb_reg_prepare_re_internal(re, str));
 }
 
 OnigPosition
@@ -1767,17 +1785,9 @@ rb_reg_onig_match(VALUE re, VALUE str,
                   OnigPosition (*match)(regex_t *reg, VALUE str, struct re_registers *regs, void *args),
                   void *args, struct re_registers *regs)
 {
-    regex_t *reg = rb_reg_prepare_re(re, str);
+    re = rb_reg_prepare_re_internal(re, str);
 
-    bool tmpreg = reg != RREGEXP_PTR(re);
-    if (!tmpreg) RREGEXP(re)->usecnt++;
-
-    OnigPosition result = match(reg, str, regs, args);
-
-    if (!tmpreg) RREGEXP(re)->usecnt--;
-    if (tmpreg) {
-        onig_free(reg);
-    }
+    OnigPosition result = match(RREGEXP_PTR(re), str, regs, args);
 
     if (result < 0) {
         switch (result) {
@@ -3506,6 +3516,8 @@ rb_reg_s_alloc(VALUE klass)
 
     MEMZERO(RREGEXP_PTR(re), struct re_pattern_buffer, 1);
     RB_OBJ_WRITE(re, &re->src, 0);
+    RB_OBJ_WRITE(re, &re->alternate, 0);
+    re->ptr = NULL;
     re->usecnt = 0;
 
     return (VALUE)re;
