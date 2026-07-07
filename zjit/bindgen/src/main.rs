@@ -222,7 +222,7 @@ fn main() {
         .allowlist_type("ruby_rstring_private_flags")
         .allowlist_function("rb_ec_str_resurrect")
         .allowlist_function("rb_str_concat_literals")
-        .allowlist_function("rb_obj_as_string_result")
+        .allowlist_function("rb_any_to_s")
         .allowlist_function("rb_str_byte_substr")
         .allowlist_function("rb_str_substr_two_fixnums")
         .allowlist_function("rb_backref_get")

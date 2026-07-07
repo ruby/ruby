@@ -2104,6 +2104,7 @@ unsafe extern "C" {
         argv: *const VALUE,
         klass: VALUE,
     ) -> VALUE;
+    pub fn rb_any_to_s(obj: VALUE) -> VALUE;
     pub fn rb_obj_is_kind_of(obj: VALUE, klass: VALUE) -> VALUE;
     pub fn rb_obj_alloc(klass: VALUE) -> VALUE;
     pub fn rb_obj_frozen_p(obj: VALUE) -> VALUE;
@@ -2199,7 +2200,6 @@ unsafe extern "C" {
         len: VALUE,
         empty: ::std::os::raw::c_int,
     ) -> VALUE;
-    pub fn rb_obj_as_string_result(str_: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_str_concat_literals(num: usize, strary: *const VALUE) -> VALUE;
     pub fn rb_ec_str_resurrect(
         ec: *mut rb_execution_context_struct,

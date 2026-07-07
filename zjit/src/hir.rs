@@ -1189,7 +1189,7 @@ pub enum Insn {
     /// Float#to_i: truncate float to integer via rb_jit_flo_to_i
     FloatToInt { recv: InsnId, state: InsnId },
 
-    AnyToString { val: InsnId, str: InsnId, state: InsnId },
+    AnyToString { val: InsnId, state: InsnId },
 
     /// Refine the known type information of with additional type information.
     /// Computes the intersection of the existing type and the new type.
@@ -1526,9 +1526,8 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*val);
                 $visit_one!(*state);
             }
-            Insn::AnyToString { val, str, state, .. } => {
+            Insn::AnyToString { val, state, .. } => {
                 $visit_one!(*val);
-                $visit_one!(*str);
                 $visit_one!(*state);
             }
             Insn::LoadField { recv, .. } => {
@@ -2294,7 +2293,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
             Insn::StringIntern { val, .. } => { write!(f, "StringIntern {val}") },
-            Insn::AnyToString { val, str, .. } => { write!(f, "AnyToString {val}, str: {str}") },
+            Insn::AnyToString { val, .. } => { write!(f, "AnyToString {val}") },
             Insn::SideExit { reason, recompile, .. } => {
                 if recompile.is_some() {
                     write!(f, "SideExit {reason} recompile")
@@ -6477,7 +6476,6 @@ impl Function {
             // Instructions with 2 Ruby object operands
             Insn::SetIvar { self_val: left, val: right, .. }
             | Insn::NewRange { low: left, high: right, .. }
-            | Insn::AnyToString { val: left, str: right, .. }
             | Insn::CheckMatch { target: left, pattern: right, .. }
             | Insn::WriteBarrier { recv: left, val: right } => {
                 self.assert_subtype(insn_id, left, types::BasicObject)?;
@@ -6486,6 +6484,9 @@ impl Function {
             Insn::GetConstant { klass, allow_nil, .. } => {
                 self.assert_subtype(insn_id, klass, types::BasicObject)?;
                 self.assert_subtype(insn_id, allow_nil, types::BoolExact)
+            }
+            Insn::AnyToString { val, .. } => {
+                self.assert_subtype(insn_id, val, types::BasicObject)
             }
             // Instructions with recv and a Vec of Ruby objects
             Insn::PushInlineFrame { recv, ref args, .. }
@@ -9154,8 +9155,7 @@ fn add_iseq_to_hir(
                     let refined = fun.push_insn(iftrue_block, Insn::RefineType { val: str, new_type: types::String });
                     fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![refined] }));
                     // false block
-                    let refined = fun.push_insn(iffalse_block, Insn::RefineType { val: str, new_type: types::NotString });
-                    let anytostring = fun.push_insn(iffalse_block, Insn::AnyToString { val, str: refined, state: exit_id });
+                    let anytostring = fun.push_insn(iffalse_block, Insn::AnyToString { val, state: exit_id });
                     fun.push_insn(iffalse_block, Insn::Jump(BranchEdge { target: join_block, args: vec![anytostring] }));
                     // join block
                     block = join_block;
