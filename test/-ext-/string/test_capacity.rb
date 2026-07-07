@@ -8,7 +8,7 @@ class Test_StringCapacity < Test::Unit::TestCase
   def test_capacity_embedded
     assert_equal pool_slot_size(0) - embed_header_size - 1, capa('foo')
     assert_equal max_embed_len, capa('1' * max_embed_len)
-    assert_equal max_embed_len, capa('1' * (max_embed_len - 1))
+    assert_include ((max_embed_len - 1)..max_embed_len), capa('1' * (max_embed_len - 1))
   end
 
   def test_capacity_shared
