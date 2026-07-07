@@ -240,7 +240,7 @@ provider ruby {
 
      * `popped_count` the number of objects popped from the mark stack in that invocation
   */
-  probe gc__mark_stacked_objects(int popped_count);
+  probe gc__mark_stacked_objects(size_t popped_count);
 
   /*
      ruby:::gc-sweep_page(slot_size, final_slots, freed_slots, empty_slots);
@@ -260,7 +260,7 @@ provider ruby {
      * `obj` the pointer to the allocated object
      * `flags` the initial flags of the object
   */
-  probe gc__obj_new(void *obj, int flags);
+  probe gc__obj_new(void *obj, uintptr_t flags);
 
   /*
      ruby:::gc-obj_free();
@@ -270,7 +270,7 @@ provider ruby {
      * `obj` the pointer to the finalized object
      * `flags` the flags of the object when it is finalized
   */
-  probe gc__obj_free(void *obj, int flags);
+  probe gc__obj_free(void *obj, uintptr_t flags);
 
   /*
      ruby:::gc-xmalloc(n, size);
@@ -280,7 +280,7 @@ provider ruby {
      * `n` the number of elements.  For `ruby_xmalloc` it is 1.
      * `size` the size of each element
   */
-  probe gc__xmalloc(int n, int size);
+  probe gc__xmalloc(size_t n, size_t size);
 
   /*
      ruby:::gc-xcalloc();
@@ -290,7 +290,7 @@ provider ruby {
      * `n` the number of elements.  For `ruby_xmalloc` it is 1.
      * `size` the size of each element
   */
-  probe gc__xcalloc(int n, int size);
+  probe gc__xcalloc(size_t n, size_t size);
 
   /*
      ruby:::gc-xfree(ptr, size);
@@ -300,7 +300,7 @@ provider ruby {
      * `ptr` the pointer to the object
      * `size` the size of the object.  0 if called with `xfree`
   */
-  probe gc__xfree(void *obj, int size);
+  probe gc__xfree(void *obj, size_t size);
 
   /*
      ruby:::gvl-acquire();
