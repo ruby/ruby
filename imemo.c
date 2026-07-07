@@ -141,7 +141,7 @@ rb_imemo_fields_new(VALUE owner, shape_id_t shape_id, bool shareable)
     // layout in the shape describes the layout of the thing on which it is set.
     // Imemo fields have the same layout as robject, therefore the layout
     // should reflect that fact.
-    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
+    RBASIC_SET_FULL_SHAPE_ID(fields, rb_shape_transition_robject(shape_id));
     RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
     return fields;
 }
@@ -156,7 +156,7 @@ rb_imemo_fields_new_complex(VALUE owner, shape_id_t shape_id, size_t capa, bool 
     // layout in the shape describes the layout of the thing on which it is set.
     // Imemo fields have the same layout as robject, therefore the layout
     // should reflect that fact.
-    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
+    RBASIC_SET_FULL_SHAPE_ID(fields, rb_shape_transition_robject(shape_id));
     return fields;
 }
 
@@ -185,7 +185,7 @@ rb_imemo_fields_new_complex_tbl(VALUE owner, shape_id_t shape_id, st_table *tbl,
     // layout in the shape describes the layout of the thing on which it is set.
     // Imemo fields have the same layout as robject, therefore the layout
     // should reflect that fact.
-    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
+    RBASIC_SET_FULL_SHAPE_ID(fields, rb_shape_transition_robject(shape_id));
     st_foreach(tbl, imemo_fields_trigger_wb_i, (st_data_t)fields);
     return fields;
 }

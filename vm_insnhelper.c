@@ -1412,8 +1412,7 @@ vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache cache)
     RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
 
     if (shape_id != dest_shape_id) {
-        // The dest_shape_id comes from the fields_obj
-        RBASIC_SET_SHAPE_ID(obj, SHAPE_ID_LAYOUT_RCLASS | (dest_shape_id & ~SHAPE_ID_LAYOUT_MASK));
+        RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
         RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
     }
 
@@ -1441,9 +1440,7 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, rb_setivar_cache cache)
 
     if (shape_id != dest_shape_id) {
         RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
-        // The dest_shape_id comes from the owner, but fields_obj must always
-        // have layout RObject, so give the fields_object the right layout.
-        RBASIC_SET_SHAPE_ID(fields_obj, rb_shape_id_with_robject_layout(dest_shape_id));
+        RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
     }
 
     RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
