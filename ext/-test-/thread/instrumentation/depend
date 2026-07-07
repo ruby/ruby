@@ -156,7 +156,6 @@ instrumentation.o: $(hdrdir)/ruby/internal/variable.h
 instrumentation.o: $(hdrdir)/ruby/internal/warning_push.h
 instrumentation.o: $(hdrdir)/ruby/internal/xmalloc.h
 instrumentation.o: $(hdrdir)/ruby/missing.h
-instrumentation.o: $(hdrdir)/ruby/onigmo.h
 instrumentation.o: $(hdrdir)/ruby/ruby.h
 instrumentation.o: $(hdrdir)/ruby/st.h
 instrumentation.o: $(hdrdir)/ruby/subst.h

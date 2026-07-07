@@ -27,7 +27,6 @@
 #include "ruby/internal/core/rstring.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
-#include "ruby/onigmo.h"
 
 /**
  * Convenient casting macro.
@@ -37,13 +36,6 @@
  */
 #define RREGEXP(obj)     RBIMPL_CAST((struct RRegexp *)(obj))
 
-/**
- * Convenient accessor macro.
- *
- * @param   obj  An object, which is in fact an ::RRegexp.
- * @return  The passed object's pattern buffer.
- */
-#define RREGEXP_PTR(obj) (&RREGEXP(obj)->pattern)
 /** @cond INTERNAL_MACRO */
 #define RREGEXP_SRC      RREGEXP_SRC
 #define RREGEXP_SRC_PTR  RREGEXP_SRC_PTR
@@ -79,15 +71,23 @@ struct RRegexp {
      *           catastrophic effects.  Just leave it.
      */
     unsigned long usecnt;
-
-   /**
-    * The pattern buffer.   This is a quasi-opaque struct  that holds compiled
-    * intermediate representation of the regular expression.
-    *
-    * @note  Compilation of a regexp could be delayed until actual match.
-    */
-   struct re_pattern_buffer pattern; /* a.k.a. OnigRegexType, defined in onigmo.h */
 };
+
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Convenient getter function.
+ *
+ * @param[in]  rexp  The regular expression in question.
+ * @return     The pattern buffer of the regular expression.
+ * @pre        `rexp` must be of ::RRegexp.
+ */
+static inline struct re_pattern_buffer *
+RREGEXP_PTR(VALUE rexp)
+{
+    RBIMPL_ASSERT_TYPE(rexp, RUBY_T_REGEXP);
+    return (struct re_pattern_buffer *)(((struct RRegexp *)rexp) + 1);
+}
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()

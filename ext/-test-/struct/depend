@@ -156,7 +156,6 @@ data.o: $(hdrdir)/ruby/internal/variable.h
 data.o: $(hdrdir)/ruby/internal/warning_push.h
 data.o: $(hdrdir)/ruby/internal/xmalloc.h
 data.o: $(hdrdir)/ruby/missing.h
-data.o: $(hdrdir)/ruby/onigmo.h
 data.o: $(hdrdir)/ruby/ruby.h
 data.o: $(hdrdir)/ruby/st.h
 data.o: $(hdrdir)/ruby/subst.h
@@ -318,7 +317,6 @@ duplicate.o: $(hdrdir)/ruby/internal/variable.h
 duplicate.o: $(hdrdir)/ruby/internal/warning_push.h
 duplicate.o: $(hdrdir)/ruby/internal/xmalloc.h
 duplicate.o: $(hdrdir)/ruby/missing.h
-duplicate.o: $(hdrdir)/ruby/onigmo.h
 duplicate.o: $(hdrdir)/ruby/ruby.h
 duplicate.o: $(hdrdir)/ruby/st.h
 duplicate.o: $(hdrdir)/ruby/subst.h
@@ -480,7 +478,6 @@ init.o: $(hdrdir)/ruby/internal/variable.h
 init.o: $(hdrdir)/ruby/internal/warning_push.h
 init.o: $(hdrdir)/ruby/internal/xmalloc.h
 init.o: $(hdrdir)/ruby/missing.h
-init.o: $(hdrdir)/ruby/onigmo.h
 init.o: $(hdrdir)/ruby/ruby.h
 init.o: $(hdrdir)/ruby/st.h
 init.o: $(hdrdir)/ruby/subst.h
@@ -642,7 +639,6 @@ len.o: $(hdrdir)/ruby/internal/variable.h
 len.o: $(hdrdir)/ruby/internal/warning_push.h
 len.o: $(hdrdir)/ruby/internal/xmalloc.h
 len.o: $(hdrdir)/ruby/missing.h
-len.o: $(hdrdir)/ruby/onigmo.h
 len.o: $(hdrdir)/ruby/ruby.h
 len.o: $(hdrdir)/ruby/st.h
 len.o: $(hdrdir)/ruby/subst.h
@@ -804,7 +800,6 @@ member.o: $(hdrdir)/ruby/internal/variable.h
 member.o: $(hdrdir)/ruby/internal/warning_push.h
 member.o: $(hdrdir)/ruby/internal/xmalloc.h
 member.o: $(hdrdir)/ruby/missing.h
-member.o: $(hdrdir)/ruby/onigmo.h
 member.o: $(hdrdir)/ruby/ruby.h
 member.o: $(hdrdir)/ruby/st.h
 member.o: $(hdrdir)/ruby/subst.h

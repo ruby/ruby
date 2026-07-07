@@ -156,7 +156,6 @@ typeddata.o: $(hdrdir)/ruby/internal/variable.h
 typeddata.o: $(hdrdir)/ruby/internal/warning_push.h
 typeddata.o: $(hdrdir)/ruby/internal/xmalloc.h
 typeddata.o: $(hdrdir)/ruby/missing.h
-typeddata.o: $(hdrdir)/ruby/onigmo.h
 typeddata.o: $(hdrdir)/ruby/ruby.h
 typeddata.o: $(hdrdir)/ruby/st.h
 typeddata.o: $(hdrdir)/ruby/subst.h

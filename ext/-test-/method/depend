@@ -156,7 +156,6 @@ arity.o: $(hdrdir)/ruby/internal/variable.h
 arity.o: $(hdrdir)/ruby/internal/warning_push.h
 arity.o: $(hdrdir)/ruby/internal/xmalloc.h
 arity.o: $(hdrdir)/ruby/missing.h
-arity.o: $(hdrdir)/ruby/onigmo.h
 arity.o: $(hdrdir)/ruby/ruby.h
 arity.o: $(hdrdir)/ruby/st.h
 arity.o: $(hdrdir)/ruby/subst.h
@@ -318,7 +317,6 @@ init.o: $(hdrdir)/ruby/internal/variable.h
 init.o: $(hdrdir)/ruby/internal/warning_push.h
 init.o: $(hdrdir)/ruby/internal/xmalloc.h
 init.o: $(hdrdir)/ruby/missing.h
-init.o: $(hdrdir)/ruby/onigmo.h
 init.o: $(hdrdir)/ruby/ruby.h
 init.o: $(hdrdir)/ruby/st.h
 init.o: $(hdrdir)/ruby/subst.h

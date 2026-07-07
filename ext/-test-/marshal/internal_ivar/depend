@@ -156,7 +156,6 @@ internal_ivar.o: $(hdrdir)/ruby/internal/variable.h
 internal_ivar.o: $(hdrdir)/ruby/internal/warning_push.h
 internal_ivar.o: $(hdrdir)/ruby/internal/xmalloc.h
 internal_ivar.o: $(hdrdir)/ruby/missing.h
-internal_ivar.o: $(hdrdir)/ruby/onigmo.h
 internal_ivar.o: $(hdrdir)/ruby/ruby.h
 internal_ivar.o: $(hdrdir)/ruby/st.h
 internal_ivar.o: $(hdrdir)/ruby/subst.h

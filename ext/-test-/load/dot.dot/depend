@@ -156,7 +156,6 @@ dot.dot.o: $(hdrdir)/ruby/internal/variable.h
 dot.dot.o: $(hdrdir)/ruby/internal/warning_push.h
 dot.dot.o: $(hdrdir)/ruby/internal/xmalloc.h
 dot.dot.o: $(hdrdir)/ruby/missing.h
-dot.dot.o: $(hdrdir)/ruby/onigmo.h
 dot.dot.o: $(hdrdir)/ruby/ruby.h
 dot.dot.o: $(hdrdir)/ruby/st.h
 dot.dot.o: $(hdrdir)/ruby/subst.h
