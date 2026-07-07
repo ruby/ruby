@@ -18606,10 +18606,13 @@ parse_def(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
          * for primary-level constructs, not commands). During command argument
          * parsing, the stack is pushed to false, causing `do` to be lexed as
          * PM_TOKEN_KEYWORD_DO_BLOCK, which is not consumed inside the endless
-         * def body and instead left for the outer context. */
+         * def body and instead left for the outer context. A method definition
+         * opens a fresh context all the way through its rescue modifier, so
+         * this frame spans the rescue modifier value as well: the `do` in
+         * `baz def f = a rescue z do end` lexes as a plain keyword that
+         * attaches to `z` rather than to `baz`. */
         pm_accepts_block_stack_push(parser, true);
         pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, allow_flags | PM_PARSE_IN_ENDLESS_DEF, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1));
-        pm_accepts_block_stack_pop(parser);
 
         /* If an unconsumed PM_TOKEN_KEYWORD_DO follows the body, it is an error
          * (e.g., `def f = 1 do end`). PM_TOKEN_KEYWORD_DO_BLOCK is
@@ -18621,7 +18624,11 @@ parse_def(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
             pm_parser_err_node(parser, UP(block), PM_ERR_DEF_ENDLESS_DO_BLOCK);
         }
 
-        if (accept1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
+        /* Any number of rescue modifiers chain onto the body within the method
+         * definition itself, associating to the left: `def f = a rescue b
+         * rescue c` defines a method whose body is `(a rescue b) rescue c`,
+         * rather than a rescue modifier guarding the definition. */
+        while (accept1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
             context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
 
             pm_token_t rescue_keyword = parser->previous;
@@ -18633,6 +18640,8 @@ parse_def(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
 
             statement = UP(pm_rescue_modifier_node_create(parser, statement, &rescue_keyword, value));
         }
+
+        pm_accepts_block_stack_pop(parser);
 
         /* A nested endless def whose body is a command call (e.g.,
          * `def f = def g = foo bar`) is a command assignment and cannot appear
