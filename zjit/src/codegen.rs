@@ -602,6 +602,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
 
     let out_opnd = match insn {
         Insn::Comment { .. } => return Ok(()), // comment instruction, no code generation
+        Insn::Identity { .. } => unreachable!("Identity instructions should not reach codegen"),
         &Insn::Const { val: Const::Value(val) } => gen_const_value(val),
         &Insn::Const { val: Const::CPtr(val) } => gen_const_cptr(val),
         &Insn::Const { val: Const::CInt64(val) } => gen_const_long(val),
