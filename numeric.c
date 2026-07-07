@@ -5733,6 +5733,49 @@ rb_int_bit_length(VALUE num)
 }
 
 static VALUE
+rb_fix_bit_count(VALUE fix)
+{
+    long v = FIX2LONG(fix);
+    if (v < 0)
+        rb_raise(rb_eArgError, "bit_count is undefined for negative integers");
+    return LONG2FIX(rb_popcount_intptr((uintptr_t)v));
+}
+
+/*
+ *  call-seq:
+ *    bit_count -> integer
+ *
+ *  Returns the number of set bits (bits equal to 1) in the binary
+ *  representation of +self+, also known as the population count or
+ *  Hamming weight.
+ *
+ *    0.bit_count            # => 0
+ *    1.bit_count            # => 1
+ *    7.bit_count            # => 3
+ *    0b10101.bit_count      # => 3
+ *    255.bit_count          # => 8
+ *    (2**1000).bit_count    # => 1
+ *    (2**1000-1).bit_count  # => 1000
+ *
+ *  Raises an exception if +self+ is negative.
+ *
+ *    (-1).bit_count # Raises ArgumentError
+ *
+ */
+
+VALUE
+rb_int_bit_count(VALUE num)
+{
+    if (FIXNUM_P(num)) {
+        return rb_fix_bit_count(num);
+    }
+    else if (RB_BIGNUM_TYPE_P(num)) {
+        return rb_big_bit_count(num);
+    }
+    UNREACHABLE_RETURN(Qnil);
+}
+
+static VALUE
 rb_fix_digits(VALUE fix, long base)
 {
     VALUE digits;
@@ -6610,6 +6653,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, ">>", rb_int_rshift, 1);
 
     rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
+    rb_define_method(rb_cInteger, "bit_count", rb_int_bit_count, 0);
 
 #define fix_to_s_static(n) do { \
         VALUE lit = rb_fstring_literal(#n); \

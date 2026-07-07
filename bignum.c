@@ -7030,6 +7030,23 @@ rb_big_bit_length(VALUE big)
 }
 
 VALUE
+rb_big_bit_count(VALUE big)
+{
+    if (BIGNUM_NEGATIVE_P(big))
+        rb_raise(rb_eArgError, "bit_count is undefined for negative integers");
+
+    BDIGIT *ds = BDIGITS(big);
+    size_t n = BIGNUM_LEN(big);
+    size_t count = 0;
+
+    while (n--) {
+        count += rb_popcount64((uint64_t)ds[n]);
+    }
+
+    return SIZET2NUM(count);
+}
+
+VALUE
 rb_big_odd_p(VALUE num)
 {
     return RBOOL(BIGNUM_LEN(num) != 0 && BDIGITS(num)[0] & 1);
