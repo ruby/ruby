@@ -155,7 +155,6 @@ sanitizers.o: $(hdrdir)/ruby/internal/variable.h
 sanitizers.o: $(hdrdir)/ruby/internal/warning_push.h
 sanitizers.o: $(hdrdir)/ruby/internal/xmalloc.h
 sanitizers.o: $(hdrdir)/ruby/missing.h
-sanitizers.o: $(hdrdir)/ruby/onigmo.h
 sanitizers.o: $(hdrdir)/ruby/ruby.h
 sanitizers.o: $(hdrdir)/ruby/st.h
 sanitizers.o: $(hdrdir)/ruby/subst.h

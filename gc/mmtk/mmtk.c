@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "ruby/assert.h"
 #include "ruby/atomic.h"
@@ -8,6 +9,10 @@
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
 #include "gc/mmtk/mmtk.h"
+
+#if USE_ZJIT
+# include "gc/mmtk/zjit_fastpath.h"
+#endif
 
 #include "ccan/list/list.h"
 #include "darray.h"
@@ -103,6 +108,8 @@ RB_THREAD_LOCAL_SPECIFIER VALUE marking_parent_object;
 #endif
 
 #include <pthread.h>
+
+#define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
 
 static inline VALUE rb_mmtk_call_object_closure(VALUE obj, bool pin);
 
@@ -643,6 +650,20 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache_ptr)
     objspace->live_ractor_cache_count--;
 
     mmtk_destroy_mutator(cache->mutator);
+
+    free(cache);
+}
+
+static bool
+zjit_mmtk_gc_stress_p(void *objspace_ptr)
+{
+    return ((struct objspace *)objspace_ptr)->gc_stress;
+}
+
+static bool
+zjit_mmtk_newobj_tracing_p(void)
+{
+    return rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_NEWOBJ);
 }
 
 void rb_gc_impl_set_params(void *objspace_ptr) { }
@@ -662,6 +683,59 @@ static size_t heap_sizes[MMTK_HEAP_COUNT + 1] = {
     32, 64, 128, 256, MMTK_MAX_OBJ_SIZE, 0
 };
 #endif
+
+bool
+rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass,
+                                 struct rb_gc_zjit_fastpath *fastpath)
+{
+#if USE_ZJIT && RB_GC_OBJ_SUFFIX_SIZE == 0
+    struct objspace *objspace = objspace_ptr;
+
+    size_t payload_size = alloc_size;
+    for (int i = 0; i < MMTK_HEAP_COUNT; i++) {
+        if (payload_size == heap_sizes[i]) break;
+        if (payload_size < heap_sizes[i]) {
+            payload_size = heap_sizes[i];
+            break;
+        }
+    }
+
+    if (payload_size > MMTK_MAX_OBJ_SIZE) return false;
+
+    size_t total_size = payload_size + sizeof(VALUE) + RB_GC_OBJ_SUFFIX_SIZE;
+    size_t value_size_shift = sizeof(VALUE) == 8 ? 3 : 2;
+
+    struct rb_gc_zjit_mmtk_new_obj_fastpath mmtk_fastpath = {
+        objspace,
+        offsetof(struct objspace, total_allocated_objects),
+        offsetof(struct MMTk_ractor_cache, mutator),
+        offsetof(struct MMTk_ractor_cache, bump_pointer),
+        offsetof(struct MMTk_ractor_cache, obj_free_parallel_buf),
+        offsetof(struct MMTk_ractor_cache, obj_free_parallel_count),
+        offsetof(MMTk_BumpPointer, cursor),
+        offsetof(MMTk_BumpPointer, limit),
+        MMTk_MIN_OBJ_ALIGN,
+        payload_size,
+        total_size,
+        MMTK_ALLOCATION_SEMANTICS_DEFAULT,
+        (uintptr_t)zjit_mmtk_gc_stress_p,
+        (uintptr_t)zjit_mmtk_newobj_tracing_p,
+        (uintptr_t)mmtk_post_alloc,
+        OBJ_FREE_BUF_CAPACITY - 1,
+        value_size_shift,
+        flags,
+        klass
+    };
+
+    memset(fastpath, 0, sizeof(*fastpath));
+    fastpath->kind = RB_GC_ZJIT_FASTPATH_MMTK;
+    memcpy(fastpath->data.words, &mmtk_fastpath, sizeof(mmtk_fastpath));
+
+    return true;
+#else
+    return false;
+#endif
+}
 
 void
 rb_gc_impl_init(void)
@@ -898,7 +972,6 @@ mmtk_post_alloc_fast_immix(struct objspace *objspace, struct MMTk_ractor_cache *
 VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size)
 {
-#define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
     struct objspace *objspace = objspace_ptr;
     struct MMTk_ractor_cache *ractor_cache = cache_ptr;
 

@@ -209,7 +209,6 @@ eventids1.o: $(hdrdir)/ruby/internal/variable.h
 eventids1.o: $(hdrdir)/ruby/internal/warning_push.h
 eventids1.o: $(hdrdir)/ruby/internal/xmalloc.h
 eventids1.o: $(hdrdir)/ruby/missing.h
-eventids1.o: $(hdrdir)/ruby/onigmo.h
 eventids1.o: $(hdrdir)/ruby/ruby.h
 eventids1.o: $(hdrdir)/ruby/st.h
 eventids1.o: $(hdrdir)/ruby/subst.h

@@ -698,7 +698,7 @@ clean-local:: clean-runnable
 	-$(Q)$(RMALL) dump_ast$(BUILD_EXEEXT)*
 	-$(Q)$(RMALL) target
 	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine target \
-	  $(PRISM_BUILD_DIR)/*/ $(PRISM_BUILD_DIR) tmp \
+	  $(PRISM_BUILD_DIR)/*/ $(PRISM_BUILD_DIR) gc/default gc tmp \
 	2> $(NULL) || $(NULLCMD)
 
 bin/clean-runnable:: PHONY

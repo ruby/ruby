@@ -156,7 +156,6 @@ infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/variable.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/warning_push.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/xmalloc.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/missing.h
-infinite_loop_dlsym.o: $(hdrdir)/ruby/onigmo.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/ruby.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/st.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/subst.h

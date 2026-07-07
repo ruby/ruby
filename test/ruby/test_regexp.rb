@@ -740,6 +740,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(/foo/, assert_warning(/ignored/) {Regexp.new(/foo/, Regexp::IGNORECASE)})
     assert_equal(/foo/, assert_no_warning(/ignored/) {Regexp.new(/foo/)})
     assert_equal(/foo/, assert_no_warning(/ignored/) {Regexp.new(/foo/, timeout: nil)})
+    assert_equal(/foo/, Regexp.new(Regexp.new("foo")))
 
     arg_encoding_none = //n.options # ARG_ENCODING_NONE is implementation defined value
 

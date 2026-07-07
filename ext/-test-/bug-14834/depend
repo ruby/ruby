@@ -156,7 +156,6 @@ bug-14834.o: $(hdrdir)/ruby/internal/variable.h
 bug-14834.o: $(hdrdir)/ruby/internal/warning_push.h
 bug-14834.o: $(hdrdir)/ruby/internal/xmalloc.h
 bug-14834.o: $(hdrdir)/ruby/missing.h
-bug-14834.o: $(hdrdir)/ruby/onigmo.h
 bug-14834.o: $(hdrdir)/ruby/ruby.h
 bug-14834.o: $(hdrdir)/ruby/st.h
 bug-14834.o: $(hdrdir)/ruby/subst.h

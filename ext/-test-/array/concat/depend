@@ -156,7 +156,6 @@ to_ary_concat.o: $(hdrdir)/ruby/internal/variable.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/warning_push.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/xmalloc.h
 to_ary_concat.o: $(hdrdir)/ruby/missing.h
-to_ary_concat.o: $(hdrdir)/ruby/onigmo.h
 to_ary_concat.o: $(hdrdir)/ruby/ruby.h
 to_ary_concat.o: $(hdrdir)/ruby/st.h
 to_ary_concat.o: $(hdrdir)/ruby/subst.h

@@ -157,7 +157,6 @@ init.o: $(hdrdir)/ruby/internal/variable.h
 init.o: $(hdrdir)/ruby/internal/warning_push.h
 init.o: $(hdrdir)/ruby/internal/xmalloc.h
 init.o: $(hdrdir)/ruby/missing.h
-init.o: $(hdrdir)/ruby/onigmo.h
 init.o: $(hdrdir)/ruby/ruby.h
 init.o: $(hdrdir)/ruby/st.h
 init.o: $(hdrdir)/ruby/subst.h
@@ -319,7 +318,6 @@ invalid.o: $(hdrdir)/ruby/internal/variable.h
 invalid.o: $(hdrdir)/ruby/internal/warning_push.h
 invalid.o: $(hdrdir)/ruby/internal/xmalloc.h
 invalid.o: $(hdrdir)/ruby/missing.h
-invalid.o: $(hdrdir)/ruby/onigmo.h
 invalid.o: $(hdrdir)/ruby/ruby.h
 invalid.o: $(hdrdir)/ruby/st.h
 invalid.o: $(hdrdir)/ruby/subst.h
@@ -481,7 +479,6 @@ rb_fatal.o: $(hdrdir)/ruby/internal/variable.h
 rb_fatal.o: $(hdrdir)/ruby/internal/warning_push.h
 rb_fatal.o: $(hdrdir)/ruby/internal/xmalloc.h
 rb_fatal.o: $(hdrdir)/ruby/missing.h
-rb_fatal.o: $(hdrdir)/ruby/onigmo.h
 rb_fatal.o: $(hdrdir)/ruby/ruby.h
 rb_fatal.o: $(hdrdir)/ruby/st.h
 rb_fatal.o: $(hdrdir)/ruby/subst.h

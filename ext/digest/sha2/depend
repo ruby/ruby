@@ -159,7 +159,6 @@ sha2.o: $(hdrdir)/ruby/internal/variable.h
 sha2.o: $(hdrdir)/ruby/internal/warning_push.h
 sha2.o: $(hdrdir)/ruby/internal/xmalloc.h
 sha2.o: $(hdrdir)/ruby/missing.h
-sha2.o: $(hdrdir)/ruby/onigmo.h
 sha2.o: $(hdrdir)/ruby/ruby.h
 sha2.o: $(hdrdir)/ruby/st.h
 sha2.o: $(hdrdir)/ruby/subst.h
@@ -323,7 +322,6 @@ sha2init.o: $(hdrdir)/ruby/internal/variable.h
 sha2init.o: $(hdrdir)/ruby/internal/warning_push.h
 sha2init.o: $(hdrdir)/ruby/internal/xmalloc.h
 sha2init.o: $(hdrdir)/ruby/missing.h
-sha2init.o: $(hdrdir)/ruby/onigmo.h
 sha2init.o: $(hdrdir)/ruby/ruby.h
 sha2init.o: $(hdrdir)/ruby/st.h
 sha2init.o: $(hdrdir)/ruby/subst.h

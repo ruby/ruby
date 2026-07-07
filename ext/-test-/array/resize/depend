@@ -155,7 +155,6 @@ resize.o: $(hdrdir)/ruby/internal/variable.h
 resize.o: $(hdrdir)/ruby/internal/warning_push.h
 resize.o: $(hdrdir)/ruby/internal/xmalloc.h
 resize.o: $(hdrdir)/ruby/missing.h
-resize.o: $(hdrdir)/ruby/onigmo.h
 resize.o: $(hdrdir)/ruby/ruby.h
 resize.o: $(hdrdir)/ruby/st.h
 resize.o: $(hdrdir)/ruby/subst.h

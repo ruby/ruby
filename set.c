@@ -804,7 +804,7 @@ set_i_add_p(VALUE set, VALUE item)
  *  call-seq:
  *    delete(object) -> self
  *
- *  Removes the given +object+ from +self+, if +self+ includes the object;
+ *  Removes the given +object+ from +self+ if +self+ includes the object;
  *  returns +self+:
  *
  *    set = Set[0, 'zero', :zero]
@@ -2472,21 +2472,23 @@ rb_set_size(VALUE set)
  * === Methods for Deleting
  *
  * - #clear:
- *   Removes all elements in the set; returns +self+.
+ *   Removes all elements from +self+; returns +self+.
  * - #delete:
- *   Removes a given object from the set; returns +self+.
+ *   Removes the given object from +self+ if +self+ includes the object; returns +self+.
  * - #delete?:
- *   If the given object is an element in the set,
- *   removes it and returns +self+; otherwise, returns +nil+.
- * - #subtract:
- *   Removes each given object from the set; returns +self+.
- * - #delete_if - Removes elements specified by a given block.
- * - #select! (aliased as #filter!):
- *   Removes elements not specified by a given block.
+ *   Like #delete, but returns +nil+ if the object is not in +self+.
+ * - #delete_if:
+ *   Calls the block with each element in +self+;
+ *   removes the element if the block returns a truthy value.
  * - #keep_if:
- *   Removes elements not specified by a given block.
+ *   Calls the block with each element in +self+,
+ *   deleting the element if the block returns +false+ or +nil+; returns +self+.
  * - #reject!
- *   Removes elements specified by a given block.
+ *   Like #delete_if, but returns +nil+ if no changes were made.
+ * - #select! (aliased as #filter!):
+ *   Like #keep_if, but returns +nil+ if no changes were made.
+ * - #subtract:
+ *   Deletes from +self+ every element found in the given enumerable; returns +self+:
  *
  * === Methods for Converting
  *
@@ -2500,29 +2502,26 @@ rb_set_size(VALUE set)
  *   as determined by the given block.
  * - #flatten:
  *   Returns a new set that is a recursive flattening of +self+.
- * - #flatten!:
- *   Replaces each nested set in +self+ with the elements from that set.
+ * - #flatten!: Like #flatten, but if any changes were made
+ *   replaces +self+ with the result and returns +self+.
  * - #inspect (aliased as #to_s):
- *   Returns a string displaying the elements.
+ *   Returns a string representation of +self+.
  * - #join:
- *   Returns a string containing all elements, converted to strings
- *   as needed, and joined by the given record separator.
+ *   Returns the string formed by joining the string-converted elements of +self+
+ *   with the given separator.
  * - #to_a:
- *   Returns an array containing all set elements.
+ *   Returns an array containing the elements of +self+.
  * - #to_set:
- *   Returns +self+ if given no arguments and no block;
- *   with a block given, returns a new set consisting of block
- *   return values.
- *
- * === Methods for Iterating
- *
- * - #each:
- *   Calls the block with each successive element; returns +self+.
+ *   With a block given, creates and returns a new set;
+ *   calls the block with each element of +self+,
+ *   and adds the block's returns value to the new set.
  *
  * === Other Methods
  *
  * - #compare_by_identity:
  *   Sets +self+ to compare by object identity (rather than by object content).
+ * - #each:
+ *   Calls the block with each successive element of +self+; returns +self+.
  * - #reset:
  *   Resets the internal state; useful if an element
  *   has been modified while an element in the set.
