@@ -2503,7 +2503,7 @@ rb_set_size(VALUE set)
  * - #flatten:
  *   Returns a new set that is a recursive flattening of +self+.
  * - #flatten!: Like #flatten, but if any changes were made
- *   replaces +self+ with the result and returns self.
+ *   replaces +self+ with the result and returns +self+.
  * - #inspect (aliased as #to_s):
  *   Returns a string representation of +self+.
  * - #join:
