@@ -378,7 +378,7 @@ rb_gc_obj_changed_slot_size(VALUE obj, size_t slot_size)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
 
-    RBASIC_SET_FULL_SHAPE_ID(obj, rb_obj_shape_transition_capacity(obj, rb_shape_capacity_for_slot_size(slot_size)));
+    RBASIC_SET_FULL_SHAPE_ID(obj, rb_obj_shape_transition_slot_size(obj, slot_size));
 }
 
 void rb_vm_update_references(void *ptr);
@@ -1036,7 +1036,7 @@ rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape
     VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, wb_protected, size, &actual_alloc_size);
 
     GC_ASSERT(actual_alloc_size >= size);
-    shape_id = rb_shape_transition_capacity(shape_id, rb_shape_capacity_for_slot_size(actual_alloc_size));
+    shape_id = rb_shape_transition_slot_size(shape_id, actual_alloc_size);
 
 #if RACTOR_CHECK_MODE
     void rb_ractor_setup_belonging(VALUE obj);
