@@ -32,6 +32,11 @@
 #include "ruby/util.h"
 #include "ractor_core.h"
 
+struct RRegexp_and_re_pattern_buffer {
+    struct RRegexp re;
+    struct re_pattern_buffer pattern; /* a.k.a. OnigRegexType, defined in onigmo.h */
+};
+
 /* Flags of RRegexp
  *
  * 4:     KCODE_FIXED
@@ -3502,10 +3507,10 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
 VALUE
 rb_reg_s_alloc(VALUE klass)
 {
-    NEWOBJ_OF(re, struct RRegexp, klass, T_REGEXP, sizeof(struct RRegexp));
+    NEWOBJ_OF(re, struct RRegexp, klass, T_REGEXP, sizeof(struct RRegexp_and_re_pattern_buffer));
 
-    MEMZERO(RREGEXP_PTR(re), struct re_pattern_buffer, 1);
-    RB_OBJ_WRITE(re, &re->src, 0);
+    MEMZERO(RREGEXP_PTR((VALUE)re), struct re_pattern_buffer, 1);
+    RB_OBJ_WRITE((VALUE)re, &re->src, 0);
     re->usecnt = 0;
 
     return (VALUE)re;

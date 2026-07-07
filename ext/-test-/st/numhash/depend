@@ -156,7 +156,6 @@ numhash.o: $(hdrdir)/ruby/internal/variable.h
 numhash.o: $(hdrdir)/ruby/internal/warning_push.h
 numhash.o: $(hdrdir)/ruby/internal/xmalloc.h
 numhash.o: $(hdrdir)/ruby/missing.h
-numhash.o: $(hdrdir)/ruby/onigmo.h
 numhash.o: $(hdrdir)/ruby/ruby.h
 numhash.o: $(hdrdir)/ruby/st.h
 numhash.o: $(hdrdir)/ruby/subst.h

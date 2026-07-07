@@ -155,7 +155,6 @@ call_without_gvl.o: $(hdrdir)/ruby/internal/variable.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/warning_push.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/xmalloc.h
 call_without_gvl.o: $(hdrdir)/ruby/missing.h
-call_without_gvl.o: $(hdrdir)/ruby/onigmo.h
 call_without_gvl.o: $(hdrdir)/ruby/ruby.h
 call_without_gvl.o: $(hdrdir)/ruby/st.h
 call_without_gvl.o: $(hdrdir)/ruby/subst.h

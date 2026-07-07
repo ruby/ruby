@@ -159,7 +159,6 @@ rmd160.o: $(hdrdir)/ruby/internal/variable.h
 rmd160.o: $(hdrdir)/ruby/internal/warning_push.h
 rmd160.o: $(hdrdir)/ruby/internal/xmalloc.h
 rmd160.o: $(hdrdir)/ruby/missing.h
-rmd160.o: $(hdrdir)/ruby/onigmo.h
 rmd160.o: $(hdrdir)/ruby/ruby.h
 rmd160.o: $(hdrdir)/ruby/st.h
 rmd160.o: $(hdrdir)/ruby/subst.h
@@ -323,7 +322,6 @@ rmd160init.o: $(hdrdir)/ruby/internal/variable.h
 rmd160init.o: $(hdrdir)/ruby/internal/warning_push.h
 rmd160init.o: $(hdrdir)/ruby/internal/xmalloc.h
 rmd160init.o: $(hdrdir)/ruby/missing.h
-rmd160init.o: $(hdrdir)/ruby/onigmo.h
 rmd160init.o: $(hdrdir)/ruby/ruby.h
 rmd160init.o: $(hdrdir)/ruby/st.h
 rmd160init.o: $(hdrdir)/ruby/subst.h

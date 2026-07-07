@@ -3002,7 +3002,6 @@ debug_counter.$(OBJEXT): {$(VPATH)}internal/variable.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 debug_counter.$(OBJEXT): {$(VPATH)}missing.h
-debug_counter.$(OBJEXT): {$(VPATH)}onigmo.h
 debug_counter.$(OBJEXT): {$(VPATH)}st.h
 debug_counter.$(OBJEXT): {$(VPATH)}subst.h
 debug_counter.$(OBJEXT): {$(VPATH)}thread_native.h
@@ -3386,7 +3385,6 @@ dln.$(OBJEXT): {$(VPATH)}internal/variable.h
 dln.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 dln.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 dln.$(OBJEXT): {$(VPATH)}missing.h
-dln.$(OBJEXT): {$(VPATH)}onigmo.h
 dln.$(OBJEXT): {$(VPATH)}st.h
 dln.$(OBJEXT): {$(VPATH)}subst.h
 dln_find.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -3546,7 +3544,6 @@ dln_find.$(OBJEXT): {$(VPATH)}internal/variable.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 dln_find.$(OBJEXT): {$(VPATH)}missing.h
-dln_find.$(OBJEXT): {$(VPATH)}onigmo.h
 dln_find.$(OBJEXT): {$(VPATH)}st.h
 dln_find.$(OBJEXT): {$(VPATH)}subst.h
 dmydln.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -3705,7 +3702,6 @@ dmydln.$(OBJEXT): {$(VPATH)}internal/variable.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 dmydln.$(OBJEXT): {$(VPATH)}missing.h
-dmydln.$(OBJEXT): {$(VPATH)}onigmo.h
 dmydln.$(OBJEXT): {$(VPATH)}st.h
 dmydln.$(OBJEXT): {$(VPATH)}subst.h
 dmyenc.$(OBJEXT): {$(VPATH)}dmyenc.c
@@ -7107,7 +7103,6 @@ inits.$(OBJEXT): {$(VPATH)}internal/variable.h
 inits.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 inits.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 inits.$(OBJEXT): {$(VPATH)}missing.h
-inits.$(OBJEXT): {$(VPATH)}onigmo.h
 inits.$(OBJEXT): {$(VPATH)}prelude.rbinc
 inits.$(OBJEXT): {$(VPATH)}st.h
 inits.$(OBJEXT): {$(VPATH)}subst.h
@@ -8524,7 +8519,6 @@ loadpath.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 loadpath.$(OBJEXT): {$(VPATH)}loadpath.c
 loadpath.$(OBJEXT): {$(VPATH)}missing.h
-loadpath.$(OBJEXT): {$(VPATH)}onigmo.h
 loadpath.$(OBJEXT): {$(VPATH)}st.h
 loadpath.$(OBJEXT): {$(VPATH)}subst.h
 loadpath.$(OBJEXT): {$(VPATH)}verconf.h
@@ -8862,7 +8856,6 @@ main.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 main.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 main.$(OBJEXT): {$(VPATH)}main.c
 main.$(OBJEXT): {$(VPATH)}missing.h
-main.$(OBJEXT): {$(VPATH)}onigmo.h
 main.$(OBJEXT): {$(VPATH)}st.h
 main.$(OBJEXT): {$(VPATH)}subst.h
 main.$(OBJEXT): {$(VPATH)}vm_debug.h
@@ -9269,7 +9262,6 @@ math.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 math.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 math.$(OBJEXT): {$(VPATH)}math.c
 math.$(OBJEXT): {$(VPATH)}missing.h
-math.$(OBJEXT): {$(VPATH)}onigmo.h
 math.$(OBJEXT): {$(VPATH)}shape.h
 math.$(OBJEXT): {$(VPATH)}st.h
 math.$(OBJEXT): {$(VPATH)}subst.h
@@ -16660,7 +16652,6 @@ setproctitle.$(OBJEXT): {$(VPATH)}internal/variable.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 setproctitle.$(OBJEXT): {$(VPATH)}missing.h
-setproctitle.$(OBJEXT): {$(VPATH)}onigmo.h
 setproctitle.$(OBJEXT): {$(VPATH)}setproctitle.c
 setproctitle.$(OBJEXT): {$(VPATH)}st.h
 setproctitle.$(OBJEXT): {$(VPATH)}subst.h
@@ -19272,7 +19263,6 @@ util.$(OBJEXT): {$(VPATH)}internal/variable.h
 util.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 util.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 util.$(OBJEXT): {$(VPATH)}missing.h
-util.$(OBJEXT): {$(VPATH)}onigmo.h
 util.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 util.$(OBJEXT): {$(VPATH)}st.h
 util.$(OBJEXT): {$(VPATH)}subst.h
