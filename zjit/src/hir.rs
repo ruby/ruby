@@ -9249,6 +9249,7 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
     let param_size = params.size.to_usize();
     let rest_param_idx = iseq_rest_param_idx(params);
 
+    // TODO(max): PatchPoint for assuming the class does not have subclasses
     let self_param = fun.load_self(entry_block);
     let mut entry_state = FrameState::new(iseq);
     // If the ISEQ does not escape EP, we can assume EP + 1 == SP
@@ -9324,6 +9325,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     let mut arg_idx: u32 = 0;
     // For `def` methods on classes that can only produce heap (non-immediate)
     // instances, `self` is a HeapBasicObject. See `Function::self_type`.
+    // TODO(max): PatchPoint for assuming the class does not have subclasses
     let self_param = fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: FieldName::SelfParam, val_type: fun.self_type });
     arg_idx += 1;
     let mut entry_state = FrameState::new(iseq);
