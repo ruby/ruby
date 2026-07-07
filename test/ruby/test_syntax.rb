@@ -1419,6 +1419,17 @@ eom
     assert_equal([3], eval("for (a, b) in [[1, 2], [3, 3], [4, 1]] when a < b then a + b end"))
     # a guard may filter everything out
     assert_equal([], eval("for x in [1, 3, 5] when x.even? then x end"))
+    # a temporary assigned in a guard does not cause an internal error even
+    # when the comprehension has several iterators (the guard's filter block and
+    # the map/flat_map block are siblings, so every synthesized block carries a
+    # binding for the temporary)
+    assert_equal([[2, 10]],
+                 eval("for x in [1, 2] when ((t = x * 2; t > 2)), y in [10] then [x, y] end"))
+    # each synthesized block binds the temporary independently, so one assigned
+    # in a guard is not visible (reads as nil) in the body or a later iterator
+    assert_equal([nil], eval("for x in [1] when ((t = 9; true)), y in [2] then t end"))
+    assert_equal([[1, nil], [2, nil]],
+                 eval("for x in [1, 2] when ((t = x * 2; true)), y in [t] then [x, y] end"))
     # case/when is unaffected
     assert_equal("one", eval("for x in [1] do break(case x when 1 then 'one' end) end"))
   end
