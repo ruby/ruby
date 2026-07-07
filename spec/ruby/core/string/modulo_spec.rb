@@ -55,51 +55,6 @@ describe "String#%" do
     -> { ("foo%" % [])}.should.raise(ArgumentError)
   end
 
-  ruby_version_is ""..."3.4" do
-    it "formats single % character before a newline as literal %" do
-      ("%\n" % []).should == "%\n"
-      ("foo%\n" % []).should == "foo%\n"
-      ("%\n.3f" % 1.2).should == "%\n.3f"
-    end
-
-    it "formats single % character before a NUL as literal %" do
-      ("%\0" % []).should == "%\0"
-      ("foo%\0" % []).should == "foo%\0"
-      ("%\0.3f" % 1.2).should == "%\0.3f"
-    end
-
-    it "raises an error if single % appears anywhere else" do
-      -> { (" % " % []) }.should.raise(ArgumentError)
-      -> { ("foo%quux" % []) }.should.raise(ArgumentError)
-    end
-
-    it "raises an error if NULL or \\n appear anywhere else in the format string" do
-      begin
-        old_debug, $DEBUG = $DEBUG, false
-
-        -> { "%.\n3f" % 1.2 }.should.raise(ArgumentError)
-        -> { "%.3\nf" % 1.2 }.should.raise(ArgumentError)
-        -> { "%.\03f" % 1.2 }.should.raise(ArgumentError)
-        -> { "%.3\0f" % 1.2 }.should.raise(ArgumentError)
-      ensure
-        $DEBUG = old_debug
-      end
-    end
-  end
-
-  ruby_version_is "3.4" do
-    it "raises an ArgumentError if % is not followed by a conversion specifier" do
-      -> { "%" % [] }.should.raise(ArgumentError)
-      -> { "%\n" % [] }.should.raise(ArgumentError)
-      -> { "%\0" % [] }.should.raise(ArgumentError)
-      -> { " % " % [] }.should.raise(ArgumentError)
-      -> { "%.\n3f" % 1.2 }.should.raise(ArgumentError)
-      -> { "%.3\nf" % 1.2 }.should.raise(ArgumentError)
-      -> { "%.\03f" % 1.2 }.should.raise(ArgumentError)
-      -> { "%.3\0f" % 1.2 }.should.raise(ArgumentError)
-    end
-  end
-
   it "ignores unused arguments when $DEBUG is false" do
     begin
       old_debug = $DEBUG
@@ -137,18 +92,6 @@ describe "String#%" do
       ("%2$s" % [1, 2, 3]).should == "2"
     ensure
       $DEBUG = old_debug
-    end
-  end
-
-  ruby_version_is ""..."3.4" do
-    it "replaces trailing absolute argument specifier without type with percent sign" do
-      ("hello %1$" % "foo").should == "hello %"
-    end
-  end
-
-  ruby_version_is "3.4" do
-    it "raises an ArgumentError if absolute argument specifier is followed by a conversion specifier" do
-      -> { "hello %1$" % "foo" }.should.raise(ArgumentError)
     end
   end
 

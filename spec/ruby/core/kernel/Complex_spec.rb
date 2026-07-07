@@ -2,7 +2,11 @@ require_relative '../../spec_helper'
 require_relative '../../shared/kernel/complex'
 require_relative 'fixtures/Complex'
 
-describe "Kernel.Complex()" do
+describe "Kernel#Complex" do
+  it "is a private method" do
+    Kernel.private_instance_methods(false).should.include?(:Complex)
+  end
+
   describe "when passed [Complex, Complex]" do
     it "returns a new Complex number based on the two given numbers" do
       Complex(Complex(3, 4), Complex(5, 6)).should == Complex(3 - 6, 4 + 5)
@@ -39,24 +43,21 @@ describe "Kernel.Complex()" do
 
   describe "when passed [Integer/Float]" do
     it "returns a new Complex number with 0 as the imaginary component" do
-      # Guard against the Mathn library
-      guard -> { !defined?(Math.rsqrt) } do
-        Complex(1).should.instance_of?(Complex)
-        Complex(1).imag.should == 0
-        Complex(1).real.should == 1
+      Complex(1).should.instance_of?(Complex)
+      Complex(1).imag.should == 0
+      Complex(1).real.should == 1
 
-        Complex(-3).should.instance_of?(Complex)
-        Complex(-3).imag.should == 0
-        Complex(-3).real.should == -3
+      Complex(-3).should.instance_of?(Complex)
+      Complex(-3).imag.should == 0
+      Complex(-3).real.should == -3
 
-        Complex(-4.5).should.instance_of?(Complex)
-        Complex(-4.5).imag.should == 0
-        Complex(-4.5).real.should == -4.5
+      Complex(-4.5).should.instance_of?(Complex)
+      Complex(-4.5).imag.should == 0
+      Complex(-4.5).real.should == -4.5
 
-        Complex(bignum_value).should.instance_of?(Complex)
-        Complex(bignum_value).imag.should == 0
-        Complex(bignum_value).real.should == bignum_value
-      end
+      Complex(bignum_value).should.instance_of?(Complex)
+      Complex(bignum_value).imag.should == 0
+      Complex(bignum_value).real.should == bignum_value
     end
   end
 
@@ -272,5 +273,11 @@ describe "Kernel.Complex()" do
 
   it "freezes its result" do
     Complex(1).frozen?.should == true
+  end
+end
+
+describe "Kernel.Complex" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:Complex)
   end
 end

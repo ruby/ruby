@@ -190,6 +190,45 @@ describe "C-API IO function" do
     end
   end
 
+  describe "rb_io_get_io" do
+    it "returns the passed object and does not call #to_io if the object is already an IO" do
+      @io.should_not_receive(:to_io)
+
+      @o.rb_io_get_io(@io).should.equal?(@io)
+    end
+
+    it "returns the passed object and does not call #to_io if the object is a subclass of IO" do
+      file = File.open(@name)
+
+      begin
+        file.should_not_receive(:to_io)
+
+        @o.rb_io_get_io(file).should.equal?(file)
+      ensure
+        file.close
+      end
+    end
+
+    it "calls #to_io to convert the object to an IO" do
+      wrapper = Object.new
+      io = @io
+      wrapper.define_singleton_method(:to_io) { io }
+
+      @o.rb_io_get_io(wrapper).should.equal?(@io)
+    end
+
+    it "raises a TypeError if #to_io does not return an IO" do
+      wrapper = Object.new
+      wrapper.define_singleton_method(:to_io) { Object.new }
+
+      -> { @o.rb_io_get_io(wrapper) }.should.raise(TypeError)
+    end
+
+    it "raises a TypeError if the object does not respond to #to_io" do
+      -> { @o.rb_io_get_io(Object.new) }.should.raise(TypeError)
+    end
+  end
+
   describe "rb_io_binmode" do
     it "returns self" do
       @o.rb_io_binmode(@io).should == @io
@@ -278,6 +317,36 @@ describe "C-API IO function" do
 
     it "raises an IOError if the IO is not initialized" do
       -> { @o.rb_io_maybe_wait_writable(0, IO.allocate, nil) }.should.raise(IOError, "uninitialized stream")
+    end
+
+    ruby_version_is "3.4" do
+      platform_is_not :windows do
+        it "raises a IO::TimeoutError if the timeout elapses" do
+          IOSpec.exhaust_write_buffer(@w_io)
+          -> { @o.rb_io_maybe_wait_writable(Errno::EAGAIN::Errno, @w_io, 0) }.
+            should.raise(IO::TimeoutError, "Timed out waiting for IO to become writable!")
+        end
+      end
+
+      platform_is :windows do
+        # Windows select/poll wrapper (rb_w32_select) treats write descriptors of non-sockets
+        # (such as pipe writers) as always writable. Thus it immediately returns IO::WRITABLE
+        # instead of timing out. So use sockets instead.
+        it "raises a IO::TimeoutError if the timeout elapses" do
+          require 'socket'
+          r_sock, w_sock = Socket.pair(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+          begin
+            r_sock.close_write
+            w_sock.close_read
+            IOSpec.exhaust_write_buffer(w_sock)
+            -> { @o.rb_io_maybe_wait_writable(Errno::EAGAIN::Errno, w_sock, 0) }.
+              should.raise(IO::TimeoutError, "Timed out waiting for IO to become writable!")
+          ensure
+            r_sock.close unless r_sock.closed?
+            w_sock.close unless w_sock.closed?
+          end
+        end
+      end
     end
 
     it "can be interrupted" do
@@ -391,6 +460,13 @@ describe "C-API IO function" do
 
       it "raises an IOError if the IO is not initialized" do
         -> { @o.rb_io_maybe_wait_readable(0, IO.allocate, nil, false) }.should.raise(IOError, "uninitialized stream")
+      end
+
+      ruby_version_is "3.4" do
+        it "raises a IO::TimeoutError if the timeout elapses" do
+          -> { @o.rb_io_maybe_wait_readable(Errno::EAGAIN::Errno, @r_io, 0, false) }.
+            should.raise(IO::TimeoutError, "Timed out waiting for IO to become readable!")
+        end
       end
     end
   end
@@ -784,5 +860,9 @@ describe "rb_io_t modes flags" do
       io.sync = false
       @o.rb_io_mode_sync_flag(io).should == false
     }
+  end
+
+  specify "rb_eIOTimeoutError references the IO::TimeoutError class" do
+    @o.rb_eIOTimeoutError.should == IO::TimeoutError
   end
 end

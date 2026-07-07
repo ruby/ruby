@@ -68,4 +68,9 @@ describe "Binding#local_variable_set" do
     -> { bind.local_variable_set(:$_, "") }.should.raise(NameError)
   end
 
+  it 'raises a TypeError when given non-String/Symbol as the variable name' do
+    -> {
+      binding.local_variable_set(1, 2)
+    }.should.raise(TypeError, '1 is not a symbol nor a string')
+  end
 end

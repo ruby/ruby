@@ -114,6 +114,24 @@ VALUE kernel_spec_rb_catch_obj(VALUE self, VALUE obj, VALUE main_proc) {
   return rb_catch_obj(obj, kernel_spec_call_proc_with_catch_obj, main_proc);
 }
 
+struct rb_catch_obj_pointer_data {
+  int magic;
+};
+
+VALUE kernel_spec_catch_obj_pointer(RB_BLOCK_CALL_FUNC_ARGLIST(arg, data)) {
+  struct rb_catch_obj_pointer_data *pointer_data = (struct rb_catch_obj_pointer_data *)data;
+  if (pointer_data->magic != 0x1234) {
+    rb_raise(rb_eRuntimeError, "invalid catch pointer");
+  }
+
+  return Qtrue;
+}
+
+VALUE kernel_spec_rb_catch_obj_with_pointer(VALUE self, VALUE obj) {
+  struct rb_catch_obj_pointer_data data = { 0x1234 };
+  return rb_catch_obj(obj, kernel_spec_catch_obj_pointer, (VALUE)&data);
+}
+
 VALUE kernel_spec_rb_eval_string(VALUE self, VALUE str) {
   return rb_eval_string(RSTRING_PTR(str));
 }
@@ -329,6 +347,29 @@ static VALUE kernel_spec_rb_exec_recursive(VALUE self, VALUE obj) {
   return rb_exec_recursive(do_rec, obj, Qtrue);
 }
 
+struct rb_exec_recursive_pointer_data {
+  int magic;
+};
+
+static VALUE do_rec_pointer(VALUE obj, VALUE arg, int is_rec) {
+  struct rb_exec_recursive_pointer_data *obj_data = (struct rb_exec_recursive_pointer_data *)obj;
+  struct rb_exec_recursive_pointer_data *arg_data = (struct rb_exec_recursive_pointer_data *)arg;
+  if (obj_data->magic != 0x1234 || arg_data->magic != 0x1234) {
+    rb_raise(rb_eRuntimeError, "invalid recursive pointer");
+  }
+
+  if (is_rec) {
+    return Qtrue;
+  } else {
+    return rb_exec_recursive(do_rec_pointer, obj, arg);
+  }
+}
+
+static VALUE kernel_spec_rb_exec_recursive_with_pointer(VALUE self) {
+  struct rb_exec_recursive_pointer_data data = { 0x1234 };
+  return rb_exec_recursive(do_rec_pointer, (VALUE)&data, (VALUE)&data);
+}
+
 static void write_io(VALUE io) {
   rb_funcall(io, rb_intern("write"), 1, rb_str_new2("in write_io"));
 }
@@ -432,6 +473,7 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_eval_string_protect", kernel_spec_rb_eval_string_protect, 2);
   rb_define_method(cls, "rb_catch", kernel_spec_rb_catch, 2);
   rb_define_method(cls, "rb_catch_obj", kernel_spec_rb_catch_obj, 2);
+  rb_define_method(cls, "rb_catch_obj_with_pointer", kernel_spec_rb_catch_obj_with_pointer, 1);
   rb_define_method(cls, "rb_sys_fail", kernel_spec_rb_sys_fail, 1);
   rb_define_method(cls, "rb_syserr_fail", kernel_spec_rb_syserr_fail, 2);
   rb_define_method(cls, "rb_syserr_fail_str", kernel_spec_rb_syserr_fail_str, 2);
@@ -443,6 +485,7 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_yield_values2", kernel_spec_rb_yield_values2, 1);
   rb_define_method(cls, "rb_yield_splat", kernel_spec_rb_yield_splat, 1);
   rb_define_method(cls, "rb_exec_recursive", kernel_spec_rb_exec_recursive, 1);
+  rb_define_method(cls, "rb_exec_recursive_with_pointer", kernel_spec_rb_exec_recursive_with_pointer, 0);
   rb_define_method(cls, "rb_set_end_proc", kernel_spec_rb_set_end_proc, 1);
   rb_define_method(cls, "ruby_vm_at_exit", kernel_spec_ruby_vm_at_exit, 0);
   rb_define_method(cls, "rb_f_sprintf", kernel_spec_rb_f_sprintf, 1);

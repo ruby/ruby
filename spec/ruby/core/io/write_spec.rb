@@ -237,6 +237,19 @@ describe "IO.write" do
         }.should complain(/IO process creation with a leading '\|'/)
       end
     end
+
+    ruby_version_is "4.0" do
+      it "writes to that literal file when path starts with a pipe" do
+        Dir.chdir(tmp("")) do
+          begin
+            IO.write("|cat", "xxx")
+            File.read("|cat").should == "xxx"
+          ensure
+            File.unlink("|cat")
+          end
+        end
+      end
+    end
   end
 end
 

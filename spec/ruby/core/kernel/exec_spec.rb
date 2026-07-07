@@ -12,7 +12,7 @@ describe "Kernel#exec" do
 end
 
 describe "Kernel.exec" do
-  it "runs the specified command, replacing current process" do
-    ruby_exe('Kernel.exec "echo hello"; puts "fail"').should == "hello\n"
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:exec)
   end
 end

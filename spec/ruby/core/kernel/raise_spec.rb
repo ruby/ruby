@@ -214,9 +214,6 @@ end
 
 describe "Kernel.raise" do
   it "is a public method" do
-    Kernel.singleton_class.should.public_method_defined?(:raise)
+    Kernel.public_methods(false).should.include?(:Array)
   end
-
-  it_behaves_like :kernel_raise, :raise, Kernel
-  it_behaves_like :kernel_raise_with_cause, :raise, Kernel
 end

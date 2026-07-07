@@ -228,10 +228,10 @@ describe "Kernel#warn" do
 
     begin
       ScratchPad.clear
-      Kernel.warn("Chunky bacon!")
+      warn("Chunky bacon!")
       ScratchPad.recorded.should == "Chunky bacon!\n"
 
-      Kernel.warn("Deprecated bacon!", category: :deprecated)
+      warn("Deprecated bacon!", category: :deprecated)
       ScratchPad.recorded.should == "Deprecated bacon!\n"
     ensure
       class << Warning
@@ -248,7 +248,7 @@ describe "Kernel#warn" do
     verbose = $VERBOSE
     $VERBOSE = false
     begin
-      Kernel.warn("Chunky bacon!")
+      warn("Chunky bacon!")
     ensure
       $VERBOSE = verbose
     end
@@ -259,7 +259,7 @@ describe "Kernel#warn" do
     verbose = $VERBOSE
     $VERBOSE = false
     begin
-      Kernel.warn("Chunky bacon!", category: 'deprecated')
+      warn("Chunky bacon!", category: 'deprecated')
     ensure
       $VERBOSE = verbose
     end
@@ -294,5 +294,11 @@ describe "Kernel#warn" do
     out = ruby_exe(code, args: "2>&1", options: "--disable-gems")
     out.should == "avoid infinite recursion\n"
     $?.should.success?
+  end
+end
+
+describe "Kernel.warn" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:warn)
   end
 end

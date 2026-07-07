@@ -98,6 +98,19 @@ describe "The rescue keyword" do
       ScratchPad.recorded.should == ["message"]
     end
 
+    it 'captures successfully in a begin/end block' do
+      ScratchPad.record []
+
+      begin
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      ScratchPad.recorded.should == ["message"]
+      e.should.is_a?(RuntimeError)
+    end
+
     it 'captures successfully in a class' do
       ScratchPad.record []
 
@@ -122,7 +135,7 @@ describe "The rescue keyword" do
       ScratchPad.recorded.should == ["message"]
     end
 
-    it 'captures sucpcessfully in a singleton class' do
+    it 'captures successfully in a singleton class' do
       ScratchPad.record []
 
       class << Object.new

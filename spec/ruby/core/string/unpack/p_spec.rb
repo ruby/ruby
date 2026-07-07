@@ -1,11 +1,9 @@
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
-require_relative 'shared/taint'
 
 describe "String#unpack with format 'P'" do
   it_behaves_like :string_unpack_basic, 'P'
-  it_behaves_like :string_unpack_taint, 'P'
 
   it "round-trips a string through pack and unpack" do
     ["hello"].pack("P").unpack("P5").should == ["hello"]
@@ -29,7 +27,6 @@ end
 
 describe "String#unpack with format 'p'" do
   it_behaves_like :string_unpack_basic, 'p'
-  it_behaves_like :string_unpack_taint, 'p'
 
   it "round-trips a string through pack and unpack" do
     ["hello"].pack("p").unpack("p").should == ["hello"]

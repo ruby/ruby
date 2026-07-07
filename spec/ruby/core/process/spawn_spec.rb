@@ -413,6 +413,12 @@ describe "Process.spawn" do
         Process.wait Process.spawn(ruby_cmd("print Dir.pwd"), chdir: dir)
       end.should output_to_fd(@dir)
     end
+
+    it "raises an Errno::ENOENT when a given path doesn't exist" do
+      -> do
+        Process.wait Process.spawn(ruby_cmd("print Dir.pwd"), chdir: "nonexistent")
+      end.should.raise(Errno::ENOENT, "No such file or directory - nonexistent")
+    end
   end
 
   # chdir

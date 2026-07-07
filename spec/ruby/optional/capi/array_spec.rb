@@ -343,7 +343,7 @@ describe "C-API Array function" do
     end
   end
 
-  ruby_version_is ""..."4.0" do
+  ruby_version_is ""..."4.1" do
     describe "rb_iterate" do
       it "calls an callback function as a block passed to an method" do
         s = [1,2,3,4]
@@ -375,6 +375,10 @@ describe "C-API Array function" do
         @s.rb_iterate_then_yield(o) { |x| s2 << x }
 
         s2.should == [1,2,3,4]
+      end
+
+      it "passes non-Ruby pointers to the iteration and block callbacks" do
+        @s.rb_iterate_with_pointer.should == [14]
       end
     end
   end
