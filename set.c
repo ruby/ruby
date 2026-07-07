@@ -2314,16 +2314,23 @@ rb_set_size(VALUE set)
  * An instance of class \Set contains a collection
  * of objects (elements), with no duplicates.
  *
- * By default, \Set determines equality via Kernel#eql? and Kernel#hash,
- * and assumes that these values do not change for a stored element.
- * If these values do change, the set enters an unreliable state;
- * see #reset.
+ * By default:
  *
- * Calling #compare_by_identity causes all following determinations of equality
- * to use object identity instead of the methods mentioned above.
+ * - Set determines equality
+ *   via {Kernel#eql?}[https://docs.ruby-lang.org/en/master/Object.html#method-i-eql-3F]
+ *   and {Kernel#hash}[https://docs.ruby-lang.org/en/master/Object.html#method-i-hash],
+ *   and assumes that these values do not change for a stored element.
+ *   If these values do change, the set enters an unreliable state;
+ *   see #reset.
+ * - A String instance added to a set is stored as a frozen copy of the string,
+ *   unless it is already frozen.
  *
- * Adding a String instance to a set stores a frozen copy of the string,
- * unless it is already frozen.
+ * Calling #compare_by_identity causes:
+ *
+ * - All following determinations of equality
+ *   to use object identity instead of the methods mentioned above.
+ * - A String added to a set is stored "as is", whether or not frozen.
+ *
  *
  * \Set includes module Enumerable, and is easy to use with other enumerable objects.
  * Many of its methods accept enumerable objects as arguments;
