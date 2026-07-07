@@ -2,33 +2,22 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe :kernel_chop, shared: true do
+describe "Kernel#chop" do
+  it "is a private method only when -n is passed" do
+    Kernel.private_instance_methods(false).should_not.include?(:chop)
+    KernelSpecs.private_instance_method_with_dash_n?(:chop).should == true
+  end
+
   it "removes the final character of $_" do
-    KernelSpecs.chop("abc", @method).should == "ab"
+    KernelSpecs.chop_with_dash_n("abc").should == "ab"
   end
 
   it "removes the final carriage return, newline of $_" do
-    KernelSpecs.chop("abc\r\n", @method).should == "abc"
+    KernelSpecs.chop_with_dash_n("abc\r\n").should == "abc"
   end
-end
-
-describe :kernel_chop_private, shared: true do
-  it "is a private method" do
-    KernelSpecs.has_private_method(@method).should == true
-  end
-end
-
-describe "Kernel.chop" do
-  it_behaves_like :kernel_chop, "Kernel.chop"
 end
 
 describe "Kernel#chop" do
-  it_behaves_like :kernel_chop_private, :chop
-
-  it_behaves_like :kernel_chop, "chop"
-end
-
-describe :kernel_chop_encoded, shared: true do
   before :each do
     @external = Encoding.default_external
     Encoding.default_external = Encoding::UTF_8
@@ -39,15 +28,14 @@ describe :kernel_chop_encoded, shared: true do
   end
 
   it "removes the final multi-byte character from $_" do
-    script = fixture __FILE__, "#{@method}.rb"
+    script = fixture __FILE__, "chop.rb"
     KernelSpecs.run_with_dash_n(script).should == "あ"
   end
 end
 
 describe "Kernel.chop" do
-  it_behaves_like :kernel_chop_encoded, "chop"
-end
-
-describe "Kernel#chop" do
-  it_behaves_like :kernel_chop_encoded, "chop_f"
+  it "is a public method only when -n is passed" do
+    Kernel.public_methods(false).should_not.include?(:chop)
+    KernelSpecs.public_singleton_method_with_dash_n?(:chop).should == true
+  end
 end

@@ -24,6 +24,11 @@ describe "IO#seek" do
     @io.readline.should == "une.\n"
   end
 
+  it "accepts the symbol :CUR for SEEK_CUR" do
+    @io.seek(10, :CUR)
+    @io.readline.should == "igne une.\n"
+  end
+
   it "moves the read position relative to the start with SEEK_SET" do
     @io.seek(1)
     @io.pos.should == 1
@@ -34,11 +39,21 @@ describe "IO#seek" do
     @io.readline.should == " la ligne une.\n"
   end
 
+  it "accepts the symbol :SET for SEEK_SET" do
+    @io.seek(43, :SET)
+    @io.readline.should == "Aquí está la línea tres.\n"
+  end
+
   it "moves the read position relative to the end with SEEK_END" do
     @io.seek(0, IO::SEEK_END)
     @io.tell.should == 137
     @io.seek(-25, IO::SEEK_END)
     @io.readline.should == "cinco.\n"
+  end
+
+  it "accepts the symbol :END for SEEK_END" do
+    @io.seek(0, :END)
+    @io.tell.should == 137
   end
 
   it "moves the read position and clears EOF with SEEK_SET" do

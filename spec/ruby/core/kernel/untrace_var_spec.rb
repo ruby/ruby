@@ -8,5 +8,7 @@ describe "Kernel#untrace_var" do
 end
 
 describe "Kernel.untrace_var" do
-  it "needs to be reviewed for spec completeness"
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:untrace_var)
+  end
 end

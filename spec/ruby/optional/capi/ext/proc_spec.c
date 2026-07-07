@@ -60,6 +60,25 @@ VALUE proc_spec_rb_proc_new_callback_arg(VALUE self, VALUE arg) {
   return rb_proc_new(proc_spec_rb_proc_new_function_callback_arg, arg);
 }
 
+struct rb_proc_new_pointer_data {
+  int magic;
+};
+
+VALUE proc_spec_rb_proc_new_function_pointer(VALUE arg, VALUE callback_arg, int argc, const VALUE *argv, VALUE blockarg) {
+  struct rb_proc_new_pointer_data *data = (struct rb_proc_new_pointer_data *)callback_arg;
+  if (data->magic != 0x1234) {
+    rb_raise(rb_eRuntimeError, "invalid proc pointer");
+  }
+
+  return Qtrue;
+}
+
+VALUE proc_spec_rb_proc_new_with_pointer(VALUE self) {
+  struct rb_proc_new_pointer_data data = { 0x1234 };
+  VALUE proc = rb_proc_new(proc_spec_rb_proc_new_function_pointer, (VALUE)&data);
+  return rb_funcall(proc, rb_intern("call"), 0);
+}
+
 VALUE proc_spec_rb_proc_new_blockarg(VALUE self) {
   return rb_proc_new(proc_spec_rb_proc_new_function_blockarg, Qnil);
 }
@@ -131,6 +150,7 @@ void Init_proc_spec(void) {
   rb_define_method(cls, "rb_proc_new_argc", proc_spec_rb_proc_new_argc, 0);
   rb_define_method(cls, "rb_proc_new_argv_n", proc_spec_rb_proc_new_argv_n, 0);
   rb_define_method(cls, "rb_proc_new_callback_arg", proc_spec_rb_proc_new_callback_arg, 1);
+  rb_define_method(cls, "rb_proc_new_with_pointer", proc_spec_rb_proc_new_with_pointer, 0);
   rb_define_method(cls, "rb_proc_new_blockarg", proc_spec_rb_proc_new_blockarg, 0);
   rb_define_method(cls, "rb_proc_new_block_given_p", proc_spec_rb_proc_new_block_given_p, 0);
   rb_define_method(cls, "rb_proc_arity", proc_spec_rb_proc_arity, 1);

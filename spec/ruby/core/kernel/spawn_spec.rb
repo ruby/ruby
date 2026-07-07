@@ -17,9 +17,7 @@ describe "Kernel#spawn" do
 end
 
 describe "Kernel.spawn" do
-  it "executes the given command" do
-    -> {
-      Process.wait Kernel.spawn("echo spawn")
-    }.should output_to_fd("spawn\n")
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:spawn)
   end
 end

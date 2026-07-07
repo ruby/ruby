@@ -180,4 +180,20 @@ describe "Proc#parameters" do
       RUBY
     end
   end
+
+  ruby_version_is ""..."4.0" do
+    it "regards a destructured parameter in proc as an optional one" do
+      proc { |(a)| }.parameters.should == [[:opt, nil]]
+    end
+  end
+
+  ruby_version_is "4.0" do
+    it "regards a destructured parameter in proc as an optional one" do
+      proc { |(a)| }.parameters.should == [[:opt]]
+    end
+  end
+
+  it "regards a destructured parameter in lambda as an required" do
+    -> ((a)) { }.parameters.should == [[:req]] # rubocop:disable Style/StabbyLambdaParentheses
+  end
 end

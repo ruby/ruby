@@ -14,6 +14,10 @@ describe "Kernel#require_relative with a relative path" do
     CodeLoadingSpecs.spec_cleanup
   end
 
+  it "is a private method" do
+    Kernel.private_instance_methods(false).should.include?(:require_relative)
+  end
+
   platform_is_not :windows do
     describe "when file is a symlink" do
       before :each do
@@ -433,5 +437,11 @@ describe "Kernel#require_relative with an absolute path" do
       $LOADED_FEATURES.should.include?(@abs_path)
       ScratchPad.recorded.should == [:loaded]
     end
+  end
+end
+
+describe "Kernel.require_relative" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:require_relative)
   end
 end

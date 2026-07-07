@@ -24,17 +24,7 @@ describe "Kernel#load" do
 end
 
 describe "Kernel.load" do
-  before :each do
-    CodeLoadingSpecs.spec_setup
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:load)
   end
-
-  after :each do
-    CodeLoadingSpecs.spec_cleanup
-  end
-
-  it_behaves_like :kernel_require_basic, :load, Kernel
-end
-
-describe "Kernel.load" do
-  it_behaves_like :kernel_load, :load, Kernel
 end

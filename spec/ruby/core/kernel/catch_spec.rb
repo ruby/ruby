@@ -1,9 +1,13 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe "Kernel.catch" do
+describe "Kernel#catch" do
   before :each do
     ScratchPad.clear
+  end
+
+  it "is a private method" do
+    Kernel.private_instance_methods(false).should.include?(:catch)
   end
 
   it "executes its block and catches a thrown value matching its argument" do
@@ -120,8 +124,8 @@ describe "Kernel.catch" do
   end
 end
 
-describe "Kernel#catch" do
-  it "is a private method" do
-    Kernel.private_instance_methods(false).should.include?(:catch)
+describe "Kernel.catch" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:catch)
   end
 end

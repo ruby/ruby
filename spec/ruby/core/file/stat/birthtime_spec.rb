@@ -22,6 +22,7 @@ platform_is(:windows, :darwin, :freebsd, :netbsd,
       st = File.stat(@file)
       st.birthtime.should.is_a?(Time)
       st.birthtime.should <= Time.now
+      st.birthtime.should > Time.now - 24*60*60
     rescue NotImplementedError => e
       e.message.should.start_with?(*not_implemented_messages)
     end

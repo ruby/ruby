@@ -127,15 +127,15 @@ describe :io_new, shared: true do
 
   it "ignores the :encoding option when the :external_encoding option is present" do
     -> {
-      @io = IO.send(@method, @fd, 'w', external_encoding: 'utf-8', encoding: 'iso-8859-1:iso-8859-1')
-    }.should complain(/Ignoring encoding parameter/)
-    @io.external_encoding.to_s.should == 'UTF-8'
+      @io = IO.send(@method, @fd, 'w', external_encoding: 'ibm866', encoding: 'iso-8859-1:iso-8859-1')
+    }.should complain(/Ignoring encoding parameter 'iso-8859-1:iso-8859-1': external_encoding is used/)
+    @io.external_encoding.to_s.should == 'IBM866'
   end
 
   it "ignores the :encoding option when the :internal_encoding option is present" do
     -> {
       @io = IO.send(@method, @fd, 'w', internal_encoding: 'ibm866', encoding: 'iso-8859-1:iso-8859-1')
-    }.should complain(/Ignoring encoding parameter/)
+    }.should complain(/Ignoring encoding parameter 'iso-8859-1:iso-8859-1': internal_encoding is used/)
     @io.internal_encoding.to_s.should == 'IBM866'
   end
 

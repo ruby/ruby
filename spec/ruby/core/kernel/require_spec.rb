@@ -54,14 +54,7 @@ describe "Kernel#require" do
 end
 
 describe "Kernel.require" do
-  before :each do
-    CodeLoadingSpecs.spec_setup
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:require)
   end
-
-  after :each do
-    CodeLoadingSpecs.spec_cleanup
-  end
-
-  it_behaves_like :kernel_require_basic, :require, Kernel
-  it_behaves_like :kernel_require, :require, Kernel
 end

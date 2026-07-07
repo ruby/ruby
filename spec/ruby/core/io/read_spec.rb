@@ -150,8 +150,8 @@ describe "IO.read" do
   end
 end
 
-ruby_version_is ""..."4.0" do
-  describe "IO.read from a pipe" do
+describe "IO.read from a pipe" do
+  ruby_version_is ""..."4.0" do
     it "runs the rest as a subprocess and returns the standard output" do
       cmd = "|sh -c 'echo hello'"
       platform_is :windows do
@@ -216,10 +216,23 @@ ruby_version_is ""..."4.0" do
 
     # https://bugs.ruby-lang.org/issues/19630
     it "warns about deprecation" do
-      cmd = "|echo ok"
       -> {
-        IO.read(cmd)
+        IO.read("|echo ok")
       }.should complain(/IO process creation with a leading '\|'/)
+    end
+  end
+
+  ruby_version_is "4.0" do
+    platform_is_not :windows do
+      it "raises Errno::ENOENT when path starts with a pipe" do
+        -> { IO.read("|echo ok") }.should.raise(Errno::ENOENT)
+      end
+    end
+
+    platform_is :windows do
+      it "raises Errno::EINVAL when path starts with a pipe" do
+        -> { IO.read("|echo ok") }.should.raise(Errno::EINVAL)
+      end
     end
   end
 end
