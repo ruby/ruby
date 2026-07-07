@@ -3852,6 +3852,7 @@ getresgid(rb_gid_t *rgid, rb_gid_t *egid, rb_gid_t *sgid)
 #define HAVE_GETRESGID
 #endif
 
+#if !defined(RUBY_ASAN_ENABLED)
 static int
 has_privilege(void)
 {
@@ -3913,6 +3914,7 @@ has_privilege(void)
 
     return 0;
 }
+#endif
 #endif
 
 struct child_handler_disabler_state

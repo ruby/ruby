@@ -3720,6 +3720,7 @@ bool
 rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath)
 {
 #if RACTOR_CHECK_MODE || defined(RUBY_ASAN_ENABLED)
+    (void)rb_gc_impl_zjit_new_obj_fastpath;
     return false;
 #else
     return rb_gc_impl_zjit_new_obj_fastpath(rb_gc_get_objspace(), alloc_size, flags, klass, fastpath);
