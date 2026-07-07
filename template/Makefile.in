@@ -215,7 +215,9 @@ DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
 			parse.$(OBJEXT) \
 			string.$(OBJEXT) \
 			symbol.$(OBJEXT) \
+			thread.$(OBJEXT) \
 			vm.$(OBJEXT) \
+			vm_sync.$(OBJEXT) \
 			$(YJIT_OBJ) \
 			$(ZJIT_OBJ)
 
