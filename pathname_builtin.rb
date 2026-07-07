@@ -1889,7 +1889,22 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.file?</tt>.
   def file?() FileTest.file?(@path) end
 
-  # See <tt>FileTest.pipe?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   pipe? -> true or false
+  #
+  # Returns whether the path in +self+ points to a pipe:
+  #
+  # ```ruby
+  # path = '/tmp/foo'
+  # File.mkfifo(path)
+  # pn = Pathname(path) # => #<Pathname:/tmp/foo>
+  # pn.pipe?            # => true
+  # Pathname('.').pipe? # => false
+  # pn.delete           # Clean up.
+  # ```
+  #
   def pipe?() FileTest.pipe?(@path) end
 
   # See <tt>FileTest.socket?</tt>.
