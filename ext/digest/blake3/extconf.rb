@@ -81,3 +81,22 @@ have_header("sys/cdefs.h")
 $preload = %w[digest]
 
 create_makefile("digest/blake3")
+
+# Emit one explicit compile rule per SIMD backend so each gets its own
+# instruction-set flag.  mkmf's implicit .c.o rule compiles every object with
+# the same $(CFLAGS), which can't express e.g. -mavx2 for one file only; an
+# explicit rule with a recipe overrides that implicit rule for these targets.
+# The recipe mirrors mkmf's .c.o rule with the extra flag inserted after
+# $(CFLAGS).
+unless simd_cflags.empty?
+  File.open("Makefile", "a") do |mf|
+    mf.puts
+    mf.puts "# Per-file instruction-set flags for the BLAKE3 SIMD backends."
+    simd_cflags.each do |obj, flag|
+      target = "#{obj}.#{$OBJEXT}"
+      mf.puts "#{target}: $(srcdir)/#{obj}.c"
+      mf.puts "\t$(ECHO) compiling $(<)"
+      mf.puts "\t$(Q) $(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) #{flag} $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/#{obj}.c"
+    end
+  end
+end
