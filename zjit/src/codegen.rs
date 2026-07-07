@@ -2280,6 +2280,9 @@ fn gen_new_hash(
         let hash = gc_fastpath::gc_fast_path_new_obj(jit, asm, alloc_size, flags, klass, |asm| {
             asm_ccall!(asm, rb_hash_new,)
         });
+        // TODO: this runs on the slow path too, where rb_hash_new already set
+        // ifnone. A fast-path-only init hook in gc_fast_path_new_obj would avoid
+        // the redundant store and be reusable for other types.
         asm.store(Opnd::mem(VALUE_BITS, hash, ifnone_offset), Qnil.into());
         hash
     } else {
