@@ -4254,6 +4254,44 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
 static int
 iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 {
+    /* foo(**h.merge(d)): the fresh kw-splat operand needs no defensive copy */
+    if (IS_INSN_ID(iobj, send) || IS_INSN_ID(iobj, opt_send_without_block)) {
+        const struct rb_callinfo *kci = (const struct rb_callinfo *)OPERAND_AT(iobj, 0);
+        if ((vm_ci_flag(kci) & VM_CALL_KW_SPLAT) &&
+            !(vm_ci_flag(kci) & (VM_CALL_KW_SPLAT_MUT | VM_CALL_ARGS_BLOCKARG))) {
+            LINK_ELEMENT *kprev = get_prev_insn(iobj);
+            if (kprev && IS_INSN(kprev) &&
+                (IS_INSN_ID((INSN *)kprev, send) || IS_INSN_ID((INSN *)kprev, opt_send_without_block))) {
+                INSN *piobj = (INSN *)kprev;
+                const struct rb_callinfo *pci = (const struct rb_callinfo *)OPERAND_AT(piobj, 0);
+                int pblk = IS_INSN_ID(piobj, send) && OPERAND_AT(piobj, 1) != 0;
+                if (!(vm_ci_flag(pci) & VM_CALL_FRESH_PROD) && !vm_ci_kwarg(pci) &&
+                    !(vm_ci_flag(pci) & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING))) {
+                    piobj->operands[0] = (VALUE)new_callinfo(iseq, vm_ci_mid(pci), vm_ci_argc(pci),
+                                                             vm_ci_flag(pci) | VM_CALL_FRESH_PROD,
+                                                             NULL, pblk);
+                }
+            }
+        }
+    }
+
+    /* f(*xs.map{..}): the fresh splat operand needs no defensive copy */
+    if (IS_INSN_ID(iobj, splatarray)) {
+        LINK_ELEMENT *sprev = get_prev_insn(iobj);
+        if (sprev && IS_INSN(sprev) &&
+            (IS_INSN_ID((INSN *)sprev, send) || IS_INSN_ID((INSN *)sprev, opt_send_without_block))) {
+            INSN *piobj = (INSN *)sprev;
+            const struct rb_callinfo *pci = (const struct rb_callinfo *)OPERAND_AT(piobj, 0);
+            int pblk = IS_INSN_ID(piobj, send) && OPERAND_AT(piobj, 1) != 0;
+            if (!(vm_ci_flag(pci) & VM_CALL_FRESH_PROD) && !vm_ci_kwarg(pci) &&
+                !(vm_ci_flag(pci) & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING))) {
+                piobj->operands[0] = (VALUE)new_callinfo(iseq, vm_ci_mid(pci), vm_ci_argc(pci),
+                                                         vm_ci_flag(pci) | VM_CALL_FRESH_PROD,
+                                                         NULL, pblk);
+            }
+        }
+    }
+
     if (IS_INSN_ID(iobj, newarray) && iobj->link.next &&
         IS_INSN(iobj->link.next)) {
         /*
@@ -8060,7 +8098,6 @@ iseq_compile_pattern_constant(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
     }
     return COMPILE_OK;
 }
-
 
 static int
 iseq_compile_array_deconstruct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, LABEL *deconstruct, LABEL *deconstructed, LABEL *match_failed, LABEL *type_error, bool in_single_pattern, int base_index, bool use_deconstructed_cache)

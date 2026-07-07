@@ -1798,6 +1798,12 @@ os_obj_of_i(void *vstart, void *vend, size_t stride, void *data)
         if (!internal_object_p(v)) {
             if (!oes->of || rb_obj_is_kind_of(v, oes->of)) {
                 if (!rb_multi_ractor_p() || rb_ractor_shareable_p(v)) {
+                    /* yielding creates a reference the fresh-flag machinery cannot see */
+                    if (!RB_OBJ_FROZEN_RAW(v)) {
+                        if (RB_TYPE_P(v, T_STRING)) FL_UNSET_RAW(v, STR_FRESH);
+                        else if (RB_TYPE_P(v, T_ARRAY)) FL_UNSET_RAW(v, ARY_FRESH);
+                        else if (RB_TYPE_P(v, T_HASH)) FL_UNSET_RAW(v, HASH_FRESH);
+                    }
                     rb_yield(v);
                     oes->num++;
                 }

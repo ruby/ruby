@@ -21,6 +21,8 @@
 #define STR_CHILLED                 (FL_USER2 | FL_USER3)
 #define STR_CHILLED_LITERAL         FL_USER2
 #define STR_CHILLED_SYMBOL_TO_S     FL_USER3
+/* fresh chain temporary; shared with STR_PRECOMPUTED_HASH, so tests must exclude frozen */
+#define STR_FRESH                   FL_USER4
 
 enum ruby_rstring_private_flags {
     RSTRING_CHILLED = STR_CHILLED,
@@ -125,6 +127,25 @@ bool rb_obj_is_fstring_table(VALUE obj);
 void Init_fstring_table();
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 VALUE rb_str_opt_plus(VALUE x, VALUE y);
+VALUE rb_str_plus_chain_head(VALUE str1, VALUE str2);
+VALUE rb_str_fresh_concat(VALUE str, VALUE str2);
+VALUE rb_str_fresh_upcase(int argc, VALUE *argv, VALUE str);
+VALUE rb_str_fresh_downcase(int argc, VALUE *argv, VALUE str);
+VALUE rb_str_fresh_capitalize(int argc, VALUE *argv, VALUE str);
+VALUE rb_str_fresh_swapcase(int argc, VALUE *argv, VALUE str);
+VALUE rb_str_fresh_strip(int argc, VALUE *argv, VALUE str);
+VALUE rb_str_fresh_lstrip(int argc, VALUE *argv, VALUE str);
+VALUE rb_str_fresh_rstrip(int argc, VALUE *argv, VALUE str);
+VALUE rb_str_fresh_chomp(int argc, VALUE *argv, VALUE str);
+VALUE rb_str_fresh_squeeze(int argc, VALUE *argv, VALUE str);
+VALUE rb_str_fresh_chop(VALUE str);
+VALUE rb_str_fresh_sub(int argc, VALUE *argv, VALUE str);
+VALUE rb_str_fresh_tr(VALUE str, VALUE src, VALUE repl);
+VALUE rb_str_fresh_delete(int argc, VALUE *argv, VALUE str);
+VALUE rb_yjitf_str_concat_literals_fresh(size_t n, const VALUE *strings);
+struct rb_execution_context_struct;
+VALUE rb_ec_str_resurrect_fresh(struct rb_execution_context_struct *ec, VALUE str);
+void rb_str_fresh_shrink(VALUE str);
 VALUE rb_str_concat_literals(size_t num, const VALUE *strary);
 VALUE rb_str_eql(VALUE str1, VALUE str2);
 VALUE rb_id_quote_unprintable(ID);

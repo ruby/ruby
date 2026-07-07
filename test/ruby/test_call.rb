@@ -3,6 +3,30 @@ require 'test/unit'
 require '-test-/iter'
 
 class TestCall < Test::Unit::TestCase
+  def test_fresh_splat_handover
+    f = ->(*a) { a }
+    xs = [1, 2, 3]
+    r = f.call(*xs.map { |v| v * 2 })
+    assert_equal([2, 4, 6], r)
+    r << 9
+    assert_equal([1, 2, 3], xs)
+  end
+
+  def test_fresh_kw_splat_handover
+    g = ->(**kw) { kw }
+    pos = ->(a) { a }
+    h = { x: 1 }
+    d = { y: 2 }
+    k = g.call(**h.merge(d))
+    assert_equal({ x: 1, y: 2 }, k)
+    k[:z] = 9
+    assert_equal({ x: 1 }, h)
+    assert_equal({ y: 2 }, d)
+    q = pos.call(**h.merge(d))
+    q[:w] = 8
+    assert_equal({ x: 1 }, h)
+  end
+
   # These dummy method definitions prevent warnings "the block passed to 'a'..."
   def a(&) = nil
   def b(&) = nil

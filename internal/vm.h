@@ -66,6 +66,14 @@ typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
                                  rb_check_funcall_hook *hook, VALUE arg, int kw_splat);
 const char *rb_type_str(enum ruby_value_type type);
+VALUE rb_vm_opt_plus_consume(VALUE recv, VALUE obj);
+VALUE rb_vm_opt_plus_fresh(VALUE recv, VALUE obj);
+void rb_vm_fresh_str_arm(VALUE val);
+void rb_vm_fresh_ary_arm(VALUE val);
+void rb_vm_fresh_hash_arm(VALUE val);
+bool rb_vm_fresh_producer_mid_p(ID mid);
+bool rb_vm_fresh_consumer_mid_p(ID mid);
+struct rb_callable_method_entry_struct;
 VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_check_funcall_basic_kw(VALUE, ID, VALUE, int, const VALUE*, int);
 VALUE rb_yield_1(VALUE val);

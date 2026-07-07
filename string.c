@@ -1056,6 +1056,35 @@ empty_str_alloc(VALUE klass)
     return str;
 }
 
+/* an empty string with `capa` capacity; the buffer is left uninitialized */
+ALWAYS_INLINE(static VALUE str_enc_buf_new0(VALUE klass, long capa, rb_encoding *enc, int termlen));
+static VALUE
+str_enc_buf_new0(VALUE klass, long capa, rb_encoding *enc, int termlen)
+{
+    VALUE str;
+
+    if (STR_EMBEDDABLE_P(capa, termlen)) {
+        str = str_alloc_embed(klass, capa + termlen);
+    }
+    else {
+        str = str_alloc_heap(klass);
+        RSTRING(str)->as.heap.aux.capa = capa;
+        /* :FIXME: @shyouhei guesses `len + termlen` is guaranteed to never
+         * integer overflow.  If we can STATIC_ASSERT that, the following
+         * mul_add_mul can be reverted to a simple ALLOC_N. */
+        RSTRING(str)->as.heap.ptr =
+            rb_xmalloc_mul_add_mul(sizeof(char), capa, sizeof(char), termlen);
+    }
+    rb_enc_raw_set(str, enc);
+    return str;
+}
+
+static VALUE
+str_enc_buf_new(VALUE klass, long capa, rb_encoding *enc)
+{
+    return str_enc_buf_new0(klass, capa, enc, rb_enc_mbminlen(enc));
+}
+
 static VALUE
 str_enc_new(VALUE klass, const char *ptr, long len, rb_encoding *enc)
 {
@@ -1072,24 +1101,10 @@ str_enc_new(VALUE klass, const char *ptr, long len, rb_encoding *enc)
     RUBY_DTRACE_CREATE_HOOK(STRING, len);
 
     int termlen = rb_enc_mbminlen(enc);
-
-    if (STR_EMBEDDABLE_P(len, termlen)) {
-        str = str_alloc_embed(klass, len + termlen);
-        if (len == 0) {
-            ENC_CODERANGE_SET(str, rb_enc_asciicompat(enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID);
-        }
+    str = str_enc_buf_new0(klass, len, enc, termlen);
+    if (len == 0) {
+        ENC_CODERANGE_SET(str, rb_enc_asciicompat(enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID);
     }
-    else {
-        str = str_alloc_heap(klass);
-        RSTRING(str)->as.heap.aux.capa = len;
-        /* :FIXME: @shyouhei guesses `len + termlen` is guaranteed to never
-         * integer overflow.  If we can STATIC_ASSERT that, the following
-         * mul_add_mul can be reverted to a simple ALLOC_N. */
-        RSTRING(str)->as.heap.ptr =
-            rb_xmalloc_mul_add_mul(sizeof(char), len, sizeof(char), termlen);
-    }
-
-    rb_enc_raw_set(str, enc);
 
     if (ptr) {
         memcpy(RSTRING_PTR(str), ptr, len);
@@ -2041,6 +2056,24 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str, bool chil
     return new_str;
 }
 
+/* dupstring for a + chain head: request twice the length so the size-pool
+ * rounding leaves in-place headroom for the appends that follow.  The copy
+ * is consumed by the + and never observable, so chilled bookkeeping and
+ * exact sizing can both be skipped.  Too-long literals fall back to the
+ * plain (sharing) duplication, unarmed. */
+VALUE
+rb_ec_str_resurrect_fresh(struct rb_execution_context_struct *ec, VALUE str)
+{
+    if (STR_EMBED_P(str) && STR_EMBEDDABLE_P(2 * RSTRING_LEN(str), TERM_LEN(str))) {
+        RUBY_DTRACE_CREATE_HOOK(STRING, RSTRING_LEN(str));
+        VALUE new_str = ec_str_alloc_embed(ec, rb_cString, 2 * RSTRING_LEN(str) + TERM_LEN(str));
+        str_duplicate_setup_embed(rb_cString, str, new_str);
+        FL_SET_RAW(new_str, STR_FRESH);
+        return new_str;
+    }
+    return rb_ec_str_resurrect(ec, str, false);
+}
+
 VALUE
 rb_str_with_debug_created_info(VALUE str, VALUE path, int line)
 {
@@ -2500,6 +2533,79 @@ rb_str_plus(VALUE str1, VALUE str2)
         rb_raise(rb_eArgError, "string size too big");
     }
     str3 = str_enc_new(rb_cString, 0, len1+len2, enc);
+    ptr3 = RSTRING_PTR(str3);
+    memcpy(ptr3, ptr1, len1);
+    memcpy(ptr3+len1, ptr2, len2);
+    TERM_FILL(&ptr3[len1+len2], termlen);
+
+    ENCODING_CODERANGE_SET(str3, rb_enc_to_index(enc),
+                           ENC_CODERANGE_AND(ENC_CODERANGE(str1), ENC_CODERANGE(str2)));
+    RB_GC_GUARD(str1);
+    RB_GC_GUARD(str2);
+    return str3;
+}
+
+/* in-place append when the encodings match and the receiver has room,
+ * otherwise the ordinary copying + */
+VALUE
+rb_str_fresh_concat(VALUE str, VALUE str2)
+{
+    long len = RSTRING_LEN(str), len2 = RSTRING_LEN(str2);
+
+    if (ENCODING_GET_INLINED(str) == ENCODING_GET_INLINED(str2) &&
+        !STR_SHARED_P(str)) {
+        if (len + len2 > (long)str_capacity(str, TERM_LEN(str))) {
+            /* out of room: reallocate like a chain head (embedded when it
+             * fits a slot), abandoning the old fresh copy */
+            return rb_str_plus_chain_head(str, str2);
+        }
+        memcpy(RSTRING_PTR(str) + len, RSTRING_PTR(str2), len2);
+        STR_SET_LEN(str, len + len2);
+        TERM_FILL(RSTRING_PTR(str) + len + len2, TERM_LEN(str));
+        ENC_CODERANGE_SET(str, ENC_CODERANGE_AND(ENC_CODERANGE(str), ENC_CODERANGE(str2)));
+        RB_GC_GUARD(str2);
+        return str;
+    }
+    return rb_str_opt_plus(str, str2); /* non-raising: Qundef falls back to dispatch */
+}
+
+/* restore String#+'s exact-capacity result at the chain end, so that later
+ * dup/sub/freeze can share its buffer like an ordinary + result */
+void
+rb_str_fresh_shrink(VALUE str)
+{
+    if (STR_EMBED_P(str) || FL_TEST_RAW(str, STR_SHARED | STR_NOFREE)) return;
+    long len = RSTRING_LEN(str);
+    long capa = RSTRING(str)->as.heap.aux.capa;
+    int termlen = TERM_LEN(str);
+    if (capa > len) {
+        SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char, (size_t)len + termlen, (size_t)capa + termlen);
+        RSTRING(str)->as.heap.aux.capa = len;
+    }
+}
+
+/* rb_str_plus for a + chain head: the result is about to be appended to,
+ * so allocate it with growth headroom */
+VALUE
+rb_str_plus_chain_head(VALUE str1, VALUE str2)
+{
+    VALUE str3;
+    rb_encoding *enc;
+    const char *ptr1, *ptr2;
+    char *ptr3;
+    long len1, len2;
+    int termlen;
+
+    StringValue(str2);
+    enc = rb_enc_check_str(str1, str2);
+    RSTRING_GETMEM(str1, ptr1, len1);
+    RSTRING_GETMEM(str2, ptr2, len2);
+    termlen = rb_enc_mbminlen(enc);
+    if (len1 > LONG_MAX / 4 - len2) {
+        return Qundef; /* headroom would overflow: fall back to dispatch */
+    }
+    str3 = str_enc_buf_new(rb_cString, (len1 + len2) * 2, enc);
+    STR_SET_LEN(str3, len1 + len2);
     ptr3 = RSTRING_PTR(str3);
     memcpy(ptr3, ptr1, len1);
     memcpy(ptr3+len1, ptr2, len2);
@@ -12862,6 +12968,63 @@ fstring_set_class_i(VALUE *str, void *data)
     RBASIC_SET_CLASS(*str, rb_cString);
 
     return ST_CONTINUE;
+}
+
+/* Destructive variants for proven-fresh receivers (vm_insnhelper.c):
+ * same as the bangs except the receiver itself is returned. */
+#define FRESH_STR_WRAP(name) \
+VALUE \
+rb_str_fresh_##name(int argc, VALUE *argv, VALUE str) \
+{ \
+    rb_str_##name##_bang(argc, argv, str); \
+    return str; \
+}
+FRESH_STR_WRAP(upcase)
+FRESH_STR_WRAP(downcase)
+FRESH_STR_WRAP(capitalize)
+FRESH_STR_WRAP(swapcase)
+FRESH_STR_WRAP(strip)
+FRESH_STR_WRAP(lstrip)
+FRESH_STR_WRAP(rstrip)
+FRESH_STR_WRAP(chomp)
+FRESH_STR_WRAP(squeeze)
+#undef FRESH_STR_WRAP
+
+VALUE
+rb_str_fresh_chop(VALUE str)
+{
+    rb_str_chop_bang(str);
+    return str;
+}
+
+VALUE
+rb_str_fresh_sub(int argc, VALUE *argv, VALUE str)
+{
+    rb_str_sub_bang(argc, argv, str);
+    return str;
+}
+
+VALUE
+rb_str_fresh_tr(VALUE str, VALUE src, VALUE repl)
+{
+    rb_str_tr_bang(str, src, repl);
+    return str;
+}
+
+VALUE
+rb_str_fresh_delete(int argc, VALUE *argv, VALUE str)
+{
+    rb_str_delete_bang(argc, argv, str);
+    return str;
+}
+
+/* JIT twin of concatstrings_fresh (insns.def) */
+VALUE
+rb_yjitf_str_concat_literals_fresh(size_t n, const VALUE *strings)
+{
+    VALUE val = rb_str_concat_literals(n, strings);
+    if (BASIC_OP_UNREDEFINED_P(BOP_STR_FRESH, STRING_REDEFINED_OP_FLAG)) FL_SET_RAW(val, STR_FRESH);
+    return val;
 }
 
 void

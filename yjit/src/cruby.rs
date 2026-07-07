@@ -125,6 +125,14 @@ extern "C" {
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
+    pub fn rb_str_plus(str1: VALUE, str2: VALUE) -> VALUE;
+    pub fn rb_ary_plus(ary1: VALUE, ary2: VALUE) -> VALUE;
+    pub fn rb_vm_opt_plus_consume(recv: VALUE, obj: VALUE) -> VALUE;
+    pub fn rb_vm_opt_plus_fresh(recv: VALUE, obj: VALUE) -> VALUE;
+    pub fn rb_yjitf_str_concat_literals_fresh(n: usize, strings: *const VALUE) -> VALUE;
+    pub fn rb_ec_str_resurrect_fresh(ec: *mut rb_execution_context_struct, str_: VALUE) -> VALUE;
+    pub fn rb_yjitf_ary_resurrect_fresh(ary: VALUE) -> VALUE;
+    pub fn rb_yjitf_ary_new_fresh(ec: *mut rb_execution_context_struct, n: ::std::os::raw::c_long, elts: *const VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_concat_to_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_defined(
@@ -740,6 +748,8 @@ mod manual_defs {
     // From vm_callinfo.h - uses calculation that seems to confuse bindgen
     pub const VM_CALL_ARGS_SIMPLE: u32 = 1 << VM_CALL_ARGS_SIMPLE_bit;
     pub const VM_CALL_ARGS_SPLAT: u32 = 1 << VM_CALL_ARGS_SPLAT_bit;
+    pub const VM_CALL_FRESH_PROD: u32 = 1 << VM_CALL_FRESH_PROD_bit;
+    pub const VM_CALL_FRESH_CONS: u32 = 1 << VM_CALL_FRESH_CONS_bit;
     pub const VM_CALL_ARGS_BLOCKARG: u32 = 1 << VM_CALL_ARGS_BLOCKARG_bit;
     pub const VM_CALL_FORWARDING: u32 = 1 << VM_CALL_FORWARDING_bit;
     pub const VM_CALL_FCALL: u32 = 1 << VM_CALL_FCALL_bit;

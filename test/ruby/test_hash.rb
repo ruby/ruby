@@ -1934,6 +1934,18 @@ class TestHash < Test::Unit::TestCase
   end
 end
 
+  def test_fresh_builtin_chain
+    h = { a: 1, b: nil }
+    g = { c: 3 }
+    assert_equal({ a: 1, b: nil, c: 3, d: 4 }, h.merge(g).merge(d: 4))
+    assert_equal({ a: 2 }, h.compact.transform_values { |v| v * 2 })
+    assert_equal({ a: 1, b: nil }, h)
+    assert_equal({ c: 3 }, g)
+    t = h.merge(g)
+    assert_equal({ a: 1, b: nil, c: 3, d: 4 }, t.merge(d: 4))
+    assert_equal({ a: 1, b: nil, c: 3 }, t)
+  end
+
 class TestHashOnly < Test::Unit::TestCase
   def test_bad_initialize_copy
     h = Class.new(Hash) {

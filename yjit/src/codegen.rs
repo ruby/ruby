@@ -1845,6 +1845,43 @@ fn gen_duparray(
     Some(KeepCompiling)
 }
 
+fn gen_duparray_fresh(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    let ary = jit.get_arg(0);
+    jit_prepare_call_with_gc(jit, asm);
+    let new_ary = asm.ccall(
+        rb_yjitf_ary_resurrect_fresh as *const u8,
+        vec![ary.into()],
+    );
+    let stack_ret = asm.stack_push(Type::CArray);
+    asm.mov(stack_ret, new_ary);
+    Some(KeepCompiling)
+}
+
+fn gen_newarray_fresh(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    let n = jit.get_arg(0).as_u32();
+    jit_prepare_call_with_gc(jit, asm);
+    let values_ptr = if n == 0 {
+        Opnd::UImm(0)
+    } else {
+        let values_opnd = asm.ctx.sp_opnd(-(n as i32));
+        asm.lea(values_opnd)
+    };
+    let new_ary = asm.ccall(
+        rb_yjitf_ary_new_fresh as *const u8,
+        vec![EC, Opnd::UImm(n.into()), values_ptr]
+    );
+    asm.stack_pop(n.as_usize());
+    let stack_ret = asm.stack_push(Type::CArray);
+    asm.mov(stack_ret, new_ary);
+    Some(KeepCompiling)
+}
+
 // dup hash
 fn gen_duphash(
     jit: &mut JITState,
@@ -2784,6 +2821,21 @@ fn gen_dupstring(
     Some(KeepCompiling)
 }
 
+fn gen_dupstring_fresh(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    let put_val = jit.get_arg(0);
+    jit_prepare_call_with_gc(jit, asm);
+    let str_opnd = asm.ccall(
+        rb_ec_str_resurrect_fresh as *const u8,
+        vec![EC, put_val.into()]
+    );
+    let stack_top = asm.stack_push(Type::CString);
+    asm.mov(stack_top, str_opnd);
+    Some(KeepCompiling)
+}
+
 fn gen_dupchilledstring(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -3563,6 +3615,23 @@ fn gen_concatstrings(
     let stack_ret = asm.stack_push(Type::TString);
     asm.mov(stack_ret, return_value);
 
+    Some(KeepCompiling)
+}
+
+fn gen_concatstrings_fresh(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    let n = jit.get_arg(0).as_usize();
+    jit_prepare_non_leaf_call(jit, asm);
+    let values_ptr = asm.lea(asm.ctx.sp_opnd(-(n as i32)));
+    let return_value = asm.ccall(
+        rb_yjitf_str_concat_literals_fresh as *const u8,
+        vec![n.into(), values_ptr]
+    );
+    asm.stack_pop(n);
+    let stack_ret = asm.stack_push(Type::TString);
+    asm.mov(stack_ret, return_value);
     Some(KeepCompiling)
 }
 
@@ -7267,7 +7336,21 @@ fn gen_send_cfunc(
     // cfunc comes from compile-time cme->def, which we assume to be stable.
     // Invalidation logic is in yjit_method_lookup_change()
     asm_comment!(asm, "call C function");
-    let ret = asm.ccall(unsafe { get_mct_func(cfunc) }.cast(), args);
+    let mut cfunc_fn_ptr: *const u8 = unsafe { get_mct_func(cfunc) }.cast();
+    if (cfunc_fn_ptr == rb_str_plus as *const u8 || cfunc_fn_ptr == rb_ary_plus as *const u8)
+        && argc == 1
+        && flags & (VM_CALL_ARGS_BLOCKARG | VM_CALL_KW_SPLAT) == 0 {
+        // + chain fusion (vm_opt_plus() in vm_insnhelper.c): keep the
+        // consume/produce behavior by substituting the entry point.
+        let opcode = jit.get_opcode() as u32;
+        if opcode == YARVINSN_opt_plus_fresh {
+            cfunc_fn_ptr = rb_vm_opt_plus_fresh as *const u8;
+        }
+        else if opcode == YARVINSN_opt_plus && flags & VM_CALL_FRESH_CONS != 0 {
+            cfunc_fn_ptr = rb_vm_opt_plus_consume as *const u8;
+        }
+    }
+    let ret = asm.ccall(cfunc_fn_ptr, args);
     asm.stack_pop((argc + 1).try_into().unwrap()); // Pop arguments after ccall to use registers for passing them.
 
     // Record code position for TracePoint patching. See full_cfunc_return().
@@ -10857,6 +10940,11 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_setlocal_WC_0 => Some(gen_setlocal_wc0),
         YARVINSN_setlocal_WC_1 => Some(gen_setlocal_wc1),
         YARVINSN_opt_plus => Some(gen_opt_plus),
+        YARVINSN_opt_plus_fresh => Some(gen_opt_plus),
+        YARVINSN_dupstring_fresh => Some(gen_dupstring_fresh),
+        YARVINSN_duparray_fresh => Some(gen_duparray_fresh),
+        YARVINSN_newarray_fresh => Some(gen_newarray_fresh),
+        YARVINSN_concatstrings_fresh => Some(gen_concatstrings_fresh),
         YARVINSN_opt_minus => Some(gen_opt_minus),
         YARVINSN_opt_and => Some(gen_opt_and),
         YARVINSN_opt_or => Some(gen_opt_or),

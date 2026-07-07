@@ -20,6 +20,8 @@
 
 #define RARRAY_SHARED_FLAG      ELTS_SHARED
 #define RARRAY_SHARED_ROOT_FLAG FL_USER12
+/* fresh chain temporary: exactly one reference, on a value stack */
+#define ARY_FRESH               FL_USER13
 #define RARRAY_PTR_IN_USE_FLAG  FL_USER14
 
 /* array.c */
@@ -33,6 +35,23 @@ size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);
 VALUE rb_to_array(VALUE obj);
 void rb_ary_cancel_sharing(VALUE ary);
+void rb_ary_chain_shrink_capa(VALUE ary);
+VALUE rb_ary_fresh_concat(VALUE ary, VALUE obj);
+VALUE rb_ary_plus_chain_head(VALUE x, VALUE y);
+VALUE rb_ary_new_chain_head_values(long n, const VALUE *elts);
+VALUE rb_ary_resurrect_chain_head(VALUE ary);
+VALUE rb_ary_fresh_map(VALUE ary);
+VALUE rb_ary_fresh_select(VALUE ary);
+VALUE rb_ary_fresh_reject(VALUE ary);
+VALUE rb_ary_fresh_sort(VALUE ary);
+VALUE rb_ary_fresh_compact(VALUE ary);
+VALUE rb_ary_fresh_uniq(VALUE ary);
+VALUE rb_ary_fresh_reverse(VALUE ary);
+VALUE rb_ary_fresh_take(VALUE ary, VALUE n);
+VALUE rb_ary_fresh_drop(VALUE ary, VALUE n);
+struct rb_execution_context_struct;
+VALUE rb_yjitf_ary_resurrect_fresh(VALUE ary);
+VALUE rb_yjitf_ary_new_fresh(struct rb_execution_context_struct *ec, long n, const VALUE *elts);
 size_t rb_ary_size_as_embedded(VALUE ary);
 void rb_ary_make_embedded(VALUE ary);
 bool rb_ary_embeddable_p(VALUE ary);

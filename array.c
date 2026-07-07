@@ -456,6 +456,67 @@ ary_shrink_capa(VALUE ary)
     ary_verify(ary);
 }
 
+/* rb_ary_plus for a + chain head: the result gets growth headroom */
+VALUE
+rb_ary_plus_chain_head(VALUE x, VALUE y)
+{
+    long len1 = RARRAY_LEN(x), len2 = RARRAY_LEN(y);
+    long total = len1 + len2;
+    VALUE z = rb_ary_new_capa(total * 2);
+    ary_memcpy(z, 0, len1, RARRAY_CONST_PTR(x));
+    ary_memcpy(z, len1, len2, RARRAY_CONST_PTR(y));
+    ARY_SET_LEN(z, total);
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
+    return z;
+}
+
+/* fused + onto a fresh receiver: in-place append when it fits, else the copying + */
+VALUE
+rb_ary_fresh_concat(VALUE ary, VALUE obj)
+{
+    long len1 = RARRAY_LEN(ary), len2 = RARRAY_LEN(obj);
+
+    if (len1 + len2 <= ARY_CAPA(ary) && !ARY_SHARED_P(ary)) {
+        ary_memcpy(ary, len1, len2, RARRAY_CONST_PTR(obj));
+        ARY_SET_LEN(ary, len1 + len2);
+        RB_GC_GUARD(obj);
+        return ary;
+    }
+    return rb_ary_plus(ary, obj);
+}
+
+/* restore Array#+'s exact-capacity result at the chain end */
+void
+rb_ary_chain_shrink_capa(VALUE ary)
+{
+    if (!ARY_EMBED_P(ary) && !ARY_SHARED_P(ary) && !ARY_SHARED_ROOT_P(ary)) {
+        ary_shrink_capa(ary);
+    }
+}
+
+/* literal + chain head: an appendable private copy while it fits a VWA slot */
+VALUE
+rb_ary_new_chain_head_values(long n, const VALUE *elts)
+{
+    VALUE ary = rb_ary_new_capa(n * 2);
+    ary_memcpy(ary, 0, n, elts);
+    ARY_SET_LEN(ary, n);
+    return ary;
+}
+
+VALUE
+rb_ary_resurrect_chain_head(VALUE ary)
+{
+    long n = RARRAY_LEN(ary);
+    if (ary_embeddable_p(n)) {
+        VALUE copy = rb_ary_new_chain_head_values(n, RARRAY_CONST_PTR(ary));
+        FL_SET_RAW(copy, ARY_FRESH);
+        return copy;
+    }
+    return rb_ary_resurrect(ary);
+}
+
 static void
 ary_double_capa(VALUE ary, long min)
 {
@@ -8920,6 +8981,112 @@ rb_ary_deconstruct(VALUE ary)
  *  - #pack: Packs the elements into a binary sequence.
  *  - #sum: Returns a sum of elements according to either <tt>+</tt> or a given block.
  */
+
+/* Destructive variants for proven-fresh receivers (vm_insnhelper.c).
+ * The receiver is unshared, unfrozen and unaliased, and the VM has
+ * already checked block presence, so the bangs' modify check,
+ * enumerator form and exception repair are unnecessary. */
+VALUE
+rb_ary_fresh_map(VALUE ary)
+{
+    for (long i = 0; i < RARRAY_LEN(ary); i++) {
+        ARY_SET(ary, i, rb_yield(RARRAY_AREF(ary, i)));
+    }
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_select(VALUE ary)
+{
+    long i1, i2;
+    for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); i1++) {
+        VALUE v = RARRAY_AREF(ary, i1);
+        if (!RTEST(rb_yield(v))) continue;
+        if (i1 != i2) ARY_SET(ary, i2, v);
+        i2++;
+    }
+    if (i2 != RARRAY_LEN(ary)) ary_resize_smaller(ary, i2);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_reject(VALUE ary)
+{
+    long i1, i2;
+    for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); i1++) {
+        VALUE v = RARRAY_AREF(ary, i1);
+        if (RTEST(rb_yield(v))) continue;
+        if (i1 != i2) ARY_SET(ary, i2, v);
+        i2++;
+    }
+    if (i2 != RARRAY_LEN(ary)) ary_resize_smaller(ary, i2);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_sort(VALUE ary)
+{
+    rb_ary_sort_bang(ary);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_compact(VALUE ary)
+{
+    rb_ary_compact_bang(ary);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_uniq(VALUE ary)
+{
+    rb_ary_uniq_bang(ary);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_reverse(VALUE ary)
+{
+    rb_ary_reverse_bang(ary);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_take(VALUE ary, VALUE n)
+{
+    long len = NUM2LONG(n);
+    if (len < 0) rb_raise(rb_eArgError, "attempt to take negative size");
+    if (len < RARRAY_LEN(ary)) rb_ary_resize(ary, len);
+    return ary;
+}
+
+VALUE
+rb_ary_fresh_drop(VALUE ary, VALUE n)
+{
+    long len = NUM2LONG(n);
+    if (len < 0) rb_raise(rb_eArgError, "attempt to drop negative size");
+    if (len > RARRAY_LEN(ary)) len = RARRAY_LEN(ary);
+    rb_ary_behead(ary, len);
+    return ary;
+}
+
+/* JIT twins of duparray_fresh / newarray_fresh (insns.def) */
+VALUE
+rb_yjitf_ary_resurrect_fresh(VALUE ary)
+{
+    if (BASIC_OP_UNREDEFINED_P(BOP_ARY_FRESH, ARRAY_REDEFINED_OP_FLAG)) {
+        return rb_ary_resurrect_chain_head(ary);
+    }
+    return rb_ary_resurrect(ary);
+}
+
+VALUE
+rb_yjitf_ary_new_fresh(rb_execution_context_t *ec, long n, const VALUE *elts)
+{
+    VALUE val = rb_ary_new_chain_head_values(n, elts);
+    if (BASIC_OP_UNREDEFINED_P(BOP_ARY_FRESH, ARRAY_REDEFINED_OP_FLAG)) FL_SET_RAW(val, ARY_FRESH);
+    return val;
+}
 
 void
 Init_Array(void)
