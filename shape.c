@@ -1305,7 +1305,7 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         }
     }
 
-    attr_index_t shape_id_capacity = rb_shape_capacity(shape_id);
+    attr_index_t shape_id_capacity = rb_shape_embedded_capacity(shape_id);
     if (RB_TYPE_P(obj, T_OBJECT)) {
         RUBY_ASSERT(shape_id_capacity > 0);
         size_t shape_id_slot_size = shape_id_capacity * sizeof(VALUE) + sizeof(struct RBasic);
@@ -1389,7 +1389,7 @@ shape_id_t_to_rb_cShape(shape_id_t shape_id)
             INT2NUM(shape->parent_offset),
             rb_shape_edge_name(shape),
             INT2NUM(shape->next_field_index),
-            INT2NUM(rb_shape_capacity(shape_id)),
+            INT2NUM(rb_shape_embedded_capacity(shape_id)),
             INT2NUM(shape->type),
             INT2NUM(RSHAPE_CAPACITY(shape_id)));
     rb_obj_freeze(obj);

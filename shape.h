@@ -278,7 +278,7 @@ rb_shape_id_with_robject_layout(shape_id_t shape_id)
 }
 
 static inline attr_index_t
-rb_shape_capacity(shape_id_t shape_id)
+rb_shape_embedded_capacity(shape_id_t shape_id)
 {
     return (attr_index_t)((shape_id & SHAPE_ID_CAPACITY_MASK) >> SHAPE_ID_CAPACITY_OFFSET);
 }
@@ -290,7 +290,7 @@ rb_shape_id_with_capacity(size_t capacity)
 
     RUBY_ASSERT(capacity <= SHAPE_ID_CAPACITY_MAX);
     RUBY_ASSERT((capacity_flags & SHAPE_ID_CAPACITY_MASK) == capacity_flags);
-    RUBY_ASSERT(rb_shape_capacity(capacity_flags) == capacity);
+    RUBY_ASSERT(rb_shape_embedded_capacity(capacity_flags) == capacity);
 
     return ROOT_SHAPE_ID | capacity_flags;
 }
@@ -330,7 +330,7 @@ RSHAPE_TYPE_P(shape_id_t shape_id, enum shape_type type)
 static inline attr_index_t
 RSHAPE_CAPACITY(shape_id_t shape_id)
 {
-    attr_index_t embedded_capacity = rb_shape_capacity(shape_id);
+    attr_index_t embedded_capacity = rb_shape_embedded_capacity(shape_id);
 
     if (embedded_capacity > RSHAPE(shape_id)->capacity) {
         return embedded_capacity;
