@@ -1932,7 +1932,24 @@ class Pathname    # * FileTest *
   #
   def owned?() FileTest.owned?(@path) end
 
-  # See <tt>FileTest.readable?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   readable? -> true or false
+  #
+  # Returns whether the path in `self` points to an entry
+  # that is readable by the owner and group of the current process:
+  #
+  # ```ruby
+  # pn = Pathname('/tmp/secret.txt')
+  # pn.write('foo')
+  # pn.readable?                 # => true
+  # pn.chmod(0o000)
+  # pn.readable?                 # => false
+  # pn.delete                    # Clean up.
+  # Pathname('nosuch').readable? # => false
+  # ```
+  #
   def readable?() FileTest.readable?(@path) end
 
   # See <tt>FileTest.world_readable?</tt>.
