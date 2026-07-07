@@ -5381,19 +5381,38 @@ impl Function {
         }
     }
 
-    fn try_remove_trivial_phi(BlockId: block_id) {
-
-    }
+    // TODO: Add a comment about the paper and where this function comes from, as well as how it's used in ZJIT
+    // (It's used more individually and differently than the paper)
+    // TODO: Update comments to consider block params rather than phi nodes and demarcate differences from the algorithm clearly
+    // TODO: Fix input arguments. We need block params, not just the phi
+    /// If all possible phi values are the same, replace the phi with the value
 
     fn remove_trivial_phis(&mut self) {
-        let mut fixpoint = False;
-        while not fixpoint {
-            for block in self.reverse_post_order() {
-                // TODO: Figure out where the predecessors come from
-                predecessors = vec![];
-                try_remove_trivial_phi(block);
+        // TODO: Find all of the phis and predecessors
+        let phi = &InsnId(5); // FIX: this shouldn't be just a random dummy value
+        let predecessors = vec![];
+        // TODO: Run the following in a loop once we've gotten all the phis
+        let phis: Vec<&InsnId> = vec![];
+        // FIX: The logic if this is wrong. We want to make sure `p` is not a self reference. Equality with phi likely does not do this
+        let external_preds: Vec<&InsnId> = predecessors.iter().filter(|p| *p != phi).collect();
+
+        let new_phi = match external_preds.as_slice() {
+            [] => {
+                // Phi is unreachable
+                // TODO: Figure out how we are supposed to handle an unreachable phi
+                *phi // FIX: We don't want to return phi in this case. What do we want to do with an unreachable value??
             }
-        }
+            [first, rest @ ..] if rest.iter().any(|p| p != first) => {
+                // Phi is non-trivial
+                *phi
+            }
+            [value, ..] => {
+                // Phi is trivial. All elements of the vec are `value`.
+                // TODO: Replace all uses of phi with value with make_equal_to
+                // TODO: Iteratively call try_remove_trivial_phi on uses. Can we get uses with find?
+                **value
+            }
+        };
     }
 
     // TODO: Probably throw this next big comment away
@@ -5472,8 +5491,8 @@ impl Function {
 
     //     // TODO: Close reading of page 11 after implementing everything else to see if there are further optimizations to be made
     //     // Key issue: we construct a lot of phis and then remove a lot of phis. Can we construct fewer in the first place?
-
-    }
+    //
+    // }
 
     fn optimize_load_store(&mut self) {
         for block in self.reverse_post_order() {
