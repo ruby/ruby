@@ -156,6 +156,7 @@ bubblebabble.o: $(hdrdir)/ruby/internal/variable.h
 bubblebabble.o: $(hdrdir)/ruby/internal/warning_push.h
 bubblebabble.o: $(hdrdir)/ruby/internal/xmalloc.h
 bubblebabble.o: $(hdrdir)/ruby/missing.h
+bubblebabble.o: $(hdrdir)/ruby/onigmo.h
 bubblebabble.o: $(hdrdir)/ruby/ruby.h
 bubblebabble.o: $(hdrdir)/ruby/st.h
 bubblebabble.o: $(hdrdir)/ruby/subst.h

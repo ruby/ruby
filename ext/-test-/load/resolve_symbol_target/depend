@@ -156,6 +156,7 @@ resolve_symbol_target.o: $(hdrdir)/ruby/internal/variable.h
 resolve_symbol_target.o: $(hdrdir)/ruby/internal/warning_push.h
 resolve_symbol_target.o: $(hdrdir)/ruby/internal/xmalloc.h
 resolve_symbol_target.o: $(hdrdir)/ruby/missing.h
+resolve_symbol_target.o: $(hdrdir)/ruby/onigmo.h
 resolve_symbol_target.o: $(hdrdir)/ruby/ruby.h
 resolve_symbol_target.o: $(hdrdir)/ruby/st.h
 resolve_symbol_target.o: $(hdrdir)/ruby/subst.h

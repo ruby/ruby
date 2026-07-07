@@ -242,6 +242,7 @@ class Ractor
   #
   #   Ractor.current #=> #<Ractor:#1 running>
   def self.current
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       rb_ractor_self(rb_ec_ractor_ptr(ec));
     }
@@ -256,6 +257,7 @@ class Ractor
   #    r.join                         # wait for r's termination
   #    Ractor.count                   #=> 1
   def self.count
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       ULONG2NUM(GET_VM()->ractor.cnt);
     }
@@ -385,6 +387,7 @@ class Ractor
 
   # Returns the name set in Ractor.new, or +nil+.
   def name
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{RACTOR_PTR(self)->name}
   end
 
@@ -517,6 +520,7 @@ class Ractor
 
   # Returns the main ractor.
   def self.main
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       rb_ractor_self(GET_VM()->ractor.main_ractor);
     }
@@ -524,6 +528,7 @@ class Ractor
 
   # Returns true if the current ractor is the main ractor.
   def self.main?
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       RBOOL(GET_VM()->ractor.main_ractor == rb_ec_ractor_ptr(ec))
     }
@@ -564,6 +569,7 @@ class Ractor
   # Returns the default port of the Ractor.
   #
   def default_port
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       ractor_default_port_value(RACTOR_PTR(self))
     }
@@ -819,6 +825,7 @@ class Ractor
     #
     # Returns whether or not the port is closed.
     def closed?
+      Primitive.attr! :leaf
       __builtin_cexpr! %q{
         ractor_port_closed_p(ec, self);
       }

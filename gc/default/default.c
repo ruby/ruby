@@ -2461,10 +2461,16 @@ heap_slot_size(unsigned char pool_id)
     return pool_slot_sizes[pool_id] - RVALUE_OVERHEAD;
 }
 
+size_t
+rb_gc_impl_max_allocation_size(void)
+{
+    return heap_slot_size(HEAP_COUNT - 1);
+}
+
 bool
 rb_gc_impl_size_allocatable_p(size_t size)
 {
-    return size + RVALUE_OVERHEAD <= pool_slot_sizes[HEAP_COUNT - 1];
+    return size <= rb_gc_impl_max_allocation_size();
 }
 
 static const size_t ALLOCATED_COUNT_STEP = 1024;
@@ -2613,24 +2619,9 @@ heap_idx_for_size(size_t size)
 }
 
 size_t
-rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
+rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
 {
-    return heap_idx_for_size(size);
-}
-
-
-static size_t heap_sizes[HEAP_COUNT + 1] = { 0 };
-
-size_t *
-rb_gc_impl_heap_sizes(void *objspace_ptr)
-{
-    if (heap_sizes[0] == 0) {
-        for (unsigned char i = 0; i < HEAP_COUNT; i++) {
-            heap_sizes[i] = heap_slot_size(i);
-        }
-    }
-
-    return heap_sizes;
+    return heap_slot_size((unsigned char)heap_idx_for_size(size));
 }
 
 NOINLINE(static VALUE newobj_cache_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx, bool vm_locked));
@@ -2743,7 +2734,7 @@ newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace
 }
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size)
 {
     VALUE obj;
     rb_objspace_t *objspace = objspace_ptr;
@@ -2758,6 +2749,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     }
 
     size_t heap_idx = heap_idx_for_size(alloc_size);
+    *actual_alloc_size = heap_slot_size((unsigned char)heap_idx);
 
     rb_ractor_newobj_cache_t *cache = (rb_ractor_newobj_cache_t *)cache_ptr;
 
@@ -7495,7 +7487,7 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, struct heap_page *src_pa
     memcpy((void *)dest, (void *)src, MIN(src_slot_size, slot_size));
 
     if (src_slot_size != slot_size && RB_TYPE_P(src, T_OBJECT)) {
-        rb_gc_obj_changed_pool(dest, dest_page->heap - heaps);
+        rb_gc_obj_changed_slot_size(dest, slot_size - RVALUE_OVERHEAD);
     }
 
     if (RVALUE_OVERHEAD > 0) {
@@ -10355,7 +10347,7 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_BITMAP_SIZE")), SIZET2NUM(HEAP_PAGE_BITMAP_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_SIZE")), SIZET2NUM(HEAP_PAGE_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_COUNT")), LONG2FIX(HEAP_COUNT));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(heap_slot_size(HEAP_COUNT - 1)));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), SIZET2NUM(rb_gc_impl_max_allocation_size()));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), LONG2FIX(RVALUE_OLD_AGE));
     if (RB_BUG_INSTEAD_OF_RB_MEMERROR+0) {
         rb_hash_aset(gc_constants, ID2SYM(rb_intern("RB_BUG_INSTEAD_OF_RB_MEMERROR")), Qtrue);

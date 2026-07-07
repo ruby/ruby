@@ -526,6 +526,7 @@ class JSONParserTest < Test::Unit::TestCase
     JSON
     assert_equal({ "key1" => "value1" }, parse(json, allow_comments: true))
     assert_equal({}, parse('{} /**/', allow_comments: true))
+    assert_equal({}, parse('{} // eol comment ending at eof', allow_comments: true))
     assert_raise(ParserError) { parse('{} /* comment not closed', allow_comments: true) }
     assert_raise(ParserError) { parse('{} /*/', allow_comments: true) }
     assert_raise(ParserError) { parse('{} /x wrong comment', allow_comments: true) }

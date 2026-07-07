@@ -4,8 +4,8 @@ use std::fmt;
 use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
-use crate::codegen::{local_size_and_idx_to_ep_offset, perf_symbol_range_start, perf_symbol_range_end, register_with_perf};
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame};
+use crate::codegen::{perf_symbol_range_start, perf_symbol_range_end, register_with_perf};
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, PerfMap, get_option};
@@ -894,6 +894,10 @@ pub enum Insn {
     // Mark a position in the generated code
     PosMarker(PosMarkerFn),
 
+    /// Mark a position at the end of the current LIR block.
+    /// This is lowered to PosMarker during linearize_instructions().
+    PosMarkerAtBlockEnd(PosMarkerFn),
+
     /// Shift a value right by a certain amount (signed).
     RShift { opnd: Opnd, shift: Opnd, out: Opnd },
 
@@ -970,7 +974,8 @@ macro_rules! for_each_operand_impl {
             Insn::Comment(_) |
             Insn::CPop { .. } |
             Insn::PadPatchPoint |
-            Insn::PosMarker(_) => {},
+            Insn::PosMarker(_) |
+            Insn::PosMarkerAtBlockEnd(_) => {},
 
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
@@ -1149,6 +1154,7 @@ impl Insn {
             Insn::PatchPoint(..) => "PatchPoint",
             Insn::PadPatchPoint => "PadPatchPoint",
             Insn::PosMarker(_) => "PosMarker",
+            Insn::PosMarkerAtBlockEnd(_) => "PosMarkerAtBlockEnd",
             Insn::RShift { .. } => "RShift",
             Insn::Store { .. } => "Store",
             Insn::Sub { .. } => "Sub",
@@ -1827,8 +1833,14 @@ impl Assembler
             }
 
             // Process each instruction, expanding branch params if needed
+            let mut block_end_pos_marker = None;
             for insn in &block.insns {
-                self.expand_branch_insn(insn, &mut insns);
+                if let Insn::PosMarkerAtBlockEnd(marker) = insn {
+                    assert!(block_end_pos_marker.is_none(), "only one PosMarkerAtBlockEnd is supported per block");
+                    block_end_pos_marker = Some(marker.clone());
+                } else {
+                    self.expand_branch_insn(insn, &mut insns);
+                }
             }
 
             // Eliminate redundant jumps: if the last instruction is an
@@ -1841,6 +1853,10 @@ impl Assembler
                         insns.pop();
                     }
                 }
+            }
+
+            if let Some(marker) = block_end_pos_marker {
+                insns.push(Insn::PosMarker(marker));
             }
 
             // Make sure we don't stomp on the next function
@@ -2073,8 +2089,9 @@ impl Assembler
                 } else {
                     if let Some(allocation) = assignment[active_interval.id] {
                         if let Some(reg) = allocation.alloc_pool_index(num_registers) {
+                            let was_not_there_before = free_registers.insert(reg);
                             assert!(
-                                free_registers.insert(reg),
+                                was_not_there_before,
                                 "attempted to return allocator register {:?} to the free pool more than once",
                                 allocation.assigned_reg().unwrap(),
                             );
@@ -3783,6 +3800,34 @@ impl Assembler {
 
     pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr, &CodeBlock) + 'static) {
         self.push_insn(Insn::PosMarker(Rc::new(marker_fn)));
+    }
+
+    /// Insert a marker that linearize_instructions lowers to a PosMarker at the
+    /// end of the current block, after its terminator instructions.
+    pub fn pos_marker_at_block_end(&mut self, marker_fn: impl Fn(CodePtr, &CodeBlock) + 'static) {
+        let block_id = self.current_block_id;
+        let block = &self.basic_blocks[block_id.0];
+        let len = block.insns.len();
+        assert!(
+            len > 0 && block.insns[len - 1].is_terminator(),
+            "pos_marker_at_block_end requires the current block to end with a terminator"
+        );
+
+        // A block may end with two terminators, such as a conditional jump
+        // followed by an unconditional jump. Keep the pseudo-instruction before
+        // the whole terminator suffix so the LIR block itself still ends with
+        // terminators; linearize_instructions emits the real PosMarker after the
+        // block's instructions.
+        let insert_pos = if block.insns.get(len - 2).is_some_and(Insn::is_terminator) {
+            len - 2
+        } else {
+            len - 1
+        };
+
+        self.idx += 1;
+        let block = &mut self.basic_blocks[block_id.0];
+        block.insns.insert(insert_pos, Insn::PosMarkerAtBlockEnd(Rc::new(marker_fn)));
+        block.insn_ids.insert(insert_pos, None);
     }
 
     #[must_use]

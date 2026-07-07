@@ -27,6 +27,7 @@
 #include "ruby/internal/core/rstring.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
+#include "ruby/onigmo.h"
 
 /**
  * Convenient casting macro.
@@ -42,15 +43,13 @@
  * @param   obj  An object, which is in fact an ::RRegexp.
  * @return  The passed object's pattern buffer.
  */
-#define RREGEXP_PTR(obj) (RREGEXP(obj)->ptr)
+#define RREGEXP_PTR(obj) (&RREGEXP(obj)->pattern)
 /** @cond INTERNAL_MACRO */
 #define RREGEXP_SRC      RREGEXP_SRC
 #define RREGEXP_SRC_PTR  RREGEXP_SRC_PTR
 #define RREGEXP_SRC_LEN  RREGEXP_SRC_LEN
 #define RREGEXP_SRC_END  RREGEXP_SRC_END
 /** @endcond */
-
-struct re_patter_buffer;  /* a.k.a. OnigRegexType, defined in onigmo.h */
 
 /**
  * Ruby's regular expression.   A regexp is compiled into  its own intermediate
@@ -61,14 +60,6 @@ struct RRegexp {
 
     /** Basic part, including flags and class. */
     struct RBasic basic;
-
-    /**
-     * The pattern buffer.   This is a quasi-opaque struct  that holds compiled
-     * intermediate representation of the regular expression.
-     *
-     * @note  Compilation of a regexp could be delayed until actual match.
-     */
-    struct re_pattern_buffer *ptr;
 
     /** Source code of this expression. */
     const VALUE src;
@@ -88,6 +79,14 @@ struct RRegexp {
      *           catastrophic effects.  Just leave it.
      */
     unsigned long usecnt;
+
+   /**
+    * The pattern buffer.   This is a quasi-opaque struct  that holds compiled
+    * intermediate representation of the regular expression.
+    *
+    * @note  Compilation of a regexp could be delayed until actual match.
+    */
+   struct re_pattern_buffer pattern; /* a.k.a. OnigRegexType, defined in onigmo.h */
 };
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()

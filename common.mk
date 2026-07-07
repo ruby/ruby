@@ -414,6 +414,8 @@ $(LIBRUBY_A):	$(LIBRUBY_A_OBJS) $(MAINOBJ) $(INITOBJS) $(ARCHFILE)
 
 $(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(BUILTIN_ENCOBJS)
 
+$(LIBRUBY_A) $(LIBRUBY_SO): $(LIBRUBY_SO_UPDATE)
+
 $(LIBRUBY_EXTS):
 	@$(NULLCMD) > $@
 
@@ -1714,10 +1716,13 @@ yes-test-bundler-parallel: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
 		-r./$(arch)-fake \
 		-r$(tooldir)/lib/_tmpdir \
+		-r$(tooldir)/lib/bundler_runtime_grouping \
 		-I$(srcdir)/spec/bundler \
 		-e "ruby = ENV['RUBY']" \
 		-e "ARGV[-1] = File.expand_path(ARGV[-1])" \
 		-e "ENV['RSPEC_EXECUTABLE'] = ruby + ARGV.shift" \
+		-e "require 'support/setup'" \
+		-e "BundlerRuntimeGrouping.install!" \
 		-e "load ARGV.shift" \
 		-s -- -no-report-tmpdir -- \
 		" -C $(srcdir) -Ispec/bundler -Ispec/lib .bundle/bin/rspec -r spec_helper" \

@@ -647,10 +647,12 @@ set_to_a_i(st_data_t key, st_data_t arg)
  *  call-seq:
  *    to_a -> array
  *
- *  Returns an array containing all elements in the set.
+ *  Returns an array containing the elements of +self+:
  *
- *    Set[1, 2].to_a                    #=> [1, 2]
- *    Set[1, 'c', :s].to_a              #=> [1, "c", :s]
+ *    Set[1, 2].to_a       # => [1, 2]
+ *    Set[1, 'c', :s].to_a # => [1, "c", :s]
+ *
+ *  Related: {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
  */
 static VALUE
 set_i_to_a(VALUE set)
@@ -675,10 +677,31 @@ set_i_to_a(VALUE set)
 
 /*
  *  call-seq:
- *    to_set(&block) -> self or new_set
+ *    to_set {|element| ... } -> new_set
+ *    to_set -> self or new_set
  *
- *  Without a block, if +self+ is an instance of +Set+, returns +self+.
- *  Otherwise, calls <tt>Set.new(self, &block)</tt>.
+ *  With a block given, creates and returns a new set;
+ *  calls the block with each element of +self+,
+ *  and adds the block's returns value to the new set:
+ *
+ *    set = Set[*0..9]        # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    set.to_set {|i| i * 2 } # => Set[0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+ *
+ *  With no block given, when +self+ is an instance of +Set+,
+ *  returns +self+:
+ *
+ *    set = Set[*0..9]
+ *    set.to_set
+ *    set.to_set.equal?(set) # => true
+ *
+ *  With no block given, when +self+ is an instance of a subclass of +Set+,
+ *  returns a \Set object containing the elements of +self+:
+ *
+ *    class MySet < Set; end
+ *    my_set = MySet[*0..9] # => #<MySet: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}>
+ *    set = my_set.to_set   # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
  */
 static VALUE
 set_i_to_set(VALUE set)
@@ -753,7 +776,7 @@ set_i_add(VALUE set, VALUE item)
  *  call-seq:
  *    add?(object) -> self or nil
  *
- *  Like #add, but returns +nil+ if +object+ is already in +self+:
+ *  Like #add, but returns +nil+ if the given +object+ is already in +self+:
  *
  *    set = Set[0, 1, 2]
  *    set.add?(:foo)   # => Set[0, 1, 2, :foo]
@@ -1312,7 +1335,27 @@ set_reset_table_with_type(VALUE set, const struct st_hash_type *type)
  *  call-seq:
  *    compare_by_identity -> self
  *
- *  Makes the set compare its elements by their identity and returns self.
+ *  Sets +self+ to compare by object identity
+ *  (rather than by object content, which is the initial setting);
+ *  returns +self+:
+ *
+ *    set = Set.new
+ *    set.compare_by_identity
+ *    str = +"foo"
+ *    set.add(str)
+ *    # =>  Set["foo"]
+ *    set.include?(str)
+ *    # => true
+ *    set.add(str)
+ *    # => Set["foo"])
+ *    set.include?(+"foo")
+ *    # => false
+ *    set.add(+"foo")
+ *    # => Set["foo", "foo"])
+ *
+ *  Once set, the compare-by-identity property may not be unset.
+ *
+ *  Related: #compare_by_identity?.
  */
 static VALUE
 set_i_compare_by_identity(VALUE set)
@@ -1330,8 +1373,16 @@ set_i_compare_by_identity(VALUE set)
  *  call-seq:
  *    compare_by_identity? -> true or false
  *
- *  Returns true if the set will compare its elements by their
- *  identity.  Also see Set#compare_by_identity.
+ *  Returns whether +self+ compares elements by object identity
+ *  (rather than by content):
+ *
+ *    set = Set[]
+ *    set.compare_by_identity? # => false
+ *    set.compare_by_identity
+ *    set.compare_by_identity? # => true
+ *
+ *  Related: #compare_by_identity;
+ *  see also {Methods for Querying}[rdoc-ref:Set@Methods+for+Querying].
  */
 static VALUE
 set_i_compare_by_identity_p(VALUE set)
@@ -1343,7 +1394,11 @@ set_i_compare_by_identity_p(VALUE set)
  *  call-seq:
  *    size -> integer
  *
- *  Returns the number of elements.
+ *  Returns the number of elements in +self+:
+ *
+ *    Set[*0..9].size # => 10
+ *
+ *  Related: see {Methods for Querying}[rdoc-ref:Set@Methods+for+Querying].
  */
 static VALUE
 set_i_size(VALUE set)
@@ -1471,10 +1526,16 @@ set_remove_enum_from(VALUE set, VALUE arg)
 
 /*
  *  call-seq:
- *    subtract(enum) -> self
+ *    subtract(enumerable) -> self
  *
- *  Deletes every element that appears in the given enumerable object
- *  and returns self.
+ *  Deletes from +self+ every element found in the given +enumerable+;
+ *  returns +self+:
+ *
+ *    set = Set[*0..9]        # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    set.subtract(5..14)     # => Set[0, 1, 2, 3, 4]
+ *    set.subtract(Set[6, 2]) # => Set[0, 1, 3, 4]
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Set@Methods+for+Deleting].
  */
 static VALUE
 set_i_subtract(VALUE set, VALUE other)
@@ -1611,11 +1672,19 @@ set_i_keep_if(VALUE set)
 
 /*
  *  call-seq:
- *    select! { |o| ... } -> self
+ *    select! {|element| ... } -> self or nil
  *    select! -> enumerator
  *
- *  Equivalent to Set#keep_if, but returns nil if no changes were made.
- *  Returns an enumerator if no block is given.
+ *  With a block given, like #keep_if, but returns +nil+ if no changes were made:
+ *
+ *    set = Set[*0..9]           # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    set.select! {|i| i.even? } # => Set[0, 2, 4, 6, 8]
+ *    set.select! {|i| i.even? } # => nil
+ *    set.select! {|i| i.odd? }  # => Set[]
+ *
+ *  With no block given, returns an Enumerator.
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Set@Methods+for+Deleting].
  */
 static VALUE
 set_i_select(VALUE set)
@@ -1847,9 +1916,17 @@ set_i_proper_subset(VALUE set, VALUE other)
 
 /*
  *  call-seq:
- *    subset?(set) -> true or false
+ *    subset?(other_set) -> true or false
  *
- *  Returns true if the set is a subset of the given set.
+ *  Returns whether +self+ is a {subset}[https://en.wikipedia.org/wiki/Subset]
+ *  of the given +other_set+:
+ *
+ *    set = Set[*'b'..'e']
+ *    set.subset?(set)            # => true
+ *    set.subset?(Set[*'a'..'f']) # => true
+ *    set.subset?(Set[*'c'..'e']) # => false
+ *
+ *  Related: {Methods for Querying}[rdoc-ref:Set@Methods+for+Querying].
  */
 static VALUE
 set_i_subset(VALUE set, VALUE other)
@@ -1883,9 +1960,17 @@ set_i_proper_superset(VALUE set, VALUE other)
 
 /*
  *  call-seq:
- *    superset?(set) -> true or false
+ *    superset?(other_set) -> true or false
  *
- *  Returns true if the set is a superset of the given set.
+ *  Returns whether +self+ is a {superset}[https://en.wikipedia.org/wiki/Subset]
+ *  of the given +other_set+:
+ *
+ *    set = Set[*'a'..'f']          # => Set["a", "b", "c", "d", "e", "f"]
+ *    set.superset?(set)            # => true
+ *    set.superset?(Set[*'b'..'e']) # => true
+ *    set.superset?(Set[*'b'..'x']) # => false
+ *
+ *  Related: {Methods for Querying}[rdoc-ref:Set@Methods+for+Querying].
  */
 static VALUE
 set_i_superset(VALUE set, VALUE other)
@@ -2326,25 +2411,20 @@ rb_set_size(VALUE set)
  * === Methods for Creating a \Set
  *
  * - ::[]:
- *   Returns a new set containing the given objects.
+ *   Returns a new set populated with the given objects.
  * - ::new:
- *   Returns a new set containing either the given objects
- *   (if no block given) or the return values from the called block
- *   (if a block given).
+ *   Returns a new set based on the given object (if no block given),
+ *   or on the return values from the called block (if a block given).
  *
  * === Methods for \Set Operations
  *
- * - #| (aliased as #union and #+):
- *   Returns a new set containing all elements from +self+
- *   and all elements from a given enumerable (no duplicates).
  * - #& (aliased as #intersection):
- *   Returns a new set containing all elements common to +self+
- *   and a given enumerable.
+ *   Returns a new set containing the intersection of +self+ and the given enumerable.
  * - #- (aliased as #difference):
- *   Returns a copy of +self+ with all elements
- *   in a given enumerable removed.
- * - #^: Returns a new set containing all elements from +self+
- *   and a given enumerable except those common to both.
+ *   Returns a new set containing the difference of +self+ and the given enumerable.
+ * - #^: Returns a new set containing the exclusive OR of +self+ and the given enumerable.
+ * - #| (aliased as #union and #+):
+ *   Returns a new set containing the union of +self+ and the given enumerable.
  *
  * === Methods for Comparing
  *
@@ -2353,47 +2433,41 @@ rb_set_size(VALUE set)
  * - #==: Returns whether +self+ and a given enumerable are equal,
  *   as determined by Object#eql?.
  * - #compare_by_identity?:
- *   Returns whether the set considers only identity
+ *   Returns whether +self+ considers only identity
  *   when comparing elements.
+ * - #proper_subset? (aliased as #<):
+ *   Returns whether the given enumerable is a proper subset of +self+.
+ * - #proper_superset? (aliased as #>):
+ *   Returns whether the given enumerable is a proper superset of +self+.
+ * - #subset? (aliased as #<=):
+ *   Returns whether the given object is a subset of +self+.
+ * - #superset? (aliased as #>=):
+ *   Returns whether the given enumerable is a superset of +self+.
  *
  * === Methods for Querying
  *
- * - #length (aliased as #size):
- *   Returns the count of elements.
- * - #empty?:
- *   Returns whether the set has no elements.
- * - #include? (aliased as #member? and #===):
- *   Returns whether a given object is an element in the set.
- * - #subset? (aliased as #<=):
- *   Returns whether a given object is a subset of the set.
- * - #proper_subset? (aliased as #<):
- *   Returns whether a given enumerable is a proper subset of the set.
- * - #superset? (aliased as #>=):
- *   Returns whether a given enumerable is a superset of the set.
- * - #proper_superset? (aliased as #>):
- *   Returns whether a given enumerable is a proper superset of the set.
  * - #disjoint?:
- *   Returns +true+ if the set and a given enumerable
- *   have no common elements, +false+ otherwise.
+ *   Returns whether no element of the given enumerable is present in +self+.
+ * - #empty?:
+ *   Returns whether +self+ contains no elements.
+ * - #include? (aliased as #member? and #===):
+ *   Returns whether the given object is an element of +self+.
  * - #intersect?:
- *   Returns +true+ if the set and a given enumerable:
- *   have any common elements, +false+ otherwise.
- * - #compare_by_identity?:
- *   Returns whether the set considers only identity
- *   when comparing elements.
+ *   Returns whether +self+ and the given enumerable have any elements in common.
+ * - #size (aliased as #length):
+ *   Returns the number of elements in +self+.
  *
  * === Methods for Assigning
  *
  * - #add (aliased as #<<):
- *   Adds a given object to the set; returns +self+.
+ *   Adds the given object to +self+; returns +self+.
  * - #add?:
- *   If the given object is not an element in the set,
- *   adds it and returns +self+; otherwise, returns +nil+.
+ *   Like #add, but returns +nil+ if the given object is already in +self+.
  * - #merge:
- *   Merges the elements of each given enumerable object to the set; returns +self+.
+ *   Adds each element of each of the given enumerables to +self+; returns +self+.
  * - #replace:
- *   Replaces the contents of the set with the contents
- *   of a given enumerable.
+ *   Replaces the contents of +self+ with the contents of the given enumerable;
+ *   returns +self+.
  *
  * === Methods for Deleting
  *
@@ -2447,6 +2521,8 @@ rb_set_size(VALUE set)
  *
  * === Other Methods
  *
+ * - #compare_by_identity:
+ *   Sets +self+ to compare by object identity (rather than by object content).
  * - #reset:
  *   Resets the internal state; useful if an element
  *   has been modified while an element in the set.

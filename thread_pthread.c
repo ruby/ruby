@@ -1244,6 +1244,13 @@ coroutine_transfer0(struct coroutine_context *transfer_from, struct coroutine_co
     __sanitizer_start_switch_fiber(fake_stack, transfer_to->stack_base, transfer_to->stack_size);
 #endif
 
+#if defined(COROUTINE_SANITIZE_THREAD)
+    /* Tell TSan we are switching to transfer_to's fiber before the stack
+     * switch, so its per-thread shadow stack stays bound to the right
+     * coroutine. */
+    __tsan_switch_to_fiber(transfer_to->tsan_fiber, 0);
+#endif
+
     RBIMPL_ATTR_MAYBE_UNUSED()
     struct coroutine_context *returning_from = coroutine_transfer(transfer_from, transfer_to);
 

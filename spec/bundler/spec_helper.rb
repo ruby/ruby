@@ -147,6 +147,16 @@ RSpec.configure do |config|
       ENV["GIT_CONFIG_NOSYSTEM"] = "1"
     end
 
+    # Disable git background maintenance. Since Git 2.46, commands like
+    # `git commit` spawn a detached `git maintenance run --auto` process,
+    # which briefly creates `.git/objects/maintenance.lock`. That races with
+    # specs copying repositories with FileUtils.cp_r, causing flaky ENOENT
+    # failures. GIT_CONFIG_COUNT is available since Git 2.31 and silently
+    # ignored by older versions.
+    ENV["GIT_CONFIG_COUNT"] = "1"
+    ENV["GIT_CONFIG_KEY_0"] = "maintenance.auto"
+    ENV["GIT_CONFIG_VALUE_0"] = "false"
+
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
 
@@ -173,26 +183,6 @@ RSpec.configure do |config|
     end
   ensure
     reset!
-  end
-
-  # Opt-in per-example runtime log (set BUNDLER_SPEC_RUNTIME_LOG to a file path).
-  # Each parallel worker appends one "<seconds>\t<file>" line per example to its
-  # own "<path>.<TEST_ENV_NUMBER>" file (a single shared file would hit Windows
-  # cross-process sharing violations), so the heaviest specs can be found after a
-  # full run. turbo_tests only writes its own --runtime-log when invoked with the
-  # bare "spec" path, which the build never does, so it produces no log otherwise.
-  if (runtime_log = ENV["BUNDLER_SPEC_RUNTIME_LOG"])
-    worker = ENV["TEST_ENV_NUMBER"].to_s
-    worker = "1" if worker.empty?
-    runtime_log = "#{runtime_log}.#{worker}"
-    config.before(:each) { @__runtime_start = Process.clock_gettime(Process::CLOCK_MONOTONIC) }
-    config.after(:each) do |example|
-      next unless @__runtime_start
-      dt = Process.clock_gettime(Process::CLOCK_MONOTONIC) - @__runtime_start
-      File.write(runtime_log, "#{format("%.4f", dt)}\t#{example.metadata[:file_path]}\n", mode: "a")
-    rescue StandardError
-      # never let runtime logging break a test run
-    end
   end
 
   Spec::Shards::EXAMPLE_MAPPINGS.each do |tag, file_paths|

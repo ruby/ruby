@@ -670,7 +670,7 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(SIZEOF_VALUE >= 8 ? 64 : 32));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(MMTK_MAX_OBJ_SIZE));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), SIZET2NUM(rb_gc_impl_max_allocation_size()));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_COUNT")), LONG2FIX(MMTK_HEAP_COUNT));
     // TODO: correctly set RVALUE_OLD_AGE when we have generational GC support
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), INT2FIX(0));
@@ -685,12 +685,6 @@ rb_gc_impl_init(void)
     rb_define_singleton_method(rb_mGC, "auto_compact=", rb_f_notimplement, 1);
     rb_define_singleton_method(rb_mGC, "latest_compact_info", rb_f_notimplement, 0);
     rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
-}
-
-size_t *
-rb_gc_impl_heap_sizes(void *objspace_ptr)
-{
-    return heap_sizes;
 }
 
 int
@@ -902,7 +896,7 @@ mmtk_post_alloc_fast_immix(struct objspace *objspace, struct MMTk_ractor_cache *
 }
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size)
 {
 #define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
     struct objspace *objspace = objspace_ptr;
@@ -916,6 +910,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
             break;
         }
     }
+    *actual_alloc_size = alloc_size;
 
     if (objspace->gc_stress) {
         mmtk_handle_user_collection_request(ractor_cache, false, false);
@@ -962,10 +957,10 @@ rb_gc_impl_obj_slot_size(VALUE obj)
 }
 
 size_t
-rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
+rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
 {
     for (int i = 0; i < MMTK_HEAP_COUNT; i++) {
-        if (size <= heap_sizes[i]) return i;
+        if (size <= heap_sizes[i]) return heap_sizes[i];
     }
 
     rb_bug("size too big");
@@ -974,7 +969,13 @@ rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
 bool
 rb_gc_impl_size_allocatable_p(size_t size)
 {
-    return size <= MMTK_MAX_OBJ_SIZE;
+    return size <= rb_gc_impl_max_allocation_size();
+}
+
+size_t
+rb_gc_impl_max_allocation_size(void)
+{
+    return MMTK_MAX_OBJ_SIZE;
 }
 
 // Malloc

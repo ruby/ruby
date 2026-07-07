@@ -79,6 +79,10 @@ module Spec
       @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
+    def rubygems_test_dir
+      @rubygems_test_dir ||= source_root.join("test/rubygems")
+    end
+
     def man_dir
       @man_dir ||= lib_dir.join("bundler/man")
     end

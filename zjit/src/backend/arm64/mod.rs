@@ -1120,6 +1120,9 @@ impl Assembler {
                 Insn::PosMarker(..) => {
                     pos_markers.push((insn_idx, cb.get_write_ptr()))
                 }
+                Insn::PosMarkerAtBlockEnd(..) => {
+                    unreachable!("PosMarkerAtBlockEnd should have been lowered by linearize_instructions");
+                },
                 Insn::BakeString(text) => {
                     for byte in text.as_bytes() {
                         cb.write_byte(*byte);

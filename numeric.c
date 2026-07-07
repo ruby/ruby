@@ -2664,7 +2664,7 @@ num_ceil(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *    round(digits = 0) -> integer or float
+ *    round(digits = 0, half: :up) -> integer or float
  *
  *  Returns +self+ rounded to the nearest value with
  *  a precision of +digits+ decimal digits.

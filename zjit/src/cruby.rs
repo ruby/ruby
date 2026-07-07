@@ -88,6 +88,7 @@ use std::ffi::{c_void, CString, CStr};
 use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::{c_char, c_int, c_long, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
+use std::ptr::NonNull;
 
 use crate::cast::IntoUsize as _;
 
@@ -335,6 +336,49 @@ pub fn iseq_rest_param_idx(params: &IseqParameters) -> Option<i32> {
     } else {
         None
     }
+}
+
+/// Compute the index of a local variable from its slot index
+pub fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
+    // Layout illustration
+    // This is an array of VALUE
+    //                                           | VM_ENV_DATA_SIZE |
+    //                                           v                  v
+    // low addr <+-------+-------+-------+-------+------------------+
+    //           |local 0|local 1|  ...  |local n|       ....       |
+    //           +-------+-------+-------+-------+------------------+
+    //           ^       ^                       ^                  ^
+    //           +-------+---local_table_size----+         cfp->ep--+
+    //                   |                                          |
+    //                   +------------------ep_offset---------------+
+    //
+    // See usages of local_var_name() from iseq.c for similar calculation.
+
+    // Equivalent of iseq->body->local_table_size
+    let local_table_size: i32 = unsafe { get_iseq_body_local_table_size(iseq) }
+        .try_into()
+        .unwrap();
+    let op = (ep_offset - VM_ENV_DATA_SIZE) as i32;
+    let local_idx = local_table_size - op - 1;
+    assert!(local_idx >= 0 && local_idx < local_table_size);
+    local_idx.try_into().unwrap()
+}
+
+/// Inverse of ep_offset_to_local_idx(). See [`ep_offset_to_local_idx`] for details.
+pub fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq) };
+    local_size_and_idx_to_ep_offset(local_size.to_usize(), local_idx)
+}
+
+/// Convert the number of locals and a local index to an offset from the EP
+pub fn local_size_and_idx_to_ep_offset(local_size: usize, local_idx: usize) -> i32 {
+    local_size as i32 - local_idx as i32 - 1 + VM_ENV_DATA_SIZE as i32
+}
+
+/// Convert the number of locals and a local index to an offset from the BP.
+/// We don't move the SP register after entry, so we often use SP as BP.
+pub fn local_size_and_idx_to_bp_offset(local_size: usize, local_idx: usize) -> i32 {
+    local_size_and_idx_to_ep_offset(local_size, local_idx) + 1
 }
 
 /// Iterate over all existing ISEQs
@@ -733,15 +777,55 @@ impl VALUE {
 
 pub type IseqParameters = rb_iseq_constant_body_rb_iseq_parameters;
 
+/// How a block iseq refers to a variable in an enclosing scope, as recorded in
+/// `ISEQ_BODY(blockiseq)->outer_variables`. `compile.c` aggregates accesses from
+/// nested blocks up the chain, and the same table backs `Ractor.shareable_proc`'s
+/// isolation checks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OuterLocalAccess {
+    /// The variable is read but never assigned to.
+    ReadOnly,
+    /// The variable is assigned to and maybe also read.
+    ReadWrite,
+}
+
+/// Wrapper over an iseq's `outer_variables` table, which describes
+/// how a block iseq refers to a variable in an enclosing scope.
+#[derive(Clone, Copy)]
+pub struct OuterVariables(Option<NonNull<rb_id_table>>);
+
+impl OuterVariables {
+    /// Look up how the enclosing-scope local `id` is accessed by the iseq (or any
+    /// iseq nested within it). Returns `None` when the variable isn't referenced.
+    pub fn local_access(self, id: ID) -> Option<OuterLocalAccess> {
+        let table = self.0?;
+        let mut write = Qfalse;
+        // Non-zero return means there's a table entry, i.e. the variable is referenced.
+        if unsafe { rb_id_table_lookup(table.as_ptr(), id, &mut write) } == 0 {
+            return None;
+        }
+        // Truthy means write
+        Some(if write.test() { OuterLocalAccess::ReadWrite } else { OuterLocalAccess::ReadOnly })
+    }
+}
+
 /// Extension trait to enable method calls on [`IseqPtr`]
 pub trait IseqAccess {
     unsafe fn params<'a>(self) -> &'a IseqParameters;
+    unsafe fn outer_variables(self) -> OuterVariables;
 }
 
 impl IseqAccess for IseqPtr {
     /// Get a description of the ISEQ's signature. Analogous to `ISEQ_BODY(iseq)->param` in C.
     unsafe fn params<'a>(self) -> &'a IseqParameters {
         unsafe { &*((*self).body.byte_add(ISEQ_BODY_OFFSET_PARAM.to_usize()) as *const IseqParameters) }
+    }
+
+    /// The iseq's `outer_variables` table. See [`OuterVariables`].
+    unsafe fn outer_variables(self) -> OuterVariables {
+        use crate::cast::IntoUsize;
+        let field = unsafe { (*self).body.byte_add(ISEQ_BODY_OFFSET_OUTER_VARIABLES.to_usize()) } as *const *mut rb_id_table;
+        OuterVariables(NonNull::new(unsafe { *field }))
     }
 }
 

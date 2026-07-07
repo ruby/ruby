@@ -133,7 +133,7 @@ rb_imemo_cdhash_new(size_t size, const struct st_hash_type *type)
 VALUE
 rb_imemo_fields_new(VALUE owner, shape_id_t shape_id, bool shareable)
 {
-    size_t capa = RSHAPE_CAPACITY(shape_id);
+    size_t capa = RSHAPE(shape_id)->capacity;
     size_t embedded_size = offsetof(struct rb_fields, as.embed) + capa * sizeof(VALUE);
     RUBY_ASSERT(rb_gc_size_allocatable_p(embedded_size));
     VALUE fields = rb_imemo_new(imemo_fields, owner, embedded_size, shareable);

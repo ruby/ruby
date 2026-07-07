@@ -276,7 +276,7 @@ class TestRactor < Test::Unit::TestCase
 
   # [Bug #21398]
   def test_port_receive_dnt_with_port_send
-    omit 'unstable on macos-14' if RUBY_PLATFORM =~ /darwin/
+    omit 'unstable on windows and macos-14' if RUBY_PLATFORM =~ /mswin|mingw|darwin/
     assert_ractor(<<~'RUBY', timeout: 90)
       THREADS = 10
       JOBS_PER_THREAD = 50
@@ -370,6 +370,13 @@ class TestRactor < Test::Unit::TestCase
         yield
       end
     end
+  end
+
+  def test_ractor_does_not_inherit_fiber_storage
+    assert_ractor(<<~'RUBY')
+      Fiber[:key] = "creator"
+      assert_nil Ractor.new { Fiber[:key] }.value
+    RUBY
   end
 
   def assert_make_shareable(obj)

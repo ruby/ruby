@@ -622,10 +622,8 @@ ossl_pkey_initialize_copy(VALUE self, VALUE other)
 {
     EVP_PKEY *pkey, *pkey_other;
 
-    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
+    ossl_want_uninitialized(self, &ossl_evp_pkey_type);
     TypedData_Get_Struct(other, EVP_PKEY, &ossl_evp_pkey_type, pkey_other);
-    if (pkey)
-        rb_raise(rb_eTypeError, "pkey already initialized");
     if (pkey_other) {
         pkey = EVP_PKEY_dup(pkey_other);
         if (!pkey)

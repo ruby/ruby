@@ -199,6 +199,48 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_incomplete "{\"a\":1,"
   end
 
+  def test_line_comment_spanning_feed_boundary_is_not_terminated_early
+    # A `//` line comment is only terminated by a newline. When the newline
+    # has not arrived yet, the comment must stay incomplete rather than being
+    # treated as consumed -- otherwise its body, delivered in a later chunk,
+    # leaks out as parsed values.
+    values = []
+    parser = new_parser(allow_comments: true)
+    parser << '[1] //'
+    values << parser.value while parser.parse
+
+    parser << "[2]\n[3]" # [2] belongs to the comment, [3] is a real document
+    values << parser.value while parser.parse
+
+    assert_equal [[1], [3]], values
+  end
+
+  def test_line_comment_terminated_by_newline_across_feeds
+    values = []
+    parser = new_parser(allow_comments: true)
+    parser << '[1] //co'
+    values << parser.value while parser.parse
+
+    parser << "mment\n[2]"
+    values << parser.value while parser.parse
+
+    assert_equal [[1], [2]], values
+  end
+
+  def test_block_comment_spanning_feed_boundary_is_not_terminated_early
+    # A `/* */` block comment whose closing `*/` has not arrived yet must stay
+    # incomplete, mirroring the line-comment behaviour above.
+    values = []
+    parser = new_parser(allow_comments: true)
+    parser << '[1] /*'
+    values << parser.value while parser.parse
+
+    parser << '[2]*/[3]' # [2] belongs to the comment, [3] is a real document
+    values << parser.value while parser.parse
+
+    assert_equal [[1], [3]], values
+  end
+
   def test_rest
     @parser << '[1, 2, 3, "unterminated string'
     refute @parser.parse
@@ -237,6 +279,89 @@ class JSONResumageParserTest < Test::Unit::TestCase
 
     refute @parser.parse
     assert_predicate @parser, :eos?
+  end
+
+  def test_empty_predicate
+    # empty? is defined on the state left after parsing everything that
+    # could be parsed from the fed bytes, so drain with parse/value first.
+    {
+      ''               => true,  # nothing fed: vacuously empty
+      '{"a":1}'        => true,
+      '{"a":1}{"b":2}' => true,
+      '{"a":1} '       => true,  # trailing whitespace
+      '{"a":1}{"b":2'  => false, # inside a number token
+      '{"a":1}{"b":'   => false, # right after a colon (token boundary)
+      '{"a":1}{'       => false, # right after an object open
+      '{"a":1,'        => false, # right after a comma (token boundary)
+      '"abc'           => false, # inside a string token
+      '[1,2'           => false, # unclosed array
+    }.each do |json, expected|
+      parser = new_parser
+      parser << json
+      parser.value while parser.parse
+      assert_equal expected, parser.empty?, "expected #{json.inspect} to be empty? == #{expected}"
+    end
+  end
+
+  def test_empty_predicate_with_undrained_buffer
+    @parser << '{"a":1}{"b":2}'
+    assert @parser.parse
+    refute_predicate @parser, :empty? # second document still in the buffer
+    assert_equal({ "a" => 1 }, @parser.value)
+    assert @parser.parse
+    assert_equal({ "b" => 2 }, @parser.value)
+    assert_predicate @parser, :empty?
+  end
+
+  def test_empty_predicate_with_pending_value
+    # A fully parsed document awaiting retrieval with #value is not empty.
+    @parser << '{"a":1}'
+    assert @parser.parse
+    refute_predicate @parser, :empty?
+    assert_equal({ "a" => 1 }, @parser.value)
+    assert_predicate @parser, :empty?
+  end
+
+  def test_empty_predicate_across_feeds
+    @parser << '{"a' # chunk boundary inside a string literal
+    refute @parser.parse
+    refute_predicate @parser, :empty?
+
+    @parser << '":1'
+    refute @parser.parse
+    refute_predicate @parser, :empty?
+
+    @parser << '}'
+    assert @parser.parse
+    refute_predicate @parser, :empty? # value not retrieved yet
+    assert_equal({ "a" => 1 }, @parser.value)
+    assert_predicate @parser, :empty?
+  end
+
+  def test_partial_value_predicate
+    {
+      ''               => false,
+      '{"a":1}'        => false,
+      '{"a":1}{"b":2}' => false,
+      '{"a":1} '       => false,
+      '{"a":1}{"b":2'  => true,  # inside a number token
+      '{"a":1}{"b":'   => true,  # right after a colon (token boundary)
+      # The tokenizer rewinds to the token start on EOS, so nothing is
+      # registered yet for a lone '{' or an unterminated top-level string:
+      # partial_value returns nil and partial_value? agrees. The truncation
+      # is still observable through the buffer: eos? is false, rest isn't
+      # empty.
+      '{"a":1}{'       => false, # right after an object open
+      '"abc'           => false, # inside a string token
+      '{"a":1,'        => true,  # right after a comma (token boundary)
+      '[1,2'           => true,  # unclosed array
+    }.each do |json, expected|
+      parser = new_parser
+      parser << json
+      parser.value while parser.parse
+      assert_equal expected, parser.partial_value?, "expected #{json.inspect} to be partial_value? == #{expected}"
+      assert_equal !parser.partial_value.nil?, parser.partial_value?, "partial_value?/partial_value mismatch for #{json.inspect}"
+    end
   end
 
   def test_partial_value

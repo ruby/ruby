@@ -23,11 +23,8 @@ use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NAT
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
 use crate::hir_type::{types, Type};
-use crate::options::{get_option, InlineDepth, PerfMap};
+use crate::options::{get_option, InlineDepth, PerfMap, DEFAULT_MAX_VERSIONS};
 use crate::cast::IntoUsize;
-
-/// Default maximum number of compiled versions per ISEQ.
-const DEFAULT_MAX_VERSIONS: usize = 2;
 
 /// Maximum number of compiled versions per ISEQ.
 /// Configurable via --zjit-max-versions (default: 2).
@@ -61,7 +58,7 @@ struct JITState {
     iseq_calls: Vec<IseqCallRef>,
 
     /// The number of native stack slots reserved for JITFrame, one per
-    /// simultaneously live frame (`inlining_depth() + 1`). gen_save_pc_for_gc()
+    /// simultaneously live frame (`inlining_depth() + 1`). gen_write_jit_frame()
     /// and the inlined frame push write a JITFrame into the slot selected by the
     /// current frame's depth.
     jit_frame_size: usize,
@@ -402,7 +399,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
         // Reserve one JITFrame slot per simultaneously live frame. The top-level
         // frame is depth 0, and each level of inlining adds another frame that
         // can be on the CFP chain at the same time, so we need
-        // `inlining_depth() + 1` slots. gen_save_pc_for_gc() and the inlined
+        // `inlining_depth() + 1` slots. gen_write_jit_frame() and the inlined
         // frame push select among these slots by the frame's depth, keeping each
         // frame's `cfp->jit_return` pointed at its own slot rather than a shared
         // one.
@@ -468,10 +465,11 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             // Compile all instructions
             for (insn_idx, &insn_id) in block.insns().enumerate() {
                 let insn = function.find(insn_id);
+                let perf_symbol = hir_perf_symbol_range_start(&mut asm, &insn);
 
-                match insn {
+                let result = match &insn {
                     Insn::CondBranch { val, if_true, if_false } => {
-                        let val_opnd = jit.get_opnd(val);
+                        let val_opnd = jit.get_opnd(*val);
                         let true_target = hir_to_lir[if_true.target.0].unwrap();
                         let false_target = hir_to_lir[if_false.target.0].unwrap();
 
@@ -490,6 +488,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                         asm.jmp(Target::Block(Box::new(false_branch)));
 
                         assert!(asm.current_block().insns.last().unwrap().is_terminator());
+                        Ok(())
                     }
                     Insn::Jump(target) => {
                         let lir_target = hir_to_lir[target.target.0].unwrap();
@@ -502,40 +501,37 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
                         // Jump should always be the last instruction in an HIR block
                         assert!(insn_idx == block.insns().len() - 1, "Jump must be the last instruction in HIR block");
+                        Ok(())
                     },
                     _ => {
-                        // Start a new perf range for the HIR instruction. For now, we do this only for
-                        // non-terminator instructions because LIR blocks must end with a terminator instruction.
-                        let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) && !insn.is_terminator() {
-                            let insn_name = format!("{insn}").split_whitespace().next().unwrap().to_string();
-                            Some(perf_symbol_range_start(&mut asm, &insn_name))
-                        } else {
-                            None
-                        };
+                        gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn)
+                    }
+                };
 
-                        let result = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn);
-
-                        // Close the current perf range for the HIR instruction.
-                        if let Some(perf_symbol) = &perf_symbol {
-                            perf_symbol_range_end(&mut asm, perf_symbol);
-                        }
-
-                        if let Err(last_snapshot) = result {
-                            debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
-                            gen_incr_counter(&mut asm, exit_counter_for_unhandled_hir_insn(&insn));
-                            let reason = match insn {
-                                Insn::Throw { .. }         => SideExitReason::UnhandledHIRThrow,
-                                Insn::InvokeBuiltin { .. } => SideExitReason::UnhandledHIRInvokeBuiltin,
-                                _                          => SideExitReason::UnhandledHIRUnknown(insn_id),
-                            };
-                            gen_side_exit(&mut jit, &mut asm, &reason, None, &function.frame_state(last_snapshot));
-                            // Don't bother generating code after a side-exit. We won't run it.
-                            // TODO(max): Generate ud2 or equivalent.
-                            break;
-                        };
-                        // It's fine; we generated the instruction
+                // Close the current perf range for the HIR instruction.
+                if let Some(perf_symbol) = &perf_symbol {
+                    if result.is_ok() && insn.is_terminator() {
+                        assert!(asm.current_block().insns.last().is_some_and(|insn| insn.is_terminator()));
+                        perf_symbol_range_end_at_block_end(&mut asm, perf_symbol);
+                    } else {
+                        perf_symbol_range_end(&mut asm, perf_symbol);
                     }
                 }
+
+                if let Err(last_snapshot) = result {
+                    debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
+                    gen_incr_counter(&mut asm, exit_counter_for_unhandled_hir_insn(&insn));
+                    let reason = match insn {
+                        Insn::Throw { .. }         => SideExitReason::UnhandledHIRThrow,
+                        Insn::InvokeBuiltin { .. } => SideExitReason::UnhandledHIRInvokeBuiltin,
+                        _                          => SideExitReason::UnhandledHIRUnknown(insn_id),
+                    };
+                    gen_side_exit(&mut jit, &mut asm, &reason, None, &function.frame_state(last_snapshot));
+                    // Don't bother generating code after a side-exit. We won't run it.
+                    // TODO(max): Generate ud2 or equivalent.
+                    break;
+                };
+                // It's fine; we generated the instruction
             }
             // Blocks should always end with control flow
             assert!(asm.current_block().insns.last().unwrap().is_terminator());
@@ -1036,7 +1032,7 @@ fn gen_ccall_with_frame(
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
     // to account for the receiver and arguments (and block arguments if any)
-    gen_save_pc_for_gc(asm, state, 0);
+    gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, caller_stack_size);
     gen_spill_stack(jit, asm, state);
     gen_spill_locals(jit, asm, state);
@@ -1130,7 +1126,7 @@ fn gen_ccall_variadic(
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
     // to account for the receiver and arguments (like gen_ccall_with_frame does)
-    gen_save_pc_for_gc(asm, state, 0);
+    gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, caller_stack_size);
     gen_spill_stack(jit, asm, state);
     gen_spill_locals(jit, asm, state);
@@ -1549,7 +1545,7 @@ fn gen_push_inline_frame(
     // Save cfp->pc and cfp->sp for the caller frame.
     // Cannot use gen_prepare_non_leaf_call because we need special SP math.
     let stack_size = state.stack().len() - args.len() - 1; // -1 for receiver
-    gen_save_pc_for_gc(asm, state, 0);
+    gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, stack_size);
 
     gen_spill_locals(jit, asm, state);
@@ -1589,14 +1585,14 @@ fn gen_push_inline_frame(
 
     // Publish the inlined callee's entry JITFrame before the inlined body runs.
     // Frame walking functions such as rb_profile_frames can inspect the new
-    // CFP between this frame push and the first inlined gen_save_pc_for_gc, so
+    // CFP between this frame push and the first inlined gen_write_jit_frame, so
     // cfp->jit_return must already reference a valid JITFrame slot. Leaving it
     // stale or uninitialized is unsafe because CFP_ZJIT_FRAME has no independent
     // way to tell whether it points at a valid JITFrame slot.
     //
     // We install a pre-baked JITFrame for the callee's entry by writing its address into
     // the callee's own JITFrame slot and pointing the callee's cfp->jit_return at that
-    // slot, matching the protocol established by gen_entry_point + gen_save_pc_for_gc.
+    // slot, matching the protocol established by gen_entry_point + gen_write_jit_frame.
     // The callee runs one level deeper than the caller, so it uses the slot for
     // `state.depth + 1` (state is the caller's FrameState). Giving each inlining depth a
     // distinct slot keeps the caller's and callee's cfp->jit_return from aliasing the same
@@ -1604,7 +1600,7 @@ fn gen_push_inline_frame(
     // one frame's PC/ISEQ into every aliased CFP on the chain. CFP_ZJIT_FRAME in zjit.h
     // reads the JITFrame via ((VALUE *)cfp->jit_return)[-1], so the field must be the
     // slot's address, not the JITFrame pointer itself. Once the inlined body runs its
-    // first gen_save_pc_for_gc, that call overwrites the same slot with a JITFrame
+    // first gen_write_jit_frame, that call overwrites the same slot with a JITFrame
     // carrying the current PC, just as the non-inlined path does.
     //
     // cfp->sp is left stale at frame push, matching the non-inlined gen_push_frame, which
@@ -1686,7 +1682,7 @@ fn gen_send_iseq_direct(
     // Save cfp->pc and cfp->sp for the caller frame
     // Can't use gen_prepare_non_leaf_call because we need special SP math.
     let stack_size = state.stack().len() - args.len() - 1; // -1 for receiver
-    let jit_frame = gen_save_pc_for_gc(asm, state, stack_size);
+    let jit_frame = gen_write_jit_frame(asm, state, stack_size);
     gen_save_sp(asm, stack_size);
 
     gen_spill_locals(jit, asm, state);
@@ -2913,7 +2909,7 @@ fn cfp_jit_return_for_depth(asm: &mut Assembler, depth: InlineDepth) -> Opnd {
 /// Save only the PC to CFP. Use this when you need to call gen_save_sp()
 /// immediately after with a custom stack size (e.g., gen_ccall_with_frame
 /// adjusts SP to exclude receiver and arguments).
-fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState, stack_map_size: usize) -> *const zjit_jit_frame {
+fn gen_write_jit_frame(asm: &mut Assembler, state: &FrameState, stack_map_size: usize) -> *const zjit_jit_frame {
     let opcode: usize = state.get_opcode().try_into().unwrap();
     let next_pc: *const VALUE = unsafe { state.pc.offset(insn_len(opcode) as isize) };
 
@@ -2941,7 +2937,7 @@ fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState, stack_map_size: u
 /// However, to avoid marking uninitialized stack slots, this also updates SP,
 /// which may have cfp->sp for a past frame or a past non-leaf call.
 fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState, leaf: bool, stack_map_size: usize) -> *const zjit_jit_frame {
-    let jit_frame = gen_save_pc_for_gc(asm, state, stack_map_size);
+    let jit_frame = gen_write_jit_frame(asm, state, stack_map_size);
     gen_save_sp(asm, state.stack_size());
     if leaf {
         asm.expect_leaf_ccall(state.stack_size());
@@ -3006,7 +3002,7 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
 /// writing stack slots. Otherwise spilling the stack can overwrite frame
 /// metadata below the real VM-stack base.
 fn gen_prepare_fallback_call(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
-    gen_save_pc_for_gc(asm, state, 0);
+    gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, state.stack_size());
     gen_spill_locals(jit, asm, state);
     gen_spill_stack(jit, asm, state);
@@ -3091,7 +3087,7 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
             asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
         }
     } else {
-        // C frames don't have a PC and ISEQ in normal operation. ISEQ frames set PC on gen_save_pc_for_gc().
+        // C frames don't have a PC and ISEQ in normal operation. ISEQ frames set PC on gen_write_jit_frame().
         // When runtime checks are enabled we poison the PC for C frames so accidental reads stand out.
         if let (None, Some(pc)) = (frame.iseq, PC_POISON) {
             asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
@@ -3126,24 +3122,6 @@ fn gen_stack_overflow_check(jit: &mut JITState, asm: &mut Assembler, state: &Fra
     let stack_limit = asm.lea(Opnd::mem(64, SP, peak_offset as i32));
     asm.cmp(CFP, stack_limit);
     asm.jbe(jit, side_exit(jit, state, StackOverflow));
-}
-
-
-/// Inverse of ep_offset_to_local_idx(). See ep_offset_to_local_idx() for details.
-pub fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
-    let local_size = unsafe { get_iseq_body_local_table_size(iseq) };
-    local_size_and_idx_to_ep_offset(local_size.to_usize(), local_idx)
-}
-
-/// Convert the number of locals and a local index to an offset from the EP
-pub fn local_size_and_idx_to_ep_offset(local_size: usize, local_idx: usize) -> i32 {
-    local_size as i32 - local_idx as i32 - 1 + VM_ENV_DATA_SIZE as i32
-}
-
-/// Convert the number of locals and a local index to an offset from the BP.
-/// We don't move the SP register after entry, so we often use SP as BP.
-pub fn local_size_and_idx_to_bp_offset(local_size: usize, local_idx: usize) -> i32 {
-    local_size_and_idx_to_ep_offset(local_size, local_idx) + 1
 }
 
 /// Convert ISEQ into High-level IR
@@ -3824,6 +3802,16 @@ impl IseqCall {
 
 type PerfSymbol = Rc<RefCell<Option<(CodePtr, String)>>>;
 
+/// Start a HIR perf symbol range when --zjit-perf=hir is enabled.
+fn hir_perf_symbol_range_start(asm: &mut Assembler, insn: &Insn) -> Option<PerfSymbol> {
+    if get_option!(perf) == Some(PerfMap::HIR) {
+        let insn_name = format!("{insn}").split_whitespace().next().unwrap().to_string();
+        Some(perf_symbol_range_start(asm, &insn_name))
+    } else {
+        None
+    }
+}
+
 /// Mark the start of a perf symbol range via pos_marker.
 /// Returns a handle to pass to perf_symbol_range_end.
 pub fn perf_symbol_range_start(asm: &mut Assembler, symbol_name: &str) -> PerfSymbol {
@@ -3846,6 +3834,23 @@ pub fn perf_symbol_range_end(asm: &mut Assembler, perf_symbol: &PerfSymbol) {
             let start_addr = start.raw_addr(cb);
             let code_size = end.raw_addr(cb) - start_addr;
             register_with_perf(name, start_addr, code_size);
+        }
+    });
+}
+
+/// Mark the end of a perf symbol range at the end of the current LIR block.
+pub fn perf_symbol_range_end_at_block_end(asm: &mut Assembler, perf_symbol: &PerfSymbol) {
+    let current = perf_symbol.clone();
+    asm.pos_marker_at_block_end(move |end, cb| {
+        if let Some((start, name)) = current.borrow_mut().take() {
+            let start_addr = start.raw_addr(cb);
+            let end_addr = end.raw_addr(cb);
+            // A terminator's jump can be removed when it targets the next
+            // linear block, leaving no code between the range start and the
+            // block-end marker. Skip zero-sized perf map entries.
+            if start_addr < end_addr {
+                register_with_perf(name, start_addr, end_addr - start_addr);
+            }
         }
     });
 }

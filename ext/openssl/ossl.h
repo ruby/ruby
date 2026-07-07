@@ -92,6 +92,8 @@ extern VALUE eOSSLError;
     }\
 } while (0)
 
+void ossl_want_uninitialized(VALUE self, const rb_data_type_t *type);
+
 /*
  * Type conversions
  */

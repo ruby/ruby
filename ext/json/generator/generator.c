@@ -34,13 +34,14 @@ typedef struct JSON_Generator_StateStruct {
     bool ascii_only;
     bool script_safe;
     bool strict;
+    VALUE sort_keys;
 } JSON_Generator_State;
 
-static VALUE mJSON, cState, cFragment, eGeneratorError, eNestingError, Encoding_UTF_8;
+static VALUE mJSON, cState, cFragment, eGeneratorError, eNestingError, Encoding_UTF_8, default_sort_keys_proc;
 
 static ID i_to_s, i_to_json, i_new, i_encode;
 static VALUE sym_indent, sym_space, sym_space_before, sym_object_nl, sym_array_nl, sym_max_nesting, sym_allow_nan, sym_allow_duplicate_key,
-             sym_ascii_only, sym_depth, sym_buffer_initial_length, sym_script_safe, sym_escape_slash, sym_strict, sym_as_json;
+             sym_ascii_only, sym_depth, sym_buffer_initial_length, sym_script_safe, sym_escape_slash, sym_strict, sym_as_json, sym_sort_keys;
 
 
 #define GET_STATE_TO(self, state) \
@@ -709,6 +710,7 @@ static void State_mark(void *ptr)
     rb_gc_mark_movable(state->object_nl);
     rb_gc_mark_movable(state->array_nl);
     rb_gc_mark_movable(state->as_json);
+    rb_gc_mark_movable(state->sort_keys);
 }
 
 static void State_compact(void *ptr)
@@ -720,6 +722,7 @@ static void State_compact(void *ptr)
     state->object_nl = rb_gc_location(state->object_nl);
     state->array_nl = rb_gc_location(state->array_nl);
     state->as_json = rb_gc_location(state->as_json);
+    state->sort_keys = rb_gc_location(state->sort_keys);
 }
 
 static size_t State_memsize(const void *ptr)
@@ -769,6 +772,7 @@ static void vstate_spill(struct generate_json_data *data)
     RB_OBJ_WRITTEN(vstate, Qundef, state->object_nl);
     RB_OBJ_WRITTEN(vstate, Qundef, state->array_nl);
     RB_OBJ_WRITTEN(vstate, Qundef, state->as_json);
+    RB_OBJ_WRITTEN(vstate, Qundef, state->sort_keys);
 }
 
 static inline VALUE json_call_to_json(struct generate_json_data *data, VALUE obj)
@@ -1050,6 +1054,11 @@ static inline long increase_depth(struct generate_json_data *data)
 
 static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
+    if (RB_UNLIKELY(data->state->sort_keys)) {
+        obj = rb_proc_call_with_block(data->state->sort_keys, 1, &obj, Qnil);
+        Check_Type(obj, T_HASH);
+    }
+
     long depth = increase_depth(data);
 
     if (RHASH_SIZE(obj) == 0) {
@@ -1376,6 +1385,7 @@ static VALUE cState_init_copy(VALUE obj, VALUE orig)
     RB_OBJ_WRITTEN(obj, Qundef, objState->object_nl);
     RB_OBJ_WRITTEN(obj, Qundef, objState->array_nl);
     RB_OBJ_WRITTEN(obj, Qundef, objState->as_json);
+    RB_OBJ_WRITTEN(obj, Qundef, objState->sort_keys);
 
     return obj;
 }
@@ -1722,6 +1732,55 @@ static VALUE cState_ascii_only_set(VALUE self, VALUE enable)
     return Qnil;
 }
 
+static VALUE cState_set_default_sort_keys_proc(VALUE self, VALUE proc)
+{
+    if (!rb_obj_is_proc(proc)) {
+        rb_raise(rb_eTypeError, "sort_key_proc must be a Proc");
+    }
+    return default_sort_keys_proc = proc;
+}
+
+static VALUE normalize_sort_keys(VALUE value)
+{
+    if (rb_obj_is_proc(value)) {
+        return value;
+    } else if (value == Qtrue) {
+        return default_sort_keys_proc;
+    } else if (RTEST(value)) {
+        rb_raise(rb_eTypeError, "The `sort_keys` argument must be a boolean or a Proc");
+    } else {
+        return Qfalse;
+    }
+}
+
+/*
+ * call-seq: sort_keys
+ *
+ * Get the value of sort_keys.
+ */
+static VALUE cState_sort_keys_p(VALUE self)
+{
+    GET_STATE(self);
+    return state->sort_keys;
+}
+
+/*
+ * call-seq: sort_keys=(value)
+ *
+ * value is a boolean or a proc. If the value is the boolean true, object keys
+ * will be sorted lexicographically in ascending order.
+ *
+ * If the value is a proc, it receives the entire Hash and must return a Hash
+ * with its pairs in the desired order, allowing for arbitrary sorting.
+ */
+static VALUE cState_sort_keys_set(VALUE self, VALUE value)
+{
+    rb_check_frozen(self);
+    GET_STATE(self);
+    RB_OBJ_WRITE(self, &state->sort_keys, normalize_sort_keys(value));
+    return Qnil;
+}
+
 static VALUE cState_allow_duplicate_key_p(VALUE self)
 {
     GET_STATE(self);
@@ -1832,6 +1891,9 @@ static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
         state->as_json_single_arg = proc && rb_proc_arity(proc) == 1;
         state_write_value(data, &state->as_json, proc);
     }
+    else if (key == sym_sort_keys)             {
+        state_write_value(data, &state->sort_keys, normalize_sort_keys(val));
+    }
     return ST_CONTINUE;
 }
 
@@ -1909,6 +1971,8 @@ void Init_generator(void)
     VALUE mExt = rb_define_module_under(mJSON, "Ext");
     VALUE mGenerator = rb_define_module_under(mExt, "Generator");
 
+    rb_global_variable(&default_sort_keys_proc);
+
     rb_global_variable(&eGeneratorError);
     eGeneratorError = rb_path2class("JSON::GeneratorError");
 
@@ -1918,6 +1982,8 @@ void Init_generator(void)
     cState = rb_define_class_under(mGenerator, "State", rb_cObject);
     rb_define_alloc_func(cState, cState_s_allocate);
     rb_define_singleton_method(cState, "from_state", cState_from_state_s, 1);
+    rb_define_singleton_method(cState, "default_sort_keys_proc=", cState_set_default_sort_keys_proc, 1);
+
     rb_define_method(cState, "initialize", cState_initialize, -1);
     rb_define_alias(cState, "initialize", "initialize"); // avoid method redefinition warnings
     rb_define_private_method(cState, "_configure", cState_configure, 1);
@@ -1957,6 +2023,8 @@ void Init_generator(void)
     rb_define_method(cState, "buffer_initial_length=", cState_buffer_initial_length_set, 1);
     rb_define_method(cState, "generate", cState_generate, -1);
     rb_define_method(cState, "_generate_no_fallback", cState_generate_no_fallback, -1);
+    rb_define_method(cState, "sort_keys", cState_sort_keys_p, 0);
+    rb_define_method(cState, "sort_keys=", cState_sort_keys_set, 1);
 
     rb_define_private_method(cState, "allow_duplicate_key?", cState_allow_duplicate_key_p, 0);
 
@@ -1986,6 +2054,7 @@ void Init_generator(void)
     sym_strict = ID2SYM(rb_intern("strict"));
     sym_as_json = ID2SYM(rb_intern("as_json"));
     sym_allow_duplicate_key = ID2SYM(rb_intern("allow_duplicate_key"));
+    sym_sort_keys = ID2SYM(rb_intern("sort_keys"));
 
     usascii_encindex = rb_usascii_encindex();
     utf8_encindex = rb_utf8_encindex();

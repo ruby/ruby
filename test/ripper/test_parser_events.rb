@@ -233,7 +233,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_arg_ambiguous
     thru_arg_ambiguous = false
-    parse('m //', :on_arg_ambiguous) {thru_arg_ambiguous = true}
+    parse('m +1', :on_arg_ambiguous) {thru_arg_ambiguous = true}
     assert_equal true, thru_arg_ambiguous
   end
 

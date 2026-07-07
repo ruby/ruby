@@ -156,6 +156,7 @@ big2str.o: $(hdrdir)/ruby/internal/variable.h
 big2str.o: $(hdrdir)/ruby/internal/warning_push.h
 big2str.o: $(hdrdir)/ruby/internal/xmalloc.h
 big2str.o: $(hdrdir)/ruby/missing.h
+big2str.o: $(hdrdir)/ruby/onigmo.h
 big2str.o: $(hdrdir)/ruby/ruby.h
 big2str.o: $(hdrdir)/ruby/st.h
 big2str.o: $(hdrdir)/ruby/subst.h
@@ -319,6 +320,7 @@ bigzero.o: $(hdrdir)/ruby/internal/variable.h
 bigzero.o: $(hdrdir)/ruby/internal/warning_push.h
 bigzero.o: $(hdrdir)/ruby/internal/xmalloc.h
 bigzero.o: $(hdrdir)/ruby/missing.h
+bigzero.o: $(hdrdir)/ruby/onigmo.h
 bigzero.o: $(hdrdir)/ruby/ruby.h
 bigzero.o: $(hdrdir)/ruby/st.h
 bigzero.o: $(hdrdir)/ruby/subst.h
@@ -482,6 +484,7 @@ div.o: $(hdrdir)/ruby/internal/variable.h
 div.o: $(hdrdir)/ruby/internal/warning_push.h
 div.o: $(hdrdir)/ruby/internal/xmalloc.h
 div.o: $(hdrdir)/ruby/missing.h
+div.o: $(hdrdir)/ruby/onigmo.h
 div.o: $(hdrdir)/ruby/ruby.h
 div.o: $(hdrdir)/ruby/st.h
 div.o: $(hdrdir)/ruby/subst.h
@@ -645,6 +648,7 @@ init.o: $(hdrdir)/ruby/internal/variable.h
 init.o: $(hdrdir)/ruby/internal/warning_push.h
 init.o: $(hdrdir)/ruby/internal/xmalloc.h
 init.o: $(hdrdir)/ruby/missing.h
+init.o: $(hdrdir)/ruby/onigmo.h
 init.o: $(hdrdir)/ruby/ruby.h
 init.o: $(hdrdir)/ruby/st.h
 init.o: $(hdrdir)/ruby/subst.h
@@ -806,6 +810,7 @@ intpack.o: $(hdrdir)/ruby/internal/variable.h
 intpack.o: $(hdrdir)/ruby/internal/warning_push.h
 intpack.o: $(hdrdir)/ruby/internal/xmalloc.h
 intpack.o: $(hdrdir)/ruby/missing.h
+intpack.o: $(hdrdir)/ruby/onigmo.h
 intpack.o: $(hdrdir)/ruby/ruby.h
 intpack.o: $(hdrdir)/ruby/st.h
 intpack.o: $(hdrdir)/ruby/subst.h
@@ -969,6 +974,7 @@ mul.o: $(hdrdir)/ruby/internal/variable.h
 mul.o: $(hdrdir)/ruby/internal/warning_push.h
 mul.o: $(hdrdir)/ruby/internal/xmalloc.h
 mul.o: $(hdrdir)/ruby/missing.h
+mul.o: $(hdrdir)/ruby/onigmo.h
 mul.o: $(hdrdir)/ruby/ruby.h
 mul.o: $(hdrdir)/ruby/st.h
 mul.o: $(hdrdir)/ruby/subst.h
@@ -1132,6 +1138,7 @@ str2big.o: $(hdrdir)/ruby/internal/variable.h
 str2big.o: $(hdrdir)/ruby/internal/warning_push.h
 str2big.o: $(hdrdir)/ruby/internal/xmalloc.h
 str2big.o: $(hdrdir)/ruby/missing.h
+str2big.o: $(hdrdir)/ruby/onigmo.h
 str2big.o: $(hdrdir)/ruby/ruby.h
 str2big.o: $(hdrdir)/ruby/st.h
 str2big.o: $(hdrdir)/ruby/subst.h

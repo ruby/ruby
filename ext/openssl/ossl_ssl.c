@@ -56,7 +56,7 @@ static void
 ossl_sslctx_mark(void *ptr)
 {
     SSL_CTX *ctx = ptr;
-    rb_gc_mark((VALUE)SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_ptr_idx));
+    rb_gc_mark_movable((VALUE)SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_ptr_idx));
 }
 
 static void
@@ -65,12 +65,25 @@ ossl_sslctx_free(void *ptr)
     SSL_CTX_free(ptr);
 }
 
+static void
+ossl_sslctx_compact(void *ptr)
+{
+    SSL_CTX *ctx = ptr;
+    VALUE self = (VALUE)SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_ptr_idx);
+    if (self) {
+        (void)SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_ptr_idx,
+                                  (void *)rb_gc_location(self));
+    }
+}
+
 static const rb_data_type_t ossl_sslctx_type = {
-    "OpenSSL/SSL/CTX",
-    {
-        ossl_sslctx_mark, ossl_sslctx_free,
+    .wrap_struct_name = "OpenSSL/SSL/CTX",
+    .function = {
+        .dmark = ossl_sslctx_mark,
+        .dfree = ossl_sslctx_free,
+        .dcompact = ossl_sslctx_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1567,7 +1580,7 @@ static void
 ossl_ssl_mark(void *ptr)
 {
     SSL *ssl = ptr;
-    rb_gc_mark((VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx));
+    rb_gc_mark_movable((VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx));
 }
 
 static void
@@ -1576,12 +1589,25 @@ ossl_ssl_free(void *ssl)
     SSL_free(ssl);
 }
 
+static void
+ossl_ssl_compact(void *ptr)
+{
+    SSL *ssl = ptr;
+    VALUE self = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
+    if (self) {
+        (void)SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx,
+                              (void *)rb_gc_location(self));
+    }
+}
+
 const rb_data_type_t ossl_ssl_type = {
-    "OpenSSL/SSL",
-    {
-        ossl_ssl_mark, ossl_ssl_free,
+    .wrap_struct_name = "OpenSSL/SSL",
+    .function = {
+        .dmark = ossl_ssl_mark,
+        .dfree = ossl_ssl_free,
+        .dcompact = ossl_ssl_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1643,18 +1669,15 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     SSL *ssl;
     SSL_CTX *ctx;
 
-    TypedData_Get_Struct(self, SSL, &ossl_ssl_type, ssl);
-    if (ssl)
-        ossl_raise(eSSLError, "SSL already initialized");
-
-    if (rb_scan_args(argc, argv, "11:", &io, &v_ctx, &opts) == 1)
-        v_ctx = rb_funcall(cSSLContext, rb_intern("new"), 0);
-
+    argc = rb_scan_args(argc, argv, "11:", &io, &v_ctx, &opts);
     if (!kw_ids[0]) {
         kw_ids[0] = rb_intern_const("sync_close");
     }
-
     rb_get_kwargs(opts, kw_ids, 0, 1, kw_args);
+    ossl_want_uninitialized(self, &ossl_ssl_type);
+
+    if (argc == 1)
+        v_ctx = rb_funcall(cSSLContext, rb_intern("new"), 0);
     if (kw_args[0] != Qundef) {
         rb_ivar_set(self, id_i_sync_close, kw_args[0]);
     }

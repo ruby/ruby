@@ -156,6 +156,7 @@ update.o: $(hdrdir)/ruby/internal/variable.h
 update.o: $(hdrdir)/ruby/internal/warning_push.h
 update.o: $(hdrdir)/ruby/internal/xmalloc.h
 update.o: $(hdrdir)/ruby/missing.h
+update.o: $(hdrdir)/ruby/onigmo.h
 update.o: $(hdrdir)/ruby/ruby.h
 update.o: $(hdrdir)/ruby/st.h
 update.o: $(hdrdir)/ruby/subst.h

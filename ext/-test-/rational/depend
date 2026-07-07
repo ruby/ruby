@@ -160,6 +160,7 @@ rat.o: $(hdrdir)/ruby/internal/variable.h
 rat.o: $(hdrdir)/ruby/internal/warning_push.h
 rat.o: $(hdrdir)/ruby/internal/xmalloc.h
 rat.o: $(hdrdir)/ruby/missing.h
+rat.o: $(hdrdir)/ruby/onigmo.h
 rat.o: $(hdrdir)/ruby/ruby.h
 rat.o: $(hdrdir)/ruby/st.h
 rat.o: $(hdrdir)/ruby/subst.h

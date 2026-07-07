@@ -155,6 +155,7 @@ beg_len_step.o: $(hdrdir)/ruby/internal/variable.h
 beg_len_step.o: $(hdrdir)/ruby/internal/warning_push.h
 beg_len_step.o: $(hdrdir)/ruby/internal/xmalloc.h
 beg_len_step.o: $(hdrdir)/ruby/missing.h
+beg_len_step.o: $(hdrdir)/ruby/onigmo.h
 beg_len_step.o: $(hdrdir)/ruby/ruby.h
 beg_len_step.o: $(hdrdir)/ruby/st.h
 beg_len_step.o: $(hdrdir)/ruby/subst.h
