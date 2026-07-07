@@ -130,33 +130,40 @@ rb_imemo_cdhash_new(size_t size, const struct st_hash_type *type)
     return (VALUE)memo;
 }
 
+static VALUE
+imemo_fields_new(VALUE owner, VALUE flags, shape_id_t shape_id, size_t size, bool is_shareable)
+{
+    RUBY_ASSERT(rb_gc_size_allocatable_p(size));
+
+    flags |= T_IMEMO | (imemo_fields << FL_USHIFT) | (is_shareable ? FL_SHAREABLE : 0);
+    // imemo fields objects should always have "RObject" layout.  The
+    // layout in the shape describes the layout of the thing on which it is set.
+    // Imemo fields have the same layout as robject, therefore the layout
+    // should reflect that fact.
+    shape_id = rb_shape_transition_robject(shape_id);
+    return rb_newobj(GET_EC(), owner, flags, shape_id, true, size);
+}
+
 VALUE
 rb_imemo_fields_new(VALUE owner, shape_id_t shape_id, bool shareable)
 {
     size_t capa = RSHAPE(shape_id)->capacity;
     size_t embedded_size = offsetof(struct rb_fields, as.embed) + capa * sizeof(VALUE);
-    RUBY_ASSERT(rb_gc_size_allocatable_p(embedded_size));
-    VALUE fields = rb_imemo_new(imemo_fields, owner, embedded_size, shareable);
-    // imemo fields objects should always have "RObject" layout.  The
-    // layout in the shape describes the layout of the thing on which it is set.
-    // Imemo fields have the same layout as robject, therefore the layout
-    // should reflect that fact.
-    RBASIC_SET_FULL_SHAPE_ID(fields, rb_shape_transition_robject(shape_id));
+
+    VALUE fields = imemo_fields_new(owner, 0, shape_id, embedded_size, shareable);
+
     RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
+    RUBY_ASSERT(rb_shape_embedded_capacity(RBASIC_SHAPE_ID(fields)) >= capa);
+
     return fields;
 }
 
 VALUE
 rb_imemo_fields_new_complex(VALUE owner, shape_id_t shape_id, size_t capa, bool shareable)
 {
-    VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
-    IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
-    FL_SET_RAW(fields, OBJ_FIELD_HEAP);
-    // imemo fields objects should always have "RObject" layout.  The
-    // layout in the shape describes the layout of the thing on which it is set.
-    // Imemo fields have the same layout as robject, therefore the layout
-    // should reflect that fact.
-    RBASIC_SET_FULL_SHAPE_ID(fields, rb_shape_transition_robject(shape_id));
+    st_table *tbl = st_init_numtable_with_size(capa);
+    VALUE fields = imemo_fields_new(owner, OBJ_FIELD_HEAP, shape_id, sizeof(struct rb_fields), shareable);
+    IMEMO_OBJ_FIELDS(fields)->as.complex.table = tbl;
     return fields;
 }
 
@@ -178,14 +185,8 @@ imemo_fields_complex_wb_i(st_data_t key, st_data_t value, st_data_t arg)
 VALUE
 rb_imemo_fields_new_complex_tbl(VALUE owner, shape_id_t shape_id, st_table *tbl, bool shareable)
 {
-    VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
+    VALUE fields = imemo_fields_new(owner, OBJ_FIELD_HEAP, shape_id, sizeof(struct rb_fields), shareable);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = tbl;
-    FL_SET_RAW(fields, OBJ_FIELD_HEAP);
-    // imemo fields objects should always have "RObject" layout.  The
-    // layout in the shape describes the layout of the thing on which it is set.
-    // Imemo fields have the same layout as robject, therefore the layout
-    // should reflect that fact.
-    RBASIC_SET_FULL_SHAPE_ID(fields, rb_shape_transition_robject(shape_id));
     st_foreach(tbl, imemo_fields_trigger_wb_i, (st_data_t)fields);
     return fields;
 }

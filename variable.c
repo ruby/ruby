@@ -1847,6 +1847,7 @@ imemo_fields_set(VALUE owner, VALUE fields_obj, shape_id_t target_shape_id, ID f
     }
     else {
         attr_index_t index = RSHAPE_INDEX(target_shape_id);
+
         if (concurrent || index >= RSHAPE_CAPACITY(current_shape_id)) {
             return imemo_fields_copy_append(owner, original_fields_obj, current_shape_id, target_shape_id, val);
         }
