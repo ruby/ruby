@@ -6115,6 +6115,10 @@ string_content	: tSTRING_CONTENT
                         p->lex.brace_nest = 0;
                     }[brace]<num>
                     {
+                        $$ = p->lex.lpar_beg;
+                        p->lex.lpar_beg = -1;
+                    }[lpar]<num>
+                    {
                         $$ = p->heredoc_indent;
                         p->heredoc_indent = 0;
                     }[indent]<num>
@@ -6125,6 +6129,7 @@ string_content	: tSTRING_CONTENT
                         p->lex.strterm = $term;
                         SET_LEX_STATE($state);
                         p->lex.brace_nest = $brace;
+                        p->lex.lpar_beg = $lpar;
                         p->heredoc_indent = $indent;
                         p->heredoc_line_indent = -1;
                         if ($compstmt) nd_unset_fl_newline($compstmt);
