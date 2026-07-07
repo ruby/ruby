@@ -2275,7 +2275,7 @@ fn gen_new_hash(
         let klass = unsafe { rb_cHash };
         let ifnone_offset: i32 = unsafe { rb_zjit_offset_rhash_ifnone() }
             .try_into()
-            .expect("RHash ifnone offset fits in i32");
+            .expect("RHash ifnone offset should fit in i32");
 
         let hash = gc_fastpath::gc_fast_path_new_obj(jit, asm, alloc_size, flags, klass, |asm| {
             asm_ccall!(asm, rb_hash_new,)
