@@ -1659,7 +1659,7 @@ pub fn iseq_self_type(iseq: IseqPtr, owner: VALUE) -> crate::hir_type::Type {
     // allocator but sit above an immediate class in the ancestry chain. They are
     // all ancestors of Integer, so this single check covers every immediate type.
     if unsafe { rb_obj_is_kind_of(VALUE::fixnum_from_usize(0), owner) }.test() { return ISEQ_DEFAULT_SELF_TYPE; }
-    crate::hir_type::types::HeapBasicObject
+    crate::hir_type::Type::from_class_inexact(owner).intersection(crate::hir_type::types::HeapBasicObject)
 }
 
 /// Interned ID values for Ruby symbols and method names.
