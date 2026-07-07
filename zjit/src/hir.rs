@@ -2593,9 +2593,8 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         return false
     }
 
-    // When the callee has no keyword parameter table, VM dispatch may convert
-    // caller keywords into a positional hash. SendDirect only models explicit
-    // keyword slots for now, so leave that conversion to VM dispatch.
+    // SendDirect only models explicit keyword slots for now, so leave this
+    // conversion to VM dispatch.
     if keywords_as_positional_hash {
         function.count(block, complex_arg_pass_keyword_to_positional_hash);
         function.set_dynamic_send_reason(send_insn, ComplexArgPass);
@@ -2619,6 +2618,8 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     // We may remove it, remove the block_arg addition to match
     // See: https://github.com/ruby/ruby/pull/15911#discussion_r2710544982
     let block_arg = if 0 != params.flags.has_block() { 1 } else { 0 };
+    // With *rest, SendDirect receives one rest-array slot instead of each rest
+    // element, so cap positional argc at required/post + filled opts + rest slot.
     let passed_opt_num = (caller_positional_i32 - min_positional).min(opt_num) as usize;
     let send_positional_argc = if has_rest { min_positional as usize + passed_opt_num + 1 } else { caller_positional };
     let send_argc = send_positional_argc + kw_total_num as usize;
@@ -3608,6 +3609,9 @@ impl Function {
 
     /// Compute the positional optional entry index and pack positional arguments
     /// into a rest array when the callee has a *rest parameter.
+    /// Mirrors vm_args.c's setup_parameters_complex / args_setup_rest_parameter:
+    /// positional arguments between required/optional and post parameters become
+    /// the callee's *rest array before entering the method body.
     ///
     /// The input args must already have keyword arguments normalized to the callee's
     /// keyword table order by setup_keyword_arguments. This function only reshapes
@@ -3634,9 +3638,10 @@ impl Function {
         let min_positional_argc = lead_num + post_num;
         if positional_argc < min_positional_argc { return Err(ArgcParamMismatch); }
 
-        // See vm_call_iseq_setup_normal_opt_start in vm_inshelper.c.
-        // For computing the optional positional entry point, only count positional args
-        // and exclude the always-present lead and post slots.
+        // For computing the optional positional entry point, only count positional
+        // args and exclude the always-present lead and post slots. Do this before
+        // rest packing changes the SendDirect argument count.
+        // See: vm_args.c's setup_parameters_complex and args_setup_opt_parameters.
         let passed_opt_num = (positional_argc - min_positional_argc).min(opt_num);
         let jit_entry_idx = passed_opt_num.try_into().map_err(|_| TooManyArgsForLir)?;
 
@@ -3646,9 +3651,9 @@ impl Function {
             return Ok((args, jit_entry_idx));
         }
 
-        // Rebuild [lead, filled opts, rest elements..., post, kw...] into
-        // [lead, filled opts, rest array, post, kw...]. Keyword args were
-        // already normalized to the callee's keyword table order.
+        // Rebuild [lead, filled opts, rest elements..., post, kw...] into the
+        // argument shape expected by SendDirect:
+        // [lead, filled opts, rest array, post, kw...].
         let rest_start = lead_num + passed_opt_num;
         let rest_end = positional_argc - post_num;
         let (prefix, rest_and_suffix) = args.split_at(rest_start);
