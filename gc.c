@@ -378,7 +378,7 @@ rb_gc_obj_changed_slot_size(VALUE obj, size_t slot_size)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
 
-    RBASIC_SET_SHAPE_ID_WITH_CAPACITY(obj, rb_obj_shape_transition_capacity(obj, rb_shape_capacity_for_slot_size(slot_size)));
+    RBASIC_SET_FULL_SHAPE_ID(obj, rb_obj_shape_transition_capacity(obj, rb_shape_capacity_for_slot_size(slot_size)));
 }
 
 void rb_vm_update_references(void *ptr);
@@ -1046,7 +1046,7 @@ rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape
     rb_ractor_setup_belonging(obj);
 #endif
 
-    RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, shape_id);
+    RBASIC_SET_FULL_SHAPE_ID_NO_CHECKS(obj, shape_id);
 
     gc_validate_pc(obj);
 
@@ -1102,7 +1102,7 @@ rb_newobj_of(VALUE klass, VALUE flags, size_t size)
 static
 VALUE class_allocate_complex_instance(VALUE klass, uint32_t capacity)
 {
-    shape_id_t initial_shape_id = rb_shape_id_with_robject_layout(0);
+    shape_id_t initial_shape_id = rb_shape_transition_robject(0);
     VALUE obj = rb_newobj_of_with_shape(klass, T_OBJECT, initial_shape_id, sizeof(struct RObject));
     rb_obj_init_complex(obj, rb_st_init_numtable_with_size(capacity));
     return obj;
@@ -1127,7 +1127,7 @@ rb_class_allocate_instance(VALUE klass)
 
         // There might be a NEWOBJ tracepoint callback, and it may set fields.
         // So the shape must be passed to `NEWOBJ_OF`.
-        obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_id_with_robject_layout(0), size);
+        obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_transition_robject(0), size);
 
         #if RUBY_DEBUG
             VALUE *ptr = ROBJECT_FIELDS(obj);
@@ -4256,7 +4256,7 @@ vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
         // set the shape on it so that the GC finalizer won't try to remove
         // it again.  A "root shape" indicates to the GC that this object
         // has no fields on it, hence it won't be in the gen fields table.
-        RBASIC_SET_SHAPE_ID((VALUE)key, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
+        RBASIC_SET_SHAPE_ID((VALUE)key, ROOT_SHAPE_ID);
         return ST_DELETE;
 
       case ST_REPLACE: {

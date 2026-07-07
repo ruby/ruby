@@ -166,7 +166,7 @@ bool rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id);
 #endif
 
 static inline void
-RBASIC_SET_SHAPE_ID_NO_CHECKS(VALUE obj, shape_id_t shape_id)
+RBASIC_SET_FULL_SHAPE_ID_NO_CHECKS(VALUE obj, shape_id_t shape_id)
 {
 #if RBASIC_SHAPE_ID_FIELD
     RBASIC(obj)->shape_id = (VALUE)shape_id;
@@ -183,14 +183,20 @@ rb_shape_layout(shape_id_t shape_id)
     return shape_id & SHAPE_ID_LAYOUT_MASK;
 }
 
+// Assigns the entire shape_id.
+// shape_id_t is composed of two parts:
+//  - The layout and capacity part, which never changes except on GC compaction.
+//  - All the other bits that regularly change.
+// In the overwhelming majority of cases, you want to use RBASIC_SET_SHAPE_ID
+// which preserves the object's layout and capacity bits.
+// In rare cases you may want to set all bits.
 static inline void
-RBASIC_SET_SHAPE_ID_WITH_CAPACITY(VALUE obj, shape_id_t shape_id)
+RBASIC_SET_FULL_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
     RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
-    RUBY_ASSERT(!IMEMO_TYPE_P(obj, imemo_fields) || rb_shape_layout(shape_id) == SHAPE_ID_LAYOUT_ROBJECT);
 
-    RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, shape_id);
+    RBASIC_SET_FULL_SHAPE_ID_NO_CHECKS(obj, shape_id);
 
     RUBY_ASSERT(rb_shape_verify_consistency(obj, shape_id));
 }
@@ -200,8 +206,11 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
 
-    shape_id = (shape_id & ~SHAPE_ID_CAPACITY_MASK) | (RBASIC_SHAPE_ID(obj) & SHAPE_ID_CAPACITY_MASK);
-    RBASIC_SET_SHAPE_ID_WITH_CAPACITY(obj, shape_id);
+    shape_id = (
+        (shape_id & ~(SHAPE_ID_CAPACITY_MASK|SHAPE_ID_LAYOUT_MASK)) |
+        (RBASIC_SHAPE_ID(obj) & (SHAPE_ID_CAPACITY_MASK|SHAPE_ID_LAYOUT_MASK))
+    );
+    RBASIC_SET_FULL_SHAPE_ID(obj, shape_id);
 }
 
 static inline shape_id_t
@@ -269,12 +278,6 @@ static inline bool
 rb_shape_canonical_p(shape_id_t shape_id)
 {
     return !(shape_id & SHAPE_ID_FL_NON_CANONICAL_MASK);
-}
-
-static inline shape_id_t
-rb_shape_id_with_robject_layout(shape_id_t shape_id)
-{
-    return (shape_id & ~SHAPE_ID_LAYOUT_MASK) | SHAPE_ID_LAYOUT_ROBJECT;
 }
 
 static inline attr_index_t
@@ -482,6 +485,12 @@ rb_obj_using_gen_fields_table_p(VALUE obj)
     }
 
     return rb_obj_gen_fields_p(obj);
+}
+
+static inline shape_id_t
+rb_shape_transition_robject(shape_id_t shape_id)
+{
+    return (shape_id & ~SHAPE_ID_LAYOUT_MASK) | SHAPE_ID_LAYOUT_ROBJECT;
 }
 
 static inline shape_id_t
