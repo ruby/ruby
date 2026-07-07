@@ -6653,12 +6653,12 @@ impl Function {
             | Insn::FloatMul { recv, other, .. }
             | Insn::FloatDiv { recv, other, .. }
             => {
-                self.assert_subtype(insn_id, recv, types::Flonum)?;
-                // other can be Flonum or Fixnum (rb_float_plus etc. handle both)
-                self.assert_subtype(insn_id, other, types::Flonum.union(types::Fixnum))
+                self.assert_subtype(insn_id, recv, types::Float)?;
+                // other can be Float or Fixnum (rb_float_plus etc. handle both)
+                self.assert_subtype(insn_id, other, types::Float.union(types::Fixnum))
             }
             Insn::FloatToInt { recv, .. } => {
-                self.assert_subtype(insn_id, recv, types::Flonum)
+                self.assert_subtype(insn_id, recv, types::Float)
             }
             Insn::FixnumLShift { left, right, .. }
             | Insn::FixnumRShift { left, right, .. } => {

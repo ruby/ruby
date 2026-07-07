@@ -674,15 +674,15 @@ fn try_inline_float_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(
     if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, FLOAT_REDEFINED_OP_FLAG) } {
         return None;
     }
-    // Receiver must be Flonum (cheap tag check: (val & 3) == 2).
-    // The other operand can be Flonum or Fixnum since rb_float_plus/minus/mul/div
+    // Receiver must be Float.
+    // The other operand can be Float or Fixnum since rb_float_plus/minus/mul/div
     // handle both via fast paths (FIXNUM_P check + cast to double).
     // HeapFloat falls back to CCallWithFrame via the default Send path.
-    if fun.likely_a(recv, types::Flonum, state)
-        && (fun.likely_a(other, types::Flonum, state) || fun.likely_a(other, types::Fixnum, state))
+    if fun.likely_a(recv, types::Float, state)
+        && (fun.likely_a(other, types::Float, state) || fun.likely_a(other, types::Fixnum, state))
     {
-        let recv = fun.coerce_to(block, recv, types::Flonum, state);
-        let other_type = if fun.likely_a(other, types::Flonum, state) { types::Flonum } else { types::Fixnum };
+        let recv = fun.coerce_to(block, recv, types::Float, state);
+        let other_type = if fun.likely_a(other, types::Float, state) { types::Float } else { types::Fixnum };
         let other = fun.coerce_to(block, other, other_type, state);
         return Some(fun.push_insn(block, f(recv, other)));
     }
@@ -711,8 +711,8 @@ fn inline_float_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
 
 fn inline_float_to_i(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
-    if fun.likely_a(recv, types::Flonum, state) {
-        let recv = fun.coerce_to(block, recv, types::Flonum, state);
+    if fun.likely_a(recv, types::Float, state) {
+        let recv = fun.coerce_to(block, recv, types::Float, state);
         return Some(fun.push_insn(block, hir::Insn::FloatToInt { recv, state }));
     }
     None
