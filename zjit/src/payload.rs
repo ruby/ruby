@@ -23,8 +23,8 @@ pub struct IseqPayload {
     /// to type the `self`-producing instructions (`LoadSelf` / `SelfParam`
     /// `LoadArg`) as `HeapBasicObject`. Defaults to `false` (the conservative
     /// `BasicObject`) when the owner is unknown.
-    /// See [`crate::cruby::iseq_self_is_heap_object`].
-    pub self_is_heap_object: bool,
+    /// See [`crate::cruby::iseq_self_type`].
+    pub self_type: crate::hir_type::Type,
 }
 
 impl IseqPayload {
@@ -33,7 +33,7 @@ impl IseqPayload {
             profile: IseqProfile::new(),
             versions: vec![],
             was_invalidated_for_singleton_class_creation: false,
-            self_is_heap_object: false,
+            self_type: ISEQ_DEFAULT_SELF_TYPE,
         }
     }
 
