@@ -520,6 +520,12 @@ rb_shape_transition_capacity(shape_id_t shape_id, size_t capacity)
     return (shape_id & (~SHAPE_ID_CAPACITY_MASK)) | capacity_flags;
 }
 
+static inline shape_id_t
+rb_shape_transition_slot_size(shape_id_t shape_id, size_t slot_size)
+{
+    return rb_shape_transition_capacity(shape_id, rb_shape_capacity_for_slot_size(slot_size));
+}
+
 shape_id_t rb_shape_transition_object_id(shape_id_t shape_id);
 
 static inline shape_id_t
@@ -539,6 +545,12 @@ static inline shape_id_t
 rb_obj_shape_transition_capacity(VALUE obj, size_t capacity)
 {
     return rb_shape_transition_capacity(RBASIC_SHAPE_ID(obj), capacity);
+}
+
+static inline shape_id_t
+rb_obj_shape_transition_slot_size(VALUE obj, size_t slot_size)
+{
+    return rb_shape_transition_slot_size(RBASIC_SHAPE_ID(obj), slot_size);
 }
 
 static inline shape_id_t
