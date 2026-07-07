@@ -2314,7 +2314,7 @@ rb_set_size(VALUE set)
  * An instance of class \Set contains a collection
  * of objects (elements), with no duplicates.
  *
- * By default, \Set determines equality via Object#eql? and Object#hash,
+ * By default, \Set determines equality via Kernel#eql? and Kernel#hash,
  * and assumes that these values do not change for a stored element.
  * If these values do change, the set enters an unreliable state;
  * see #reset.
