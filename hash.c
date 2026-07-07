@@ -49,6 +49,7 @@
 #include "ruby/ractor.h"
 #include "vm_sync.h"
 #include "builtin.h"
+#include "zjit.h"
 
 /* Flags of RHash
  *
@@ -1440,10 +1441,16 @@ compact_after_delete(VALUE hash)
     }
 }
 
+static inline size_t
+hash_slot_size(bool st)
+{
+    return sizeof(struct RHash) + (st ? sizeof(st_table) : sizeof(ar_table));
+}
+
 static VALUE
 hash_alloc_flags(VALUE klass, VALUE flags, VALUE ifnone, bool st)
 {
-    const size_t size = sizeof(struct RHash) + (st ? sizeof(st_table) : sizeof(ar_table));
+    const size_t size = hash_slot_size(st);
     VALUE hash = rb_newobj_of(klass, T_HASH | flags, size);
     return rb_hash_set_ifnone(hash, ifnone);
 }
@@ -1454,6 +1461,20 @@ hash_alloc(VALUE klass)
     /* Allocate to be able to fit both st_table and ar_table. */
     return hash_alloc_flags(klass, 0, Qnil, sizeof(st_table) > sizeof(ar_table));
 }
+
+#if USE_ZJIT
+size_t
+rb_zjit_hash_new_size(void)
+{
+    return hash_slot_size(sizeof(st_table) > sizeof(ar_table));
+}
+
+size_t
+rb_zjit_offset_rhash_ifnone(void)
+{
+    return offsetof(struct RHash, ifnone);
+}
+#endif
 
 static VALUE
 empty_hash_alloc(VALUE klass)
