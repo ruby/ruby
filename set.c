@@ -2479,15 +2479,16 @@ rb_set_size(VALUE set)
  *   Removes the given object from +self+ if +self+ includes the object; returns +self+.
  * - #delete?:
  *   Like #delete, but returns +nil+ if the object is not in +self+.
- * - #delete_if: With a block given, calls the block with each element in +self+;
+ * - #delete_if:
+ *   Calls the block with each element in +self+;
  *   removes the element if the block returns a truthy value.
  * - #keep_if:
- *   With a block given, calls the block with each element in +self+,
+ *   Calls the block with each element in +self+,
  *   deleting the element if the block returns +false+ or +nil+; returns +self+.
  * - #reject!
- *   With a block given, like #delete_if, but returns +nil+ if no changes were made.
+ *   Like #delete_if, but returns +nil+ if no changes were made.
  * - #select! (aliased as #filter!):
- *   With a block given, like #keep_if, but returns +nil+ if no changes were made.
+ *   Like #keep_if, but returns +nil+ if no changes were made.
  * - #subtract:
  *   Deletes from +self+ every element found in the given enumerable; returns +self+:
  *
