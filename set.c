@@ -2316,9 +2316,7 @@ rb_set_size(VALUE set)
  *
  * By default:
  *
- * - Set determines equality
- *   via {Kernel#eql?}[https://docs.ruby-lang.org/en/master/Object.html#method-i-eql-3F]
- *   and {Kernel#hash}[https://docs.ruby-lang.org/en/master/Object.html#method-i-hash],
+ * - Set determines equality via Object#eql? and Object#hash,
  *   and assumes that these values do not change for a stored element.
  *   If these values do change, the set enters an unreliable state;
  *   see #reset.
