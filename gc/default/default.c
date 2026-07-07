@@ -74,6 +74,9 @@ rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
 
 #include "probes.h"
 
+#define RUBY_DTRACE_GC_HOOK(name, ...) \
+    do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name(__VA_ARGS__);} while (0)
+
 #if USE_ZJIT
 # include "gc/default/zjit_fastpath.h"
 #endif
@@ -4414,6 +4417,8 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
         gc_sweep_page(objspace, heap, &ctx);
         int free_slots = ctx.freed_slots + ctx.empty_slots;
 
+        RUBY_DTRACE_GC_HOOK(SWEEP_PAGE, ctx.page->slot_size, ctx.final_slots, ctx.freed_slots, ctx.empty_slots);
+
         heap->sweeping_page = ccan_list_next(&heap->pages, sweep_page, page_node);
 
         if (free_slots == sweep_page->total_slots) {
@@ -5175,12 +5180,13 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
         }
         gc_mark_children(objspace, obj);
 
+        popped_count++;
+
         if (incremental) {
             if (RGENGC_CHECK_MODE && !RVALUE_MARKING(objspace, obj)) {
                 rb_bug("gc_mark_stacked_objects: incremental, but marking bit is 0");
             }
             CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
-            popped_count++;
 
             if (popped_count + (objspace->marked_slots - marked_slots_at_the_beginning) > count) {
                 break;
@@ -5190,6 +5196,8 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
             /* just ignore marking bits */
         }
     }
+
+    RUBY_DTRACE_GC_HOOK(MARK_STACKED_OBJECTS, popped_count);
 
     if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
 
@@ -7247,6 +7255,8 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
 {
     *lock_lev = RB_GC_VM_LOCK();
 
+    RUBY_DTRACE_GC_HOOK(ENTER, event);
+
     if (objspace->profile.run) {
         switch (event) {
           case gc_enter_event_start:
@@ -7293,6 +7303,8 @@ static inline void
 gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
     GC_ASSERT(during_gc != 0);
+
+    RUBY_DTRACE_GC_HOOK(EXIT, event);
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_EXIT);
 
@@ -9299,9 +9311,6 @@ gc_prof_timer_stop(rb_objspace_t *objspace)
         record->gc_wall_time = elapsed_hrtime_from(objspace->profile.gc_wall_start_time);
     }
 }
-
-#define RUBY_DTRACE_GC_HOOK(name) \
-    do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name();} while (0)
 
 static inline void
 gc_prof_mark_timer_start(rb_objspace_t *objspace)

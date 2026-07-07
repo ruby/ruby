@@ -40,6 +40,8 @@
 #include <time.h>
 #include <signal.h>
 
+#include "probes.h"
+
 #if defined __APPLE__
 # include <AvailabilityMacros.h>
 #endif
@@ -688,6 +690,11 @@ thread_sched_set_running(struct rb_thread_sched *sched, rb_thread_t *th)
 {
     RUBY_DEBUG_LOG("th:%u->th:%u", rb_th_serial(sched->running), rb_th_serial(th));
     VM_ASSERT(sched->running != th);
+
+    if (RUBY_DTRACE_RTS_SET_RUNNING_ENABLED()) {
+        rb_thread_t *old = sched->running;
+        RUBY_DTRACE_RTS_SET_RUNNING(sched, old, th);
+    }
 
     sched->running = th;
 }

@@ -1054,6 +1054,10 @@ rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape
         gc_newobj_hook(obj);
     }
 
+    if (RUBY_DTRACE_GC_OBJ_NEW_ENABLED()) {
+        RUBY_DTRACE_GC_OBJ_NEW((void*)obj, flags);
+    }
+
 #if RGENGC_CHECK_MODE
 # ifndef GC_DEBUG_SLOT_FILL_SPECIAL_VALUE
 #  define GC_DEBUG_SLOT_FILL_SPECIAL_VALUE 255
@@ -1539,7 +1543,13 @@ rb_gc_obj_free(void *objspace, VALUE obj)
 
     RB_DEBUG_COUNTER_INC(obj_free);
 
-    switch (BUILTIN_TYPE(obj)) {
+    enum ruby_value_type builtin_type = BUILTIN_TYPE(obj);
+
+    if (RUBY_DTRACE_GC_OBJ_FREE_ENABLED()) {
+        RUBY_DTRACE_GC_OBJ_FREE((void*)obj, RBASIC(obj)->flags);
+    }
+
+    switch (builtin_type) {
       case T_NIL:
       case T_FIXNUM:
       case T_TRUE:
@@ -1550,7 +1560,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         break;
     }
 
-    switch (BUILTIN_TYPE(obj)) {
+    switch (builtin_type) {
       case T_OBJECT:
         if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
             if (rb_obj_shape_complex_p(obj)) {
@@ -5435,6 +5445,10 @@ static void *ruby_xmalloc_body(size_t size);
 void *
 ruby_xmalloc(size_t size)
 {
+    if (RUBY_DTRACE_GC_XMALLOC_ENABLED()) {
+        RUBY_DTRACE_GC_XMALLOC(1, size);
+    }
+
     return handle_malloc_failure(ruby_xmalloc_body(size));
 }
 
@@ -5477,6 +5491,10 @@ static void *ruby_xmalloc2_body(size_t n, size_t size);
 void *
 ruby_xmalloc2(size_t n, size_t size)
 {
+    if (RUBY_DTRACE_GC_XMALLOC_ENABLED()) {
+        RUBY_DTRACE_GC_XMALLOC(n, size);
+    }
+
     return handle_malloc_failure(ruby_xmalloc2_body(n, size));
 }
 
@@ -5491,6 +5509,10 @@ static void *ruby_xcalloc_body(size_t n, size_t size);
 void *
 ruby_xcalloc(size_t n, size_t size)
 {
+    if (RUBY_DTRACE_GC_XCALLOC_ENABLED()) {
+        RUBY_DTRACE_GC_XCALLOC(n, size);
+    }
+
     return handle_malloc_failure(ruby_xcalloc_body(n, size));
 }
 
@@ -5554,9 +5576,20 @@ ruby_xrealloc2(void *ptr, size_t n, size_t size)
 #ifdef ruby_xfree_sized
 #undef ruby_xfree_sized
 #endif
+
+static bool g_nofree = false;
+
 void
 ruby_xfree_sized(void *x, size_t size)
 {
+    if (g_nofree) {
+        return;
+    }
+
+    if (RUBY_DTRACE_GC_XFREE_ENABLED()) {
+        RUBY_DTRACE_GC_XFREE(x, size);
+    }
+
     if (LIKELY(x)) {
         /* It's possible for a C extension's pthread destructor function set by pthread_key_create
          * to be called after ruby_vm_destruct and attempt to free memory. Fall back to mimfree in
@@ -5820,6 +5853,12 @@ rb_gc_checking_shareable(void)
 void
 Init_GC(void)
 {
+    const char* nofree_str = getenv("RUBY_NO_FREE");
+    if (nofree_str && strcmp(nofree_str, "yes") == 0) {
+        fprintf(stderr, "WARNING: Enabling no-free mode! xfree() will never free anything!\n");
+        g_nofree = true;
+    }
+
 #undef rb_intern
     rb_gc_register_address(&id2ref_value);
 
