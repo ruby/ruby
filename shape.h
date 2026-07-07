@@ -286,18 +286,6 @@ rb_shape_embedded_capacity(shape_id_t shape_id)
     return (attr_index_t)((shape_id & SHAPE_ID_CAPACITY_MASK) >> SHAPE_ID_CAPACITY_OFFSET);
 }
 
-static inline shape_id_t
-rb_shape_id_with_capacity(size_t capacity)
-{
-    shape_id_t capacity_flags = (shape_id_t)capacity << SHAPE_ID_CAPACITY_OFFSET;
-
-    RUBY_ASSERT(capacity <= SHAPE_ID_CAPACITY_MAX);
-    RUBY_ASSERT((capacity_flags & SHAPE_ID_CAPACITY_MASK) == capacity_flags);
-    RUBY_ASSERT(rb_shape_embedded_capacity(capacity_flags) == capacity);
-
-    return ROOT_SHAPE_ID | capacity_flags;
-}
-
 static inline attr_index_t
 rb_shape_capacity_for_slot_size(size_t slot_size)
 {
@@ -526,7 +514,10 @@ rb_shape_transition_offset(shape_id_t shape_id, shape_id_t offset)
 static inline shape_id_t
 rb_shape_transition_capacity(shape_id_t shape_id, size_t capacity)
 {
-    return (shape_id & (~SHAPE_ID_CAPACITY_MASK)) | rb_shape_id_with_capacity(capacity);
+    RUBY_ASSERT(capacity <= SHAPE_ID_CAPACITY_MAX);
+
+    shape_id_t capacity_flags = (shape_id_t)capacity << SHAPE_ID_CAPACITY_OFFSET;
+    return (shape_id & (~SHAPE_ID_CAPACITY_MASK)) | capacity_flags;
 }
 
 shape_id_t rb_shape_transition_object_id(shape_id_t shape_id);

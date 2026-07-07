@@ -1039,7 +1039,7 @@ rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape
     VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, wb_protected, size, &actual_alloc_size);
 
     GC_ASSERT(actual_alloc_size >= size);
-    shape_id = (shape_id & ~SHAPE_ID_CAPACITY_MASK) | rb_shape_id_with_capacity(rb_shape_capacity_for_slot_size(actual_alloc_size));
+    shape_id = rb_shape_transition_capacity(shape_id, rb_shape_capacity_for_slot_size(actual_alloc_size));
 
 #if RACTOR_CHECK_MODE
     void rb_ractor_setup_belonging(VALUE obj);
