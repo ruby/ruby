@@ -2322,7 +2322,7 @@ rb_set_size(VALUE set)
  * Calling #compare_by_identity causes all following determinations of equality
  * to use object identity instead of the methods mentioned above.
  *
- * Adding a string element stores a frozen copy of the string,
+ * Adding a String instance to a set stores a frozen copy of the string,
  * unless it is already frozen.
  *
  * \Set includes module Enumerable, and is easy to use with other enumerable objects.
