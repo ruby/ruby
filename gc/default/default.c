@@ -3517,9 +3517,10 @@ objspace_free_slots(rb_objspace_t *objspace)
 }
 
 static void
-gc_setup_mark_bits(struct heap_page *page)
+gc_prime_next_mark_bits(struct heap_page *page)
 {
-    /* copy oldgen bitmap to mark bitmap */
+    /* Seed the mark bits with the uncollectible set (old-gen + shady).
+       Called at the end of sweeping to prime the next marking phase */
     memcpy(&page->mark_bits[0], &page->uncollectible_bits[0], HEAP_PAGE_BITMAP_SIZE);
 }
 
@@ -4034,7 +4035,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
     asan_lock_freelist(sweep_page);
 
     if (!heap->compact_cursor) {
-        gc_setup_mark_bits(sweep_page);
+        gc_prime_next_mark_bits(sweep_page);
     }
 
 #if GC_PROFILE_MORE_DETAIL
@@ -7825,7 +7826,7 @@ gc_update_references(rb_objspace_t *objspace)
                 should_set_mark_bits = FALSE;
             }
             if (should_set_mark_bits) {
-                gc_setup_mark_bits(page);
+                gc_prime_next_mark_bits(page);
             }
         }
     }
