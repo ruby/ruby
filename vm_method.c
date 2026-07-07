@@ -2834,8 +2834,8 @@ rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me)
     return rb_hash_method_definition(hash, me->def);
 }
 
-void
-rb_alias(VALUE klass, ID alias_name, ID original_name)
+static void
+rb_alias_with_visibility(VALUE klass, ID alias_name, ID original_name, rb_method_visibility_t force_visi)
 {
     const VALUE target_klass = klass;
     VALUE defined_class;
@@ -2879,6 +2879,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
     }
 
     if (visi == METHOD_VISI_UNDEF) visi = METHOD_ENTRY_VISI(orig_me);
+    if (force_visi != METHOD_VISI_UNDEF) visi = force_visi;
 
     if (orig_me->defined_class == 0) {
         rb_method_entry_make(target_klass, alias_name, target_klass, visi,
@@ -2899,6 +2900,18 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
             RB_OBJ_WRITE(alias_me, &alias_me->defined_class, orig_me->defined_class);
         }
     }
+}
+
+void
+rb_alias(VALUE klass, ID alias_name, ID original_name)
+{
+    rb_alias_with_visibility(klass, alias_name, original_name, METHOD_VISI_UNDEF);
+}
+
+void
+rb_private_alias(VALUE klass, ID alias_name, ID original_name)
+{
+    rb_alias_with_visibility(klass, alias_name, original_name, METHOD_VISI_PRIVATE);
 }
 
 /*

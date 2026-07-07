@@ -2203,6 +2203,7 @@ method_entry_i(ID key, VALUE value, void *data)
     struct method_entry_arg *arg = (struct method_entry_arg *)data;
     rb_method_visibility_t type;
 
+    if (!rb_id2str(key)) return ID_TABLE_CONTINUE;
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
         VALUE owner = me->owner;
         me = rb_resolve_refined_method(Qnil, me);
