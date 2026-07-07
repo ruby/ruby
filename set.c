@@ -2516,15 +2516,12 @@ rb_set_size(VALUE set)
  *   calls the block with each element of +self+,
  *   and adds the block's returns value to the new set.
  *
- * === Methods for Iterating
- *
- * - #each:
- *   Calls the block with each successive element; returns +self+.
- *
  * === Other Methods
  *
  * - #compare_by_identity:
  *   Sets +self+ to compare by object identity (rather than by object content).
+ * - #each:
+ *   Calls the block with each successive element of +self+; returns +self+.
  * - #reset:
  *   Resets the internal state; useful if an element
  *   has been modified while an element in the set.
