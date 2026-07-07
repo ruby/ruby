@@ -2269,7 +2269,19 @@ fn gen_new_hash(
 ) -> lir::Opnd {
     if elements.is_empty() {
         gen_prepare_leaf_call_with_gc(asm, state);
-        asm_ccall!(asm, rb_hash_new,)
+
+        let alloc_size = unsafe { rb_zjit_hash_new_size() };
+        let flags = RUBY_T_HASH as u64;
+        let klass = unsafe { rb_cHash };
+        let ifnone_offset: i32 = unsafe { rb_zjit_offset_rhash_ifnone() }
+            .try_into()
+            .expect("RHash ifnone offset fits in i32");
+
+        let hash = gc_fastpath::gc_fast_path_new_obj(jit, asm, alloc_size, flags, klass, |asm| {
+            asm_ccall!(asm, rb_hash_new,)
+        });
+        asm.store(Opnd::mem(VALUE_BITS, hash, ifnone_offset), Qnil.into());
+        hash
     } else {
         gen_prepare_non_leaf_call(jit, asm, state);
 
