@@ -282,8 +282,8 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_cFloat, "zero?", types::BoolExact);
     annotate_builtin!(rb_cFloat, "positive?", types::BoolExact);
     annotate_builtin!(rb_cFloat, "negative?", types::BoolExact);
-    annotate_builtin!(rb_mKernel, "Float", types::Float);
-    annotate_builtin!(rb_mKernel, "Integer", types::Integer);
+    annotate_builtin!(rb_mKernel, "Float", types::Float.union(types::NilClass));
+    annotate_builtin!(rb_mKernel, "Integer", types::Integer.union(types::NilClass));
     annotate_builtin!(rb_mKernel, "class", inline_kernel_class, types::Class, leaf);
     annotate_builtin!(rb_mKernel, "frozen?", types::BoolExact);
     annotate_builtin!(rb_cSymbol, "name", types::StringExact);
