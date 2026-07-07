@@ -1923,7 +1923,14 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.world_readable?</tt>.
   def world_readable?() File.world_readable?(@path) end
 
-  # See <tt>FileTest.readable_real?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #
+  #   readable_real? -> true or false
+  #
+  # Like #readable?, but checks against the real user and group ids
+  # instead of the effective ids.
   def readable_real?() FileTest.readable_real?(@path) end
 
   # See <tt>FileTest.setuid?</tt>.
