@@ -2327,7 +2327,7 @@ rb_set_size(VALUE set)
  *
  * \Set includes module Enumerable, and is easy to use with other enumerable objects.
  * Many of its methods accept enumerable objects as arguments;
- * any enumerable object may be converted to a set via method #to_set.
+ * any enumerable object may be converted to a set via #to_set.
  *
  * == Contact
  *
