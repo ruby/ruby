@@ -2341,7 +2341,7 @@ rb_set_size(VALUE set)
  * and the behaviors of some methods were adjusted.
  *
  * When compatibility with the older implementation is needed,
- * a class should inherit directly from class +Set+;
+ * a \Set subclass should inherit directly from class +Set+;
  * this automatically includes module +Set::SubclassCompatible+,
  * which makes behaviors closer to those in the older implementation.
  *
