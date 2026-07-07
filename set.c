@@ -2352,7 +2352,7 @@ rb_set_size(VALUE set)
  *   MySet[[1, 2, 3]]     # => #<MySet: {[1, 2, 3]}>  # Same as in Ruby 3.4.
  *
  * When backward compatibility is not needed,
- * a set should inherit from +Set::CoreSet+,
+ * a \Set subclass should inherit from +Set::CoreSet+,
  * which avoids including the compatibility layer:
  *
  *   class MyCoreSet < Set::CoreSet; end
