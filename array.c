@@ -66,6 +66,10 @@ VALUE rb_cArray_empty_frozen;
  * 14:  RARRAY_PTR_IN_USE_FLAG
  *          The buffer of the array is in use. This is only used during
  *          debugging.
+ * 19:  RARRAY_FAKEARY
+ *            The array is not allocated or managed by the garbage collector.
+ *            Typically, the array object header (struct RString) is temporarily
+ *            allocated on C stack.
  */
 
 /* for OPTIMIZED_CMP: */
@@ -900,7 +904,7 @@ static VALUE
 init_fake_ary_flags(void)
 {
     struct RArray fake_ary = {0};
-    fake_ary.basic.flags = T_ARRAY;
+    fake_ary.basic.flags = T_ARRAY | RARRAY_FAKEARY;
     VALUE ary = (VALUE)&fake_ary;
     RBASIC_SET_FULL_SHAPE_ID(ary, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
     rb_ary_freeze(ary);

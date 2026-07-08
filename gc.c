@@ -376,8 +376,6 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
 void
 rb_gc_obj_changed_slot_size(VALUE obj, size_t slot_size)
 {
-    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
-
     RBASIC_SET_FULL_SHAPE_ID(obj, rb_obj_shape_transition_slot_size(obj, slot_size));
 }
 

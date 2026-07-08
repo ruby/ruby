@@ -131,7 +131,6 @@ VALUE rb_cSymbol;
 #define STR_BORROWED FL_USER6
 #define STR_TMPLOCK FL_USER7
 #define STR_NOFREE FL_USER18
-#define STR_FAKESTR FL_USER19
 
 #define STR_SET_NOEMBED(str) do {\
     FL_SET((str), STR_NOEMBED);\
