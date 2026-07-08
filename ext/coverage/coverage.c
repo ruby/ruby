@@ -239,6 +239,45 @@ branch_coverage(VALUE branches)
     return b.result;
 }
 
+/*
+ * Fold a single method entry's contribution into the method coverage result.
+ * `add` is the number of calls to attribute to it (0 is used to make sure a
+ * defined-but-uncalled method shows up). Entries that resolve elsewhere (e.g.
+ * aliases) are skipped: their calls are attributed to the original definition
+ * via the [owner, mid, location] key, exactly like the old heap-walk did.
+ */
+static void
+method_coverage_add(const rb_method_entry_t *me, long add, VALUE ncoverages)
+{
+    VALUE data[5];
+    const rb_method_entry_t *me2 = rb_resolve_me_location(me, data);
+    if (me != me2) return;
+
+    VALUE klass = me->owner;
+    if (RB_TYPE_P(klass, T_ICLASS)) return;
+
+    VALUE first_lineno = data[1];
+    if (FIX2LONG(first_lineno) <= 0) return;
+
+    VALUE path = data[0];
+    VALUE ncoverage = rb_hash_aref(ncoverages, path);
+    if (NIL_P(ncoverage)) return;
+
+    VALUE methods = rb_hash_aref(ncoverage, ID2SYM(rb_intern("methods")));
+    VALUE method_id = ID2SYM(me->def->original_id);
+    VALUE key = rb_ary_new_from_args(6, klass, method_id, data[1], data[2], data[3], data[4]);
+
+    VALUE rcount = rb_hash_aref(methods, key);
+    long count = NIL_P(rcount) ? 0 : FIX2LONG(rcount);
+    if (!POSFIXABLE(count + add)) {
+        count = FIXNUM_MAX;
+    }
+    else {
+        count += add;
+    }
+    rb_hash_aset(methods, key, LONG2FIX(count));
+}
+
 static int
 method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
 {
@@ -259,43 +298,9 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
         rb_asan_unpoison_object(v, false);
 
         if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
-            const rb_method_entry_t *me = (rb_method_entry_t *) v;
-            VALUE path, first_lineno, first_column, last_lineno, last_column;
-            VALUE data[5], ncoverage, methods;
-            VALUE methods_id = ID2SYM(rb_intern("methods"));
-            VALUE klass;
-            const rb_method_entry_t *me2 = rb_resolve_me_location(me, data);
-            if (me != me2) continue;
-            klass = me->owner;
-            if (RB_TYPE_P(klass, T_ICLASS)) {
-                rb_bug("T_ICLASS");
-            }
-            path = data[0];
-            first_lineno = data[1];
-            first_column = data[2];
-            last_lineno = data[3];
-            last_column = data[4];
-            if (FIX2LONG(first_lineno) <= 0) continue;
-            ncoverage = rb_hash_aref(ncoverages, path);
-            if (NIL_P(ncoverage)) continue;
-            methods = rb_hash_aref(ncoverage, methods_id);
-
-            {
-                VALUE method_id = ID2SYM(me->def->original_id);
-                VALUE rcount = rb_hash_aref(cme2counter, (VALUE) me);
-                VALUE key = rb_ary_new_from_args(6, klass, method_id, first_lineno, first_column, last_lineno, last_column);
-                VALUE rcount2 = rb_hash_aref(methods, key);
-
-                if (NIL_P(rcount)) rcount = LONG2FIX(0);
-                if (NIL_P(rcount2)) rcount2 = LONG2FIX(0);
-                if (!POSFIXABLE(FIX2LONG(rcount) + FIX2LONG(rcount2))) {
-                    rcount = LONG2FIX(FIXNUM_MAX);
-                }
-                else {
-                    rcount = LONG2FIX(FIX2LONG(rcount) + FIX2LONG(rcount2));
-                }
-                rb_hash_aset(methods, key, rcount);
-            }
+            const rb_method_entry_t *me = (const rb_method_entry_t *) v;
+            VALUE rcount = rb_hash_aref(cme2counter, (VALUE) me);
+            method_coverage_add(me, NIL_P(rcount) ? 0 : FIX2LONG(rcount), ncoverages);
         }
 
         if (poisoned) {
