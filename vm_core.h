@@ -807,7 +807,7 @@ typedef struct rb_vm_struct {
     rb_nativethread_cond_t once_cond;
 
     VALUE orig_progname, progname;
-    VALUE coverages, me2counter;
+    VALUE coverages, cme2counter;
     int coverage_mode;
 
     struct {
