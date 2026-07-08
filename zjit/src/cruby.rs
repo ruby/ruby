@@ -396,15 +396,8 @@ pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
 }
 
 /// Return a poison value to be set above the stack top to verify leafness.
-#[cfg(not(test))]
 pub fn vm_stack_canary() -> u64 {
     unsafe { rb_vm_stack_canary() }.as_u64()
-}
-
-/// Avoid linking the C function in `cargo test`
-#[cfg(test)]
-pub fn vm_stack_canary() -> u64 {
-    0
 }
 
 /// Opaque execution-context type from vm_core.h
