@@ -1047,7 +1047,60 @@ class Pathname    # * File *
   #
   def binread(...) File.binread(@path, ...) end
 
-  # See <tt>File.readlines</tt>.  Returns all the lines from the file.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   readlines(sep = $/, **options) → array
+  #   readlines(limit, **options) → array
+  #   readlines(sep, limit, **options) → array
+  #
+  # Returns an array of all lines read from the source at the path in `self`,
+  # which must be the path to a file.
+  #
+  # Examples here use a file defined
+  # at [IO Example Files](rdoc-ref:IO@Example+Files).
+  #
+  # With no arguments given, parses lines from the file at the given path,
+  # as determined by the default line separator, and returns those lines in an array:
+  #
+  # ```ruby
+  # pn = Pathname('t.txt')
+  # ppn.readlines
+  # # => ["First line\n", "Second line\n", "\n", "Fourth line\n", "Fifth line\n"]
+  # ```
+  #
+  # With argument `sep` given,
+  # parses lines as determined by that line separator
+  # (see [IO Line Separator](rdoc-ref:IO@Line+Separator)):
+  #
+  # ```ruby
+  # pn.readlines('li')
+  # # => ["First li", "ne\nSecond li", "ne\n\nFourth li", "ne\nFifth li", "ne\n"]
+  # pn.readlines('')  # Special "paragraphs" separator value.
+  # # => ["First line\nSecond line\n\n", "Fourth line\nFifth line\n"]
+  # pn.readlines(nil) # Special "slurp" separator value.
+  # # => ["First line\nSecond line\n\nFourth line\nFifth line\n"]
+  # ```
+  #
+  # With argument `limit` given, parses lines as determined by the default line separator
+  # and the given line-length `limit`
+  # (see [IO Line Separator](rdoc-ref:IO@Line+Separator)
+  # and [IO Line Limit](rdoc-ref:IO@Line+Limit)):
+  #
+  # ```ruby
+  # pn.readlines(7)
+  # # => ["First l", "ine\n", "Second ", "line\n", "\n", "Fourth ", "line\n", "Fifth l", "ine\n"]
+  # ```
+  #
+  # With arguments `sep` and `limit` given, combines the two behaviors
+  # (see [IO Line Separator and Line Limit](rdoc-ref:IO@Line+Separator+and+Line+Limit)).
+  #
+  # Optional keyword arguments `options` specify:
+  #
+  # - {IO Open Options}[rdoc-ref:IO@Open+Options].
+  # - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+  # - {IO Line Input Options}[rdoc-ref:IO@Line+Input+Options].
+  #
   def readlines(...) File.readlines(@path, ...) end
 
   # See <tt>File.sysopen</tt>.
