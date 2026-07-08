@@ -7099,7 +7099,7 @@ mod hir_opt_tests {
           v23:String = RefineType v39, String
           Jump bb6(v23)
         bb5():
-          v25:String = AnyToString v10
+          v25:StringExact = AnyToString v10
           Jump bb6(v25)
         bb6(v27:String):
           v29:StringExact = StringConcat v14, v27
