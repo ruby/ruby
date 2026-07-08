@@ -331,6 +331,7 @@ static void timer_thread_wakeup(void);
 static void timer_thread_wakeup_locked(rb_vm_t *vm);
 static void timer_thread_wakeup_force(void);
 static void thread_sched_switch(rb_thread_t *cth, rb_thread_t *next_th);
+static void ractor_sched_cancel_enq(rb_vm_t *vm, struct rb_thread_sched *sched);
 static void coroutine_transfer0(struct coroutine_context *transfer_from,
                                 struct coroutine_context *transfer_to, bool to_dead);
 
@@ -854,6 +855,12 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
         if (th->has_dedicated_nt && th == sched->runnable_hot_th && (sched->running == NULL || sched->running->has_dedicated_nt)) {
             RUBY_DEBUG_LOG("(nt) stealing: hot-th:%u.  running:%u", rb_th_serial(th), rb_th_serial(sched->running));
 
+            // th serves itself on its own nt, displacing the enqueued
+            // running thread back to the readyq: cancel the entry that was
+            // posted for it (a later dequeue would find this Ractor served
+            // and its next enqueue would double-list the node)
+            ractor_sched_cancel_enq(th->vm, sched);
+
             // If there is a thread set to run, move it back to the front of the readyq
             if (sched->running != NULL) {
                 rb_thread_t *running = sched->running;
@@ -1230,6 +1237,7 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 
     ccan_list_head_init(&sched->readyq);
     sched->readyq_cnt = 0;
+    ccan_list_node_init(&sched->grq_node); // self-linked = not enqueued
 
 #if USE_MN_THREADS
     if (!atfork) sched->enable_mn_threads = true; // MN is enabled on Ractors
@@ -1272,6 +1280,10 @@ thread_sched_switch0(struct coroutine_context *current_cont, rb_thread_t *next_t
 
     RUBY_DEBUG_LOG("next_th:%u", rb_th_serial(next_th));
 
+    // this direct transfer serves next_th without a dequeue; cancel its
+    // Ractor's outstanding grq entry (no-op when nothing is enqueued)
+    ractor_sched_cancel_enq(next_th->vm, TH_SCHED(next_th));
+
     ruby_thread_set_native(next_th);
     native_thread_assign(nt, next_th);
 
@@ -1307,6 +1319,29 @@ grq_size(rb_vm_t *vm, rb_ractor_t *cr)
 }
 #endif
 
+// A direct service of a runnable thread (direct transfer or the hot-thread
+// steal) bypasses the grq; cancel the Ractor's outstanding entry so that
+// "enqueued <=> runnable and unserved" keeps holding. The caller holds the
+// per-Ractor sched lock, so no concurrent enqueue can relink the node: a
+// self-linked read needs no lock (the common case -- direct switches whose
+// transition never enqueued). A linked read can race only with a dequeue,
+// hence the recheck under the grq lock.
+static void
+ractor_sched_cancel_enq(rb_vm_t *vm, struct rb_thread_sched *sched)
+{
+    if (sched->grq_node.next != &sched->grq_node) {
+        ractor_sched_lock(vm, NULL);
+        {
+            if (sched->grq_node.next != &sched->grq_node) {
+                ccan_list_del_init(&sched->grq_node);
+                VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
+                vm->ractor.sched.grq_cnt--;
+            }
+        }
+        ractor_sched_unlock(vm, NULL);
+    }
+}
+
 static void
 ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 {
@@ -1318,14 +1353,16 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 
     ractor_sched_lock(vm, cr);
     {
-#if VM_CHECK_MODE > 0
-        // check if grq contains r
-        rb_ractor_t *tr;
-        ccan_list_for_each(&vm->ractor.sched.grq, tr, threads.sched.grq_node) {
-            VM_ASSERT(r != tr);
+        // Precondition: not already enqueued (the grq_node is self-linked).
+        // This holds because every service of a runnable-but-unserved thread
+        // either dequeues the entry (the nt scheduling loop) or cancels it
+        // (direct transfers / the hot-thread steal; see
+        // ractor_sched_cancel_enq) -- re-adding a linked node would corrupt
+        // the queue, so check unconditionally (a CHECK-mode-only assert
+        // would miss it: the race needs timing that CHECK builds perturb).
+        if (sched->grq_node.next != &sched->grq_node) {
+            rb_bug("ractor_sched_enq: already enqueued");
         }
-#endif
-
         ccan_list_add_tail(&vm->ractor.sched.grq, &sched->grq_node);
         vm->ractor.sched.grq_cnt++;
         VM_ASSERT(grq_size(vm, cr) == vm->ractor.sched.grq_cnt);
@@ -1389,6 +1426,7 @@ ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
         VM_ASSERT(rb_current_execution_context(false) == NULL);
 
         if (r) {
+            ccan_list_node_init(&r->threads.sched.grq_node); // back to self-linked
             VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
             vm->ractor.sched.grq_cnt--;
             RUBY_DEBUG_LOG("r:%d grq_cnt:%u", (int)rb_ractor_id(r), vm->ractor.sched.grq_cnt);

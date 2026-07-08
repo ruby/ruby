@@ -141,6 +141,10 @@ struct rb_thread_sched {
     struct ccan_list_head readyq;
     int readyq_cnt;
     // ractor scheduling
+    // When not linked in vm->ractor.sched.grq, this node is kept
+    // self-linked (ccan_list_node_init), so "linked?" can be read off the
+    // node itself: enqueuers assert it, and direct transfers cancel an
+    // outstanding entry (see ractor_sched_cancel_enq).
     struct ccan_list_node grq_node;
 };
 
