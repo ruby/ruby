@@ -884,10 +884,11 @@ pub struct CCallVariadicData {
 }
 
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
-/// the instruction ([`InsnId`]). SSA form enables this, and [`UnionFind`] ([`Function::find`])
+/// the instruction ([`InsnId`]). SSA form enables this, and [`Function::find`]
 /// helps with editing.
 #[derive(Debug, Clone)]
 pub enum Insn {
+    Identity { other: InsnId },
     /// Comment that can be inserted into HIR for diagnostics.
     Comment { message: String },
 
@@ -1551,6 +1552,9 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*val);
                 $visit_one!(*class);
             }
+            Insn::Identity { other } => {
+                $visit_one!(*other);
+            }
         }
     };
 }
@@ -1621,6 +1625,7 @@ impl Insn {
     fn effects_of(&self) -> Effect {
         const allocates: Effect = Effect::read_write(abstract_heaps::PC.union(abstract_heaps::Allocator), abstract_heaps::Allocator);
         match &self {
+            Insn::Identity { .. } => effects::Empty,
             Insn::Comment { .. } => effects::Empty,
             Insn::Const { .. } => effects::Empty,
             Insn::Param { .. } => effects::Empty,
@@ -2321,6 +2326,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IsA { val, class } => write!(f, "IsA {val}, {class}"),
             Insn::BreakPoint => write!(f, "BreakPoint"),
             Insn::Unreachable => write!(f, "Unreachable"),
+            Insn::Identity { other } => write!(f, "Identity {other}"),
         }
     }
 }
@@ -2372,101 +2378,6 @@ impl<'a> FunctionPrinter<'a> {
         let mut printer = Self::without_snapshot(fun);
         printer.display_snapshot_and_tp_patchpoints = true;
         printer
-    }
-}
-
-/// Union-Find (Disjoint-Set) is a data structure for managing disjoint sets that has an interface
-/// of two operations:
-///
-/// * find (what set is this item part of?)
-/// * union (join these two sets)
-///
-/// Union-Find identifies sets by their *representative*, which is some chosen element of the set.
-/// This is implemented by structuring each set as its own graph component with the representative
-/// pointing at nothing. For example:
-///
-/// * A -> B -> C
-/// * D -> E
-///
-/// This represents two sets `C` and `E`, with three and two members, respectively. In this
-/// example, `find(A)=C`, `find(C)=C`, `find(D)=E`, and so on.
-///
-/// To union sets, call `make_equal_to` on any set element. That is, `make_equal_to(A, D)` and
-/// `make_equal_to(B, E)` have the same result: the two sets are joined into the same graph
-/// component. After this operation, calling `find` on any element will return `E`.
-///
-/// This is a useful data structure in compilers because it allows in-place rewriting without
-/// linking/unlinking instructions and without replacing all uses. When calling `make_equal_to` on
-/// any instruction, all of its uses now implicitly point to the replacement.
-///
-/// This does mean that pattern matching and analysis of the instruction graph must be careful to
-/// call `find` whenever it is inspecting an instruction (or its operands). If not, this may result
-/// in missing optimizations.
-#[derive(Debug)]
-struct UnionFind<T: Copy + Into<usize>> {
-    forwarded: Vec<Option<T>>,
-}
-
-impl<T: Copy + Into<usize> + PartialEq> UnionFind<T> {
-    fn new() -> UnionFind<T> {
-        UnionFind { forwarded: vec![] }
-    }
-
-    /// Private. Return the internal representation of the forwarding pointer for a given element.
-    fn at(&self, idx: T) -> Option<T> {
-        self.forwarded.get(idx.into()).copied().flatten()
-    }
-
-    /// Private. Set the internal representation of the forwarding pointer for the given element
-    /// `idx`. Extend the internal vector if necessary.
-    fn set(&mut self, idx: T, value: T) {
-        if idx.into() >= self.forwarded.len() {
-            self.forwarded.resize(idx.into()+1, None);
-        }
-        if idx != value {
-            self.forwarded[idx.into()] = Some(value);
-        }
-    }
-
-    /// Find the set representative for `insn`. Perform path compression at the same time to speed
-    /// up further find operations. For example, before:
-    ///
-    /// `A -> B -> C`
-    ///
-    /// and after `find(A)`:
-    ///
-    /// ```
-    /// A -> C
-    /// B ---^
-    /// ```
-    pub fn find(&mut self, insn: T) -> T {
-        let result = self.find_const(insn);
-        if result != insn {
-            // Path compression
-            self.set(insn, result);
-        }
-        result
-    }
-
-    /// Find the set representative for `insn` without doing path compression.
-    fn find_const(&self, insn: T) -> T {
-        let mut result = insn;
-        loop {
-            match self.at(result) {
-                None => return result,
-                Some(insn) => {
-                    assert!(result != insn, "cycle detected");
-                    result = insn;
-                }
-            }
-        }
-    }
-
-    /// Union the two sets containing `insn` and `target` such that every element in `insn`s set is
-    /// now part of `target`'s. Neither argument must be the representative in its set.
-    pub fn make_equal_to(&mut self, insn: T, target: T) {
-        let found = self.find(insn);
-        self.set(found, target);
     }
 }
 
@@ -2619,7 +2530,6 @@ pub struct Function {
     param_types: Vec<Type>,
 
     insns: Vec<Insn>,
-    union_find: std::cell::RefCell<UnionFind<InsnId>>,
     insn_types: Vec<Type>,
     blocks: Vec<Block>,
     /// Superblock that targets all entry blocks. The sole root for RPO/dominator computation.
@@ -2724,7 +2634,6 @@ impl Function {
             policy: CompilePolicy::new(iseq),
             insns: vec![],
             insn_types: vec![],
-            union_find: UnionFind::new().into(),
             blocks: vec![Block::default(), Block::default()],
             entries_block: BlockId(0),
             entry_block: BlockId(1),
@@ -2827,7 +2736,7 @@ impl Function {
     /// need the depth avoid cloning the whole `FrameState`, including its stack
     /// and locals, the way [`Function::frame_state`] does.
     fn frame_depth(&self, insn_id: InsnId) -> InlineDepth {
-        let insn_id = self.union_find.borrow().find_const(insn_id);
+        let insn_id = self.find_id(insn_id);
         match &self.insns[insn_id.0] {
             Insn::Snapshot { state } => state.depth,
             insn => panic!("Unexpected non-Snapshot {insn} when looking up frame depth"),
@@ -2949,8 +2858,7 @@ impl Function {
     }
 
     /// Return a copy of the instruction where the instruction and its operands have been read from
-    /// the union-find table (to find the current most-optimized version of this instruction). See
-    /// [`UnionFind`] for more.
+    /// the union-find table (to find the current most-optimized version of this instruction).
     ///
     /// This is _the_ function for reading [`Insn`]. Use frequently. Example:
     ///
@@ -2964,19 +2872,10 @@ impl Function {
     /// }
     /// ```
     pub fn find(&self, insn_id: InsnId) -> Insn {
-        macro_rules! find {
-            ( $x:expr ) => {
-                {
-                    // TODO(max): Figure out why borrow_mut().find() causes `already borrowed:
-                    // BorrowMutError`
-                    self.union_find.borrow().find_const($x)
-                }
-            };
-        }
-        let insn_id = find!(insn_id);
+        let insn_id = self.find_id(insn_id);
         let mut result = self.insns[insn_id.0].clone();
         result.for_each_operand_mut(&mut |operand: &mut InsnId| {
-            *operand = find!(*operand);
+            *operand = self.find_id(*operand);
         });
         result
     }
@@ -2997,6 +2896,17 @@ impl Function {
         }
     }
 
+    fn find_id(&self, insn_id: InsnId) -> InsnId {
+        let mut result = insn_id;
+        loop {
+            match self.insns[result.0] {
+                Insn::Identity { other } if other != result => result = other,
+                _ => break,
+            }
+        }
+        result
+    }
+
     /// Replace `insn` with the new instruction `replacement`, which will get appended to `insns`.
     fn make_equal_to(&mut self, insn: InsnId, replacement: InsnId) {
         assert!(self.insns[insn.0].has_output(),
@@ -3004,12 +2914,12 @@ impl Function {
         assert!(self.insns[replacement.0].has_output(),
                 "Can't replace instruction that has output with instruction that has no output");
         // Don't push it to the block
-        self.union_find.borrow_mut().make_equal_to(insn, replacement);
+        self.insns[insn.0] = Insn::Identity { other: replacement };
     }
 
     pub fn type_of(&self, insn: InsnId) -> Type {
         assert!(self.insns[insn.0].has_output());
-        self.insn_types[self.union_find.borrow_mut().find(insn).0]
+        self.insn_types[self.find_id(insn).0]
     }
 
     /// Check if the type of `insn` is a subtype of `ty`.
@@ -3162,6 +3072,7 @@ impl Function {
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
             Insn::IsA { .. } => types::BoolExact,
+            &Insn::Identity { other } => self.type_of(other),
         }
     }
 
@@ -3215,7 +3126,7 @@ impl Function {
             ($insn:expr, $new_type:expr) => {{
                 let insn = $insn;
                 let new_type = $new_type;
-                let old_type = self.insn_types[self.union_find.borrow_mut().find(insn).0];
+                let old_type = self.insn_types[self.find_id(insn).0];
                 if old_type.bit_equal(new_type) {
                     false
                 } else {
@@ -3290,7 +3201,7 @@ impl Function {
     }
 
     fn chase_insn(&self, insn: InsnId) -> InsnId {
-        let id = self.union_find.borrow().find_const(insn);
+        let id = self.find_id(insn);
         match self.insns[id.0] {
             Insn::GuardType { val, .. }
             | Insn::GuardBitEquals { val, .. }
@@ -5473,13 +5384,14 @@ impl Function {
             rewrite_map.clear();
             for i in 0..self.blocks[block.0].insns.len() {
                 let insn_id = self.blocks[block.0].insns[i];
-                let canonical_id = self.union_find.borrow().find_const(insn_id);
+                let canonical_id = self.find_id(insn_id);
 
-                let union_find = &self.union_find;
-                self.insns[canonical_id.0].for_each_operand_mut(|operand| {
-                    let canon = union_find.borrow().find_const(*operand);
+                let mut insn = self.insns[canonical_id.0].clone();
+                insn.for_each_operand_mut(|operand| {
+                    let canon = self.find_id(*operand);
                     *operand = rewrite_map.get(&canon).copied().unwrap_or(canon);
                 });
+                self.insns[canonical_id.0] = insn;
 
                 // For the binary guards only `left` is registered because their infer_type is
                 // type_of(left).
@@ -5851,9 +5763,9 @@ impl Function {
         while let Some(insn_id) = worklist.pop_front() {
             if necessary.get(insn_id) { continue; }
             necessary.insert(insn_id);
-            let insn_id = self.union_find.borrow().find_const(insn_id);
+            let insn_id = self.find_id(insn_id);
             self.insns[insn_id.0].for_each_operand(|operand| {
-                worklist.push_back(self.union_find.borrow().find_const(operand));
+                worklist.push_back(self.find_id(operand));
             });
         }
         // Now remove all unnecessary instructions
@@ -6094,7 +6006,7 @@ impl Function {
             // Parameters are currently guaranteed to be Parameter instructions, but in the future
             // they might be refined to other instruction kinds by the optimizer.
             for insn_id in block.params.iter().chain(block.insns.iter()) {
-                let insn_id = self.union_find.borrow().find_const(*insn_id);
+                let insn_id = self.find_id(*insn_id);
                 let insn = self.find(insn_id);
 
                 // Snapshots are not serialized, so skip them.
@@ -6346,7 +6258,7 @@ impl Function {
                 assigned.insert(param);
             }
             for &insn_id in &self.blocks[block.0].insns {
-                let insn_id = self.union_find.borrow().find_const(insn_id);
+                let insn_id = self.find_id(insn_id);
                 let insn = self.find(insn_id);
                 let mut propagate = |target: BlockId| -> Result<(), ValidationError> {
                     let Some(block_in) = assigned_in[target.0].as_mut() else {
@@ -6382,9 +6294,9 @@ impl Function {
                 assigned.insert(param);
             }
             for &insn_id in &self.blocks[block.0].insns {
-                let insn_id = self.union_find.borrow().find_const(insn_id);
+                let insn_id = self.find_id(insn_id);
                 self.insns[insn_id.0].try_for_each_operand(|operand| {
-                    let operand = self.union_find.borrow().find_const(operand);
+                    let operand = self.find_id(operand);
                     if !assigned.get(operand) {
                         return Err(ValidationError::OperandNotDefined(block, insn_id, operand));
                     }
@@ -6403,7 +6315,7 @@ impl Function {
         let mut seen = InsnSet::with_capacity(self.insns.len());
         for block_id in self.reverse_post_order() {
             for &insn_id in &self.blocks[block_id.0].insns {
-                let insn_id = self.union_find.borrow().find_const(insn_id);
+                let insn_id = self.find_id(insn_id);
                 if !seen.insert(insn_id) {
                     return Err(ValidationError::DuplicateInstruction(block_id, insn_id));
                 }
@@ -6421,7 +6333,7 @@ impl Function {
     }
 
     fn validate_insn_type(&self, insn_id: InsnId) -> Result<(), ValidationError> {
-        let insn_id = self.union_find.borrow().find_const(insn_id);
+        let insn_id = self.find_id(insn_id);
         let insn = self.find(insn_id);
         match insn {
             // Instructions with no InsnId operands (except state) or nothing to assert
@@ -6753,6 +6665,7 @@ impl Function {
             // are validated by the recv+args group (PushLightweightFrame)
             // or the state-only group (PopLightweightFrame).
             Insn::PopInlineFrame { .. } => Ok(()),
+            Insn::Identity { .. } => Ok(()),
         }
     }
 
@@ -9641,50 +9554,6 @@ impl<'a> LoopInfo<'a> {
 
     pub fn is_loop_header(&self, block: BlockId) -> bool {
         self.loop_headers.get(block)
-    }
-}
-
-#[cfg(test)]
-mod union_find_tests {
-    use super::UnionFind;
-
-    #[test]
-    fn test_find_returns_self() {
-        let mut uf = UnionFind::new();
-        assert_eq!(uf.find(3usize), 3);
-    }
-
-    #[test]
-    fn test_find_returns_target() {
-        let mut uf = UnionFind::new();
-        uf.make_equal_to(3, 4);
-        assert_eq!(uf.find(3usize), 4);
-    }
-
-    #[test]
-    fn test_find_halts_with_identity_make_equal_to() {
-        let mut uf = UnionFind::<usize>::new();
-        uf.make_equal_to(0, 0);
-        assert_eq!(uf.find(0), 0);
-    }
-
-    #[test]
-    fn test_find_returns_transitive_target() {
-        let mut uf = UnionFind::new();
-        uf.make_equal_to(3, 4);
-        uf.make_equal_to(4, 5);
-        assert_eq!(uf.find(3usize), 5);
-        assert_eq!(uf.find(4usize), 5);
-    }
-
-    #[test]
-    fn test_find_compresses_path() {
-        let mut uf = UnionFind::new();
-        uf.make_equal_to(3, 4);
-        uf.make_equal_to(4, 5);
-        assert_eq!(uf.at(3usize), Some(4));
-        assert_eq!(uf.find(3usize), 5);
-        assert_eq!(uf.at(3usize), Some(5));
     }
 }
 
