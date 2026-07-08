@@ -238,6 +238,8 @@ RUBY_SYMBOL_EXPORT_BEGIN
 const rb_method_entry_t *rb_resolve_me_location(const rb_method_entry_t *, VALUE[5]);
 RUBY_SYMBOL_EXPORT_END
 
+void rb_vm_coverage_record_me(const rb_method_entry_t *me);
+
 const rb_callable_method_entry_t *rb_callable_method_entry(VALUE klass, ID id);
 const rb_callable_method_entry_t *rb_callable_method_entry_or_negative(VALUE klass, ID id);
 const rb_callable_method_entry_t *rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class);

@@ -1702,9 +1702,13 @@ rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_c
     } while (0)
 
 static void
-method_added(VALUE klass, ID mid)
+method_added(VALUE klass, ID mid, const rb_method_entry_t *me)
 {
     if (ruby_running) {
+        /* [Bug #22179] Record the just-defined method entry for method coverage
+         * so the result no longer depends on walking the heap (and thus on GC
+         * timing). */
+        if (me) rb_vm_coverage_record_me(me);
         CALL_METHOD_HOOK(klass, added, mid);
     }
 }
@@ -1712,12 +1716,13 @@ method_added(VALUE klass, ID mid)
 void
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_visibility_t visi)
 {
+    const rb_method_entry_t *me;
     RB_VM_LOCKING() {
-        rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts);
+        me = rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts);
     }
 
     if (type != VM_METHOD_TYPE_UNDEF && type != VM_METHOD_TYPE_REFINED) {
-        method_added(klass, mid);
+        method_added(klass, mid, me);
     }
 }
 
@@ -1749,7 +1754,7 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
         }
     }
 
-    method_added(klass, mid);
+    method_added(klass, mid, newme);
     return newme;
 }
 
@@ -2881,10 +2886,11 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
     if (visi == METHOD_VISI_UNDEF) visi = METHOD_ENTRY_VISI(orig_me);
 
     if (orig_me->defined_class == 0) {
-        rb_method_entry_make(target_klass, alias_name, target_klass, visi,
-                             VM_METHOD_TYPE_ALIAS, NULL, orig_me->called_id,
-                             (void *)rb_method_entry_clone(orig_me));
-        method_added(target_klass, alias_name);
+        const rb_method_entry_t *alias_me =
+            rb_method_entry_make(target_klass, alias_name, target_klass, visi,
+                                 VM_METHOD_TYPE_ALIAS, NULL, orig_me->called_id,
+                                 (void *)rb_method_entry_clone(orig_me));
+        method_added(target_klass, alias_name, alias_me);
     }
     else {
         rb_method_entry_t *alias_me;
