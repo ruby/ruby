@@ -2897,6 +2897,29 @@ fn test_new_hash_empty() {
     assert_snapshot!(assert_compiles("test"), @"{}");
 }
 
+// Exercises the empty-hash GC fast path under GC pressure. Guards against
+// baking object flags as a GC-managed VALUE: T_HASH (8) has no immediate-mask
+// bits set, so misclassifying it as a heap object records a bogus GC offset
+// and crashes during marking.
+#[test]
+fn test_new_hash_empty_gc_stress() {
+    eval("
+        def make = {}
+    ");
+    assert_contains_opcode("make", YARVINSN_newhash);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make
+          h = make
+          h[:a] = 1
+          [h.class, h.size, h.default, h]
+        ensure
+          GC.stress = false
+        end
+    "#), @"[Hash, 1, nil, {a: 1}]");
+}
+
 #[test]
 fn test_new_hash_nonempty() {
     eval(r#"

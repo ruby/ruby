@@ -404,27 +404,6 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
-  def test_regression_gc_stress_new_hash_fast_path
-    assert_compiles ':ok', %q{
-      def make = {}
-
-      begin
-        GC.stress = true
-        10.times { make }
-        h = make
-        raise "wrong class"   unless h.instance_of?(Hash)
-        raise "wrong size"    unless h.size == 0
-        raise "wrong default" unless h.default.nil?
-        h[:a] = 1
-        h[:b] = 2
-        raise "not writable"  unless h == { a: 1, b: 2 }
-        :ok
-      ensure
-        GC.stress = false
-      end
-    }
-  end
-
   def test_exit_tracing
     # Smoke test: --zjit-trace-exits writes a Fuchsia trace (.fxt) file to /tmp
     assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-exits'])
