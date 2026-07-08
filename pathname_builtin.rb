@@ -1716,11 +1716,30 @@ class Pathname    # * File *
     array.map {|f| self.class.new(f) }
   end
 
-  # Returns the real (absolute) pathname for +self+ in the actual filesystem.
+  # :markup: markdown
   #
-  # Does not contain symlinks or useless dots, +..+ and +.+.
+  # call-seq:
+  #   realpath -> new_pathname
   #
-  # All components of the pathname must exist when this method is called.
+  # Returns a new pathname containing the real (absolute) pathname
+  # of the path in `self`;
+  # the new path is the path in the actual filesystem,
+  # and does not contain useless dot-entries (`'.'` or `'..'`)
+  # or symbolic links:
+  #
+  # ```ruby
+  # Pathname('/etc/./passwd/../../var').realpath
+  # # => #<Pathname:/var>
+  # ```
+  #
+  # All components of the new path must exist:
+  #
+  # ```ruby
+  # Pathname('/etc/./passwd/../../var/nosuch').realpath
+  # # Raises Errno::ENOENT: No such file or directory.
+  # ```
+  #
+  # \Method #realdirpath is similar, but does not require the last component to exist.
   def realpath(...) self.class.new(File.realpath(@path, ...)) end
 
 
@@ -1749,6 +1768,7 @@ class Pathname    # * File *
   # # Raises Errno::ENOENT: No such file or directory.
   # ```
   #
+  # \Method #realpath is similar, but requires all components to exist.
   def realdirpath(...) self.class.new(File.realdirpath(@path, ...)) end
 end
 
