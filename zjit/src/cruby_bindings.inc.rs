@@ -1968,15 +1968,6 @@ pub type jit_bindgen_constants = i32;
 pub const rb_invalid_shape_id: shape_id_t = 524287;
 pub type rb_iseq_param_keyword_struct =
     rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct gc_bump_pointer_heap {
-    pub cursor: usize,
-    pub cursor_end: usize,
-    pub jit_cursor_end: usize,
-    pub region_start: usize,
-    pub slot_size: usize,
-}
 pub const RB_GC_ZJIT_FASTPATH_DEFAULT: rb_gc_zjit_fastpath_kind = 1;
 pub const RB_GC_ZJIT_FASTPATH_MMTK: rb_gc_zjit_fastpath_kind = 2;
 pub type rb_gc_zjit_fastpath_kind = u32;
@@ -1994,7 +1985,7 @@ pub struct rb_gc_zjit_fastpath {
 #[repr(C)]
 pub struct rb_gc_zjit_default_new_obj_fastpath {
     pub cursor_offset: usize,
-    pub jit_cursor_end_offset: usize,
+    pub cursor_end_offset: usize,
     pub slot_size: usize,
     pub flags: VALUE,
     pub klass: VALUE,

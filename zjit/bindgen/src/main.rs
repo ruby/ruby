@@ -91,7 +91,6 @@ fn main() {
         .allowlist_type("RBasic")
 
         .allowlist_type("RArray")
-        .allowlist_type("gc_bump_pointer_heap")
         .allowlist_type("rb_gc_zjit_fastpath_kind")
         .allowlist_type("rb_gc_zjit_fastpath")
         .allowlist_type("rb_gc_zjit_fastpath_data")
