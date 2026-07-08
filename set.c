@@ -2329,7 +2329,6 @@ rb_set_size(VALUE set)
  *   to use object identity instead of the methods mentioned above.
  * - A String added to a set is stored "as is", whether or not frozen.
  *
- *
  * \Set includes module Enumerable, and is easy to use with other enumerable objects.
  * Many of its methods accept enumerable objects as arguments;
  * any enumerable object may be converted to a set via #to_set.
@@ -2342,7 +2341,7 @@ rb_set_size(VALUE set)
  *
  * Before Ruby 4.0 (released in December, 2025),
  * class \Set had a different, less efficient implementation.
- * In Release 4.0, the class was reimplemented in C,
+ * In Ruby 4.0, the class was reimplemented in C,
  * and the behaviors of some methods were adjusted.
  *
  * When compatibility with the older implementation is needed,
