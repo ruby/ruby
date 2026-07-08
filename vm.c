@@ -3303,6 +3303,7 @@ rb_vm_update_references(void *ptr)
         if (vm->coverages) {
             vm->coverages = rb_gc_location(vm->coverages);
             vm->cme2counter = rb_gc_location(vm->cme2counter);
+            vm->me_set = rb_gc_location(vm->me_set);
         }
     }
 }
@@ -3379,6 +3380,7 @@ rb_vm_mark(void *ptr)
         rb_gc_mark_movable(vm->orig_progname);
         rb_gc_mark_movable(vm->coverages);
         rb_gc_mark_movable(vm->cme2counter);
+        rb_gc_mark_movable(vm->me_set);
         rb_gc_mark_movable(vm->cc_refinement_set);
 
         rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);

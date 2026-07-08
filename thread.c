@@ -6070,6 +6070,26 @@ update_method_coverage(VALUE cme2counter, rb_trace_arg_t *trace_arg)
     }
 }
 
+/* [Bug #22179] Record every method entry as it is defined (via method_added)
+ * into me_set, so that method coverage no longer needs to reconstruct the set
+ * of defined methods by walking the heap. This keeps shadowed/removed method
+ * entries discoverable (me_set holds them as keys, so GC cannot reclaim them)
+ * and makes the result independent of GC timing. Only entries that carry a
+ * source location (Ruby / define_method methods) are recorded. */
+void
+rb_vm_coverage_record_me(const rb_method_entry_t *me)
+{
+    if (!RTEST(GET_VM()->coverages)) return;
+    if (!(GET_VM()->coverage_mode & COVERAGE_TARGET_METHODS)) return;
+
+    VALUE me_set = GET_VM()->me_set;
+    if (!RTEST(me_set)) return;
+
+    if (rb_resolve_me_location(me, 0)) {
+        rb_hash_aset(me_set, (VALUE)me, Qtrue);
+    }
+}
+
 VALUE
 rb_get_coverages(void)
 {
@@ -6083,10 +6103,11 @@ rb_get_coverage_mode(void)
 }
 
 void
-rb_set_coverages(VALUE coverages, int mode, VALUE cme2counter)
+rb_set_coverages(VALUE coverages, int mode, VALUE cme2counter, VALUE me_set)
 {
     GET_VM()->coverages = coverages;
     GET_VM()->cme2counter = cme2counter;
+    GET_VM()->me_set = me_set;
     GET_VM()->coverage_mode = mode;
 }
 
@@ -6124,6 +6145,7 @@ rb_reset_coverages(void)
     rb_iseq_remove_coverage_all();
     GET_VM()->coverages = Qfalse;
     GET_VM()->cme2counter = Qnil;
+    GET_VM()->me_set = Qnil;
 }
 
 VALUE

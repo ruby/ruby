@@ -794,7 +794,7 @@ typedef struct rb_vm_struct {
     rb_nativethread_lock_t workqueue_lock;
 
     VALUE orig_progname, progname;
-    VALUE coverages, cme2counter;
+    VALUE coverages, cme2counter, me_set;
     int coverage_mode;
 
     struct {
@@ -2408,7 +2408,7 @@ int rb_thread_check_trap_pending(void);
 #define RUBY_EVENT_COVERAGE_BRANCH              0x020000
 
 extern VALUE rb_get_coverages(void);
-extern void rb_set_coverages(VALUE, int, VALUE);
+extern void rb_set_coverages(VALUE, int, VALUE, VALUE);
 extern void rb_clear_coverages(void);
 extern void rb_reset_coverages(void);
 extern void rb_resume_coverages(void);
