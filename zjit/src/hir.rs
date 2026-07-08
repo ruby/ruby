@@ -5778,9 +5778,13 @@ impl Function {
     /// Inspired by Cranelift's aegraph canonicalize step
     /// (<https://cfallin.org/blog/2026/04/09/aegraph/>).
     fn canonicalize(&mut self) {
-        let mut rewrite_map: HashMap<InsnId, InsnId> = HashMap::new();
+        // TODO(max): Don't duplicate map. Instead, use either undo-redo or dominator numbering
+        // information for dominator tree.
+        let mut rewrite_maps: Vec<HashMap<InsnId, InsnId>> = vec![HashMap::new(); self.blocks.len()];
+        let dominators = Dominators::new(self);
         for block in self.reverse_post_order() {
-            rewrite_map.clear();
+            rewrite_maps[block.0] = rewrite_maps[dominators.idom(block).0].clone();
+            let rewrite_map = &mut rewrite_maps[block.0];
             for i in 0..self.blocks[block.0].insns.len() {
                 let insn_id = self.blocks[block.0].insns[i];
                 let canonical_id = self.union_find.borrow().find_const(insn_id);

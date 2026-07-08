@@ -7530,7 +7530,7 @@ mod hir_opt_tests {
           v23:String = RefineType v39, String
           Jump bb6(v23)
         bb5():
-          v25:StringExact = AnyToString v10
+          v25:StringExact = AnyToString v18
           Jump bb6(v25)
         bb6(v27:String):
           v29:StringExact = StringConcat v14, v27
@@ -18956,6 +18956,75 @@ mod hir_opt_tests {
           PopInlineFrame
           CheckInterrupts
           Return v56
+        ");
+    }
+
+    #[test]
+    fn test_canonicalize_global() {
+        set_call_threshold(3);
+        eval("
+            def test(n)
+              if n < 0
+                if n + 1 < 0
+                  0
+                else
+                  n + 1
+                end
+              else
+                n + 2
+              end
+            end
+            test(-2)
+            test(-1)
+            test(1)
+        ");
+        assert_snapshot!(hir_string_with_inlining("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          v81:Fixnum = GuardType v10, Fixnum recompile
+          v82:BoolExact = FixnumLt v81, v15
+          CheckInterrupts
+          v21:CBool = Test v82
+          CondBranch v21, bb6(), bb5(v9, v81)
+        bb6():
+          v28:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
+          v86:Fixnum = FixnumAdd v81, v28
+          v33:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          v90:BoolExact = FixnumLt v86, v33
+          CheckInterrupts
+          v39:CBool = Test v90
+          CondBranch v39, bb7(), bb4(v9, v81)
+        bb7():
+          v45:Fixnum[0] = Const Value(0)
+          CheckInterrupts
+          Return v45
+        bb4(v64:BasicObject, v65:Fixnum):
+          v70:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
+          v94:Fixnum = FixnumAdd v65, v70
+          CheckInterrupts
+          Return v94
+        bb5(v50:BasicObject, v51:Fixnum):
+          v56:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
+          v98:Fixnum = FixnumAdd v51, v56
+          CheckInterrupts
+          Return v98
         ");
     }
 
