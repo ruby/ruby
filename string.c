@@ -3149,12 +3149,11 @@ str_subseq(VALUE str, long beg, long len)
         return str2;
     }
 
-    str2 = str_alloc_heap(rb_cString);
-    if (str_embed_capa(str2) >= len + termlen) {
+    if (STR_EMBEDDABLE_P(len, termlen)) {
+        str2 = str_alloc_embed(rb_cString, len + termlen);
         char *ptr2 = RSTRING(str2)->as.embed.ary;
-        STR_SET_EMBED(str2);
         memcpy(ptr2, RSTRING_PTR(str) + beg, len);
-        TERM_FILL(ptr2+len, termlen);
+        TERM_FILL(ptr2 + len, termlen);
 
         STR_SET_LEN(str2, len);
         if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
@@ -3164,6 +3163,7 @@ str_subseq(VALUE str, long beg, long len)
         RB_GC_GUARD(str);
     }
     else {
+        str2 = str_alloc_heap(rb_cString);
         str_replace_shared(str2, str);
         RUBY_ASSERT(!STR_EMBED_P(str2));
         if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
