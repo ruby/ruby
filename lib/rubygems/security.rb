@@ -470,10 +470,10 @@ module Gem::Security
   def self.create_key(algorithm)
     if defined?(OpenSSL::PKey)
       case algorithm.downcase
-      when "dsa"
-        OpenSSL::PKey::DSA.new(RSA_DSA_KEY_LENGTH)
       when "rsa"
         OpenSSL::PKey::RSA.new(RSA_DSA_KEY_LENGTH)
+      when "dsa"
+        OpenSSL::PKey::DSA.new(RSA_DSA_KEY_LENGTH)
       when "ec"
         OpenSSL::PKey::EC.generate(EC_NAME)
       else
