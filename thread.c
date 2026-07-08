@@ -6106,6 +6106,7 @@ rb_reset_coverages(void)
     rb_clear_coverages();
     rb_iseq_remove_coverage_all();
     GET_VM()->coverages = Qfalse;
+    GET_VM()->me2counter = Qnil;
 }
 
 VALUE
