@@ -3339,7 +3339,6 @@ vm_mark_negative_cme(VALUE val, void *dmy)
     return ID_TABLE_CONTINUE;
 }
 
-void rb_thread_sched_mark_zombies(rb_vm_t *vm);
 
 void
 rb_vm_mark(void *ptr)
@@ -3395,8 +3394,6 @@ rb_vm_mark(void *ptr)
                 }
             }
         }
-
-        rb_thread_sched_mark_zombies(vm);
     }
 
     RUBY_MARK_LEAVE("vm");
@@ -3418,6 +3415,14 @@ void rb_objspace_free_objects(void *objspace);
 int
 ruby_vm_destruct(rb_vm_t *vm)
 {
+    {
+        // wait for native threads still winding down a dead coroutine: their
+        // reclaim frees through the objspace this function is about to
+        // destroy (see coroutine_thread_terminated)
+        void rb_thread_sched_wait_winding(rb_vm_t *vm);
+        rb_thread_sched_wait_winding(vm);
+    }
+
     RUBY_FREE_ENTER("vm");
     ruby_vm_during_cleanup = true;
 
@@ -3878,6 +3883,9 @@ thread_free(void *ptr)
     RUBY_FREE_ENTER("thread");
 
     rb_threadptr_sched_free(th);
+    // destroyed here rather than during teardown: nothing can interrupt a
+    // thread that is unreachable and off its Ractor's living set
+    rb_native_mutex_destroy(&th->interrupt_lock);
 
     if (th->locking_mutex != Qfalse) {
         rb_bug("thread_free: locking_mutex must be NULL (%p:%p)", (void *)th, (void *)th->locking_mutex);
@@ -3993,6 +4001,10 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->self = self;
 
     ccan_list_head_init(&th->interrupt_exec_tasks);
+    // initialized here (not at thread creation) so that every Thread object
+    // -- including allocated-but-never-started ones -- owns a valid mutex:
+    // thread_free destroys it unconditionally
+    rb_native_mutex_initialize(&th->interrupt_lock);
 
     rb_threadptr_root_fiber_setup(th);
 
