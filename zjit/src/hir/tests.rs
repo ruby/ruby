@@ -2325,7 +2325,7 @@ pub(crate) mod hir_build_tests {
           v26:String = RefineType v22, String
           Jump bb9(v26)
         bb8():
-          v28:String = AnyToString v12
+          v28:StringExact = AnyToString v12
           Jump bb9(v28)
         bb9(v30:String):
           v32:StringExact = StringConcat v10, v30
@@ -5362,7 +5362,7 @@ pub(crate) mod hir_build_tests {
           v26:String = RefineType v22, String
           Jump bb9(v26)
         bb8():
-          v28:String = AnyToString v12
+          v28:StringExact = AnyToString v12
           Jump bb9(v28)
         bb9(v30:String):
           v32:StringExact = StringConcat v10, v30
@@ -5405,7 +5405,7 @@ pub(crate) mod hir_build_tests {
           v24:String = RefineType v20, String
           Jump bb9(v24)
         bb8():
-          v26:String = AnyToString v10
+          v26:StringExact = AnyToString v10
           Jump bb9(v26)
         bb9(v28:String):
           v30:Fixnum[2] = Const Value(2)
@@ -5425,7 +5425,7 @@ pub(crate) mod hir_build_tests {
           v44:String = RefineType v40, String
           Jump bb15(v44)
         bb14():
-          v46:String = AnyToString v30
+          v46:StringExact = AnyToString v30
           Jump bb15(v46)
         bb15(v48:String):
           v50:Fixnum[3] = Const Value(3)
@@ -5445,7 +5445,7 @@ pub(crate) mod hir_build_tests {
           v64:String = RefineType v60, String
           Jump bb21(v64)
         bb20():
-          v66:String = AnyToString v50
+          v66:StringExact = AnyToString v50
           Jump bb21(v66)
         bb21(v68:String):
           v70:StringExact = StringConcat v28, v48, v68
@@ -5489,7 +5489,7 @@ pub(crate) mod hir_build_tests {
           v26:String = RefineType v22, String
           Jump bb9(v26)
         bb8():
-          v28:String = AnyToString v12
+          v28:StringExact = AnyToString v12
           Jump bb9(v28)
         bb9(v30:String):
           v32:StringExact = StringConcat v10, v30
@@ -5532,7 +5532,7 @@ pub(crate) mod hir_build_tests {
           v24:String = RefineType v20, String
           Jump bb9(v24)
         bb8():
-          v26:String = AnyToString v10
+          v26:StringExact = AnyToString v10
           Jump bb9(v26)
         bb9(v28:String):
           v30:Fixnum[2] = Const Value(2)
@@ -5552,7 +5552,7 @@ pub(crate) mod hir_build_tests {
           v44:String = RefineType v40, String
           Jump bb15(v44)
         bb14():
-          v46:String = AnyToString v30
+          v46:StringExact = AnyToString v30
           Jump bb15(v46)
         bb15(v48:String):
           v50:Fixnum[3] = Const Value(3)
@@ -5572,7 +5572,7 @@ pub(crate) mod hir_build_tests {
           v64:String = RefineType v60, String
           Jump bb21(v64)
         bb20():
-          v66:String = AnyToString v50
+          v66:StringExact = AnyToString v50
           Jump bb21(v66)
         bb21(v68:String):
           v70:RegexpExact = ToRegexp v28, v48, v68
@@ -5615,7 +5615,7 @@ pub(crate) mod hir_build_tests {
           v24:String = RefineType v20, String
           Jump bb9(v24)
         bb8():
-          v26:String = AnyToString v10
+          v26:StringExact = AnyToString v10
           Jump bb9(v26)
         bb9(v28:String):
           v30:Fixnum[2] = Const Value(2)
@@ -5635,7 +5635,7 @@ pub(crate) mod hir_build_tests {
           v44:String = RefineType v40, String
           Jump bb15(v44)
         bb14():
-          v46:String = AnyToString v30
+          v46:StringExact = AnyToString v30
           Jump bb15(v46)
         bb15(v48:String):
           v50:RegexpExact = ToRegexp v28, v48, MULTILINE|IGNORECASE|EXTENDED|NOENCODING
