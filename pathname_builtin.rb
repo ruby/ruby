@@ -895,19 +895,41 @@ class Pathname
     children(with_directory).each(&b)
   end
 
+  # :markup: markdown
   #
-  # Returns a relative path from the given +base_directory+ to the receiver.
+  # call-seq:
+  #   relative_path_from(source) -> new_pathname
   #
-  # If +self+ is absolute, then +base_directory+ must be absolute too.
+  # Returns a pathname containing the relative filesystem path from the given `source`
+  # to the path in `self`;
+  # `source` must be a directory path or a pathname containing a directory path:
   #
-  # If +self+ is relative, then +base_directory+ must be relative too.
+  # ```ruby
+  # Pathname('.').relative_path_from('doc/language')   # => #<Pathname:../..>
+  # Pathname('doc/language').relative_path_from('.')   # => #<Pathname:doc/language>
+  # Pathname('doc').relative_path_from('doc/language') # => #<Pathname:..>
+  # ```
   #
-  # This method doesn't access the filesystem.  It assumes no symlinks.
+  # The paths need not exist:
   #
-  # ArgumentError is raised when it cannot find a relative path.
+  # ```ruby
+  # Pathname('nosuch').relative_path_from('nosuch/foo/bar/baz')
+  # # => #<Pathname:../../..>
+  # ```
   #
-  # Note that this method does not handle situations where the case sensitivity
-  # of the filesystem in use differs from the operating system default.
+  # The two paths must be either both absolute or both relative:
+  #
+  # ```ruby
+  # Pathname('/var').relative_path_from('/etc') # => #<Pathname:../var>
+  # Pathname('/var').relative_path_from('doc')  # Raises ArgumentError
+  # Pathname('doc').relative_path_from('/etc')  # Raises ArgumentError
+  # ```
+  #
+  # Raises an exception if there is no such relative path:
+  #
+  # ```ruby
+  # Pathname('foo').relative_path_from('..')    # Raises ArgumentError
+  # ```
   #
   def relative_path_from(base_directory)
     base_directory = Pathname.new(base_directory) unless base_directory.is_a? Pathname
