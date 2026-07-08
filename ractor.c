@@ -2032,7 +2032,7 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
     }
     else {
         VALUE type = RB_BUILTIN_TYPE(obj);
-        size_t slot_size = rb_gc_obj_slot_size(obj);
+        size_t slot_size = rb_obj_shape_slot_size(obj);
         VALUE moved = rb_newobj(GET_EC(), 0, type, RBASIC_SHAPE_ID(obj), wb_protected_types[type], slot_size);
         MEMZERO(((struct RBasic *)moved) + 1, char, slot_size - sizeof(struct RBasic));
         data->replacement = (VALUE)moved;
@@ -2050,7 +2050,7 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     memcpy(
         (char *)data->replacement + sizeof(VALUE),
         (char *)obj + sizeof(VALUE),
-        rb_gc_obj_slot_size(obj) - sizeof(VALUE)
+        rb_obj_shape_slot_size(obj) - sizeof(VALUE)
     );
 
     // We've copied obj's references to the replacement
