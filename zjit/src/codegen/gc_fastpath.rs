@@ -193,7 +193,7 @@ fn emit_default_new_obj_fastpath(
     asm.store(Opnd::mem(64, gc_cache, cursor_offset), new_cursor);
     asm.store(
         Opnd::mem(VALUE_BITS, cursor, RUBY_OFFSET_RBASIC_FLAGS),
-        Opnd::UImm(fastpath.flags.0 as u64),
+        fastpath.flags.as_u64().into(),
     );
     asm.store(
         Opnd::mem(VALUE_BITS, cursor, RUBY_OFFSET_RBASIC_KLASS),
@@ -309,7 +309,7 @@ fn emit_mmtk_new_obj_fastpath(
     asm.store(Opnd::mem(VALUE_BITS, aligned, 0), Opnd::UImm(payload_size));
     asm.store(
         Opnd::mem(VALUE_BITS, obj, RUBY_OFFSET_RBASIC_FLAGS),
-        Opnd::UImm(fastpath.flags.0 as u64),
+        fastpath.flags.as_u64().into(),
     );
     asm.store(
         Opnd::mem(VALUE_BITS, obj, RUBY_OFFSET_RBASIC_KLASS),
