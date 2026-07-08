@@ -2377,6 +2377,12 @@ rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const cfunc_type func
     return check_cfunc(me, func);
 }
 
+static inline bool
+vm_method_basic_definition_p(VALUE recv, ID id)
+{
+    return rb_method_basic_definition_p(recv, id);
+}
+
 int
 rb_vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
 {

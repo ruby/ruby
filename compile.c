@@ -9673,6 +9673,45 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
     LABEL *not_basic_new = NEW_LABEL(nd_line(node));
     LABEL *not_basic_new_finish = NEW_LABEL(nd_line(node));
 
+    // Detect String.new with no positional arguments: allocate via the
+    // String-specific opt_string_new instead of the generic opt_new. The
+    // instruction guards at runtime that the receiver is String and "new" is
+    // unredefined, so a compile-time name match is sufficient here.
+    //
+    //   - string_new_capa_loc is the TOPN offset of the capacity: argument, or
+    //     -1 when none is given. It can be deeper than 0 because other keywords
+    //     (e.g. encoding:) may sit above it on the stack.
+    //   - string_new_skip_init means the allocation already satisfies the call
+    //     (nothing, or just capacity), so #initialize is omitted. Otherwise a
+    //     trailing initialize send applies the remaining keywords, like opt_new.
+    int string_new_capa_loc = -1;
+    bool string_new = false;
+    bool string_new_skip_init = false;
+    if (inline_new &&
+            !(flag & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING))) {
+        const NODE *recv_node = get_nd_recv(node);
+        // NUM2INT(argc) is the positional count (new_callinfo adds the keywords
+        // separately), so it must be zero for both the bare and capacity forms.
+        if (recv_node && nd_type_p(recv_node, NODE_CONST) &&
+                RNODE_CONST(recv_node)->nd_vid == rb_intern("String") &&
+                NUM2INT(argc) == 0) {
+            string_new = true;
+            int keyword_len = keywords ? keywords->keyword_len : 0;
+            if (keywords) {
+                VALUE capacity_sym = ID2SYM(rb_intern("capacity"));
+                for (int i = 0; i < keyword_len; i++) {
+                    if (keywords->keywords[i] == capacity_sym) {
+                        string_new_capa_loc = keyword_len - 1 - i;
+                        break;
+                    }
+                }
+            }
+            if (keyword_len == 0 || (keyword_len == 1 && string_new_capa_loc >= 0)) {
+                string_new_skip_init = true;
+            }
+        }
+    }
+
     if (inline_new) {
         // Jump unless the receiver uses the "basic" implementation of "new"
         VALUE ci;
@@ -9682,11 +9721,30 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         else {
             ci = (VALUE)new_callinfo(iseq, mid, NUM2INT(argc), flag, keywords, 0);
         }
-        ADD_INSN2(ret, node, opt_new, ci, not_basic_new);
+        if (string_new) {
+            // opt_string_new allocates the String via the String-specific
+            // allocator (pre-sized when capacity: is present). Whether
+            // #initialize runs is decided by the trailing bytecode below.
+            ADD_INSN3(ret, node, opt_string_new, ci, not_basic_new, INT2FIX(string_new_capa_loc));
+        }
+        else {
+            ADD_INSN2(ret, node, opt_new, ci, not_basic_new);
+        }
         LABEL_REF(not_basic_new);
 
         // optimized path
-        ADD_SEND_R(ret, line_node, rb_intern("initialize"), argc, parent_block, INT2FIX(flag | VM_CALL_FCALL), keywords);
+        if (string_new_skip_init) {
+            // The allocated String already satisfies these arguments, so
+            // initialize would be a no-op. It now sits in the bookkeeping slot;
+            // discard the receiver copy and any capacity argument (the shared
+            // pop below drops the receiver copy) and use the allocation as-is.
+            for (int i = 0; i < NUM2INT(argc) + (keywords ? keywords->keyword_len : 0); i++) {
+                ADD_INSN(ret, line_node, pop);
+            }
+        }
+        else {
+            ADD_SEND_R(ret, line_node, rb_intern("initialize"), argc, parent_block, INT2FIX(flag | VM_CALL_FCALL), keywords);
+        }
         ADD_INSNL(ret, line_node, jump, not_basic_new_finish);
 
         ADD_LABEL(ret, not_basic_new);

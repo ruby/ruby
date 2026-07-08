@@ -826,6 +826,7 @@ pub(crate) mod ids {
         name: to_s               content: b"to_s"
         name: eq                 content: b"=="
         name: include_p          content: b"include?"
+        name: initialize         content: b"initialize"
     }
 }
 

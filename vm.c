@@ -27,6 +27,7 @@
 #include "internal/re.h"
 #include "internal/ruby_parser.h"
 #include "internal/st.h"
+#include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/transcode.h"

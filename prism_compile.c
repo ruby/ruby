@@ -3882,6 +3882,47 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         call_node->block == NULL &&
         (flags & VM_CALL_ARGS_BLOCKARG) == 0;
 
+    // Detect String.new with no positional arguments: allocate via the
+    // String-specific opt_string_new instead of the generic opt_new. The
+    // instruction guards at runtime that the receiver is String and "new" is
+    // unredefined, so a compile-time name match is sufficient here.
+    //
+    //   - string_new_capa_loc is the TOPN offset of the capacity: argument, or
+    //     -1 when none is given. It can be deeper than 0 because other keywords
+    //     (e.g. encoding:) may sit above it on the stack.
+    //   - string_new_skip_init means the allocation already satisfies the call
+    //     (nothing, or just capacity), so #initialize is omitted. Otherwise a
+    //     trailing initialize send applies the remaining keywords, exactly like
+    //     opt_new does.
+    int string_new_capa_loc = -1;
+    bool string_new = false;
+    bool string_new_skip_init = false;
+    if (inline_new &&
+            !(flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING)) &&
+            call_node->receiver != NULL &&
+            PM_NODE_TYPE_P(call_node->receiver, PM_CONSTANT_READ_NODE)) {
+        const pm_constant_read_node_t *recv = (const pm_constant_read_node_t *) call_node->receiver;
+        // orig_argc is the positional count (new_callinfo adds the keywords
+        // separately).
+        if (pm_constant_id_lookup(scope_node, recv->name) == rb_intern("String") &&
+                orig_argc == 0) {
+            string_new = true;
+            int keyword_len = kw_arg ? kw_arg->keyword_len : 0;
+            if (kw_arg) {
+                VALUE capacity_sym = ID2SYM(rb_intern("capacity"));
+                for (int i = 0; i < keyword_len; i++) {
+                    if (kw_arg->keywords[i] == capacity_sym) {
+                        string_new_capa_loc = keyword_len - 1 - i;
+                        break;
+                    }
+                }
+            }
+            if (keyword_len == 0 || (keyword_len == 1 && string_new_capa_loc >= 0)) {
+                string_new_skip_init = true;
+            }
+        }
+    }
+
     if (inline_new) {
         if (LAST_ELEMENT(ret) == opt_new_prelude) {
             PUSH_INSN(ret, location, putnil);
@@ -3903,10 +3944,29 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             ci = (VALUE)new_callinfo(iseq, method_id, orig_argc, flags, kw_arg, 0);
         }
 
-        PUSH_INSN2(ret, location, opt_new, ci, not_basic_new);
+        if (string_new) {
+            // opt_string_new allocates the String via the String-specific
+            // allocator (pre-sized when capacity: is present). Whether
+            // #initialize runs is decided by the trailing bytecode below.
+            PUSH_INSN3(ret, location, opt_string_new, ci, not_basic_new, INT2FIX(string_new_capa_loc));
+        }
+        else {
+            PUSH_INSN2(ret, location, opt_new, ci, not_basic_new);
+        }
         LABEL_REF(not_basic_new);
         // optimized path
-        PUSH_SEND_R(ret, location, rb_intern("initialize"), INT2FIX(orig_argc), block_iseq, INT2FIX(flags | VM_CALL_FCALL), kw_arg);
+        if (string_new_skip_init) {
+            // The allocated String already satisfies these arguments, so
+            // initialize would be a no-op. It now sits in the bookkeeping slot;
+            // discard the receiver copy and any capacity argument (the shared
+            // pop below drops the receiver copy) and use the allocation as-is.
+            for (int i = 0; i < orig_argc + (kw_arg ? kw_arg->keyword_len : 0); i++) {
+                PUSH_INSN(ret, location, pop);
+            }
+        }
+        else {
+            PUSH_SEND_R(ret, location, rb_intern("initialize"), INT2FIX(orig_argc), block_iseq, INT2FIX(flags | VM_CALL_FCALL), kw_arg);
+        }
         PUSH_INSNL(ret, location, jump, not_basic_new_finish);
 
         PUSH_LABEL(ret, not_basic_new);

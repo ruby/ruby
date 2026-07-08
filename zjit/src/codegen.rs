@@ -628,6 +628,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ArrayLength { array } => gen_array_length(asm, opnd!(array)),
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, opnd!(val), &function.frame_state(*state)),
         &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(asm, class, &function.frame_state(state)),
+        &Insn::StringNew { capa, cfunc, state } => gen_string_new(asm, opnd!(capa), cfunc, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state)),
         &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
@@ -2309,6 +2310,12 @@ fn gen_object_alloc(jit: &JITState, asm: &mut Assembler, val: lir::Opnd, state: 
     // Allocating an object from an unknown class is non-leaf; see doc for `ObjectAlloc`.
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_ccall!(asm, rb_obj_alloc, val)
+}
+
+fn gen_string_new(asm: &mut Assembler, capa: lir::Opnd, cfunc: *const u8, state: &FrameState) -> lir::Opnd {
+    // rb_str_buf_new / rb_str_new_capa_for_init are leaf allocators that may trigger GC.
+    gen_prepare_leaf_call_with_gc(asm, state);
+    asm.ccall(cfunc, vec![capa])
 }
 
 fn gen_object_alloc_class(asm: &mut Assembler, class: VALUE, state: &FrameState) -> lir::Opnd {

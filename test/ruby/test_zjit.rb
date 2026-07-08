@@ -192,6 +192,74 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_new], call_threshold: 2
   end
 
+  def test_opt_string_new
+    assert_compiles '["", String, false]', %q{
+      def test = String.new
+      s = test; test
+      [s, s.class, s.frozen?]
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
+  def test_opt_string_new_with_capacity
+    assert_compiles '["", "", ""]', %q{
+      def test(cap) = String.new(capacity: cap)
+      [test(100), test(-5), test(0)].tap { test(100) }
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
+  def test_opt_string_new_allocates_mutable_string
+    assert_compiles '"hello world"', %q{
+      def test = String.new
+      test; test
+      s = test
+      s << "hello" << " " << "world"
+      s
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
+  def test_opt_string_new_falls_back_when_initialize_redefined
+    assert_compiles '[true, true]', %q{
+      def test = String.new
+      test; test
+      class String
+        def initialize(*) = (super; @marked = true)
+      end
+      a = test
+      b = String.new
+      [a.instance_variable_get(:@marked), b.instance_variable_get(:@marked)]
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
+  def test_opt_string_new_with_encoding
+    # Hybrid: opt_string_new allocates, then a trailing #initialize applies the encoding.
+    assert_compiles '["UTF-8", true]', %q{
+      def test = String.new(encoding: "UTF-8")
+      test; test
+      s = test
+      [s.encoding.name, s.empty?]
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
+  def test_opt_string_new_with_capacity_and_encoding
+    # Hybrid with a pre-sized buffer; capacity is below encoding on the stack.
+    assert_compiles '["UTF-8", "abc"]', %q{
+      def test = String.new(capacity: 100, encoding: "UTF-8")
+      test; test
+      s = test
+      s << "abc"
+      [s.encoding.name, s]
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
+  def test_opt_string_new_with_encoding_then_capacity
+    # Keyword order reversed: capacity is the top of the stack (capa_loc 0).
+    assert_compiles '"UTF-8"', %q{
+      def test = String.new(encoding: "UTF-8", capacity: 100)
+      test; test
+      test.encoding.name
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
   def test_uncached_getconstant_path
     assert_compiles RUBY_COPYRIGHT.dump, %q{
       def test = RUBY_COPYRIGHT

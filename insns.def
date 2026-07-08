@@ -941,6 +941,62 @@ opt_new
     }
 }
 
+/* Specialized String.new for the cases where initialize is a no-op: a bare
+ * String.new (argc == 0) or String.new(capacity: <fixnum>). Allocates the
+ * String directly and skips the initialize call (there is none in the
+ * bytecode). Jumps to the generic new path unless the receiver is String,
+ * "new" is the builtin, and String#initialize is unredefined -- and, for the
+ * capacity form, the capacity is a fixnum. capa_loc is the TOPN index of the
+ * capacity argument (unused when argc == 0). */
+DEFINE_INSN
+opt_string_new
+(CALL_DATA cd, OFFSET dst, rb_num_t capa_loc)
+()
+()
+// attr bool leaf = false;
+{
+    VALUE argc = vm_ci_argc(cd->ci);
+    VALUE recv = TOPN(argc);
+
+    // The bookkeeping slot should be empty.
+    RUBY_ASSERT(TOPN(argc + 1) == Qnil);
+
+    VALUE str = Qundef;
+
+    if (recv == rb_cString &&
+            vm_method_cfunc_is(GET_CFP(), cd, recv, rb_class_new_instance_pass_kw) &&
+            vm_method_basic_definition_p(recv, idInitialize)) {
+
+        if (capa_loc == (rb_num_t)-1) {
+            // No capacity given: allocate an empty (embedded) buffer. When a
+            // trailing #initialize send follows (e.g. String.new(encoding:)) it
+            // applies the remaining arguments; otherwise this is the result.
+            str = rb_str_buf_new(0);
+        }
+        else {
+            // The capacity is not necessarily the top of the stack: with
+            // String.new(capacity:, encoding:) the encoding sits above it.
+            VALUE rbcapa = TOPN(capa_loc);
+            if (FIXNUM_P(rbcapa)) {
+                // rb_str_new_capa_for_init floors anything below the minimum
+                // buffer size, including negatives, so no clamping is needed.
+                str = rb_str_new_capa_for_init(FIX2LONG(rbcapa));
+            }
+        }
+
+        if (str != Qundef) {
+            TOPN(argc) = str;
+            TOPN(argc + 1) = str;
+        }
+        else {
+            JUMP(dst);
+        }
+    }
+    else {
+        JUMP(dst);
+    }
+}
+
 /* Convert object to string using to_s or equivalent. */
 DEFINE_INSN
 objtostring

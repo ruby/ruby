@@ -1735,6 +1735,19 @@ rb_str_buf_new(long capa)
     return str;
 }
 
+/* Allocate a String suitable for becoming the receiver of String#initialize
+ * with a `capacity:` of +capa+. Floors to STR_BUF_MIN_SIZE so that the buffer
+ * rb_str_init computes for the same capacity matches and is reused as-is
+ * (see the "reuse it as-is" branch in rb_str_init). Used by opt_string_new. */
+VALUE
+rb_str_new_capa_for_init(long capa)
+{
+    if (capa < STR_BUF_MIN_SIZE) {
+        capa = STR_BUF_MIN_SIZE;
+    }
+    return rb_str_buf_new(capa);
+}
+
 VALUE
 rb_str_buf_new_cstr(const char *ptr)
 {
@@ -2065,24 +2078,26 @@ rb_str_with_debug_created_info(VALUE str, VALUE path, int line)
  */
 
 static VALUE
-rb_str_init(int argc, VALUE *argv, VALUE str)
+rb_str_init(rb_execution_context_t *ec, VALUE str, VALUE orig, VALUE encoding, VALUE capacity, VALUE omitted)
 {
-    static ID keyword_ids[2];
-    VALUE orig, opt, venc, vcapa;
-    VALUE kwargs[2];
     rb_encoding *enc = 0;
-    int n;
 
-    if (!keyword_ids[0]) {
-        keyword_ids[0] = rb_id_encoding();
-        CONST_ID(keyword_ids[1], "capacity");
-    }
+    /* omitted packs the "argument was not supplied" sentinels: bit 0 = orig,
+     * bit 1 = encoding, bit 2 = capacity. They arrive in one integer so the
+     * builtin call stays within YJIT's invokebuiltin argument limit. */
+    const long om = FIX2LONG(omitted);
+    const int no_str = om & 1;
+    const int no_encoding = om & 2;
+    const int no_capacity = om & 4;
 
-    n = rb_scan_args(argc, argv, "01:", &orig, &opt);
-    if (!NIL_P(opt)) {
-        rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
-        venc = kwargs[0];
-        vcapa = kwargs[1];
+    int n = no_str ? 0 : 1;
+
+    /* A keyword was supplied iff its sentinel is clear. Mirror the old
+     * rb_scan_args/rb_get_kwargs behavior: only touch encoding/capacity
+     * when the corresponding keyword was actually passed. */
+    if (!no_encoding || !no_capacity) {
+        VALUE venc = no_encoding ? Qundef : encoding;
+        VALUE vcapa = no_capacity ? Qundef : capacity;
         if (!UNDEF_P(venc) && !NIL_P(venc)) {
             enc = rb_to_encoding(venc);
         }
@@ -2103,8 +2118,13 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
                 if (orig == str) n = 0;
             }
             str_modifiable(str);
-            if (STR_EMBED_P(str) || FL_TEST(str, STR_SHARED|STR_NOFREE)) {
-                /* make noembed always */
+            if (!FL_TEST(str, STR_SHARED|STR_NOFREE) && str_capacity(str, termlen) >= (size_t)capa) {
+                /* The receiver already owns a big-enough buffer (e.g. opt_string_new
+                 * pre-sized this object for us). Reuse it as-is, whether it is an
+                 * embedded slot or an owned heap buffer -- do not reallocate. */
+            }
+            else if (STR_EMBED_P(str) || FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+                /* Move to an owned heap buffer of the requested size. */
                 const size_t size = (size_t)capa + termlen;
                 const char *const old_ptr = RSTRING_PTR(str);
                 const size_t osize = RSTRING_LEN(str) + TERM_LEN(str);
@@ -2113,19 +2133,21 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
                 memcpy(new_ptr, old_ptr, osize < size ? osize : size);
                 FL_UNSET_RAW(str, STR_SHARED|STR_NOFREE);
                 RSTRING(str)->as.heap.ptr = new_ptr;
+                FL_SET(str, STR_NOEMBED);
+                RSTRING(str)->as.heap.aux.capa = capa;
             }
-            else if (STR_HEAP_SIZE(str) != (size_t)capa + termlen) {
+            else {
+                /* Owned heap buffer that is too small: grow it. */
                 SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char,
                         (size_t)capa + termlen, STR_HEAP_SIZE(str));
+                RSTRING(str)->as.heap.aux.capa = capa;
             }
             STR_SET_LEN(str, len);
-            TERM_FILL(&RSTRING(str)->as.heap.ptr[len], termlen);
+            TERM_FILL(RSTRING_PTR(str) + len, termlen);
             if (n == 1) {
-                memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), len);
+                memcpy(RSTRING_PTR(str), RSTRING_PTR(orig), len);
                 rb_enc_cr_str_exact_copy(str, orig);
             }
-            FL_SET(str, STR_NOEMBED);
-            RSTRING(str)->as.heap.aux.capa = capa;
         }
         else if (n == 1) {
             rb_str_replace(str, orig);
@@ -2138,86 +2160,6 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
     else if (n == 1) {
         rb_str_replace(str, orig);
     }
-    return str;
-}
-
-/* :nodoc: */
-static VALUE
-rb_str_s_new(int argc, VALUE *argv, VALUE klass)
-{
-    if (klass != rb_cString) {
-        return rb_class_new_instance_pass_kw(argc, argv, klass);
-    }
-
-    static ID keyword_ids[2];
-    VALUE orig, opt, encoding = Qnil, capacity = Qnil;
-    VALUE kwargs[2];
-    rb_encoding *enc = NULL;
-
-    int n = rb_scan_args(argc, argv, "01:", &orig, &opt);
-    if (NIL_P(opt)) {
-        return rb_class_new_instance_pass_kw(argc, argv, klass);
-    }
-
-    keyword_ids[0] = rb_id_encoding();
-    CONST_ID(keyword_ids[1], "capacity");
-    rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
-    encoding = kwargs[0];
-    capacity = kwargs[1];
-
-    if (n == 1) {
-        orig = StringValue(orig);
-    }
-    else {
-        orig = Qnil;
-    }
-
-    if (UNDEF_P(encoding)) {
-        if (!NIL_P(orig)) {
-            encoding = rb_obj_encoding(orig);
-        }
-    }
-
-    if (!UNDEF_P(encoding)) {
-        enc = rb_to_encoding(encoding);
-    }
-
-    // If capacity is nil, we're basically just duping `orig`.
-    if (UNDEF_P(capacity)) {
-        if (NIL_P(orig)) {
-            VALUE empty_str = str_new(klass, "", 0);
-            if (enc) {
-                rb_enc_associate(empty_str, enc);
-            }
-            return empty_str;
-        }
-        VALUE copy = str_duplicate(klass, orig);
-        rb_enc_associate(copy, enc);
-        ENC_CODERANGE_CLEAR(copy);
-        return copy;
-    }
-
-    long capa = 0;
-    capa = NUM2LONG(capacity);
-    if (capa < 0) {
-        capa = 0;
-    }
-
-    if (!NIL_P(orig)) {
-        long orig_capa = rb_str_capacity(orig);
-        if (orig_capa > capa) {
-            capa = orig_capa;
-        }
-    }
-
-    VALUE str = str_enc_new(klass, NULL, capa, enc);
-    STR_SET_LEN(str, 0);
-    TERM_FILL(RSTRING_PTR(str), enc ? rb_enc_mbmaxlen(enc) : 1);
-
-    if (!NIL_P(orig)) {
-        rb_str_buf_append(str, orig);
-    }
-
     return str;
 }
 
@@ -12872,9 +12814,7 @@ Init_String(void)
 
     rb_include_module(rb_cString, rb_mComparable);
     rb_define_alloc_func(rb_cString, empty_str_alloc);
-    rb_define_singleton_method(rb_cString, "new", rb_str_s_new, -1);
     rb_define_singleton_method(rb_cString, "try_convert", rb_str_s_try_convert, 1);
-    rb_define_method(rb_cString, "initialize", rb_str_init, -1);
     rb_define_method(rb_cString, "replace", rb_str_replace, 1);
     rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1);
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);

@@ -4957,6 +4957,93 @@ fn gen_opt_new(
     }
 }
 
+fn gen_opt_string_new(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    let cd = jit.get_arg(0).as_ptr();
+    let jump_offset = jit.get_arg(1).as_i32();
+    // TOPN offset of the capacity: argument, or -1 when none was given.
+    let capa_loc = jit.get_arg(2).as_i64();
+
+    if !jit.at_compile_target() {
+        return jit.defer_compilation(asm);
+    }
+
+    let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
+    let mid = unsafe { vm_ci_mid(ci) };
+    let argc: i32 = unsafe { vm_ci_argc(ci) }.try_into().unwrap();
+
+    let recv_idx = argc;
+    let comptime_recv = jit.peek_at_stack(&asm.ctx, recv_idx as isize);
+
+    // The branch target is the generic new path, which calls new/initialize.
+    let jump_idx = jit.next_insn_idx() as i32 + jump_offset;
+
+    // The fast path only specializes String itself. Anything else bails to the
+    // generic path.
+    if comptime_recv != unsafe { rb_cString } {
+        return end_block_with_jump(jit, asm, jump_idx as u16);
+    }
+
+    let comptime_recv_klass = comptime_recv.class_of();
+    let recv = asm.stack_opnd(recv_idx);
+
+    perf_call!("opt_string_new: ", jit_guard_known_klass(
+        jit,
+        asm,
+        recv,
+        recv.into(),
+        comptime_recv,
+        SEND_MAX_DEPTH,
+        Counter::guard_send_klass_megamorphic,
+    ));
+
+    // The interpreter skips the initialize call entirely, so the fast path is
+    // only valid while "new" is the builtin and String#initialize is unredefined.
+    // Otherwise fall back to the generic path.
+    if jit.assume_expected_cfunc(asm, comptime_recv_klass, mid, rb_class_new_instance_pass_kw as _)
+        && assume_method_basic_definition(jit, asm, comptime_recv_klass, ID!(initialize)) {
+
+        let str = if capa_loc == -1 {
+            // No capacity given: an empty (embedded) string. rb_str_buf_new skips
+            // the encoding/coderange setup that rb_str_new would do. When a
+            // trailing initialize send follows (e.g. String.new(encoding:)) it
+            // applies the remaining arguments.
+            jit_prepare_non_leaf_call(jit, asm);
+            asm.ccall(rb_str_buf_new as *const u8, vec![Opnd::Imm(0)])
+        } else {
+            // The capacity is at TOPN(capa_loc) (not necessarily the top of the
+            // stack: with String.new(capacity:, encoding:) the encoding sits
+            // above it). Only fixnum capacities take the fast path; a non-fixnum
+            // side-exits so the interpreter takes the generic path.
+            let capa = asm.stack_opnd(capa_loc as i32);
+            guard_object_is_fixnum(jit, asm, capa, capa.into());
+
+            jit_prepare_non_leaf_call(jit, asm);
+
+            // FIX2LONG; rb_str_new_capa_for_init floors anything below the
+            // minimum buffer size (including negatives) so no clamping needed.
+            let capa = asm.load(asm.stack_opnd(capa_loc as i32));
+            let capa = asm.rshift(capa, Opnd::UImm(1));
+            asm.ccall(rb_str_new_capa_for_init as *const u8, vec![capa])
+        };
+
+        // Write the allocated string into both the receiver slot and the
+        // bookkeeping slot (mirrors TOPN(argc) and TOPN(argc + 1)).
+        let result = asm.stack_opnd(recv_idx + 1);
+        let recv = asm.stack_opnd(recv_idx);
+        asm.ctx.set_opnd_mapping(recv.into(), TempMapping::MapToStack(Type::CString));
+        asm.mov(recv, str);
+        asm.ctx.set_opnd_mapping(result.into(), TempMapping::MapToStack(Type::CString));
+        asm.mov(result, str);
+
+        jump_to_next_insn(jit, asm)
+    } else {
+        return end_block_with_jump(jit, asm, jump_idx as u16);
+    }
+}
+
 fn gen_jump(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -10923,6 +11010,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_branchnil_without_ints => Some(gen_branchnil),
         YARVINSN_jump_without_ints => Some(gen_jump),
         YARVINSN_opt_new => Some(gen_opt_new),
+        YARVINSN_opt_string_new => Some(gen_opt_string_new),
 
         YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
         YARVINSN_getblockparam => Some(gen_getblockparam),
