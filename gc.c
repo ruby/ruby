@@ -5577,14 +5577,24 @@ ruby_xrealloc2(void *ptr, size_t n, size_t size)
 #undef ruby_xfree_sized
 #endif
 
+/*
+ * This is a debugging flag for measuring the cost of `xfree`.
+ * It can be enabled at compile time using `-DRUBY_NO_FREE`.
+ * At run time, if the `RUBY_NO_FREE` environment variable is set to "1",
+ * then `xfree` will not free any memory.
+ */
+#ifdef RUBY_NO_FREE
 static bool g_nofree = false;
+#endif
 
 void
 ruby_xfree_sized(void *x, size_t size)
 {
+#ifdef RUBY_NO_FREE
     if (g_nofree) {
         return;
     }
+#endif
 
     if (RUBY_DTRACE_GC_XFREE_ENABLED()) {
         RUBY_DTRACE_GC_XFREE(x, size);
@@ -5853,11 +5863,13 @@ rb_gc_checking_shareable(void)
 void
 Init_GC(void)
 {
+#ifdef RUBY_NO_FREE
     const char* nofree_str = getenv("RUBY_NO_FREE");
-    if (nofree_str && strcmp(nofree_str, "yes") == 0) {
+    if (nofree_str && strcmp(nofree_str, "1") == 0) {
         fprintf(stderr, "WARNING: Enabling no-free mode! xfree() will never free anything!\n");
         g_nofree = true;
     }
+#endif
 
 #undef rb_intern
     rb_gc_register_address(&id2ref_value);
