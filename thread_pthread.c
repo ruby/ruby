@@ -1742,6 +1742,11 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     rb_native_cond_initialize(&vm->ractor.sched.barrier_release_cond);
 
     ccan_list_head_init(&vm->ractor.sched.grq);
+    vm->ractor.sched.grq_cnt = 0; // the list was just emptied; reset the count with it
+    // Threads that were winding down in the parent do not exist in the child;
+    // without this reset the child's ruby_vm_destruct would wait for their
+    // reclaim (which never comes) forever.
+    vm->ractor.sched.winding_cnt = 0;
     ccan_list_head_init(&vm->ractor.sched.timeslice_threads);
     ccan_list_head_init(&vm->ractor.sched.running_threads);
 
