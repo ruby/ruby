@@ -124,7 +124,6 @@ unsafe extern "C" {
 
     pub fn rb_zjit_offset_ractor_newobj_cache() -> usize;
 
-    pub fn rb_zjit_hash_new_size() -> usize;
     pub fn rb_zjit_offset_rhash_ifnone() -> usize;
 
     // Floats within range will be encoded without creating objects in the heap.
