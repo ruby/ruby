@@ -6052,7 +6052,7 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
 }
 
 static void
-update_method_coverage(VALUE me2counter, rb_trace_arg_t *trace_arg)
+update_method_coverage(VALUE cme2counter, rb_trace_arg_t *trace_arg)
 {
     const rb_control_frame_t *cfp = GET_EC()->cfp;
     const rb_callable_method_entry_t *cme = rb_vm_frame_method_entry(cfp);
@@ -6063,10 +6063,10 @@ update_method_coverage(VALUE me2counter, rb_trace_arg_t *trace_arg)
     me = rb_resolve_me_location(me, 0);
     if (!me) return;
 
-    rcount = rb_hash_aref(me2counter, (VALUE) me);
+    rcount = rb_hash_aref(cme2counter, (VALUE) me);
     count = FIXNUM_P(rcount) ? FIX2LONG(rcount) + 1 : 1;
     if (POSFIXABLE(count)) {
-        rb_hash_aset(me2counter, (VALUE) me, LONG2FIX(count));
+        rb_hash_aset(cme2counter, (VALUE) me, LONG2FIX(count));
     }
 }
 
@@ -6083,10 +6083,10 @@ rb_get_coverage_mode(void)
 }
 
 void
-rb_set_coverages(VALUE coverages, int mode, VALUE me2counter)
+rb_set_coverages(VALUE coverages, int mode, VALUE cme2counter)
 {
     GET_VM()->coverages = coverages;
-    GET_VM()->me2counter = me2counter;
+    GET_VM()->cme2counter = cme2counter;
     GET_VM()->coverage_mode = mode;
 }
 
@@ -6094,13 +6094,13 @@ void
 rb_resume_coverages(void)
 {
     int mode = GET_VM()->coverage_mode;
-    VALUE me2counter = GET_VM()->me2counter;
+    VALUE cme2counter = GET_VM()->cme2counter;
     rb_add_event_hook2((rb_event_hook_func_t) update_line_coverage, RUBY_EVENT_COVERAGE_LINE, Qnil, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
     if (mode & COVERAGE_TARGET_BRANCHES) {
         rb_add_event_hook2((rb_event_hook_func_t) update_branch_coverage, RUBY_EVENT_COVERAGE_BRANCH, Qnil, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
     }
     if (mode & COVERAGE_TARGET_METHODS) {
-        rb_add_event_hook2((rb_event_hook_func_t) update_method_coverage, RUBY_EVENT_CALL, me2counter, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
+        rb_add_event_hook2((rb_event_hook_func_t) update_method_coverage, RUBY_EVENT_CALL, cme2counter, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
     }
 }
 
@@ -6123,7 +6123,7 @@ rb_reset_coverages(void)
     rb_clear_coverages();
     rb_iseq_remove_coverage_all();
     GET_VM()->coverages = Qfalse;
-    GET_VM()->me2counter = Qnil;
+    GET_VM()->cme2counter = Qnil;
 }
 
 VALUE

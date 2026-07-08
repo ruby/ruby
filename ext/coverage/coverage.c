@@ -21,7 +21,7 @@ static enum {
     RUNNING
 } current_state = IDLE;
 static int current_mode;
-static VALUE me2counter = Qnil;
+static VALUE cme2counter = Qnil;
 
 /*
  *  call-seq: Coverage.supported?(mode) -> true or false
@@ -115,10 +115,10 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
     }
 
     if (mode & COVERAGE_TARGET_METHODS) {
-        me2counter = rb_ident_hash_new();
+        cme2counter = rb_ident_hash_new();
     }
     else {
-        me2counter = Qnil;
+        cme2counter = Qnil;
     }
 
     coverages = rb_get_coverages();
@@ -127,7 +127,7 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
         rb_obj_hide(coverages);
         current_mode = mode;
         if (mode == 0) mode = COVERAGE_TARGET_LINES;
-        rb_set_coverages(coverages, mode, me2counter);
+        rb_set_coverages(coverages, mode, cme2counter);
         current_state = SUSPENDED;
     }
     else if (current_mode != mode) {
@@ -282,7 +282,7 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
 
             {
                 VALUE method_id = ID2SYM(me->def->original_id);
-                VALUE rcount = rb_hash_aref(me2counter, (VALUE) me);
+                VALUE rcount = rb_hash_aref(cme2counter, (VALUE) me);
                 VALUE key = rb_ary_new_from_args(6, klass, method_id, first_lineno, first_column, last_lineno, last_column);
                 VALUE rcount2 = rb_hash_aref(methods, key);
 
@@ -377,9 +377,9 @@ rb_coverage_peek_result(VALUE klass)
 
 
 static int
-clear_me2counter_i(VALUE key, VALUE value, VALUE unused)
+clear_cme2counter_i(VALUE key, VALUE value, VALUE unused)
 {
-    rb_hash_aset(me2counter, key, INT2FIX(0));
+    rb_hash_aset(cme2counter, key, INT2FIX(0));
     return ST_CONTINUE;
 }
 
@@ -435,14 +435,14 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
     }
     if (clear) {
         rb_clear_coverages();
-        if (!NIL_P(me2counter)) rb_hash_foreach(me2counter, clear_me2counter_i, Qnil);
+        if (!NIL_P(cme2counter)) rb_hash_foreach(cme2counter, clear_cme2counter_i, Qnil);
     }
     if (stop) {
         if (current_state == RUNNING) {
             rb_coverage_suspend(klass);
         }
         rb_reset_coverages();
-        me2counter = Qnil;
+        cme2counter = Qnil;
         current_state = IDLE;
     }
     return ncoverages;
@@ -706,5 +706,5 @@ Init_coverage(void)
     rb_define_module_function(rb_mCoverage, "peek_result", rb_coverage_peek_result, 0);
     rb_define_module_function(rb_mCoverage, "state", rb_coverage_state, 0);
     rb_define_module_function(rb_mCoverage, "running?", rb_coverage_running, 0);
-    rb_global_variable(&me2counter);
+    rb_global_variable(&cme2counter);
 }

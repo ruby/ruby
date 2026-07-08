@@ -794,7 +794,7 @@ typedef struct rb_vm_struct {
     rb_nativethread_lock_t workqueue_lock;
 
     VALUE orig_progname, progname;
-    VALUE coverages, me2counter;
+    VALUE coverages, cme2counter;
     int coverage_mode;
 
     struct {
