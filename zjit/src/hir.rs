@@ -57,6 +57,12 @@ impl From<InsnId> for usize {
     }
 }
 
+impl From<usize> for InsnId {
+    fn from(val: usize) -> Self {
+        InsnId(val)
+    }
+}
+
 impl std::fmt::Display for InsnId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "v{}", self.0)
@@ -2404,28 +2410,28 @@ impl<'a> FunctionPrinter<'a> {
 /// in missing optimizations.
 #[derive(Debug)]
 struct UnionFind<T: Copy + Into<usize>> {
-    forwarded: Vec<Option<T>>,
+    forwarded: Vec<T>,
 }
 
-impl<T: Copy + Into<usize> + PartialEq> UnionFind<T> {
+impl<T: Copy + Into<usize> + PartialEq + std::convert::From<usize>> UnionFind<T> {
     fn new() -> UnionFind<T> {
         UnionFind { forwarded: vec![] }
     }
 
     /// Private. Return the internal representation of the forwarding pointer for a given element.
-    fn at(&self, idx: T) -> Option<T> {
-        self.forwarded.get(idx.into()).copied().flatten()
+    fn at(&self, idx: T) -> T {
+        self.forwarded.get(idx.into()).unwrap_or(&idx).to_owned()
     }
 
     /// Private. Set the internal representation of the forwarding pointer for the given element
     /// `idx`. Extend the internal vector if necessary.
     fn set(&mut self, idx: T, value: T) {
         if idx.into() >= self.forwarded.len() {
-            self.forwarded.resize(idx.into()+1, None);
+            for i in self.forwarded.len()..=idx.into() {
+                self.forwarded.push(i.into());
+            }
         }
-        if idx != value {
-            self.forwarded[idx.into()] = Some(value);
-        }
+        self.forwarded[idx.into()] = value;
     }
 
     /// Find the set representative for `insn`. Perform path compression at the same time to speed
@@ -2452,21 +2458,18 @@ impl<T: Copy + Into<usize> + PartialEq> UnionFind<T> {
     fn find_const(&self, insn: T) -> T {
         let mut result = insn;
         loop {
-            match self.at(result) {
-                None => return result,
-                Some(insn) => {
-                    assert!(result != insn, "cycle detected");
-                    result = insn;
-                }
-            }
+            let found = self.at(result);
+            if found == result { return found; }
+            result = found;
         }
     }
 
     /// Union the two sets containing `insn` and `target` such that every element in `insn`s set is
     /// now part of `target`'s. Neither argument must be the representative in its set.
     pub fn make_equal_to(&mut self, insn: T, target: T) {
-        let found = self.find(insn);
-        self.set(found, target);
+        let insn = self.find(insn);
+        let target = self.find(target);
+        self.set(insn, target);
     }
 }
 
@@ -9662,6 +9665,12 @@ mod union_find_tests {
     }
 
     #[test]
+    fn test_find_with_unknown_element_returns_self() {
+        let mut uf = UnionFind::new();
+        assert_eq!(uf.find(10usize), 10);
+    }
+
+    #[test]
     fn test_find_halts_with_identity_make_equal_to() {
         let mut uf = UnionFind::<usize>::new();
         uf.make_equal_to(0, 0);
@@ -9682,9 +9691,20 @@ mod union_find_tests {
         let mut uf = UnionFind::new();
         uf.make_equal_to(3, 4);
         uf.make_equal_to(4, 5);
-        assert_eq!(uf.at(3usize), Some(4));
+        assert_eq!(uf.at(3usize), 4);
         assert_eq!(uf.find(3usize), 5);
-        assert_eq!(uf.at(3usize), Some(5));
+        assert_eq!(uf.at(3usize), 5);
+    }
+
+    #[test]
+    fn test_make_equal_to_does_not_create_cycles() {
+        let mut uf = UnionFind::new();
+        uf.make_equal_to(3, 4);
+        uf.make_equal_to(4, 5);
+        uf.make_equal_to(5, 3);
+        assert_eq!(uf.find(3usize), 5);
+        assert_eq!(uf.find(4usize), 5);
+        assert_eq!(uf.find(5usize), 5);
     }
 }
 
