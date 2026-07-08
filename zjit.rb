@@ -182,6 +182,7 @@ class << RubyVM::ZJIT
       :side_exit_size_ratio,
       :zjit_alloc_bytes,
       :total_mem_bytes,
+      :total_native_stack_bytes,
 
       :side_exit_count,
       :total_insn_count,

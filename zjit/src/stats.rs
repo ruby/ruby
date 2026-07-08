@@ -478,6 +478,8 @@ make_counters! {
     getblockparamproxy_handler_polymorphic,
     getblockparamproxy_handler_megamorphic,
     getblockparamproxy_handler_no_profiles,
+
+    total_native_stack_bytes,
 }
 
 /// Increase a counter by a specified amount
