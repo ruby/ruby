@@ -112,6 +112,7 @@ fn main() {
         .allowlist_function("rb_protect")
         .allowlist_function("rb_zjit_profile_disable")
         .allowlist_function("rb_zjit_insn_to_bare_insn")
+        .allowlist_function("rb_zjit_hash_new_size")
 
         // For crashing
         .allowlist_function("rb_bug")
