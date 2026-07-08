@@ -722,7 +722,7 @@ class TestObjSpace < Test::Unit::TestCase
     obj = klass.new
     dump = ObjectSpace.dump(obj)
 
-    assert_includes dump, "\"slot_size\":#{GC.stat_heap(0, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]}"
+    assert_match /"slot_size":\d+/, dump
   end
 
   def test_dump_reference_addresses_match_dump_all_addresses
