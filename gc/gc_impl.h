@@ -13,14 +13,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-struct gc_bump_pointer_heap {
-    uintptr_t cursor;
-    uintptr_t cursor_end;
-    uintptr_t jit_cursor_end;
-    uintptr_t region_start;
-    size_t    slot_size;
-};
-
 enum rb_gc_zjit_fastpath_kind {
     RB_GC_ZJIT_FASTPATH_DEFAULT = 1,
     RB_GC_ZJIT_FASTPATH_MMTK = 2,

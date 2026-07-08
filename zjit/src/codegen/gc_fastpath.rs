@@ -12,7 +12,7 @@ use super::JITState;
 #[derive(Clone, Copy)]
 struct RbGcZjitDefaultNewObjFastpath {
     cursor_offset: usize,
-    jit_cursor_end_offset: usize,
+    cursor_end_offset: usize,
     slot_size: usize,
     flags: VALUE,
     klass: VALUE,
@@ -173,7 +173,7 @@ fn emit_default_new_obj_fastpath(
     miss: &Target,
 ) -> Option<Opnd> {
     let cursor_offset: i32 = fastpath.cursor_offset.try_into().ok()?;
-    let jit_cursor_end_offset: i32 = fastpath.jit_cursor_end_offset.try_into().ok()?;
+    let cursor_end_offset: i32 = fastpath.cursor_end_offset.try_into().ok()?;
     let slot_size: u64 = fastpath.slot_size.try_into().ok()?;
 
     let thread = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR as i32));
@@ -184,7 +184,7 @@ fn emit_default_new_obj_fastpath(
     let gc_cache = asm.load(Opnd::mem(64, ractor, ractor_newobj_cache_offset));
 
     let cursor = asm.load(Opnd::mem(64, gc_cache, cursor_offset));
-    let cursor_end = asm.load(Opnd::mem(64, gc_cache, jit_cursor_end_offset));
+    let cursor_end = asm.load(Opnd::mem(64, gc_cache, cursor_end_offset));
 
     let new_cursor = asm.add(cursor, Opnd::UImm(slot_size));
     asm.cmp(cursor_end, new_cursor);
