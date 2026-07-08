@@ -286,6 +286,19 @@ rb_shape_embedded_capacity(shape_id_t shape_id)
     return (attr_index_t)((shape_id & SHAPE_ID_CAPACITY_MASK) >> SHAPE_ID_CAPACITY_OFFSET);
 }
 
+static inline size_t
+rb_shape_slot_size(shape_id_t shape_id)
+{
+    return sizeof(struct RBasic) + (rb_shape_embedded_capacity(shape_id) * sizeof(VALUE));
+}
+
+static inline size_t
+rb_obj_shape_slot_size(VALUE obj)
+{
+    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
+    return rb_shape_slot_size(RBASIC_SHAPE_ID(obj));
+}
+
 static inline attr_index_t
 rb_shape_capacity_for_slot_size(size_t slot_size)
 {

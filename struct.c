@@ -840,7 +840,7 @@ struct_alloc(VALUE klass)
         NEWOBJ_OF(st, struct RStruct, klass, flags, embedded_size);
         if (RCLASS_MAX_IV_COUNT(klass) == 0) {
             if (!rb_obj_shape_has_fields((VALUE)st)
-                    && embedded_size < rb_gc_obj_slot_size((VALUE)st)) {
+                    && embedded_size < rb_obj_shape_slot_size((VALUE)st)) {
                 FL_UNSET_RAW((VALUE)st, RSTRUCT_GEN_FIELDS);
                 RSTRUCT_SET_FIELDS_OBJ((VALUE)st, 0);
             }

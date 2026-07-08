@@ -3002,7 +3002,7 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
 static size_t
 big_embed_capa(VALUE big)
 {
-    size_t size = rb_gc_obj_slot_size(big) - offsetof(struct RBignum, as.ary);
+    size_t size = rb_obj_shape_slot_size(big) - offsetof(struct RBignum, as.ary);
     RUBY_ASSERT(size % sizeof(BDIGIT) == 0);
     size_t capa = size / sizeof(BDIGIT);
     RUBY_ASSERT(capa <= BIGNUM_EMBED_LEN_MAX);

@@ -222,7 +222,7 @@ SHARABLE_SUBSTRING_P(VALUE str, long beg, long len)
 static inline long
 str_embed_capa(VALUE str)
 {
-    return rb_gc_obj_slot_size(str) - offsetof(struct RString, as.embed.ary);
+    return rb_obj_shape_slot_size(str) - offsetof(struct RString, as.embed.ary);
 }
 
 bool
