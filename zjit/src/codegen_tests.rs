@@ -2044,6 +2044,28 @@ fn test_invokebuiltin_delegate() {
 }
 
 #[test]
+fn test_kernel_integer_exception_false_returns_nil() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def test = Integer('x', exception: false) ? 1 : 0;
+            test
+            test
+        "), @"0");
+    });
+}
+
+#[test]
+fn test_kernel_float_exception_false_returns_nil() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def test = Float('x', exception: false) ? 1 : 0;
+            test
+            test
+        "), @"0");
+    });
+}
+
+#[test]
 fn test_opt_plus_const() {
     assert_snapshot!(inspect("
         def test = 1 + 2
