@@ -1815,6 +1815,30 @@ missing keywords: :shop_id, :param1 (ArgumentError)
     end
   end
 
+  def test_detailed_message_does_not_raise_when_backtrace_locations_is_nil
+    # This reproduces a real-world crash: when an exception crosses a process
+    # boundary via Marshal, `backtrace` survives as strings but
+    # `backtrace_locations` becomes nil. A keyword ArgumentError then crashed
+    # CoreExt#generate_snippet with `undefined method 'size' for nil`.
+    begin
+      def_with_required_keyword
+    rescue ArgumentError => original
+      exc = Marshal.load(Marshal.dump(original))
+    end
+
+    assert_nil exc.backtrace_locations
+
+    msg = nil
+    assert_nothing_raised do
+      msg = exc.detailed_message(highlight: false)
+    end
+    assert_match("missing keyword", msg)
+
+    assert_nothing_raised do
+      exc.full_message(highlight: false)
+    end
+  end
+
   private
 
   def find_node_by_id(node, node_id)
