@@ -2360,7 +2360,7 @@ rb_set_size(VALUE set)
  * which avoids including the compatibility layer:
  *
  *   class MyCoreSet < Set::CoreSet; end
-     MyCoreSet[[1, 2, 3]] # => MyCoreSet[[1, 2, 3]]
+ *   MyCoreSet[[1, 2, 3]] # => MyCoreSet[[1, 2, 3]]
  *
  * == What's Here
  *
