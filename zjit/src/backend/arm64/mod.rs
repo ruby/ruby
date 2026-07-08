@@ -352,17 +352,20 @@ impl Assembler {
 
         /// Returns the operands that should be used for a csel instruction.
         fn split_csel_operands(asm: &mut Assembler, opnd0: Opnd, opnd1: Opnd) -> (Opnd, Opnd) {
-            let opnd0 = match opnd0 {
-                Opnd::Reg(_) | Opnd::VReg { .. } => opnd0,
-                _ => split_load_operand(asm, opnd0)
-            };
+            // A zero operand can be read directly from the zero register (xzr)
+            // instead of being materialized into a fresh register with `mov`. This
+            // is common: comparisons csel between two constants (Qtrue/Qfalse, or
+            // 1/0 for FixnumCmpBool), so one side is frequently zero. Cmp/Test
+            // already map Imm(0)/UImm(0) to XZR_REG the same way.
+            fn split_csel_operand(asm: &mut Assembler, opnd: Opnd) -> Opnd {
+                match opnd {
+                    Opnd::Reg(_) | Opnd::VReg { .. } => opnd,
+                    Opnd::UImm(0) | Opnd::Imm(0) => Opnd::Reg(XZR_REG),
+                    _ => split_load_operand(asm, opnd)
+                }
+            }
 
-            let opnd1 = match opnd1 {
-                Opnd::Reg(_) | Opnd::VReg { .. } => opnd1,
-                _ => split_load_operand(asm, opnd1)
-            };
-
-            (opnd0, opnd1)
+            (split_csel_operand(asm, opnd0), split_csel_operand(asm, opnd1))
         }
 
         fn split_less_than_32_cmp(asm: &mut Assembler, opnd0: Opnd) -> Opnd {
@@ -2712,11 +2715,10 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 2);
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov x0, #0x14
-            0x4: mov x1, #0
-            0x8: csel x1, x0, x1, lt
+        0x0: mov x0, #0x14
+        0x4: csel x1, x0, xzr, lt
         ");
-        assert_snapshot!(cb.hexdump(), @"800280d2010080d201b0819a");
+        assert_snapshot!(cb.hexdump(), @"800280d201b09f9a");
     }
 
     #[test]
