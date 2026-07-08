@@ -7616,7 +7616,7 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, struct heap_page *src_pa
     /* Move the object */
     memcpy((void *)dest, (void *)src, MIN(src_slot_size, slot_size));
 
-    if (src_slot_size != slot_size && RB_TYPE_P(src, T_OBJECT)) {
+    if (src_slot_size != slot_size) {
         rb_gc_obj_changed_slot_size(dest, slot_size - RVALUE_OVERHEAD);
     }
 

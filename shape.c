@@ -1244,6 +1244,21 @@ rb_shape_expected_layout(VALUE obj)
 }
 
 bool
+rb_shape_verify_capacity_consistency_p(VALUE obj)
+{
+    switch (BUILTIN_TYPE(obj)) {
+      case T_IMEMO:
+        return IMEMO_TYPE_P(obj, imemo_fields);
+      case T_STRING:
+        return !FL_TEST_RAW(obj, FL_USER19); // STR_FAKESTR
+      case T_ARRAY:
+        return !FL_TEST_RAW(obj, RARRAY_FAKEARY);
+      default:
+        return true;
+    }
+}
+
+bool
 rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 {
     if (shape_id == INVALID_SHAPE_ID) {
@@ -1305,8 +1320,8 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         }
     }
 
-    attr_index_t shape_id_capacity = rb_shape_embedded_capacity(shape_id);
-    if (RB_TYPE_P(obj, T_OBJECT) || IMEMO_TYPE_P(obj, imemo_fields)) {
+    if (rb_shape_verify_capacity_consistency_p(obj)) {
+        attr_index_t shape_id_capacity = rb_shape_embedded_capacity(shape_id);
         RUBY_ASSERT(shape_id_capacity > 0);
 
         size_t shape_id_slot_size = shape_id_capacity * sizeof(VALUE) + sizeof(struct RBasic);

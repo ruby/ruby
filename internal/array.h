@@ -21,6 +21,7 @@
 #define RARRAY_SHARED_FLAG      ELTS_SHARED
 #define RARRAY_SHARED_ROOT_FLAG FL_USER12
 #define RARRAY_PTR_IN_USE_FLAG  FL_USER14
+#define RARRAY_FAKEARY          FL_USER19
 
 /* array.c */
 VALUE rb_ary_hash_values(long len, const VALUE *elements);
