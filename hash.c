@@ -1468,12 +1468,6 @@ rb_zjit_hash_new_size(void)
 {
     return hash_slot_size(sizeof(st_table) > sizeof(ar_table));
 }
-
-size_t
-rb_zjit_offset_rhash_ifnone(void)
-{
-    return offsetof(struct RHash, ifnone);
-}
 #endif
 
 static VALUE

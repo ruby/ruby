@@ -2273,9 +2273,6 @@ fn gen_new_hash(
         let alloc_size = unsafe { rb_zjit_hash_new_size() };
         let flags = RUBY_T_HASH as u64;
         let klass = unsafe { rb_cHash };
-        let ifnone_offset: i32 = unsafe { rb_zjit_offset_rhash_ifnone() }
-            .try_into()
-            .expect("RHash ifnone offset should fit in i32");
 
         let hash = gc_fastpath::gc_fast_path_new_obj(jit, asm, alloc_size, flags, klass, |asm| {
             asm_ccall!(asm, rb_hash_new,)
@@ -2283,7 +2280,7 @@ fn gen_new_hash(
         // TODO: this runs on the slow path too, where rb_hash_new already set
         // ifnone. A fast-path-only init hook in gc_fast_path_new_obj would avoid
         // the redundant store and be reusable for other types.
-        asm.store(Opnd::mem(VALUE_BITS, hash, ifnone_offset), Qnil.into());
+        asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
         hash
     } else {
         gen_prepare_non_leaf_call(jit, asm, state);
