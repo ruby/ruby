@@ -22,6 +22,7 @@ static enum {
 } current_state = IDLE;
 static int current_mode;
 static VALUE cme2counter = Qnil;
+static VALUE me_set = Qnil;
 
 /*
  *  call-seq: Coverage.supported?(mode) -> true or false
@@ -116,9 +117,11 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
 
     if (mode & COVERAGE_TARGET_METHODS) {
         cme2counter = rb_ident_hash_new();
+        me_set = rb_ident_hash_new();
     }
     else {
         cme2counter = Qnil;
+        me_set = Qnil;
     }
 
     coverages = rb_get_coverages();
@@ -127,7 +130,7 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
         rb_obj_hide(coverages);
         current_mode = mode;
         if (mode == 0) mode = COVERAGE_TARGET_LINES;
-        rb_set_coverages(coverages, mode, cme2counter);
+        rb_set_coverages(coverages, mode, cme2counter, me_set);
         current_state = SUSPENDED;
     }
     else if (current_mode != mode) {
@@ -278,36 +281,21 @@ method_coverage_add(const rb_method_entry_t *me, long add, VALUE ncoverages)
     rb_hash_aset(methods, key, LONG2FIX(count));
 }
 
+/* me_set entries: every defined method, so uncalled ones appear with count 0. */
 static int
-method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
+method_coverage_me_i(VALUE key, VALUE value, VALUE ncoverages)
 {
-    /*
-     * ObjectSpace.each_object(Module){|mod|
-     *   mod.instance_methods.each{|mid|
-     *     m = mod.instance_method(mid)
-     *     if loc = m.source_location
-     *       p [m.name, loc, $g_method_cov_counts[m]]
-     *     end
-     *   }
-     * }
-     */
-    VALUE ncoverages = *(VALUE*)data, v;
+    method_coverage_add((const rb_method_entry_t *)key, 0, ncoverages);
+    return ST_CONTINUE;
+}
 
-    for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
-        void *poisoned = rb_asan_poisoned_object_p(v);
-        rb_asan_unpoison_object(v, false);
-
-        if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
-            const rb_method_entry_t *me = (const rb_method_entry_t *) v;
-            VALUE rcount = rb_hash_aref(cme2counter, (VALUE) me);
-            method_coverage_add(me, NIL_P(rcount) ? 0 : FIX2LONG(rcount), ncoverages);
-        }
-
-        if (poisoned) {
-            rb_asan_poison_object(v);
-        }
-    }
-    return 0;
+/* cme2counter entries: call counts, attributed to the definition's key. */
+static int
+method_coverage_count_i(VALUE key, VALUE value, VALUE ncoverages)
+{
+    long add = FIXNUM_P(value) ? FIX2LONG(value) : 0;
+    method_coverage_add((const rb_method_entry_t *)key, add, ncoverages);
+    return ST_CONTINUE;
 }
 
 static int
@@ -373,7 +361,8 @@ rb_coverage_peek_result(VALUE klass)
     rb_hash_foreach(coverages, coverage_peek_result_i, ncoverages);
 
     if (current_mode & COVERAGE_TARGET_METHODS) {
-        rb_objspace_each_objects(method_coverage_i, &ncoverages);
+        if (RTEST(me_set)) rb_hash_foreach(me_set, method_coverage_me_i, ncoverages);
+        if (RTEST(cme2counter)) rb_hash_foreach(cme2counter, method_coverage_count_i, ncoverages);
     }
 
     rb_hash_freeze(ncoverages);
@@ -440,6 +429,8 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
     }
     if (clear) {
         rb_clear_coverages();
+        /* Reset call counts, but keep me_set: the set of defined methods
+         * persists across clear so that uncalled methods keep showing up. */
         if (!NIL_P(cme2counter)) rb_hash_foreach(cme2counter, clear_cme2counter_i, Qnil);
     }
     if (stop) {
@@ -448,6 +439,7 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
         }
         rb_reset_coverages();
         cme2counter = Qnil;
+        me_set = Qnil;
         current_state = IDLE;
     }
     return ncoverages;
@@ -712,4 +704,5 @@ Init_coverage(void)
     rb_define_module_function(rb_mCoverage, "state", rb_coverage_state, 0);
     rb_define_module_function(rb_mCoverage, "running?", rb_coverage_running, 0);
     rb_global_variable(&cme2counter);
+    rb_global_variable(&me_set);
 }
