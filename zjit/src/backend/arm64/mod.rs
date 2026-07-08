@@ -1740,6 +1740,9 @@ impl Assembler {
                 unsafe { rb_jit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
             });
 
+            if crate::state::ZJITState::has_instance() {
+                crate::stats::incr_counter_by(crate::stats::Counter::total_native_stack_bytes, (asm.stack_state.stack_slot_count() * (VALUE_BITS as usize)).try_into().unwrap());
+            }
             Ok((start_ptr, gc_offsets))
         })
     }
