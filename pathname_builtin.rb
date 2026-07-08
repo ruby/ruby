@@ -581,17 +581,25 @@ class Pathname
     end
   end
 
-  # The opposite of Pathname#absolute?
+  # :markup: markdown
   #
-  # It returns +false+ if the pathname begins with a slash.
+  # call-seq:
+  #   relative? -> true or false
   #
-  #   p = Pathname.new('/im/sure')
-  #   p.relative?
-  #       #=> false
+  # Returns whether `self` contains a relative path:
   #
-  #   p = Pathname.new('not/so/sure')
-  #   p.relative?
-  #       #=> true
+  # ```ruby
+  # Pathname('lib').relative?   # => true
+  # Pathname('/home').relative? # => false
+  # ```
+  #
+  # The result is OS-dependent for some paths:
+  #
+  # ```ruby
+  # Pathname('C:/').relative?   # => false # On Windows.
+  # Pathname('C:/').relative?   # => true  # Elsewhere.
+  # ```
+  #
   def relative?
     !absolute?
   end
