@@ -1164,12 +1164,18 @@ impl Assembler {
                         slot_count += 1
                     }
                     if slot_count > 0 {
-                        let slot_offset = (slot_count * SIZEOF_VALUE) as u64;
-                        // Bail when asked to reserve too many slots in one instruction.
-                        if ShiftedImmediate::try_from(slot_offset).is_err() {
-                            return Err(CompileError::NativeStackTooLarge);
+                        let mut slot_offset = (slot_count * SIZEOF_VALUE) as u64;
+                        // Loop when asked to reserve too many slots in one instruction.
+                        // TODO(max): Use a scratch reg instead of iterated subtraction
+                        while slot_offset > 0 {
+                            let reserve_step = if ShiftedImmediate::try_from(slot_offset).is_ok() {
+                                slot_offset
+                            } else {
+                                ShiftedImmediate::MAX
+                            };
+                            sub(cb, C_SP_REG, C_SP_REG, A64Opnd::new_uimm(reserve_step));
+                            slot_offset = slot_offset.saturating_sub(reserve_step);
                         }
-                        sub(cb, C_SP_REG, C_SP_REG, A64Opnd::new_uimm(slot_offset));
                     }
                 }
                 Insn::FrameTeardown { preserved } => {
@@ -1646,9 +1652,6 @@ impl Assembler {
             asm.stack_state.num_spill_slots = num_stack_slots;
             asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&assignments);
             let stack_slot_count = asm.stack_state.stack_slot_count();
-            if stack_slot_count > Self::MAX_FRAME_STACK_SLOTS {
-                return Err(CompileError::NativeStackTooLarge);
-            }
 
             // Dump vreg-to-physical-register mapping if requested
             if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
@@ -2950,5 +2953,61 @@ mod tests {
         0x4: ldur x0, [x0]
         ");
         assert_snapshot!(cb.hexdump(), @"00000891000040f8");
+    }
+
+    #[test]
+    fn test_frame_setup() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.stack_state.stack_base_idx = 16;
+        let _ = asm.frame_setup(&[]);
+        asm.compile(&mut cb).unwrap();
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: stp x29, x30, [sp, #-0x10]!
+        0x4: mov x29, sp
+        0x8: sub sp, sp, #0x80
+        ");
+        assert_snapshot!(cb.hexdump(), @"fd7bbfa9fd030091ff0302d1");
+    }
+
+    #[test]
+    fn test_frame_setup_with_large_frame_fits_in_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.stack_state.stack_base_idx = ShiftedImmediate::MAX.to_usize();
+        let _ = asm.frame_setup(&[]);
+        asm.compile(&mut cb).unwrap();
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: stp x29, x30, [sp, #-0x10]!
+        0x4: mov x29, sp
+        0x8: sub sp, sp, #8, lsl #12
+        ");
+        assert_snapshot!(cb.hexdump(), @"fd7bbfa9fd030091ff2340d1");
+    }
+
+    #[test]
+    fn test_frame_setup_with_large_frame_too_big_for_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.stack_state.stack_base_idx = (ShiftedImmediate::MAX + 8).to_usize();
+        let _ = asm.frame_setup(&[]);
+        asm.compile(&mut cb).unwrap();
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: stp x29, x30, [sp, #-0x10]!
+        0x4: mov x29, sp
+        0x8: sub sp, sp, #0xfff
+        0xc: sub sp, sp, #0xfff
+        0x10: sub sp, sp, #0xfff
+        0x14: sub sp, sp, #0xfff
+        0x18: sub sp, sp, #0xfff
+        0x1c: sub sp, sp, #0xfff
+        0x20: sub sp, sp, #0xfff
+        0x24: sub sp, sp, #0xfff
+        0x28: sub sp, sp, #0x48
+        ");
+        assert_snapshot!(cb.hexdump(), @"fd7bbfa9fd030091ffff3fd1ffff3fd1ffff3fd1ffff3fd1ffff3fd1ffff3fd1ffff3fd1ffff3fd1ff2301d1");
     }
 }
