@@ -1,5 +1,6 @@
 #include "ruby/internal/config.h"
-#include "ruby/ruby.h"
+
+#define rb_notimplement() (errno = EINVAL)
 
 #if defined _WIN32
 #elif defined __wasi__

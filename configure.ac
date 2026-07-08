@@ -4750,6 +4750,19 @@ AS_IF([test ! -f "$srcdir/revision.h"], [
     ])
 ])
 
+AS_IF([test "x$HAVE_BASERUBY" = xyes], [
+    X_DEPENDENCIES_DIR=.deps
+    AC_MSG_NOTICE([generating build dependencies])
+    rm -rf "$ac_pwd/.deps"
+    AS_MKDIR_P([.deps])
+    RUBYOPT=- $BASERUBY "$srcdir/tool/mkdepend.rb" \
+        -root="$srcdir" -all -output="$ac_pwd/.deps" ||
+        AC_MSG_ERROR([failed to generate build dependencies])
+], [
+    X_DEPENDENCIES_DIR='$(srcdir)'
+])
+AC_SUBST(X_DEPENDENCIES_DIR)
+
 AS_IF([test x"$firstmf" != x], [
     AC_CONFIG_FILES($firstmf:$firsttmpl, [], [firstmf="$firstmf" firsttmpl="$firsttmpl"])
 ])
@@ -4780,9 +4793,16 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	AS_IF([test "$gnumake" != yes], [
 	    # extract NMake-style include list
 	    set = `sed -n 's/^!include  *//p' ${srcdir}/common.mk`
+	    AS_IF([test "x$X_DEPENDENCIES_DIR" = x.deps], [
+		dependency_dir="$ac_pwd/.deps"
+	    ], [
+		dependency_dir=.
+	    ])
 	    echo common_mk_includes "@S|@*" # generate the macro assignment
 	    shift
-	    common_mk_includes="`echo \"@S|@*\" | sed 's|\$(srcdir)|.|g'`"
+	    common_mk_includes="`echo \"@S|@*\" | sed \
+	        -e "s|\\\$(DEPENDENCIES_DIR)|$dependency_dir|g" \
+	        -e 's|\$(srcdir)|.|g'`"
 	    (PWD= cd ${srcdir} && sed -f tool/prereq.status common.mk ${common_mk_includes})
             AS_IF([test "$YJIT_SUPPORT" = yes], [
                 cat ${srcdir}/yjit/not_gmake.mk
@@ -4795,7 +4815,7 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	echo; echo '$(srcdir)/$(CONFIGURE):RUBY_M4_INCLUDED \
 	$(empty)'
     } > $tmpmk && mv -f $tmpmk Makefile],
-[EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT'])
+[EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT' X_DEPENDENCIES_DIR='$X_DEPENDENCIES_DIR'])
 
 AC_ARG_WITH([ruby-pc],
 	    AS_HELP_STRING([--with-ruby-pc=FILENAME], [pc file basename]),

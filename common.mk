@@ -724,6 +724,7 @@ clean-rubyspec: clean-spec
 
 distclean: distclean-ext distclean-enc distclean-golf distclean-docs distclean-extout distclean-modular-gc distclean-local distclean-platform distclean-spec
 distclean-local:: clean-local
+	-$(Q)$(RMALL) .deps
 	$(Q)$(RM) $(MKFILES) *.inc $(PRELUDES) *.rbinc *.rbbin
 	$(Q)$(RM) config.cache config.status config.status.lineno
 	$(Q)$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
@@ -2004,6 +2005,14 @@ rewindable:
 
 HELP_EXTRA_TASKS = ""
 
+MKDEPEND_OPTIONS = -sources
+
+fix-depends: PHONY
+	$(BASERUBY) -C $(srcdir) tool/mkdepend.rb -all $(MKDEPEND_OPTIONS) -inplace
+
+check-depends: PHONY
+	$(BASERUBY) -C $(srcdir) tool/mkdepend.rb -all -sources -check
+
 gc/Makefile:
 	$(MAKEDIRS) $(@D)
 	$(MESSAGE_BEGIN) \
@@ -2083,4 +2092,4 @@ $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}mini_builtin.c
 $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}miniprelude.c
 
 !include $(srcdir)/prism/srcs.mk
-!include $(srcdir)/depend
+!include $(DEPENDENCIES_DIR)/depend

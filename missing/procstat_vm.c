@@ -1,3 +1,4 @@
+#ifdef __FreeBSD__
 #include <sys/user.h>
 #include <sys/sysctl.h>
 #include <sys/param.h>
@@ -83,3 +84,4 @@ procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp, FILE *errout)
 	}
 	free(freep);
 }
+#endif

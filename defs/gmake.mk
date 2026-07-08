@@ -501,20 +501,13 @@ update-deps:
 	$(eval deps_dir := $(shell mktemp -d)/$(update_deps))
 	$(eval GIT_DIR := $(shell $(GIT_IN_SRC) rev-parse --absolute-git-dir))
 	$(GIT) --git-dir=$(GIT_DIR) worktree add $(deps_dir)
-	cp $(tooldir)/config.guess $(tooldir)/config.sub $(deps_dir)/tool
-	[ -f config.status ] && cp config.status $(deps_dir)
-	cd $(deps_dir) && autoconf && \
-	exec ./configure -q -C --enable-load-relative --disable-install-doc --disable-rubygems 'optflags=-O0' 'debugflags=-save-temps=obj -g'
-	$(RUNRUBY) -C $(deps_dir) tool/update-deps --fix
+	$(BASERUBY) -C $(deps_dir) tool/mkdepend.rb -all -sources -inplace
 	$(GIT) -C $(deps_dir) diff --no-ext-diff --ignore-submodules --exit-code || \
 	    $(GIT) -C $(deps_dir) commit --all --message='Update dependencies'
 	$(GIT) --git-dir=$(GIT_DIR) worktree remove $(deps_dir)
 	$(RMDIR) $(dir $(deps_dir))
 	$(GIT) --git-dir=$(GIT_DIR) merge --no-edit --ff-only $(update_deps)
 	$(GIT) --git-dir=$(GIT_DIR) branch --delete $(update_deps)
-
-fix-depends check-depends: all hello
-	$(BASERUBY) -C $(srcdir) tool/update-deps $(if $(filter fix-%,$@),--fix)
 
 # order-only-prerequisites doesn't work for $(RUBYSPEC_CAPIEXT)
 # because the same named directory exists in the source tree.

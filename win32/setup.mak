@@ -36,7 +36,7 @@ i686-mswin32: -prologue- -i686- -epilogue-
 x64-mswin64: -prologue- -x64- -epilogue-
 arm64-mswin64: -prologue- -arm64- -epilogue-
 
--prologue-: -basic-vars- -baseruby- -gmp-
+-prologue-: -basic-vars- -baseruby- -dependencies- -gmp-
 -generic-: -osname-
 
 -basic-vars-: nul
@@ -53,6 +53,12 @@ prefix = $(prefix:\=/)
 -baseruby-: nul
 !if "$(HAVE_BASERUBY)" != "no"
 	@cd $(srcdir:/=\)\tool && $(BASERUBY:/=\) missing-baseruby.bat --verbose || exit $(HAVE_BASERUBY:yes=non-)0
+!endif
+
+-dependencies-: -baseruby-
+!if "$(HAVE_BASERUBY)" != "no"
+	@$(WIN32DIR:/=\)\rm.bat -f -r .deps
+	@$(BASERUBY:/=\) $(srcdir)/tool/mkdepend.rb -root=$(srcdir) -all -nmake -output=.deps
 !endif
 
 -gmp-:

@@ -18,6 +18,7 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 
 srcdir = @srcdir@
 top_srcdir = $(srcdir)
+DEPENDENCIES_DIR = @X_DEPENDENCIES_DIR@
 hdrdir = $(srcdir)/include
 tooldir = $(srcdir)/tool
 

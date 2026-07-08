@@ -44,6 +44,12 @@ HAVE_BASERUBY = no
 HAVE_BASERUBY = yes
 !endif
 
+!if "$(HAVE_BASERUBY)" == "yes"
+DEPENDENCIES_DIR = .deps
+!else
+DEPENDENCIES_DIR = $(srcdir)
+!endif
+
 !ifndef REVISION_FORCE
 !if "$(HAVE_BASERUBY)" == "yes"
 REVISION_FORCE = PHONY

@@ -2698,6 +2698,15 @@ site-install-rb: install-rb
     end
 
     depend = File.join(srcdir, "depend")
+    if $extmk && $top_srcdir
+      source_dir = File.expand_path(srcdir)
+      top_source_dir = File.expand_path($top_srcdir)
+      if source_dir.start_with?(top_source_dir + File::SEPARATOR)
+        relative_dir = source_dir.delete_prefix(top_source_dir + File::SEPARATOR)
+        generated = File.join($topdir, ".deps", relative_dir, "depend")
+        depend = generated if File.file?(generated)
+      end
+    end
     if File.exist?(depend)
       mfile.print("###\n", *depend_rules(File.read(depend)))
     else
