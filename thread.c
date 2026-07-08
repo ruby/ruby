@@ -535,10 +535,19 @@ thread_cleanup_func(void *th_ptr, int atfork)
     if (atfork) {
         native_thread_destroy_atfork(th->nt);
         th->nt = NULL;
+        // The copied interrupt_lock may have been held at the moment of
+        // fork (interrupters run concurrently); reinitialize it so that
+        // thread_free's destroy is well-defined in the child.
+        rb_native_mutex_initialize(&th->interrupt_lock);
         return;
     }
 
-    rb_native_mutex_destroy(&th->interrupt_lock);
+    // interrupt_lock is destroyed in thread_free: while th is in its
+    // Ractor's living set, anyone (terminate_all on the Ractor's main
+    // thread, Thread#kill/#raise) may lock it -- and the living set keeps
+    // the Thread object marked, so it cannot reach thread_free while
+    // listed. Destroying it anywhere during teardown leaves a window where
+    // a concurrent interrupter locks a destroyed mutex (EINVAL).
 }
 
 void
@@ -807,6 +816,16 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     thread_cleanup_func(th, FALSE);
     VM_ASSERT(th->ec->vm_stack == NULL);
 
+#if defined(USE_MN_THREADS) && USE_MN_THREADS
+    if (th_has_coroutine(th)) {
+        // Run the coroutine thread's epilogue here, while th is still valid;
+        // co_start then only makes the final transfer (see
+        // coroutine_thread_terminated in thread_pthread_mn.c).
+        coroutine_thread_terminated(th);
+        return 0;
+    }
+#endif
+
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
         // after rb_ractor_living_threads_remove()
         // GC will happen anytime and this ractor can be collected (and destroy GVL).
@@ -907,8 +926,6 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
         th->pending_interrupt_mask_stack = rb_ary_dup(current_th->pending_interrupt_mask_stack);
         RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
     }
-
-    rb_native_mutex_initialize(&th->interrupt_lock);
 
     RUBY_DEBUG_LOG("r:%u th:%u", rb_ractor_id(th->ractor), rb_th_serial(th));
 

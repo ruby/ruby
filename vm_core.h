@@ -724,6 +724,7 @@ typedef struct rb_vm_struct {
 
             unsigned int max_cpu;
             struct ccan_list_head grq; // // Global Ready Queue
+            rb_atomic_t winding_cnt; // native threads between a coroutine epilogue and its reclaim; ruby_vm_destruct waits for 0
             unsigned int grq_cnt;
 
             // running threads
@@ -731,8 +732,6 @@ typedef struct rb_vm_struct {
 
             // threads which switch context by timeslice
             struct ccan_list_head timeslice_threads;
-
-            struct ccan_list_head zombie_threads;
 
             // true if timeslice timer is not enable
             bool timeslice_wait_inf;
@@ -2006,9 +2005,6 @@ rb_vm_living_threads_init(rb_vm_t *vm)
 {
     ccan_list_head_init(&vm->workqueue);
     ccan_list_head_init(&vm->ractor.set);
-#ifdef RUBY_THREAD_PTHREAD_H
-    ccan_list_head_init(&vm->ractor.sched.zombie_threads);
-#endif
 }
 
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);

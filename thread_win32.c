@@ -910,17 +910,7 @@ rb_threadptr_sched_free(rb_thread_t *th)
     ruby_xfree(th->sched.vm_stack);
 }
 
-void
-rb_threadptr_remove(rb_thread_t *th)
-{
-    // do nothing
-}
 
-void
-rb_thread_sched_mark_zombies(rb_vm_t *vm)
-{
-    // do nothing
-}
 
 static bool
 vm_barrier_finish_p(rb_vm_t *vm)
@@ -1031,3 +1021,11 @@ rb_thread_malloc_stack_set(rb_thread_t *th, void *stack, size_t stack_size)
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
+
+void
+rb_thread_sched_wait_winding(rb_vm_t *vm)
+{
+    // no coroutine (M:N) threads on this implementation: nothing winds down
+    // after leaving the living set (see thread_pthread.c)
+    (void)vm;
+}
