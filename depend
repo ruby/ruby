@@ -7849,6 +7849,7 @@ jit.$(OBJEXT): $(top_srcdir)/internal/compile.h
 jit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 jit.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 jit.$(OBJEXT): $(top_srcdir)/internal/gc.h
+jit.$(OBJEXT): $(top_srcdir)/internal/hash.h
 jit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 jit.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 jit.$(OBJEXT): $(top_srcdir)/internal/serial.h
@@ -8014,6 +8015,7 @@ jit.$(OBJEXT): {$(VPATH)}internal/has/declspec_attribute.h
 jit.$(OBJEXT): {$(VPATH)}internal/has/extension.h
 jit.$(OBJEXT): {$(VPATH)}internal/has/feature.h
 jit.$(OBJEXT): {$(VPATH)}internal/has/warning.h
+jit.$(OBJEXT): {$(VPATH)}internal/hash.h
 jit.$(OBJEXT): {$(VPATH)}internal/intern/array.h
 jit.$(OBJEXT): {$(VPATH)}internal/intern/bignum.h
 jit.$(OBJEXT): {$(VPATH)}internal/intern/class.h
