@@ -2311,44 +2311,27 @@ rb_set_size(VALUE set)
 /*
  *  Document-class: Set
  *
- * The Set class implements a collection of unordered values with no
- * duplicates. It is a hybrid of Array's intuitive inter-operation
- * facilities and Hash's fast lookup.
+ * An instance of class \Set contains a collection
+ * of objects (elements), with no duplicates.
  *
- * Set is easy to use with Enumerable objects (implementing #each).
- * Most of the initializer methods and binary operators accept generic
- * Enumerable objects besides sets and arrays.  An Enumerable object
- * can be converted to Set using the +to_set+ method.
+ * By default:
  *
- * Set uses a data structure similar to Hash for storage, except that
- * it only has keys and no values.
+ * - Set determines equality via Object#eql? and Object#hash,
+ *   and assumes that these values do not change for a stored element.
+ *   If these values do change, the set enters an unreliable state;
+ *   see #reset.
+ * - A String instance added to a set is stored as a frozen copy of the string,
+ *   unless it is already frozen.
  *
- * * Equality of elements is determined according to Object#eql? and
- *   Object#hash.  Use Set#compare_by_identity to make a set compare
- *   its elements by their identity.
- * * Set assumes that the identity of each element does not change
- *   while it is stored.  Modifying an element of a set will render the
- *   set to an unreliable state.
- * * When a string is to be stored, a frozen copy of the string is
- *   stored instead unless the original string is already frozen.
+ * Calling #compare_by_identity causes:
  *
- * == Comparison
+ * - All following determinations of equality
+ *   to use object identity instead of the methods mentioned above.
+ * - A String added to a set is stored "as is", whether or not frozen.
  *
- * The comparison operators <tt><</tt>, <tt>></tt>, <tt><=</tt>, and
- * <tt>>=</tt> are implemented as shorthand for the
- * {proper_,}{subset?,superset?} methods.  The <tt><=></tt>
- * operator reflects this order, or returns +nil+ for sets that both
- * have distinct elements (<tt>{x, y}</tt> vs. <tt>{x, z}</tt> for example).
- *
- * == Example
- *
- *   s1 = Set[1, 2]                        #=> Set[1, 2]
- *   s2 = [1, 2].to_set                    #=> Set[1, 2]
- *   s1 == s2                              #=> true
- *   s1.add("foo")                         #=> Set[1, 2, "foo"]
- *   s1.merge([2, 6])                      #=> Set[1, 2, "foo", 6]
- *   s1.subset?(s2)                        #=> false
- *   s2.subset?(s1)                        #=> true
+ * \Set includes module Enumerable, and is easy to use with other enumerable objects.
+ * Many of its methods accept enumerable objects as arguments;
+ * any enumerable object may be converted to a set via #to_set.
  *
  * == Contact
  *
@@ -2356,35 +2339,30 @@ rb_set_size(VALUE set)
  *
  * == Inheriting from \Set
  *
- * Before Ruby 4.0 (released December 2025), \Set had a different, less
- * efficient implementation. It was reimplemented in C, and the behavior
- * of some of the core methods were adjusted.
+ * Before Ruby 4.0 (released in December, 2025),
+ * class \Set had a different, less efficient implementation.
+ * In Ruby 4.0, the class was reimplemented in C,
+ * and the behaviors of some methods were adjusted.
  *
- * To keep backward compatibility, when a class is inherited from \Set,
- * additional module +Set::SubclassCompatible+ is included, which makes
- * the inherited class behavior, as well as internal method names,
- * closer to what it was before Ruby 4.0.
+ * When compatibility with the older implementation is needed,
+ * a \Set subclass should inherit directly from class +Set+;
+ * this automatically includes module +Set::SubclassCompatible+,
+ * which makes behaviors closer to those in the older implementation.
  *
- * It can be easily seen, for example, in the #inspect method behavior:
+ * A difference may be seen as follows:
  *
- *    p Set[1, 2, 3]
- *    # prints "Set[1, 2, 3]"
+ *   Set[[1, 2, 3]]       # => Set[[1, 2, 3]]
+ *   class MySet < Set; end
+ *   MySet[[1, 2, 3]]     # => #<MySet: {[1, 2, 3]}>  # Same as in Ruby 3.4.
  *
- *    class MySet < Set
- *    end
- *    p MySet[1, 2, 3]
- *    # prints "#<MySet: {1, 2, 3}>", like it was in Ruby 3.4
+ * When backward compatibility is not needed,
+ * a \Set subclass should inherit from +Set::CoreSet+,
+ * which avoids including the compatibility layer:
  *
- * For new code, if backward compatibility is not necessary,
- * it is recommended to instead inherit from +Set::CoreSet+, which
- * avoids including the "compatibility" layer:
+ *   class MyCoreSet < Set::CoreSet; end
+     MyCoreSet[[1, 2, 3]] # => MyCoreSet[[1, 2, 3]]
  *
- *    class MyCoreSet < Set::CoreSet
- *    end
- *    p MyCoreSet[1, 2, 3]
- *    # prints "MyCoreSet[1, 2, 3]"
- *
- * == Set's methods
+ * == What's Here
  *
  * First, what's elsewhere. \Class \Set:
  *
