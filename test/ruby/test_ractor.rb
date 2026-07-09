@@ -377,6 +377,8 @@ class TestRactor < Test::Unit::TestCase
     assert_ractor(<<~'RUBY')
       assert_raise(ArgumentError) { Ractor.receive_all(0) }
       assert_raise(ArgumentError) { Ractor.receive_all(-5) }
+  end
+  
   def test_mn_threads
     # Ideally, we would assert that vm->ractor.sched.max_cpu equals sysconf(_SC_NPROCESSORS_ONLN)
     # when RUBY_MAX_CPU is not set.
