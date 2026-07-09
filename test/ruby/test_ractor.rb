@@ -377,6 +377,7 @@ class TestRactor < Test::Unit::TestCase
     assert_ractor(<<~'RUBY')
       assert_raise(ArgumentError) { Ractor.receive_all(0) }
       assert_raise(ArgumentError) { Ractor.receive_all(-5) }
+    RUBY
   end
   
   def test_mn_threads
