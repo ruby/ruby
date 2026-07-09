@@ -2044,7 +2044,7 @@ rb_zjit_str_resurrect_fastpath(VALUE str, bool chilled, size_t *size_out,
                                VALUE *flags_out,
                                long *len_out, size_t *byte_size_out)
 {
-    if (chilled) return false;
+    if (chilled && RTEST(rb_ivar_defined(str, id_debug_created_info))) return false;
 
     if (!STR_EMBED_P(str)) return false;
 
@@ -2061,6 +2061,7 @@ rb_zjit_str_resurrect_fastpath(VALUE str, bool chilled, size_t *size_out,
 
     flags &= ~FL_FREEZE;
     flags |= T_STRING;
+    if (chilled) flags |= STR_CHILLED;
 
     shape_id_t shape_id = rb_shape_transition_slot_size(ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER,
                                                         rb_gc_size_slot_size(size));
