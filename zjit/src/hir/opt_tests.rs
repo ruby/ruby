@@ -17492,7 +17492,7 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Float@0x1008, +@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum
+          v29:Flonum = GuardType v13, Flonum recompile
           v30:Float = FloatAdd v28, v29
           CheckInterrupts
           Return v30
@@ -17523,7 +17523,7 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum
+          v29:Flonum = GuardType v13, Flonum recompile
           v30:Float = FloatMul v28, v29
           CheckInterrupts
           Return v30
@@ -17554,7 +17554,7 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Float@0x1008, -@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum
+          v29:Flonum = GuardType v13, Flonum recompile
           v30:Float = FloatSub v28, v29
           CheckInterrupts
           Return v30
@@ -17585,7 +17585,7 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Float@0x1008, /@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum
+          v29:Flonum = GuardType v13, Flonum recompile
           v30:Float = FloatDiv v28, v29
           CheckInterrupts
           Return v30
@@ -17644,10 +17644,75 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum recompile
-          v29:Fixnum = GuardType v13, Fixnum
+          v29:Fixnum = GuardType v13, Fixnum recompile
           v30:Float = FloatMul v28, v29
           CheckInterrupts
           Return v30
+        ");
+    }
+
+    #[test]
+    fn test_float_mul_recompile_stops_inlining_heap_float() {
+        set_max_versions(2);
+        eval(r#"
+            def test_float_mul_recompile(a, b) = a * b
+
+            30.times { test_float_mul_recompile(1.5, 2.5) }
+        "#);
+
+        let intermediate_hir = hir_string("test_float_mul_recompile");
+        assert!(intermediate_hir.contains("FloatMul"), "{intermediate_hir}");
+
+        eval(r#"
+            30.times { test_float_mul_recompile(1.5, -0.0) }
+        "#);
+
+        let final_hir = hir_string("test_float_mul_recompile");
+        assert!(final_hir.contains("CCallWithFrame"), "{final_hir}");
+        assert!(!final_hir.contains("FloatMul"), "{final_hir}");
+        assert_snapshot!(format!("{intermediate_hir}\n{final_hir}"), @"
+        fn test_float_mul_recompile@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
+          v28:Flonum = GuardType v12, Flonum recompile
+          v29:Flonum = GuardType v13, Flonum recompile
+          v30:Float = FloatMul v28, v29
+          CheckInterrupts
+          Return v30
+
+        fn test_float_mul_recompile@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
+          v28:Flonum = GuardType v12, Flonum recompile
+          v29:BasicObject = CCallWithFrame v28, :Float#*@0x1040, v13
+          CheckInterrupts
+          Return v29
         ");
     }
 
