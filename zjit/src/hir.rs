@@ -1091,6 +1091,10 @@ pub enum Insn {
     AdjustBounds { index: InsnId, length: InsnId },
 
     HashAref { hash: InsnId, key: InsnId, state: InsnId },
+    /// `hash.key?(key)` (and has_key?/include?/member?) for an exact Hash.
+    HashKeyP { hash: InsnId, key: InsnId, state: InsnId },
+    /// `hash.fetch(key)` (single arg, no block) for an exact Hash.
+    HashFetch { hash: InsnId, key: InsnId, state: InsnId },
     HashAset { hash: InsnId, key: InsnId, val: InsnId, state: InsnId },
     HashDup { val: InsnId, state: InsnId },
 
@@ -1663,7 +1667,9 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*index);
                 $visit_one!(*length);
             }
-            Insn::HashAref { hash, key, state } => {
+            Insn::HashAref { hash, key, state }
+            | Insn::HashKeyP { hash, key, state }
+            | Insn::HashFetch { hash, key, state } => {
                 $visit_one!(*hash);
                 $visit_one!(*key);
                 $visit_one!(*state);
@@ -1903,6 +1909,8 @@ impl Insn {
             Insn::ArrayLength { .. } => Effect::write(abstract_heaps::Empty),
             Insn::AdjustBounds { .. } => effects::Empty,
             Insn::HashAref { .. } => effects::Any,
+            Insn::HashKeyP { .. } => effects::Any,
+            Insn::HashFetch { .. } => effects::Any,
             Insn::HashAset { .. } => effects::Any,
             Insn::HashDup { .. } => allocates,
             Insn::ObjectAlloc { .. } => effects::Any,
@@ -2270,6 +2278,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
             Insn::HashAref { hash, key, .. } => { write!(f, "HashAref {hash}, {key}")}
+            Insn::HashKeyP { hash, key, .. } => { write!(f, "HashKeyP {hash}, {key}")}
+            Insn::HashFetch { hash, key, .. } => { write!(f, "HashFetch {hash}, {key}")}
             Insn::HashAset { hash, key, val, .. } => { write!(f, "HashAset {hash}, {key}, {val}")}
             Insn::ObjectAlloc { val, .. } => { write!(f, "ObjectAlloc {val}") }
             &Insn::ObjectAllocClass { class, .. } => {
@@ -3867,6 +3877,8 @@ impl Function {
             Insn::ArrayLength { .. } => types::CInt64,
             Insn::AdjustBounds { .. } => types::CInt64,
             Insn::HashAref { .. } => types::BasicObject,
+            Insn::HashKeyP { .. } => types::BoolExact,
+            Insn::HashFetch { .. } => types::BasicObject,
             Insn::NewHash { .. } => types::HashExact,
             Insn::HashDup { .. } => types::HashExact,
             Insn::NewRange { .. } => types::RangeExact,
@@ -8719,6 +8731,8 @@ impl Function {
             }
             // Instructions with Hash operands
             Insn::HashAref { hash, .. }
+            | Insn::HashKeyP { hash, .. }
+            | Insn::HashFetch { hash, .. }
             | Insn::HashAset { hash, .. } => self.assert_subtype(insn_id, hash, types::HashExact),
             Insn::HashDup { val, .. } => self.assert_subtype(insn_id, val, types::HashExact),
             // Other
