@@ -256,6 +256,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cHash, "include?", inline_hash_key_p);
     annotate!(rb_cHash, "member?", inline_hash_key_p);
     annotate!(rb_cHash, "fetch", inline_hash_fetch);
+    annotate!(rb_cHash, "dig", inline_hash_dig);
     annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
@@ -532,6 +533,18 @@ fn inline_hash_key_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
     if fun.likely_a(recv, types::HashExact, state) {
         let recv = fun.coerce_to(block, recv, types::HashExact, state);
         Some(fun.push_insn(block, hir::Insn::HashKeyP { hash: recv, key, state }))
+    } else {
+        None
+    }
+}
+
+fn inline_hash_dig(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    // Single-argument `dig(key)` is exactly `hash[key]` (it applies the default),
+    // so reuse HashAref. Nested `dig(a, b, ...)` falls back to the method.
+    let &[key] = args else { return None; };
+    if fun.likely_a(recv, types::HashExact, state) {
+        let recv = fun.coerce_to(block, recv, types::HashExact, state);
+        Some(fun.push_insn(block, hir::Insn::HashAref { hash: recv, key, state }))
     } else {
         None
     }
