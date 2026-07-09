@@ -6074,8 +6074,9 @@ update_method_coverage(VALUE cme2counter, rb_trace_arg_t *trace_arg)
  * into me_set, so that method coverage no longer needs to reconstruct the set
  * of defined methods by walking the heap. This keeps shadowed/removed method
  * entries discoverable (me_set holds them as keys, so GC cannot reclaim them)
- * and makes the result independent of GC timing. Only entries that carry a
- * source location (Ruby / define_method methods) are recorded. */
+ * and makes the result independent of GC timing. Only entries that resolve to
+ * themselves (i.e. methods defined by `def` or Module#define_method) are
+ * recorded. */
 void
 rb_vm_coverage_record_me(const rb_method_entry_t *me)
 {
@@ -6085,7 +6086,7 @@ rb_vm_coverage_record_me(const rb_method_entry_t *me)
     VALUE me_set = GET_VM()->me_set;
     if (!RTEST(me_set)) return;
 
-    if (rb_resolve_me_location(me, 0)) {
+    if (rb_resolve_me_location(me, 0) == me) {
         rb_hash_aset(me_set, (VALUE)me, Qtrue);
     }
 }
