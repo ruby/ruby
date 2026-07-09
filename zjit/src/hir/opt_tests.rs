@@ -24313,10 +24313,13 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Float@0x1008, +@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum recompile
-          v30:Float = FloatAdd v28, v29
+          v29:CDouble = UnboxFlonum v28
+          v30:Flonum = GuardType v13, Flonum recompile
+          v31:CDouble = UnboxFlonum v30
+          v32:CDouble = FloatAdd v29, v31
+          v33:Flonum = BoxFlonum v32
           CheckInterrupts
-          Return v30
+          Return v33
         ");
     }
 
@@ -24344,10 +24347,13 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum recompile
-          v30:Float = FloatMul v28, v29
+          v29:CDouble = UnboxFlonum v28
+          v30:Flonum = GuardType v13, Flonum recompile
+          v31:CDouble = UnboxFlonum v30
+          v32:CDouble = FloatMul v29, v31
+          v33:Flonum = BoxFlonum v32
           CheckInterrupts
-          Return v30
+          Return v33
         ");
     }
 
@@ -24375,10 +24381,13 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Float@0x1008, -@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum recompile
-          v30:Float = FloatSub v28, v29
+          v29:CDouble = UnboxFlonum v28
+          v30:Flonum = GuardType v13, Flonum recompile
+          v31:CDouble = UnboxFlonum v30
+          v32:CDouble = FloatSub v29, v31
+          v33:Flonum = BoxFlonum v32
           CheckInterrupts
-          Return v30
+          Return v33
         ");
     }
 
@@ -24406,11 +24415,14 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Float@0x1008, /@0x1010, cme:0x1018)
           v30:Flonum = GuardType v12, Flonum recompile
-          v31:Flonum = GuardType v13, Flonum recompile
-          v32:Float = FloatDiv v30, v31
+          v31:CDouble = UnboxFlonum v30
+          v32:Flonum = GuardType v13, Flonum recompile
+          v33:CDouble = UnboxFlonum v32
+          v34:CDouble = FloatDiv v31, v33
+          v35:Flonum = BoxFlonum v34
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v32
+          Return v35
         ");
     }
 
@@ -24467,10 +24479,13 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum recompile
-          v29:Fixnum = GuardType v13, Fixnum recompile
-          v30:Float = FloatMul v28, v29
+          v29:CDouble = UnboxFlonum v28
+          v30:Fixnum = GuardType v13, Fixnum recompile
+          v31:CDouble = F64FromFixnum v30
+          v32:CDouble = FloatMul v29, v31
+          v33:Flonum = BoxFlonum v32
           CheckInterrupts
-          Return v30
+          Return v33
         ");
     }
 
@@ -24511,10 +24526,13 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum recompile
-          v30:Float = FloatMul v28, v29
+          v29:CDouble = UnboxFlonum v28
+          v30:Flonum = GuardType v13, Flonum recompile
+          v31:CDouble = UnboxFlonum v30
+          v32:CDouble = FloatMul v29, v31
+          v33:Flonum = BoxFlonum v32
           CheckInterrupts
-          Return v30
+          Return v33
 
         fn test_float_mul_recompile@<compiled>:2:
         bb1():
@@ -24578,10 +24596,13 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum recompile
-          v30:Float = FloatMul v28, v29
+          v29:CDouble = UnboxFlonum v28
+          v30:Flonum = GuardType v13, Flonum recompile
+          v31:CDouble = UnboxFlonum v30
+          v32:CDouble = FloatMul v29, v31
+          v33:Flonum = BoxFlonum v32
           CheckInterrupts
-          Return v30
+          Return v33
 
         fn test_float_mul_recompile@<compiled>:2:
         bb1():
@@ -24609,9 +24630,12 @@ mod hir_opt_tests {
         bb8():
           v28:Flonum = RefineType v12, Flonum
           PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
-          v43:Flonum = GuardType v13, Flonum recompile
-          v44:Float = FloatMul v28, v43
-          Jump bb4(v44)
+          v43:CDouble = UnboxFlonum v28
+          v44:Flonum = GuardType v13, Flonum recompile
+          v45:CDouble = UnboxFlonum v44
+          v46:CDouble = FloatMul v43, v45
+          v47:Flonum = BoxFlonum v46
+          Jump bb4(v47)
         bb5():
           v31:BasicObject = Send v12, :*, v13 # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v31)
@@ -24889,7 +24913,7 @@ mod hir_opt_tests {
           v8:BasicObject = LoadArg :x@1
           Jump bb3(v7, v8)
         bb3(v11:HeapBasicObject, v12:BasicObject):
-          v92:NilClass = Const Value(nil)
+          v95:NilClass = Const Value(nil)
           v17:Fixnum[1] = Const Value(1)
           v20:CShape = LoadField v11, :shape_id@0x1001
           v21:CShape[0x1002] = Const CShape(0x1002)
@@ -24924,21 +24948,23 @@ mod hir_opt_tests {
         bb13():
           v54:Flonum = RefineType v12, Flonum
           PatchPoint MethodRedefined(Float@0x1040, +@0x1010, cme:0x1048)
-          v87:Float = FloatAdd v54, v43
-          Jump bb9(v87)
+          v87:CDouble = UnboxFlonum v54
+          v88:CDouble = F64FromFixnum v43
+          v89:CDouble = FloatAdd v87, v88
+          v90:Flonum = BoxFlonum v89
+          Jump bb9(v90)
         bb10():
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v90:Fixnum = GuardType v12, Fixnum recompile
-          v91:Fixnum = FixnumAdd v90, v43
-          Jump bb9(v91)
-        bb9(v46:Float|Fixnum):
+          v93:Fixnum = GuardType v12, Fixnum recompile
+          v94:Fixnum = FixnumAdd v93, v43
+          Jump bb9(v94)
+        bb9(v46:Flonum|Fixnum):
           v65:CShape = LoadField v11, :shape_id@0x1001
           v66:CShape[0x1002] = Const CShape(0x1002)
           v67:CBool = IsBitEqual v65, v66
           CondBranch v67, bb15(), bb16()
         bb15():
           StoreField v11, :@a@0x1003, v46
-          WriteBarrier v11, v46
           Jump bb14()
         bb16():
           SetIvar v11, :@a, v46

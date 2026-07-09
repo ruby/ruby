@@ -1120,6 +1120,13 @@ pub enum Insn {
     /// Convert a C `long` to a Ruby `Fixnum`. Side exit on overflow.
     BoxFixnum { val: InsnId, state: InsnId },
     UnboxFixnum { val: InsnId },
+    /// Decode a flonum VALUE to its raw IEEE-754 double ([`types::CDouble`]).
+    UnboxFlonum { val: InsnId },
+    /// Re-encode a raw double ([`types::CDouble`]) as a flonum VALUE. Side exits
+    /// when the value is not flonum-representable (would need a heap Float).
+    BoxFlonum { val: InsnId, state: InsnId },
+    /// Convert a `Fixnum` directly to a raw double ([`types::CDouble`]).
+    F64FromFixnum { val: InsnId },
     FixnumAref { recv: InsnId, index: InsnId },
     // TODO(max): In iseq body types that are not ISEQ_TYPE_METHOD, rewrite to Constant false.
     // `lep_level` is the lexical distance from this insn's iseq up to its local_iseq, used only
@@ -1539,7 +1546,8 @@ macro_rules! for_each_operand_impl {
             | Insn::IsMethodCfunc { val, state, .. }
             | Insn::ToNewArray { val, state }
             | Insn::SetLocal { val, state, .. }
-            | Insn::BoxFixnum { val, state } => {
+            | Insn::BoxFixnum { val, state }
+            | Insn::BoxFlonum { val, state } => {
                 $visit_one!(*val);
                 $visit_one!(*state);
             }
@@ -1757,7 +1765,9 @@ macro_rules! for_each_operand_impl {
             | Insn::SideExit { state, .. } => {
                 $visit_one!(*state);
             }
-            Insn::UnboxFixnum { val } => {
+            Insn::UnboxFixnum { val }
+            | Insn::UnboxFlonum { val }
+            | Insn::F64FromFixnum { val } => {
                 $visit_one!(*val);
             }
             Insn::FixnumAref { recv, index } => {
@@ -1896,6 +1906,12 @@ impl Insn {
             Insn::BoolNegate { .. } => effects::Empty,
             Insn::BoxFixnum { .. } => effects::Empty,
             Insn::UnboxFixnum { .. } => effects::Empty,
+            // Pure conversions; the box's representability side exit is emitted
+            // only when the boxed result survives DCE, so dead boxes/unboxes in a
+            // cancelled float chain are eliminated.
+            Insn::UnboxFlonum { .. } => effects::Empty,
+            Insn::BoxFlonum { .. } => effects::Empty,
+            Insn::F64FromFixnum { .. } => effects::Empty,
             Insn::FixnumAref { .. } => effects::Empty,
             Insn::Defined { .. } => effects::Any,
             Insn::GetConstant { .. } => effects::Any,
@@ -1995,10 +2011,10 @@ impl Insn {
             Insn::FixnumMult { .. } => effects::Empty,
             Insn::FixnumDiv { .. } => effects::Any,
             Insn::FixnumMod { .. } => effects::Any,
-            Insn::FloatAdd { .. } => effects::Any,
-            Insn::FloatSub { .. } => effects::Any,
-            Insn::FloatMul { .. } => effects::Any,
-            Insn::FloatDiv { .. } => effects::Any,
+            Insn::FloatAdd { .. } => effects::Empty,
+            Insn::FloatSub { .. } => effects::Empty,
+            Insn::FloatMul { .. } => effects::Empty,
+            Insn::FloatDiv { .. } => effects::Empty,
             Insn::FloatCmp { .. } => effects::Any,
             Insn::FloatToInt { .. } => effects::Any,
             Insn::FixnumEq { .. } => effects::Empty,
@@ -2298,6 +2314,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::BoolNegate { val } => write!(f, "BoolNegate {val}"),
             Insn::BoxFixnum { val, .. } => write!(f, "BoxFixnum {val}"),
             Insn::UnboxFixnum { val } => write!(f, "UnboxFixnum {val}"),
+            Insn::UnboxFlonum { val } => write!(f, "UnboxFlonum {val}"),
+            Insn::BoxFlonum { val, .. } => write!(f, "BoxFlonum {val}"),
+            Insn::F64FromFixnum { val } => write!(f, "F64FromFixnum {val}"),
             Insn::FixnumAref { recv, index } => write!(f, "FixnumAref {recv}, {index}"),
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::CondBranch { val, if_true, if_false } => { write!(f, "CondBranch {val}, {if_true}, {if_false}") },
@@ -3857,10 +3876,13 @@ impl Function {
                 }
             }
             Insn::FixnumMod  { .. } => types::Fixnum,
-            Insn::FloatAdd   { .. } => types::Float,
-            Insn::FloatSub   { .. } => types::Float,
-            Insn::FloatMul   { .. } => types::Float,
-            Insn::FloatDiv   { .. } => types::Float,
+            Insn::FloatAdd   { .. } => types::CDouble,
+            Insn::FloatSub   { .. } => types::CDouble,
+            Insn::FloatMul   { .. } => types::CDouble,
+            Insn::FloatDiv   { .. } => types::CDouble,
+            Insn::UnboxFlonum { .. } => types::CDouble,
+            Insn::F64FromFixnum { .. } => types::CDouble,
+            Insn::BoxFlonum { .. } => types::Flonum,
             Insn::FloatCmp   { .. } => types::BoolExact,
             Insn::FloatToInt { .. } => types::Integer,
             Insn::FixnumEq   { .. } => types::BoolExact,
@@ -6984,6 +7006,17 @@ impl Function {
                             _ => insn_id,
                         }
                     },
+                    &Insn::UnboxFlonum { val } => {
+                        // UnboxFlonum(BoxFlonum(x)) == x: cancel the box/unbox
+                        // round-trip between chained float ops. The now-dead
+                        // BoxFlonum (with its representability side exit) is
+                        // removed by DCE unless something else keeps it live.
+                        if let &Insn::BoxFlonum { val: inner, .. } = self.resolve(val).insn(self) {
+                            self.make_equal_to(insn_id, inner);
+                            continue;
+                        }
+                        insn_id
+                    },
                     &Insn::GuardGreaterEq { left, right, state, ref reason } => {
                         let left_num = self.type_of(left).cint64_value();
                         let right_num = self.type_of(right).cint64_value();
@@ -8360,6 +8393,9 @@ impl Function {
             Insn::UnboxFixnum { val } => {
                 self.assert_subtype(insn_id, val, types::Fixnum)
             }
+            Insn::UnboxFlonum { val } => self.assert_subtype(insn_id, val, types::Flonum),
+            Insn::BoxFlonum { val, .. } => self.assert_subtype(insn_id, val, types::CDouble),
+            Insn::F64FromFixnum { val } => self.assert_subtype(insn_id, val, types::Fixnum),
             Insn::FixnumAref { recv, index } => {
                 self.assert_subtype(insn_id, recv, types::Fixnum)?;
                 self.assert_subtype(insn_id, index, types::Fixnum)
@@ -8388,10 +8424,9 @@ impl Function {
             | Insn::FloatMul { recv, other, .. }
             | Insn::FloatDiv { recv, other, .. }
             => {
-                // Each operand is Flonum (unboxed) or Fixnum (converted to double).
-                // The HIR only emits these with at least one Flonum operand.
-                self.assert_subtype(insn_id, recv, types::Flonum.union(types::Fixnum))?;
-                self.assert_subtype(insn_id, other, types::Flonum.union(types::Fixnum))
+                // Operands are raw doubles (an UnboxFlonum or F64FromFixnum).
+                self.assert_subtype(insn_id, recv, types::CDouble)?;
+                self.assert_subtype(insn_id, other, types::CDouble)
             }
             Insn::FloatCmp { recv, other, .. } => {
                 // Both operands must be Flonum: rb_zjit_flo_* read a double from each.

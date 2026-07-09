@@ -766,10 +766,15 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
         Insn::FixnumMult { left, right, state } => gen_fixnum_mult(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
         Insn::FixnumDiv { left, right, state } => gen_fixnum_div(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
-        Insn::FloatAdd { recv, other, state } => gen_float_add(jit, asm, function, opnd!(recv), function.type_of(*recv), opnd!(other), function.type_of(*other), &function.frame_state(*state)),
-        Insn::FloatSub { recv, other, state } => gen_float_sub(jit, asm, function, opnd!(recv), function.type_of(*recv), opnd!(other), function.type_of(*other), &function.frame_state(*state)),
-        Insn::FloatMul { recv, other, state } => gen_float_mul(jit, asm, function, opnd!(recv), function.type_of(*recv), opnd!(other), function.type_of(*other), &function.frame_state(*state)),
-        Insn::FloatDiv { recv, other, state } => gen_float_div(jit, asm, function, opnd!(recv), function.type_of(*recv), opnd!(other), function.type_of(*other), &function.frame_state(*state)),
+        // FloatAdd/Sub/Mul/Div now operate on raw doubles (CDouble); the flonum
+        // unbox/rebox live in UnboxFlonum/BoxFlonum so chains stay unboxed.
+        Insn::FloatAdd { recv, other, .. } => asm.float_arith(FloatArithOp::Add, opnd!(recv), opnd!(other)),
+        Insn::FloatSub { recv, other, .. } => asm.float_arith(FloatArithOp::Sub, opnd!(recv), opnd!(other)),
+        Insn::FloatMul { recv, other, .. } => asm.float_arith(FloatArithOp::Mul, opnd!(recv), opnd!(other)),
+        Insn::FloatDiv { recv, other, .. } => asm.float_arith(FloatArithOp::Div, opnd!(recv), opnd!(other)),
+        &Insn::UnboxFlonum { val } => flonum_unbox(asm, opnd!(val)),
+        &Insn::BoxFlonum { val, state } => double_bits_to_flonum(jit, asm, function, opnd!(val), &function.frame_state(state)),
+        &Insn::F64FromFixnum { val } => gen_f64_from_fixnum(asm, opnd!(val)),
         &Insn::FloatCmp { op, recv, other, state } => gen_float_cmp(asm, op, opnd!(recv), opnd!(other), &function.frame_state(state)),
         Insn::FloatToInt { recv, state } => gen_float_to_int(asm, opnd!(recv), &function.frame_state(*state)),
         Insn::FixnumEq { left, right } => gen_fixnum_eq(asm, opnd!(left), opnd!(right)),
@@ -3072,52 +3077,12 @@ fn double_bits_to_flonum(jit: &mut JITState, asm: &mut Assembler, function: &Fun
     asm.csel_e(sentinel, encoded)
 }
 
-/// Convert a guarded Flonum-or-Fixnum operand to its raw double bit pattern:
-/// unbox a flonum, or convert a fixnum (FIX2LONG then `(double)`, matching
-/// rb_int2dbl / Integer#to_f rounding).
-fn flonum_or_fixnum_to_double_bits(asm: &mut Assembler, opnd: Opnd, ty: Type) -> Opnd {
-    if ty.is_subtype(types::Flonum) {
-        flonum_unbox(asm, opnd)
-    } else {
-        // Fixnum: an arithmetic shift right by 1 strips the tag (FIX2LONG),
-        // then scvtf/cvtsi2sd converts the signed integer to a double.
-        let int_val = asm.rshift(opnd, Opnd::UImm(1));
-        asm.int64_to_f64_bits(int_val)
-    }
-}
-
-/// Open-code flonum `op` on two operands each guarded Flonum or Fixnum: convert
-/// each to raw double bits (unbox a flonum, convert a fixnum), perform the op in
-/// a scratch FP register (see [`Insn::FloatArith`]), and re-encode the result as
-/// a flonum (side-exiting if not representable).
-fn gen_flonum_arith(jit: &mut JITState, asm: &mut Assembler, function: &Function, op: FloatArithOp, recv: Opnd, recv_type: Type, other: Opnd, other_type: Type, state: &FrameState) -> Opnd {
-    let recv_bits = flonum_or_fixnum_to_double_bits(asm, recv, recv_type);
-    let other_bits = flonum_or_fixnum_to_double_bits(asm, other, other_type);
-    let result_bits = asm.float_arith(op, recv_bits, other_bits);
-    double_bits_to_flonum(jit, asm, function, result_bits, state)
-}
-
-/// Compile Float/mixed-Fixnum `+`. The HIR only emits FloatAdd/Sub/Mul/Div when
-/// both operands are guarded Flonum or Fixnum (at least one Flonum -- pure Fixnum
-/// stays FixnumAdd), so it is always open-coded: `Fixnum + Float`, `Float +
-/// Fixnum`, and `Float + Float` all convert their operands and do an fadd.
-fn gen_float_add(jit: &mut JITState, asm: &mut Assembler, function: &Function, recv: lir::Opnd, recv_type: Type, other: lir::Opnd, other_type: Type, state: &FrameState) -> lir::Opnd {
-    gen_flonum_arith(jit, asm, function, FloatArithOp::Add, recv, recv_type, other, other_type, state)
-}
-
-/// Compile Float/mixed-Fixnum `-` (see [`gen_float_add`]).
-fn gen_float_sub(jit: &mut JITState, asm: &mut Assembler, function: &Function, recv: lir::Opnd, recv_type: Type, other: lir::Opnd, other_type: Type, state: &FrameState) -> lir::Opnd {
-    gen_flonum_arith(jit, asm, function, FloatArithOp::Sub, recv, recv_type, other, other_type, state)
-}
-
-/// Compile Float/mixed-Fixnum `*` (see [`gen_float_add`]).
-fn gen_float_mul(jit: &mut JITState, asm: &mut Assembler, function: &Function, recv: lir::Opnd, recv_type: Type, other: lir::Opnd, other_type: Type, state: &FrameState) -> lir::Opnd {
-    gen_flonum_arith(jit, asm, function, FloatArithOp::Mul, recv, recv_type, other, other_type, state)
-}
-
-/// Compile Float/mixed-Fixnum `/` (see [`gen_float_add`]).
-fn gen_float_div(jit: &mut JITState, asm: &mut Assembler, function: &Function, recv: lir::Opnd, recv_type: Type, other: lir::Opnd, other_type: Type, state: &FrameState) -> lir::Opnd {
-    gen_flonum_arith(jit, asm, function, FloatArithOp::Div, recv, recv_type, other, other_type, state)
+/// Convert a Fixnum to a raw double: an arithmetic shift right by 1 strips the
+/// tag (FIX2LONG), then scvtf/cvtsi2sd converts the signed integer to a double.
+/// Matches rb_int2dbl / Integer#to_f rounding.
+fn gen_f64_from_fixnum(asm: &mut Assembler, val: Opnd) -> Opnd {
+    let int_val = asm.rshift(val, Opnd::UImm(1));
+    asm.int64_to_f64_bits(int_val)
 }
 
 /// Compile a flonum comparison (both operands guarded Flonum) via a leaf call to

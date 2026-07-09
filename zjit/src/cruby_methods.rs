@@ -737,21 +737,38 @@ fn inline_integer_xor(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
     None
 }
 
+/// Lower an operand to a raw double ([`types::CDouble`]) for float arithmetic:
+/// UnboxFlonum a flonum, or F64FromFixnum a fixnum.
+fn unbox_operand_to_f64(fun: &mut hir::Function, block: hir::BlockId, val: hir::InsnId, is_flonum: bool, state: hir::InsnId) -> hir::InsnId {
+    // Guard with recompile (like coerce_float_op_operand) so a site that later
+    // sees heap Floats recompiles to the generic path instead of exiting forever.
+    if is_flonum {
+        let val = coerce_float_op_operand(fun, block, val, types::Flonum, state);
+        fun.push_insn(block, hir::Insn::UnboxFlonum { val })
+    } else {
+        let val = coerce_float_op_operand(fun, block, val, types::Fixnum, state);
+        fun.push_insn(block, hir::Insn::F64FromFixnum { val })
+    }
+}
+
 fn try_inline_float_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
     if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, FLOAT_REDEFINED_OP_FLAG) } {
         return None;
     }
-    // Receiver must be Flonum (cheap tag check: (val & 3) == 2).
-    // The other operand can be Flonum or Fixnum since rb_float_plus/minus/mul/div
-    // handle both via fast paths (FIXNUM_P check + cast to double).
+    // Receiver must be Flonum (cheap tag check: (val & 3) == 2); the other operand
+    // may be Flonum or Fixnum. The op runs on raw doubles: unbox/convert each
+    // operand (f builds the FloatX on the doubles), then box the result. A
+    // UnboxFlonum(BoxFlonum(x)) peephole later cancels the box/unbox at the
+    // boundary between chained float ops, keeping intermediates unboxed.
     // HeapFloat falls back to CCallWithFrame via the default Send path.
     if fun.likely_a(recv, types::Flonum, state)
         && (fun.likely_a(other, types::Flonum, state) || fun.likely_a(other, types::Fixnum, state))
     {
-        let recv = coerce_float_op_operand(fun, block, recv, types::Flonum, state);
-        let other_type = if fun.likely_a(other, types::Flonum, state) { types::Flonum } else { types::Fixnum };
-        let other = coerce_float_op_operand(fun, block, other, other_type, state);
-        return Some(fun.push_insn(block, f(recv, other)));
+        let recv_d = unbox_operand_to_f64(fun, block, recv, true, state);
+        let other_flonum = fun.likely_a(other, types::Flonum, state);
+        let other_d = unbox_operand_to_f64(fun, block, other, other_flonum, state);
+        let result_d = fun.push_insn(block, f(recv_d, other_d));
+        return Some(fun.push_insn(block, hir::Insn::BoxFlonum { val: result_d, state }));
     }
     None
 }
@@ -863,9 +880,10 @@ fn try_inline_fixnum_float_op(fun: &mut hir::Function, block: hir::BlockId, f: &
         return None;
     }
     if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(other, types::Flonum, state) {
-        let recv = fun.coerce_to(block, recv, types::Fixnum, state);
-        let other = fun.coerce_to(block, other, types::Flonum, state);
-        return Some(fun.push_insn(block, f(recv, other)));
+        let recv_d = unbox_operand_to_f64(fun, block, recv, false, state);
+        let other_d = unbox_operand_to_f64(fun, block, other, true, state);
+        let result_d = fun.push_insn(block, f(recv_d, other_d));
+        return Some(fun.push_insn(block, hir::Insn::BoxFlonum { val: result_d, state }));
     }
     None
 }
