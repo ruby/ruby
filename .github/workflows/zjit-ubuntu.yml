@@ -95,7 +95,7 @@ jobs:
             configure: '--enable-zjit=dev'
             run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=1'
 
-          - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit.rb
+          - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit_cli.rb
             configure: '--enable-yjit --enable-zjit=dev'
             rust_version: '1.85.0'
 
