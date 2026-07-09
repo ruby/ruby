@@ -1621,6 +1621,8 @@ pub fn class_has_leaf_allocator(class: VALUE) -> bool {
     unsafe { rb_zjit_class_has_default_allocator(class) }
 }
 
+pub const ISEQ_DEFAULT_SELF_TYPE: crate::hir_type::Type = crate::hir_type::types::BasicObject;
+
 /// Whether a method ISEQ defined on `owner` is guaranteed to run with a `self`
 /// that is a heap (non-immediate) object.
 ///
@@ -1637,20 +1639,20 @@ pub fn class_has_leaf_allocator(class: VALUE) -> bool {
 ///
 /// Returns `false` conservatively for anything that doesn't clearly qualify
 /// (modules, singleton classes, custom allocators, non-`def` ISEQs, etc.).
-pub fn iseq_self_is_heap_object(iseq: IseqPtr, owner: VALUE) -> bool {
-    if unsafe { rb_get_iseq_body_type(iseq) } != ISEQ_TYPE_METHOD { return false; }
-    if !unsafe { RB_TYPE_P(owner, RUBY_T_CLASS) } { return false; }
+pub fn iseq_self_type(iseq: IseqPtr, owner: VALUE) -> crate::hir_type::Type {
+    if unsafe { rb_get_iseq_body_type(iseq) } != ISEQ_TYPE_METHOD { return ISEQ_DEFAULT_SELF_TYPE; }
+    if !unsafe { RB_TYPE_P(owner, RUBY_T_CLASS) } { return ISEQ_DEFAULT_SELF_TYPE; }
     // Check initialized + non-singleton before reading the allocator (reading it otherwise
     // aborts).
     // TODO(max): Determine if we can loosen this to allow methods defined on singleton classes.
-    if !unsafe { rb_zjit_class_initialized_p(owner) } { return false; }
-    if unsafe { rb_zjit_singleton_class_p(owner) } { return false; }
-    if !unsafe { rb_zjit_class_has_default_allocator(owner) } { return false; }
+    if !unsafe { rb_zjit_class_initialized_p(owner) } { return ISEQ_DEFAULT_SELF_TYPE; }
+    if unsafe { rb_zjit_singleton_class_p(owner) } { return ISEQ_DEFAULT_SELF_TYPE; }
+    if !unsafe { rb_zjit_class_has_default_allocator(owner) } { return ISEQ_DEFAULT_SELF_TYPE; }
     // Exclude Object/BasicObject/Numeric and friends: classes that use the default
     // allocator but sit above an immediate class in the ancestry chain. They are
     // all ancestors of Integer, so this single check covers every immediate type.
-    if unsafe { rb_obj_is_kind_of(VALUE::fixnum_from_usize(0), owner) }.test() { return false; }
-    true
+    if unsafe { rb_obj_is_kind_of(VALUE::fixnum_from_usize(0), owner) }.test() { return ISEQ_DEFAULT_SELF_TYPE; }
+    crate::hir_type::Type::from_class_inexact(owner).intersection(crate::hir_type::types::HeapBasicObject)
 }
 
 /// Interned ID values for Ruby symbols and method names.
