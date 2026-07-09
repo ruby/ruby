@@ -1324,6 +1324,22 @@ fn test_throw_break_value_used_by_caller() {
 }
 
 #[test]
+fn test_throw_break_into_frame_with_float_temporary() {
+    // `a * b` waits on the operand stack across the block call. The break materializes the
+    // frame from that call's stack map and the interpreter resumes it at the `+`, so the slot
+    // must hold a VALUE, not a raw double whose box was sunk to the deopt path (+0.0 read back
+    // as false, 18.0 as a wild pointer).
+    set_call_threshold(2);
+    eval("
+        def each_once = yield
+        def test(a, b) = (a * b) + each_once { break 1.5 }
+        test(0.0, 6.0)
+        test(0.0, 6.0)
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("[test(0.0, 6.0), test(3.0, 6.0)]"), @"[1.5, 19.5]");
+}
+
+#[test]
 fn test_throw_break_search_loop() {
     set_call_threshold(2);
     eval("

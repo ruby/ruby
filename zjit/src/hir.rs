@@ -1125,6 +1125,14 @@ pub enum Insn {
     /// Re-encode a raw double ([`types::CDouble`]) as a flonum VALUE. Side exits
     /// when the value is not flonum-representable (would need a heap Float).
     BoxFlonum { val: InsnId, state: InsnId },
+    /// Guard that a raw double ([`types::CDouble`]) is flonum-representable,
+    /// side-exiting to `state` otherwise. A passthrough: the output is the same
+    /// [`types::CDouble`]. Created by `sink_flonum_boxes_to_deopt` in place of a
+    /// `BoxFlonum` whose only uses are deopt snapshots -- the flonum encoding is
+    /// then deferred to the side-exit path ([`crate::codegen::rb_zjit_flonum_encode`]),
+    /// keeping it out of the hot loop while the guard preserves the exact
+    /// non-representable side-exit behavior the box had.
+    GuardFlonumRepresentable { val: InsnId, state: InsnId },
     /// Convert a `Fixnum` directly to a raw double ([`types::CDouble`]).
     F64FromFixnum { val: InsnId },
     FixnumAref { recv: InsnId, index: InsnId },
@@ -1547,7 +1555,8 @@ macro_rules! for_each_operand_impl {
             | Insn::ToNewArray { val, state }
             | Insn::SetLocal { val, state, .. }
             | Insn::BoxFixnum { val, state }
-            | Insn::BoxFlonum { val, state } => {
+            | Insn::BoxFlonum { val, state }
+            | Insn::GuardFlonumRepresentable { val, state } => {
                 $visit_one!(*val);
                 $visit_one!(*state);
             }
@@ -1912,6 +1921,9 @@ impl Insn {
             Insn::UnboxFlonum { .. } => effects::Empty,
             Insn::BoxFlonum { .. } => effects::Empty,
             Insn::F64FromFixnum { .. } => effects::Empty,
+            // A guard: writes Control so DCE keeps it and never reorders it past
+            // the value it guards.
+            Insn::GuardFlonumRepresentable { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
             Insn::FixnumAref { .. } => effects::Empty,
             Insn::Defined { .. } => effects::Any,
             Insn::GetConstant { .. } => effects::Any,
@@ -2317,6 +2329,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::UnboxFlonum { val } => write!(f, "UnboxFlonum {val}"),
             Insn::BoxFlonum { val, .. } => write!(f, "BoxFlonum {val}"),
             Insn::F64FromFixnum { val } => write!(f, "F64FromFixnum {val}"),
+            Insn::GuardFlonumRepresentable { val, .. } => write!(f, "GuardFlonumRepresentable {val}"),
             Insn::FixnumAref { recv, index } => write!(f, "FixnumAref {recv}, {index}"),
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::CondBranch { val, if_true, if_false } => { write!(f, "CondBranch {val}, {if_true}, {if_false}") },
@@ -3773,6 +3786,19 @@ impl Function {
         self.insn_types[self.union_find.borrow_mut().find(insn)]
     }
 
+    /// The resolved output type of every instruction, indexed by InsnId, for
+    /// codegen to consult (e.g. at side-exit build time). Instructions with no
+    /// output get `types::Empty`. Types are resolved through the union-find so
+    /// that a non-canonical (replaced) InsnId reports its canonical type.
+    pub fn insn_types_snapshot(&self) -> Vec<Type> {
+        (0..self.insns.len())
+            .map(|i| {
+                let id = InsnId::from(i);
+                if self.insns[i].has_output() { self.type_of(id) } else { types::Empty }
+            })
+            .collect()
+    }
+
     /// Check if the type of `insn` is a subtype of `ty`.
     pub fn is_a(&self, insn: InsnId, ty: Type) -> bool {
         self.type_of(insn).is_subtype(ty)
@@ -3883,6 +3909,8 @@ impl Function {
             Insn::UnboxFlonum { .. } => types::CDouble,
             Insn::F64FromFixnum { .. } => types::CDouble,
             Insn::BoxFlonum { .. } => types::Flonum,
+            // Passthrough: guarding representability does not change the raw double.
+            Insn::GuardFlonumRepresentable { val, .. } => self.type_of(*val),
             Insn::FloatCmp   { .. } => types::BoolExact,
             Insn::FloatToInt { .. } => types::Integer,
             Insn::FixnumEq   { .. } => types::BoolExact,
@@ -7833,6 +7861,116 @@ impl Function {
         Self::make_iongraph_function(pass_name, hir_blocks)
     }
 
+    /// Mark the values on the operand stack of every state whose stack may be
+    /// published verbatim. A raw `CDouble` slot is only sound where a side exit
+    /// is its sole reader, since `compile_exit_save_state` re-encodes it. Calls,
+    /// frame pushes, and VM fallbacks publish their state's stack as-is -- via
+    /// `gen_spill_stack`, or a JITFrame stack map that `zjit_materialize_frames()`
+    /// copies into the interpreter frame on a longjmp (raise, `break`, `throw`) --
+    /// and so does a caller-position state when an inlined callee exits. The
+    /// interpreter then reads the raw bits as a `VALUE`: +0.0 as `false`, anything
+    /// else as a wild pointer. Locals are exempt: `gen_spill_locals` and the
+    /// elided-frame materializer re-encode raw local slots before publishing them.
+    fn values_on_published_stacks(&self) -> Vec<bool> {
+        let rpo = self.reverse_post_order();
+        let mut published = vec![false; self.insns.len()];
+        for block_id in &rpo {
+            for &insn_id in &self.blocks[*block_id].insns {
+                let insn = &self.insns[insn_id];
+                // Only a side exit reads these instructions' states.
+                let deopt_only = matches!(insn,
+                    Insn::GuardType { .. } | Insn::GuardBitEquals { .. }
+                    | Insn::GuardAnyBitSet { .. } | Insn::GuardNoBitsSet { .. }
+                    | Insn::GuardGreaterEq { .. } | Insn::GuardLess { .. }
+                    | Insn::GuardFlonumRepresentable { .. }
+                    | Insn::PatchPoint { .. } | Insn::CheckInterrupts { .. }
+                    | Insn::FixnumAdd { .. } | Insn::FixnumSub { .. }
+                    | Insn::FixnumMult { .. } | Insn::FixnumLShift { .. }
+                    | Insn::BoxFixnum { .. } | Insn::BoxFlonum { .. }
+                    // Open-coded on raw doubles, these ignore their state; FloatCmp's
+                    // leaf call publishes no stack (gen_prepare_leaf_call_with_gc).
+                    | Insn::FloatAdd { .. } | Insn::FloatSub { .. }
+                    | Insn::FloatMul { .. } | Insn::FloatDiv { .. }
+                    | Insn::FloatCmp { .. });
+                if deopt_only {
+                    continue;
+                }
+                // Any other reference publishes the state, including a Snapshot
+                // naming it as the caller of an inlined frame.
+                insn.for_each_operand(|operand| {
+                    let operand = self.union_find.borrow().find_const(operand);
+                    if matches!(self.insns[operand], Insn::Snapshot { .. }) {
+                        published[operand] = true;
+                    }
+                });
+            }
+        }
+        let mut on_published_stack = vec![false; self.insns.len()];
+        for block_id in &rpo {
+            for &insn_id in &self.blocks[*block_id].insns {
+                let Insn::Snapshot { state } = &self.insns[insn_id] else { continue };
+                let resolved = self.union_find.borrow().find_const(insn_id);
+                if !published[resolved] && !published[insn_id] {
+                    continue;
+                }
+                for &operand in state.stack() {
+                    on_published_stack[self.union_find.borrow().find_const(operand)] = true;
+                }
+            }
+        }
+        on_published_stack
+    }
+
+    /// Replace each `BoxFlonum` whose only remaining uses are deopt snapshots with
+    /// a `GuardFlonumRepresentable`. The box's flonum encoding then no longer runs
+    /// in the mainline; the snapshot slot instead carries the raw double
+    /// ([`types::CDouble`]) and the side-exit path encodes it lazily (see
+    /// `compile_exit_save_state` and [`crate::codegen::rb_zjit_flonum_encode`]).
+    /// The guard preserves the box's non-representable side exit, so the deferred
+    /// encode is always a pure, non-allocating bit twiddle -- safe to run mid-exit.
+    /// A box on the stack of a state published verbatim stays in the mainline
+    /// (see [`Self::values_on_published_stacks`]).
+    ///
+    /// Runs once after the pipeline reaches a fixed point, so the peephole that
+    /// cancels `UnboxFlonum(BoxFlonum(x))` and the subsequent DCE have already
+    /// removed a chained box's non-snapshot uses, leaving only the deopt ones.
+    fn sink_flonum_boxes_to_deopt(&mut self) {
+        let rpo = self.reverse_post_order();
+        // Mark every insn referenced by a non-Snapshot instruction. Snapshot
+        // operands are the deopt stack/locals -- exactly the uses we are moving
+        // into the side-exit path -- so they must not count as "real" uses.
+        let mut used_outside_snapshot = vec![false; self.insns.len()];
+        for block_id in &rpo {
+            for &insn_id in &self.blocks[*block_id].insns {
+                if matches!(self.insns[insn_id], Insn::Snapshot { .. }) {
+                    continue;
+                }
+                self.insns[insn_id].for_each_operand(|operand| {
+                    let operand = self.union_find.borrow().find_const(operand);
+                    used_outside_snapshot[operand] = true;
+                });
+            }
+        }
+        let on_published_stack = self.values_on_published_stacks();
+        // Turn each deopt-only BoxFlonum into a representability guard in place.
+        // The snapshots keep referencing this insn, now typed CDouble, and
+        // build_side_exit re-encodes those slots in the exit.
+        for block_id in &rpo {
+            for insn_id in self.blocks[*block_id].insns.clone() {
+                let Insn::BoxFlonum { val, state } = self.insns[insn_id] else { continue };
+                // Only rewrite canonical, deopt-only boxes.
+                if self.union_find.borrow().find_const(insn_id) != insn_id {
+                    continue;
+                }
+                if used_outside_snapshot[insn_id] || on_published_stack[insn_id] {
+                    continue;
+                }
+                self.insns[insn_id] = Insn::GuardFlonumRepresentable { val, state };
+                self.insn_types[insn_id] = types::CDouble;
+            }
+        }
+    }
+
     /// Run all the optimization passes we have.
     pub fn optimize(&mut self) {
         let mut passes: Vec<Json> = Vec::new();
@@ -7910,6 +8048,12 @@ impl Function {
                 break;
             }
         }
+
+        // After the pipeline reaches a fixed point (all inlining, peepholes, and
+        // DCE done), sink deopt-only flonum boxes into representability guards so
+        // the flonum encoding moves to the cold side-exit path.
+        crate::stats::trace_compile_phase("sink_flonum_boxes_to_deopt", || self.sink_flonum_boxes_to_deopt());
+        #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
 
         if should_dump {
             let iseq_name = iseq_get_location(self.iseq, 0);
@@ -8395,6 +8539,7 @@ impl Function {
             }
             Insn::UnboxFlonum { val } => self.assert_subtype(insn_id, val, types::Flonum),
             Insn::BoxFlonum { val, .. } => self.assert_subtype(insn_id, val, types::CDouble),
+            Insn::GuardFlonumRepresentable { val, .. } => self.assert_subtype(insn_id, val, types::CDouble),
             Insn::F64FromFixnum { val } => self.assert_subtype(insn_id, val, types::Fixnum),
             Insn::FixnumAref { recv, index } => {
                 self.assert_subtype(insn_id, recv, types::Fixnum)?;

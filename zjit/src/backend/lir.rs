@@ -631,6 +631,12 @@ pub struct SideExit {
     pub pc: Opnd,
     pub stack: Vec<Opnd>,
     pub locals: Vec<Opnd>,
+    /// Parallel to `stack`/`locals`: `true` where the operand is a raw double
+    /// ([`crate::hir_type::types::CDouble`], left unboxed by the flonum-box sink)
+    /// and must be re-encoded to a flonum VALUE before it is written to the
+    /// interpreter frame. See `compile_exit_save_state`.
+    pub stack_needs_flonum_box: Vec<bool>,
+    pub locals_needs_flonum_box: Vec<bool>,
     pub iseq: IseqPtr,
     /// Stack map for older inlined frames that are not written directly by this
     /// side exit. The current frame's stack and locals are still handled by
@@ -3121,7 +3127,7 @@ impl Assembler
 
         /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals, iseq, stack_map, .. } = exit;
+            let SideExit { pc, stack, locals, stack_needs_flonum_box, locals_needs_flonum_box, iseq, stack_map, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
@@ -3139,10 +3145,28 @@ impl Assembler
 
             // cfp->block_code and cfp->jit_return are cleared by the materialize_exit trampoline
 
+            // Re-encode a raw-double frame slot (written above) into a flonum VALUE
+            // in place. Only reached for slots the flonum-box sink left unboxed,
+            // where GuardFlonumRepresentable already proved representability, so
+            // rb_zjit_flonum_encode is a pure, non-allocating bit twiddle: no GC can
+            // run, so the other raw doubles still on the frame stay safe, and we read
+            // the value back from the frame (not a register) so the call clobbering
+            // caller-saved registers cannot lose a pending slot. CFP/SP are
+            // callee-saved and survive the call.
+            fn encode_flonum_slot(asm: &mut Assembler, slot: Opnd) {
+                let _ = asm.ccall(crate::codegen::rb_zjit_flonum_encode as *const u8, vec![slot]);
+                asm.store(slot, C_RET_OPND);
+            }
+
             if !stack.is_empty() {
                 asm_comment!(asm, "write stack slots: {}", join_opnds(&stack, ", "));
                 for (idx, &opnd) in stack.iter().enumerate() {
                     asm.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
+                }
+                for (idx, &needs_box) in stack_needs_flonum_box.iter().enumerate() {
+                    if needs_box {
+                        encode_flonum_slot(asm, Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32));
+                    }
                 }
             }
 
@@ -3150,6 +3174,11 @@ impl Assembler
                 asm_comment!(asm, "write locals: {}", join_opnds(&locals, ", "));
                 for (idx, &opnd) in locals.iter().enumerate() {
                     asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
+                }
+                for (idx, &needs_box) in locals_needs_flonum_box.iter().enumerate() {
+                    if needs_box {
+                        encode_flonum_slot(asm, Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32));
+                    }
                 }
             }
 

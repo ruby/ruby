@@ -68,6 +68,12 @@ struct JITState {
     /// inlined frame push write a JITFrame into the slot selected by the current
     /// frame's depth; gen_prepare_non_leaf_call() writes the SP slot.
     jit_frame_size: usize,
+
+    /// HIR type of each instruction (resolved through the union-find), indexed by
+    /// InsnId. Populated once from the optimized `Function` so that side-exit
+    /// construction can tell which frame-state slots hold a raw double
+    /// ([`types::CDouble`]) and must be re-encoded to a flonum in the exit.
+    insn_types: Vec<Type>,
 }
 
 impl JITState {
@@ -80,12 +86,18 @@ impl JITState {
             jit_entries: Vec::default(),
             iseq_calls: Vec::default(),
             jit_frame_size,
+            insn_types: Vec::default(),
         }
     }
 
     /// Retrieve the output of a given instruction that has been compiled
     fn get_opnd(&self, insn_id: InsnId) -> lir::Opnd {
         self.opnds[insn_id].unwrap_or_else(|| panic!("Failed to get_opnd({insn_id})"))
+    }
+
+    /// HIR type of an instruction's output (see [`JITState::insn_types`]).
+    fn type_of(&self, insn_id: InsnId) -> Type {
+        self.insn_types[insn_id]
     }
 
     /// Get the ISEQ for the version currently being compiled.
@@ -179,6 +191,24 @@ fn update_self_is_heap_object(iseq: IseqPtr, cfp: CfpPtr) {
     let self_is_heap_object = !cme.is_null()
         && iseq_self_is_heap_object(iseq, unsafe { (*cme).owner });
     get_or_create_iseq_payload(iseq).self_is_heap_object = self_is_heap_object;
+}
+
+/// Encode raw f64 bits into a flonum `VALUE`. The caller must guarantee the bits
+/// are flonum-representable (enforced in JIT code by `GuardFlonumRepresentable`);
+/// this is pure bit math and **never allocates**, which is what makes it safe to
+/// call from a side exit while other raw doubles are still sitting on the
+/// interpreter stack (a GC triggered by an allocation would misread them). The
+/// encoding must stay bit-for-bit identical to `double_bits_to_flonum`'s encode
+/// half.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_flonum_encode(bits: u64) -> VALUE {
+    // +0.0 (all-zero bits) is the flonum sentinel; it is not rotate-encodable.
+    if bits == 0 {
+        return VALUE(0x8000000000000002);
+    }
+    // rotl(bits, 3) then set the flonum tag: ((bits << 3 | bits >> 61) & ~1) | 2
+    let rotl = (bits << 3) | (bits >> 61);
+    VALUE(((rotl & !1u64) | 2) as usize)
 }
 
 /// CRuby API to compile a given ISEQ.
@@ -428,6 +458,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
         // are anchored on (see base_ptr_slot_offset()).
         let jit_frame_size = function.inlining_depth() + 2;
         let mut jit = JITState::new(version, function.num_insns(), function.num_blocks(), jit_frame_size);
+        jit.insn_types = function.insn_types_snapshot();
         let mut asm = Assembler::new_with_stack_slots(jit_frame_size);
 
         // Mapping from HIR block IDs to LIR block IDs.
@@ -774,6 +805,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FloatDiv { recv, other, .. } => asm.float_arith(FloatArithOp::Div, opnd!(recv), opnd!(other)),
         &Insn::UnboxFlonum { val } => flonum_unbox(asm, opnd!(val)),
         &Insn::BoxFlonum { val, state } => double_bits_to_flonum(jit, asm, function, opnd!(val), &function.frame_state(state)),
+        &Insn::GuardFlonumRepresentable { val, state } => gen_guard_flonum_representable(jit, asm, function, opnd!(val), &function.frame_state(state)),
         &Insn::F64FromFixnum { val } => gen_f64_from_fixnum(asm, opnd!(val)),
         &Insn::FloatCmp { op, recv, other, state } => gen_float_cmp(asm, op, opnd!(recv), opnd!(other), &function.frame_state(state)),
         Insn::FloatToInt { recv, state } => gen_float_to_int(asm, opnd!(recv), &function.frame_state(*state)),
@@ -3042,7 +3074,12 @@ fn flonum_unbox(asm: &mut Assembler, val: Opnd) -> Opnd {
 /// Re-encode a raw IEEE-754 double bit pattern `t` as a flonum VALUE, taking a
 /// side exit when the result is not representable as a flonum (e.g. it would
 /// need a heap Float). Mirrors the flonum-encodable fast path.
-fn double_bits_to_flonum(jit: &mut JITState, asm: &mut Assembler, function: &Function, t: Opnd, state: &FrameState) -> Opnd {
+/// Side-exit when `t` (raw IEEE-754 double bits) is not flonum-representable.
+/// Shared by [`double_bits_to_flonum`] (which then encodes) and
+/// [`gen_guard_flonum_representable`] (which passes the raw double through). Both
+/// must agree exactly: the sink pass moves the encode into the side exit only
+/// because this guard guarantees the value it later encodes is representable.
+fn gen_flonum_representable_guard(jit: &mut JITState, asm: &mut Assembler, function: &Function, t: Opnd, state: &FrameState) {
     // +0.0 (all-zero bits) is not rotate-encodable but IS a flonum -- the
     // sentinel 0x8000000000000002. Every other double is flonum-representable
     // iff its top three exponent bits are 3 or 4; otherwise it needs a heap
@@ -3065,7 +3102,12 @@ fn double_bits_to_flonum(jit: &mut JITState, asm: &mut Assembler, function: &Fun
     let edge = asm.load(Opnd::UImm(0x3000000000000000));
     asm.cmp(t, edge);
     asm.je(jit, side_exit(jit, function, state, FlonumArithResultNotFlonum));
-    // rotl(t, 3) then set the flonum tag: ((t << 3 | t >> 61) & ~1) | 2
+}
+
+fn double_bits_to_flonum(jit: &mut JITState, asm: &mut Assembler, function: &Function, t: Opnd, state: &FrameState) -> Opnd {
+    gen_flonum_representable_guard(jit, asm, function, t, state);
+    // rotl(t, 3) then set the flonum tag: ((t << 3 | t >> 61) & ~1) | 2. This must
+    // stay bit-for-bit identical to rb_zjit_flonum_encode (the side-exit path).
     let hi = asm.lshift(t, Opnd::UImm(3));
     let lo = asm.urshift(t, Opnd::UImm(61));
     let rotl = asm.or(hi, lo);
@@ -3075,6 +3117,15 @@ fn double_bits_to_flonum(jit: &mut JITState, asm: &mut Assembler, function: &Fun
     let sentinel = asm.load(Opnd::UImm(0x8000000000000002));
     asm.cmp(t, Opnd::UImm(0));
     asm.csel_e(sentinel, encoded)
+}
+
+/// Guard that `t` (raw double bits) is flonum-representable, then pass it through
+/// unchanged. Emitted for `GuardFlonumRepresentable`, which the sink pass leaves
+/// in place of a deopt-only `BoxFlonum`: the mainline keeps only the check, and
+/// the flonum encoding is deferred to the side exit (`rb_zjit_flonum_encode`).
+fn gen_guard_flonum_representable(jit: &mut JITState, asm: &mut Assembler, function: &Function, t: Opnd, state: &FrameState) -> Opnd {
+    gen_flonum_representable_guard(jit, asm, function, t, state);
+    t
 }
 
 /// Convert a Fixnum to a raw double: an arithmetic shift right by 1 strips the
@@ -3673,7 +3724,45 @@ fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     gen_incr_counter(asm, Counter::vm_write_locals_count);
     asm_comment!(asm, "spill locals");
     for (idx, &insn_id) in state.locals().enumerate() {
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
+        let val = spill_encode_local(asm, jit.get_opnd(insn_id), jit.type_of(insn_id));
+        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), val);
+    }
+}
+
+/// Re-encode a local operand into a `VALUE` before a live spill writes it to a
+/// real EP slot. The flonum sink pass can leave a local holding a raw unboxed
+/// operand on the mainline (a `CDouble` from a sunk `BoxFlonum`; later passes add
+/// `CInt64`/`CBool`). That is sound for mainline SSA uses and for side exits
+/// (which re-encode the same slots in [`build_side_exit`]), but `gen_spill_locals`
+/// publishes the value to an EP stack slot that *another* frame reads as a
+/// `VALUE`: a nested block capturing the local (`getlocal level:1`), a caller
+/// `Binding`, or the interpreter after a `NoEPEscape` reload. Encode in place,
+/// bit-for-bit identically to `rb_zjit_{flonum,fixnum,bool}_encode`. The passes
+/// already proved representability, so this never allocates and needs no guard.
+fn spill_encode_local(asm: &mut Assembler, opnd: Opnd, ty: Type) -> Opnd {
+    if ty.is_subtype(types::CDouble) {
+        // rb_zjit_flonum_encode: rotl(bits, 3) then set the flonum tag, with the
+        // all-zero (+0.0) bit pattern mapped to the non-rotate-encodable sentinel.
+        let hi = asm.lshift(opnd, Opnd::UImm(3));
+        let lo = asm.urshift(opnd, Opnd::UImm(61));
+        let rotl = asm.or(hi, lo);
+        let cleared = asm.and(rotl, Opnd::Imm(!0x1i64));
+        let encoded = asm.or(cleared, Opnd::UImm(0x2));
+        let sentinel = asm.load(Opnd::UImm(0x8000000000000002));
+        asm.cmp(opnd, Opnd::UImm(0));
+        asm.csel_e(sentinel, encoded)
+    } else if ty.is_subtype(types::CInt64) {
+        // rb_zjit_fixnum_encode: (v << 1) | 1
+        let shifted = asm.lshift(opnd, Opnd::UImm(1));
+        asm.or(shifted, Opnd::UImm(1))
+    } else if ty.is_subtype(types::CBool) {
+        // rb_zjit_bool_encode: b == 0 ? Qfalse : Qtrue
+        let fal = asm.load(Opnd::UImm(Qfalse.as_u64()));
+        let tru = asm.load(Opnd::UImm(Qtrue.as_u64()));
+        asm.cmp(opnd, Opnd::UImm(0));
+        asm.csel_e(fal, tru)
+    } else {
+        opnd
     }
 }
 
@@ -3910,20 +3999,30 @@ fn side_exit_with_recompile(jit: &JITState, function: &Function, state: &FrameSt
 
 /// Build a side-exit context
 fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> SideExit {
+    // A frame-state slot typed CDouble holds a raw double (its flonum box was
+    // sunk to the exit by GuardFlonumRepresentable). Capture the raw operand and
+    // flag the slot so compile_exit_save_state re-encodes it to a flonum -- the
+    // guard already ran, so rb_zjit_flonum_encode never allocates.
     let mut stack = Vec::new();
+    let mut stack_needs_flonum_box = Vec::new();
     for &insn_id in state.stack() {
         stack.push(jit.get_opnd(insn_id));
+        stack_needs_flonum_box.push(jit.type_of(insn_id).is_subtype(types::CDouble));
     }
 
     let mut locals = Vec::new();
+    let mut locals_needs_flonum_box = Vec::new();
     for &insn_id in state.locals() {
         locals.push(jit.get_opnd(insn_id));
+        locals_needs_flonum_box.push(jit.type_of(insn_id).is_subtype(types::CDouble));
     }
 
     SideExit{
         pc: Opnd::const_ptr(state.pc),
         stack,
         locals,
+        stack_needs_flonum_box,
+        locals_needs_flonum_box,
         iseq: state.iseq,
         stack_map: build_caller_stack_map(jit, function, state),
         recompile: None,
