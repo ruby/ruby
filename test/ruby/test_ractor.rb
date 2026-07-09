@@ -338,6 +338,7 @@ class TestRactor < Test::Unit::TestCase
       port.receive
       assert_equal true, port.empty?
       r.join
+    RUBY
   end
 
   def test_mn_threads
