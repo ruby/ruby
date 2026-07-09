@@ -1749,7 +1749,7 @@ ranges_inspect(DebugInfoReader *reader, ranges_t *ptr, FILE *errout)
 #endif
 
 static int
-di_read_cu(DebugInfoReader *reader, FILE *errout)
+di_read_cu_context(DebugInfoReader *reader, FILE *errout)
 {
     uint64_t unit_length;
     uint16_t version;
@@ -1784,7 +1784,6 @@ di_read_cu(DebugInfoReader *reader, FILE *errout)
 
     reader->level = 0;
     di_read_debug_abbrev_cu(reader);
-    if (di_read_debug_line_cu(reader, errout)) return -1;
 
     do {
         DIE die;
@@ -1840,12 +1839,57 @@ di_read_cu(DebugInfoReader *reader, FILE *errout)
     return 0;
 }
 
+static int
+di_read_cu(DebugInfoReader *reader, FILE *errout)
+{
+    /* Keep di_read_cu_context separate so that it can be reused by di_read_cu_at
+     * to set up arbitrary CUs without disturbing the .debug_line traversal. */
+    if (di_read_cu_context(reader, errout)) return -1;
+    if (di_read_debug_line_cu(reader, errout)) return -1;
+    return 0;
+}
+
+/* Find the .debug_info compilation unit containing the section-relative DIE
+ * offset `die_offset`, initialize `reader` with that unit's abbrev/base context,
+ * and leave reader->p pointing at the referenced DIE.  Type units, split DWARF,
+ * and supplementary debug objects are outside this parser's current scope. */
+static bool
+di_read_cu_at(DebugInfoReader *reader, uint64_t die_offset, FILE *errout)
+{
+    const uint64_t debug_info_size = reader->obj->debug_info.size;
+    if (die_offset >= debug_info_size) return false;
+
+    const char *const info = reader->obj->debug_info.ptr;
+    const char *const pend = reader->pend;
+    const char *const target = info + die_offset;
+    const char *cu = info;
+
+    while (pend - cu >= 4) {
+        const char *hp = cu;
+        uint64_t unit_length = read_uint32(&hp);
+
+        if (unit_length == 0xffffffff) {
+            if (pend - hp < 8) return false;
+            unit_length = read_uint64(&hp);
+        }
+        if (unit_length == 0 || unit_length > (uint64_t)(pend - hp)) return false;
+
+        const char *cu_end = hp + unit_length;
+        if (target >= cu && target < cu_end) {
+            reader->p = cu;
+            if (di_read_cu_context(reader, errout)) return false;
+            reader->p = target;
+            return true;
+        }
+        cu = cu_end;
+    }
+    return false;
+}
+
 static void
 read_abstract_origin(DebugInfoReader *reader, uint64_t form, uint64_t abstract_origin, line_info_t *line, FILE *errout)
 {
-    const char *p = reader->p;
-    const char *q = reader->q;
-    int level = reader->level;
+    DebugInfoReader saved = *reader; /* CU-scoped state may be rewritten below */
     DIE die;
 
     switch (form) {
@@ -1857,7 +1901,11 @@ read_abstract_origin(DebugInfoReader *reader, uint64_t form, uint64_t abstract_o
         reader->p = reader->current_cu + abstract_origin;
         break;
       case DW_FORM_ref_addr:
-        goto finish; /* not supported yet */
+        /* Section-relative; target may be in another CU.
+         * Switch to that CU's context.
+         * di_read_cu_at leaves p at the target DIE. */
+        if (!di_read_cu_at(reader, abstract_origin, errout)) goto finish;
+        break;
       case DW_FORM_ref_sig8:
         goto finish; /* not supported yet */
       case DW_FORM_ref_sup4:
@@ -1880,9 +1928,7 @@ read_abstract_origin(DebugInfoReader *reader, uint64_t form, uint64_t abstract_o
     }
 
   finish:
-    reader->p = p;
-    reader->q = q;
-    reader->level = level;
+    *reader = saved;
 }
 
 static bool
@@ -2209,7 +2255,12 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     }
 
     if (obj->debug_info.ptr && obj->debug_abbrev.ptr) {
-        DebugInfoReader reader;
+        /* Static (not stack): ~2KB struct, runs on a small altstack.
+         * Safe despite fill_lines re-entering via follow_debuglink: this
+         * block's while loop fully consumes the reader before that
+         * recursion point (in the separate !debug_line block below), and
+         * debug_info_reader_init reinitializes on each entry. */
+        static DebugInfoReader reader;
         debug_info_reader_init(&reader, obj);
         i = 0;
         while (reader.p < reader.pend) {
@@ -2492,7 +2543,8 @@ found_mach_header:
     }
 
     if (obj->debug_info.ptr && obj->debug_abbrev.ptr) {
-        DebugInfoReader reader;
+        /* Static (not stack): ~2KB struct, runs on a small altstack. */
+        static DebugInfoReader reader;
         debug_info_reader_init(&reader, obj);
         while (reader.p < reader.pend) {
             if (di_read_cu(&reader, errout)) goto fail;
