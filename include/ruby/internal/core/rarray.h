@@ -45,7 +45,6 @@
 /** @cond INTERNAL_MACRO */
 #define RARRAY_EMBED_FLAG      RARRAY_EMBED_FLAG
 #define RARRAY_EMBED_LEN_MASK  RARRAY_EMBED_LEN_MASK
-#define RARRAY_EMBED_LEN_MAX   RARRAY_EMBED_LEN_MAX
 #define RARRAY_EMBED_LEN_SHIFT RARRAY_EMBED_LEN_SHIFT
 /** @endcond */
 #define RARRAY_LEN                 rb_array_len                 /**< @alias{rb_array_len} */
