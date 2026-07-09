@@ -4862,9 +4862,12 @@ impl Function {
                 // callee sits one level deeper (caller_depth + 1).
                 let caller_depth = self.frame_depth(state);
 
+                // The callee's perspective of the stack is with the receiver and arguments popped off.
+                let caller_stack_size = call_state.stack_size() - args.len() - 1; // -1 for receiver
+                let post_send_caller = self.new_insn(Insn::Snapshot { state: Box::new(call_state.with_stack_size(caller_stack_size)) });
                 let mode = AddIseqMode::Inlined {
                     return_block: continuation,
-                    caller: state,
+                    caller: post_send_caller,
                     depth: caller_depth + 1,
                     jit_entry_idx: passed_opt_num,
                 };
@@ -4991,6 +4994,10 @@ impl Function {
 
                 // The original SendDirect result is now the continuation's return value param.
                 self.make_equal_to(send_insn_id, return_val_param);
+
+                // Keep the caller FrameState that inlined callee Snapshots point at
+                // as a distinct Snapshot instead of rewriting the consumed SendDirect.
+                self.push_insn_id(block, post_send_caller);
 
                 // Insert PushLightweightFrame and jump to callee body entry.
                 self.push_insn(block, Insn::PushInlineFrame {
@@ -6847,7 +6854,7 @@ pub struct FrameState {
     stack: Vec<InsnId>,
     locals: Vec<InsnId>,
 
-    /// `InsnId` of the caller's call-site `Snapshot` for inlined frames; `None`
+    /// `InsnId` of the caller's post-send `Snapshot` for inlined frames; `None`
     /// for non-inlined frames. Stored as an instruction reference rather than
     /// an owned `FrameState` so that value remapping in the caller's `Snapshot`
     /// propagates here automatically, and so the caller's state has a single
@@ -6879,6 +6886,13 @@ impl FrameState {
     pub fn without_stack(&self) -> Self {
         let mut state = self.clone();
         state.stack.clear();
+        state
+    }
+
+    /// Return itself with a truncated stack.
+    pub fn with_stack_size(&self, stack_size: usize) -> Self {
+        let mut state = self.clone();
+        state.stack.truncate(stack_size);
         state
     }
 
@@ -6918,7 +6932,7 @@ impl FrameState {
     }
 
     /// Construct a `FrameState` for an inlined callee. `caller` is the `InsnId`
-    /// of the caller's call-site `Snapshot`; `depth` is this frame's inlining depth.
+    /// of the caller's post-send `Snapshot`; `depth` is this frame's inlining depth.
     fn inlined(iseq: IseqPtr, caller: InsnId, depth: InlineDepth) -> FrameState {
         FrameState { caller: Some(caller), depth, ..FrameState::new(iseq) }
     }
@@ -6931,6 +6945,10 @@ impl FrameState {
     /// Iterate over all stack slots
     pub fn stack(&self) -> Iter<'_, InsnId> {
         self.stack.iter()
+    }
+
+    pub fn caller(&self) -> Option<InsnId> {
+        self.caller
     }
 
     /// Iterate over all local variables
@@ -7244,7 +7262,7 @@ enum AddIseqMode {
     Standalone,
     Inlined {
         return_block: BlockId,
-        /// The caller's call-site `Snapshot`. Allows side-exits to restore the outer frame.
+        /// The caller's post-send `Snapshot`. Allows side-exits to restore the outer frame.
         caller: InsnId,
         /// Inlining depth of every frame emitted for the callee.
         depth: InlineDepth,
@@ -7315,7 +7333,7 @@ fn add_iseq_to_hir(
     let mut profiles = ProfileOracle::new();
 
     // Build the initial FrameState for a block being translated. In inlined
-    // mode it carries the caller's call-site Snapshot and this frame's depth;
+    // mode it carries the caller's post-send Snapshot and this frame's depth;
     // because every Snapshot emitted for the callee is cloned from one of these
     // initial states, those values propagate to the whole inlined body without a
     // separate rewrite pass.
