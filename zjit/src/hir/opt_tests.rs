@@ -2114,8 +2114,7 @@ mod hir_opt_tests {
           v64:StringExact = StringCopy v63
           PatchPoint NoSingletonClass(String@0x10b0)
           PatchPoint MethodRedefined(String@0x10b0, ==@0x1078, cme:0x10b8)
-          v198 = GuardType v187, StringExact recompile
-          v199:BoolExact = StringEqual v198, v64
+          v199:BoolExact = StringEqual v193, v64
           v69:CBool = Test v199
           CondBranch v69, bb6(), bb14()
         bb6():
@@ -2129,7 +2128,6 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(open_uri)
           v83:StringExact[VALUE(0x1100)] = Const Value(VALUE(0x1100))
           PatchPoint NoSingletonClass(String@0x10b0)
-          v88 = GuardType v187, String
           Unreachable
         ");
     }

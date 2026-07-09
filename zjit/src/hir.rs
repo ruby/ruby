@@ -7971,6 +7971,225 @@ impl Function {
         }
     }
 
+    /// Return the outgoing edges of `block` as (target, args). Terminators have no
+    /// output, so reading `self.insns` directly (no union-find) is fine.
+    fn out_edges_of(&self, block: BlockId) -> Vec<(BlockId, Vec<InsnId>)> {
+        let Some(&term_id) = self.blocks[block].insns.last() else { return vec![] };
+        match &self.insns[term_id] {
+            Insn::Jump(e) => vec![(e.target, e.args.clone())],
+            Insn::CondBranch { if_true, if_false, .. } => {
+                vec![(if_true.target, if_true.args.clone()), (if_false.target, if_false.args.clone())]
+            }
+            Insn::CondBranchFixnumCmp(insn) => {
+                vec![(insn.if_true.target, insn.if_true.args.clone()), (insn.if_false.target, insn.if_false.args.clone())]
+            }
+            Insn::CondBranchHasType(insn) => {
+                vec![(insn.if_true.target, insn.if_true.args.clone()), (insn.if_false.target, insn.if_false.args.clone())]
+            }
+            _ => vec![],
+        }
+    }
+
+    /// Point `args[arg_idx]` of the edge `pred -> target` at `new_val`.
+    fn set_edge_arg(&mut self, pred: BlockId, target: BlockId, arg_idx: usize, new_val: InsnId) {
+        let term_id = *self.blocks[pred].insns.last().unwrap();
+        match &mut self.insns[term_id] {
+            Insn::Jump(e) if e.target == target => e.args[arg_idx] = new_val,
+            Insn::CondBranch { if_true, if_false, .. } => {
+                if if_true.target == target { if_true.args[arg_idx] = new_val; }
+                if if_false.target == target { if_false.args[arg_idx] = new_val; }
+            }
+            Insn::CondBranchFixnumCmp(insn) => {
+                if insn.if_true.target == target { insn.if_true.args[arg_idx] = new_val; }
+                if insn.if_false.target == target { insn.if_false.args[arg_idx] = new_val; }
+            }
+            Insn::CondBranchHasType(insn) => {
+                if insn.if_true.target == target { insn.if_true.args[arg_idx] = new_val; }
+                if insn.if_false.target == target { insn.if_false.args[arg_idx] = new_val; }
+            }
+            _ => panic!("set_edge_arg: {pred} does not branch to {target}"),
+        }
+    }
+
+    /// Insert `insn` into `block` immediately before its terminator; returns its id.
+    fn insert_before_terminator(&mut self, block: BlockId, insn: Insn) -> InsnId {
+        let id = self.new_insn(insn);
+        let pos = self.blocks[block].insns.len() - 1;
+        self.blocks[block].insns.insert(pos, id);
+        id
+    }
+
+    /// The `state` (Snapshot) of the last state-bearing instruction in `block`
+    /// before `before`, to attach to an inserted BoxFlonum.
+    fn snapshot_state_in(&self, block: BlockId, before: usize) -> Option<InsnId> {
+        for &insn_id in self.blocks[block].insns[..before].iter().rev() {
+            match self.insns[insn_id] {
+                Insn::CheckInterrupts { state } => return Some(state),
+                Insn::Snapshot { .. } => return Some(insn_id),
+                _ => {}
+            }
+        }
+        None
+    }
+
+    /// True if `x` (resolved through the union-find) is a param in `web`.
+    fn insn_in_web(&self, web: &HashSet<InsnId>, x: InsnId) -> bool {
+        web.contains(&self.union_find.borrow().find_const(x))
+    }
+
+    /// Keep a loop-carried float accumulator unboxed across the loop back-edge.
+    ///
+    /// `while i < n; s += <float>; ... end` threads `s` as a Flonum block param,
+    /// unboxing it at the top of the body and re-boxing the result for the
+    /// back-edge -- a box/unbox pair sitting *on* the loop-carried dependency chain
+    /// (s -> unbox -> fadd -> box -> s) that lengthens the critical path.
+    ///
+    /// This unboxes the whole phi-web of such a param: every value entering the web
+    /// from outside is wrapped in an UnboxFlonum and every UnboxFlonum use inside it
+    /// is rewritten to the param. After the caller re-runs the peephole and
+    /// sink_flonum_boxes_to_deopt, the back-edge box collapses into a
+    /// GuardFlonumRepresentable (off the critical path -- nothing carried depends on
+    /// it) and the params carry a raw CDouble. Snapshot uses become CDouble slots
+    /// the side exit re-encodes; the loop result is boxed once, outside the loop.
+    fn unbox_loop_carried_floats(&mut self) {
+        // Params at a loop header (via natural-loop analysis) plus all params.
+        let mut loop_header_params: HashSet<InsnId> = HashSet::new();
+        let mut all_params: HashSet<InsnId> = HashSet::new();
+        {
+            let dominators = Dominators::new(self);
+            let loop_info = LoopInfo::new(&dominators);
+            for block in (0..self.num_blocks()).map(BlockId::from) {
+                let is_header = loop_info.loop_headers.get(block);
+                for &p in &self.blocks[block].params {
+                    all_params.insert(p);
+                    if is_header { loop_header_params.insert(p); }
+                }
+            }
+        }
+        if loop_header_params.is_empty() { return; }
+
+        // Union-find over params: a param joins the value flowing into it when that
+        // value is itself a param. Also record each param's incoming values.
+        let mut uf: HashMap<InsnId, InsnId> = HashMap::new();
+        fn ufind(uf: &mut HashMap<InsnId, InsnId>, x: InsnId) -> InsnId {
+            let mut r = x;
+            while let Some(&p) = uf.get(&r) { if p == r { break; } r = p; }
+            r
+        }
+        fn uunion(uf: &mut HashMap<InsnId, InsnId>, a: InsnId, b: InsnId) {
+            let (ra, rb) = (ufind(uf, a), ufind(uf, b));
+            if ra != rb { uf.insert(ra, rb); }
+        }
+        for &p in &all_params { uf.entry(p).or_insert(p); }
+
+        // (target, param_idx) -> [(pred, canonical arg)]
+        let mut incoming: HashMap<(BlockId, usize), Vec<(BlockId, InsnId)>> = HashMap::new();
+        for pred in (0..self.num_blocks()).map(BlockId::from) {
+            for (target, args) in self.out_edges_of(pred) {
+                if args.len() != self.blocks[target].params.len() { return; }
+                for (idx, &arg) in args.iter().enumerate() {
+                    let arg = self.union_find.borrow().find_const(arg);
+                    let param = self.blocks[target].params[idx];
+                    incoming.entry((target, idx)).or_default().push((pred, arg));
+                    if all_params.contains(&arg) { uunion(&mut uf, param, arg); }
+                }
+            }
+        }
+
+        // Group params into webs.
+        let mut webs: HashMap<InsnId, Vec<InsnId>> = HashMap::new();
+        for &p in &all_params { let r = ufind(&mut uf, p); webs.entry(r).or_default().push(p); }
+
+        let on_published_stack = self.values_on_published_stacks();
+        for (_root, web) in webs {
+            let web_set: HashSet<InsnId> = web.iter().copied().collect();
+            // Only loop-carried, all-Flonum webs are worth (and valid to) unbox.
+            if !web.iter().any(|p| loop_header_params.contains(p)) { continue; }
+            if !web.iter().all(|&p| self.type_of(p).is_subtype(types::Flonum)) { continue; }
+            // A raw param must not reach a stack slot that is published verbatim.
+            if web.iter().any(|&p| on_published_stack[p]) { continue; }
+
+            // Classify uses of web params. Bail on anything we can't cleanly handle.
+            let mut unbox_uses: Vec<InsnId> = Vec::new();
+            let mut box_uses: Vec<InsnId> = Vec::new();
+            let mut bail = false;
+            'scan: for block in (0..self.num_blocks()).map(BlockId::from) {
+                for i in 0..self.blocks[block].insns.len() {
+                    let insn_id = self.blocks[block].insns[i];
+                    match &self.insns[insn_id] {
+                        Insn::UnboxFlonum { val } if self.insn_in_web(&web_set, *val) => unbox_uses.push(insn_id),
+                        Insn::Snapshot { .. } => {} // CDouble slot, re-encoded on side exit
+                        Insn::Jump(_) => {} // branch args feeding web params are intra-web wiring
+                        Insn::CondBranch { val, .. } if self.insn_in_web(&web_set, *val) => { bail = true; break 'scan; }
+                        Insn::CondBranchFixnumCmp(insn)
+                            if self.insn_in_web(&web_set, insn.left) || self.insn_in_web(&web_set, insn.right) => { bail = true; break 'scan; }
+                        Insn::CondBranchHasType(insn) if self.insn_in_web(&web_set, insn.val) => { bail = true; break 'scan; }
+                        Insn::CondBranch { .. } | Insn::CondBranchFixnumCmp(_) | Insn::CondBranchHasType(_) => {}
+                        _ => {
+                            let mut reads = false;
+                            self.insns[insn_id].for_each_operand(|op| if web_set.contains(&self.union_find.borrow().find_const(op)) { reads = true; });
+                            if reads {
+                                if self.snapshot_state_in(block, i).is_none() { bail = true; break 'scan; }
+                                box_uses.push(insn_id);
+                            }
+                        }
+                    }
+                }
+            }
+            if bail { continue; }
+
+            // Locate each param so we can rewrite its incoming edges.
+            let mut param_loc: HashMap<InsnId, (BlockId, usize)> = HashMap::new();
+            for block in (0..self.num_blocks()).map(BlockId::from) {
+                for (idx, &p) in self.blocks[block].params.iter().enumerate() {
+                    if web_set.contains(&p) { param_loc.insert(p, (block, idx)); }
+                }
+            }
+
+            // --- Commit: rewrite this web to CDouble. ---
+
+            // 1. Wrap each external incoming value in UnboxFlonum at its predecessor.
+            for (_p, &(pblock, pidx)) in &param_loc.clone() {
+                let sources = incoming.get(&(pblock, pidx)).cloned().unwrap_or_default();
+                for (pred, arg) in sources {
+                    if web_set.contains(&arg) { continue; } // intra-web edge
+                    let unbox = self.insert_before_terminator(pred, Insn::UnboxFlonum { val: arg });
+                    self.set_edge_arg(pred, pblock, pidx, unbox);
+                }
+            }
+
+            // 2. UnboxFlonum(p) uses become identity once p is a CDouble.
+            for &u in &unbox_uses {
+                if let Insn::UnboxFlonum { val } = self.insns[u] {
+                    let param = self.union_find.borrow().find_const(val);
+                    self.make_equal_to(u, param);
+                }
+            }
+
+            // 3. Box each escaping use once, just before it, from a local snapshot.
+            for &use_id in &box_uses {
+                let (block, pos) = (0..self.num_blocks()).map(BlockId::from).find_map(|b| {
+                    self.blocks[b].insns.iter().position(|&i| i == use_id).map(|p| (b, p))
+                }).expect("box use still present");
+                let state = self.snapshot_state_in(block, pos).expect("snapshot checked above");
+                let mut ops: Vec<InsnId> = Vec::new();
+                self.insns[use_id].for_each_operand(|op| {
+                    let c = self.union_find.borrow().find_const(op);
+                    if web_set.contains(&c) && !ops.contains(&c) { ops.push(c); }
+                });
+                for webval in ops {
+                    let boxed = self.new_insn(Insn::BoxFlonum { val: webval, state });
+                    let pos = self.blocks[block].insns.iter().position(|&i| i == use_id).unwrap();
+                    self.blocks[block].insns.insert(pos, boxed);
+                    let uf_ref = &self.union_find;
+                    self.insns[use_id].for_each_operand_mut(|op| {
+                        if uf_ref.borrow().find_const(*op) == webval { *op = boxed; }
+                    });
+                }
+            }
+        }
+    }
+
     /// Run all the optimization passes we have.
     pub fn optimize(&mut self) {
         let mut passes: Vec<Json> = Vec::new();
@@ -8049,9 +8268,20 @@ impl Function {
             }
         }
 
-        // After the pipeline reaches a fixed point (all inlining, peepholes, and
-        // DCE done), sink deopt-only flonum boxes into representability guards so
-        // the flonum encoding moves to the cold side-exit path.
+        // Keep loop-carried float accumulators unboxed across the back-edge, then
+        // clean up: canonicalize resolves the identity rewrites and reinfers types
+        // (so the web params become CDouble), fold_constants cancels the inserted
+        // UnboxFlonum(BoxFlonum) pairs at the entry/back-edge, and a second
+        // canonicalize + DCE removes the now-dead boxes and unboxes.
+        crate::stats::trace_compile_phase("unbox_loop_carried_floats", || self.unbox_loop_carried_floats());
+        self.canonicalize();
+        self.fold_constants();
+        self.canonicalize();
+        self.eliminate_dead_code();
+
+        // Sink deopt-only flonum boxes (including the back-edge boxes just exposed)
+        // into representability guards so the flonum encoding moves to the cold
+        // side-exit path.
         crate::stats::trace_compile_phase("sink_flonum_boxes_to_deopt", || self.sink_flonum_boxes_to_deopt());
         #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
 

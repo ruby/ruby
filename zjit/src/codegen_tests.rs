@@ -1340,6 +1340,29 @@ fn test_throw_break_into_frame_with_float_temporary() {
 }
 
 #[test]
+fn test_throw_break_into_loop_with_float_accumulator() {
+    // The loop-carried accumulator `s` sits on the operand stack across the block call, so its
+    // stack-map slot must hold a VALUE when the break resumes the frame in the interpreter.
+    // Warming up with a +0.0 accumulator makes a raw slot fail as `false + 0.5`.
+    set_call_threshold(2);
+    eval("
+        def yield_one(x) = yield(x)
+        def test(n, step)
+          s = 0.0
+          i = 0
+          while i < n
+            s = s + yield_one(i) { |v| break 0.5 if v == n - 1; step }
+            i += 1
+          end
+          s
+        end
+        test(4, 0.0)
+        test(4, 0.0)
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("[test(4, 0.0), test(4, 1.0)]"), @"[0.5, 3.5]");
+}
+
+#[test]
 fn test_throw_break_search_loop() {
     set_call_threshold(2);
     eval("
