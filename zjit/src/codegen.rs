@@ -627,7 +627,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ArrayPop { array, state } => gen_array_pop(asm, opnd!(array), &function.frame_state(*state)),
         Insn::ArrayLength { array } => gen_array_length(asm, opnd!(array)),
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, function, opnd!(val), &function.frame_state(*state)),
-        &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(asm, class, &function.frame_state(state)),
+        &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(jit, asm, class, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, function, opnds!(strings), &function.frame_state(*state)),
         &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
@@ -745,7 +745,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumBitCheck { val, index } => gen_fixnum_bit_check(asm, opnd!(val), *index),
         Insn::SideExit { state, reason, recompile } => no_output!(gen_side_exit(jit, asm, function, reason, *recompile, &function.frame_state(*state))),
         Insn::PutSpecialObject { value_type, state } => gen_putspecialobject(jit, asm, function, *value_type, &function.frame_state(*state)),
-        Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state)),
+        Insn::AnyToString { val, state } => gen_anytostring(asm, opnd!(val), &function.frame_state(*state)),
         Insn::Defined { op_type, obj, pushval, v, lep_level, state } => gen_defined(jit, asm, function, *op_type, *obj, *pushval, opnd!(v), *lep_level, &function.frame_state(*state)),
         Insn::CheckMatch { target, pattern, flag, state } => gen_checkmatch(jit, asm, function, opnd!(target), opnd!(pattern), *flag, &function.frame_state(*state)),
         Insn::GetSpecialSymbol { symbol_type, state } => gen_getspecial_symbol(asm, *symbol_type, &function.frame_state(*state)),
@@ -768,10 +768,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::LoadSP => gen_load_sp(),
         &Insn::GetEP { level } => gen_get_ep(asm, level),
         Insn::LoadSelf => gen_load_self(asm),
-        &Insn::LoadField { recv, id, offset, return_type } => gen_load_field(asm, opnd!(recv), id, offset, return_type),
-        &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), function.type_of(val))),
+        &Insn::LoadField { recv, id, offset, return_type: _, num_bits } => gen_load_field(asm, opnd!(recv), id, offset, num_bits),
+        &Insn::StoreField { recv, id, offset, val, num_bits } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), num_bits)),
         &Insn::WriteBarrier { recv, val } => no_output!(gen_write_barrier(jit, asm, opnd!(recv), opnd!(val), function.type_of(val))),
-        &Insn::IsBlockGiven { lep } => gen_is_block_given(asm, opnd!(lep)),
+        &Insn::IsBlockGiven { block_handler } => gen_is_block_given(asm, opnd!(block_handler)),
         Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, function, opnds!(elements), opnd!(target), &function.frame_state(*state)),
         Insn::ArrayPackBuffer { elements, fmt, buffer, state } => gen_array_pack_buffer(jit, asm, function, opnds!(elements), opnd!(fmt), (*buffer).map(|buffer| opnd!(buffer)), &function.frame_state(*state)),
         &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, function, ary, opnd!(target), &function.frame_state(state)),
@@ -837,8 +837,7 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, function: &Function, op_type
 }
 
 /// Similar to gen_defined for DEFINED_YIELD
-fn gen_is_block_given(asm: &mut Assembler, lep: Opnd) -> Opnd {
-    let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
+fn gen_is_block_given(asm: &mut Assembler, block_handler: Opnd) -> Opnd {
     asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
     asm.csel_e(Qfalse.into(), Qtrue.into())
 }
@@ -1370,18 +1369,18 @@ fn gen_load_self(asm: &mut Assembler) -> Opnd {
     asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF))
 }
 
-fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: FieldName, offset: i32, return_type: Type) -> Opnd {
+fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: FieldName, offset: i32, num_bits: u8) -> Opnd {
     gen_incr_counter(asm, Counter::load_field_count);
     asm_comment!(asm, "Load field id={id} offset={offset}");
     let recv = asm.load_mem(recv);
-    asm.load(Opnd::mem(return_type.num_bits(), recv, offset))
+    asm.load(Opnd::mem(num_bits, recv, offset))
 }
 
-fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: FieldName, offset: i32, val: Opnd, val_type: Type) {
+fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: FieldName, offset: i32, val: Opnd, num_bits: u8) {
     gen_incr_counter(asm, Counter::store_field_count);
     asm_comment!(asm, "Store field id={id} offset={offset}");
     let recv = asm.load_mem(recv);
-    asm.store(Opnd::mem(val_type.num_bits(), recv, offset), val);
+    asm.store(Opnd::mem(num_bits, recv, offset), val);
 }
 
 fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type) {
@@ -2344,13 +2343,24 @@ fn gen_object_alloc(jit: &JITState, asm: &mut Assembler, function: &Function, va
     asm_ccall!(asm, rb_obj_alloc, val)
 }
 
-fn gen_object_alloc_class(asm: &mut Assembler, class: VALUE, state: &FrameState) -> lir::Opnd {
+fn gen_object_alloc_class(jit: &mut JITState, asm: &mut Assembler, class: VALUE, state: &FrameState) -> lir::Opnd {
     // Allocating an object for a known class with default allocator is leaf; see doc for
     // `ObjectAllocClass`.
     gen_prepare_leaf_call_with_gc(asm, state);
     if unsafe { rb_zjit_class_has_default_allocator(class) } {
-        // TODO(max): inline code to allocate an instance
-        asm_ccall!(asm, rb_class_allocate_instance, class.into())
+        let mut alloc_size: usize = 0;
+        let mut shape_id: shape_id_t = 0;
+        let has_fastpath = unsafe {
+            rb_zjit_class_allocate_instance_fastpath(class, &mut alloc_size, &mut shape_id)
+        };
+        if has_fastpath {
+            let flags = (RUBY_T_OBJECT as u64) | ((shape_id as u64) << RB_SHAPE_FLAG_SHIFT as u64);
+            gc_fastpath::gc_fast_path_new_obj(jit, asm, alloc_size, flags, class, |asm| {
+                asm_ccall!(asm, rb_class_allocate_instance, class.into())
+            })
+        } else {
+            asm_ccall!(asm, rb_class_allocate_instance, class.into())
+        }
     } else {
         assert!(class_has_leaf_allocator(class), "class passed to ObjectAllocClass must have a leaf allocator");
         let alloc_func = unsafe { rb_zjit_class_get_alloc_func(class) };
@@ -2604,10 +2614,10 @@ fn gen_box_fixnum(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
     asm.or(shifted, Opnd::UImm(RUBY_FIXNUM_FLAG as u64))
 }
 
-fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, str: lir::Opnd, state: &FrameState) -> lir::Opnd {
+fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
     gen_prepare_leaf_call_with_gc(asm, state);
 
-    asm_ccall!(asm, rb_obj_as_string_result, str, val)
+    asm_ccall!(asm, rb_any_to_s, val)
 }
 
 /// Evaluate if a value is truthy

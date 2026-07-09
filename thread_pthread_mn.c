@@ -549,6 +549,9 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
     // this native thread's own context, where the nt loop reclaims tctx.
     struct rb_thread_context *tctx = (struct rb_thread_context *)self;
     tctx->dead = true;
+    // Hand this context to the nt's loop, which reclaims it right after the
+    // final transfer returns from switch0.
+    tctx->nt->dead_co = &tctx->co;
     coroutine_transfer0(&tctx->co, tctx->nt->nt_context, true);
 
     rb_bug("unreachable");

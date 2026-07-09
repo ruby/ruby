@@ -346,9 +346,9 @@ struct rb_thread_context {
     bool dead;
 };
 
-static bool thread_sched_reclaim_from(struct coroutine_context *returning_from);
+static bool thread_sched_reclaim(struct coroutine_context *dead_co);
 #endif
-static struct coroutine_context *coroutine_transfer0(struct coroutine_context *transfer_from,
+static void coroutine_transfer0(struct coroutine_context *transfer_from,
                                 struct coroutine_context *transfer_to, bool to_dead);
 
 #define thread_sched_dump(s) thread_sched_dump_(__FILE__, __LINE__, s)
@@ -709,8 +709,7 @@ thread_sched_set_running(struct rb_thread_sched *sched, rb_thread_t *th)
     VM_ASSERT(sched->running != th);
 
     if (RUBY_DTRACE_RTS_SET_RUNNING_ENABLED()) {
-        rb_thread_t *old = sched->running;
-        RUBY_DTRACE_RTS_SET_RUNNING(sched, old, th);
+        RUBY_DTRACE_RTS_SET_RUNNING(sched, sched->running, th);
     }
 
     sched->running = th;
@@ -1264,7 +1263,7 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 #endif
 }
 
-static struct coroutine_context *
+static void
 coroutine_transfer0(struct coroutine_context *transfer_from, struct coroutine_context *transfer_to, bool to_dead)
 {
 #ifdef RUBY_ASAN_ENABLED
@@ -1279,6 +1278,7 @@ coroutine_transfer0(struct coroutine_context *transfer_from, struct coroutine_co
     __tsan_switch_to_fiber(transfer_to->tsan_fiber, 0);
 #endif
 
+    RBIMPL_ATTR_MAYBE_UNUSED()
     struct coroutine_context *returning_from = coroutine_transfer(transfer_from, transfer_to);
 
     /* if to_dead was passed, the caller is promising that this coroutine is finished and it should
@@ -1288,11 +1288,9 @@ coroutine_transfer0(struct coroutine_context *transfer_from, struct coroutine_co
    __sanitizer_finish_switch_fiber(transfer_from->fake_stack,
                                    (const void**)&returning_from->stack_base, &returning_from->stack_size);
 #endif
-
-    return returning_from;
 }
 
-static struct coroutine_context *
+static void
 thread_sched_switch0(struct coroutine_context *current_cont, rb_thread_t *next_th, struct rb_native_thread *nt, bool to_dead)
 {
     VM_ASSERT(!nt->dedicated);
@@ -1307,7 +1305,7 @@ thread_sched_switch0(struct coroutine_context *current_cont, rb_thread_t *next_t
     ruby_thread_set_native(next_th);
     native_thread_assign(nt, next_th);
 
-    return coroutine_transfer0(current_cont, next_th->sched.context, to_dead);
+    coroutine_transfer0(current_cont, next_th->sched.context, to_dead);
 }
 
 static void
@@ -2436,12 +2434,16 @@ nt_start(void *ptr)
                     if (next_th && next_th->nt == NULL) {
                         RUBY_DEBUG_LOG("nt:%d next_th:%d", (int)nt->serial, (int)next_th->serial);
 #if USE_MN_THREADS
-                        struct coroutine_context *from = thread_sched_switch0(nt->nt_context, next_th, nt, false);
-                        if (thread_sched_reclaim_from(from)) {
-                            // A terminal transfer: the dying thread released
-                            // the sched lock before transferring (its Ractor
-                            // may be gone by now); we resumed with NO lock
-                            // held and must not touch the sched again.
+                        thread_sched_switch0(nt->nt_context, next_th, nt, false);
+
+                        // If a coroutine terminated during the transfer, co_start
+                        // recorded it in nt->dead_co (switch0's return value is
+                        // backend-dependent, unusable; see thread_pthread.h).
+                        struct coroutine_context *dead_co = nt->dead_co;
+                        nt->dead_co = NULL;
+                        if (thread_sched_reclaim(dead_co)) {
+                            // it already released the sched lock before its
+                            // transfer (its Ractor may be gone): leave sched be.
                             locked = false;
                         }
 #else
@@ -2477,16 +2479,15 @@ static int native_thread_create_shared(rb_thread_t *th);
 static void nt_free_stack(void *mstack);
 
 
-// Reclaim the coroutine context the nt scheduling loop just resumed from,
-// if its thread terminated. A dying thread always returns to its native
-// thread's own context (co_start's epilogue), so this is the only place
-// terminal transfers arrive -- and our running here proves the transfer's
-// register save into the block has completed. Returns true for a terminal
-// transfer, whose dying thread RELEASED the sched lock before transferring.
+// Reclaim the context a coroutine thread recorded in nt->dead_co before its
+// final transfer (co_start's epilogue). Our running here proves that transfer's
+// register save into the block completed. Returns true when a thread did
+// terminate -- it RELEASED the sched lock before transferring; NULL/false means
+// a live yield, where the loop still owns the lock.
 static bool
-thread_sched_reclaim_from(struct coroutine_context *returning_from)
+thread_sched_reclaim(struct coroutine_context *dead_co)
 {
-    struct rb_thread_context *tctx = (struct rb_thread_context *)returning_from;
+    struct rb_thread_context *tctx = (struct rb_thread_context *)dead_co;
 
     if (tctx != NULL && tctx->dead) {
         nt_free_stack(tctx->stack);
@@ -2512,7 +2513,7 @@ rb_threadptr_sched_free(rb_thread_t *th)
     else if (th->sched.context != NULL) {
         // a coroutine thread that never reached its epilogue (never started);
         // a terminated one is reclaimed by whoever resumed from its final
-        // transfer (thread_sched_reclaim_from), and cleared this pointer.
+        // transfer (thread_sched_reclaim), and cleared this pointer.
         struct rb_thread_context *tctx = (struct rb_thread_context *)th->sched.context;
         nt_free_stack(tctx->stack);
         SIZED_FREE(tctx);

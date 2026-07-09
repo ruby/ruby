@@ -2319,11 +2319,19 @@ pub(crate) mod hir_build_tests {
           v20:BasicObject = Send v19, :to_s # SendFallbackReason: ObjToString: result is not a string
           Jump bb6(v20)
         bb6(v22:BasicObject):
-          v24:String = AnyToString v12, str: v22
-          v26:StringExact = StringConcat v10, v24
-          v28:Symbol = StringIntern v26
+          v24:CBool = HasType v22, String
+          CondBranch v24, bb7(), bb8()
+        bb7():
+          v26:String = RefineType v22, String
+          Jump bb9(v26)
+        bb8():
+          v28:StringExact = AnyToString v12
+          Jump bb9(v28)
+        bb9(v30:String):
+          v32:StringExact = StringConcat v10, v30
+          v34:Symbol = StringIntern v32
           CheckInterrupts
-          Return v28
+          Return v34
         ");
     }
 
@@ -4818,15 +4826,8 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9, v10)
         bb3(v12:BasicObject, v13:NilClass, v14:NilClass, v15:NilClass):
           PatchPoint SingleRactorMode
-          v20:BasicObject = GetIvar v12, :@a
-          PatchPoint SingleRactorMode
-          v23:BasicObject = GetIvar v12, :@b
-          PatchPoint SingleRactorMode
-          v26:BasicObject = GetIvar v12, :@c
-          PatchPoint NoEPEscape(reverse_odd)
-          v38:ArrayExact = NewArray v20, v23, v26
-          CheckInterrupts
-          Return v38
+          v20:HeapBasicObject = GuardType v12, HeapBasicObject
+          SideExit NoProfileGetIvar recompile
 
         fn reverse_even@<compiled>:8:
         bb1():
@@ -4847,17 +4848,8 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v8, v9, v10, v11, v12)
         bb3(v14:BasicObject, v15:NilClass, v16:NilClass, v17:NilClass, v18:NilClass):
           PatchPoint SingleRactorMode
-          v23:BasicObject = GetIvar v14, :@a
-          PatchPoint SingleRactorMode
-          v26:BasicObject = GetIvar v14, :@b
-          PatchPoint SingleRactorMode
-          v29:BasicObject = GetIvar v14, :@c
-          PatchPoint SingleRactorMode
-          v32:BasicObject = GetIvar v14, :@d
-          PatchPoint NoEPEscape(reverse_even)
-          v46:ArrayExact = NewArray v23, v26, v29, v32
-          CheckInterrupts
-          Return v46
+          v23:HeapBasicObject = GuardType v14, HeapBasicObject
+          SideExit NoProfileGetIvar recompile
         ");
     }
 
@@ -5348,10 +5340,18 @@ pub(crate) mod hir_build_tests {
           v20:BasicObject = Send v19, :to_s # SendFallbackReason: ObjToString: result is not a string
           Jump bb6(v20)
         bb6(v22:BasicObject):
-          v24:String = AnyToString v12, str: v22
-          v26:StringExact = StringConcat v10, v24
+          v24:CBool = HasType v22, String
+          CondBranch v24, bb7(), bb8()
+        bb7():
+          v26:String = RefineType v22, String
+          Jump bb9(v26)
+        bb8():
+          v28:StringExact = AnyToString v12
+          Jump bb9(v28)
+        bb9(v30:String):
+          v32:StringExact = StringConcat v10, v30
           CheckInterrupts
-          Return v26
+          Return v32
         ");
     }
 
@@ -5383,34 +5383,58 @@ pub(crate) mod hir_build_tests {
           v18:BasicObject = Send v17, :to_s # SendFallbackReason: ObjToString: result is not a string
           Jump bb6(v18)
         bb6(v20:BasicObject):
-          v22:String = AnyToString v10, str: v20
-          v24:Fixnum[2] = Const Value(2)
-          v27:CBool[false] = HasType v24, String
-          CondBranch v27, bb7(), bb8()
+          v22:CBool = HasType v20, String
+          CondBranch v22, bb7(), bb8()
         bb7():
-          v29 = RefineType v24, String
-          Jump bb9(v29)
+          v24:String = RefineType v20, String
+          Jump bb9(v24)
         bb8():
-          v31:Fixnum[2] = RefineType v24, NotString
-          v32:BasicObject = Send v31, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb9(v32)
-        bb9(v34:BasicObject):
-          v36:String = AnyToString v24, str: v34
-          v38:Fixnum[3] = Const Value(3)
-          v41:CBool[false] = HasType v38, String
-          CondBranch v41, bb10(), bb11()
+          v26:StringExact = AnyToString v10
+          Jump bb9(v26)
+        bb9(v28:String):
+          v30:Fixnum[2] = Const Value(2)
+          v33:CBool[false] = HasType v30, String
+          CondBranch v33, bb10(), bb11()
         bb10():
-          v43 = RefineType v38, String
-          Jump bb12(v43)
+          v35 = RefineType v30, String
+          Jump bb12(v35)
         bb11():
-          v45:Fixnum[3] = RefineType v38, NotString
-          v46:BasicObject = Send v45, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb12(v46)
-        bb12(v48:BasicObject):
-          v50:String = AnyToString v38, str: v48
-          v52:StringExact = StringConcat v22, v36, v50
+          v37:Fixnum[2] = RefineType v30, NotString
+          v38:BasicObject = Send v37, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb12(v38)
+        bb12(v40:BasicObject):
+          v42:CBool = HasType v40, String
+          CondBranch v42, bb13(), bb14()
+        bb13():
+          v44:String = RefineType v40, String
+          Jump bb15(v44)
+        bb14():
+          v46:StringExact = AnyToString v30
+          Jump bb15(v46)
+        bb15(v48:String):
+          v50:Fixnum[3] = Const Value(3)
+          v53:CBool[false] = HasType v50, String
+          CondBranch v53, bb16(), bb17()
+        bb16():
+          v55 = RefineType v50, String
+          Jump bb18(v55)
+        bb17():
+          v57:Fixnum[3] = RefineType v50, NotString
+          v58:BasicObject = Send v57, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb18(v58)
+        bb18(v60:BasicObject):
+          v62:CBool = HasType v60, String
+          CondBranch v62, bb19(), bb20()
+        bb19():
+          v64:String = RefineType v60, String
+          Jump bb21(v64)
+        bb20():
+          v66:StringExact = AnyToString v50
+          Jump bb21(v66)
+        bb21(v68:String):
+          v70:StringExact = StringConcat v28, v48, v68
           CheckInterrupts
-          Return v52
+          Return v70
         ");
     }
 
@@ -5443,10 +5467,18 @@ pub(crate) mod hir_build_tests {
           v20:BasicObject = Send v19, :to_s # SendFallbackReason: ObjToString: result is not a string
           Jump bb6(v20)
         bb6(v22:BasicObject):
-          v24:String = AnyToString v12, str: v22
-          v26:StringExact = StringConcat v10, v24
+          v24:CBool = HasType v22, String
+          CondBranch v24, bb7(), bb8()
+        bb7():
+          v26:String = RefineType v22, String
+          Jump bb9(v26)
+        bb8():
+          v28:StringExact = AnyToString v12
+          Jump bb9(v28)
+        bb9(v30:String):
+          v32:StringExact = StringConcat v10, v30
           CheckInterrupts
-          Return v26
+          Return v32
         ");
     }
 
@@ -5478,34 +5510,58 @@ pub(crate) mod hir_build_tests {
           v18:BasicObject = Send v17, :to_s # SendFallbackReason: ObjToString: result is not a string
           Jump bb6(v18)
         bb6(v20:BasicObject):
-          v22:String = AnyToString v10, str: v20
-          v24:Fixnum[2] = Const Value(2)
-          v27:CBool[false] = HasType v24, String
-          CondBranch v27, bb7(), bb8()
+          v22:CBool = HasType v20, String
+          CondBranch v22, bb7(), bb8()
         bb7():
-          v29 = RefineType v24, String
-          Jump bb9(v29)
+          v24:String = RefineType v20, String
+          Jump bb9(v24)
         bb8():
-          v31:Fixnum[2] = RefineType v24, NotString
-          v32:BasicObject = Send v31, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb9(v32)
-        bb9(v34:BasicObject):
-          v36:String = AnyToString v24, str: v34
-          v38:Fixnum[3] = Const Value(3)
-          v41:CBool[false] = HasType v38, String
-          CondBranch v41, bb10(), bb11()
+          v26:StringExact = AnyToString v10
+          Jump bb9(v26)
+        bb9(v28:String):
+          v30:Fixnum[2] = Const Value(2)
+          v33:CBool[false] = HasType v30, String
+          CondBranch v33, bb10(), bb11()
         bb10():
-          v43 = RefineType v38, String
-          Jump bb12(v43)
+          v35 = RefineType v30, String
+          Jump bb12(v35)
         bb11():
-          v45:Fixnum[3] = RefineType v38, NotString
-          v46:BasicObject = Send v45, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb12(v46)
-        bb12(v48:BasicObject):
-          v50:String = AnyToString v38, str: v48
-          v52:RegexpExact = ToRegexp v22, v36, v50
+          v37:Fixnum[2] = RefineType v30, NotString
+          v38:BasicObject = Send v37, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb12(v38)
+        bb12(v40:BasicObject):
+          v42:CBool = HasType v40, String
+          CondBranch v42, bb13(), bb14()
+        bb13():
+          v44:String = RefineType v40, String
+          Jump bb15(v44)
+        bb14():
+          v46:StringExact = AnyToString v30
+          Jump bb15(v46)
+        bb15(v48:String):
+          v50:Fixnum[3] = Const Value(3)
+          v53:CBool[false] = HasType v50, String
+          CondBranch v53, bb16(), bb17()
+        bb16():
+          v55 = RefineType v50, String
+          Jump bb18(v55)
+        bb17():
+          v57:Fixnum[3] = RefineType v50, NotString
+          v58:BasicObject = Send v57, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb18(v58)
+        bb18(v60:BasicObject):
+          v62:CBool = HasType v60, String
+          CondBranch v62, bb19(), bb20()
+        bb19():
+          v64:String = RefineType v60, String
+          Jump bb21(v64)
+        bb20():
+          v66:StringExact = AnyToString v50
+          Jump bb21(v66)
+        bb21(v68:String):
+          v70:RegexpExact = ToRegexp v28, v48, v68
           CheckInterrupts
-          Return v52
+          Return v70
         ");
     }
 
@@ -5537,22 +5593,38 @@ pub(crate) mod hir_build_tests {
           v18:BasicObject = Send v17, :to_s # SendFallbackReason: ObjToString: result is not a string
           Jump bb6(v18)
         bb6(v20:BasicObject):
-          v22:String = AnyToString v10, str: v20
-          v24:Fixnum[2] = Const Value(2)
-          v27:CBool[false] = HasType v24, String
-          CondBranch v27, bb7(), bb8()
+          v22:CBool = HasType v20, String
+          CondBranch v22, bb7(), bb8()
         bb7():
-          v29 = RefineType v24, String
-          Jump bb9(v29)
+          v24:String = RefineType v20, String
+          Jump bb9(v24)
         bb8():
-          v31:Fixnum[2] = RefineType v24, NotString
-          v32:BasicObject = Send v31, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb9(v32)
-        bb9(v34:BasicObject):
-          v36:String = AnyToString v24, str: v34
-          v38:RegexpExact = ToRegexp v22, v36, MULTILINE|IGNORECASE|EXTENDED|NOENCODING
+          v26:StringExact = AnyToString v10
+          Jump bb9(v26)
+        bb9(v28:String):
+          v30:Fixnum[2] = Const Value(2)
+          v33:CBool[false] = HasType v30, String
+          CondBranch v33, bb10(), bb11()
+        bb10():
+          v35 = RefineType v30, String
+          Jump bb12(v35)
+        bb11():
+          v37:Fixnum[2] = RefineType v30, NotString
+          v38:BasicObject = Send v37, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb12(v38)
+        bb12(v40:BasicObject):
+          v42:CBool = HasType v40, String
+          CondBranch v42, bb13(), bb14()
+        bb13():
+          v44:String = RefineType v40, String
+          Jump bb15(v44)
+        bb14():
+          v46:StringExact = AnyToString v30
+          Jump bb15(v46)
+        bb15(v48:String):
+          v50:RegexpExact = ToRegexp v28, v48, MULTILINE|IGNORECASE|EXTENDED|NOENCODING
           CheckInterrupts
-          Return v38
+          Return v50
         ");
     }
 

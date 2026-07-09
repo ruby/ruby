@@ -322,20 +322,10 @@ fn inline_string_to_s(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
 fn inline_thread_current(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     let ec = fun.push_insn(block, hir::Insn::LoadEC);
-    let thread_ptr = fun.push_insn(block, hir::Insn::LoadField {
-        recv: ec,
-        id: FieldName::thread_ptr,
-        offset: RUBY_OFFSET_EC_THREAD_PTR,
-        return_type: types::CPtr,
-    });
-    let thread_self = fun.push_insn(block, hir::Insn::LoadField {
-        recv: thread_ptr,
-        id: FieldName::SelfParam,
-        offset: RUBY_OFFSET_THREAD_SELF,
-        // TODO(max): Add Thread type. But Thread.current is not guaranteed to be an exact Thread.
-        // You can make subclasses...
-        return_type: types::BasicObject,
-    });
+    let thread_ptr = fun.load_field(block, ec, FieldName::thread_ptr, RUBY_OFFSET_EC_THREAD_PTR, types::CPtr);
+    // TODO(max): Add Thread type. But Thread.current is not guaranteed to be an exact Thread.
+    // You can make subclasses...
+    let thread_self = fun.load_field(block, thread_ptr, FieldName::SelfParam, RUBY_OFFSET_THREAD_SELF, types::BasicObject);
     Some(thread_self)
 }
 
@@ -362,7 +352,8 @@ fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _re
         // Equivalent of GET_LEP() macro.
         let level = crate::cruby::get_lvar_level(call_site_iseq);
         let lep = fun.push_insn(block, hir::Insn::GetEP { level });
-        Some(fun.push_insn(block, hir::Insn::IsBlockGiven { lep }))
+        let block_handler = fun.load_field(block, lep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, types::RubyValue);
+        Some(fun.push_insn(block, hir::Insn::IsBlockGiven { block_handler }))
     } else {
         Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }))
     }
@@ -468,12 +459,7 @@ fn inline_hash_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
 fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if args.is_empty() && fun.likely_a(recv, types::String, state) {
         let recv = fun.coerce_to(block, recv, types::String, state);
-        let len = fun.push_insn(block, hir::Insn::LoadField {
-            recv,
-            id: FieldName::len,
-            offset: RUBY_OFFSET_RSTRING_LEN,
-            return_type: types::CInt64,
-        });
+        let len = fun.load_string_length(block, recv);
 
         let result = fun.push_insn(block, hir::Insn::BoxFixnum {
             val: len,
@@ -492,12 +478,7 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         // when converting the index to a C integer.
         let index = fun.coerce_to(block, index, types::Fixnum, state);
         let unboxed_index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
-        let len = fun.push_insn(block, hir::Insn::LoadField {
-            recv,
-            id: FieldName::len,
-            offset: RUBY_OFFSET_RSTRING_LEN,
-            return_type: types::CInt64,
-        });
+        let len = fun.load_string_length(block, recv);
         // TODO(max): Find a way to mark these guards as not needed for correctness... as in, once
         // the data dependency is gone (say, the StringGetbyte is elided), they can also be elided.
         //
@@ -520,12 +501,7 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let value = fun.coerce_to(block, value, types::Fixnum, state);
 
         let unboxed_index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
-        let len = fun.push_insn(block, hir::Insn::LoadField {
-            recv,
-            id: FieldName::len,
-            offset: RUBY_OFFSET_RSTRING_LEN,
-            return_type: types::CInt64,
-        });
+        let len = fun.load_string_length(block, recv);
         let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, reason: Box::new(SideExitReason::GuardLess), state });
         let unboxed_index = fun.push_insn(block, hir::Insn::AdjustBounds { index: unboxed_index, length: len });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
@@ -543,12 +519,7 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
 
 fn inline_string_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
-    let len = fun.push_insn(block, hir::Insn::LoadField {
-        recv,
-        id: FieldName::len,
-        offset: RUBY_OFFSET_RSTRING_LEN,
-        return_type: types::CInt64,
-    });
+    let len = fun.load_string_length(block, recv);
     let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
     let is_zero = fun.push_insn(block, hir::Insn::IsBitEqual { left: len, right: zero });
     let result = fun.push_insn(block, hir::Insn::BoxBool { val: is_zero });

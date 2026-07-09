@@ -235,6 +235,7 @@ make_counters! {
         exit_too_many_keyword_parameters,
         exit_too_many_args_for_lir,
         exit_no_profile_send,
+        exit_no_profile_getivar,
         exit_splatkw_not_nil_or_hash,
         exit_splatkw_polymorphic,
         exit_splatkw_not_profiled,
@@ -659,6 +660,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
                                       => exit_patchpoint_root_box_only,
         SendWhileTracing              => exit_send_while_tracing,
         NoProfileSend                 => exit_no_profile_send,
+        NoProfileGetIvar              => exit_no_profile_getivar,
         InvokeBlockNotIfunc           => exit_invokeblock_not_ifunc,
     }
 }
