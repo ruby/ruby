@@ -307,6 +307,19 @@ rb_zjit_defined_ivar(VALUE obj, ID id, VALUE pushval)
     return result ? pushval : Qnil;
 }
 
+// Flonum comparison fast paths for ZJIT's Float#< / #<= / #> / #>= / #==
+// specialization. ZJIT guards that both operands are flonums before calling
+// these, so a plain double comparison is exact and matches the interpreter's
+// FLONUM_2_P fast path in vm_opt_lt() and friends (NaN compares false in every
+// direction, as with the C operators). RFLOAT_VALUE reads both flonums and heap
+// floats. These never allocate, raise, or re-enter the VM, so ZJIT calls them
+// as leaf functions.
+VALUE rb_zjit_flo_lt(VALUE recv, VALUE obj) { return RBOOL(RFLOAT_VALUE(recv) <  RFLOAT_VALUE(obj)); }
+VALUE rb_zjit_flo_le(VALUE recv, VALUE obj) { return RBOOL(RFLOAT_VALUE(recv) <= RFLOAT_VALUE(obj)); }
+VALUE rb_zjit_flo_gt(VALUE recv, VALUE obj) { return RBOOL(RFLOAT_VALUE(recv) >  RFLOAT_VALUE(obj)); }
+VALUE rb_zjit_flo_ge(VALUE recv, VALUE obj) { return RBOOL(RFLOAT_VALUE(recv) >= RFLOAT_VALUE(obj)); }
+VALUE rb_zjit_flo_eq(VALUE recv, VALUE obj) { return RBOOL(RFLOAT_VALUE(recv) == RFLOAT_VALUE(obj)); }
+
 bool
 rb_zjit_method_tracing_currently_enabled(void)
 {

@@ -26,7 +26,7 @@ use crate::stats::{counter_ptr, with_compile_time_stat, trace_compile_phase, Cou
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
 use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, CondBranchFixnumCmpData, CondBranchHasTypeData, Const, FieldName, FixnumCmpOp, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
+use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, CondBranchFixnumCmpData, CondBranchHasTypeData, Const, FieldName, FixnumCmpOp, FloatCmpOp, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, InlineDepth, DEFAULT_MAX_VERSIONS};
 use crate::cast::IntoUsize;
@@ -770,6 +770,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FloatSub { recv, other, state } => gen_float_sub(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::FloatMul { recv, other, state } => gen_float_mul(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::FloatDiv { recv, other, state } => gen_float_div(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
+        &Insn::FloatCmp { op, recv, other, state } => gen_float_cmp(asm, op, opnd!(recv), opnd!(other), &function.frame_state(state)),
         Insn::FloatToInt { recv, state } => gen_float_to_int(asm, opnd!(recv), &function.frame_state(*state)),
         Insn::FixnumEq { left, right } => gen_fixnum_eq(asm, opnd!(left), opnd!(right)),
         Insn::FixnumLt { left, right } => gen_fixnum_lt(asm, opnd!(left), opnd!(right)),
@@ -3032,6 +3033,26 @@ fn gen_float_mul(asm: &mut Assembler, recv: lir::Opnd, other: lir::Opnd, state: 
 fn gen_float_div(asm: &mut Assembler, recv: lir::Opnd, other: lir::Opnd, state: &FrameState) -> lir::Opnd {
     gen_prepare_leaf_call_with_gc(asm, state);
     asm_ccall!(asm, rb_float_div, recv, other)
+}
+
+/// Compile a flonum comparison (both operands guarded Flonum) via a leaf call to
+/// `rb_zjit_flo_<op>`, which returns Qtrue/Qfalse without allocating or raising.
+fn gen_float_cmp(asm: &mut Assembler, op: FloatCmpOp, recv: lir::Opnd, other: lir::Opnd, state: &FrameState) -> lir::Opnd {
+    unsafe extern "C" {
+        fn rb_zjit_flo_lt(recv: VALUE, obj: VALUE) -> VALUE;
+        fn rb_zjit_flo_le(recv: VALUE, obj: VALUE) -> VALUE;
+        fn rb_zjit_flo_gt(recv: VALUE, obj: VALUE) -> VALUE;
+        fn rb_zjit_flo_ge(recv: VALUE, obj: VALUE) -> VALUE;
+        fn rb_zjit_flo_eq(recv: VALUE, obj: VALUE) -> VALUE;
+    }
+    gen_prepare_leaf_call_with_gc(asm, state);
+    match op {
+        FloatCmpOp::Lt => asm_ccall!(asm, rb_zjit_flo_lt, recv, other),
+        FloatCmpOp::Le => asm_ccall!(asm, rb_zjit_flo_le, recv, other),
+        FloatCmpOp::Gt => asm_ccall!(asm, rb_zjit_flo_gt, recv, other),
+        FloatCmpOp::Ge => asm_ccall!(asm, rb_zjit_flo_ge, recv, other),
+        FloatCmpOp::Eq => asm_ccall!(asm, rb_zjit_flo_eq, recv, other),
+    }
 }
 
 /// Compile Float#to_i (truncate to integer)

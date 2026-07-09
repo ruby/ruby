@@ -285,6 +285,11 @@ pub fn init() -> Annotations {
     annotate!(rb_cFloat, "-", inline_float_minus);
     annotate!(rb_cFloat, "*", inline_float_mul);
     annotate!(rb_cFloat, "/", inline_float_div);
+    annotate!(rb_cFloat, "<", inline_float_lt);
+    annotate!(rb_cFloat, "<=", inline_float_le);
+    annotate!(rb_cFloat, ">", inline_float_gt);
+    annotate!(rb_cFloat, ">=", inline_float_ge);
+    annotate!(rb_cFloat, "==", inline_float_eq);
     annotate!(rb_cFloat, "to_i", inline_float_to_i);
     annotate!(rb_cFloat, "to_int", inline_float_to_i);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
@@ -777,6 +782,47 @@ fn inline_float_mul(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
 fn inline_float_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatDiv { recv, other, state }, BOP_DIV, recv, other, state)
+}
+
+fn try_inline_float_cmp(fun: &mut hir::Function, block: hir::BlockId, op: hir::FloatCmpOp, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, FLOAT_REDEFINED_OP_FLAG) } {
+        return None;
+    }
+    // Both operands must be Flonum: rb_zjit_flo_* reads a double from each. A
+    // Fixnum/Bignum argument needs coercion or exact comparison, so it falls back
+    // to the generic (frame-pushing) cfunc via the default Send path. HeapFloat
+    // likewise falls back.
+    if fun.likely_a(recv, types::Flonum, state) && fun.likely_a(other, types::Flonum, state) {
+        let recv = fun.coerce_to(block, recv, types::Flonum, state);
+        let other = fun.coerce_to(block, other, types::Flonum, state);
+        return Some(fun.push_insn(block, hir::Insn::FloatCmp { op, recv, other, state }));
+    }
+    None
+}
+
+fn inline_float_lt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_cmp(fun, block, hir::FloatCmpOp::Lt, BOP_LT, recv, other, state)
+}
+
+fn inline_float_le(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_cmp(fun, block, hir::FloatCmpOp::Le, BOP_LE, recv, other, state)
+}
+
+fn inline_float_gt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_cmp(fun, block, hir::FloatCmpOp::Gt, BOP_GT, recv, other, state)
+}
+
+fn inline_float_ge(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_cmp(fun, block, hir::FloatCmpOp::Ge, BOP_GE, recv, other, state)
+}
+
+fn inline_float_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_cmp(fun, block, hir::FloatCmpOp::Eq, BOP_EQ, recv, other, state)
 }
 
 fn inline_float_to_i(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
