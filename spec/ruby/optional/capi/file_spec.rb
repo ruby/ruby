@@ -5,13 +5,13 @@ load_extension('file')
 describe :rb_file_open, shared: true do
   it "raises an ArgumentError if passed an empty mode string" do
     touch @name
-    -> { @s.rb_file_open(@name, "") }.should raise_error(ArgumentError)
+    -> { @s.rb_file_open(@name, "") }.should.raise(ArgumentError)
   end
 
   it "opens a file in read-only mode with 'r'" do
     touch(@name) { |f| f.puts "readable" }
     @file = @s.send(@method, @name, "r")
-    @file.should be_an_instance_of(File)
+    @file.should.instance_of?(File)
     @file.read.chomp.should == "readable"
   end
 
@@ -65,13 +65,13 @@ describe "C-API File function" do
   describe "FilePathValue" do
     it "returns a String argument unchanged" do
       obj = "path"
-      @s.FilePathValue(obj).should eql(obj)
+      @s.FilePathValue(obj).should.eql?(obj)
     end
 
     it "does not call #to_str on a String" do
       obj = +"path"
       obj.should_not_receive(:to_str)
-      @s.FilePathValue(obj).should eql(obj)
+      @s.FilePathValue(obj).should.eql?(obj)
     end
 
     it "calls #to_path to convert an object to a String" do

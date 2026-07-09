@@ -20,7 +20,7 @@ describe "Exception#exception" do
   it "returns an exception of the same class as self with the message given as argument" do
     e = RuntimeError.new
     e2 = e.exception("message")
-    e2.should be_an_instance_of(RuntimeError)
+    e2.should.instance_of?(RuntimeError)
     e2.message.should == "message"
   end
 
@@ -62,7 +62,7 @@ describe "Exception#exception" do
   it "returns an exception of the same class as self with the message given as argument, but without reinitializing" do
     e = CustomArgumentError.new(:boom)
     e2 = e.exception("message")
-    e2.should be_an_instance_of(CustomArgumentError)
+    e2.should.instance_of?(CustomArgumentError)
     e2.val.should == :boom
     e2.message.should == "message"
   end

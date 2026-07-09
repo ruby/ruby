@@ -1,7 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/isatty'
+require 'stringio'
 
 describe "StringIO#tty?" do
-  it_behaves_like :stringio_isatty, :tty?
+  it "returns false" do
+    StringIO.new("tty").tty?.should == false
+  end
 end

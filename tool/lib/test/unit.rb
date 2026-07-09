@@ -460,10 +460,15 @@ module Test
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
         warn ""
-        warn "A test worker crashed. It might be an interpreter bug or"
-        warn "a bug in test/unit/parallel.rb. Try again without the -j"
-        warn "option."
+        warn "A test worker crashed. It might be a bug in the"
+        warn "Ruby runtime or a bug in  test/unit/parallel.rb."
+        warn "You may want to try again without the -j option."
         warn ""
+        if ENV["RUBY_CRASH_REPORT"]
+          warn "hint: RUBY_CRASH_REPORT is set and may have produced additional information."
+          warn "      Crash logs might be collapsed under a different fold on CI." if "true" == ENV["GITHUB_ACTIONS"]
+          warn ""
+        end
         if File.exist?('core')
           require 'fileutils'
           require 'time'
@@ -1671,6 +1676,19 @@ module Test
           $stdout.flush
 
           leakchecker.check("#{inst.class}\##{inst.__name__}")
+
+          # Optionally verify GC internal consistency after each test. An
+          # integer >= 2 samples once every N tests (use a prime so a
+          # randomized test order samples a different set each run); any other
+          # non-empty value verifies every test (O(heap) per test, so only
+          # practical for small runs).
+          if (interval = ENV["RUBY_TEST_GC_VERIFY"])
+            n = interval.to_i
+            @__gc_verify_tick = (@__gc_verify_tick || 0) + 1
+            if n <= 1 || (@__gc_verify_tick % n).zero?
+              GC.verify_internal_consistency
+            end
+          end
 
           _end_method(inst)
 

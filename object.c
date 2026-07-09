@@ -264,8 +264,14 @@ static inline VALUE
 class_real(VALUE cl)
 {
     RUBY_ASSERT(cl);
+
+    // TODO: In the future we should only call this with T_CLASS
+    RUBY_ASSERT(RB_TYPE_P(cl, T_CLASS) || RB_TYPE_P(cl, T_ICLASS) || RB_TYPE_P(cl, T_MODULE));
+
     while (RB_UNLIKELY(fake_class_p(cl))) {
-        cl = RCLASS_SUPER(cl);
+        // All paths through super in any box will eventually result in the
+        // same class.
+        cl = RCLASSEXT_SUPER(RCLASS_EXT_PRIME(cl));
     }
     return cl;
 }
@@ -322,8 +328,8 @@ rb_obj_singleton_class(VALUE obj)
 void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
-    RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
+    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
+    RUBY_ASSERT(RB_TYPE_P(dest, T_OBJECT));
 
     unsigned long src_num_ivs = rb_ivar_count(obj);
     if (!src_num_ivs) {
@@ -332,7 +338,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     shape_id_t src_shape_id = RBASIC_SHAPE_ID(obj);
 
-    if (rb_shape_too_complex_p(src_shape_id)) {
+    if (rb_shape_complex_p(src_shape_id)) {
         rb_shape_copy_complex_ivars(dest, obj, src_shape_id, ROBJECT_FIELDS_HASH(obj));
         return;
     }
@@ -341,10 +347,10 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
 
     shape_id_t dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
-    if (UNLIKELY(rb_shape_too_complex_p(dest_shape_id))) {
+    if (UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
         st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
         rb_obj_copy_ivs_to_hash_table(obj, table);
-        rb_obj_init_too_complex(dest, table);
+        rb_obj_init_complex(dest, table);
 
         return;
     }
@@ -447,13 +453,13 @@ rb_immutable_obj_clone(int argc, VALUE *argv, VALUE obj)
 VALUE
 rb_get_freeze_opt(int argc, VALUE *argv)
 {
-    static ID keyword_ids[1];
+    /* idFreeze (== :freeze) is preinterned before any Ruby code runs, so use it
+     * directly instead of lazily initializing a shared static, which races when
+     * Ractors run this concurrently. */
+    const ID keyword_ids[1] = { idFreeze };
     VALUE opt;
     VALUE kwfreeze = Qnil;
 
-    if (!keyword_ids[0]) {
-        CONST_ID(keyword_ids[0], "freeze");
-    }
     rb_scan_args(argc, argv, "0:", &opt);
     if (!NIL_P(opt)) {
         rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
@@ -470,6 +476,29 @@ immutable_obj_clone(VALUE obj, VALUE kwfreeze)
         rb_raise(rb_eArgError, "can't unfreeze %"PRIsVALUE,
                  rb_obj_class(obj));
     return obj;
+}
+
+/* Cache of the `{freeze: true/false}` keyword hash passed to #initialize_clone.
+ * Ractors may reach this concurrently, so build a fully populated, frozen and
+ * pinned hash locally and publish it with a single atomic CAS: any value another
+ * thread can observe in the static is already complete, and a builder that loses
+ * the CAS just discards its hash. (The old lazy init published an empty hash that
+ * a second thread could read and freeze before the first finished filling it.) */
+static VALUE freeze_true_hash, freeze_false_hash;
+
+static VALUE
+clone_freeze_kwarg_hash(VALUE *cache, VALUE freeze_value)
+{
+    VALUE h = RUBY_ATOMIC_VALUE_LOAD(*cache);
+    if (!h) {
+        h = rb_hash_new();
+        rb_hash_aset(h, ID2SYM(idFreeze), freeze_value);
+        rb_obj_freeze(h);
+        rb_vm_register_global_object(h); /* pin before publishing */
+        VALUE prev = RUBY_ATOMIC_VALUE_CAS(*cache, 0, h);
+        if (prev) h = prev; /* lost the race; our h becomes garbage */
+    }
+    return h;
 }
 
 VALUE
@@ -495,36 +524,20 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         }
 
         if (RB_OBJ_FROZEN(obj)) {
-            shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
+            shape_id_t next_shape_id = rb_obj_shape_transition_frozen(clone);
             RBASIC_SET_SHAPE_ID(clone, next_shape_id);
         }
         break;
       case Qtrue: {
-        static VALUE freeze_true_hash;
-        if (!freeze_true_hash) {
-            freeze_true_hash = rb_hash_new();
-            rb_vm_register_global_object(freeze_true_hash);
-            rb_hash_aset(freeze_true_hash, ID2SYM(idFreeze), Qtrue);
-            rb_obj_freeze(freeze_true_hash);
-        }
-
         argv[0] = obj;
-        argv[1] = freeze_true_hash;
+        argv[1] = clone_freeze_kwarg_hash(&freeze_true_hash, Qtrue);
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         OBJ_FREEZE(clone);
         break;
       }
       case Qfalse: {
-        static VALUE freeze_false_hash;
-        if (!freeze_false_hash) {
-            freeze_false_hash = rb_hash_new();
-            rb_vm_register_global_object(freeze_false_hash);
-            rb_hash_aset(freeze_false_hash, ID2SYM(idFreeze), Qfalse);
-            rb_obj_freeze(freeze_false_hash);
-        }
-
         argv[0] = obj;
-        argv[1] = freeze_false_hash;
+        argv[1] = clone_freeze_kwarg_hash(&freeze_false_hash, Qfalse);
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         break;
       }
@@ -763,7 +776,7 @@ inspect_obj(VALUE obj, VALUE a, int recur)
         rb_str_cat2(str, " ...");
     }
     else {
-        rb_ivar_foreach(obj, inspect_i, a);
+        rb_ivar_foreach_buffered(obj, inspect_i, a);
     }
     rb_str_cat2(str, ">");
     RSTRING_PTR(str)[0] = '#';
@@ -1344,26 +1357,10 @@ rb_obj_dummy1(VALUE _x, VALUE _y)
 
 /*
  *  call-seq:
- *     obj.freeze    -> obj
+ *     obj.freeze -> self
  *
- *  Prevents further modifications to <i>obj</i>. A
- *  FrozenError will be raised if modification is attempted.
- *  There is no way to unfreeze a frozen object. See also
- *  Object#frozen?.
- *
- *  This method returns self.
- *
- *     a = [ "a", "b", "c" ]
- *     a.freeze
- *     a << "z"
- *
- *  <em>produces:</em>
- *
- *     prog.rb:3:in `<<': can't modify frozen Array (FrozenError)
- *     	from prog.rb:3
- *
- *  Objects of the following classes are always frozen: Integer,
- *  Float, Symbol.
+ *  Freezes +self+, preventing further modifications;
+ *  see {Frozen Objects}[rdoc-ref:frozen_objects.md].
  */
 
 VALUE
@@ -1549,10 +1546,10 @@ rb_true_to_s(VALUE obj)
 
 
 /*
- *  call-seq:
- *    true & object -> true or false
+ * call-seq:
+ *   true & object -> true or false
  *
- *  Returns +false+ if +object+ is +false+ or +nil+, +true+ otherwise:
+ * Returns +false+ if +object+ is +false+ or +nil+, +true+ otherwise:
  *
  *  true & Object.new # => true
  *  true & false      # => false
@@ -2218,6 +2215,7 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
         }
     }
     rb_class_set_super(klass, super);
+    RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     RCLASS_SET_ALLOCATOR(klass, RCLASS_ALLOCATOR(super));
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
@@ -2262,6 +2260,7 @@ static VALUE class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass);
 static VALUE
 rb_class_alloc(VALUE klass)
 {
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
     rb_alloc_func_t allocator = class_get_alloc_func(klass);
     return class_call_alloc_func(allocator, klass);
 }
@@ -3359,13 +3358,9 @@ rb_check_convert_type(VALUE val, int type, const char *tname, const char *method
 
 /*! \private */
 VALUE
-rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
+rb_check_convert_type_with_id_slow(VALUE val, int type, const char *tname, ID method)
 {
-    VALUE v;
-
-    /* always convert T_DATA */
-    if (TYPE(val) == type && type != T_DATA) return val;
-    v = convert_type_with_id(val, tname, method, FALSE, -1);
+    VALUE v = convert_type_with_id(val, tname, method, FALSE, -1);
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
         rb_cant_convert_invalid_return(val, tname, rb_id2name(method), v);
@@ -4063,7 +4058,7 @@ rb_Hash(VALUE val)
  *
  *  Examples:
  *
- *    Hash({foo: 0, bar: 1}) # => {:foo=>0, :bar=>1}
+ *    Hash({foo: 0, bar: 1}) # => {foo: 0, bar: 1}
  *    Hash(nil)              # => {}
  *    Hash([])               # => {}
  *

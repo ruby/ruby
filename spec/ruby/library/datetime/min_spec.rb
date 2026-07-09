@@ -1,6 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/min'
+require 'date'
 
-describe "DateTime.min" do
-  it_behaves_like :datetime_min, :min
+describe "DateTime#min" do
+  it "is an alias of DateTime#minute" do
+    DateTime.instance_method(:min).should == DateTime.instance_method(:minute)
+  end
 end

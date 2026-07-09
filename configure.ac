@@ -110,11 +110,21 @@ AS_IF([test "$HAVE_BASERUBY" = no], [
 ])
 AC_SUBST(BASERUBY)
 AC_SUBST(HAVE_BASERUBY)
+AS_IF([test "$cross_compiling" = yes],
+    [X_BUILD_EXEEXT=`$BASERUBY -rrbconfig -e ['puts RbConfig::CONFIG["EXEEXT"]']`],
+    [X_BUILD_EXEEXT='$(EXEEXT)']
+)
+AC_SUBST(X_BUILD_EXEEXT)
 
 AC_ARG_WITH(dump-ast,
 	AS_HELP_STRING([--with-dump-ast=DUMP_AST], [use DUMP_AST as dump_ast; for cross-compiling with a host-built dump_ast]),
 	[DUMP_AST=$withval DUMP_AST_TARGET='$(empty)'],
-	[DUMP_AST='./dump_ast$(EXEEXT)' DUMP_AST_TARGET='$(DUMP_AST)'])
+	[AS_IF([test "$cross_compiling" = yes], [
+	    DUMP_AST='build-tool/dump_ast$(BUILD_EXEEXT)'
+	], [
+	    DUMP_AST='./dump_ast$(BUILD_EXEEXT)'
+	])
+	DUMP_AST_TARGET='$(DUMP_AST)'])
 dnl Without baseruby, .rbinc files cannot be regenerated, so clear the
 dnl dependency on dump_ast to avoid rebuilding pre-generated .rbinc files.
 AS_IF([test "$HAVE_BASERUBY" = no], [DUMP_AST_TARGET='$(empty)'])
@@ -278,6 +288,11 @@ AS_CASE(["/${rb_CC} "],
     RUBY_CHECK_PROG_FOR_CC([OBJDUMP], [clang], [${llvm_prefix}objdump])
     RUBY_CHECK_PROG_FOR_CC([RANLIB],  [clang], [${llvm_prefix}ranlib])
     RUBY_CHECK_PROG_FOR_CC([STRIP],   [clang], [${llvm_prefix}strip])
+
+    # These -Wno-* flags silence clang-specific diagnostics that don't exist
+    # in GCC.  GCC silently accepts unknown -Wno-* flags but later emits noisy
+    # "unrecognized command-line option" notes whenever another warning fires.
+    clang_warnflags="-Wno-constant-logical-operand -Wno-parentheses-equality -Wno-self-assign"
 ])
 AS_UNSET(rb_CC)
 AS_UNSET(rb_dummy)
@@ -777,13 +792,10 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Wimplicit-fallthrough=0 \
 		 -Wmissing-noreturn \
 		 -Wno-cast-function-type \
-		 -Wno-constant-logical-operand \
 		 -Wno-long-long \
 		 -Wno-missing-field-initializers \
 		 -Wno-overlength-strings \
 		 -Wno-packed-bitfield-compat \
-		 -Wno-parentheses-equality \
-		 -Wno-self-assign \
 		 -Wno-tautological-compare \
 		 -Wno-unused-parameter \
 		 -Wno-unused-value \
@@ -791,6 +803,7 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Wsuggest-attribute=noreturn \
 		 -Wunused-variable \
 		 -diag-disable=175,188,1684,2259,2312 \
+		 $clang_warnflags \
 		 $extra_warnflags \
 		 ; do
 	AS_IF([test "$particular_werror_flags" != yes], [
@@ -3528,7 +3541,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
     # darwin target requires miniruby for linking ext bundles
     PREP="$PREP"' miniruby$(EXEEXT)'
   ])
-  RUNRUBY_COMMAND='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
+  RUNRUBY_COMMAND='$(MINIRUBY) -I`$(CHDIR) $(srcdir)/lib; pwd`'
   RUNRUBY='$(RUNRUBY_COMMAND)'
   XRUBY='$(MINIRUBY)'
   TEST_RUNNABLE=no
@@ -3570,7 +3583,8 @@ AS_CASE(["$target_os"],
 
 AC_ARG_ENABLE(multiarch,
 	      AS_HELP_STRING([--enable-multiarch], [enable multiarch compatible directories]),
-	      [multiarch=], [unset multiarch])
+	      [AS_CASE([$enableval], [no], [unset multiarch], [multiarch=])],
+	      [unset multiarch])
 AS_IF([test ${multiarch+set}], [
    AC_DEFINE(ENABLE_MULTIARCH)
 ])
@@ -3806,9 +3820,6 @@ AS_CASE(["${enable_dtrace}"],
 ], [
     rb_cv_dtrace_available=no
 ])
-AS_CASE(["$target_os"],[freebsd*],[
-         rb_cv_dtrace_available=no
-	 ])
 AS_IF([test "${enable_dtrace}" = yes], [dnl
     AS_IF([test -z "$DTRACE"], [dnl
 	AC_MSG_ERROR([dtrace(1) is missing])
@@ -4149,7 +4160,7 @@ AC_SUBST(JIT_CARGO_SUPPORT)dnl "no" or the cargo profile of the rust code
 [begin]_group "build section" && {
 AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[extern void conftest_external(void) {}]], [[]])],[
-	rb_cv_symbol_prefix=`$NM conftest.$ac_objext |
+	rb_cv_symbol_prefix=`$NM conftest.$ac_objext 2>/dev/null |
 			     sed -n ['/.*T[ 	]\([^ 	]*\)conftest_external.*/!d;s//\1/p;q']`
 	],
 	[rb_cv_symbol_prefix=''])

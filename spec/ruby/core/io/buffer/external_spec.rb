@@ -8,16 +8,16 @@ describe "IO::Buffer#external?" do
 
   it "is true for a buffer with externally-managed memory" do
     @buffer = IO::Buffer.for("string")
-    @buffer.external?.should be_true
+    @buffer.external?.should == true
   end
 
   it "is false for a buffer with self-managed memory" do
     @buffer = IO::Buffer.new(12, IO::Buffer::MAPPED)
-    @buffer.external?.should be_false
+    @buffer.external?.should == false
   end
 
   it "is false for a null buffer" do
     @buffer = IO::Buffer.new(0)
-    @buffer.external?.should be_false
+    @buffer.external?.should == false
   end
 end

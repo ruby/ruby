@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/with_object'
 
 describe "Enumerator#with_object" do
-  it_behaves_like :enum_with_object, :with_object
+  it "is an alias of Enumerator#each_with_object" do
+    Enumerator.instance_method(:with_object).should == Enumerator.instance_method(:each_with_object)
+  end
 end

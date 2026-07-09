@@ -902,6 +902,25 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(array.uniq.sort, set.sort)
   end
 
+  def test_compare_by_identity_compact
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    # [Bug #22064]
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      set = Set.new.compare_by_identity
+
+      o = Object.new
+      set.add(o)
+
+      assert_include(set, o)
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_include(set, o)
+    end;
+  end
+
   def test_reset
     [Set, Class.new(Set)].each { |klass|
       a = [1, 2]
@@ -978,7 +997,8 @@ class TC_Enumerable < Test::Unit::TestCase
     assert_equal([-10,-8,-6,-4,-2], set.sort)
 
     assert_same set, set.to_set
-    assert_not_same set, set.to_set { |o| o }
+    transformed = set.to_set { |o| o + 1 }
+    assert_equal([-9,-7,-5,-3,-1], transformed.sort)
   end
 
   class MyEnum

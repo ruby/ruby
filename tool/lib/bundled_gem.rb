@@ -130,4 +130,46 @@ module BundledGem
     command = "#{git} checkout --detach #{rev}"
     system(command, chdir: gemdir) or raise "failed: #{command}"
   end
+
+  class GemspecLoader
+    module NoPipe
+      refine IO.singleton_class do
+        def popen(...) ""; end
+      end
+    end
+    using NoPipe
+
+    def `(command) ""; end
+
+    def load_gemspec(file)
+      code = File.read(file, encoding: "utf-8:-")
+      eval(code, binding, file)
+    rescue
+      nil
+    end
+  end
+
+  def load_gemspec(g)
+    spec = GemspecLoader.new.load_gemspec(g)
+    spec.files.clear
+    spec.extensions.clear
+    src = spec.to_ruby
+    src.sub!(/^$$/) {
+      %[# default: #{g} #{File.mtime(g).strftime(%[%s.%N])}\n]
+    }
+    return spec.full_name+'.gemspec', src
+  end
+
+  def update_default_gemspecs(basedirs, out, quiet: true)
+    basedirs.each do |basedir|
+      Dir.glob(basedir+'/**/*.gemspec') do |g|
+        name, src = BundledGem.load_gemspec(g)
+        unless src
+          puts "Ignoring #{g}" unless quiet
+          next
+        end
+        out.write(src, name: name, newer: File.mtime(g), quiet: quiet)
+      end
+    end
+  end
 end

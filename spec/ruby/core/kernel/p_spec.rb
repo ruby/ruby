@@ -13,7 +13,7 @@ describe "Kernel#p" do
   end
 
   it "is a private method" do
-    Kernel.should have_private_instance_method(:p)
+    Kernel.private_instance_methods(false).should.include?(:p)
   end
 
   # TODO: fix
@@ -81,5 +81,7 @@ describe "Kernel#p" do
 end
 
 describe "Kernel.p" do
-  it "needs to be reviewed for spec completeness"
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:p)
+  end
 end

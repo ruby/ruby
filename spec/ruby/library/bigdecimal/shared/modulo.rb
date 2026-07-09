@@ -116,16 +116,6 @@ describe :bigdecimal_modulo, shared: true do
   it "raises TypeError if the argument cannot be coerced to BigDecimal" do
     -> {
       @one.send(@method, '2')
-    }.should raise_error(TypeError)
-  end
-end
-
-describe :bigdecimal_modulo_zerodivisionerror, shared: true do
-  it "raises ZeroDivisionError if other is zero" do
-    bd5667 = BigDecimal("5667.19")
-
-    -> { bd5667.send(@method, 0) }.should raise_error(ZeroDivisionError)
-    -> { bd5667.send(@method, BigDecimal("0")) }.should raise_error(ZeroDivisionError)
-    -> { @zero.send(@method, @zero) }.should raise_error(ZeroDivisionError)
+    }.should.raise(TypeError)
   end
 end

@@ -26,7 +26,7 @@ describe :array_pack_unicode, shared: true do
   it "constructs strings with valid encodings" do
     str = [0x85].pack("U*")
     str.should == "\xc2\x85"
-    str.valid_encoding?.should be_true
+    str.valid_encoding?.should == true
   end
 
   it "encodes values larger than UTF-8 max codepoints" do
@@ -64,13 +64,13 @@ describe :array_pack_unicode, shared: true do
   it "raises a TypeError if #to_int does not return an Integer" do
     obj = mock('to_int')
     obj.should_receive(:to_int).and_return("5")
-    -> { [obj].pack("U") }.should raise_error(TypeError)
+    -> { [obj].pack("U") }.should.raise(TypeError)
   end
 
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       [1, 2, 3].pack("U\x00U")
-    }.should raise_error(ArgumentError, /unknown pack directive/)
+    }.should.raise(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -78,11 +78,11 @@ describe :array_pack_unicode, shared: true do
   end
 
   it "raises a RangeError if passed a negative number" do
-    -> { [-1].pack("U") }.should raise_error(RangeError)
+    -> { [-1].pack("U") }.should.raise(RangeError)
   end
 
   it "raises a RangeError if passed a number larger than an unsigned 32-bit integer" do
-    -> { [2**32].pack("U") }.should raise_error(RangeError)
+    -> { [2**32].pack("U") }.should.raise(RangeError)
   end
 
   it "sets the output string to UTF-8 encoding" do

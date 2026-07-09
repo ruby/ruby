@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/equal'
 
 describe "Integer#===" do
-  it_behaves_like :integer_equal, :===
+  it "is an alias of Integer#==" do
+    Integer.instance_method(:===).should == Integer.instance_method(:==)
+  end
 end

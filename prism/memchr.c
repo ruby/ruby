@@ -11,7 +11,7 @@
  * we need to search for a character in a buffer that could be the trailing byte
  * of a multibyte character.
  */
-void *
+const void *
 pm_memchr(const void *memory, int character, size_t number, bool encoding_changed, const pm_encoding_t *encoding) {
     if (encoding_changed && encoding->multibyte && character >= TRAILING_BYTE_MINIMUM) {
         const uint8_t *source = (const uint8_t *) memory;

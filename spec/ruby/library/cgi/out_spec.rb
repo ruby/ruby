@@ -48,7 +48,7 @@ ruby_version_is ""..."4.0" do
     end
 
     it "raises a LocalJumpError" do
-      -> { @cgi.out }.should raise_error(LocalJumpError)
+      -> { @cgi.out }.should.raise(LocalJumpError)
     end
   end
 end

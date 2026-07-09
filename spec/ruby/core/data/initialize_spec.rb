@@ -47,6 +47,12 @@ describe "Data#initialize" do
     data.unit.should == "km"
   end
 
+  it "accepts the last entry when a keyword is given as both String and Symbol" do
+    data = DataSpecs::Single.new("value" => -1, value: 42)
+
+    data.value.should == 42
+  end
+
   it "accepts positional arguments with empty keyword arguments" do
     data = DataSpecs::Single.new(42, **{})
 
@@ -61,7 +67,7 @@ describe "Data#initialize" do
   it "raises ArgumentError if no arguments are given" do
     -> {
       DataSpecs::Measure.new
-    }.should raise_error(ArgumentError) { |e|
+    }.should.raise(ArgumentError) { |e|
       e.message.should.include?("missing keywords: :amount, :unit")
     }
   end
@@ -69,17 +75,59 @@ describe "Data#initialize" do
   it "raises ArgumentError if at least one argument is missing" do
     -> {
       DataSpecs::Measure.new(unit: "km")
-    }.should raise_error(ArgumentError) { |e|
+    }.should.raise(ArgumentError) { |e|
       e.message.should.include?("missing keyword: :amount")
     }
+  end
+
+  ruby_version_is "4.0" do # https://bugs.ruby-lang.org/issues/21844
+    it "raises ArgumentError if at least one argument is missing and other is provided as both String and Symbol" do
+      -> {
+        DataSpecs::Measure.new(unit: "km", "unit" => "km")
+      }.should.raise(ArgumentError) { |e|
+        e.message.should.include?("missing keyword: :amount")
+      }
+    end
   end
 
   it "raises ArgumentError if unknown keyword is given" do
     -> {
       DataSpecs::Measure.new(amount: 42, unit: "km", system: "metric")
-    }.should raise_error(ArgumentError) { |e|
+    }.should.raise(ArgumentError) { |e|
       e.message.should.include?("unknown keyword: :system")
     }
+  end
+
+  ruby_version_is "4.0" do # https://bugs.ruby-lang.org/issues/21844
+    it "raises ArgumentError if unknown keyword is given which is convertable to String" do
+      key = mock("to_str")
+      key.should_receive(:to_str).and_return("system")
+
+      -> {
+        DataSpecs::Measure.new(amount: 42, unit: "km", key => "metric")
+      }.should.raise(ArgumentError) { |e|
+        e.message.should.include?('unknown keyword: "system"')
+      }
+    end
+
+    it "raises TypeError when the keyword is not convertable to String" do
+      -> {
+        DataSpecs::Measure.new(1 => 2)
+      }.should.raise(TypeError) { |e|
+        e.message.should == "1 is not a symbol nor a string"
+      }
+    end
+
+    it "raises TypeError if the conversion with #to_str does not return a String" do
+      klass = Data.define(:x, :y)
+
+      key = mock("to_str")
+      key.should_receive(:to_str).and_return(0)
+
+      -> {
+        klass.new(key => 2)
+      }.should raise_consistent_error(TypeError, /can't convert MockObject into String/)
+    end
   end
 
   it "supports super from a subclass" do
@@ -90,7 +138,7 @@ describe "Data#initialize" do
   end
 
   it "supports Data with no fields" do
-    -> { DataSpecs::Empty.new }.should_not raise_error
+    -> { DataSpecs::Empty.new }.should_not.raise
   end
 
   it "can be overridden" do

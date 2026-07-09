@@ -3,17 +3,16 @@
 require "bundler/installer/parallel_installer"
 
 RSpec.describe Bundler::ParallelInstaller::SpecInstallation do
-  let!(:dep) do
-    a_spec = Object.new
-    def a_spec.name
-      "I like tests"
-    end
-
-    def a_spec.full_name
-      "I really like tests"
-    end
-    a_spec
+  def build_spec(name, extensions: [])
+    spec = Object.new
+    spec.define_singleton_method(:name) { name }
+    spec.define_singleton_method(:full_name) { "#{name}-1.0" }
+    spec.define_singleton_method(:extensions) { extensions }
+    spec.define_singleton_method(:dependencies) { [] }
+    spec
   end
+
+  let!(:dep) { build_spec("I like tests") }
 
   describe "#ready_to_enqueue?" do
     context "when in enqueued state" do
@@ -39,29 +38,51 @@ RSpec.describe Bundler::ParallelInstaller::SpecInstallation do
   end
 
   describe "#dependencies_installed?" do
-    context "when all dependencies are installed" do
-      it "returns true" do
-        dependencies = []
-        dependencies << instance_double("SpecInstallation", spec: "alpha", name: "alpha", installed?: true, all_dependencies: [], type: :production)
-        dependencies << instance_double("SpecInstallation", spec: "beta", name: "beta", installed?: true, all_dependencies: [], type: :production)
-        all_specs = dependencies + [instance_double("SpecInstallation", spec: "gamma", name: "gamma", installed?: false, all_dependencies: [], type: :production)]
+    it "returns true when all dependencies are installed" do
+      alpha = described_class.new(build_spec("alpha"))
+      alpha.dependencies = []
+
+      beta = described_class.new(build_spec("beta"))
+      beta.dependencies = [alpha]
+
+      gamma = described_class.new(build_spec("gamma"))
+      gamma.dependencies = [beta]
+
+      expect(gamma.dependencies_installed?({})).to be_falsey
+      expect(gamma.dependencies_installed?({ "beta" => true })).to be_falsey
+      expect(gamma.dependencies_installed?({ "alpha" => true, "beta" => true })).to be_truthy
+    end
+  end
+
+  describe "#ready_to_install?" do
+    context "when spec has no extensions" do
+      it "returns true regardless of dependencies" do
+        beta = described_class.new(build_spec("beta"))
+        beta.dependencies = []
+
         spec = described_class.new(dep)
-        allow(spec).to receive(:all_dependencies).and_return(dependencies)
-        installed_specs = all_specs.select(&:installed?).map {|s| [s.name, true] }.to_h
-        expect(spec.dependencies_installed?(installed_specs)).to be_truthy
+        spec.state = :downloaded
+        spec.dependencies = [beta]
+
+        expect(spec.ready_to_install?({})).to be_truthy
       end
     end
 
-    context "when all dependencies are not installed" do
-      it "returns false" do
-        dependencies = []
-        dependencies << instance_double("SpecInstallation", spec: "alpha", name: "alpha", installed?: false, all_dependencies: [], type: :production)
-        dependencies << instance_double("SpecInstallation", spec: "beta", name: "beta", installed?: true, all_dependencies: [], type: :production)
-        all_specs = dependencies + [instance_double("SpecInstallation", spec: "gamma", name: "gamma", installed?: false, all_dependencies: [], type: :production)]
-        spec = described_class.new(dep)
-        allow(spec).to receive(:all_dependencies).and_return(dependencies)
-        installed_specs = all_specs.select(&:installed?).map {|s| [s.name, true] }.to_h
-        expect(spec.dependencies_installed?(installed_specs)).to be_falsey
+    context "when spec has extensions" do
+      it "returns true when all dependencies are installed" do
+        alpha = described_class.new(build_spec("alpha"))
+        alpha.dependencies = []
+
+        beta = described_class.new(build_spec("beta"))
+        beta.dependencies = [alpha]
+
+        gamma = described_class.new(build_spec("gamma", extensions: ["ext/Rakefile"]))
+        gamma.state = :downloaded
+        gamma.dependencies = [beta]
+
+        expect(gamma.ready_to_install?({})).to be_falsey
+        expect(gamma.ready_to_install?({ "beta" => true })).to be_falsey
+        expect(gamma.ready_to_install?({ "alpha" => true, "beta" => true })).to be_truthy
       end
     end
   end

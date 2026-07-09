@@ -16,6 +16,7 @@ bundle-outdated(1) -- List installed gems with newer versions available
                         [--filter-minor]
                         [--filter-patch]
                         [--only-explicit]
+                        [--cooldown=NUMBER]
 
 ## DESCRIPTION
 
@@ -70,6 +71,12 @@ are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
 
 * `--only-explicit`:
   Only list gems specified in your Gemfile, not their dependencies.
+
+* `--cooldown=<number>`:
+  Annotate (rather than hide) versions that are still inside the
+  cooldown window of <number> days. The prose output appends "in
+  cooldown for Nd more days" and the table form adds "(cooldown Nd)" to
+  the Latest column. See `cooldown` in bundle-config(1).
 
 ## PATCH LEVEL OPTIONS
 

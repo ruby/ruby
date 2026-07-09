@@ -16,18 +16,18 @@ Gem::Specification.new do |s|
   s.summary = "Provides lexical scanning operations on a String."
   s.description = "Provides lexical scanning operations on a String."
 
-  files = [
-    "COPYING",
-    "LICENSE.txt",
-    "lib/strscan/strscan.rb"
+  files = %w[
+    COPYING
+    LICENSE.txt
+    lib/strscan.rb
+    lib/strscan/strscan.rb
+    lib/strscan/truffleruby.rb
   ]
 
   s.require_paths = %w{lib}
 
   if RUBY_ENGINE == "jruby"
     files << "lib/strscan.jar"
-    files << "ext/jruby/lib/strscan.rb"
-    s.require_paths += %w{ext/jruby/lib}
     s.platform = "java"
   else
     files << "ext/strscan/extconf.rb"

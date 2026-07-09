@@ -68,14 +68,11 @@ struct rb_thread_sched_item {
         // locked by vm->ractor.sched.lock
         struct ccan_list_node running_threads;
 
-        // connected to vm->ractor.sched.zombie_threads
-        struct ccan_list_node zombie_threads;
     } node;
 
     struct rb_thread_sched_waiting waiting_reason;
     uint32_t event_serial;
 
-    bool finished;
     bool malloc_stack;
     void *context_stack;
     size_t context_stack_size;
@@ -115,8 +112,6 @@ struct rb_native_thread {
 
     struct coroutine_context *nt_context;
     int dedicated;
-
-    size_t machine_stack_maxsize;
 };
 
 #undef except
@@ -143,8 +138,22 @@ struct rb_thread_sched {
     struct ccan_list_head readyq;
     int readyq_cnt;
     // ractor scheduling
+    // When not linked in vm->ractor.sched.grq, this node is kept
+    // self-linked (ccan_list_node_init), so "linked?" can be read off the
+    // node itself: enqueuers assert it, and direct transfers cancel an
+    // outstanding entry (see ractor_sched_cancel_enq).
     struct ccan_list_node grq_node;
 };
+
+struct rb_thread_context;
+
+// A coroutine (M:N) thread's teardown runs coroutine_thread_terminated
+// instead of the dedicated-thread path in thread_start_func_2; see the
+// comments there and in thread_pthread_mn.c. th->sched.context is cleared in
+// that epilogue, so this also reads as "did not tear down yet".
+// (Only meaningful when USE_MN_THREADS -- gate uses accordingly; the macro
+// itself is a plain pointer test and always compiles.)
+#define th_has_coroutine(th) ((th)->sched.context != NULL)
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
   NOINLINE(void rb_current_ec_set(struct rb_execution_context_struct *));

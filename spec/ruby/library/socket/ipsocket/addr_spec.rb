@@ -17,7 +17,7 @@ describe "Socket::IPSocket#addr" do
     BasicSocket.do_not_reverse_lookup = false
     addrinfo = @socket.addr
     addrinfo[0].should == "AF_INET"
-    addrinfo[1].should be_kind_of(Integer)
+    addrinfo[1].should.is_a?(Integer)
     addrinfo[2].should == SocketSpecs.hostname
     addrinfo[3].should == "127.0.0.1"
   end
@@ -27,7 +27,7 @@ describe "Socket::IPSocket#addr" do
     BasicSocket.do_not_reverse_lookup = true
     addrinfo = @socket.addr
     addrinfo[0].should == "AF_INET"
-    addrinfo[1].should be_kind_of(Integer)
+    addrinfo[1].should.is_a?(Integer)
     addrinfo[2].should == "127.0.0.1"
     addrinfo[3].should == "127.0.0.1"
   end
@@ -35,7 +35,7 @@ describe "Socket::IPSocket#addr" do
   it "returns an address in the array if passed false" do
     addrinfo = @socket.addr(false)
     addrinfo[0].should == "AF_INET"
-    addrinfo[1].should be_kind_of(Integer)
+    addrinfo[1].should.is_a?(Integer)
     addrinfo[2].should == "127.0.0.1"
     addrinfo[3].should == "127.0.0.1"
   end
@@ -81,7 +81,7 @@ describe 'Socket::IPSocket#addr' do
 
       describe 'using :cats as the argument' do
         it 'raises ArgumentError' do
-          -> { @server.addr(:cats) }.should raise_error(ArgumentError)
+          -> { @server.addr(:cats) }.should.raise(ArgumentError)
         end
       end
     end

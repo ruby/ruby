@@ -13,6 +13,6 @@ describe 'Process#last_status' do
   end
 
   it 'raises an ArgumentError if any arguments are provided' do
-    -> { Process.last_status(1) }.should raise_error(ArgumentError)
+    -> { Process.last_status(1) }.should.raise(ArgumentError)
   end
 end

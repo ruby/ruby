@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/isdst'
 
 describe "Time#isdst" do
-  it_behaves_like :time_isdst, :isdst
+  it "is an alias of Time#dst?" do
+    Time.instance_method(:isdst).should == Time.instance_method(:dst?)
+  end
 end

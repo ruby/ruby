@@ -105,6 +105,44 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
     assert_equal(revoked.map(&:serial), revoked2.map(&:serial))
   end
 
+  def test_by_serial
+    now = Time.at(Time.now.to_i)
+    revoke_info = [
+      [1, Time.at(0),          1], # keyCompromise
+      [2, Time.at(0x7fffffff), 2], # cACompromise
+      [3, now,                 3], # affiliationChanged
+    ]
+    cert = issue_cert(@ca, @rsa1, 1, [], nil, nil)
+    crl = issue_crl(revoke_info, 1, Time.now, Time.now+1600, [],
+                    cert, @rsa1, "SHA256")
+
+    # Returns the matching Revoked entry for a listed serial
+    rev = crl.by_serial(2)
+    assert_instance_of(OpenSSL::X509::Revoked, rev)
+    assert_equal(2, rev.serial)
+    assert_equal(Time.at(0x7fffffff), rev.time)
+    assert_equal("CRLReason", rev.extensions[0].oid)
+    assert_equal("CA Compromise", rev.extensions[0].value)
+
+    # Accepts an OpenSSL::BN as well as an Integer
+    assert_equal(3, crl.by_serial(OpenSSL::BN.new(3)).serial)
+
+    # Returns nil for a serial that is not listed
+    assert_nil(crl.by_serial(42))
+
+    # Same answers after a DER round-trip, and consistent with #revoked
+    crl = OpenSSL::X509::CRL.new(crl.to_der)
+    revoke_info.each do |serial, time, _reason|
+      by_serial = crl.by_serial(serial)
+      from_list = crl.revoked.find {|r| r.serial == serial }
+      assert_equal(by_serial, from_list)
+      assert_equal(time, by_serial.time)
+    end
+
+    # Rejects values that can't be an integer serial
+    assert_raise(TypeError) { crl.by_serial(nil) }
+  end
+
   def test_extension
     cert_exts = [
       ["basicConstraints", "CA:TRUE", true],

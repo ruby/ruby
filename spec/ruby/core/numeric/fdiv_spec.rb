@@ -18,7 +18,7 @@ describe "Numeric#fdiv" do
   end
 
   it "returns a Float" do
-    bignum_value.fdiv(Float::MAX).should be_an_instance_of(Float)
+    bignum_value.fdiv(Float::MAX).should.instance_of?(Float)
   end
 
   it "returns Infinity if other is 0" do
@@ -26,6 +26,6 @@ describe "Numeric#fdiv" do
   end
 
   it "returns NaN if other is NaN" do
-    3334.fdiv(nan_value).nan?.should be_true
+    3334.fdiv(nan_value).nan?.should == true
   end
 end

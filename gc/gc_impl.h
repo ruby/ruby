@@ -10,6 +10,25 @@
  */
 #include "ruby/ruby.h"
 
+#include <stddef.h>
+#include <stdint.h>
+
+enum rb_gc_zjit_fastpath_kind {
+    RB_GC_ZJIT_FASTPATH_DEFAULT = 1,
+    RB_GC_ZJIT_FASTPATH_MMTK = 2,
+};
+
+#define RB_GC_ZJIT_FASTPATH_DATA_WORDS 19
+
+union rb_gc_zjit_fastpath_data {
+    uintptr_t words[RB_GC_ZJIT_FASTPATH_DATA_WORDS];
+};
+
+struct rb_gc_zjit_fastpath {
+    enum rb_gc_zjit_fastpath_kind kind;
+    union rb_gc_zjit_fastpath_data data;
+};
+
 #ifndef RB_GC_OBJECT_METADATA_ENTRY_DEFINED
 # define RB_GC_OBJECT_METADATA_ENTRY_DEFINED
 struct rb_gc_object_metadata_entry {
@@ -38,7 +57,6 @@ GC_IMPL_FN void rb_gc_impl_objspace_init(void *objspace_ptr);
 GC_IMPL_FN void *rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor);
 GC_IMPL_FN void rb_gc_impl_set_params(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_init(void);
-GC_IMPL_FN size_t *rb_gc_impl_heap_sizes(void *objspace_ptr);
 // Shutdown
 GC_IMPL_FN void rb_gc_impl_shutdown_free_objects(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_objspace_free(void *objspace_ptr);
@@ -54,11 +72,23 @@ GC_IMPL_FN void rb_gc_impl_stress_set(void *objspace_ptr, VALUE flag);
 GC_IMPL_FN VALUE rb_gc_impl_stress_get(void *objspace_ptr);
 GC_IMPL_FN VALUE rb_gc_impl_config_get(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_config_set(void *objspace_ptr, VALUE hash);
+GC_IMPL_FN struct rb_gc_vm_context *rb_gc_impl_get_vm_context(void *objspace_ptr);
 // Object allocation
-GC_IMPL_FN VALUE rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size);
+GC_IMPL_FN VALUE rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size);
+/* This is an (optional) function that allows the GC implementation to return
+ * metadata for ZJIT's fast path object allocator. Returns `true` if ZJIT can
+ * use the fast path allocator, `false` otherwise.
+ *
+ * The GC is provided `alloc_size`, `flags`, and `class` which describe the
+ * object to be allocated. The GC can use this information to perform
+ * precomputation and fill `fastpath` with GC-specific metadata. ZJIT owns the
+ * generated instruction sequence; see zjit/src/gc_fastpath.rs.
+ */
+GC_IMPL_FN bool rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
 GC_IMPL_FN size_t rb_gc_impl_obj_slot_size(VALUE obj);
-GC_IMPL_FN size_t rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size);
+GC_IMPL_FN size_t rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size);
 GC_IMPL_FN bool rb_gc_impl_size_allocatable_p(size_t size);
+GC_IMPL_FN size_t rb_gc_impl_max_allocation_size(void);
 // Malloc
 /*
  * BEWARE: These functions may or may not run under GVL.
@@ -116,7 +146,7 @@ GC_IMPL_FN VALUE rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE
 GC_IMPL_FN const char *rb_gc_impl_active_gc_name(void);
 // Miscellaneous
 GC_IMPL_FN struct rb_gc_object_metadata_entry *rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj);
-GC_IMPL_FN bool rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr);
+GC_IMPL_FN bool rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr);
 GC_IMPL_FN bool rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN void rb_gc_impl_set_event_hook(void *objspace_ptr, const rb_event_flag_t event);
 GC_IMPL_FN void rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj);

@@ -225,6 +225,12 @@ module Test_SyncDefaultGems
       assert_operator(top_commit(@target), :start_with?, log.last[/\h+$/], out)
     end
 
+    def test_unknown_repository
+      assert_raise_with_message(RuntimeError, /unknown/) do
+        SyncDefaultGems::REPOSITORIES["not-exist"]
+      end
+    end
+
     def test_skip_tool
       git(*%W"rm -q tool/ok", chdir: @target)
       git(*%W"commit -q -m", "Remove tool", chdir: @target)
@@ -363,8 +369,8 @@ module Test_SyncDefaultGems
           lib/net/https.rb
       ])
       expected = {
-        "un" => %w[lib/un.rb],
-        "net-http" => %w[lib/net/https.rb],
+        "ruby/un" => %w[lib/un.rb],
+        "ruby/net-http" => %w[lib/net/https.rb],
         nil => %w[lib/unicode_normalize/normalize.rb lib/unicode_normalize/tables.rb],
       }
       assert_equal(expected, group)

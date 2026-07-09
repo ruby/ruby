@@ -3,27 +3,24 @@ require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
 require_relative 'shared/unicode'
-require_relative 'shared/taint'
 
 describe "String#unpack with format 'U'" do
   it_behaves_like :string_unpack_basic, 'U'
   it_behaves_like :string_unpack_no_platform, 'U'
   it_behaves_like :string_unpack_unicode, 'U'
-  it_behaves_like :string_unpack_taint, 'U'
 
   it "raises ArgumentError on a malformed byte sequence" do
-    -> { "\xE3".unpack('U') }.should raise_error(ArgumentError)
+    -> { "\xE3".unpack('U') }.should.raise(ArgumentError)
   end
 
   it "raises ArgumentError on a malformed byte sequence and doesn't continue when used with the * modifier" do
-    -> { "\xE3".unpack('U*') }.should raise_error(ArgumentError)
+    -> { "\xE3".unpack('U*') }.should.raise(ArgumentError)
   end
 end
 
 describe "String#unpack with format 'u'" do
   it_behaves_like :string_unpack_basic, 'u'
   it_behaves_like :string_unpack_no_platform, 'u'
-  it_behaves_like :string_unpack_taint, 'u'
 
   it "decodes an empty string as an empty string" do
     "".unpack("u").should == [""]

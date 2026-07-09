@@ -42,7 +42,7 @@ class TestGemResolverAPISet < Gem::TestCase
         dependencies: [] },
     ]
 
-    @fetcher.data["#{@dep_uri}a"] = "---\n1  "
+    @fetcher.data["#{@dep_uri}a"] = util_compact_index_response("---\n1  ")
 
     set = Gem::Resolver::APISet.new @dep_uri
 
@@ -69,7 +69,7 @@ class TestGemResolverAPISet < Gem::TestCase
         dependencies: [] },
     ]
 
-    @fetcher.data["#{@dep_uri}a"] = "---\n1\n2.a"
+    @fetcher.data["#{@dep_uri}a"] = util_compact_index_response("---\n1\n2.a")
 
     set = Gem::Resolver::APISet.new @dep_uri
     set.prerelease = true
@@ -94,7 +94,7 @@ class TestGemResolverAPISet < Gem::TestCase
         dependencies: [] },
     ]
 
-    @fetcher.data["#{@dep_uri}a"] = "---\n1  "
+    @fetcher.data["#{@dep_uri}a"] = util_compact_index_response("---\n1  ")
 
     set = Gem::Resolver::APISet.new @dep_uri
 
@@ -123,7 +123,7 @@ class TestGemResolverAPISet < Gem::TestCase
   def test_find_all_missing
     spec_fetcher
 
-    @fetcher.data["#{@dep_uri}a"] = "---"
+    @fetcher.data["#{@dep_uri}a"] = util_compact_index_response("---")
 
     set = Gem::Resolver::APISet.new @dep_uri
 
@@ -158,8 +158,8 @@ class TestGemResolverAPISet < Gem::TestCase
   def test_prefetch
     spec_fetcher
 
-    @fetcher.data["#{@dep_uri}a"] = "---\n1  \n"
-    @fetcher.data["#{@dep_uri}b"] = "---"
+    @fetcher.data["#{@dep_uri}a"] = util_compact_index_response("---\n1  \n")
+    @fetcher.data["#{@dep_uri}b"] = util_compact_index_response("---")
 
     set = Gem::Resolver::APISet.new @dep_uri
 
@@ -175,7 +175,7 @@ class TestGemResolverAPISet < Gem::TestCase
   def test_prefetch_cache
     spec_fetcher
 
-    @fetcher.data["#{@dep_uri}a"] = "---\n1  \n"
+    @fetcher.data["#{@dep_uri}a"] = util_compact_index_response("---\n1  \n")
 
     set = Gem::Resolver::APISet.new @dep_uri
 
@@ -185,7 +185,7 @@ class TestGemResolverAPISet < Gem::TestCase
     set.prefetch [a_dep]
 
     @fetcher.data.delete "#{@dep_uri}a"
-    @fetcher.data["#{@dep_uri}?b"] = "---"
+    @fetcher.data["#{@dep_uri}?b"] = util_compact_index_response("---")
 
     set.prefetch [a_dep, b_dep]
   end
@@ -193,8 +193,8 @@ class TestGemResolverAPISet < Gem::TestCase
   def test_prefetch_cache_missing
     spec_fetcher
 
-    @fetcher.data["#{@dep_uri}a"] = "---\n1  \n"
-    @fetcher.data["#{@dep_uri}b"] = "---"
+    @fetcher.data["#{@dep_uri}a"] = util_compact_index_response("---\n1  \n")
+    @fetcher.data["#{@dep_uri}b"] = util_compact_index_response("---")
 
     set = Gem::Resolver::APISet.new @dep_uri
 
@@ -212,8 +212,8 @@ class TestGemResolverAPISet < Gem::TestCase
   def test_prefetch_local
     spec_fetcher
 
-    @fetcher.data["#{@dep_uri}a"] = "---\n1  \n"
-    @fetcher.data["#{@dep_uri}b"] = "---"
+    @fetcher.data["#{@dep_uri}a"] = util_compact_index_response("---\n1  \n")
+    @fetcher.data["#{@dep_uri}b"] = util_compact_index_response("---")
 
     set = Gem::Resolver::APISet.new @dep_uri
     set.remote = false

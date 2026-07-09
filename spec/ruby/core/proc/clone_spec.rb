@@ -18,7 +18,7 @@ describe "Proc#clone" do
     obj = ProcSpecs::MyProc2.new(:a, 2) { }
     dup = obj.clone
 
-    dup.should_not equal(obj)
+    dup.should_not.equal?(obj)
     dup.class.should == ProcSpecs::MyProc2
 
     dup.first.should == :a

@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/to_s'
 
 describe "Float#inspect" do
-  it_behaves_like :float_to_s, :inspect
+  it "is an alias of Float#to_s" do
+    Float.instance_method(:inspect).should == Float.instance_method(:to_s)
+  end
 end

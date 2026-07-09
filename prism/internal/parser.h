@@ -9,6 +9,7 @@
 #include "prism/internal/list.h"
 #include "prism/internal/options.h"
 #include "prism/internal/static_literals.h"
+#include "prism/internal/strpbrk.h"
 
 #include "prism/ast.h"
 #include "prism/line_offset_list.h"
@@ -168,7 +169,7 @@ typedef struct pm_lex_mode {
              * This is the character set that should be used to delimit the
              * tokens within the list.
              */
-            uint8_t breakpoints[11];
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE];
         } list;
 
         struct {
@@ -190,7 +191,7 @@ typedef struct pm_lex_mode {
              * This is the character set that should be used to delimit the
              * tokens within the regular expression.
              */
-            uint8_t breakpoints[7];
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE];
         } regexp;
 
         struct {
@@ -223,7 +224,7 @@ typedef struct pm_lex_mode {
              * This is the character set that should be used to delimit the
              * tokens within the string.
              */
-            uint8_t breakpoints[7];
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE];
         } string;
 
         struct {

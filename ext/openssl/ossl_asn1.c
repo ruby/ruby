@@ -228,7 +228,7 @@ obj_to_asn1int(VALUE obj)
 }
 
 static ASN1_BIT_STRING*
-obj_to_asn1bstr(VALUE obj, long unused_bits)
+obj_to_asn1bstr(VALUE obj, int unused_bits)
 {
     ASN1_BIT_STRING *bstr;
 
@@ -236,11 +236,11 @@ obj_to_asn1bstr(VALUE obj, long unused_bits)
         ossl_raise(eASN1Error, "unused_bits for a bitstring value must be in "\
                    "the range 0 to 7");
     StringValue(obj);
-    if(!(bstr = ASN1_BIT_STRING_new()))
-        ossl_raise(eASN1Error, NULL);
-    ASN1_BIT_STRING_set(bstr, (unsigned char *)RSTRING_PTR(obj), RSTRING_LENINT(obj));
-    bstr->flags &= ~(ASN1_STRING_FLAG_BITS_LEFT|0x07); /* clear */
-    bstr->flags |= ASN1_STRING_FLAG_BITS_LEFT | unused_bits;
+    if (!(bstr = ASN1_BIT_STRING_new()))
+        ossl_raise(eASN1Error, "ASN1_BIT_STRING_new");
+    if (!ASN1_BIT_STRING_set1(bstr, (uint8_t *)RSTRING_PTR(obj),
+                              RSTRING_LEN(obj), unused_bits))
+        ossl_raise(eASN1Error, "ASN1_BIT_STRING_set1");
 
     return bstr;
 }
@@ -253,7 +253,10 @@ obj_to_asn1str(VALUE obj)
     StringValue(obj);
     if(!(str = ASN1_STRING_new()))
         ossl_raise(eASN1Error, NULL);
-    ASN1_STRING_set(str, RSTRING_PTR(obj), RSTRING_LENINT(obj));
+    if(!ASN1_STRING_set(str, RSTRING_PTR(obj), RSTRING_LENINT(obj))) {
+        ASN1_STRING_free(str);
+        ossl_raise(eASN1Error, NULL);
+    }
 
     return str;
 }
@@ -323,7 +326,10 @@ obj_to_asn1derstr(VALUE obj)
     str = ossl_to_der(obj);
     if(!(a1str = ASN1_STRING_new()))
         ossl_raise(eASN1Error, NULL);
-    ASN1_STRING_set(a1str, RSTRING_PTR(str), RSTRING_LENINT(str));
+    if(!ASN1_STRING_set(a1str, RSTRING_PTR(str), RSTRING_LENINT(str))) {
+        ASN1_STRING_free(a1str);
+        ossl_raise(eASN1Error, NULL);
+    }
 
     return a1str;
 }
@@ -364,22 +370,25 @@ decode_int(unsigned char* der, long length)
 }
 
 static VALUE
-decode_bstr(unsigned char* der, long length, long *unused_bits)
+decode_bstr(unsigned char* der, long length, int *unused_bits)
 {
     ASN1_BIT_STRING *bstr;
     const unsigned char *p;
-    long len;
+    size_t len;
     VALUE ret;
+    int state;
 
     p = der;
-    if(!(bstr = d2i_ASN1_BIT_STRING(NULL, &p, length)))
-        ossl_raise(eASN1Error, NULL);
-    len = bstr->length;
-    *unused_bits = 0;
-    if(bstr->flags & ASN1_STRING_FLAG_BITS_LEFT)
-        *unused_bits = bstr->flags & 0x07;
-    ret = rb_str_new((const char *)bstr->data, len);
+    if (!(bstr = d2i_ASN1_BIT_STRING(NULL, &p, length)))
+        ossl_raise(eASN1Error, "d2i_ASN1_BIT_STRING");
+    if (!ASN1_BIT_STRING_get_length(bstr, &len, unused_bits)) {
+        ASN1_BIT_STRING_free(bstr);
+        ossl_raise(eASN1Error, "ASN1_BIT_STRING_get_length");
+    }
+    ret = ossl_str_new((const char *)ASN1_STRING_get0_data(bstr), len, &state);
     ASN1_BIT_STRING_free(bstr);
+    if (state)
+        rb_jump_tag(state);
 
     return ret;
 }
@@ -688,11 +697,12 @@ to_der_internal(VALUE self, int constructed, int indef_len, VALUE body)
     int tag_number = ossl_asn1_tag(self);
     int default_tag_number = ossl_asn1_default_tag(self);
     int body_length, total_length;
+    VALUE tagging = ossl_asn1_get_tagging(self);
     VALUE str;
     unsigned char *p;
 
     body_length = RSTRING_LENINT(body);
-    if (ossl_asn1_get_tagging(self) == sym_EXPLICIT) {
+    if (tagging == sym_EXPLICIT) {
         int inner_length, e_encoding = indef_len ? 2 : 1;
 
         if (default_tag_number == -1)
@@ -713,7 +723,7 @@ to_der_internal(VALUE self, int constructed, int indef_len, VALUE body)
             ASN1_put_eoc(&p); /* For wrapper object */
         }
     }
-    else {
+    else if (NIL_P(tagging) || tagging == sym_IMPLICIT) {
         total_length = ASN1_object_size(encoding, body_length, tag_number);
         str = rb_str_new(NULL, total_length);
         p = (unsigned char *)RSTRING_PTR(str);
@@ -722,6 +732,9 @@ to_der_internal(VALUE self, int constructed, int indef_len, VALUE body)
         p += body_length;
         if (indef_len)
             ASN1_put_eoc(&p);
+    }
+    else {
+        ossl_raise(eASN1Error, "invalid tagging method");
     }
     assert(p - (unsigned char *)RSTRING_PTR(str) == total_length);
     return str;
@@ -763,7 +776,7 @@ int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,
 {
     VALUE value, asn1data;
     unsigned char *p;
-    long flag = 0;
+    int flag = 0;
 
     p = *pp;
 
@@ -820,7 +833,7 @@ int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,
         asn1data = rb_obj_alloc(klass);
         ossl_asn1_initialize(4, args, asn1data);
         if(tag == V_ASN1_BIT_STRING){
-            rb_ivar_set(asn1data, sivUNUSED_BITS, LONG2NUM(flag));
+            rb_ivar_set(asn1data, sivUNUSED_BITS, INT2NUM(flag));
         }
     }
     else {
@@ -886,6 +899,8 @@ int_ossl_asn1_decode0_cons(unsigned char **pp, long max_len, long length,
     return asn1data;
 }
 
+#define MAX_NESTING_DEPTH 200
+
 static VALUE
 ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
                   int yield, long *num_read)
@@ -895,6 +910,10 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
     long len = 0, inner_read = 0, off = *offset, hlen;
     int tag, tc, j;
     VALUE asn1data, tag_class;
+
+    if (depth > MAX_NESTING_DEPTH) {
+        ossl_raise(eASN1Error, "nesting depth %d exceeds limit", depth);
+    }
 
     p = *pp;
     start = p;

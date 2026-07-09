@@ -22,7 +22,7 @@ describe "StringIO#putc when passed [String]" do
 
   it "returns the passed String" do
     str = "test"
-    @io.putc(str).should equal(str)
+    @io.putc(str).should.equal?(str)
   end
 
   it "correctly updates the current position" do
@@ -79,7 +79,7 @@ describe "StringIO#putc when passed [Object]" do
   end
 
   it "raises a TypeError when the passed argument can't be coerced to Integer" do
-    -> { @io.putc(Object.new) }.should raise_error(TypeError)
+    -> { @io.putc(Object.new) }.should.raise(TypeError)
   end
 end
 
@@ -94,10 +94,10 @@ end
 describe "StringIO#putc when self is not writable" do
   it "raises an IOError" do
     io = StringIO.new(+"test", "r")
-    -> { io.putc(?a) }.should raise_error(IOError)
+    -> { io.putc(?a) }.should.raise(IOError)
 
     io = StringIO.new(+"test")
     io.close_write
-    -> { io.putc("t") }.should raise_error(IOError)
+    -> { io.putc("t") }.should.raise(IOError)
   end
 end

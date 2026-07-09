@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Struct[]" do
   it "is a synonym for new" do
-    StructClasses::Ruby['2.0', 'i686'].should be_kind_of(StructClasses::Ruby)
+    StructClasses::Ruby['2.0', 'i686'].should.is_a?(StructClasses::Ruby)
   end
 end
 
@@ -26,20 +26,20 @@ describe "Struct#[]" do
 
   it "fails when it does not know about the requested attribute" do
     car = StructClasses::Car.new('Ford', 'Ranger')
-    -> { car[3]        }.should raise_error(IndexError)
-    -> { car[-4]       }.should raise_error(IndexError)
-    -> { car[:body]    }.should raise_error(NameError)
-    -> { car['wheels'] }.should raise_error(NameError)
+    -> { car[3]        }.should.raise(IndexError)
+    -> { car[-4]       }.should.raise(IndexError)
+    -> { car[:body]    }.should.raise(NameError)
+    -> { car['wheels'] }.should.raise(NameError)
   end
 
   it "fails if passed too many arguments" do
     car = StructClasses::Car.new('Ford', 'Ranger')
-    -> { car[:make, :model] }.should raise_error(ArgumentError)
+    -> { car[:make, :model] }.should.raise(ArgumentError)
   end
 
   it "fails if not passed a string, symbol, or integer" do
     car = StructClasses::Car.new('Ford', 'Ranger')
-    -> { car[Object.new] }.should raise_error(TypeError)
+    -> { car[Object.new] }.should.raise(TypeError)
   end
 
   it "returns attribute names that contain hyphens" do

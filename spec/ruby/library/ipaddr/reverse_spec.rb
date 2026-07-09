@@ -13,7 +13,7 @@ describe "IPAddr#ip6_arpa" do
     IPAddr.new("3ffe:505:2::f").ip6_arpa.should == "f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.2.0.0.0.5.0.5.0.e.f.f.3.ip6.arpa"
     ->{
       IPAddr.new("192.168.2.1").ip6_arpa
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 end
 
@@ -22,6 +22,6 @@ describe "IPAddr#ip6_int" do
     IPAddr.new("3ffe:505:2::f").ip6_int.should == "f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.2.0.0.0.5.0.5.0.e.f.f.3.ip6.int"
     ->{
       IPAddr.new("192.168.2.1").ip6_int
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 end

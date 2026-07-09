@@ -11,7 +11,7 @@ platform_is :windows do
     end
 
     it "returns a String" do
-      @var.visible?.should be_true
+      @var.visible?.should == true
     end
 
   end

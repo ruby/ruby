@@ -165,25 +165,25 @@ class TestGemVersion < Gem::TestCase
   end
 
   def test_approximate_recommendation
-    assert_approximate_equal "~> 1.0", "1"
+    assert_approximate_equal ">= 1.0", "1"
     assert_approximate_satisfies_itself "1"
 
-    assert_approximate_equal "~> 1.0", "1.0"
+    assert_approximate_equal ">= 1.0", "1.0"
     assert_approximate_satisfies_itself "1.0"
 
-    assert_approximate_equal "~> 1.2", "1.2"
+    assert_approximate_equal ">= 1.2", "1.2"
     assert_approximate_satisfies_itself "1.2"
 
-    assert_approximate_equal "~> 1.2", "1.2.0"
+    assert_approximate_equal ">= 1.2", "1.2.0"
     assert_approximate_satisfies_itself "1.2.0"
 
-    assert_approximate_equal "~> 1.2", "1.2.3"
+    assert_approximate_equal ">= 1.2", "1.2.3"
     assert_approximate_satisfies_itself "1.2.3"
 
-    assert_approximate_equal "~> 1.2.a", "1.2.3.a.4"
+    assert_approximate_equal ">= 1.2.a", "1.2.3.a.4"
     assert_approximate_satisfies_itself "1.2.3.a.4"
 
-    assert_approximate_equal "~> 1.9.a", "1.9.0.dev"
+    assert_approximate_equal ">= 1.9.a", "1.9.0.dev"
     assert_approximate_satisfies_itself "1.9.0.dev"
   end
 

@@ -2,6 +2,11 @@
 #
 # This set of tests can be run with:
 # make test-all TESTS=test/ruby/test_zjit.rb
+#
+# Instead of adding new tests here, you should probably
+# be adding tests that run under the Rust test harness,
+# say, in `codegen_tests.rs`. It parallelizes better and
+# allows for easy inspection of VM internal states.
 
 require 'test/unit'
 require 'envutil'
@@ -382,6 +387,23 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 14, num_profiles: 5
   end
 
+  def test_regression_gc_stress_with_lazy_block_code
+    assert_compiles ':ok', %q{
+      def allocate_array
+        [1, 2, 3]
+      end
+
+      begin
+        GC.stress = true
+        allocate_array
+        allocate_array
+        :ok
+      ensure
+        GC.stress = false
+      end
+    }
+  end
+
   def test_exit_tracing
     # Smoke test: --zjit-trace-exits writes a Fuchsia trace (.fxt) file to /tmp
     assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-exits'])
@@ -395,7 +417,9 @@ class TestZJIT < Test::Unit::TestCase
       test(array)
 
       fxt_files = Dir.glob("/tmp/perfetto-\#{Process.pid}.fxt")
-      fxt_files.length == 1 && !File.empty?(fxt_files.first)
+      result = fxt_files.length == 1 && !File.empty?(fxt_files.first)
+      File.unlink(*fxt_files)
+      result
     RUBY
   end
 
@@ -414,6 +438,18 @@ class TestZJIT < Test::Unit::TestCase
       run(6)
       :ok
     RUBY
+  end
+
+  def test_float_arithmetic
+    assert_compiles '4.0', 'def test = 1.5 + 2.5; test'
+    assert_compiles '6.0', 'def test = 2.0 * 3.0; test'
+    assert_compiles '1.5', 'def test = 3.5 - 2.0; test'
+    assert_compiles '2.5', 'def test = 5.0 / 2.0; test'
+    assert_compiles '4.5', 'def test = 1.5 * 3; test' # Float * Fixnum
+    assert_compiles 'true', 'def test = (Float::NAN + 1.0).nan?; test'
+    assert_compiles 'Infinity', 'def test = Float::INFINITY * 2.0; test'
+    assert_compiles '3', 'def test = 3.7.to_i; test'
+    assert_compiles '-2', 'def test = (-2.9).to_i; test'
   end
 
   private

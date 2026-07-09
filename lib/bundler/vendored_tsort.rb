@@ -1,4 +1,8 @@
 # frozen_string_literal: true
 
-module Bundler; end
-require_relative "vendor/tsort/lib/tsort"
+begin
+  require "rubygems/vendored_tsort"
+rescue LoadError
+  require "tsort"
+  Gem::TSort = TSort
+end

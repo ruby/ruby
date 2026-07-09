@@ -49,7 +49,7 @@ describe "IO#dup" do
 
   it "allows closing the new IO without affecting the original" do
     @i.close
-    -> { @f.gets }.should_not raise_error(Exception)
+    -> { @f.gets }.should_not.raise(Exception)
 
     @i.should.closed?
     @f.should_not.closed?
@@ -57,14 +57,14 @@ describe "IO#dup" do
 
   it "allows closing the original IO without affecting the new one" do
     @f.close
-    -> { @i.gets }.should_not raise_error(Exception)
+    -> { @i.gets }.should_not.raise(Exception)
 
     @i.should_not.closed?
     @f.should.closed?
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.dup }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.dup }.should.raise(IOError)
   end
 
   it "always sets the close-on-exec flag for the new IO object" do

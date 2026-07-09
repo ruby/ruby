@@ -16,7 +16,7 @@ describe 'Socket#recvfrom_nonblock' do
     platform_is_not :windows do
       describe 'using an unbound socket' do
         it 'raises IO::WaitReadable' do
-          -> { @server.recvfrom_nonblock(1) }.should raise_error(IO::WaitReadable)
+          -> { @server.recvfrom_nonblock(1) }.should.raise(IO::WaitReadable)
         end
       end
     end
@@ -29,7 +29,7 @@ describe 'Socket#recvfrom_nonblock' do
 
       describe 'without any data available' do
         it 'raises IO::WaitReadable' do
-          -> { @server.recvfrom_nonblock(1) }.should raise_error(IO::WaitReadable)
+          -> { @server.recvfrom_nonblock(1) }.should.raise(IO::WaitReadable)
         end
 
         it 'returns :wait_readable with exception: false' do
@@ -47,7 +47,7 @@ describe 'Socket#recvfrom_nonblock' do
             IO.select([@server])
             ret = @server.recvfrom_nonblock(1)
 
-            ret.should be_an_instance_of(Array)
+            ret.should.instance_of?(Array)
             ret.length.should == 2
           end
         end
@@ -98,7 +98,7 @@ describe 'Socket#recvfrom_nonblock' do
             end
 
             it 'contains an Addrinfo at index 1' do
-              @array[1].should be_an_instance_of(Addrinfo)
+              @array[1].should.instance_of?(Addrinfo)
             end
           end
 
@@ -175,13 +175,13 @@ describe 'Socket#recvfrom_nonblock' do
         end
 
         Thread.pass while t.status and t.status != "sleep"
-        t.status.should_not be_nil
+        t.status.should_not == nil
 
         @client.connect(@server_addr)
         @client.close
         ready = true
 
-        t.value.should be_nil
+        t.value.should == nil
       end
     end
   end

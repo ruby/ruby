@@ -111,7 +111,7 @@ describe "IO#puts" do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.puts("stuff") }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.puts("stuff") }.should.raise(IOError)
   end
 
   it "writes crlf when IO is opened with newline: :crlf" do

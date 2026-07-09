@@ -7,10 +7,16 @@ describe "The -x command line option" do
     result.should == "success\n"
   end
 
+  it "changes the working directory when given" do
+    dir = fixture __FILE__, "bin"
+    result = ruby_exe(nil, options: "-x#{dir} embedded_ruby_change_directory.txt")
+    result.should == "#{dir}\n"
+  end
+
   it "fails when /\#!.*ruby.*/-ish line in target file is not found" do
     bad_embedded_ruby = fixture __FILE__, "bin/bad_embedded_ruby.txt"
     result = ruby_exe(bad_embedded_ruby, options: '-x', args: '2>&1', exit_status: 1)
-    result.should include "no Ruby script found in input"
+    result.should.include? "no Ruby script found in input"
   end
 
   it "behaves as -x was set when non-ruby shebang is encountered on first line" do

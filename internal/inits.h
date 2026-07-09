@@ -11,7 +11,7 @@
 
 /* box.c */
 void Init_enable_box(void);
-void Init_root_box(void);
+void Init_master_box(void);
 
 /* class.c */
 void Init_class_hierarchy(void);

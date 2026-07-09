@@ -72,7 +72,7 @@ module Psych
         when '!binary', 'tag:yaml.org,2002:binary'
           o.value.unpack('m').first
         when /^!(?:str|ruby\/string)(?::(.*))?$/, 'tag:yaml.org,2002:str'
-          klass = resolve_class($1)
+          klass = resolve_subclass($1, String)
           if klass
             klass.allocate.replace o.value
           else
@@ -87,6 +87,7 @@ module Psych
           DateTime.civil(*t.to_a[0, 6].reverse, Rational(t.utc_offset, 86400)) +
             (t.subsec/86400)
         when '!ruby/encoding'
+          class_loader.encoding
           ::Encoding.find o.value
         when "!ruby/object:Complex"
           class_loader.complex
@@ -156,7 +157,7 @@ module Psych
           }
           map
         when /^!(?:seq|ruby\/array):(.*)$/
-          klass = resolve_class($1)
+          klass = resolve_subclass($1, Array)
           list  = register(o, klass.allocate)
           o.children.each { |c| list.push accept c }
           list
@@ -246,7 +247,7 @@ module Psych
           end
 
         when /^!(?:str|ruby\/string)(?::(.*))?$/, 'tag:yaml.org,2002:str'
-          klass   = resolve_class($1)
+          klass   = resolve_subclass($1, String)
           members = {}
           string  = nil
 
@@ -267,7 +268,7 @@ module Psych
           end
           init_with(string, members.map { |k,v| [k.to_s.sub(/^@/, ''),v] }, o)
         when /^!ruby\/array:(.*)$/
-          klass = resolve_class($1)
+          klass = resolve_subclass($1, Array)
           list  = register(o, klass.allocate)
 
           members = Hash[o.children.map { |c| accept c }.each_slice(2).to_a]
@@ -301,7 +302,7 @@ module Psych
           set
 
         when /^!ruby\/hash-with-ivars(?::(.*))?$/
-          hash = $1 ? resolve_class($1).allocate : {}
+          hash = $1 ? resolve_subclass($1, Hash).allocate : {}
           register o, hash
           o.children.each_slice(2) do |key, value|
             case key.value
@@ -316,7 +317,7 @@ module Psych
           hash
 
         when /^!map:(.*)$/, /^!ruby\/hash:(.*)$/
-          revive_hash register(o, resolve_class($1).allocate), o
+          revive_hash register(o, resolve_subclass($1, Hash).allocate), o
 
         when '!omap', 'tag:yaml.org,2002:omap'
           map = register(o, class_loader.psych_omap.new)
@@ -467,6 +468,19 @@ module Psych
       # Convert +klassname+ to a Class
       def resolve_class klassname
         class_loader.load klassname
+      end
+
+      # Resolve +klassname+ and ensure it is +parent+ or one of its
+      # subclasses. Tags such as !ruby/hash-with-ivars are only ever emitted
+      # for subclasses of a specific core class; without this check a crafted
+      # document could name an unrelated (but permitted) class and have its
+      # state populated directly, bypassing the class's own init_with.
+      def resolve_subclass klassname, parent
+        klass = resolve_class(klassname)
+        if klass && !(klass <= parent)
+          raise ArgumentError, "Invalid tag: expected a subclass of #{parent}, got #{klass}"
+        end
+        klass
       end
     end
 

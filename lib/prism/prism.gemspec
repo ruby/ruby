@@ -48,6 +48,7 @@ Gem::Specification.new do |spec|
     "include/prism.h",
     "include/prism/compiler/accel.h",
     "include/prism/compiler/align.h",
+    "include/prism/compiler/assume.h",
     "include/prism/compiler/exported.h",
     "include/prism/compiler/fallthrough.h",
     "include/prism/compiler/filesystem.h",

@@ -70,6 +70,7 @@ VALUE rb_float_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
 VALUE rb_float_mul(VALUE x, VALUE y);
 VALUE rb_float_div(VALUE x, VALUE y);
+VALUE rb_flo_to_i(VALUE num);
 VALUE rb_int_idiv(VALUE x, VALUE y);
 VALUE rb_int_modulo(VALUE x, VALUE y);
 VALUE rb_int2str(VALUE num, int base);

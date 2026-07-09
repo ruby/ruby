@@ -696,6 +696,20 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_equal 17, ret[0][6]
   end
 
+  def test_decode_constructed_deeply_nested
+    bool = OpenSSL::ASN1::Boolean.new(true)
+    nested_100 = B(%w{ 30 80 }) * 100 + bool.to_der + B(%w{ 00 00 }) * 100
+    decoded = OpenSSL::ASN1.decode(nested_100)
+    assert_equal(nested_100, decoded.to_der)
+    content = 100.times.inject(decoded) { |a,| a.value[0] }
+    assert_kind_of(OpenSSL::ASN1::Boolean, content)
+
+    nested_500 = B(%w{ 30 80 }) * 500 + bool.to_der + B(%w{ 00 00 }) * 500
+    assert_raise_with_message(OpenSSL::ASN1::ASN1Error, /nesting depth/) {
+      OpenSSL::ASN1.decode(nested_500)
+    }
+  end
+
   def test_constructive_each
     data = [OpenSSL::ASN1::Integer.new(0), OpenSSL::ASN1::Integer.new(1)]
     seq = OpenSSL::ASN1::Sequence.new data

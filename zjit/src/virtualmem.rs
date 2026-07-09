@@ -113,11 +113,11 @@ impl VirtualMem {
 
         // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
         // `virt_block` is page-aligned, `second_half` should be page-aligned as long as the
-        // page size in bytes is a power of two 2¹⁹ or smaller. This is because the user
-        // requested size is half of mem_option × 2²⁰ as it's in MiB.
+        // page size in bytes is a power of two 2^19 or smaller. This is because the user
+        // requested size is half of mem_option * 2^20 as it's in MiB.
         //
         // Basically, we don't support x86-64 2MiB and 1GiB pages. ARMv8 can do up to 64KiB
-        // (2¹⁶ bytes) pages, which should be fine. 4KiB pages seem to be the most popular though.
+        // (2^16 bytes) pages, which should be fine. 4KiB pages seem to be the most popular though.
         let page_size = unsafe { rb_jit_get_page_size() };
         assert_eq!(
             virt_block as usize % page_size as usize, 0,
@@ -265,6 +265,22 @@ impl<A: Allocator> VirtualMemory<A> {
         memory_usage_bytes + self.page_size_bytes < memory_limit_bytes
     }
 
+    /// Make all the code in the region writable. Call this before bulk writes (e.g. GC
+    /// reference updates). See [Self] for usual usage flow.
+    pub fn mark_all_writable(&mut self) {
+        self.current_write_page = None;
+
+        let region_start = self.region_start;
+        let mapped_region_bytes: u32 = self.mapped_region_bytes.try_into().unwrap();
+
+        // Make mapped region writable
+        if mapped_region_bytes > 0 {
+            if !self.allocator.mark_writable(region_start.as_ptr(), mapped_region_bytes) {
+                panic!("Cannot make JIT memory region writable");
+            }
+        }
+    }
+
     /// Make all the code in the region executable. Call this at the end of a write session.
     /// See [Self] for usual usage flow.
     pub fn mark_all_executable(&mut self) {
@@ -317,15 +333,21 @@ pub mod sys {
 
     impl super::Allocator for SystemAllocator {
         fn mark_writable(&mut self, ptr: *const u8, size: u32) -> bool {
-            unsafe { rb_jit_mark_writable(ptr as VoidPtr, size) }
+            crate::stats::trace_compile_phase("mark_writable", || {
+                unsafe { rb_jit_mark_writable(ptr as VoidPtr, size) }
+            })
         }
 
         fn mark_executable(&mut self, ptr: *const u8, size: u32) {
-            unsafe { rb_jit_mark_executable(ptr as VoidPtr, size) }
+            crate::stats::trace_compile_phase("mark_executable", || {
+                unsafe { rb_jit_mark_executable(ptr as VoidPtr, size) }
+            })
         }
 
         fn mark_unused(&mut self, ptr: *const u8, size: u32) -> bool {
-            unsafe { rb_jit_mark_unused(ptr as VoidPtr, size) }
+            crate::stats::trace_compile_phase("mark_unused", || {
+                unsafe { rb_jit_mark_unused(ptr as VoidPtr, size) }
+            })
         }
     }
 }

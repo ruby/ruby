@@ -7,7 +7,7 @@ require_relative '../../../spec_helper'
   "RDWR", "TRUNC", "WRONLY", "SHARE_DELETE"].each do |const|
   describe "File::Constants::#{const}" do
     it "is defined" do
-      File::Constants.const_defined?(const).should be_true
+      File::Constants.const_defined?(const).should == true
     end
   end
 end
@@ -15,7 +15,7 @@ end
 platform_is :windows do
   describe "File::Constants::BINARY" do
     it "is defined" do
-      File::Constants.const_defined?(:BINARY).should be_true
+      File::Constants.const_defined?(:BINARY).should == true
     end
   end
 end
@@ -24,7 +24,7 @@ platform_is_not :windows do
   ["NOCTTY", "SYNC"].each do |const|
     describe "File::Constants::#{const}" do
       it "is defined" do
-        File::Constants.const_defined?(const).should be_true
+        File::Constants.const_defined?(const).should == true
       end
     end
   end

@@ -18,6 +18,32 @@ VALUE rb_gc_register_address_outside_init;
 
 VALUE rb_gc_register_mark_object_not_referenced_float;
 
+static VALUE spec_RB_GC_GUARD_keep_alive(VALUE self, VALUE array_with_string) {
+  VALUE string = rb_ary_entry(array_with_string, 0);
+  char* ptr = RSTRING_PTR(string);
+  // Without the RB_GC_GUARD(string) below, string could be GC'd, and ptr become invalid
+  rb_gc();
+  char copy[4];
+  copy[0] = ptr[0];
+  copy[1] = ptr[1];
+  copy[2] = ptr[2];
+  copy[3] = '\0';
+  RB_GC_GUARD(string);
+  return rb_str_new_cstr(copy);
+}
+
+static VALUE spec_RB_GC_GUARD(VALUE self, VALUE object) {
+  RB_GC_GUARD(object);
+  return object;
+}
+
+static VALUE spec_RB_GC_GUARD_raw(VALUE self, VALUE number) {
+  long l = NUM2LONG(number);
+  VALUE value = (VALUE) l;
+  RB_GC_GUARD(value);
+  return Qnil;
+}
+
 static VALUE registered_tagged_address(VALUE self) {
   return registered_tagged_value;
 }
@@ -124,6 +150,9 @@ void Init_gc_spec(void) {
   rb_gc_register_mark_object_not_referenced_float = DBL2NUM(1.61);
   rb_gc_register_mark_object(rb_gc_register_mark_object_not_referenced_float);
 
+  rb_define_method(cls, "RB_GC_GUARD_keep_alive", spec_RB_GC_GUARD_keep_alive, 1);
+  rb_define_method(cls, "RB_GC_GUARD", spec_RB_GC_GUARD, 1);
+  rb_define_method(cls, "RB_GC_GUARD_raw", spec_RB_GC_GUARD_raw, 1);
   rb_define_method(cls, "registered_tagged_address", registered_tagged_address, 0);
   rb_define_method(cls, "registered_reference_address", registered_reference_address, 0);
   rb_define_method(cls, "registered_before_rb_gc_register_address", get_registered_before_rb_gc_register_address, 0);

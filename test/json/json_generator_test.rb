@@ -190,6 +190,59 @@ class JSONGeneratorTest < Test::Unit::TestCase
     JSON
   end
 
+  def test_generate_sort_keys
+    json = generate({2=>"a", 1=>"b", 3=>"c"}, sort_keys: true)
+    assert_equal('{"1":"b","2":"a","3":"c"}', json)
+
+    json = generate({2=>"a", 1=>"b", 3=>"c"}, sort_keys: false)
+    assert_equal('{"2":"a","1":"b","3":"c"}', json)
+
+    json = pretty_generate({2=>"a", 1=>"b", 3=>"c"}, sort_keys: true)
+    assert_equal(<<~'JSON'.chomp, json)
+      {
+        "1": "b",
+        "2": "a",
+        "3": "c"
+      }
+    JSON
+
+    json = pretty_generate({2=>"a", 1=>"b", 3=>"c"}, sort_keys: false)
+    assert_equal(<<~'JSON'.chomp, json)
+      {
+        "2": "a",
+        "1": "b",
+        "3": "c"
+      }
+    JSON
+
+    json = pretty_generate({2=>"a", 1=>"b", 3=>"c"})
+    assert_equal(<<~'JSON'.chomp, json)
+      {
+        "2": "a",
+        "1": "b",
+        "3": "c"
+      }
+    JSON
+  end
+
+  def test_generate_sort_keys_with_proc
+    reverse = ->(hash) { hash.sort.reverse.to_h }
+    json = generate({2=>"a", 1=>"b", 3=>"c"}, sort_keys: reverse)
+    assert_equal('{"3":"c","2":"a","1":"b"}', json)
+
+    by_value = ->(hash) { hash.sort_by { |_k, v| v }.to_h }
+    json = generate({2=>"c", 1=>"a", 3=>"b"}, sort_keys: by_value)
+    assert_equal('{"1":"a","3":"b","2":"c"}', json)
+
+    state = State.new(sort_keys: reverse)
+    assert_same reverse, state.to_h[:sort_keys]
+    assert_equal('{"3":"c","2":"a","1":"b"}', state.generate({2=>"a", 1=>"b", 3=>"c"}))
+
+    # A truthy sort_keys is normalized to the default sorting proc.
+    state = State.new(sort_keys: true)
+    assert_instance_of Proc, state.sort_keys
+  end
+
   def test_generate_custom
     state = State.new(:space_before => " ", :space => "   ", :indent => "<i>", :object_nl => "\n", :array_nl => "<a_nl>")
     json = generate({1=>{2=>3,4=>[5,6]}}, state)
@@ -289,6 +342,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
       :object_nl             => "",
       :space                 => "",
       :space_before          => "",
+      :sort_keys             => false,
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
 
     state = JSON::State.new(allow_duplicate_key: true)
@@ -307,6 +361,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
       :object_nl             => "",
       :space                 => "",
       :space_before          => "",
+      :sort_keys             => false,
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
@@ -601,6 +656,8 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal too_deep, ok
     ok = generate too_deep_ary, :max_nesting => 0
     assert_equal too_deep, ok
+
+    assert_raise(TypeError) { generate too_deep_ary, max_nesting: "garbage" }
   end
 
   def test_backslash
@@ -1078,6 +1135,17 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
     assert_raise(ArgumentError) do
       JSON.state.new(depth: -1)
+    end
+  end
+
+  def test_large_depth_raises
+    assert_raise(RangeError, ArgumentError) do
+      JSON.generate([[1]],
+        indent:      " " * 5,
+        array_nl:    "\n",
+        depth:       3_689_348_814_741_910_324,
+        max_nesting: 0
+      )
     end
   end
 

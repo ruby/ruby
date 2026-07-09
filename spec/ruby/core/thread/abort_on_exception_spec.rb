@@ -13,12 +13,12 @@ describe "Thread#abort_on_exception" do
   end
 
   it "is false by default" do
-    @thread.abort_on_exception.should be_false
+    @thread.abort_on_exception.should == false
   end
 
   it "returns true when #abort_on_exception= is passed true" do
     @thread.abort_on_exception = true
-    @thread.abort_on_exception.should be_true
+    @thread.abort_on_exception.should == true
   end
 end
 
@@ -39,7 +39,7 @@ describe :thread_abort_on_exception, shared: true do
         ThreadSpecs.state = :run
         # Wait for the main thread to be interrupted
         sleep
-      end.should raise_error(RuntimeError, "Thread#abort_on_exception= specs")
+      end.should.raise(RuntimeError, "Thread#abort_on_exception= specs")
 
       ScratchPad << :after
     rescue Exception => e
@@ -81,7 +81,7 @@ describe "Thread.abort_on_exception" do
 
   it "returns true when .abort_on_exception= is passed true" do
     Thread.abort_on_exception = true
-    Thread.abort_on_exception.should be_true
+    Thread.abort_on_exception.should == true
   end
 end
 

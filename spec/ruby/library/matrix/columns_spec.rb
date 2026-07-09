@@ -10,7 +10,7 @@ describe "Matrix.columns" do
   end
 
   it "creates a Matrix from argument columns" do
-    @m.should be_an_instance_of(Matrix)
+    @m.should.instance_of?(Matrix)
     @m.column(0).to_a.should == @a
     @m.column(1).to_a.should == @b
   end
@@ -36,7 +36,7 @@ describe "Matrix.columns" do
 
   describe "for a subclass of Matrix" do
     it "returns an instance of that subclass" do
-      MatrixSub.columns([[1]]).should be_an_instance_of(MatrixSub)
+      MatrixSub.columns([[1]]).should.instance_of?(MatrixSub)
     end
   end
 end

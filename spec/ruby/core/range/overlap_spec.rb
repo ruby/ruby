@@ -9,6 +9,9 @@ describe "Range#overlap?" do
     (1..2).overlap?(0..3).should == true
 
     ('a'..'c').overlap?('b'..'d').should == true
+
+    (0..4).overlap?(4..10).should == true
+    (4..10).overlap?(0..10).should == true
   end
 
   it "returns false if other Range does not overlap self" do
@@ -21,7 +24,7 @@ describe "Range#overlap?" do
   it "raises TypeError when called with non-Range argument" do
     -> {
       (0..2).overlap?(1)
-    }.should raise_error(TypeError, "wrong argument type Integer (expected Range)")
+    }.should.raise(TypeError, "wrong argument type Integer (expected Range)")
   end
 
   it "returns true when beginningless and endless Ranges overlap" do
@@ -43,6 +46,20 @@ describe "Range#overlap?" do
 
     (0..).overlap?(2..).should == true
     (..0).overlap?(..2).should == true
+
+    (nil..nil).overlap?(4..6).should == true
+    (4..6).overlap?(nil..nil).should == true
+
+    ruby_version_is "4.0" do
+      (nil..nil).overlap?(..6).should == true
+      (..6).overlap?(nil..nil).should == true
+    end
+
+    (nil..nil).overlap?(4..).should == true
+    (4..).overlap?(nil..nil).should == true
+
+    (..10).overlap?(10..).should == true
+    (10..).overlap?(..10).should == true
   end
 
   it "returns false when beginningless and endless Ranges do not overlap" do
@@ -51,6 +68,8 @@ describe "Range#overlap?" do
 
     (..-1).overlap?(0..2).should == false
     (3..).overlap?(0..2).should == false
+
+    (..0).overlap?(10..).should == false
   end
 
   it "returns false when Ranges are not compatible" do
@@ -83,5 +102,14 @@ describe "Range#overlap?" do
 
     ('a'...'c').overlap?('c'..'e').should == false
     ('c'..'e').overlap?('a'...'c').should == false
+
+    (0...10).overlap?(6..10).should == true
+    (nil...6).overlap?(4..6).should == true
+    (nil...10).overlap?(nil..10).should == true
+
+    (nil...4).overlap?(4..10).should == false
+    (nil...10).overlap?(10..).should == false
+    (10..).overlap?(nil...10).should == false
+    (6..).overlap?(0...6).should == false
   end
 end

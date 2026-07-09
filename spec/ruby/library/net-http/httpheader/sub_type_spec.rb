@@ -20,13 +20,13 @@ describe "Net::HTTPHeader#sub_type" do
 
   it "returns nil if no 'sub-content-type' is set" do
     @headers["Content-Type"] = "text"
-    @headers.sub_type.should be_nil
+    @headers.sub_type.should == nil
 
     @headers["Content-Type"] = "text;charset=utf-8"
-    @headers.sub_type.should be_nil
+    @headers.sub_type.should == nil
   end
 
   it "returns nil if the 'Content-Type' header entry does not exist" do
-    @headers.sub_type.should be_nil
+    @headers.sub_type.should == nil
   end
 end

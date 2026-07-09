@@ -30,7 +30,7 @@ describe "Random::Formatter#alphanumeric" do
   it "raises an ArgumentError if the size is not numeric" do
     -> {
       @object.alphanumeric("10")
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "does not coerce the size argument with #to_int" do
@@ -38,7 +38,7 @@ describe "Random::Formatter#alphanumeric" do
     size.should_not_receive(:to_int)
     -> {
       @object.alphanumeric(size)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "accepts a 'chars' argument with the output alphabet" do

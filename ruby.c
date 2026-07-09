@@ -798,6 +798,25 @@ require_libraries(VALUE *req_list)
     *req_list = 0;
 }
 
+static void
+require_libraries_in_main_box(VALUE *req_list)
+{
+    const rb_box_t *main_box = rb_main_box();
+    VALUE list = *req_list;
+    ID require;
+    rb_encoding *extenc = rb_default_external_encoding();
+
+    CONST_ID(require, "require");
+    while (list && RARRAY_LEN(list) > 0) {
+        VALUE feature = rb_ary_shift(list);
+        rb_enc_associate(feature, extenc);
+        RBASIC_SET_CLASS_RAW(feature, rb_cString);
+        OBJ_FREEZE(feature);
+        rb_funcallv(main_box->box_object, require, 1, &feature);
+    }
+    *req_list = 0;
+}
+
 static const struct rb_block*
 toplevel_context(rb_binding_t *bind)
 {
@@ -1373,7 +1392,7 @@ proc_0_option(ruby_cmdline_options_t *opt, const char *s)
 static void
 proc_encoding_option(ruby_cmdline_options_t *opt, const char *s, const char *opt_name)
 {
-    char *p;
+    const char *p;
 # define set_encoding_part(type) \
     if (!(p = strchr(s, ':'))) {                        \
         set_##type##_encoding_once(opt, s, 0);          \
@@ -1771,6 +1790,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
     return argc0 - argc;
 }
 
+VALUE rb_define_gem_modules(VALUE, VALUE);
 void Init_builtin_features(void);
 
 static void
@@ -1798,19 +1818,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     if (opt->dump & dump_exit_bits) return;
 
-    if (FEATURE_SET_P(opt->features, gems)) {
-        rb_define_module("Gem");
-        if (opt->features.set & FEATURE_BIT(error_highlight)) {
-            rb_define_module("ErrorHighlight");
-        }
-        if (opt->features.set & FEATURE_BIT(did_you_mean)) {
-            rb_define_module("DidYouMean");
-        }
-        if (opt->features.set & FEATURE_BIT(syntax_suggest)) {
-            rb_define_module("SyntaxSuggest");
-        }
-    }
-
     Init_ext(); /* load statically linked extensions before rubygems */
     Init_extra_exts();
 
@@ -1829,13 +1836,40 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     rb_zjit_init_builtin_cmes();
 #endif
 
-    ruby_init_prelude();
+    /**
+     * Initialize the root/main boxes before loading libraries to run them
+     * (including RubyGems, written in Ruby) in those boxes themselves
+     */
+    if (rb_box_available()) {
+        rb_initialize_mandatory_boxes();
+    }
 
-    /* Initialize the main box after loading libraries (including rubygems)
-     * to enable those in both root and main */
-    if (rb_box_available())
-        rb_initialize_main_box();
     rb_box_init_done();
+
+    if (FEATURE_SET_P(opt->features, gems)) {
+        rb_box_gem_flags_t gem_flags = {
+            .gem = FEATURE_SET_P(opt->features, gems),
+            .error_highlight = opt->features.set & FEATURE_BIT(error_highlight),
+            .did_you_mean    = opt->features.set & FEATURE_BIT(did_you_mean),
+            .syntax_suggest  = opt->features.set & FEATURE_BIT(syntax_suggest)
+        };
+
+        if (rb_box_available()) {
+            rb_vm_call_cfunc_in_box(Qnil, rb_define_gem_modules, (VALUE)&gem_flags, Qnil,
+                                    rb_str_new_cstr("before_prelude.root.dummy"), rb_root_box());
+            rb_vm_call_cfunc_in_box(Qnil, rb_define_gem_modules, (VALUE)&gem_flags, Qnil,
+                                    rb_str_new_cstr("before_prelude.main.dummy"), rb_main_box());
+
+            rb_box_set_gem_flags(&gem_flags);
+        }
+        else {
+            rb_define_gem_modules((VALUE)&gem_flags, Qnil);
+        }
+    }
+
+    // The root/main boxes load gem_prelude here.
+    // User boxes will load it in those #initialize instead.
+    ruby_init_prelude();
 
     // Enable JITs after ruby_init_prelude() to avoid JITing prelude code.
 #if USE_YJIT
@@ -1847,7 +1881,12 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 #endif
 
     ruby_set_script_name(opt->script_name);
-    require_libraries(&opt->req_list);
+    if (rb_box_available()) {
+        require_libraries_in_main_box(&opt->req_list);
+    }
+    else {
+        require_libraries(&opt->req_list);
+    }
 }
 
 static int
@@ -2188,7 +2227,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
     const bool read_stdin = (strcmp(opt->script, "-") == 0);
 
     if (read_stdin) {
-        pm_options_encoding_set(options, rb_enc_name(rb_locale_encoding()));
+        pm_options_encoding_set(options, rb_enc_name(IF_UTF8_PATH(rb_utf8_encoding(), rb_locale_encoding())));
     }
     if (opt->src.enc.name != 0) {
         pm_options_encoding_set(options, StringValueCStr(opt->src.enc.name));
@@ -2501,7 +2540,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
         int modifiable = FALSE;
 
-        rb_get_expanded_load_path();
+        rb_get_expanded_load_path(NULL);
         for (i = 0; i < RARRAY_LEN(load_path); ++i) {
             VALUE path = RARRAY_AREF(load_path, i);
             int mark = rb_attr_get(path, id_initial_load_path_mark) == path;
@@ -2805,7 +2844,7 @@ load_file_internal(VALUE argp_v)
         enc = rb_enc_from_index(opt->src.enc.index);
     }
     else if (f == rb_stdin) {
-        enc = rb_locale_encoding();
+        enc = IF_UTF8_PATH(rb_utf8_encoding(), rb_locale_encoding());
     }
     else {
         enc = rb_utf8_encoding();

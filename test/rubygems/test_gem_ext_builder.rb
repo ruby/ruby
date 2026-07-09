@@ -106,6 +106,22 @@ install:
     assert_match(/install: OK/, results)
   end
 
+  def test_class_run_closes_stdin
+    results = []
+    check_stdin_script = <<~'RUBY'
+      if IO.select([STDIN], nil, nil, 1)
+        puts "STDIN: #{STDIN.read.inspect}"
+      else
+        puts "NOT_READY"
+      end
+    RUBY
+
+    Gem::Ext::Builder.run([Gem.ruby, "-e", check_stdin_script], results)
+
+    command_output = results.last
+    assert_equal "STDIN: \"\"\n", command_output
+  end
+
   def test_build_extensions
     pend "terminates on mswin" if vc_windows? && ruby_repo?
 

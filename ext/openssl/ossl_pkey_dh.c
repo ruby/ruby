@@ -81,12 +81,11 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
     BIO *in = NULL;
     VALUE arg;
 
-    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
-    if (pkey)
-        rb_raise(rb_eTypeError, "pkey already initialized");
+    rb_scan_args(argc, argv, "01", &arg);
+    ossl_want_uninitialized(self, &ossl_evp_pkey_type);
 
     /* The DH.new(size, generator) form is handled by lib/openssl/pkey.rb */
-    if (rb_scan_args(argc, argv, "01", &arg) == 0) {
+    if (argc == 0) {
 #ifdef OSSL_HAVE_IMMUTABLE_PKEY
         rb_raise(rb_eArgError, "OpenSSL::PKey::DH.new cannot be called " \
                  "without arguments; pkeys are immutable with OpenSSL 3.0");
@@ -144,9 +143,7 @@ ossl_dh_initialize_copy(VALUE self, VALUE other)
     DH *dh, *dh_other;
     const BIGNUM *pub, *priv;
 
-    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
-    if (pkey)
-        rb_raise(rb_eTypeError, "pkey already initialized");
+    ossl_want_uninitialized(self, &ossl_evp_pkey_type);
     GetDH(other, dh_other);
 
     dh = DHparams_dup(dh_other);
@@ -187,7 +184,7 @@ ossl_dh_initialize_copy(VALUE self, VALUE other)
 static VALUE
 ossl_dh_is_public(VALUE self)
 {
-    OSSL_3_const DH *dh;
+    const DH *dh;
     const BIGNUM *bn;
 
     GetDH(self, dh);
@@ -206,7 +203,7 @@ ossl_dh_is_public(VALUE self)
 static VALUE
 ossl_dh_is_private(VALUE self)
 {
-    OSSL_3_const DH *dh;
+    const DH *dh;
     const BIGNUM *bn;
 
     GetDH(self, dh);
@@ -243,7 +240,7 @@ ossl_dh_is_private(VALUE self)
 static VALUE
 ossl_dh_export(VALUE self)
 {
-    OSSL_3_const DH *dh;
+    const DH *dh;
     BIO *out;
     VALUE str;
 
@@ -276,7 +273,7 @@ ossl_dh_export(VALUE self)
 static VALUE
 ossl_dh_to_der(VALUE self)
 {
-    OSSL_3_const DH *dh;
+    const DH *dh;
     unsigned char *p;
     long len;
     VALUE str;
@@ -318,7 +315,7 @@ ossl_dh_check_params(VALUE self)
     ret = EVP_PKEY_param_check(pctx);
     EVP_PKEY_CTX_free(pctx);
 #else
-    DH *dh;
+    const DH *dh;
     int codes;
 
     GetDH(self, dh);

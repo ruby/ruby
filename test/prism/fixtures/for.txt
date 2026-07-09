@@ -17,3 +17,11 @@ i
 end
 
 for i in 1..10; i; end
+
+for (a, b), c in 1..10
+i
+end
+
+for (a, b), *c, d in 1..10
+i
+end

@@ -6,7 +6,7 @@ require 'test/unit'
 require 'tempfile'
 
 require 'digest'
-%w[digest/md5 digest/rmd160 digest/sha1 digest/sha2 digest/bubblebabble].each do |lib|
+%w[digest/md5 digest/rmd160 digest/sha1 digest/sha2 digest/bubblebabble digest/crc32].each do |lib|
   begin
     require lib
   rescue LoadError
@@ -196,6 +196,88 @@ module TestDigest
       Data2 => "12a053384a9c0c88e405a06c27dcf49ada62eb2b",
     }
   end if defined?(Digest::RMD160)
+
+  class TestCRC32 < Test::Unit::TestCase
+    include TestDigest
+    ALGO = Digest::CRC32
+    DATA = {
+      Data1 => "352441c2",
+      Data2 => "171a3f5f",
+    }
+
+    def test_digest_byte_order
+      # CRC32("abc") = 0x352441C2; raw digest bytes must be big-endian (MSB first)
+      assert_equal [0x35, 0x24, 0x41, 0xC2], Digest::CRC32.digest("abc").bytes
+    end
+
+    def test_digest_length
+      assert_equal 4, Digest::CRC32.new.digest_length
+    end
+
+    def test_block_length
+      assert_equal 8, Digest::CRC32.new.block_length
+    end
+
+    def test_empty_string
+      assert_equal "00000000", Digest::CRC32.hexdigest("")
+    end
+
+    def test_single_null_byte
+      assert_equal "d202ef8d", Digest::CRC32.hexdigest("\x00".b)
+    end
+
+    def test_high_bytes
+      # Exercises the unsigned byte masking (& 0xFF) in the update loop
+      assert_equal "08eaaf6d", Digest::CRC32.hexdigest("\xFF\xFE\xFD".b)
+    end
+
+    def test_all_byte_values
+      # Exercises every entry in the lookup table
+      assert_equal "29058c73", Digest::CRC32.hexdigest((0..255).map(&:chr).join.b)
+    end
+
+    def test_incremental_equals_one_shot
+      inc = Digest::CRC32.new
+      inc << "a" << "b" << "c"
+      assert_equal "352441c2", inc.hexdigest
+    end
+
+    def test_clone_mid_stream_independence
+      d = Digest::CRC32.new
+      d << "ab"
+      copy = d.clone
+      d << "c"
+      copy << "c"
+      assert_equal d.hexdigest, copy.hexdigest
+    end
+
+    def test_reset
+      d = Digest::CRC32.new
+      d << "abc"
+      d.reset
+      d << "abc"
+      assert_equal "352441c2", d.hexdigest
+    end
+
+    def test_digest_is_non_destructive
+      d = Digest::CRC32.new
+      d << "abc"
+      assert_equal d.hexdigest, d.hexdigest
+    end
+
+    def test_digest_bang_resets_state
+      d = Digest::CRC32.new
+      d << "abc"
+      d.hexdigest!
+      assert_equal "00000000", d.hexdigest
+    end
+
+    def test_initialize_copy_into_frozen_raises
+      dest = Digest::CRC32.allocate
+      dest.freeze
+      assert_raise(FrozenError) { dest.send(:initialize_copy, Digest::CRC32.new) }
+    end
+  end
 
   class TestBase < Test::Unit::TestCase
     def test_base

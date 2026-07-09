@@ -12,7 +12,7 @@ platform_is :windows do
 
     it "returns an Integer" do
       # according to doc, this could return nil
-      @var.value.should be_kind_of Integer
+      @var.value.should.is_a? Integer
     end
 
   end

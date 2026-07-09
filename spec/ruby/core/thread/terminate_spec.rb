@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/exit'
 
 describe "Thread#terminate" do
-  it_behaves_like :thread_exit, :terminate
+  it "is an alias of Thread#kill" do
+    Thread.instance_method(:terminate).should == Thread.instance_method(:kill)
+  end
 end

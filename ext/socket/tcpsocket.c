@@ -83,40 +83,6 @@ tcp_init(int argc, VALUE *argv, VALUE sock)
                                fast_fallback, test_mode_settings);
 }
 
-static VALUE
-tcp_sockaddr(struct sockaddr *addr, socklen_t len)
-{
-    return rsock_make_ipaddr(addr, len);
-}
-
-/*
- * call-seq:
- *   TCPSocket.gethostbyname(hostname) => [official_hostname, alias_hostnames, address_family, *address_list]
- *
- * Use Addrinfo.getaddrinfo instead.
- * This method is deprecated for the following reasons:
- *
- * - The 3rd element of the result is the address family of the first address.
- *   The address families of the rest of the addresses are not returned.
- * - gethostbyname() may take a long time and it may block other threads.
- *   (GVL cannot be released since gethostbyname() is not thread safe.)
- * - This method uses gethostbyname() function already removed from POSIX.
- *
- * This method lookups host information by _hostname_.
- *
- *   TCPSocket.gethostbyname("localhost")
- *   #=> ["localhost", ["hal"], 2, "127.0.0.1"]
- *
- */
-static VALUE
-tcp_s_gethostbyname(VALUE obj, VALUE host)
-{
-    rb_warn("TCPSocket.gethostbyname is deprecated; use Addrinfo.getaddrinfo instead.");
-    struct rb_addrinfo *res =
-        rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, AI_CANONNAME, Qnil);
-    return rsock_make_hostent(host, res, tcp_sockaddr);
-}
-
 void
 rsock_init_tcpsocket(void)
 {
@@ -139,6 +105,5 @@ rsock_init_tcpsocket(void)
      *
      */
     rb_cTCPSocket = rb_define_class("TCPSocket", rb_cIPSocket);
-    rb_define_singleton_method(rb_cTCPSocket, "gethostbyname", tcp_s_gethostbyname, 1);
     rb_define_method(rb_cTCPSocket, "initialize", tcp_init, -1);
 }

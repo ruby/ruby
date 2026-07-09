@@ -535,10 +535,19 @@ thread_cleanup_func(void *th_ptr, int atfork)
     if (atfork) {
         native_thread_destroy_atfork(th->nt);
         th->nt = NULL;
+        // The copied interrupt_lock may have been held at the moment of
+        // fork (interrupters run concurrently); reinitialize it so that
+        // thread_free's destroy is well-defined in the child.
+        rb_native_mutex_initialize(&th->interrupt_lock);
         return;
     }
 
-    rb_native_mutex_destroy(&th->interrupt_lock);
+    // interrupt_lock is destroyed in thread_free: while th is in its
+    // Ractor's living set, anyone (terminate_all on the Ractor's main
+    // thread, Thread#kill/#raise) may lock it -- and the living set keeps
+    // the Thread object marked, so it cannot reach thread_free while
+    // listed. Destroying it anywhere during teardown leaves a window where
+    // a concurrent interrupter locks a destroyed mutex (EINVAL).
 }
 
 void
@@ -680,6 +689,13 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
             r->r_stdin = rb_io_prep_stdin();
             r->r_stdout = rb_io_prep_stdout();
             r->r_stderr = rb_io_prep_stderr();
+
+            /* Build the interrupt queue and mask stack here, on the new Ractor's
+             * own main thread, instead of carrying over the ones the creating
+             * thread made. The mask stack starts empty so a new Ractor does not
+             * inherit the creating thread's Thread.handle_interrupt state. */
+            th->pending_interrupt_queue = rb_ary_hidden_new(0);
+            th->pending_interrupt_mask_stack = rb_ary_hidden_new(0);
         }
         RB_VM_UNLOCK();
     }
@@ -800,6 +816,16 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     thread_cleanup_func(th, FALSE);
     VM_ASSERT(th->ec->vm_stack == NULL);
 
+#if defined(USE_MN_THREADS) && USE_MN_THREADS
+    if (th_has_coroutine(th)) {
+        // Run the coroutine thread's epilogue here, while th is still valid;
+        // co_start then only makes the final transfer (see
+        // coroutine_thread_terminated in thread_pthread_mn.c).
+        coroutine_thread_terminated(th);
+        return 0;
+    }
+#endif
+
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
         // after rb_ractor_living_threads_remove()
         // GC will happen anytime and this ractor can be collected (and destroy GVL).
@@ -845,7 +871,12 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
                  "can't start a new thread (frozen ThreadGroup)");
     }
 
-    rb_fiber_inherit_storage(ec, th->ec->fiber_ptr);
+    /* A new Ractor must not inherit the creating thread's fiber storage: its
+     * entries may be objects owned by the creating Ractor. Only threads created
+     * within the same Ractor inherit it. */
+    if (params->type != thread_invoke_type_ractor_proc) {
+        rb_fiber_inherit_storage(ec, th->ec->fiber_ptr);
+    }
 
     switch (params->type) {
       case thread_invoke_type_proc:
@@ -882,12 +913,19 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
     th->priority = current_th->priority;
     th->thgroup = current_th->thgroup;
 
-    th->pending_interrupt_queue = rb_ary_hidden_new(0);
-    th->pending_interrupt_queue_checked = 0;
-    th->pending_interrupt_mask_stack = rb_ary_dup(current_th->pending_interrupt_mask_stack);
-    RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
-
-    rb_native_mutex_initialize(&th->interrupt_lock);
+    if (th->invoke_type == thread_invoke_type_ractor_proc) {
+        /* A new Ractor's main thread builds these on start
+         * (thread_start_func_2); leave them unset until then. */
+        th->pending_interrupt_queue = 0;
+        th->pending_interrupt_mask_stack = 0;
+        th->pending_interrupt_queue_checked = 0;
+    }
+    else {
+        th->pending_interrupt_queue = rb_ary_hidden_new(0);
+        th->pending_interrupt_queue_checked = 0;
+        th->pending_interrupt_mask_stack = rb_ary_dup(current_th->pending_interrupt_mask_stack);
+        RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
+    }
 
     RUBY_DEBUG_LOG("r:%u th:%u", rb_ractor_id(th->ractor), rb_th_serial(th));
 
@@ -4289,7 +4327,7 @@ rb_fd_init_copy(rb_fdset_t *dst, rb_fdset_t *src)
 void
 rb_fd_term(rb_fdset_t *fds)
 {
-    ruby_sized_xfree(fds->fdset, fdset_memsize(fds->maxfd));
+    ruby_xfree_sized(fds->fdset, fdset_memsize(fds->maxfd));
     fds->maxfd = 0;
     fds->fdset = 0;
 }
@@ -4308,7 +4346,7 @@ rb_fd_resize(int n, rb_fdset_t *fds)
     size_t o = fdset_memsize(fds->maxfd);
 
     if (m > o) {
-        fds->fdset = ruby_sized_xrealloc(fds->fdset, m, o);
+        fds->fdset = ruby_xrealloc_sized(fds->fdset, m, o);
         memset((char *)fds->fdset + o, 0, m - o);
     }
     if (n >= fds->maxfd) fds->maxfd = n + 1;
@@ -4339,7 +4377,7 @@ void
 rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
 {
     size_t size = fdset_memsize(max);
-    dst->fdset = ruby_sized_xrealloc(dst->fdset, size, fdset_memsize(dst->maxfd));
+    dst->fdset = ruby_xrealloc_sized(dst->fdset, size, fdset_memsize(dst->maxfd));
     dst->maxfd = max;
     memcpy(dst->fdset, src, size);
 }
@@ -4348,7 +4386,7 @@ void
 rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
 {
     size_t size = fdset_memsize(rb_fd_max(src));
-    dst->fdset = ruby_sized_xrealloc(dst->fdset, size, fdset_memsize(dst->maxfd));
+    dst->fdset = ruby_xrealloc_sized(dst->fdset, size, fdset_memsize(dst->maxfd));
     dst->maxfd = src->maxfd;
     memcpy(dst->fdset, src->fdset, size);
 }
@@ -4413,7 +4451,7 @@ fdset_memsize(int capa)
 void
 rb_fd_term(rb_fdset_t *set)
 {
-    ruby_sized_xfree(set->fdset, fdset_memsize(set->capa));
+    ruby_xfree_sized(set->fdset, fdset_memsize(set->capa));
     set->fdset = NULL;
     set->capa = 0;
 }
@@ -5081,7 +5119,7 @@ static const rb_data_type_t thgroup_data_type = {
         RUBY_TYPED_DEFAULT_FREE,
         NULL, // No external memory to report
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 /*
@@ -5250,7 +5288,7 @@ thread_shield_mark(void *ptr)
 static const rb_data_type_t thread_shield_data_type = {
     "thread_shield",
     {thread_shield_mark, 0, 0,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 static VALUE
@@ -6085,6 +6123,7 @@ rb_reset_coverages(void)
     rb_clear_coverages();
     rb_iseq_remove_coverage_all();
     GET_VM()->coverages = Qfalse;
+    GET_VM()->me2counter = Qnil;
 }
 
 VALUE

@@ -286,7 +286,7 @@ struct iseq_inline_constant_cache {
 };
 
 struct iseq_inline_iv_cache_entry {
-    uint64_t value; // dest_shape_id in former half, attr_index in latter half
+    uint64_t value; // Either rb_setivar_cache or rb_getivar_cache packed in a uint64_t.
     ID iv_set_name;
 };
 
@@ -679,11 +679,6 @@ typedef struct rb_hook_list_struct {
 // see builtin.h for definition
 typedef const struct rb_builtin_function *RB_BUILTIN;
 
-struct global_object_list {
-    VALUE *varptr;
-    struct global_object_list *next;
-};
-
 typedef struct rb_vm_struct {
     VALUE self;
 
@@ -729,6 +724,7 @@ typedef struct rb_vm_struct {
 
             unsigned int max_cpu;
             struct ccan_list_head grq; // // Global Ready Queue
+            rb_atomic_t winding_cnt; // native threads between a coroutine epilogue and its reclaim; ruby_vm_destruct waits for 0
             unsigned int grq_cnt;
 
             // running threads
@@ -736,8 +732,6 @@ typedef struct rb_vm_struct {
 
             // threads which switch context by timeslice
             struct ccan_list_head timeslice_threads;
-
-            struct ccan_list_head zombie_threads;
 
             // true if timeslice timer is not enable
             bool timeslice_wait_inf;
@@ -770,10 +764,13 @@ typedef struct rb_vm_struct {
 
     /* object management */
     VALUE mark_object_ary;
-    struct global_object_list *global_object_list;
+    VALUE **global_object_list;
+    size_t global_object_list_size;
+    size_t global_object_list_capa;
     const VALUE special_exceptions[ruby_special_error_count];
 
     /* Ruby Box */
+    rb_box_t *master_box;
     rb_box_t *root_box;
     rb_box_t *main_box;
 
@@ -920,7 +917,7 @@ struct rb_block {
 typedef struct rb_control_frame_struct {
     const VALUE *pc;        // cfp[0]
     VALUE *sp;              // cfp[1]
-    const rb_iseq_t *_iseq; // cfp[2] -- use rb_cfp_iseq(cfp) to read
+    const rb_iseq_t *_iseq; // cfp[2] -- use CFP_ISEQ(cfp) to read
     VALUE self;             // cfp[3] / block[0]
     const VALUE *ep;        // cfp[4] / block[1]
     const void *block_code; // cfp[5] / block[2] -- iseq, ifunc, or forwarded block handler
@@ -1017,6 +1014,10 @@ struct rb_vm_tag {
     struct rb_vm_tag *prev;
     enum ruby_tag_type state;
     unsigned int lock_rec;
+#if USE_ZJIT
+    // ec->cfp as of EC_PUSH_TAG, which is saved for materializing JITFrame.
+    rb_control_frame_t *cfp;
+#endif
 };
 
 STATIC_ASSERT(rb_vm_tag_buf_offset, offsetof(struct rb_vm_tag, buf) > 0);
@@ -1243,9 +1244,12 @@ typedef enum {
 #define VM_DEFINECLASS_TYPE(x) ((rb_vm_defineclass_type_t)(x) & VM_DEFINECLASS_TYPE_MASK)
 #define VM_DEFINECLASS_FLAG_SCOPED         0x08
 #define VM_DEFINECLASS_FLAG_HAS_SUPERCLASS 0x10
+#define VM_DEFINECLASS_FLAG_DYNAMIC_CREF  0x20
 #define VM_DEFINECLASS_SCOPED_P(x) ((x) & VM_DEFINECLASS_FLAG_SCOPED)
 #define VM_DEFINECLASS_HAS_SUPERCLASS_P(x) \
     ((x) & VM_DEFINECLASS_FLAG_HAS_SUPERCLASS)
+#define VM_DEFINECLASS_DYNAMIC_CREF_P(x) \
+    ((x) & VM_DEFINECLASS_FLAG_DYNAMIC_CREF)
 
 /* iseq.c */
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -1717,7 +1721,13 @@ VM_BH_ISEQ_BLOCK_P(VALUE block_handler)
     if ((block_handler & 0x03) == 0x01) {
 #if VM_CHECK_MODE > 0
         struct rb_captured_block *captured = VM_TAGGED_PTR_REF(block_handler, 0x03);
-        VM_ASSERT(imemo_type_p(captured->code.val, imemo_iseq));
+        if (!imemo_type_p(captured->code.val, imemo_iseq)) {
+            rb_bug("not imemo_iseq. captured:%p IMEMO_P(captured->code.val):%d, "
+                   "flags:%.*" PRIxVALUE,
+                   captured,
+                   RB_TYPE_P(captured->code.val, T_IMEMO),
+                   (int)(sizeof(VALUE) * CHAR_BIT / 4), RBASIC(captured->code.val)->flags);
+        }
 #endif
         return 1;
     }
@@ -1995,9 +2005,6 @@ rb_vm_living_threads_init(rb_vm_t *vm)
 {
     ccan_list_head_init(&vm->workqueue);
     ccan_list_head_init(&vm->ractor.set);
-#ifdef RUBY_THREAD_PTHREAD_H
-    ccan_list_head_init(&vm->ractor.sched.zombie_threads);
-#endif
 }
 
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);
@@ -2021,8 +2028,6 @@ void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE
     rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (long)rb_strlen_lit(m)))
 
 void rb_gc_mark_machine_context(const rb_execution_context_t *ec);
-
-rb_cref_t *rb_vm_rewrite_cref(rb_cref_t *node, VALUE old_klass, VALUE new_klass);
 
 const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
 const rb_callable_method_entry_t *rb_vm_frame_method_entry_unchecked(const rb_control_frame_t *cfp);
@@ -2410,6 +2415,7 @@ extern void rb_resume_coverages(void);
 extern void rb_suspend_coverages(void);
 
 void rb_postponed_job_flush(rb_vm_t *vm);
+void rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor);
 
 // ractor.c
 RUBY_EXTERN VALUE rb_eRactorUnsafeError;

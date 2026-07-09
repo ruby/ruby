@@ -222,6 +222,16 @@ class TestSyntax < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /block accepted/) {obj.f(&proc {})}
   end
 
+  def test_trailing_comma_in_method_parameters
+    assert_valid_syntax("def f(a,b,c,); end")
+    assert_valid_syntax("def f(a,b,*c,); end")
+    assert_valid_syntax("def f(a,b,*,); end")
+    assert_valid_syntax("def f(a,b,**c,); end")
+    assert_valid_syntax("def f(a,b,**,); end")
+    assert_syntax_error("def f(a,b,&block,); end", /unexpected/)
+    assert_syntax_error("def f(a,b,...,); end", /unexpected/)
+  end
+
   def test_no_block_argument_in_block
     assert_valid_syntax("proc do |&nil| end")
     assert_valid_syntax("proc do |a, &nil| end")
@@ -1899,6 +1909,24 @@ eom
   def test_classdef_in_cond
     assert_valid_syntax('while class Foo; tap do end; end; break; end')
     assert_valid_syntax('while class Foo a = tap do end; end; break; end')
+  end
+
+  def test_while_until_conditional_bug_22002
+    @foo = 123 until defined?(@foo)
+    assert_equal(123, @foo)
+
+    @bar = 456 while @bar==nil..true
+    assert_equal(456, @bar)
+
+    while false and @baz
+      @baz = 789
+    end
+    assert_equal(nil, @baz)
+
+    until true || @baz
+      @baz = 789
+    end
+    assert_equal(nil, @baz)
   end
 
   def test_command_with_cmd_brace_block

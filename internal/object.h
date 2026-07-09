@@ -20,8 +20,15 @@ VALUE rb_obj_dig(int argc, VALUE *argv, VALUE self, VALUE notfound);
 VALUE rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze);
 VALUE rb_obj_dup_setup(VALUE obj, VALUE dup);
 VALUE rb_immutable_obj_clone(int, VALUE *, VALUE);
-VALUE rb_check_convert_type_with_id(VALUE,int,const char*,ID);
+VALUE rb_check_convert_type_with_id_slow(VALUE,int,const char*,ID);
 int rb_bool_expected(VALUE, const char *, int raise);
+
+static inline VALUE
+rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
+{
+    if (RB_TYPE_P(val, type) && type != T_DATA) return val;
+    return rb_check_convert_type_with_id_slow(val, type, tname, method);
+}
 static inline void RBASIC_CLEAR_CLASS(VALUE obj);
 static inline void RBASIC_SET_CLASS_RAW(VALUE obj, VALUE klass);
 static inline void RBASIC_SET_CLASS(VALUE obj, VALUE klass);
@@ -61,9 +68,27 @@ RBASIC_SET_CLASS(VALUE obj, VALUE klass)
     RB_OBJ_WRITTEN(obj, oldv, klass);
 }
 
+static inline VALUE *
+ROBJECT_FIELDS(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    struct RObject *const ptr = ROBJECT(obj);
+
+    if (RB_UNLIKELY(RB_FL_ANY_RAW(obj, ROBJECT_HEAP))) {
+        return ptr->as.heap.fields;
+    }
+    else {
+        return ptr->as.ary;
+    }
+}
+
 static inline size_t
 rb_obj_embedded_size(uint32_t fields_count)
 {
-    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
+    size_t size = offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
+    // Ensure enough room for the heap pointer if this expands
+    if (size < sizeof(struct RObject)) size = sizeof(struct RObject);
+    return size;
 }
 #endif /* INTERNAL_OBJECT_H */

@@ -88,7 +88,7 @@ free_arena(struct iseq_compile_data_storage *cur)
 
     while (cur) {
         next = cur->next;
-        ruby_sized_xfree(cur, offsetof(struct iseq_compile_data_storage, buff) + cur->size * sizeof(char));
+        ruby_xfree_sized(cur, offsetof(struct iseq_compile_data_storage, buff) + cur->size * sizeof(char));
         cur = next;
     }
 }
@@ -208,7 +208,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
         SIZED_FREE_N(body->is_entries, ISEQ_IS_SIZE(body));
         SIZED_FREE_N(body->call_data, body->ci_size);
         if (body->catch_table) {
-            ruby_sized_xfree(body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
+            ruby_xfree_sized(body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
         }
         SIZED_FREE_N(body->param.opt_table, body->param.opt_num + 1);
         if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1 && body->mark_bits.list) {
@@ -302,9 +302,7 @@ rb_iseq_mark_and_move_each_body_value(const rb_iseq_t *iseq, VALUE *original_ise
         for (unsigned int i = 0; i < body->icvarc_size; i++, is_entries++) {
             ICVARC icvarc = (ICVARC)is_entries;
             if (icvarc->entry) {
-                RUBY_ASSERT(!RB_TYPE_P(icvarc->entry->class_value, T_NONE));
-
-                rb_gc_mark_and_move(&icvarc->entry->class_value);
+                rb_gc_mark_and_move((VALUE *)&icvarc->entry);
             }
         }
 
@@ -866,10 +864,6 @@ set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
 static rb_compile_option_t *
 set_compile_option_from_ast(rb_compile_option_t *option, const rb_ast_body_t *ast)
 {
-#define SET_COMPILE_OPTION(o, a, mem) \
-    ((a)->mem < 0 ? 0 : ((o)->mem = (a)->mem > 0))
-    SET_COMPILE_OPTION(option, ast, coverage_enabled);
-#undef SET_COMPILE_OPTION
     if (ast->frozen_string_literal >= 0) {
         option->frozen_string_literal = ast->frozen_string_literal;
     }
@@ -1023,8 +1017,13 @@ rb_iseq_new_eval(const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, 
         }
     }
 
+    rb_compile_option_t option = COMPILE_OPTION_DEFAULT;
+    rb_ast_t *ast = rb_ruby_ast_data_get(ast_value);
+    if (ast->body.coverage_enabled >= 0) {
+        option.coverage_enabled = ast->body.coverage_enabled;
+    }
     return rb_iseq_new_with_opt(ast_value, name, path, realpath, first_lineno,
-                                parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT,
+                                parent, isolated_depth, ISEQ_TYPE_EVAL, &option,
                                 Qnil);
 }
 
@@ -1211,7 +1210,7 @@ rb_iseq_load_iseq(VALUE fname)
     VALUE iseqv = rb_check_funcall(rb_cISeq, rb_intern("load_iseq"), 1, &fname);
 
     if (!SPECIAL_CONST_P(iseqv) && RBASIC_CLASS(iseqv) == rb_cISeq) {
-        return  iseqw_check(iseqv);
+        return iseqw_check(iseqv);
     }
 
     return NULL;
@@ -1399,6 +1398,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         rb_exc_raise(GET_EC()->errinfo);
     }
     else {
+        iseq_new_setup_coverage(file, ast_line_count(ast_value));
         iseq = rb_iseq_new_with_opt(ast_value, name, file, realpath, ln,
                                     NULL, 0, ISEQ_TYPE_TOP, &option,
                                     Qnil);
@@ -1464,6 +1464,7 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
 
     if (error == Qnil) {
         int error_state;
+        iseq_new_setup_coverage(file, (int) (pm_parser_line_offsets(result.node.parser)->size - 1));
         iseq = pm_iseq_new_with_opt(&result.node, name, file, realpath, ln, NULL, 0, ISEQ_TYPE_TOP, &option, &error_state);
 
         pm_parse_result_free(&result);
@@ -1606,7 +1607,7 @@ static const rb_data_type_t iseqw_data_type = {
         iseqw_memsize,
         iseqw_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE|RUBY_TYPED_WB_PROTECTED
 };
 
 static VALUE
@@ -1855,6 +1856,7 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
     parser = rb_parser_new();
     rb_parser_set_context(parser, NULL, FALSE);
     ast_value = rb_parser_load_file(parser, file);
+    iseq_new_setup_coverage(file, ast_line_count(ast_value));
     ast = rb_ruby_ast_data_get(ast_value);
     if (!ast->body.root) exc = GET_EC()->errinfo;
 
@@ -1918,17 +1920,32 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
     rb_execution_context_t *ec = GET_EC();
     VALUE v = rb_vm_push_frame_fname(ec, file);
 
+    make_compile_option(&option, opt);
+
     pm_parse_result_t result;
     pm_parse_result_init(&result);
     result.node.coverage_enabled = 1;
+
+    switch (option.frozen_string_literal) {
+      case ISEQ_FROZEN_STRING_LITERAL_UNSET:
+        break;
+      case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
+        pm_options_frozen_string_literal_set(result.options, false);
+        break;
+      case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
+        pm_options_frozen_string_literal_set(result.options, true);
+        break;
+      default:
+        rb_bug("iseqw_s_compile_file_prism: invalid frozen_string_literal=%d", option.frozen_string_literal);
+        break;
+    }
 
     VALUE script_lines;
     VALUE error = pm_load_parse_file(&result, file, ruby_vm_keep_script_lines ? &script_lines : NULL);
 
     if (error == Qnil) {
-        make_compile_option(&option, opt);
-
         int error_state;
+        iseq_new_setup_coverage(file, (int) (pm_parser_line_offsets(result.node.parser)->size - 1));
         rb_iseq_t *iseq = pm_iseq_new_with_opt(&result.node, rb_fstring_lit("<main>"),
                                                file,
                                                rb_realpath_internal(Qnil, file, 1),
@@ -2846,7 +2863,7 @@ iseq_inspect(const rb_iseq_t *iseq)
 static const rb_data_type_t tmp_set = {
     "tmpset",
     {(void (*)(void *))rb_mark_set, (void (*)(void *))st_free_table, 0, 0,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 static VALUE
@@ -3024,14 +3041,20 @@ rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
         }
     }
 
-    attr_index_t count = (attr_index_t)iv_names.num_entries;
+    size_t count = iv_names.num_entries;
 
     VALUE superclass = rb_class_superclass(klass);
-    count += RCLASS_MAX_IV_COUNT(superclass);
+    if (!NIL_P(superclass)) { // BasicObject doesn't have a superclass
+        count += RCLASS_MAX_IV_COUNT(superclass);
+    }
 
     set_free_embedded_table(&iv_names);
 
-    return count;
+    if (count > (attr_index_t)-1) {
+        return (attr_index_t)-1;
+    }
+
+    return (attr_index_t)count;
 }
 
 /*
@@ -3252,7 +3275,7 @@ iseqw_s_of(VALUE klass, VALUE body)
  *    0000 trace            8                                               (   1)
  *    0002 trace            1                                               (   2)
  *    0004 putself
- *    0005 putstring        "hello, world"
+ *    0005 dupstring        "hello, world"
  *    0007 send             :puts, 1, nil, 8, <ic:0>
  *    0013 trace            16                                              (   3)
  *    0015 leave                                                            (   2)
@@ -3317,14 +3340,14 @@ static int
 cdhash_each(VALUE key, VALUE value, VALUE ary)
 {
     rb_ary_push(ary, obj_resurrect(key));
-    rb_ary_push(ary, value);
+    rb_ary_push(ary, INT2FIX(value));
     return ST_CONTINUE;
 }
 
 static const rb_data_type_t label_wrapper = {
     "label_wrapper",
     {(void (*)(void *))rb_mark_tbl, (void (*)(void *))st_free_table, 0, 0,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 #define DECL_ID(name) \
@@ -3558,11 +3581,11 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
                 break;
               case TS_CDHASH:
                 {
-                    VALUE hash = *seq;
+                    VALUE cdhash = *seq;
                     VALUE val = rb_ary_new();
                     int i;
 
-                    rb_hash_foreach(hash, cdhash_each, val);
+                    st_foreach(rb_imemo_cdhash_tbl(cdhash), cdhash_each, val);
 
                     for (i=0; i<RARRAY_LEN(val); i+=2) {
                         VALUE pos = FIX2INT(rb_ary_entry(val, i+1));
@@ -4238,10 +4261,7 @@ clear_attr_ccs_i(void *vstart, void *vend, size_t stride, void *data)
 void
 rb_clear_attr_ccs(void)
 {
-    RB_VM_LOCKING() {
-        rb_vm_barrier();
-        rb_objspace_each_objects(clear_attr_ccs_i, NULL);
-    }
+    rb_objspace_each_objects(clear_attr_ccs_i, NULL);
 }
 
 static int
@@ -4260,7 +4280,6 @@ clear_bf_ccs_i(void *vstart, void *vend, size_t stride, void *data)
 void
 rb_clear_bf_ccs(void)
 {
-    ASSERT_vm_locking_with_barrier();
     rb_objspace_each_objects(clear_bf_ccs_i, NULL);
 }
 
@@ -4290,10 +4309,7 @@ trace_set_i(void *vstart, void *vend, size_t stride, void *data)
 void
 rb_iseq_trace_set_all(rb_event_flag_t turnon_events)
 {
-    RB_VM_LOCKING() {
-        rb_vm_barrier();
-        rb_objspace_each_objects(trace_set_i, &turnon_events);
-    }
+    rb_objspace_each_objects(trace_set_i, &turnon_events);
 }
 
 VALUE

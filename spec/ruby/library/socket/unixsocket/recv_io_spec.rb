@@ -37,7 +37,7 @@ platform_is_not :windows do
       @socket = @server.accept
       @io = @socket.recv_io(File)
 
-      @io.should be_an_instance_of(File)
+      @io.should.instance_of?(File)
     end
   end
 
@@ -59,7 +59,7 @@ platform_is_not :windows do
         @client.send_io(@file)
 
         @io = @server.recv_io
-        @io.should be_an_instance_of(IO)
+        @io.should.instance_of?(IO)
       end
     end
 
@@ -68,7 +68,7 @@ platform_is_not :windows do
         @client.send_io(@file)
 
         @io = @server.recv_io(File)
-        @io.should be_an_instance_of(File)
+        @io.should.instance_of?(File)
       end
     end
 
@@ -77,7 +77,7 @@ platform_is_not :windows do
         @client.send_io(@file)
 
         @io = @server.recv_io(File, File::WRONLY)
-        @io.should be_an_instance_of(File)
+        @io.should.instance_of?(File)
       end
     end
   end

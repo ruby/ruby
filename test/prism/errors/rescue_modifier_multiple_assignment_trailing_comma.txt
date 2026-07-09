@@ -1,0 +1,3 @@
+(a rescue b,)
+          ^~ unexpected write target
+

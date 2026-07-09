@@ -5,7 +5,7 @@ class Object
     format = instance_variable_get(:@method)
     format += count.to_s unless format == 'P' || format == 'p'
     format *= repeat if repeat
-    format.dup # because it may then become tainted
+    format
   end
 end
 

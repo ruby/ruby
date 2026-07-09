@@ -59,26 +59,26 @@ describe "Range#each" do
   end
 
   it "raises a TypeError beginless ranges" do
-    -> { (..2).each { |x| x } }.should raise_error(TypeError)
+    -> { (..2).each { |x| x } }.should.raise(TypeError)
   end
 
   it "raises a TypeError if the first element does not respond to #succ" do
-    -> { (0.5..2.4).each { |i| i } }.should raise_error(TypeError)
+    -> { (0.5..2.4).each { |i| i } }.should.raise(TypeError)
 
     b = mock('x')
     (a = mock('1')).should_receive(:<=>).with(b).and_return(1)
 
-    -> { (a..b).each { |i| i } }.should raise_error(TypeError)
+    -> { (a..b).each { |i| i } }.should.raise(TypeError)
   end
 
   it "returns self" do
     range = 1..10
-    range.each{}.should equal(range)
+    range.each{}.should.equal?(range)
   end
 
   it "returns an enumerator when no block given" do
     enum = (1..3).each
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.to_a.should == [1, 2, 3]
   end
 

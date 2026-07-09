@@ -6,6 +6,6 @@ describe :integer_arithmetic_coerce_not_rescue, shared: true do
     b.should_receive(:coerce).and_raise(IntegerSpecs::CoerceError)
 
     # e.g. 1 + b
-    -> { 1.send(@method, b) }.should raise_error(IntegerSpecs::CoerceError)
+    -> { 1.send(@method, b) }.should.raise(IntegerSpecs::CoerceError)
   end
 end

@@ -1,15 +1,16 @@
 require_relative '../../spec_helper'
 require_relative '../rational/fixtures/rational'
 
-describe "Kernel.Rational" do
+describe "Kernel#Rational" do
+  it "is a private method" do
+    Kernel.private_instance_methods(false).should.include?(:Rational)
+  end
+
   describe "passed Integer" do
-    # Guard against the Mathn library
-    guard -> { !defined?(Math.rsqrt) } do
-      it "returns a new Rational number with 1 as the denominator" do
-        Rational(1).should eql(Rational(1, 1))
-        Rational(-3).should eql(Rational(-3, 1))
-        Rational(bignum_value).should eql(Rational(bignum_value, 1))
-      end
+    it "returns a new Rational number with 1 as the denominator" do
+      Rational(1).should.eql?(Rational(1, 1))
+      Rational(-3).should.eql?(Rational(-3, 1))
+      Rational(bignum_value).should.eql?(Rational(bignum_value, 1))
     end
   end
 
@@ -18,17 +19,17 @@ describe "Kernel.Rational" do
       rat = Rational(1, 2)
       rat.numerator.should == 1
       rat.denominator.should == 2
-      rat.should be_an_instance_of(Rational)
+      rat.should.instance_of?(Rational)
 
       rat = Rational(-3, -5)
       rat.numerator.should == 3
       rat.denominator.should == 5
-      rat.should be_an_instance_of(Rational)
+      rat.should.instance_of?(Rational)
 
       rat = Rational(bignum_value, 3)
       rat.numerator.should == bignum_value
       rat.denominator.should == 3
-      rat.should be_an_instance_of(Rational)
+      rat.should.instance_of?(Rational)
     end
 
     it "reduces the Rational" do
@@ -82,7 +83,7 @@ describe "Kernel.Rational" do
       end
 
       it "raises a RangeError if the imaginary part is not 0" do
-        -> { Rational(Complex(1, 2)) }.should raise_error(RangeError, "can't convert 1+2i into Rational")
+        -> { Rational(Complex(1, 2)) }.should.raise(RangeError, "can't convert 1+2i into Rational")
       end
     end
 
@@ -113,18 +114,18 @@ describe "Kernel.Rational" do
     end
 
     it "raises TypeError if it neither responds to #to_r nor #to_int method" do
-      -> { Rational([]) }.should raise_error(TypeError, "can't convert Array into Rational")
-      -> { Rational({}) }.should raise_error(TypeError, "can't convert Hash into Rational")
-      -> { Rational(nil) }.should raise_error(TypeError, "can't convert nil into Rational")
+      -> { Rational([]) }.should.raise(TypeError, "can't convert Array into Rational")
+      -> { Rational({}) }.should.raise(TypeError, "can't convert Hash into Rational")
+      -> { Rational(nil) }.should.raise(TypeError, "can't convert nil into Rational")
     end
 
     it "swallows exception raised in #to_int method" do
       object = Object.new
       def object.to_int() raise NoMethodError; end
 
-      -> { Rational(object) }.should raise_error(TypeError)
-      -> { Rational(object, 1) }.should raise_error(TypeError)
-      -> { Rational(1, object) }.should raise_error(TypeError)
+      -> { Rational(object) }.should.raise(TypeError)
+      -> { Rational(object, 1) }.should.raise(TypeError)
+      -> { Rational(1, object) }.should.raise(TypeError)
     end
 
     it "raises TypeError if #to_r does not return Rational" do
@@ -136,24 +137,24 @@ describe "Kernel.Rational" do
   end
 
   it "raises a ZeroDivisionError if the second argument is 0" do
-    -> { Rational(1, 0) }.should raise_error(ZeroDivisionError, "divided by 0")
-    -> { Rational(1, 0.0) }.should raise_error(ZeroDivisionError, "divided by 0")
+    -> { Rational(1, 0) }.should.raise(ZeroDivisionError, "divided by 0")
+    -> { Rational(1, 0.0) }.should.raise(ZeroDivisionError, "divided by 0")
   end
 
   it "raises a TypeError if the first argument is nil" do
-    -> { Rational(nil) }.should raise_error(TypeError, "can't convert nil into Rational")
+    -> { Rational(nil) }.should.raise(TypeError, "can't convert nil into Rational")
   end
 
   it "raises a TypeError if the second argument is nil" do
-    -> { Rational(1, nil) }.should raise_error(TypeError, "can't convert nil into Rational")
+    -> { Rational(1, nil) }.should.raise(TypeError, "can't convert nil into Rational")
   end
 
   it "raises a TypeError if the first argument is a Symbol" do
-    -> { Rational(:sym) }.should raise_error(TypeError)
+    -> { Rational(:sym) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if the second argument is a Symbol" do
-    -> { Rational(1, :sym) }.should raise_error(TypeError)
+    -> { Rational(1, :sym) }.should.raise(TypeError)
   end
 
   describe "when passed exception: false" do
@@ -232,5 +233,11 @@ describe "Kernel.Rational" do
 
   it "freezes its result" do
     Rational(1).frozen?.should == true
+  end
+end
+
+describe "Kernel.Rational" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:Rational)
   end
 end

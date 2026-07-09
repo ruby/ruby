@@ -20,7 +20,7 @@ end
 describe "String#strip!" do
   it "modifies self in place and returns self" do
     a = "   hello   "
-    a.strip!.should equal(a)
+    a.strip!.should.equal?(a)
     a.should == "hello"
 
     a = "\tgoodbye\r\v\n"
@@ -47,12 +47,12 @@ describe "String#strip!" do
   end
 
   it "raises a FrozenError on a frozen instance that is modified" do
-    -> { "  hello  ".freeze.strip! }.should raise_error(FrozenError)
+    -> { "  hello  ".freeze.strip! }.should.raise(FrozenError)
   end
 
   # see #1552
   it "raises a FrozenError on a frozen instance that would not be modified" do
-    -> {"hello".freeze.strip! }.should raise_error(FrozenError)
-    -> {"".freeze.strip!      }.should raise_error(FrozenError)
+    -> {"hello".freeze.strip! }.should.raise(FrozenError)
+    -> {"".freeze.strip!      }.should.raise(FrozenError)
   end
 end

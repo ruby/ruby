@@ -3,7 +3,7 @@ require_relative 'fixtures/caller'
 
 describe 'Kernel#caller' do
   it 'is a private method' do
-    Kernel.should have_private_instance_method(:caller)
+    Kernel.private_instance_methods(false).should.include?(:caller)
   end
 
   it 'returns an Array of caller locations' do
@@ -32,7 +32,7 @@ describe 'Kernel#caller' do
     locations = KernelSpecs::CallerTest.locations
     line      = __LINE__ - 1
 
-    locations[0].should include("#{__FILE__}:#{line}:in")
+    locations[0].should.include?("#{__FILE__}:#{line}:in")
   end
 
   it "returns an Array with the block given to #at_exit at the base of the stack" do
@@ -41,6 +41,18 @@ describe 'Kernel#caller' do
     lines.size.should == 2
     lines[0].should =~ /\A#{path}:6:in [`'](?:Object#)?foo'\n\z/
     lines[1].should =~ /\A#{path}:2:in [`']block in <main>'\n\z/
+  end
+
+  it "raises for negative start" do
+    -> { caller(-1) }.should.raise(ArgumentError, "negative level (-1)")
+  end
+
+  it "raises for negative length" do
+    -> { caller(0, -1) }.should.raise(ArgumentError, "negative size (-1)")
+  end
+
+  it "can be called with `nil` length" do
+    caller(0, nil).should == caller(0)
   end
 
   it "can be called with a range" do
@@ -83,6 +95,11 @@ describe 'Kernel#caller' do
     caller.should == caller(1..-1)
   end
 
+  it "coerces the arguments to integers" do
+    caller(1.1, 1.1).should == caller(1, 1)
+    caller(1.1..1.1).should == caller(1..1)
+  end
+
   guard -> { Kernel.instance_method(:tap).source_location } do
     ruby_version_is ""..."3.4" do
       it "includes core library methods defined in Ruby" do
@@ -107,14 +124,21 @@ describe 'Kernel#caller' do
     end
 
     ruby_version_is "4.0" do
-      it "includes core library methods defined in Ruby" do
+      it "does not include core library methods defined in Ruby" do
         file, line = Kernel.instance_method(:tap).source_location
         file.should.start_with?('<internal:')
 
         loc = nil
         tap { loc = caller(1, 1)[0] }
-        loc.should =~ /\A#{__FILE__}:.*in 'Kernel#tap'\z/
+        # CRuby hides the file which defines the method: https://bugs.ruby-lang.org/issues/20968
+        loc.should =~ /\A(<internal:|#{__FILE__}:).*in 'Kernel#tap'\z/
       end
     end
+  end
+end
+
+describe "Kernel.caller" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:caller)
   end
 end

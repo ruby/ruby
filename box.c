@@ -20,6 +20,8 @@
 #include "darray.h"
 #include "zjit.h"
 
+#include "builtin.h"
+
 #include <stdio.h>
 
 #ifdef HAVE_FCNTL_H
@@ -36,8 +38,12 @@ VALUE rb_cBox = 0;
 VALUE rb_cBoxEntry = 0;
 VALUE rb_mBoxLoader = 0;
 
-static rb_box_t root_box[1]; /* Initialize in initialize_root_box() */
+static rb_box_t master_box[1]; /* Initialize in initialize_master_box() */
+static rb_box_t *root_box;
 static rb_box_t *main_box;
+
+static rb_box_gem_flags_t box_gem_flags[1];
+
 static char *tmp_dir;
 static bool tmp_dir_has_dirsep;
 
@@ -62,14 +68,32 @@ static VALUE rb_box_inspect(VALUE obj);
 static void cleanup_all_local_extensions(VALUE libmap);
 
 void
+rb_box_set_gem_flags(rb_box_gem_flags_t *flags)
+{
+
+    box_gem_flags->gem = flags->gem;
+    box_gem_flags->error_highlight = flags->error_highlight;
+    box_gem_flags->did_you_mean    = flags->did_you_mean;
+    box_gem_flags->syntax_suggest  = flags->syntax_suggest;
+}
+
+void
 rb_box_init_done(void)
 {
     ruby_box_init_done = true;
 }
 
 const rb_box_t *
+rb_master_box(void)
+{
+    return master_box;
+}
+
+const rb_box_t *
 rb_root_box(void)
 {
+    if (!root_box) // The root box isn't initialized yet - The Ruby runtime is in setup.
+        return master_box;
     return root_box;
 }
 
@@ -83,12 +107,14 @@ const rb_box_t *
 rb_current_box(void)
 {
     /*
-     * If RUBY_BOX is not set, the root box is the only available one.
+     * If RUBY_BOX is not set, the master box is the only available one.
      *
-     * Until the main_box is not initialized, the root box is
+     * While the root/main boxes are not initialized, the master box is
      * the only valid box.
      * This early return is to avoid accessing EC before its setup.
      */
+    if (!root_box)
+        return master_box;
     if (!main_box)
         return root_box;
 
@@ -98,6 +124,8 @@ rb_current_box(void)
 const rb_box_t *
 rb_loading_box(void)
 {
+    if (!root_box)
+        return master_box;
     if (!main_box)
         return root_box;
 
@@ -133,7 +161,7 @@ box_main_to_s(VALUE obj)
 static void
 box_entry_initialize(rb_box_t *box)
 {
-    const rb_box_t *root = rb_root_box();
+    const rb_box_t *master = rb_master_box();
 
     // These will be updated immediately
     box->box_object = 0;
@@ -142,15 +170,15 @@ box_entry_initialize(rb_box_t *box)
     box->top_self = rb_obj_alloc(rb_cObject);
     rb_define_singleton_method(box->top_self, "to_s", box_main_to_s, 0);
     rb_define_alias(rb_singleton_class(box->top_self), "inspect", "to_s");
-    box->load_path = rb_ary_dup(root->load_path);
-    box->expanded_load_path = rb_ary_dup(root->expanded_load_path);
+    box->load_path = rb_ary_dup(master->load_path);
+    box->expanded_load_path = rb_ary_dup(master->expanded_load_path);
     box->load_path_snapshot = rb_ary_new();
     box->load_path_check_cache = 0;
-    box->loaded_features = rb_ary_dup(root->loaded_features);
+    box->loaded_features = rb_ary_dup(master->loaded_features);
     box->loaded_features_snapshot = rb_ary_new();
     box->loaded_features_index = st_init_numtable();
-    box->loaded_features_realpaths = rb_hash_dup(root->loaded_features_realpaths);
-    box->loaded_features_realpath_map = rb_hash_dup(root->loaded_features_realpath_map);
+    box->loaded_features_realpaths = rb_hash_dup(master->loaded_features_realpaths);
+    box->loaded_features_realpath_map = rb_hash_dup(master->loaded_features_realpath_map);
     box->loading_table = st_init_strtable();
     box->ruby_dln_libmap = rb_hash_new_with_size(0);
     box->gvar_tbl = rb_hash_new_with_size(0);
@@ -206,7 +234,7 @@ rb_box_entry_mark(void *ptr)
     rb_gc_mark(box->ruby_dln_libmap);
     rb_gc_mark(box->gvar_tbl);
     if (box->classext_cow_classes) {
-        rb_mark_tbl(box->classext_cow_classes);
+        rb_mark_set(box->classext_cow_classes);
     }
 }
 
@@ -227,7 +255,7 @@ free_loaded_feature_index_i(st_data_t key, st_data_t value, st_data_t arg)
 }
 
 static void
-box_root_free(void *ptr)
+free_box_st_tables(void *ptr)
 {
     rb_box_t *box = (rb_box_t *)ptr;
     if (box->loading_table) {
@@ -243,10 +271,10 @@ box_root_free(void *ptr)
 }
 
 static int
-free_classext_for_box(st_data_t _key, st_data_t obj_value, st_data_t box_arg)
+free_classext_for_box(st_data_t key, st_data_t _value, st_data_t box_arg)
 {
     rb_classext_t *ext;
-    VALUE obj = (VALUE)obj_value;
+    VALUE obj = (VALUE)key;
     const rb_box_t *box = (const rb_box_t *)box_arg;
 
     if (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) {
@@ -274,7 +302,7 @@ box_entry_free(void *ptr)
 
     cleanup_all_local_extensions(box->ruby_dln_libmap);
 
-    box_root_free(ptr);
+    free_box_st_tables(ptr);
     SIZED_FREE(box);
 }
 
@@ -303,15 +331,15 @@ static const rb_data_type_t rb_box_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
 };
 
-static const rb_data_type_t rb_root_box_data_type = {
-    "Ruby::Box::Root",
+static const rb_data_type_t rb_master_box_data_type = {
+    "Ruby::Box::Master",
     {
         rb_box_entry_mark,
-        box_root_free,
+        free_box_st_tables,
         box_entry_memsize,
         rb_box_gc_update_references,
     },
-    &rb_box_data_type, 0, RUBY_TYPED_FREE_IMMEDIATELY // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
+    &rb_box_data_type, 0, RUBY_TYPED_THREAD_SAFE_FREE // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
 };
 
 VALUE
@@ -340,7 +368,7 @@ rb_get_box_t(VALUE box)
     VM_ASSERT(box);
 
     if (NIL_P(box))
-        return root_box;
+        return (rb_box_t *)rb_root_box();
 
     VM_ASSERT(BOX_OBJ_P(box));
 
@@ -393,6 +421,14 @@ box_initialize(VALUE box_value)
     RCLASS_SET_CONST_TBL(box_value, RCLASSEXT_CONST_TBL(object_classext), true);
 
     rb_ivar_set(box_value, id_box_entry, entry);
+
+    if (ruby_box_init_done) {
+        if (box_gem_flags->gem) {
+            rb_vm_call_cfunc_in_box(Qnil, rb_define_gem_modules, (VALUE)box_gem_flags, Qnil,
+                                    rb_str_new_cstr("before_prelude.user.dummy"), (const rb_box_t *)box);
+            rb_load_gem_prelude((VALUE)box);
+        }
+    }
 
     // Invalidate ZJIT code that assumes only the root box is active
     rb_zjit_invalidate_root_box();
@@ -824,8 +860,7 @@ rb_box_load(int argc, VALUE *argv, VALUE box)
 
     rb_vm_frame_flag_set_box_require(GET_EC());
 
-    VALUE args = rb_ary_new_from_args(2, fname, wrap);
-    return rb_load_entrypoint(args);
+    return rb_load_entrypoint(fname, wrap);
 }
 
 static VALUE
@@ -845,49 +880,52 @@ rb_box_require_relative(VALUE box, VALUE fname)
 }
 
 static void
-initialize_root_box(void)
+initialize_master_box(void)
 {
     rb_vm_t *vm = GET_VM();
-    rb_box_t *root = (rb_box_t *)rb_root_box();
+    rb_box_t *master = (rb_box_t *)rb_master_box();
 
-    root->load_path = rb_ary_new();
-    root->expanded_load_path = rb_ary_hidden_new(0);
-    root->load_path_snapshot = rb_ary_hidden_new(0);
-    root->load_path_check_cache = 0;
-    rb_define_singleton_method(root->load_path, "resolve_feature_path", rb_resolve_feature_path, 1);
+    master->load_path = rb_ary_new();
+    master->expanded_load_path = rb_ary_hidden_new(0);
+    master->load_path_snapshot = rb_ary_hidden_new(0);
+    master->load_path_check_cache = 0;
+    rb_define_singleton_method(master->load_path, "resolve_feature_path", rb_resolve_feature_path, 1);
 
-    root->loaded_features = rb_ary_new();
-    root->loaded_features_snapshot = rb_ary_hidden_new(0);
-    root->loaded_features_index = st_init_numtable();
-    root->loaded_features_realpaths = rb_hash_new();
-    rb_obj_hide(root->loaded_features_realpaths);
-    root->loaded_features_realpath_map = rb_hash_new();
-    rb_obj_hide(root->loaded_features_realpath_map);
+    master->loaded_features = rb_ary_new();
+    master->loaded_features_snapshot = rb_ary_hidden_new(0);
+    master->loaded_features_index = st_init_numtable();
+    master->loaded_features_realpaths = rb_hash_new();
+    rb_obj_hide(master->loaded_features_realpaths);
+    master->loaded_features_realpath_map = rb_hash_new();
+    rb_obj_hide(master->loaded_features_realpath_map);
 
-    root->ruby_dln_libmap = rb_hash_new_with_size(0);
-    root->gvar_tbl = rb_hash_new_with_size(0);
-    root->classext_cow_classes = NULL; // classext CoW never happen on the root box
+    master->ruby_dln_libmap = rb_hash_new_with_size(0);
+    master->gvar_tbl = rb_hash_new_with_size(0);
+    master->classext_cow_classes = NULL; // classext CoW never happen on the master box
 
-    vm->root_box = root;
+    vm->master_box = master;
 
     if (rb_box_available()) {
-        VALUE root_box, entry;
+        VALUE master_box, entry;
         ID id_box_entry;
         CONST_ID(id_box_entry, "__box_entry__");
 
-        root_box = rb_obj_alloc(rb_cBox);
-        RCLASS_SET_PRIME_CLASSEXT_WRITABLE(root_box, true);
-        RCLASS_SET_CONST_TBL(root_box, RCLASSEXT_CONST_TBL(RCLASS_EXT_PRIME(rb_cObject)), true);
+        master_box = rb_obj_alloc(rb_cBox);
+        RCLASS_SET_PRIME_CLASSEXT_WRITABLE(master_box, true);
+        RCLASS_SET_CONST_TBL(master_box, RCLASSEXT_CONST_TBL(RCLASS_EXT_PRIME(rb_cObject)), true);
 
-        root->box_id = box_generate_id();
-        root->box_object = root_box;
+        master->box_id = box_generate_id();
+        master->box_object = master_box;
 
-        entry = TypedData_Wrap_Struct(rb_cBoxEntry, &rb_root_box_data_type, root);
-        rb_ivar_set(root_box, id_box_entry, entry);
+        entry = TypedData_Wrap_Struct(rb_cBoxEntry, &rb_master_box_data_type, master);
+        rb_ivar_set(master_box, id_box_entry, entry);
+
+        rb_gc_register_mark_object(master_box);
+        rb_gc_register_mark_object(entry);
     }
     else {
-        root->box_id = 1;
-        root->box_object = Qnil;
+        master->box_id = 1;
+        master->box_object = Qnil;
     }
 }
 
@@ -911,11 +949,26 @@ static int box_experimental_warned = 0;
 
 RUBY_EXTERN const char ruby_api_version_name[];
 
-void
-rb_initialize_main_box(void)
+static VALUE
+box_value_initialize(bool root, bool user, bool optional)
 {
     rb_box_t *box;
-    VALUE main_box_value;
+    VALUE box_value = rb_class_new_instance(0, NULL, rb_cBox);
+
+    VM_ASSERT(BOX_OBJ_P(box_value));
+
+    box = rb_get_box_t(box_value);
+    box->box_object = box_value;
+    box->is_root = root;
+    box->is_user = user;
+    box->is_optional = optional;
+    return box_value;
+}
+
+void
+rb_initialize_mandatory_boxes(void)
+{
+    VALUE root_box_value, main_box_value;
     rb_vm_t *vm = GET_VM();
 
     VM_ASSERT(rb_box_available());
@@ -928,19 +981,18 @@ rb_initialize_main_box(void)
         box_experimental_warned = 1;
     }
 
-    main_box_value = rb_class_new_instance(0, NULL, rb_cBox);
-    VM_ASSERT(BOX_OBJ_P(main_box_value));
-    box = rb_get_box_t(main_box_value);
-    box->box_object = main_box_value;
-    box->is_user = true;
-    box->is_optional = false;
+    root_box_value = box_value_initialize(true, false, false);
+    main_box_value = box_value_initialize(false, true, false);
 
+    rb_const_set(rb_cBox, rb_intern("ROOT"), root_box_value);
     rb_const_set(rb_cBox, rb_intern("MAIN"), main_box_value);
 
-    vm->main_box = main_box = box;
+    vm->root_box = root_box = rb_get_box_t(root_box_value);
+    vm->main_box = main_box = rb_get_box_t(main_box_value);
 
     // create the writable classext of ::Object explicitly to finalize the set of visible top-level constants
-    RCLASS_EXT_WRITABLE_IN_BOX(rb_cObject, box);
+    RCLASS_EXT_WRITABLE_IN_BOX(rb_cObject, root_box);
+    RCLASS_EXT_WRITABLE_IN_BOX(rb_cObject, main_box);
 }
 
 static VALUE
@@ -949,12 +1001,15 @@ rb_box_inspect(VALUE obj)
     rb_box_t *box;
     VALUE r;
     if (obj == Qfalse) {
-        r = rb_str_new_cstr("#<Ruby::Box:root>");
+        r = rb_str_new_cstr("#<Ruby::Box:master>");
         return r;
     }
     box = rb_get_box_t(obj);
     r = rb_str_new_cstr("#<Ruby::Box:");
     rb_str_concat(r, rb_funcall(LONG2NUM(box->box_id), rb_intern("to_s"), 0));
+    if (BOX_MASTER_P(box)) {
+        rb_str_cat_cstr(r, ",master");
+    }
     if (BOX_ROOT_P(box)) {
         rb_str_cat_cstr(r, ",root");
     }
@@ -986,9 +1041,9 @@ box_define_loader_method(const char *name)
 }
 
 void
-Init_root_box(void)
+Init_master_box(void)
 {
-    root_box->loading_table = st_init_strtable();
+    master_box->loading_table = st_init_strtable();
 }
 
 void
@@ -1005,6 +1060,13 @@ Init_enable_box(void)
 
 /* :nodoc: */
 static VALUE
+rb_box_s_master(VALUE recv)
+{
+    return master_box->box_object;
+}
+
+/* :nodoc: */
+static VALUE
 rb_box_s_root(VALUE recv)
 {
     return root_box->box_object;
@@ -1015,6 +1077,14 @@ static VALUE
 rb_box_s_main(VALUE recv)
 {
     return main_box->box_object;
+}
+
+/* :nodoc: */
+static VALUE
+rb_box_master_p(VALUE box_value)
+{
+    const rb_box_t *box = (const rb_box_t *)rb_get_box_t(box_value);
+    return RBOOL(BOX_MASTER_P(box));
 }
 
 /* :nodoc: */
@@ -1151,7 +1221,7 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
     box = RCLASSEXT_BOX(ext);
     snprintf(buf, 2048, "Prime classext box(%ld,%s), readable(%s), writable(%s)\n",
              box->box_id,
-             BOX_ROOT_P(box) ? "root" : (BOX_MAIN_P(box) ? "main" : "optional"),
+             BOX_MASTER_P(box) ? "master" : (BOX_ROOT_P(box) ? "root" : (BOX_MAIN_P(box) ? "main" : "optional")),
              RCLASS_PRIME_CLASSEXT_READABLE_P(klass) ? "t" : "f",
              RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass) ? "t" : "f");
     rb_str_cat_cstr(res, buf);
@@ -1193,7 +1263,7 @@ Init_Box(void)
     rb_cBoxEntry = rb_define_class_under(rb_cBox, "Entry", rb_cObject);
     rb_define_alloc_func(rb_cBoxEntry, rb_box_entry_alloc);
 
-    initialize_root_box();
+    initialize_master_box();
 
     /* :nodoc: */
     rb_mBoxLoader = rb_define_module_under(rb_cBox, "Loader");
@@ -1204,8 +1274,10 @@ Init_Box(void)
     if (rb_box_available()) {
         rb_include_module(rb_cObject, rb_mBoxLoader);
 
+        rb_define_singleton_method(rb_cBox, "master", rb_box_s_master, 0);
         rb_define_singleton_method(rb_cBox, "root", rb_box_s_root, 0);
         rb_define_singleton_method(rb_cBox, "main", rb_box_s_main, 0);
+        rb_define_method(rb_cBox, "master?", rb_box_master_p, 0);
         rb_define_method(rb_cBox, "root?", rb_box_root_p, 0);
         rb_define_method(rb_cBox, "main?", rb_box_main_p, 0);
 

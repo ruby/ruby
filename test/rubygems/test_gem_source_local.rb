@@ -63,6 +63,30 @@ class TestGemSourceLocal < Gem::TestCase
     assert_equal "a-2.a", @sl.find_gem("a", req, true).full_name
   end
 
+  def test_find_all_gems
+    _, a2_gem = util_gem "a", "2"
+    FileUtils.mv a2_gem, @tempdir
+
+    results = @sl.find_all_gems("a")
+    assert_equal ["a-1", "a-2"], results.map(&:full_name).sort
+  end
+
+  def test_find_all_gems_excludes_prerelease_by_default
+    results = @sl.find_all_gems("a")
+    assert_equal ["a-1"], results.map(&:full_name)
+  end
+
+  def test_find_all_gems_includes_prerelease_when_requested
+    results = @sl.find_all_gems("a", Gem::Requirement.create(">= 0"), true)
+    assert_equal ["a-1", "a-2.a"], results.map(&:full_name).sort
+  end
+
+  def test_find_all_gems_includes_prerelease_when_requirement_is_prerelease
+    req = Gem::Requirement.create("= 2.a")
+    results = @sl.find_all_gems("a", req)
+    assert_equal ["a-2.a"], results.map(&:full_name)
+  end
+
   def test_fetch_spec
     s = @sl.fetch_spec @a.name_tuple
     assert_equal s, @a

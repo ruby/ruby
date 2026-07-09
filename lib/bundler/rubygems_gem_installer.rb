@@ -4,6 +4,11 @@ require "rubygems/installer"
 
 module Bundler
   class RubyGemsGemInstaller < Gem::Installer
+    # Cap how many jobserver slots a single gem's `make` may grab so that one
+    # gem with many recipes doesn't starve the others sharing the pool. Beyond
+    # a handful of jobs the extra parallelism rarely pays off in practice.
+    MAX_JOBS_PER_GEM = 3
+
     def check_executable_overwrite(filename)
       # Bundler needs to install gems regardless of binstub overwriting
     end
@@ -20,14 +25,18 @@ module Bundler
       strict_rm_rf spec.extension_dir
 
       SharedHelpers.filesystem_access(gem_dir, :create) do
-        FileUtils.mkdir_p gem_dir, mode: 0o755
+        FileUtils.mkdir_p gem_dir
       end
 
       SharedHelpers.filesystem_access(gem_dir, :write) do
         extract_files
       end
 
-      build_extensions if spec.extensions.any?
+      if options[:build_extension] == false
+        warn_skipped_extensions
+      elsif spec.extensions.any?
+        build_extensions
+      end
       write_build_info_file
       run_post_build_hooks
 
@@ -35,7 +44,12 @@ module Bundler
         generate_bin
       end
 
-      generate_plugins
+      if options[:install_plugin] == false
+        remove_stale_plugins
+        warn_skipped_plugins
+      else
+        generate_plugins
+      end
 
       write_spec
 
@@ -80,6 +94,20 @@ module Bundler
       end
     end
 
+    def warn_skipped_extensions
+      return if spec.extensions.empty?
+
+      Bundler.ui.warn "#{spec.full_name} contains native extensions that were not built.\n" \
+                      "To build extensions, unset no_build_extension and run `bundle pristine #{spec.name}`."
+    end
+
+    def warn_skipped_plugins
+      return if spec.plugins.empty?
+
+      Bundler.ui.warn "#{spec.full_name} contains plugins that were not installed.\n" \
+                      "To install plugins, unset no_install_plugin and run `bundle pristine #{spec.name}`."
+    end
+
     if Bundler.rubygems.provides?("< 3.5.19")
       def generate_bin_script(filename, bindir)
         bin_script_path = File.join bindir, formatted_program_filename(filename)
@@ -101,10 +129,18 @@ module Bundler
     end
 
     def build_jobs
-      Bundler.settings[:jobs] || super
+      @jobserver_read_io&.read_nonblock(MAX_JOBS_PER_GEM, @jobserver_tokens)
+      acquired_jobs = @jobserver_tokens.empty? ? nil : @jobserver_tokens.size
+
+      acquired_jobs || Bundler.settings[:jobs] || super
+    rescue IO::WaitReadable, EOFError
+      1
     end
 
     def build_extensions
+      @jobserver_tokens = +""
+      @jobserver_read_io, @jobserver_write_io = connect_to_jobserver
+
       extension_cache_path = options[:bundler_extension_cache_path]
       extension_dir = spec.extension_dir
       unless extension_cache_path && extension_dir
@@ -128,6 +164,11 @@ module Bundler
           FileUtils.cp_r extension_dir, extension_cache_path
         end
       end
+    ensure
+      unless @jobserver_tokens.empty?
+        @jobserver_write_io.write(@jobserver_tokens)
+        @jobserver_write_io.flush
+      end
     end
 
     def spec
@@ -143,6 +184,21 @@ module Bundler
     end
 
     private
+
+    def connect_to_jobserver
+      return unless ENV["MAKEFLAGS"]
+      # We append our own --jobserver-auth, so read the last one. Otherwise a
+      # parent jobserver's descriptors (e.g. `bundle install` run under
+      # `make -j`) would be picked up instead of the pool ParallelInstaller created.
+      read_fd, write_fd = ENV["MAKEFLAGS"].scan(/--jobserver-auth=(\d+),(\d+)/).last
+
+      return unless read_fd && write_fd
+
+      # Pass explicit modes. On POSIX, IO.new detects the descriptor's access
+      # mode, but on Windows it can't, so the write end would default to read
+      # mode and raise "IOError: not opened for writing" when releasing slots.
+      [IO.new(read_fd.to_i, "r", autoclose: false), IO.new(write_fd.to_i, "w", autoclose: false)]
+    end
 
     def prepare_extension_build(extension_dir)
       SharedHelpers.filesystem_access(extension_dir, :create) do

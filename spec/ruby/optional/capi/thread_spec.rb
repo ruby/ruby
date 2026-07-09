@@ -50,7 +50,7 @@ describe "C-API Thread function" do
     end
 
     it "returns nil if the value has not been set" do
-      @t.rb_thread_local_aref(Thread.current, :thread_capi_specs_undefined).should be_nil
+      @t.rb_thread_local_aref(Thread.current, :thread_capi_specs_undefined).should == nil
     end
   end
 
@@ -72,7 +72,7 @@ describe "C-API Thread function" do
       obj = Object.new
       proc = -> x { ScratchPad.record x }
       thr = @t.rb_thread_create(proc, obj)
-      thr.should be_kind_of(Thread)
+      thr.should.is_a?(Thread)
       thr.join
       ScratchPad.recorded.should == obj
     end
@@ -83,18 +83,18 @@ describe "C-API Thread function" do
         raise "my error"
       }
       thr = @t.rb_thread_create(prc, nil)
-      thr.should be_kind_of(Thread)
+      thr.should.is_a?(Thread)
 
       -> {
         thr.join
-      }.should raise_error(RuntimeError, "my error")
+      }.should.raise(RuntimeError, "my error")
     end
 
     it "sets the thread's group" do
       thr = @t.rb_thread_create(-> x { }, nil)
       begin
         thread_group = thr.group
-        thread_group.should be_an_instance_of(ThreadGroup)
+        thread_group.should.instance_of?(ThreadGroup)
       ensure
         thr.join
       end
@@ -103,11 +103,11 @@ describe "C-API Thread function" do
 
   describe "ruby_native_thread_p" do
     it "returns non-zero for a ruby thread" do
-      @t.ruby_native_thread_p.should be_true
+      @t.ruby_native_thread_p.should == true
     end
 
     it "returns zero for a non ruby thread" do
-      @t.ruby_native_thread_p_new_thread.should be_false
+      @t.ruby_native_thread_p_new_thread.should == false
     end
   end
 
@@ -128,7 +128,7 @@ describe "C-API Thread function" do
       thr.wakeup
 
       # Make sure it stopped and we got a proper value
-      thr.value.should be_true
+      thr.value.should == true
     end
 
     platform_is_not :windows do
@@ -159,7 +159,7 @@ describe "C-API Thread function" do
 
         going_to_block = true
         # Make sure it stopped and we got a proper value
-        @t.rb_thread_call_without_gvl.should be_true
+        @t.rb_thread_call_without_gvl.should == true
 
         interrupter.join
       end
@@ -181,14 +181,14 @@ describe "C-API Thread function" do
       thr.wakeup
 
       # Make sure it stopped and we got a proper value
-      thr.value.should be_true
+      thr.value.should == true
     end
   end
 
   ruby_version_is "4.0" do
     describe "ruby_thread_has_gvl_p" do
       it "returns true if the current thread has the GVL" do
-        @t.ruby_thread_has_gvl_p.should be_true
+        @t.ruby_thread_has_gvl_p.should == true
       end
     end
   end

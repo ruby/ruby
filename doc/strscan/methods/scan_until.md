@@ -1,6 +1,3 @@
-call-seq:
-  scan_until(pattern) -> substring or nil
-
 Attempts to [match][17] the given `pattern`
 anywhere (at any [position][2]) in the [target substring][3].
 

@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/length'
 
 describe "Symbol#size" do
-  it_behaves_like :symbol_length, :size
+  it "is an alias of Symbol#length" do
+    Symbol.instance_method(:size).should == Symbol.instance_method(:length)
+  end
 end

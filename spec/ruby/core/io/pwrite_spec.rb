@@ -43,25 +43,25 @@ describe "IO#pwrite" do
 
   it "raises IOError when file is not open in write mode" do
     File.open(@fname, "r") do |file|
-      -> { file.pwrite("foo", 1) }.should raise_error(IOError, "not opened for writing")
+      -> { file.pwrite("foo", 1) }.should.raise(IOError, "not opened for writing")
     end
   end
 
   it "raises IOError when file is closed" do
     file = File.open(@fname, "w+")
     file.close
-    -> { file.pwrite("foo", 1) }.should raise_error(IOError, "closed stream")
+    -> { file.pwrite("foo", 1) }.should.raise(IOError, "closed stream")
   end
 
   it "raises a NoMethodError if object does not respond to #to_s" do
     -> {
       @file.pwrite(BasicObject.new, 0)
-    }.should raise_error(NoMethodError, /undefined method [`']to_s'/)
+    }.should.raise(NoMethodError, /undefined method [`']to_s'/)
   end
 
   it "raises a TypeError if the offset cannot be converted to an Integer" do
     -> {
       @file.pwrite("foo", Object.new)
-    }.should raise_error(TypeError, "no implicit conversion of Object into Integer")
+    }.should.raise(TypeError, "no implicit conversion of Object into Integer")
   end
 end

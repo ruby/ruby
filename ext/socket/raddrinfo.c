@@ -601,13 +601,9 @@ start:
     if (need_free) free_getaddrinfo_arg(arg);
 
     if (timedout) {
-        if (arg->ai) {
-            rsock_raise_user_specified_timeout(arg->ai, Qnil, Qnil);
-        } else {
-            VALUE host = rb_str_new_cstr(hostp);
-            VALUE port = rb_str_new_cstr(portp);
-            rsock_raise_user_specified_timeout(NULL, host, port);
-        }
+        VALUE host = rb_str_new_cstr(hostp);
+        VALUE port = rb_str_new_cstr(portp);
+        rsock_raise_user_specified_timeout(NULL, host, port);
     }
 
     // If the current thread is interrupted by asynchronous exception, the following raises the exception.
@@ -1295,7 +1291,7 @@ addrinfo_memsize(const void *ptr)
 static const rb_data_type_t addrinfo_type = {
     "socket/addrinfo",
     {addrinfo_mark, addrinfo_free, addrinfo_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE

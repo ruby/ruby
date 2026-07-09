@@ -18,7 +18,7 @@ describe "ObjectSpace.memsize_of" do
 
   it "returns a positive Integer for an Object" do
     obj = Object.new
-    ObjectSpace.memsize_of(obj).should be_kind_of(Integer)
+    ObjectSpace.memsize_of(obj).should.is_a?(Integer)
     ObjectSpace.memsize_of(obj).should > 0
   end
 

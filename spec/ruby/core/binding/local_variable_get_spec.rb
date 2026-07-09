@@ -13,7 +13,7 @@ describe "Binding#local_variable_get" do
 
     -> {
       bind.local_variable_get(:no_such_variable)
-    }.should raise_error(NameError)
+    }.should.raise(NameError)
   end
 
   it "reads variables added later to the binding" do
@@ -21,7 +21,7 @@ describe "Binding#local_variable_get" do
 
     -> {
       bind.local_variable_get(:a)
-    }.should raise_error(NameError)
+    }.should.raise(NameError)
 
     bind.local_variable_set(:a, 42)
 
@@ -45,12 +45,18 @@ describe "Binding#local_variable_get" do
 
   it "raises a NameError on global access" do
     bind = binding
-    -> { bind.local_variable_get(:$0) }.should raise_error(NameError)
+    -> { bind.local_variable_get(:$0) }.should.raise(NameError)
   end
 
   it "raises a NameError on special variable access" do
     bind = binding
-    -> { bind.local_variable_get(:$~) }.should raise_error(NameError)
-    -> { bind.local_variable_get(:$_) }.should raise_error(NameError)
+    -> { bind.local_variable_get(:$~) }.should.raise(NameError)
+    -> { bind.local_variable_get(:$_) }.should.raise(NameError)
+  end
+
+  it 'raises a TypeError when given non-String/Symbol as the variable name' do
+    -> {
+      binding.local_variable_get(1)
+    }.should.raise(TypeError, '1 is not a symbol nor a string')
   end
 end

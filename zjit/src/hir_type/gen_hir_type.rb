@@ -75,8 +75,8 @@ $inexact_c_names = {
 
 # Define a new type that can be subclassed (most of them).
 # If c_name is given, mark the rb_cXYZ object as equivalent to this exact type.
-def base_type name, c_name: nil
-  type = $object.subtype name
+def base_type name, base: $object, c_name: nil
+  type = base.subtype name
   exact = type.subtype(name+"Exact")
   subclass = type.subtype(name+"Subclass")
   if c_name
@@ -89,7 +89,7 @@ def base_type name, c_name: nil
   [type, exact]
 end
 
-# Define a new type that cannot be subclassed.
+# Define a new type that has no subclasses and cannot be subclassed.
 # If c_name is given, mark the rb_cXYZ object as equivalent to this type.
 def final_type name, base: $object, c_name: nil
   if c_name
@@ -109,7 +109,9 @@ base_type "Range", c_name: "rb_cRange"
 base_type "Set", c_name: "rb_cSet"
 base_type "Regexp", c_name: "rb_cRegexp"
 module_class, _ = base_type "Module", c_name: "rb_cModule"
-class_ = final_type "Class", base: module_class, c_name: "rb_cClass"
+# Class cannot be subclassed by doing `class Sub < Class`,
+# but every metaclass is a subclass of `Class`. It's not final.
+base_type "Class", base: module_class, c_name: "rb_cClass"
 
 numeric, _ = base_type "Numeric", c_name: "rb_cNumeric"
 
@@ -148,6 +150,7 @@ unsigned = cvalue_int.subtype "CUnsigned"
   unsigned.subtype "CUInt#{width}"
 }
 unsigned.subtype "CShape"
+unsigned.subtype "CAttrIndex"
 
 # Assign individual bits to type leaves and union bit patterns to nodes with subtypes
 num_bits = 0
@@ -195,6 +198,8 @@ $bits["Truthy"] = ["BasicObject & !Falsy"]
 $numeric_bits["Truthy"] = $numeric_bits["BasicObject"] & ~$numeric_bits["Falsy"]
 $bits["NotNil"] = ["BasicObject & !NilClass"]
 $numeric_bits["NotNil"] = $numeric_bits["BasicObject"] & ~$numeric_bits["NilClass"]
+$bits["NotString"] = ["BasicObject & !String"]
+$numeric_bits["NotString"] = $numeric_bits["BasicObject"] & ~$numeric_bits["String"]
 
 # ===== Finished generating the DAG; write Rust code =====
 

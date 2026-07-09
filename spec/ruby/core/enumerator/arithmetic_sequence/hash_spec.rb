@@ -2,7 +2,7 @@ require_relative '../../../spec_helper'
 
 describe "Enumerator::ArithmeticSequence#hash" do
   it "is based on begin, end, step and exclude_end?" do
-    1.step(10).hash.should be_an_instance_of(Integer)
+    1.step(10).hash.should.instance_of?(Integer)
 
     1.step(10).hash.should == 1.step(10).hash
     1.step(10, 5).hash.should == 1.step(10, 5).hash

@@ -10,6 +10,6 @@
  * we need to search for a character in a buffer that could be the trailing byte
  * of a multibyte character.
  */
-void * pm_memchr(const void *source, int character, size_t number, bool encoding_changed, const pm_encoding_t *encoding);
+const void * pm_memchr(const void *source, int character, size_t number, bool encoding_changed, const pm_encoding_t *encoding);
 
 #endif

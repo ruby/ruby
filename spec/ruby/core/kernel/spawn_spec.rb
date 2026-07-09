@@ -6,7 +6,7 @@ require_relative 'fixtures/classes'
 # run here as it is redundant and takes too long for little gain.
 describe "Kernel#spawn" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:spawn)
+    Kernel.private_instance_methods(false).should.include?(:spawn)
   end
 
   it "executes the given command" do
@@ -17,9 +17,7 @@ describe "Kernel#spawn" do
 end
 
 describe "Kernel.spawn" do
-  it "executes the given command" do
-    -> {
-      Process.wait Kernel.spawn("echo spawn")
-    }.should output_to_fd("spawn\n")
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:spawn)
   end
 end

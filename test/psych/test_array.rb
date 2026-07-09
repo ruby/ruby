@@ -52,6 +52,18 @@ module Psych
       assert_equal X, x.class
     end
 
+    class NotAnArray
+    end
+
+    def test_seq_tag_rejects_non_array_class
+      assert_raise(ArgumentError) do
+        Psych.unsafe_load "--- !seq:#{NotAnArray} []\n"
+      end
+      assert_raise(ArgumentError) do
+        Psych.unsafe_load "--- !ruby/array:#{NotAnArray} []\n"
+      end
+    end
+
     def test_self_referential
       @list << @list
       assert_cycle(@list)

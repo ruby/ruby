@@ -4,7 +4,7 @@ class Object
   def unpack_format(count=nil, repeat=nil)
     format = "#{instance_variable_get(:@method)}#{count}"
     format *= repeat if repeat
-    format.dup # because it may then become tainted
+    format
   end
 end
 

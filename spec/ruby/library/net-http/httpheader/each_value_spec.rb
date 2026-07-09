@@ -23,7 +23,7 @@ describe "Net::HTTPHeader#each_value" do
   describe "when passed no block" do
     it "returns an Enumerator" do
       enumerator = @headers.each_value
-      enumerator.should be_an_instance_of(Enumerator)
+      enumerator.should.instance_of?(Enumerator)
 
       res = []
       enumerator.each do |key|

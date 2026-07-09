@@ -57,15 +57,15 @@ describe "File.extname" do
   end
 
   it "raises a TypeError if not passed a String type" do
-    -> { File.extname(nil)   }.should raise_error(TypeError)
-    -> { File.extname(0)     }.should raise_error(TypeError)
-    -> { File.extname(true)  }.should raise_error(TypeError)
-    -> { File.extname(false) }.should raise_error(TypeError)
+    -> { File.extname(nil)   }.should.raise(TypeError)
+    -> { File.extname(0)     }.should.raise(TypeError)
+    -> { File.extname(true)  }.should.raise(TypeError)
+    -> { File.extname(false) }.should.raise(TypeError)
   end
 
   it "raises an ArgumentError if not passed one argument" do
-    -> { File.extname }.should raise_error(ArgumentError)
-    -> { File.extname("foo.bar", "foo.baz") }.should raise_error(ArgumentError)
+    -> { File.extname }.should.raise(ArgumentError)
+    -> { File.extname("foo.bar", "foo.baz") }.should.raise(ArgumentError)
   end
 
 

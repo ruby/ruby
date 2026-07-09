@@ -19,6 +19,12 @@ printf_test_q(VALUE self, VALUE obj)
     return rb_enc_sprintf(rb_usascii_encoding(), "[% "PRIsVALUE"]", obj);
 }
 
+static VALUE
+printf_test_value(VALUE self, VALUE obj)
+{
+    return rb_enc_sprintf(rb_usascii_encoding(), "%"PRIsVALUE, obj);
+}
+
 static char *
 uint_to_str(char *p, char *e, unsigned int x)
 {
@@ -91,6 +97,19 @@ printf_test_call(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
+printf_test_enc_sprintf(VALUE self, VALUE enc)
+{
+    return rb_enc_sprintf(rb_to_encoding(enc), "%s", "x");
+}
+
+static VALUE
+printf_test_catf(VALUE self, VALUE str)
+{
+    StringValue(str);
+    return rb_str_catf(str, "%s", "x");
+}
+
+static VALUE
 snprintf_count(VALUE self, VALUE str)
 {
     int n = ruby_snprintf(NULL, 0, "%s", StringValueCStr(str));
@@ -104,6 +123,9 @@ Init_printf(void)
     rb_define_singleton_method(m, "s", printf_test_s, 1);
     rb_define_singleton_method(m, "v", printf_test_v, 1);
     rb_define_singleton_method(m, "q", printf_test_q, 1);
+    rb_define_singleton_method(m, "value", printf_test_value, 1);
     rb_define_singleton_method(m, "call", printf_test_call, -1);
+    rb_define_singleton_method(m, "enc_sprintf", printf_test_enc_sprintf, 1);
+    rb_define_singleton_method(m, "catf", printf_test_catf, 1);
     rb_define_singleton_method(m, "sncount", snprintf_count, 1);
 }

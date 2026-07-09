@@ -142,11 +142,9 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     VALUE arg, pass;
     int type;
 
-    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
-    if (pkey)
-        rb_raise(rb_eTypeError, "pkey already initialized");
-
     rb_scan_args(argc, argv, "02", &arg, &pass);
+    ossl_want_uninitialized(self, &ossl_evp_pkey_type);
+
     if (NIL_P(arg)) {
 #ifdef OSSL_HAVE_IMMUTABLE_PKEY
         rb_raise(rb_eArgError, "OpenSSL::PKey::EC.new cannot be called " \
@@ -199,11 +197,10 @@ static VALUE
 ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 {
     EVP_PKEY *pkey;
-    EC_KEY *ec, *ec_new;
+    const EC_KEY *ec;
+    EC_KEY *ec_new;
 
-    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
-    if (pkey)
-        rb_raise(rb_eTypeError, "pkey already initialized");
+    ossl_want_uninitialized(self, &ossl_evp_pkey_type);
     GetEC(other, ec);
 
     ec_new = EC_KEY_dup(ec);
@@ -231,7 +228,7 @@ ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 static VALUE
 ossl_ec_key_get_group(VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
     const EC_GROUP *group;
 
     GetEC(self, ec);
@@ -276,7 +273,7 @@ ossl_ec_key_set_group(VALUE self, VALUE group_v)
  */
 static VALUE ossl_ec_key_get_private_key(VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
     const BIGNUM *bn;
 
     GetEC(self, ec);
@@ -327,7 +324,7 @@ static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
  */
 static VALUE ossl_ec_key_get_public_key(VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
     const EC_POINT *point;
 
     GetEC(self, ec);
@@ -379,7 +376,7 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
  */
 static VALUE ossl_ec_key_is_public(VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
 
     GetEC(self, ec);
 
@@ -395,7 +392,7 @@ static VALUE ossl_ec_key_is_public(VALUE self)
  */
 static VALUE ossl_ec_key_is_private(VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
 
     GetEC(self, ec);
 
@@ -463,7 +460,7 @@ static VALUE ossl_ec_key_is_private(VALUE self)
 static VALUE
 ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
 
     GetEC(self, ec);
     if (EC_KEY_get0_public_key(ec) == NULL)
@@ -491,7 +488,7 @@ ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_ec_key_to_der(VALUE self)
 {
-    OSSL_3_const EC_KEY *ec;
+    const EC_KEY *ec;
 
     GetEC(self, ec);
     if (EC_KEY_get0_public_key(ec) == NULL)
@@ -566,7 +563,7 @@ static VALUE ossl_ec_key_check_key(VALUE self)
 
     EVP_PKEY_CTX_free(pctx);
 #else
-    EC_KEY *ec;
+    const EC_KEY *ec;
 
     GetEC(self, ec);
     if (EC_KEY_check_key(ec) != 1)
@@ -631,11 +628,10 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
     VALUE arg1, arg2, arg3, arg4;
     EC_GROUP *group;
 
-    TypedData_Get_Struct(self, EC_GROUP, &ossl_ec_group_type, group);
-    if (group)
-        ossl_raise(rb_eRuntimeError, "EC_GROUP is already initialized");
+    rb_scan_args(argc, argv, "13", &arg1, &arg2, &arg3, &arg4);
+    ossl_want_uninitialized(self, &ossl_ec_group_type);
 
-    switch (rb_scan_args(argc, argv, "13", &arg1, &arg2, &arg3, &arg4)) {
+    switch (argc) {
       case 1:
         if (rb_obj_is_kind_of(arg1, cEC_GROUP)) {
             const EC_GROUP *arg1_group;
@@ -717,9 +713,7 @@ ossl_ec_group_initialize_copy(VALUE self, VALUE other)
 {
     EC_GROUP *group, *group_new;
 
-    TypedData_Get_Struct(self, EC_GROUP, &ossl_ec_group_type, group_new);
-    if (group_new)
-        ossl_raise(eEC_GROUP, "EC::Group already initialized");
+    ossl_want_uninitialized(self, &ossl_ec_group_type);
     GetECGroup(other, group);
 
     group_new = EC_GROUP_dup(group);
@@ -1219,11 +1213,9 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
     VALUE group_v, arg2;
     const EC_GROUP *group;
 
-    TypedData_Get_Struct(self, EC_POINT, &ossl_ec_point_type, point);
-    if (point)
-        rb_raise(eEC_POINT, "EC_POINT already initialized");
-
     rb_scan_args(argc, argv, "11", &group_v, &arg2);
+    ossl_want_uninitialized(self, &ossl_ec_point_type);
+
     if (rb_obj_is_kind_of(group_v, cEC_POINT)) {
         if (argc != 1)
             rb_raise(rb_eArgError, "invalid second argument");
@@ -1270,9 +1262,7 @@ ossl_ec_point_initialize_copy(VALUE self, VALUE other)
     EC_GROUP *group;
     VALUE group_v;
 
-    TypedData_Get_Struct(self, EC_POINT, &ossl_ec_point_type, point_new);
-    if (point_new)
-        ossl_raise(eEC_POINT, "EC::Point already initialized");
+    ossl_want_uninitialized(self, &ossl_ec_point_type);
     GetECPoint(other, point);
 
     group_v = rb_obj_dup(rb_attr_get(other, id_i_group));

@@ -26,7 +26,7 @@
 } while (0)
 
 static inline int
-RSA_HAS_PRIVATE(OSSL_3_const RSA *rsa)
+RSA_HAS_PRIVATE(const RSA *rsa)
 {
     const BIGNUM *e, *d;
 
@@ -35,7 +35,7 @@ RSA_HAS_PRIVATE(OSSL_3_const RSA *rsa)
 }
 
 static inline int
-RSA_PRIVATE(VALUE obj, OSSL_3_const RSA *rsa)
+RSA_PRIVATE(VALUE obj, const RSA *rsa)
 {
     return RSA_HAS_PRIVATE(rsa) || OSSL_PKEY_IS_PRIVATE(obj);
 }
@@ -84,12 +84,10 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     VALUE arg, pass;
     int type;
 
-    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
-    if (pkey)
-        rb_raise(rb_eTypeError, "pkey already initialized");
+    rb_scan_args(argc, argv, "02", &arg, &pass);
+    ossl_want_uninitialized(self, &ossl_evp_pkey_type);
 
     /* The RSA.new(size, generator) form is handled by lib/openssl/pkey.rb */
-    rb_scan_args(argc, argv, "02", &arg, &pass);
     if (argc == 0) {
 #ifdef OSSL_HAVE_IMMUTABLE_PKEY
         rb_raise(rb_eArgError, "OpenSSL::PKey::RSA.new cannot be called " \
@@ -148,11 +146,10 @@ static VALUE
 ossl_rsa_initialize_copy(VALUE self, VALUE other)
 {
     EVP_PKEY *pkey;
-    RSA *rsa, *rsa_new;
+    const RSA *rsa;
+    RSA *rsa_new;
 
-    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
-    if (pkey)
-        rb_raise(rb_eTypeError, "pkey already initialized");
+    ossl_want_uninitialized(self, &ossl_evp_pkey_type);
     GetRSA(other, rsa);
 
     rsa_new = (RSA *)ASN1_dup((i2d_of_void *)i2d_RSAPrivateKey,
@@ -182,7 +179,7 @@ ossl_rsa_initialize_copy(VALUE self, VALUE other)
 static VALUE
 ossl_rsa_is_public(VALUE self)
 {
-    OSSL_3_const RSA *rsa;
+    const RSA *rsa;
 
     GetRSA(self, rsa);
     /*
@@ -201,7 +198,7 @@ ossl_rsa_is_public(VALUE self)
 static VALUE
 ossl_rsa_is_private(VALUE self)
 {
-    OSSL_3_const RSA *rsa;
+    const RSA *rsa;
 
     GetRSA(self, rsa);
 
@@ -211,7 +208,7 @@ ossl_rsa_is_private(VALUE self)
 static int
 can_export_rsaprivatekey(VALUE self)
 {
-    OSSL_3_const RSA *rsa;
+    const RSA *rsa;
     const BIGNUM *n, *e, *d, *p, *q, *dmp1, *dmq1, *iqmp;
 
     GetRSA(self, rsa);

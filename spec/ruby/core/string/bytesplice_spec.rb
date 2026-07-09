@@ -4,15 +4,15 @@ require_relative '../../spec_helper'
 
 describe "String#bytesplice" do
   it "raises IndexError when index is less than -bytesize" do
-    -> { "hello".bytesplice(-6, 0, "xxx") }.should raise_error(IndexError, "index -6 out of string")
+    -> { "hello".bytesplice(-6, 0, "xxx") }.should.raise(IndexError, "index -6 out of string")
   end
 
   it "raises IndexError when index is greater than bytesize" do
-    -> { "hello".bytesplice(6, 0, "xxx") }.should raise_error(IndexError, "index 6 out of string")
+    -> { "hello".bytesplice(6, 0, "xxx") }.should.raise(IndexError, "index 6 out of string")
   end
 
   it "raises IndexError for negative length" do
-    -> { "abc".bytesplice(0, -2, "") }.should raise_error(IndexError, "negative length -2")
+    -> { "abc".bytesplice(0, -2, "") }.should.raise(IndexError, "negative length -2")
   end
 
   it "replaces with integer indices" do
@@ -24,7 +24,7 @@ describe "String#bytesplice" do
   end
 
   it "raises RangeError when range left boundary is less than -bytesize" do
-    -> { "hello".bytesplice(-6...-6, "xxx") }.should raise_error(RangeError, "-6...-6 out of range")
+    -> { "hello".bytesplice(-6...-6, "xxx") }.should.raise(RangeError, "-6...-6 out of range")
   end
 
   it "replaces with ranges" do
@@ -39,7 +39,7 @@ describe "String#bytesplice" do
   end
 
   it "raises TypeError when integer index is provided without length argument" do
-    -> { "hello".bytesplice(0, "xxx") }.should raise_error(TypeError, "wrong argument type Integer (expected Range)")
+    -> { "hello".bytesplice(0, "xxx") }.should.raise(TypeError, "wrong argument type Integer (expected Range)")
   end
 
   it "replaces on an empty string" do
@@ -54,19 +54,19 @@ describe "String#bytesplice" do
 
   it "raises when string is frozen" do
     s = "hello".freeze
-    -> { s.bytesplice(2, 1, "xxx") }.should raise_error(FrozenError, "can't modify frozen String: \"hello\"")
+    -> { s.bytesplice(2, 1, "xxx") }.should.raise(FrozenError, "can't modify frozen String: \"hello\"")
   end
 
   it "raises IndexError when str_index is less than -bytesize" do
-    -> { "hello".bytesplice(2, 1, "HELLO", -6, 0) }.should raise_error(IndexError, "index -6 out of string")
+    -> { "hello".bytesplice(2, 1, "HELLO", -6, 0) }.should.raise(IndexError, "index -6 out of string")
   end
 
   it "raises IndexError when str_index is greater than bytesize" do
-    -> { "hello".bytesplice(2, 1, "HELLO", 6, 0) }.should raise_error(IndexError, "index 6 out of string")
+    -> { "hello".bytesplice(2, 1, "HELLO", 6, 0) }.should.raise(IndexError, "index 6 out of string")
   end
 
   it "raises IndexError for negative str length" do
-    -> { "abc".bytesplice(0, 1, "", 0, -2) }.should raise_error(IndexError, "negative length -2")
+    -> { "abc".bytesplice(0, 1, "", 0, -2) }.should.raise(IndexError, "negative length -2")
   end
 
   it "replaces with integer str indices" do
@@ -78,7 +78,7 @@ describe "String#bytesplice" do
   end
 
   it "raises RangeError when str range left boundary is less than -bytesize" do
-    -> { "hello".bytesplice(0..1, "HELLO", -6...-6) }.should raise_error(RangeError, "-6...-6 out of range")
+    -> { "hello".bytesplice(0..1, "HELLO", -6...-6) }.should.raise(RangeError, "-6...-6 out of range")
   end
 
   it "replaces with str ranges" do
@@ -93,7 +93,7 @@ describe "String#bytesplice" do
   end
 
   it "raises ArgumentError when integer str index is provided without str length argument" do
-    -> { "hello".bytesplice(0, 1, "xxx", 0) }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 2, 3, or 5)")
+    -> { "hello".bytesplice(0, 1, "xxx", 0) }.should.raise(ArgumentError, "wrong number of arguments (given 4, expected 2, 3, or 5)")
   end
 
   it "replaces on an empty string with str index/length" do
@@ -109,7 +109,7 @@ describe "String#bytesplice" do
 
   it "raises when string is frozen and str index/length" do
     s = "hello".freeze
-    -> { s.bytesplice(2, 1, "xxx", 0, 1) }.should raise_error(FrozenError, "can't modify frozen String: \"hello\"")
+    -> { s.bytesplice(2, 1, "xxx", 0, 1) }.should.raise(FrozenError, "can't modify frozen String: \"hello\"")
   end
 
   it "replaces on an empty string with str range" do
@@ -125,22 +125,22 @@ describe "String#bytesplice" do
 
   it "raises when string is frozen and str range" do
     s = "hello".freeze
-    -> { s.bytesplice(2..2, "yzx", 0..1) }.should raise_error(FrozenError, "can't modify frozen String: \"hello\"")
+    -> { s.bytesplice(2..2, "yzx", 0..1) }.should.raise(FrozenError, "can't modify frozen String: \"hello\"")
   end
 end
 
 describe "String#bytesplice with multibyte characters" do
   it "raises IndexError when index is out of byte size boundary" do
-    -> { "こんにちは".bytesplice(-16, 0, "xxx") }.should raise_error(IndexError, "index -16 out of string")
+    -> { "こんにちは".bytesplice(-16, 0, "xxx") }.should.raise(IndexError, "index -16 out of string")
   end
 
   it "raises IndexError when index is not on a codepoint boundary" do
-    -> { "こんにちは".bytesplice(1, 0, "xxx") }.should raise_error(IndexError, "offset 1 does not land on character boundary")
+    -> { "こんにちは".bytesplice(1, 0, "xxx") }.should.raise(IndexError, "offset 1 does not land on character boundary")
   end
 
   it "raises IndexError when length is not matching the codepoint boundary" do
-    -> { "こんにちは".bytesplice(0, 1, "xxx") }.should raise_error(IndexError, "offset 1 does not land on character boundary")
-    -> { "こんにちは".bytesplice(0, 2, "xxx") }.should raise_error(IndexError, "offset 2 does not land on character boundary")
+    -> { "こんにちは".bytesplice(0, 1, "xxx") }.should.raise(IndexError, "offset 1 does not land on character boundary")
+    -> { "こんにちは".bytesplice(0, 2, "xxx") }.should.raise(IndexError, "offset 2 does not land on character boundary")
   end
 
   it "replaces with integer indices" do
@@ -169,14 +169,14 @@ describe "String#bytesplice with multibyte characters" do
   end
 
   it "raises when ranges not match codepoint boundaries" do
-    -> { "こんにちは".bytesplice(0..0, "x") }.should raise_error(IndexError, "offset 1 does not land on character boundary")
-    -> { "こんにちは".bytesplice(0..1, "x") }.should raise_error(IndexError, "offset 2 does not land on character boundary")
+    -> { "こんにちは".bytesplice(0..0, "x") }.should.raise(IndexError, "offset 1 does not land on character boundary")
+    -> { "こんにちは".bytesplice(0..1, "x") }.should.raise(IndexError, "offset 2 does not land on character boundary")
     # Begin is incorrect
-    -> { "こんにちは".bytesplice(-4..-1, "x") }.should raise_error(IndexError, "offset 11 does not land on character boundary")
-    -> { "こんにちは".bytesplice(-5..-1, "x") }.should raise_error(IndexError, "offset 10 does not land on character boundary")
+    -> { "こんにちは".bytesplice(-4..-1, "x") }.should.raise(IndexError, "offset 11 does not land on character boundary")
+    -> { "こんにちは".bytesplice(-5..-1, "x") }.should.raise(IndexError, "offset 10 does not land on character boundary")
     # End is incorrect
-    -> { "こんにちは".bytesplice(-3..-2, "x") }.should raise_error(IndexError, "offset 14 does not land on character boundary")
-    -> { "こんにちは".bytesplice(-3..-3, "x") }.should raise_error(IndexError, "offset 13 does not land on character boundary")
+    -> { "こんにちは".bytesplice(-3..-2, "x") }.should.raise(IndexError, "offset 14 does not land on character boundary")
+    -> { "こんにちは".bytesplice(-3..-3, "x") }.should.raise(IndexError, "offset 13 does not land on character boundary")
   end
 
   it "deals with a different encoded argument" do
@@ -200,16 +200,16 @@ describe "String#bytesplice with multibyte characters" do
   end
 
   it "raises IndexError when str_index is out of byte size boundary" do
-    -> { "こんにちは".bytesplice(3, 3, "こんにちは", -16, 0) }.should raise_error(IndexError, "index -16 out of string")
+    -> { "こんにちは".bytesplice(3, 3, "こんにちは", -16, 0) }.should.raise(IndexError, "index -16 out of string")
   end
 
   it "raises IndexError when str_index is not on a codepoint boundary" do
-    -> { "こんにちは".bytesplice(3, 3, "こんにちは", 1, 0) }.should raise_error(IndexError, "offset 1 does not land on character boundary")
+    -> { "こんにちは".bytesplice(3, 3, "こんにちは", 1, 0) }.should.raise(IndexError, "offset 1 does not land on character boundary")
   end
 
   it "raises IndexError when str_length is not matching the codepoint boundary" do
-    -> { "こんにちは".bytesplice(3, 3, "こんにちは", 0, 1) }.should raise_error(IndexError, "offset 1 does not land on character boundary")
-    -> { "こんにちは".bytesplice(3, 3, "こんにちは", 0, 2) }.should raise_error(IndexError, "offset 2 does not land on character boundary")
+    -> { "こんにちは".bytesplice(3, 3, "こんにちは", 0, 1) }.should.raise(IndexError, "offset 1 does not land on character boundary")
+    -> { "こんにちは".bytesplice(3, 3, "こんにちは", 0, 2) }.should.raise(IndexError, "offset 2 does not land on character boundary")
   end
 
   it "replaces with integer str indices" do
@@ -238,14 +238,14 @@ describe "String#bytesplice with multibyte characters" do
   end
 
   it "raises when ranges not match codepoint boundaries in str" do
-    -> { "こんにちは".bytesplice(3...3, "こ", 0..0) }.should raise_error(IndexError, "offset 1 does not land on character boundary")
-    -> { "こんにちは".bytesplice(3...3, "こ", 0..1) }.should raise_error(IndexError, "offset 2 does not land on character boundary")
+    -> { "こんにちは".bytesplice(3...3, "こ", 0..0) }.should.raise(IndexError, "offset 1 does not land on character boundary")
+    -> { "こんにちは".bytesplice(3...3, "こ", 0..1) }.should.raise(IndexError, "offset 2 does not land on character boundary")
     # Begin is incorrect
-    -> { "こんにちは".bytesplice(3...3, "こんにちは", -4..-1) }.should raise_error(IndexError, "offset 11 does not land on character boundary")
-    -> { "こんにちは".bytesplice(3...3, "こんにちは", -5..-1) }.should raise_error(IndexError, "offset 10 does not land on character boundary")
+    -> { "こんにちは".bytesplice(3...3, "こんにちは", -4..-1) }.should.raise(IndexError, "offset 11 does not land on character boundary")
+    -> { "こんにちは".bytesplice(3...3, "こんにちは", -5..-1) }.should.raise(IndexError, "offset 10 does not land on character boundary")
     # End is incorrect
-    -> { "こんにちは".bytesplice(3...3, "こんにちは", -3..-2) }.should raise_error(IndexError, "offset 14 does not land on character boundary")
-    -> { "こんにちは".bytesplice(3...3, "こんにちは", -3..-3) }.should raise_error(IndexError, "offset 13 does not land on character boundary")
+    -> { "こんにちは".bytesplice(3...3, "こんにちは", -3..-2) }.should.raise(IndexError, "offset 14 does not land on character boundary")
+    -> { "こんにちは".bytesplice(3...3, "こんにちは", -3..-3) }.should.raise(IndexError, "offset 13 does not land on character boundary")
   end
 
   it "deals with a different encoded argument with str index/length" do

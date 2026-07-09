@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/pos'
 
 describe "IO#tell" do
-  it_behaves_like :io_pos, :tell
+  it "is an alias of IO#pos" do
+    IO.instance_method(:tell).should == IO.instance_method(:pos)
+  end
 end
