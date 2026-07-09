@@ -93,6 +93,11 @@ impl CodeBlock {
         self.mem_block.borrow().mapped_region_size()
     }
 
+    /// Size of the region in bytes where writes could be attempted.
+    pub fn virtual_region_size(&self) -> usize {
+        self.mem_size
+    }
+
     /// Add an assembly comment if the feature is on.
     pub fn add_comment(&mut self, comment: &str) {
         if !self.keep_comments {
