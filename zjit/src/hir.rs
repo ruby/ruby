@@ -5392,10 +5392,21 @@ impl Function {
         let phi = &InsnId(5); // FIX: this shouldn't be just a random dummy value
         let predecessors = vec![];
         // TODO: Run the following in a loop once we've gotten all the phis
-        let phis: Vec<&InsnId> = vec![];
+        // TODO: Figure out if we want to do this mutably and in one pass with into_iter or take instead.
+        let phis: Vec<(BlockId, InsnId)> = self.reverse_post_order().iter().flat_map(|block_id| {
+            self.blocks[block_id.0].params().map(|&param| (*block_id, param))
+        }).collect();
         // FIX: The logic if this is wrong. We want to make sure `p` is not a self reference. Equality with phi likely does not do this
         let external_preds: Vec<&InsnId> = predecessors.iter().filter(|p| *p != phi).collect();
 
+        match external_preds.as_slice() {
+            [] => {} // Phi is unreachable
+            [first, rest @ ..] if rest.iter().any(|p| p != first) => {} // Phi is non-trivial
+            [value, ..] => { // Phi is trivial
+
+            }
+
+        }
         let new_phi = match external_preds.as_slice() {
             [] => {
                 // Phi is unreachable
