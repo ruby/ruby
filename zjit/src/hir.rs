@@ -992,7 +992,7 @@ pub enum Insn {
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
     /// Kernel#block_given? but without pushing a frame. Similar to [`Insn::Defined`] with
     /// `DEFINED_YIELD`
-    IsBlockGiven { lep: InsnId },
+    IsBlockGiven { block_handler: InsnId },
     /// Test the bit at index of val, a Fixnum.
     /// Return Qtrue if the bit is set, else Qfalse.
     FixnumBitCheck { val: InsnId, index: u8 },
@@ -1259,8 +1259,8 @@ macro_rules! for_each_operand_impl {
             | Insn::IncrCounter(_)
             | Insn::IncrCounterPtr { .. } => {}
 
-            Insn::IsBlockGiven { lep } => {
-                $visit_one!(*lep);
+            Insn::IsBlockGiven { block_handler } => {
+                $visit_one!(*block_handler);
             }
             Insn::IsBlockParamModified { flags } => {
                 $visit_one!(*flags);
@@ -1686,7 +1686,7 @@ impl Insn {
             Insn::Defined { .. } => effects::Any,
             Insn::GetConstant { .. } => effects::Any,
             Insn::GetConstantPath { .. } => effects::Any,
-            Insn::IsBlockGiven { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
+            Insn::IsBlockGiven { .. } => effects::Empty,
             Insn::FixnumBitCheck { .. } => effects::Empty,
             // IsA needs to read the class of the value and traverse the class hierarchy, which we model as reading from Memory.
             Insn::IsA { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
@@ -2200,7 +2200,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, "GetConstant {klass}, :{}, {allow_nil}", id.contents_lossy())
             }
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
-            Insn::IsBlockGiven { lep } => { write!(f, "IsBlockGiven {lep}") },
+            Insn::IsBlockGiven { block_handler } => { write!(f, "IsBlockGiven {block_handler}") },
             Insn::FixnumBitCheck {val, index} => { write!(f, "FixnumBitCheck {val}, {index}") },
             Insn::CCall { cfunc, recv, args, name, owner, return_type: _, elidable: _ } => {
                 let display_name = if *owner == Qnil { name.contents_lossy().to_string() } else { qualified_method_name(*owner, *name) };

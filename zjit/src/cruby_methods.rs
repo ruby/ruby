@@ -352,7 +352,8 @@ fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _re
         // Equivalent of GET_LEP() macro.
         let level = crate::cruby::get_lvar_level(call_site_iseq);
         let lep = fun.push_insn(block, hir::Insn::GetEP { level });
-        Some(fun.push_insn(block, hir::Insn::IsBlockGiven { lep }))
+        let block_handler = fun.load_field(block, lep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, types::RubyValue);
+        Some(fun.push_insn(block, hir::Insn::IsBlockGiven { block_handler }))
     } else {
         Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }))
     }
