@@ -4184,10 +4184,11 @@ impl Assembler {
         self.push_insn(Insn::IncrCounter { mem, value });
     }
 
-    pub fn jb(&mut self, target: Target) {
-        self.push_insn(Insn::Jb(target));
-    }
-
+    // NOTE: `jb`/`je`/`jnz`/... for CFG-building codegen live in
+    // `define_split_jumps!` (codegen.rs): they end the current block so a
+    // conditional branch never lands mid-block (see `validate_jump_positions`).
+    // `jg` below is a *raw* emit that does NOT split the block; it is only for
+    // backend lowering (post-CFG, e.g. arm64_split), never for codegen.
     #[allow(dead_code)]
     pub fn jg(&mut self, target: Target) {
         self.push_insn(Insn::Jg(target));

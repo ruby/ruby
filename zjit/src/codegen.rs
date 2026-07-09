@@ -171,6 +171,7 @@ macro_rules! define_split_jumps {
 }
 
 define_split_jumps! {
+    jb => Jb,
     jbe => Jbe,
     je => Je,
     jge => Jge,
@@ -2484,7 +2485,9 @@ fn gen_array_aref_checked(
     let length = asm.load_mem(length);
     // An unsigned comparison also treats negative indices as out of bounds.
     asm.cmp(unboxed_idx, length);
-    asm.jb(in_bounds_edge);
+    // The block ends in this explicit jb + jmp pair, so emit the raw Jb rather
+    // than the block-splitting jb.
+    asm.push_insn(lir::Insn::Jb(in_bounds_edge));
     asm.jmp(result_edge(Qnil.into()));
 
     asm.set_current_block(in_bounds_block);
