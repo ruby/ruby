@@ -1238,6 +1238,52 @@ fn cbz_cbnz(num_bits: u8, op: bool, offset: InstructionOffset, rt: u8) -> [u8; 4
           rt as u32).to_le_bytes()
 }
 
+// -- Scalar floating-point (double) support ------------------------------------
+//
+// ZJIT open-codes flonum arithmetic by moving a flonum's raw double bits into a
+// SIMD&FP register, doing the op, and moving the result bits back. Only a handful
+// of scalar-double instructions are needed. These take raw register numbers
+// (0-31) rather than A64Opnd because ZJIT has no FP register operand type; the
+// backend uses fixed scratch FP registers (D0/D1) for these short sequences.
+
+/// FMOV (general, X -> D): copy the 64 raw bits of GPR Xn into double reg Dd.
+pub fn fmov_gpr_to_reg(cb: &mut CodeBlock, dd: u8, xn: u8) {
+    let insn: u32 = 0x9E67_0000 | ((xn as u32) << 5) | (dd as u32);
+    cb.write_bytes(&insn.to_le_bytes());
+}
+
+/// FMOV (general, D -> X): copy the 64 raw bits of double reg Dn into GPR Xd.
+pub fn fmov_reg_to_gpr(cb: &mut CodeBlock, xd: u8, dn: u8) {
+    let insn: u32 = 0x9E66_0000 | ((dn as u32) << 5) | (xd as u32);
+    cb.write_bytes(&insn.to_le_bytes());
+}
+
+/// Encoder for scalar-double floating-point data-processing (2 source):
+/// `base | Dm<<16 | Dn<<5 | Dd`.
+fn fp_data_proc2(base: u32, dd: u8, dn: u8, dm: u8) -> [u8; 4] {
+    (base | ((dm as u32) << 16) | ((dn as u32) << 5) | (dd as u32)).to_le_bytes()
+}
+
+/// FADD (scalar, double): Dd = Dn + Dm.
+pub fn fadd(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
+    cb.write_bytes(&fp_data_proc2(0x1E60_2800, dd, dn, dm));
+}
+
+/// FSUB (scalar, double): Dd = Dn - Dm.
+pub fn fsub(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
+    cb.write_bytes(&fp_data_proc2(0x1E60_3800, dd, dn, dm));
+}
+
+/// FMUL (scalar, double): Dd = Dn * Dm.
+pub fn fmul(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
+    cb.write_bytes(&fp_data_proc2(0x1E60_0800, dd, dn, dm));
+}
+
+/// FDIV (scalar, double): Dd = Dn / Dm.
+pub fn fdiv(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
+    cb.write_bytes(&fp_data_proc2(0x1E60_1800, dd, dn, dm));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

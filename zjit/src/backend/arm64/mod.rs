@@ -772,6 +772,23 @@ impl Assembler {
                         asm.store(mem_out, SCRATCH0_OPND);
                     }
                 }
+                Insn::FloatArith { left, right, out, .. } => {
+                    // The emit sequence moves the operands into FP scratch
+                    // registers (D0/D1) and uses no GPR scratch, so loading
+                    // spilled operands into SCRATCH0/SCRATCH1 (X15/X17) can't
+                    // collide with it. `left` is read into D0 before `out` is
+                    // written, so left==out (both spilled to SCRATCH0) is safe.
+                    *left = split_memory_read(asm, *left, SCRATCH0_OPND);
+                    *right = split_memory_read(asm, *right, SCRATCH1_OPND);
+                    let mem_out = split_memory_write(out, SCRATCH0_OPND);
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND);
+                        asm.store(mem_out, SCRATCH0_OPND);
+                    }
+                }
                 Insn::Mul { left, right, out } => {
                     *left = split_memory_read(asm, *left, SCRATCH0_OPND);
                     *right = split_memory_read(asm, *right, SCRATCH1_OPND);
@@ -793,7 +810,8 @@ impl Assembler {
                     }
                 }
                 Insn::LShift { opnd, out, .. } |
-                Insn::RShift { opnd, out, .. } => {
+                Insn::RShift { opnd, out, .. } |
+                Insn::URShift { opnd, out, .. } => {
                     *opnd = split_memory_read(asm, *opnd, SCRATCH0_OPND);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
 
@@ -1217,6 +1235,25 @@ impl Assembler {
                     } else {
                         adds(cb, out, left.into(), right.into());
                     }
+                },
+                Insn::FloatArith { op, left, right, out } => {
+                    // After arm64_scratch_split, the operands and out are all
+                    // registers. Move the raw double bit patterns into FP scratch
+                    // registers D0/D1, perform the scalar-double op, and move the
+                    // result bits back. `left` is consumed into D0 before `out`
+                    // is written, so left==out is safe.
+                    let left: A64Opnd = left.into();
+                    let right: A64Opnd = right.into();
+                    let out: A64Opnd = out.into();
+                    fmov_gpr_to_reg(cb, 0, left.unwrap_reg().reg_no);
+                    fmov_gpr_to_reg(cb, 1, right.unwrap_reg().reg_no);
+                    match op {
+                        FloatArithOp::Add => fadd(cb, 0, 0, 1),
+                        FloatArithOp::Sub => fsub(cb, 0, 0, 1),
+                        FloatArithOp::Mul => fmul(cb, 0, 0, 1),
+                        FloatArithOp::Div => fdiv(cb, 0, 0, 1),
+                    }
+                    fmov_reg_to_gpr(cb, out.unwrap_reg().reg_no, 0);
                 },
                 Insn::Sub { left, right, out } => {
                     // Usually, we issue SUBS, so you could branch on overflow, but SUBS with

@@ -639,6 +639,9 @@ pub enum SideExitReason {
     FixnumSubOverflow,
     FixnumMultOverflow,
     FixnumLShiftOverflow,
+    /// An open-coded flonum arithmetic result was not representable as a flonum
+    /// (e.g. it needed a heap Float), so fall back to the interpreter.
+    FlonumArithResultNotFlonum,
     GuardType(Type),
     GuardShape(ShapeId),
     ExpandArray,

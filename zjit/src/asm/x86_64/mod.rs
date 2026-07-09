@@ -1367,6 +1367,46 @@ pub fn xor(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
     );
 }
 
+// -- SSE2 scalar-double support ------------------------------------------------
+//
+// ZJIT open-codes flonum arithmetic by moving a flonum's raw double bits into an
+// XMM register, doing the op, and moving the result bits back. XMM registers are
+// referred to by number (0/1) through a GP-typed operand: only the register
+// *number* participates in ModRM encoding, and ZJIT has no XMM RegType.
+
+/// An operand referring to XMM register `xmm_no` for ModRM encoding purposes.
+fn xmm_reg(xmm_no: u8) -> X86Opnd {
+    X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: xmm_no })
+}
+
+/// MOVQ xmm, r/m64 (`66 REX.W 0F 6E /r`): copy 64 raw bits from a GPR/memory
+/// operand into an XMM register.
+pub fn movq_xmm_from_reg(cb: &mut CodeBlock, xmm_no: u8, src: X86Opnd) {
+    write_rm(cb, true, true, xmm_reg(xmm_no), src, None, &[0x0F, 0x6E]);
+}
+
+/// MOVQ r/m64, xmm (`66 REX.W 0F 7E /r`): copy 64 raw bits from an XMM register
+/// into a GPR/memory operand.
+pub fn movq_reg_from_xmm(cb: &mut CodeBlock, dst: X86Opnd, xmm_no: u8) {
+    write_rm(cb, true, true, xmm_reg(xmm_no), dst, None, &[0x0F, 0x7E]);
+}
+
+/// Shared encoder for `F2 0F <opcode> /r` scalar-double SSE2 arithmetic
+/// (reg = dst xmm, r/m = src xmm).
+fn sse_arith(cb: &mut CodeBlock, opcode: u8, dst_xmm: u8, src_xmm: u8) {
+    cb.write_byte(0xF2);
+    write_rm(cb, false, false, xmm_reg(dst_xmm), xmm_reg(src_xmm), None, &[0x0F, opcode]);
+}
+
+/// ADDSD: dst_xmm += src_xmm (scalar double).
+pub fn addsd(cb: &mut CodeBlock, dst_xmm: u8, src_xmm: u8) { sse_arith(cb, 0x58, dst_xmm, src_xmm); }
+/// SUBSD: dst_xmm -= src_xmm (scalar double).
+pub fn subsd(cb: &mut CodeBlock, dst_xmm: u8, src_xmm: u8) { sse_arith(cb, 0x5C, dst_xmm, src_xmm); }
+/// MULSD: dst_xmm *= src_xmm (scalar double).
+pub fn mulsd(cb: &mut CodeBlock, dst_xmm: u8, src_xmm: u8) { sse_arith(cb, 0x59, dst_xmm, src_xmm); }
+/// DIVSD: dst_xmm /= src_xmm (scalar double).
+pub fn divsd(cb: &mut CodeBlock, dst_xmm: u8, src_xmm: u8) { sse_arith(cb, 0x5E, dst_xmm, src_xmm); }
+
 impl fmt::Display for X86Reg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match X86Opnd::Reg(*self) {

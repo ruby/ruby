@@ -24,7 +24,7 @@ use crate::state::{rb_zjit_compiling_p, ZJITState};
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_compile_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
+use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND, CFP, EC, FloatArithOp, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
 use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, CondBranchFixnumCmpData, CondBranchHasTypeData, Const, FieldName, FixnumCmpOp, FloatCmpOp, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
@@ -766,10 +766,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
         Insn::FixnumMult { left, right, state } => gen_fixnum_mult(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
         Insn::FixnumDiv { left, right, state } => gen_fixnum_div(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
-        Insn::FloatAdd { recv, other, state } => gen_float_add(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
-        Insn::FloatSub { recv, other, state } => gen_float_sub(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
-        Insn::FloatMul { recv, other, state } => gen_float_mul(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
-        Insn::FloatDiv { recv, other, state } => gen_float_div(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
+        Insn::FloatAdd { recv, other, state } => gen_float_add(jit, asm, function, opnd!(recv), opnd!(other), function.type_of(*other), &function.frame_state(*state)),
+        Insn::FloatSub { recv, other, state } => gen_float_sub(jit, asm, function, opnd!(recv), opnd!(other), function.type_of(*other), &function.frame_state(*state)),
+        Insn::FloatMul { recv, other, state } => gen_float_mul(jit, asm, function, opnd!(recv), opnd!(other), function.type_of(*other), &function.frame_state(*state)),
+        Insn::FloatDiv { recv, other, state } => gen_float_div(jit, asm, function, opnd!(recv), opnd!(other), function.type_of(*other), &function.frame_state(*state)),
         &Insn::FloatCmp { op, recv, other, state } => gen_float_cmp(asm, op, opnd!(recv), opnd!(other), &function.frame_state(state)),
         Insn::FloatToInt { recv, state } => gen_float_to_int(asm, opnd!(recv), &function.frame_state(*state)),
         Insn::FixnumEq { left, right } => gen_fixnum_eq(asm, opnd!(left), opnd!(right)),
@@ -3011,28 +3011,106 @@ fn gen_fixnum_div(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
     asm_ccall!(asm, rb_jit_fix_div_fix, left, right)
 }
 
-/// Compile Float + Float
-fn gen_float_add(asm: &mut Assembler, recv: lir::Opnd, other: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    gen_prepare_leaf_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_float_plus, recv, other)
+/// Decode a guaranteed-flonum VALUE into its raw IEEE-754 double bit pattern,
+/// inline. This is the exact inverse of the flonum encoding:
+/// `ror((v & ~3) | (2 - (v >> 63)), 3)`, with the special case that the +0.0
+/// sentinel (0x8000000000000002) decodes to all-zero bits.
+fn flonum_unbox(asm: &mut Assembler, val: Opnd) -> Opnd {
+    // sign = v >> 63  (0 or 1)
+    let sign = asm.urshift(val, Opnd::UImm(63));
+    // 2 - sign  (load 2 into a register first so the subtrahend is a register)
+    let two = asm.load(Opnd::UImm(2));
+    let two_minus_sign = asm.sub(two, sign);
+    // (v & ~3) | (2 - sign)
+    let masked = asm.and(val, Opnd::Imm(!0x3i64));
+    let combined = asm.or(masked, two_minus_sign);
+    // ror(combined, 3) == (combined >> 3) | (combined << 61)
+    let hi = asm.urshift(combined, Opnd::UImm(3));
+    let lo = asm.lshift(combined, Opnd::UImm(61));
+    let rotated = asm.or(hi, lo);
+    // The +0.0 flonum sentinel decodes to all-zero double bits.
+    let sentinel = asm.load(Opnd::UImm(0x8000000000000002));
+    asm.cmp(val, sentinel);
+    asm.csel_e(Opnd::UImm(0), rotated)
 }
 
-/// Compile Float - Float
-fn gen_float_sub(asm: &mut Assembler, recv: lir::Opnd, other: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    gen_prepare_leaf_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_float_minus, recv, other)
+/// Re-encode a raw IEEE-754 double bit pattern `t` as a flonum VALUE, taking a
+/// side exit when the result is not representable as a flonum (e.g. it would
+/// need a heap Float). Mirrors the flonum-encodable fast path.
+fn double_bits_to_flonum(jit: &mut JITState, asm: &mut Assembler, function: &Function, t: Opnd, state: &FrameState) -> Opnd {
+    // A double is flonum-representable iff the top three exponent bits are 3 or
+    // 4. `t >> 60` keeps sign + top three exponent bits; `& 0x7` drops the sign.
+    let shifted = asm.urshift(t, Opnd::UImm(60));
+    let bits3 = asm.and(shifted, Opnd::UImm(0x7));
+    let d = asm.sub(bits3, Opnd::UImm(3)); // 0 for bits3==3, 1 for bits3==4
+    // Mask off the low bit: 0 for d in {0,1}, nonzero otherwise. Use a signed
+    // immediate so x86 encodes it as a sign-extended imm8 rather than a too-wide
+    // unsigned imm32.
+    let d_masked = asm.and(d, Opnd::Imm(!0x1i64));
+    asm.cmp(d_masked, Opnd::UImm(0));
+    asm.jne(jit, side_exit(jit, function, state, FlonumArithResultNotFlonum));
+    // Exclude 0x3000000000000000, which would encode to the +0.0 sentinel.
+    let edge = asm.load(Opnd::UImm(0x3000000000000000));
+    asm.cmp(t, edge);
+    asm.je(jit, side_exit(jit, function, state, FlonumArithResultNotFlonum));
+    // rotl(t, 3) then set the flonum tag: ((t << 3 | t >> 61) & ~1) | 2
+    let hi = asm.lshift(t, Opnd::UImm(3));
+    let lo = asm.urshift(t, Opnd::UImm(61));
+    let rotl = asm.or(hi, lo);
+    let cleared = asm.and(rotl, Opnd::Imm(!0x1i64));
+    asm.or(cleared, Opnd::UImm(0x2))
 }
 
-/// Compile Float * Float
-fn gen_float_mul(asm: &mut Assembler, recv: lir::Opnd, other: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    gen_prepare_leaf_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_float_mul, recv, other)
+/// Open-code flonum `op` on two guaranteed-flonum operands: unbox both to raw
+/// double bits, perform the op in a scratch FP register (see [`Insn::FloatArith`]),
+/// and re-encode the result as a flonum (side-exiting if not representable).
+fn gen_flonum_arith(jit: &mut JITState, asm: &mut Assembler, function: &Function, op: FloatArithOp, recv: Opnd, other: Opnd, state: &FrameState) -> Opnd {
+    let recv_bits = flonum_unbox(asm, recv);
+    let other_bits = flonum_unbox(asm, other);
+    let result_bits = asm.float_arith(op, recv_bits, other_bits);
+    double_bits_to_flonum(jit, asm, function, result_bits, state)
 }
 
-/// Compile Float / Float
-fn gen_float_div(asm: &mut Assembler, recv: lir::Opnd, other: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    gen_prepare_leaf_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_float_div, recv, other)
+/// Compile Float + Float. When both operands are flonums, open-code the addition
+/// on their raw double bits; otherwise (a Fixnum other operand) fall back to the
+/// leaf ccall, which handles coercion.
+fn gen_float_add(jit: &mut JITState, asm: &mut Assembler, function: &Function, recv: lir::Opnd, other: lir::Opnd, other_type: Type, state: &FrameState) -> lir::Opnd {
+    if other_type.is_subtype(types::Flonum) {
+        gen_flonum_arith(jit, asm, function, FloatArithOp::Add, recv, other, state)
+    } else {
+        gen_prepare_leaf_call_with_gc(asm, state);
+        asm_ccall!(asm, rb_float_plus, recv, other)
+    }
+}
+
+/// Compile Float - Float (see [`gen_float_add`]).
+fn gen_float_sub(jit: &mut JITState, asm: &mut Assembler, function: &Function, recv: lir::Opnd, other: lir::Opnd, other_type: Type, state: &FrameState) -> lir::Opnd {
+    if other_type.is_subtype(types::Flonum) {
+        gen_flonum_arith(jit, asm, function, FloatArithOp::Sub, recv, other, state)
+    } else {
+        gen_prepare_leaf_call_with_gc(asm, state);
+        asm_ccall!(asm, rb_float_minus, recv, other)
+    }
+}
+
+/// Compile Float * Float (see [`gen_float_add`]).
+fn gen_float_mul(jit: &mut JITState, asm: &mut Assembler, function: &Function, recv: lir::Opnd, other: lir::Opnd, other_type: Type, state: &FrameState) -> lir::Opnd {
+    if other_type.is_subtype(types::Flonum) {
+        gen_flonum_arith(jit, asm, function, FloatArithOp::Mul, recv, other, state)
+    } else {
+        gen_prepare_leaf_call_with_gc(asm, state);
+        asm_ccall!(asm, rb_float_mul, recv, other)
+    }
+}
+
+/// Compile Float / Float (see [`gen_float_add`]).
+fn gen_float_div(jit: &mut JITState, asm: &mut Assembler, function: &Function, recv: lir::Opnd, other: lir::Opnd, other_type: Type, state: &FrameState) -> lir::Opnd {
+    if other_type.is_subtype(types::Flonum) {
+        gen_flonum_arith(jit, asm, function, FloatArithOp::Div, recv, other, state)
+    } else {
+        gen_prepare_leaf_call_with_gc(asm, state);
+        asm_ccall!(asm, rb_float_div, recv, other)
+    }
 }
 
 /// Compile a flonum comparison (both operands guarded Flonum) via a leaf call to

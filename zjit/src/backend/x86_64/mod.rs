@@ -534,6 +534,16 @@ impl Assembler {
                     asm.push_insn(insn);
                     asm_mov(asm, out, left, SCRATCH0_OPND);
                 }
+                Insn::FloatArith { left, right, out, .. } => {
+                    // Lower spilled operands' stack membases so movq can address
+                    // them. The emit moves the operands through xmm0/xmm1 and
+                    // uses no GPR scratch, so routing reads through SCRATCH0/
+                    // SCRATCH1 can't collide with it.
+                    *left = split_stack_membase(asm, *left, SCRATCH0_OPND);
+                    *right = split_stack_membase(asm, *right, SCRATCH1_OPND);
+                    *out = lower_stack_membase(asm, *out);
+                    asm.push_insn(insn);
+                }
                 &mut Insn::Not { opnd, out } |
                 &mut Insn::LShift { opnd, out, .. } |
                 &mut Insn::RShift { opnd, out, .. } |
@@ -856,6 +866,22 @@ impl Assembler {
 
                 Insn::Mul { left, right, .. } => {
                     imul(cb, left.into(), right.into());
+                },
+
+                Insn::FloatArith { op, left, right, out } => {
+                    // Move the raw double bit patterns into XMM scratch registers
+                    // (xmm0/xmm1), perform the scalar-double op, and move the
+                    // result bits back. Uses no GPR scratch; `left` is read into
+                    // xmm0 before `out` is written, so left==out is safe.
+                    movq_xmm_from_reg(cb, 0, left.into());
+                    movq_xmm_from_reg(cb, 1, right.into());
+                    match op {
+                        FloatArithOp::Add => addsd(cb, 0, 1),
+                        FloatArithOp::Sub => subsd(cb, 0, 1),
+                        FloatArithOp::Mul => mulsd(cb, 0, 1),
+                        FloatArithOp::Div => divsd(cb, 0, 1),
+                    }
+                    movq_reg_from_xmm(cb, out.into(), 0);
                 },
 
                 Insn::And { left, right, .. } => {

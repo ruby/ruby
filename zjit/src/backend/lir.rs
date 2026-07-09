@@ -763,11 +763,28 @@ pub struct PatchPointData {
     pub version: IseqVersionRef,
 }
 
+/// Which scalar-double floating-point operation a [`Insn::FloatArith`] performs.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FloatArithOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
 /// ZJIT Low-level IR instruction
 #[derive(Clone)]
 pub enum Insn {
     /// Add two operands together, and return the result as a new operand.
     Add { left: Opnd, right: Opnd, out: Opnd },
+
+    /// Scalar-double floating-point arithmetic on raw IEEE-754 bit patterns.
+    /// `left`/`right` hold the 64-bit double bit patterns (already unboxed from
+    /// flonums); `out` receives the result's bit pattern. The backend moves the
+    /// operands into scratch FP registers, performs `op`, and moves the result
+    /// back -- it uses no general-purpose scratch, so unboxing/reboxing is done
+    /// in the caller (see `codegen::gen_flonum_arith`).
+    FloatArith { op: FloatArithOp, left: Opnd, right: Opnd, out: Opnd },
 
     /// This is the same as the OP_ADD instruction, except that it performs the
     /// binary AND operation.
@@ -1069,6 +1086,7 @@ macro_rules! for_each_operand_impl {
             }
             Insn::Add { left: opnd0, right: opnd1, .. } |
             Insn::And { left: opnd0, right: opnd1, .. } |
+            Insn::FloatArith { left: opnd0, right: opnd1, .. } |
             Insn::CPopPairInto(opnd0, opnd1) |
             Insn::Cmp { left: opnd0, right: opnd1 } |
             Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
@@ -1186,6 +1204,7 @@ impl Insn {
         match self {
             Insn::Add { .. } => "Add",
             Insn::And { .. } => "And",
+            Insn::FloatArith { .. } => "FloatArith",
             Insn::BakeString(_) => "BakeString",
             Insn::BoundaryPad => "BoundaryPad",
             Insn::Breakpoint => "Breakpoint",
@@ -1255,6 +1274,7 @@ impl Insn {
         match self {
             Insn::Add { out, .. } |
             Insn::And { out, .. } |
+            Insn::FloatArith { out, .. } |
             Insn::CPop { out, .. } |
             Insn::CSelE { out, .. } |
             Insn::CSelG { out, .. } |
@@ -1287,6 +1307,7 @@ impl Insn {
         match self {
             Insn::Add { out, .. } |
             Insn::And { out, .. } |
+            Insn::FloatArith { out, .. } |
             Insn::CPop { out, .. } |
             Insn::CSelE { out, .. } |
             Insn::CSelG { out, .. } |
@@ -3914,6 +3935,16 @@ impl Assembler {
     pub fn and(&mut self, left: Opnd, right: Opnd) -> Opnd {
         let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::And { left, right, out });
+        out
+    }
+
+    /// Scalar-double floating-point arithmetic on raw double bit patterns.
+    /// `left`/`right` are 64-bit IEEE-754 bit patterns; the result is the
+    /// operation's bit pattern. See [`Insn::FloatArith`].
+    #[must_use]
+    pub fn float_arith(&mut self, op: FloatArithOp, left: Opnd, right: Opnd) -> Opnd {
+        let out = self.new_vreg(64);
+        self.push_insn(Insn::FloatArith { op, left, right, out });
         out
     }
 
