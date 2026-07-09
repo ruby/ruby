@@ -1106,6 +1106,16 @@ VALUE class_allocate_complex_instance(VALUE klass, uint32_t capacity)
     return obj;
 }
 
+static inline size_t
+robject_embedded_size(uint32_t fields_count)
+{
+    size_t size = rb_obj_embedded_size(fields_count);
+    if (!rb_gc_size_allocatable_p(size)) {
+        size = sizeof(struct RObject);
+    }
+    return size;
+}
+
 VALUE
 rb_class_allocate_instance(VALUE klass)
 {
@@ -1118,10 +1128,7 @@ rb_class_allocate_instance(VALUE klass)
         obj = class_allocate_complex_instance(klass, index_tbl_num_entries);
     }
     else {
-        size_t size = rb_obj_embedded_size(index_tbl_num_entries);
-        if (!rb_gc_size_allocatable_p(size)) {
-            size = sizeof(struct RObject);
-        }
+        size_t size = robject_embedded_size(index_tbl_num_entries);
 
         // There might be a NEWOBJ tracepoint callback, and it may set fields.
         // So the shape must be passed to `NEWOBJ_OF`.
@@ -1144,6 +1151,25 @@ rb_class_allocate_instance(VALUE klass)
 
     return obj;
 }
+
+#if USE_ZJIT
+bool
+rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, shape_id_t *shape_id_out)
+{
+    uint32_t index_tbl_num_entries = RCLASS_MAX_IV_COUNT(klass);
+
+    RUBY_ASSERT(rb_shape_max_capacity() > 0);
+    if (RB_UNLIKELY(index_tbl_num_entries > rb_shape_max_capacity())) {
+        return false;
+    }
+
+    size_t size = robject_embedded_size(index_tbl_num_entries);
+    *size_out = size;
+    *shape_id_out = rb_shape_transition_slot_size(rb_shape_transition_robject(0),
+                                                  rb_gc_size_slot_size(size));
+    return true;
+}
+#endif
 
 void
 rb_gc_register_pinning_obj(VALUE obj)

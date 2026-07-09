@@ -570,6 +570,7 @@ pub enum SideExitReason {
     DirectiveInduced,
     SendWhileTracing,
     NoProfileSend,
+    NoProfileGetIvar,
     InvokeBlockNotIfunc,
 }
 
@@ -991,7 +992,7 @@ pub enum Insn {
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
     /// Kernel#block_given? but without pushing a frame. Similar to [`Insn::Defined`] with
     /// `DEFINED_YIELD`
-    IsBlockGiven { lep: InsnId },
+    IsBlockGiven { block_handler: InsnId },
     /// Test the bit at index of val, a Fixnum.
     /// Return Qtrue if the bit is set, else Qfalse.
     FixnumBitCheck { val: InsnId, index: u8 },
@@ -1022,10 +1023,10 @@ pub enum Insn {
     LoadSP,
     /// Load cfp->self
     LoadSelf,
-    LoadField { recv: InsnId, id: FieldName, offset: i32, return_type: Type },
+    LoadField { recv: InsnId, id: FieldName, offset: i32, return_type: Type, num_bits: u8 },
     /// Write `val` at an offset of `recv`.
     /// When writing a Ruby object to a Ruby object, one must use GuardNotFrozen (or equivalent) before and WriteBarrier after.
-    StoreField { recv: InsnId, id: FieldName, offset: i32, val: InsnId },
+    StoreField { recv: InsnId, id: FieldName, offset: i32, val: InsnId, num_bits: u8 },
     WriteBarrier { recv: InsnId, val: InsnId },
 
     /// Check whether VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set in the (already loaded) environment flags.
@@ -1189,7 +1190,7 @@ pub enum Insn {
     /// Float#to_i: truncate float to integer via rb_jit_flo_to_i
     FloatToInt { recv: InsnId, state: InsnId },
 
-    AnyToString { val: InsnId, str: InsnId, state: InsnId },
+    AnyToString { val: InsnId, state: InsnId },
 
     /// Refine the known type information of with additional type information.
     /// Computes the intersection of the existing type and the new type.
@@ -1258,8 +1259,8 @@ macro_rules! for_each_operand_impl {
             | Insn::IncrCounter(_)
             | Insn::IncrCounterPtr { .. } => {}
 
-            Insn::IsBlockGiven { lep } => {
-                $visit_one!(*lep);
+            Insn::IsBlockGiven { block_handler } => {
+                $visit_one!(*block_handler);
             }
             Insn::IsBlockParamModified { flags } => {
                 $visit_one!(*flags);
@@ -1526,9 +1527,8 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*val);
                 $visit_one!(*state);
             }
-            Insn::AnyToString { val, str, state, .. } => {
+            Insn::AnyToString { val, state, .. } => {
                 $visit_one!(*val);
-                $visit_one!(*str);
                 $visit_one!(*state);
             }
             Insn::LoadField { recv, .. } => {
@@ -1686,7 +1686,7 @@ impl Insn {
             Insn::Defined { .. } => effects::Any,
             Insn::GetConstant { .. } => effects::Any,
             Insn::GetConstantPath { .. } => effects::Any,
-            Insn::IsBlockGiven { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
+            Insn::IsBlockGiven { .. } => effects::Empty,
             Insn::FixnumBitCheck { .. } => effects::Empty,
             // IsA needs to read the class of the value and traverse the class hierarchy, which we model as reading from Memory.
             Insn::IsA { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
@@ -2200,7 +2200,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, "GetConstant {klass}, :{}, {allow_nil}", id.contents_lossy())
             }
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
-            Insn::IsBlockGiven { lep } => { write!(f, "IsBlockGiven {lep}") },
+            Insn::IsBlockGiven { block_handler } => { write!(f, "IsBlockGiven {block_handler}") },
             Insn::FixnumBitCheck {val, index} => { write!(f, "FixnumBitCheck {val}, {index}") },
             Insn::CCall { cfunc, recv, args, name, owner, return_type: _, elidable: _ } => {
                 let display_name = if *owner == Qnil { name.contents_lossy().to_string() } else { qualified_method_name(*owner, *name) };
@@ -2269,10 +2269,10 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::LoadSP => write!(f, "LoadSP"),
             &Insn::GetEP { level } => write!(f, "GetEP {level}"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
-            &Insn::LoadField { recv, id, offset, return_type: _ } => {
+            &Insn::LoadField { recv, id, offset, return_type: _, num_bits: _ } => {
                 write!(f, "LoadField {recv}, :{id}@{:#x}", self.ptr_map.map_offset(offset))
             }
-            &Insn::StoreField { recv, id, offset, val } => write!(f, "StoreField {recv}, :{id}@{:#x}, {val}", self.ptr_map.map_offset(offset)),
+            &Insn::StoreField { recv, id, offset, val, num_bits: _ } => write!(f, "StoreField {recv}, :{id}@{:#x}, {val}", self.ptr_map.map_offset(offset)),
             &Insn::WriteBarrier { recv, val } => write!(f, "WriteBarrier {recv}, {val}"),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
@@ -2294,7 +2294,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
             Insn::StringIntern { val, .. } => { write!(f, "StringIntern {val}") },
-            Insn::AnyToString { val, str, .. } => { write!(f, "AnyToString {val}, str: {str}") },
+            Insn::AnyToString { val, .. } => { write!(f, "AnyToString {val}") },
             Insn::SideExit { reason, recompile, .. } => {
                 if recompile.is_some() {
                     write!(f, "SideExit {reason} recompile")
@@ -2790,7 +2790,12 @@ impl Function {
     }
 
     pub fn load_field(&mut self, block: BlockId, recv: InsnId, id: FieldName, offset: i32, return_type: Type) -> InsnId {
-        self.push_insn(block, Insn::LoadField { recv, id, offset, return_type })
+        let num_bits = return_type.num_bits();
+        self.push_insn(block, Insn::LoadField { recv, id, offset, return_type, num_bits })
+    }
+
+    pub fn load_string_length(&mut self, block: BlockId, str: InsnId) -> InsnId {
+        self.load_field(block, str, FieldName::len, RUBY_OFFSET_RSTRING_LEN, types::CInt64)
     }
 
     // Add an instruction to an SSA block
@@ -3158,7 +3163,7 @@ impl Function {
             Insn::GetClassVar { .. } => types::BasicObject,
             Insn::ToNewArray { .. } => types::ArrayExact,
             Insn::ToArray { .. } => types::ArrayExact,
-            Insn::AnyToString { .. } => types::String,
+            Insn::AnyToString { .. } => types::StringExact,
             Insn::IsBlockParamModified { .. } => types::CBool,
             Insn::GetBlockParam { .. } => types::BasicObject,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
@@ -3489,6 +3494,19 @@ impl Function {
             }
             resolution => resolution,
         }
+    }
+
+    fn profile_summary(&self, profiles: &ProfileOracle, recv: InsnId, state: InsnId) -> TypeDistributionSummary {
+        let Some(entries) = profiles.get(state) else {
+            return TypeDistributionSummary::empty();
+        };
+        let recv = self.chase_insn(recv);
+        for (entry_insn, entry_type_summary) in entries {
+            if self.chase_insn(*entry_insn) == recv {
+                return entry_type_summary.clone();
+            }
+        }
+        TypeDistributionSummary::empty()
     }
 
     fn polymorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, state: InsnId) -> Option<TypeDistributionSummary> {
@@ -4096,7 +4114,7 @@ impl Function {
                                     };
 
                                     let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
-                                        self.push_insn(block, Insn::StoreField { recv: target, id: mid.into(), offset, val });
+                                        self.push_insn(block, Insn::StoreField { recv: target, id: mid.into(), offset, val, num_bits: types::BasicObject.num_bits() });
                                         self.push_insn(block, Insn::WriteBarrier { recv, val });
                                         val
                                     } else { // StructAref
@@ -4329,13 +4347,6 @@ impl Function {
                             let reason = if has_block { SendNotOptimizedMethodType(MethodType::from(def_type)) } else { SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)) };
                             self.set_dynamic_send_reason(insn_id, reason);
                             self.push_insn_id(block, insn_id); continue;
-                        }
-                    }
-                    Insn::AnyToString { str, .. } => {
-                        if self.is_a(str, types::String) {
-                            self.make_equal_to(insn_id, str);
-                        } else {
-                            self.push_insn_id(block, insn_id);
                         }
                     }
                     Insn::IsMethodCfunc { val, cd, cfunc, state } if self.type_of(val).ruby_object_known() => {
@@ -5225,13 +5236,13 @@ impl Function {
             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
             (as_heap, offset)
         };
-        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val });
+        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val, num_bits: types::BasicObject.num_bits() });
         self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
         if next_shape_id != profiled_type.shape() {
             // Write the new shape ID
             let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
             let shape_id_offset = unsafe { rb_shape_id_offset() };
-            self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id });
+            self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id, num_bits: types::CShape.num_bits() });
         }
         Ok(())
     }
@@ -5525,19 +5536,6 @@ impl Function {
             let mut new_insns = vec![];
             for insn_id in old_insns {
                 let replacement_id = match self.find(insn_id) {
-                    // TODO (nirvdrum 2026-06-26): Folding the guard to a SideExit is a workaround,
-                    // not a proper fix. It relies on constant folding to keep an Empty-typed value
-                    // (see below) from reaching codegen; disabling this pass would let that value
-                    // through and the program would fail to compile on x86-64. Compilation correctness
-                    // should not depend on an optimization pass, so this should be replaced by a
-                    // comprehensive fix.
-                    Insn::GuardType { val, guard_type, state, recompile } if !self.type_of(val).could_be(guard_type) => {
-                        // The value's type is disjoint from the guard type, so the guard can never
-                        // pass. Every execution would side-exit here, so we replace the guard with an
-                        // unconditional exit. The terminator handling below then drops the rest of
-                        // the block, which is now unreachable.
-                        self.new_insn(Insn::SideExit { state, reason: Box::new(SideExitReason::GuardType(guard_type)), recompile })
-                    }
                     Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
                         self.make_equal_to(insn_id, val);
                         // Don't bother re-inferring the type of val; we already know it.
@@ -5622,11 +5620,6 @@ impl Function {
                         } else {
                             insn_id
                         }
-                    }
-                    Insn::AnyToString { str, .. } if self.is_a(str, types::String) => {
-                        self.make_equal_to(insn_id, str);
-                        // Don't bother re-inferring the type of str; we already know it.
-                        continue;
                     }
                     Insn::IsA { val, class } => 'is_a: {
                         let class_type = self.type_of(class);
@@ -6489,7 +6482,6 @@ impl Function {
             // Instructions with 2 Ruby object operands
             Insn::SetIvar { self_val: left, val: right, .. }
             | Insn::NewRange { low: left, high: right, .. }
-            | Insn::AnyToString { val: left, str: right, .. }
             | Insn::CheckMatch { target: left, pattern: right, .. }
             | Insn::WriteBarrier { recv: left, val: right } => {
                 self.assert_subtype(insn_id, left, types::BasicObject)?;
@@ -6498,6 +6490,9 @@ impl Function {
             Insn::GetConstant { klass, allow_nil, .. } => {
                 self.assert_subtype(insn_id, klass, types::BasicObject)?;
                 self.assert_subtype(insn_id, allow_nil, types::BoolExact)
+            }
+            Insn::AnyToString { val, .. } => {
+                self.assert_subtype(insn_id, val, types::BasicObject)
             }
             // Instructions with recv and a Vec of Ruby objects
             Insn::PushInlineFrame { recv, ref args, .. }
@@ -6783,6 +6778,78 @@ impl Function {
         self.validate_insn_uniqueness()?;
         self.validate_types()?;
         Ok(())
+    }
+
+    /// Return Some(InsnId) if we generated any code to load an ivar and None if we only generated
+    /// an unconditional SideExit (in which case we should end the block).
+    fn dispatch_getivar(
+        &mut self,
+        profiled_types: &Vec<ProfiledType>,
+        mut block: BlockId,
+        insn_idx: u32,
+        self_param: InsnId,
+        id: ID,
+        ic: *const iseq_inline_iv_cache_entry,
+        exit_id: InsnId,
+    ) -> Option<(BlockId, InsnId)> {
+        // 0 profiled_types: Generate a recompile exit or a fallback. No need for new HIR blocks.
+        if profiled_types.is_empty() {
+            if self.policy.no_side_exits {
+                self.count(block, Counter::getivar_fallback_no_side_exits);
+                let result = self.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
+                return Some((block, result));
+            } else {
+                self.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::NoProfileGetIvar), recompile: Some(Recompile) });
+                return None;
+            }
+        }
+        // 1 profiled_types: Generate a monomorphic getivar with a guard if allowed by policy. No need for new HIR blocks.
+        if profiled_types.len() == 1 && !self.policy.no_side_exits {
+            // 0 profiled_types: Generate a recompile exit or a fallback.
+            let actual = self.load_shape(block, self_param);
+            self.guard_shape(block, actual, profiled_types[0].shape(), exit_id, Some(Recompile));
+            let result = self.load_ivar(block, self_param, profiled_types[0], id);
+            return Some((block, result));
+        }
+
+        // Otherwise, make HIR blocks to handle different shapes or a fallback, and let them jump to join_block.
+        let edge = |target: BlockId| BranchEdge { target, args: vec![] };
+        let branch = |cond: InsnId, if_true: BlockId, if_false: BlockId| Insn::CondBranch { val: cond, if_true: edge(if_true), if_false: edge(if_false) };
+        let actual = self.load_shape(block, self_param);
+        let last_shape_index = profiled_types.len() - 1;
+        let join_block = self.new_block(insn_idx);
+        let result = self.push_insn(join_block, Insn::Param);
+        for (i, &profiled_type) in profiled_types.iter().enumerate() {
+            let load_optimized_block = self.new_block(insn_idx);
+            if i == last_shape_index {
+                if self.policy.no_side_exits {
+                    // If the policy doesn't allow exits, make a fallback block and jump to it if the shape doesn't match.
+                    let expected = self.push_insn(block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
+                    let val = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected });
+                    let load_fallback_block = self.new_block(insn_idx);
+                    self.push_insn(block, branch(val, load_optimized_block, load_fallback_block));
+                    self.count(load_fallback_block, Counter::getivar_fallback_no_side_exits);
+                    let result = self.push_insn(load_fallback_block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
+                    self.push_insn(load_fallback_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                } else {
+                    // If the policy allows exits, exit to the interpreter if the shape doesn't match.
+                    self.guard_shape(block, actual, profiled_type.shape(), exit_id, Some(Recompile));
+                    // TODO(max): Don't make a new block in this case
+                    self.push_insn(block, Insn::Jump(BranchEdge { target: load_optimized_block, args: vec![] }));
+                }
+            } else {
+                // If this is not the last profiled shape, let the guard jump to the next block.
+                let expected = self.push_insn(block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
+                let val = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected});
+                let next_block = self.new_block(insn_idx);
+                self.push_insn(block, branch(val, load_optimized_block, next_block));
+                block = next_block;
+            }
+            // Generate the optimized getivar for the profiled_type and jump to join_block
+            let result = self.load_ivar(load_optimized_block, self_param, profiled_type, id);
+            self.push_insn(load_optimized_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+        }
+        Some((join_block, result))
     }
 }
 
@@ -8177,6 +8244,7 @@ fn add_iseq_to_hir(
                         id: FieldName::VM_ENV_DATA_INDEX_FLAGS,
                         offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32),
                         val: modified,
+                        num_bits: types::CInt64.num_bits(),
                     });
                 }
                 YARVINSN_getblockparamproxy => {
@@ -8925,68 +8993,42 @@ fn add_iseq_to_hir(
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledYARVInsn(opcode)), recompile: None });
                         break;  // End the block
                     }
-                    if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_id) {
-                        self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id, recompile: None });
-                        let join_block = fun.new_block(insn_idx);
-                        let join_param = fun.push_insn(join_block, Insn::Param);
-                        // Dedup by expected shape so objects with different classes but the same shape can share code
-                        // TODO(max): De-duplicate further by checking ivar offsets to allow
-                        // different shapes with the same ivar layout to share code
-                        let mut seen_shape = Vec::with_capacity(summary.buckets().len());
-                        for &profiled_type in summary.buckets() {
-                            // End of the buckets
-                            if profiled_type.is_empty() { break; }
-                            // Instance variable lookups on immediate values are always nil; don't bother
-                            if profiled_type.flags().is_immediate() { continue; }
-                            let profiled_shape = profiled_type.shape();
-                            assert!(profiled_shape.is_valid());
-                            // Too-complex shapes use hash tables for ivars;
-                            // rb_shape_get_iv_index doesn't work for them.
-                            // Let the fallthrough GetIvar handle these.
-                            if profiled_shape.is_complex() { continue; }
-                            if seen_shape.contains(&profiled_shape) { continue; }
-                            seen_shape.push(profiled_shape);
-                            let actual_shape = fun.load_shape(block, self_param);
-                            // Load the expected shape to a variable
-                            let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_shape) });
-                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: actual_shape, right: expected_shape });
-                            let iftrue_block = fun.new_block(insn_idx);
-                            let target = BranchEdge { target: iftrue_block, args: vec![] };
-                            let fall_through = fun.new_block(insn_idx);
-
-                            fun.push_insn(block, Insn::CondBranch { val: has_shape,
-                                if_true: target,
-                                if_false: BranchEdge { target: fall_through, args: vec![] }
-                            });
-
-                            block = fall_through;
-                            let result = fun.load_ivar(iftrue_block, self_param, profiled_type, id);
-                            fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                    let summary = fun.profile_summary(&profiles, self_param, exit_id);
+                    let self_param = fun.guard_heap(block, self_param, exit_id);
+                    // Filter out profiled types we don't care to optimize
+                    let profiled_types = summary.buckets().iter().filter(|profiled_type| {
+                        // Don't read past the end of the profiled types
+                        !profiled_type.is_empty()
+                        // Instance variable lookups on immediate values are always nil; don't bother
+                        && !profiled_type.flags().is_immediate()
+                        // Too-complex shapes use hash tables for ivars;
+                        // rb_shape_get_iv_index doesn't work for them.
+                        // Let the fallthrough GetIvar handle these.
+                        && !profiled_type.shape().is_complex()
+                    }).collect::<Vec<_>>();
+                    // We might have two objects of class A and B with the same shape; de-duplicate
+                    // profiled types by shape. This is just an optimization to reduce code size.
+                    let mut profiled_types_unique_shapes = Vec::with_capacity(profiled_types.len());
+                    for &profiled_type in profiled_types {
+                        if profiled_types_unique_shapes.iter().any(|t: &ProfiledType| t.shape() == profiled_type.shape()) {
+                            continue;
                         }
-                        // In the fallthrough case, do a generic interpreter getivar and then join.
-                        let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
-                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
-                        state.stack_push(join_param);
-                        // Continue compilation from the join block at the next instruction.
-                        // Make a copy of the current state without the args (pop the receiver
-                        // and push the result) because we just use the locals/stack sizes to
-                        // make the right number of Params
-                        block = join_block;
-                    } else {
-                        if let Some(profiled_type) = fun.monomorphic_summary(&profiles, self_param, exit_id) {
-                            let result = fun.try_emit_optimized_getivar(block, self_param, id, profiled_type, exit_id).unwrap_or_else(|counter| {
-                                fun.count(block, counter);
-                                fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id })
-                            });
-                            state.stack_push(result);
-                        } else {
-                            let resolution = fun.resolve_receiver_type_from_profile(self_param, exit_id);
-                            let counter = Function::getivar_fallback_reason(resolution, ic);
-                            fun.count(block, counter);
-                            let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
-                            state.stack_push(result);
-                        }
+                        profiled_types_unique_shapes.push(profiled_type);
                     }
+                    let Some((new_block, result)) = fun.dispatch_getivar(
+                        &profiled_types_unique_shapes,
+                        block,
+                        insn_idx,
+                        self_param,
+                        id,
+                        ic,
+                        exit_id,
+                    ) else {
+                        // Side-exiting unconditionally; end the block
+                        break;
+                    };
+                    block = new_block;
+                    state.stack_push(result);
                 }
                 YARVINSN_setinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
@@ -9152,8 +9194,26 @@ fn add_iseq_to_hir(
                     let str = state.stack_pop()?;
                     let val = state.stack_pop()?;
 
-                    let anytostring = fun.push_insn(block, Insn::AnyToString { val, str, state: exit_id });
-                    state.stack_push(anytostring);
+                    // Mirror logic of rb_obj_as_string_result() (`anytostring` in insns.def)
+                    let has_type = fun.push_insn(block, Insn::HasType { val: str, expected: types::String });
+                    let iftrue_block = fun.new_block(insn_idx);
+                    let iffalse_block = fun.new_block(insn_idx);
+                    let join_block = fun.new_block(insn_idx);
+                    fun.push_insn(block, Insn::CondBranch {
+                        val: has_type,
+                        if_true: BranchEdge { target: iftrue_block, args: vec![] },
+                        if_false: BranchEdge { target: iffalse_block, args: vec![] }
+                    });
+                    // true block
+                    let refined = fun.push_insn(iftrue_block, Insn::RefineType { val: str, new_type: types::String });
+                    fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![refined] }));
+                    // false block
+                    let anytostring = fun.push_insn(iffalse_block, Insn::AnyToString { val, state: exit_id });
+                    fun.push_insn(iffalse_block, Insn::Jump(BranchEdge { target: join_block, args: vec![anytostring] }));
+                    // join block
+                    block = join_block;
+                    let result = fun.push_insn(join_block, Insn::Param);
+                    state.stack_push(result);
                 }
                 YARVINSN_getspecial => {
                     let key = get_arg(pc, 0).as_u64();
@@ -9410,6 +9470,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
                 id: local_id.into(),
                 offset: -(SIZEOF_VALUE_I32 * ep_offset),
                 val: local,
+                num_bits: types::BasicObject.num_bits(),
             });
         }
     }

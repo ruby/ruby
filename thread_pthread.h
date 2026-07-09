@@ -112,6 +112,11 @@ struct rb_native_thread {
 
     struct coroutine_context *nt_context;
     int dedicated;
+
+    // A terminating coroutine records its context here before its final
+    // transfer; this nt's loop reclaims it. (Not via coroutine_transfer()'s
+    // return value: its meaning differs between the amd64 asm and ucontext.)
+    struct coroutine_context *dead_co;
 };
 
 #undef except

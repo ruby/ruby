@@ -2921,6 +2921,32 @@ fn test_new_hash_empty_gc_stress() {
 }
 
 #[test]
+fn test_object_alloc_gc_stress() {
+    eval("
+        class Foo
+          def initialize
+            @a = 1
+            @b = 2
+          end
+          def sum = @a + @b
+        end
+        def make = Foo.new
+    ");
+    assert_contains_opcode("make", YARVINSN_opt_new);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make
+          foo = make
+          foo.instance_variable_set(:@c, 3)
+          [foo.class, foo.sum, foo.instance_variables]
+        ensure
+          GC.stress = false
+        end
+    "#), @"[Foo, 3, [:@a, :@b, :@c]]");
+}
+
+#[test]
 fn test_new_hash_nonempty() {
     eval(r#"
         def test
