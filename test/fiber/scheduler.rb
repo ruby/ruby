@@ -70,7 +70,7 @@ class Scheduler
 
     begin
       readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
-    rescue IOError
+    rescue IOError, Errno::EBADF
       # Ignore - this can happen if the IO is closed while we are waiting.
     end
 
@@ -84,7 +84,7 @@ class Scheduler
         @writable.delete(io) if @writable[io] == fiber
         selected[fiber] = IO::READABLE
       elsif io == @urgent.first
-        @urgent.first.read_nonblock(1024)
+        @urgent.first.read_nonblock(1024) rescue nil
       end
     end
 
@@ -168,7 +168,7 @@ class Scheduler
     self.run
   ensure
     if @urgent
-      @urgent.each(&:close)
+      @urgent.each{it.close rescue nil}
       @urgent = nil
     end
 
@@ -310,7 +310,7 @@ class Scheduler
     end
 
     io = @urgent.last
-    io.write_nonblock('.')
+    io.write_nonblock('.') rescue nil
   end
 
   class FiberInterrupt
@@ -512,6 +512,103 @@ class IOErrorScheduler < Scheduler
 
   def io_write(io, buffer, length, offset)
     return -Errno::EINVAL::Errno
+  end
+
+  def socket_send(socket, buffer, flags, destination = nil)
+    return -Errno::ENOTCONN::Errno
+  end
+
+  def socket_recv(socket, buffer, flags, from = nil)
+    return -Errno::ENOTSOCK::Errno
+  end
+
+  def socket_connect(socket, address)
+    return -Errno::EBADF::Errno
+  end
+
+  def socket_accept(socket, address)
+    return -Errno::ENOTSOCK::Errno
+  end
+
+  def socket_shutdown(socket, how)
+    return -Errno::EBADF::Errno
+  end
+end
+
+class SocketIOScheduler < Scheduler
+  def operations
+    @operations ||= []
+  end
+
+  def socket_send(socket, buffer, flags, destination = nil)
+    descriptor = socket.fileno
+    string = buffer.get_string
+
+    self.operations << [:socket_send, descriptor, string, flags, destination]
+
+    Fiber.blocking do
+      if destination
+        socket.send(string, flags, destination)
+      else
+        socket.send(string, flags)
+      end
+    end
+  end
+
+  def socket_recv(socket, buffer, flags, from = nil)
+    descriptor = socket.fileno
+
+    self.operations << [:socket_recv, descriptor, buffer.size, flags, !from.nil?]
+
+    Fiber.blocking do
+      if from
+        temp = Socket.for_fd(socket.fileno)
+        temp.autoclose = false
+        str, addrinfo = temp.recvfrom(buffer.size, flags)
+        buffer.set_string(str)
+        from.replace(addrinfo.to_s)
+        str.bytesize
+      else
+        str = socket.recv(buffer.size, flags)
+        buffer.set_string(str)
+        str.bytesize
+      end
+    end
+  end
+
+  def socket_connect(socket, address)
+    descriptor = socket.fileno
+
+    self.operations << [:socket_connect, descriptor, address]
+    addr2 = Addrinfo.new(address)
+
+    Fiber.blocking do
+      socket.connect(addr2.ip_address, addr2.ip_port)
+    end
+  end
+
+  def socket_accept(socket, address)
+    descriptor = socket.fileno
+
+    Fiber.blocking do
+      # Use Socket.for_fd with autoclose=false so GC doesn't close sock's fd.
+      temp = Socket.for_fd(socket.fileno)
+      temp.autoclose = false
+      conn, peer_addrinfo = temp.accept
+      address.replace(peer_addrinfo.to_s)
+      self.operations << [:socket_accept, descriptor, peer_addrinfo.to_s]
+      # Prevent conn from closing its fd on GC; the C side will own the fd.
+      conn.autoclose = false
+      conn.fileno
+    end
+  end
+
+  def socket_shutdown(socket, how)
+    descriptor = socket.fileno
+    self.operations << [:socket_shutdown, descriptor, how]
+    Fiber.blocking do
+      socket.shutdown(how)
+    end
   end
 end
 

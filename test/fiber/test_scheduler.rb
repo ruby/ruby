@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'securerandom'
 require 'fileutils'
+require 'socket'
 require_relative 'scheduler'
 
 class TestFiberScheduler < Test::Unit::TestCase
@@ -382,5 +383,390 @@ class TestFiberScheduler < Test::Unit::TestCase
   ensure
     thread.kill rescue nil
     FileUtils.rm_f(path)
+  end
+
+  def test_socket_send
+    s1, s2 = UNIXSocket.socketpair
+    operations = nil
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        s1.send('foo', 0)
+        s1.send('bar', 0)
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_send, s1.fileno, 'foo', 0, nil],
+      [:socket_send, s1.fileno, 'bar', 0, nil]
+    ], operations
+
+    assert_equal 'foobar', s2.recv(6)
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
+  def test_socket_send_udp
+    s1 = UDPSocket.new
+    s2 = UDPSocket.new
+    s2.bind('127.0.0.1', 0)
+    port = s2.addr[1]
+    destination = Addrinfo.new(s2.addr)
+    operations = nil
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        s1.send('foo', 0, destination)
+        s1.send('bar', 0, '127.0.0.1', port)
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_send, s1.fileno, 'foo', 0, destination.to_s],
+      [:socket_send, s1.fileno, 'bar', 0, destination.to_s]
+    ], operations
+
+    assert_equal 'foo', s2.recv(6)
+    assert_equal 'bar', s2.recv(6)
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
+  def test_socket_send_error
+    s1, s2 = UNIXSocket.socketpair
+    error = nil
+
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        s1.send('foo', 0)
+      rescue => error
+      end
+    end
+
+    thread.join
+    assert_kind_of Errno::ENOTCONN, error
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
+  def test_socket_recv
+    s1, s2 = UNIXSocket.socketpair
+    operations = nil
+
+    s1.send('foobar', 0)
+    s1.shutdown(:WR)
+    received = []
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        received << s2.recv(9)
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_recv, s2.fileno, 9, 0, false],
+    ], operations
+
+    assert_equal ['foobar'], received
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
+  def test_socket_recv_udp
+    s1 = UDPSocket.new
+    s1.bind('127.0.0.1', 0)
+    port_src = s1.addr[1]
+
+    s2 = UDPSocket.new
+    s2.bind('127.0.0.1', 0)
+
+    destination = Addrinfo.new(s2.addr)
+
+    operations = nil
+
+    s1.send('foobar', 0, destination)
+    received = []
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        received << s2.recvfrom(9)
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_recv, s2.fileno, 9, 0, true],
+    ], operations
+
+    assert_equal [['foobar', ["AF_INET", port_src, "127.0.0.1", "127.0.0.1"]]], received
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
+  def test_socket_recv_error
+    s1, s2 = UNIXSocket.socketpair
+    error = nil
+
+    s1.send('foobar', 0)
+    s1.shutdown(:WR)
+    received = []
+
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        received << s2.recv(9)
+      rescue => error
+      end
+    end
+
+    thread.join
+    assert_kind_of Errno::ENOTSOCK, error
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
+  def test_socket_connect
+    s1 = UDPSocket.new
+    s2 = UDPSocket.new
+    s2.bind('127.0.0.1', 0)
+    port = s2.addr[1]
+    addr = Addrinfo.udp('127.0.0.1', port)
+
+    operations = nil
+    result = nil
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        result = s1.connect('127.0.0.1', port)
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_connect, s1.fileno, addr.to_s],
+    ], operations
+    assert_equal 0, result
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
+  def test_socket_connect_error
+    s1 = UDPSocket.new
+    s2 = UDPSocket.new
+    s2.bind('127.0.0.1', 0)
+    port = s2.addr[1]
+
+    error = nil
+
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        s1.connect('127.0.0.1', port)
+      rescue => error
+      end
+    end
+
+    thread.join
+    assert_kind_of Errno::EBADF, error
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
+  def test_socket_accept
+    server = Socket.new(:INET, :STREAM, 0)
+    server.bind(Addrinfo.tcp('127.0.0.1', 0))
+    server.listen(5)
+
+    client = Socket.new(:INET, :STREAM, 0)
+    client.bind(Addrinfo.tcp('127.0.0.1', 0))
+    client_addr = Addrinfo.new(client.getsockname)
+    client.connect(server.connect_address)
+
+    operations = nil
+    conn = nil
+    addr = nil
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        conn, addr = server.accept
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_accept, server.fileno, client_addr.to_s]
+    ], operations
+    assert_kind_of Socket, conn
+    assert_equal client_addr.to_s, addr.to_s
+  ensure
+    thread.kill rescue nil
+    server.close rescue nil
+    client&.close rescue nil
+    conn&.close rescue nil
+  end
+
+  def test_socket_accept_tcpserver
+    server = TCPServer.new('127.0.0.1', 0)
+
+    client = Socket.new(:INET, :STREAM, 0)
+    client.bind(Addrinfo.tcp('127.0.0.1', 0))
+    client_addr = Addrinfo.new(client.getsockname)
+    client.connect(server.connect_address)
+
+    operations = nil
+    conn = nil
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        conn = server.accept
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_accept, server.fileno, client_addr.to_s]
+    ], operations
+    assert_kind_of TCPSocket, conn
+  ensure
+    thread.kill rescue nil
+    server.close rescue nil
+    client&.close rescue nil
+    conn&.close rescue nil
+  end
+
+  def test_socket_accept_error
+    server = Socket.new(:INET, :STREAM, 0)
+
+    error = nil
+
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        server.accept
+      rescue => error
+      end
+    end
+
+    thread.join
+    assert_kind_of Errno::ENOTSOCK, error
+  ensure
+    thread.kill rescue nil
+    server.close rescue nil
+  end
+
+  def test_socket_shutdown
+    server = Socket.new(:INET, :STREAM, 0)
+    server.bind(Addrinfo.tcp('127.0.0.1', 0))
+    server.listen(5)
+
+    client = Socket.new(:INET, :STREAM, 0)
+    client.connect(server.connect_address)
+
+    operations = nil
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        client.shutdown(Socket::SHUT_WR)
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_shutdown, client.fileno, Socket::SHUT_WR]
+    ], operations
+  ensure
+    thread.kill rescue nil
+    server.close rescue nil
+    client&.close rescue nil
+  end
+
+  def test_socket_shutdown_error
+    socket = Socket.new(:INET, :STREAM, 0)
+
+    error = nil
+
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        socket.shutdown
+      rescue => error
+      end
+    end
+
+    thread.join
+    assert_kind_of Errno::EBADF, error
+  ensure
+    thread.kill rescue nil
+    socket.close rescue nil
   end
 end

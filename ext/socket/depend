@@ -179,6 +179,7 @@ ancdata.o: $(hdrdir)/ruby/internal/variable.h
 ancdata.o: $(hdrdir)/ruby/internal/warning_push.h
 ancdata.o: $(hdrdir)/ruby/internal/xmalloc.h
 ancdata.o: $(hdrdir)/ruby/io.h
+ancdata.o: $(hdrdir)/ruby/io/buffer.h
 ancdata.o: $(hdrdir)/ruby/missing.h
 ancdata.o: $(hdrdir)/ruby/onigmo.h
 ancdata.o: $(hdrdir)/ruby/oniguruma.h
@@ -204,6 +205,7 @@ ancdata.o: $(top_srcdir)/internal/error.h
 ancdata.o: $(top_srcdir)/internal/gc.h
 ancdata.o: $(top_srcdir)/internal/imemo.h
 ancdata.o: $(top_srcdir)/internal/io.h
+ancdata.o: $(top_srcdir)/internal/io_buffer.h
 ancdata.o: $(top_srcdir)/internal/sanitizers.h
 ancdata.o: $(top_srcdir)/internal/serial.h
 ancdata.o: $(top_srcdir)/internal/set_table.h
@@ -395,6 +397,7 @@ basicsocket.o: $(hdrdir)/ruby/internal/variable.h
 basicsocket.o: $(hdrdir)/ruby/internal/warning_push.h
 basicsocket.o: $(hdrdir)/ruby/internal/xmalloc.h
 basicsocket.o: $(hdrdir)/ruby/io.h
+basicsocket.o: $(hdrdir)/ruby/io/buffer.h
 basicsocket.o: $(hdrdir)/ruby/missing.h
 basicsocket.o: $(hdrdir)/ruby/onigmo.h
 basicsocket.o: $(hdrdir)/ruby/oniguruma.h
@@ -420,6 +423,7 @@ basicsocket.o: $(top_srcdir)/internal/error.h
 basicsocket.o: $(top_srcdir)/internal/gc.h
 basicsocket.o: $(top_srcdir)/internal/imemo.h
 basicsocket.o: $(top_srcdir)/internal/io.h
+basicsocket.o: $(top_srcdir)/internal/io_buffer.h
 basicsocket.o: $(top_srcdir)/internal/sanitizers.h
 basicsocket.o: $(top_srcdir)/internal/serial.h
 basicsocket.o: $(top_srcdir)/internal/set_table.h
@@ -611,6 +615,7 @@ constants.o: $(hdrdir)/ruby/internal/variable.h
 constants.o: $(hdrdir)/ruby/internal/warning_push.h
 constants.o: $(hdrdir)/ruby/internal/xmalloc.h
 constants.o: $(hdrdir)/ruby/io.h
+constants.o: $(hdrdir)/ruby/io/buffer.h
 constants.o: $(hdrdir)/ruby/missing.h
 constants.o: $(hdrdir)/ruby/onigmo.h
 constants.o: $(hdrdir)/ruby/oniguruma.h
@@ -636,6 +641,7 @@ constants.o: $(top_srcdir)/internal/error.h
 constants.o: $(top_srcdir)/internal/gc.h
 constants.o: $(top_srcdir)/internal/imemo.h
 constants.o: $(top_srcdir)/internal/io.h
+constants.o: $(top_srcdir)/internal/io_buffer.h
 constants.o: $(top_srcdir)/internal/sanitizers.h
 constants.o: $(top_srcdir)/internal/serial.h
 constants.o: $(top_srcdir)/internal/set_table.h
@@ -828,6 +834,7 @@ ifaddr.o: $(hdrdir)/ruby/internal/variable.h
 ifaddr.o: $(hdrdir)/ruby/internal/warning_push.h
 ifaddr.o: $(hdrdir)/ruby/internal/xmalloc.h
 ifaddr.o: $(hdrdir)/ruby/io.h
+ifaddr.o: $(hdrdir)/ruby/io/buffer.h
 ifaddr.o: $(hdrdir)/ruby/missing.h
 ifaddr.o: $(hdrdir)/ruby/onigmo.h
 ifaddr.o: $(hdrdir)/ruby/oniguruma.h
@@ -853,6 +860,7 @@ ifaddr.o: $(top_srcdir)/internal/error.h
 ifaddr.o: $(top_srcdir)/internal/gc.h
 ifaddr.o: $(top_srcdir)/internal/imemo.h
 ifaddr.o: $(top_srcdir)/internal/io.h
+ifaddr.o: $(top_srcdir)/internal/io_buffer.h
 ifaddr.o: $(top_srcdir)/internal/sanitizers.h
 ifaddr.o: $(top_srcdir)/internal/serial.h
 ifaddr.o: $(top_srcdir)/internal/set_table.h
@@ -1044,6 +1052,7 @@ init.o: $(hdrdir)/ruby/internal/variable.h
 init.o: $(hdrdir)/ruby/internal/warning_push.h
 init.o: $(hdrdir)/ruby/internal/xmalloc.h
 init.o: $(hdrdir)/ruby/io.h
+init.o: $(hdrdir)/ruby/io/buffer.h
 init.o: $(hdrdir)/ruby/missing.h
 init.o: $(hdrdir)/ruby/onigmo.h
 init.o: $(hdrdir)/ruby/oniguruma.h
@@ -1069,6 +1078,7 @@ init.o: $(top_srcdir)/internal/error.h
 init.o: $(top_srcdir)/internal/gc.h
 init.o: $(top_srcdir)/internal/imemo.h
 init.o: $(top_srcdir)/internal/io.h
+init.o: $(top_srcdir)/internal/io_buffer.h
 init.o: $(top_srcdir)/internal/sanitizers.h
 init.o: $(top_srcdir)/internal/serial.h
 init.o: $(top_srcdir)/internal/set_table.h
@@ -1260,6 +1270,7 @@ ipsocket.o: $(hdrdir)/ruby/internal/variable.h
 ipsocket.o: $(hdrdir)/ruby/internal/warning_push.h
 ipsocket.o: $(hdrdir)/ruby/internal/xmalloc.h
 ipsocket.o: $(hdrdir)/ruby/io.h
+ipsocket.o: $(hdrdir)/ruby/io/buffer.h
 ipsocket.o: $(hdrdir)/ruby/missing.h
 ipsocket.o: $(hdrdir)/ruby/onigmo.h
 ipsocket.o: $(hdrdir)/ruby/oniguruma.h
@@ -1285,6 +1296,7 @@ ipsocket.o: $(top_srcdir)/internal/error.h
 ipsocket.o: $(top_srcdir)/internal/gc.h
 ipsocket.o: $(top_srcdir)/internal/imemo.h
 ipsocket.o: $(top_srcdir)/internal/io.h
+ipsocket.o: $(top_srcdir)/internal/io_buffer.h
 ipsocket.o: $(top_srcdir)/internal/sanitizers.h
 ipsocket.o: $(top_srcdir)/internal/serial.h
 ipsocket.o: $(top_srcdir)/internal/set_table.h
@@ -1476,6 +1488,7 @@ option.o: $(hdrdir)/ruby/internal/variable.h
 option.o: $(hdrdir)/ruby/internal/warning_push.h
 option.o: $(hdrdir)/ruby/internal/xmalloc.h
 option.o: $(hdrdir)/ruby/io.h
+option.o: $(hdrdir)/ruby/io/buffer.h
 option.o: $(hdrdir)/ruby/missing.h
 option.o: $(hdrdir)/ruby/onigmo.h
 option.o: $(hdrdir)/ruby/oniguruma.h
@@ -1501,6 +1514,7 @@ option.o: $(top_srcdir)/internal/error.h
 option.o: $(top_srcdir)/internal/gc.h
 option.o: $(top_srcdir)/internal/imemo.h
 option.o: $(top_srcdir)/internal/io.h
+option.o: $(top_srcdir)/internal/io_buffer.h
 option.o: $(top_srcdir)/internal/sanitizers.h
 option.o: $(top_srcdir)/internal/serial.h
 option.o: $(top_srcdir)/internal/set_table.h
@@ -1692,6 +1706,7 @@ raddrinfo.o: $(hdrdir)/ruby/internal/variable.h
 raddrinfo.o: $(hdrdir)/ruby/internal/warning_push.h
 raddrinfo.o: $(hdrdir)/ruby/internal/xmalloc.h
 raddrinfo.o: $(hdrdir)/ruby/io.h
+raddrinfo.o: $(hdrdir)/ruby/io/buffer.h
 raddrinfo.o: $(hdrdir)/ruby/missing.h
 raddrinfo.o: $(hdrdir)/ruby/onigmo.h
 raddrinfo.o: $(hdrdir)/ruby/oniguruma.h
@@ -1717,6 +1732,7 @@ raddrinfo.o: $(top_srcdir)/internal/error.h
 raddrinfo.o: $(top_srcdir)/internal/gc.h
 raddrinfo.o: $(top_srcdir)/internal/imemo.h
 raddrinfo.o: $(top_srcdir)/internal/io.h
+raddrinfo.o: $(top_srcdir)/internal/io_buffer.h
 raddrinfo.o: $(top_srcdir)/internal/sanitizers.h
 raddrinfo.o: $(top_srcdir)/internal/serial.h
 raddrinfo.o: $(top_srcdir)/internal/set_table.h
@@ -1908,6 +1924,7 @@ socket.o: $(hdrdir)/ruby/internal/variable.h
 socket.o: $(hdrdir)/ruby/internal/warning_push.h
 socket.o: $(hdrdir)/ruby/internal/xmalloc.h
 socket.o: $(hdrdir)/ruby/io.h
+socket.o: $(hdrdir)/ruby/io/buffer.h
 socket.o: $(hdrdir)/ruby/missing.h
 socket.o: $(hdrdir)/ruby/onigmo.h
 socket.o: $(hdrdir)/ruby/oniguruma.h
@@ -1933,6 +1950,7 @@ socket.o: $(top_srcdir)/internal/error.h
 socket.o: $(top_srcdir)/internal/gc.h
 socket.o: $(top_srcdir)/internal/imemo.h
 socket.o: $(top_srcdir)/internal/io.h
+socket.o: $(top_srcdir)/internal/io_buffer.h
 socket.o: $(top_srcdir)/internal/sanitizers.h
 socket.o: $(top_srcdir)/internal/serial.h
 socket.o: $(top_srcdir)/internal/set_table.h
@@ -2124,6 +2142,7 @@ sockssocket.o: $(hdrdir)/ruby/internal/variable.h
 sockssocket.o: $(hdrdir)/ruby/internal/warning_push.h
 sockssocket.o: $(hdrdir)/ruby/internal/xmalloc.h
 sockssocket.o: $(hdrdir)/ruby/io.h
+sockssocket.o: $(hdrdir)/ruby/io/buffer.h
 sockssocket.o: $(hdrdir)/ruby/missing.h
 sockssocket.o: $(hdrdir)/ruby/onigmo.h
 sockssocket.o: $(hdrdir)/ruby/oniguruma.h
@@ -2149,6 +2168,7 @@ sockssocket.o: $(top_srcdir)/internal/error.h
 sockssocket.o: $(top_srcdir)/internal/gc.h
 sockssocket.o: $(top_srcdir)/internal/imemo.h
 sockssocket.o: $(top_srcdir)/internal/io.h
+sockssocket.o: $(top_srcdir)/internal/io_buffer.h
 sockssocket.o: $(top_srcdir)/internal/sanitizers.h
 sockssocket.o: $(top_srcdir)/internal/serial.h
 sockssocket.o: $(top_srcdir)/internal/set_table.h
@@ -2340,6 +2360,7 @@ tcpserver.o: $(hdrdir)/ruby/internal/variable.h
 tcpserver.o: $(hdrdir)/ruby/internal/warning_push.h
 tcpserver.o: $(hdrdir)/ruby/internal/xmalloc.h
 tcpserver.o: $(hdrdir)/ruby/io.h
+tcpserver.o: $(hdrdir)/ruby/io/buffer.h
 tcpserver.o: $(hdrdir)/ruby/missing.h
 tcpserver.o: $(hdrdir)/ruby/onigmo.h
 tcpserver.o: $(hdrdir)/ruby/oniguruma.h
@@ -2365,6 +2386,7 @@ tcpserver.o: $(top_srcdir)/internal/error.h
 tcpserver.o: $(top_srcdir)/internal/gc.h
 tcpserver.o: $(top_srcdir)/internal/imemo.h
 tcpserver.o: $(top_srcdir)/internal/io.h
+tcpserver.o: $(top_srcdir)/internal/io_buffer.h
 tcpserver.o: $(top_srcdir)/internal/sanitizers.h
 tcpserver.o: $(top_srcdir)/internal/serial.h
 tcpserver.o: $(top_srcdir)/internal/set_table.h
@@ -2556,6 +2578,7 @@ tcpsocket.o: $(hdrdir)/ruby/internal/variable.h
 tcpsocket.o: $(hdrdir)/ruby/internal/warning_push.h
 tcpsocket.o: $(hdrdir)/ruby/internal/xmalloc.h
 tcpsocket.o: $(hdrdir)/ruby/io.h
+tcpsocket.o: $(hdrdir)/ruby/io/buffer.h
 tcpsocket.o: $(hdrdir)/ruby/missing.h
 tcpsocket.o: $(hdrdir)/ruby/onigmo.h
 tcpsocket.o: $(hdrdir)/ruby/oniguruma.h
@@ -2581,6 +2604,7 @@ tcpsocket.o: $(top_srcdir)/internal/error.h
 tcpsocket.o: $(top_srcdir)/internal/gc.h
 tcpsocket.o: $(top_srcdir)/internal/imemo.h
 tcpsocket.o: $(top_srcdir)/internal/io.h
+tcpsocket.o: $(top_srcdir)/internal/io_buffer.h
 tcpsocket.o: $(top_srcdir)/internal/sanitizers.h
 tcpsocket.o: $(top_srcdir)/internal/serial.h
 tcpsocket.o: $(top_srcdir)/internal/set_table.h
@@ -2772,6 +2796,7 @@ udpsocket.o: $(hdrdir)/ruby/internal/variable.h
 udpsocket.o: $(hdrdir)/ruby/internal/warning_push.h
 udpsocket.o: $(hdrdir)/ruby/internal/xmalloc.h
 udpsocket.o: $(hdrdir)/ruby/io.h
+udpsocket.o: $(hdrdir)/ruby/io/buffer.h
 udpsocket.o: $(hdrdir)/ruby/missing.h
 udpsocket.o: $(hdrdir)/ruby/onigmo.h
 udpsocket.o: $(hdrdir)/ruby/oniguruma.h
@@ -2797,6 +2822,7 @@ udpsocket.o: $(top_srcdir)/internal/error.h
 udpsocket.o: $(top_srcdir)/internal/gc.h
 udpsocket.o: $(top_srcdir)/internal/imemo.h
 udpsocket.o: $(top_srcdir)/internal/io.h
+udpsocket.o: $(top_srcdir)/internal/io_buffer.h
 udpsocket.o: $(top_srcdir)/internal/sanitizers.h
 udpsocket.o: $(top_srcdir)/internal/serial.h
 udpsocket.o: $(top_srcdir)/internal/set_table.h
@@ -2988,6 +3014,7 @@ unixserver.o: $(hdrdir)/ruby/internal/variable.h
 unixserver.o: $(hdrdir)/ruby/internal/warning_push.h
 unixserver.o: $(hdrdir)/ruby/internal/xmalloc.h
 unixserver.o: $(hdrdir)/ruby/io.h
+unixserver.o: $(hdrdir)/ruby/io/buffer.h
 unixserver.o: $(hdrdir)/ruby/missing.h
 unixserver.o: $(hdrdir)/ruby/onigmo.h
 unixserver.o: $(hdrdir)/ruby/oniguruma.h
@@ -3013,6 +3040,7 @@ unixserver.o: $(top_srcdir)/internal/error.h
 unixserver.o: $(top_srcdir)/internal/gc.h
 unixserver.o: $(top_srcdir)/internal/imemo.h
 unixserver.o: $(top_srcdir)/internal/io.h
+unixserver.o: $(top_srcdir)/internal/io_buffer.h
 unixserver.o: $(top_srcdir)/internal/sanitizers.h
 unixserver.o: $(top_srcdir)/internal/serial.h
 unixserver.o: $(top_srcdir)/internal/set_table.h
@@ -3204,6 +3232,7 @@ unixsocket.o: $(hdrdir)/ruby/internal/variable.h
 unixsocket.o: $(hdrdir)/ruby/internal/warning_push.h
 unixsocket.o: $(hdrdir)/ruby/internal/xmalloc.h
 unixsocket.o: $(hdrdir)/ruby/io.h
+unixsocket.o: $(hdrdir)/ruby/io/buffer.h
 unixsocket.o: $(hdrdir)/ruby/missing.h
 unixsocket.o: $(hdrdir)/ruby/onigmo.h
 unixsocket.o: $(hdrdir)/ruby/oniguruma.h
@@ -3229,6 +3258,7 @@ unixsocket.o: $(top_srcdir)/internal/error.h
 unixsocket.o: $(top_srcdir)/internal/gc.h
 unixsocket.o: $(top_srcdir)/internal/imemo.h
 unixsocket.o: $(top_srcdir)/internal/io.h
+unixsocket.o: $(top_srcdir)/internal/io_buffer.h
 unixsocket.o: $(top_srcdir)/internal/sanitizers.h
 unixsocket.o: $(top_srcdir)/internal/serial.h
 unixsocket.o: $(top_srcdir)/internal/set_table.h

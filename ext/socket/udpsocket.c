@@ -153,7 +153,40 @@ udp_send_internal(VALUE v)
     struct addrinfo *res;
 
     rb_io_check_closed(fptr = arg->fptr);
+
+#if defined(RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SEND) && defined(HAVE_RB_FIBER_SCHEDULER_SOCKET_ADDRESS_PACK)
+    VALUE scheduler = rb_fiber_scheduler_current();
+#ifdef MSG_DONTWAIT
+    int use_scheduler = (scheduler != Qnil) && !(arg->sarg.flags & MSG_DONTWAIT);
+#else
+    int use_scheduler = (scheduler != Qnil);
+#endif
+#endif
+
     for (res = arg->res->ai; res; res = res->ai_next) {
+#if defined(RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SEND) && defined(HAVE_RB_FIBER_SCHEDULER_SOCKET_ADDRESS_PACK)
+        if (use_scheduler) {
+            VALUE destination = rb_fiber_scheduler_socket_address_pack(res->ai_addr, res->ai_addrlen);
+            struct rsock_scheduler_socket_send_arguments arguments = {
+                .scheduler = scheduler,
+                .socket = fptr->self,
+                .flags = arg->sarg.flags,
+                .destination = destination,
+            };
+            VALUE result = rb_io_buffer_for_reading(arg->sarg.mesg, rsock_scheduler_socket_send, (VALUE)&arguments);
+            if (UNDEF_P(result)) {
+                /* Scheduler doesn't implement socket_send; fall back to blocking for all addrs. */
+                use_scheduler = 0;
+            }
+            else {
+                if (rb_fiber_scheduler_io_result_apply(result) >= 0)
+                    return result;
+                /* Scheduler reported an error for this addr; try the next one. */
+                continue;
+            }
+        }
+#endif
+
       retry:
         arg->sarg.fd = fptr->fd;
         arg->sarg.to = res->ai_addr;

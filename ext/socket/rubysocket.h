@@ -149,7 +149,33 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "sockport.h"
+#ifdef HAVE_INTERNAL_IO_BUFFER_H
+#include "internal/io_buffer.h"
+#endif
+#ifdef HAVE_RUBY_FIBER_SCHEDULER_H
 #include "ruby/fiber/scheduler.h"
+#endif
+
+#if defined(HAVE_RB_FIBER_SCHEDULER_CURRENT)
+# if defined(HAVE_RB_FIBER_SCHEDULER_ADDRESS_RESOLVE)
+#  define RSOCK_HAVE_FIBER_SCHEDULER_ADDRESS_RESOLVE 1
+# endif
+# if defined(HAVE_RB_FIBER_SCHEDULER_SOCKET_SEND) && defined(HAVE_RB_IO_BUFFER_FOR_READING)
+#  define RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SEND 1
+# endif
+# if defined(HAVE_RB_FIBER_SCHEDULER_SOCKET_RECV) && defined(HAVE_RB_IO_BUFFER_FOR_WRITING)
+#  define RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_RECV 1
+# endif
+# if defined(HAVE_RB_FIBER_SCHEDULER_SOCKET_CONNECT) && defined(HAVE_RB_FIBER_SCHEDULER_SOCKET_ADDRESS_PACK)
+#  define RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_CONNECT 1
+# endif
+# if defined(HAVE_RB_FIBER_SCHEDULER_SOCKET_ACCEPT) && defined(HAVE_RB_FIBER_SCHEDULER_SOCKET_ADDRESS_UNPACK)
+#  define RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_ACCEPT 1
+# endif
+# if defined(HAVE_RB_FIBER_SCHEDULER_SOCKET_SHUTDOWN)
+#  define RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SHUTDOWN 1
+# endif
+#endif
 
 #ifndef HAVE_TYPE_SOCKLEN_T
 typedef int socklen_t;
@@ -367,6 +393,16 @@ struct rsock_send_arg {
 
 VALUE rsock_sendto_blocking(void *data);
 VALUE rsock_send_blocking(void *data);
+#ifdef RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SEND
+struct rsock_scheduler_socket_send_arguments {
+    VALUE scheduler;
+    VALUE socket;
+    int flags;
+    VALUE destination;
+};
+
+VALUE rsock_scheduler_socket_send(VALUE buffer, VALUE argument);
+#endif
 VALUE rsock_bsock_send(int argc, VALUE *argv, VALUE sock);
 
 enum sock_recv_type {

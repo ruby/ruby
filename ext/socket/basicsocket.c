@@ -9,6 +9,7 @@
 ************************************************/
 
 #include "rubysocket.h"
+#include "ruby/fiber/scheduler.h"
 
 #ifdef _WIN32
 #define is_socket(fd) rb_w32_is_socket(fd)
@@ -102,6 +103,19 @@ bsock_shutdown(int argc, VALUE *argv, VALUE sock)
         }
     }
     GetOpenFile(sock, fptr);
+
+#ifdef RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SHUTDOWN
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_socket_shutdown(scheduler, sock, how);
+        if (!UNDEF_P(result)) {
+            if (rb_fiber_scheduler_io_result_apply(result) < 0)
+                rb_sys_fail("shutdown(2)");
+            return INT2FIX(0);
+        }
+    }
+#endif
+
     if (shutdown(fptr->fd, how) == -1)
         rb_sys_fail("shutdown(2)");
 
@@ -586,6 +600,28 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE socket)
         func = rsock_send_blocking;
         funcname = "send(2)";
     }
+
+#ifdef RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SEND
+    VALUE scheduler = rb_fiber_scheduler_current();
+#ifdef MSG_DONTWAIT
+    if (scheduler != Qnil && !(NUM2INT(flags) & MSG_DONTWAIT)) {
+#else
+    if (scheduler != Qnil) {
+#endif
+        struct rsock_scheduler_socket_send_arguments arguments = {
+            .scheduler = scheduler,
+            .socket = socket,
+            .flags = NUM2INT(flags),
+            .destination = to,
+        };
+        VALUE result = rb_io_buffer_for_reading(arg.mesg, rsock_scheduler_socket_send, (VALUE)&arguments);
+        if (!UNDEF_P(result)) {
+            if (rb_fiber_scheduler_io_result_apply(result) < 0)
+                rb_sys_fail(funcname);
+            return result;
+        }
+    }
+#endif
 
     RB_IO_POINTER(socket, fptr);
 

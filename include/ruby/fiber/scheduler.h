@@ -10,7 +10,6 @@
  * @brief      Scheduler APIs.
  */
 #include "ruby/internal/config.h"
-
 #include <errno.h>
 
 #ifdef STDC_HEADERS
@@ -21,10 +20,16 @@
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/arithmetic.h"
 
+/* Forward declaration to avoid pulling in <sys/socket.h> (or <net/socket.h>
+ * on Haiku). Callers that need the full definition must include the relevant
+ * socket header themselves before including this file. */
+struct sockaddr;
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 // Version 3: Adds support for `fiber_interrupt`.
-#define RUBY_FIBER_SCHEDULER_VERSION 3
+// Version 4: Adds support for socket_* hooks.
+#define RUBY_FIBER_SCHEDULER_VERSION 4
 
 struct timeval;
 struct rb_thread_struct;
@@ -499,6 +504,89 @@ VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exc
  * @return     The created and scheduled fiber.
  */
 VALUE rb_fiber_scheduler_fiber(VALUE scheduler, int argc, VALUE *argv, int kw_splat);
+
+/**
+ * Non-blocking single send operation to the passed Socket.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   socket       A socket object to send to.
+ * @param[in]   buffer       The buffer to send from. The scheduler should send
+ *                           at most `buffer.size` bytes.
+ * @param[in]   flags        The flags to use for sending.
+ * @param[in]   destination  Optional send destination.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_send`.
+ * @return      otherwise    What `scheduler.socket_send` returns `[-errno, size]`.
+ */
+VALUE rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE destination);
+
+/**
+ * Non-blocking single recv operation from the passed Socket.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   socket       A socket object to receive from.
+ * @param[in]   buffer       The buffer to receive into. The scheduler should
+ *                           receive at most `buffer.size` bytes.
+ * @param[in]   flags        The flags to use for receiving.
+ * @param[in]   from         A mutable String to receive the source address into,
+ *                           or Qnil if the source address is not needed.
+ *                           The scheduler fills it by calling `from.replace(packed_sockaddr)`.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_recv`.
+ * @return      otherwise    What `scheduler.socket_recv` returns (received byte count or -errno).
+ */
+VALUE rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE from);
+
+/**
+ * Non-blocking connect with the passed Socket to the given address.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   socket       A socket object to connect.
+ * @param[in]   address      A packed string containing the destination addrinfo.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_connect`.
+ * @return      otherwise    What `scheduler.socket_connect` returns `[-errno, 0]`.
+ */
+VALUE rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE address);
+
+/**
+ * Non-blocking accept connection from the passed Socket.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   socket       A socket object to accept connections on.
+ * @param[in]   address      A mutable String to receive the peer's packed sockaddr.
+ *                           The scheduler fills it by calling `address.replace(packed_sockaddr)`.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_accept`.
+ * @return      otherwise    What `scheduler.socket_accept` returns (peer fd or -errno).
+ */
+VALUE rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE socket, VALUE address);
+
+/**
+ * Non-blocking shutdown of the passed Socket.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   socket       A socket object to shut down.
+ * @param[in]   how          How to shut down: SHUT_RD=0, SHUT_WR=1, SHUT_RDWR=2.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_shutdown`.
+ * @return      otherwise    What `scheduler.socket_shutdown` returns (0 or -errno).
+ */
+VALUE rb_fiber_scheduler_socket_shutdown(VALUE scheduler, VALUE socket, int how);
+
+/**
+ * Pack a struct sockaddr into a Ruby String for passing to a scheduler hook.
+ *
+ * @param[in]   address  Pointer to the sockaddr to pack.
+ * @param[in]   size     Length of the sockaddr in bytes.
+ * @return      A new String containing the raw bytes of the sockaddr.
+ */
+VALUE rb_fiber_scheduler_socket_address_pack(const struct sockaddr *address, size_t size);
+
+/**
+ * Unpack a Ruby String (filled by a scheduler hook) back into a C sockaddr buffer.
+ *
+ * @param[in]    buffer   The String returned by a scheduler hook.
+ * @param[out]   address  The sockaddr buffer to copy into.
+ * @param[in]    size     The maximum number of bytes to copy.
+ * @return       The number of bytes copied, or 0 if `str` is empty.
+ */
+size_t rb_fiber_scheduler_socket_address_unpack(VALUE buffer, struct sockaddr *address, size_t size);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
