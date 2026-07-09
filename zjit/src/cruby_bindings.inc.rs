@@ -2234,6 +2234,11 @@ unsafe extern "C" {
     pub fn rb_iseq_label(iseq: *const rb_iseq_t) -> VALUE;
     pub fn rb_iseq_defined_string(type_: defined_type) -> VALUE;
     pub fn rb_zjit_hash_new_size() -> usize;
+    pub fn rb_zjit_class_allocate_instance_fastpath(
+        klass: VALUE,
+        size_out: *mut usize,
+        shape_id_out: *mut shape_id_t,
+    ) -> bool;
     pub fn rb_profile_frames(
         start: ::std::os::raw::c_int,
         limit: ::std::os::raw::c_int,

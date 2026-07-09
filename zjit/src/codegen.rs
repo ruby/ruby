@@ -627,7 +627,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ArrayPop { array, state } => gen_array_pop(asm, opnd!(array), &function.frame_state(*state)),
         Insn::ArrayLength { array } => gen_array_length(asm, opnd!(array)),
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, function, opnd!(val), &function.frame_state(*state)),
-        &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(asm, class, &function.frame_state(state)),
+        &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(jit, asm, class, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, function, opnds!(strings), &function.frame_state(*state)),
         &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
@@ -2344,13 +2344,24 @@ fn gen_object_alloc(jit: &JITState, asm: &mut Assembler, function: &Function, va
     asm_ccall!(asm, rb_obj_alloc, val)
 }
 
-fn gen_object_alloc_class(asm: &mut Assembler, class: VALUE, state: &FrameState) -> lir::Opnd {
+fn gen_object_alloc_class(jit: &mut JITState, asm: &mut Assembler, class: VALUE, state: &FrameState) -> lir::Opnd {
     // Allocating an object for a known class with default allocator is leaf; see doc for
     // `ObjectAllocClass`.
     gen_prepare_leaf_call_with_gc(asm, state);
     if unsafe { rb_zjit_class_has_default_allocator(class) } {
-        // TODO(max): inline code to allocate an instance
-        asm_ccall!(asm, rb_class_allocate_instance, class.into())
+        let mut alloc_size: usize = 0;
+        let mut shape_id: shape_id_t = 0;
+        let has_fastpath = unsafe {
+            rb_zjit_class_allocate_instance_fastpath(class, &mut alloc_size, &mut shape_id)
+        };
+        if has_fastpath {
+            let flags = (RUBY_T_OBJECT as u64) | ((shape_id as u64) << RB_SHAPE_FLAG_SHIFT as u64);
+            gc_fastpath::gc_fast_path_new_obj(jit, asm, alloc_size, flags, class, |asm| {
+                asm_ccall!(asm, rb_class_allocate_instance, class.into())
+            })
+        } else {
+            asm_ccall!(asm, rb_class_allocate_instance, class.into())
+        }
     } else {
         assert!(class_has_leaf_allocator(class), "class passed to ObjectAllocClass must have a leaf allocator");
         let alloc_func = unsafe { rb_zjit_class_get_alloc_func(class) };

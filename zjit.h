@@ -4,6 +4,8 @@
 // This file contains definitions ZJIT exposes to the CRuby codebase
 //
 
+#include "shape.h" // for shape_id_t
+
 // ZJIT_STATS controls whether to support runtime counters in the interpreter
 #ifndef ZJIT_STATS
 # define ZJIT_STATS (USE_ZJIT && RUBY_DEBUG)
@@ -91,6 +93,7 @@ void rb_zjit_invalidate_root_box(void);
 void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_frame);
 void rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
 size_t rb_zjit_hash_new_size(void);
+bool rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, shape_id_t *shape_id_out);
 
 // Special value for cfp->jit_return that means "this is a C method frame, use
 // rb_zjit_c_frame as the JITFrame". We don't control the native stack layout
