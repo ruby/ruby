@@ -231,6 +231,8 @@ make_counters! {
         exit_block_param_proxy_not_proc,
         exit_block_param_proxy_fallback_miss,
         exit_block_param_proxy_profile_not_covered,
+        exit_invoke_block_handler_not_iseq,
+        exit_invoke_block_iseq_changed,
         exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
         exit_too_many_args_for_lir,
@@ -305,6 +307,7 @@ make_counters! {
         inline_iseq_optimized_send_count,
         non_variadic_cfunc_optimized_send_count,
         variadic_cfunc_optimized_send_count,
+        block_iseq_direct_optimized_send_count,
     }
 
     // Ivar fallback counters that are summed as dynamic_setivar_count
@@ -635,6 +638,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         BlockParamProxyNotProc       => exit_block_param_proxy_not_proc,
         BlockParamProxyFallbackMiss => exit_block_param_proxy_fallback_miss,
         BlockParamProxyProfileNotCovered => exit_block_param_proxy_profile_not_covered,
+        InvokeBlockHandlerNotIseq     => exit_invoke_block_handler_not_iseq,
+        InvokeBlockIseqChanged        => exit_invoke_block_iseq_changed,
         BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
         TooManyArgsForLir             => exit_too_many_args_for_lir,

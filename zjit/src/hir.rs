@@ -559,6 +559,8 @@ pub enum SideExitReason {
     BlockParamProxyNotProc,
     BlockParamProxyFallbackMiss,
     BlockParamProxyProfileNotCovered,
+    InvokeBlockHandlerNotIseq,
+    InvokeBlockIseqChanged,
     BlockParamWbRequired,
     StackOverflow,
     FixnumModByZero,
@@ -821,6 +823,7 @@ pub enum FieldName {
     VM_ENV_DATA_INDEX_SPECVAL,
     VM_ENV_DATA_INDEX_FLAGS,
     RBASIC_FLAGS,
+    code_iseq,
     shape_id,
     as_heap,
     fields_obj,
@@ -1123,6 +1126,18 @@ pub enum Insn {
         args: Vec<InsnId>,
         state: InsnId,
         kw_splat: bool,
+    },
+    /// Fast-path `yield`: the enclosing frame's block is a known ISEQ block, so push its frame
+    /// inline and jump straight to its JIT entry. `iseq` is the comptime-known block iseq; the
+    /// tag + iseq-identity guards live in preceding HIR instructions, and `captured` is the
+    /// guarded, untagged `struct rb_captured_block *` codegen reads self/ep from. Args are the
+    /// positional arguments (lead-only, exact arity).
+    InvokeBlockIseqDirect {
+        iseq: IseqPtr,
+        /// Guarded `struct rb_captured_block *` (block handler with the ISEQ tag masked off).
+        captured: InsnId,
+        args: Vec<InsnId>,
+        state: InsnId,
     },
 
     /// Optimized ISEQ call
@@ -1490,6 +1505,11 @@ macro_rules! for_each_operand_impl {
                 $visit_many!(args);
                 $visit_one!(*state);
             }
+            Insn::InvokeBlockIseqDirect { captured, args, state, .. } => {
+                $visit_one!(*captured);
+                $visit_many!(args);
+                $visit_one!(*state);
+            }
             Insn::InvokeBlockIfunc { block_handler, args, state, .. } => {
                 $visit_one!(*block_handler);
                 $visit_many!(args);
@@ -1809,6 +1829,7 @@ impl Insn {
             Insn::IncrCounterPtr { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
             Insn::CheckInterrupts { .. } => Effect::read_write(abstract_heaps::InterruptFlag, abstract_heaps::Control),
             Insn::InvokeProc { .. } => effects::Any,
+            Insn::InvokeBlockIseqDirect { .. } => effects::Any,
             Insn::RefineType { .. } => effects::Empty,
             Insn::HasType { expected, .. }
                 => Effect::read_write(
@@ -2123,6 +2144,11 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 if *kw_splat {
                     write!(f, ", kw_splat")?;
                 }
+                Ok(())
+            }
+            Insn::InvokeBlockIseqDirect { iseq, captured, args, .. } => {
+                write!(f, "InvokeBlockIseqDirect ({:?}), {captured}", self.ptr_map.map_ptr(iseq))?;
+                write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
             Insn::InvokeBuiltin { bf, args, leaf, .. } => {
@@ -2718,6 +2744,29 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
     }
 }
 
+/// True if the `invokeblock` call flags permit inlining the block dispatch.
+fn block_call_inlinable(flags: u32) -> bool {
+    (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG | VM_CALL_ARGS_BLOCKARG)) == 0
+}
+
+/// True if `yield` with `argc` positional args can dispatch by inlining the block ISEQ
+/// frame. The block must take the simple callee-setup path (`rb_simple_iseq_p`)
+/// with an exact arity match, avoid arg0 auto-splat, and contain no `throw` (break /
+/// non-local return). Anything else falls back to the generic `invokeblock` dispatch.
+fn block_call_inlinable_iseq(iseq: IseqPtr, argc: usize) -> bool {
+    if !unsafe { rb_simple_iseq_p(iseq) } {
+        return false;
+    }
+    let lead_num = unsafe { rb_get_iseq_body_param_lead_num(iseq) } as usize;
+    if argc != lead_num {
+        return false;
+    }
+    if argc == 1 && !unsafe { rb_get_iseq_flags_ambiguous_param0(iseq) } {
+        return false;
+    }
+    !crate::codegen::block_iseq_may_throw(iseq)
+}
+
 impl Function {
     fn new(iseq: *const rb_iseq_t) -> Function {
         Function {
@@ -2796,6 +2845,36 @@ impl Function {
 
     pub fn load_string_length(&mut self, block: BlockId, str: InsnId) -> InsnId {
         self.load_field(block, str, FieldName::len, RUBY_OFFSET_RSTRING_LEN, types::CInt64)
+    }
+
+    /// Emit the fast-path `yield` dispatch to a known ISEQ block.
+    /// When `guarded`, the block handler is read from the runtime LEP and guarded (tag + iseq
+    /// identity) because the profiled block can differ per caller. When the enclosing method is
+    /// inlined and the caller passed a literal block, `gen_push_inline_frame` wrote that exact
+    /// block into this frame's EP from a compile-time constant, so both guards are unnecessary.
+    fn push_invoke_block_iseq_direct(&mut self, block: BlockId, block_iseq: IseqPtr, level: u32, args: Vec<InsnId>, state: InsnId, guarded: bool) -> InsnId {
+        let ep = self.get_ep(block, level);
+        let block_handler = self.load_ep_env_field(block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
+
+        if guarded {
+            // Guard the handler is an ISEQ block: VM_BH_ISEQ_BLOCK_P is `& 0x3 == 0x1`.
+            let tag_mask = self.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
+            let tag = self.push_insn(block, Insn::IntAnd { left: block_handler, right: tag_mask });
+            self.push_insn(block, Insn::GuardBitEquals { val: tag, expected: Const::CInt64(0x1), reason: Box::new(SideExitReason::InvokeBlockHandlerNotIseq), state, recompile: Some(Recompile) });
+        }
+
+        // captured = block_handler & ~0x3 (struct rb_captured_block *)
+        let untag_mask = self.push_insn(block, Insn::Const { val: Const::CInt64(!0x3) });
+        let captured = self.push_insn(block, Insn::IntAnd { left: block_handler, right: untag_mask });
+
+        if guarded {
+            // Guard captured->code.iseq is the comptime block iseq. Compare the raw imemo pointer:
+            // type inference (from_value) can't type an iseq imemo, so guard it as a CPtr identity.
+            let captured_iseq = self.load_field(block, captured, FieldName::code_iseq, 2 * SIZEOF_VALUE_I32, types::CPtr);
+            self.push_insn(block, Insn::GuardBitEquals { val: captured_iseq, expected: Const::CPtr(block_iseq as *const u8), reason: Box::new(SideExitReason::InvokeBlockIseqChanged), state, recompile: Some(Recompile) });
+        }
+
+        self.push_insn(block, Insn::InvokeBlockIseqDirect { iseq: block_iseq, captured, args, state })
     }
 
     // Add an instruction to an SSA block
@@ -3137,6 +3216,7 @@ impl Function {
             Insn::InvokeBlock { .. } => types::BasicObject,
             Insn::InvokeBlockIfunc { .. } => types::BasicObject,
             Insn::InvokeProc { .. } => types::BasicObject,
+            Insn::InvokeBlockIseqDirect { .. } => types::BasicObject,
             Insn::InvokeBuiltin { return_type, .. } => *return_type,
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::DefinedIvar { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
@@ -4881,6 +4961,7 @@ impl Function {
                     caller: post_send_caller,
                     depth: caller_depth + 1,
                     jit_entry_idx: passed_opt_num,
+                    blockiseq,
                 };
                 let add_result = match add_iseq_to_hir(self, iseq, mode) {
                     Ok(r) => r,
@@ -6542,6 +6623,7 @@ impl Function {
             }
             // Instructions with a Vec of Ruby objects
             Insn::InvokeBlock { ref args, .. }
+            | Insn::InvokeBlockIseqDirect { ref args, .. }
             | Insn::InvokeBlockIfunc { ref args, .. }
             | Insn::NewArray { elements: ref args, .. }
             | Insn::ArrayHash { elements: ref args, .. }
@@ -7335,6 +7417,8 @@ enum AddIseqMode {
         depth: InlineDepth,
         /// The JIT entry index selected by the call site's argument count.
         jit_entry_idx: usize,
+        /// The literal block the caller passed to this frame, if any.
+        blockiseq: Option<IseqPtr>,
     },
 }
 
@@ -8914,15 +8998,51 @@ fn add_iseq_to_hir(
                     }
                     let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
 
-                    // Check if this is a monomorphic IFUNC block handler we can specialize
+                    // The monomorphic block handler class the profile recorded, if any. Both the
+                    // IFUNC and inline-ISEQ specializations below key off this single distribution.
                     let block_handler_types = payload.profile.get_operand_types(exit_state.insn_idx);
-                    let is_ifunc = (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT)) == 0
-                        && block_handler_types.is_some_and(|types| types.len() == 1 && {
-                            let summary = TypeDistributionSummary::new(&types[0]);
-                            summary.is_monomorphic() && unsafe { rb_IMEMO_TYPE_P(summary.bucket(0).class(), imemo_ifunc) == 1 }
-                        });
+                    let block_handler_class = block_handler_types.and_then(|types| {
+                        if types.len() != 1 { return None; }
+                        let summary = TypeDistributionSummary::new(&types[0]);
+                        if !summary.is_monomorphic() { return None; }
+                        Some(summary.bucket(0).class())
+                    });
 
-                    let result = if is_ifunc {
+                    let is_ifunc = (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT)) == 0
+                        && block_handler_class.is_some_and(|obj| unsafe { rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1 });
+
+                    // If the block handler is a known simple ISEQ block with exact arity and no
+                    // non-local exit, push its frame inline instead of calling rb_vm_invokeblock.
+                    let inline_iseq = if block_call_inlinable(flags) {
+                        block_handler_class.and_then(|obj| {
+                            if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 } {
+                                let iseq = obj.as_iseq();
+                                if block_call_inlinable_iseq(iseq, args.len()) { return Some(iseq); }
+                            }
+                            None
+                        })
+                    } else { None };
+
+                    let inlined_known_block = if let AddIseqMode::Inlined { blockiseq: Some(bi), .. } = mode {
+                        if block_call_inlinable(flags)
+                            // Only methods are inlined today, so exit_state.iseq is always a method iseq and this is
+                            // always 0. That matters because the emit below is guard-free and bakes in both level 0
+                            // and *this* frame's block (bi) — sound only when the yield resolves to this exact frame.
+                            // TODO: if block iseqs become inlinable, a yield here could resolve to an ancestor frame
+                            // (level > 0). To stay guard-free we'd bake in get_lvar_level(...) as the level and fetch
+                            // that ancestor's blockiseq from the inline caller chain instead of bi.
+                            && get_lvar_level(exit_state.iseq) == 0
+                            && block_call_inlinable_iseq(bi, args.len()) {
+                            Some(bi)
+                        } else { None }
+                    } else { None };
+
+                    let result = if let Some(block_iseq) = inlined_known_block {
+                        fun.push_invoke_block_iseq_direct(block, block_iseq, 0, args, exit_id, false)
+                    } else if let Some(block_iseq) = inline_iseq {
+                        let level = get_lvar_level(exit_state.iseq);
+                        fun.push_invoke_block_iseq_direct(block, block_iseq, level, args, exit_id, true)
+                    } else if is_ifunc {
                         // Load the block handler from the current frame's LEP. In inlined
                         // code, the function ISEQ is the caller while `exit_state.iseq` is the
                         // callee containing this `invokeblock`.
