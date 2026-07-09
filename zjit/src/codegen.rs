@@ -1757,7 +1757,7 @@ fn gen_send_iseq_direct(
 
     asm_comment!(asm, "switch to new CFP");
     let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
-    asm.mov(CFP, new_cfp);
+    asm.mov(CFP, new_cfp); // will be published at `ec->cfp` after callee's entrypoint
 
     let params = unsafe { iseq.params() };
 
