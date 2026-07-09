@@ -382,6 +382,27 @@ impl Assembler {
             }
         }
 
+        /// True if the next instruction is a conditional jump to a side exit --
+        /// i.e. a `Test`/`Cmp` that can be folded into a flag-free cbz/cbnz.
+        fn peek_is_side_exit_branch(iterator: &mut InsnIter) -> bool {
+            matches!(iterator.peek(), Some((_,
+                Insn::Jz(Target::SideExit(..)) | Insn::Je(Target::SideExit(..)) |
+                Insn::Jnz(Target::SideExit(..)) | Insn::Jne(Target::SideExit(..)))))
+        }
+
+        /// Replace a compare-against-zero / self-`Test` that feeds the peeked
+        /// side-exit branch with a single Joz/Jonz (cbz/cbnz), and consume the
+        /// branch. Joz emits on zero (== / Jz), Jonz on nonzero (!= / Jnz).
+        fn fuse_cmp_zero_jump(asm: &mut Assembler, iterator: &mut InsnIter, reg: Opnd) {
+            let fused = match iterator.peek() {
+                Some((_, Insn::Jz(t) | Insn::Je(t)))   => Insn::Joz(reg, t.clone()),
+                Some((_, Insn::Jnz(t) | Insn::Jne(t))) => Insn::Jonz(reg, t.clone()),
+                _ => unreachable!("peek_is_side_exit_branch guaranteed a conditional jump"),
+            };
+            asm.push_insn(fused);
+            iterator.next(asm); // consume the merged jump
+        }
+
         let mut asm_local = Assembler::new_with_asm(&self);
         let mut iterator = self.instruction_iterator();
         let asm = &mut asm_local;
@@ -445,35 +466,25 @@ impl Assembler {
 
                     asm.push_insn(insn);
                 }
-                /*
-                // Lower to Joz and Jonz for generating CBZ/CBNZ for compare-with-0-and-branch.
-                ref insn @ Insn::Cmp { ref left, right: ref right @ (Opnd::UImm(0) | Opnd::Imm(0)) } |
-                ref insn @ Insn::Test { ref left, right: ref right @ (Opnd::InsnOut { .. } | Opnd::Reg(_)) } if {
-                    let same_opnd_if_test = if let Insn::Test { .. } = insn {
-                        left == right
-                    } else {
-                        true
-                    };
-
-                    same_opnd_if_test && if let Some(
-                            Insn::Jz(target) | Insn::Je(target) | Insn::Jnz(target) | Insn::Jne(target)
-                        ) = iterator.peek() {
-                            matches!(target, Target::SideExit(..))
-                        } else {
-                            false
-                        }
-                } => {
+                // Fold a compare-against-zero or self-`Test` that feeds a
+                // side-exit branch into a single flag-free cbz/cbnz (Joz/Jonz).
+                // This is one instruction shorter and, crucially, doesn't
+                // clobber NZCV -- so RUBY_VM_CHECK_INTS (`Test flag,flag; Jnz
+                // exit`) stops wiping the flags of a surrounding compare.
+                // Restricted to SideExit targets: emit_cmp_zero_jump needs a
+                // resolved CodePtr, and side exits are always within range.
+                Insn::Cmp { left, right: Opnd::UImm(0) | Opnd::Imm(0) }
+                    if peek_is_side_exit_branch(&mut iterator) =>
+                {
                     let reg = split_load_operand(asm, *left);
-                    match iterator.peek() {
-                        Some(Insn::Jz(target) | Insn::Je(target))   => asm.push_insn(Insn::Joz(reg, *target)),
-                        Some(Insn::Jnz(target) | Insn::Jne(target)) => asm.push_insn(Insn::Jonz(reg, *target)),
-                        _ => ()
-                    }
-
-                    iterator.map_insn_index(asm);
-                    iterator.next_unmapped(); // Pop merged jump instruction
+                    fuse_cmp_zero_jump(asm, &mut iterator, reg);
                 }
-                */
+                Insn::Test { left, right }
+                    if left == right && peek_is_side_exit_branch(&mut iterator) =>
+                {
+                    let reg = split_load_operand(asm, *left);
+                    fuse_cmp_zero_jump(asm, &mut iterator, reg);
+                }
                 Insn::Cmp { left, right } => {
                     let opnd0 = split_load_operand(asm, *left);
                     let opnd0 = split_less_than_32_cmp(asm, opnd0);
@@ -828,6 +839,12 @@ impl Assembler {
                     *right = split_memory_read(asm, *right, SCRATCH1_OPND);
                     asm.push_insn(insn);
                 }
+                // cbz/cbnz read a single register; load a spilled operand first.
+                Insn::Joz(opnd, _) |
+                Insn::Jonz(opnd, _) => {
+                    *opnd = split_memory_read(asm, *opnd, SCRATCH0_OPND);
+                    asm.push_insn(insn);
+                }
                 // For compile_exits, support splitting simple C arguments here
                 Insn::CCall { data } if !data.opnds.is_empty() => {
                     for (i, opnd) in data.opnds.iter().enumerate() {
@@ -1028,39 +1045,60 @@ impl Assembler {
 
         /// Emit a CBZ or CBNZ which branches when a register is zero or non-zero
         fn emit_cmp_zero_jump(cb: &mut CodeBlock, reg: A64Opnd, branch_if_zero: bool, target: Target) {
-            if let Target::CodePtr(dst_ptr) = target {
-                let dst_addr = dst_ptr.as_offset();
-                let src_addr = cb.get_write_ptr().as_offset();
+            match target {
+                Target::CodePtr(dst_ptr) => {
+                    let dst_addr = dst_ptr.as_offset();
+                    let src_addr = cb.get_write_ptr().as_offset();
 
-                if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
-                    // If the offset fits in one instruction, generate cbz or cbnz
-                    let bytes = (dst_addr - src_addr) as i32;
-                    if branch_if_zero {
-                        cbz(cb, reg, InstructionOffset::from_bytes(bytes));
+                    if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
+                        // If the offset fits in one instruction, generate cbz or cbnz
+                        let bytes = (dst_addr - src_addr) as i32;
+                        if branch_if_zero {
+                            cbz(cb, reg, InstructionOffset::from_bytes(bytes));
+                        } else {
+                            cbnz(cb, reg, InstructionOffset::from_bytes(bytes));
+                        }
                     } else {
-                        cbnz(cb, reg, InstructionOffset::from_bytes(bytes));
-                    }
-                } else {
-                    // Otherwise, we load the address into a register and
-                    // use the branch register instruction. Note that because
-                    // side exits should always be close, this form should be
-                    // rare or impossible to see.
-                    let dst_addr = dst_ptr.raw_addr(cb) as u64;
-                    let load_insns: i32 = emit_load_size(dst_addr).into();
+                        // Otherwise, we load the address into a register and
+                        // use the branch register instruction. Note that because
+                        // side exits should always be close, this form should be
+                        // rare or impossible to see.
+                        let dst_addr = dst_ptr.raw_addr(cb) as u64;
+                        let load_insns: i32 = emit_load_size(dst_addr).into();
 
-                    // Write out the inverse condition so that if
-                    // it doesn't match it will skip over the
-                    // instructions used for branching.
-                    if branch_if_zero {
-                        cbnz(cb, reg, InstructionOffset::from_insns(load_insns + 2));
-                    } else {
-                        cbz(cb, reg, InstructionOffset::from_insns(load_insns + 2));
+                        // Write out the inverse condition so that if
+                        // it doesn't match it will skip over the
+                        // instructions used for branching.
+                        if branch_if_zero {
+                            cbnz(cb, reg, InstructionOffset::from_insns(load_insns + 2));
+                        } else {
+                            cbz(cb, reg, InstructionOffset::from_insns(load_insns + 2));
+                        }
+                        emit_load_value(cb, Assembler::EMIT_OPND, dst_addr);
+                        br(cb, Assembler::EMIT_OPND);
                     }
-                    emit_load_value(cb, Assembler::EMIT_OPND, dst_addr);
-                    br(cb, Assembler::EMIT_OPND);
                 }
-            } else {
-                unreachable!("We should only generate Joz/Jonz with side-exit targets");
+                // ZJIT's compile_exits lowers side exits to labels resolved during
+                // emit, so Joz/Jonz reach here with a Label. cbz/cbnz share bcond's
+                // 19-bit (+/-1MB) range, and side exits are always in range.
+                Target::Label(label_idx) => {
+                    cb.label_ref(label_idx, 4, move |cb, src_addr, dst_addr| {
+                        // +1 since src_addr is after the instruction while A64
+                        // counts the offset relative to the start.
+                        let offset = (dst_addr - src_addr) / 4 + 1;
+                        if bcond_offset_fits_bits(offset) {
+                            if branch_if_zero {
+                                cbz(cb, reg, InstructionOffset::from_insns(offset as i32));
+                            } else {
+                                cbnz(cb, reg, InstructionOffset::from_insns(offset as i32));
+                            }
+                            Ok(())
+                        } else {
+                            Err(())
+                        }
+                    });
+                }
+                _ => unreachable!("We should only generate Joz/Jonz with side-exit targets"),
             }
         }
 
@@ -1085,10 +1123,15 @@ impl Assembler {
 
         /// Load a VALUE to a register and remember it for GC marking and reference updating
         fn emit_load_gc_value(cb: &mut CodeBlock, gc_offsets: &mut Vec<CodePtr>, dest: A64Opnd, value: VALUE) {
-            // We dont need to check if it's a special const
-            // here because we only allow these operands to hit
-            // this point if they're not a special const.
-            assert!(!value.special_const_p());
+            // Special-const VALUEs are immediates (no heap pointer to track), so
+            // load the bits directly. Passes after arm64_split -- e.g. parallel-
+            // move resolution materializing a block-argument constant -- can
+            // produce a Load/Store of a special-const VALUE, which the pre-split
+            // Opnd::Value-to-UImm lowering never saw.
+            if value.special_const_p() {
+                emit_load_value(cb, dest, value.as_u64());
+                return;
+            }
 
             // This assumes only load instructions can contain
             // references to GC'd Value operands. If the value
