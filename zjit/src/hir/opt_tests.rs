@@ -2160,10 +2160,39 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, fun_new_map@0x1010, cme:0x1018)
           v25:ArraySubclass[class_exact:C] = GuardType v10, ArraySubclass[class_exact:C] recompile
-          v26:BasicObject = SendDirect v25, 0x1040, :fun_new_map (0x1060)
+          v144:NilClass = Const Value(nil)
+          v145:NilClass = Const Value(nil)
+          PushInlineFrame :fun_new_map, v25 (0x1040), num_args=0
+          v63:Fixnum[0] = Const Value(0)
+          v67:BasicObject = InvokeBuiltin ary_sized_alloc, v25
+          PatchPoint NoEPEscape(map)
+          Jump bb10(v63, v145)
+        bb10(v84:Fixnum, v86:BasicObject):
+          v90:CInt64 = ArrayLength v25
+          v91:Fixnum = BoxFixnum v90
+          v92:BoolExact = FixnumGe v84, v91
+          PatchPoint NoEPEscape(map)
+          CondBranchFixnumCmp Ge v84, v91, bb14(), bb9()
+        bb14():
+          PopInlineFrame
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v26
+          Return v67
+        bb9():
+          v116:CInt64 = UnboxFixnum v84
+          v117:BasicObject = ArrayAref v25, v116
+          PatchPoint NoEPEscape(map)
+          v121:CPtr = GetEP 0
+          v122:CInt64 = LoadField v121, :VM_ENV_DATA_INDEX_SPECVAL@0x1060
+          v123:CInt64[-4] = Const CInt64(-4)
+          v124:CInt64 = IntAnd v122, v123
+          v125:BasicObject = InvokeBlockIseqDirect (0x1068), v124, v117
+          PatchPoint NoEPEscape(map)
+          v131:BasicObject = InvokeBuiltin rb_jit_ary_push, v25, v67, v125
+          PatchPoint NoEPEscape(map)
+          v137:Fixnum[1] = Const Value(1)
+          v138:Fixnum = FixnumAdd v84, v137
+          Jump bb10(v138, v125)
         ");
     }
 
@@ -12121,9 +12150,38 @@ mod hir_opt_tests {
           v11:ArrayExact = ArrayDup v10
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, map@0x1010, cme:0x1018)
-          v22:BasicObject = SendDirect v11, 0x1040, :map (0x1060)
+          v140:NilClass = Const Value(nil)
+          v141:NilClass = Const Value(nil)
+          PushInlineFrame :map, v11 (0x1040), num_args=0
+          v59:Fixnum[0] = Const Value(0)
+          v63:BasicObject = InvokeBuiltin ary_sized_alloc, v11
+          PatchPoint NoEPEscape(map)
+          Jump bb10(v59, v141)
+        bb10(v80:Fixnum, v82:BasicObject):
+          v86:CInt64 = ArrayLength v11
+          v87:Fixnum = BoxFixnum v86
+          v88:BoolExact = FixnumGe v80, v87
+          PatchPoint NoEPEscape(map)
+          CondBranchFixnumCmp Ge v80, v87, bb14(), bb9()
+        bb14():
+          PopInlineFrame
           CheckInterrupts
-          Return v22
+          Return v63
+        bb9():
+          v112:CInt64 = UnboxFixnum v80
+          v113:BasicObject = ArrayAref v11, v112
+          PatchPoint NoEPEscape(map)
+          v117:CPtr = GetEP 0
+          v118:CInt64 = LoadField v117, :VM_ENV_DATA_INDEX_SPECVAL@0x1060
+          v119:CInt64[-4] = Const CInt64(-4)
+          v120:CInt64 = IntAnd v118, v119
+          v121:BasicObject = InvokeBlockIseqDirect (0x1068), v120, v113
+          PatchPoint NoEPEscape(map)
+          v127:BasicObject = InvokeBuiltin rb_jit_ary_push, v11, v63, v121
+          PatchPoint NoEPEscape(map)
+          v133:Fixnum[1] = Const Value(1)
+          v134:Fixnum = FixnumAdd v80, v133
+          Jump bb10(v134, v121)
         ");
     }
 

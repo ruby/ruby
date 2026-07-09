@@ -5859,7 +5859,7 @@ impl Function {
 
     /// Decide whether an inlinable callee ISEQ is worth inlining into this
     /// function based on heuristics.
-    fn should_inline(&self, callee_iseq: IseqPtr, cme: *const rb_callable_method_entry_t) -> bool {
+    fn should_inline(&self, callee_iseq: IseqPtr, cme: *const rb_callable_method_entry_t, blockiseq: Option<IseqPtr>) -> bool {
         let threshold = get_option!(inline_threshold);
         if threshold == 0 {
             return false;
@@ -5894,9 +5894,19 @@ impl Function {
             }
         }
 
+        // Methods annotated with `:inline_block` (Integer#times, Array#each/map, ...)
+        // exist to be inlined so the block they `yield` to can be specialized into
+        // a direct JIT-to-JIT call. Exempt them from the size threshold, but only
+        // when the call site passes a block we can actually specialize -- otherwise
+        // inlining just grows the code for a `yield` that still falls back.
+        let inline_block = unsafe { rb_jit_iseq_builtin_attrs(callee_iseq) } & BUILTIN_ATTR_INLINE_BLOCK != 0
+            && blockiseq.is_some_and(|bi| iseq_supports_jit_entry(bi)
+                && unsafe { rb_simple_iseq_p(bi) }
+                && !crate::codegen::block_iseq_may_throw(bi));
+
         // Check callee bytecode size against threshold.
         let callee_size = unsafe { get_iseq_encoded_size(callee_iseq) } as usize;
-        if callee_size > threshold {
+        if !inline_block && callee_size > threshold {
             incr_counter!(inline_reject_too_large);
             return false;
         }
@@ -5982,7 +5992,7 @@ impl Function {
                 // Apply the cheap optimization heuristics (size, budget, denylist)
                 // before can_inline's more expensive elibility checks. This allows
                 // oversized callees to bail out early. Both guards must pass.
-                if !self.should_inline(iseq, cme) || !Self::can_inline(iseq) {
+                if !self.should_inline(iseq, cme, blockiseq) || !Self::can_inline(iseq) {
                     search_start = send_pos + 1;
                     continue;
                 }
