@@ -112,6 +112,7 @@ fn main() {
         .allowlist_function("rb_zjit_profile_disable")
         .allowlist_function("rb_zjit_insn_to_bare_insn")
         .allowlist_function("rb_zjit_hash_new_size")
+        .allowlist_function("rb_zjit_class_allocate_instance_fastpath")
 
         // For crashing
         .allowlist_function("rb_bug")

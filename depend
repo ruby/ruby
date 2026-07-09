@@ -16094,6 +16094,7 @@ scheduler.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/serial.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+scheduler.$(OBJEXT): $(top_srcdir)/internal/struct.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/thread.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/variable.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -16897,6 +16898,7 @@ signal.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 signal.$(OBJEXT): $(top_srcdir)/internal/signal.h
 signal.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 signal.$(OBJEXT): $(top_srcdir)/internal/string.h
+signal.$(OBJEXT): $(top_srcdir)/internal/struct.h
 signal.$(OBJEXT): $(top_srcdir)/internal/thread.h
 signal.$(OBJEXT): $(top_srcdir)/internal/variable.h
 signal.$(OBJEXT): $(top_srcdir)/internal/vm.h
