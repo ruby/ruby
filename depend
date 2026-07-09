@@ -17920,6 +17920,7 @@ string.$(OBJEXT): {$(VPATH)}vm_core.h
 string.$(OBJEXT): {$(VPATH)}vm_debug.h
 string.$(OBJEXT): {$(VPATH)}vm_opts.h
 string.$(OBJEXT): {$(VPATH)}vm_sync.h
+string.$(OBJEXT): {$(VPATH)}zjit.h
 strlcat.$(OBJEXT): {$(VPATH)}config.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/attr/format.h
 strlcat.$(OBJEXT): {$(VPATH)}internal/compiler_is.h

@@ -49,6 +49,7 @@
 #include "ruby_assert.h"
 #include "shape.h"
 #include "vm_sync.h"
+#include "zjit.h"
 #include "ruby/internal/attr/nonstring.h"
 
 #if defined HAVE_CRYPT_R
@@ -2036,6 +2037,41 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str, bool chil
     }
     return new_str;
 }
+
+#if USE_ZJIT
+bool
+rb_zjit_str_resurrect_fastpath(VALUE str, bool chilled, size_t *size_out,
+                               VALUE *flags_out,
+                               long *len_out, size_t *byte_size_out)
+{
+    if (chilled) return false;
+
+    if (!STR_EMBED_P(str)) return false;
+
+    long len = RSTRING_LEN(str);
+    long termlen = TERM_LEN(str);
+    size_t size = rb_str_embed_size(len + termlen, 0);
+    if (!rb_gc_size_allocatable_p(size)) return false;
+
+    VALUE flags = FL_TEST_RAW(str, flag_mask);
+
+    if ((flags & ENCODING_MASK) == ((VALUE)ENCODING_INLINE_MAX << ENCODING_SHIFT)) {
+        return false;
+    }
+
+    flags &= ~FL_FREEZE;
+    flags |= T_STRING;
+
+    shape_id_t shape_id = rb_shape_transition_slot_size(ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER,
+                                                        rb_gc_size_slot_size(size));
+
+    *size_out = size;
+    *flags_out = flags | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
+    *len_out = len;
+    *byte_size_out = (size_t)(len + termlen);
+    return true;
+}
+#endif
 
 VALUE
 rb_str_with_debug_created_info(VALUE str, VALUE path, int line)
