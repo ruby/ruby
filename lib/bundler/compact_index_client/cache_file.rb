@@ -103,7 +103,7 @@ module Bundler
       # Returns false without appending when no digests since appending is too error prone to do without digests.
       def append(data)
         return false unless digests?
-        open("a") {|f| f.write data }
+        open("ab") {|f| f.write data }
         verify && commit
       end
 

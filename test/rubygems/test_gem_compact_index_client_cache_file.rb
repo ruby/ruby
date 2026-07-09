@@ -82,6 +82,23 @@ class TestGemCompactIndexClientCacheFile < Gem::TestCase
     assert_equal "abcdef", @path.read
   end
 
+  def test_append_writes_in_binary_mode
+    @path.binwrite "created_at: 2026-06-10\n---\n"
+
+    appended = nil
+    CacheFile.copy(@path) do |file|
+      file.digests = sha256("created_at: 2026-06-10\n---\nrake 13.0.0\n")
+      appended = file.append("rake 13.0.0\n")
+    end
+
+    assert appended
+    # On Windows a text-mode append rewrites the appended LF as CRLF while the
+    # digest is computed over the pre-write bytes, so verify passes but the file
+    # on disk is corrupted. Read raw bytes to catch any stray carriage return.
+    refute_includes @path.binread, "\r"
+    assert_equal "created_at: 2026-06-10\n---\nrake 13.0.0\n", @path.binread
+  end
+
   def test_append_with_mismatched_digests_keeps_original
     @path.binwrite "abc"
 
