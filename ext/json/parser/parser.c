@@ -1457,7 +1457,7 @@ static inline int json_parse_digits(JSON_ParserState *state, uint64_t *accumulat
     return (int)(state->cursor - start);
 }
 
-static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig *config, bool negative, const char *start)
+static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig *config, bool negative, const char *start, bool resumable)
 {
     bool integer = true;
     const char first_digit = *state->cursor;
@@ -1512,6 +1512,16 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
         } else {
             exponent = negative_exponent ? -(int64_t)abs_exponent : (int64_t)abs_exponent;
         }
+    }
+
+    // A number touching the end of the buffer may still grow in a later chunk,
+    // so the caller will rewind and wait. Decoding it now would build a value
+    // -- for a long run of digits, an expensive bignum -- only to discard it,
+    // and repeating that on every resumed chunk is quadratic in the number's
+    // length. The digit scan above already advanced the cursor, which is all
+    // the caller needs to detect the incomplete number.
+    if (RB_UNLIKELY(resumable && eos(state))) {
+        return Qundef;
     }
 
     if (integer) {
@@ -1638,7 +1648,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
             case '-': {
                 state->cursor++;
 
-                value = json_parse_number(state, config, true, value_start);
+                value = json_parse_number(state, config, true, value_start, resumable);
 
                 if (RB_UNLIKELY(UNDEF_P(value) && config->allow_nan && peek(state) == 'I')) {
                     state->cursor = value_start;
@@ -1661,7 +1671,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
             }
 
             case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': {
-                value = json_parse_number(state, config, false, value_start);
+                value = json_parse_number(state, config, false, value_start, resumable);
 
                 // Top level numbers are ambiguous when parsing streams, we can't
                 // know if we parsed all the digits if we hit EOS.

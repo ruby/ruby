@@ -175,6 +175,23 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_resumed_parsing('123 ', trailing_bytes: 1)
   end
 
+  def test_large_numbers_split_across_feeds_are_decoded_correctly
+    {
+      '12345678901234567890123456789012345678901234567890 ' => 12345678901234567890123456789012345678901234567890,
+      '-98765432109876543210987654321 ' => -98765432109876543210987654321,
+      '3.14159265358979323846264338327950288 ' => 3.14159265358979323846264338327950288,
+      '-1.5e-300 ' => -1.5e-300,
+    }.each do |doc, expected|
+      parser = new_parser
+      value = nil
+      doc.each_char do |char|
+        parser << char
+        value = parser.value if parser.parse
+      end
+      assert_equal expected, value, doc.inspect
+    end
+  end
+
   def test_nul_byte_is_a_syntax_error
     # A NUL byte in a structural position must raise, not stall forever waiting for more input
     # (peek() returns 0 both at EOS and for a literal NUL byte).
