@@ -3378,7 +3378,7 @@ c_callable! {
             unsafe { rb_set_cfp_pc(cfp, pc) };
             unsafe { (*cfp)._iseq = iseq };
             unsafe { (*cfp).jit_return = std::ptr::null_mut() };
-            let ec_cfp = unsafe { (ec as *mut u8).add(RUBY_OFFSET_EC_CFP as usize) as *mut CfpPtr };
+            let ec_cfp = unsafe { ec.byte_add(RUBY_OFFSET_EC_CFP as usize) as *mut CfpPtr };
             unsafe { *ec_cfp = cfp };
         }
 
