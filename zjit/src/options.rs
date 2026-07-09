@@ -149,27 +149,16 @@ pub struct Options {
     pub inline_threshold: InlineThreshold,
 
     /// Per-caller cumulative size budget for inlining, measured as the caller
-    /// `Function`'s `insns.len()` at the moment `should_inline` is consulted (during
+    /// `Function::num_instructions` at the moment `should_inline` is consulted (during
     /// `inline_methods` inside the `optimize()` fixed-point loop). Once a caller has
     /// grown past this many HIR instructions, `should_inline` rejects further callees,
     /// bounding runaway code-size growth from depth-N inlining (and providing the
     /// optimization fixed-point loop's effective terminating condition).
     /// `INLINE_BUDGET_UNLIMITED` disables the budget.
     ///
-    /// Caveat on the unit: `self.insns` is append-only across the whole pipeline —
-    /// `InsnId`s are stable indices into it, so passes never shrink it. `len()` is
-    /// therefore a high-water mark of total HIR instructions ever allocated for the
-    /// function, including ones that later optimization passes mark dead via
-    /// `eliminate_dead_code` or alias away via `union_find`. By the time
-    /// `should_inline` runs in a given fixed-point iteration, `self.insns.len()` has
-    /// already been bumped by `iseq_to_hir`'s initial build, then by `type_specialize`
-    /// and the trivial `inline` pass, and (in iterations 2+) by every prior pass in
-    /// the loop including the previous round's `inline_methods`. It is a useful proxy
-    /// for "compile work done" but not for "size of the compiled output".
-    ///
     /// Note: this is a different unit than `inline_threshold` — that field is callee
-    /// YARV bytecode words; this one is caller HIR instructions, allocation high-water
-    /// mark. They aren't directly comparable; YARV → HIR typically expands roughly 1-3x.
+    /// YARV bytecode words; this one is caller HIR instructions. They aren't directly comparable;
+    /// YARV → HIR typically expands roughly 1-3x.
     pub inline_budget: InlineBudget,
 
     /// Set of qualified method names (e.g. `Class#method`, `Module::Class.method`) that
