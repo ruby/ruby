@@ -208,40 +208,41 @@ skip_to_eol(const char *p, const char *pend)
     (ISSPACE(type) || (type == '#' && (p = skip_to_eol(p, pend), 1)))
 
 #ifndef NATINT_PACK
-# define pack_modifiers(p, t, n, e) pack_modifiers(p, t, e)
+# define pack_modifiers(p, pe, t, n, e) pack_modifiers(p, pe, t, e)
 #endif
-static char *
-pack_modifiers(const char *p, char type, int *natint, int *explicit_endian)
+static const char *
+pack_modifiers(const char *p, const char *pend, char type, int *natint, int *explicit_endian)
 {
-     while (1) {
-         switch (*p) {
-           case '_':
-           case '!':
-             if (strchr(natstr, type)) {
+    while (p < pend) {
+        switch (*p) {
+          case '_':
+          case '!':
+            if (strchr(natstr, type)) {
 #ifdef NATINT_PACK
-                 *natint = 1;
+                *natint = 1;
 #endif
-                 p++;
-             }
-             else {
-                 rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
-             }
-             break;
+                p++;
+            }
+            else {
+                rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
+            }
+            break;
 
-           case '<':
-           case '>':
-             if (!strchr(endstr, type)) {
-                 rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, endstr);
-             }
-             if (*explicit_endian) {
-                 rb_raise(rb_eRangeError, "Can't use both '<' and '>'");
-             }
-             *explicit_endian = *p++;
-             break;
-           default:
-             return (char *)p;
-         }
+          case '<':
+          case '>':
+            if (!strchr(endstr, type)) {
+                rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, endstr);
+            }
+            if (*explicit_endian) {
+                rb_raise(rb_eRangeError, "Can't use both '<' and '>'");
+            }
+            *explicit_endian = *p++;
+            break;
+          default:
+            return (char *)p;
+        }
     }
+    return p;
 }
 
 static VALUE
@@ -289,7 +290,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 #endif
 
         if (skip_blank(p, type)) continue;
-        p = pack_modifiers(p, type, &natint, &explicit_endian);
+        p = pack_modifiers(p, pend, type, &natint, &explicit_endian);
 
         if (*p == '*') {	/* set data length */
             len = strchr("@Xxu", type) ? 0
@@ -1046,7 +1047,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, VALUE ofs, enum unpack_mode mode)
         int star = 0;
 
         if (skip_blank(p, type)) continue;
-        p = pack_modifiers(p, type, &natint, &explicit_endian);
+        p = pack_modifiers(p, pend, type, &natint, &explicit_endian);
 
         if (p >= pend)
             len = 1;
