@@ -2277,6 +2277,14 @@ unsafe extern "C" {
         size_out: *mut usize,
         shape_id_out: *mut shape_id_t,
     ) -> bool;
+    pub fn rb_zjit_str_resurrect_fastpath(
+        str_: VALUE,
+        chilled: bool,
+        size_out: *mut usize,
+        flags_out: *mut VALUE,
+        len_out: *mut ::std::os::raw::c_long,
+        byte_size_out: *mut usize,
+    ) -> bool;
     pub fn rb_profile_frames(
         start: ::std::os::raw::c_int,
         limit: ::std::os::raw::c_int,

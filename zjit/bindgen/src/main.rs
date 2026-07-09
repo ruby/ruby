@@ -113,6 +113,7 @@ fn main() {
         .allowlist_function("rb_zjit_insn_to_bare_insn")
         .allowlist_function("rb_zjit_hash_new_size")
         .allowlist_function("rb_zjit_class_allocate_instance_fastpath")
+        .allowlist_function("rb_zjit_str_resurrect_fastpath")
 
         // For crashing
         .allowlist_function("rb_bug")

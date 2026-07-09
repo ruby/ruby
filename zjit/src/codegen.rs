@@ -631,7 +631,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ArrayLength { array } => gen_array_length(asm, opnd!(array)),
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, function, opnd!(val), &function.frame_state(*state)),
         &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(jit, asm, class, &function.frame_state(state)),
-        Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
+        Insn::StringCopy { val, chilled, state } => gen_string_copy(jit, asm, function, *val, opnd!(val), *chilled, &function.frame_state(*state)),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, function, opnds!(strings), &function.frame_state(*state)),
         &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
         Insn::StringSetbyteFixnum { string, index, value } => gen_string_setbyte_fixnum(asm, opnd!(string), opnd!(index), opnd!(value)),
@@ -2025,11 +2025,48 @@ fn gen_invokesuperforward(
 }
 
 /// Compile a string resurrection
-fn gen_string_copy(asm: &mut Assembler, recv: Opnd, chilled: bool, state: &FrameState) -> Opnd {
+fn gen_string_copy(jit: &mut JITState, asm: &mut Assembler, function: &Function, val_id: InsnId, recv: Opnd, chilled: bool, state: &FrameState) -> Opnd {
     // TODO: split rb_ec_str_resurrect into separate functions
     gen_prepare_leaf_call_with_gc(asm, state);
-    let chilled = if chilled { Opnd::Imm(1) } else { Opnd::Imm(0) };
-    asm_ccall!(asm, rb_ec_str_resurrect, EC, recv, chilled)
+    let slow_path = |asm: &mut Assembler| asm_ccall!(asm, rb_ec_str_resurrect, EC, recv, (chilled as i64).into());
+
+    let Some(src) = function.type_of(val_id).ruby_object() else {
+        return slow_path(asm);
+    };
+
+    let mut alloc_size: usize = 0;
+    let mut flags: VALUE = VALUE(0);
+    let mut len: c_long = 0;
+    let mut byte_size: usize = 0;
+    let has_fastpath = unsafe {
+        rb_zjit_str_resurrect_fastpath(src, chilled, &mut alloc_size, &mut flags, &mut len, &mut byte_size)
+    };
+    if !has_fastpath {
+        return slow_path(asm);
+    }
+
+    let padded_size = byte_size.next_multiple_of(8);
+
+    let Some(src_bytes) = (unsafe { src.as_rstring_byte_slice() }) else {
+        return slow_path(asm);
+    };
+    debug_assert_eq!(src_bytes.len(), len as usize);
+    let mut buf = vec![0u8; padded_size];
+    buf[..src_bytes.len()].copy_from_slice(src_bytes);
+
+    let full_flags = flags.as_u64();
+    let klass = unsafe { rb_cString };
+
+    gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, full_flags, klass,
+        &|asm, obj| {
+            asm.store(Opnd::mem(VALUE_BITS, obj, RUBY_OFFSET_RSTRING_LEN), Opnd::Imm(len));
+            for (i, chunk) in buf.chunks_exact(8).enumerate() {
+                let word = u64::from_le_bytes(chunk.try_into().unwrap());
+                let offset = RUBY_OFFSET_RSTRING_AS_ARY + (i as i32) * 8;
+                asm.store(Opnd::mem(64, obj, offset), Opnd::UImm(word));
+            }
+        },
+        slow_path)
 }
 
 fn gen_string_equal(asm: &mut Assembler, left: Opnd, right: Opnd) -> lir::Opnd {

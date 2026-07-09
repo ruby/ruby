@@ -3261,6 +3261,67 @@ fn test_object_alloc_gc_stress() {
 }
 
 #[test]
+fn test_string_copy_gc_stress() {
+    eval(r#"
+        # frozen_string_literal: false
+        def make = "hello world"
+    "#);
+    assert_contains_opcode("make", YARVINSN_dupstring);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make
+          s = make
+          orig = s.dup
+          s << "!"
+          [s.class, s, s.frozen?, s.encoding.name, s.length, orig]
+        ensure
+          GC.stress = false
+        end
+    "#), @r#"[String, "hello world!", false, "UTF-8", 12, "hello world"]"#);
+}
+
+#[test]
+fn test_string_copy_large_gc_stress() {
+    eval(r#"
+        # frozen_string_literal: false
+        def make = "the quick brown fox jumps over the lazy dog, the quick brown fox jumps over"
+    "#);
+    assert_contains_opcode("make", YARVINSN_dupstring);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make
+          s = make
+          s << "!"
+          [s.class, s.frozen?, s.length, s.end_with?("!")]
+        ensure
+          GC.stress = false
+        end
+    "#), @"[String, false, 76, true]");
+}
+
+#[test]
+fn test_string_copy_chilled_gc_stress() {
+    eval(r#"
+        def make = "hello world"
+    "#);
+    assert_contains_opcode("make", YARVINSN_dupchilledstring);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make
+          s = make
+          orig = s.dup
+          s << "!"
+          [s.class, s, s.frozen?, s.encoding.name, s.length, orig]
+        ensure
+          GC.stress = false
+        end
+    "#), @r#"[String, "hello world!", false, "UTF-8", 12, "hello world"]"#);
+}
+
+#[test]
 fn test_new_hash_nonempty() {
     eval(r#"
         def test
