@@ -51,14 +51,12 @@ impl CodeBlock {
     pub fn jmp_ptr_bytes(&self) -> usize {
         // b instruction's offset is encoded as imm26 times 4. It can jump to
         // +/-128MiB, so this can be used when --zjit-exec-mem-size <= 128.
-        /*
-        let num_insns = if b_offset_fits_bits(self.virtual_region_size() as i64 / 4) {
+        // The widest in-region branch spans the region minus one instruction.
+        let num_insns = if b_offset_fits_bits((self.virtual_region_size() as i64 - 4) / 4) {
             1 // b instruction
         } else {
             5 // 4 instructions to load a 64-bit absolute address + br instruction
         };
-        */
-        let num_insns = 5; // TODO: support virtual_region_size() check
         num_insns * 4
     }
 
@@ -1774,6 +1772,19 @@ mod tests {
     }
 
     #[test]
+    fn test_jmp_ptr_bytes_at_b_range_boundary() {
+        // The widest branch in a 128MiB region spans 128MiB - 4 bytes, which is
+        // still the largest offset a b can encode, so one instruction is enough.
+        let cb = CodeBlock::new_dummy_sized(128 * 1024 * 1024);
+        assert_eq!(4, cb.jmp_ptr_bytes());
+
+        // One instruction further and a b can no longer span the region, so we
+        // have to reserve room for an absolute load-address plus br.
+        let cb = CodeBlock::new_dummy_sized(128 * 1024 * 1024 + 4);
+        assert_eq!(20, cb.jmp_ptr_bytes());
+    }
+
+    #[test]
     fn test_lir_string() {
         use crate::hir::SideExitReason;
 
@@ -2057,12 +2068,8 @@ mod tests {
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: b.eq #0x50
         0x4: nop
-        0x8: nop
-        0xc: nop
-        0x10: nop
-        0x14: nop
         ");
-        assert_snapshot!(cb.hexdump(), @"800200541f2003d51f2003d51f2003d51f2003d51f2003d5");
+        assert_snapshot!(cb.hexdump(), @"800200541f2003d5");
     }
 
     #[test]
@@ -2078,12 +2085,8 @@ mod tests {
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: b.ne #8
         0x4: b #0x200000
-        0x8: nop
-        0xc: nop
-        0x10: nop
-        0x14: nop
         ");
-        assert_snapshot!(cb.hexdump(), @"41000054ffff07141f2003d51f2003d51f2003d51f2003d5");
+        assert_snapshot!(cb.hexdump(), @"41000054ffff0714");
     }
 
     #[test]
