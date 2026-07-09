@@ -1541,13 +1541,18 @@ fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: O
         let result_block = asm.new_block(hir_block_id, false, rpo_idx);
         let result_edge = Target::Block(Box::new(lir::BranchEdge { target: result_block, args: vec![] }));
 
-        // If non-false immediate, don't fire write barrier
-        asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
-        asm.jnz(jit, result_edge.clone());
+        // When the value is known to be a heap object, the immediate/false checks
+        // that rb_obj_written() uses to skip the barrier are dead; only the
+        // receiver-side check below can still skip it.
+        if !val_type.is_subtype(types::HeapObject) {
+            // If non-false immediate, don't fire write barrier
+            asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+            asm.jnz(jit, result_edge.clone());
 
-        // If false, don't fire write barrier
-        asm.cmp(val, Qfalse.into());
-        asm.je(jit, result_edge.clone());
+            // If false, don't fire write barrier
+            asm.cmp(val, Qfalse.into());
+            asm.je(jit, result_edge.clone());
+        }
 
         unsafe extern "C" {
             fn rb_gc_zjit_writebarrier_required_p_ptr() -> *const usize;
