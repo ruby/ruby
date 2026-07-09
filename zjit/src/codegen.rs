@@ -892,7 +892,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
         &Insn::HashKeyP { hash, key, state } => { gen_hash_key_p(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
         &Insn::HashFetch { hash, key, state } => { gen_hash_fetch(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
-        &Insn::HashAset { hash, key, val, state } => { no_output!(gen_hash_aset(jit, asm, function, opnd!(hash), opnd!(key), opnd!(val), &function.frame_state(state))) },
+        &Insn::HashAset { hash, key, val, state } => { no_output!(gen_hash_aset(jit, asm, function, opnd!(hash), opnd!(key), opnd!(val), function.type_of(key), function.type_of(val), &function.frame_state(state))) },
         &Insn::ArrayPush { array, val, state } => { no_output!(gen_array_push(asm, opnd!(array), opnd!(val), &function.frame_state(state))) },
         &Insn::ToNewArray { val, state } => { gen_to_new_array(jit, asm, function, opnd!(val), &function.frame_state(state)) },
         &Insn::ToArray { val, state } => { gen_to_array(jit, asm, function, opnd!(val), &function.frame_state(state)) },
@@ -1618,9 +1618,87 @@ fn gen_hash_ar_probe(jit: &mut JITState, asm: &mut Assembler, function: &Functio
     param
 }
 
-fn gen_hash_aset(jit: &mut JITState, asm: &mut Assembler, function: &Function, hash: Opnd, key: Opnd, val: Opnd, state: &FrameState) {
+fn gen_hash_aset(jit: &mut JITState, asm: &mut Assembler, function: &Function, hash: Opnd, key: Opnd, val: Opnd, key_type: Type, val_type: Type, state: &FrameState) {
+    // Inline the in-place *update* for a symbol/fixnum key already present in a
+    // small ar-table hash. An insert (miss), an st_table, a frozen hash (which
+    // must raise), and other key types fall back to rb_hash_aset.
+    if hash_ar_key_ok(key_type) {
+        return gen_hash_aset_ar_update(jit, asm, function, hash, key, val, val_type, state);
+    }
     gen_prepare_non_leaf_call(jit, asm, function, state);
     asm_ccall!(asm, rb_hash_aset, hash, key, val);
+}
+
+/// Inline `hash[key] = val` when the symbol/fixnum `key` is already present in a
+/// small ar-table hash: overwrite the pair's value in place, then run the write
+/// barrier (outside the scan, so no ccall is live across the loop temporaries).
+/// A miss would insert, so it -- with st_table and frozen hashes -- goes to
+/// rb_hash_aset. No output: callers use `val` directly (like inline_hash_aset).
+fn gen_hash_aset_ar_update(jit: &mut JITState, asm: &mut Assembler, function: &Function, hash: Opnd, key: Opnd, val: Opnd, val_type: Type, state: &FrameState) {
+    // Pair layout and capacity: see gen_hash_ar_probe.
+    let (pairs_off, pair_size, max_size) =
+        (RUBY_OFFSET_RHASH_AR_PAIRS as i32, 2 * SIZEOF_VALUE_I32, RUBY_RHASH_AR_TABLE_MAX_SIZE as i32);
+    let st_or_frozen = (RHASH_ST_TABLE_FLAG as u64) | (RUBY_FL_FREEZE as u64);
+    let bound_shift = RHASH_AR_TABLE_BOUND_SHIFT as u64;
+    let bound_mask = (RHASH_AR_TABLE_BOUND_MASK as u64) >> bound_shift;
+
+    // The slow path (rb_hash_aset) and the write barrier may run C that touches
+    // the GC, so sync PC/SP once up front.
+    gen_prepare_non_leaf_call(jit, asm, function, state);
+
+    let hash = asm.load(hash);
+    let key = asm.load(key);
+    let val = asm.load(val);
+
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let done_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let slow_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let store_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let done_edge = || Target::Block(Box::new(lir::BranchEdge { target: done_block, args: vec![] }));
+    let slow_edge = || Target::Block(Box::new(lir::BranchEdge { target: slow_block, args: vec![] }));
+    let store_edge = |addr: Opnd| Target::Block(Box::new(lir::BranchEdge { target: store_block, args: vec![addr] }));
+
+    asm_comment!(asm, "inline Hash#[]= ar_table in-place update");
+    let flags = asm.load(Opnd::mem(64, hash, RUBY_OFFSET_RBASIC_FLAGS));
+    // st_table hashes and frozen hashes (which must raise) take the slow path.
+    asm.test(flags, Opnd::UImm(st_or_frozen));
+    asm.jnz(jit, slow_edge());
+    let shifted = asm.rshift(flags, Opnd::UImm(bound_shift));
+    let bound = asm.and(shifted, Opnd::UImm(bound_mask));
+    let pairs_base = asm.add(hash, Opnd::UImm(pairs_off as u64));
+    for i in 0..max_size {
+        // bound <= i: past the occupied span -> the key is absent (would insert).
+        asm.cmp(bound, Opnd::UImm((i + 1) as u64));
+        asm.jb(jit, slow_edge());
+        let key_i = asm.load(Opnd::mem(64, pairs_base, i * pair_size));
+        let val_addr = asm.add(pairs_base, Opnd::UImm((i * pair_size + SIZEOF_VALUE_I32) as u64));
+        asm.cmp(key_i, key);
+        asm.je(jit, store_edge(val_addr));
+    }
+    asm.jmp(slow_edge());
+
+    // Found: overwrite the pair's value in place, then the write barrier.
+    asm.set_current_block(store_block);
+    let store_label = jit.get_label(asm, store_block, hir_block_id);
+    asm.write_label(store_label);
+    let val_addr = asm.new_block_param(VALUE_BITS);
+    asm.current_block().add_parameter(val_addr);
+    asm.store(Opnd::mem(64, val_addr, 0), val);
+    gen_write_barrier(jit, asm, hash, val, val_type);
+    asm.jmp(done_edge());
+
+    // Miss / st_table / frozen: rb_hash_aset (inserts, converts, or raises).
+    asm.set_current_block(slow_block);
+    let slow_label = jit.get_label(asm, slow_block, hir_block_id);
+    asm.write_label(slow_label);
+    asm_ccall!(asm, rb_hash_aset, hash, key, val);
+    asm.jmp(done_edge());
+
+    // Converge.
+    asm.set_current_block(done_block);
+    let done_label = jit.get_label(asm, done_block, hir_block_id);
+    asm.write_label(done_label);
 }
 
 fn gen_array_push(asm: &mut Assembler, array: Opnd, val: Opnd, state: &FrameState) {
