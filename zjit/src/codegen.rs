@@ -1758,7 +1758,6 @@ fn gen_send_iseq_direct(
     asm_comment!(asm, "switch to new CFP");
     let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, new_cfp);
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
     let params = unsafe { iseq.params() };
 
@@ -2391,6 +2390,11 @@ fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Optio
     let jit_frame = JITFrame::new_iseq(entry_pc(jit.iseq(), jit_entry_idx), jit.iseq(), 0);
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(jit_frame));
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), NATIVE_BASE_PTR);
+
+    // Direct JIT-to-JIT callers switch the CFP register before calling this entry
+    // point, but they leave ec->cfp pointing at the caller until cfp->jit_return
+    // is valid so signal-based frame walkers never observe a half-published callee.
+    asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 }
 
 /// Compile code that exits from JIT code with a return value
@@ -3374,6 +3378,8 @@ c_callable! {
             unsafe { rb_set_cfp_pc(cfp, pc) };
             unsafe { (*cfp)._iseq = iseq };
             unsafe { (*cfp).jit_return = std::ptr::null_mut() };
+            let ec_cfp = unsafe { (ec as *mut u8).add(RUBY_OFFSET_EC_CFP as usize) as *mut CfpPtr };
+            unsafe { *ec_cfp = cfp };
         }
 
         with_vm_lock(src_loc!(), || {
