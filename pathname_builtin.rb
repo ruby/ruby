@@ -1480,7 +1480,47 @@ class Pathname    # * File *
   #
   def readlink() self.class.new(File.readlink(@path)) end
 
-  # See <tt>File.rename</tt>.  Rename the file.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   rename(new_name)
+  #
+  # Renames the entry at the path in `self` to the entry given in `new_name`,
+  # which may be either a path or another pathname:
+  #
+  # ```ruby
+  # # Create source and destination pathnames and directories.
+  # pn_srcdir = Pathname('/tmp/src')     # => #<Pathname:/tmp/src>
+  # pn_srcdir.mkdir
+  # pn_dstdir = Pathname('/tmp/dst')     # => #<Pathname:/tmp/dst>
+  # pn_dstdir.mkdir
+  # # Create source file pathname and file.
+  # pn_srcfile = pn_srcdir.join('t.tmp') # => #<Pathname:/tmp/src/t.tmp>
+  # pn_srcfile.write('foo')
+  # # Create destination file pathname.
+  # pn_dstfile = pn_dstdir.join('u.tmp') # => #<Pathname:/tmp/dst/u.tmp>
+  # # Rename source file as destination file.
+  # pn_srcfile.rename(pn_dstfile)
+  # pn_srcfile.exist?                    # => false
+  # pn_dstfile.exist?                    # => true
+  # ```
+  #
+  # Works for directories, too:
+  #
+  # ```ruby
+  # pn_dstdir.rename('/tmp/foo')
+  # pn_dstdir.exist?            # => false
+  # Pathname('/tmp/foo').exist? # => true
+  # ```
+  #
+  # Clean up.
+  #
+  # ```ruby
+  # pn_srcdir.rmtree
+  # Pathname('/tmp/foo').rmtree
+  # ```
+  #
+  # Raises SystemCallError if the entry cannot be renamed.
   def rename(to) File.rename(@path, to) end
 
   # See <tt>File.stat</tt>.  Returns a <tt>File::Stat</tt> object.
