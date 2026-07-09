@@ -416,7 +416,7 @@ set_s_alloc(VALUE klass)
  *  call-seq:
  *    Set[*objects] -> new_set
  *
- *  Returns a new \Set object populated with the given +objects+:
+ *  Returns a new set populated with the given +objects+:
  *
  *    Set[1, 'one', :one, 1.0, %w[a b c], {foo: 0, bar: 1}]
  *    # => Set[1, "one", :one, 1.0, ["a", "b", "c"], {foo: 0, bar: 1}]
@@ -503,11 +503,11 @@ set_initialize_with_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
  *   Set.new(object = nil) -> new_set
  *   Set.new(object = nil) {|element| ... } -> new_set
  *
- * Returns a new \Set object based on the given +object+,
+ * Returns a new set based on the given +object+,
  * which must be an Enumerable or +nil+.
  *
  * With argument +object+ given as +nil+,
- * returns a new empty \Set object:
+ * returns a new empty set:
  *
  *   Set.new                          # => Set[]
  *   Set.new { fail 'Cannot happen' } # => Set[]  # Block not called.
@@ -695,7 +695,7 @@ set_i_to_a(VALUE set)
  *    set.to_set.equal?(set) # => true
  *
  *  With no block given, when +self+ is an instance of a subclass of +Set+,
- *  returns a \Set object containing the elements of +self+:
+ *  returns a set containing the elements of +self+:
  *
  *    class MySet < Set; end
  *    my_set = MySet[*0..9] # => #<MySet: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}>
@@ -749,7 +749,7 @@ set_i_join(int argc, VALUE *argv, VALUE set)
  *  call-seq:
  *    add(object) -> self
  *
- *  Adds the given +object+ to +self+, returns +self+:
+ *  Adds the given +object+ to +self+; returns +self+:
  *
  *    set = Set[0, 1, 2]
  *    set.add(%w[a b c]) # => Set[0, 1, 2, ["a", "b", "c"]]
@@ -1439,7 +1439,7 @@ set_xor_i(st_data_t key, st_data_t data)
  *  call-seq:
  *    self ^ enumerable -> new_set
  *
- *  Returns a new \Set object containing
+ *  Returns a new set containing
  *  the {exclusive OR}[https://en.wikipedia.org/wiki/Exclusive_or]
  *  of +self+ and the given +enumerable+;
  *  that is, containing each element that is in either +self+ or +enumerable+,
@@ -1479,7 +1479,7 @@ set_i_xor(VALUE set, VALUE other)
  *  call-seq:
  *    self | enumerable -> new_set
  *
- *  Returns a new \Set object containing
+ *  Returns a new set containing
  *  the {union}[https://en.wikipedia.org/wiki/Union_(set_theory)]
  *  of +self+ and the given +enumerable+;
  *  that is, containing the elements of both +self+ and +enumerable+.
@@ -1738,7 +1738,7 @@ set_i_replace(VALUE set, VALUE other)
  *  call-seq:
  *    reset -> self
  *
- *  Resets the internal state of +self+; return +self+.
+ *  Resets the internal state of +self+; returns +self+.
  *
  *  A set relies on the #hash results of each element being consistent.
  *  Modifying an element in a way that changes the results of #hash
@@ -2462,7 +2462,7 @@ rb_set_size(VALUE set)
  * === Methods for Assigning
  *
  * - #add (aliased as #<<):
- *   Adds the given object to +self+, returns +self+.
+ *   Adds the given object to +self+; returns +self+.
  * - #add?:
  *   Like #add, but returns +nil+ if the given object is already in +self+.
  * - #merge:
@@ -2526,8 +2526,8 @@ rb_set_size(VALUE set)
  * - #compare_by_identity:
  *   Sets +self+ to compare by object identity (rather than by object content).
  * - #reset:
- *   Resets the internal state; useful if an element
- *   has been modified while an element in the set.
+ *   Resets the internal state of +self+; returns +self+.
+ *   Useful if an element has been modified while an element in the set.
  *
  */
 void
