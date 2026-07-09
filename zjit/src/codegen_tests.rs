@@ -2920,6 +2920,70 @@ fn test_new_hash_empty_gc_stress() {
     "#), @"[Hash, 1, nil, {a: 1}]");
 }
 
+// Static-symbol keys hash and compare without running Ruby, so NewHash takes the
+// leaf bulk-insert fast path into an inline-allocated ar_table. Runs under GC
+// stress to guard the leaf-call preparation.
+#[test]
+fn test_new_hash_static_sym_keys_gc_stress() {
+    eval("
+        def make(a, b) = {x: a, y: b}
+    ");
+    assert_contains_opcode("make", YARVINSN_newhash);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make(1, 2)
+          h = make(:foo, [3])
+          [h.class, h.size, h[:x], h[:y], h[:z], h.default, h]
+        ensure
+          GC.stress = false
+        end
+    "#), @"[Hash, 2, :foo, [3], nil, nil, {x: :foo, y: [3]}]");
+}
+
+// Eight pairs fills an inline embedded ar_table (the fast path); nine crosses
+// RHASH_AR_TABLE_MAX_SIZE, so it's built as a pre-sized st_table instead. Both stay
+// on the static-symbol leaf path, so this guards the ar_table and st_table routes.
+#[test]
+fn test_new_hash_static_sym_ar_table_boundary() {
+    eval("
+        def eight(v) = {a:v,b:v,c:v,d:v,e:v,f:v,g:v,h:v}
+        def nine(v)  = {a:v,b:v,c:v,d:v,e:v,f:v,g:v,h:v,i:v}
+    ");
+    assert_contains_opcode("eight", YARVINSN_newhash);
+    assert_contains_opcode("nine", YARVINSN_newhash);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          [eight(7).size, eight(7)[:h], nine([9]).size, nine([9])[:i]]
+        ensure
+          GC.stress = false
+        end
+    "#), @"[8, 7, 9, [9]]");
+}
+
+// Dynamic symbol keys hash and compare without running Ruby, so NewHash takes the
+// leaf bulk-insert fast path into an inline-allocated ar_table. Runs under GC
+// stress to guard the leaf-call preparation.
+#[test]
+fn test_new_hash_dynamic_sym_keys_gc_stress() {
+    eval(r#"
+        def make(k, v) = { :"x_#{k}" => v, :"y_#{k}" => v }
+    "#);
+    assert_contains_opcode("make", YARVINSN_newhash);
+    assert_contains_opcode("make", YARVINSN_intern);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make("warm", 0)
+          h = make("k", [3])
+          [h.class, h.size, h[:"x_k"], h[:"y_k"]]
+        ensure
+          GC.stress = false
+        end
+    "#), @r#"[Hash, 2, [3], [3]]"#);
+}
+
 #[test]
 fn test_new_hash_nonempty() {
     eval(r#"
