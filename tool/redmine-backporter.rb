@@ -33,6 +33,7 @@ RUBY_REPO_PATH = repo_path || ENV['RUBY_REPO_PATH']
 BACKPORT_CF_KEY = 'cf_5'
 STATUS_CLOSE = 5
 REDMINE_API_KEY = api_key || ENV['REDMINE_API_KEY'] || (puts opts.help; raise 'need to specify REDMINE_API_KEY')
+REDMINE_API_KEY_HEADER = {'X-Redmine-API-Key' => REDMINE_API_KEY}.freeze
 REDMINE_BASE = 'https://bugs.ruby-lang.org'
 
 @query = {
@@ -164,8 +165,16 @@ def has_commit(commit, branch)
   system("git", *base, "merge-base", "--is-ancestor", commit, branch)
 end
 
+def redmine_read_json(uri)
+  JSON(uri.read($openuri_options.merge(REDMINE_API_KEY_HEADER)))
+end
+
+def redmine_get(http, uri)
+  http.get(uri.respond_to?(:request_uri) ? uri.request_uri : uri, REDMINE_API_KEY_HEADER)
+end
+
 def show_last_journal(http, uri)
-  res = http.get("#{uri.path}?include=journals")
+  res = redmine_get(http, "#{uri.path}?include=journals")
   res.value
   h = JSON(res.body)
   x = h["issue"]
@@ -219,7 +228,7 @@ commands = {
     raise CommandSyntaxError unless /\A(\d+)?\z/ =~ args
     uri = URI(REDMINE_BASE+'/projects/ruby-master/issues.json?'+URI.encode_www_form(@query.dup.merge('page' => ($1 ? $1.to_i : 1))))
     # puts uri
-    res = JSON(uri.read($openuri_options))
+    res = redmine_read_json(uri)
     @issues = issues = res["issues"]
     from = res["offset"] + 1
     total = res["total_count"]
@@ -244,7 +253,7 @@ commands = {
     end
     uri = "#{REDMINE_BASE}/issues/#{id}"
     uri = URI(uri+".json?include=children,attachments,relations,changesets,journals")
-    res = JSON(uri.read($openuri_options))
+    res = redmine_read_json(uri)
     i = res["issue"]
     unless i["changesets"]
       abort "You don't have view_changesets permission"
@@ -375,7 +384,8 @@ eom
 
     uri = URI("#{REDMINE_BASE}/issues/#{@issue}.json")
     Net::HTTP.start(uri.host, uri.port, http_options) do |http|
-      res = http.get(uri.path)
+      res = redmine_get(http, uri)
+      res.value
       data = JSON(res.body)
       h = data["issue"]["custom_fields"].find{|x|x["id"]==5}
       if h and val = h["value"] and val != ""
