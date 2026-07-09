@@ -3581,9 +3581,10 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, block_given?@0x1008, cme:0x1010)
           v19:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
           v20:CPtr = GetEP 0
-          v21:BoolExact = IsBlockGiven v20
+          v21:RubyValue = LoadField v20, :VM_ENV_DATA_INDEX_SPECVAL@0x1038
+          v22:BoolExact = IsBlockGiven v21
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 

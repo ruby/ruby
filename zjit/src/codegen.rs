@@ -771,7 +771,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::LoadField { recv, id, offset, return_type: _, num_bits } => gen_load_field(asm, opnd!(recv), id, offset, num_bits),
         &Insn::StoreField { recv, id, offset, val, num_bits } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), num_bits)),
         &Insn::WriteBarrier { recv, val } => no_output!(gen_write_barrier(jit, asm, opnd!(recv), opnd!(val), function.type_of(val))),
-        &Insn::IsBlockGiven { lep } => gen_is_block_given(asm, opnd!(lep)),
+        &Insn::IsBlockGiven { block_handler } => gen_is_block_given(asm, opnd!(block_handler)),
         Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, function, opnds!(elements), opnd!(target), &function.frame_state(*state)),
         Insn::ArrayPackBuffer { elements, fmt, buffer, state } => gen_array_pack_buffer(jit, asm, function, opnds!(elements), opnd!(fmt), (*buffer).map(|buffer| opnd!(buffer)), &function.frame_state(*state)),
         &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, function, ary, opnd!(target), &function.frame_state(state)),
@@ -837,8 +837,7 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, function: &Function, op_type
 }
 
 /// Similar to gen_defined for DEFINED_YIELD
-fn gen_is_block_given(asm: &mut Assembler, lep: Opnd) -> Opnd {
-    let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
+fn gen_is_block_given(asm: &mut Assembler, block_handler: Opnd) -> Opnd {
     asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
     asm.csel_e(Qfalse.into(), Qtrue.into())
 }
