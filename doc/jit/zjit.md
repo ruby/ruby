@@ -292,18 +292,18 @@ Test changes will be reviewed alongside code changes.
 This command runs Ruby execution tests.
 
 ```bash
-make test-all TESTS="test/ruby/test_zjit.rb"
+make test-all TESTS="test/ruby/test_zjit_cli.rb"
 ```
 
 You can also run a single test case by matching the method name:
 
 ```bash
-make test-all TESTS="test/ruby/test_zjit.rb -n TestZJIT#test_putobject"
+make test-all TESTS="test/ruby/test_zjit_cli.rb -n TestZJITCLI#test_enabled"
 ```
 
 ### Running all tests
 
-Runs both `make zjit-test` and `test/ruby/test_zjit.rb`:
+Runs both `make zjit-test` and `test/ruby/test_zjit_cli.rb`:
 
 ```bash
 make zjit-check

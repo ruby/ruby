@@ -6865,3 +6865,170 @@ fn test_getlocal_level_zero_after_setlocal_wc_0() {
         test
     "#), @"2");
 }
+
+#[test]
+fn test_uncached_getconstant_path() {
+    set_call_threshold(1);
+    eval("
+        def test = RUBY_COPYRIGHT
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_getconstant_path);
+    // RUBY_COPYRIGHT is version-dependent, so compare against its runtime value
+    // rather than a fixed snapshot.
+    assert_eq!(assert_compiles_allowing_exits("test"), inspect("RUBY_COPYRIGHT"));
+}
+
+#[test]
+fn test_line_tracepoint_on_c_method() {
+    set_call_threshold(1);
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        events = []
+        events.instance_variable_set(
+          :@tp,
+          TracePoint.new(:line) { |tp| events << [tp.event, tp.lineno] if tp.path == __FILE__ }
+        )
+        def events.to_str
+          @tp.enable; ''
+        end
+
+        # Stay in generated code while enabling tracing
+        def events.compiled(obj)
+          String(obj)
+          @tp.disable; __LINE__
+        end
+
+        line = events.compiled(events)
+        events[0][-1] = (events[0][-1] == line)
+
+        events.to_s # can't dump events as it's a singleton object AND it has a TracePoint instance variable, which also can't be dumped
+    "#), @r#""[[:line, true]]""#);
+}
+
+#[test]
+fn test_targeted_line_tracepoint_in_c_method_call() {
+    set_call_threshold(1);
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        events = []
+        events.instance_variable_set(:@tp, TracePoint.new(:line) { |tp| events << tp.lineno })
+        def events.to_str
+          @tp.enable(target: method(:compiled))
+          ''
+        end
+
+        # Stay in generated code while enabling tracing
+        def events.compiled(obj)
+          String(obj)
+          __LINE__
+        end
+
+        line = events.compiled(events)
+        events[0] = (events[0] == line)
+
+        events.to_s # can't dump events as it's a singleton object AND it has a TracePoint instance variable, which also can't be dumped
+    "#), @r#""[true]""#);
+}
+
+#[test]
+fn test_regression_cfp_sp_set_correctly_before_leaf_gc_call() {
+    set_call_threshold(14);
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        def check(l, r)
+          return 1 unless l
+          1 + check(*l) + check(*r)
+        end
+
+        def tree(depth)
+          # This duparray is our leaf-gc target.
+          return [nil, nil] unless depth > 0
+
+          # Modify the local and pass it to the following calls.
+          depth -= 1
+          [tree(depth), tree(depth)]
+        end
+
+        def test
+          GC.stress = true
+          2.times do
+            t = tree(11)
+            check(*t)
+          end
+          :ok
+        end
+
+        test
+    "#), @":ok");
+}
+
+#[test]
+fn test_regression_gc_stress_with_lazy_block_code() {
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        def allocate_array
+          [1, 2, 3]
+        end
+
+        begin
+          GC.stress = true
+          allocate_array
+          allocate_array
+          :ok
+        ensure
+          GC.stress = false
+        end
+    "#), @":ok");
+}
+
+#[test]
+fn test_float_arithmetic() {
+    set_call_threshold(1);
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 1.5 + 2.5; test"), @"4.0");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 2.0 * 3.0; test"), @"6.0");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 3.5 - 2.0; test"), @"1.5");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 5.0 / 2.0; test"), @"2.5");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 1.5 * 3; test"), @"4.5"); // Float * Fixnum
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (Float::NAN + 1.0).nan?; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = Float::INFINITY * 2.0; test"), @"Infinity");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 3.7.to_i; test"), @"3");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (-2.9).to_i; test"), @"-2");
+}
+
+#[test]
+fn test_send_backtrace() {
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        def jit_frame2 = caller     # 1
+        def jit_frame1 = jit_frame2 # 2
+        def entry = jit_frame1      # 3
+        entry # profile send        # 4
+        entry                       # 5
+    "#), @r#"["<compiled>:3:in 'Object#jit_frame1'", "<compiled>:4:in 'Object#entry'", "<compiled>:6:in '<compiled>'", "-e:in 'RubyVM::InstructionSequence#eval'"]"#);
+}
+
+// Regression test: when specialized_instruction is disabled (as power_assert does),
+// eval'd code uses `send` instead of `opt_send_without_block`, producing SendNoProfiles.
+// The `times` call with a literal block is the SendNoProfiles send whose exit profiling
+// triggers recompilation of `run`. After recompilation, `make`'s eval("proc { }") crashes
+// in vm_make_env_each because the caller frame's EP[-1] (specval) has a stale value.
+#[test]
+fn test_send_no_profiles_with_disabled_specialized_instruction() {
+    set_call_threshold(1);
+    assert_snapshot!(inspect(r#"
+        RubyVM::InstructionSequence.compile_option = { specialized_instruction: false }
+        eval <<~'INNERRUBY'
+          def make = eval("proc { }")
+          def run(n) = n.times { make }
+        INNERRUBY
+        run(6)
+        :ok
+    "#), @":ok");
+}
+
+#[test]
+fn test_array_each_is_defined_in_ruby() {
+    assert_snapshot!(inspect("Array.instance_method(:each).source_location&.first"), @r#""<internal:array>""#);
+}
