@@ -3496,17 +3496,17 @@ impl Function {
         }
     }
 
-    fn profile_summary(&self, profiles: &ProfileOracle, recv: InsnId, state: InsnId) -> Option<TypeDistributionSummary> {
+    fn profile_summary(&self, profiles: &ProfileOracle, recv: InsnId, state: InsnId) -> TypeDistributionSummary {
         let Some(entries) = profiles.get(state) else {
-            return None;
+            return TypeDistributionSummary::empty();
         };
         let recv = self.chase_insn(recv);
         for (entry_insn, entry_type_summary) in entries {
             if self.chase_insn(*entry_insn) == recv {
-                return Some(entry_type_summary.clone());
+                return entry_type_summary.clone();
             }
         }
-        None
+        TypeDistributionSummary::empty()
     }
 
     fn polymorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, state: InsnId) -> Option<TypeDistributionSummary> {
@@ -8993,9 +8993,7 @@ fn add_iseq_to_hir(
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledYARVInsn(opcode)), recompile: None });
                         break;  // End the block
                     }
-                    let summary = fun.profile_summary(&profiles, self_param, exit_id).unwrap_or_else(|| {
-                        TypeDistributionSummary::empty()
-                    });
+                    let summary = fun.profile_summary(&profiles, self_param, exit_id);
                     let self_param = fun.guard_heap(block, self_param, exit_id);
                     // Filter out profiled types we don't care to optimize
                     let profiled_types = summary.buckets().iter().filter(|profiled_type| {
