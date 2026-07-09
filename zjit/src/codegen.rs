@@ -2601,6 +2601,8 @@ fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
 }
 
 fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_type: Type, ty: Type) -> lir::Opnd {
+    // TODO(max): Add case for Integer, which could either be Fixnum or Bignum
+    // TODO(max): Add case for Float, which could either be Flonum or Float
     if ty.is_subtype(types::Fixnum) {
         asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
         asm.csel_nz(Opnd::Imm(1), Opnd::Imm(0))
@@ -2712,18 +2714,63 @@ fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_typ
     }
 }
 
+fn gen_check_class_or_jmp(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected_class: VALUE, target: Target) {
+    // Load the class from the object's klass field
+    let val = asm.load_mem(val);
+    let klass = asm.load(Opnd::mem(64, val, RUBY_OFFSET_RBASIC_KLASS));
+    asm.cmp(klass, Opnd::Value(expected_class));
+    asm.jne(jit, target);
+}
+
+fn gen_guard_split_type(jit: &mut JITState, asm: &mut Assembler, test_immediate_or_jmp: impl Fn(&mut JITState, &mut Assembler, Opnd, Target), val: Opnd, expected_class: VALUE, guard_type: Type, recompile: Option<Recompile>, state: &FrameState) {
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+
+    let heap_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let heap_target = Target::Block(Box::new(lir::BranchEdge { target: heap_block, args: vec![] }));
+
+    let join_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let join_target = Target::Block(Box::new(lir::BranchEdge { target: join_block, args: vec![] }));
+
+    test_immediate_or_jmp(jit, asm, val, heap_target);
+    asm.jmp(join_target.clone());
+
+    asm.set_current_block(heap_block);
+    let heap_label = jit.get_label(asm, heap_block, hir_block_id);
+    asm.write_label(heap_label);
+    let side_exit = side_exit_with_recompile(jit, state, GuardType(guard_type), recompile);
+    gen_check_class_or_jmp(jit, asm, val, expected_class, side_exit);
+    asm.jmp(join_target);
+
+    asm.set_current_block(join_block);
+    let join_label = jit.get_label(asm, join_block, hir_block_id);
+    asm.write_label(join_label);
+}
+
+fn gen_check_fixnum_or_jmp(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, target: Target) {
+    asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+    asm.jz(jit, target);
+}
+
+fn gen_check_flonum_or_jmp(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, target: Target) {
+    // Flonum: (val & RUBY_FLONUM_MASK) == RUBY_FLONUM_FLAG
+    let masked = asm.and(val, Opnd::UImm(RUBY_FLONUM_MASK as u64));
+    asm.cmp(masked, Opnd::UImm(RUBY_FLONUM_FLAG as u64));
+    asm.jne(jit, target);
+}
+
 /// Compile a type check with a side exit
 fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_type: Type, guard_type: Type, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
     let is_known_heap_basic_object = val_type.is_subtype(types::HeapBasicObject);
     gen_incr_counter(asm, Counter::guard_type_count);
     if guard_type.is_subtype(types::Fixnum) {
-        asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
-        asm.jz(jit, side_exit_with_recompile(jit, state, GuardType(guard_type), recompile));
+        gen_check_fixnum_or_jmp(jit, asm, val, side_exit_with_recompile(jit, state, GuardType(guard_type), recompile));
+    } else if guard_type.is_subtype(types::Integer) {
+        gen_guard_split_type(jit, asm, gen_check_fixnum_or_jmp, val, unsafe { rb_cInteger }, guard_type, recompile, state);
     } else if guard_type.is_subtype(types::Flonum) {
-        // Flonum: (val & RUBY_FLONUM_MASK) == RUBY_FLONUM_FLAG
-        let masked = asm.and(val, Opnd::UImm(RUBY_FLONUM_MASK as u64));
-        asm.cmp(masked, Opnd::UImm(RUBY_FLONUM_FLAG as u64));
-        asm.jne(jit, side_exit_with_recompile(jit, state, GuardType(guard_type), recompile));
+        gen_check_flonum_or_jmp(jit, asm, val, side_exit_with_recompile(jit, state, GuardType(guard_type), recompile));
+    } else if guard_type.is_subtype(types::Float) {
+        gen_guard_split_type(jit, asm, gen_check_flonum_or_jmp, val, unsafe { rb_cFloat }, guard_type, recompile, state);
     } else if guard_type.is_subtype(types::StaticSymbol) {
         // Static symbols have (val & 0xff) == RUBY_SYMBOL_FLAG
         // Use 8-bit comparison like YJIT does.
@@ -2761,11 +2808,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_t
             asm.je(jit, side_exit.clone());
         }
 
-        // Load the class from the object's klass field
-        let klass = asm.load(Opnd::mem(64, val, RUBY_OFFSET_RBASIC_KLASS));
-
-        asm.cmp(klass, Opnd::Value(expected_class));
-        asm.jne(jit, side_exit);
+        gen_check_class_or_jmp(jit, asm, val, expected_class, side_exit);
     } else if let Some(builtin_type) = guard_type.builtin_type_equivalent() {
         let side = side_exit_with_recompile(jit, state, GuardType(guard_type), recompile);
 
