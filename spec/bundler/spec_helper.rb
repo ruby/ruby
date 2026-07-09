@@ -38,7 +38,7 @@ require_relative "support/indexes"
 require_relative "support/matchers"
 require_relative "support/permissions"
 require_relative "support/platforms"
-require_relative "support/windows_tag_group"
+require_relative "support/shards"
 
 begin
   raise LoadError if File.exist?(File.expand_path("../../lib/bundler/bundler.gemspec", __dir__))
@@ -56,7 +56,7 @@ begin
     add_filter "/lib/rubygems/"
     add_filter "/lib/bundler/vendor/"
     add_filter "/tool/"
-    add_filter "/bundler/tmp/"
+    add_filter "/tmp/"
     add_filter ".gemspec"
   end
 
@@ -88,7 +88,7 @@ RSpec.configure do |config|
   config.include Spec::Path
   config.include Spec::Platforms
   config.include Spec::Permissions
-  config.include Spec::WindowsTagGroup
+  config.include Spec::Shards
 
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
@@ -147,6 +147,16 @@ RSpec.configure do |config|
       ENV["GIT_CONFIG_NOSYSTEM"] = "1"
     end
 
+    # Disable git background maintenance. Since Git 2.46, commands like
+    # `git commit` spawn a detached `git maintenance run --auto` process,
+    # which briefly creates `.git/objects/maintenance.lock`. That races with
+    # specs copying repositories with FileUtils.cp_r, causing flaky ENOENT
+    # failures. GIT_CONFIG_COUNT is available since Git 2.31 and silently
+    # ignored by older versions.
+    ENV["GIT_CONFIG_COUNT"] = "1"
+    ENV["GIT_CONFIG_KEY_0"] = "maintenance.auto"
+    ENV["GIT_CONFIG_VALUE_0"] = "false"
+
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
 
@@ -175,7 +185,7 @@ RSpec.configure do |config|
     reset!
   end
 
-  Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.each do |tag, file_paths|
+  Spec::Shards::EXAMPLE_MAPPINGS.each do |tag, file_paths|
     file_pattern = Regexp.union(file_paths.map {|path| Regexp.new(Regexp.escape(path) + "$") })
 
     config.define_derived_metadata(file_path: file_pattern) do |metadata|
@@ -185,8 +195,8 @@ RSpec.configure do |config|
 
   config.before(:context) do |example|
     metadata = example.class.metadata
-    if metadata[:type] != :aruba && !metadata[:realworld] && metadata.keys.none? {|k| Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.keys.include?(k) }
-      warn "#{metadata[:file_path]} is not assigned to any Windows runner group. see spec/support/windows_tag_group.rb for details."
+    if metadata[:type] != :aruba && !metadata[:realworld] && metadata.keys.none? {|k| Spec::Shards::EXAMPLE_MAPPINGS.keys.include?(k) }
+      warn "#{metadata[:file_path]} is not assigned to any shard. see spec/support/shards.rb for details."
     end
   end unless Spec::Path.ruby_core?
 end

@@ -42,7 +42,7 @@ class Gem::Commands::SpecificationCommand < Gem::Command
 
   def arguments # :nodoc:
     <<-ARGS
-GEMFILE       name of gem to show the gemspec for
+GEM_OR_FILE   gem name or a .gem file to show the gemspec for
 FIELD         name of gemspec field to show
     ARGS
   end
@@ -68,7 +68,7 @@ Specific fields in the specification can be extracted in YAML format:
   end
 
   def usage # :nodoc:
-    "#{program_name} [GEMFILE] [FIELD]"
+    "#{program_name} [GEM_OR_FILE] [FIELD]"
   end
 
   def execute
@@ -77,7 +77,7 @@ Specific fields in the specification can be extracted in YAML format:
 
     unless gem
       raise Gem::CommandLineError,
-            "Please specify a gem name or file on the command line"
+            "Please specify a gem name or a .gem file on the command line"
     end
 
     case v = options[:version]

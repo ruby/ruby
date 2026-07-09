@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Math.cbrt" do
   it "returns a float" do
-    Math.cbrt(1).should be_an_instance_of(Float)
+    Math.cbrt(1).should.instance_of?(Float)
   end
 
   it "returns the cubic root of the argument" do
@@ -14,11 +14,11 @@ describe "Math.cbrt" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.cbrt("foobar") }.should raise_error(TypeError)
+    -> { Math.cbrt("foobar") }.should.raise(TypeError)
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.cbrt(nil) }.should raise_error(TypeError)
+    -> { Math.cbrt(nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

@@ -3,8 +3,8 @@ require_relative 'fixtures/classes'
 
 context "Creating UnboundMethods" do
   specify "there is no difference between Method#unbind and Module#instance_method" do
-    UnboundMethodSpecs::Methods.instance_method(:foo).should be_kind_of(UnboundMethod)
-    UnboundMethodSpecs::Methods.new.method(:foo).unbind.should be_kind_of(UnboundMethod)
+    UnboundMethodSpecs::Methods.instance_method(:foo).should.is_a?(UnboundMethod)
+    UnboundMethodSpecs::Methods.new.method(:foo).unbind.should.is_a?(UnboundMethod)
   end
 end
 
@@ -127,6 +127,13 @@ describe "UnboundMethod#==" do
     end
 
     (@discard_1 == UnboundMethodSpecs::Methods.instance_method(:discard_1)).should == false
+  end
+
+  it "returns false for two attr_reader methods" do
+    Class.new do
+      attr_reader :a, :b
+      instance_method(:a).should_not == instance_method(:b)
+    end
   end
 
   it "considers methods through aliasing equal" do

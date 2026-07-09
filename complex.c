@@ -40,7 +40,6 @@ static VALUE RFLOAT_0;
 VALUE rb_cComplex;
 
 static ID id_abs, id_arg,
-    id_denominator, id_numerator,
     id_real_p, id_i_real, id_i_imag,
     id_finite_p, id_infinite_p, id_rationalize,
     id_PI;
@@ -369,8 +368,7 @@ k_numeric_p(VALUE x)
 inline static VALUE
 nucomp_s_new_internal(VALUE klass, VALUE real, VALUE imag)
 {
-    NEWOBJ_OF(obj, struct RComplex, klass,
-            T_COMPLEX | (RGENGC_WB_PROTECTED_COMPLEX ? FL_WB_PROTECTED : 0), sizeof(struct RComplex), 0);
+    NEWOBJ_OF(obj, struct RComplex, klass, T_COMPLEX, sizeof(struct RComplex));
 
     RCOMPLEX_SET_REAL(obj, real);
     RCOMPLEX_SET_IMAG(obj, imag);
@@ -2697,8 +2695,6 @@ Init_Complex(void)
     VALUE compat;
     id_abs = rb_intern_const("abs");
     id_arg = rb_intern_const("arg");
-    id_denominator = rb_intern_const("denominator");
-    id_numerator = rb_intern_const("numerator");
     id_real_p = rb_intern_const("real?");
     id_i_real = rb_intern_const("@real");
     id_i_imag = rb_intern_const("@image"); /* @image, not @imag */

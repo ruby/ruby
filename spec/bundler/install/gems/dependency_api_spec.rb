@@ -157,7 +157,6 @@ RSpec.describe "gemcutter's dependency API" do
       "actionpack 2.3.2",
       "actionmailer 2.3.2",
       "activeresource 2.3.2",
-      "activesupport 2.3.2",
       "thin 1.0.0",
       "myrack 1.0.0",
       "rails 2.3.2"

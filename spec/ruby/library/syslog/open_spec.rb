@@ -1,18 +1,17 @@
 require_relative '../../spec_helper'
 
 platform_is_not :windows do
-  require_relative 'shared/reopen'
   require 'syslog'
 
   describe "Syslog.open" do
     platform_is_not :windows do
 
       before :each do
-        Syslog.opened?.should be_false
+        Syslog.opened?.should == false
       end
 
       after :each do
-        Syslog.opened?.should be_false
+        Syslog.opened?.should == false
       end
 
       it "returns the module" do
@@ -69,24 +68,59 @@ platform_is_not :windows do
 
       it "closes the log if after it receives a block" do
         Syslog.open{ }
-        Syslog.opened?.should be_false
+        Syslog.opened?.should == false
       end
 
       it "raises an error if the log is opened" do
         Syslog.open
         -> {
           Syslog.open
-        }.should raise_error(RuntimeError, /syslog already open/)
+        }.should.raise(RuntimeError, /syslog already open/)
         -> {
           Syslog.close
           Syslog.open
-        }.should_not raise_error
+        }.should_not.raise
         Syslog.close
       end
     end
   end
 
   describe "Syslog.open!" do
-    it_behaves_like :syslog_reopen, :open!
+    before :each do
+      Syslog.opened?.should == false
+    end
+
+    after :each do
+      Syslog.opened?.should == false
+    end
+
+    it "reopens the log" do
+      Syslog.open
+      -> { Syslog.open! }.should_not.raise
+      Syslog.opened?.should == true
+      Syslog.close
+    end
+
+    it "fails with RuntimeError if the log is closed" do
+      -> { Syslog.open! }.should.raise(RuntimeError)
+    end
+
+    it "receives the same parameters as Syslog.open" do
+      Syslog.open
+      Syslog.open!("rubyspec", 3, 8) do |s|
+        s.should == Syslog
+        s.ident.should == "rubyspec"
+        s.options.should == 3
+        s.facility.should == Syslog::LOG_USER
+        s.opened?.should == true
+      end
+      Syslog.opened?.should == false
+    end
+
+    it "returns the module" do
+      Syslog.open
+      Syslog.open!.should == Syslog
+      Syslog.close
+    end
   end
 end

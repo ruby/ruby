@@ -12,12 +12,12 @@ describe "StringIO#readlines when passed [separator]" do
 
   it "updates self's position based on the number of read bytes" do
     @io.readlines(">")
-    @io.pos.should eql(18)
+    @io.pos.should.eql?(18)
   end
 
   it "updates self's lineno based on the number of read lines" do
     @io.readlines(">")
-    @io.lineno.should eql(4)
+    @io.lineno.should.eql?(4)
   end
 
   it "does not change $_" do
@@ -61,12 +61,12 @@ describe "StringIO#readlines when passed no argument" do
 
   it "updates self's position based on the number of read bytes" do
     @io.readlines
-    @io.pos.should eql(41)
+    @io.pos.should.eql?(41)
   end
 
   it "updates self's lineno based on the number of read lines" do
     @io.readlines
-    @io.lineno.should eql(3)
+    @io.lineno.should.eql?(3)
   end
 
   it "does not change $_" do
@@ -84,11 +84,11 @@ end
 describe "StringIO#readlines when in write-only mode" do
   it "raises an IOError" do
     io = StringIO.new(+"xyz", "w")
-    -> { io.readlines }.should raise_error(IOError)
+    -> { io.readlines }.should.raise(IOError)
 
     io = StringIO.new("xyz")
     io.close_read
-    -> { io.readlines }.should raise_error(IOError)
+    -> { io.readlines }.should.raise(IOError)
   end
 end
 
@@ -109,7 +109,7 @@ describe "StringIO#readlines when passed [limit]" do
   end
 
   it "raises ArgumentError when limit is 0" do
-    -> { @io.readlines(0) }.should raise_error(ArgumentError)
+    -> { @io.readlines(0) }.should.raise(ArgumentError)
   end
 
   it "ignores it when the limit is negative" do

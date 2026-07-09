@@ -88,6 +88,7 @@ module Prism
           KEYWORD_DEFINED: :kDEFINED,
           KEYWORD_DO: :kDO,
           KEYWORD_DO_BLOCK: :kDO_BLOCK,
+          KEYWORD_DO_LAMBDA: :kDO_LAMBDA,
           KEYWORD_DO_LOOP: :kDO_COND,
           KEYWORD_END: :kEND,
           KEYWORD_END_UPCASE: :klEND,
@@ -192,17 +193,17 @@ module Prism
         EXPR_BEG = 0x1
         EXPR_LABEL = 0x400
 
-        # It is used to determine whether `do` is of the token type `kDO` or `kDO_LAMBDA`.
-        #
-        # NOTE: In edge cases like `-> (foo = -> (bar) {}) do end`, please note that `kDO` is still returned
-        # instead of `kDO_LAMBDA`, which is expected: https://github.com/ruby/prism/pull/3046
-        LAMBDA_TOKEN_TYPES = Set.new([:kDO_LAMBDA, :tLAMBDA, :tLAMBEG])
-
-        # The `PARENTHESIS_LEFT` token in Prism is classified as either `tLPAREN` or `tLPAREN2` in the Parser gem.
-        # The following token types are listed as those classified as `tLPAREN`.
+        # The `PARENTHESIS_LEFT` token in Prism is classified as either
+        # `tLPAREN` or `tLPAREN2` in the Parser gem. The following token types
+        # are listed as those classified as `tLPAREN`.
         LPAREN_CONVERSION_TOKEN_TYPES = Set.new([
-          :kBREAK, :tCARET, :kCASE, :tDIVIDE, :kFOR, :kIF, :kNEXT, :kRETURN, :kUNTIL, :kWHILE, :tAMPER, :tANDOP, :tBANG, :tCOMMA, :tDOT2, :tDOT3,
-          :tEQL, :tLPAREN, :tLPAREN2, :tLPAREN_ARG, :tLSHFT, :tNL, :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS, :tLCURLY
+          :kAND, :kBEGIN, :kBREAK, :kCASE, :kDO_COND, :kDO_LAMBDA, :kDO, :kELSE,
+          :kELSIF, :kENSURE, :kFOR, :kIF_MOD, :kIF, :kIN, :kNEXT, :kOR,
+          :kRESCUE_MOD, :kRESCUE, :kRETURN, :kTHEN, :kUNLESS_MOD, :kUNLESS,
+          :kUNTIL_MOD, :kUNTIL, :kWHEN, :kWHILE_MOD, :kWHILE,
+          :tAMPER, :tANDOP, :tBANG, :tCARET, :tCOMMA, :tDIVIDE, :tDOT2, :tDOT3,
+          :tEQL, :tLCURLY, :tLPAREN_ARG, :tLPAREN, :tLPAREN2, :tLSHFT, :tNL,
+          :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS
         ])
 
         # Types of tokens that are allowed to continue a method call with comments in-between.
@@ -213,7 +214,7 @@ module Prism
         # Heredocs are complex and require us to keep track of a bit of info to refer to later
         HeredocData = Struct.new(:identifier, :common_whitespace, keyword_init: true)
 
-        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL, :LAMBDA_TOKEN_TYPES, :LPAREN_CONVERSION_TOKEN_TYPES, :HeredocData
+        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL, :LPAREN_CONVERSION_TOKEN_TYPES, :HeredocData
 
         # The Parser::Source::Buffer that the tokens were lexed from.
         attr_reader :source_buffer
@@ -261,14 +262,6 @@ module Prism
             location = range(token.location.start_offset, token.location.end_offset)
 
             case type
-            when :kDO
-              nearest_lambda_token = tokens.reverse_each.find do |token|
-                LAMBDA_TOKEN_TYPES.include?(token.first)
-              end
-
-              if nearest_lambda_token&.first == :tLAMBDA
-                type = :kDO_LAMBDA
-              end
             when :tCHARACTER
               value.delete_prefix!("?")
               # Character literals behave similar to double-quoted strings. We can use the same escaping mechanism.

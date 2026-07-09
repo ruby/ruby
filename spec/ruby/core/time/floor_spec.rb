@@ -20,8 +20,8 @@ describe "Time#floor" do
   it "returns an instance of Time, even if #floor is called on a subclass" do
     subclass = Class.new(Time)
     instance = subclass.at(0)
-    instance.class.should equal subclass
-    instance.floor.should be_an_instance_of(Time)
+    instance.class.should.equal? subclass
+    instance.floor.should.instance_of?(Time)
   end
 
   it "copies own timezone to the returning value" do

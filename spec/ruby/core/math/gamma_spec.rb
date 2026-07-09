@@ -51,7 +51,7 @@ describe "Math.gamma" do
   end
 
   it "raises Math::DomainError given -1" do
-    -> { Math.gamma(-1) }.should raise_error(Math::DomainError)
+    -> { Math.gamma(-1) }.should.raise(Math::DomainError)
   end
 
   # See https://bugs.ruby-lang.org/issues/10642
@@ -60,10 +60,10 @@ describe "Math.gamma" do
   end
 
   it "raises Math::DomainError given negative infinity" do
-    -> { Math.gamma(-Float::INFINITY) }.should raise_error(Math::DomainError)
+    -> { Math.gamma(-Float::INFINITY) }.should.raise(Math::DomainError)
   end
 
   it "returns NaN given NaN" do
-    Math.gamma(nan_value).nan?.should be_true
+    Math.gamma(nan_value).nan?.should == true
   end
 end

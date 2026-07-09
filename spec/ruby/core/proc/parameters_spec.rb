@@ -7,8 +7,8 @@ describe "Proc#parameters" do
 
   it "returns an Array of Arrays for a proc expecting parameters" do
     p = proc {|x| }
-    p.parameters.should be_an_instance_of(Array)
-    p.parameters.first.should be_an_instance_of(Array)
+    p.parameters.should.instance_of?(Array)
+    p.parameters.first.should.instance_of?(Array)
   end
 
   it "sets the first element of each sub-Array to :opt for optional arguments" do
@@ -179,5 +179,21 @@ describe "Proc#parameters" do
         proc { |&nil| }.parameters.should == [[:noblock]]
       RUBY
     end
+  end
+
+  ruby_version_is ""..."4.0" do
+    it "regards a destructured parameter in proc as an optional one" do
+      proc { |(a)| }.parameters.should == [[:opt, nil]]
+    end
+  end
+
+  ruby_version_is "4.0" do
+    it "regards a destructured parameter in proc as an optional one" do
+      proc { |(a)| }.parameters.should == [[:opt]]
+    end
+  end
+
+  it "regards a destructured parameter in lambda as an required" do
+    -> ((a)) { }.parameters.should == [[:req]] # rubocop:disable Style/StabbyLambdaParentheses
   end
 end

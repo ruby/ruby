@@ -155,6 +155,15 @@ module JSON
     # Set the module _generator_ to be used by JSON.
     def generator=(generator) # :nodoc:
       old, $VERBOSE = $VERBOSE, nil
+
+      # The default proc used when the +sort_keys+ generation option is +true+.
+      # It returns a new hash with the entries sorted by their keys.
+      sort_keys_proc = ->(hash) { hash.sort.to_h }
+      if defined?(::Ractor) && Ractor.respond_to?(:shareable_lambda)
+        sort_keys_proc = Ractor.shareable_lambda(&sort_keys_proc)
+      end
+      generator::State.default_sort_keys_proc = sort_keys_proc
+
       @generator = generator
       if generator.const_defined?(:GeneratorMethods)
         generator_methods = generator::GeneratorMethods

@@ -46,7 +46,7 @@ describe :socket_local_remote_address, shared: true do
     end
 
     it 'returns an Addrinfo' do
-      @addr.should be_an_instance_of(Addrinfo)
+      @addr.should.instance_of?(Addrinfo)
     end
 
     it 'uses 0 as the protocol' do
@@ -110,7 +110,7 @@ describe :socket_local_remote_address, shared: true do
       end
 
       it 'returns an Addrinfo' do
-        @addr.should be_an_instance_of(Addrinfo)
+        @addr.should.instance_of?(Addrinfo)
       end
 
       it 'uses 0 as the protocol' do
@@ -184,7 +184,7 @@ describe :socket_local_remote_address, shared: true do
     end
 
     it 'returns an Addrinfo' do
-      @addr.should be_an_instance_of(Addrinfo)
+      @addr.should.instance_of?(Addrinfo)
     end
 
     it 'uses 0 as the protocol' do
@@ -240,7 +240,7 @@ describe :socket_local_remote_address, shared: true do
     end
 
     it 'returns an Addrinfo' do
-      @addr.should be_an_instance_of(Addrinfo)
+      @addr.should.instance_of?(Addrinfo)
     end
 
     it 'uses 0 as the protocol' do

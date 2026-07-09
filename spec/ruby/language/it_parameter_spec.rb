@@ -1,7 +1,7 @@
 require_relative '../spec_helper'
 
 ruby_version_is "3.4" do
-  eval <<-RUBY # use eval to avoid warnings on Ruby 3.3
+  eval <<-RUBY, binding, __FILE__, __LINE__ + 1 # use eval to avoid warnings on Ruby 3.3
   describe "The `it` parameter" do
     it "provides it in a block" do
       -> { it }.call("a").should == "a"
@@ -43,27 +43,27 @@ ruby_version_is "3.4" do
     end
 
     it "raises SyntaxError when block parameters are specified explicitly" do
-      -> { eval("-> () { it }")         }.should raise_error(SyntaxError, /ordinary parameter is defined/)
-      -> { eval("-> (x) { it }")        }.should raise_error(SyntaxError, /ordinary parameter is defined/)
+      -> { eval("-> () { it }")         }.should.raise(SyntaxError, /ordinary parameter is defined/)
+      -> { eval("-> (x) { it }")        }.should.raise(SyntaxError, /ordinary parameter is defined/)
 
-      -> { eval("proc { || it }")       }.should raise_error(SyntaxError, /ordinary parameter is defined/)
-      -> { eval("proc { |x| it }")      }.should raise_error(SyntaxError, /ordinary parameter is defined/)
+      -> { eval("proc { || it }")       }.should.raise(SyntaxError, /ordinary parameter is defined/)
+      -> { eval("proc { |x| it }")      }.should.raise(SyntaxError, /ordinary parameter is defined/)
 
-      -> { eval("lambda { || it }")     }.should raise_error(SyntaxError, /ordinary parameter is defined/)
-      -> { eval("lambda { |x| it }")    }.should raise_error(SyntaxError, /ordinary parameter is defined/)
+      -> { eval("lambda { || it }")     }.should.raise(SyntaxError, /ordinary parameter is defined/)
+      -> { eval("lambda { |x| it }")    }.should.raise(SyntaxError, /ordinary parameter is defined/)
 
-      -> { eval("['a'].map { || it }")  }.should raise_error(SyntaxError, /ordinary parameter is defined/)
-      -> { eval("['a'].map { |x| it }") }.should raise_error(SyntaxError, /ordinary parameter is defined/)
+      -> { eval("['a'].map { || it }")  }.should.raise(SyntaxError, /ordinary parameter is defined/)
+      -> { eval("['a'].map { |x| it }") }.should.raise(SyntaxError, /ordinary parameter is defined/)
     end
 
     it "cannot be mixed with numbered parameters" do
       -> {
         eval("proc { it + _1 }")
-      }.should raise_error(SyntaxError, /numbered parameters are not allowed when 'it' is already used|'it' is already used in/)
+      }.should.raise(SyntaxError, /numbered parameters are not allowed when 'it' is already used|'it' is already used in/)
 
       -> {
         eval("proc { _1 + it }")
-      }.should raise_error(SyntaxError, /numbered parameter is already used in|'it' is not allowed when a numbered parameter is already used/)
+      }.should.raise(SyntaxError, /numbered parameter is already used in|'it' is not allowed when a numbered parameter is already used/)
     end
 
     it "affects block arity" do
@@ -86,11 +86,30 @@ ruby_version_is "3.4" do
       -> { it; binding.local_variables }.call("a").should == []
     end
 
+    it "does not affect binding local variables getting" do
+      proc {
+        a = it; binding.local_variable_get(:it)
+      }.should.raise(NameError, /local variable 'it' is not defined for/)
+    end
+
+    it "does not affect binding local variables setting" do
+      -> {
+       a = it
+       binding.local_variable_set(:it, :b)
+       [a, it]
+      }.call(:a).should == [:a, :a]
+    end
+
+    it "does not affect binding local variables definition check" do
+      a = it
+      binding.local_variable_defined?(:it).should == false
+    end
+
     it "does not work in methods" do
       obj = Object.new
       def obj.foo; it; end
 
-      -> { obj.foo("a") }.should raise_error(ArgumentError, /wrong number of arguments/)
+      -> { obj.foo("a") }.should.raise(ArgumentError, /wrong number of arguments/)
     end
 
     context "given multiple arguments" do
@@ -99,8 +118,8 @@ ruby_version_is "3.4" do
       end
 
       it "raises ArgumentError for a proc" do
-        -> { -> { it }.call("a", "b") }.should raise_error(ArgumentError, "wrong number of arguments (given 2, expected 1)")
-        -> { lambda { it }.call("a", "b") }.should raise_error(ArgumentError, "wrong number of arguments (given 2, expected 1)")
+        -> { -> { it }.call("a", "b") }.should.raise(ArgumentError, "wrong number of arguments (given 2, expected 1)")
+        -> { lambda { it }.call("a", "b") }.should.raise(ArgumentError, "wrong number of arguments (given 2, expected 1)")
       end
     end
   end

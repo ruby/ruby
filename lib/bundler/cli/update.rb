@@ -15,8 +15,6 @@ module Bundler
 
       Bundler.self_manager.update_bundler_and_restart_with_it_if_needed(update_bundler) if update_bundler
 
-      Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.settings[:plugins]
-
       sources = Array(options[:source])
       groups  = Array(options[:group]).map(&:to_sym)
 
@@ -33,28 +31,38 @@ module Bundler
 
       conservative = options[:conservative]
 
-      if full_update
+      unlock = if full_update
         if conservative
-          Bundler.definition(conservative: conservative)
+          { conservative: conservative }
         else
-          Bundler.definition(true)
+          true
         end
       else
         unless Bundler.default_lockfile.exist?
           raise GemfileLockNotFound, "This Bundle hasn't been installed yet. " \
             "Run `bundle install` to update and install the bundled gems."
         end
-        Bundler::CLI::Common.ensure_all_gems_in_lockfile!(gems)
+        explicit_gems = gems.dup
 
         if groups.any?
           deps = Bundler.definition.dependencies.select {|d| (d.groups & groups).any? }
           gems.concat(deps.map(&:name))
         end
 
-        Bundler.definition(gems: gems, sources: sources, ruby: options[:ruby],
-                           conservative: conservative,
-                           bundler: update_bundler)
+        {
+          gems: gems,
+          sources: sources,
+          ruby: options[:ruby],
+          conservative: conservative,
+          bundler: update_bundler,
+        }
       end
+
+      Plugin.gemfile_install(Bundler.default_gemfile, Bundler.default_lockfile, unlock.dup) if Bundler.settings[:plugins]
+
+      Bundler::CLI::Common.ensure_all_gems_in_lockfile!(explicit_gems) if explicit_gems
+
+      Bundler.definition(unlock)
 
       Bundler::CLI::Common.configure_gem_version_promoter(Bundler.definition, options)
 
@@ -66,6 +74,8 @@ module Bundler
       opts["force"] = options[:redownload] if options[:redownload]
 
       Bundler.settings.set_command_option_if_given :jobs, opts["jobs"]
+      Bundler::CLI::Common.validate_cooldown!(options[:cooldown])
+      Bundler.settings.set_command_option_if_given :cooldown, options[:cooldown]
 
       Bundler.definition.validate_runtime!
 

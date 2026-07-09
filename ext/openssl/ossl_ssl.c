@@ -56,7 +56,7 @@ static void
 ossl_sslctx_mark(void *ptr)
 {
     SSL_CTX *ctx = ptr;
-    rb_gc_mark((VALUE)SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_ptr_idx));
+    rb_gc_mark_movable((VALUE)SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_ptr_idx));
 }
 
 static void
@@ -65,12 +65,25 @@ ossl_sslctx_free(void *ptr)
     SSL_CTX_free(ptr);
 }
 
+static void
+ossl_sslctx_compact(void *ptr)
+{
+    SSL_CTX *ctx = ptr;
+    VALUE self = (VALUE)SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_ptr_idx);
+    if (self) {
+        (void)SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_ptr_idx,
+                                  (void *)rb_gc_location(self));
+    }
+}
+
 static const rb_data_type_t ossl_sslctx_type = {
-    "OpenSSL/SSL/CTX",
-    {
-        ossl_sslctx_mark, ossl_sslctx_free,
+    .wrap_struct_name = "OpenSSL/SSL/CTX",
+    .function = {
+        .dmark = ossl_sslctx_mark,
+        .dfree = ossl_sslctx_free,
+        .dcompact = ossl_sslctx_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -91,7 +104,8 @@ ossl_sslctx_s_alloc(VALUE klass)
     SSL_CTX_set_mode(ctx, mode);
     SSL_CTX_set_dh_auto(ctx, 1);
     RTYPEDDATA_DATA(obj) = ctx;
-    SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_ptr_idx, (void *)obj);
+    if (!SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_ptr_idx, (void *)obj))
+        ossl_raise(eSSLError, "SSL_CTX_set_ex_data");
 
     return obj;
 }
@@ -1566,7 +1580,7 @@ static void
 ossl_ssl_mark(void *ptr)
 {
     SSL *ssl = ptr;
-    rb_gc_mark((VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx));
+    rb_gc_mark_movable((VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx));
 }
 
 static void
@@ -1575,12 +1589,25 @@ ossl_ssl_free(void *ssl)
     SSL_free(ssl);
 }
 
+static void
+ossl_ssl_compact(void *ptr)
+{
+    SSL *ssl = ptr;
+    VALUE self = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
+    if (self) {
+        (void)SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx,
+                              (void *)rb_gc_location(self));
+    }
+}
+
 const rb_data_type_t ossl_ssl_type = {
-    "OpenSSL/SSL",
-    {
-        ossl_ssl_mark, ossl_ssl_free,
+    .wrap_struct_name = "OpenSSL/SSL",
+    .function = {
+        .dmark = ossl_ssl_mark,
+        .dfree = ossl_ssl_free,
+        .dcompact = ossl_ssl_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1642,18 +1669,15 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     SSL *ssl;
     SSL_CTX *ctx;
 
-    TypedData_Get_Struct(self, SSL, &ossl_ssl_type, ssl);
-    if (ssl)
-        ossl_raise(eSSLError, "SSL already initialized");
-
-    if (rb_scan_args(argc, argv, "11:", &io, &v_ctx, &opts) == 1)
-        v_ctx = rb_funcall(cSSLContext, rb_intern("new"), 0);
-
+    argc = rb_scan_args(argc, argv, "11:", &io, &v_ctx, &opts);
     if (!kw_ids[0]) {
         kw_ids[0] = rb_intern_const("sync_close");
     }
-
     rb_get_kwargs(opts, kw_ids, 0, 1, kw_args);
+    ossl_want_uninitialized(self, &ossl_ssl_type);
+
+    if (argc == 1)
+        v_ctx = rb_funcall(cSSLContext, rb_intern("new"), 0);
     if (kw_args[0] != Qundef) {
         rb_ivar_set(self, id_i_sync_close, kw_args[0]);
     }
@@ -1672,7 +1696,8 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
         ossl_raise(eSSLError, NULL);
     RTYPEDDATA_DATA(self) = ssl;
 
-    SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void *)self);
+    if (!SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void *)self))
+        ossl_raise(eSSLError, "SSL_set_ex_data");
     SSL_set_info_callback(ssl, ssl_info_cb);
 
     rb_call_super(0, NULL);
@@ -2194,9 +2219,12 @@ ossl_ssl_write(VALUE self, VALUE str)
 /*
  * call-seq:
  *    ssl.syswrite_nonblock(string) => Integer
+ *    ssl.syswrite_nonblock(string, opts) => Integer
  *
  * Writes _string_ to the SSL connection in a non-blocking manner.  Raises an
- * SSLError if writing would block.
+ * SSLError if writing would block.  If "exception: false" is passed, this
+ * method returns a symbol of :wait_readable or :wait_writable, rather than
+ * raising an exception.
  */
 static VALUE
 ossl_ssl_write_nonblock(int argc, VALUE *argv, VALUE self)
@@ -2480,16 +2508,15 @@ ossl_ssl_get_verify_result(VALUE self)
 
 /*
  * call-seq:
- *    ssl.finished_message => "finished message"
+ *    ssl.finished_message -> string or nil
  *
- * Returns the last *Finished* message sent
- *
+ * Returns the contents of the last +Finished+ message sent to the peer.
  */
 static VALUE
 ossl_ssl_get_finished(VALUE self)
 {
     SSL *ssl;
-    char sizer[1], *buf;
+    char sizer[1];
     size_t len;
 
     GetSSL(self, ssl);
@@ -2498,23 +2525,23 @@ ossl_ssl_get_finished(VALUE self)
     if (len == 0)
         return Qnil;
 
-    buf = ALLOCA_N(char, len);
-    SSL_get_finished(ssl, buf, len);
-    return rb_str_new(buf, len);
+    VALUE str = rb_str_new(NULL, len);
+    SSL_get_finished(ssl, RSTRING_PTR(str), len);
+    return str;
 }
 
 /*
  * call-seq:
- *    ssl.peer_finished_message => "peer finished message"
+ *    ssl.peer_finished_message -> string or nil
  *
- * Returns the last *Finished* message received
- *
+ * Returns the contents of the last +Finished+ message expected to be sent
+ * by the peer.
  */
 static VALUE
 ossl_ssl_get_peer_finished(VALUE self)
 {
     SSL *ssl;
-    char sizer[1], *buf;
+    char sizer[1];
     size_t len;
 
     GetSSL(self, ssl);
@@ -2523,9 +2550,9 @@ ossl_ssl_get_peer_finished(VALUE self)
     if (len == 0)
         return Qnil;
 
-    buf = ALLOCA_N(char, len);
-    SSL_get_peer_finished(ssl, buf, len);
-    return rb_str_new(buf, len);
+    VALUE str = rb_str_new(NULL, len);
+    SSL_get_peer_finished(ssl, RSTRING_PTR(str), len);
+    return str;
 }
 
 /*

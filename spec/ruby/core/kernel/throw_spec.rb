@@ -1,13 +1,17 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe "Kernel.throw" do
+describe "Kernel#throw" do
+  it "is a private method" do
+    Kernel.private_instance_methods(false).should.include?(:throw)
+  end
+
   it "transfers control to the end of the active catch block waiting for symbol" do
     catch(:blah) do
       :value
       throw :blah
       fail("throw didn't transfer the control")
-    end.should be_nil
+    end.should == nil
   end
 
   it "transfers control to the innermost catch block waiting for the same symbol" do
@@ -42,11 +46,11 @@ describe "Kernel.throw" do
   end
 
   it "raises an ArgumentError if there is no catch block for the symbol" do
-    -> { throw :blah }.should raise_error(ArgumentError)
+    -> { throw :blah }.should.raise(ArgumentError)
   end
 
   it "raises an UncaughtThrowError if there is no catch block for the symbol" do
-    -> { throw :blah }.should raise_error(UncaughtThrowError)
+    -> { throw :blah }.should.raise(UncaughtThrowError)
   end
 
   it "raises ArgumentError if 3 or more arguments provided" do
@@ -54,13 +58,13 @@ describe "Kernel.throw" do
       catch :blah do
         throw :blah, :return_value, 2
       end
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
 
     -> {
       catch :blah do
         throw :blah, :return_value, 2, 3, 4, 5
       end
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "can throw an object" do
@@ -69,12 +73,12 @@ describe "Kernel.throw" do
       catch obj do
         throw obj
       end
-    }.should_not raise_error(NameError)
+    }.should_not.raise(NameError)
   end
 end
 
-describe "Kernel#throw" do
-  it "is a private method" do
-    Kernel.should have_private_instance_method(:throw)
+describe "Kernel.throw" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:throw)
   end
 end

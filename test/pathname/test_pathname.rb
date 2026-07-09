@@ -175,19 +175,19 @@ class TestPathname < Test::Unit::TestCase
 
   if DOSISH_UNC
     defassert(:del_trailing_separator, "//", "//")
-    defassert(:del_trailing_separator, "//a", "//a")
-    defassert(:del_trailing_separator, "//a", "//a/")
-    defassert(:del_trailing_separator, "//a", "//a//")
-    defassert(:del_trailing_separator, "//a/b", "//a/b")
-    defassert(:del_trailing_separator, "//a/b", "//a/b/")
-    defassert(:del_trailing_separator, "//a/b", "//a/b//")
-    defassert(:del_trailing_separator, "//a/b/c", "//a/b/c")
-    defassert(:del_trailing_separator, "//a/b/c", "//a/b/c/")
-    defassert(:del_trailing_separator, "//a/b/c", "//a/b/c//")
   else
     defassert(:del_trailing_separator, "/", "///")
-    defassert(:del_trailing_separator, "///a", "///a/")
   end
+  defassert(:del_trailing_separator, "//a", "//a")
+  defassert(:del_trailing_separator, "//a", "//a/")
+  defassert(:del_trailing_separator, "//a", "//a//")
+  defassert(:del_trailing_separator, "//a/b", "//a/b")
+  defassert(:del_trailing_separator, "//a/b", "//a/b/")
+  defassert(:del_trailing_separator, "//a/b", "//a/b//")
+  defassert(:del_trailing_separator, "//a/b/c", "//a/b/c")
+  defassert(:del_trailing_separator, "//a/b/c", "//a/b/c/")
+  defassert(:del_trailing_separator, "//a/b/c", "//a/b/c//")
+  defassert(:del_trailing_separator, "///a", "///a/")
 
   if DOSISH
     defassert(:del_trailing_separator, "a", "a\\")
@@ -260,13 +260,12 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(Pathname("/foo/var"), r)
   end
 
-  def test_absolute
-    assert_equal(true, Pathname("/").absolute?)
-    assert_equal(false, Pathname("a").absolute?)
-  end
-
   def relative?(path)
-    Pathname.new(path).relative?
+    path = Pathname.new(path)
+    relative = path.relative?
+    absolute = path.absolute?
+    assert_equal(!relative, absolute)
+    relative
   end
 
   defassert(:relative?, true, '')
@@ -281,7 +280,7 @@ class TestPathname < Test::Unit::TestCase
   defassert(:relative?, !DOSISH_DRIVE_LETTER, 'A:/')
   defassert(:relative?, !DOSISH_DRIVE_LETTER, 'A:/a')
 
-  if File.dirname('//') == '//'
+  if DOSISH_UNC
     defassert(:relative?, false, '//')
     defassert(:relative?, false, '//a')
     defassert(:relative?, false, '//a/')

@@ -9,7 +9,7 @@ describe "Module#instance_method" do
   end
 
   it "is a public method" do
-    Module.should have_public_instance_method(:instance_method, false)
+    Module.public_instance_methods(false).should.include?(:instance_method)
   end
 
   it "requires an argument" do
@@ -17,26 +17,26 @@ describe "Module#instance_method" do
   end
 
   it "returns an UnboundMethod corresponding to the given name" do
-    @parent_um.should be_kind_of(UnboundMethod)
+    @parent_um.should.is_a?(UnboundMethod)
     @parent_um.bind(ModuleSpecs::InstanceMeth.new).call.should == :foo
   end
 
   it "returns an UnboundMethod corresponding to the given name from a superclass" do
-    @child_um.should be_kind_of(UnboundMethod)
+    @child_um.should.is_a?(UnboundMethod)
     @child_um.bind(ModuleSpecs::InstanceMethChild.new).call.should == :foo
   end
 
   it "returns an UnboundMethod corresponding to the given name from an included Module" do
-    @mod_um.should be_kind_of(UnboundMethod)
+    @mod_um.should.is_a?(UnboundMethod)
     @mod_um.bind(ModuleSpecs::InstanceMethChild.new).call.should == :bar
   end
 
   it "returns an UnboundMethod when given a protected method name" do
-    ModuleSpecs::Basic.instance_method(:protected_module).should be_an_instance_of(UnboundMethod)
+    ModuleSpecs::Basic.instance_method(:protected_module).should.instance_of?(UnboundMethod)
   end
 
   it "returns an UnboundMethod when given a private method name" do
-    ModuleSpecs::Basic.instance_method(:private_module).should be_an_instance_of(UnboundMethod)
+    ModuleSpecs::Basic.instance_method(:private_module).should.instance_of?(UnboundMethod)
   end
 
   it "gives UnboundMethod method name, Module defined in and Module extracted from" do
@@ -51,20 +51,20 @@ describe "Module#instance_method" do
   end
 
   it "raises a TypeError if the given name is not a String/Symbol" do
-    -> { Object.instance_method([]) }.should raise_error(TypeError, /is not a symbol nor a string/)
-    -> { Object.instance_method(0) }.should raise_error(TypeError, /is not a symbol nor a string/)
-    -> { Object.instance_method(nil) }.should raise_error(TypeError, /is not a symbol nor a string/)
-    -> { Object.instance_method(mock('x')) }.should raise_error(TypeError, /is not a symbol nor a string/)
+    -> { Object.instance_method([]) }.should.raise(TypeError, /is not a symbol nor a string/)
+    -> { Object.instance_method(0) }.should.raise(TypeError, /is not a symbol nor a string/)
+    -> { Object.instance_method(nil) }.should.raise(TypeError, /is not a symbol nor a string/)
+    -> { Object.instance_method(mock('x')) }.should.raise(TypeError, /is not a symbol nor a string/)
   end
 
   it "accepts String name argument" do
     method = ModuleSpecs::InstanceMeth.instance_method(:foo)
-    method.should be_kind_of(UnboundMethod)
+    method.should.is_a?(UnboundMethod)
   end
 
   it "accepts Symbol name argument"  do
     method = ModuleSpecs::InstanceMeth.instance_method("foo")
-    method.should be_kind_of(UnboundMethod)
+    method.should.is_a?(UnboundMethod)
   end
 
   it "converts non-String name by calling #to_str method" do
@@ -72,7 +72,7 @@ describe "Module#instance_method" do
     def obj.to_str() "foo" end
 
     method = ModuleSpecs::InstanceMeth.instance_method(obj)
-    method.should be_kind_of(UnboundMethod)
+    method.should.is_a?(UnboundMethod)
   end
 
   it "raises TypeError when passed non-String name and #to_str returns non-String value" do
@@ -89,11 +89,11 @@ describe "Module#instance_method" do
     um.should == @parent_um
     -> do
       child.instance_method(:foo)
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "raises a NameError if the method does not exist" do
-    -> { Object.instance_method(:missing) }.should raise_error(NameError)
+    -> { Object.instance_method(:missing) }.should.raise(NameError)
   end
 
   it "sets the NameError#name attribute to the name of the missing method" do

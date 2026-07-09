@@ -1,0 +1,9 @@
+prelude: |
+  nums = (0..9).to_a
+
+benchmark:
+  integer_zero?: nums.each { |n| n.zero? }
+  integer_even?: nums.each { |n| n.even? }
+  integer_odd?: nums.each { |n| n.odd? }
+
+loop_count: 1000000

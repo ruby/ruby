@@ -33,7 +33,7 @@ describe "Encoding::Converter#replacement=" do
 
   it "raises a TypeError if assigned a non-String argument" do
     ec = Encoding::Converter.new("utf-8", "us-ascii")
-    -> { ec.replacement = nil }.should raise_error(TypeError)
+    -> { ec.replacement = nil }.should.raise(TypeError)
   end
 
   it "sets #replacement" do
@@ -47,16 +47,14 @@ describe "Encoding::Converter#replacement=" do
     ec = Encoding::Converter.new("sjis", "ascii")
     utf8_q = "\u{986}".dup.force_encoding('utf-8')
     ec.primitive_convert(utf8_q.dup, +"").should == :undefined_conversion
-    -> { ec.replacement = utf8_q }.should \
-      raise_error(Encoding::UndefinedConversionError)
+    -> { ec.replacement = utf8_q }.should.raise(Encoding::UndefinedConversionError)
   end
 
   it "does not change the replacement character if the argument cannot be converted into the destination encoding" do
     ec = Encoding::Converter.new("sjis", "ascii")
     utf8_q = "\u{986}".dup.force_encoding('utf-8')
     ec.primitive_convert(utf8_q.dup, +"").should == :undefined_conversion
-    -> { ec.replacement = utf8_q }.should \
-      raise_error(Encoding::UndefinedConversionError)
+    -> { ec.replacement = utf8_q }.should.raise(Encoding::UndefinedConversionError)
     ec.replacement.should == "?".dup.force_encoding('us-ascii')
   end
 

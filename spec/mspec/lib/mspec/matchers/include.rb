@@ -26,6 +26,7 @@ end
 # Cannot override #include at the toplevel in MRI
 module MSpecMatchers
   private def include(*expected)
+    MSpec.deprecate __method__, '.should.include?'
     IncludeMatcher.new(*expected)
   end
 end

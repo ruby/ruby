@@ -507,7 +507,7 @@ assert_equal 'false', %q{
 }
 
 # To copy the object, now Marshal#dump is used
-assert_match /can not copy unshareable object/, %q{
+assert_match /can't clone unshareable instance of Thread/, %q{
   obj = Thread.new{}
   begin
     r = Ractor.new obj do |msg|
@@ -1255,37 +1255,6 @@ assert_equal '0', %q{
     n
   }.value
 }
-
-# ObjectSpace._id2ref can not handle unshareable objects with Ractors
-assert_equal 'ok', <<~'RUBY', frozen_string_literal: false
-  s = 'hello'
-
-  Ractor.new s.object_id do |id ;s|
-    begin
-      s = ObjectSpace._id2ref(id)
-    rescue => e
-      :ok
-    end
-  end.value
-RUBY
-
-# Inserting into the id2ref table should be Ractor-safe
-assert_equal 'ok', <<~'RUBY'
-  # Force all calls to Kernel#object_id to insert into the id2ref table
-  obj = Object.new
-  ObjectSpace._id2ref(obj.object_id) rescue nil
-
-  10.times.map do
-    Ractor.new do
-      10_000.times do
-        a = Object.new
-        a.object_id
-      end
-    end
-  end.map(&:value)
-
-  :ok
-RUBY
 
 # Ractor.make_shareable(obj)
 assert_equal 'true', <<~'RUBY', frozen_string_literal: false
@@ -2163,7 +2132,7 @@ assert_equal 'ok', %q{
 
 # move object with complex generic ivars
 assert_equal 'ok', %q{
-  # Make Array too_complex
+  # Make Array complex
   30.times { |i| [].instance_variable_set(:"@complex#{i}", 1) }
 
   ractor = Ractor.new { Ractor.receive }
@@ -2175,22 +2144,9 @@ assert_equal 'ok', %q{
   roundtripped_obj.instance_variable_get(:@array1) == [1] ? :ok : roundtripped_obj
 }
 
-# move object with generic ivars and existing id2ref table
-# [Bug #21664]
-assert_equal 'ok', %q{
-  obj = [1]
-  obj.instance_variable_set("@field", :ok)
-  ObjectSpace._id2ref(obj.object_id) # build id2ref table
-
-  ractor = Ractor.new { Ractor.receive }
-  ractor.send(obj, move: true)
-  obj = ractor.value
-  obj.instance_variable_get("@field")
-}
-
 # copy object with complex generic ivars
 assert_equal 'ok', %q{
-  # Make Array too_complex
+  # Make Array complex
   30.times { |i| [].instance_variable_set(:"@complex#{i}", 1) }
 
   ractor = Ractor.new { Ractor.receive }
@@ -2643,3 +2599,24 @@ rescue ThreadError => e
   end
 end
 RUBY
+
+# Concurrent super calls with keyword arguments must not race on the
+# callinfo kwarg reference count. [Bug #22075]
+assert_equal 'ok', %q{
+  class Base
+    def foo(a:, b:, c:) = a
+  end
+
+  class Sub < Base
+    def foo(a:, b:, c:) = super(a: a, b: b, c: c)
+  end
+
+  4.times.map do
+    Ractor.new do
+      obj = Sub.new
+      100_000.times { obj.foo(a: 1, b: 2, c: 3) }
+    end
+  end.each(&:join)
+
+  :ok
+}

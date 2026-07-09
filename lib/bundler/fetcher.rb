@@ -243,6 +243,10 @@ module Bundler
       fetchers.first.api_fetcher?
     end
 
+    def release_resolution_memory!
+      @fetchers&.each(&:release_resolution_memory!)
+    end
+
     def gem_remote_fetcher
       @gem_remote_fetcher ||= begin
         require_relative "fetcher/gem_remote_fetcher"
@@ -314,7 +318,7 @@ module Bundler
         if ssl_client_cert
           pem = File.read(ssl_client_cert)
           con.cert = OpenSSL::X509::Certificate.new(pem)
-          con.key  = OpenSSL::PKey::RSA.new(pem)
+          con.key  = OpenSSL::PKey.read(pem)
         end
 
         con.read_timeout = Fetcher.api_timeout

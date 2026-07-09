@@ -362,6 +362,7 @@ LIBRUBY_LDSHARED = $(LDSHARED)
 LIBRUBY_DLDFLAGS = $(EXTLDFLAGS) -implib:dummy.lib -def:$(RUBYDEF)
 
 EXEEXT = .exe
+BUILD_EXEEXT = $(EXEEXT)
 EXECUTABLE_EXTS = ".exe",".com",".cmd",".bat"
 !if !defined(PROGRAM)
 PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
@@ -561,7 +562,7 @@ ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 !if defined(DUMP_AST)
 DUMP_AST_TARGET = $(empty)
 !else
-DUMP_AST = dump_ast$(EXEEXT)
+DUMP_AST = dump_ast$(BUILD_EXEEXT)
 DUMP_AST_TARGET = $(DUMP_AST)
 !endif
 
@@ -1136,16 +1137,14 @@ $(STUBPROGRAM):	rubystub.$(OBJEXT) $(LIBRUBY) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME)
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
 !endif
 
-!if "$(LIBRUBY_SO_UPDATE)" == ""
+!if "$(EXTSTATIC)" != "" && "$(LIBRUBY_SO_UPDATE)" == ""
 PRE_LIBRUBY_UPDATE = $(RM) $(LIBRUBY_EXTS)
 !else
 PRE_LIBRUBY_UPDATE =
 !endif
 
 $(LIBRUBY_A):	$(OBJS) $(INITOBJS)
-!if "$(EXTSTATIC)" != ""
 		@-$(PRE_LIBRUBY_UPDATE)
-!endif
 		$(ECHO) linking static-library $(@:\=/)
 		$(Q) $(AR) $(ARFLAGS)$@ $(OBJS) $(INITOBJS)
 
@@ -1155,9 +1154,7 @@ $(LIBRUBY):	$(RUBYDEF)
 
 $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		@echo $(DLDOBJS)
-!if "$(EXTSTATIC)" == ""
 		@-$(PRE_LIBRUBY_UPDATE)
-!endif
 		$(ECHO) linking shared-library $(@:\=/)
 		$(Q) $(LDSHARED) $(DLDOBJS) $(LIBRUBY_A) \
 			$(RUBY_SO_NAME).res $(SOLIBS) $(EXTSOLIBS) $(LIBS) \
@@ -1414,7 +1411,7 @@ loadpath: verconf.h
 	@for %J in (\
 "%~nI.rbinc: %I $$(tooldir)/mk_builtin_loader.rb $$(DUMP_AST_TARGET)" \
 "	$$(ECHO) making $$@" \
-"	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(DUMP_AST) %I" \
+"	$$(Q) $$(BASERUBY) $$(tooldir)/mk_builtin_loader.rb $$(DUMP_AST) %I" \
 "" \
 ) do @echo.%~J>>rbincs.mk]
 !else

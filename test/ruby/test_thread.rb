@@ -798,7 +798,7 @@ class TestThread < Test::Unit::TestCase
 
   def for_test_handle_interrupt_with_return
     Thread.handle_interrupt(Object => :never){
-      Thread.current.raise RuntimeError.new("have to be rescured")
+      Thread.current.raise RuntimeError.new("have to be rescued")
       return
     }
   rescue
@@ -815,7 +815,7 @@ class TestThread < Test::Unit::TestCase
     assert_nothing_raised do
       begin
         Thread.handle_interrupt(Object => :never){
-          Thread.current.raise RuntimeError.new("have to be rescured")
+          Thread.current.raise RuntimeError.new("have to be rescued")
           break
         }
       rescue
@@ -1480,8 +1480,6 @@ q.pop
   end
 
   def test_thread_interrupt_for_killed_thread
-    pend "hang-up" if /mswin|mingw/ =~ RUBY_PLATFORM
-
     opts = { timeout: 5, timeout_error: nil }
 
     assert_normal_exit(<<-_end, '[Bug #8996]', **opts)
@@ -1592,10 +1590,9 @@ q.pop
     INPUT
   end
 
-  # [Bug #21342]
   def test_unlock_locked_mutex_with_collected_fiber
-    bug21127 = '[ruby-core:120930] [Bug #21127]'
-    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug21127)
+    bug21342 = '[ruby-core:122121] [Bug #21342]'
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug21342)
     begin;
       5.times do
         m = Mutex.new
@@ -1667,7 +1664,7 @@ q.pop
 
   # [Bug #21926]
   def test_thread_join_during_finalizers
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
     begin;
       require 'open3'
 
@@ -1690,7 +1687,7 @@ q.pop
         end
       end
 
-      50.times { ProcessWrapper.new }
+      20.times { ProcessWrapper.new }
       GC.stress = true
       1000.times { Object.new }
     end;

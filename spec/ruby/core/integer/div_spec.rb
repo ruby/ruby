@@ -46,21 +46,21 @@ describe "Integer#div" do
     end
 
     it "raises a ZeroDivisionError when the given argument is 0 and a Float" do
-      -> { 0.div(0.0)   }.should raise_error(ZeroDivisionError)
-      -> { 10.div(0.0)  }.should raise_error(ZeroDivisionError)
-      -> { -10.div(0.0) }.should raise_error(ZeroDivisionError)
+      -> { 0.div(0.0)   }.should.raise(ZeroDivisionError)
+      -> { 10.div(0.0)  }.should.raise(ZeroDivisionError)
+      -> { -10.div(0.0) }.should.raise(ZeroDivisionError)
     end
 
     it "raises a ZeroDivisionError when the given argument is 0 and not a Float" do
-      -> { 13.div(0) }.should raise_error(ZeroDivisionError)
-      -> { 13.div(-0) }.should raise_error(ZeroDivisionError)
+      -> { 13.div(0) }.should.raise(ZeroDivisionError)
+      -> { 13.div(-0) }.should.raise(ZeroDivisionError)
     end
 
     it "raises a TypeError when given a non-numeric argument" do
-      -> { 13.div(mock('10')) }.should raise_error(TypeError)
-      -> { 5.div("2") }.should raise_error(TypeError)
-      -> { 5.div(:"2") }.should raise_error(TypeError)
-      -> { 5.div([]) }.should raise_error(TypeError)
+      -> { 13.div(mock('10')) }.should.raise(TypeError)
+      -> { 5.div("2") }.should.raise(TypeError)
+      -> { 5.div(:"2") }.should.raise(TypeError)
+      -> { 5.div([]) }.should.raise(TypeError)
     end
   end
 
@@ -118,29 +118,29 @@ describe "Integer#div" do
     end
 
     it "raises a TypeError when given a non-numeric" do
-      -> { @bignum.div(mock("10")) }.should raise_error(TypeError)
-      -> { @bignum.div("2") }.should raise_error(TypeError)
-      -> { @bignum.div(:symbol) }.should raise_error(TypeError)
+      -> { @bignum.div(mock("10")) }.should.raise(TypeError)
+      -> { @bignum.div("2") }.should.raise(TypeError)
+      -> { @bignum.div(:symbol) }.should.raise(TypeError)
     end
 
     it "returns a result of integer division of self by a float argument" do
-      @bignum.div(4294967295.5).should eql(4294967296)
+      @bignum.div(4294967295.5).should.eql?(4294967296)
       not_supported_on :opal do
-        @bignum.div(4294967295.0).should eql(4294967297)
-        @bignum.div(bignum_value(88).to_f).should eql(1)
-        @bignum.div((-bignum_value(88)).to_f).should eql(-1)
+        @bignum.div(4294967295.0).should.eql?(4294967297)
+        @bignum.div(bignum_value(88).to_f).should.eql?(1)
+        @bignum.div((-bignum_value(88)).to_f).should.eql?(-1)
       end
     end
 
     # #5490
     it "raises ZeroDivisionError if the argument is 0 and is a Float" do
-      -> { @bignum.div(0.0) }.should raise_error(ZeroDivisionError)
-      -> { @bignum.div(-0.0) }.should raise_error(ZeroDivisionError)
+      -> { @bignum.div(0.0) }.should.raise(ZeroDivisionError)
+      -> { @bignum.div(-0.0) }.should.raise(ZeroDivisionError)
     end
 
     it "raises ZeroDivisionError if the argument is 0 and is not a Float" do
-      -> { @bignum.div(0) }.should raise_error(ZeroDivisionError)
-      -> { @bignum.div(-0) }.should raise_error(ZeroDivisionError)
+      -> { @bignum.div(0) }.should.raise(ZeroDivisionError)
+      -> { @bignum.div(-0) }.should.raise(ZeroDivisionError)
     end
   end
 

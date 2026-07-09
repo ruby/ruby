@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/equal'
 
 describe "Proc#eql?" do
-  it_behaves_like :proc_equal, :eql?
+  it "is an alias of Proc#==" do
+    Proc.instance_method(:eql?).should == Proc.instance_method(:==)
+  end
 end

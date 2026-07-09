@@ -242,6 +242,7 @@ class Ractor
   #
   #   Ractor.current #=> #<Ractor:#1 running>
   def self.current
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       rb_ractor_self(rb_ec_ractor_ptr(ec));
     }
@@ -256,6 +257,7 @@ class Ractor
   #    r.join                         # wait for r's termination
   #    Ractor.count                   #=> 1
   def self.count
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       ULONG2NUM(GET_VM()->ractor.cnt);
     }
@@ -418,6 +420,7 @@ class Ractor
 
   # Returns the name set in Ractor.new, or +nil+.
   def name
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{RACTOR_PTR(self)->name}
   end
 
@@ -550,6 +553,7 @@ class Ractor
 
   # Returns the main ractor.
   def self.main
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       rb_ractor_self(GET_VM()->ractor.main_ractor);
     }
@@ -557,6 +561,7 @@ class Ractor
 
   # Returns true if the current ractor is the main ractor.
   def self.main?
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       RBOOL(GET_VM()->ractor.main_ractor == rb_ec_ractor_ptr(ec))
     }
@@ -597,6 +602,7 @@ class Ractor
   # Returns the default port of the Ractor.
   #
   def default_port
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       ractor_default_port_value(RACTOR_PTR(self))
     }
@@ -648,13 +654,17 @@ class Ractor
 
   #
   # call-seq:
-  #    ractor.monitor(port) -> self
+  #    ractor.monitor(port) -> true or false
   #
   # Registers the port as a monitoring port for this ractor. When the ractor terminates,
   # the port receives a Symbol object.
   #
   # * +:exited+ is sent if the ractor terminates without an unhandled exception.
   # * +:aborted+ is sent if the ractor terminates by an unhandled exception.
+  #
+  # Returns +true+ if the monitor was registered (the ractor is still running).
+  # Returns +false+ if the ractor had already terminated; in that case the
+  # termination message (+:exited+ or +:aborted+) is sent to the port immediately.
   #
   #     r = Ractor.new{ some_task() }
   #     r.monitor(port = Ractor::Port.new)
@@ -879,6 +889,7 @@ class Ractor
     #
     # Returns whether or not the port is closed.
     def closed?
+      Primitive.attr! :leaf
       __builtin_cexpr! %q{
         ractor_port_closed_p(ec, self);
       }

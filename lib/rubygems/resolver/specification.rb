@@ -55,9 +55,16 @@ class Gem::Resolver::Specification
   attr_reader :required_rubygems_version
 
   ##
+  # The time this gem version was published, when the source provides it
+  # (compact index v2), nil otherwise.
+
+  attr_reader :created_at
+
+  ##
   # Sets default instance variables for the specification.
 
   def initialize
+    @created_at   = nil
     @dependencies = nil
     @name         = nil
     @platform     = nil

@@ -80,6 +80,8 @@ class TestOpenURI < Test::Unit::TestCase
           sock.print "Content-Length: 4\r\n\r\n"
           sleep 1
           sock.print "ab\r\n"
+        rescue Errno::EPIPE, Errno::ECONNRESET, Errno::ECONNABORTED
+          # expected when client times out and closes the connection
         ensure
           sock.close
         end

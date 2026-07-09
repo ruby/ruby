@@ -140,6 +140,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
   end
 
   def missing_extensions?
+    return false if RUBY_ENGINE == "jruby"
     return false if default_gem?
     return false if extensions.empty?
     return false if File.exist? gem_build_complete_path

@@ -161,6 +161,19 @@ strio_substr(struct StringIO *ptr, long pos, long len, rb_encoding *enc)
     return enc_subseq(str, pos, len, enc);
 }
 
+static VALUE
+strio_readbuf(struct StringIO *ptr, VALUE str)
+{
+    if (!NIL_P(str)) {
+	StringValue(str);
+	rb_str_modify(str);
+	if (str == ptr->string) {
+	    rb_raise(rb_eArgError, "cannot read into the underlying string");
+	}
+    }
+    return str;
+}
+
 #define StringIO(obj) get_strio(obj)
 #define StringIOForRead(obj) get_strio_for_read(obj)
 
@@ -1684,11 +1697,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
 
     switch (argc) {
       case 2:
-	str = argv[1];
-	if (!NIL_P(str)) {
-	    StringValue(str);
-	    rb_str_modify(str);
-	}
+	str = strio_readbuf(ptr, argv[1]);
 	/* fall through */
       case 1:
 	if (!NIL_P(argv[0])) {
@@ -1753,6 +1762,8 @@ static VALUE
 strio_pread(int argc, VALUE *argv, VALUE self)
 {
     VALUE rb_len, rb_offset, rb_buf;
+    struct StringIO *ptr = readable(self);
+
     rb_scan_args(argc, argv, "21", &rb_len, &rb_offset, &rb_buf);
     long len = NUM2LONG(rb_len);
     long offset = NUM2LONG(rb_offset);
@@ -1761,18 +1772,18 @@ strio_pread(int argc, VALUE *argv, VALUE self)
 	rb_raise(rb_eArgError, "negative string size (or size too big): %" PRIsVALUE, rb_len);
     }
 
+    if (offset < 0) {
+	rb_syserr_fail_str(EINVAL, rb_sprintf("pread: Invalid offset argument: %" PRIsVALUE, rb_offset));
+    }
+
+    rb_buf = strio_readbuf(ptr, rb_buf);
+
     if (len == 0) {
 	if (NIL_P(rb_buf)) {
 	    return rb_str_new("", 0);
 	}
 	return rb_buf;
     }
-
-    if (offset < 0) {
-	rb_syserr_fail_str(EINVAL, rb_sprintf("pread: Invalid offset argument: %" PRIsVALUE, rb_offset));
-    }
-
-    struct StringIO *ptr = readable(self);
 
     if (outside_p(ptr, offset)) {
 	rb_eof_error();

@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/readlines'
 
 describe "ARGF.to_a" do
-  it_behaves_like :argf_readlines, :to_a
+  it "is an alias of ARGF.readlines" do
+    ARGF.method(:to_a).should == ARGF.method(:readlines)
+  end
 end

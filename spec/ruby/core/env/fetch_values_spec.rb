@@ -36,7 +36,7 @@ ruby_version_is "4.1" do
       ENV["bar"] = "rab"
       -> {
         ENV.fetch_values("bar", "y", "foo", "z")
-      }.should raise_error(KeyError, 'key not found: "y"')
+      }.should.raise(KeyError, 'key not found: "y"')
     end
 
     it "uses the locale encoding" do
@@ -45,7 +45,7 @@ ruby_version_is "4.1" do
 
     it "raises TypeError when a key is not coercible to String" do
       ENV["foo"] = "oof"
-      -> { ENV.fetch_values("foo", Object.new) }.should raise_error(TypeError, "no implicit conversion of Object into String")
+      -> { ENV.fetch_values("foo", Object.new) }.should.raise(TypeError, "no implicit conversion of Object into String")
     end
   end
 end

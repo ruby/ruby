@@ -9,14 +9,6 @@
  */
 #include "ossl.h"
 
-#define NewX509CRL(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_x509crl_type, 0)
-#define SetX509CRL(obj, crl) do { \
-    if (!(crl)) { \
-        ossl_raise(rb_eRuntimeError, "CRL wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (crl); \
-} while (0)
 #define GetX509CRL(obj, crl) do { \
     TypedData_Get_Struct((obj), X509_CRL, &ossl_x509crl_type, (crl)); \
     if (!(crl)) { \
@@ -44,6 +36,12 @@ static const rb_data_type_t ossl_x509crl_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
+static VALUE
+ossl_x509crl_alloc(VALUE klass)
+{
+    return TypedData_Wrap_Struct(klass, &ossl_x509crl_type, NULL);
+}
+
 /*
  * PUBLIC
  */
@@ -58,34 +56,17 @@ GetX509CRLPtr(VALUE obj)
 }
 
 VALUE
-ossl_x509crl_new(X509_CRL *crl)
+ossl_x509crl_new(const X509_CRL *crl)
 {
     X509_CRL *tmp;
     VALUE obj;
 
-    obj = NewX509CRL(cX509CRL);
-    tmp = X509_CRL_dup(crl);
+    obj = ossl_x509crl_alloc(cX509CRL);
+    /* OpenSSL 1.1.1 takes a non-const pointer */
+    tmp = X509_CRL_dup((X509_CRL *)crl);
     if (!tmp)
         ossl_raise(eX509CRLError, "X509_CRL_dup");
-    SetX509CRL(obj, tmp);
-
-    return obj;
-}
-
-/*
- * PRIVATE
- */
-static VALUE
-ossl_x509crl_alloc(VALUE klass)
-{
-    X509_CRL *crl;
-    VALUE obj;
-
-    obj = NewX509CRL(klass);
-    if (!(crl = X509_CRL_new())) {
-        ossl_raise(eX509CRLError, NULL);
-    }
-    SetX509CRL(obj, crl);
+    RTYPEDDATA_DATA(obj) = tmp;
 
     return obj;
 }
@@ -94,11 +75,16 @@ static VALUE
 ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
-    X509_CRL *crl, *crl_orig = RTYPEDDATA_DATA(self);
+    X509_CRL *crl;
     VALUE arg;
 
-    rb_check_frozen(self);
-    if (rb_scan_args(argc, argv, "01", &arg) == 0) {
+    rb_scan_args(argc, argv, "01", &arg);
+    ossl_want_uninitialized(self, &ossl_x509crl_type);
+    if (argc == 0) {
+        crl = X509_CRL_new();
+        if (!crl)
+            ossl_raise(eX509CRLError, "X509_CRL_new");
+        RTYPEDDATA_DATA(self) = crl;
         return self;
     }
     arg = ossl_to_der_if_possible(arg);
@@ -111,9 +97,7 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
     BIO_free(in);
     if (!crl)
         ossl_raise(eX509CRLError, "PEM_read_bio_X509_CRL");
-
     RTYPEDDATA_DATA(self) = crl;
-    X509_CRL_free(crl_orig);
 
     return self;
 }
@@ -122,17 +106,14 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_x509crl_copy(VALUE self, VALUE other)
 {
-    X509_CRL *a, *b, *crl;
+    X509_CRL *b, *crl;
 
-    rb_check_frozen(self);
-    if (self == other) return self;
-    GetX509CRL(self, a);
+    ossl_want_uninitialized(self, &ossl_x509crl_type);
     GetX509CRL(other, b);
     if (!(crl = X509_CRL_dup(b))) {
         ossl_raise(eX509CRLError, NULL);
     }
-    X509_CRL_free(a);
-    DATA_PTR(self) = crl;
+    RTYPEDDATA_DATA(self) = crl;
 
     return self;
 }
@@ -289,7 +270,7 @@ ossl_x509crl_get_revoked(VALUE self)
     num = sk_X509_REVOKED_num(sk);
     ary = rb_ary_new_capa(num);
     for(i=0; i<num; i++) {
-        X509_REVOKED *rev = sk_X509_REVOKED_value(sk, i);
+        const X509_REVOKED *rev = sk_X509_REVOKED_value(sk, i);
         rb_ary_push(ary, ossl_x509revoked_new(rev));
     }
 
@@ -324,6 +305,44 @@ ossl_x509crl_set_revoked(VALUE self, VALUE ary)
     X509_CRL_sort(crl);
 
     return ary;
+}
+
+/*
+ * call-seq:
+ *    crl.by_serial(serial) -> OpenSSL::X509::Revoked or nil
+ *
+ * Looks up the certificate _serial_ (an Integer or OpenSSL::BN) in the CRL and
+ * returns the matching OpenSSL::X509::Revoked entry, or +nil+ if that serial is
+ * not listed.
+ *
+ * Unlike iterating over #revoked, this does not instantiate the entire
+ * revocation list: it performs a sorted lookup (wrapping the OpenSSL function
+ * +X509_CRL_get0_by_serial+), which is significantly faster and uses far less
+ * memory for large CRLs.
+ *
+ *    crl.by_serial(cert.serial)        #=> #<OpenSSL::X509::Revoked> or nil
+ *    crl.by_serial(cert.serial)&.time  #=> revocation time, if revoked
+ */
+static VALUE
+ossl_x509crl_by_serial(VALUE self, VALUE serial)
+{
+    X509_CRL *crl;
+    X509_REVOKED *rev = NULL;
+    ASN1_INTEGER *asn1_serial;
+    int found;
+
+    GetX509CRL(self, crl);
+    asn1_serial = num_to_asn1integer(serial, NULL);
+
+    /* 0 = not found, 1 = found, 2 = found with reason removeFromCRL */
+    found = X509_CRL_get0_by_serial(crl, &rev, asn1_serial);
+    ASN1_INTEGER_free(asn1_serial);
+
+    if (found == 0)
+        return Qnil;
+
+    /* ossl_x509revoked_new dups, so the result outlives the CRL safely */
+    return ossl_x509revoked_new(rev);
 }
 
 static VALUE
@@ -443,14 +462,13 @@ ossl_x509crl_get_extensions(VALUE self)
 {
     X509_CRL *crl;
     int count, i;
-    X509_EXTENSION *ext;
     VALUE ary;
 
     GetX509CRL(self, crl);
     count = X509_CRL_get_ext_count(crl);
     ary = rb_ary_new_capa(count);
     for (i=0; i<count; i++) {
-        ext = X509_CRL_get_ext(crl, i); /* NO DUP - don't free! */
+        const X509_EXTENSION *ext = X509_CRL_get_ext(crl, i);
         rb_ary_push(ary, ossl_x509ext_new(ext));
     }
 
@@ -525,6 +543,7 @@ Init_ossl_x509crl(void)
     rb_define_method(cX509CRL, "next_update=", ossl_x509crl_set_next_update, 1);
     rb_define_method(cX509CRL, "revoked", ossl_x509crl_get_revoked, 0);
     rb_define_method(cX509CRL, "revoked=", ossl_x509crl_set_revoked, 1);
+    rb_define_method(cX509CRL, "by_serial", ossl_x509crl_by_serial, 1);
     rb_define_method(cX509CRL, "add_revoked", ossl_x509crl_add_revoked, 1);
     rb_define_method(cX509CRL, "sign", ossl_x509crl_sign, 2);
     rb_define_method(cX509CRL, "verify", ossl_x509crl_verify, 1);

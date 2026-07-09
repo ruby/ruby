@@ -40,12 +40,12 @@ require 'stringio'
 describe "Predefined global $~" do
   it "is set to contain the MatchData object of the last match if successful" do
     md = /foo/.match 'foo'
-    $~.should be_kind_of(MatchData)
-    $~.should equal md
+    $~.should.is_a?(MatchData)
+    $~.should.equal? md
 
     /bar/ =~ 'bar'
-    $~.should be_kind_of(MatchData)
-    $~.should_not equal md
+    $~.should.is_a?(MatchData)
+    $~.should_not.equal? md
   end
 
   it "is set to nil if the last match was unsuccessful" do
@@ -87,10 +87,10 @@ describe "Predefined global $~" do
     $~ = nil
     $~.should == nil
     $~ = /foo/.match("foo")
-    $~.should be_an_instance_of(MatchData)
+    $~.should.instance_of?(MatchData)
 
-    -> { $~ = Object.new }.should raise_error(TypeError, 'wrong argument type Object (expected MatchData)')
-    -> { $~ = 1 }.should raise_error(TypeError, 'wrong argument type Integer (expected MatchData)')
+    -> { $~ = Object.new }.should.raise(TypeError, 'wrong argument type Object (expected MatchData)')
+    -> { $~ = 1 }.should.raise(TypeError, 'wrong argument type Integer (expected MatchData)')
   end
 
   it "changes the value of derived capture globals when assigned" do
@@ -135,20 +135,20 @@ describe "Predefined global $&" do
 
   it "sets the encoding to the encoding of the source String" do
     "abc".dup.force_encoding(Encoding::EUC_JP) =~ /b/
-    $&.encoding.should equal(Encoding::EUC_JP)
+    $&.encoding.should.equal?(Encoding::EUC_JP)
   end
 
   it "is read-only" do
     -> {
       eval %q{$& = ""}
-    }.should raise_error(SyntaxError, /Can't set variable \$&/)
+    }.should.raise(SyntaxError, /Can't set variable \$&/)
   end
 
   it "is read-only when aliased" do
     alias $predefined_spec_ampersand $&
     -> {
       $predefined_spec_ampersand = ""
-    }.should raise_error(NameError, '$predefined_spec_ampersand is a read-only variable')
+    }.should.raise(NameError, '$predefined_spec_ampersand is a read-only variable')
   end
 end
 
@@ -161,25 +161,25 @@ describe "Predefined global $`" do
 
   it "sets the encoding to the encoding of the source String" do
     "abc".dup.force_encoding(Encoding::EUC_JP) =~ /b/
-    $`.encoding.should equal(Encoding::EUC_JP)
+    $`.encoding.should.equal?(Encoding::EUC_JP)
   end
 
   it "sets an empty result to the encoding of the source String" do
     "abc".dup.force_encoding(Encoding::ISO_8859_1) =~ /a/
-    $`.encoding.should equal(Encoding::ISO_8859_1)
+    $`.encoding.should.equal?(Encoding::ISO_8859_1)
   end
 
   it "is read-only" do
     -> {
       eval %q{$` = ""}
-    }.should raise_error(SyntaxError, /Can't set variable \$`/)
+    }.should.raise(SyntaxError, /Can't set variable \$`/)
   end
 
   it "is read-only when aliased" do
     alias $predefined_spec_backquote $`
     -> {
       $predefined_spec_backquote = ""
-    }.should raise_error(NameError, '$predefined_spec_backquote is a read-only variable')
+    }.should.raise(NameError, '$predefined_spec_backquote is a read-only variable')
   end
 end
 
@@ -192,25 +192,25 @@ describe "Predefined global $'" do
 
   it "sets the encoding to the encoding of the source String" do
     "abc".dup.force_encoding(Encoding::EUC_JP) =~ /b/
-    $'.encoding.should equal(Encoding::EUC_JP)
+    $'.encoding.should.equal?(Encoding::EUC_JP)
   end
 
   it "sets an empty result to the encoding of the source String" do
     "abc".dup.force_encoding(Encoding::ISO_8859_1) =~ /c/
-    $'.encoding.should equal(Encoding::ISO_8859_1)
+    $'.encoding.should.equal?(Encoding::ISO_8859_1)
   end
 
   it "is read-only" do
     -> {
       eval %q{$' = ""}
-    }.should raise_error(SyntaxError, /Can't set variable \$'/)
+    }.should.raise(SyntaxError, /Can't set variable \$'/)
   end
 
   it "is read-only when aliased" do
     alias $predefined_spec_single_quote $'
     -> {
       $predefined_spec_single_quote = ""
-    }.should raise_error(NameError, '$predefined_spec_single_quote is a read-only variable')
+    }.should.raise(NameError, '$predefined_spec_single_quote is a read-only variable')
   end
 end
 
@@ -228,20 +228,20 @@ describe "Predefined global $+" do
 
   it "sets the encoding to the encoding of the source String" do
     "abc".dup.force_encoding(Encoding::EUC_JP) =~ /(b)/
-    $+.encoding.should equal(Encoding::EUC_JP)
+    $+.encoding.should.equal?(Encoding::EUC_JP)
   end
 
   it "is read-only" do
     -> {
       eval %q{$+ = ""}
-    }.should raise_error(SyntaxError, /Can't set variable \$\+/)
+    }.should.raise(SyntaxError, /Can't set variable \$\+/)
   end
 
   it "is read-only when aliased" do
     alias $predefined_spec_plus $+
     -> {
       $predefined_spec_plus = ""
-    }.should raise_error(NameError, '$predefined_spec_plus is a read-only variable')
+    }.should.raise(NameError, '$predefined_spec_plus is a read-only variable')
   end
 end
 
@@ -268,7 +268,7 @@ describe "Predefined globals $1..N" do
 
   it "sets the encoding to the encoding of the source String" do
     "abc".dup.force_encoding(Encoding::EUC_JP) =~ /(b)/
-    $1.encoding.should equal(Encoding::EUC_JP)
+    $1.encoding.should.equal?(Encoding::EUC_JP)
   end
 end
 
@@ -282,16 +282,16 @@ describe "Predefined global $stdout" do
   end
 
   it "raises TypeError error if assigned to nil" do
-    -> { $stdout = nil }.should raise_error(TypeError, '$stdout must have write method, NilClass given')
+    -> { $stdout = nil }.should.raise(TypeError, '$stdout must have write method, NilClass given')
   end
 
   it "raises TypeError error if assigned to object that doesn't respond to #write" do
     obj = mock('object')
-    -> { $stdout = obj }.should raise_error(TypeError)
+    -> { $stdout = obj }.should.raise(TypeError)
 
     obj.stub!(:write)
     $stdout = obj
-    $stdout.should equal(obj)
+    $stdout.should.equal?(obj)
   end
 end
 
@@ -309,7 +309,7 @@ describe "Predefined global $!" do
   it "is read-only" do
     -> {
       $! = []
-    }.should raise_error(NameError, '$! is a read-only variable')
+    }.should.raise(NameError, '$! is a read-only variable')
   end
 
   # See http://jira.codehaus.org/browse/JRUBY-5550
@@ -586,7 +586,7 @@ describe "Predefined global $@" do
     begin
       raise
     rescue
-      $@.should be_an_instance_of(Array)
+      $@.should.instance_of?(Array)
       $@.should == $!.backtrace
     end
   end
@@ -608,7 +608,7 @@ describe "Predefined global $@" do
     begin
       raise
     rescue
-      $@.should be_an_instance_of(Array)
+      $@.should.instance_of?(Array)
       $@.should == $!.backtrace
     end
   end
@@ -636,7 +636,7 @@ describe "Predefined global $@" do
   it "cannot be assigned when there is no a rescued exception" do
     -> {
       $@ = []
-    }.should raise_error(ArgumentError, '$! not set')
+    }.should.raise(ArgumentError, '$! not set')
   end
 end
 
@@ -691,7 +691,7 @@ describe "Predefined global $/" do
     it "can be assigned a String" do
       str = +"abc"
       $/ = str
-      $/.should equal(str)
+      $/.should.equal?(str)
     end
   end
 
@@ -702,7 +702,7 @@ describe "Predefined global $/" do
       str.instance_variable_set(:@ivar, 1)
       $/ = str
       $/.should.frozen?
-      $/.should be_an_instance_of(String)
+      $/.should.instance_of?(String)
       $/.should_not.instance_variable_defined?(:@ivar)
       $/.should == str
     end
@@ -717,13 +717,13 @@ describe "Predefined global $/" do
     it "assigns the given String if it's frozen and has no instance variables" do
       str = "abc".freeze
       $/ = str
-      $/.should equal(str)
+      $/.should.equal?(str)
     end
   end
 
   it "can be assigned nil" do
     $/ = nil
-    $/.should be_nil
+    $/.should == nil
   end
 
   it "returns the value assigned" do
@@ -732,22 +732,22 @@ describe "Predefined global $/" do
 
   it "changes $-0" do
     $/ = "xyz"
-    $-0.should equal($/)
+    $-0.should.equal?($/)
   end
 
   it "does not call #to_str to convert the object to a String" do
     obj = mock("$/ value")
     obj.should_not_receive(:to_str)
 
-    -> { $/ = obj }.should raise_error(TypeError, 'value of $/ must be String')
+    -> { $/ = obj }.should.raise(TypeError, 'value of $/ must be String')
   end
 
   it "raises a TypeError if assigned an Integer" do
-    -> { $/ = 1 }.should raise_error(TypeError, 'value of $/ must be String')
+    -> { $/ = 1 }.should.raise(TypeError, 'value of $/ must be String')
   end
 
   it "raises a TypeError if assigned a boolean" do
-    -> { $/ = true }.should raise_error(TypeError, 'value of $/ must be String')
+    -> { $/ = true }.should.raise(TypeError, 'value of $/ must be String')
   end
 
   it "warns if assigned non-nil" do
@@ -772,7 +772,7 @@ describe "Predefined global $-0" do
     it "can be assigned a String" do
       str = +"abc"
       $-0 = str
-      $-0.should equal(str)
+      $-0.should.equal?(str)
     end
   end
 
@@ -783,7 +783,7 @@ describe "Predefined global $-0" do
       str.instance_variable_set(:@ivar, 1)
       $-0 = str
       $-0.should.frozen?
-      $-0.should be_an_instance_of(String)
+      $-0.should.instance_of?(String)
       $-0.should_not.instance_variable_defined?(:@ivar)
       $-0.should == str
     end
@@ -798,13 +798,13 @@ describe "Predefined global $-0" do
     it "assigns the given String if it's frozen and has no instance variables" do
       str = "abc".freeze
       $-0 = str
-      $-0.should equal(str)
+      $-0.should.equal?(str)
     end
   end
 
   it "can be assigned nil" do
     $-0 = nil
-    $-0.should be_nil
+    $-0.should == nil
   end
 
   it "returns the value assigned" do
@@ -813,22 +813,22 @@ describe "Predefined global $-0" do
 
   it "changes $/" do
     $-0 = "xyz"
-    $/.should equal($-0)
+    $/.should.equal?($-0)
   end
 
   it "does not call #to_str to convert the object to a String" do
     obj = mock("$-0 value")
     obj.should_not_receive(:to_str)
 
-    -> { $-0 = obj }.should raise_error(TypeError, 'value of $-0 must be String')
+    -> { $-0 = obj }.should.raise(TypeError, 'value of $-0 must be String')
   end
 
   it "raises a TypeError if assigned an Integer" do
-    -> { $-0 = 1 }.should raise_error(TypeError, 'value of $-0 must be String')
+    -> { $-0 = 1 }.should.raise(TypeError, 'value of $-0 must be String')
   end
 
   it "raises a TypeError if assigned a boolean" do
-    -> { $-0 = true }.should raise_error(TypeError, 'value of $-0 must be String')
+    -> { $-0 = true }.should.raise(TypeError, 'value of $-0 must be String')
   end
 
   it "warns if assigned non-nil" do
@@ -850,12 +850,12 @@ describe "Predefined global $\\" do
   it "can be assigned a String" do
     str = "abc"
     $\ = str
-    $\.should equal(str)
+    $\.should.equal?(str)
   end
 
   it "can be assigned nil" do
     $\ = nil
-    $\.should be_nil
+    $\.should == nil
   end
 
   it "returns the value assigned" do
@@ -866,12 +866,12 @@ describe "Predefined global $\\" do
     obj = mock("$\\ value")
     obj.should_not_receive(:to_str)
 
-    -> { $\ = obj }.should raise_error(TypeError, 'value of $\ must be String')
+    -> { $\ = obj }.should.raise(TypeError, 'value of $\ must be String')
   end
 
   it "raises a TypeError if assigned not String" do
-    -> { $\ = 1 }.should raise_error(TypeError, 'value of $\ must be String')
-    -> { $\ = true }.should raise_error(TypeError, 'value of $\ must be String')
+    -> { $\ = 1 }.should.raise(TypeError, 'value of $\ must be String')
+    -> { $\ = true }.should.raise(TypeError, 'value of $\ must be String')
   end
 
   it "warns if assigned non-nil" do
@@ -885,11 +885,11 @@ describe "Predefined global $," do
   end
 
   it "defaults to nil" do
-    $,.should be_nil
+    $,.should == nil
   end
 
   it "raises TypeError if assigned a non-String" do
-    -> { $, = Object.new }.should raise_error(TypeError, 'value of $, must be String')
+    -> { $, = Object.new }.should.raise(TypeError, 'value of $, must be String')
   end
 
   it "warns if assigned non-nil" do
@@ -920,7 +920,7 @@ describe "Predefined global $." do
     obj = mock("bad-value")
     obj.should_receive(:to_int).and_return('abc')
 
-    -> { $. = obj }.should raise_error(TypeError)
+    -> { $. = obj }.should.raise(TypeError)
   end
 end
 
@@ -985,7 +985,7 @@ describe "Predefined global $_" do
     end
 
     Thread.pass until running
-    $_.should be_nil
+    $_.should == nil
 
     thr.join
   end
@@ -1056,7 +1056,7 @@ describe "Execution variable $:" do
   end
 
   it "does not include the current directory" do
-    $:.should_not include(".")
+    $:.should_not.include?(".")
   end
 
   it "is the same object as $LOAD_PATH and $-I" do
@@ -1066,7 +1066,7 @@ describe "Execution variable $:" do
 
   it "can be changed via <<" do
     $: << "foo"
-    $:.should include("foo")
+    $:.should.include?("foo")
   ensure
     $:.delete("foo")
   end
@@ -1074,15 +1074,15 @@ describe "Execution variable $:" do
   it "is read-only" do
     -> {
       $: = []
-    }.should raise_error(NameError, '$: is a read-only variable')
+    }.should.raise(NameError, '$: is a read-only variable')
 
     -> {
       $LOAD_PATH = []
-    }.should raise_error(NameError, '$LOAD_PATH is a read-only variable')
+    }.should.raise(NameError, '$LOAD_PATH is a read-only variable')
 
     -> {
       $-I = []
-    }.should raise_error(NameError, '$-I is a read-only variable')
+    }.should.raise(NameError, '$-I is a read-only variable')
   end
 
   it "default $LOAD_PATH entries until sitelibdir included have @gem_prelude_index set" do
@@ -1097,24 +1097,24 @@ describe "Execution variable $:" do
       idx = $:.index(RbConfig::CONFIG['sitelibdir'])
     end
 
-    $:[idx..-1].all? { |p| p.instance_variable_defined?(:@gem_prelude_index) }.should be_true
-    $:[0...idx].all? { |p| !p.instance_variable_defined?(:@gem_prelude_index) }.should be_true
+    $:[idx..-1].all? { |p| p.instance_variable_defined?(:@gem_prelude_index) }.should == true
+    $:[0...idx].all? { |p| !p.instance_variable_defined?(:@gem_prelude_index) }.should == true
   end
 end
 
 describe "Global variable $\"" do
-  it "is an alias for $LOADED_FEATURES" do
-    $".should equal $LOADED_FEATURES
+  it "is an alias of $LOADED_FEATURES" do
+    $".should.equal? $LOADED_FEATURES
   end
 
   it "is read-only" do
     -> {
       $" = []
-    }.should raise_error(NameError, '$" is a read-only variable')
+    }.should.raise(NameError, '$" is a read-only variable')
 
     -> {
       $LOADED_FEATURES = []
-    }.should raise_error(NameError, '$LOADED_FEATURES is a read-only variable')
+    }.should.raise(NameError, '$LOADED_FEATURES is a read-only variable')
   end
 end
 
@@ -1122,7 +1122,7 @@ describe "Global variable $<" do
   it "is read-only" do
     -> {
       $< = nil
-    }.should raise_error(NameError, '$< is a read-only variable')
+    }.should.raise(NameError, '$< is a read-only variable')
   end
 end
 
@@ -1130,7 +1130,7 @@ describe "Global variable $FILENAME" do
   it "is read-only" do
     -> {
       $FILENAME = "-"
-    }.should raise_error(NameError, '$FILENAME is a read-only variable')
+    }.should.raise(NameError, '$FILENAME is a read-only variable')
   end
 end
 
@@ -1138,30 +1138,30 @@ describe "Global variable $?" do
   it "is read-only" do
     -> {
       $? = nil
-    }.should raise_error(NameError, '$? is a read-only variable')
+    }.should.raise(NameError, '$? is a read-only variable')
   end
 
   it "is thread-local" do
     system(ruby_cmd('exit 0'))
-    Thread.new { $?.should be_nil }.join
+    Thread.new { $?.should == nil }.join
   end
 end
 
 describe "Global variable $-a" do
   it "is read-only" do
-    -> { $-a = true }.should raise_error(NameError, '$-a is a read-only variable')
+    -> { $-a = true }.should.raise(NameError, '$-a is a read-only variable')
   end
 end
 
 describe "Global variable $-l" do
   it "is read-only" do
-    -> { $-l = true }.should raise_error(NameError, '$-l is a read-only variable')
+    -> { $-l = true }.should.raise(NameError, '$-l is a read-only variable')
   end
 end
 
 describe "Global variable $-p" do
   it "is read-only" do
-    -> { $-p = true }.should raise_error(NameError, '$-p is a read-only variable')
+    -> { $-p = true }.should.raise(NameError, '$-p is a read-only variable')
   end
 end
 
@@ -1176,9 +1176,9 @@ describe "Global variable $-d" do
 
   it "is an alias of $DEBUG" do
     $DEBUG = true
-    $-d.should be_true
+    $-d.should == true
     $-d = false
-    $DEBUG.should be_false
+    $DEBUG.should == false
   end
 end
 
@@ -1192,24 +1192,24 @@ describe "Global variable $VERBOSE" do
   end
 
   it "is false by default" do
-    $VERBOSE.should be_false
+    $VERBOSE.should == false
   end
 
   it "converts truthy values to true" do
     [true, 1, 0, [], ""].each do |true_value|
       $VERBOSE = true_value
-      $VERBOSE.should be_true
+      $VERBOSE.should == true
     end
   end
 
   it "allows false" do
     $VERBOSE = false
-    $VERBOSE.should be_false
+    $VERBOSE.should == false
   end
 
   it "allows nil without coercing to false" do
     $VERBOSE = nil
-    $VERBOSE.should be_nil
+    $VERBOSE.should == nil
   end
 end
 
@@ -1224,9 +1224,9 @@ describe :verbose_global_alias, shared: true do
 
   it "is an alias of $VERBOSE" do
     $VERBOSE = true
-    eval(@method).should be_true
+    eval(@method).should == true
     eval("#{@method} = false")
-    $VERBOSE.should be_false
+    $VERBOSE.should == false
   end
 end
 
@@ -1263,7 +1263,7 @@ describe "Global variable $0" do
     it "actually sets the program name" do
       title = "rubyspec-dollar0-test"
       $0 = title
-      `ps -ocommand= -p#{$$}`.should include(title)
+      `ps -ocommand= -p#{$$}`.should.include?(title)
     end
   end
 
@@ -1272,7 +1272,7 @@ describe "Global variable $0" do
   end
 
   it "raises a TypeError when not given an object that can be coerced to a String" do
-    -> { $0 = nil }.should raise_error(TypeError)
+    -> { $0 = nil }.should.raise(TypeError)
   end
 end
 
@@ -1308,37 +1308,37 @@ end
 
 describe "The predefined standard object nil" do
   it "is an instance of NilClass" do
-    nil.should be_kind_of(NilClass)
+    nil.should.is_a?(NilClass)
   end
 
   it "raises a SyntaxError if assigned to" do
-    -> { eval("nil = true") }.should raise_error(SyntaxError, /Can't assign to nil/)
+    -> { eval("nil = true") }.should.raise(SyntaxError, /Can't assign to nil/)
   end
 end
 
 describe "The predefined standard object true" do
   it "is an instance of TrueClass" do
-    true.should be_kind_of(TrueClass)
+    true.should.is_a?(TrueClass)
   end
 
   it "raises a SyntaxError if assigned to" do
-    -> { eval("true = false") }.should raise_error(SyntaxError, /Can't assign to true/)
+    -> { eval("true = false") }.should.raise(SyntaxError, /Can't assign to true/)
   end
 end
 
 describe "The predefined standard object false" do
   it "is an instance of FalseClass" do
-    false.should be_kind_of(FalseClass)
+    false.should.is_a?(FalseClass)
   end
 
   it "raises a SyntaxError if assigned to" do
-    -> { eval("false = nil") }.should raise_error(SyntaxError, /Can't assign to false/)
+    -> { eval("false = nil") }.should.raise(SyntaxError, /Can't assign to false/)
   end
 end
 
 describe "The self pseudo-variable" do
   it "raises a SyntaxError if assigned to" do
-    -> { eval("self = 1") }.should raise_error(SyntaxError, /Can't change the value of self/)
+    -> { eval("self = 1") }.should.raise(SyntaxError, /Can't change the value of self/)
   end
 end
 
@@ -1433,21 +1433,21 @@ describe "The predefined global constant" do
   describe "STDIN" do
     platform_is_not :windows do
       it "has the same external encoding as Encoding.default_external" do
-        STDIN.external_encoding.should equal(Encoding.default_external)
+        STDIN.external_encoding.should.equal?(Encoding.default_external)
       end
 
       it "has the same external encoding as Encoding.default_external when that encoding is changed" do
         Encoding.default_external = Encoding::ISO_8859_16
-        STDIN.external_encoding.should equal(Encoding::ISO_8859_16)
+        STDIN.external_encoding.should.equal?(Encoding::ISO_8859_16)
       end
 
       it "has nil for the internal encoding" do
-        STDIN.internal_encoding.should be_nil
+        STDIN.internal_encoding.should == nil
       end
 
       it "has nil for the internal encoding despite Encoding.default_internal being changed" do
         Encoding.default_internal = Encoding::IBM437
-        STDIN.internal_encoding.should be_nil
+        STDIN.internal_encoding.should == nil
       end
     end
 
@@ -1467,12 +1467,12 @@ describe "The predefined global constant" do
 
   describe "STDOUT" do
     it "has nil for the external encoding" do
-      STDOUT.external_encoding.should be_nil
+      STDOUT.external_encoding.should == nil
     end
 
     it "has nil for the external encoding despite Encoding.default_external being changed" do
       Encoding.default_external = Encoding::ISO_8859_1
-      STDOUT.external_encoding.should be_nil
+      STDOUT.external_encoding.should == nil
     end
 
     it "has the encodings set by #set_encoding" do
@@ -1482,23 +1482,23 @@ describe "The predefined global constant" do
     end
 
     it "has nil for the internal encoding" do
-      STDOUT.internal_encoding.should be_nil
+      STDOUT.internal_encoding.should == nil
     end
 
     it "has nil for the internal encoding despite Encoding.default_internal being changed" do
       Encoding.default_internal = Encoding::IBM437
-      STDOUT.internal_encoding.should be_nil
+      STDOUT.internal_encoding.should == nil
     end
   end
 
   describe "STDERR" do
     it "has nil for the external encoding" do
-      STDERR.external_encoding.should be_nil
+      STDERR.external_encoding.should == nil
     end
 
     it "has nil for the external encoding despite Encoding.default_external being changed" do
       Encoding.default_external = Encoding::ISO_8859_1
-      STDERR.external_encoding.should be_nil
+      STDERR.external_encoding.should == nil
     end
 
     it "has the encodings set by #set_encoding" do
@@ -1508,12 +1508,12 @@ describe "The predefined global constant" do
     end
 
     it "has nil for the internal encoding" do
-      STDERR.internal_encoding.should be_nil
+      STDERR.internal_encoding.should == nil
     end
 
     it "has nil for the internal encoding despite Encoding.default_internal being changed" do
       Encoding.default_internal = Encoding::IBM437
-      STDERR.internal_encoding.should be_nil
+      STDERR.internal_encoding.should == nil
     end
   end
 
@@ -1544,7 +1544,7 @@ describe "$LOAD_PATH.resolve_feature_path" do
   end
 
   it "return nil if feature cannot be found" do
-    $LOAD_PATH.resolve_feature_path('noop').should be_nil
+    $LOAD_PATH.resolve_feature_path('noop').should == nil
   end
 end
 

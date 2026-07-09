@@ -42,7 +42,7 @@ describe "Array#sort" do
     a = [1, 2, 3]
     sorted = a.sort
     sorted.should == a
-    sorted.should_not equal(a)
+    sorted.should_not.equal?(a)
   end
 
   it "properly handles recursive arrays" do
@@ -68,7 +68,7 @@ describe "Array#sort" do
 
     -> {
       [o, 1].sort
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "may take a block which is used to determine the order of objects a and b described as -1, 0 or +1" do
@@ -78,28 +78,28 @@ describe "Array#sort" do
   end
 
   it "raises an error when a given block returns nil" do
-    -> { [1, 2].sort {} }.should raise_error(ArgumentError)
+    -> { [1, 2].sort {} }.should.raise(ArgumentError)
   end
 
   it "does not call #<=> on contained objects when invoked with a block" do
     a = Array.new(25)
     (0...25).each {|i| a[i] = ArraySpecs::UFOSceptic.new }
 
-    a.sort { -1 }.should be_an_instance_of(Array)
+    a.sort { -1 }.should.instance_of?(Array)
   end
 
   it "does not call #<=> on elements when invoked with a block even if Array is large (Rubinius #412)" do
     a = Array.new(1500)
     (0...1500).each {|i| a[i] = ArraySpecs::UFOSceptic.new }
 
-    a.sort { -1 }.should be_an_instance_of(Array)
+    a.sort { -1 }.should.instance_of?(Array)
   end
 
   it "completes when supplied a block that always returns the same result" do
     a = [2, 3, 5, 1, 4]
-    a.sort {  1 }.should be_an_instance_of(Array)
-    a.sort {  0 }.should be_an_instance_of(Array)
-    a.sort { -1 }.should be_an_instance_of(Array)
+    a.sort {  1 }.should.instance_of?(Array)
+    a.sort {  0 }.should.instance_of?(Array)
+    a.sort { -1 }.should.instance_of?(Array)
   end
 
   it "does not freezes self during being sorted" do
@@ -136,7 +136,7 @@ describe "Array#sort" do
     }.should == [-4, 1, 2, 5, 7, 10, 12]
     -> {
       a.sort { |n, m| (n - m).to_s }
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "sorts an array that has a value shifted off without a block" do
@@ -155,7 +155,7 @@ describe "Array#sort" do
 
   it "raises an error if objects can't be compared" do
     a=[ArraySpecs::Uncomparable.new, ArraySpecs::Uncomparable.new]
-    -> {a.sort}.should raise_error(ArgumentError)
+    -> {a.sort}.should.raise(ArgumentError)
   end
 
   # From a strange Rubinius bug
@@ -166,7 +166,7 @@ describe "Array#sort" do
 
   it "does not return subclass instance on Array subclasses" do
     ary = ArraySpecs::MyArray[1, 2, 3]
-    ary.sort.should be_an_instance_of(Array)
+    ary.sort.should.instance_of?(Array)
   end
 end
 
@@ -184,13 +184,13 @@ describe "Array#sort!" do
 
   it "returns self if the order of elements changed" do
     a = [6, 7, 2, 3, 7]
-    a.sort!.should equal(a)
+    a.sort!.should.equal?(a)
     a.should == [2, 3, 6, 7, 7]
   end
 
   it "returns self even if makes no modification" do
     a = [1, 2, 3, 4, 5]
-    a.sort!.should equal(a)
+    a.sort!.should.equal?(a)
     a.should == [1, 2, 3, 4, 5]
   end
 
@@ -216,25 +216,25 @@ describe "Array#sort!" do
     a = Array.new(25)
     (0...25).each {|i| a[i] = ArraySpecs::UFOSceptic.new }
 
-    a.sort! { -1 }.should be_an_instance_of(Array)
+    a.sort! { -1 }.should.instance_of?(Array)
   end
 
   it "does not call #<=> on elements when invoked with a block even if Array is large (Rubinius #412)" do
     a = Array.new(1500)
     (0...1500).each {|i| a[i] = ArraySpecs::UFOSceptic.new }
 
-    a.sort! { -1 }.should be_an_instance_of(Array)
+    a.sort! { -1 }.should.instance_of?(Array)
   end
 
   it "completes when supplied a block that always returns the same result" do
     a = [2, 3, 5, 1, 4]
-    a.sort!{  1 }.should be_an_instance_of(Array)
-    a.sort!{  0 }.should be_an_instance_of(Array)
-    a.sort!{ -1 }.should be_an_instance_of(Array)
+    a.sort!{  1 }.should.instance_of?(Array)
+    a.sort!{  0 }.should.instance_of?(Array)
+    a.sort!{ -1 }.should.instance_of?(Array)
   end
 
   it "raises a FrozenError on a frozen array" do
-    -> { ArraySpecs.frozen_array.sort! }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.sort! }.should.raise(FrozenError)
   end
 
   it "returns the specified value when it would break in the given block" do
@@ -247,6 +247,6 @@ describe "Array#sort!" do
       ary.sort!{|x,y| break if x==i; x<=>y}
       ary
     }
-    partially_sorted.any?{|ary| ary != [1, 2, 3, 4, 5]}.should be_true
+    partially_sorted.any?{|ary| ary != [1, 2, 3, 4, 5]}.should == true
   end
 end

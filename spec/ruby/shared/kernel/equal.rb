@@ -2,13 +2,13 @@
 describe :object_equal, shared: true do
   it "returns true if other is identical to self" do
     obj = Object.new
-    obj.__send__(@method, obj).should be_true
+    obj.__send__(@method, obj).should == true
   end
 
   it "returns false if other is not identical to self" do
     a = Object.new
     b = Object.new
-    a.__send__(@method, b).should be_false
+    a.__send__(@method, b).should == false
   end
 
   it "returns true only if self and other are the same object" do

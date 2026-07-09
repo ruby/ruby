@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 describe "Hash#clear" do
   it "removes all key, value pairs" do
     h = { 1 => 2, 3 => 4 }
-    h.clear.should equal(h)
+    h.clear.should.equal?(h)
     h.should == {}
   end
 
@@ -26,7 +26,7 @@ describe "Hash#clear" do
   end
 
   it "raises a FrozenError if called on a frozen instance" do
-    -> { HashSpecs.frozen_hash.clear  }.should raise_error(FrozenError)
-    -> { HashSpecs.empty_frozen_hash.clear }.should raise_error(FrozenError)
+    -> { HashSpecs.frozen_hash.clear  }.should.raise(FrozenError)
+    -> { HashSpecs.empty_frozen_hash.clear }.should.raise(FrozenError)
   end
 end

@@ -8,16 +8,16 @@ describe "IO::Buffer#internal?" do
 
   it "is true for an internally-allocated buffer" do
     @buffer = IO::Buffer.new(12)
-    @buffer.internal?.should be_true
+    @buffer.internal?.should == true
   end
 
   it "is false for an externally-allocated buffer" do
     @buffer = IO::Buffer.new(12, IO::Buffer::MAPPED)
-    @buffer.internal?.should be_false
+    @buffer.internal?.should == false
   end
 
   it "is false for a null buffer" do
     @buffer = IO::Buffer.new(0)
-    @buffer.internal?.should be_false
+    @buffer.internal?.should == false
   end
 end

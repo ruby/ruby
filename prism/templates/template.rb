@@ -643,8 +643,14 @@ module Prism
           end
         end
 
-        FileUtils.mkdir_p(File.dirname(write_to))
-        File.write(write_to, contents)
+        begin
+          FileUtils.mkdir_p(File.dirname(write_to))
+          File.write(write_to, contents)
+        rescue SystemCallError # EACCES, EPERM, EROFS, etc.
+          # Fall back to the current directory
+          FileUtils.mkdir_p(File.dirname(name))
+          File.write(name, contents)
+        end
       end
 
       private
@@ -684,9 +690,9 @@ module Prism
       "javascript/src/deserialize.js",
       "javascript/src/nodes.js",
       "javascript/src/visitor.js",
-      "java/api/target/generated-sources/java/org/ruby_lang/prism/Loader.java",
-      "java/api/target/generated-sources/java/org/ruby_lang/prism/Nodes.java",
-      "java/api/target/generated-sources/java/org/ruby_lang/prism/AbstractNodeVisitor.java",
+      "java/api/src/main/java-templates/org/ruby_lang/prism/Loader.java",
+      "java/api/src/main/java-templates/org/ruby_lang/prism/Nodes.java",
+      "java/api/src/main/java-templates/org/ruby_lang/prism/AbstractNodeVisitor.java",
       "lib/prism/compiler.rb",
       "lib/prism/dispatcher.rb",
       "lib/prism/dot_visitor.rb",

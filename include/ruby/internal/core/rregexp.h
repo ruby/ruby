@@ -36,21 +36,12 @@
  */
 #define RREGEXP(obj)     RBIMPL_CAST((struct RRegexp *)(obj))
 
-/**
- * Convenient accessor macro.
- *
- * @param   obj  An object, which is in fact an ::RRegexp.
- * @return  The passed object's pattern buffer.
- */
-#define RREGEXP_PTR(obj) (RREGEXP(obj)->ptr)
 /** @cond INTERNAL_MACRO */
 #define RREGEXP_SRC      RREGEXP_SRC
 #define RREGEXP_SRC_PTR  RREGEXP_SRC_PTR
 #define RREGEXP_SRC_LEN  RREGEXP_SRC_LEN
 #define RREGEXP_SRC_END  RREGEXP_SRC_END
 /** @endcond */
-
-struct re_patter_buffer;  /* a.k.a. OnigRegexType, defined in onigmo.h */
 
 /**
  * Ruby's regular expression.   A regexp is compiled into  its own intermediate
@@ -61,14 +52,6 @@ struct RRegexp {
 
     /** Basic part, including flags and class. */
     struct RBasic basic;
-
-    /**
-     * The pattern buffer.   This is a quasi-opaque struct  that holds compiled
-     * intermediate representation of the regular expression.
-     *
-     * @note  Compilation of a regexp could be delayed until actual match.
-     */
-    struct re_pattern_buffer *ptr;
 
     /** Source code of this expression. */
     const VALUE src;
@@ -89,6 +72,22 @@ struct RRegexp {
      */
     unsigned long usecnt;
 };
+
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Convenient getter function.
+ *
+ * @param[in]  rexp  The regular expression in question.
+ * @return     The pattern buffer of the regular expression.
+ * @pre        `rexp` must be of ::RRegexp.
+ */
+static inline struct re_pattern_buffer *
+RREGEXP_PTR(VALUE rexp)
+{
+    RBIMPL_ASSERT_TYPE(rexp, RUBY_T_REGEXP);
+    return (struct re_pattern_buffer *)(((struct RRegexp *)rexp) + 1);
+}
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()

@@ -2,7 +2,11 @@ require_relative '../../spec_helper'
 require_relative '../../shared/kernel/complex'
 require_relative 'fixtures/Complex'
 
-describe "Kernel.Complex()" do
+describe "Kernel#Complex" do
+  it "is a private method" do
+    Kernel.private_instance_methods(false).should.include?(:Complex)
+  end
+
   describe "when passed [Complex, Complex]" do
     it "returns a new Complex number based on the two given numbers" do
       Complex(Complex(3, 4), Complex(5, 6)).should == Complex(3 - 6, 4 + 5)
@@ -19,19 +23,19 @@ describe "Kernel.Complex()" do
 
   describe "when passed [Integer, Integer]" do
     it "returns a new Complex number" do
-      Complex(1, 2).should be_an_instance_of(Complex)
+      Complex(1, 2).should.instance_of?(Complex)
       Complex(1, 2).real.should == 1
       Complex(1, 2).imag.should == 2
 
-      Complex(-3, -5).should be_an_instance_of(Complex)
+      Complex(-3, -5).should.instance_of?(Complex)
       Complex(-3, -5).real.should == -3
       Complex(-3, -5).imag.should == -5
 
-      Complex(3.5, -4.5).should be_an_instance_of(Complex)
+      Complex(3.5, -4.5).should.instance_of?(Complex)
       Complex(3.5, -4.5).real.should == 3.5
       Complex(3.5, -4.5).imag.should == -4.5
 
-      Complex(bignum_value, 30).should be_an_instance_of(Complex)
+      Complex(bignum_value, 30).should.instance_of?(Complex)
       Complex(bignum_value, 30).real.should == bignum_value
       Complex(bignum_value, 30).imag.should == 30
     end
@@ -39,24 +43,21 @@ describe "Kernel.Complex()" do
 
   describe "when passed [Integer/Float]" do
     it "returns a new Complex number with 0 as the imaginary component" do
-      # Guard against the Mathn library
-      guard -> { !defined?(Math.rsqrt) } do
-        Complex(1).should be_an_instance_of(Complex)
-        Complex(1).imag.should == 0
-        Complex(1).real.should == 1
+      Complex(1).should.instance_of?(Complex)
+      Complex(1).imag.should == 0
+      Complex(1).real.should == 1
 
-        Complex(-3).should be_an_instance_of(Complex)
-        Complex(-3).imag.should == 0
-        Complex(-3).real.should == -3
+      Complex(-3).should.instance_of?(Complex)
+      Complex(-3).imag.should == 0
+      Complex(-3).real.should == -3
 
-        Complex(-4.5).should be_an_instance_of(Complex)
-        Complex(-4.5).imag.should == 0
-        Complex(-4.5).real.should == -4.5
+      Complex(-4.5).should.instance_of?(Complex)
+      Complex(-4.5).imag.should == 0
+      Complex(-4.5).real.should == -4.5
 
-        Complex(bignum_value).should be_an_instance_of(Complex)
-        Complex(bignum_value).imag.should == 0
-        Complex(bignum_value).real.should == bignum_value
-      end
+      Complex(bignum_value).should.instance_of?(Complex)
+      Complex(bignum_value).imag.should == 0
+      Complex(bignum_value).real.should == bignum_value
     end
   end
 
@@ -67,47 +68,47 @@ describe "Kernel.Complex()" do
       it "raises Encoding::CompatibilityError if String is in not ASCII-compatible encoding" do
         -> {
           Complex("79+4i".encode("UTF-16"))
-        }.should raise_error(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
+        }.should.raise(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
       end
 
       it "raises ArgumentError for unrecognised Strings" do
         -> {
           Complex("ruby")
-        }.should raise_error(ArgumentError, 'invalid value for convert(): "ruby"')
+        }.should.raise(ArgumentError, 'invalid value for convert(): "ruby"')
       end
 
       it "raises ArgumentError for trailing garbage" do
         -> {
           Complex("79+4iruby")
-        }.should raise_error(ArgumentError, 'invalid value for convert(): "79+4iruby"')
+        }.should.raise(ArgumentError, 'invalid value for convert(): "79+4iruby"')
       end
 
       it "does not understand Float::INFINITY" do
         -> {
           Complex("Infinity")
-        }.should raise_error(ArgumentError, 'invalid value for convert(): "Infinity"')
+        }.should.raise(ArgumentError, 'invalid value for convert(): "Infinity"')
 
         -> {
           Complex("-Infinity")
-        }.should raise_error(ArgumentError, 'invalid value for convert(): "-Infinity"')
+        }.should.raise(ArgumentError, 'invalid value for convert(): "-Infinity"')
       end
 
       it "does not understand Float::NAN" do
         -> {
           Complex("NaN")
-        }.should raise_error(ArgumentError, 'invalid value for convert(): "NaN"')
+        }.should.raise(ArgumentError, 'invalid value for convert(): "NaN"')
       end
 
       it "does not understand a sequence of _" do
         -> {
           Complex("7__9+4__0i")
-        }.should raise_error(ArgumentError, 'invalid value for convert(): "7__9+4__0i"')
+        }.should.raise(ArgumentError, 'invalid value for convert(): "7__9+4__0i"')
       end
 
       it "does not allow null-byte" do
         -> {
           Complex("1-2i\0")
-        }.should raise_error(ArgumentError, "string contains null byte")
+        }.should.raise(ArgumentError, "string contains null byte")
       end
     end
 
@@ -115,7 +116,7 @@ describe "Kernel.Complex()" do
       it "raises Encoding::CompatibilityError if String is in not ASCII-compatible encoding" do
         -> {
           Complex("79+4i".encode("UTF-16"), exception: false)
-        }.should raise_error(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
+        }.should.raise(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
       end
 
       it "returns nil for unrecognised Strings" do
@@ -160,7 +161,7 @@ describe "Kernel.Complex()" do
     it "returns the passed argument" do
       n = mock_numeric("unreal")
       n.should_receive(:real?).any_number_of_times.and_return(false)
-      Complex(n).should equal(n)
+      Complex(n).should.equal?(n)
     end
   end
 
@@ -169,8 +170,8 @@ describe "Kernel.Complex()" do
       n = mock_numeric("real")
       n.should_receive(:real?).any_number_of_times.and_return(true)
       result = Complex(n)
-      result.real.should equal(n)
-      result.imag.should equal(0)
+      result.real.should.equal?(n)
+      result.imag.should.equal?(0)
     end
   end
 
@@ -185,7 +186,7 @@ describe "Kernel.Complex()" do
         n2.should_receive(:real?).any_number_of_times.and_return(r2)
         n2.should_receive(:*).with(Complex(0, 1)).and_return(n3)
         n1.should_receive(:+).with(n3).and_return(n4)
-        Complex(n1, n2).should equal(n4)
+        Complex(n1, n2).should.equal?(n4)
       end
     end
   end
@@ -197,8 +198,8 @@ describe "Kernel.Complex()" do
       n1.should_receive(:real?).any_number_of_times.and_return(true)
       n2.should_receive(:real?).any_number_of_times.and_return(true)
       result = Complex(n1, n2)
-      result.real.should equal(n1)
-      result.imag.should equal(n2)
+      result.real.should.equal?(n1)
+      result.imag.should.equal?(n2)
     end
   end
 
@@ -207,22 +208,22 @@ describe "Kernel.Complex()" do
       n = mock("n")
       c = Complex(0, 0)
       n.should_receive(:to_c).and_return(c)
-      Complex(n).should equal(c)
+      Complex(n).should.equal?(c)
     end
   end
 
   describe "when passed a non-Numeric second argument" do
     it "raises TypeError" do
-      -> { Complex(:sym, :sym) }.should raise_error(TypeError)
-      -> { Complex(0,    :sym) }.should raise_error(TypeError)
+      -> { Complex(:sym, :sym) }.should.raise(TypeError)
+      -> { Complex(0,    :sym) }.should.raise(TypeError)
     end
   end
 
   describe "when passed nil" do
     it "raises TypeError" do
-      -> { Complex(nil) }.should raise_error(TypeError, "can't convert nil into Complex")
-      -> { Complex(0, nil) }.should raise_error(TypeError, "can't convert nil into Complex")
-      -> { Complex(nil, 0) }.should raise_error(TypeError, "can't convert nil into Complex")
+      -> { Complex(nil) }.should.raise(TypeError, "can't convert nil into Complex")
+      -> { Complex(0, nil) }.should.raise(TypeError, "can't convert nil into Complex")
+      -> { Complex(nil, 0) }.should.raise(TypeError, "can't convert nil into Complex")
     end
   end
 
@@ -241,7 +242,7 @@ describe "Kernel.Complex()" do
 
     describe "and [non-Numeric, Numeric] argument" do
       it "throws a TypeError" do
-        -> { Complex(:sym, 0, exception: false) }.should raise_error(TypeError, "not a real")
+        -> { Complex(:sym, 0, exception: false) }.should.raise(TypeError, "not a real")
       end
     end
 
@@ -272,5 +273,11 @@ describe "Kernel.Complex()" do
 
   it "freezes its result" do
     Complex(1).frozen?.should == true
+  end
+end
+
+describe "Kernel.Complex" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:Complex)
   end
 end

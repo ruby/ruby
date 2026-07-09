@@ -20,7 +20,7 @@ ruby_version_is ""..."4.1" do
     end
 
     it "sends the ABOR command to the server" do
-      -> { @ftp.abort }.should_not raise_error
+      -> { @ftp.abort }.should_not.raise
     end
 
     it "ignores the response" do
@@ -34,32 +34,32 @@ ruby_version_is ""..."4.1" do
 
     it "does not raise any error when the response code is 225" do
       @server.should_receive(:abor).and_respond("225 Data connection open; no transfer in progress.")
-      -> { @ftp.abort }.should_not raise_error
+      -> { @ftp.abort }.should_not.raise
     end
 
     it "does not raise any error when the response code is 226" do
       @server.should_receive(:abor).and_respond("226 Closing data connection.")
-      -> { @ftp.abort }.should_not raise_error
+      -> { @ftp.abort }.should_not.raise
     end
 
     it "raises a Net::FTPProtoError when the response code is 500" do
       @server.should_receive(:abor).and_respond("500 Syntax error, command unrecognized.")
-      -> { @ftp.abort }.should raise_error(Net::FTPProtoError)
+      -> { @ftp.abort }.should.raise(Net::FTPProtoError)
     end
 
     it "raises a Net::FTPProtoError when the response code is 501" do
       @server.should_receive(:abor).and_respond("501 Syntax error in parameters or arguments.")
-      -> { @ftp.abort }.should raise_error(Net::FTPProtoError)
+      -> { @ftp.abort }.should.raise(Net::FTPProtoError)
     end
 
     it "raises a Net::FTPProtoError when the response code is 502" do
       @server.should_receive(:abor).and_respond("502 Command not implemented.")
-      -> { @ftp.abort }.should raise_error(Net::FTPProtoError)
+      -> { @ftp.abort }.should.raise(Net::FTPProtoError)
     end
 
     it "raises a Net::FTPProtoError when the response code is 421" do
       @server.should_receive(:abor).and_respond("421 Service not available, closing control connection.")
-      -> { @ftp.abort }.should raise_error(Net::FTPProtoError)
+      -> { @ftp.abort }.should.raise(Net::FTPProtoError)
     end
   end
 end

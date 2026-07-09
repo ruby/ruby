@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 # erfc is the complementary error function
 describe "Math.erfc" do
   it "returns a float" do
-    Math.erf(1).should be_kind_of(Float)
+    Math.erf(1).should.is_a?(Float)
   end
 
   it "returns the complementary error function of the argument" do
@@ -20,15 +20,15 @@ describe "Math.erfc" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.erfc("test") }.should raise_error(TypeError)
+    -> { Math.erfc("test") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
-    Math.erfc(nan_value).nan?.should be_true
+    Math.erfc(nan_value).nan?.should == true
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.erfc(nil) }.should raise_error(TypeError)
+    -> { Math.erfc(nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

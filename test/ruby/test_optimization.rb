@@ -728,7 +728,7 @@ class TestRubyOptimization < Test::Unit::TestCase
       insn = iseq.disasm
       assert_match %r{putobject\s+#{Regexp.quote('"1.8.0"..."1.8.8"')}}, insn
       assert_match %r{putobject\s+#{Regexp.quote('"2.0.0".."2.3.2"')}}, insn
-      assert_no_match(/putstring/, insn)
+      assert_no_match(/dupstring/, insn)
       assert_no_match(/newrange/, insn)
     end
   end
@@ -945,6 +945,82 @@ class TestRubyOptimization < Test::Unit::TestCase
     END
   end
 
+  def bptest_call(&b) = b.call(1, 2)
+  def bptest_aref(&b) = b[1, 2]
+  def bptest_dot_yield(&b) = b.yield(1, 2)
+  def bptest_eqq(&b) = b === 2
+
+  def test_block_param_proxy_aref_yield_and_eqq
+    %i[bptest_call bptest_aref bptest_dot_yield bptest_eqq].each do |name|
+      assert_include(RubyVM::InstructionSequence.of(method(name)).disasm,
+                     "getblockparamproxy", "#{name} should use the block param proxy")
+    end
+    assert_equal(3, bptest_call {|a, b| a + b})
+    assert_equal(3, bptest_aref {|a, b| a + b})
+    assert_equal(3, bptest_dot_yield {|a, b| a + b})
+    assert_equal(3, bptest_eqq {|a| a + 1})
+  end
+
+  def test_block_param_proxy_should_not_create_objects
+    assert_separately [], <<-END
+      def viacall(&b) = b.call
+      def viaaref(&b) = b[]
+      def viayield(&b) = b.yield
+      def viaeqq(&b) = b === 1
+      viacall{}; viaaref{}; viayield{}; viaeqq{} # warm up caches
+      h1 = {}; h2 = {}
+      ObjectSpace.count_objects(h1)
+      GC.start; GC.disable
+      ObjectSpace.count_objects(h1)
+      1000.times { viacall{}; viaaref{}; viayield{}; viaeqq{} }
+      ObjectSpace.count_objects(h2)
+
+      # The proxy avoids materializing a Proc (T_DATA), so allocations must
+      # not scale with the number of calls.
+      assert_operator(h2[:T_DATA] - h1[:T_DATA], :<, 1000)
+    END
+  end
+
+  def test_block_param_proxy_honors_redefinition
+    assert_separately [], <<-END
+      $VERBOSE = nil # silence "method redefined" warnings
+      def viacall(&b) = b.call
+      def viaaref(&b) = b[]
+      def viayield(&b) = b.yield
+      def viaeqq(&b) = b === 1
+
+      assert_equal(:orig, viacall { :orig })
+      assert_equal(:orig, viaaref { :orig })
+      assert_equal(:orig, viayield { :orig })
+      assert_equal(:orig, viaeqq { :orig })
+
+      class Proc
+        def [](*) = :redef_aref
+      end
+      assert_equal(:redef_aref, viaaref { :orig }, "redefining Proc#[] must deopt blk[]")
+      assert_equal(:orig, viacall { :orig }, "Proc#[] redefinition must not affect blk.call")
+      assert_equal(:orig, viayield { :orig }, "Proc#[] redefinition must not affect blk.yield")
+      assert_equal(:orig, viaeqq { :orig }, "Proc#[] redefinition must not affect blk === x")
+
+      class Proc
+        def yield(*) = :redef_yield
+      end
+      assert_equal(:redef_yield, viayield { :orig }, "redefining Proc#yield must deopt blk.yield")
+      assert_equal(:orig, viacall { :orig }, "Proc#yield redefinition must not affect blk.call")
+
+      class Proc
+        def ===(*) = :redef_eqq
+      end
+      assert_equal(:redef_eqq, viaeqq { :orig }, "redefining Proc#=== must deopt blk === x")
+      assert_equal(:orig, viacall { :orig }, "Proc#=== redefinition must not affect blk.call")
+
+      class Proc
+        def call(*) = :redef_call
+      end
+      assert_equal(:redef_call, viacall { :orig }, "redefining Proc#call must deopt blk.call")
+    END
+  end
+
   def test_peephole_optimization_without_trace
     assert_ruby_status [], <<-END
       RubyVM::InstructionSequence.compile_option = {trace_instruction: false}
@@ -1047,6 +1123,21 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal(:ok, x.bug)
   end
 
+  def test_peephole_branch_dup_with_label_after_dup
+    assert_ruby_status [], <<-END
+      src = <<~'SRC'
+        $g&.call&.to_s
+        [*d, [__dir__].each(&:each), C1.value(/ab/o, &b)].each {}
+        begin
+          ((-243 != qux) ? (1..2) : 8i&.value) => ^([1].select(&:to_s))
+        rescue
+          ((-243 != qux) ? (1..2) : 8i&.value) => ^([1].select(&:to_s))
+        end
+      SRC
+      RubyVM::InstructionSequence.compile(src)
+    END
+  end
+
   def test_peephole_jump_after_newarray
     i = 0
     %w(1) || 2 while (i += 1) < 100
@@ -1119,6 +1210,13 @@ class TestRubyOptimization < Test::Unit::TestCase
       '@c = :b; [:a, :b].include?(@c)',
       '@c = "b"; %i[a b].include?(@c.to_sym)',
       '[:a, :b].include?(self) == false',
+      "[:a, :b].include?(:a)",
+      "[true, false].include?(false)",
+      "[1, nil].include?(nil)",
+      "# frozen_string_literal: true\n['a', 'b'].include?('a')",
+      "# frozen_string_literal: true\n['a', 'b'].include?('c') == false",
+      "# frozen_string_literal: true\n['a', 'b'].include?(2) == false",
+      "# frozen_string_literal: true\n['a', 'b'].include?(/a/) == false",
     ].each do |code|
       iseq = RubyVM::InstructionSequence.compile(code)
       insn = iseq.disasm

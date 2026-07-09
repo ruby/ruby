@@ -408,7 +408,7 @@ You may need to `bundle install` to install missing gems
     require "bundler"
 
     # If bundler gemspec exists, pretend it's installed
-    bundler_gemspec = File.expand_path("../../bundler/bundler.gemspec", __dir__)
+    bundler_gemspec = File.expand_path("../../bundler.gemspec", __dir__)
     if File.exist?(bundler_gemspec)
       target_gemspec_location = "#{path}/specifications/bundler-#{Bundler::VERSION}.gemspec"
 

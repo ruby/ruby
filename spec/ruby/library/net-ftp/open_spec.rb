@@ -11,7 +11,7 @@ ruby_version_is ""..."4.1" do
 
     describe "when passed no block" do
       it "returns a new Net::FTP instance" do
-        Net::FTP.open("localhost").should equal(@ftp)
+        Net::FTP.open("localhost").should.equal?(@ftp)
       end
 
       it "passes the passed arguments down to Net::FTP.new" do
@@ -29,9 +29,9 @@ ruby_version_is ""..."4.1" do
         yielded = false
         Net::FTP.open("localhost") do |ftp|
           yielded = true
-          ftp.should equal(@ftp)
+          ftp.should.equal?(@ftp)
         end
-        yielded.should be_true
+        yielded.should == true
       end
 
       it "closes the Net::FTP instance after yielding" do

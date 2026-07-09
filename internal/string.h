@@ -21,6 +21,7 @@
 #define STR_CHILLED                 (FL_USER2 | FL_USER3)
 #define STR_CHILLED_LITERAL         FL_USER2
 #define STR_CHILLED_SYMBOL_TO_S     FL_USER3
+#define STR_FAKESTR                 FL_USER19
 
 enum ruby_rstring_private_flags {
     RSTRING_CHILLED = STR_CHILLED,
@@ -98,6 +99,7 @@ VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
 VALUE rb_str_with_debug_created_info(VALUE, VALUE, int);
 VALUE rb_str_frozen_bare_string(VALUE);
 const char *rb_str_null_check(VALUE);
+VALUE rb_str_casecmp(VALUE str1, VALUE str2);
 
 /* error.c */
 void rb_warn_unchilled_literal(VALUE str);

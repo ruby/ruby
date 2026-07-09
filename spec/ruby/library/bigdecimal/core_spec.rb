@@ -25,7 +25,7 @@ describe "Core extension by bigdecimal" do
       # log(BigDecimal(r, 1000), 50)
       result2 = BigDecimal('0.22314354220170971436137296411949880462556361100853e0')
       r = Rational(1_234_567_890, 987_654_321)
-      [result1, result2].should include(BigMath.log(r, 50).mult(1, 50))
+      [result1, result2].should.include?(BigMath.log(r, 50).mult(1, 50))
     end
   end
 
@@ -33,15 +33,15 @@ describe "Core extension by bigdecimal" do
     it "returns the passed argument, self as Float, when given a Float" do
       result = Rational(3, 4).coerce(1.0)
       result.should == [1.0, 0.75]
-      result.first.is_a?(Float).should be_true
-      result.last.is_a?(Float).should be_true
+      result.first.is_a?(Float).should == true
+      result.last.is_a?(Float).should == true
     end
 
     it "returns the passed argument, self as Rational, when given an Integer" do
       result = Rational(3, 4).coerce(10)
       result.should == [Rational(10, 1), Rational(3, 4)]
-      result.first.is_a?(Rational).should be_true
-      result.last.is_a?(Rational).should be_true
+      result.first.is_a?(Rational).should == true
+      result.last.is_a?(Rational).should == true
     end
 
     it "coerces to Rational, when given a Complex" do
@@ -56,7 +56,7 @@ describe "Core extension by bigdecimal" do
     it "raises an error when passed a BigDecimal" do
       -> {
         Rational(500, 3).coerce(BigDecimal('166.666666666'))
-      }.should raise_error(TypeError, /BigDecimal can't be coerced into Rational/)
+      }.should.raise(TypeError, /BigDecimal can't be coerced into Rational/)
     end
   end
 end

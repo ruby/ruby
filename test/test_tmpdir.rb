@@ -77,6 +77,17 @@ class TestTmpdir < Test::Unit::TestCase
     }
   end
 
+  def test_mktmpdir_tolerates_removed_directory
+    dir = nil
+    assert_nothing_raised do
+      Dir.mktmpdir do |d|
+        dir = d
+        FileUtils.remove_entry(d)
+      end
+    end
+    assert_file.not_exist?(dir)
+  end
+
   def test_mktmpdir_mutate
     bug16918 = '[ruby-core:98563]'
     assert_nothing_raised(bug16918) do

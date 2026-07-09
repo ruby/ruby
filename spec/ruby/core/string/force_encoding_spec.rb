@@ -41,23 +41,23 @@ describe "String#force_encoding" do
     obj = mock("force_encoding")
     obj.should_receive(:to_str).and_return(1)
 
-    -> { "abc".force_encoding(obj) }.should raise_error(TypeError)
+    -> { "abc".force_encoding(obj) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed nil" do
-    -> { "abc".force_encoding(nil) }.should raise_error(TypeError)
+    -> { "abc".force_encoding(nil) }.should.raise(TypeError)
   end
 
   it "returns self" do
     str = "abc"
-    str.force_encoding('utf-8').should equal(str)
+    str.force_encoding('utf-8').should.equal?(str)
   end
 
   it "sets the encoding even if the String contents are invalid in that encoding" do
     str = "\u{9765}"
     str.force_encoding('euc-jp')
     str.encoding.should == Encoding::EUC_JP
-    str.valid_encoding?.should be_false
+    str.valid_encoding?.should == false
   end
 
   it "does not transcode self" do
@@ -67,6 +67,6 @@ describe "String#force_encoding" do
 
   it "raises a FrozenError if self is frozen" do
     str = "abcd".freeze
-    -> { str.force_encoding(str.encoding) }.should raise_error(FrozenError)
+    -> { str.force_encoding(str.encoding) }.should.raise(FrozenError)
   end
 end

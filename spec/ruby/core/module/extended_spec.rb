@@ -39,6 +39,6 @@ describe "Module#extended" do
   end
 
   it "is private in its default implementation" do
-    Module.new.private_methods.should include(:extended)
+    Module.new.private_methods.should.include?(:extended)
   end
 end

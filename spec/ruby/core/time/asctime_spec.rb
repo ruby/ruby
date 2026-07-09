@@ -1,6 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/asctime'
 
 describe "Time#asctime" do
-  it_behaves_like :time_asctime, :asctime
+  it "returns a canonical string representation of time" do
+    t = Time.now
+    t.asctime.should == t.strftime("%a %b %e %H:%M:%S %Y")
+  end
 end

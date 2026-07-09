@@ -66,17 +66,17 @@ describe "IPAddr Operator" do
   end
 
   it "checks whether an address is included in a range" do
-    @a.should include(IPAddr.new("3ffe:505:2::"))
-    @a.should include(IPAddr.new("3ffe:505:2::1"))
-    @a.should_not include(IPAddr.new("3ffe:505:3::"))
+    @a.should.include?(IPAddr.new("3ffe:505:2::"))
+    @a.should.include?(IPAddr.new("3ffe:505:2::1"))
+    @a.should_not.include?(IPAddr.new("3ffe:505:3::"))
     net1 = IPAddr.new("192.168.2.0/24")
-    net1.should include(IPAddr.new("192.168.2.0"))
-    net1.should include(IPAddr.new("192.168.2.255"))
-    net1.should_not include(IPAddr.new("192.168.3.0"))
+    net1.should.include?(IPAddr.new("192.168.2.0"))
+    net1.should.include?(IPAddr.new("192.168.2.255"))
+    net1.should_not.include?(IPAddr.new("192.168.3.0"))
     # test with integer parameter
     int = (192 << 24) + (168 << 16) + (2 << 8) + 13
 
-    net1.should include(int)
-    net1.should_not include(int+255)
+    net1.should.include?(int)
+    net1.should_not.include?(int+255)
   end
 end

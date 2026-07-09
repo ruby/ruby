@@ -40,7 +40,7 @@ mark_cc_entry_i(VALUE ccs_ptr, void *data)
             VM_ASSERT(!vm_cc_super_p(cc) && !vm_cc_refinement_p(cc));
             vm_cc_invalidate(cc);
         }
-        ruby_sized_xfree(ccs, vm_ccs_alloc_size(ccs->capa));
+        ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
         return ID_TABLE_DELETE;
     }
     else {
@@ -71,7 +71,7 @@ cc_table_free_i(VALUE ccs_ptr, void *data)
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
     VM_ASSERT(vm_ccs_p(ccs));
 
-    ruby_sized_xfree(ccs, vm_ccs_alloc_size(ccs->capa));
+    ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
 
     return ID_TABLE_CONTINUE;
 }
@@ -135,7 +135,7 @@ static const rb_data_type_t cc_table_type = {
         .dcompact = vm_cc_table_compact,
     },
     .parent = &rb_managed_id_table_type,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 VALUE
@@ -201,7 +201,7 @@ rb_vm_ccs_invalidate_and_free(struct rb_class_cc_entries *ccs)
 {
     RB_DEBUG_COUNTER_INC(ccs_free);
     vm_ccs_invalidate(ccs);
-    ruby_sized_xfree(ccs, vm_ccs_alloc_size(ccs->capa));
+    ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
 }
 
 void
@@ -404,6 +404,30 @@ invalidate_callable_method_entry_in_every_m_table_i(rb_classext_t *ext, bool is_
     }
 }
 
+struct collect_per_box_origins_arg {
+    VALUE owner;
+    VALUE klass_housing_cme;
+    VALUE origins; // Array of origins
+};
+
+static void
+collect_per_box_origins_i(rb_classext_t *ext, bool is_prime, VALUE box_value, void *data)
+{
+    struct collect_per_box_origins_arg *arg = (struct collect_per_box_origins_arg *)data;
+    VALUE origin = RCLASSEXT_ORIGIN(ext);
+
+    if (origin == arg->owner || origin == arg->klass_housing_cme) {
+        return;
+    }
+    long len = RARRAY_LEN(arg->origins);
+    for (long i = 0; i < len; i++) {
+        if (RARRAY_AREF(arg->origins, i) == origin) {
+            return;
+        }
+    }
+    rb_ary_push(arg->origins, origin);
+}
+
 static void
 invalidate_callable_method_entry_in_every_m_table(VALUE klass, ID mid, const rb_callable_method_entry_t *cme)
 {
@@ -439,7 +463,8 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     RB_VM_LOCKING() {
         rb_vm_barrier();
 
-        if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL) &&
+        if (LIKELY(!RCLASS_SUBCLASSES(klass)) &&
+            !FL_TEST_RAW(klass, RCLASS_HAS_SUBCLASSES) &&
             // Non-refinement ICLASSes (from module inclusion) previously had
             // subclasses reparented onto them, so they need the tree path for
             // broader cme-based invalidation even though they now have no subclasses.
@@ -486,6 +511,29 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 
                         // replace the cme that will be invalid in the all classexts
                         invalidate_callable_method_entry_in_every_m_table(klass_housing_cme, mid, cme);
+                        // owner may be a boxable class with per-box classext copies of its m_tbl
+                        // (klass_housing_cme may be a non-boxable origin ICLASS that doesn't cover them)
+                        if (klass_housing_cme != owner) {
+                            invalidate_callable_method_entry_in_every_m_table(owner, mid, cme);
+                        }
+                        // Also update per-box origin ICLASSes. When ensure_origin is called in
+                        // one box's context, it creates a per-box origin ICLASS whose m_tbl is
+                        // a copy of owner's m_tbl at that time. The current execution box may
+                        // not see these origins via RCLASS_ORIGIN(owner), so we find them by
+                        // iterating all of owner's classexts and checking their origin_ fields.
+                        {
+                            VALUE origins = rb_ary_hidden_new(1);
+                            struct collect_per_box_origins_arg origins_arg = {
+                                .owner = owner,
+                                .klass_housing_cme = klass_housing_cme,
+                                .origins = origins,
+                            };
+                            rb_class_classext_foreach(owner, collect_per_box_origins_i, &origins_arg);
+                            for (long i = 0; i < RARRAY_LEN(origins); i++) {
+                                invalidate_callable_method_entry_in_every_m_table(RARRAY_AREF(origins, i), mid, cme);
+                            }
+                            RB_GC_GUARD(origins);
+                        }
                     }
 
                     vm_cme_invalidate((rb_callable_method_entry_t *)cme);
@@ -576,7 +624,7 @@ invalidate_ccs_in_iclass_cc_tbl(VALUE value, void *data)
 {
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)value;
     vm_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
-    ruby_sized_xfree(ccs, vm_ccs_alloc_size(ccs->capa));
+    ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
     return ID_TABLE_DELETE;
 }
 
@@ -667,7 +715,7 @@ rb_vm_ci_lookup(ID mid, unsigned int flag, unsigned int argc, const struct rb_ca
     const struct rb_callinfo *ci = NULL;
 
     if (kwarg) {
-        ((struct rb_callinfo_kwarg *)kwarg)->references++;
+        RUBY_ATOMIC_FETCH_ADD(((struct rb_callinfo_kwarg *)kwarg)->references, 1);
     }
 
     struct rb_callinfo *new_ci = SHAREABLE_IMEMO_NEW(struct rb_callinfo, imemo_callinfo, (VALUE)kwarg);
@@ -750,7 +798,7 @@ static const rb_data_type_t cc_refinement_set_type = {
         cc_refinement_set_compact,
         cc_refinement_set_handle_weak_references,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 VALUE
@@ -802,7 +850,6 @@ rb_clear_all_refinement_method_cache(void)
 
             // All objects should be live as weak references are pruned in
             // cc_refinement_set_handle_weak_references
-            VM_ASSERT(rb_gc_pointer_to_heap_p(v));
             VM_ASSERT(!rb_objspace_garbage_object_p(v));
 
             const struct rb_callcache *cc = (const struct rb_callcache *)v;
@@ -1369,6 +1416,12 @@ check_override_opt_method(VALUE klass, VALUE mid)
     }
 }
 
+VALUE
+rb_zsuper_to_super(int argc, VALUE *argv, VALUE self)
+{
+    return rb_call_super_kw(argc, argv, RB_PASS_CALLED_KEYWORDS);
+}
+
 static inline rb_method_entry_t* search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined);
 /*
  * klass->method_table[mid] = method_entry(defined_class, visi, def)
@@ -1385,6 +1438,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     st_data_t data;
     int make_refined = 0;
     VALUE orig_klass;
+    bool turn_zsuper_to_super = false;
 
     if (NIL_P(klass)) {
         klass = rb_cObject;
@@ -1410,12 +1464,10 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 
     if (RB_TYPE_P(klass, T_MODULE) && FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
         VALUE refined_class = rb_refinement_module_get_refined_class(klass);
-        bool search_superclass = type == VM_METHOD_TYPE_ZSUPER && !lookup_method_table(refined_class, mid);
-        rb_add_refined_method_entry(refined_class, mid);
-        if (search_superclass) {
-            rb_method_entry_t *me = lookup_method_table(refined_class, mid);
-            me->def->body.refined.orig_me = search_method0(refined_class, mid, NULL, true);
+        if (type == VM_METHOD_TYPE_ZSUPER) {
+            turn_zsuper_to_super = true;
         }
+        rb_add_refined_method_entry(refined_class, mid);
     }
     if (type == VM_METHOD_TYPE_REFINED) {
         rb_method_entry_t *old_me = lookup_method_table(RCLASS_ORIGIN(klass), mid);
@@ -1478,6 +1530,12 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     me = rb_method_entry_create(mid, defined_class, visi, NULL);
     if (def == NULL) {
         def = rb_method_definition_create(type, original_id);
+        if (turn_zsuper_to_super) {
+          def->type = VM_METHOD_TYPE_CFUNC;
+          def->body.cfunc.func = (rb_cfunc_t)rb_zsuper_to_super;
+          def->body.cfunc.invoker = ractor_safe_call_cfunc_m1;
+          def->body.cfunc.argc = -1;
+        }
     }
     rb_method_definition_set(me, def, opts);
 
@@ -1947,6 +2005,18 @@ static const rb_callable_method_entry_t *
 callable_method_entry_or_negative(VALUE klass, ID mid, VALUE *defined_class_ptr)
 {
     const rb_callable_method_entry_t *cme;
+
+    VM_ASSERT(!SPECIAL_CONST_P(klass));
+
+    if (RB_BUILTIN_TYPE(klass) == T_NONE) {
+      // If we find a T_NONE here, it's most likely we called CLASS_OF(obj) on a
+      // garbage collected object (the freelist is stored in the class pointer),
+      // but it's possible that just the class was GC'd.
+      // This message intentionally tries to imply the former, but make an
+      // accurate statement for either case.
+      rb_bug("attempted to search method '%s' on a garbage collected object",
+             rb_id2name(mid));
+    }
 
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 

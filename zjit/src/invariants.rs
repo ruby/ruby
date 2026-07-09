@@ -2,7 +2,7 @@
 
 use std::{collections::{HashMap, HashSet}, mem};
 
-use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p}, virtualmem::CodePtr};
+use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p, trace_invalidation}, virtualmem::CodePtr};
 use crate::payload::{IseqVersionRef, get_or_create_iseq_payload};
 use crate::codegen::invalidate_iseq_version;
 use crate::cruby::rb_iseq_reset_jit_func;
@@ -12,7 +12,7 @@ use crate::gc::remove_gc_offsets;
 
 macro_rules! compile_patch_points {
     ($cb:expr, $patch_points:expr, $cause:ident, $($comment_args:tt)*) => {
-        with_time_stat(invalidation_time_ns, || {
+        trace_invalidation(|| format!($($comment_args)*), || with_time_stat(invalidation_time_ns, || {
             for patch_point in $patch_points {
                 let written_range = $cb.with_write_ptr(patch_point.patch_point_ptr, |cb| {
                     let mut asm = Assembler::new();
@@ -35,7 +35,7 @@ macro_rules! compile_patch_points {
                     }
                 }
             }
-        });
+        }));
     };
 }
 
@@ -188,7 +188,7 @@ pub extern "C" fn rb_zjit_bop_redefined(klass: RedefinitionFlag, bop: ruby_basic
 
     with_vm_lock(src_loc!(), || {
         let invariants = ZJITState::get_invariants();
-        if let Some(patch_points) = invariants.bop_patch_points.get(&(klass, bop)) {
+        if let Some(patch_points) = invariants.bop_patch_points.remove(&(klass, bop)) {
             let cb = ZJITState::get_code_block();
             let bop = Invariant::BOPRedefined { klass, bop };
             debug!("BOP is redefined: {}", bop);
@@ -216,7 +216,7 @@ pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
         invariants.ep_escape_iseqs.insert(iseq);
 
         // If the ISEQ has been compiled assuming it doesn't escape EP, invalidate the JIT code.
-        if let Some(patch_points) = invariants.no_ep_escape_iseq_patch_points.get(&iseq) {
+        if let Some(patch_points) = invariants.no_ep_escape_iseq_patch_points.remove(&iseq) {
             debug!("EP is escaped: {}", iseq_name(iseq));
 
             // Invalidate the patch points for this ISEQ
@@ -263,7 +263,7 @@ pub fn track_no_ep_escape_assumption(
 }
 
 /// Returns true if a given ISEQ has previously escaped environment pointer.
-pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
+pub fn iseq_seen_ep_escape(iseq: IseqPtr) -> bool {
     ZJITState::get_invariants().ep_escape_iseqs.contains(&iseq)
 }
 
@@ -372,12 +372,12 @@ pub extern "C" fn rb_zjit_constant_state_changed(id: ID) {
 
     with_vm_lock(src_loc!(), || {
         let invariants = ZJITState::get_invariants();
-        if let Some(patch_points) = invariants.constant_state_patch_points.get(&id) {
+        if let Some(patch_points) = invariants.constant_state_patch_points.remove(&id) {
             let cb = ZJITState::get_code_block();
-            debug!("Constant state changed: {:?}", id);
+            debug!("Constant state changed: {id:?}: {}", id.contents_lossy());
 
             // Invalidate all patch points for this constant ID
-            compile_patch_points!(cb, patch_points, Const, "Constant state changed: {:?}", id);
+            compile_patch_points!(cb, patch_points, Const, "Constant state changed: {id:?}: {}", id.contents_lossy());
 
             cb.mark_all_executable();
         }

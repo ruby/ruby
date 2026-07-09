@@ -18,7 +18,7 @@ describe :dir_chroot_as_root, shared: true do
   compilations_ci = ENV["GITHUB_WORKFLOW"] == "Compilations"
 
   it "can be used to change the process' root directory" do
-    -> { Dir.send(@method, __dir__) }.should_not raise_error
+    -> { Dir.send(@method, __dir__) }.should_not.raise
     File.should.exist?("/#{File.basename(__FILE__)}")
   end unless compilations_ci
 
@@ -27,7 +27,7 @@ describe :dir_chroot_as_root, shared: true do
   end
 
   it "raises an Errno::ENOENT exception if the directory doesn't exist" do
-    -> { Dir.send(@method, 'xgwhwhsjai2222jg') }.should raise_error(Errno::ENOENT)
+    -> { Dir.send(@method, 'xgwhwhsjai2222jg') }.should.raise(Errno::ENOENT)
   end
 
   it "can be escaped from with ../" do

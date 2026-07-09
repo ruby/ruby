@@ -12,31 +12,31 @@ ruby_version_is ""..."4.1" do
     end
 
     it "is private" do
-      Net::FTP.should have_private_instance_method(:initialize)
+      Net::FTP.private_instance_methods(false).should.include?(:initialize)
     end
 
     it "sets self into binary mode" do
-      @ftp.binary.should be_nil
+      @ftp.binary.should == nil
       @ftp.send(:initialize)
-      @ftp.binary.should be_true
+      @ftp.binary.should == true
     end
 
     it "sets self into active mode" do
-      @ftp.passive.should be_nil
+      @ftp.passive.should == nil
       @ftp.send(:initialize)
-      @ftp.passive.should be_false
+      @ftp.passive.should == false
     end
 
     it "sets self into non-debug mode" do
-      @ftp.debug_mode.should be_nil
+      @ftp.debug_mode.should == nil
       @ftp.send(:initialize)
-      @ftp.debug_mode.should be_false
+      @ftp.debug_mode.should == false
     end
 
     it "sets self to not resume file uploads/downloads" do
-      @ftp.resume.should be_nil
+      @ftp.resume.should == nil
       @ftp.send(:initialize)
-      @ftp.resume.should be_false
+      @ftp.resume.should == false
     end
 
     describe "when passed no arguments" do
@@ -388,7 +388,7 @@ ruby_version_is ""..."4.1" do
 
               -> {
                 @ftp.send(:initialize, nil, options)
-              }.should raise_error(ArgumentError, /private_data_connection can be set to true only when ssl is enabled/)
+              }.should.raise(ArgumentError, /private_data_connection can be set to true only when ssl is enabled/)
             end
           end
 

@@ -72,7 +72,7 @@ module Spec
     attr_reader :failure_reason
 
     def normalize(string)
-      string.force_encoding(Encoding::UTF_8).strip.gsub("\r\n", "\n")
+      string.dup.force_encoding(Encoding::UTF_8).scrub.strip.gsub("\r\n", "\n")
     end
   end
 end

@@ -19,7 +19,7 @@ describe "Net::HTTP#request" do
       response.body.should == "Request type: GET"
 
       response = @http.request(Net::HTTP::Head.new("/request"), "test=test")
-      response.body.should be_nil
+      response.body.should == nil
 
       response = @http.request(Net::HTTP::Post.new("/request"), "test=test")
       response.body.should == "Request type: POST"
@@ -38,7 +38,7 @@ describe "Net::HTTP#request" do
 
       # TODO: Does not work?
       #response = @http.request(Net::HTTP::Options.new("/request"), "test=test")
-      #response.body.should be_nil
+      #response.body.should == nil
 
       response = @http.request(Net::HTTP::Propfind.new("/request"), "test=test")
       response.body.should == "Request type: PROPFIND"
@@ -66,7 +66,7 @@ describe "Net::HTTP#request" do
       response.body.should == "test=test"
 
       response = @http.request(Net::HTTP::Head.new("/request/body"), "test=test")
-      response.body.should be_nil
+      response.body.should == nil
 
       response = @http.request(Net::HTTP::Post.new("/request/body"), "test=test")
       response.body.should == "test=test"
@@ -85,7 +85,7 @@ describe "Net::HTTP#request" do
 
       # TODO: Does not work?
       #response = @http.request(Net::HTTP::Options.new("/request/body"), "test=test")
-      #response.body.should be_nil
+      #response.body.should == nil
 
       response = @http.request(Net::HTTP::Propfind.new("/request/body"), "test=test")
       response.body.should == "test=test"

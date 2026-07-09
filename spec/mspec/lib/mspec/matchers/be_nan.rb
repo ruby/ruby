@@ -15,6 +15,7 @@ end
 
 module MSpecMatchers
   private def be_nan
+    MSpec.deprecate __method__, '.should.nan?'
     BeNaNMatcher.new
   end
 end

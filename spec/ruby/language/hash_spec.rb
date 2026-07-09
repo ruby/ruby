@@ -81,7 +81,7 @@ describe "Hash literal" do
   end
 
   it "with '==>' in the middle raises SyntaxError" do
-    -> { eval("{:a ==> 1}") }.should raise_error(SyntaxError)
+    -> { eval("{:a ==> 1}") }.should.raise(SyntaxError)
   end
 
   it "recognizes '!' at the end of the key" do
@@ -93,7 +93,7 @@ describe "Hash literal" do
   end
 
   it "raises a SyntaxError if there is no space between `!` and `=>`" do
-    -> { eval("{:a!=> 1}") }.should raise_error(SyntaxError)
+    -> { eval("{:a!=> 1}") }.should.raise(SyntaxError)
   end
 
   it "recognizes '?' at the end of the key" do
@@ -105,7 +105,7 @@ describe "Hash literal" do
   end
 
   it "raises a SyntaxError if there is no space between `?` and `=>`" do
-    -> { eval("{:a?=> 1}") }.should raise_error(SyntaxError)
+    -> { eval("{:a?=> 1}") }.should.raise(SyntaxError)
   end
 
   it "constructs a new hash with the given elements" do
@@ -152,9 +152,9 @@ describe "Hash literal" do
   ruby_version_is ""..."3.4" do
     it "does not expand nil using ** into {} and raises TypeError" do
       h = nil
-      -> { {a: 1, **h} }.should raise_error(TypeError, "no implicit conversion of nil into Hash")
+      -> { {a: 1, **h} }.should.raise(TypeError, "no implicit conversion of nil into Hash")
 
-      -> { {a: 1, **nil} }.should raise_error(TypeError, "no implicit conversion of nil into Hash")
+      -> { {a: 1, **nil} }.should.raise(TypeError, "no implicit conversion of nil into Hash")
     end
   end
 
@@ -223,13 +223,13 @@ describe "Hash literal" do
     obj = mock("hash splat")
     obj.should_receive(:to_hash).and_return(obj)
 
-    -> { {**obj} }.should raise_error(TypeError)
+    -> { {**obj} }.should.raise(TypeError)
   end
 
   it "raises a TypeError if the object does not respond to #to_hash" do
     obj = 42
-    -> { {**obj} }.should raise_error(TypeError)
-    -> { {a: 1, **obj} }.should raise_error(TypeError)
+    -> { {**obj} }.should.raise(TypeError)
+    -> { {a: 1, **obj} }.should.raise(TypeError)
   end
 
   it "does not change encoding of literal string keys during creation" do
@@ -249,7 +249,7 @@ describe "Hash literal" do
       ScratchPad.record []
       -> {
         eval 'ScratchPad << 1; {:"\xC3" => 1}'
-      }.should raise_error(SyntaxError, /invalid symbol/)
+      }.should.raise(SyntaxError, /invalid symbol/)
       ScratchPad.recorded.should == []
     end
 
@@ -257,7 +257,7 @@ describe "Hash literal" do
       ScratchPad.record []
       -> {
         eval 'ScratchPad << 1; {"\xC3": 1}'
-      }.should raise_error(SyntaxError, /invalid symbol/)
+      }.should.raise(SyntaxError, /invalid symbol/)
       ScratchPad.recorded.should == []
     end
   end
@@ -323,11 +323,11 @@ describe "The ** operator" do
     end
 
     it "raises a SyntaxError when the hash key ends with `!`" do
-      -> { eval("{a!:}") }.should raise_error(SyntaxError, /identifier a! is not valid to get/)
+      -> { eval("{a!:}") }.should.raise(SyntaxError, /identifier a! is not valid to get/)
     end
 
     it "raises a SyntaxError when the hash key ends with `?`" do
-      -> { eval("{a?:}") }.should raise_error(SyntaxError, /identifier a\? is not valid to get/)
+      -> { eval("{a?:}") }.should.raise(SyntaxError, /identifier a\? is not valid to get/)
     end
   end
 end

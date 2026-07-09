@@ -264,6 +264,14 @@ VALUE rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to);
 VALUE rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts);
 
 /**
+ * @private
+ *
+ * This is an implementation detail of rb_enc_str_coderange().  Don't use this
+ * directly.
+ **/
+int rbimpl_enc_str_coderange_scan(VALUE str);
+
+/**
  * Scans the passed string to collect  its code range.  Because a Ruby's string
  * is mutable, its contents  change from time to time; so  does its code range.
  * A  long-lived string  tends  to fall  back to  ::RUBY_ENC_CODERANGE_UNKNOWN.
@@ -273,6 +281,27 @@ VALUE rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ec
  * @return      An enum ::ruby_coderange_type.
  */
 int rb_enc_str_coderange(VALUE str);
+
+/**
+ * Scans the passed string to collect  its code range.  Because a Ruby's string
+ * is mutable, its contents  change from time to time; so  does its code range.
+ * A  long-lived string  tends  to fall  back to  ::RUBY_ENC_CODERANGE_UNKNOWN.
+ * This API scans it and re-assigns a fine-grained code range constant.
+ *
+ * @param[out]  str  A string.
+ * @return      An enum ::ruby_coderange_type.
+ */
+static inline int
+rb_enc_str_coderange_inline(VALUE str)
+{
+    int cr = ENC_CODERANGE(str);
+    if (cr == ENC_CODERANGE_UNKNOWN) {
+        cr = rbimpl_enc_str_coderange_scan(str);
+    }
+    return cr;
+}
+
+#define rb_enc_str_coderange rb_enc_str_coderange_inline
 
 /**
  * Scans the passed string until it finds something odd.  Returns the number of

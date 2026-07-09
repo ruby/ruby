@@ -22,7 +22,7 @@ describe "ENV.rassoc" do
     [
         ["foo", "bar"],
         ["baz", "bar"],
-    ].should include(ENV.rassoc("bar"))
+    ].should.include?(ENV.rassoc("bar"))
   end
 
   it "returns nil if no environment variable with the given value exists" do

@@ -5,9 +5,9 @@ describe :stringio_read, shared: true do
 
   it "returns the passed buffer String" do
     # Note: Rubinius bug:
-    # @io.send(@method, 7, buffer = +"").should equal(buffer)
+    # @io.send(@method, 7, buffer = +"").should.equal?(buffer)
     ret = @io.send(@method, 7, buffer = +"")
-    ret.should equal(buffer)
+    ret.should.equal?(buffer)
   end
 
   it "reads length bytes and writes them to the buffer String" do
@@ -42,11 +42,11 @@ describe :stringio_read, shared: true do
   end
 
   it "raises a TypeError when the passed buffer Object can't be converted to a String" do
-    -> { @io.send(@method, 7, Object.new) }.should raise_error(TypeError)
+    -> { @io.send(@method, 7, Object.new) }.should.raise(TypeError)
   end
 
   it "raises a FrozenError error when passed a frozen String as buffer" do
-    -> { @io.send(@method, 7, "".freeze) }.should raise_error(FrozenError)
+    -> { @io.send(@method, 7, "".freeze) }.should.raise(FrozenError)
   end
 end
 
@@ -66,10 +66,10 @@ describe :stringio_read_length, shared: true do
 
   it "correctly updates the position" do
     @io.send(@method, 3)
-    @io.pos.should eql(3)
+    @io.pos.should.eql?(3)
 
     @io.send(@method, 999)
-    @io.pos.should eql(7)
+    @io.pos.should.eql?(7)
   end
 
   it "tries to convert the passed length to an Integer using #to_int" do
@@ -79,11 +79,11 @@ describe :stringio_read_length, shared: true do
   end
 
   it "raises a TypeError when the passed length can't be converted to an Integer" do
-    -> { @io.send(@method, Object.new) }.should raise_error(TypeError)
+    -> { @io.send(@method, Object.new) }.should.raise(TypeError)
   end
 
   it "raises a TypeError when the passed length is negative" do
-    -> { @io.send(@method, -2) }.should raise_error(ArgumentError)
+    -> { @io.send(@method, -2) }.should.raise(ArgumentError)
   end
 
   it "returns a binary String" do
@@ -105,13 +105,13 @@ describe :stringio_read_no_arguments, shared: true do
 
   it "correctly updates the current position" do
     @io.send(@method)
-    @io.pos.should eql(7)
+    @io.pos.should.eql?(7)
   end
 
   it "correctly update the current position in bytes when multi-byte characters are used" do
     @io.print("example\u03A3") # Overwrite the original string with 8 characters containing 9 bytes.
     @io.send(@method)
-    @io.pos.should eql(9)
+    @io.pos.should.eql?(9)
   end
 end
 
@@ -129,17 +129,17 @@ describe :stringio_read_nil, shared: true do
 
   it "updates the current position" do
     @io.send(@method, nil)
-    @io.pos.should eql(7)
+    @io.pos.should.eql?(7)
   end
 end
 
 describe :stringio_read_not_readable, shared: true do
   it "raises an IOError" do
     io = StringIO.new(+"test", "w")
-    -> { io.send(@method) }.should raise_error(IOError)
+    -> { io.send(@method) }.should.raise(IOError)
 
     io = StringIO.new("test")
     io.close_read
-    -> { io.send(@method) }.should raise_error(IOError)
+    -> { io.send(@method) }.should.raise(IOError)
   end
 end

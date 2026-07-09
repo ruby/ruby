@@ -2,6 +2,7 @@
 
 require 'tempfile'
 require 'rbconfig/sizeof'
+require '-test-/io_buffer'
 
 class TestIOBuffer < Test::Unit::TestCase
   experimental = Warning[:experimental]
@@ -29,6 +30,58 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 64, IO::Buffer::PRIVATE
 
     assert_equal 128, IO::Buffer::READONLY
+  end
+
+  def test_internal_for_reading_with_string
+    string = "hello"
+
+    assert_equal "hello", Bug::IOBuffer.for_reading_get_string(string)
+    assert_equal true, Bug::IOBuffer.for_reading_readonly?(string)
+  end
+
+  def test_internal_for_reading_with_io_buffer
+    buffer = IO::Buffer.for("hello")
+
+    assert_equal buffer.object_id, Bug::IOBuffer.for_reading_object_id(buffer)
+  end
+
+  def test_internal_for_writing_with_string
+    string = "hello"
+
+    Bug::IOBuffer.for_writing_set_string(string, "world")
+
+    assert_equal "world", string
+    assert_equal false, Bug::IOBuffer.for_writing_readonly?(string)
+  end
+
+  def test_internal_for_writing_rejects_readonly_buffer
+    buffer = IO::Buffer.for("hello")
+
+    assert_raise(ArgumentError) do
+      Bug::IOBuffer.for_writing_set_string(buffer, "world")
+    end
+  end
+
+  def test_internal_for_writing_unlocks_after_callback_exception
+    string = "hello"
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.for_writing_modify_string(string)
+    end
+
+    string << "!"
+    assert_equal "hello!", string
+  end
+
+  def test_internal_for_reading_unlocks_after_callback_exception
+    string = "hello"
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.for_reading_raise(string)
+    end
+
+    string << "!"
+    assert_equal "hello!", string
   end
 
   def test_endian
@@ -91,11 +144,11 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_file_mapped_size_too_large
-    assert_raise ArgumentError do
-      File.open(__FILE__) {|file| IO::Buffer.map(file, 200_000, 0, IO::Buffer::READONLY)}
-    end
-    assert_raise ArgumentError do
-      File.open(__FILE__) {|file| IO::Buffer.map(file, File.size(__FILE__) + 1, 0, IO::Buffer::READONLY)}
+    size = File.size(__FILE__) + 1
+    file_size = File.size(__FILE__)
+    message = "Size (#{size}) can't be larger than file size (#{file_size})"
+    assert_raise_with_message ArgumentError, message do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, size, 0, IO::Buffer::READONLY)}
     end
   end
 
@@ -105,12 +158,34 @@ class TestIOBuffer < Test::Unit::TestCase
     }
   end
 
-  def test_file_mapped_offset_too_large
-    assert_raise ArgumentError do
-      File.open(__FILE__) {|file| IO::Buffer.map(file, nil, IO::Buffer::PAGE_SIZE * 100, IO::Buffer::READONLY)}
+  def test_file_mapped_offset_negative
+    offset = -1
+    message = "Offset (#{offset}) can't be negative!"
+    assert_raise_with_message ArgumentError, message do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, nil, offset, IO::Buffer::READONLY)}
     end
-    assert_raise ArgumentError do
-      File.open(__FILE__) {|file| IO::Buffer.map(file, 20, IO::Buffer::PAGE_SIZE * 100, IO::Buffer::READONLY)}
+  end
+
+  def test_file_mapped_offset_too_large
+    file_size = File.size(__FILE__)
+    page_count = file_size / IO::Buffer::PAGE_SIZE
+    offset = IO::Buffer::PAGE_SIZE * (page_count + 1)
+    message = "Offset (#{offset}) can't be larger than file size (#{file_size})"
+    assert_raise_with_message ArgumentError, message do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, nil, offset, IO::Buffer::READONLY)}
+    end
+
+    if page_count > 0
+      offset = IO::Buffer::PAGE_SIZE * page_count
+      available_size = file_size - offset
+      size = available_size + 1
+      maximum_page_count = (file_size - size) / IO::Buffer::PAGE_SIZE
+      maximum_offset = IO::Buffer::PAGE_SIZE * maximum_page_count
+      message = "Offset (#{offset}) can't be larger than #{maximum_offset} " +
+                "for requested size (#{size})"
+      assert_raise_with_message ArgumentError, message do
+        File.open(__FILE__) {|file| IO::Buffer.map(file, size, offset, IO::Buffer::READONLY)}
+      end
     end
   end
 
@@ -239,6 +314,16 @@ class TestIOBuffer < Test::Unit::TestCase
 
     assert_raise IO::Buffer::AccessError do
       buffer.resize(0)
+    end
+  end
+
+  def test_resize_invalidated_slice
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    slice = inner.slice(0, 8)
+    inner.free
+
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.resize(16)
     end
   end
 
@@ -376,6 +461,17 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /Offset can't be negative/) do
       buffer.get_string(-1)
     end
+
+    encoding = Struct.new(:buffer) do
+      def to_str
+        buffer.free
+        "BINARY"
+      end
+    end.new(buffer.dup)
+    slice = encoding.buffer.slice(0, 8)
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.get_string(0, 8, encoding)
+    end
   end
 
   def test_zero_length_get_string
@@ -449,6 +545,26 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_set_values_invalidated_slice
+    to_int = Struct.new(:buffer) do
+      def to_int
+        buffer.free
+        0x41
+      end
+    end
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 8)
+    value = to_int.new(buffer)
+    assert_raise(IO::Buffer::InvalidatedError) {slice.set_value(:U8, 0, value)}
+
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 8)
+    value = to_int.new(buffer)
+    assert_raise(IO::Buffer::InvalidatedError) {
+      slice.set_values([:U8, :U8], 0, [0, value])
+    }
+  end
+
   def test_zero_length_get_set_values
     buffer = IO::Buffer.new(0)
 
@@ -492,6 +608,14 @@ class TestIOBuffer < Test::Unit::TestCase
 
     assert_equal string.bytes, buffer.each_byte.to_a
     assert_equal string.bytes[3, 5], buffer.each_byte(3, 5).to_a
+  end
+
+  def test_each_byte_bounds_error
+    buffer = IO::Buffer.for("A")
+
+    assert_raise(ArgumentError) { buffer.each_byte(0, 2).to_a }
+    assert_raise(ArgumentError) { buffer.each_byte(1, 1).to_a }
+    assert_raise(ArgumentError) { buffer.each_byte(SIZE_MAX, 0).to_a }
   end
 
   def test_zero_length_each_byte
@@ -692,6 +816,68 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal IO::Buffer.for("1334133413"), source.dup.or!(mask)
     assert_equal IO::Buffer.for("\x00\x01\x004\x00\x01\x004\x00\x01"), source.dup.xor!(mask)
     assert_equal IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd"), source.dup.not!
+  end
+
+  def test_operators_raise_on_freed_self
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    slice = inner.slice(0, 8)
+    inner.free
+
+    mask = IO::Buffer.for("ABCDEFGH")
+    assert_raise(IO::Buffer::InvalidatedError) { slice & mask }
+    assert_raise(IO::Buffer::InvalidatedError) { slice | mask }
+    assert_raise(IO::Buffer::InvalidatedError) { slice ^ mask }
+    assert_raise(IO::Buffer::InvalidatedError) { ~slice }
+
+    assert_raise(IO::Buffer::InvalidatedError) { slice.and!(mask) }
+    assert_raise(IO::Buffer::InvalidatedError) { slice.or!(mask) }
+    assert_raise(IO::Buffer::InvalidatedError) { slice.xor!(mask) }
+  end
+
+  def test_operators_raise_on_freed_mask
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    mask_slice = inner.slice(0, 8)
+    inner.free
+
+    source = IO::Buffer.for("ABCDEFGH")
+    assert_raise(IO::Buffer::InvalidatedError) { source & mask_slice }
+    assert_raise(IO::Buffer::InvalidatedError) { source | mask_slice }
+    assert_raise(IO::Buffer::InvalidatedError) { source ^ mask_slice }
+
+    source = source.dup
+    assert_raise(IO::Buffer::InvalidatedError) { source.and!(mask_slice) }
+    assert_raise(IO::Buffer::InvalidatedError) { source.or!(mask_slice) }
+    assert_raise(IO::Buffer::InvalidatedError) { source.xor!(mask_slice) }
+  end
+
+  def test_bit_count
+    # All ones: 8 bits set per byte
+    assert_equal 8,  IO::Buffer.for("\xFF").bit_count
+    # All zeros: no bits set
+    assert_equal 0,  IO::Buffer.for("\x00").bit_count
+    # Mixed: 0xFF (8) + 0x00 (0) + 0x0F (4) = 12
+    assert_equal 12, IO::Buffer.for("\xFF\x00\x0F").bit_count
+    # Subrange: offset=0, length=1 => 0xFF => 8
+    assert_equal 8,  IO::Buffer.for("\xFF\x00\x0F").bit_count(0, 1)
+    # Subrange: offset=1, length=1 => 0x00 => 0
+    assert_equal 0,  IO::Buffer.for("\xFF\x00\x0F").bit_count(1, 1)
+    # Subrange: offset=2, length=1 => 0x0F => 4
+    assert_equal 4,  IO::Buffer.for("\xFF\x00\x0F").bit_count(2, 1)
+    # Subrange: offset=1, length=2 => 0x00 + 0x0F = 4
+    assert_equal 4,  IO::Buffer.for("\xFF\x00\x0F").bit_count(1, 2)
+    # Empty buffer: 0
+    assert_equal 0,  IO::Buffer.new(0).bit_count
+    # 8-byte aligned: 8 bytes of 0xFF => 64 bits
+    assert_equal 64, IO::Buffer.for("\xFF" * 8).bit_count
+    # Cross 8-byte boundary: 9 bytes of 0xFF => 72 bits
+    assert_equal 72, IO::Buffer.for("\xFF" * 9).bit_count
+    # offset=0 with no length => defaults to full buffer:
+    assert_equal 12, IO::Buffer.for("\xFF\x00\x0F").bit_count(0)
+    # offset=1 with no length => 0x00 + 0x0F = 4:
+    assert_equal 4,  IO::Buffer.for("\xFF\x00\x0F").bit_count(1)
+    # Out-of-range raises
+    assert_raise(ArgumentError) { IO::Buffer.for("\xFF").bit_count(0, 2) }
+    assert_raise(ArgumentError) { IO::Buffer.for("\xFF").bit_count(1, 1) }
   end
 
   def test_shared
@@ -959,5 +1145,49 @@ class TestIOBuffer < Test::Unit::TestCase
     # should be unlocked now and can be locked again
     refute_predicate buf, :locked?
     buf.locked { }
+  end
+
+  def test_hexdump_default_width
+    buffer = IO::Buffer.for("Hello World")
+    hexdump = buffer.hexdump
+    assert_include hexdump, "Hello World"
+    assert_include hexdump, "0x00000000"
+  end
+
+  def test_hexdump_custom_width
+    buffer = IO::Buffer.for("A" * 64)
+    hexdump = buffer.hexdump(0, 64, 32)
+    assert_include hexdump, "0x00000000"
+    assert_include hexdump, "0x00000020"
+  end
+
+  def test_hexdump_maximum_width
+    buffer = IO::Buffer.for("A" * 2048)
+    # Maximum width is 1024
+    hexdump = buffer.hexdump(0, 1024, 1024)
+    assert_include hexdump, "0x00000000"
+  end
+
+  def test_hexdump_width_too_large
+    buffer = IO::Buffer.for("A")
+    # Width exceeding maximum (1024) should raise ArgumentError
+    assert_raise(ArgumentError) do
+      buffer.hexdump(0, 1, 1025)
+    end
+  end
+
+  def test_hexdump_width_negative
+    buffer = IO::Buffer.for("A")
+    assert_raise(ArgumentError) do
+      buffer.hexdump(0, 1, -1)
+    end
+  end
+
+  def test_hexdump_width_zero
+    buffer = IO::Buffer.for("A")
+    # Width must be at least 1
+    assert_raise(ArgumentError) do
+      buffer.hexdump(0, 1, 0)
+    end
   end
 end

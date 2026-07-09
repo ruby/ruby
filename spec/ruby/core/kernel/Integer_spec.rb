@@ -1,7 +1,11 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe :kernel_integer, shared: true do
+describe "Kernel#Integer" do
+  it "is a private method" do
+    Kernel.private_instance_methods(false).should.include?(:Integer)
+  end
+
   it "returns a Bignum for a Bignum" do
     Integer(2e100).should == 2e100
   end
@@ -14,7 +18,9 @@ describe :kernel_integer, shared: true do
     obj = mock("object")
     obj.should_receive(:to_int).and_return("1")
     obj.should_receive(:to_i).and_return(nil)
-    -> { Integer(obj) }.should raise_error(TypeError)
+    -> {
+      Integer(obj)
+    }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_i gives nil)")
   end
 
   it "return a result of to_i when to_int does not return an Integer" do
@@ -24,13 +30,36 @@ describe :kernel_integer, shared: true do
     Integer(obj).should == 42
   end
 
+  it "returns a result of to_str" do
+    obj = mock("obj")
+    obj.should_receive(:to_str).and_return("1")
+
+    Integer(obj).should == 1
+  end
+
+  it "returns a result of to_int when both to_int and to_str are defined" do
+    obj = mock("obj")
+    obj.should_receive(:to_int).and_return(1)
+    obj.should_not_receive(:to_str)
+
+    Integer(obj).should == 1
+  end
+
+  it "returns a result of to_str when both to_str and to_i are defined" do
+    obj = mock("obj")
+    obj.should_receive(:to_str).and_return("1")
+    obj.should_not_receive(:to_i)
+
+    Integer(obj).should == 1
+  end
+
   it "raises a TypeError when passed nil" do
-    -> { Integer(nil) }.should raise_error(TypeError)
+    -> { Integer(nil) }.should.raise(TypeError, "can't convert nil into Integer")
   end
 
   it "returns an Integer object" do
-    Integer(2).should be_an_instance_of(Integer)
-    Integer(9**99).should be_an_instance_of(Integer)
+    Integer(2).should.instance_of?(Integer)
+    Integer(9**99).should.instance_of?(Integer)
   end
 
   it "truncates Floats" do
@@ -67,26 +96,32 @@ describe :kernel_integer, shared: true do
   it "raises a TypeError if to_i returns a value that is not an Integer" do
     obj = mock("object")
     obj.should_receive(:to_i).and_return("1")
-    -> { Integer(obj) }.should raise_error(TypeError)
+    -> {
+      Integer(obj)
+    }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_i gives String)")
   end
 
   it "raises a TypeError if no to_int or to_i methods exist" do
     obj = mock("object")
-    -> { Integer(obj) }.should raise_error(TypeError)
+    -> {
+      Integer(obj)
+    }.should.raise(TypeError, "can't convert MockObject into Integer")
   end
 
   it "raises a TypeError if to_int returns nil and no to_i exists" do
     obj = mock("object")
     obj.should_receive(:to_i).and_return(nil)
-    -> { Integer(obj) }.should raise_error(TypeError)
+    -> {
+      Integer(obj)
+    }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_i gives nil)")
   end
 
   it "raises a FloatDomainError when passed NaN" do
-    -> { Integer(nan_value) }.should raise_error(FloatDomainError)
+    -> { Integer(nan_value) }.should.raise(FloatDomainError)
   end
 
   it "raises a FloatDomainError when passed Infinity" do
-    -> { Integer(infinity_value) }.should raise_error(FloatDomainError)
+    -> { Integer(infinity_value) }.should.raise(FloatDomainError)
   end
 
   describe "when passed exception: false" do
@@ -143,23 +178,21 @@ describe :kernel_integer, shared: true do
       end
     end
   end
-end
 
-describe :kernel_integer_string, shared: true do
   it "raises an ArgumentError if the String is a null byte" do
-    -> { Integer("\0") }.should raise_error(ArgumentError)
+    -> { Integer("\0") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if the String starts with a null byte" do
-    -> { Integer("\01") }.should raise_error(ArgumentError)
+    -> { Integer("\01") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if the String ends with a null byte" do
-    -> { Integer("1\0") }.should raise_error(ArgumentError)
+    -> { Integer("1\0") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if the String contains a null byte" do
-    -> { Integer("1\01") }.should raise_error(ArgumentError)
+    -> { Integer("1\01") }.should.raise(ArgumentError)
   end
 
   it "ignores leading whitespace" do
@@ -175,13 +208,13 @@ describe :kernel_integer_string, shared: true do
   end
 
   it "raises an ArgumentError if there are leading _s" do
-    -> { Integer("_1") }.should raise_error(ArgumentError)
-    -> { Integer("___1") }.should raise_error(ArgumentError)
+    -> { Integer("_1") }.should.raise(ArgumentError)
+    -> { Integer("___1") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if there are trailing _s" do
-    -> { Integer("1_") }.should raise_error(ArgumentError)
-    -> { Integer("1___") }.should raise_error(ArgumentError)
+    -> { Integer("1_") }.should.raise(ArgumentError)
+    -> { Integer("1___") }.should.raise(ArgumentError)
   end
 
   it "ignores an embedded _" do
@@ -189,8 +222,8 @@ describe :kernel_integer_string, shared: true do
   end
 
   it "raises an ArgumentError if there are multiple embedded _s" do
-    -> { Integer("1__1") }.should raise_error(ArgumentError)
-    -> { Integer("1___1") }.should raise_error(ArgumentError)
+    -> { Integer("1__1") }.should.raise(ArgumentError)
+    -> { Integer("1___1") }.should.raise(ArgumentError)
   end
 
   it "ignores a single leading +" do
@@ -198,17 +231,17 @@ describe :kernel_integer_string, shared: true do
   end
 
   it "raises an ArgumentError if there is a space between the + and number" do
-    -> { Integer("+ 1") }.should raise_error(ArgumentError)
+    -> { Integer("+ 1") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if there are multiple leading +s" do
-    -> { Integer("++1") }.should raise_error(ArgumentError)
-    -> { Integer("+++1") }.should raise_error(ArgumentError)
+    -> { Integer("++1") }.should.raise(ArgumentError)
+    -> { Integer("+++1") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if there are trailing +s" do
-    -> { Integer("1+") }.should raise_error(ArgumentError)
-    -> { Integer("1+++") }.should raise_error(ArgumentError)
+    -> { Integer("1+") }.should.raise(ArgumentError)
+    -> { Integer("1+++") }.should.raise(ArgumentError)
   end
 
   it "makes the number negative if there's a leading -" do
@@ -216,21 +249,21 @@ describe :kernel_integer_string, shared: true do
   end
 
   it "raises an ArgumentError if there are multiple leading -s" do
-    -> { Integer("--1") }.should raise_error(ArgumentError)
-    -> { Integer("---1") }.should raise_error(ArgumentError)
+    -> { Integer("--1") }.should.raise(ArgumentError)
+    -> { Integer("---1") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if there are trailing -s" do
-    -> { Integer("1-") }.should raise_error(ArgumentError)
-    -> { Integer("1---") }.should raise_error(ArgumentError)
+    -> { Integer("1-") }.should.raise(ArgumentError)
+    -> { Integer("1---") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if there is a period" do
-    -> { Integer("0.0") }.should raise_error(ArgumentError)
+    -> { Integer("0.0") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for an empty String" do
-    -> { Integer("") }.should raise_error(ArgumentError)
+    -> { Integer("") }.should.raise(ArgumentError)
   end
 
   describe "when passed exception: false" do
@@ -280,7 +313,7 @@ describe :kernel_integer_string, shared: true do
     end
 
     it "raises an ArgumentError if the number cannot be parsed as hex" do
-      -> { Integer("0#{x}g") }.should raise_error(ArgumentError)
+      -> { Integer("0#{x}g") }.should.raise(ArgumentError)
     end
   end
 
@@ -301,7 +334,7 @@ describe :kernel_integer_string, shared: true do
     end
 
     it "raises an ArgumentError if the number cannot be parsed as binary" do
-      -> { Integer("0#{b}2") }.should raise_error(ArgumentError)
+      -> { Integer("0#{b}2") }.should.raise(ArgumentError)
     end
   end
 
@@ -322,7 +355,7 @@ describe :kernel_integer_string, shared: true do
     end
 
     it "raises an ArgumentError if the number cannot be parsed as octal" do
-      -> { Integer("0#{o}9") }.should raise_error(ArgumentError)
+      -> { Integer("0#{o}9") }.should.raise(ArgumentError)
     end
   end
 
@@ -343,26 +376,24 @@ describe :kernel_integer_string, shared: true do
     end
 
     it "raises an ArgumentError if the number cannot be parsed as decimal" do
-      -> { Integer("0#{d}a") }.should raise_error(ArgumentError)
+      -> { Integer("0#{d}a") }.should.raise(ArgumentError)
     end
   end
-end
 
-describe :kernel_integer_string_base, shared: true do
   it "raises an ArgumentError if the String is a null byte" do
-    -> { Integer("\0", 2) }.should raise_error(ArgumentError)
+    -> { Integer("\0", 2) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if the String starts with a null byte" do
-    -> { Integer("\01", 3) }.should raise_error(ArgumentError)
+    -> { Integer("\01", 3) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if the String ends with a null byte" do
-    -> { Integer("1\0", 4) }.should raise_error(ArgumentError)
+    -> { Integer("1\0", 4) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if the String contains a null byte" do
-    -> { Integer("1\01", 5) }.should raise_error(ArgumentError)
+    -> { Integer("1\01", 5) }.should.raise(ArgumentError)
   end
 
   it "ignores leading whitespace" do
@@ -378,13 +409,13 @@ describe :kernel_integer_string_base, shared: true do
   end
 
   it "raises an ArgumentError if there are leading _s" do
-    -> { Integer("_1", 7) }.should raise_error(ArgumentError)
-    -> { Integer("___1", 7) }.should raise_error(ArgumentError)
+    -> { Integer("_1", 7) }.should.raise(ArgumentError)
+    -> { Integer("___1", 7) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if there are trailing _s" do
-    -> { Integer("1_", 12) }.should raise_error(ArgumentError)
-    -> { Integer("1___", 12) }.should raise_error(ArgumentError)
+    -> { Integer("1_", 12) }.should.raise(ArgumentError)
+    -> { Integer("1___", 12) }.should.raise(ArgumentError)
   end
 
   it "ignores an embedded _" do
@@ -392,8 +423,8 @@ describe :kernel_integer_string_base, shared: true do
   end
 
   it "raises an ArgumentError if there are multiple embedded _s" do
-    -> { Integer("1__1", 4) }.should raise_error(ArgumentError)
-    -> { Integer("1___1", 4) }.should raise_error(ArgumentError)
+    -> { Integer("1__1", 4) }.should.raise(ArgumentError)
+    -> { Integer("1___1", 4) }.should.raise(ArgumentError)
   end
 
   it "ignores a single leading +" do
@@ -401,17 +432,17 @@ describe :kernel_integer_string_base, shared: true do
   end
 
   it "raises an ArgumentError if there is a space between the + and number" do
-    -> { Integer("+ 1", 3) }.should raise_error(ArgumentError)
+    -> { Integer("+ 1", 3) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if there are multiple leading +s" do
-    -> { Integer("++1", 3) }.should raise_error(ArgumentError)
-    -> { Integer("+++1", 3) }.should raise_error(ArgumentError)
+    -> { Integer("++1", 3) }.should.raise(ArgumentError)
+    -> { Integer("+++1", 3) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if there are trailing +s" do
-    -> { Integer("1+", 3) }.should raise_error(ArgumentError)
-    -> { Integer("1+++", 12) }.should raise_error(ArgumentError)
+    -> { Integer("1+", 3) }.should.raise(ArgumentError)
+    -> { Integer("1+++", 12) }.should.raise(ArgumentError)
   end
 
   it "makes the number negative if there's a leading -" do
@@ -419,29 +450,29 @@ describe :kernel_integer_string_base, shared: true do
   end
 
   it "raises an ArgumentError if there are multiple leading -s" do
-    -> { Integer("--1", 9) }.should raise_error(ArgumentError)
-    -> { Integer("---1", 9) }.should raise_error(ArgumentError)
+    -> { Integer("--1", 9) }.should.raise(ArgumentError)
+    -> { Integer("---1", 9) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if there are trailing -s" do
-    -> { Integer("1-", 12) }.should raise_error(ArgumentError)
-    -> { Integer("1---", 12) }.should raise_error(ArgumentError)
+    -> { Integer("1-", 12) }.should.raise(ArgumentError)
+    -> { Integer("1---", 12) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if there is a period" do
-    -> { Integer("0.0", 3) }.should raise_error(ArgumentError)
+    -> { Integer("0.0", 3) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for an empty String" do
-    -> { Integer("", 12) }.should raise_error(ArgumentError)
+    -> { Integer("", 12) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for a base of 1" do
-    -> { Integer("1", 1) }.should raise_error(ArgumentError)
+    -> { Integer("1", 1) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for a base of 37" do
-    -> { Integer("1", 37) }.should raise_error(ArgumentError)
+    -> { Integer("1", 37) }.should.raise(ArgumentError)
   end
 
   it "accepts wholly lowercase alphabetic strings for bases > 10" do
@@ -469,8 +500,8 @@ describe :kernel_integer_string_base, shared: true do
   end
 
   it "raises an ArgumentError for letters invalid in the given base" do
-    -> { Integer('z',19) }.should raise_error(ArgumentError)
-    -> { Integer('c00o',2) }.should raise_error(ArgumentError)
+    -> { Integer('z',19) }.should.raise(ArgumentError)
+    -> { Integer('c00o',2) }.should.raise(ArgumentError)
   end
 
   %w(x X).each do |x|
@@ -491,12 +522,12 @@ describe :kernel_integer_string_base, shared: true do
 
     2.upto(15) do |base|
       it "raises an ArgumentError if the number begins with 0#{x} and the base is #{base}" do
-        -> { Integer("0#{x}1", base) }.should raise_error(ArgumentError)
+        -> { Integer("0#{x}1", base) }.should.raise(ArgumentError)
       end
     end
 
     it "raises an ArgumentError if the number cannot be parsed as hex and the base is 16" do
-      -> { Integer("0#{x}g", 16) }.should raise_error(ArgumentError)
+      -> { Integer("0#{x}g", 16) }.should.raise(ArgumentError)
     end
   end
 
@@ -517,7 +548,7 @@ describe :kernel_integer_string_base, shared: true do
     end
 
     it "raises an ArgumentError if the number cannot be parsed as binary and the base is 2" do
-      -> { Integer("0#{b}2", 2) }.should raise_error(ArgumentError)
+      -> { Integer("0#{b}2", 2) }.should.raise(ArgumentError)
     end
   end
 
@@ -538,12 +569,12 @@ describe :kernel_integer_string_base, shared: true do
     end
 
     it "raises an ArgumentError if the number cannot be parsed as octal and the base is 8" do
-      -> { Integer("0#{o}9", 8) }.should raise_error(ArgumentError)
+      -> { Integer("0#{o}9", 8) }.should.raise(ArgumentError)
     end
 
     2.upto(7) do |base|
       it "raises an ArgumentError if the number begins with 0#{o} and the base is #{base}" do
-        -> { Integer("0#{o}1", base) }.should raise_error(ArgumentError)
+        -> { Integer("0#{o}1", base) }.should.raise(ArgumentError)
       end
     end
   end
@@ -565,18 +596,18 @@ describe :kernel_integer_string_base, shared: true do
     end
 
     it "raises an ArgumentError if the number cannot be parsed as decimal and the base is 10" do
-      -> { Integer("0#{d}a", 10) }.should raise_error(ArgumentError)
+      -> { Integer("0#{d}a", 10) }.should.raise(ArgumentError)
     end
 
     2.upto(9) do |base|
       it "raises an ArgumentError if the number begins with 0#{d} and the base is #{base}" do
-        -> { Integer("0#{d}1", base) }.should raise_error(ArgumentError)
+        -> { Integer("0#{d}1", base) }.should.raise(ArgumentError)
       end
     end
   end
 
   it "raises an ArgumentError if a base is given for a non-String value" do
-    -> { Integer(98, 15) }.should raise_error(ArgumentError)
+    -> { Integer(98, 15) }.should.raise(ArgumentError, "base specified for non string value")
   end
 
   it "tries to convert the base to an integer using to_int" do
@@ -589,7 +620,7 @@ describe :kernel_integer_string_base, shared: true do
   it "raises a TypeError if it is not an integer and does not respond to #to_i" do
     -> {
       Integer("777", "8")
-    }.should raise_error(TypeError, "no implicit conversion of String into Integer")
+    }.should.raise(TypeError, "no implicit conversion of String into Integer")
   end
 
   describe "when passed exception: false" do
@@ -607,208 +638,184 @@ describe :kernel_integer_string_base, shared: true do
       end
     end
   end
-end
 
-describe :kernel_Integer, shared: true do
   it "raises an ArgumentError when the String contains digits out of range of radix 2" do
     str = "23456789abcdefghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 2) }.should raise_error(ArgumentError)
+    -> { Integer(str, 2) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 3" do
     str = "3456789abcdefghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 3) }.should raise_error(ArgumentError)
+    -> { Integer(str, 3) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 4" do
     str = "456789abcdefghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 4) }.should raise_error(ArgumentError)
+    -> { Integer(str, 4) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 5" do
     str = "56789abcdefghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 5) }.should raise_error(ArgumentError)
+    -> { Integer(str, 5) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 6" do
     str = "6789abcdefghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 6) }.should raise_error(ArgumentError)
+    -> { Integer(str, 6) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 7" do
     str = "789abcdefghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 7) }.should raise_error(ArgumentError)
+    -> { Integer(str, 7) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 8" do
     str = "89abcdefghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 8) }.should raise_error(ArgumentError)
+    -> { Integer(str, 8) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 9" do
     str = "9abcdefghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 9) }.should raise_error(ArgumentError)
+    -> { Integer(str, 9) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 10" do
     str = "abcdefghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 10) }.should raise_error(ArgumentError)
+    -> { Integer(str, 10) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 11" do
     str = "bcdefghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 11) }.should raise_error(ArgumentError)
+    -> { Integer(str, 11) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 12" do
     str = "cdefghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 12) }.should raise_error(ArgumentError)
+    -> { Integer(str, 12) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 13" do
     str = "defghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 13) }.should raise_error(ArgumentError)
+    -> { Integer(str, 13) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 14" do
     str = "efghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 14) }.should raise_error(ArgumentError)
+    -> { Integer(str, 14) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 15" do
     str = "fghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 15) }.should raise_error(ArgumentError)
+    -> { Integer(str, 15) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 16" do
     str = "ghijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 16) }.should raise_error(ArgumentError)
+    -> { Integer(str, 16) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 17" do
     str = "hijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 17) }.should raise_error(ArgumentError)
+    -> { Integer(str, 17) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 18" do
     str = "ijklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 18) }.should raise_error(ArgumentError)
+    -> { Integer(str, 18) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 19" do
     str = "jklmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 19) }.should raise_error(ArgumentError)
+    -> { Integer(str, 19) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 20" do
     str = "klmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 20) }.should raise_error(ArgumentError)
+    -> { Integer(str, 20) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 21" do
     str = "lmnopqrstuvwxyz"
-    -> { @object.send(@method, str, 21) }.should raise_error(ArgumentError)
+    -> { Integer(str, 21) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 22" do
     str = "mnopqrstuvwxyz"
-    -> { @object.send(@method, str, 22) }.should raise_error(ArgumentError)
+    -> { Integer(str, 22) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 23" do
     str = "nopqrstuvwxyz"
-    -> { @object.send(@method, str, 23) }.should raise_error(ArgumentError)
+    -> { Integer(str, 23) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 24" do
     str = "opqrstuvwxyz"
-    -> { @object.send(@method, str, 24) }.should raise_error(ArgumentError)
+    -> { Integer(str, 24) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 25" do
     str = "pqrstuvwxyz"
-    -> { @object.send(@method, str, 25) }.should raise_error(ArgumentError)
+    -> { Integer(str, 25) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 26" do
     str = "qrstuvwxyz"
-    -> { @object.send(@method, str, 26) }.should raise_error(ArgumentError)
+    -> { Integer(str, 26) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 27" do
     str = "rstuvwxyz"
-    -> { @object.send(@method, str, 27) }.should raise_error(ArgumentError)
+    -> { Integer(str, 27) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 28" do
     str = "stuvwxyz"
-    -> { @object.send(@method, str, 28) }.should raise_error(ArgumentError)
+    -> { Integer(str, 28) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 29" do
     str = "tuvwxyz"
-    -> { @object.send(@method, str, 29) }.should raise_error(ArgumentError)
+    -> { Integer(str, 29) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 30" do
     str = "uvwxyz"
-    -> { @object.send(@method, str, 30) }.should raise_error(ArgumentError)
+    -> { Integer(str, 30) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 31" do
     str = "vwxyz"
-    -> { @object.send(@method, str, 31) }.should raise_error(ArgumentError)
+    -> { Integer(str, 31) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 32" do
     str = "wxyz"
-    -> { @object.send(@method, str, 32) }.should raise_error(ArgumentError)
+    -> { Integer(str, 32) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 33" do
     str = "xyz"
-    -> { @object.send(@method, str, 33) }.should raise_error(ArgumentError)
+    -> { Integer(str, 33) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 34" do
     str = "yz"
-    -> { @object.send(@method, str, 34) }.should raise_error(ArgumentError)
+    -> { Integer(str, 34) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 35" do
     str = "z"
-    -> { @object.send(@method, str, 35) }.should raise_error(ArgumentError)
+    -> { Integer(str, 35) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the String contains digits out of range of radix 36" do
-    -> { @object.send(@method, "{", 36) }.should raise_error(ArgumentError)
+    -> { Integer("{", 36) }.should.raise(ArgumentError)
   end
 end
 
 describe "Kernel.Integer" do
-  it_behaves_like :kernel_Integer, :Integer_method, KernelSpecs
-
-  # TODO: fix these specs
-  it_behaves_like :kernel_integer, :Integer, Kernel
-  it_behaves_like :kernel_integer_string, :Integer
-
-  it_behaves_like :kernel_integer_string_base, :Integer
-
   it "is a public method" do
-    Kernel.Integer(10).should == 10
-  end
-end
-
-describe "Kernel#Integer" do
-  it_behaves_like :kernel_Integer, :Integer_function, KernelSpecs
-
-  # TODO: fix these specs
-  it_behaves_like :kernel_integer, :Integer, Object.new
-  it_behaves_like :kernel_integer_string, :Integer
-
-  it_behaves_like :kernel_integer_string_base, :Integer
-
-  it "is a private method" do
-    Kernel.should have_private_instance_method(:Integer)
+    Kernel.public_methods(false).should.include?(:Integer)
   end
 end

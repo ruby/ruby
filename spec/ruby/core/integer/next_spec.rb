@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/next'
 
 describe "Integer#next" do
-  it_behaves_like :integer_next, :next
+  it "is an alias of Integer#succ" do
+    Integer.instance_method(:next).should == Integer.instance_method(:succ)
+  end
 end

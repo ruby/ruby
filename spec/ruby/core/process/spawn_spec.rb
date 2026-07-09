@@ -51,7 +51,7 @@ describe "Process.spawn" do
   it "returns the process ID of the new process as an Integer" do
     pid = Process.spawn(*ruby_exe, "-e", "exit")
     Process.wait pid
-    pid.should be_an_instance_of(Integer)
+    pid.should.instance_of?(Integer)
   end
 
   it "returns immediately" do
@@ -93,11 +93,11 @@ describe "Process.spawn" do
     end
 
     it "raises an ArgumentError if the command includes a null byte" do
-      -> { Process.spawn "\000" }.should raise_error(ArgumentError)
+      -> { Process.spawn "\000" }.should.raise(ArgumentError)
     end
 
     it "raises a TypeError if the argument does not respond to #to_str" do
-      -> { Process.spawn :echo }.should raise_error(TypeError)
+      -> { Process.spawn :echo }.should.raise(TypeError)
     end
   end
 
@@ -122,11 +122,11 @@ describe "Process.spawn" do
     end
 
     it "raises an ArgumentError if an argument includes a null byte" do
-      -> { Process.spawn "echo", "\000" }.should raise_error(ArgumentError)
+      -> { Process.spawn "echo", "\000" }.should.raise(ArgumentError)
     end
 
     it "raises a TypeError if an argument does not respond to #to_str" do
-      -> { Process.spawn "echo", :foo }.should raise_error(TypeError)
+      -> { Process.spawn "echo", :foo }.should.raise(TypeError)
     end
   end
 
@@ -178,19 +178,19 @@ describe "Process.spawn" do
     end
 
     it "raises an ArgumentError if the Array does not have exactly two elements" do
-      -> { Process.spawn([]) }.should raise_error(ArgumentError)
-      -> { Process.spawn([:a]) }.should raise_error(ArgumentError)
-      -> { Process.spawn([:a, :b, :c]) }.should raise_error(ArgumentError)
+      -> { Process.spawn([]) }.should.raise(ArgumentError)
+      -> { Process.spawn([:a]) }.should.raise(ArgumentError)
+      -> { Process.spawn([:a, :b, :c]) }.should.raise(ArgumentError)
     end
 
     it "raises an ArgumentError if the Strings in the Array include a null byte" do
-      -> { Process.spawn ["\000", "echo"] }.should raise_error(ArgumentError)
-      -> { Process.spawn ["echo", "\000"] }.should raise_error(ArgumentError)
+      -> { Process.spawn ["\000", "echo"] }.should.raise(ArgumentError)
+      -> { Process.spawn ["echo", "\000"] }.should.raise(ArgumentError)
     end
 
     it "raises a TypeError if an element in the Array does not respond to #to_str" do
-      -> { Process.spawn ["echo", :echo] }.should raise_error(TypeError)
-      -> { Process.spawn [:echo, "echo"] }.should raise_error(TypeError)
+      -> { Process.spawn ["echo", :echo] }.should.raise(TypeError)
+      -> { Process.spawn [:echo, "echo"] }.should.raise(TypeError)
     end
   end
 
@@ -256,19 +256,19 @@ describe "Process.spawn" do
   it "raises an ArgumentError if an environment key includes an equals sign" do
     -> do
       Process.spawn({"FOO=" => "BAR"}, "echo #{@var}>#{@name}")
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if an environment key includes a null byte" do
     -> do
       Process.spawn({"\000" => "BAR"}, "echo #{@var}>#{@name}")
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if an environment value includes a null byte" do
     -> do
       Process.spawn({"FOO" => "\000"}, "echo #{@var}>#{@name}")
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 
   # :unsetenv_others
@@ -285,7 +285,7 @@ describe "Process.spawn" do
     it "unsets other environment variables when given a true :unsetenv_others option" do
       ENV["FOO"] = "BAR"
       Process.wait Process.spawn(*@common_env_spawn_args, unsetenv_others: true)
-      $?.success?.should be_true
+      $?.success?.should == true
       File.read(@name).should == "\n"
     end
   end
@@ -293,7 +293,7 @@ describe "Process.spawn" do
   it "does not unset other environment variables when given a false :unsetenv_others option" do
     ENV["FOO"] = "BAR"
     Process.wait Process.spawn(*@common_env_spawn_args, unsetenv_others: false)
-    $?.success?.should be_true
+    $?.success?.should == true
     File.read(@name).should == "BAR\n"
   end
 
@@ -301,7 +301,7 @@ describe "Process.spawn" do
     it "does not unset environment variables included in the environment hash" do
       env = @minimal_env.merge({"FOO" => "BAR"})
       Process.wait Process.spawn(env, "echo #{@var}>#{@name}", unsetenv_others: true)
-      $?.success?.should be_true
+      $?.success?.should == true
       File.read(@name).should == "BAR\n"
     end
   end
@@ -363,17 +363,17 @@ describe "Process.spawn" do
     end
 
     it "raises an ArgumentError if given a negative :pgroup option" do
-      -> { Process.spawn("echo", pgroup: -1) }.should raise_error(ArgumentError)
+      -> { Process.spawn("echo", pgroup: -1) }.should.raise(ArgumentError)
     end
 
     it "raises a TypeError if given a symbol as :pgroup option" do
-      -> { Process.spawn("echo", pgroup: :true) }.should raise_error(TypeError)
+      -> { Process.spawn("echo", pgroup: :true) }.should.raise(TypeError)
     end
   end
 
   platform_is :windows do
     it "raises an ArgumentError if given :pgroup option" do
-      -> { Process.spawn("echo", pgroup: false) }.should raise_error(ArgumentError)
+      -> { Process.spawn("echo", pgroup: false) }.should.raise(ArgumentError)
     end
   end
 
@@ -412,6 +412,12 @@ describe "Process.spawn" do
       -> do
         Process.wait Process.spawn(ruby_cmd("print Dir.pwd"), chdir: dir)
       end.should output_to_fd(@dir)
+    end
+
+    it "raises an Errno::ENOENT when a given path doesn't exist" do
+      -> do
+        Process.wait Process.spawn(ruby_cmd("print Dir.pwd"), chdir: "nonexistent")
+      end.should.raise(Errno::ENOENT, "No such file or directory - nonexistent")
     end
   end
 
@@ -452,7 +458,7 @@ describe "Process.spawn" do
           children.each do |child|
             -> do
               Process.kill("TERM", child)
-            end.should raise_error(Errno::ESRCH)
+            end.should.raise(Errno::ESRCH)
           end
         end
       end
@@ -678,53 +684,93 @@ describe "Process.spawn" do
   # error handling
 
   it "raises an ArgumentError if passed no command arguments" do
-    -> { Process.spawn }.should raise_error(ArgumentError)
+    -> { Process.spawn }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if passed env or options but no command arguments" do
-    -> { Process.spawn({}) }.should raise_error(ArgumentError)
+    -> { Process.spawn({}) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if passed env and options but no command arguments" do
-    -> { Process.spawn({}, {}) }.should raise_error(ArgumentError)
+    -> { Process.spawn({}, {}) }.should.raise(ArgumentError)
   end
 
   it "raises an Errno::ENOENT for an empty string" do
-    -> { Process.spawn "" }.should raise_error(Errno::ENOENT)
+    -> { Process.spawn "" }.should.raise(Errno::ENOENT)
   end
 
   it "raises an Errno::ENOENT if the command does not exist" do
-    -> { Process.spawn "nonesuch" }.should raise_error(Errno::ENOENT)
+    -> { Process.spawn "nonesuch" }.should.raise(Errno::ENOENT, "No such file or directory - nonesuch")
+  end
+
+  it "sets $? to exit status 127 when the command does not exist" do
+    Process.spawn("nonesuch") rescue nil
+    $?.exitstatus.should == 127
+  end
+
+  it "raises an Errno::ENOENT if the file does not exist" do
+    -> { Process.spawn "./nonesuch" }.should.raise(Errno::ENOENT, "No such file or directory - ./nonesuch")
+  end
+
+  it "sets $? to exit status 127 when the file does not exist" do
+    Process.spawn("./nonesuch") rescue nil
+    $?.exitstatus.should == 127
+  end
+
+  platform_is_not :windows do
+    it "raises an Errno::EACCES when the path is a directory" do
+      -> { Process.spawn "./" }.should.raise(Errno::EACCES, "Permission denied - ./")
+    end
   end
 
   unless File.executable?(__FILE__) # Some FS (e.g. vboxfs) locate all files executable
     platform_is_not :windows do
       it "raises an Errno::EACCES when the file does not have execute permissions" do
-        -> { Process.spawn __FILE__ }.should raise_error(Errno::EACCES)
+        -> { Process.spawn __FILE__ }.should.raise(Errno::EACCES, "Permission denied - #{__FILE__}")
+      end
+
+      it "sets $? to exit status 127 when the file does not have execute permissions" do
+        Process.spawn(__FILE__) rescue nil
+        $?.exitstatus.should == 127
+      end
+
+      it "raises an Errno::ENOENT when a non-executable file is found in PATH" do
+        dir = tmp("spawn_path_non_executable_dir")
+        mkdir_p dir
+        begin
+          exe = 'process-spawn-non-executable-in-path'
+          File.write("#{dir}/#{exe}", "#!/bin/sh\necho hi")
+          File.chmod(0644, "#{dir}/#{exe}")
+          env = { "PATH" => "#{dir}#{File::PATH_SEPARATOR}#{ENV['PATH']}" }
+          -> { Process.spawn(env, exe) }.should.raise(Errno::ENOENT, "No such file or directory - #{exe}")
+          $?.exitstatus.should == 127
+        ensure
+          rm_r dir
+        end
       end
     end
 
     platform_is :windows do
       it "raises Errno::EACCES or Errno::ENOEXEC when the file is not an executable file" do
-        -> { Process.spawn __FILE__ }.should raise_error(SystemCallError) { |e|
-          [Errno::EACCES, Errno::ENOEXEC].should include(e.class)
+        -> { Process.spawn __FILE__ }.should.raise(SystemCallError) { |e|
+          [Errno::EACCES, Errno::ENOEXEC].should.include?(e.class)
         }
       end
     end
   end
 
   it "raises an Errno::EACCES or Errno::EISDIR when passed a directory" do
-    -> { Process.spawn __dir__ }.should raise_error(SystemCallError) { |e|
-      [Errno::EACCES, Errno::EISDIR].should include(e.class)
+    -> { Process.spawn __dir__ }.should.raise(SystemCallError) { |e|
+      [Errno::EACCES, Errno::EISDIR].should.include?(e.class)
     }
   end
 
   it "raises an ArgumentError when passed a string key in options" do
-    -> { Process.spawn("echo", "chdir" => Dir.pwd) }.should raise_error(ArgumentError)
+    -> { Process.spawn("echo", "chdir" => Dir.pwd) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when passed an unknown option key" do
-    -> { Process.spawn("echo", nonesuch: :foo) }.should raise_error(ArgumentError)
+    -> { Process.spawn("echo", nonesuch: :foo) }.should.raise(ArgumentError)
   end
 
   platform_is_not :windows, :aix do

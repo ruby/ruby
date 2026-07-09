@@ -23,13 +23,13 @@ with_feature :readline do
     end
 
     it "raises an IndexError when there is no item at the passed index" do
-      -> { Readline::HISTORY[-10] }.should raise_error(IndexError)
-      -> { Readline::HISTORY[-9] }.should raise_error(IndexError)
-      -> { Readline::HISTORY[-8] }.should raise_error(IndexError)
+      -> { Readline::HISTORY[-10] }.should.raise(IndexError)
+      -> { Readline::HISTORY[-9] }.should.raise(IndexError)
+      -> { Readline::HISTORY[-8] }.should.raise(IndexError)
 
-      -> { Readline::HISTORY[8] }.should raise_error(IndexError)
-      -> { Readline::HISTORY[9] }.should raise_error(IndexError)
-      -> { Readline::HISTORY[10] }.should raise_error(IndexError)
+      -> { Readline::HISTORY[8] }.should.raise(IndexError)
+      -> { Readline::HISTORY[9] }.should.raise(IndexError)
+      -> { Readline::HISTORY[10] }.should.raise(IndexError)
     end
   end
 end

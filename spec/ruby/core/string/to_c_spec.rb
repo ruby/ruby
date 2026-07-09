@@ -38,7 +38,7 @@ describe "String#to_c" do
   it "raises Encoding::CompatibilityError if String is in not ASCII-compatible encoding" do
     -> {
       '79+4i'.encode("UTF-16").to_c
-    }.should raise_error(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
+    }.should.raise(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
   end
 
   it "treats a sequence of underscores as an end of Complex string" do

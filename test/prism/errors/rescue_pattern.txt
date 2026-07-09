@@ -1,4 +1,5 @@
 a rescue b => c in d
+                ^~ unexpected 'in'; '=>' is a non-associative operator
                 ^~ unexpected 'in', expecting end-of-input
                 ^~ unexpected 'in', ignoring it
 

@@ -1,6 +1,15 @@
 require_relative "../../spec_helper"
-require_relative 'shared/target'
 
 describe "Refinement#target" do
-  it_behaves_like :refinement_target, :target
+  it "returns the class refined by the receiver" do
+    refinement_int = nil
+
+    Module.new do
+      refine Integer do
+        refinement_int = self
+      end
+    end
+
+    refinement_int.target.should == Integer
+  end
 end

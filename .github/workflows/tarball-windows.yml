@@ -1,0 +1,163 @@
+name: tarball-windows (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      archname:
+        description: 'archname (e.g. snapshot-master)'
+        required: true
+        type: string
+      notify-release-channel:
+        description: 'Also send failure notifications to SNAPSHOT_SLACK_WEBHOOK_URL (schedule/release builds).'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      SIMPLER_ALERTS_URL:
+        required: false
+      SNAPSHOT_SLACK_WEBHOOK_URL:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    strategy:
+      matrix:
+        include:
+          - os: '2022'
+            test_task: check
+          - os: '2025-vs2026'
+            test_task: check
+      fail-fast: false
+    runs-on: windows-${{ matrix.os }}
+    defaults:
+      run:
+        shell: cmd
+        working-directory: build
+    name: Windows ${{ matrix.os }} (${{ matrix.test_task }})
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      PATCH: C:\msys64\usr\bin\patch.exe
+      OS_VER: windows-${{ matrix.os }}
+      # see https://github.com/ruby/ruby/commit/9ff4399decef0036897d3cfb9ac2c710dea913ca
+      OPENSSL_MODULES: C:\vcpkg\installed\x64-windows\bin
+    steps:
+      - run: md build
+        working-directory:
+
+      - uses: ruby/setup-ruby@d45b1a4e94b71acab930e56e79c6aa188764e7f9 # v1.316.0
+        with:
+          ruby-version: '3.2'
+          bundler: none
+          windows-toolchain: none
+
+      - uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2.32.0
+        id: setup-msys2
+        with:
+          update: true
+          install: >-
+            patch
+      - name: patch path
+        shell: msys2 {0}
+        run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
+        if: ${{ steps.setup-msys2.outcome == 'success' }}
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: C:\vcpkg\installed
+          key: ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-
+            ${{ runner.os }}-vcpkg-installed-
+      - name: Install libraries with vcpkg
+        run: |
+          vcpkg --triplet x64-windows install gmp libffi libyaml openssl zlib
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: Packages
+          path: pkg
+      - name: Extract
+        run: 7z x pkg/*.zip
+        working-directory:
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: snapshot-*/.downloaded-cache
+          key: downloaded-cache
+
+      - name: setup env
+        # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
+        # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
+        env:
+          ARCHNAME: ${{ inputs.archname }}
+        run: |
+          set > old.env
+          call ..\%ARCHNAME%\win32\vssetup.cmd
+          set TMP=%USERPROFILE%\AppData\Local\Temp
+          set TEMP=%USERPROFILE%\AppData\Local\Temp
+          set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
+          set > new.env
+
+      - name: update env
+        shell: pwsh
+        run: |
+          $old = (Get-Content old.env); $new = (Get-Content new.env)
+          del *.env
+          Compare-Object $old $new |
+            Where-Object { $_.SideIndicator -eq '=>' } |
+            Select-Object -ExpandProperty InputObject |
+            Add-Content -Path $env:GITHUB_ENV
+      - name: link libraries
+        run: |
+          for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
+            mklink %%~nxI %%I
+          )
+      - name: Configure
+        env:
+          ARCHNAME: ${{ inputs.archname }}
+        run: >-
+          ../%ARCHNAME%/win32/configure.bat --disable-install-doc
+          --with-opt-dir=C:/vcpkg/installed/x64-windows
+      - run: nmake incs
+      - run: nmake extract-extlibs
+      - run: nmake
+        env:
+          YACC: win_bison
+
+      - name: ruby -v
+        run: .\ruby -v
+
+      - run: nmake test
+        timeout-minutes: 5
+
+      - run: nmake ${{ matrix.test_task }}
+        env:
+          RUBY_TESTOPTS: -j${{env.TEST_JOBS}}
+        timeout-minutes: 70
+        continue-on-error: ${{ matrix.continue-on-error || false }}
+
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github/actions/slack
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+        if: ${{ failure() }}
+      - uses: ./.github/actions/slack
+        with:
+          label: "${{ env.OS_VER }} / ${{ matrix.test_task }}"
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
+      - uses: ruby/action-slack@d260b61aa817726d5bedd22dd6cc305787fa4cdd # v4.0.0
+        with:
+          payload: |
+            {
+              "attachments": [{
+                "text": "${{ job.status }}: ${{ env.OS_VER }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ inputs.archname }}>",
+                "color": "danger"
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
+        if: failure() && inputs.notify-release-channel

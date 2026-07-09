@@ -38,20 +38,33 @@ describe "IO.binread" do
   end
 
   it "raises an ArgumentError when not passed a valid length" do
-    -> { IO.binread @fname, -1 }.should raise_error(ArgumentError)
+    -> { IO.binread @fname, -1 }.should.raise(ArgumentError)
   end
 
   it "raises an Errno::EINVAL when not passed a valid offset" do
-    -> { IO.binread @fname, 0, -1  }.should raise_error(Errno::EINVAL)
+    -> { IO.binread @fname, 0, -1  }.should.raise(Errno::EINVAL)
   end
 
   ruby_version_is ""..."4.0" do
     # https://bugs.ruby-lang.org/issues/19630
     it "warns about deprecation given a path with a pipe" do
-      cmd = "|echo ok"
       -> {
-        IO.binread(cmd)
+        IO.binread("|echo ok")
       }.should complain(/IO process creation with a leading '\|'/)
+    end
+  end
+
+  ruby_version_is "4.0" do
+    platform_is_not :windows do
+      it "raises Errno::ENOENT when path starts with a pipe" do
+        -> { IO.binread("|echo ok") }.should.raise(Errno::ENOENT)
+      end
+    end
+
+    platform_is :windows do
+      it "raises Errno::EINVAL when path starts with a pipe" do
+        -> { IO.binread("|echo ok") }.should.raise(Errno::EINVAL)
+      end
     end
   end
 end

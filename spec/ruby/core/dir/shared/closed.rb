@@ -4,6 +4,6 @@ describe :dir_closed, shared: true do
       dir = Dir.open DirSpecs.mock_dir
       dir.close
       dir.send(@method) {}
-    }.should raise_error(IOError)
+    }.should.raise(IOError)
   end
 end

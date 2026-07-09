@@ -1,7 +1,14 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
-require_relative 'shared/length'
 
 describe "Array#size" do
-  it_behaves_like :array_length, :size
+  it "returns the number of elements" do
+    [].size.should == 0
+    [1, 2, 3].size.should == 3
+  end
+
+  it "properly handles recursive arrays" do
+    ArraySpecs.empty_recursive_array.size.should == 1
+    ArraySpecs.recursive_array.size.should == 8
+  end
 end

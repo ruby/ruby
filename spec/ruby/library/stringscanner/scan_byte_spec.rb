@@ -48,7 +48,7 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
           s = StringScanner.new("abc")
           s.scan_byte
           s.should.matched?
-          s[:a].should be_nil
+          s[:a].should == nil
         end
       end
       version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4.3"
@@ -56,7 +56,7 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
           s = StringScanner.new("abc")
           s.scan_byte
           s.should.matched?
-          -> { s[:a] }.should raise_error(IndexError)
+          -> { s[:a] }.should.raise(IndexError)
         end
       end
 
@@ -90,7 +90,7 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
 
           s.scan_byte
           s.should.matched?
-          -> { s[:a] }.should raise_error(IndexError)
+          -> { s[:a] }.should.raise(IndexError)
         end
       end
     end

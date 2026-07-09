@@ -9,6 +9,11 @@ module Prism
     base = File.expand_path("errors", __dir__)
     filepaths = Dir[ENV.fetch("FOCUS", "**/*.txt"), base: base]
 
+    PARSE_Y_EXCLUDES = [
+      # https://bugs.ruby-lang.org/issues/20409
+      "#{base}/4.1/end_block_exit.txt"
+    ]
+
     filepaths.each do |filepath|
       ruby_versions_for(filepath).each do |version|
         define_method(:"test_#{version}_#{File.basename(filepath, ".txt")}") do
@@ -111,7 +116,9 @@ module Prism
       expected = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
 
       source = expected.lines.grep_v(/^\s*\^/).join.gsub(/\n*\z/, "")
-      refute_valid_syntax(source) if CURRENT_MAJOR_MINOR == version
+      if CURRENT_MAJOR_MINOR == version && !PARSE_Y_EXCLUDES.include?(filepath)
+        refute_valid_syntax(source)
+      end
 
       result = Prism.parse(source, version: version)
       errors = result.errors

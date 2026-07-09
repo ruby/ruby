@@ -19,7 +19,7 @@ describe 'Thread#fetch' do
     it 'raises a KeyError when the Thread does not have a fiber-local variable of the same name' do
       th = Thread.new {}
       th.join
-      -> { th.fetch(:cat) }.should raise_error(KeyError)
+      -> { th.fetch(:cat) }.should.raise(KeyError)
     end
 
     it 'returns the value of the fiber-local variable if value has been assigned' do
@@ -60,7 +60,7 @@ describe 'Thread#fetch' do
   end
 
   it 'raises an ArgumentError when not passed one or two arguments' do
-    -> { Thread.current.fetch() }.should raise_error(ArgumentError)
-    -> { Thread.current.fetch(1, 2, 3) }.should raise_error(ArgumentError)
+    -> { Thread.current.fetch() }.should.raise(ArgumentError)
+    -> { Thread.current.fetch(1, 2, 3) }.should.raise(ArgumentError)
   end
 end

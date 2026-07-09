@@ -5,13 +5,13 @@ describe "NilClass#=~" do
     o = nil
 
     suppress_warning do
-      (o =~ /Object/).should   be_nil
-      (o =~ 'Object').should   be_nil
-      (o =~ Object).should     be_nil
-      (o =~ Object.new).should be_nil
-      (o =~ nil).should        be_nil
-      (o =~ false).should      be_nil
-      (o =~ true).should       be_nil
+      (o =~ /Object/).should == nil
+      (o =~ 'Object').should == nil
+      (o =~ Object).should == nil
+      (o =~ Object.new).should == nil
+      (o =~ nil).should == nil
+      (o =~ false).should == nil
+      (o =~ true).should == nil
     end
   end
 

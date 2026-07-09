@@ -597,7 +597,7 @@ static const rb_data_type_t rb_process_status_type = {
         .dfree = RUBY_DEFAULT_FREE,
         .dsize = NULL,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE
@@ -1740,7 +1740,7 @@ memsize_exec_arg(const void *ptr)
 static const rb_data_type_t exec_arg_data_type = {
     "exec_arg",
     {mark_exec_arg, RUBY_TYPED_DEFAULT_FREE, memsize_exec_arg},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
 #ifdef _WIN32
@@ -2204,7 +2204,7 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
         if (SYMBOL_P(key))
             rb_raise(rb_eArgError, "wrong exec option symbol: % "PRIsVALUE,
                      key);
-        rb_raise(rb_eArgError, "wrong exec option");
+        rb_raise(rb_eArgError, "wrong exec option: %"PRIsVALUE, rb_obj_class(key));
     }
     return ST_CONTINUE;
 }
@@ -2726,7 +2726,7 @@ open_func(void *ptr)
 static void
 rb_execarg_allocate_dup2_tmpbuf(struct rb_execarg *eargp, long len)
 {
-    rb_alloc_tmp_buffer(&eargp->dup2_tmpbuf, run_exec_dup2_tmpbuf_size(len));
+    rb_alloc_tmp_buffer(&eargp->dup2_tmpbuf, run_exec_dup2_tmpbuf_size(len), false);
 }
 
 static VALUE
@@ -2888,7 +2888,6 @@ void
 rb_execarg_parent_end(VALUE execarg_obj)
 {
     execarg_parent_end(execarg_obj);
-    RB_GC_GUARD(execarg_obj);
 }
 
 static void
@@ -3853,6 +3852,7 @@ getresgid(rb_gid_t *rgid, rb_gid_t *egid, rb_gid_t *sgid)
 #define HAVE_GETRESGID
 #endif
 
+#if !defined(RUBY_ASAN_ENABLED)
 static int
 has_privilege(void)
 {
@@ -3914,6 +3914,7 @@ has_privilege(void)
 
     return 0;
 }
+#endif
 #endif
 
 struct child_handler_disabler_state

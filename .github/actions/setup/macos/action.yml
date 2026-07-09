@@ -13,6 +13,8 @@ runs:
     - name: brew
       shell: bash
       run: |
+        brew uninstall bicep
+        brew untap aws/tap azure/bicep
         brew install --quiet jemalloc gmp libffi openssl@3 zlib autoconf automake libtool
 
     - name: Set ENV

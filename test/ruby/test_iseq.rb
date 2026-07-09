@@ -212,6 +212,26 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  def test_compile_file_options
+    Tempfile.create(%w"test_iseq .rb") do |f|
+      f.puts('_ = "test"')
+      f.close
+      iseq = RubyVM::InstructionSequence.compile_file(f.path, { frozen_string_literal: false })
+      refute_predicate iseq.eval, :frozen?
+
+      iseq = RubyVM::InstructionSequence.compile_file(f.path, { frozen_string_literal: true })
+      assert_predicate iseq.eval, :frozen?
+    end
+  end
+
+  def test_compile_options
+    iseq = RubyVM::InstructionSequence.compile("'test'", nil, nil, nil, { frozen_string_literal: false })
+    refute_predicate iseq.eval, :frozen?
+
+    iseq = RubyVM::InstructionSequence.compile("'test'", nil, nil, nil, { frozen_string_literal: true })
+    assert_predicate iseq.eval, :frozen?
+  end
+
   LINE_BEFORE_METHOD = __LINE__
   def method_test_line_trace
 
@@ -353,6 +373,20 @@ class TestISeq < Test::Unit::TestCase
     assert_predicate(s2, :frozen?)
     assert_not_predicate(s3, :frozen?)
     assert_not_predicate(s4, :frozen?)
+  end
+
+  def test_frozen_string_literal_compile_option_file
+    Tempfile.create(%w[fsl .rb]) do |f|
+      f.write("['foo', 'foo', \"\#{$f}foo\", \"\#{'foo'}\"]\n")
+      f.flush
+      $f = 'f'
+      s1, s2, s3, s4 = RubyVM::InstructionSequence
+        .compile_file(f.path, frozen_string_literal: true).eval
+      assert_predicate(s1, :frozen?)
+      assert_predicate(s2, :frozen?)
+      assert_not_predicate(s3, :frozen?)
+      assert_not_predicate(s4, :frozen?)
+    end
   end
 
   # Safe call chain is not optimized when Coverage is running.
@@ -872,6 +906,10 @@ class TestISeq < Test::Unit::TestCase
     assert_ruby_status([], "BEGIN {exit}; while true && true; end")
   end
 
+  def test_short_circuited_loop_condition
+    assert_ruby_status([], "while true || true; exit; end; abort")
+  end
+
   def test_unreachable_syntax_error
     mesg = /Invalid break/
     assert_syntax_error("false and break", mesg)
@@ -913,6 +951,10 @@ class TestISeq < Test::Unit::TestCase
         end
       RUBY
     end
+  end
+
+  def test_unreachable_find_pattern_in_else_branch
+    assert_in_out_err([], "if []; else; a => [*, 42, *]; end")
   end
 
   def test_serialize_anonymous_outer_variables

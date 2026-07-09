@@ -1,9 +1,10 @@
 #include <psych.h>
 
+#ifndef PSYCH_USE_LIBFYAML
+
 VALUE cPsychParser;
 
 static ID id_read;
-static ID id_path;
 static ID id_empty;
 static ID id_start_stream;
 static ID id_end_stream;
@@ -32,9 +33,20 @@ static int io_reader(void * data, unsigned char *buf, size_t size, size_t *read)
     *read = 0;
 
     if(! NIL_P(string)) {
-        void * str = (void *)StringValuePtr(string);
-        *read = (size_t)RSTRING_LEN(string);
-        memcpy(buf, str, *read);
+        char * str = StringValuePtr(string);
+        size_t len = (size_t)RSTRING_LEN(string);
+
+        /* IO#read(size) is documented to return at most `size` bytes, but a
+         * misbehaving IO-like object may return more. Clamp the copy to the
+         * buffer libyaml gave us to avoid writing past its end, rounding down
+         * to a character boundary so a multibyte character is never split. */
+        if(len > size) {
+            rb_encoding * enc = rb_enc_get(string);
+            len = (size_t)(rb_enc_left_char_head(str, str + size, str + len, enc) - str);
+        }
+
+        *read = len;
+        memcpy(buf, str, len);
     }
 
     return 1;
@@ -548,7 +560,6 @@ void Init_psych_parser(void)
     rb_define_method(cPsychParser, "mark", mark, 0);
 
     id_read            = rb_intern("read");
-    id_path            = rb_intern("path");
     id_empty           = rb_intern("empty");
     id_start_stream    = rb_intern("start_stream");
     id_end_stream      = rb_intern("end_stream");
@@ -562,3 +573,5 @@ void Init_psych_parser(void)
     id_end_mapping     = rb_intern("end_mapping");
     id_event_location  = rb_intern("event_location");
 }
+
+#endif /* PSYCH_USE_LIBFYAML */

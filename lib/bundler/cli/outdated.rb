@@ -26,6 +26,9 @@ module Bundler
     def run
       check_for_deployment_mode!
 
+      Bundler::CLI::Common.validate_cooldown!(options[:cooldown])
+      Bundler.settings.set_command_option_if_given :cooldown, options[:cooldown]
+
       Bundler.definition.validate_runtime!
       current_specs = Bundler.ui.silence { Bundler.definition.resolve }
 
@@ -74,7 +77,7 @@ module Bundler
         gemfile_specs + dependency_specs
       end
 
-      specs.sort_by(&:name).uniq(&:name).each do |current_spec|
+      specs_for_outdated_check(specs).each do |current_spec|
         next unless gems.empty? || gems.include?(current_spec.name)
 
         active_spec = retrieve_active_spec(definition, current_spec)
@@ -149,6 +152,12 @@ module Bundler
       end
     end
 
+    def specs_for_outdated_check(specs)
+      specs.group_by(&:name).values.filter_map do |matching_specs|
+        MatchPlatform.select_best_platform_match(matching_specs, Bundler.local_platform).first || matching_specs.first
+      end.sort_by(&:name)
+    end
+
     def retrieve_active_spec(definition, current_spec)
       active_spec = definition.resolve.find_by_name_and_platform(current_spec.name, current_spec.platform)
       return unless active_spec
@@ -203,6 +212,10 @@ module Bundler
 
       release_date = release_date_for(active_spec)
       spec_outdated_info += ", released #{release_date}" unless release_date.empty?
+
+      remaining = cooldown_days_remaining(active_spec)
+      spec_outdated_info += ", in cooldown for #{remaining} more day#{"s" if remaining > 1}" if remaining
+
       spec_outdated_info += ")"
 
       output_message = if options[:parseable]
@@ -219,12 +232,23 @@ module Bundler
     def gem_column_for(current_spec, active_spec, dependency, groups)
       current_version = "#{current_spec.version}#{current_spec.git_version}"
       spec_version = "#{active_spec.version}#{active_spec.git_version}"
+      remaining = cooldown_days_remaining(active_spec)
+      spec_version += " (cooldown #{remaining}d)" if remaining
       dependency = dependency.requirement if dependency
 
       ret_val = [active_spec.name, current_version, spec_version, dependency.to_s, groups.to_s]
       ret_val << release_date_for(active_spec)
       ret_val << loaded_from_for(active_spec).to_s if Bundler.ui.debug?
       ret_val
+    end
+
+    def cooldown_days_remaining(spec, now = Time.now)
+      return nil unless spec.respond_to?(:created_at) && spec.created_at
+      return nil unless spec.respond_to?(:remote) && spec.remote
+      days = spec.remote.effective_cooldown
+      return nil if days.nil? || days <= 0
+      remaining = days - ((now - spec.created_at) / 86_400.0)
+      remaining > 0 ? remaining.ceil : nil
     end
 
     def check_for_deployment_mode!

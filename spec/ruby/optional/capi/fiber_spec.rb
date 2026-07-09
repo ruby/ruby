@@ -10,7 +10,7 @@ describe "C-API Fiber function" do
   describe "rb_fiber_current" do
     it "returns the current fiber" do
       result = @s.rb_fiber_current()
-      result.should be_an_instance_of(Fiber)
+      result.should.instance_of?(Fiber)
       result.should == Fiber.current
     end
   end
@@ -19,9 +19,9 @@ describe "C-API Fiber function" do
     it "returns the fibers alive status" do
       fiber = Fiber.new { Fiber.yield }
       fiber.resume
-      @s.rb_fiber_alive_p(fiber).should be_true
+      @s.rb_fiber_alive_p(fiber).should == true
       fiber.resume
-      @s.rb_fiber_alive_p(fiber).should be_false
+      @s.rb_fiber_alive_p(fiber).should == false
     end
   end
 
@@ -43,8 +43,12 @@ describe "C-API Fiber function" do
   describe "rb_fiber_new" do
     it "returns a new fiber" do
       fiber = @s.rb_fiber_new
-      fiber.should be_an_instance_of(Fiber)
+      fiber.should.instance_of?(Fiber)
       fiber.resume(42).should == "42"
+    end
+
+    it "passes non-Ruby pointers to the fiber callback" do
+      @s.rb_fiber_new_with_pointer.should == true
     end
   end
 
@@ -61,7 +65,7 @@ describe "C-API Fiber function" do
       fiber.resume
 
       result = @s.rb_fiber_raise(fiber, "Boom!")
-      result.should be_an_instance_of(RuntimeError)
+      result.should.instance_of?(RuntimeError)
       result.message.should == "Boom!"
     end
 
@@ -79,7 +83,7 @@ describe "C-API Fiber function" do
       fiber.transfer
 
       result = @s.rb_fiber_raise(fiber, "Boom!")
-      result.should be_an_instance_of(RuntimeError)
+      result.should.instance_of?(RuntimeError)
       result.message.should == "Boom!"
     end
   end

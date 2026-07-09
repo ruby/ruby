@@ -28,8 +28,8 @@ describe "Time#ceil" do
   it "returns an instance of Time, even if #ceil is called on a subclass" do
     subclass = Class.new(Time)
     instance = subclass.at(0)
-    instance.class.should equal subclass
-    instance.ceil.should be_an_instance_of(Time)
+    instance.class.should.equal? subclass
+    instance.ceil.should.instance_of?(Time)
   end
 
   it "copies own timezone to the returning value" do

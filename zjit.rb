@@ -7,7 +7,7 @@
 # This module may not exist if ZJIT does not support the particular platform
 # for which CRuby is built.
 module RubyVM::ZJIT
-  # Blocks that are called when YJIT is enabled
+  # Blocks that are called when ZJIT is enabled
   @jit_hooks = []
   # Avoid calling a Ruby method here to avoid interfering with compilation tests
   if Primitive.rb_zjit_get_stats_file_path_p
@@ -58,8 +58,6 @@ class << RubyVM::ZJIT
   # A directive for the compiler to emit a breakpoint instruction at the call site of this method.
   # To show this to ZJIT, say `::RubyVM::ZJIT.induce_breakpoint!` verbatim.
   # Other forms are too dynamic to detect during compilation.
-  #
-  # Actually running this method does nothing, whether ZJIT sees the call or not.
   def induce_breakpoint! = nil
 
   # Check if `--zjit-stats` is used
@@ -113,6 +111,7 @@ class << RubyVM::ZJIT
     print_counters_with_prefix(prefix: 'definedivar_fallback_', prompt: 'definedivar fallback reasons', buf:, stats:, limit: 5)
     print_counters_with_prefix(prefix: 'invokeblock_handler_', prompt: 'invokeblock handler', buf:, stats:, limit: 10)
     print_counters_with_prefix(prefix: 'getblockparamproxy_handler_', prompt: 'getblockparamproxy handler', buf:, stats:, limit: 10)
+    print_counters_with_prefix(prefix: 'inline_reject_', prompt: 'HIR-level inlining rejection reasons', buf:, stats:, limit: 10)
 
     # Show most popular unsupported call features. Because each call can
     # use multiple complex features, a decrease in this number does not
@@ -130,16 +129,18 @@ class << RubyVM::ZJIT
       :send_count,
       :dynamic_send_count,
       :optimized_send_count,
-      :dynamic_setivar_count,
-      :dynamic_getivar_count,
-      :dynamic_definedivar_count,
       :iseq_optimized_send_count,
       :inline_cfunc_optimized_send_count,
       :inline_iseq_optimized_send_count,
+      :inline_method_count,
       :non_variadic_cfunc_optimized_send_count,
       :variadic_cfunc_optimized_send_count,
     ], buf:, stats:, right_align: true, base: :send_count)
     print_counters([
+      :dynamic_setivar_count,
+      :dynamic_getivar_count,
+      :dynamic_definedivar_count,
+
       :compiled_iseq_count,
       :compiled_side_exit_count,
       :failed_iseq_count,
@@ -150,6 +151,8 @@ class << RubyVM::ZJIT
       :compile_hir_time_ns,
       :compile_hir_build_time_ns,
       :compile_hir_strength_reduce_time_ns,
+      :compile_hir_inline_methods_time_ns,
+      :compile_hir_canonicalize_time_ns,
       :compile_hir_fold_constants_time_ns,
       :compile_hir_clean_cfg_time_ns,
       :compile_hir_eliminate_dead_code_time_ns,
@@ -158,7 +161,7 @@ class << RubyVM::ZJIT
       :gc_time_ns,
       :invalidation_time_ns,
 
-      :vm_write_pc_count,
+      :vm_write_jit_frame_count,
       :vm_write_sp_count,
       :vm_write_locals_count,
       :vm_write_stack_count,
