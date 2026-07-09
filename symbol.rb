@@ -34,7 +34,7 @@ class Symbol
   # Returns +true+ if +self+ is <tt>:''</tt>, +false+ otherwise.
   def empty?
     Primitive.attr! :leaf
-    Primitive.cexpr! 'RBOOL(RSTRING_LEN(rb_sym2str(self)) == 0)'
+    Primitive.cexpr! 'RBOOL(self == STATIC_ID2SYM(idNULL))'
   end
 
   # call-seq:
