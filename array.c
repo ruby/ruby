@@ -208,7 +208,9 @@ ary_embed_size(long capa)
 static bool
 ary_embeddable_p(long capa)
 {
-    return rb_gc_size_allocatable_p(ary_embed_size(capa));
+    const long embed_len_max = RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT;
+
+    return capa <= embed_len_max && rb_gc_size_allocatable_p(ary_embed_size(capa));
 }
 
 bool
