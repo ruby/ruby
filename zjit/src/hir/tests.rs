@@ -4818,15 +4818,8 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9, v10)
         bb3(v12:BasicObject, v13:NilClass, v14:NilClass, v15:NilClass):
           PatchPoint SingleRactorMode
-          v20:BasicObject = GetIvar v12, :@a
-          PatchPoint SingleRactorMode
-          v23:BasicObject = GetIvar v12, :@b
-          PatchPoint SingleRactorMode
-          v26:BasicObject = GetIvar v12, :@c
-          PatchPoint NoEPEscape(reverse_odd)
-          v38:ArrayExact = NewArray v20, v23, v26
-          CheckInterrupts
-          Return v38
+          v20:HeapBasicObject = GuardType v12, HeapBasicObject
+          SideExit NoProfileGetIvar recompile
 
         fn reverse_even@<compiled>:8:
         bb1():
@@ -4847,17 +4840,8 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v8, v9, v10, v11, v12)
         bb3(v14:BasicObject, v15:NilClass, v16:NilClass, v17:NilClass, v18:NilClass):
           PatchPoint SingleRactorMode
-          v23:BasicObject = GetIvar v14, :@a
-          PatchPoint SingleRactorMode
-          v26:BasicObject = GetIvar v14, :@b
-          PatchPoint SingleRactorMode
-          v29:BasicObject = GetIvar v14, :@c
-          PatchPoint SingleRactorMode
-          v32:BasicObject = GetIvar v14, :@d
-          PatchPoint NoEPEscape(reverse_even)
-          v46:ArrayExact = NewArray v23, v26, v29, v32
-          CheckInterrupts
-          Return v46
+          v23:HeapBasicObject = GuardType v14, HeapBasicObject
+          SideExit NoProfileGetIvar recompile
         ");
     }
 
