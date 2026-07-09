@@ -213,34 +213,34 @@ skip_to_eol(const char *p, const char *pend)
 static char *
 pack_modifiers(const char *p, char type, int *natint, int *explicit_endian)
 {
-     while (1) {
-         switch (*p) {
-           case '_':
-           case '!':
-             if (strchr(natstr, type)) {
+    while (1) {
+        switch (*p) {
+          case '_':
+          case '!':
+            if (strchr(natstr, type)) {
 #ifdef NATINT_PACK
-                 *natint = 1;
+                *natint = 1;
 #endif
-                 p++;
-             }
-             else {
-                 rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
-             }
-             break;
+                p++;
+            }
+            else {
+                rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
+            }
+            break;
 
-           case '<':
-           case '>':
-             if (!strchr(endstr, type)) {
-                 rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, endstr);
-             }
-             if (*explicit_endian) {
-                 rb_raise(rb_eRangeError, "Can't use both '<' and '>'");
-             }
-             *explicit_endian = *p++;
-             break;
-           default:
-             return (char *)p;
-         }
+          case '<':
+          case '>':
+            if (!strchr(endstr, type)) {
+                rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, endstr);
+            }
+            if (*explicit_endian) {
+                rb_raise(rb_eRangeError, "Can't use both '<' and '>'");
+            }
+            *explicit_endian = *p++;
+            break;
+          default:
+            return (char *)p;
+        }
     }
 }
 
