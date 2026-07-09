@@ -786,6 +786,12 @@ pub enum Insn {
     /// in the caller (see `codegen::gen_flonum_arith`).
     FloatArith { op: FloatArithOp, left: Opnd, right: Opnd, out: Opnd },
 
+    /// Convert a signed 64-bit integer to a double and return its raw IEEE-754
+    /// bit pattern (scvtf/cvtsi2sd + move to a GPR). Used to feed a Fixnum
+    /// operand into open-coded flonum arithmetic. `opnd` is the untagged
+    /// integer; `out` receives the double's bit pattern.
+    Int64ToF64Bits { opnd: Opnd, out: Opnd },
+
     /// This is the same as the OP_ADD instruction, except that it performs the
     /// binary AND operation.
     And { left: Opnd, right: Opnd, out: Opnd },
@@ -1075,6 +1081,7 @@ macro_rules! for_each_operand_impl {
             Insn::Lea { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
+            Insn::Int64ToF64Bits { opnd, .. } |
             Insn::Not { opnd, .. } => {
                 visit_one!(opnd);
             }
@@ -1253,6 +1260,7 @@ impl Insn {
             Insn::LShift { .. } => "LShift",
             Insn::Mov { .. } => "Mov",
             Insn::Not { .. } => "Not",
+            Insn::Int64ToF64Bits { .. } => "Int64ToF64Bits",
             Insn::Or { .. } => "Or",
             Insn::PatchPoint(..) => "PatchPoint",
             Insn::PatchPointPad => "PatchPointPad",
@@ -1290,6 +1298,7 @@ impl Insn {
             Insn::LoadSExt { out, .. } |
             Insn::LShift { out, .. } |
             Insn::Not { out, .. } |
+            Insn::Int64ToF64Bits { out, .. } |
             Insn::Or { out, .. } |
             Insn::RShift { out, .. } |
             Insn::Sub { out, .. } |
@@ -1323,6 +1332,7 @@ impl Insn {
             Insn::LoadSExt { out, .. } |
             Insn::LShift { out, .. } |
             Insn::Not { out, .. } |
+            Insn::Int64ToF64Bits { out, .. } |
             Insn::Or { out, .. } |
             Insn::RShift { out, .. } |
             Insn::Sub { out, .. } |
@@ -4220,6 +4230,15 @@ impl Assembler {
     pub fn not(&mut self, opnd: Opnd) -> Opnd {
         let out = self.new_vreg(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn::Not { opnd, out });
+        out
+    }
+
+    /// Convert a signed 64-bit integer to a double, returning the double's raw
+    /// bit pattern. See [`Insn::Int64ToF64Bits`].
+    #[must_use]
+    pub fn int64_to_f64_bits(&mut self, opnd: Opnd) -> Opnd {
+        let out = self.new_vreg(64);
+        self.push_insn(Insn::Int64ToF64Bits { opnd, out });
         out
     }
 

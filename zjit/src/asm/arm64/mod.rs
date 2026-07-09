@@ -1284,6 +1284,13 @@ pub fn fdiv(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
     cb.write_bytes(&fp_data_proc2(0x1E60_1800, dd, dn, dm));
 }
 
+/// SCVTF (scalar, signed 64-bit int -> double): Dd = (double)Xn.
+/// sf=1, type=01 (double), rmode=00, opcode=010.
+pub fn scvtf(cb: &mut CodeBlock, dd: u8, xn: u8) {
+    let insn: u32 = 0x9E62_0000 | ((xn as u32) << 5) | (dd as u32);
+    cb.write_bytes(&insn.to_le_bytes());
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

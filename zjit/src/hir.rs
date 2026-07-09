@@ -8388,8 +8388,9 @@ impl Function {
             | Insn::FloatMul { recv, other, .. }
             | Insn::FloatDiv { recv, other, .. }
             => {
-                self.assert_subtype(insn_id, recv, types::Flonum)?;
-                // other can be Flonum or Fixnum (rb_float_plus etc. handle both)
+                // Each operand is Flonum (unboxed) or Fixnum (converted to double).
+                // The HIR only emits these with at least one Flonum operand.
+                self.assert_subtype(insn_id, recv, types::Flonum.union(types::Fixnum))?;
                 self.assert_subtype(insn_id, other, types::Flonum.union(types::Fixnum))
             }
             Insn::FloatCmp { recv, other, .. } => {

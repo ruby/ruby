@@ -822,7 +822,8 @@ impl Assembler {
                 }
                 Insn::LShift { opnd, out, .. } |
                 Insn::RShift { opnd, out, .. } |
-                Insn::URShift { opnd, out, .. } => {
+                Insn::URShift { opnd, out, .. } |
+                Insn::Int64ToF64Bits { opnd, out } => {
                     *opnd = split_memory_read(asm, *opnd, SCRATCH0_OPND);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
 
@@ -1296,6 +1297,14 @@ impl Assembler {
                         FloatArithOp::Mul => fmul(cb, 0, 0, 1),
                         FloatArithOp::Div => fdiv(cb, 0, 0, 1),
                     }
+                    fmov_reg_to_gpr(cb, out.unwrap_reg().reg_no, 0);
+                },
+                Insn::Int64ToF64Bits { opnd, out } => {
+                    // (double)int via scvtf, then read the raw bits back to a GPR.
+                    // opnd/out are registers after arm64_scratch_split.
+                    let opnd: A64Opnd = opnd.into();
+                    let out: A64Opnd = out.into();
+                    scvtf(cb, 0, opnd.unwrap_reg().reg_no);
                     fmov_reg_to_gpr(cb, out.unwrap_reg().reg_no, 0);
                 },
                 Insn::Sub { left, right, out } => {

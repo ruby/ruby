@@ -544,6 +544,13 @@ impl Assembler {
                     *out = lower_stack_membase(asm, *out);
                     asm.push_insn(insn);
                 }
+                Insn::Int64ToF64Bits { opnd, out } => {
+                    // cvtsi2sd/movq take r/m operands; just lower spilled
+                    // stack membases so they can be addressed.
+                    *opnd = split_stack_membase(asm, *opnd, SCRATCH0_OPND);
+                    *out = lower_stack_membase(asm, *out);
+                    asm.push_insn(insn);
+                }
                 &mut Insn::Not { opnd, out } |
                 &mut Insn::LShift { opnd, out, .. } |
                 &mut Insn::RShift { opnd, out, .. } |
@@ -881,6 +888,13 @@ impl Assembler {
                         FloatArithOp::Mul => mulsd(cb, 0, 1),
                         FloatArithOp::Div => divsd(cb, 0, 1),
                     }
+                    movq_reg_from_xmm(cb, out.into(), 0);
+                },
+
+                Insn::Int64ToF64Bits { opnd, out } => {
+                    // (double)int via cvtsi2sd into xmm0, then move the raw bits
+                    // back out. cvtsi2sd/movq accept reg or memory operands.
+                    cvtsi2sd(cb, 0, opnd.into());
                     movq_reg_from_xmm(cb, out.into(), 0);
                 },
 

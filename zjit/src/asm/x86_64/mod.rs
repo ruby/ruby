@@ -1407,6 +1407,13 @@ pub fn mulsd(cb: &mut CodeBlock, dst_xmm: u8, src_xmm: u8) { sse_arith(cb, 0x59,
 /// DIVSD: dst_xmm /= src_xmm (scalar double).
 pub fn divsd(cb: &mut CodeBlock, dst_xmm: u8, src_xmm: u8) { sse_arith(cb, 0x5E, dst_xmm, src_xmm); }
 
+/// CVTSI2SD xmm, r/m64 (`F2 REX.W 0F 2A /r`): dst_xmm = (double)(signed 64-bit
+/// integer in `src`).
+pub fn cvtsi2sd(cb: &mut CodeBlock, dst_xmm: u8, src: X86Opnd) {
+    cb.write_byte(0xF2);
+    write_rm(cb, false, true, xmm_reg(dst_xmm), src, None, &[0x0F, 0x2A]);
+}
+
 impl fmt::Display for X86Reg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match X86Opnd::Reg(*self) {
