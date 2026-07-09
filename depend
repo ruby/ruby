@@ -5452,6 +5452,7 @@ eval.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 eval.$(OBJEXT): $(top_srcdir)/internal/inits.h
 eval.$(OBJEXT): $(top_srcdir)/internal/io.h
 eval.$(OBJEXT): $(top_srcdir)/internal/object.h
+eval.$(OBJEXT): $(top_srcdir)/internal/ractor.h
 eval.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 eval.$(OBJEXT): $(top_srcdir)/internal/serial.h
 eval.$(OBJEXT): $(top_srcdir)/internal/set_table.h
@@ -19742,6 +19743,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 vm.$(OBJEXT): $(top_srcdir)/internal/object.h
 vm.$(OBJEXT): $(top_srcdir)/internal/parse.h
 vm.$(OBJEXT): $(top_srcdir)/internal/proc.h
+vm.$(OBJEXT): $(top_srcdir)/internal/ractor.h
 vm.$(OBJEXT): $(top_srcdir)/internal/random.h
 vm.$(OBJEXT): $(top_srcdir)/internal/rational.h
 vm.$(OBJEXT): $(top_srcdir)/internal/re.h
