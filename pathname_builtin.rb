@@ -952,10 +952,10 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   each_line(sep = $/, **opts) {|line| ... } → nil
-  #   each_line(limit, **opts) {|line| ... } → nil
-  #   each_line(sep, limit, **opts) {|line| ... } → nil
-  #   each_line(...) → new_enumerator
+  #   each_line(sep = $/, **opts) {|line| ... } -> nil
+  #   each_line(limit, **opts) {|line| ... } -> nil
+  #   each_line(sep, limit, **opts) {|line| ... } -> nil
+  #   each_line(...) -> new_enumerator
   #
   # With a block given, calls the block with each line
   # from the file represented by `self`;
@@ -1050,9 +1050,9 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   readlines(sep = $/, **options) → array
-  #   readlines(limit, **options) → array
-  #   readlines(sep, limit, **options) → array
+  #   readlines(sep = $/, **options) -> array
+  #   readlines(limit, **options) -> array
+  #   readlines(sep, limit, **options) -> array
   #
   # Returns an array of all lines read from the source at the path in `self`,
   # which must be the path to a file.
@@ -2030,8 +2030,8 @@ end
 
 class Pathname
   # call-seq:
-  #   glob(patterns, base: '.', flags: 0, sort: true) → array_of_pathnames
-  #   glob(patterns, base: '.', flags: 0, sort: true) {|pathname| ... } → nil
+  #   glob(patterns, base: '.', flags: 0, sort: true) -> array_of_pathnames
+  #   glob(patterns, base: '.', flags: 0, sort: true) {|pathname| ... } -> nil
   #
   # Selects filesystem entries
   # based on the given keyword arguments +base+, +flags+, and +sort+;
