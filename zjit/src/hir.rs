@@ -570,6 +570,7 @@ pub enum SideExitReason {
     DirectiveInduced,
     SendWhileTracing,
     NoProfileSend,
+    NoProfileGetIvar,
     InvokeBlockNotIfunc,
 }
 
@@ -3493,6 +3494,19 @@ impl Function {
             }
             resolution => resolution,
         }
+    }
+
+    fn profile_summary(&self, profiles: &ProfileOracle, recv: InsnId, state: InsnId) -> Option<TypeDistributionSummary> {
+        let Some(entries) = profiles.get(state) else {
+            return None;
+        };
+        let recv = self.chase_insn(recv);
+        for (entry_insn, entry_type_summary) in entries {
+            if self.chase_insn(*entry_insn) == recv {
+                return Some(entry_type_summary.clone());
+            }
+        }
+        None
     }
 
     fn polymorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, state: InsnId) -> Option<TypeDistributionSummary> {
@@ -6765,6 +6779,78 @@ impl Function {
         self.validate_types()?;
         Ok(())
     }
+
+    /// Return Some(InsnId) if we generated any code to load an ivar and None if we only generated
+    /// an unconditional SideExit (in which case we should end the block).
+    fn dispatch_getivar(
+        &mut self,
+        profiled_types: &Vec<ProfiledType>,
+        mut block: BlockId,
+        insn_idx: u32,
+        self_param: InsnId,
+        id: ID,
+        ic: *const iseq_inline_iv_cache_entry,
+        exit_id: InsnId,
+    ) -> Option<(BlockId, InsnId)> {
+        // 0 profiled_types: Generate a recompile exit or a fallback. No need for new HIR blocks.
+        if profiled_types.is_empty() {
+            if self.policy.no_side_exits {
+                self.count(block, Counter::getivar_fallback_no_side_exits);
+                let result = self.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
+                return Some((block, result));
+            } else {
+                self.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::NoProfileGetIvar), recompile: Some(Recompile) });
+                return None;
+            }
+        }
+        // 1 profiled_types: Generate a monomorphic getivar with a guard if allowed by policy. No need for new HIR blocks.
+        if profiled_types.len() == 1 && !self.policy.no_side_exits {
+            // 0 profiled_types: Generate a recompile exit or a fallback.
+            let actual = self.load_shape(block, self_param);
+            self.guard_shape(block, actual, profiled_types[0].shape(), exit_id, Some(Recompile));
+            let result = self.load_ivar(block, self_param, profiled_types[0], id);
+            return Some((block, result));
+        }
+
+        // Otherwise, make HIR blocks to handle different shapes or a fallback, and let them jump to join_block.
+        let edge = |target: BlockId| BranchEdge { target, args: vec![] };
+        let branch = |cond: InsnId, if_true: BlockId, if_false: BlockId| Insn::CondBranch { val: cond, if_true: edge(if_true), if_false: edge(if_false) };
+        let actual = self.load_shape(block, self_param);
+        let last_shape_index = profiled_types.len() - 1;
+        let join_block = self.new_block(insn_idx);
+        let result = self.push_insn(join_block, Insn::Param);
+        for (i, &profiled_type) in profiled_types.iter().enumerate() {
+            let load_optimized_block = self.new_block(insn_idx);
+            if i == last_shape_index {
+                if self.policy.no_side_exits {
+                    // If the policy doesn't allow exits, make a fallback block and jump to it if the shape doesn't match.
+                    let expected = self.push_insn(block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
+                    let val = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected });
+                    let load_fallback_block = self.new_block(insn_idx);
+                    self.push_insn(block, branch(val, load_optimized_block, load_fallback_block));
+                    self.count(load_fallback_block, Counter::getivar_fallback_no_side_exits);
+                    let result = self.push_insn(load_fallback_block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
+                    self.push_insn(load_fallback_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                } else {
+                    // If the policy allows exits, exit to the interpreter if the shape doesn't match.
+                    self.guard_shape(block, actual, profiled_type.shape(), exit_id, Some(Recompile));
+                    // TODO(max): Don't make a new block in this case
+                    self.push_insn(block, Insn::Jump(BranchEdge { target: load_optimized_block, args: vec![] }));
+                }
+            } else {
+                // If this is not the last profiled shape, let the guard jump to the next block.
+                let expected = self.push_insn(block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
+                let val = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected});
+                let next_block = self.new_block(insn_idx);
+                self.push_insn(block, branch(val, load_optimized_block, next_block));
+                block = next_block;
+            }
+            // Generate the optimized getivar for the profiled_type and jump to join_block
+            let result = self.load_ivar(load_optimized_block, self_param, profiled_type, id);
+            self.push_insn(load_optimized_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+        }
+        Some((join_block, result))
+    }
 }
 
 impl<'a> std::fmt::Display for FunctionPrinter<'a> {
@@ -8907,68 +8993,44 @@ fn add_iseq_to_hir(
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledYARVInsn(opcode)), recompile: None });
                         break;  // End the block
                     }
-                    if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_id) {
-                        self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id, recompile: None });
-                        let join_block = fun.new_block(insn_idx);
-                        let join_param = fun.push_insn(join_block, Insn::Param);
-                        // Dedup by expected shape so objects with different classes but the same shape can share code
-                        // TODO(max): De-duplicate further by checking ivar offsets to allow
-                        // different shapes with the same ivar layout to share code
-                        let mut seen_shape = Vec::with_capacity(summary.buckets().len());
-                        for &profiled_type in summary.buckets() {
-                            // End of the buckets
-                            if profiled_type.is_empty() { break; }
-                            // Instance variable lookups on immediate values are always nil; don't bother
-                            if profiled_type.flags().is_immediate() { continue; }
-                            let profiled_shape = profiled_type.shape();
-                            assert!(profiled_shape.is_valid());
-                            // Too-complex shapes use hash tables for ivars;
-                            // rb_shape_get_iv_index doesn't work for them.
-                            // Let the fallthrough GetIvar handle these.
-                            if profiled_shape.is_complex() { continue; }
-                            if seen_shape.contains(&profiled_shape) { continue; }
-                            seen_shape.push(profiled_shape);
-                            let actual_shape = fun.load_shape(block, self_param);
-                            // Load the expected shape to a variable
-                            let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_shape) });
-                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: actual_shape, right: expected_shape });
-                            let iftrue_block = fun.new_block(insn_idx);
-                            let target = BranchEdge { target: iftrue_block, args: vec![] };
-                            let fall_through = fun.new_block(insn_idx);
-
-                            fun.push_insn(block, Insn::CondBranch { val: has_shape,
-                                if_true: target,
-                                if_false: BranchEdge { target: fall_through, args: vec![] }
-                            });
-
-                            block = fall_through;
-                            let result = fun.load_ivar(iftrue_block, self_param, profiled_type, id);
-                            fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                    let summary = fun.profile_summary(&profiles, self_param, exit_id).unwrap_or_else(|| {
+                        TypeDistributionSummary::empty()
+                    });
+                    let self_param = fun.guard_heap(block, self_param, exit_id);
+                    // Filter out profiled types we don't care to optimize
+                    let profiled_types = summary.buckets().iter().filter(|profiled_type| {
+                        // Don't read past the end of the profiled types
+                        !profiled_type.is_empty()
+                        // Instance variable lookups on immediate values are always nil; don't bother
+                        && !profiled_type.flags().is_immediate()
+                        // Too-complex shapes use hash tables for ivars;
+                        // rb_shape_get_iv_index doesn't work for them.
+                        // Let the fallthrough GetIvar handle these.
+                        && !profiled_type.shape().is_complex()
+                    }).collect::<Vec<_>>();
+                    // We might have two objects of class A and B with the same shape; de-duplicate
+                    // profiled types by shape. This is just an optimization to reduce code size.
+                    let mut profiled_types_unique_shapes = Vec::with_capacity(profiled_types.len());
+                    for &profiled_type in profiled_types {
+                        if profiled_types_unique_shapes.iter().any(|t: &ProfiledType| t.shape() == profiled_type.shape()) {
+                            continue;
                         }
-                        // In the fallthrough case, do a generic interpreter getivar and then join.
-                        let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
-                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
-                        state.stack_push(join_param);
-                        // Continue compilation from the join block at the next instruction.
-                        // Make a copy of the current state without the args (pop the receiver
-                        // and push the result) because we just use the locals/stack sizes to
-                        // make the right number of Params
-                        block = join_block;
-                    } else {
-                        if let Some(profiled_type) = fun.monomorphic_summary(&profiles, self_param, exit_id) {
-                            let result = fun.try_emit_optimized_getivar(block, self_param, id, profiled_type, exit_id).unwrap_or_else(|counter| {
-                                fun.count(block, counter);
-                                fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id })
-                            });
-                            state.stack_push(result);
-                        } else {
-                            let resolution = fun.resolve_receiver_type_from_profile(self_param, exit_id);
-                            let counter = Function::getivar_fallback_reason(resolution, ic);
-                            fun.count(block, counter);
-                            let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
-                            state.stack_push(result);
-                        }
+                        profiled_types_unique_shapes.push(profiled_type);
                     }
+                    let Some((new_block, result)) = fun.dispatch_getivar(
+                        &profiled_types_unique_shapes,
+                        block,
+                        insn_idx,
+                        self_param,
+                        id,
+                        ic,
+                        exit_id,
+                    ) else {
+                        // Side-exiting unconditionally; end the block
+                        break;
+                    };
+                    block = new_block;
+                    state.stack_push(result);
                 }
                 YARVINSN_setinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
