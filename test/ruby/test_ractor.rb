@@ -338,6 +338,7 @@ class TestRactor < Test::Unit::TestCase
       port.receive
       assert_equal true, port.empty?
       r.join
+  end
 
   def test_mn_threads
     # Ideally, we would assert that vm->ractor.sched.max_cpu equals sysconf(_SC_NPROCESSORS_ONLN)
