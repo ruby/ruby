@@ -544,6 +544,166 @@ fn test_getblockparamproxy_polymorphic_none_and_iseq_and_proc() {
 }
 
 #[test]
+fn test_yield_inline_self_is_captured_self() {
+    // The inlined frame's self must be the block's captured self, not the yielding receiver.
+    set_call_threshold(2);
+    eval("
+        class Yielder
+          def run = yield
+        end
+        class C
+          def initialize(v) = @v = v
+          def go(y) = y.run { @v * 2 }
+        end
+        Y = Yielder.new
+        C.new(21).go(Y)
+        C.new(21).go(Y)
+    ");
+    assert_snapshot!(assert_compiles("C.new(21).go(Y)"), @"42");
+}
+
+#[test]
+fn test_yield_iseq_guard_miss_recompiles() {
+    set_call_threshold(2);
+    eval("
+        def invoke = yield(41)
+        invoke { |x| x * 2 }
+        invoke { |x| x * 2 }
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("[invoke { |x| x + 1 }, invoke { |x| x * 2 }]"), @"[42, 82]");
+}
+
+#[test]
+fn test_yield_inline_invocation_with_args() {
+    // Plain yield with two args to a matching-arity block inlines and returns correctly.
+    set_call_threshold(2);
+    eval("
+        def foo = yield(3, 4)
+        def test = foo { |a, b| a + b }
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"7");
+}
+
+#[test]
+fn test_yield_inline_invocation_live_stack_below_args() {
+    // A live value sits on the stack below the yield args; the no-receiver-slot SP math
+    // must preserve it so `x +` sees the right operand.
+    set_call_threshold(2);
+    eval("
+        def foo(x) = x + yield(1, 2)
+        def test = foo(10) { |a, b| a + b }
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"13");
+}
+
+#[test]
+fn test_yield_inlined_caller_block_dispatches_without_guards() {
+    // When the yielding method is inlined into a caller that passes a literal block, the block
+    // handler is written into the inlined frame's EP from a compile-time constant, so the yield
+    // dispatches with no tag/iseq guards. assert_inlines requires the method to actually inline
+    // and to run with no side exits, exercising the guard-free InvokeBlockIseqDirect machine code.
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def two_yields = (yield 1) + (yield 2)
+            def test = two_yields { |x| x * 10 }
+            test
+            test
+        "), @"30");
+    });
+}
+
+#[test]
+fn test_yield_with_lambda_arg() {
+    // A lambda passed via &l is a proc handler (not imemo_iseq): yield falls back but runs.
+    set_call_threshold(2);
+    eval("
+        def foo = yield(5)
+        def test = foo(&L)
+        L = ->(x) { x * 10 }
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"50");
+}
+
+#[test]
+fn test_yield_break() {
+    set_call_threshold(2);
+    eval("
+        def foo = yield
+        def test = foo { break 5 }
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"5");
+}
+
+#[test]
+fn test_yield_non_local_return() {
+    set_call_threshold(2);
+    eval("
+        def inner = yield
+        def test
+          inner { return 42 }
+          99
+        end
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"42");
+}
+
+#[test]
+fn test_yield_autosplat() {
+    // {|a, b|} auto-splats a single Array arg for yield (falls back).
+    set_call_threshold(2);
+    eval("
+        def via_yield = yield([3, 4])
+        def test_yield = via_yield { |a, b| a + b }
+        test_yield; test_yield
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test_yield"), @"7");
+}
+
+#[test]
+fn test_yield_next() {
+    // next(val) compiles to leave (not throw), so yield inlines invocation and returns val.
+    set_call_threshold(2);
+    eval("
+        def via_yield = yield
+        def test_yield = via_yield { next 7 }
+        test_yield; test_yield
+    ");
+    assert_snapshot!(assert_compiles("test_yield"), @"7");
+}
+
+#[test]
+fn test_yield_inline_ensure_runs() {
+    // The ensure body must run on the normal inlined invocation yield path.
+    set_call_threshold(2);
+    eval("
+        def foo = yield
+        $log = []
+        def driver
+          foo do
+            begin
+              42
+            ensure
+              $log << :ensured
+            end
+          end
+        end
+        driver
+        driver
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("$log.clear; [driver, $log]"), @"[42, [:ensured]]");
+}
+
+#[test]
 fn test_getblockparam() {
     eval("
         def test(&blk)
@@ -5473,10 +5633,13 @@ fn test_invokeblock() {
         def test
           yield
         end
-        test { 41 }
+        def entry
+          test { 42 }
+        end
+        entry
     ");
     assert_contains_opcode("test", YARVINSN_invokeblock);
-    assert_snapshot!(assert_compiles("test { 42 }"), @"42");
+    assert_snapshot!(assert_compiles("entry"), @"42");
 }
 
 #[test]
@@ -5485,10 +5648,13 @@ fn test_invokeblock_with_args() {
         def test(x, y)
           yield x, y
         end
-        test(1, 2) { |a, b| a + b }
+        def entry
+          test(1, 2) { |a, b| a + b }
+        end
+        entry
     ");
     assert_contains_opcode("test", YARVINSN_invokeblock);
-    assert_snapshot!(assert_compiles("test(1, 2) { |a, b| a + b }"), @"3");
+    assert_snapshot!(assert_compiles("entry"), @"3");
 }
 
 #[test]
@@ -5500,7 +5666,9 @@ fn test_invokeblock_no_block_given() {
         test { }
     ");
     assert_contains_opcode("test", YARVINSN_invokeblock);
-    assert_snapshot!(assert_compiles("test"), @":error");
+    // Compiled expecting an ISEQ block; calling with none misses the handler guard and
+    // deopts, so the interpreter raises LocalJumpError (rescued to :error).
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @":error");
 }
 
 #[test]
@@ -5511,14 +5679,15 @@ fn test_invokeblock_multiple_yields() {
           yield 2
           yield 3
         end
-        test { |x| x }
+        def entry
+          results = []
+          test { |x| results << x }
+          results
+        end
+        entry
     ");
     assert_contains_opcode("test", YARVINSN_invokeblock);
-    assert_snapshot!(assert_compiles("
-        results = []
-        test { |x| results << x }
-        results
-    "), @"[1, 2, 3]");
+    assert_snapshot!(assert_compiles("entry"), @"[1, 2, 3]");
 }
 
 #[test]

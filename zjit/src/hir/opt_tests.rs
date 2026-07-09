@@ -3817,6 +3817,118 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_yield_no_args_inlines_invocation() {
+        // `foo` is inlined into `test`, which passes a literal block, so PushInlineFrame writes
+        // that exact block into the frame's EP from a compile-time constant. The yield's block
+        // handler is therefore statically known: dispatch has no tag/iseq GuardBitEquals, just an
+        // untag (IntAnd -4) feeding InvokeBlockIseqDirect.
+        let result = eval("
+            def foo = yield
+            def test = foo { 42 }
+            test
+            test
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(42), result);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame v18 (0x1038)
+          v25:CPtr = GetEP 0
+          v26:CInt64 = LoadField v25, :VM_ENV_DATA_INDEX_SPECVAL@0x1040
+          v27:CInt64[-4] = Const CInt64(-4)
+          v28:CInt64 = IntAnd v26, v27
+          v29:BasicObject = InvokeBlockIseqDirect (0x1048), v28
+          CheckInterrupts
+          PopInlineFrame
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_yield_live_stack_below_args_inlines_invocation() {
+        // A live value sits on the stack below the yield args (base > 0): the no-receiver-slot
+        // SP math must preserve it.
+        let result = eval("
+            def foo(x) = x + yield(1, 2)
+            def test = foo(10) { |a, b| a + b }
+            test
+            test
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(13), result);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[10] = Const Value(10)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v20:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame v20 (0x1038), v11
+          v29:Fixnum[1] = Const Value(1)
+          v31:Fixnum[2] = Const Value(2)
+          v33:CPtr = GetEP 0
+          v34:CInt64 = LoadField v33, :VM_ENV_DATA_INDEX_SPECVAL@0x1040
+          v35:CInt64[-4] = Const CInt64(-4)
+          v36:CInt64 = IntAnd v34, v35
+          v37:BasicObject = InvokeBlockIseqDirect (0x1048), v36, v29, v31
+          PatchPoint MethodRedefined(Integer@0x1050, +@0x1058, cme:0x1060)
+          v52:Fixnum = GuardType v37, Fixnum
+          v53:Fixnum = FixnumAdd v11, v52
+          CheckInterrupts
+          PopInlineFrame
+          Return v53
+        ");
+    }
+
+    #[test]
+    fn test_yield_lambda_falls_back() {
+        // A lambda passed via &l becomes a proc block handler (not imemo_iseq), so it never inlines invocation.
+        // Compiles to Send.
+        let result = eval("
+            def foo = yield(5)
+            def test(l) = foo(&l)
+            l = ->(x) { x * 10 }
+            test(l)
+            test(l)
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(50), result);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :l@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :l@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:BasicObject = Send v9, &block, :foo, v10 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
     fn reload_local_across_send() {
         eval("
             def foo(&block) = 1
@@ -9551,10 +9663,14 @@ mod hir_opt_tests {
           v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
           PushInlineFrame v18 (0x1038)
           v25:Fixnum[1] = Const Value(1)
-          v27:BasicObject = InvokeBlock v25 # SendFallbackReason: InvokeBlock: not yet specialized
+          v27:CPtr = GetEP 0
+          v28:CInt64 = LoadField v27, :VM_ENV_DATA_INDEX_SPECVAL@0x1040
+          v29:CInt64[-4] = Const CInt64(-4)
+          v30:CInt64 = IntAnd v28, v29
+          v31:BasicObject = InvokeBlockIseqDirect (0x1048), v30, v25
           CheckInterrupts
           PopInlineFrame
-          Return v27
+          Return v31
         ");
     }
 
@@ -16619,11 +16735,20 @@ mod hir_opt_tests {
           v75:Array = RefineType v70, Array
           v76:CInt64 = UnboxFixnum v71
           v77:BasicObject = ArrayAref v75, v76
-          v79:BasicObject = InvokeBlock v77 # SendFallbackReason: InvokeBlock: not yet specialized
-          v83:Fixnum[1] = Const Value(1)
-          v84:Fixnum = FixnumAdd v71, v83
+          v79:CPtr = GetEP 0
+          v80:CInt64 = LoadField v79, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
+          v81:CInt64[3] = Const CInt64(3)
+          v82:CInt64 = IntAnd v80, v81
+          v83:CInt64[1] = GuardBitEquals v82, CInt64(1) recompile
+          v84:CInt64[-4] = Const CInt64(-4)
+          v85:CInt64 = IntAnd v80, v84
+          v86:CPtr = LoadField v85, :code_iseq@0x1001
+          v87:CPtr[CPtr(0x1002)] = GuardBitEquals v86, CPtr(0x1002) recompile
+          v88:BasicObject = InvokeBlockIseqDirect (0x1008), v85, v77
+          v92:Fixnum[1] = Const Value(1)
+          v93:Fixnum = FixnumAdd v71, v92
           PatchPoint NoEPEscape(each)
-          Jump bb8(v70, v84)
+          Jump bb8(v70, v93)
         bb4(v23:BasicObject, v24:NilClass):
           v28:BasicObject = InvokeBuiltin <inline_expr>, v23
           CheckInterrupts
@@ -19008,11 +19133,15 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1008, with_yield@0x1010, cme:0x1018)
           v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
           PushInlineFrame v25 (0x1040), v10
-          v34:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: not yet specialized
+          v34:CPtr = GetEP 0
+          v35:CInt64 = LoadField v34, :VM_ENV_DATA_INDEX_SPECVAL@0x1048
+          v36:CInt64[-4] = Const CInt64(-4)
+          v37:CInt64 = IntAnd v35, v36
+          v38:BasicObject = InvokeBlockIseqDirect (0x1050), v37, v10
           CheckInterrupts
           PopInlineFrame
           PatchPoint NoEPEscape(test)
-          Return v34
+          Return v38
         ");
     }
 

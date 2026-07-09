@@ -667,6 +667,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::InvokeBlockIfunc { cd, block_handler, args, state, .. } => gen_invokeblock_ifunc(jit, asm, function, *cd, opnd!(block_handler), opnds!(args), &function.frame_state(*state)),
         Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, function, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
         Insn::InvokeBuiltin { bf, leaf, args, state, .. } => gen_invokebuiltin(jit, asm, function, &function.frame_state(*state), unsafe { &**bf }, *leaf, opnds!(args)),
+        Insn::InvokeBlockIseqDirect { iseq, captured, args, state } => gen_invoke_block_iseq_direct(cb, jit, asm, function, *iseq, opnd!(captured), opnds!(args), &function.frame_state(*state)),
         &Insn::EntryPoint { jit_entry_idx } => no_output!(gen_entry_point(jit, asm, jit_entry_idx)),
         Insn::Return { val } => no_output!(gen_return(asm, opnd!(val))),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
@@ -1911,6 +1912,86 @@ fn gen_invokeproc(
     )
 }
 
+/// Compile `yield`. Inlines the block ISEQ frame like `invokeblock` instead of calling vm_yield.
+/// The block handler is read from the enclosing frame's LEP (`level` hops up), guarded to be the
+/// comptime-known ISEQ block, and its frame is pushed here before jumping to the block's JIT entry.
+/// On a guard miss, side-exit and recompile. The HIR gate ensures the block is simple + lead-only
+/// + non-throwing.
+fn gen_invoke_block_iseq_direct(
+    cb: &mut CodeBlock,
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    function: &Function,
+    block_iseq: IseqPtr,
+    captured: Opnd,
+    args: Vec<Opnd>,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_incr_counter(asm, Counter::block_iseq_direct_optimized_send_count);
+
+    let local_size = unsafe { get_iseq_body_local_table_size(block_iseq) }.to_usize();
+    let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(block_iseq) }.to_usize();
+    gen_stack_overflow_check(jit, asm, function, state, stack_growth);
+
+    // `captured` is the guarded `struct rb_captured_block *` (block handler with the ISEQ tag
+    // masked off). The HIR builder loaded it from the LEP and guarded the tag + iseq identity.
+    // TODO: During inlining, captured->self can be known. It should be put into HIR.
+    let captured_self = asm.load(Opnd::mem(64, captured, 0)); // captured->self
+    // TODO: During inlining, captured->ep can sometimes also be known.
+    let captured_ep = asm.load(Opnd::mem(64, captured, SIZEOF_VALUE_I32)); // captured->ep
+    // specval = VM_GUARDED_PREV_EP(captured->ep) = captured->ep | 0x01
+    let specval = asm.or(captured_ep, Opnd::Imm(0x1));
+
+    let stack_size = state.stack().len() - args.len();
+    let stack_map = build_stack_map(jit, function, &state.with_stack_size(stack_size));
+    let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
+    gen_save_sp(asm, stack_size);
+
+    gen_spill_locals(jit, asm, state);
+    asm.stack_map(stack_map, jit_frame, state.depth);
+
+    gen_push_frame(asm, args.len(), state, ControlFrame {
+        recv: captured_self,
+        iseq: Some(block_iseq),
+        cme: std::ptr::null(),
+        frame_type: VM_FRAME_MAGIC_BLOCK,
+        specval,
+        write_block_code: iseq_may_write_block_code(block_iseq),
+    });
+
+    asm_comment!(asm, "switch to new SP register");
+    let sp_offset = (stack_size + local_size + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
+    let new_sp = asm.add(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
+
+    asm_comment!(asm, "switch to new CFP");
+    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+
+    // JIT-to-JIT convention: self as c_args[0], then positional args. The block is
+    // gated to simple + lead-only + exact arity, so there are no optionals/kw/block.
+    let mut c_args = Vec::with_capacity(1 + args.len());
+    c_args.push(captured_self);
+    c_args.extend(&args);
+
+    let iseq_call = IseqCall::new(block_iseq, 0, args.len().try_into().expect("checked in HIR"));
+    let dummy_ptr = cb.get_write_ptr().raw_ptr(cb);
+    jit.iseq_calls.push(iseq_call.clone());
+    let ret = asm.ccall_with_iseq_call(dummy_ptr, c_args, &iseq_call);
+
+    // If the callee side-exits (returns Qundef), propagate to the caller.
+    asm_comment!(asm, "side-exit if callee side-exits");
+    asm.cmp(ret, Qundef.into());
+    asm.je(jit, ZJITState::get_exit_trampoline().into());
+
+    asm_comment!(asm, "restore SP register for the caller");
+    let new_sp = asm.sub(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
+
+    ret
+}
+
 /// Compile a dynamic dispatch for `super`
 fn gen_invokesuper(
     jit: &mut JITState,
@@ -2871,6 +2952,7 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, function: &Func
     let expected_opnd: Opnd = match expected {
         crate::hir::Const::Value(v) => { Opnd::Value(v) }
         crate::hir::Const::CInt64(v) => { v.into() }
+        crate::hir::Const::CPtr(v) => { Opnd::const_ptr(v) }
         crate::hir::Const::CShape(v) => { Opnd::UImm(v.0 as u64) }
         _ => panic!("gen_guard_bit_equals: unexpected hir::Const {expected:?}"),
     };
@@ -2965,6 +3047,28 @@ pub(crate) fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
                 return true;
             }
             _ => {}
+        }
+
+        insn_idx = insn_idx.saturating_add(unsafe { rb_insn_len(VALUE(opcode as usize)) }.try_into().unwrap());
+    }
+
+    false
+}
+
+/// True if the block ISEQ contains a `throw` opcode (break, non-local return). ZJIT can't
+/// compile `throw`, so inlining such a block's frame would side-exit + deopt on every call.
+/// These blocks fall back to `vm_yield`, which handles the non-local exit in C.
+/// (`next`/`redo` lower to `leave`/`jump`, not `throw`, so they stay inlinable.)
+pub(crate) fn block_iseq_may_throw(iseq: IseqPtr) -> bool {
+    let encoded_size = unsafe { rb_iseq_encoded_size(iseq) };
+    let mut insn_idx: u32 = 0;
+
+    while insn_idx < encoded_size {
+        let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+        let opcode = unsafe { rb_iseq_bare_opcode_at_pc(iseq, pc) } as u32;
+
+        if opcode == YARVINSN_throw {
+            return true;
         }
 
         insn_idx = insn_idx.saturating_add(unsafe { rb_insn_len(VALUE(opcode as usize)) }.try_into().unwrap());
