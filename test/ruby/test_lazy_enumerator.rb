@@ -124,6 +124,26 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(1, a.current)
   end
 
+  def test_flat_map_block_called_after_iteration_ended
+    bug22019 = '[Bug #22019]'
+    c = Class.new do
+      include Enumerable
+      attr_reader :block
+      def each(&b)
+        @block = b
+        yield 1
+      end
+      def force
+        to_a
+      end
+    end
+    obj = c.new
+    assert_equal([1], [obj].lazy.flat_map {|x| x}.force, bug22019)
+    assert_raise_with_message(RuntimeError, /after iteration ended/, bug22019) {
+      obj.block.call(1)
+    }
+  end
+
   def test_flat_map_nested
     a = Step.new(1..3)
     assert_equal([1, "a"],

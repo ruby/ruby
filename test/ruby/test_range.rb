@@ -870,6 +870,22 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (0...nil).end)
   end
 
+  def test_first_block_called_after_iteration_ended
+    bug22019 = '[Bug #22019]'
+    c = Class.new(Range) do
+      attr_reader :block
+      def each(&b)
+        @block = b
+        super
+      end
+    end
+    r = c.new(1, 5)
+    assert_equal([1, 2], r.first(2), bug22019)
+    assert_raise_with_message(RuntimeError, /after iteration ended/, bug22019) {
+      r.block.call(9)
+    }
+  end
+
   def test_first_last
     assert_equal([0, 1, 2], (0..10).first(3))
     assert_equal([8, 9, 10], (0..10).last(3))

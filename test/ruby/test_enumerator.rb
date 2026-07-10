@@ -965,6 +965,24 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal(true, e.is_lambda)
   end
 
+  def test_product_block_called_after_iteration_ended
+    bug22019 = '[Bug #22019]'
+    o = Object.new
+    def o.each_entry(&b)
+      @block = b
+      b.call(1)
+    end
+    def o.block
+      @block
+    end
+    acc = []
+    Enumerator::Product.new(o, [2]).each { |x, y| acc << [x, y] }
+    assert_equal([[1, 2]], acc, bug22019)
+    assert_raise_with_message(RuntimeError, /after iteration ended/, bug22019) {
+      o.block.call(1)
+    }
+  end
+
   def test_product_new
     # 0-dimensional
     e = Enumerator::Product.new

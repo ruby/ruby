@@ -1475,8 +1475,32 @@ vm_frametype_name(const rb_control_frame_t *cfp);
 #endif
 
 static VALUE
+iterator_block_expired(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
+{
+    rb_raise(rb_eRuntimeError, "iterator block was called after iteration ended");
+    UNREACHABLE_RETURN(Qnil);
+}
+
+/* Whether `data` points into the machine stack of the current execution
+ * context, i.e. into a local of one of the C frames above rb_iterate0. */
+static bool
+iterator_data_on_machine_stack(const rb_execution_context_t *ec, const void *data)
+{
+    /* A large Fixnum or a flonum passed as data could alias a stack
+     * address; a real pointer into the stack is at least VALUE-aligned
+     * and never a special constant. */
+    if (RB_SPECIAL_CONST_P((VALUE)data)) return false;
+
+    const uintptr_t p = (uintptr_t)data;
+    const uintptr_t start = (uintptr_t)ec->machine.stack_start;
+    const uintptr_t here = (uintptr_t)&p;
+
+    return start < here ? (start <= p && p <= here) : (here <= p && p <= start);
+}
+
+static VALUE
 rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
-            const struct vm_ifunc *const ifunc,
+            struct vm_ifunc *const ifunc,
             rb_execution_context_t *ec)
 {
     enum ruby_tag_type state;
@@ -1521,6 +1545,15 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
         }
     }
     EC_POP_TAG();
+
+    if (ifunc && iterator_data_on_machine_stack(ec, ifunc->data)) {
+        /* The data points into a C stack frame that dies with this return,
+         * so the block must not outlive this iteration.  Blocks whose data
+         * is a heap object (e.g. the ones rb_proc_new or Enumerator pass to
+         * a method that retains them) stay callable. */
+        ifunc->func = iterator_block_expired;
+        ifunc->data = NULL;
+    }
 
     if (state) {
         EC_JUMP_TAG(ec, state);
