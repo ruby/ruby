@@ -2155,7 +2155,29 @@ class Pathname    # * FileTest *
   #
   def size() FileTest.size(@path) end
 
-  # See <tt>FileTest.size?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   size? -> integer or nil
+  #
+  # If the file or directory entry at the path in `self` exists,
+  # returns its size if non-zero, or `nil` if zero:
+  #
+  # ```ruby
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('foo')
+  # pn.size? # => 3
+  # pn.write('')
+  # pn.size? # => nil
+  # ```
+  #
+  # Returns `nil` if the entry does not exist:
+  #
+  # ```ruby
+  # pn.delete
+  # pn.size? # => nil
+  # ```
+  #
   def size?() FileTest.size?(@path) end
   # See <tt>FileTest.sticky?</tt>.
   def sticky?() FileTest.sticky?(@path) end
