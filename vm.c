@@ -3290,7 +3290,6 @@ rb_vm_update_references(void *ptr)
         rb_vm_t *vm = ptr;
 
         vm->self = rb_gc_location(vm->self);
-        vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
         vm->orig_progname = rb_gc_location(vm->orig_progname);
         vm->cc_refinement_set = rb_gc_location(vm->cc_refinement_set);
 
@@ -3376,7 +3375,14 @@ rb_vm_mark(void *ptr)
             rb_box_entry_mark(vm->main_box);
         }
 
-        rb_gc_mark_movable(vm->mark_object_ary);
+        /* The main Ractor's registered mark objects (rb_gc_register_mark_object)
+         * are process-lifetime pins.  Mark them here as well as from ractor_mark
+         * so they stay live before the main Ractor joins vm->ractor.set, e.g.
+         * during early boot under GC.stress. */
+        if (vm->ractor.main_ractor && vm->ractor.main_ractor->mark_object_ary) {
+            rb_gc_mark_movable(vm->ractor.main_ractor->mark_object_ary);
+        }
+
         rb_gc_mark_movable(vm->orig_progname);
         rb_gc_mark_movable(vm->coverages);
         rb_gc_mark_movable(vm->me2counter);
@@ -4824,13 +4830,35 @@ rb_vm_register_global_object(VALUE obj)
         break;
     }
     RB_VM_LOCKING() {
-        VALUE list = GET_VM()->mark_object_ary;
+        rb_ractor_t *cr = GET_RACTOR();
+        if (!cr->mark_object_ary) cr->mark_object_ary = pin_array_list_new(Qnil);
+        VALUE list = cr->mark_object_ary;
         VALUE head = pin_array_list_append(list, obj);
         if (head != list) {
-            GET_VM()->mark_object_ary = head;
+            cr->mark_object_ary = head;
         }
         RB_GC_GUARD(obj);
     }
+}
+
+/* Hand src's registered mark objects to dst (used when a Ractor terminates:
+ * these are process-lifetime pins, so the main Ractor keeps them alive). */
+void
+rb_vm_ractor_migrate_mark_objects(rb_ractor_t *dst, rb_ractor_t *src)
+{
+    ASSERT_vm_locking();
+    VALUE list = src->mark_object_ary;
+    while (!NIL_P(list) && list) {
+        struct pin_array_list *array_list;
+        TypedData_Get_Struct(list, struct pin_array_list, &pin_array_list_type, array_list);
+        for (long i = 0; i < array_list->len; i++) {
+            if (!dst->mark_object_ary) dst->mark_object_ary = pin_array_list_new(Qnil);
+            VALUE head = pin_array_list_append(dst->mark_object_ary, array_list->array[i]);
+            if (head != dst->mark_object_ary) dst->mark_object_ary = head;
+        }
+        list = array_list->next;
+    }
+    src->mark_object_ary = 0;
 }
 
 VALUE rb_cc_refinement_set_create(void);
@@ -4840,8 +4868,8 @@ Init_vm_objects(void)
 {
     rb_vm_t *vm = GET_VM();
 
-    /* initialize mark object array, hash */
-    vm->mark_object_ary = pin_array_list_new(Qnil);
+    /* mark object arrays are per-Ractor (rb_ractor_t.mark_object_ary),
+     * lazily created on first rb_gc_register_mark_object */
     st_init_existing_table_with_size(&vm->ci_table, &vm_ci_hashtype, 0);
     vm->cc_refinement_set = rb_cc_refinement_set_create();
 }
