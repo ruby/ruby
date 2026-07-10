@@ -1112,7 +1112,7 @@ rb_signal_exec(rb_thread_t *th, int sig)
     if (cmd == 0) {
         switch (sig) {
           case SIGINT:
-            rb_interrupt();
+            rb_threadptr_interrupt_raise(th);
             break;
 #ifdef SIGHUP
           case SIGHUP:
