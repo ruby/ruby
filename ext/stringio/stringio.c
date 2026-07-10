@@ -39,7 +39,11 @@ STRINGIO_VERSION = "3.2.1.dev";
 static inline bool
 str_chilled_p(VALUE str)
 {
-#if (RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR >= 4) || RUBY_API_VERSION_MAJOR >= 4
+#if RUBY_API_VERSION_CODE >= 40100
+    // Do not attempt to modify chilled strings on Ruby 4.1+
+    // RUBY_FL_USER2 == STR_CHILLED
+    return FL_TEST_RAW(str, RUBY_FL_USER2);
+#elif RUBY_API_VERSION_CODE >= 30400
     // Do not attempt to modify chilled strings on Ruby 3.4+
     // RUBY_FL_USER2 == STR_CHILLED_LITERAL
     // RUBY_FL_USER3 == STR_CHILLED_SYMBOL_TO_S
