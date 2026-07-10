@@ -2082,6 +2082,9 @@ SRC
     verbose = with_config('verbose') ?  "1" : (CONFIG['MKMF_VERBOSE'] || "0")
     vpath = $VPATH.dup
     CONFIG["hdrdir"] ||= $hdrdir
+    if $mswin and dir = [CONFIG["srcdir"], $extmk ? CONFIG["topdir"] : $topdir, CONFIG["hdrdir"], $arch_hdrdir].compact.find {|d| /\s/ =~ d.to_s}
+      warn "mkmf: nmake cannot handle spaces in paths: #{dir}"
+    end
     mk << %{
 SHELL = /bin/sh
 
