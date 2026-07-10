@@ -1664,10 +1664,16 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
         ractor_sched_lock(vm, cr);
         {
             // running_cnt
-            vm->ractor.sched.barrier_waiting_cnt++;
-            RUBY_DEBUG_LOG("waiting_cnt:%u serial:%u", vm->ractor.sched.barrier_waiting_cnt, barrier_serial);
-
-            ractor_sched_barrier_join_signal_locked(vm);
+            /* A not-yet-running thread (blocking/terminating, joined only to
+             * sync) must not be counted, or barrier_waiting_cnt > running_cnt-1. */
+            if (cr->threads.sched.is_running) {
+                vm->ractor.sched.barrier_waiting_cnt++;
+                RUBY_DEBUG_LOG("waiting_cnt:%u serial:%u", vm->ractor.sched.barrier_waiting_cnt, barrier_serial);
+                ractor_sched_barrier_join_signal_locked(vm);
+            }
+            else {
+                RUBY_DEBUG_LOG("join without counting (not running) serial:%u", barrier_serial);
+            }
             ractor_sched_barrier_join_wait_locked(vm, cr->threads.sched.running);
         }
         ractor_sched_unlock(vm, cr);
