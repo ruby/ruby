@@ -2,31 +2,19 @@ class Symbol
   # call-seq:
   #   to_s -> string
   #
-  # Returns a string representation of +self+ (not including the leading colon):
-  #
-  #   :foo.to_s # => "foo"
-  #
-  # Related: Symbol#inspect, Symbol#name.
-  def to_s
-    Primitive.attr! :leaf
-    Primitive.cexpr! 'rb_sym_to_s(self)'
-  end
-
-  alias id2name to_s
-
-  # call-seq:
-  #   name -> string
-  #
   # Returns a frozen string representation of +self+ (not including the leading colon):
   #
-  #   :foo.name         # => "foo"
+  #   :foo.to_s # => "foo"
   #   :foo.name.frozen? # => true
   #
-  # Related: Symbol#to_s, Symbol#inspect.
-  def name
+  # Related: Symbol#inspect
+  def to_s
     Primitive.attr! :leaf
     Primitive.cexpr! 'rb_sym2str(self)'
   end
+
+  alias id2name to_s
+  alias name to_s
 
   # call-seq:
   #   empty? -> true or false

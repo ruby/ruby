@@ -6188,9 +6188,6 @@ vm_objtostring(struct rb_control_frame_struct *reg_cfp, VALUE recv, CALL_DATA cd
     switch (type) {
       case T_SYMBOL:
         if (check_method_basic_definition(cme)) {
-            // rb_sym_to_s() allocates a mutable string, but since we are only
-            // going to use this string for interpolation, it's fine to use the
-            // frozen string.
             return rb_sym2str(recv);
         }
         break;

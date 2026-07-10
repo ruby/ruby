@@ -4271,15 +4271,6 @@ rb_warn_unchilled_literal(VALUE obj)
     }
 }
 
-void
-rb_warn_unchilled_symbol_to_s(VALUE obj)
-{
-    rb_category_warn(
-        RB_WARN_CATEGORY_DEPRECATED,
-        "string returned by :%s.to_s will be frozen in the future", RSTRING_PTR(obj)
-    );
-}
-
 #undef rb_check_frozen
 void
 rb_check_frozen(VALUE obj)
