@@ -1447,7 +1447,8 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 		p = RSTRING_PTR(str);
 		bm_init_skip(skip, p, n);
 		if ((pos = bm_search(p, n, s, e - s, skip)) >= 0) {
-		    e = s + pos + (arg->chomp ? 0 : n);
+		    e = s + pos + n;
+		    if (arg->chomp) w = n;
 		}
 	    }
 	}
