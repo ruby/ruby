@@ -20,7 +20,7 @@ class Gem::Ext::RakeBuilder < Gem::Ext::Builder
     rake = ENV["rake"]
 
     if rake
-      rake = shellsplit(rake)
+      rake = shellsplit_command(rake)
     else
       begin
         rake = ruby << "-rrubygems" << Gem.bin_path("rake", "rake")
