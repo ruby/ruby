@@ -2665,10 +2665,10 @@ fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> l
 fn gen_test(asm: &mut Assembler, val: lir::Opnd, val_type: Type) -> lir::Opnd {
     if val_type.is_subtype(types::BoolExact) {
         // If the type is BoolExact, we know it's either Qtrue or Qfalse. We can just right shift
-        // to check what's in the third bit.
+        // to check what's in the fifth bit.
         assert_eq!(Qfalse.as_i64(), 0);
         assert_eq!(Qtrue.as_i64(), 0b10100);
-        return asm.rshift(val, Opnd::UImm(2));
+        return asm.rshift(val, Opnd::UImm(4));
     }
     // Test if any bit (outside of the Qnil bit) is on
     // See RB_TEST(), include/ruby/internal/special_consts.h
