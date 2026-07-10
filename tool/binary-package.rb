@@ -66,10 +66,8 @@ rbconfigs = Dir.glob(File.join(root, "lib/ruby/*/*/rbconfig.rb"))
 abort "#{$0}: rbconfig.rb not found under #{root}" if rbconfigs.empty?
 rbconfigs.each do |file|
   src = File.binread(file)
-  src.sub!(/^(\s*CONFIG\["configure_args"\]\s*=\s*")(.*)(")/) do
-    pre, args, post = $1, $2, $3
-    kept = args.scan(/\\".*?\\"|\S+/).reject {|t| t.match?(%r{[A-Za-z]:[/\\]})}
-    pre + kept.join(" ") + post
+  src.sub!(/^\s*CONFIG\["configure_args"\]\s*=\s*"\K.*(?=")/) do |args|
+    args.scan(/\\".*?\\"|\S+/).grep_v(%r{\b[A-Za-z]:[/\\]}).join(" ")
   end or abort "#{$0}: configure_args not found in #{file}"
   File.binwrite(file, src)
 end
