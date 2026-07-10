@@ -624,7 +624,7 @@ binary-package:
 	@if exist $(BINARY_PACKAGE_STAGE)\. rd /s /q $(BINARY_PACKAGE_STAGE)
 	@$(MAKE) DESTDIR="$(MAKEDIR)\$(BINARY_PACKAGE_STAGE)" install-nodoc
 	$(RUNRUBY) "$(tooldir)/binary-package.rb" --stage=$(BINARY_PACKAGE_STAGE) \
-		--name=$(BINARY_PACKAGE_NAME) --arch=$(ARCH) --srcdir="$(srcdir)" \
+		--name=$(BINARY_PACKAGE_NAME) --srcdir="$(srcdir)" \
 		--vcpkg-dir="$(VCPKG_INSTALLED)" \
 		--output=$(BINARY_PACKAGE_NAME).zip
 
