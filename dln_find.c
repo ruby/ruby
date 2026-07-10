@@ -234,7 +234,11 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
             }
 
             /* add a "/" between directory and filename */
+#if defined(DOSISH)
+            if (ep[-1] != '/' && ep[-1] != '\\')
+#else
             if (ep[-1] != '/')
+#endif
                 *bp++ = '/';
         }
 
