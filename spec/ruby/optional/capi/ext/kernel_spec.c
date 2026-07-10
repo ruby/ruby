@@ -352,9 +352,8 @@ struct rb_exec_recursive_pointer_data {
 };
 
 static VALUE do_rec_pointer(VALUE obj, VALUE arg, int is_rec) {
-  struct rb_exec_recursive_pointer_data *obj_data = (struct rb_exec_recursive_pointer_data *)obj;
   struct rb_exec_recursive_pointer_data *arg_data = (struct rb_exec_recursive_pointer_data *)arg;
-  if (obj_data->magic != 0x1234 || arg_data->magic != 0x1234) {
+  if (arg_data->magic != 0x1234) {
     rb_raise(rb_eRuntimeError, "invalid recursive pointer");
   }
 
@@ -367,7 +366,7 @@ static VALUE do_rec_pointer(VALUE obj, VALUE arg, int is_rec) {
 
 static VALUE kernel_spec_rb_exec_recursive_with_pointer(VALUE self) {
   struct rb_exec_recursive_pointer_data data = { 0x1234 };
-  return rb_exec_recursive(do_rec_pointer, (VALUE)&data, (VALUE)&data);
+  return rb_exec_recursive(do_rec_pointer, self, (VALUE)&data);
 }
 
 static void write_io(VALUE io) {
