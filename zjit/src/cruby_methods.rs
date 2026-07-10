@@ -656,12 +656,20 @@ fn try_inline_float_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(
     if fun.likely_a(recv, types::Flonum, state)
         && (fun.likely_a(other, types::Flonum, state) || fun.likely_a(other, types::Fixnum, state))
     {
-        let recv = fun.coerce_to(block, recv, types::Flonum, state);
+        let recv = coerce_float_op_operand(fun, block, recv, types::Flonum, state);
         let other_type = if fun.likely_a(other, types::Flonum, state) { types::Flonum } else { types::Fixnum };
-        let other = fun.coerce_to(block, other, other_type, state);
+        let other = coerce_float_op_operand(fun, block, other, other_type, state);
         return Some(fun.push_insn(block, f(recv, other)));
     }
     None
+}
+
+fn coerce_float_op_operand(fun: &mut hir::Function, block: hir::BlockId, val: hir::InsnId, guard_type: Type, state: hir::InsnId) -> hir::InsnId {
+    if fun.is_a(val, guard_type) {
+        val
+    } else {
+        fun.guard_type_recompile(block, val, guard_type, state, hir::Recompile)
+    }
 }
 
 fn inline_float_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
