@@ -773,7 +773,6 @@ typedef struct rb_vm_struct {
     unsigned int thread_ignore_deadlock: 1;
 
     /* object management */
-    VALUE mark_object_ary;
     VALUE **global_object_list;
     size_t global_object_list_size;
     size_t global_object_list_capa;

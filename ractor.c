@@ -237,6 +237,12 @@ ractor_mark(void *ptr)
 
     if (!checking_shareable) {
         // may unshareable objects
+
+        /* objects this Ractor pinned via rb_gc_register_mark_object (the
+         * pin_array_list wrapper itself is an unshareable internal object;
+         * updated in ractor_update_references) */
+        if (r->mark_object_ary) rb_gc_mark_movable(r->mark_object_ary);
+
         rb_gc_mark(r->r_stdin);
         rb_gc_mark(r->r_stdout);
         rb_gc_mark(r->r_stderr);
@@ -313,13 +319,23 @@ ractor_memsize(const void *ptr)
     return sizeof(rb_ractor_t) + ractor_sync_memsize(r);
 }
 
+static void
+ractor_update_references(void *ptr)
+{
+    rb_ractor_t *r = (rb_ractor_t *)ptr;
+    /* the registered mark objects list is marked movable in ractor_mark */
+    if (r->mark_object_ary) {
+        r->mark_object_ary = rb_gc_location(r->mark_object_ary);
+    }
+}
+
 static const rb_data_type_t ractor_data_type = {
     "ractor",
     {
         ractor_mark,
         ractor_free,
         ractor_memsize,
-        NULL, // update
+        ractor_update_references,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY /* | RUBY_TYPED_WB_PROTECTED */
 };
@@ -437,6 +453,9 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
 
     RB_VM_LOCK();
     {
+        /* keep this Ractor's registered mark objects alive under the main Ractor */
+        if (cr->mark_object_ary) rb_vm_ractor_migrate_mark_objects(vm->ractor.main_ractor, cr);
+
         RUBY_DEBUG_LOG("ractor.cnt:%u-- terminate_waiting:%d",
                        vm->ractor.cnt,  vm->ractor.sync.terminate_waiting);
 
