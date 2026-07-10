@@ -7162,7 +7162,7 @@ expand_feature(VALUE fname, VALUE dname, VALUE buffer, bool need_expansion)
     else {
         rb_str_set_len(buffer, 0);
         rb_str_append(buffer, dname);
-        if (!isdirsep(dname_ptr[dname_len])) {
+        if (!isdirsep(dname_ptr[dname_len - 1])) {
             rb_str_cat(buffer, "/", 1);
         }
         rb_str_append(buffer, fname);
