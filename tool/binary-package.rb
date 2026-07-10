@@ -73,9 +73,12 @@ rbconfigs.each do |file|
 end
 
 # Rename the prefix directory to the package name and archive it with
-# bsdtar, which ships with Windows 10 and later.
+# bsdtar, which ships with Windows 10 and later.  Prefer the inbox
+# tar.exe; a GNU tar earlier in PATH cannot write zip with -a.
 pkgdir = File.join(stage, name)
 File.rename(root, pkgdir) unless root == pkgdir
 FileUtils.rm_f(output)
-system("tar", "-a", "-c", "-f", output, "-C", stage, name, exception: true)
+tar = File.join(ENV["SystemRoot"] || "C:/Windows", "System32", "tar.exe")
+tar = "tar" unless File.exist?(tar)
+system(tar, "-a", "-c", "-f", output, "-C", stage, name, exception: true)
 puts "packaged #{output}"
