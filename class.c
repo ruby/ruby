@@ -1047,6 +1047,13 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         rb_class_update_superclasses(clone);
     }
 
+    if (RB_TYPE_P(clone, T_CLASS)) {
+        VALUE super = RCLASS_SUPER(clone);
+        if (super && RB_TYPE_P(super, T_ICLASS)) {
+            class_switch_superclass(rb_class_superclass(clone), clone);
+        }
+    }
+
     return clone;
 }
 
