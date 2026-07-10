@@ -66,6 +66,8 @@ Note: We're only listing outstanding class updates.
 
 * Module
 
+    * `Module#descendants` is added.  It returns an array of classes and
+      modules that have the receiver in their ancestors.  [[Feature #9779]]
     * `Module#ruby2_keywords` and top-level `ruby2_keywords` are
       deprecated and will be removed in Ruby 4.4. [[Feature #22205]]
 
@@ -298,6 +300,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 ## JIT
 
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
+[Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
 [Feature #20163]: https://bugs.ruby-lang.org/issues/20163
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
