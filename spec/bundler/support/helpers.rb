@@ -185,7 +185,13 @@ module Spec
 
     def sys_exec(cmd, options = {}, &block)
       env = options[:env] || {}
-      env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/switch_rubygems.rb", env["RUBYOPT"]), ENV["RUBYOPT"])
+      if ENV["RGV"] == "system"
+        # Spawned processes must boot system RubyGems untouched, so don't make
+        # them switch, and drop the load path override the harness runs with.
+        env["RUBYOPT"] = opt_add(env["RUBYOPT"] || "", opt_remove("-I#{source_lib_dir}", ENV["RUBYOPT"]))
+      else
+        env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/switch_rubygems.rb", env["RUBYOPT"]), ENV["RUBYOPT"])
+      end
       options[:env] = env
 
       sh(cmd, options, &block)
