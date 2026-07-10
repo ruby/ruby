@@ -1108,7 +1108,7 @@ module Test
         super
         parser.separator "load path options:"
         parser.on '-Idirectory', 'Add library load path' do |dirs|
-          dirs.split(':').each { |d| $LOAD_PATH.unshift d }
+          dirs.split(File::PATH_SEPARATOR).each { |d| $LOAD_PATH.unshift d }
         end
       end
     end
