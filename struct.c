@@ -829,7 +829,9 @@ struct_alloc(VALUE klass)
 
     VALUE flags = T_STRUCT;
 
-    if (n > 0 && rb_gc_size_allocatable_p(embedded_size)) {
+    const long embed_len_max = RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT;
+
+    if (n > 0 && n <= embed_len_max && rb_gc_size_allocatable_p(embedded_size)) {
         flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
         if (RCLASS_MAX_IV_COUNT(klass) == 0) {
             // We set the flag before calling `NEWOBJ_OF` in case a NEWOBJ tracepoint does
