@@ -6633,17 +6633,19 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     }
     else {
         bool retry = false;
-        /* slow path */
-        int lev = RB_GC_VM_LOCK_NO_BARRIER();
-        {
-            if (is_incremental_marking(objspace)) {
-                gc_writebarrier_incremental(a, b, objspace);
+        if (RVALUE_BLACK_P(objspace, a)) {
+            /* slow path */
+            int lev = RB_GC_VM_LOCK_NO_BARRIER();
+            {
+                if (is_incremental_marking(objspace)) {
+                    gc_writebarrier_incremental(a, b, objspace);
+                }
+                else {
+                    retry = true;
+                }
             }
-            else {
-                retry = true;
-            }
+            RB_GC_VM_UNLOCK_NO_BARRIER(lev);
         }
-        RB_GC_VM_UNLOCK_NO_BARRIER(lev);
 
         if (retry) goto retry;
     }
