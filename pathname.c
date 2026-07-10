@@ -133,11 +133,45 @@ same_paths(VALUE self, VALUE a, VALUE b)
 }
 
 /*
- * Predicate method for root directories.  Returns +true+ if the
- * pathname consists of consecutive slashes.
+ * :markup: markdown
  *
- * It doesn't access the filesystem.  So it may return +false+ for some
- * pathnames which points to roots such as <tt>/usr/..</tt>.
+ * call-seq:
+ *   root? -> true or false
+ *
+ * Returns whether the path in `self` points to a root directory.
+ *
+ * On a non-Windows system, a root directory path is one whose name begins
+ * with one or more slash characters (`'/'):
+ *
+ * ```ruby
+ * Pathname('/').root?       # => true
+ * Pathname('////').root?    # => true
+ * Pathname('/usr').root?    # => false
+ * Pathname('foo').root?     # => false
+ * ```
+ *
+ * Does not resolve dot directories:
+ *
+ * ```ruby
+ * Pathname('/usr/.').root?  # => false
+ * Pathname('/usr/..').root? # => false
+ * ```
+ *
+ * On a Windows system, a root directory path is one whose name begins as above,
+ * or with a device letter followed by a colon character (`':'`)
+ * and one or more slash characters (`'/'):
+ *
+ * ```ruby
+ * Pathname('/').root?      # => true
+ * Pathname('////').root?   # => true
+ * Pathname('C:/').root?    # => true
+ * Pathname('C:////').root? # => true
+ * Pathname('c:/').root?    # => true
+ * Pathname('H:/').root?    # => true
+ * Pathname('C:/m').root?   # => false
+ * Pathname('C:').root?     # => false
+ * ```
+ *
  */
 static VALUE
 path_root_p(VALUE self)
