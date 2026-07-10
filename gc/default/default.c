@@ -317,8 +317,12 @@ static ruby_gc_params_t gc_params = {
 #define RGENGC_DEBUG       0
 #endif
 #endif
-#if RGENGC_DEBUG < 0 && !defined(_MSC_VER)
+#if RGENGC_DEBUG < 0
+# if !defined(_MSC_VER)
 # define RGENGC_DEBUG_ENABLED(level) (-(RGENGC_DEBUG) >= (level) && ruby_rgengc_debug >= (level))
+# else
+# define RGENGC_DEBUG_ENABLED(level) (ruby_rgengc_debug >= (level))
+# endif
 #elif defined(HAVE_VA_ARGS_MACRO)
 # define RGENGC_DEBUG_ENABLED(level) ((RGENGC_DEBUG) >= (level))
 #else
@@ -1336,7 +1340,7 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 
 #ifdef HAVE_VA_ARGS_MACRO
 # define gc_report(level, objspace, ...) \
-    if (!RGENGC_DEBUG_ENABLED(level)) {} else gc_report_body(level, objspace, __VA_ARGS__)
+    if (!RGENGC_DEBUG_ENABLED(level)) {} else gc_report_body(level, objspace, "" __VA_ARGS__)
 #else
 # define gc_report if (!RGENGC_DEBUG_ENABLED(0)) {} else gc_report_body
 #endif
@@ -6370,7 +6374,7 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 static void
 gc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...)
 {
-    if (level <= RGENGC_DEBUG) {
+    if (level <= (RGENGC_DEBUG < 0 ? ruby_rgengc_debug : RGENGC_DEBUG)) {
         char buf[1024];
         FILE *out = stderr;
         va_list args;
