@@ -6,16 +6,15 @@
 require 'optparse'
 require 'fileutils'
 
-stage = name = arch = srcdir = vcpkgdir = output = nil
+stage = name = srcdir = vcpkgdir = output = nil
 opt = OptionParser.new
 opt.on('--stage=DIR') {|v| stage = v}
 opt.on('--name=NAME') {|v| name = v}
-opt.on('--arch=ARCH') {|v| arch = v}
 opt.on('--srcdir=DIR') {|v| srcdir = v}
 opt.on('--vcpkg-dir=DIR') {|v| vcpkgdir = v}
 opt.on('--output=FILE') {|v| output = v}
 opt.parse!(ARGV)
-abort(opt.to_s) unless stage and name and arch and srcdir and vcpkgdir and output
+abort(opt.to_s) unless stage and name and srcdir and vcpkgdir and output
 
 stage = File.expand_path(stage)
 output = File.expand_path(output)
@@ -43,17 +42,10 @@ dlls.reject! {|f| File.basename(f, ".dll") == "readline"}
 abort "#{$0}: no DLLs in #{vcpkgdir}/bin; run `nmake install-vcpkg' first" if dlls.empty?
 dlls.each {|f| FileUtils.cp(f, bindir)}
 
-# Bundle the VC runtime (app-local deployment).  UCRT ships with the
-# OS since Windows 10, but vcruntime140*.dll does not.
-vcruntime = []
-if redist = ENV["VCToolsRedistDir"]
-  cpu = arch == "i386" ? "x86" : arch
-  # backslashes would be glob escapes
-  pattern = File.join(redist.tr("\\", "/"), cpu, "Microsoft.VC*.CRT", "vcruntime140*.dll")
-  vcruntime = Dir.glob(pattern)
-  vcruntime.each {|f| FileUtils.cp(f, bindir)}
-end
-warn "#{$0}: vcruntime140.dll not bundled; run under vcvars to set VCToolsRedistDir" if vcruntime.empty?
+# The VC runtime (vcruntime140*.dll) is deliberately not bundled.
+# App-local copies are never serviced by Windows Update; the package
+# assumes the VC++ Redistributable is installed.
+# https://bugs.ruby-lang.org/issues/22180
 
 # Collect license terms of everything the package redistributes.
 licdir = File.join(root, "LICENSES")
