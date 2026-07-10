@@ -4022,6 +4022,13 @@ socketpair_unix_path(struct sockaddr_un *sock_un)
         case 0:
             /* user temp dir from TMP or TEMP env var, it ends with a backslash */
             path_len = GetTempPathW(maxpath, wpath);
+            if (path_len == 0 || path_len > maxpath) {
+                /* The env var path did not fit in wpath (GetTempPathW then
+                 * returns the required length and leaves wpath unfilled), or
+                 * the call failed.  Skip to the next candidate directory
+                 * instead of reading past wpath in WideCharToMultiByte. */
+                continue;
+            }
             break;
         case 1:
             wcsncpy(wpath, L"C:/Temp/", maxpath);
