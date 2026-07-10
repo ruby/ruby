@@ -19,6 +19,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
+#include "internal/vm.h"
 #include "method.h"
 #include "iseq.h"
 #include "vm_core.h"
@@ -3796,7 +3797,7 @@ rb_proc_new(
     rb_block_call_func_t func,
     VALUE val)
 {
-    VALUE procval = rb_block_call(rb_mRubyVMFrozenCore, idProc, 0, 0, func, val);
+    VALUE procval = rb_block_call_retaining(rb_mRubyVMFrozenCore, idProc, 0, 0, func, val);
     return procval;
 }
 
@@ -3822,7 +3823,7 @@ method_to_proc(VALUE method)
      *   end
      * end
      */
-    procval = rb_block_call(rb_mRubyVMFrozenCore, idLambda, 0, 0, bmcall, method);
+    procval = rb_block_call_retaining(rb_mRubyVMFrozenCore, idLambda, 0, 0, bmcall, method);
     GetProcPtr(procval, proc);
     proc->is_from_method = 1;
     return procval;

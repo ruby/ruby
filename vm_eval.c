@@ -1500,7 +1500,7 @@ iterator_data_on_machine_stack(const rb_execution_context_t *ec, const void *dat
 
 static VALUE
 rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
-            struct vm_ifunc *const ifunc,
+            struct vm_ifunc *const ifunc, bool invalidate_block,
             rb_execution_context_t *ec)
 {
     enum ruby_tag_type state;
@@ -1546,11 +1546,13 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
     }
     EC_POP_TAG();
 
-    if (ifunc && iterator_data_on_machine_stack(ec, ifunc->data)) {
+    if (invalidate_block && ifunc && iterator_data_on_machine_stack(ec, ifunc->data)) {
         /* The data points into a C stack frame that dies with this return,
          * so the block must not outlive this iteration.  Blocks whose data
          * is a heap object (e.g. the ones rb_proc_new or Enumerator pass to
-         * a method that retains them) stay callable. */
+         * a method that retains them) stay callable.  Constructors such as
+         * rb_proc_new()/rb_fiber_new() pass invalidate_block=false because
+         * their block deliberately outlives this call. */
         ifunc->func = iterator_block_expired;
         ifunc->data = NULL;
     }
@@ -1563,11 +1565,11 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 
 static VALUE
 rb_iterate_internal(VALUE (* it_proc)(VALUE), VALUE data1,
-                    rb_block_call_func_t bl_proc, VALUE data2)
+                    rb_block_call_func_t bl_proc, VALUE data2, bool invalidate_block)
 {
     return rb_iterate0(it_proc, data1,
                        bl_proc ? rb_vm_ifunc_proc_new(bl_proc, (void *)data2) : 0,
-                       GET_EC());
+                       invalidate_block, GET_EC());
 }
 
 struct iter_method_arg {
@@ -1607,7 +1609,27 @@ rb_block_call_kw(VALUE obj, ID mid, int argc, const VALUE * argv,
     arg.argc = argc;
     arg.argv = argv;
     arg.kw_splat = kw_splat;
-    return rb_iterate_internal(iterate_method, (VALUE)&arg, bl_proc, data2);
+    return rb_iterate_internal(iterate_method, (VALUE)&arg, bl_proc, data2, true);
+}
+
+/*
+ * Like rb_block_call, but the block created for bl_proc is expected to
+ * outlive this call (it is captured into a Proc or Fiber that is
+ * returned).  Its ifunc is therefore not invalidated on return; the
+ * caller owns the lifetime of data2.
+ */
+VALUE
+rb_block_call_retaining(VALUE obj, ID mid, int argc, const VALUE *argv,
+                        rb_block_call_func_t bl_proc, VALUE data2)
+{
+    struct iter_method_arg arg;
+
+    arg.obj = obj;
+    arg.mid = mid;
+    arg.argc = argc;
+    arg.argv = argv;
+    arg.kw_splat = RB_NO_KEYWORDS;
+    return rb_iterate_internal(iterate_method, (VALUE)&arg, bl_proc, data2, false);
 }
 
 /*
@@ -1638,7 +1660,7 @@ rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv,
     if (flags & RB_BLOCK_NO_USE_PACKED_ARGS)
         ifunc->flags |= IFUNC_YIELD_OPTIMIZABLE;
 
-    return rb_iterate0(iterate_method, (VALUE)&arg, ifunc, GET_EC());
+    return rb_iterate0(iterate_method, (VALUE)&arg, ifunc, true, GET_EC());
 }
 
 VALUE
@@ -1656,7 +1678,7 @@ rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
     arg.argv = argv;
     arg.kw_splat = 0;
     block = rb_vm_ifunc_new(bl_proc, (void *)data2, min_argc, max_argc);
-    return rb_iterate0(iterate_method, (VALUE)&arg, block, GET_EC());
+    return rb_iterate0(iterate_method, (VALUE)&arg, block, true, GET_EC());
 }
 
 static VALUE
@@ -1679,7 +1701,7 @@ rb_check_block_call(VALUE obj, ID mid, int argc, const VALUE *argv,
     arg.argc = argc;
     arg.argv = argv;
     arg.kw_splat = 0;
-    return rb_iterate_internal(iterate_check_method, (VALUE)&arg, bl_proc, data2);
+    return rb_iterate_internal(iterate_check_method, (VALUE)&arg, bl_proc, data2, true);
 }
 
 VALUE
