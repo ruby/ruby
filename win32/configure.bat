@@ -188,7 +188,7 @@ goto :loop ;
 :ntver
   ::- For version constants, see
   ::- https://learn.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt#remarks
-  if "%eq%" == "" (set "NTVER=%~1" & call :shift) else (set "NTVER=%arg%")
+  set "NTVER=%arg%"
   if /i not "%NTVER:~0,2%" == "0x" if /i not "%NTVER:~0,13%" == "_WIN32_WINNT_" (
     for %%i in (A B C D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
       call :set NTVER=%%NTVER:%%i=%%i%%
