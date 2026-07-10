@@ -1488,7 +1488,8 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 {
     enum ruby_tag_type state;
     volatile VALUE retval = Qnil;
-    rb_control_frame_t *const cfp = ec->cfp;
+    rb_control_frame_t *volatile const cfp = ec->cfp;
+    struct vm_ifunc *volatile const invalidate_ifunc = block_noescape ? ifunc : NULL;
 
     EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
@@ -1529,13 +1530,9 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
     }
     EC_POP_TAG();
 
-    if (block_noescape && ifunc) {
-        /* The block must not outlive this call: its data may point into
-         * this (now dead) C stack frame.  Invalidate it so that a block
-         * captured by the called method raises instead of causing a
-         * use-after-return. */
-        ifunc->func = iterator_block_expired;
-        ifunc->data = NULL;
+    if (invalidate_ifunc) {
+        invalidate_ifunc->func = iterator_block_expired;
+        invalidate_ifunc->data = NULL;
     }
 
     if (state) {
