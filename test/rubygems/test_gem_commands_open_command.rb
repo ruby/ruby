@@ -43,6 +43,34 @@ class TestGemCommandsOpenCommand < Gem::TestCase
     assert_equal "", @ui.output
   end
 
+  def test_editor_command_windows_path
+    win_platform = Gem.win_platform?
+
+    editor = if win_platform
+      FileUtils.mkdir_p File.join(@tempdir, "editor dir")
+      File.join(@tempdir, "editor dir", "editor.exe").tr("/", "\\")
+    else
+      # backslashes and spaces are plain filename characters on POSIX
+      File.join(@tempdir, 'C:\editor dir\editor.exe')
+    end
+    FileUtils.touch editor
+
+    Gem.win_platform = true
+
+    assert_equal [editor], @cmd.editor_command(editor)
+  ensure
+    Gem.win_platform = win_platform
+  end
+
+  def test_editor_command_quoted_path
+    assert_equal ['C:\editor dir\editor.exe', "-w"],
+                 @cmd.editor_command('"C:\editor dir\editor.exe" -w')
+  end
+
+  def test_editor_command_with_arguments
+    assert_equal %w[code -w], @cmd.editor_command("code -w")
+  end
+
   def test_wrong_version
     @cmd.options[:version] = "4.0"
     @cmd.options[:args] = %w[foo]
