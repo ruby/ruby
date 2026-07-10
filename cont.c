@@ -2187,7 +2187,9 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
 static inline rb_fiber_t*
 fiber_current(void)
 {
-    rb_execution_context_t *ec = GET_EC();
+    /* Called right after a coroutine transfer: an inlined GET_EC() may read a
+     * TLS pointer cached before the NT migration, so force a fresh load. */
+    rb_execution_context_t *ec = rb_current_ec_noinline();
     return ec->fiber_ptr;
 }
 
