@@ -183,6 +183,13 @@ module Spec
       sys_exec(cmd.to_s, options)
     end
 
+    # The RubyGems version that processes spawned by specs run. Under
+    # RGV=system it's the system RubyGems, which is older than the one loaded
+    # in the current process.
+    def exercised_rubygems_version
+      @exercised_rubygems_version ||= Gem::Version.new(ENV["BUNDLER_SPEC_SYSTEM_RUBYGEMS_VERSION"] || Gem::VERSION)
+    end
+
     def sys_exec(cmd, options = {}, &block)
       env = options[:env] || {}
       if ENV["RGV"] == "system"

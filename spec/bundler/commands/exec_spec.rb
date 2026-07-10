@@ -75,13 +75,13 @@ RSpec.describe "bundle exec" do
     skip "https://github.com/ruby/rubygems/issues/3351" if mswin?
     install_gemfile "source \"https://gem.repo1\"; gem \"myrack\""
     bundle "exec #{gem_cmd} --version"
-    expect(out).to eq(Gem::VERSION)
+    expect(out).to eq(exercised_rubygems_version.to_s)
   end
 
   it "works when exec'ing to rubygems through sh -c" do
     install_gemfile "source \"https://gem.repo1\"; gem \"myrack\""
     bundle "exec sh -c '#{gem_cmd} --version'"
-    expect(out).to eq(Gem::VERSION)
+    expect(out).to eq(exercised_rubygems_version.to_s)
   end
 
   it "works when exec'ing back to bundler to run a remote resolve" do
