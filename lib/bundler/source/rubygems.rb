@@ -406,7 +406,7 @@ module Bundler
         @cached_specs ||= begin
           idx = Index.new
 
-          Dir["#{cache_path}/*.gem"].each do |gemfile|
+          Gem::Util.glob_files_in_dir("*.gem", cache_path.to_s).each do |gemfile|
             s ||= Bundler.rubygems.spec_from_gem(gemfile)
             s.source = self
             idx << s

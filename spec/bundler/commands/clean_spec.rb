@@ -46,6 +46,34 @@ RSpec.describe "bundle clean" do
     expect(vendored_gems("bin/myrackup")).to exist
   end
 
+  it "removes unused gems when the bundle path contains glob metacharacters" do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "thin"
+      gem "foo"
+    G
+
+    bundle_config "path vendor/dir[1]"
+    bundle_config "clean false"
+    bundle "install"
+
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "thin"
+    G
+    bundle "install"
+
+    bundle :clean
+
+    expect(out).to include("Removing foo (1.0)")
+
+    metachar_vendored_gems = scoped_gem_path(bundled_app("vendor/dir[1]"))
+    expect(metachar_vendored_gems.join("gems/foo-1.0")).not_to exist
+    expect(metachar_vendored_gems.join("gems/thin-1.0")).to exist
+  end
+
   it "removes old version of gem if unused" do
     gemfile <<-G
       source "https://gem.repo1"

@@ -306,9 +306,7 @@ class Gem::BasicSpecification
   # Return all files in this gem that match for +glob+.
 
   def matches_for_glob(glob) # TODO: rename?
-    glob = File.join(lib_dirs_glob, glob)
-
-    Dir[glob]
+    Gem::Util.glob_files_in_dir(File.join(lib_dirs, glob), full_gem_path)
   end
 
   ##
@@ -323,17 +321,7 @@ class Gem::BasicSpecification
   # for this spec.
 
   def lib_dirs_glob
-    dirs = if raw_require_paths
-      if raw_require_paths.size > 1
-        "{#{raw_require_paths.join(",")}}"
-      else
-        raw_require_paths.first
-      end
-    else
-      "lib" # default value for require_paths for bundler/inline
-    end
-
-    "#{full_gem_path}/#{dirs}"
+    "#{full_gem_path}/#{lib_dirs}"
   end
 
   ##
@@ -363,6 +351,22 @@ class Gem::BasicSpecification
   end
 
   private
+
+  ##
+  # Returns the require_paths of this gem as a string usable in Dir.glob,
+  # relative to full_gem_path.
+
+  def lib_dirs
+    if raw_require_paths
+      if raw_require_paths.size > 1
+        "{#{raw_require_paths.join(",")}}"
+      else
+        raw_require_paths.first
+      end
+    else
+      "lib" # default value for require_paths for bundler/inline
+    end
+  end
 
   def have_extensions?
     !extensions.empty?

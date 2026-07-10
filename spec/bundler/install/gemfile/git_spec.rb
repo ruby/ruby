@@ -122,6 +122,26 @@ RSpec.describe "bundle install with git sources" do
       expect(file_code.strip).to eq(ruby_code)
     end
 
+    it "caches the evaluated gemspec when the bundle path contains glob metacharacters" do
+      bundle_config "path vendor/dir[1]"
+      install_base_gemfile
+      git = update_git "foo" do |s|
+        s.executables = ["foobar"] # we added this the first time, so keep it now
+        s.files = ["bin/foobar"] # updating git nukes the files list
+        foospec = s.to_ruby.gsub(/s\.files.*/, 's.files = `git ls-files -z`.split("\x0")')
+        s.write "foo.gemspec", foospec
+      end
+
+      bundle "update foo"
+
+      sha = git.ref_for("main", 11)
+      spec_file = scoped_gem_path(bundled_app("vendor/dir[1]")).join("bundler/gems/foo-1.0-#{sha}/foo.gemspec")
+      expect(spec_file).to exist
+      ruby_code = Gem::Specification.load(spec_file.to_s).to_ruby
+      file_code = File.read(spec_file)
+      expect(file_code).to eq(ruby_code)
+    end
+
     it "does not update the git source implicitly" do
       install_base_gemfile
       update_git "foo"
