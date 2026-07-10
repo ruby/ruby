@@ -69,6 +69,13 @@ struct rb_ractor_struct {
     struct rb_ractor_pub pub;
     struct rb_ractor_sync sync;
 
+#if !USE_MODULAR_GC
+    /* traversal-API mark redirect (NULL outside a traversal).  Per Ractor so a
+     * concurrent traversal on another Ractor is never observed.  A modular GC
+     * keeps this in the VM instead (vm->gc.mark_func_data). */
+    struct gc_mark_func_data_struct *mark_func_data;
+#endif
+
     // thread management
     struct {
         struct ccan_list_head set;

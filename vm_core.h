@@ -679,6 +679,16 @@ typedef struct rb_hook_list_struct {
 // see builtin.h for definition
 typedef const struct rb_builtin_function *RB_BUILTIN;
 
+/* The mark redirect used by the object-traversal APIs
+ * (rb_objspace_reachable_objects_from etc.).  It is installed while a traversal
+ * runs and is NULL during a real GC.  Storage is per-Ractor
+ * (rb_ractor_t.mark_func_data), except on a modular GC where it lives in the VM
+ * (rb_vm_struct's gc sub-struct; see gc.c). */
+struct gc_mark_func_data_struct {
+    void *data;
+    void (*mark_func)(VALUE v, void *data);
+};
+
 typedef struct rb_vm_struct {
     VALUE self;
 
@@ -799,10 +809,13 @@ typedef struct rb_vm_struct {
 
     struct {
         struct rb_objspace *objspace;
-        struct gc_mark_func_data_struct {
-            void *data;
-            void (*mark_func)(VALUE v, void *data);
-        } *mark_func_data;
+#if USE_MODULAR_GC
+        /* A modular GC (e.g. MMTk) may mark on worker threads that have no
+         * current EC, so the traversal mark redirect must be reachable without
+         * a Ractor and lives here.  Otherwise it is per-Ractor
+         * (rb_ractor_t.mark_func_data). */
+        struct gc_mark_func_data_struct *mark_func_data;
+#endif
     } gc;
 
     rb_at_exit_list *at_exit;
