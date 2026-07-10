@@ -128,7 +128,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 # define CharNext(p) ((p)+1)
 # endif
 # ifdef DOSISH_DRIVE_LETTER
-    if (((p[0] | 0x20) - 'a') < 26  && p[1] == ':') {
+    if ((unsigned char)((p[0] | 0x20) - 'a') < 26u  && p[1] == ':') {
         p += 2;
         is_abs = 1;
     }
