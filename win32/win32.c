@@ -1955,7 +1955,10 @@ get_handle_pathname(HANDLE fh, WCHAR **pathptr, DWORD add)
     WCHAR *path = malloc((len + add + 1) * sizeof(WCHAR));
     if (!(*pathptr = path)) return 0;
     len = GetFinalPathNameByHandleW(fh, path, len + 1, 0);
-    if (!len) free(path);
+    if (!len) {
+        free(path);
+        *pathptr = NULL;
+    }
     return len;
 }
 
