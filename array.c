@@ -4659,7 +4659,7 @@ take_items(VALUE obj, long n)
     if (!NIL_P(result)) return rb_ary_subseq(result, 0, n);
     result = rb_ary_new2(n);
     args[0] = result; args[1] = (VALUE)n;
-    if (UNDEF_P(rb_check_block_call(obj, idEach, 0, 0, take_i, (VALUE)args)))
+    if (UNDEF_P(rb_check_block_call_noescape(obj, idEach, 0, 0, take_i, (VALUE)args)))
         rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (must respond to :each)",
                  rb_obj_class(obj));
     return result;

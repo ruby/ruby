@@ -14,6 +14,7 @@
 #include "internal/set_table.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
+#include "internal/vm.h"
 #include "ruby_assert.h"
 
 #include <stdio.h>
@@ -1186,7 +1187,7 @@ set_i_intersection(VALUE set, VALUE other)
             .into = ntable,
             .other = stable
         };
-        rb_block_call(other, enum_method_id(other), 0, 0, set_intersection_block, (VALUE)&data);
+        rb_block_call_noescape(other, enum_method_id(other), 0, 0, set_intersection_block, (VALUE)&data);
     }
 
     return new_set;

@@ -29,6 +29,7 @@
 #include "internal/numeric.h"
 #include "internal/range.h"
 #include "internal/rational.h"
+#include "internal/vm.h"
 #include "ruby/ruby.h"
 
 /*
@@ -2122,7 +2123,7 @@ lazy_flat_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo
     else if (rb_respond_to(value, id_force) && rb_respond_to(value, id_each)) {
         struct flat_map_i_arg arg = {.result = result, .index = proc_index};
         LAZY_MEMO_RESET_BREAK(result);
-        rb_block_call(value, id_each, 0, 0, lazy_flat_map_i, (VALUE)&arg);
+        rb_block_call_noescape(value, id_each, 0, 0, lazy_flat_map_i, (VALUE)&arg);
         if (break_p) LAZY_MEMO_SET_BREAK(result);
         return 0;
     }
@@ -3681,7 +3682,7 @@ product_each(VALUE obj, struct product_state *pstate)
     if (pstate->index < pstate->argc) {
         VALUE eobj = RARRAY_AREF(enums, pstate->index);
 
-        rb_block_call(eobj, id_each_entry, 0, NULL, product_each_i, (VALUE)pstate);
+        rb_block_call_noescape(eobj, id_each_entry, 0, NULL, product_each_i, (VALUE)pstate);
     }
     else {
         rb_funcall(pstate->block, id_call, 1, rb_ary_new_from_values(pstate->argc, pstate->argv));

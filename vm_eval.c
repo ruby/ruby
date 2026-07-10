@@ -1481,26 +1481,9 @@ iterator_block_expired(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     UNREACHABLE_RETURN(Qnil);
 }
 
-/* Whether `data` points into the machine stack of the current execution
- * context, i.e. into a local of one of the C frames above rb_iterate0. */
-static bool
-iterator_data_on_machine_stack(const rb_execution_context_t *ec, const void *data)
-{
-    /* A large Fixnum or a flonum passed as data could alias a stack
-     * address; a real pointer into the stack is at least VALUE-aligned
-     * and never a special constant. */
-    if (RB_SPECIAL_CONST_P((VALUE)data)) return false;
-
-    const uintptr_t p = (uintptr_t)data;
-    const uintptr_t start = (uintptr_t)ec->machine.stack_start;
-    const uintptr_t here = (uintptr_t)&p;
-
-    return start < here ? (start <= p && p <= here) : (here <= p && p <= start);
-}
-
 static VALUE
 rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
-            struct vm_ifunc *const ifunc, bool invalidate_block,
+            struct vm_ifunc *const ifunc, bool block_noescape,
             rb_execution_context_t *ec)
 {
     enum ruby_tag_type state;
@@ -1546,13 +1529,11 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
     }
     EC_POP_TAG();
 
-    if (invalidate_block && ifunc && iterator_data_on_machine_stack(ec, ifunc->data)) {
-        /* The data points into a C stack frame that dies with this return,
-         * so the block must not outlive this iteration.  Blocks whose data
-         * is a heap object (e.g. the ones rb_proc_new or Enumerator pass to
-         * a method that retains them) stay callable.  Constructors such as
-         * rb_proc_new()/rb_fiber_new() pass invalidate_block=false because
-         * their block deliberately outlives this call. */
+    if (block_noescape && ifunc) {
+        /* The block must not outlive this call: its data may point into
+         * this (now dead) C stack frame.  Invalidate it so that a block
+         * captured by the called method raises instead of causing a
+         * use-after-return. */
         ifunc->func = iterator_block_expired;
         ifunc->data = NULL;
     }
@@ -1565,11 +1546,11 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 
 static VALUE
 rb_iterate_internal(VALUE (* it_proc)(VALUE), VALUE data1,
-                    rb_block_call_func_t bl_proc, VALUE data2, bool invalidate_block)
+                    rb_block_call_func_t bl_proc, VALUE data2, bool block_noescape)
 {
     return rb_iterate0(it_proc, data1,
                        bl_proc ? rb_vm_ifunc_proc_new(bl_proc, (void *)data2) : 0,
-                       invalidate_block, GET_EC());
+                       block_noescape, GET_EC());
 }
 
 struct iter_method_arg {
@@ -1609,18 +1590,20 @@ rb_block_call_kw(VALUE obj, ID mid, int argc, const VALUE * argv,
     arg.argc = argc;
     arg.argv = argv;
     arg.kw_splat = kw_splat;
-    return rb_iterate_internal(iterate_method, (VALUE)&arg, bl_proc, data2, true);
+    return rb_iterate_internal(iterate_method, (VALUE)&arg, bl_proc, data2, false);
 }
 
 /*
- * Like rb_block_call, but the block created for bl_proc is expected to
- * outlive this call (it is captured into a Proc or Fiber that is
- * returned).  Its ifunc is therefore not invalidated on return; the
- * caller owns the lifetime of data2.
+ * Identical to rb_block_call(), except that the block created for
+ * `bl_proc` must not escape this call: it is invalidated when this
+ * function returns, and calling it afterwards raises RuntimeError.
+ * Use this variant whenever `data2` points to storage that dies with
+ * this call (e.g. a buffer on the caller's stack), so that a block
+ * captured by the called method cannot cause a use-after-return.
  */
 VALUE
-rb_block_call_retaining(VALUE obj, ID mid, int argc, const VALUE *argv,
-                        rb_block_call_func_t bl_proc, VALUE data2)
+rb_block_call_noescape(VALUE obj, ID mid, int argc, const VALUE *argv,
+                       rb_block_call_func_t bl_proc, VALUE data2)
 {
     struct iter_method_arg arg;
 
@@ -1629,7 +1612,7 @@ rb_block_call_retaining(VALUE obj, ID mid, int argc, const VALUE *argv,
     arg.argc = argc;
     arg.argv = argv;
     arg.kw_splat = RB_NO_KEYWORDS;
-    return rb_iterate_internal(iterate_method, (VALUE)&arg, bl_proc, data2, false);
+    return rb_iterate_internal(iterate_method, (VALUE)&arg, bl_proc, data2, true);
 }
 
 /*
@@ -1660,7 +1643,7 @@ rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv,
     if (flags & RB_BLOCK_NO_USE_PACKED_ARGS)
         ifunc->flags |= IFUNC_YIELD_OPTIMIZABLE;
 
-    return rb_iterate0(iterate_method, (VALUE)&arg, ifunc, true, GET_EC());
+    return rb_iterate0(iterate_method, (VALUE)&arg, ifunc, false, GET_EC());
 }
 
 VALUE
@@ -1678,7 +1661,7 @@ rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
     arg.argv = argv;
     arg.kw_splat = 0;
     block = rb_vm_ifunc_new(bl_proc, (void *)data2, min_argc, max_argc);
-    return rb_iterate0(iterate_method, (VALUE)&arg, block, true, GET_EC());
+    return rb_iterate0(iterate_method, (VALUE)&arg, block, false, GET_EC());
 }
 
 static VALUE
@@ -1693,6 +1676,21 @@ iterate_check_method(VALUE obj)
 VALUE
 rb_check_block_call(VALUE obj, ID mid, int argc, const VALUE *argv,
                     rb_block_call_func_t bl_proc, VALUE data2)
+{
+    struct iter_method_arg arg;
+
+    arg.obj = obj;
+    arg.mid = mid;
+    arg.argc = argc;
+    arg.argv = argv;
+    arg.kw_splat = 0;
+    return rb_iterate_internal(iterate_check_method, (VALUE)&arg, bl_proc, data2, false);
+}
+
+/* The rb_block_call_noescape() counterpart of rb_check_block_call(). */
+VALUE
+rb_check_block_call_noescape(VALUE obj, ID mid, int argc, const VALUE *argv,
+                             rb_block_call_func_t bl_proc, VALUE data2)
 {
     struct iter_method_arg arg;
 
