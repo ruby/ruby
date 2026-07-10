@@ -2296,7 +2296,23 @@ class Pathname
   # Argument `permissions` is ignored on Windows.
   def mkdir(...) Dir.mkdir(@path, ...) end
 
-  # See <tt>Dir.rmdir</tt>.  Remove the referenced directory.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   rmdir -> 0
+  #
+  # Deletes the directory at the path in +self+; returns `0`:
+  #
+  # ```ruby
+  # pn = Pathname('doc/foo')
+  # pn.mkdir
+  # pn.rmdir
+  # ```
+  #
+  # Raises an exception if the directory is not empty,
+  # or if the path does not point to a directory.
+  #
+  # Use method #rmtree to delete the entire filetree at the path.
   def rmdir() Dir.rmdir(@path) end
 
   # :markup: markdown
