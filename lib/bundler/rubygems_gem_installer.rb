@@ -94,6 +94,15 @@ module Bundler
       end
     end
 
+    # Reimplemented from RubyGems, since RubyGems older than 4.1 doesn't
+    # provide it
+    def remove_stale_plugins
+      return unless spec.plugins.empty?
+
+      ensure_writable_dir @plugins_dir
+      remove_plugins_for(spec, @plugins_dir)
+    end
+
     def warn_skipped_extensions
       return if spec.extensions.empty?
 
