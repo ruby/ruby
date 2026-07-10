@@ -118,7 +118,7 @@ goto :loop ;
   echo>>%confargs%  "--target=%arg:$=$$%" \
 goto :loop ;
 :program_name
-  for /f "delims=- tokens=1,*" %I in ("%opt%") do set "var=%%J"
+  for /f "delims=- tokens=1,*" %%I in ("%opt%") do set "var=%%J"
   if "%var%" == "prefix" (set "var=PROGRAM_PREFIX" & goto :name)
   if "%var%" == "suffix" (set "var=PROGRAM_SUFFIX" & goto :name)
   if "%var%" == "name" (set "var=RUBY_INSTALL_NAME" & goto :name)
