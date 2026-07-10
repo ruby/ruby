@@ -1653,7 +1653,7 @@ rb_nogvl(void *(*func)(void *), void *data1,
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
     bool is_main_thread = vm->ractor.main_thread == th;
-    int saved_errno = 0;
+    int saved_errno = EINTR;
 
     rb_thread_resolve_unblock_function(&ubf, &data2, th);
 
