@@ -1005,9 +1005,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             rb_class_set_super(prev_clone_p, clone_p);
             prev_clone_p = clone_p;
             RCLASS_SET_CONST_TBL(clone_p, RCLASS_CONST_TBL(p), false);
-            if (RB_TYPE_P(clone, T_CLASS)) {
-                RCLASS_SET_INCLUDER(clone_p, clone);
-            }
+            RCLASS_SET_INCLUDER(clone_p, clone);
             add_subclass = TRUE;
             if (p != RCLASS_ORIGIN(p)) {
                 origin[0] = clone_p;
@@ -2116,6 +2114,115 @@ VALUE
 rb_class_subclasses(VALUE klass)
 {
     return class_descendants(klass, true);
+}
+
+struct descendants_traverse_data
+{
+    VALUE buffer;
+    long count;
+    long maxcount;
+    st_table *visited;
+};
+
+static void module_descendants_recursive(VALUE entry, VALUE v);
+
+static void
+module_descendants_add(VALUE klass, struct descendants_traverse_data *data)
+{
+    // skip entries beyond the estimation to keep the enumeration pass allocation-free
+    if (data->buffer && data->count >= data->maxcount) return;
+
+    if (st_insert(data->visited, (st_data_t)klass, 1)) return; // already visited
+
+    if (data->buffer) {
+        // assumes that this does not cause GC as long as the length does not exceed the capacity
+        rb_ary_push(data->buffer, klass);
+    }
+    data->count++;
+    rb_class_foreach_subclass(klass, module_descendants_recursive, (VALUE)data);
+}
+
+static void
+module_descendants_recursive(VALUE entry, VALUE v)
+{
+    struct descendants_traverse_data *data = (struct descendants_traverse_data *)v;
+
+    if (rb_objspace_garbage_object_p(entry)) return;
+
+    if (RB_TYPE_P(entry, T_ICLASS)) {
+        // resolve the ICLASS to the including class or module;
+        // refinement ICLASSes have no includer
+        VALUE includer = RCLASS_INCLUDER(entry);
+        while (includer && RB_TYPE_P(includer, T_ICLASS)) {
+            includer = RCLASS_INCLUDER(includer);
+        }
+        if (!includer || UNDEF_P(includer)) return;
+        if (rb_objspace_garbage_object_p(includer)) return;
+        if (RCLASS_SINGLETON_P(includer)) return; // e.g. Object#extend
+        module_descendants_add(includer, data);
+    }
+    else {
+        if (RCLASS_SINGLETON_P(entry)) return;
+        module_descendants_add(entry, data);
+    }
+}
+
+/*
+ *  call-seq:
+ *     descendants -> array
+ *
+ *  Returns an array of classes and modules that have the receiver in
+ *  their ancestors. This is the inverse of Module#ancestors:
+ *  +x.descendants.include?(y)+ holds if and only if
+ *  +y.ancestors.include?(x)+ holds, except that the receiver itself,
+ *  singleton classes, and refinements are never included.
+ *  The order of the returned array is not defined.
+ *
+ *     module A; end
+ *     module B; include A; end
+ *     class C; include B; end
+ *     class D < C; end
+ *
+ *     A.descendants    #=> [B, C, D]
+ *     B.descendants    #=> [C, D]
+ *     C.descendants    #=> [D]
+ *
+ *  Note that the receiver does not hold references to its descendants
+ *  and doesn't prevent them from being garbage collected. This means
+ *  that a descendant might disappear from the result when all
+ *  references to it are dropped, depending on whether garbage
+ *  collector was run.
+ */
+
+VALUE
+rb_mod_descendants(VALUE mod)
+{
+    struct descendants_traverse_data data = { Qfalse, 0, -1, NULL };
+
+    // estimate the count of descendants
+    data.visited = st_init_numtable();
+    st_insert(data.visited, (st_data_t)mod, 1); // exclude the receiver
+    rb_class_foreach_subclass(mod, module_descendants_recursive, (VALUE)&data);
+    st_free_table(data.visited);
+
+    // the following allocation may cause GC which may change the number of descendants
+    data.buffer = rb_ary_new_capa(data.count);
+    data.maxcount = data.count;
+    data.count = 0;
+    // pre-sized so that st_insert() does not cause GC during the enumeration
+    data.visited = st_init_numtable_with_size(data.maxcount + 1);
+    st_insert(data.visited, (st_data_t)mod, 1); // exclude the receiver
+
+    size_t gc_count = rb_gc_count();
+
+    rb_class_foreach_subclass(mod, module_descendants_recursive, (VALUE)&data);
+
+    if (gc_count != rb_gc_count()) {
+        rb_bug("GC must not occur during the subclass iteration of Module#descendants");
+    }
+    st_free_table(data.visited);
+
+    return data.buffer;
 }
 
 /*
