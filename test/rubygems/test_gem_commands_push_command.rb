@@ -219,6 +219,36 @@ class TestGemCommandsPushCommand < Gem::TestCase
     end
   end
 
+  # When the running Ruby lives under a path containing whitespace, Gem.ruby
+  # returns a quoted string. That quoting must not leak into the argv passed to
+  # Open3.capture2e, or signing spawns fail and push silently falls back to an
+  # unsigned upload.
+  def test_attest_unquotes_ruby
+    require "open3"
+
+    fake_status = Object.new
+    def fake_status.success?
+      true
+    end
+
+    captured = nil
+    capture_stub = lambda do |*args, **_kwargs|
+      captured = args
+      ["", fake_status]
+    end
+    Gem.stub(:ruby, '"/path with space/bin/ruby"') do
+      Open3.stub(:capture2e, capture_stub) do
+        @cmd.send(:attest!, @path)
+      end
+    end
+
+    refute_nil captured, "signing command should have been spawned"
+    # captured[0] is the env hash; the interpreter follows it.
+    assert_equal "/path with space/bin/ruby", captured[1]
+    refute_includes captured[1], '"'
+    assert_equal "-S", captured[2]
+  end
+
   def test_execute_allowed_push_host
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
       spec.metadata["allowed_push_host"] = "https://privategemserver.example"

@@ -816,6 +816,36 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_empty @cmd.updated
   end
 
+  # When the running Ruby lives under a path containing whitespace, Gem.ruby
+  # returns a quoted string. That quoting must not leak into the argv passed to
+  # the non-shell `system` call that runs setup.rb, or the interpreter can't be
+  # found and `gem update --system` fails to spawn.
+  def test_install_rubygems_unquotes_ruby
+    version = Gem::Version.new("99.0.0")
+    update_dir = File.join @tempdir, "gems", "rubygems-update-#{version}"
+    FileUtils.mkdir_p update_dir
+
+    spec = Struct.new(:version, :base_dir).new(version, @tempdir)
+
+    captured = nil
+    @cmd.define_singleton_method(:system) do |*args|
+      captured = args
+      true
+    end
+
+    @cmd.options[:silent] = true
+
+    Gem.stub(:ruby, '"/path with space/bin/ruby"') do
+      @cmd.install_rubygems(spec)
+    end
+
+    refute_nil captured, "setup.rb should have been spawned"
+    assert_equal "/path with space/bin/ruby", captured.first
+    refute_includes captured.first, '"'
+    assert_includes captured, "--disable-gems"
+    assert_includes captured, "setup.rb"
+  end
+
   def test_update_rubygems_arguments
     @cmd.options[:system] = true
 
