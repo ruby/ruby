@@ -58,6 +58,10 @@ Note: We're only listing outstanding class updates.
     * A deprecated behavior, `Set#to_set`, `Range#to_set`, and
       `Enumerable#to_set` accepting arguments, was removed.  [[Feature #21390]]
 
+* Symbol
+
+    * `Symbol#to_s` now returns a frozen string. [[Feature #22137]]
+
 ## Stdlib updates
 
 ### The following bundled gems are added.
@@ -211,6 +215,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21861]: https://bugs.ruby-lang.org/issues/21861
 [Feature #21932]: https://bugs.ruby-lang.org/issues/21932
 [Feature #21981]: https://bugs.ruby-lang.org/issues/21981
+[Feature #22137]: https://bugs.ruby-lang.org/issues/22137
 [Feature #22139]: https://bugs.ruby-lang.org/issues/22139
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4

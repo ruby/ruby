@@ -18,9 +18,7 @@
 
 #define STR_SHARED                  FL_USER0 /* = ELTS_SHARED */
 #define STR_NOEMBED                 FL_USER1
-#define STR_CHILLED                 (FL_USER2 | FL_USER3)
-#define STR_CHILLED_LITERAL         FL_USER2
-#define STR_CHILLED_SYMBOL_TO_S     FL_USER3
+#define STR_CHILLED         FL_USER2
 #define STR_FAKESTR                 FL_USER19
 
 enum ruby_rstring_private_flags {
@@ -103,7 +101,6 @@ VALUE rb_str_casecmp(VALUE str1, VALUE str2);
 
 /* error.c */
 void rb_warn_unchilled_literal(VALUE str);
-void rb_warn_unchilled_symbol_to_s(VALUE str);
 
 static inline bool STR_EMBED_P(VALUE str);
 static inline bool STR_SHARED_P(VALUE str);
@@ -173,17 +170,9 @@ CHILLED_STRING_P(VALUE obj)
 static inline void
 CHILLED_STRING_MUTATED(VALUE str)
 {
-    VALUE chilled_reason = RB_FL_TEST_RAW(str, STR_CHILLED);
-    FL_UNSET_RAW(str, STR_CHILLED);
-    switch (chilled_reason) {
-      case STR_CHILLED_SYMBOL_TO_S:
-        rb_warn_unchilled_symbol_to_s(str);
-        break;
-      case STR_CHILLED_LITERAL:
+    if (RB_FL_TEST_RAW(str, STR_CHILLED)) {
+        FL_UNSET_RAW(str, STR_CHILLED);
         rb_warn_unchilled_literal(str);
-        break;
-      default:
-        rb_bug("RString was chilled for multiple reasons");
     }
 }
 

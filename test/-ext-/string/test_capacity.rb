@@ -12,8 +12,8 @@ class Test_StringCapacity < Test::Unit::TestCase
   end
 
   def test_capacity_shared
-    sym = ("a" * pool_slot_size(0)).to_sym
-    assert_equal 0, capa(sym.to_s)
+    source = ("a" * pool_slot_size(0)).freeze
+    assert_equal 0, capa(Bug::String.rb_str_new_shared(source))
   end
 
   def test_capacity_normal

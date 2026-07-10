@@ -2008,7 +2008,7 @@ rb_obj_freeze_inline(VALUE x)
     if (RB_FL_ABLE(x)) {
         RB_FL_SET_RAW(x, RUBY_FL_FREEZE);
         if (TYPE(x) == T_STRING) {
-            RB_FL_UNSET_RAW(x, FL_USER2 | FL_USER3); // STR_CHILLED
+            RB_FL_UNSET_RAW(x, FL_USER2); // STR_CHILLED
         }
 
         // rb_obj_freeze_inline(String)

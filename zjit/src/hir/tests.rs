@@ -5230,7 +5230,7 @@ pub(crate) mod hir_build_tests {
         let iseq = crate::cruby::with_rubyvm(|| get_instance_method_iseq("Symbol", "name"));
         let function = iseq_to_hir(iseq).unwrap();
         assert_snapshot!(hir_string_function(&function), @"
-        fn name@<internal:symbol>:
+        fn to_s@<internal:symbol>:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf

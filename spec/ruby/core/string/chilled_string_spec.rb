@@ -78,7 +78,9 @@ describe "chilled String" do
         end
       end
     end
+  end
 
+  guard -> { ruby_version_is "3.4"..."4.1" and !:test.to_s.equal?(:test.to_s) } do
     describe "chilled strings returned by Symbol#to_s" do
 
       describe "#frozen?" do

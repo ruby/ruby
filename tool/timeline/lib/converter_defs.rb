@@ -91,8 +91,7 @@ module RubyTimelineTool
   StringFlags = FlagsConverter.new({
     STR_SHARED:               FL_USER_N(0),
     RSTRING_NOEMBED:          FL_USER_N(1),
-    STR_CHILLED_LITERAL:      FL_USER_N(2),
-    STR_CHILLED_SYMBOL_TO_S:  FL_USER_N(3),
+    STR_CHILLED:      FL_USER_N(2),
     RSTRING_FSTR:             FL_USER_N(17),
   })
 
