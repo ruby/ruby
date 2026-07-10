@@ -2135,7 +2135,24 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.setgid?</tt>.
   def setgid?() FileTest.setgid?(@path) end
 
-  # See <tt>FileTest.size</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   size -> integer
+  #
+  # Returns the size of the entry at the path in `self`:
+  #
+  # ```ruby
+  # Pathname('README.md').size # => 3469
+  # Pathname('doc').size       # => 4096
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('')
+  # pn.size                    # => 0
+  # pd.delete                  # Clean up.
+  # ```
+  #
+  # Raises an exception if the entry does not exist.
+  #
   def size() FileTest.size(@path) end
 
   # See <tt>FileTest.size?</tt>.
