@@ -2637,8 +2637,11 @@ fn gen_is_bit_not_equal(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) 
 }
 
 fn gen_box_bool(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
-    asm.test(val, val);
-    asm.csel_nz(Opnd::Value(Qtrue), Opnd::Value(Qfalse))
+    // Since we know val is either 0 or 1 and we are trying to get Qfalse or Qtrue, respectively,
+    // we can just multiply by Qtrue to get the correct boxed value.
+    assert_eq!(Qfalse.as_i64(), 0);
+    assert_eq!(Qtrue.as_i64(), 0b10100);
+    asm.mul(val, Qtrue.as_i64().into())
 }
 
 fn gen_box_fixnum(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
