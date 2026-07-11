@@ -277,12 +277,20 @@ has_separator_p(VALUE self, VALUE path)
 }
 
 /*
- * Return a pathname with +repl+ added as a suffix to the basename.
+ * :markup: markdown
  *
- * If self has no extension part, +repl+ is appended.
+ * call-seq:
+ *   sub_ext -> new_pathname
  *
- *	Pathname.new('/usr/bin/shutdown').sub_ext('.rb')
- *	    #=> #<Pathname:/usr/bin/shutdown.rb>
+ * Returns a new pathname whose path is the path in `self`,
+ * after specified changes:
+ *
+ * ```ruby
+ * Pathname('t.tmp').sub_ext('.txt') # => #<Pathname:t.txt>     # Extension replaced.
+ * Pathname('temp').sub_ext('.txt')  # => #<Pathname:temp.txt>  # Extension added.
+ * Pathname('t.tmp').sub_ext('')     # => #<Pathname:t>         # Extension removed.
+ * ```
+ *
  */
 static VALUE
 path_sub_ext(VALUE self, VALUE repl)
