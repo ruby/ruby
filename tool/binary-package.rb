@@ -18,6 +18,9 @@ abort(opt.to_s) unless stage and name and srcdir and vcpkgdir and output
 
 stage = File.expand_path(stage)
 output = File.expand_path(output)
+# Normalize so backslashes are not treated as glob escapes below.
+srcdir = srcdir.tr("\\", "/")
+vcpkgdir = vcpkgdir.tr("\\", "/")
 
 # Find the installed prefix inside the stage.  DESTDIR staging
 # reproduces the prefix below the stage directory (with the drive
@@ -54,7 +57,9 @@ FileUtils.mkdir_p(File.join(licdir, "ruby"))
   src = File.join(srcdir, f)
   FileUtils.cp(src, File.join(licdir, "ruby", f)) if File.exist?(src)
 end
-Dir.glob(File.join(vcpkgdir, "share", "*", "copyright")) do |f|
+copyrights = Dir.glob(File.join(vcpkgdir, "share", "*", "copyright"))
+abort "#{$0}: no copyright files in #{vcpkgdir}/share" if copyrights.empty?
+copyrights.each do |f|
   FileUtils.cp(f, File.join(licdir, "#{File.basename(File.dirname(f))}.txt"))
 end
 
