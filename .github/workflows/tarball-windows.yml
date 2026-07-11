@@ -44,8 +44,6 @@ jobs:
       OS_VER: windows-${{ matrix.os }}
       VCPKG_DEFAULT_TRIPLET: x64-windows
       FEED_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
-      # see https://github.com/ruby/ruby/commit/9ff4399decef0036897d3cfb9ac2c710dea913ca
-      OPENSSL_MODULES: ${{ github.workspace }}\${{ inputs.archname }}\vcpkg_installed\x64-windows\bin
     steps:
       - run: md build
         working-directory:
@@ -103,6 +101,7 @@ jobs:
           key: downloaded-cache
 
       - name: setup env
+        # OPENSSL_MODULES: see https://github.com/ruby/ruby/commit/9ff4399decef0036897d3cfb9ac2c710dea913ca
         env:
           ARCHNAME: ${{ inputs.archname }}
         run: |
@@ -115,7 +114,8 @@ jobs:
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
-          set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/%ARCHNAME%/vcpkg_installed/x64-windows
+          set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/%ARCHNAME%/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
+          set OPENSSL_MODULES=%GITHUB_WORKSPACE%\%ARCHNAME%\vcpkg_installed\%VCPKG_DEFAULT_TRIPLET%\bin
           set > new.env
 
       - name: update env
