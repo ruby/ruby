@@ -525,6 +525,15 @@ ASSERT_ractor_sched_locked(rb_vm_t *vm, rb_ractor_t *cr)
     VM_ASSERT(cr == NULL || vm->ractor.sched.lock_owner == cr);
 }
 
+/* O(1) membership in vm->ractor.sched.running_threads: the node is
+ * NULL-initialized before the first add and self-linked after del_init. */
+static bool
+ractor_sched_running_threads_member_p(const rb_thread_t *th)
+{
+    const struct ccan_list_node *node = &th->sched.node.running_threads;
+    return node->next != NULL && node->next != node;
+}
+
 RBIMPL_ATTR_MAYBE_UNUSED()
 static bool
 ractor_sched_running_threads_contain_p(rb_vm_t *vm, rb_thread_t *th)
@@ -1650,33 +1659,33 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
     VM_ASSERT(vm->ractor.sync.lock_owner == NULL); // VM is locked, but owner == NULL
     VM_ASSERT(vm->ractor.sched.barrier_waiting);  // VM needs barrier sync
 
-#if USE_RUBY_DEBUG_LOG || VM_CHECK_MODE > 0
-    unsigned int barrier_serial = vm->ractor.sched.barrier_serial;
-#endif
+    const unsigned int barrier_serial = vm->ractor.sched.barrier_serial;
 
     RUBY_DEBUG_LOG("join");
 
     rb_native_mutex_unlock(&vm->ractor.sync.lock);
     {
-        VM_ASSERT(vm->ractor.sched.barrier_waiting);  // VM needs barrier sync
-        VM_ASSERT(vm->ractor.sched.barrier_serial == barrier_serial);
-
         ractor_sched_lock(vm, cr);
-        {
-            // running_cnt
-            /* A not-yet-running thread (blocking/terminating, joined only to
-             * sync) must not be counted, or barrier_waiting_cnt > running_cnt-1. */
-            if (cr->threads.sched.is_running) {
+        /* The barrier seen under the VM lock can complete before we get here;
+         * waiting then would sleep until the NEXT barrier completes. Skip
+         * instead and let the caller re-evaluate. */
+        if (vm->ractor.sched.barrier_waiting && vm->ractor.sched.barrier_serial == barrier_serial) {
+            rb_thread_t *th = GET_THREAD();
+
+            /* Count only a member of the running set, checked per-thread:
+             * sched.is_running can already be true for a designated successor
+             * while this (terminating) caller has left the set. */
+            if (ractor_sched_running_threads_member_p(th)) {
                 vm->ractor.sched.barrier_waiting_cnt++;
                 RUBY_DEBUG_LOG("waiting_cnt:%u serial:%u", vm->ractor.sched.barrier_waiting_cnt, barrier_serial);
                 ractor_sched_barrier_join_signal_locked(vm);
             }
             else {
-                RUBY_DEBUG_LOG("join without counting (not running) serial:%u", barrier_serial);
+                RUBY_DEBUG_LOG("join without counting (not in running set) serial:%u", barrier_serial);
             }
             /* Park the CALLING thread: cr->threads.sched.running can be another
              * thread (e.g. blocked in IO); saving into its ec corrupts its bounds. */
-            ractor_sched_barrier_join_wait_locked(vm, GET_THREAD());
+            ractor_sched_barrier_join_wait_locked(vm, th);
         }
         ractor_sched_unlock(vm, cr);
     }
