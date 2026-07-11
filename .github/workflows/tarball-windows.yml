@@ -18,9 +18,9 @@ on:
       SNAPSHOT_SLACK_WEBHOOK_URL:
         required: false
 
-permissions:
-  contents: read
-  packages: write
+# GITHUB_TOKEN permissions are inherited from the caller job. Declaring
+# permissions here would be an elevation request and fail at startup when
+# the caller's token is capped to read-only (fork pull requests).
 
 jobs:
   windows:
