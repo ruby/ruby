@@ -57,11 +57,23 @@ goto :remove_end
     ::- files under the target directory, instead of the symlink itself.
     rd /q "%p%" 2> nul && goto :remove_end
 
+    ::- If matching files and directory exist, remove the files only first.
+    del /q "%p%" 2> nul
+
     ::- `del` exits with 0 even when nothing matched, so its result cannot
-    ::- tell whether directories remain; remove them first.
-    if "%recursive%" == "-r" for /D %%I in (%p%) do (
-        rd /s /q %%I || call set error=%%ERRORLEVEL%%
+    ::- tell whether directories remain; check if matching entries still
+    ::- exist instead.
+    if not exist "%p%" goto :remove_end
+
+    ::- Unless `-r` option is given, do not remove directories; just fail.
+    if not "%recursive%" == "-r" (
+        call set error=1
+        goto :remove_end
     )
-    if exist "%p%" del /q "%p%" 2> nul
+
+    ::- Remove remained directories recursively.
+    for /D %%I in (%p%) do (
+        rd /s /q %%I 2> nul || call set error=%%ERRORLEVEL%%
+    )
 :remove_end
 endlocal & set "error=%error%" & goto :EOF
