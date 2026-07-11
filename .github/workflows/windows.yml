@@ -50,10 +50,18 @@ jobs:
 
     name: Win ${{ matrix.os }} VS ${{ matrix.vc }} (${{ matrix.test_task }})
 
+    permissions:
+      contents: read
+      packages: write
+
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       OS_VER: windows-${{ matrix.os }}
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
+      FEED_URL: https://nuget.pkg.github.com/ruby/index.json
+      # The GITHUB_TOKEN of pull_request events (forks, dependabot) is
+      # read-only; built packages are uploaded on push and merge_group only.
+      VCPKG_BINARY_SOURCES: clear;nuget,https://nuget.pkg.github.com/ruby/index.json,${{ github.event_name != 'pull_request' && 'readwrite' || 'read' }}
       TEST_BUNDLED_GEMS_ALLOW_FAILURES: "rake" # test-bundled-gems with windows-2025 is failed with rake test
 
     steps:
@@ -112,25 +120,21 @@ jobs:
           scoop install vcpkg cmake@3.31.6
         shell: pwsh
 
-      - name: Restore vcpkg artifact
-        id: restore-vcpkg
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: src\vcpkg_installed
-          key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
+      - name: Set up vcpkg binary cache
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEED_OWNER: ${{ github.repository_owner }}
+        run: |
+          $nuget = (vcpkg fetch nuget --vcpkg-root=C:\Users\runneradmin\scoop\apps\vcpkg\current) | Select-Object -Last 1
+          & $nuget sources add -Source $Env:FEED_URL -StorePasswordInClearText `
+            -Name GitHubPackages -UserName $Env:FEED_OWNER -Password $Env:GH_TOKEN
+          & $nuget setapikey $Env:GH_TOKEN -Source $Env:FEED_URL
 
       - name: Install libraries with vcpkg
         run: |
           vcpkg install --vcpkg-root=C:\Users\runneradmin\scoop\apps\vcpkg\current
         working-directory: src
-        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit }}
-
-      - name: Save vcpkg artifact
-        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: src\vcpkg_installed
-          key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
-        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit && (github.ref_name == 'master' || startsWith(github.ref_name, 'ruby_')) }}
 
       - name: setup env
         # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby
