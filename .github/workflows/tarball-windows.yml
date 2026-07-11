@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   windows:
@@ -41,8 +42,13 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       PATCH: C:\msys64\usr\bin\patch.exe
       OS_VER: windows-${{ matrix.os }}
+      VCPKG_DEFAULT_TRIPLET: x64-windows
+      FEED_URL: https://nuget.pkg.github.com/ruby/index.json
+      # The GITHUB_TOKEN of pull_request events (forks, dependabot) is
+      # read-only; built packages are uploaded on push and merge_group only.
+      VCPKG_BINARY_SOURCES: clear;nuget,https://nuget.pkg.github.com/ruby/index.json,${{ github.event_name != 'pull_request' && 'readwrite' || 'read' }}
       # see https://github.com/ruby/ruby/commit/9ff4399decef0036897d3cfb9ac2c710dea913ca
-      OPENSSL_MODULES: C:\vcpkg\installed\x64-windows\bin
+      OPENSSL_MODULES: ${{ github.workspace }}\${{ inputs.archname }}\vcpkg_installed\x64-windows\bin
     steps:
       - run: md build
         working-directory:
@@ -63,17 +69,6 @@ jobs:
         shell: msys2 {0}
         run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
         if: ${{ steps.setup-msys2.outcome == 'success' }}
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: C:\vcpkg\installed
-          key: ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-
-            ${{ runner.os }}-vcpkg-installed-
-      - name: Install libraries with vcpkg
-        run: |
-          vcpkg --triplet x64-windows install gmp libffi libyaml openssl zlib
-
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: Packages
@@ -81,6 +76,23 @@ jobs:
       - name: Extract
         run: 7z x pkg/*.zip
         working-directory:
+
+      - name: Set up vcpkg binary cache
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEED_OWNER: ${{ github.repository_owner }}
+        run: |
+          $nuget = (vcpkg fetch nuget) | Select-Object -Last 1
+          & $nuget sources add -Source $Env:FEED_URL -StorePasswordInClearText `
+            -Name GitHubPackages -UserName $Env:FEED_OWNER -Password $Env:GH_TOKEN
+          & $nuget setapikey $Env:GH_TOKEN -Source $Env:FEED_URL
+
+      - name: Install libraries with vcpkg
+        run: |
+          git -C "%VCPKG_INSTALLATION_ROOT%" pull --quiet
+          vcpkg install
+        working-directory: ${{ inputs.archname }}
 
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -98,6 +110,7 @@ jobs:
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
+          set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/%ARCHNAME%/vcpkg_installed/x64-windows
           set > new.env
 
       - name: update env
@@ -109,17 +122,13 @@ jobs:
             Where-Object { $_.SideIndicator -eq '=>' } |
             Select-Object -ExpandProperty InputObject |
             Add-Content -Path $env:GITHUB_ENV
-      - name: link libraries
-        run: |
-          for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
-            mklink %%~nxI %%I
-          )
       - name: Configure
         env:
           ARCHNAME: ${{ inputs.archname }}
         run: >-
           ../%ARCHNAME%/win32/configure.bat --disable-install-doc
-          --with-opt-dir=C:/vcpkg/installed/x64-windows
+          --with-opt-dir=%RUBY_OPT_DIR%
+      - run: nmake prepare-vcpkg
       - run: nmake incs
       - run: nmake extract-extlibs
       - run: nmake

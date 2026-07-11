@@ -91,6 +91,9 @@ jobs:
   windows:
     needs: tarball
     if: ${{ ! needs.tarball.outputs.skip }}
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/tarball-windows.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
