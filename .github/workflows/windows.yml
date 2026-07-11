@@ -57,10 +57,7 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
-      FEED_URL: https://nuget.pkg.github.com/ruby/index.json
-      # The GITHUB_TOKEN of pull_request events (forks, dependabot) is
-      # read-only; built packages are uploaded on push and merge_group only.
-      VCPKG_BINARY_SOURCES: clear;nuget,https://nuget.pkg.github.com/ruby/index.json,${{ github.event_name != 'pull_request' && 'readwrite' || 'read' }}
+      FEED_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
 
     steps:
       - run: md build
@@ -101,11 +98,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEED_OWNER: ${{ github.repository_owner }}
+          # The GITHUB_TOKEN of pull_request events (forks, dependabot) is
+          # read-only; packages are uploaded on push and merge_group only.
+          FEED_MODE: ${{ github.event_name != 'pull_request' && 'readwrite' || 'read' }}
         run: |
           $nuget = (vcpkg fetch nuget) | Select-Object -Last 1
           & $nuget sources add -Source $Env:FEED_URL -StorePasswordInClearText `
             -Name GitHubPackages -UserName $Env:FEED_OWNER -Password $Env:GH_TOKEN
           & $nuget setapikey $Env:GH_TOKEN -Source $Env:FEED_URL
+          "VCPKG_BINARY_SOURCES=clear;nuget,$Env:FEED_URL,$Env:FEED_MODE" >> $Env:GITHUB_ENV
 
       - name: Install libraries with vcpkg
         run: |
