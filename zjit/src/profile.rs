@@ -84,7 +84,7 @@ fn profile_insn_sample(
         YARVINSN_opt_ltlt  => profile_operands(profiler, profile, 2),
         YARVINSN_opt_aset  => profile_operands(profiler, profile, 3),
         YARVINSN_opt_not   => profile_operands(profiler, profile, 1),
-        YARVINSN_getinstancevariable => profile_self(profiler, profile),
+        YARVINSN_getinstancevariable => profile_getivar(profiler, profile),
         YARVINSN_setinstancevariable => profile_self(profiler, profile),
         YARVINSN_definedivar   => profile_self(profiler, profile),
         YARVINSN_opt_regexpmatch2    => profile_operands(profiler, profile, 2),
@@ -187,6 +187,23 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
 }
 
 fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
+    profile_self_with(profiler, profile, |distribution, ty| distribution.observe(ty));
+}
+
+fn profile_getivar(profiler: &mut Profiler, profile: &mut IseqProfile) {
+    profile_self_with(profiler, profile, observe_getivar_type);
+}
+
+fn observe_getivar_type(distribution: &mut TypeDistribution, ty: ProfiledType) {
+    // getivar specializes on shapes, so class variations should not consume buckets.
+    distribution.observe_with(ty, |left, right| left.shape() == right.shape());
+}
+
+fn profile_self_with(
+    profiler: &mut Profiler,
+    profile: &mut IseqProfile,
+    observe: impl FnOnce(&mut TypeDistribution, ProfiledType),
+) {
     let entry = profile.entry_mut(profiler.insn_idx);
     if entry.opnd_types.is_empty() {
         entry.opnd_types.resize(1, TypeDistribution::new());
@@ -196,7 +213,7 @@ fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
     // drop them or something
     let ty = ProfiledType::new(obj);
     VALUE::from(profiler.iseq).write_barrier(ty.class());
-    entry.opnd_types[0].observe(ty);
+    observe(&mut entry.opnd_types[0], ty);
 }
 
 fn profile_block_handler(profiler: &mut Profiler, profile: &mut IseqProfile) {
@@ -525,7 +542,28 @@ impl IseqProfile {
 
 #[cfg(test)]
 mod tests {
-    use crate::cruby::*;
+    use super::*;
+
+    #[test]
+    fn getivar_profiles_distinct_shapes() {
+        let mut distribution = TypeDistribution::new();
+        let shape = ShapeId(1);
+
+        // Different classes with the same shape should share one bucket.
+        for class in 1..=DISTRIBUTION_SIZE {
+            let ty = ProfiledType { class: VALUE(class), shape, flags: Flags::none() };
+            observe_getivar_type(&mut distribution, ty);
+        }
+
+        // The remaining buckets should be available for distinct shapes.
+        for shape_id in 2..=DISTRIBUTION_SIZE {
+            let ty = ProfiledType { class: VALUE(shape_id + DISTRIBUTION_SIZE), shape: ShapeId(shape_id as u32), flags: Flags::none() };
+            observe_getivar_type(&mut distribution, ty);
+        }
+
+        let shapes = distribution.each_item().map(|ty| ty.shape()).collect::<Vec<_>>();
+        assert_eq!(shapes, vec![ShapeId(1), ShapeId(2), ShapeId(3), ShapeId(4)]);
+    }
 
     #[test]
     fn can_profile_block_handler() {

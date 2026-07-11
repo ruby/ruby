@@ -22,8 +22,13 @@ impl<T: Copy + PartialEq + Default, const N: usize> Distribution<T, N> {
     }
 
     pub fn observe(&mut self, item: T) {
+        self.observe_with(item, |left, right| left == right);
+    }
+
+    /// Observe an item using a caller-defined notion of bucket equivalence.
+    pub fn observe_with(&mut self, item: T, equivalent: impl Fn(T, T) -> bool) {
         for (bucket, count) in self.buckets.iter_mut().zip(self.counts.iter_mut()) {
-            if *bucket == item || *count == 0 {
+            if *count == 0 || equivalent(*bucket, item) {
                 *bucket = item;
                 *count = count.saturating_add(1);
                 // Keep the most frequent item at the front
@@ -198,6 +203,18 @@ mod distribution_tests {
         assert!(dist.buckets.is_empty());
         assert!(dist.counts.is_empty());
         assert_eq!(dist.other, 1);
+    }
+
+    #[test]
+    fn observe_with_uses_custom_equivalence() {
+        let mut dist = Distribution::<(usize, usize), 2>::new();
+        dist.observe_with((1, 10), |left, right| left.1 == right.1);
+        dist.observe_with((2, 10), |left, right| left.1 == right.1);
+        dist.observe_with((3, 20), |left, right| left.1 == right.1);
+
+        assert_eq!(dist.buckets, [(2, 10), (3, 20)]);
+        assert_eq!(dist.counts, [2, 1]);
+        assert_eq!(dist.other, 0);
     }
 
     #[test]

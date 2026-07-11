@@ -9116,7 +9116,7 @@ fn add_iseq_to_hir(
                     let summary = fun.profile_summary(&profiles, self_param, exit_id);
                     let self_param = fun.guard_heap(block, self_param, exit_id);
                     // Filter out profiled types we don't care to optimize
-                    let profiled_types = summary.buckets().iter().filter(|profiled_type| {
+                    let profiled_types = summary.buckets().iter().copied().filter(|profiled_type| {
                         // Don't read past the end of the profiled types
                         !profiled_type.is_empty()
                         // Instance variable lookups on immediate values are always nil; don't bother
@@ -9126,17 +9126,8 @@ fn add_iseq_to_hir(
                         // Let the fallthrough GetIvar handle these.
                         && !profiled_type.shape().is_complex()
                     }).collect::<Vec<_>>();
-                    // We might have two objects of class A and B with the same shape; de-duplicate
-                    // profiled types by shape. This is just an optimization to reduce code size.
-                    let mut profiled_types_unique_shapes = Vec::with_capacity(profiled_types.len());
-                    for &profiled_type in profiled_types {
-                        if profiled_types_unique_shapes.iter().any(|t: &ProfiledType| t.shape() == profiled_type.shape()) {
-                            continue;
-                        }
-                        profiled_types_unique_shapes.push(profiled_type);
-                    }
                     let Some((new_block, result)) = fun.dispatch_getivar(
-                        &profiled_types_unique_shapes,
+                        &profiled_types,
                         block,
                         insn_idx,
                         self_param,

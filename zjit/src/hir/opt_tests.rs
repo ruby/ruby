@@ -9240,6 +9240,44 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_getivar_recompile_profiles_distinct_shapes_across_classes() {
+        // Fill the initial profiles with different classes that have the same
+        // shape, compile, then trigger recompile exits with a distinct shape.
+        set_call_threshold(6);
+        eval(r#"
+            module DistinctShapeReader
+              def foo = @foo
+            end
+
+            SAME_SHAPE_OBJECTS = 4.times.map do
+              Class.new do
+                include DistinctShapeReader
+                def initialize
+                  @foo = 1
+                end
+              end.new
+            end
+
+            different_shape_class = Class.new do
+              include DistinctShapeReader
+              def initialize
+                @bar = 2
+                @foo = 1
+              end
+            end
+            DIFFERENT_SHAPE_OBJECT = different_shape_class.new
+
+            SAME_SHAPE_OBJECTS.each(&:foo) # four profiles with one shape
+            SAME_SHAPE_OBJECTS[0].foo      # fifth profile
+            SAME_SHAPE_OBJECTS[0].foo      # compile
+            100.times { DIFFERENT_SHAPE_OBJECT.foo } # profile recompile exits
+        "#);
+
+        let hir = hir_string_proc("DistinctShapeReader.instance_method(:foo)");
+        assert!(hir.contains("CondBranch"), "expected getivar branches for two distinct shapes:\n{hir}");
+    }
+
+    #[test]
     fn test_optimize_getivar_polymorphic_with_subclass() {
         set_call_threshold(3);
         eval(r#"
