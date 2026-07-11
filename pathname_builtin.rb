@@ -2358,7 +2358,28 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.writable?</tt>.
   def writable?() FileTest.writable?(@path) end
 
-  # See <tt>FileTest.world_writable?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   world_writable? -> integer or nil
+  #
+  # If the entry at the path in `self` is writable by others,
+  # returns the integer permissions for the entry:
+  #
+  # ```ruby
+  # Pathname('/tmp').world_writable?.to_s(8) # => "777"
+  # ```
+  #
+  # Otherwise, returns `nil`:
+  #
+  # ```ruby
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('foo')
+  # pn.chmod(0o0)
+  # pn.world_writable? # => nil
+  # pn.delete
+  # ```
+  #
   def world_writable?() File.world_writable?(@path) end
 
   # See <tt>FileTest.writable_real?</tt>.
