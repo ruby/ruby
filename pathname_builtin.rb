@@ -2132,18 +2132,14 @@ class Pathname    # * mixed *
   # :markup: markdown
   #
   # call-seq:
-  #   unlink -> 1 or 0
+  #   unlink -> 0 or 1
   #
-  # Removes the file or directory represented by `self`, using:
-  #
-  # - File.unlink, if `self` represents a file; returns `1`.
-  # - Dir.unlink, if `self` represents a directory; returns `0`.
-  #
-  # Examples:
+  # Removes the entry represented by `self`;
+  # returns `0` if a directory, `1` if a file:
   #
   # ```ruby
-  # Pathname(Tempfile.create).unlink   # => 1
   # Pathname(Pathname.mktmpdir).unlink # => 0
+  # Pathname(Tempfile.create).unlink   # => 1
   # ```
   #
   def unlink()
