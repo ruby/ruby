@@ -1719,7 +1719,47 @@ class Pathname    # * File *
   #
   def truncate(length) File.truncate(@path, length) end
 
-  # See <tt>File.utime</tt>.  Update the access and modification times.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   utime(atime, mtime) -> 1
+  #
+  # For the entry at the path in `self`,
+  # updates its access time to the given `atime`
+  # and its modification time to the given `mtime`;
+  # each given time may be a Time object, an integer representing a time,
+  # or `nil` (meaning Time.now):
+  #
+  # ```ruby
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('foo')
+  # pn.stat.atime   # => 1969-12-31 18:00:00 -0600
+  # pn.stat.mtime   # => 2026-07-11 16:12:15.832556524 -0500
+  # pn.utime(0, 0)
+  # pn.stat.atime   # => 1969-12-31 18:00:00 -0600
+  # pn.stat.mtime   # => 1969-12-31 18:00:00 -0600
+  # pn.utime(nil, nil)
+  # pn.stat.atime   # => 2026-07-11 16:13:06.982646673 -0500
+  # pn.stat.mtime   # => 2026-07-11 16:13:04.983530291 -0500
+  # time = Time.now # => 2026-07-11 16:13:40.190110708 -0500
+  # pn.utime(time, time)
+  # pn.stat.atime   # => 2026-07-11 16:13:51.99317823 -0500
+  # pn.stat.mtime   # => 2026-07-11 16:13:40.190110708 -0500
+  # ```
+  #
+  # Follows symbolic links:
+  #
+  # ```ruby
+  # link_pn = Pathname('link')
+  # link_pn.make_symlink(pn)
+  # link_pn.stat.atime # => 2026-07-11 16:13:51.99317823 -0500
+  # link_pn.stat.mtime # => 2026-07-11 16:13:40.190110708 -0500
+  # link_pn.utime(0, 0)
+  # pn.stat.atime      # => 1969-12-31 18:00:00 -0600
+  # pn.stat.mtime      # => 1969-12-31 18:00:00 -0600
+  # pn.delete
+  # link_pn.delete
+  # ```
   def utime(atime, mtime) File.utime(atime, mtime, @path) end
 
   # :markup: markdown
