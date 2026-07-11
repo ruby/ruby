@@ -1674,7 +1674,9 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
             else {
                 RUBY_DEBUG_LOG("join without counting (not running) serial:%u", barrier_serial);
             }
-            ractor_sched_barrier_join_wait_locked(vm, cr->threads.sched.running);
+            /* Park the CALLING thread: cr->threads.sched.running can be another
+             * thread (e.g. blocked in IO); saving into its ec corrupts its bounds. */
+            ractor_sched_barrier_join_wait_locked(vm, GET_THREAD());
         }
         ractor_sched_unlock(vm, cr);
     }
