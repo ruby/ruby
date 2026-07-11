@@ -51,9 +51,17 @@ jobs:
 
     name: Windows ${{ matrix.os }}/Visual C++ ${{ matrix.vc }} (${{ matrix.test_task }})
 
+    permissions:
+      contents: read
+      packages: write
+
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
+      FEED_URL: https://nuget.pkg.github.com/ruby/index.json
+      # The GITHUB_TOKEN of pull_request events (forks, dependabot) is
+      # read-only; built packages are uploaded on push and merge_group only.
+      VCPKG_BINARY_SOURCES: clear;nuget,https://nuget.pkg.github.com/ruby/index.json,${{ github.event_name != 'pull_request' && 'readwrite' || 'read' }}
 
     steps:
       - run: md build
@@ -87,25 +95,21 @@ jobs:
           scoop install vcpkg
         shell: pwsh
 
-      - name: Restore vcpkg artifact
-        id: restore-vcpkg
-        uses: actions/cache/restore@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-        with:
-          path: src\vcpkg_installed
-          key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
+      - name: Set up vcpkg binary cache
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEED_OWNER: ${{ github.repository_owner }}
+        run: |
+          $nuget = (vcpkg fetch nuget) | Select-Object -Last 1
+          & $nuget sources add -Source $Env:FEED_URL -StorePasswordInClearText `
+            -Name GitHubPackages -UserName $Env:FEED_OWNER -Password $Env:GH_TOKEN
+          & $nuget setapikey $Env:GH_TOKEN -Source $Env:FEED_URL
 
       - name: Install libraries with vcpkg
         run: |
           vcpkg install
         working-directory: src
-        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit }}
-
-      - name: Save vcpkg artifact
-        uses: actions/cache/save@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-        with:
-          path: src\vcpkg_installed
-          key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
-        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit && (github.ref_name == 'master' || startsWith(github.ref_name, 'ruby_')) }}
 
       - name: setup env
         # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby
