@@ -1029,3 +1029,10 @@ rb_thread_sched_wait_winding(rb_vm_t *vm)
     // after leaving the living set (see thread_pthread.c)
     (void)vm;
 }
+
+// No detached (scheduler-handed-over) terminate path on this thread model.
+bool
+rb_ractor_sched_running_thread_p(rb_ractor_t *cr)
+{
+    return false;
+}

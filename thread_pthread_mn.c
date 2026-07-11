@@ -496,7 +496,7 @@ coroutine_thread_terminated(rb_thread_t *th)
     // collect th (and, for a Ractor's main thread, the Ractor).
     // (interrupt_lock stays valid up to here -- a concurrent terminate_all
     // may interrupt any still-listed thread; it is destroyed in thread_free.)
-    rb_ractor_living_threads_remove(r, th);
+    rb_ractor_living_threads_remove(r, th, true);
 
     if (last) {
         rb_current_ec_set(NULL); // TLS only; r may be collectable already

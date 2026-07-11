@@ -753,7 +753,7 @@ rb_vm_ractor_blocking_cnt_dec(rb_vm_t *vm, rb_ractor_t *cr, const char *file, in
 }
 
 static void
-ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const char *file, int line)
+ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, bool sched_detached, const char *file, int line)
 {
     VM_ASSERT(cr == GET_RACTOR());
 
@@ -771,18 +771,23 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const c
         rb_vm_t *vm = GET_VM();
 
         RB_VM_LOCKING() {
-            rb_vm_ractor_blocking_cnt_inc(vm, cr, file, line);
+            /* Re-check: acquiring the VM lock can join a barrier, and the world
+             * may have changed meanwhile (a sibling resumed, a successor ran). */
+            if (cr->threads.cnt == cr->threads.blocking_cnt + 1 &&
+                (!sched_detached || !rb_ractor_sched_running_thread_p(cr))) {
+                rb_vm_ractor_blocking_cnt_inc(vm, cr, file, line);
+            }
         }
     }
 }
 
 
 void
-rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
+rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th, bool sched_detached)
 {
     VM_ASSERT(cr == GET_RACTOR());
     RUBY_DEBUG_LOG("r->threads.cnt:%d--", cr->threads.cnt);
-    ractor_check_blocking(cr, cr->threads.cnt - 1, __FILE__, __LINE__);
+    ractor_check_blocking(cr, cr->threads.cnt - 1, sched_detached, __FILE__, __LINE__);
 
 
     if (cr->threads.cnt == 1) {
@@ -806,7 +811,7 @@ rb_ractor_blocking_threads_inc(rb_ractor_t *cr, const char *file, int line)
     VM_ASSERT(cr->threads.cnt > 0);
     VM_ASSERT(cr == GET_RACTOR());
 
-    ractor_check_blocking(cr, cr->threads.cnt, __FILE__, __LINE__);
+    ractor_check_blocking(cr, cr->threads.cnt, false, __FILE__, __LINE__);
     cr->threads.blocking_cnt++;
 }
 
@@ -819,11 +824,15 @@ rb_ractor_blocking_threads_dec(rb_ractor_t *cr, const char *file, int line)
 
     VM_ASSERT(cr == GET_RACTOR());
 
-    if (cr->threads.cnt == cr->threads.blocking_cnt) {
+    /* Keyed on the status, not on cnt arithmetic, to stay paired with the
+     * inc side (which can skip the transition for a detached caller). */
+    if (rb_ractor_status_p(cr, ractor_blocking)) {
         rb_vm_t *vm = GET_VM();
 
         RB_VM_LOCKING() {
-            rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
+            if (rb_ractor_status_p(cr, ractor_blocking)) {
+                rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
+            }
         }
     }
 

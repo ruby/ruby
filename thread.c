@@ -837,10 +837,10 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         // GC will happen anytime and this ractor can be collected (and destroy GVL).
         // So gvl_release() should be before it.
         thread_sched_to_dead(TH_SCHED(th), th);
-        rb_ractor_living_threads_remove(th->ractor, th);
+        rb_ractor_living_threads_remove(th->ractor, th, true);
     }
     else {
-        rb_ractor_living_threads_remove(th->ractor, th);
+        rb_ractor_living_threads_remove(th->ractor, th, false);
         thread_sched_to_dead(TH_SCHED(th), th);
     }
 
@@ -941,7 +941,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
     err = native_thread_create(th);
     if (err) {
         th->status = THREAD_KILLED;
-        rb_ractor_living_threads_remove(th->ractor, th);
+        rb_ractor_living_threads_remove(th->ractor, th, false);
         rb_raise(rb_eThreadError, "can't create Thread: %s", strerror(err));
     }
     return thval;
