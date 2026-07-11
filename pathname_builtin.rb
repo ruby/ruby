@@ -1892,7 +1892,27 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.pipe?</tt>.
   def pipe?() FileTest.pipe?(@path) end
 
-  # See <tt>FileTest.socket?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   socket? -> true or false
+  #
+  # Returns whether the path in `self` points to a socket entry:
+  #
+  # ```ruby
+  # require 'socket'
+  # path = 'doc/socket'
+  # server = UNIXServer.new(path) # => #<UNIXServer:doc/socket>
+  # pn = Pathname(path)           # => #<Pathname:doc/socket>
+  # pn.socket?                    # => true
+  # server.close
+  # pn.unlink
+  # Pathname('README.md').socket? # => false
+  # Pathname('nosuch').socket?    # => false
+  # ```
+  # 
+  # Returns `false` on Windows.
+  #
   def socket?() FileTest.socket?(@path) end
 
   # :markup: markdown
