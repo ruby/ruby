@@ -1606,7 +1606,20 @@ class Pathname    # * File *
   # Raises SystemCallError if the entry cannot be renamed.
   def rename(to) File.rename(@path, to) end
 
-  # See <tt>File.stat</tt>.  Returns a <tt>File::Stat</tt> object.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   stat -> File::Stat
+  #
+  # Returns a File::Stat object for the entry at the path in `self`:
+  #
+  # ```ruby
+  # Pathname('README.md').stat.inspect
+  # => "#<File::Stat dev=0x10302, ino=22941341, mode=0100664, nlink=1, uid=1000, gid=1000, rdev=0x0, size=3469, blksize=4096, blocks=8, atime=2026-07-10 15:24:17.476506084 -0500, mtime=2026-07-07 10:23:27.320088262 -0500, ctime=2026-07-07 10:23:27.320088262 -0500>"
+  # Pathname('doc').stat.inspect
+  # => "#<File::Stat dev=0x10302, ino=22941930, mode=040775, nlink=22, uid=1000, gid=1000, rdev=0x0, size=4096, blksize=4096, blocks=8, atime=2026-07-11 10:05:20.480330738 -0500, mtime=2026-07-11 10:05:06.34333645 -0500, ctime=2026-07-11 10:05:06.34333645 -0500>"
+  # ```
+  #
   def stat() File.stat(@path) end
 
   #
