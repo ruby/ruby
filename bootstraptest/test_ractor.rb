@@ -2620,3 +2620,24 @@ assert_equal 'ok', %q{
 
   :ok
 }
+
+# A terminating/blocking thread that joins the Ractor barrier must not save
+# its machine context into cr->threads.sched.running's ec: that corrupts the
+# blocked thread's stack bounds, the barrier GC then scans nothing of its
+# machine stack, and its IO buffer gets swept (use-after-free on read).
+assert_equal 'ok', %q{
+  Warning[:experimental] = false
+  b = Ractor.new do
+    60.times do
+      r, w = IO.pipe
+      t = Thread.new { sleep(0.0004); w.write("x" * 40); w.close }
+      r.read
+      r.close
+      t.join
+    end
+    :ok
+  end
+  a = Ractor.new { 300.times { GC.compact }; :ok }
+  [a, b].each(&:value)
+  :ok
+}
