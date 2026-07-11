@@ -1920,7 +1920,28 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.readable?</tt>.
   def readable?() FileTest.readable?(@path) end
 
-  # See <tt>FileTest.world_readable?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   world_readable? -> integer or nil
+  #
+  # If the entry at the path in `self` is readable by others,
+  # returns the integer permissions for the entry:
+  #
+  # ```ruby
+  # Pathname('/etc/passwd').world_readable?.to_s(8) # => "644"
+  # ```
+  #
+  # Otherwise, returns `nil`:
+  #
+  # ```ruby
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('foo')
+  # pn.chmod(0o0)
+  # pn.world_readable? # => nil
+  # pn.delete
+  # ```
+  #
   def world_readable?() File.world_readable?(@path) end
 
   # See <tt>FileTest.readable_real?</tt>.
