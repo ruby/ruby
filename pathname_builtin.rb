@@ -1937,7 +1937,26 @@ class Pathname    # * FileTest *
 
   # See <tt>FileTest.size?</tt>.
   def size?() FileTest.size?(@path) end
-  # See <tt>FileTest.sticky?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   sticky? -> true or false
+  #
+  # Returns whether the [sticky bit](https://en.wikipedia.org/wiki/Sticky_bit) is set
+  # for the entry at the path in `self`:
+  #
+  # ```ruby
+  # pn = Pathname('t.tmp')
+  # pn.write('foo')
+  # pn.stat.mode.to_s(8) # => "100664"
+  # pn.sticky?           # => false
+  # pn.chmod(0o1644)
+  # pn.stat.mode.to_s(8) # => "101644"
+  # pn.sticky?           # => true
+  # pn.delete
+  # ```
+  #
+  # Returns `false` on Windows.
   def sticky?() FileTest.sticky?(@path) end
 
   # :markup: markdown
