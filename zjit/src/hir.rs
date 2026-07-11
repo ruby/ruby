@@ -573,6 +573,7 @@ pub enum SideExitReason {
     SendWhileTracing,
     NoProfileSend,
     NoProfileGetIvar,
+    NoProfileSetIvar,
     InvokeBlockNotIfunc,
 }
 
@@ -2609,6 +2610,13 @@ struct CompilePolicy {
     /// side-exit, and instead use fallback paths (e.g. C calls) on mismatch.
     /// Set when this is the final version of an ISEQ after recompilation.
     no_side_exits: bool,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct SetIvarSpec {
+    profiled_type: ProfiledType,
+    ivar_index: attr_index_t,
+    next_shape: ShapeId,
 }
 
 impl CompilePolicy {
@@ -5250,9 +5258,9 @@ impl Function {
         Ok(self.load_ivar(block, self_val, profiled_type, id))
     }
 
-    fn try_emit_optimized_setivar(&mut self, block: BlockId, self_val: InsnId, id: ID, val: InsnId, profiled_type: ProfiledType, state: InsnId, recompile: Option<Recompile>) -> Result<(), Counter> {
+    fn prepare_optimized_setivar(&mut self, id: ID, profiled_type: ProfiledType) -> Result<SetIvarSpec, Counter> {
         if profiled_type.flags().is_immediate() {
-            // Instance variable lookups on immediate values are always nil
+            // Instance variable writes on immediate values raise.
             return Err(Counter::setivar_fallback_immediate);
         }
         if !profiled_type.flags().is_t_object() {
@@ -5268,63 +5276,69 @@ impl Function {
             // too-complex shapes can't use index access
             return Err(Counter::setivar_fallback_complex);
         }
-        if self.policy.no_side_exits {
-            // On the final version, skip GetIvar shape specialization.
-            // iseq_to_hir already generates polymorphic branches with a
-            // GetIvar C call fallback for getinstancevariable, so we don't
-            // need to wrap it again here.
-            return Err(Counter::setivar_fallback_no_side_exits);
-        }
-
         let mut ivar_index: attr_index_t = 0;
-        let mut next_shape_id = profiled_type.shape();
+        let mut next_shape = profiled_type.shape();
         if !unsafe { rb_shape_get_iv_index(profiled_type.shape().0, id, &mut ivar_index) } {
             // Current shape does not contain this ivar; do a shape transition.
             let current_shape_id = profiled_type.shape();
             let class = profiled_type.class();
             // We're only looking at T_OBJECT so ignore all of the imemo stuff.
             assert!(profiled_type.flags().is_t_object());
-            next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id.0, id, class) });
+            next_shape = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id.0, id, class) });
             // If the VM ran out of shapes, or this class generated too many leaf,
             // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
-            let new_shape_complex = unsafe { rb_jit_shape_complex_p(next_shape_id.0) };
+            let new_shape_complex = unsafe { rb_jit_shape_complex_p(next_shape.0) };
             // TODO(max): Is it OK to bail out here after making a shape transition?
             if new_shape_complex {
                 return Err(Counter::setivar_fallback_new_shape_complex);
             }
-            let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
+            let ivar_result = unsafe { rb_shape_get_iv_index(next_shape.0, id, &mut ivar_index) };
             assert!(ivar_result, "New shape must have the ivar index");
             let current_capacity = unsafe { rb_jit_shape_capacity(current_shape_id.0) };
-            let next_capacity = unsafe { rb_jit_shape_capacity(next_shape_id.0) };
+            let next_capacity = unsafe { rb_jit_shape_capacity(next_shape.0) };
             // If the new shape has a different capacity, or is COMPLEX, we'll have to
             // reallocate it.
             let needs_extension = next_capacity != current_capacity;
             if needs_extension {
                 return Err(Counter::setivar_fallback_new_shape_needs_extension);
             }
-            // Fall through to emitting the ivar write
+            // Fall through to preparing the ivar write.
         }
-        let self_val = self.guard_heap(block, self_val, state);
-        let shape = self.load_shape(block, self_val);
-        self.guard_shape(block, shape, profiled_type.shape(), state, recompile);
+
+        Ok(SetIvarSpec { profiled_type, ivar_index, next_shape })
+    }
+
+    fn emit_optimized_setivar(&mut self, block: BlockId, self_val: InsnId, id: ID, val: InsnId, spec: SetIvarSpec) {
         // Current shape contains this ivar
-        let (ivar_storage, offset) = if profiled_type.flags().is_embedded() {
+        let (ivar_storage, offset) = if spec.profiled_type.flags().is_embedded() {
             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-            let offset = ROBJECT_OFFSET_AS_ARY + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+            let offset = ROBJECT_OFFSET_AS_ARY + (SIZEOF_VALUE * spec.ivar_index.to_usize()) as i32;
             (self_val, offset)
         } else {
             let as_heap = self.load_field(block, self_val, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::CPtr);
-            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+            let offset = SIZEOF_VALUE_I32 * spec.ivar_index as i32;
             (as_heap, offset)
         };
         self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val, num_bits: types::BasicObject.num_bits() });
         self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
-        if next_shape_id != profiled_type.shape() {
+        if spec.next_shape != spec.profiled_type.shape() {
             // Write the new shape ID
-            let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
+            let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(spec.next_shape) });
             let shape_id_offset = unsafe { rb_shape_id_offset() };
             self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id, num_bits: types::CShape.num_bits() });
         }
+    }
+
+    fn try_emit_optimized_setivar(&mut self, block: BlockId, self_val: InsnId, id: ID, val: InsnId, profiled_type: ProfiledType, state: InsnId, recompile: Option<Recompile>) -> Result<(), Counter> {
+        if self.policy.no_side_exits {
+            // On the final version, don't add a shape guard without a fallback.
+            return Err(Counter::setivar_fallback_no_side_exits);
+        }
+        let spec = self.prepare_optimized_setivar(id, profiled_type)?;
+        let self_val = self.guard_heap(block, self_val, state);
+        let shape = self.load_shape(block, self_val);
+        self.guard_shape(block, shape, profiled_type.shape(), state, recompile);
+        self.emit_optimized_setivar(block, self_val, id, val, spec);
         Ok(())
     }
 
@@ -6932,6 +6946,82 @@ impl Function {
             self.push_insn(load_optimized_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
         }
         Some((join_block, result))
+    }
+
+    /// Return Some(BlockId) if we generated a setivar or None if we only generated an
+    /// unconditional SideExit (in which case we should end the block).
+    fn dispatch_setivar(
+        &mut self,
+        specs: &[SetIvarSpec],
+        unoptimized_reason: Option<Counter>,
+        mut block: BlockId,
+        insn_idx: u32,
+        self_param: InsnId,
+        id: ID,
+        ic: *const iseq_inline_iv_cache_entry,
+        val: InsnId,
+        exit_id: InsnId,
+    ) -> Option<BlockId> {
+        // 0 specs: Generate a recompile exit or a fallback. No need for new HIR blocks.
+        if specs.is_empty() {
+            if let Some(counter) = unoptimized_reason {
+                self.count(block, counter);
+                self.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
+                return Some(block);
+            } else if self.policy.no_side_exits {
+                self.count(block, Counter::setivar_fallback_no_side_exits);
+                self.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
+                return Some(block);
+            } else {
+                self.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::NoProfileSetIvar), recompile: Some(Recompile) });
+                return None;
+            }
+        }
+        // 1 spec: Generate a monomorphic setivar with a guard if allowed by policy. No need for new HIR blocks.
+        if specs.len() == 1 && !self.policy.no_side_exits {
+            let actual = self.load_shape(block, self_param);
+            self.guard_shape(block, actual, specs[0].profiled_type.shape(), exit_id, Some(Recompile));
+            self.emit_optimized_setivar(block, self_param, id, val, specs[0]);
+            return Some(block);
+        }
+
+        // Otherwise, make HIR blocks to handle different shapes or a fallback, and let them jump to join_block.
+        let edge = |target: BlockId| BranchEdge { target, args: vec![] };
+        let branch = |cond: InsnId, if_true: BlockId, if_false: BlockId| Insn::CondBranch { val: cond, if_true: edge(if_true), if_false: edge(if_false) };
+        let actual = self.load_shape(block, self_param);
+        let last_shape_index = specs.len() - 1;
+        let join_block = self.new_block(insn_idx);
+        for (i, &spec) in specs.iter().enumerate() {
+            let store_optimized_block = self.new_block(insn_idx);
+            if i == last_shape_index {
+                if self.policy.no_side_exits {
+                    // If the policy doesn't allow exits, make a fallback block and jump to it if the shape doesn't match.
+                    let expected = self.push_insn(block, Insn::Const { val: Const::CShape(spec.profiled_type.shape()) });
+                    let matches = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected });
+                    let store_fallback_block = self.new_block(insn_idx);
+                    self.push_insn(block, branch(matches, store_optimized_block, store_fallback_block));
+                    self.count(store_fallback_block, Counter::setivar_fallback_no_side_exits);
+                    self.push_insn(store_fallback_block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
+                    self.push_insn(store_fallback_block, Insn::Jump(edge(join_block)));
+                } else {
+                    // If the policy allows exits, exit to the interpreter if the shape doesn't match.
+                    self.guard_shape(block, actual, spec.profiled_type.shape(), exit_id, Some(Recompile));
+                    // TODO(max): Don't make a new block in this case
+                    self.push_insn(block, Insn::Jump(edge(store_optimized_block)));
+                }
+            } else {
+                // If this is not the last profiled shape, let the guard jump to the next block.
+                let expected = self.push_insn(block, Insn::Const { val: Const::CShape(spec.profiled_type.shape()) });
+                let matches = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected });
+                let next_block = self.new_block(insn_idx);
+                self.push_insn(block, branch(matches, store_optimized_block, next_block));
+                block = next_block;
+            }
+            // Generate the optimized setivar for the profiled shape and jump to join_block.
+            self.emit_optimized_setivar(store_optimized_block, self_param, id, val, spec);
+            self.push_insn(store_optimized_block, Insn::Jump(edge(join_block)));
+        }
+        Some(join_block)
     }
 }
 
@@ -9161,19 +9251,53 @@ fn add_iseq_to_hir(
                         break;  // End the block
                     }
                     let val = state.stack_pop()?;
-                    if let Some(profiled_type) = fun.monomorphic_summary(&profiles, self_param, exit_id) {
-                        // TODO(max): Assert ic is never null
-                        let recompile = (!ic.is_null()).then_some(Recompile);
-                        fun.try_emit_optimized_setivar(block, self_param, id, val, profiled_type, exit_id, recompile).unwrap_or_else(|counter| {
-                            fun.count(block, counter);
-                            fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
-                        });
-                    } else {
-                        fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
+                    let unrefined_self_param = self_param;
+                    let summary = fun.profile_summary(&profiles, self_param, exit_id);
+                    // Filter out profiled types we don't know how to optimize and de-duplicate shapes.
+                    let mut seen_shapes = Vec::with_capacity(summary.buckets().len());
+                    let mut specs = Vec::with_capacity(summary.buckets().len());
+                    let mut unoptimized_reason = None;
+                    for &profiled_type in summary.buckets() {
+                        if profiled_type.is_empty() {
+                            continue;
+                        }
+                        let shape = if profiled_type.flags().is_immediate() {
+                            INVALID_SHAPE_ID
+                        } else {
+                            profiled_type.shape()
+                        };
+                        if seen_shapes.contains(&shape) {
+                            continue;
+                        }
+                        seen_shapes.push(shape);
+                        match fun.prepare_optimized_setivar(id, profiled_type) {
+                            Ok(spec) => specs.push(spec),
+                            Err(counter) => {
+                                unoptimized_reason.get_or_insert(counter);
+                            },
+                        }
                     }
+                    if !specs.is_empty() || unoptimized_reason.is_none() {
+                        self_param = fun.guard_heap(block, self_param, exit_id);
+                    }
+                    let Some(new_block) = fun.dispatch_setivar(
+                        &specs,
+                        unoptimized_reason,
+                        block,
+                        insn_idx,
+                        self_param,
+                        id,
+                        ic,
+                        val,
+                        exit_id,
+                    ) else {
+                        // Side-exiting unconditionally; end the block.
+                        break;
+                    };
+                    block = new_block;
                     // SetIvar will raise if self is an immediate. If it raises, we will have
                     // exited JIT code. So upgrade the type within JIT code to a heap object.
-                    self_param = fun.push_insn(block, Insn::RefineType { val: self_param, new_type: types::HeapBasicObject });
+                    self_param = fun.push_insn(block, Insn::RefineType { val: unrefined_self_param, new_type: types::HeapBasicObject });
                 }
                 YARVINSN_getclassvariable => {
                     let id = ID(get_arg(pc, 0).as_u64());

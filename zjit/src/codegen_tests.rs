@@ -4170,6 +4170,29 @@ fn test_setinstancevariable() {
 }
 
 #[test]
+fn test_polymorphic_setinstancevariable_with_shape_transitions() {
+    set_call_threshold(3);
+    assert_snapshot!(inspect(r#"
+        class C
+          def set(value) = @a = value
+        end
+
+        normal = C.new
+        with_b = C.new
+        with_b.instance_variable_set(:@b, true)
+        normal.set(:profile_normal)
+        with_b.set(:profile_with_b)
+
+        normal = C.new
+        with_b = C.new
+        with_b.instance_variable_set(:@b, true)
+        results = [normal.set(:normal), with_b.set(:with_b)]
+        results << normal.instance_variable_get(:@a)
+        results << with_b.instance_variable_get(:@a)
+    "#), @"[:normal, :with_b, :normal, :with_b]");
+}
+
+#[test]
 fn test_getclassvariable() {
     assert_snapshot!(inspect("
         class Foo
