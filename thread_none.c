@@ -156,7 +156,7 @@ static int
 native_thread_create(rb_thread_t *th)
 {
     th->status = THREAD_KILLED;
-    rb_ractor_living_threads_remove(th->ractor, th);
+    rb_ractor_living_threads_remove(th->ractor, th, false);
     rb_notimplement();
 }
 
@@ -339,4 +339,10 @@ rb_thread_sched_wait_winding(rb_vm_t *vm)
     // no coroutine (M:N) threads on this implementation: nothing winds down
     // after leaving the living set (see thread_pthread.c)
     (void)vm;
+}
+
+bool
+rb_ractor_sched_running_thread_p(rb_ractor_t *cr)
+{
+    return false;
 }

@@ -545,6 +545,18 @@ ractor_sched_running_threads_contain_p(rb_vm_t *vm, rb_thread_t *th)
     return false;
 }
 
+// Whether this Ractor's scheduler has a running (or designated successor) thread.
+bool
+rb_ractor_sched_running_thread_p(rb_ractor_t *cr)
+{
+    struct rb_thread_sched *sched = &cr->threads.sched;
+    bool ret;
+    thread_sched_lock(sched, NULL);
+    ret = (sched->running != NULL);
+    thread_sched_unlock(sched, NULL);
+    return ret;
+}
+
 RBIMPL_ATTR_MAYBE_UNUSED()
 static unsigned int
 ractor_sched_running_threads_size(rb_vm_t *vm)

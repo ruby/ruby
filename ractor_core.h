@@ -162,7 +162,8 @@ bool rb_ractor_p(VALUE rv);
 
 void rb_ractor_living_threads_init(rb_ractor_t *r);
 void rb_ractor_living_threads_insert(rb_ractor_t *r, rb_thread_t *th);
-void rb_ractor_living_threads_remove(rb_ractor_t *r, rb_thread_t *th);
+void rb_ractor_living_threads_remove(rb_ractor_t *r, rb_thread_t *th, bool sched_detached);
+bool rb_ractor_sched_running_thread_p(rb_ractor_t *cr);
 void rb_ractor_blocking_threads_inc(rb_ractor_t *r, const char *file, int line); // TODO: file, line only for RUBY_DEBUG_LOG
 void rb_ractor_blocking_threads_dec(rb_ractor_t *r, const char *file, int line); // TODO: file, line only for RUBY_DEBUG_LOG
 
