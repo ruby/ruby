@@ -1947,7 +1947,7 @@ class Pathname    # * FileTest *
   # pn.delete                   # Clean up.
   # ```
   #
-  # On Windows, the bit is never set; the method always returns `false`.  #
+  # On Windows, the bit is never set; the method always returns `false`.
   def setuid?() FileTest.setuid?(@path) end
 
   # See <tt>FileTest.setgid?</tt>.
