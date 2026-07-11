@@ -1534,7 +1534,30 @@ class Pathname    # * File *
   # See also: #read, #readlink, #symlink?.
   def make_symlink(old) File.symlink(old, @path) end
 
-  # See <tt>File.truncate</tt>.  Truncate the file to +length+ bytes.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   truncate(size) -> 0
+  #
+  # Adjusts the size of file at the path in `self` to the given `size`;
+  # returns `0`:
+  #
+  # ```ruby
+  # pn.write('0123456789')
+  # pn.size # => 10
+  # pn.truncate(5)
+  # pn.size # => 5
+  # pn.read # => "01234"
+  # ```
+  #
+  # Pads on the right with null characters if necessary:
+  #
+  # ```ruby
+  # pn.truncate(10)
+  # pn.size # => 10
+  # pn.read # => "01234\u0000\u0000\u0000\u0000\u0000"
+  # ```
+  #
   def truncate(length) File.truncate(@path, length) end
 
   # See <tt>File.utime</tt>.  Update the access and modification times.
