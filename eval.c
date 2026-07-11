@@ -1492,12 +1492,6 @@ rb_using_module(const rb_cref_t *cref, VALUE module)
     rb_clear_all_refinement_method_cache();
 }
 
-void
-rb_vm_using_module(VALUE module)
-{
-    rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
-}
-
 /*
  *  call-seq:
  *     target    -> class_or_module
