@@ -6876,76 +6876,112 @@ impl Function {
         Ok(())
     }
 
-    /// Return Some(InsnId) if we generated any code to load an ivar and None if we only generated
-    /// an unconditional SideExit (in which case we should end the block).
-    fn dispatch_getivar(
+    /// Dispatch an ivar access to profiled shapes. Callbacks generate the optimized access and
+    /// generic fallback, optionally returning a value to pass through the join block.
+    fn dispatch_ivar<T: Copy>(
         &mut self,
-        profiled_types: &Vec<ProfiledType>,
+        profiles: &[T],
         mut block: BlockId,
         insn_idx: u32,
         self_param: InsnId,
-        id: ID,
-        ic: *const iseq_inline_iv_cache_entry,
         exit_id: InsnId,
-    ) -> Option<(BlockId, InsnId)> {
-        // 0 profiled_types: Generate a recompile exit or a fallback. No need for new HIR blocks.
-        if profiled_types.is_empty() {
+        no_profile_reason: SideExitReason,
+        fallback_counter: Counter,
+        has_result: bool,
+        profile_shape: impl Fn(T) -> ShapeId,
+        mut emit_optimized: impl FnMut(&mut Function, BlockId, T) -> Option<InsnId>,
+        mut emit_fallback: impl FnMut(&mut Function, BlockId) -> Option<InsnId>,
+    ) -> Option<(BlockId, Option<InsnId>)> {
+        // 0 profiles: Generate a recompile exit or a fallback. No need for new HIR blocks.
+        if profiles.is_empty() {
             if self.policy.no_side_exits {
-                self.count(block, Counter::getivar_fallback_no_side_exits);
-                let result = self.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
+                self.count(block, fallback_counter);
+                let result = emit_fallback(self, block);
+                assert_eq!(has_result, result.is_some());
                 return Some((block, result));
             } else {
-                self.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::NoProfileGetIvar), recompile: Some(Recompile) });
+                self.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(no_profile_reason), recompile: Some(Recompile) });
                 return None;
             }
         }
-        // 1 profiled_types: Generate a monomorphic getivar with a guard if allowed by policy. No need for new HIR blocks.
-        if profiled_types.len() == 1 && !self.policy.no_side_exits {
-            // 0 profiled_types: Generate a recompile exit or a fallback.
+        // 1 profile: Generate a monomorphic ivar access with a guard if allowed by policy. No need for new HIR blocks.
+        if profiles.len() == 1 && !self.policy.no_side_exits {
             let actual = self.load_shape(block, self_param);
-            self.guard_shape(block, actual, profiled_types[0].shape(), exit_id, Some(Recompile));
-            let result = self.load_ivar(block, self_param, profiled_types[0], id);
+            self.guard_shape(block, actual, profile_shape(profiles[0]), exit_id, Some(Recompile));
+            let result = emit_optimized(self, block, profiles[0]);
+            assert_eq!(has_result, result.is_some());
             return Some((block, result));
         }
 
         // Otherwise, make HIR blocks to handle different shapes or a fallback, and let them jump to join_block.
         let edge = |target: BlockId| BranchEdge { target, args: vec![] };
         let branch = |cond: InsnId, if_true: BlockId, if_false: BlockId| Insn::CondBranch { val: cond, if_true: edge(if_true), if_false: edge(if_false) };
+        let result_edge = |target: BlockId, result: Option<InsnId>| {
+            assert_eq!(has_result, result.is_some());
+            BranchEdge { target, args: result.into_iter().collect() }
+        };
         let actual = self.load_shape(block, self_param);
-        let last_shape_index = profiled_types.len() - 1;
+        let last_shape_index = profiles.len() - 1;
         let join_block = self.new_block(insn_idx);
-        let result = self.push_insn(join_block, Insn::Param);
-        for (i, &profiled_type) in profiled_types.iter().enumerate() {
-            let load_optimized_block = self.new_block(insn_idx);
+        let result = has_result.then(|| self.push_insn(join_block, Insn::Param));
+        for (i, &profile) in profiles.iter().enumerate() {
+            let optimized_block = self.new_block(insn_idx);
             if i == last_shape_index {
                 if self.policy.no_side_exits {
                     // If the policy doesn't allow exits, make a fallback block and jump to it if the shape doesn't match.
-                    let expected = self.push_insn(block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
-                    let val = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected });
-                    let load_fallback_block = self.new_block(insn_idx);
-                    self.push_insn(block, branch(val, load_optimized_block, load_fallback_block));
-                    self.count(load_fallback_block, Counter::getivar_fallback_no_side_exits);
-                    let result = self.push_insn(load_fallback_block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
-                    self.push_insn(load_fallback_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                    let expected = self.push_insn(block, Insn::Const { val: Const::CShape(profile_shape(profile)) });
+                    let matches = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected });
+                    let fallback_block = self.new_block(insn_idx);
+                    self.push_insn(block, branch(matches, optimized_block, fallback_block));
+                    self.count(fallback_block, fallback_counter);
+                    let fallback_result = emit_fallback(self, fallback_block);
+                    self.push_insn(fallback_block, Insn::Jump(result_edge(join_block, fallback_result)));
                 } else {
                     // If the policy allows exits, exit to the interpreter if the shape doesn't match.
-                    self.guard_shape(block, actual, profiled_type.shape(), exit_id, Some(Recompile));
+                    self.guard_shape(block, actual, profile_shape(profile), exit_id, Some(Recompile));
                     // TODO(max): Don't make a new block in this case
-                    self.push_insn(block, Insn::Jump(BranchEdge { target: load_optimized_block, args: vec![] }));
+                    self.push_insn(block, Insn::Jump(edge(optimized_block)));
                 }
             } else {
                 // If this is not the last profiled shape, let the guard jump to the next block.
-                let expected = self.push_insn(block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
-                let val = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected});
+                let expected = self.push_insn(block, Insn::Const { val: Const::CShape(profile_shape(profile)) });
+                let matches = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected });
                 let next_block = self.new_block(insn_idx);
-                self.push_insn(block, branch(val, load_optimized_block, next_block));
+                self.push_insn(block, branch(matches, optimized_block, next_block));
                 block = next_block;
             }
-            // Generate the optimized getivar for the profiled_type and jump to join_block
-            let result = self.load_ivar(load_optimized_block, self_param, profiled_type, id);
-            self.push_insn(load_optimized_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+            let optimized_result = emit_optimized(self, optimized_block, profile);
+            self.push_insn(optimized_block, Insn::Jump(result_edge(join_block, optimized_result)));
         }
         Some((join_block, result))
+    }
+
+    /// Return Some(InsnId) if we generated any code to load an ivar and None if we only generated
+    /// an unconditional SideExit (in which case we should end the block).
+    fn dispatch_getivar(
+        &mut self,
+        profiled_types: &[ProfiledType],
+        block: BlockId,
+        insn_idx: u32,
+        self_param: InsnId,
+        id: ID,
+        ic: *const iseq_inline_iv_cache_entry,
+        exit_id: InsnId,
+    ) -> Option<(BlockId, InsnId)> {
+        let (block, result) = self.dispatch_ivar(
+            profiled_types,
+            block,
+            insn_idx,
+            self_param,
+            exit_id,
+            SideExitReason::NoProfileGetIvar,
+            Counter::getivar_fallback_no_side_exits,
+            true,
+            |profiled_type| profiled_type.shape(),
+            |fun, block, profiled_type| Some(fun.load_ivar(block, self_param, profiled_type, id)),
+            |fun, block| Some(fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id })),
+        )?;
+        Some((block, result.unwrap()))
     }
 
     /// Return Some(BlockId) if we generated a setivar or None if we only generated an
@@ -6954,7 +6990,7 @@ impl Function {
         &mut self,
         specs: &[SetIvarSpec],
         unoptimized_reason: Option<Counter>,
-        mut block: BlockId,
+        block: BlockId,
         insn_idx: u32,
         self_param: InsnId,
         id: ID,
@@ -6962,66 +6998,34 @@ impl Function {
         val: InsnId,
         exit_id: InsnId,
     ) -> Option<BlockId> {
-        // 0 specs: Generate a recompile exit or a fallback. No need for new HIR blocks.
         if specs.is_empty() {
             if let Some(counter) = unoptimized_reason {
                 self.count(block, counter);
                 self.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
                 return Some(block);
-            } else if self.policy.no_side_exits {
-                self.count(block, Counter::setivar_fallback_no_side_exits);
-                self.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
-                return Some(block);
-            } else {
-                self.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::NoProfileSetIvar), recompile: Some(Recompile) });
-                return None;
             }
         }
-        // 1 spec: Generate a monomorphic setivar with a guard if allowed by policy. No need for new HIR blocks.
-        if specs.len() == 1 && !self.policy.no_side_exits {
-            let actual = self.load_shape(block, self_param);
-            self.guard_shape(block, actual, specs[0].profiled_type.shape(), exit_id, Some(Recompile));
-            self.emit_optimized_setivar(block, self_param, id, val, specs[0]);
-            return Some(block);
-        }
-
-        // Otherwise, make HIR blocks to handle different shapes or a fallback, and let them jump to join_block.
-        let edge = |target: BlockId| BranchEdge { target, args: vec![] };
-        let branch = |cond: InsnId, if_true: BlockId, if_false: BlockId| Insn::CondBranch { val: cond, if_true: edge(if_true), if_false: edge(if_false) };
-        let actual = self.load_shape(block, self_param);
-        let last_shape_index = specs.len() - 1;
-        let join_block = self.new_block(insn_idx);
-        for (i, &spec) in specs.iter().enumerate() {
-            let store_optimized_block = self.new_block(insn_idx);
-            if i == last_shape_index {
-                if self.policy.no_side_exits {
-                    // If the policy doesn't allow exits, make a fallback block and jump to it if the shape doesn't match.
-                    let expected = self.push_insn(block, Insn::Const { val: Const::CShape(spec.profiled_type.shape()) });
-                    let matches = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected });
-                    let store_fallback_block = self.new_block(insn_idx);
-                    self.push_insn(block, branch(matches, store_optimized_block, store_fallback_block));
-                    self.count(store_fallback_block, Counter::setivar_fallback_no_side_exits);
-                    self.push_insn(store_fallback_block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
-                    self.push_insn(store_fallback_block, Insn::Jump(edge(join_block)));
-                } else {
-                    // If the policy allows exits, exit to the interpreter if the shape doesn't match.
-                    self.guard_shape(block, actual, spec.profiled_type.shape(), exit_id, Some(Recompile));
-                    // TODO(max): Don't make a new block in this case
-                    self.push_insn(block, Insn::Jump(edge(store_optimized_block)));
-                }
-            } else {
-                // If this is not the last profiled shape, let the guard jump to the next block.
-                let expected = self.push_insn(block, Insn::Const { val: Const::CShape(spec.profiled_type.shape()) });
-                let matches = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected });
-                let next_block = self.new_block(insn_idx);
-                self.push_insn(block, branch(matches, store_optimized_block, next_block));
-                block = next_block;
-            }
-            // Generate the optimized setivar for the profiled shape and jump to join_block.
-            self.emit_optimized_setivar(store_optimized_block, self_param, id, val, spec);
-            self.push_insn(store_optimized_block, Insn::Jump(edge(join_block)));
-        }
-        Some(join_block)
+        let (block, result) = self.dispatch_ivar(
+            specs,
+            block,
+            insn_idx,
+            self_param,
+            exit_id,
+            SideExitReason::NoProfileSetIvar,
+            Counter::setivar_fallback_no_side_exits,
+            false,
+            |spec| spec.profiled_type.shape(),
+            |fun, block, spec| {
+                fun.emit_optimized_setivar(block, self_param, id, val, spec);
+                None
+            },
+            |fun, block| {
+                fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
+                None
+            },
+        )?;
+        assert!(result.is_none());
+        Some(block)
     }
 }
 
