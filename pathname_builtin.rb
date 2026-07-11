@@ -1708,8 +1708,20 @@ class Pathname    # * File *
   #
   def expand_path(...) self.class.new(File.expand_path(@path, ...)) end
 
-  # See <tt>File.split</tt>.  Returns the #dirname and the #basename in an
-  # Array.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   split -> array
+  #
+  # Returns a 2-element array containing #dirname and #basename:
+  #
+  # ```ruby
+  # Pathname('lib/pathname.rb').split # => [#<Pathname:lib>, #<Pathname:pathname.rb>]
+  # Pathname('README.md').split       # => [#<Pathname:.>, #<Pathname:README.md>]
+  # Pathname('').split                # => [#<Pathname:.>, #<Pathname:>]
+  # Pathname('nosuch/foo/bar').split  # => [#<Pathname:nosuch/foo>, #<Pathname:bar>]
+  # ```
+  #
   def split()
     array = File.split(@path)
     raise TypeError, 'wrong argument type nil (expected Array)' unless Array === array
