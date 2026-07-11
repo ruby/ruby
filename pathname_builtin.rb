@@ -1050,7 +1050,30 @@ class Pathname    # * File *
   # See <tt>File.readlines</tt>.  Returns all the lines from the file.
   def readlines(...) File.readlines(@path, ...) end
 
-  # See <tt>File.sysopen</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   sysopen(mode = 'r', permissions = 0666) -> integer
+  #
+  # Opens the file at the path in `self` with the given mode and permissions;
+  # returns the integer file descriptor.
+  #
+  # If the file is to be readable, it must exist;
+  # if the file is to be writable and does not exist,
+  # it is created with the given permissions:
+  #
+  # ```ruby
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('foo')
+  # fd = pn.sysopen             # => 5
+  # IO.new(fd).close
+  # fd = pn.sysopen('w')        # => 5
+  # IO.new(fd).close
+  # fd = pn.sysopen('r', 0o644) # => 5
+  # IO.new(fd).close
+  # pn.delete
+  # ```
+  #
   def sysopen(...) File.sysopen(@path, ...) end
 
   # call-seq:
