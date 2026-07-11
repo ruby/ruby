@@ -42,7 +42,12 @@
 # define RBIMPL_UNREACHABLE_RETURN(_) __builtin_unreachable()
 
 #elif defined(RBIMPL_HAVE___ASSUME)
-# define RBIMPL_UNREACHABLE_RETURN(_) return (__assume(0), (_))
+# /* Discard the argument like the `__builtin_unreachable` variant above, */
+# /* so that `UNREACHABLE_RETURN()` with no argument compiles on MSVC too. */
+# /* Variadic, to spare the caller MSVC's C4003 on an empty argument.  No */
+# /* C++98 concern here: this branch is only reachable on MSVC-like       */
+# /* compilers, which accept variadic macros in every language mode.      */
+# define RBIMPL_UNREACHABLE_RETURN(...) __assume(0)
 
 #else
 # define RBIMPL_UNREACHABLE_RETURN(_) return (_)
