@@ -196,6 +196,29 @@ jobs:
           RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }}
         timeout-minutes: 70
 
+      - run: nmake binary-package
+        if: ${{ matrix.test_task == 'check' }}
+        timeout-minutes: 10
+
+      - name: Verify binary package
+        shell: pwsh
+        if: ${{ matrix.test_task == 'check' }}
+        run: |
+          $zip = Get-Item ruby-*-mswin*.zip
+          $dest = Join-Path $env:RUNNER_TEMP "binpkg"
+          if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
+          New-Item -ItemType Directory $dest | Out-Null
+          & "$env:SystemRoot\System32\tar.exe" -x -f $zip.FullName -C $dest
+          if ((Get-ChildItem $dest).Count -ne 1) { throw "zip must contain a single root directory" }
+          $root = (Get-ChildItem $dest)[0].FullName
+          if (!(Test-Path "$root\bin\ruby.exe")) { throw "bin\ruby.exe not found" }
+          if (Get-ChildItem "$root\bin" -Filter "vcruntime140*.dll") { throw "the VC runtime must not be bundled" }
+          if (!(Get-ChildItem "$root\LICENSES" -ErrorAction SilentlyContinue)) { throw "LICENSES missing" }
+          $env:PATH = "$env:SystemRoot\System32"
+          & "$root\bin\ruby.exe" -v -ropenssl -rfiddle -rpsych -rzlib -e 'abort "configure_args has an absolute path: #{RbConfig::CONFIG[%q(configure_args)]}" if RbConfig::CONFIG[%q(configure_args)] =~ /\b[A-Za-z]:[\/\\]/; puts %q(binary package OK)'
+          if ($LASTEXITCODE -ne 0) { throw "smoke test failed" }
+        timeout-minutes: 5
+
       - uses: ./.github/actions/slack
         with:
           label: Windows ${{ matrix.os }} / ${{ matrix.test_task || 'check' }}
