@@ -2620,3 +2620,31 @@ assert_equal 'ok', %q{
 
   :ok
 }
+
+# A terminating thread joining an in-progress Ractor barrier must not corrupt
+# the designated successor's machine context, hang on a completed barrier, or
+# leave the Ractor's blocking status inconsistent.
+assert_equal 'ok', %q{
+  Warning[:experimental] = false
+  can_compact = begin
+    GC.compact
+    true
+  rescue NotImplementedError
+    false
+  end
+  if can_compact
+    b = Ractor.new do
+      30.times do
+        r, w = IO.pipe
+        t = Thread.new { sleep(0.0004); w.write("x" * 40); w.close }
+        r.read
+        r.close
+        t.join
+      end
+      :ok
+    end
+    a = Ractor.new { 100.times { GC.compact }; :ok }
+    [a, b].each(&:value)
+  end
+  :ok
+}
