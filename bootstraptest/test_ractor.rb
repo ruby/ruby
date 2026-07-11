@@ -2620,3 +2620,31 @@ assert_equal 'ok', %q{
 
   :ok
 }
+
+# A thread terminating (here: the pipe writer) while another Ractor runs a
+# compaction barrier must not corrupt the machine context of a thread blocked
+# in IO, whose locked read buffer lives only on that machine stack.
+assert_equal 'ok', %q{
+  Warning[:experimental] = false
+  can_compact = begin
+    GC.compact
+    true
+  rescue NotImplementedError
+    false
+  end
+  if can_compact
+    b = Ractor.new do
+      10.times do
+        r, w = IO.pipe
+        t = Thread.new { w.write("x" * 40); w.close }
+        r.read
+        r.close
+        t.join
+      end
+      :ok
+    end
+    a = Ractor.new { 20.times { GC.compact }; :ok }
+    [a, b].each(&:value)
+  end
+  :ok
+}
