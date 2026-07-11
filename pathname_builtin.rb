@@ -1910,7 +1910,7 @@ class Pathname    # * FileTest *
   # Pathname('README.md').socket? # => false
   # Pathname('nosuch').socket?    # => false
   # ```
-  # 
+  #
   # Returns `false` on Windows.
   #
   def socket?() FileTest.socket?(@path) end
