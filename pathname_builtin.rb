@@ -281,12 +281,21 @@ class Pathname
     @path.hash
   end
 
-  # Return the path as a String.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   to_s -> string
+  #
+  # Returns a copy of the string path in `self`:
+  #
+  # ```ruby
+  # Pathname('nosuch/foo/bar').to_ss # => "nosuch/foo/bar"
+  # ```
+  #
   def to_s
     @path.dup
   end
 
-  # to_path is implemented so Pathname objects are usable with File.open, etc.
   alias to_path to_s
 
   def inspect # :nodoc:
