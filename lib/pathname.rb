@@ -93,11 +93,25 @@ end
 
 
 class Pathname    # * FileUtils *
-  # Recursively deletes a directory, including all directories beneath it.
+
+  # :markup: markdown
   #
-  # Note that you need to require 'pathname' to use this method.
+  # call-seq:
+  #   rmtree -> 0
   #
-  # See FileUtils.rm_rf
+  # Deletes the entire filetree at the path in `self`; returns `0`:
+  #
+  # ```ruby
+  # dir_pn = Pathname('foo/bar/baz') # => #<Pathname:foo/bar/baz>
+  # dir_pn.mkpath                    # Create 'baz' and intermediate directories.
+  # file_pn = dir_pn.join('t.tmp')   # => #<Pathname:foo/bar/baz/t.tmp>
+  # file_pn.write('foo')             # Create file at nested directory 'baz'.
+  # Pathname('foo').rmtree           # Delete the entire tree at directory 'foo'.
+  # Pathname('foo').exist?           # => false
+  # ```
+  #
+  # Use method #rmdir to delete a single (empty) directory.
+  #
   def rmtree(noop: nil, verbose: nil, secure: nil)
     # The name "rmtree" is borrowed from File::Path of Perl.
     # File::Path provides "mkpath" and "rmtree".
