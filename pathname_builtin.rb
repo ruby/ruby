@@ -289,7 +289,7 @@ class Pathname
   # Returns a copy of the string path in `self`:
   #
   # ```ruby
-  # Pathname('nosuch/foo/bar').to_ss # => "nosuch/foo/bar"
+  # Pathname('nosuch/foo/bar').to_s # => "nosuch/foo/bar"
   # ```
   #
   def to_s
