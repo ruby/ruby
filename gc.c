@@ -1506,8 +1506,6 @@ rb_data_free(void *objspace, VALUE obj)
 
         if (dfree) {
             bool embedded = RTYPEDDATA_EMBEDDED_P(obj);
-            int free_immediately = (type->flags & (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_THREAD_SAFE_FREE)) != 0;
-            bool free_embeddable_data = RB_DATA_TYPE_EMBEDDABLE_P(type) && !embedded;
 
             if (dfree == RUBY_DEFAULT_FREE) {
                 if (!embedded) {
@@ -1515,18 +1513,24 @@ rb_data_free(void *objspace, VALUE obj)
                     RB_DEBUG_COUNTER_INC(obj_data_xfree);
                 }
             }
-            else if (free_immediately) {
-                (*dfree)(data);
-                if (free_embeddable_data) {
-                    xfree(data);
-                }
-
-                RB_DEBUG_COUNTER_INC(obj_data_imm_free);
-            }
             else {
-                rb_gc_impl_make_zombie(objspace, obj, dfree, data);
-                RB_DEBUG_COUNTER_INC(obj_data_zombie);
-                return FALSE;
+                bool free_immediately = (type->flags & (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_THREAD_SAFE_FREE)) != 0;
+                if (free_immediately) {
+                    bool free_embeddable_data = RB_DATA_TYPE_EMBEDDABLE_P(type) && !embedded;
+
+                    (*dfree)(data);
+
+                    if (free_embeddable_data) {
+                        xfree(data);
+                    }
+
+                    RB_DEBUG_COUNTER_INC(obj_data_imm_free);
+                }
+                else {
+                    rb_gc_impl_make_zombie(objspace, obj, dfree, data);
+                    RB_DEBUG_COUNTER_INC(obj_data_zombie);
+                    return FALSE;
+                }
             }
         }
         else {
