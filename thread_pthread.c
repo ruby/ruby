@@ -3379,6 +3379,22 @@ watchdog_dump(rb_vm_t *vm)
                     (void *)th, rb_thread_status_str(th->status),
                     (void *)th->nt, (th->nt && th->nt->dedicated) ? "(DNT)" : "(SNT)",
                     in_runset, th->blocking_region_buffer != NULL);
+            {
+                const rb_execution_context_t *tec = th->ec;
+                const rb_control_frame_t *cfp = tec ? tec->cfp : NULL;
+                const rb_control_frame_t *end = tec ? RUBY_VM_END_CONTROL_FRAME(tec) : NULL;
+                int depth = 0;
+                while (cfp && cfp < end && depth < 8) {
+                    if (VM_FRAME_RUBYFRAME_P(cfp) && cfp->_iseq) {
+                        VALUE path = rb_iseq_path(cfp->_iseq);
+                        int line = rb_vm_get_sourceline(cfp);
+                        fprintf(e, "      #%d %s:%d\n", depth,
+                                RB_TYPE_P(path, T_STRING) ? RSTRING_PTR(path) : "?", line);
+                        depth++;
+                    }
+                    cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp);
+                }
+            }
         }
     }
     schedlog_dump(e);
