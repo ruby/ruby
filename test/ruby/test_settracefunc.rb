@@ -2808,6 +2808,62 @@ CODE
     assert_equal [__LINE__ - 5, __LINE__ - 4, __LINE__ - 3], lines, 'Bug #17868'
   end
 
+  def test_line_event_after_guard_before_while_true
+    lines = []
+    while_line = body_line = nil
+
+    TracePoint.new(:line) {|tp|
+      next unless target_thread?
+      lines << tp.lineno
+    }.enable {
+      raise if 1 == 2
+      while_line = __LINE__ + 1
+      while true
+        body_line = __LINE__ + 1
+        break
+      end
+    }
+
+    assert_includes lines, while_line
+    assert_includes lines, body_line
+    assert_operator lines.index(while_line), :<, lines.index(body_line)
+  end
+
+  def test_line_event_after_guard_before_while_predicate
+    parent = Class.new do
+      def read
+        @values.shift
+      end
+    end
+
+    child = Class.new(parent) do
+      def initialize
+        @values = ["chunk", nil]
+      end
+    end
+
+    start_line = __LINE__ + 2
+    while_line = start_line + 2
+    child.class_eval <<~RUBY, __FILE__, start_line
+      def read
+        return if @finished
+        while chunk = super
+          chunk.upcase
+        end
+      end
+    RUBY
+
+    lines = []
+    TracePoint.new(:line) {|tp|
+      next unless target_thread?
+      lines << tp.lineno
+    }.enable {
+      child.new.read
+    }
+
+    assert_includes lines, while_line
+  end
+
   def test_allow_reentry
     event_lines = []
     _l1 = _l2 = _l3 = _l4 = nil

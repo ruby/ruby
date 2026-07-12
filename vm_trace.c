@@ -61,6 +61,17 @@ typedef void (*rb_event_hook_raw_arg_func_t)(VALUE data, const rb_trace_arg_t *a
 
 #define MAX_EVENT_NUM 32
 
+static unsigned int
+trace_arg_line_no(const rb_execution_context_t *ec, const rb_trace_arg_t *trace_arg)
+{
+    if (!UNDEF_P(trace_arg->path)) {
+        return (unsigned int)trace_arg->lineno;
+    }
+    else {
+        return (unsigned int)rb_vm_get_sourceline(ec->cfp);
+    }
+}
+
 void
 rb_hook_list_mark(rb_hook_list_t *hooks)
 {
@@ -458,7 +469,7 @@ exec_hooks_body(const rb_execution_context_t *ec, rb_hook_list_t *list, const rb
         if (!(hook->hook_flags & RUBY_EVENT_HOOK_FLAG_DELETED) &&
             (trace_arg->event & hook->events) &&
             (LIKELY(hook->filter.th == 0) || hook->filter.th == rb_ec_thread_ptr(ec)) &&
-            (LIKELY(hook->filter.target_line == 0) || (hook->filter.target_line == (unsigned int)rb_vm_get_sourceline(ec->cfp)))) {
+            (LIKELY(hook->filter.target_line == 0) || (hook->filter.target_line == trace_arg_line_no(ec, trace_arg)))) {
             if (!(hook->hook_flags & RUBY_EVENT_HOOK_FLAG_RAW_ARG)) {
                 (*hook->func)(trace_arg->event, hook->data, trace_arg->self, trace_arg->id, trace_arg->klass);
             }

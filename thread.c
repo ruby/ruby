@@ -5988,7 +5988,7 @@ update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
         VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
         if (lines) {
-            long line = rb_sourceline() - 1;
+            long line = FIX2LONG(rb_tracearg_lineno((rb_trace_arg_t *)trace_arg)) - 1;
             VM_ASSERT(line >= 0);
             long count;
             VALUE num;

@@ -574,6 +574,13 @@ struct rb_iseq_constant_body {
     // ZJIT stores some data on each iseq.
     void *zjit_payload;
 #endif
+
+    struct iseq_trace_edge_event {
+        unsigned int pc;
+        rb_event_flag_t events;
+        int line_no;
+    } *trace_edge_events;
+    unsigned int trace_edge_events_size;
 };
 
 /* T_IMEMO/iseq */
