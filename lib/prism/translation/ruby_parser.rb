@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 # :markup: markdown
 
+require "timeout"
+
 begin
   require "sexp"
 rescue LoadError
