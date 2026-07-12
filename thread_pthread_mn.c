@@ -448,9 +448,8 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
 }
 
 // A coroutine thread's epilogue, run from thread_start_func_2 while th is
-// still valid (and, until the living-set removal, still GC-reachable).
-// Everything that touches th happens here; co_start then only makes the
-// final transfer, touching the execution-owned tctx alone.
+// still valid. Everything that touches th happens here; co_start then only
+// makes the final transfer, touching the execution-owned tctx alone.
 static void
 coroutine_thread_terminated(rb_thread_t *th)
 {
@@ -470,6 +469,20 @@ coroutine_thread_terminated(rb_thread_t *th)
 
     rb_thread_t *wake_th;
 
+    // Leave the living set BEFORE handing over the scheduler slot: the
+    // removal's VM-lock work (ractor_check_blocking, a barrier join) then
+    // runs as an ordinary counted running thread. Afterwards th may be
+    // unreachable, but no GC can complete while th still owns the slot
+    // (a barrier waits for it to join), so the handoff below may keep
+    // touching th/sched.
+    //
+    // The Ractor's last thread is the exception and keeps the reverse
+    // order (below): its removal unlinks the Ractor itself, after which
+    // r/sched must not be touched. That order is safe only for it: with
+    // no successor, sched->running stays NULL, so the removal's VM lock
+    // never joins a barrier (vm_need_barrier requires a running thread).
+    if (!last) rb_ractor_living_threads_remove(r, th);
+
     thread_sched_lock(sched, th);
     {
         // designate the successor (running = next from readyq, or NULL); for
@@ -477,12 +490,12 @@ coroutine_thread_terminated(rb_thread_t *th)
         thread_sched_to_dead_common(sched, th);
 
         // Only the successor WE designated here may be enqueued by this
-        // epilogue (below, after the living-set removal). If readyq was
-        // empty, running is now NULL and a waker (e.g. the timer thread)
-        // that later installs a runnable thread enqueues the Ractor itself
-        // -- enqueuing "whatever is running" at that point would duplicate
-        // its entry. While running is non-NULL, nobody else re-assigns it,
-        // so wake_th stays valid until we enqueue.
+        // epilogue (below). If readyq was empty, running is now NULL and a
+        // waker (e.g. the timer thread) that later installs a runnable
+        // thread enqueues the Ractor itself -- enqueuing "whatever is
+        // running" at that point would duplicate its entry. While running
+        // is non-NULL, nobody else re-assigns it, so wake_th stays valid
+        // until we enqueue.
         wake_th = is_dnt ? NULL : sched->running;
 
         tctx->nt = th->nt;        // stash the final transfer target for co_start
@@ -491,14 +504,10 @@ coroutine_thread_terminated(rb_thread_t *th)
     }
     thread_sched_unlock(sched, th);
 
-    // Leave the living set. This is the dying thread's last access to th --
-    // the removal needs the current ec (VM lock), and after it the GC may
-    // collect th (and, for a Ractor's main thread, the Ractor).
-    // (interrupt_lock stays valid up to here -- a concurrent terminate_all
-    // may interrupt any still-listed thread; it is destroyed in thread_free.)
-    rb_ractor_living_threads_remove(r, th);
-
     if (last) {
+        // Last access to th/r: the removal may unlink the Ractor, after
+        // which the GC may collect th and r.
+        rb_ractor_living_threads_remove(r, th);
         rb_current_ec_set(NULL); // TLS only; r may be collectable already
     }
     else {
