@@ -1562,7 +1562,7 @@ module Prism
 
         # Create a new compiler with the given options.
         def copy_compiler(in_def: self.in_def, in_pattern: self.in_pattern)
-          Compiler.new(file, in_def: in_def, in_pattern: in_pattern)
+          self.class.new(file, in_def: in_def, in_pattern: in_pattern)
         end
 
         # Create a new Sexp object from the given prism node and arguments.
@@ -1624,7 +1624,6 @@ module Prism
         end
       end
 
-      private_constant :Compiler
       attr_accessor :scopes # :nodoc:
 
       def initialize scopes:nil # :nodoc:
@@ -1677,7 +1676,7 @@ module Prism
         end
 
         result.attach_comments!
-        result.value.accept(Compiler.new(filepath))
+        result.value.accept(self.class::Compiler.new(filepath))
       end
     end
   end
