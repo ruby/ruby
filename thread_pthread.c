@@ -1588,6 +1588,7 @@ rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr)
     ractor_sched_lock(vm, cr);
     {
         vm->ractor.sched.barrier_waiting = true;
+        SCHEDLOG("BARRIER_START owner_r=%u serial=%u running_cnt=%u", (unsigned)cr->pub.id, vm->ractor.sched.barrier_serial, vm->ractor.sched.running_cnt);
         vm->ractor.sched.barrier_ractor = cr;
         vm->ractor.sched.barrier_lock_rec = vm->ractor.sync.lock_rec;
 
@@ -1617,6 +1618,7 @@ rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr)
 
         // no other ractors are there
         vm->ractor.sched.barrier_serial++;
+        SCHEDLOG("BARRIER_COMPLETE serial=%u running_cnt=%u waiting_cnt=%u", vm->ractor.sched.barrier_serial, vm->ractor.sched.running_cnt, vm->ractor.sched.barrier_waiting_cnt);
         vm->ractor.sched.barrier_waiting_cnt = 0;
         rb_native_cond_broadcast(&vm->ractor.sched.barrier_release_cond);
 
@@ -1639,6 +1641,7 @@ rb_ractor_sched_barrier_end(rb_vm_t *vm, rb_ractor_t *cr)
     VM_ASSERT(vm->ractor.sched.barrier_ractor);
     VM_ASSERT(vm->ractor.sched.barrier_lock_rec > 0);
 
+    SCHEDLOG("BARRIER_END serial=%u", vm->ractor.sched.barrier_serial);
     vm->ractor.sched.barrier_waiting = false;
     vm->ractor.sched.barrier_ractor = NULL;
     vm->ractor.sched.barrier_lock_rec = 0;
@@ -1699,6 +1702,7 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
              * leaves the living set before handing over its scheduler slot. */
             VM_ASSERT(ractor_sched_running_threads_contain_p(vm, GET_THREAD()));
             vm->ractor.sched.barrier_waiting_cnt++;
+            SCHEDLOG("BARRIER_JOIN r=%u th=%p serial=%u waiting_cnt=%u running_cnt=%u", (unsigned)cr->pub.id, (void*)GET_THREAD(), vm->ractor.sched.barrier_serial, vm->ractor.sched.barrier_waiting_cnt, vm->ractor.sched.running_cnt);
             RUBY_DEBUG_LOG("waiting_cnt:%u serial:%u", vm->ractor.sched.barrier_waiting_cnt, barrier_serial);
 
             ractor_sched_barrier_join_signal_locked(vm);
