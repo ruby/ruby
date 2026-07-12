@@ -277,6 +277,16 @@ shown_cause_p(VALUE cause, VALUE *shown_causes)
 }
 
 static void
+add_shown_cause(VALUE cause, VALUE *shown_causes)
+{
+    if (!NIL_OR_UNDEF_P(cause) &&
+        !THROW_DATA_P(cause) &&
+        rb_obj_is_kind_of(cause, rb_eException)) {
+        shown_cause_p(cause, shown_causes);
+    }
+}
+
+static void
 show_cause(VALUE errinfo, VALUE str, VALUE opt, VALUE highlight, VALUE reverse, long backtrace_limit, VALUE *shown_causes)
 {
     VALUE cause = rb_attr_get(errinfo, id_cause);
@@ -309,15 +319,18 @@ rb_exc_check_circular_cause(VALUE exc)
     } while (!NIL_P(cause = rb_attr_get(cause, id_cause)));
 }
 
-void
-rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VALUE highlight, VALUE reverse)
+static void
+rb_error_write0(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VALUE highlight, VALUE reverse, VALUE *shown_causes)
 {
     volatile VALUE eclass;
-    VALUE shown_causes = 0;
+    VALUE local_shown_causes = 0;
     long backtrace_limit = rb_backtrace_length_limit;
 
     if (NIL_P(errinfo))
         return;
+    if (!shown_causes) {
+        shown_causes = &local_shown_causes;
+    }
 
     if (UNDEF_P(errat)) {
         errat = Qnil;
@@ -340,19 +353,25 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VA
             len = p - (msg = buff);
         }
         write_warn2(str, msg, len);
-        show_cause(errinfo, str, opt, highlight, reverse, backtrace_limit, &shown_causes);
+        show_cause(errinfo, str, opt, highlight, reverse, backtrace_limit, shown_causes);
         print_backtrace(eclass, errat, str, TRUE, backtrace_limit);
         print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
     }
     else {
         print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
         print_backtrace(eclass, errat, str, FALSE, backtrace_limit);
-        show_cause(errinfo, str, opt, highlight, reverse, backtrace_limit, &shown_causes);
+        show_cause(errinfo, str, opt, highlight, reverse, backtrace_limit, shown_causes);
     }
 }
 
+void
+rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VALUE highlight, VALUE reverse)
+{
+    rb_error_write0(errinfo, emesg, errat, str, opt, highlight, reverse, NULL);
+}
+
 static void
-rb_ec_error_print_detailed(rb_execution_context_t *const ec, const VALUE errinfo, const VALUE str, VALUE emesg0)
+rb_ec_error_print_detailed0(rb_execution_context_t *const ec, const VALUE errinfo, const VALUE str, VALUE emesg0, VALUE *shown_causes)
 {
     volatile uint8_t raised_flag = ec->raised_flag;
     volatile VALUE errat = Qundef;
@@ -378,12 +397,18 @@ rb_ec_error_print_detailed(rb_execution_context_t *const ec, const VALUE errinfo
 
     if (!written) {
         written = true;
-        rb_error_write(errinfo, emesg, errat, str, opt, highlight, Qfalse);
+        rb_error_write0(errinfo, emesg, errat, str, opt, highlight, Qfalse, shown_causes);
     }
 
     EC_POP_TAG();
     ec->errinfo = errinfo;
     rb_ec_raised_set(ec, raised_flag);
+}
+
+static void
+rb_ec_error_print_detailed(rb_execution_context_t *const ec, const VALUE errinfo, const VALUE str, VALUE emesg0)
+{
+    rb_ec_error_print_detailed0(ec, errinfo, str, emesg0, NULL);
 }
 
 void
@@ -504,7 +529,7 @@ exiting_split(VALUE errinfo, volatile int *exitcode, volatile int *sigstatus)
     rb_bug("Unknown longjmp status %d", status)
 
 static int
-error_handle(rb_execution_context_t *ec, VALUE errinfo, enum ruby_tag_type ex)
+error_handle_with_shown_causes(rb_execution_context_t *ec, VALUE errinfo, enum ruby_tag_type ex, VALUE *shown_causes)
 {
     int status = EXIT_FAILURE;
 
@@ -546,7 +571,7 @@ error_handle(rb_execution_context_t *ec, VALUE errinfo, enum ruby_tag_type ex)
         }
         /* fallthrough */
       case TAG_FATAL:
-        rb_ec_error_print(ec, errinfo);
+        rb_ec_error_print_detailed0(ec, errinfo, Qnil, Qundef, shown_causes);
         break;
       default:
         unknown_longjmp_status(ex);
@@ -554,4 +579,10 @@ error_handle(rb_execution_context_t *ec, VALUE errinfo, enum ruby_tag_type ex)
     }
     rb_ec_reset_raised(ec);
     return status;
+}
+
+static int
+error_handle(rb_execution_context_t *ec, VALUE errinfo, enum ruby_tag_type ex)
+{
+    return error_handle_with_shown_causes(ec, errinfo, ex, NULL);
 }
