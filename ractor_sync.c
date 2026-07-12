@@ -971,11 +971,13 @@ ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
             VM_ASSERT(waiter->wakeup_status == wakeup_none);
 
             waiter->wakeup_status = wakeup_status;
+            rb_wakelog("WKALL r=%u pop th=%p st=%d", (unsigned)rb_ractor_id(r), (void*)waiter->th, (int)wakeup_status);
             rb_ractor_sched_wakeup(r, waiter->th);
 
             wakeup_p = true;
         }
         else {
+            if (!wakeup_p) rb_wakelog("WKALL r=%u none", (unsigned)rb_ractor_id(r));
             break;
         }
     }
@@ -1003,6 +1005,7 @@ ubf_ractor_wait(void *ptr)
         {
             if (RUBY_ATOMIC_LOAD(th->unblock.event_serial) == event_serial && waiter->wakeup_status == wakeup_none) {
                 RUBY_DEBUG_LOG("waiter:%p", (void *)waiter);
+                rb_wakelog("UBF take th=%p", (void*)th);
 
                 waiter->wakeup_status = wakeup_by_interrupt;
                 ccan_list_del(&waiter->node);
@@ -1033,6 +1036,7 @@ ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr)
     VM_ASSERT(!ractor_waiter_included(cr, th));
 
     ccan_list_add_tail(&cr->sync.waiters, &waiter.node);
+    rb_wakelog("RWAIT add th=%p r=%u", (void*)th, (unsigned)rb_ractor_id(cr));
 
     // resume another ready thread and wait for an event
     rb_ractor_sched_wait(ec, cr, ubf_ractor_wait, &waiter);
@@ -1074,10 +1078,12 @@ ractor_check_received(rb_ractor_t *cr, struct ractor_queue *messages)
     ASSERT_ractor_locking(cr);
 
     if (ractor_queue_empty_p(cr, received_queue)) {
+        rb_wakelog("CHKRECV r=%u empty", (unsigned)rb_ractor_id(cr));
         RUBY_DEBUG_LOG("empty");
     }
     else {
         received = true;
+        rb_wakelog("CHKRECV r=%u moved", (unsigned)rb_ractor_id(cr));
 
         // messages <- incoming
         ractor_queue_init(messages);
@@ -1127,6 +1133,7 @@ ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *cr, const struct rac
     }
 
     struct ractor_basket *b = ractor_queue_deq(cr, rq);
+    rb_wakelog("TRYRECV port=%u r=%u %s", (unsigned)ractor_port_id(rp), (unsigned)rb_ractor_id(cr), b ? "hit" : "miss");
 
     if (rq->closed && ractor_queue_empty_p(cr, rq)) {
         ractor_delete_port(cr, ractor_port_id(rp), false);
@@ -1173,10 +1180,12 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
     {
         if (ractor_closed_port_p(ec, rp->r, rp)) {
             closed = true;
+            rb_wakelog("SEND port=%u@r%u CLOSED-DROP", (unsigned)ractor_port_id(rp), (unsigned)rb_ractor_id(rp->r));
         }
         else {
             b->port_id = ractor_port_id(rp);
             ractor_queue_enq(rp->r, rp->r->sync.recv_queue, b);
+            rb_wakelog("SEND port=%u@r%u enq", (unsigned)ractor_port_id(rp), (unsigned)rb_ractor_id(rp->r));
         }
     }
     RACTOR_UNLOCK(rp->r);
@@ -1500,4 +1509,29 @@ Init_RactorPort(void)
 #if USE_RACTOR_SELECTOR
     rb_init_ractor_selector();
 #endif
+}
+
+// DIAGNOSTIC (watchdog): dump this ractor's sync state without locks.
+static int
+dump_port_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    FILE *e = (FILE *)arg;
+    struct ractor_queue *rq = (struct ractor_queue *)val;
+    int n = 0;
+    struct ractor_basket *b;
+    ccan_list_for_each(&rq->set, b, node) n++;
+    fprintf(e, "     port=%u len=%d closed=%d\n", (unsigned)key, n, (int)rq->closed);
+    return ST_CONTINUE;
+}
+void
+rb_ractor_dump_sync_state(rb_ractor_t *r, FILE *e)
+{
+    int n = 0, w = 0;
+    struct ractor_basket *b;
+    struct ractor_waiter *wt;
+    ccan_list_for_each(&r->sync.recv_queue->set, b, node) n++;
+    ccan_list_for_each(&r->sync.waiters, wt, node) w++;
+    fprintf(e, "   R#%u sync: recv_queue=%d waiters=%d legacy_set=%d\n",
+            (unsigned)r->pub.id, n, w, !UNDEF_P(r->sync.legacy));
+    if (r->sync.ports) st_foreach(r->sync.ports, dump_port_i, (st_data_t)e);
 }

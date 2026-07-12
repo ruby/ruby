@@ -715,6 +715,28 @@ static rb_atomic_t schedlog_idx;
     unsigned _i = (unsigned)RUBY_ATOMIC_FETCH_ADD(schedlog_idx, 1) % SCHEDLOG_N; \
     snprintf(schedlog_buf[_i], sizeof(schedlog_buf[_i]), __VA_ARGS__); \
 } while (0)
+// Second ring for Ractor wait/wakeup path events (kept separate so barrier
+// traffic cannot flush it).
+static char wakelog_buf[512][144];
+static rb_atomic_t wakelog_idx;
+void
+rb_wakelog(const char *fmt, ...)
+{
+    unsigned i = (unsigned)RUBY_ATOMIC_FETCH_ADD(wakelog_idx, 1) % 512;
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(wakelog_buf[i], sizeof(wakelog_buf[i]), fmt, ap);
+    va_end(ap);
+}
+static void
+wakelog_dump(FILE *e)
+{
+    unsigned n = (unsigned)RUBY_ATOMIC_LOAD(wakelog_idx);
+    unsigned start = n > 512 ? n - 512 : 0;
+    fprintf(e, "---- last %u wait/wakeup events ----\n", n - start);
+    for (unsigned k = start; k < n; k++) fprintf(e, "  %s\n", wakelog_buf[k % 512]);
+}
+
 static void
 schedlog_dump(FILE *e)
 {
@@ -1520,8 +1542,10 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
 
     if (ubf_set(th, ubf, ubf_arg, &waiter->event_serial)) {
         // interrupted
+        rb_wakelog("RSW_INTR th=%p", (void*)th);
         return;
     }
+    rb_wakelog("RSW_SLEEP th=%p serial=%u", (void*)th, (unsigned)waiter->event_serial);
 
     thread_sched_lock(sched, th);
     rb_ractor_unlock_self(cr);
@@ -1537,6 +1561,7 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
         th->status = THREAD_RUNNABLE;
     }
     thread_sched_unlock(sched, th);
+    rb_wakelog("RSW_WOKE th=%p st=%d", (void*)th, (int)waiter->wakeup_status);
     rb_ractor_lock_self(cr);
 
     ubf_clear(th, true);
@@ -1555,8 +1580,12 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *r_th)
     thread_sched_lock(sched, r_th);
     {
         if (r_th->status == THREAD_STOPPED_FOREVER) {
+            rb_wakelog("RSWK th=%p GATE-OK -> to_ready", (void*)r_th);
             RUBY_ATOMIC_ADD(r_th->unblock.event_serial, 1);
             thread_sched_to_ready_common(sched, r_th, true, false);
+        }
+        else {
+            rb_wakelog("RSWK th=%p GATE-MISS status=%d", (void*)r_th, (int)r_th->status);
         }
     }
     thread_sched_unlock(sched, r_th);
@@ -3383,21 +3412,22 @@ watchdog_dump(rb_vm_t *vm)
                 const rb_execution_context_t *tec = th->ec;
                 const rb_control_frame_t *cfp = tec ? tec->cfp : NULL;
                 const rb_control_frame_t *end = tec ? RUBY_VM_END_CONTROL_FRAME(tec) : NULL;
-                int depth = 0;
-                while (cfp && cfp < end && depth < 8) {
-                    if (VM_FRAME_RUBYFRAME_P(cfp) && cfp->_iseq) {
-                        VALUE path = rb_iseq_path(cfp->_iseq);
-                        int line = rb_vm_get_sourceline(cfp);
-                        fprintf(e, "      #%d %s:%d\n", depth,
-                                RB_TYPE_P(path, T_STRING) ? RSTRING_PTR(path) : "?", line);
-                        depth++;
-                    }
-                    cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp);
+                // print only the innermost Ruby frame; deeper walking hits
+                // garbage _iseq on parked stacks (observed SEGV)
+                if (cfp && cfp < end && cfp->_iseq && cfp->pc && rb_obj_is_iseq((VALUE)cfp->_iseq)) {
+                    VALUE path = rb_iseq_path(cfp->_iseq);
+                    int line = rb_vm_get_sourceline(cfp);
+                    fprintf(e, "      #0 %s:%d\n",
+                            RB_TYPE_P(path, T_STRING) ? RSTRING_PTR(path) : "?", line);
                 }
             }
         }
     }
     schedlog_dump(e);
+    wakelog_dump(e);
+    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+        rb_ractor_dump_sync_state(r, e);
+    }
     fprintf(e, "===== WATCHDOG END =====\n");
     fflush(e);
 }
