@@ -2129,7 +2129,28 @@ class Pathname    # * FileTest *
   # instead of the effective ids.
   def readable_real?() FileTest.readable_real?(@path) end
 
-  # See <tt>FileTest.setuid?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   setuid? -> true or false
+  #
+  # Returns whether the [setuid bit](https://en.wikipedia.org/wiki/Setuid) is set
+  # in the permissions for the entry at the path in `self`:
+  #
+  # ```ruby
+  # # Create a file and get its permissions and setuid? setting.
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('foo')
+  # mode = pn.stat.mode.to_s(8) # => "100664"
+  # pn.setuid?                  # => false
+  # # Set the bit.
+  # pn.chmod(0o4644)
+  # mode = pn.stat.mode.to_s(8) # => "104644"
+  # pn.setuid?                  # => true
+  # pn.delete                   # Clean up.
+  # ```
+  #
+  # On Windows, the bit is never set; the method always returns `false`.
   def setuid?() FileTest.setuid?(@path) end
 
   # :markup: markdown
