@@ -21,11 +21,11 @@ ruby_version_is "4.1" do
     end
 
     it "raises an ArgumentError for a negative number" do
-      -> { -1.bit_count }.should raise_error(ArgumentError)
-      -> { -19.bit_count }.should raise_error(ArgumentError)
-      -> { fixnum_min.bit_count }.should raise_error(ArgumentError)
-      -> { (-2**1000).bit_count }.should raise_error(ArgumentError)
-      -> { (-2**1000 - 1).bit_count }.should raise_error(ArgumentError)
+      -> { -1.bit_count }.should.raise(ArgumentError)
+      -> { -19.bit_count }.should.raise(ArgumentError)
+      -> { fixnum_min.bit_count }.should.raise(ArgumentError)
+      -> { (-2**1000).bit_count }.should.raise(ArgumentError)
+      -> { (-2**1000 - 1).bit_count }.should.raise(ArgumentError)
     end
   end
 end
