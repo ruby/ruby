@@ -280,7 +280,7 @@ has_separator_p(VALUE self, VALUE path)
  * :markup: markdown
  *
  * call-seq:
- *   sub_ext -> new_pathname
+ *   sub_ext(replacement) -> new_pathname
  *
  * Returns a new pathname whose path is the path in `self`,
  * after specified changes:
