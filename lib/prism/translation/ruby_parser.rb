@@ -1625,17 +1625,23 @@ module Prism
       end
 
       private_constant :Compiler
+      attr_accessor :scopes # :nodoc:
+
+      def initialize scopes:nil # :nodoc:
+        super()
+        self.scopes = [scopes] if scopes
+      end
 
       # Parse the given source and translate it into the seattlerb/ruby_parser
       # gem's Sexp format.
       def parse(source, filepath = "(string)")
-        translate(Prism.parse(source, filepath: filepath, partial_script: true), filepath)
+        translate(Prism.parse(source, filepath: filepath, partial_script: true, scopes: scopes), filepath)
       end
 
       # Parse the given file and translate it into the seattlerb/ruby_parser
       # gem's Sexp format.
       def parse_file(filepath)
-        translate(Prism.parse_file(filepath, partial_script: true), filepath)
+        translate(Prism.parse_file(filepath, partial_script: true, scopes: scopes), filepath)
       end
 
       # Parse the give file and translate it into the
@@ -1649,14 +1655,14 @@ module Prism
       class << self
         # Parse the given source and translate it into the seattlerb/ruby_parser
         # gem's Sexp format.
-        def parse(source, filepath = "(string)")
-          new.parse(source, filepath)
+        def parse(source, filepath = "(string)", scopes: nil)
+          new(scopes: scopes).parse(source, filepath)
         end
 
         # Parse the given file and translate it into the seattlerb/ruby_parser
         # gem's Sexp format.
-        def parse_file(filepath)
-          new.parse_file(filepath)
+        def parse_file(filepath, scopes: nil)
+          new(scopes: scopes).parse_file(filepath)
         end
       end
 
