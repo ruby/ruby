@@ -652,7 +652,7 @@ void
 rb_ractor_receive_parameters(rb_execution_context_t *ec, rb_ractor_t *r, int len, VALUE *ptr)
 {
     for (int i=0; i<len; i++) {
-        ptr[i] = ractor_receive(ec, ractor_default_port(r));
+        ptr[i] = ractor_receive(ec, ractor_default_port(r), r->sync.default_port_value);
     }
 }
 

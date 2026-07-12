@@ -727,6 +727,9 @@ rb_wakelog(const char *fmt, ...)
     va_start(ap, fmt);
     vsnprintf(wakelog_buf[i], sizeof(wakelog_buf[i]), fmt, ap);
     va_end(ap);
+    static int live = -1;
+    if (live < 0) live = getenv("RUBY_WAKELOG_STDERR") ? 1 : 0;
+    if (live) { fprintf(stderr, "[WK] %s\n", wakelog_buf[i]); }
 }
 static void
 wakelog_dump(FILE *e)

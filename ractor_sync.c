@@ -13,7 +13,7 @@ ractor_port_id(const struct ractor_port *rp)
 
 static VALUE rb_cRactorPort;
 
-static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp);
+static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE portv);
 static VALUE ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
 static VALUE ractor_try_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
 static void ractor_add_port(rb_ractor_t *r, st_data_t id);
@@ -126,7 +126,7 @@ ractor_port_receive(rb_execution_context_t *ec, VALUE self)
         rb_raise(rb_eRactorError, "only allowed from the creator Ractor of this port");
     }
 
-    return ractor_receive(ec, rp);
+    return ractor_receive(ec, rp, self);
 }
 
 static VALUE
@@ -134,6 +134,10 @@ ractor_port_send(rb_execution_context_t *ec, VALUE self, VALUE obj, VALUE move)
 {
     const struct ractor_port *rp = RACTOR_PORT_PTR(self);
     ractor_send(ec, rp, obj, RTEST(move));
+    if (RACTOR_PORT_PTR(self) != rp) {
+        fprintf(stderr, "[PORTMOVE] port_send: port data moved (stale deref happened) %p -> %p\n",
+                (void*)rp, (void*)RACTOR_PORT_PTR(self));
+    }
     return self;
 }
 
@@ -559,6 +563,14 @@ ractor_monitor(rb_execution_context_t *ec, VALUE self, VALUE port)
     bool terminated = false;
     const struct ractor_port *rp = RACTOR_PORT_PTR(port);
     struct ractor_monitor *rm = ALLOC(struct ractor_monitor);
+    if (getenv("RUBY_INJ_COMPACT_MONITOR")) {
+        // force a full-move compaction at this GC-able point
+        rb_funcall(rb_define_module("GC"), rb_intern("verify_compaction_references"), 0);
+    }
+    if (RACTOR_PORT_PTR(port) != rp) {
+        fprintf(stderr, "[PORTMOVE] monitor: port data moved %p -> %p (stale id=%u r=%p)\n",
+                (void*)rp, (void*)RACTOR_PORT_PTR(port), (unsigned)rp->id_, (void*)rp->r);
+    }
     rm->port = *rp; // copy port information
 
     RACTOR_LOCK(r);
@@ -638,7 +650,12 @@ ractor_notify_exit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE legacy, bo
     {
         RUBY_DEBUG_LOG("port:%u@r%u", (unsigned int)ractor_port_id(&rm->port), (unsigned int)rb_ractor_id(rm->port.r));
 
-        ractor_try_send(ec, &rm->port, token, false);
+        if (getenv("RUBY_INJ_DROP_MONITOR") && (rand() % 4) == 0) {
+            rb_wakelog("INJ drop monitor token port=%u", (unsigned)ractor_port_id(&rm->port));
+        }
+        else {
+            ractor_try_send(ec, &rm->port, token, false);
+        }
 
         ccan_list_del(&rm->node);
         SIZED_FREE(rm);
@@ -1049,6 +1066,10 @@ ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr)
 
     RACTOR_UNLOCK_SELF(cr);
     {
+        if (getenv("RUBY_INJ_CHECKINTS")) usleep(300);  // widen the popped-waiter window
+        if (getenv("RUBY_INJ_COMPACT_WAIT")) {
+            rb_funcall(rb_define_module("GC"), rb_intern("compact"), 0);  // simulate barrier-join compaction here
+        }
         rb_ec_check_ints(ec);
     }
     RACTOR_LOCK_SELF(cr);
@@ -1148,14 +1169,26 @@ ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *cr, const struct rac
 }
 
 static VALUE
-ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp)
+ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE portv)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     VM_ASSERT(cr == rp->r);
+    const st_data_t id0 = ractor_port_id(rp);
+    const struct ractor_port *rp0 = rp;
 
     RUBY_DEBUG_LOG("port:%u", (unsigned int)ractor_port_id(rp));
 
     while (1) {
+        /* DIAGNOSTIC: catch the receive target changing under us (CI hang
+         * showed TRYRECV port=1 turning into port=0 after a wakeup). */
+        if (ractor_port_id(rp) != id0 || RACTOR_PORT_PTR(portv) != rp0) {
+            fprintf(stderr, "[PORTSHIFT] id %u->%u rp=%p->%p portv=%p type=0x%x flags=%lx frozen=%d\n",
+                    (unsigned)id0, (unsigned)ractor_port_id(rp), (void*)rp0, (void*)RACTOR_PORT_PTR(portv),
+                    (void*)portv, (unsigned)RB_BUILTIN_TYPE(portv), (unsigned long)RBASIC(portv)->flags,
+                    RB_OBJ_FROZEN_RAW(portv) ? 1 : 0);
+            fflush(stderr);
+            rb_bug("PORTSHIFT detected");
+        }
         VALUE v = ractor_try_receive(ec, cr, rp);
 
         if (v != Qundef) {
