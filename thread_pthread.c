@@ -702,6 +702,30 @@ rb_del_running_thread(rb_thread_t *th)
 // sched->running should be set only on this function.
 //
 // if th is NULL, there is no running threads.
+static rb_ractor_t *
+sched_ractor(struct rb_thread_sched *sched)
+{
+    return (rb_ractor_t *)((char *)sched - offsetof(rb_ractor_t, threads.sched));
+}
+// Ring buffer of the last scheduler events; dumped by the watchdog on hang.
+#define SCHEDLOG_N 512
+static char schedlog_buf[SCHEDLOG_N][160];
+static rb_atomic_t schedlog_idx;
+#define SCHEDLOG(...) do { \
+    unsigned _i = (unsigned)RUBY_ATOMIC_FETCH_ADD(schedlog_idx, 1) % SCHEDLOG_N; \
+    snprintf(schedlog_buf[_i], sizeof(schedlog_buf[_i]), __VA_ARGS__); \
+} while (0)
+static void
+schedlog_dump(FILE *e)
+{
+    unsigned n = (unsigned)RUBY_ATOMIC_LOAD(schedlog_idx);
+    unsigned start = n > SCHEDLOG_N ? n - SCHEDLOG_N : 0;
+    fprintf(e, "---- last %u scheduler events ----\n", n - start);
+    for (unsigned k = start; k < n; k++) {
+        fprintf(e, "  %s\n", schedlog_buf[k % SCHEDLOG_N]);
+    }
+}
+
 static void
 thread_sched_set_running(struct rb_thread_sched *sched, rb_thread_t *th)
 {
@@ -713,6 +737,13 @@ thread_sched_set_running(struct rb_thread_sched *sched, rb_thread_t *th)
     }
 
     sched->running = th;
+    {
+        if (th && th->nt == NULL) {  // SNT designated: INV-1 relevant
+            rb_ractor_t *r = sched_ractor(sched);
+            int grq = (sched->grq_node.next != NULL && sched->grq_node.next != &sched->grq_node);
+            SCHEDLOG("SET_RUNNING r=%u SNT_th=%p grq_linked=%d", (unsigned)r->pub.id, (void*)th, grq);
+        }
+    }
 }
 
 RBIMPL_ATTR_MAYBE_UNUSED()
@@ -795,29 +826,26 @@ thread_sched_wakeup_running_thread(struct rb_thread_sched *sched, rb_thread_t *n
     VM_ASSERT(sched->running == next_th);
 
     if (next_th) {
+        rb_ractor_t *nr = next_th->ractor;
         if (next_th->nt) {
             if (th_has_dedicated_nt(next_th)) {
-                RUBY_DEBUG_LOG("pinning th:%u", next_th->serial);
-                rb_native_cond_signal(&next_th->nt->cond.readyq);
+                rb_native_cond_signal(&next_th->nt->cond.readyq);  // DNT wake (noise, not logged)
             }
             else {
-                // TODO
-                RUBY_DEBUG_LOG("th:%u is already running.", next_th->serial);
+                SCHEDLOG("WAKE r=%u th=%p SNT+nt will_switch=%d -> TODO(nothing)", (unsigned)nr->pub.id, (void*)next_th, will_switch);
             }
         }
         else {
             if (will_switch) {
-                RUBY_DEBUG_LOG("th:%u (do nothing)", rb_th_serial(next_th));
+                SCHEDLOG("WAKE r=%u th=%p nt=NULL will_switch=1 -> do nothing (caller transfers)", (unsigned)nr->pub.id, (void*)next_th);
             }
             else {
-                RUBY_DEBUG_LOG("th:%u (enq)", rb_th_serial(next_th));
+                SCHEDLOG("WAKE r=%u th=%p nt=NULL will_switch=0 -> ENQ", (unsigned)nr->pub.id, (void*)next_th);
                 ractor_sched_enq(next_th->vm, next_th->ractor);
             }
         }
     }
-    else {
-        RUBY_DEBUG_LOG("no waiting threads%s", "");
-    }
+    // (no waiting threads: noise, not logged)
 }
 
 // waiting -> ready (locked)
@@ -1366,6 +1394,7 @@ ractor_sched_cancel_enq(rb_vm_t *vm, struct rb_thread_sched *sched)
                 ccan_list_del_init(&sched->grq_node);
                 VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
                 vm->ractor.sched.grq_cnt--;
+                SCHEDLOG("CANCEL_ENQ r=%u run_th=%p grq_cnt=%u", (unsigned)sched_ractor(sched)->pub.id, (void*)sched->running, vm->ractor.sched.grq_cnt);
             }
         }
         ractor_sched_unlock(vm, NULL);
@@ -1395,6 +1424,7 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
         }
         ccan_list_add_tail(&vm->ractor.sched.grq, &sched->grq_node);
         vm->ractor.sched.grq_cnt++;
+        SCHEDLOG("ENQ r=%u run_th=%p grq_cnt=%u snt_cnt=%u", (unsigned)r->pub.id, (void*)sched->running, vm->ractor.sched.grq_cnt, vm->ractor.sched.snt_cnt);
         VM_ASSERT(grq_size(vm, cr) == vm->ractor.sched.grq_cnt);
 
         RUBY_DEBUG_LOG("r:%u th:%u grq_cnt:%u", rb_ractor_id(r), rb_th_serial(sched->running), vm->ractor.sched.grq_cnt);
@@ -1459,6 +1489,7 @@ ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
             ccan_list_node_init(&r->threads.sched.grq_node); // back to self-linked
             VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
             vm->ractor.sched.grq_cnt--;
+            SCHEDLOG("DEQ r=%u run_th=%p grq_cnt=%u (SNT serves)", (unsigned)r->pub.id, (void*)r->threads.sched.running, vm->ractor.sched.grq_cnt);
             RUBY_DEBUG_LOG("r:%d grq_cnt:%u", (int)rb_ractor_id(r), vm->ractor.sched.grq_cnt);
         }
         else {
@@ -3346,6 +3377,7 @@ watchdog_dump(rb_vm_t *vm)
                     in_runset, th->blocking_region_buffer != NULL);
         }
     }
+    schedlog_dump(e);
     fprintf(e, "===== WATCHDOG END =====\n");
     fflush(e);
 }
