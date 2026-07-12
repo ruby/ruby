@@ -147,15 +147,26 @@ rb_ec_fiber_scheduler_finalize(rb_execution_context_t *ec)
 static void
 rb_ec_teardown(rb_execution_context_t *ec)
 {
+    enum ruby_tag_type state = TAG_NONE;
+    volatile VALUE trap_errinfo = Qnil;
+
     // If the user code defined a scheduler for the top level thread, run it:
     rb_ec_fiber_scheduler_finalize(ec);
 
     EC_PUSH_TAG(ec);
-    if (EC_EXEC_TAG() == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         rb_vm_trap_exit(rb_ec_vm_ptr(ec));
+    }
+    else {
+        trap_errinfo = ec->errinfo;
+        ec->errinfo = Qnil;
     }
     EC_POP_TAG();
     rb_ec_exec_end_proc(ec);
+    if (!NIL_P(trap_errinfo)) {
+        error_handle(ec, trap_errinfo, state);
+        ec->errinfo = trap_errinfo;
+    }
     rb_ec_clear_all_trace_func(ec);
 }
 
