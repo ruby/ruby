@@ -2774,6 +2774,29 @@ rb_threadptr_signal_raise(rb_thread_t *th, int sig)
 }
 
 void
+rb_threadptr_interrupt_raise(rb_thread_t *th)
+{
+    rb_thread_t *target_th = th->vm->ractor.main_thread;
+
+    if (rb_threadptr_dead(target_th)) {
+        return;
+    }
+
+    /* Preserve the traditional no-message Interrupt from default SIGINT. */
+    VALUE exc = rb_exc_new(rb_eInterrupt, 0, 0);
+
+    /* making an exception object can switch thread,
+       so we need to check thread deadness again */
+    if (rb_threadptr_dead(target_th)) {
+        return;
+    }
+
+    rb_ec_setup_exception(GET_EC(), exc, Qundef);
+    rb_threadptr_pending_interrupt_enque(target_th, exc);
+    rb_threadptr_interrupt(target_th);
+}
+
+void
 rb_threadptr_signal_exit(rb_thread_t *th)
 {
     VALUE argv[2];
