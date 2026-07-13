@@ -306,6 +306,11 @@ rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr)
 }
 
 void
+rb_wakelog(const char *fmt, ...) // DIAGNOSTIC stub (no threads backend)
+{
+}
+
+void
 rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
 {
     // do nothing

@@ -496,18 +496,29 @@ ractor_sched_set_unlocked(rb_vm_t *vm, rb_ractor_t *cr)
 
 static pthread_t ractor_sched_lock_tid;   // DIAGNOSTIC
 static int ractor_sched_lock_tid_set;
+static const char *ractor_sched_lock_held_file; // DIAGNOSTIC: where the held lock was taken
+static int ractor_sched_lock_held_line;
 
 static void
 ractor_sched_lock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 {
     if (ractor_sched_lock_tid_set && pthread_equal(ractor_sched_lock_tid, pthread_self())) {
-        fprintf(stderr, "[SELFDEADLOCK] ractor_sched_lock recursive at %s:%d\n", file, line);
+        // Smoking gun: report where the still-held acquisition came from and
+        // the barrier state, so the leak site is unambiguous in the CI log.
+        fprintf(stderr, "[SELFDEADLOCK-TID] ractor_sched_lock recursive (tid) at %s:%d\n"
+                        "  held since %s:%d | barrier_waiting=%d barrier_ractor=%p cr=%p owner=%p locked=%d\n",
+                file, line, ractor_sched_lock_held_file, ractor_sched_lock_held_line,
+                vm->ractor.sched.barrier_waiting, (void*)vm->ractor.sched.barrier_ractor,
+                (void*)cr, (void*)vm->ractor.sched.lock_owner, vm->ractor.sched.locked);
         fflush(stderr);
-        rb_bug("ractor_sched_lock: recursive acquisition at %s:%d", file, line);
+        rb_bug("ractor_sched_lock: recursive acquisition (tid) at %s:%d (held since %s:%d)",
+               file, line, ractor_sched_lock_held_file, ractor_sched_lock_held_line);
     }
     rb_native_mutex_lock(&vm->ractor.sched.lock);
     ractor_sched_lock_tid = pthread_self();
     ractor_sched_lock_tid_set = 1;
+    ractor_sched_lock_held_file = file;
+    ractor_sched_lock_held_line = line;
 
 #if VM_CHECK_MODE
     RUBY_DEBUG_LOG2(file, line, "cr:%u prev_owner:%u", rb_ractor_serial(cr), rb_ractor_serial(vm->ractor.sched.lock_owner));
@@ -1810,6 +1821,7 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     vm->ractor.sched.running_cnt = 0;
 
     rb_native_mutex_initialize(&vm->ractor.sched.lock);
+    ractor_sched_lock_tid_set = 0; // DIAGNOSTIC: keep the tid detector fork-safe
 #if VM_CHECK_MODE > 0
     vm->ractor.sched.lock_owner = NULL;
     vm->ractor.sched.locked = false;

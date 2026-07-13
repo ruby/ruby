@@ -2694,6 +2694,10 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
         terminate_interrupt = interrupt & TERMINATE_INTERRUPT_MASK; // request from other ractors
 
         if (interrupt & VM_BARRIER_INTERRUPT_MASK) {
+            {
+                const char *s = getenv("RUBY_BARRIER_SLEEP_US"); // DIAGNOSTIC: widen join window
+                if (s) { int us = atoi(s); if (us > 0) usleep(us); }
+            }
             RB_VM_LOCKING();
         }
 
