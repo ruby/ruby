@@ -481,6 +481,7 @@ coroutine_thread_terminated(rb_thread_t *th)
     // r/sched must not be touched. That order is safe only for it: with
     // no successor, sched->running stays NULL, so the removal's VM lock
     // never joins a barrier (vm_need_barrier requires a running thread).
+    VM_ASSERT(sched->running == th); // th owns the slot through the removal
     if (!last) rb_ractor_living_threads_remove(r, th);
 
     thread_sched_lock(sched, th);
@@ -505,6 +506,10 @@ coroutine_thread_terminated(rb_thread_t *th)
     thread_sched_unlock(sched, th);
 
     if (last) {
+        // The reverse order is safe only with no successor: running == NULL
+        // means the removal's VM lock cannot join a barrier (vm_need_barrier).
+        VM_ASSERT(sched->running == NULL);
+        VM_ASSERT(wake_th == NULL);
         // Last access to th/r: the removal may unlink the Ractor, after
         // which the GC may collect th and r.
         rb_ractor_living_threads_remove(r, th);
