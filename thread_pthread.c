@@ -2503,6 +2503,7 @@ thread_sched_reclaim(struct coroutine_context *dead_co)
         SIZED_FREE(tctx);
         // pairs with the increment at the top of coroutine_thread_terminated:
         // a waiting VM destruct may proceed once this reclaim is done
+        VM_ASSERT(RUBY_ATOMIC_LOAD(GET_VM()->ractor.sched.winding_cnt) > 0);
         RUBY_ATOMIC_DEC(GET_VM()->ractor.sched.winding_cnt);
         return true;
     }
