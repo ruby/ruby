@@ -6,6 +6,11 @@ require_relative 'lib/gem_env'
 
 ENV.delete("GNUMAKEFLAGS")
 
+# net-imap's test helper enables SimpleCov, but its released versions still
+# call the pre-1.0.0 `SimpleCov.formatters=` API that breaks with simplecov
+# 1.0.0. Coverage of bundled gems is not collected in CI, so disable it.
+ENV["SIMPLECOV_DISABLE"] = "1"
+
 github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
