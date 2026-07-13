@@ -311,6 +311,11 @@ rb_wakelog(const char *fmt, ...) // DIAGNOSTIC stub (no threads backend)
 }
 
 void
+rb_forkt_stage(const char *stage)
+{
+}
+
+void
 rb_forkt_probe(const char *stage) // DIAGNOSTIC stub
 {
 }

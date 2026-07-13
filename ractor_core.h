@@ -166,6 +166,7 @@ void rb_ractor_living_threads_remove(rb_ractor_t *r, rb_thread_t *th);
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
 void rb_wakelog(const char *fmt, ...);
 void rb_forkt_probe(const char *stage);
+void rb_forkt_stage(const char *stage);
 void rb_ractor_dump_sync_state(rb_ractor_t *r, FILE *e);
 void rb_ractor_blocking_threads_inc(rb_ractor_t *r, const char *file, int line); // TODO: file, line only for RUBY_DEBUG_LOG
 void rb_ractor_blocking_threads_dec(rb_ractor_t *r, const char *file, int line); // TODO: file, line only for RUBY_DEBUG_LOG

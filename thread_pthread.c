@@ -757,6 +757,44 @@ rb_wakelog(const char *fmt, ...)
     if (live < 0) live = getenv("RUBY_WAKELOG_STDERR") ? 1 : 0;
     if (live) { fprintf(stderr, "[WK] %s\n", wakelog_buf[i]); }
 }
+// DIAGNOSTIC: parent-side fork stage tracker. The watchdog prints the current
+// stage + elapsed, so a fork window that never completes is still attributed.
+// A completed stage also prints itself when it took suspiciously long.
+static const char *volatile rb_forkt_stage_name;
+static struct timespec rb_forkt_stage_t0;
+void
+rb_forkt_stage(const char *stage)
+{
+    static int on = -1;
+    if (on < 0) on = getenv("RUBY_FORK_TIMING") ? 1 : 0;
+    if (!on) return;
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    const char *prev = rb_forkt_stage_name;
+    if (prev) {
+        const double dt = (double)(now.tv_sec - rb_forkt_stage_t0.tv_sec)
+                        + (double)(now.tv_nsec - rb_forkt_stage_t0.tv_nsec) / 1e9;
+        if (dt > 0.3) {
+            fprintf(stderr, "[FORKT] parent stage %s took %.3fs\n", prev, dt);
+            fflush(stderr);
+        }
+    }
+    rb_forkt_stage_t0 = now;
+    rb_forkt_stage_name = stage; // NULL = fork path left
+}
+static void
+rb_forkt_stage_dump(FILE *e)
+{
+    const char *cur = rb_forkt_stage_name;
+    if (cur) {
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        const double dt = (double)(now.tv_sec - rb_forkt_stage_t0.tv_sec)
+                        + (double)(now.tv_nsec - rb_forkt_stage_t0.tv_nsec) / 1e9;
+        fprintf(e, "forkt: main is in fork stage '%s' for %.3fs\n", cur, dt);
+    }
+}
+
 // DIAGNOSTIC: fork-lifecycle timing. Armed in the fork child (thread_sched_atfork);
 // a stage prints only when suspiciously late, so healthy runs stay silent.
 static struct timespec rb_forkt_t0;
@@ -3449,6 +3487,7 @@ watchdog_dump(rb_vm_t *vm)
             (int)vm->ractor.sched.barrier_waiting, vm->ractor.sched.barrier_waiting_cnt,
             vm->ractor.sched.barrier_serial, vm->ractor.sched.grq_cnt);
     fprintf(e, "vm->ractor: cnt=%u blocking_cnt=%u\n", vm->ractor.cnt, vm->ractor.blocking_cnt);
+    rb_forkt_stage_dump(e);
 #if VM_CHECK_MODE
     fprintf(e, "sched.lock_owner=%p barrier_ractor=%p sched_lock_holder=%p\n",
             (void *)vm->ractor.sched.lock_owner, (void *)vm->ractor.sched.barrier_ractor, (void *)RUBY_ATOMIC_PTR_LOAD(ractor_sched_lock_holder));

@@ -4126,17 +4126,23 @@ rb_fork_ruby(int *status)
     if (forkt_on) clock_gettime(CLOCK_MONOTONIC, &forkt0);
 
     do {
+        rb_forkt_stage("prefork"); // DIAGNOSTIC stage markers below
         prefork();
 
+        rb_forkt_stage("before_fork(timer-stop+gc-barrier)");
         before_fork_ruby();
+        rb_forkt_stage("fork_lock");
         rb_thread_acquire_fork_lock();
+        rb_forkt_stage("disable_child_handler");
         disable_child_handler_before_fork(&old);
 
+        rb_forkt_stage("fork-syscall");
         RB_VM_LOCKING() {
             child.pid = pid = rb_fork();
             child.error = err = errno;
         }
 
+        rb_forkt_stage("fork-parent-epilogue");
         disable_child_handler_fork_parent(&old); /* yes, bad name */
         if (
 #if defined(__FreeBSD__)
@@ -4148,7 +4154,9 @@ rb_fork_ruby(int *status)
         if (pid == 0) {
             rb_thread_reset_fork_lock();
         }
+        rb_forkt_stage("after_fork(gc-unlock+timer-start)");
         after_fork_ruby(pid);
+        rb_forkt_stage(NULL);
 
         /* repeat while fork failed but retryable */
     } while (pid < 0 && handle_fork_error(err, &child, NULL, &try_gc) == 0);
