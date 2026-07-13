@@ -1822,6 +1822,12 @@ thread_sched_atfork(struct rb_thread_sched *sched)
 
     ccan_list_head_init(&vm->ractor.sched.grq);
     vm->ractor.sched.grq_cnt = 0; // the list was just emptied; reset the count with it
+    // A fork during a VM barrier leaves the child with barrier state that can
+    // never complete (the other ractors are gone); reset it like the rest.
+    vm->ractor.sched.barrier_waiting = false;
+    vm->ractor.sched.barrier_waiting_cnt = 0;
+    vm->ractor.sched.barrier_ractor = NULL;
+    vm->ractor.sched.barrier_lock_rec = 0;
     // Threads that were winding down in the parent do not exist in the child;
     // without this reset the child's ruby_vm_destruct would wait for their
     // reclaim (which never comes) forever.
