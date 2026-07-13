@@ -3894,6 +3894,10 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                      * get updated and "during_compacting" should get disabled */
                     rb_bug("T_MOVED shouldn't be seen until compaction is finished");
                 }
+                /* Drop the tombstone's pin with the slot: invalidate_moved_page
+                 * identifies tombstones by pinned && !marked, so a stale pin
+                 * would make it misread this freed slot later. */
+                CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(vp), vp);
                 gc_report(3, objspace, "page_sweep: %s is freed\n", rb_obj_info(vp));
                 ctx->empty_slots++;
                 gc_sweep_register_free_slot(objspace, sweep_page, ctx, p, slot_size);
