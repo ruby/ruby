@@ -494,15 +494,20 @@ ractor_sched_set_unlocked(rb_vm_t *vm, rb_ractor_t *cr)
 #endif
 }
 
-static pthread_t ractor_sched_lock_tid;   // DIAGNOSTIC
-static int ractor_sched_lock_tid_set;
+// DIAGNOSTIC. Single atomic slot: 0 = free, else the holder's pthread_t.
+// A thread can read its OWN id here only while it truly holds the lock
+// (it clears the slot before releasing the mutex and same-thread program
+// order makes that clear visible to itself), so the pre-lock self check
+// cannot false-fire the way the old two-variable tid/set pair did (torn
+// reads of another holder's set=1 with our own stale tid).
+static volatile void *ractor_sched_lock_holder;   // pthread_t as void*
 static const char *ractor_sched_lock_held_file; // DIAGNOSTIC: where the held lock was taken
 static int ractor_sched_lock_held_line;
 
 static void
 ractor_sched_lock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 {
-    if (ractor_sched_lock_tid_set && pthread_equal(ractor_sched_lock_tid, pthread_self())) {
+    if ((pthread_t)RUBY_ATOMIC_PTR_LOAD(ractor_sched_lock_holder) == pthread_self()) {
         // Smoking gun: report where the still-held acquisition came from and
         // the barrier state, so the leak site is unambiguous in the CI log.
         fprintf(stderr, "[SELFDEADLOCK-TID] ractor_sched_lock recursive (tid) at %s:%d\n"
@@ -515,8 +520,7 @@ ractor_sched_lock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
                file, line, ractor_sched_lock_held_file, ractor_sched_lock_held_line);
     }
     rb_native_mutex_lock(&vm->ractor.sched.lock);
-    ractor_sched_lock_tid = pthread_self();
-    ractor_sched_lock_tid_set = 1;
+    RUBY_ATOMIC_PTR_EXCHANGE(ractor_sched_lock_holder, (void *)pthread_self());
     ractor_sched_lock_held_file = file;
     ractor_sched_lock_held_line = line;
 
@@ -532,7 +536,7 @@ ractor_sched_lock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 static void
 ractor_sched_unlock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 {
-    ractor_sched_lock_tid_set = 0;
+    RUBY_ATOMIC_PTR_EXCHANGE(ractor_sched_lock_holder, NULL);
     RUBY_DEBUG_LOG2(file, line, "cr:%u", rb_ractor_serial(cr));
 
     ractor_sched_set_unlocked(vm, cr);
@@ -1821,7 +1825,7 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     vm->ractor.sched.running_cnt = 0;
 
     rb_native_mutex_initialize(&vm->ractor.sched.lock);
-    ractor_sched_lock_tid_set = 0; // DIAGNOSTIC: keep the tid detector fork-safe
+    RUBY_ATOMIC_PTR_EXCHANGE(ractor_sched_lock_holder, NULL); // DIAGNOSTIC: fork-safe
 #if VM_CHECK_MODE > 0
     vm->ractor.sched.lock_owner = NULL;
     vm->ractor.sched.locked = false;
@@ -3424,10 +3428,10 @@ watchdog_dump(rb_vm_t *vm)
             vm->ractor.sched.barrier_serial, vm->ractor.sched.grq_cnt);
     fprintf(e, "vm->ractor: cnt=%u blocking_cnt=%u\n", vm->ractor.cnt, vm->ractor.blocking_cnt);
 #if VM_CHECK_MODE
-    fprintf(e, "sched.lock_owner=%p barrier_ractor=%p sched_lock_tid_set=%d\n",
-            (void *)vm->ractor.sched.lock_owner, (void *)vm->ractor.sched.barrier_ractor, ractor_sched_lock_tid_set);
+    fprintf(e, "sched.lock_owner=%p barrier_ractor=%p sched_lock_holder=%p\n",
+            (void *)vm->ractor.sched.lock_owner, (void *)vm->ractor.sched.barrier_ractor, (void *)RUBY_ATOMIC_PTR_LOAD(ractor_sched_lock_holder));
 #else
-    fprintf(e, "barrier_ractor=%p sched_lock_tid_set=%d\n", (void *)vm->ractor.sched.barrier_ractor, ractor_sched_lock_tid_set);
+    fprintf(e, "barrier_ractor=%p sched_lock_holder=%p\n", (void *)vm->ractor.sched.barrier_ractor, (void *)RUBY_ATOMIC_PTR_LOAD(ractor_sched_lock_holder));
 #endif
 
     rb_ractor_t *r;
