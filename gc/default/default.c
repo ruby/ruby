@@ -3653,11 +3653,18 @@ read_barrier_handler(uintptr_t address)
 
     int lev = RB_GC_VM_LOCK();
     {
-        unlock_page_body(objspace, page_body);
+        /* A thread in a blocking region can fault on a protected page while
+         * the compacting GC holds the VM lock, and only get here after
+         * gc_compact_finish already unprotected every page and updated every
+         * reference. Invalidating now would move the objects back and leave
+         * the updated references dangling; there is nothing left to do. */
+        if (objspace->flags.during_compacting) {
+            unlock_page_body(objspace, page_body);
 
-        objspace->profile.read_barrier_faults++;
+            objspace->profile.read_barrier_faults++;
 
-        invalidate_moved_page(objspace, GET_HEAP_PAGE(address));
+            invalidate_moved_page(objspace, GET_HEAP_PAGE(address));
+        }
     }
     RB_GC_VM_UNLOCK(lev);
 }
