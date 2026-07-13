@@ -469,13 +469,6 @@ make_counters! {
     load_field_count,
     store_field_count,
 
-    invokeblock_handler_monomorphic_iseq,
-    invokeblock_handler_monomorphic_ifunc,
-    invokeblock_handler_monomorphic_other,
-    invokeblock_handler_polymorphic,
-    invokeblock_handler_megamorphic,
-    invokeblock_handler_no_profiles,
-
     // HIR-level method inliner counters. Rejection counters are incremented once per
     // SendDirect the inliner considers.
     inline_method_count,

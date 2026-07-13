@@ -9587,34 +9587,10 @@ fn add_iseq_to_hir(
             } else if opcode == YARVINSN_definedivar || opcode == YARVINSN_trace_definedivar {
                 profiles.profile_self(exit_id, &exit_state, self_param);
             } else if opcode == YARVINSN_invokeblock || opcode == YARVINSN_trace_invokeblock {
-                if get_option!(stats) {
-                    let iseq_insn_idx = exit_state.insn_idx;
-                    if let Some(operand_types) = payload.profile.get_operand_types(iseq_insn_idx) {
-                        if let [self_type_distribution] = &operand_types[..] {
-                            let summary = TypeDistributionSummary::new(&self_type_distribution);
-                            if summary.is_monomorphic() {
-                                let profiled_type = summary.bucket(0);
-                                if unsafe { rb_IMEMO_TYPE_P(profiled_type.class(), imemo_iseq) == 1 } {
-                                    fun.count(block, Counter::invokeblock_handler_monomorphic_iseq);
-                                } else if profiled_type.flags().is_ifunc_block_handler() {
-                                    fun.count(block, Counter::invokeblock_handler_monomorphic_ifunc);
-                                } else {
-                                    fun.count(block, Counter::invokeblock_handler_monomorphic_other);
-                                }
-                            } else if summary.is_skewed_polymorphic() || summary.is_polymorphic() {
-                                fun.count(block, Counter::invokeblock_handler_polymorphic);
-                            } else if summary.is_skewed_megamorphic() || summary.is_megamorphic() {
-                                fun.count(block, Counter::invokeblock_handler_megamorphic);
-                            } else {
-                                fun.count(block, Counter::invokeblock_handler_no_profiles);
-                            }
-                        } else {
-                            fun.count(block, Counter::invokeblock_handler_no_profiles);
-                        }
-                    }
-                }
-            }
-            else {
+                // Do nothing
+            } else if opcode == YARVINSN_getblockparamproxy || opcode == YARVINSN_trace_getblockparamproxy {
+                // Do nothing
+            } else {
                 profiles.profile_stack(exit_id, &exit_state);
             }
 
