@@ -5778,13 +5778,24 @@ impl Function {
     /// Inspired by Cranelift's aegraph canonicalize step
     /// (<https://cfallin.org/blog/2026/04/09/aegraph/>).
     fn canonicalize(&mut self) {
-        // TODO(max): Don't duplicate map. Instead, use either undo-redo or dominator numbering
+        // TODO(max): Don't make so many maps. Instead, use either undo-redo or dominator numbering
         // information for dominator tree.
+        fn lookup_dominating(rewrite_maps: &mut Vec<HashMap<InsnId, InsnId>>, dominators: &Dominators, block: BlockId, insn_id: InsnId) -> Option<InsnId> {
+            let mut current_block = block;
+            loop {
+                if let Some(&canonical_id) = rewrite_maps[current_block.0].get(&insn_id) {
+                    return Some(canonical_id);
+                }
+                match dominators.idom(current_block) {
+                    dominator if dominator == current_block => break,
+                    dominator => current_block = dominator,
+                }
+            }
+            None
+        }
         let mut rewrite_maps: Vec<HashMap<InsnId, InsnId>> = vec![HashMap::new(); self.blocks.len()];
         let dominators = Dominators::new(self);
         for block in self.reverse_post_order() {
-            rewrite_maps[block.0] = rewrite_maps[dominators.idom(block).0].clone();
-            let rewrite_map = &mut rewrite_maps[block.0];
             for i in 0..self.blocks[block.0].insns.len() {
                 let insn_id = self.blocks[block.0].insns[i];
                 let canonical_id = self.union_find.borrow().find_const(insn_id);
@@ -5792,7 +5803,7 @@ impl Function {
                 let union_find = &self.union_find;
                 self.insns[canonical_id.0].for_each_operand_mut(|operand| {
                     let canon = union_find.borrow().find_const(*operand);
-                    *operand = rewrite_map.get(&canon).copied().unwrap_or(canon);
+                    *operand = lookup_dominating(&mut rewrite_maps, &dominators, block, canon).unwrap_or(canon);
                 });
 
                 // For the binary guards only `left` is registered because their infer_type is
@@ -5804,7 +5815,7 @@ impl Function {
                     | Insn::GuardNoBitsSet { val:  src, .. }
                     | Insn::GuardGreaterEq { left: src, .. }
                     | Insn::GuardLess      { left: src, .. } => {
-                        rewrite_map.insert(*src, canonical_id);
+                        rewrite_maps[block.0].insert(*src, canonical_id);
                     }
                     _ => {}
                 }
