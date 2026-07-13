@@ -1066,10 +1066,12 @@ ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr)
 
     RACTOR_UNLOCK_SELF(cr);
     {
+#ifndef _WIN32
         if (getenv("RUBY_INJ_CHECKINTS")) usleep(300);  // widen the popped-waiter window
         if (getenv("RUBY_INJ_COMPACT_WAIT")) {
-            rb_funcall(rb_define_module("GC"), rb_intern("compact"), 0);  // simulate barrier-join compaction here
+            rb_funcall(rb_define_module("GC"), rb_intern("verify_compaction_references"), 0);  // full move at the receive wait
         }
+#endif
         rb_ec_check_ints(ec);
     }
     RACTOR_LOCK_SELF(cr);

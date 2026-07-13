@@ -1029,3 +1029,9 @@ rb_thread_sched_wait_winding(rb_vm_t *vm)
     // after leaving the living set (see thread_pthread.c)
     (void)vm;
 }
+
+// DIAGNOSTIC stubs (the pthread build defines these in thread_pthread.c)
+void
+rb_wakelog(const char *fmt, ...)
+{
+}
