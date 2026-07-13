@@ -494,10 +494,20 @@ ractor_sched_set_unlocked(rb_vm_t *vm, rb_ractor_t *cr)
 #endif
 }
 
+static pthread_t ractor_sched_lock_tid;   // DIAGNOSTIC
+static int ractor_sched_lock_tid_set;
+
 static void
 ractor_sched_lock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 {
+    if (ractor_sched_lock_tid_set && pthread_equal(ractor_sched_lock_tid, pthread_self())) {
+        fprintf(stderr, "[SELFDEADLOCK] ractor_sched_lock recursive at %s:%d\n", file, line);
+        fflush(stderr);
+        rb_bug("ractor_sched_lock: recursive acquisition at %s:%d", file, line);
+    }
     rb_native_mutex_lock(&vm->ractor.sched.lock);
+    ractor_sched_lock_tid = pthread_self();
+    ractor_sched_lock_tid_set = 1;
 
 #if VM_CHECK_MODE
     RUBY_DEBUG_LOG2(file, line, "cr:%u prev_owner:%u", rb_ractor_serial(cr), rb_ractor_serial(vm->ractor.sched.lock_owner));
@@ -511,6 +521,7 @@ ractor_sched_lock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 static void
 ractor_sched_unlock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 {
+    ractor_sched_lock_tid_set = 0;
     RUBY_DEBUG_LOG2(file, line, "cr:%u", rb_ractor_serial(cr));
 
     ractor_sched_set_unlocked(vm, cr);
@@ -3394,6 +3405,12 @@ watchdog_dump(rb_vm_t *vm)
             (int)vm->ractor.sched.barrier_waiting, vm->ractor.sched.barrier_waiting_cnt,
             vm->ractor.sched.barrier_serial, vm->ractor.sched.grq_cnt);
     fprintf(e, "vm->ractor: cnt=%u blocking_cnt=%u\n", vm->ractor.cnt, vm->ractor.blocking_cnt);
+#if VM_CHECK_MODE
+    fprintf(e, "sched.lock_owner=%p barrier_ractor=%p sched_lock_tid_set=%d\n",
+            (void *)vm->ractor.sched.lock_owner, (void *)vm->ractor.sched.barrier_ractor, ractor_sched_lock_tid_set);
+#else
+    fprintf(e, "barrier_ractor=%p sched_lock_tid_set=%d\n", (void *)vm->ractor.sched.barrier_ractor, ractor_sched_lock_tid_set);
+#endif
 
     rb_ractor_t *r;
     ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
