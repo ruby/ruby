@@ -1038,10 +1038,16 @@ gc_step(void *objspace_ptr, bool force)
 
 }
 
+// No barrier when GC is disabled: the NEWOBJ hook holds the VM lock without barrier support.
 static void
-maybe_gc(void *objspace_ptr)
+maybe_gc_with_barrier(void *objspace_ptr)
 {
-    gc_step(objspace_ptr, false);
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+
+    if (objspace && objspace->gc_enabled) {
+        rb_gc_vm_barrier();
+        gc_step(objspace_ptr, false);
+    }
 }
 
 static void
@@ -1056,10 +1062,7 @@ static void *
 lock_and_maybe_gc_gvl(void *objspace_ptr)
 {
     unsigned int lev = RB_GC_VM_LOCK();
-    rb_gc_vm_barrier();
-
-    maybe_gc(objspace_ptr);
-
+    maybe_gc_with_barrier(objspace_ptr);
     RB_GC_VM_UNLOCK(lev);
     return NULL;
 }
@@ -1081,10 +1084,9 @@ VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size)
 {
     unsigned int lev = RB_GC_VM_LOCK();
-    rb_gc_vm_barrier();
 
     // Check if we should trigger GC before allocating
-    maybe_gc(objspace_ptr);
+    maybe_gc_with_barrier(objspace_ptr);
 
     // Ensure minimum allocation size of BASE_SLOT_SIZE
     alloc_size = rb_gc_impl_size_slot_size(objspace_ptr, alloc_size);
