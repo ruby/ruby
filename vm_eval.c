@@ -1080,6 +1080,7 @@ VALUE
 rb_funcallv(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     VM_ASSERT(ruby_thread_has_gvl_p());
+    VM_ASSERT(!RB_TYPE_P(recv, T_IMEMO));
 
     return rb_funcallv_scope(recv, mid, argc, argv, CALL_FCALL);
 }

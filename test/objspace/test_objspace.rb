@@ -895,6 +895,11 @@ class TestObjSpace < Test::Unit::TestCase
       bar
     rescue => err
       _, m = ObjectSpace.reachable_objects_from(err)
+
+      # The very first NameError allocated by a process is extended
+      if ObjectSpace::InternalObjectWrapper === m # T_IMEMO/fields_obj
+        m, _ = ObjectSpace.reachable_objects_from(m)
+      end
     end
     assert_equal(m, m.clone)
   end

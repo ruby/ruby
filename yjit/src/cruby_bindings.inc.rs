@@ -1126,7 +1126,6 @@ extern "C" {
     pub fn rb_ivar_get_at_no_ractor_check(obj: VALUE, index: attr_index_t) -> VALUE;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
-    pub fn rb_ensure_iv_list_size(obj: VALUE, current_len: u32, newsize: u32);
     pub fn rb_vm_barrier();
     pub fn rb_str_byte_substr(str_: VALUE, beg: VALUE, len: VALUE) -> VALUE;
     pub fn rb_str_substr_two_fixnums(

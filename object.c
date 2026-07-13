@@ -363,12 +363,17 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     RUBY_ASSERT(src_num_ivs <= dest_capa);
     if (initial_capa < dest_capa) {
-        rb_ensure_iv_list_size(dest, 0, dest_capa);
+        // We we need to transition the object to an extended layout.
+        VALUE fields_obj = rb_imemo_fields_new(dest, dest_shape_id, false);
+        ROBJECT_SET_EXTENDED(dest, fields_obj);
         dest_buf = ROBJECT_FIELDS(dest);
+        rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
+        RBASIC_SET_SHAPE_ID_WITH_LAYOUT(dest, dest_shape_id, SHAPE_ID_LAYOUT_EXTENDED);
     }
-
-    rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
-    RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
+    else {
+        rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
+        RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
+    }
 }
 
 static void

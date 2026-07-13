@@ -9492,8 +9492,8 @@ mod hir_opt_tests {
           Jump bb4(v17)
         bb6():
           v19:CShape[0x1003] = GuardBitEquals v12, CShape(0x1003) recompile
-          v21:CPtr = LoadField v11, :as_heap@0x1004
-          v22:BasicObject = LoadField v21, :@foo@0x1005
+          v21:RubyValue = LoadField v11, :fields_obj@0x1004
+          v22:BasicObject = LoadField v21, :@foo@0x1004
           Jump bb4(v22)
         bb4(v13:BasicObject):
           v25:Fixnum[1] = Const Value(1)
@@ -9555,12 +9555,12 @@ mod hir_opt_tests {
           v15:CBool = IsBitEqual v12, v14
           CondBranch v15, bb5(), bb6()
         bb5():
-          v17:CPtr = LoadField v11, :as_heap@0x1002
-          v18:BasicObject = LoadField v17, :@foo@0x1003
+          v17:RubyValue = LoadField v11, :fields_obj@0x1002
+          v18:BasicObject = LoadField v17, :@foo@0x1002
           Jump bb4(v18)
         bb6():
-          v20:CShape[0x1004] = GuardBitEquals v12, CShape(0x1004) recompile
-          v22:BasicObject = LoadField v11, :@foo@0x1005
+          v20:CShape[0x1003] = GuardBitEquals v12, CShape(0x1003) recompile
+          v22:BasicObject = LoadField v11, :@foo@0x1004
           Jump bb4(v22)
         bb4(v13:BasicObject):
           v25:Fixnum[1] = Const Value(1)

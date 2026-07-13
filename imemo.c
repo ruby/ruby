@@ -151,7 +151,6 @@ rb_imemo_fields_new(VALUE owner, shape_id_t shape_id, bool shareable)
     size_t embedded_size = offsetof(struct rb_fields, as.embed) + capa * sizeof(VALUE);
 
     VALUE fields = imemo_fields_new(owner, 0, shape_id, embedded_size, shareable);
-
     RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
     RUBY_ASSERT(rb_shape_embedded_capacity(RBASIC_SHAPE_ID(fields)) >= capa);
 
@@ -223,14 +222,6 @@ rb_imemo_fields_clone(VALUE fields_obj)
 void
 rb_imemo_fields_clear(VALUE fields_obj)
 {
-    // When replacing an imemo/fields by another one, we must clear
-    // its shape so that gc.c:obj_free_object_id won't be called.
-    if (rb_obj_shape_complex_p(fields_obj)) {
-        RBASIC_SET_SHAPE_ID(fields_obj, ROOT_COMPLEX_SHAPE_ID);
-    }
-    else {
-        RBASIC_SET_SHAPE_ID(fields_obj, ROOT_SHAPE_ID);
-    }
     // Invalidate the ec->gen_fields_cache.
     RBASIC_CLEAR_CLASS(fields_obj);
 }

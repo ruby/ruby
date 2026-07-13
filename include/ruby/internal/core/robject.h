@@ -89,23 +89,8 @@ struct RObject {
 
     /** Object's specific fields. */
     union {
-
-        /**
-         * Object that use  separated memory region for  instance variables use
-         * this pattern.
-         */
-        struct {
-            /** Pointer to a C array that holds instance variables. */
-            VALUE *fields;
-        } heap;
-
-        /* When an object is too complex, it uses a st_table to store instance
-         * variable name to value mappings.
-         */
-        st_table *hash;
-
-        /* Embedded instance variables. When an object is small enough, it
-         * uses this area to store the instance variables.
+        /* Embedded instance variables. When an object slot is large enough, it
+         * uses this area to store the instance variables embedded.
          *
          * This is a length 1 array because:
          *   1. GCC has a bug that does not optimize C flexible array members
@@ -113,6 +98,13 @@ struct RObject {
          *   2. Zero length arrays are not supported by all compilers
          */
         VALUE ary[1];
+
+       /**
+        * When an object slot is too small or too complex to store instance
+        * variables inline, it references another, larger, object that contains
+        * the instance variables.
+        */
+       VALUE extended;
     } as;
 };
 

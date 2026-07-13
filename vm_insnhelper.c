@@ -1216,7 +1216,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        fields_obj = obj;
+        fields_obj = ROBJECT_FIELDS_OBJ(obj);
         break;
       case T_CLASS:
       case T_MODULE:
@@ -1463,9 +1463,13 @@ vm_setivar(VALUE obj, VALUE val, rb_setivar_cache cache)
                 break;
             }
 
-            RB_OBJ_WRITE(obj, &ROBJECT_FIELDS(obj)[cache.index], val);
+            VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
+            RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
             if (shape_id != dest_shape_id) {
                 RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
+                if (fields_obj != obj) {
+                    RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
+                }
             }
 
             RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);

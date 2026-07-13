@@ -1106,8 +1106,8 @@ class TestShapes < Test::Unit::TestCase
     klass.instance_variable_set(:@a, 123)
     assert_equal :rclass, RubyVM::Shape.of(klass).layout
 
-    assert_equal :rdata, RubyVM::Shape.of(Thread.current).layout
-    assert_equal :rdata, RubyVM::Shape.of(lambda {}).layout
+    assert_equal :extended_or_rdata, RubyVM::Shape.of(Thread.current).layout
+    assert_equal :extended_or_rdata, RubyVM::Shape.of(lambda {}).layout
 
     assert_equal :other, RubyVM::Shape.of(Struct.new(:x).new(1)).layout
     assert_equal :other, RubyVM::Shape.of([]).layout

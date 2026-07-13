@@ -5344,13 +5344,6 @@ impl Function {
             elidable: true })
     }
 
-    fn load_ivar_heap(&mut self, block: BlockId,  recv: InsnId, id: ID, ivar_index: attr_index_t) -> InsnId {
-        // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-        let ptr = self.load_field(block, recv, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::CPtr);
-        let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-        self.load_field(block, ptr, id.into(), offset, types::BasicObject)
-    }
-
     fn load_ivar_embedded(&mut self, block: BlockId, recv: InsnId, id: ID, ivar_index: attr_index_t) -> InsnId {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
         let offset = ROBJECT_OFFSET_AS_ARY
@@ -5390,11 +5383,7 @@ impl Function {
                 self.load_ivar_embedded(block, fields_obj, id, ivar_index)
             },
             ShapeLayout::RObject => {
-                if recv_type.flags().is_embedded() {
-                    self.load_ivar_embedded(block, self_val, id, ivar_index)
-                } else {
-                    self.load_ivar_heap(block, self_val, id, ivar_index)
-                }
+                self.load_ivar_embedded(block, self_val, id, ivar_index)
             },
             ShapeLayout::Other => {
                 // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
@@ -5444,10 +5433,20 @@ impl Function {
             // Instance variable writes on immediate values raise.
             return Err(Counter::setivar_fallback_immediate);
         }
-        if !profiled_type.flags().is_t_object() {
-            // Check if the receiver is a T_OBJECT
-            return Err(Counter::setivar_fallback_not_t_object);
+
+        match profiled_type.shape().layout() {
+            ShapeLayout::RObject => {
+                // OK
+            }
+            ShapeLayout::RData => {
+                // FIXME: we side exit for now as we're missing SHAPE_ID_FL_PRIVATE_MASK handling.
+                return Err(Counter::setivar_fallback_not_t_object);
+            }
+            _ => {
+                return Err(Counter::setivar_fallback_not_t_object);
+            }
         }
+
         assert!(profiled_type.shape().is_valid());
         if profiled_type.shape().is_frozen() {
             // Can't set ivars on frozen objects
@@ -5490,22 +5489,35 @@ impl Function {
     }
 
     fn emit_optimized_setivar(&mut self, block: BlockId, self_val: InsnId, id: ID, val: InsnId, spec: SetIvarSpec) {
-        // Current shape contains this ivar
-        let (ivar_storage, offset) = if spec.profiled_type.flags().is_embedded() {
-            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-            let offset = ROBJECT_OFFSET_AS_ARY + (SIZEOF_VALUE * spec.ivar_index.to_usize()) as i32;
-            (self_val, offset)
-        } else {
-            let as_heap = self.load_field(block, self_val, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::CPtr);
-            let offset = SIZEOF_VALUE_I32 * spec.ivar_index as i32;
-            (as_heap, offset)
+        let offset = ROBJECT_OFFSET_AS_ARY + (SIZEOF_VALUE * spec.ivar_index.to_usize()) as i32;
+
+        // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+        let (ivar_storage, embedded) = match spec.profiled_type.shape().layout() {
+            ShapeLayout::RObject => { // AKA embedded
+                (self_val, true)
+            },
+            ShapeLayout::RData => { // AKA extended
+                let fields = self.load_field(block, self_val, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::BasicObject);
+                (fields, false)
+            },
+            ShapeLayout::Other | ShapeLayout::RClass => {
+                panic!("This is a T_OBJECT only path (for now)")
+            }
         };
+
         self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val, num_bits: types::BasicObject.num_bits() });
-        self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
+        self.push_insn(block, Insn::WriteBarrier { recv: ivar_storage, val });
         if spec.next_shape != spec.profiled_type.shape() {
             // Write the new shape ID
             let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(spec.next_shape) });
             let shape_id_offset = unsafe { rb_shape_id_offset() };
+
+            if !embedded {
+                // FIXME: We need to strip the SHAPE_ID_FL_PRIVATE_MASK from the shape for `ivar_storage`.
+                // see `RBASIC_SET_SHAPE_ID`.
+                // This path is currently dead code, see the FIXME in `prepare_optimized_setivar`
+                self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id, num_bits: types::CShape.num_bits() });
+            }
             self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id, num_bits: types::CShape.num_bits() });
         }
     }
