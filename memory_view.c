@@ -154,6 +154,12 @@ rb_memory_view_is_row_major_contiguous(const rb_memory_view_t *view)
     const ssize_t *strides = view->strides;
     ssize_t n = view->item_size;
     ssize_t i;
+    if (!strides) {
+        return true;
+    }
+    if (ndim == 1) {
+        return strides[0] == n;
+    }
     for (i = ndim - 1; i >= 0; --i) {
         if (strides[i] != n) return false;
         n *= shape[i];
@@ -168,13 +174,39 @@ rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view)
     const ssize_t ndim = view->ndim;
     const ssize_t *shape = view->shape;
     const ssize_t *strides = view->strides;
-    ssize_t n = view->item_size;
+    ssize_t n;
+    bool trivial;
     ssize_t i;
-    for (i = 0; i < ndim; ++i) {
-        if (strides[i] != n) return false;
-        n *= shape[i];
+    if (strides) {
+        n = view->item_size;
+        if (ndim == 1) {
+            return strides[0] == n;
+        }
+        for (i = 0; i < ndim; ++i) {
+            if (strides[i] != n) return false;
+            n *= shape[i];
+        }
+        return true;
     }
-    return true;
+    else {
+        if (ndim == 1) {
+            return true;
+        }
+        if (!shape) {
+            return false;
+        }
+
+        trivial = true;
+        for (i = 0; i < ndim; ++i) {
+            if (shape[i] > 1) {
+                if (!trivial) {
+                    return false;
+                }
+                trivial = false;
+            }
+        }
+        return true;
+    }
 }
 
 /* Initialize strides array to represent the specified contiguous array. */
