@@ -753,9 +753,7 @@ rb_wakelog(const char *fmt, ...)
     va_start(ap, fmt);
     vsnprintf(wakelog_buf[i], sizeof(wakelog_buf[i]), fmt, ap);
     va_end(ap);
-    static int live = -1;
-    if (live < 0) live = getenv("RUBY_WAKELOG_STDERR") ? 1 : 0;
-    if (live) { fprintf(stderr, "[WK] %s\n", wakelog_buf[i]); }
+    if (rb_diag_wakelog_stderr) { fprintf(stderr, "[WK] %s\n", wakelog_buf[i]); }
 }
 // DIAGNOSTIC: parent-side fork stage tracker. The watchdog prints the current
 // stage + elapsed, so a fork window that never completes is still attributed.
@@ -765,9 +763,7 @@ static struct timespec rb_forkt_stage_t0;
 void
 rb_forkt_stage(const char *stage)
 {
-    static int on = -1;
-    if (on < 0) on = getenv("RUBY_FORK_TIMING") ? 1 : 0;
-    if (!on) return;
+    if (!rb_diag_forkt_on) return;
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
     const char *prev = rb_forkt_stage_name;
@@ -1867,7 +1863,7 @@ void rb_internal_thread_event_hooks_rw_lock_atfork(void);
 static void
 thread_sched_atfork(struct rb_thread_sched *sched)
 {
-    if (getenv("RUBY_FORK_TIMING")) { // DIAGNOSTIC: start the child lifecycle clock
+    if (rb_diag_forkt_on) { // DIAGNOSTIC: start the child lifecycle clock
         clock_gettime(CLOCK_MONOTONIC, &rb_forkt_t0);
         rb_forkt_on = 1;
     }
@@ -1987,6 +1983,13 @@ static size_t RB_THREAD_PAGE_SIZE;
 void
 Init_native_thread(rb_thread_t *main_th)
 {
+    // DIAGNOSTIC: read all diag env knobs once, while still single-threaded.
+    rb_diag_wakelog_stderr = getenv("RUBY_WAKELOG_STDERR") ? 1 : 0;
+    rb_diag_forkt_on = getenv("RUBY_FORK_TIMING") ? 1 : 0;
+    { const char *s_ = getenv("RUBY_BARRIER_SLEEP_US"); rb_diag_barrier_sleep_us = s_ ? atoi(s_) : 0; }
+    rb_diag_inj_checkints = getenv("RUBY_INJ_CHECKINTS") ? 1 : 0;
+    rb_diag_inj_compact_wait = getenv("RUBY_INJ_COMPACT_WAIT") ? 1 : 0;
+
     // Get the system page size for later use in stack allocation and stack overflow checks:
     RB_THREAD_PAGE_SIZE = sysconf(_SC_PAGESIZE);
 

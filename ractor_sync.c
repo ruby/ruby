@@ -1067,8 +1067,8 @@ ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr)
     RACTOR_UNLOCK_SELF(cr);
     {
 #ifndef _WIN32
-        if (getenv("RUBY_INJ_CHECKINTS")) usleep(300);  // widen the popped-waiter window
-        if (getenv("RUBY_INJ_COMPACT_WAIT")) {
+        if (rb_diag_inj_checkints) usleep(300);  // widen the popped-waiter window
+        if (rb_diag_inj_compact_wait) {
             rb_funcall(rb_define_module("GC"), rb_intern("verify_compaction_references"), 0);  // full move at the receive wait
         }
 #endif

@@ -4120,8 +4120,7 @@ rb_fork_ruby(int *status)
     struct child_handler_disabler_state old;
 
     // DIAGNOSTIC: time the parent-side fork path (before_fork barrier .. after_fork)
-    static int forkt_on = -1;
-    if (forkt_on < 0) forkt_on = getenv("RUBY_FORK_TIMING") ? 1 : 0;
+    const int forkt_on = rb_diag_forkt_on;
     struct timespec forkt0;
     if (forkt_on) clock_gettime(CLOCK_MONOTONIC, &forkt0);
 

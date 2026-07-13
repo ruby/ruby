@@ -167,6 +167,14 @@ RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
 void rb_wakelog(const char *fmt, ...);
 void rb_forkt_probe(const char *stage);
 void rb_forkt_stage(const char *stage);
+// DIAGNOSTIC knobs, read from env exactly once at boot (Init_native_thread):
+// libc getenv() is unsynchronized against another Ractor's setenv (ENV.clear
+// crashed a getenv inside ractor_wait), so hot paths must read these instead.
+extern int rb_diag_wakelog_stderr;
+extern int rb_diag_forkt_on;
+extern int rb_diag_barrier_sleep_us;
+extern int rb_diag_inj_checkints;
+extern int rb_diag_inj_compact_wait;
 void rb_ractor_dump_sync_state(rb_ractor_t *r, FILE *e);
 void rb_ractor_blocking_threads_inc(rb_ractor_t *r, const char *file, int line); // TODO: file, line only for RUBY_DEBUG_LOG
 void rb_ractor_blocking_threads_dec(rb_ractor_t *r, const char *file, int line); // TODO: file, line only for RUBY_DEBUG_LOG

@@ -2696,10 +2696,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 
         if (interrupt & VM_BARRIER_INTERRUPT_MASK) {
 #ifndef _WIN32
-            {
-                const char *s = getenv("RUBY_BARRIER_SLEEP_US"); // DIAGNOSTIC: widen join window
-                if (s) { int us = atoi(s); if (us > 0) usleep(us); }
-            }
+            if (rb_diag_barrier_sleep_us > 0) usleep(rb_diag_barrier_sleep_us); // DIAGNOSTIC: widen join window
 #endif
             RB_VM_LOCKING();
         }
@@ -2784,6 +2781,13 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
     }
     return ret;
 }
+
+// DIAGNOSTIC knobs (see ractor_core.h): set once at boot, never getenv in hot paths.
+int rb_diag_wakelog_stderr;
+int rb_diag_forkt_on;
+int rb_diag_barrier_sleep_us;
+int rb_diag_inj_checkints;
+int rb_diag_inj_compact_wait;
 
 void
 rb_thread_execute_interrupts(VALUE thval)
