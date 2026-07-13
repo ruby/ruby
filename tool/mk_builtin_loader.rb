@@ -117,8 +117,8 @@ def visit_call_node(source, node, name, locals, requires, bs, inlines)
       raise "argc (#{argc}) of inline! should be 1" if argc != 1
 
       # The string literal keeps the line endings of the source file; normalize
-      # CRLF so the generated code does not depend on how it was checked out.
-      text = extract_string_literal(args[0]).gsub(/\r\n/, "\n").rstrip
+      # them so the generated code does not depend on how it was checked out.
+      text = extract_string_literal(args[0]).encode(universal_newline: true).rstrip
       lineno = line_number(source, node)
 
       case primitive_macro
