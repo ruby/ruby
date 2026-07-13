@@ -667,6 +667,22 @@ dump_port_i(st_data_t key, st_data_t val, st_data_t arg)
     return ST_CONTINUE;
 }
 
+// DIAGNOSTIC (dump-only): compare the live port (from the frame's self, which
+// compaction updates) against the receive loop's cached raw pointer.
+void
+rb_ractor_diag_recv_check(FILE *e, VALUE maybe_port, const void *cached_rp)
+{
+    if (!RB_TYPE_P(maybe_port, T_DATA)) return;
+    if (!rb_typeddata_is_kind_of(maybe_port, &ractor_port_data_type)) return;
+
+    const struct ractor_port *live = RTYPEDDATA_GET_DATA(maybe_port);
+    fprintf(e, "      recv-check: self=%p live_rp=%p live_id=%zu | cached_rp=%p %s\n",
+            (void *)maybe_port, (const void *)live, (size_t)live->id_,
+            cached_rp,
+            (cached_rp && (const void *)live != cached_rp) ? "*** MOVED: cached rp is stale ***"
+            : (cached_rp ? "(same pointer)" : ""));
+}
+
 void
 rb_ractor_dump_sync_state(rb_ractor_t *r, FILE *e)
 {

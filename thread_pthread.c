@@ -3366,6 +3366,12 @@ watchdog_dump(rb_vm_t *vm)
                 int line = rb_vm_get_sourceline(cfp);
                 fprintf(e, "      #0 %s:%d\n",
                         RB_TYPE_P(path, T_STRING) ? RSTRING_PTR(path) : "?", line);
+                {
+                    void rb_ractor_diag_recv_check(FILE *, VALUE, const void *);
+                    if (th->ractor && th->ractor->sync.dbg_recv_port_id1) {
+                        rb_ractor_diag_recv_check(e, cfp->self, th->ractor->sync.dbg_recv_rp);
+                    }
+                }
             }
         }
     }
