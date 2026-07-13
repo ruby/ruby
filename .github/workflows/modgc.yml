@@ -118,11 +118,11 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
         with:
           cache-bin: false
-      - name: Set MMTk environment variables
+      - name: Set test excludes
         run: |
           echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV
           echo 'MSPECOPT=-B../src/spec/mmtk.mspec' >> $GITHUB_ENV
-        if: ${{ matrix.gc.name == 'mmtk' }}
+        if: ${{ matrix.gc.name == 'mmtk' || matrix.gc.name == 'wbcheck' }}
 
       - name: Adjust test timeout
         run: |
