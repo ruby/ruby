@@ -47,6 +47,7 @@ struct rb_ractor_sync {
     // per receive entry; read only by the hang-time watchdog). +1 biased so 0
     // means "not receiving".
     size_t dbg_recv_port_id1;
+    const void *dbg_recv_rp;
 };
 
 // created

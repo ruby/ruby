@@ -679,10 +679,11 @@ rb_ractor_dump_sync_state(rb_ractor_t *r, FILE *e)
         n++;
     }
     ccan_list_for_each(&r->sync.waiters, wt, node) w++;
-    fprintf(e, "   R#%u sync: recv_queue=%d[%s] waiters=%d legacy_set=%d polling_port=%s%zu\n",
+    fprintf(e, "   R#%u sync: recv_queue=%d[%s] waiters=%d legacy_set=%d polling_port=%s%zu rp=%p\n",
             (unsigned)r->pub.id, n, ids, w, !UNDEF_P(r->sync.legacy),
             r->sync.dbg_recv_port_id1 ? "" : "(none)",
-            r->sync.dbg_recv_port_id1 ? r->sync.dbg_recv_port_id1 - 1 : (size_t)0);
+            r->sync.dbg_recv_port_id1 ? r->sync.dbg_recv_port_id1 - 1 : (size_t)0,
+            r->sync.dbg_recv_rp);
     if (r->sync.ports) st_foreach(r->sync.ports, dump_port_i, (st_data_t)e);
 }
 
@@ -1185,8 +1186,6 @@ ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp)
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     VM_ASSERT(cr == rp->r);
 
-    cr->sync.dbg_recv_port_id1 = (size_t)ractor_port_id(rp) + 1; // DIAGNOSTIC (biased)
-
     RUBY_DEBUG_LOG("port:%u", (unsigned int)ractor_port_id(rp));
 
     while (1) {
@@ -1197,6 +1196,10 @@ ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp)
             return v;
         }
         else {
+            // DIAGNOSTIC: record the id we are ABOUT to wait on, re-read each
+            // iteration -- the entry-time value hid a mid-receive change.
+            cr->sync.dbg_recv_port_id1 = (size_t)ractor_port_id(rp) + 1; // biased
+            cr->sync.dbg_recv_rp = (const void *)rp;
             ractor_wait_receive(ec, cr);
         }
     }
