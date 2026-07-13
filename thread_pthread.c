@@ -3297,9 +3297,117 @@ timer_thread_wakeup(void)
     ractor_sched_unlock(vm, NULL);
 }
 
+// ==== MINIMAL DIAGNOSTIC WATCHDOG (dump-only; no hot-path instrumentation) ====
+void rb_ractor_dump_sync_state(rb_ractor_t *r, FILE *e);
+
+static const char *
+wd_ractor_status_str(int s)
+{
+    switch (s) {
+      case ractor_created: return "created";
+      case ractor_running: return "running";
+      case ractor_blocking: return "blocking";
+      case ractor_terminated: return "terminated";
+      default: return "?";
+    }
+}
+
+static const char *
+wd_thread_status_str(enum rb_thread_status s)
+{
+    switch (s) {
+      case THREAD_RUNNABLE: return "RUNNABLE";
+      case THREAD_STOPPED: return "STOPPED";
+      case THREAD_STOPPED_FOREVER: return "STOPPED_FOREVER";
+      case THREAD_KILLED: return "KILLED";
+      default: return "?";
+    }
+}
+
+static void
+watchdog_dump(rb_vm_t *vm)
+{
+    FILE *e = stderr;
+    fprintf(e, "\n===== WATCHDOG: HANG DETECTED =====\n");
+    fprintf(e, "sched: running_cnt=%u snt_cnt=%u barrier_waiting=%d waiting_cnt=%u serial=%u grq_cnt=%u barrier_ractor=%p\n",
+            vm->ractor.sched.running_cnt, vm->ractor.sched.snt_cnt,
+            (int)vm->ractor.sched.barrier_waiting, vm->ractor.sched.barrier_waiting_cnt,
+            vm->ractor.sched.barrier_serial, vm->ractor.sched.grq_cnt,
+            (void *)vm->ractor.sched.barrier_ractor);
+    fprintf(e, "vm->ractor: cnt=%u blocking_cnt=%u\n", vm->ractor.cnt, vm->ractor.blocking_cnt);
+
+    rb_ractor_t *r;
+    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+        struct rb_thread_sched *sched = &r->threads.sched;
+        int grq_linked = (sched->grq_node.next != NULL && sched->grq_node.next != &sched->grq_node);
+        fprintf(e, "R#%u status=%s threads.cnt=%u | sched.running=%p is_running=%d readyq_cnt=%d grq_linked=%d\n",
+                (unsigned)r->pub.id, wd_ractor_status_str(r->status_),
+                r->threads.cnt,
+                (void *)sched->running, (int)sched->is_running, sched->readyq_cnt, grq_linked);
+        rb_thread_t *th;
+        ccan_list_for_each(&r->threads.set, th, lt_node) {
+            int in_runset = (th->sched.node.running_threads.next != NULL &&
+                             th->sched.node.running_threads.next != &th->sched.node.running_threads);
+            fprintf(e, "   th=%p status=%s nt=%p%s in_runset=%d blocking_region=%d\n",
+                    (void *)th, wd_thread_status_str(th->status),
+                    (void *)th->nt, (th->nt && th->nt->dedicated) ? "(DNT)" : "(SNT)",
+                    in_runset, th->blocking_region_buffer != NULL);
+            const rb_execution_context_t *tec = th->ec;
+            const rb_control_frame_t *cfp = tec ? tec->cfp : NULL;
+            const rb_control_frame_t *end = tec ? RUBY_VM_END_CONTROL_FRAME(tec) : NULL;
+            // innermost Ruby frame only; deeper walking hits garbage _iseq on
+            // parked stacks (observed SEGV)
+            if (cfp && cfp < end && cfp->_iseq && cfp->pc && rb_obj_is_iseq((VALUE)cfp->_iseq)) {
+                VALUE path = rb_iseq_path(cfp->_iseq);
+                int line = rb_vm_get_sourceline(cfp);
+                fprintf(e, "      #0 %s:%d\n",
+                        RB_TYPE_P(path, T_STRING) ? RSTRING_PTR(path) : "?", line);
+            }
+        }
+    }
+    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+        rb_ractor_dump_sync_state(r, e);
+    }
+    fprintf(e, "===== WATCHDOG END =====\n");
+    fflush(e);
+}
+
+static void *
+watchdog_func(void *ptr)
+{
+    rb_vm_t *vm = (rb_vm_t *)ptr;
+    const char *s = getenv("RUBY_WATCHDOG_SEC");
+    int sec = s ? atoi(s) : 90;
+    if (sec <= 0) return NULL;
+    // Dump only -- killing stays the harness's job. EINTR-proof sleep, a few
+    // dumps 30s apart to show a progress rate (true hang vs merely slow).
+    struct timespec ts = { .tv_sec = sec, .tv_nsec = 0 };
+    for (int i = 0; i < 4; i++) {
+        while (nanosleep(&ts, &ts) != 0 && errno == EINTR) continue;
+        watchdog_dump(vm);
+        ts.tv_sec = 30; ts.tv_nsec = 0;
+    }
+    return NULL;
+}
+
+static void
+watchdog_start(void)
+{
+    if (!getenv("RUBY_WATCHDOG_SEC")) return;
+    // rides on the timer thread, which every fork recreates: one per process.
+    static pid_t wd_pid;
+    if (wd_pid == getpid()) return;
+    wd_pid = getpid();
+    static pthread_t wd;
+    pthread_create(&wd, NULL, watchdog_func, GET_VM());
+    pthread_detach(wd);
+}
+// ==== END MINIMAL WATCHDOG ====
+
 static void
 rb_thread_create_timer_thread(void)
 {
+    watchdog_start();
     rb_serial_t created_fork_gen = timer_th.created_fork_gen;
 
     RUBY_DEBUG_LOG("fork_gen create:%d current:%d", (int)created_fork_gen, (int)current_fork_gen);

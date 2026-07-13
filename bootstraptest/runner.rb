@@ -606,7 +606,8 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
       filename = make_srcfile(**argh)
       begin
         kw = self.err ? {err: self.err} : {}
-        out = IO.popen("#{BT.ruby} -W0 #{opt} #{filename}", **kw)
+        env = {"RUBY_WATCHDOG_SEC" => [timeout.to_i - 30, 10].max.to_s} # DIAG: dump before the harness SIGKILL
+        out = IO.popen(env, "#{BT.ruby} -W0 #{opt} #{filename}", **kw)
         pid = out.pid
         th = Thread.new {out.read.tap {Process.waitpid(pid); out.close}}
         if th.join(timeout)

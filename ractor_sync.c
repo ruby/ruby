@@ -647,6 +647,36 @@ ractor_notify_exit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE legacy, bo
     VM_ASSERT(ccan_list_empty(&cr->sync.monitors));
 }
 
+// DIAGNOSTIC dump helpers (called only from the watchdog at hang time)
+static int
+dump_port_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    FILE *e = (FILE *)arg;
+    struct ractor_queue *rq = (struct ractor_queue *)val;
+    int n = 0;
+    struct ractor_basket *b;
+    ccan_list_for_each(&rq->set, b, node) n++;
+    fprintf(e, "     port=%u len=%d closed=%d\n", (unsigned)key, n, (int)rq->closed);
+    return ST_CONTINUE;
+}
+
+void
+rb_ractor_dump_sync_state(rb_ractor_t *r, FILE *e)
+{
+    int n = 0, w = 0;
+    struct ractor_basket *b;
+    struct ractor_waiter *wt;
+    char ids[128] = ""; int off = 0;
+    ccan_list_for_each(&r->sync.recv_queue->set, b, node) {
+        if (n < 8 && off < 100) off += snprintf(ids+off, sizeof(ids)-(size_t)off, "%u,", (unsigned)b->port_id);
+        n++;
+    }
+    ccan_list_for_each(&r->sync.waiters, wt, node) w++;
+    fprintf(e, "   R#%u sync: recv_queue=%d[%s] waiters=%d legacy_set=%d\n",
+            (unsigned)r->pub.id, n, ids, w, !UNDEF_P(r->sync.legacy));
+    if (r->sync.ports) st_foreach(r->sync.ports, dump_port_i, (st_data_t)e);
+}
+
 // ractor-internal - initialize, mark, free, memsize
 
 static int
