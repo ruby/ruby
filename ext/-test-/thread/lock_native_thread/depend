@@ -155,7 +155,6 @@ lock_native_thread.o: $(hdrdir)/ruby/internal/variable.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/warning_push.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/xmalloc.h
 lock_native_thread.o: $(hdrdir)/ruby/missing.h
-lock_native_thread.o: $(hdrdir)/ruby/onigmo.h
 lock_native_thread.o: $(hdrdir)/ruby/ruby.h
 lock_native_thread.o: $(hdrdir)/ruby/st.h
 lock_native_thread.o: $(hdrdir)/ruby/subst.h

@@ -498,6 +498,13 @@ rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor)
     return NULL;
 }
 
+bool
+rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass,
+                                 struct rb_gc_zjit_fastpath *fastpath)
+{
+    return false;
+}
+
 void
 rb_gc_impl_set_params(void *objspace_ptr)
 {
@@ -518,7 +525,7 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX])));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(MAX_HEAP_SIZE));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), SIZET2NUM(rb_gc_impl_max_allocation_size()));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_COUNT")), LONG2FIX(HEAP_COUNT));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("SIZE_POOL_COUNT")), LONG2FIX(HEAP_COUNT));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), INT2FIX(3));
@@ -1127,7 +1134,13 @@ bool
 rb_gc_impl_size_allocatable_p(size_t size)
 {
     // Only allow sizes up to the largest heap size
-    return size <= MAX_HEAP_SIZE;
+    return size <= rb_gc_impl_max_allocation_size();
+}
+
+size_t
+rb_gc_impl_max_allocation_size(void)
+{
+    return MAX_HEAP_SIZE;
 }
 
 // Malloc

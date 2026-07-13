@@ -16,6 +16,7 @@
 #include "internal/gc.h"
 #include "vm_sync.h"
 #include "internal/fixnum.h"
+#include "internal/hash.h"
 #include "internal/string.h"
 #include "internal/class.h"
 #include "internal/imemo.h"
@@ -36,6 +37,12 @@ enum jit_bindgen_constants {
 
     // Field offset for fields_obj in T_DATA
     TDATA_OFFSET_FIELDS_OBJ = offsetof(struct RTypedData, fields_obj),
+
+    // Field offset for the RHash struct
+    RUBY_OFFSET_RHASH_IFNONE = offsetof(struct RHash, ifnone),
+
+    // Max pairs an embedded ar_table hash holds before it converts to an st_table
+    RUBY_RHASH_AR_TABLE_MAX_SIZE = RHASH_AR_TABLE_MAX_SIZE,
 
     // Field offsets for the RString struct
     RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len),

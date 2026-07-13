@@ -1755,18 +1755,10 @@ extern const ID id_warn, id_warning, id_gets, id_assoc;
 # define PRIsWARN PRIsVALUE
 # define WARN_ARGS(fmt,n) p->value, id_warn, n, rb_usascii_str_new_lit(fmt)
 # define WARN_ARGS_L(l,fmt,n) WARN_ARGS(fmt,n)
-# ifdef HAVE_VA_ARGS_MACRO
 # define WARN_CALL(...) rb_funcall(__VA_ARGS__)
-# else
-# define WARN_CALL rb_funcall
-# endif
 # define WARNING_ARGS(fmt,n) p->value, id_warning, n, rb_usascii_str_new_lit(fmt)
 # define WARNING_ARGS_L(l, fmt,n) WARNING_ARGS(fmt,n)
-# ifdef HAVE_VA_ARGS_MACRO
 # define WARNING_CALL(...) rb_funcall(__VA_ARGS__)
-# else
-# define WARNING_CALL rb_funcall
-# endif
 # define compile_error ripper_compile_error
 #else
 # define WARN_S_L(s,l) s
@@ -6063,6 +6055,10 @@ string_content	: tSTRING_CONTENT[content]
                         p->lex.brace_nest = 0;
                     }[brace]<num>
                     {
+                        $$ = p->lex.lpar_beg;
+                        p->lex.lpar_beg = -1;
+                    }[lpar]<num>
+                    {
                         $$ = p->heredoc_indent;
                         p->heredoc_indent = 0;
                     }[indent]<num>
@@ -6073,6 +6069,7 @@ string_content	: tSTRING_CONTENT[content]
                         p->lex.strterm = $term;
                         SET_LEX_STATE($state);
                         p->lex.brace_nest = $brace;
+                        p->lex.lpar_beg = $lpar;
                         p->heredoc_indent = $indent;
                         p->heredoc_line_indent = -1;
                         if ($compstmt) nd_unset_fl_newline($compstmt);

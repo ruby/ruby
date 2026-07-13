@@ -1791,6 +1791,85 @@ RSpec.describe "bundle update --bundler" do
     expect(out).to include("Using bundler 9.0.0")
   end
 
+  it "preserves the locked bundler checksum when re-locking without the bundler gem cached" do
+    system_gems "bundler-9.0.0"
+
+    build_repo4 do
+      build_gem "myrack", "1.0"
+      build_gem "weakling", "0.0.3"
+
+      build_bundler "9.0.0"
+    end
+
+    install_gemfile <<-G
+      source "https://gem.repo4"
+      gem "myrack"
+    G
+
+    system_gems "bundler-9.0.0", path: local_gem_path
+    bundle :update, bundler: "9.0.0", verbose: true
+
+    # Sanity check: the lockfile now records the bundler checksum.
+    expect(lockfile).to match(/^  bundler \(9\.0\.0\) sha256=/)
+
+    # Simulate a machine where the bundler gem is not present in the cache
+    # (e.g. a fresh CI checkout that never downloaded bundler-9.0.0.gem).
+    FileUtils.rm_f Dir[local_gem_path("cache", "bundler-9.0.0.gem")]
+    FileUtils.rm_f Dir[system_gem_path("cache", "bundler-9.0.0.gem")]
+
+    # Force a re-resolution / lockfile rewrite.
+    install_gemfile <<-G
+      source "https://gem.repo4"
+      gem "myrack"
+      gem "weakling"
+    G
+
+    # The bundler checksum must survive the rewrite, since it was already locked.
+    expect(lockfile).to match(/^  bundler \(9\.0\.0\) sha256=/)
+  end
+
+  it "drops the locked bundler checksum when the bundler version changes and the gem isn't cached" do
+    system_gems "bundler-9.0.0"
+
+    build_repo4 do
+      build_gem "myrack", "1.0"
+
+      build_bundler "9.0.0"
+      build_bundler "9.9.9"
+    end
+
+    install_gemfile <<-G
+      source "https://gem.repo4"
+      gem "myrack"
+    G
+
+    system_gems "bundler-9.0.0", path: local_gem_path
+    bundle :update, bundler: "9.0.0", verbose: true
+
+    # Sanity check: the lockfile records the bundler 9.0.0 checksum and is
+    # locked to bundler 9.0.0.
+    expect(lockfile).to match(/^  bundler \(9\.0\.0\) sha256=/)
+    expect(lockfile).to match(/BUNDLED WITH\n\s+9\.0\.0\n/)
+
+    # Simulate a machine where the bundler gem is not present in the cache
+    # (e.g. a fresh CI checkout), so a fresh checksum can't be computed.
+    FileUtils.rm_f Dir[local_gem_path("cache", "bundler-9.0.0.gem")]
+    FileUtils.rm_f Dir[system_gem_path("cache", "bundler-9.0.0.gem")]
+
+    # Change the locked bundler version. `bundle lock --update --bundler` rewrites
+    # the BUNDLED WITH section without switching the running bundler, so the gem
+    # whose checksum is locked (9.0.0) is no longer the version being locked.
+    bundle "lock --update --bundler 9.9.9", verbose: true
+
+    # The BUNDLED WITH version was bumped...
+    expect(lockfile).to match(/BUNDLED WITH\n\s+9\.9\.9\n/)
+
+    # ...so the stale `bundler (9.0.0)` checksum must be dropped rather than kept,
+    # otherwise we'd lock a checksum that no longer matches the BUNDLED WITH
+    # version (and that we can't recompute since the gem isn't cached).
+    expect(lockfile).not_to match(/^  bundler \(/)
+  end
+
   it "prints an error when trying to update bundler in frozen mode" do
     system_gems "bundler-9.0.0"
 

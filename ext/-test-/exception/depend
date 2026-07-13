@@ -155,7 +155,6 @@ dataerror.o: $(hdrdir)/ruby/internal/variable.h
 dataerror.o: $(hdrdir)/ruby/internal/warning_push.h
 dataerror.o: $(hdrdir)/ruby/internal/xmalloc.h
 dataerror.o: $(hdrdir)/ruby/missing.h
-dataerror.o: $(hdrdir)/ruby/onigmo.h
 dataerror.o: $(hdrdir)/ruby/ruby.h
 dataerror.o: $(hdrdir)/ruby/st.h
 dataerror.o: $(hdrdir)/ruby/subst.h
@@ -490,7 +489,6 @@ ensured.o: $(hdrdir)/ruby/internal/variable.h
 ensured.o: $(hdrdir)/ruby/internal/warning_push.h
 ensured.o: $(hdrdir)/ruby/internal/xmalloc.h
 ensured.o: $(hdrdir)/ruby/missing.h
-ensured.o: $(hdrdir)/ruby/onigmo.h
 ensured.o: $(hdrdir)/ruby/ruby.h
 ensured.o: $(hdrdir)/ruby/st.h
 ensured.o: $(hdrdir)/ruby/subst.h
@@ -652,7 +650,6 @@ init.o: $(hdrdir)/ruby/internal/variable.h
 init.o: $(hdrdir)/ruby/internal/warning_push.h
 init.o: $(hdrdir)/ruby/internal/xmalloc.h
 init.o: $(hdrdir)/ruby/missing.h
-init.o: $(hdrdir)/ruby/onigmo.h
 init.o: $(hdrdir)/ruby/ruby.h
 init.o: $(hdrdir)/ruby/st.h
 init.o: $(hdrdir)/ruby/subst.h

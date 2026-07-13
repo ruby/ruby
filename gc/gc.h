@@ -38,8 +38,6 @@ struct rb_gc_obj_suffix {
 #endif
 
 struct rb_gc_vm_context {
-    rb_nativethread_lock_t lock;
-
     struct rb_execution_context_struct *ec;
 };
 
@@ -50,7 +48,6 @@ enum rb_gc_vm_weak_tables {
     RB_GC_VM_CI_TABLE,
     RB_GC_VM_OVERLOADED_CME_TABLE,
     RB_GC_VM_GLOBAL_SYMBOLS_TABLE,
-    RB_GC_VM_ID2REF_TABLE,
     RB_GC_VM_GENERIC_FIELDS_TABLE,
     RB_GC_VM_FROZEN_STRINGS_TABLE,
     RB_GC_VM_WEAK_TABLE_COUNT

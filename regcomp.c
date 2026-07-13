@@ -5615,7 +5615,7 @@ onig_reg_copy_body(regex_t* nreg, regex_t* oreg)
       size_t exact_size = oreg->exact_end - oreg->exact;
       if (COPY_FAILED(exact, exact_size))
         goto err;
-      (nreg)->exact_end = (oreg)->exact + exact_size;
+      (nreg)->exact_end = (nreg)->exact + exact_size;
     }
 
     if (IS_NOT_NULL(oreg->p)) {

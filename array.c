@@ -66,6 +66,10 @@ VALUE rb_cArray_empty_frozen;
  * 14:  RARRAY_PTR_IN_USE_FLAG
  *          The buffer of the array is in use. This is only used during
  *          debugging.
+ * 19:  RARRAY_FAKEARY
+ *            The array is not allocated or managed by the garbage collector.
+ *            Typically, the array object header (struct RString) is temporarily
+ *            allocated on C stack.
  */
 
 /* for OPTIMIZED_CMP: */
@@ -188,7 +192,7 @@ ARY_SET(VALUE a, long i, VALUE v)
 static long
 ary_embed_capa(VALUE ary)
 {
-    size_t size = rb_gc_obj_slot_size(ary) - offsetof(struct RArray, as.ary);
+    size_t size = rb_obj_shape_slot_size(ary) - offsetof(struct RArray, as.ary);
     RUBY_ASSERT(size % sizeof(VALUE) == 0);
     return size / sizeof(VALUE);
 }
@@ -204,7 +208,9 @@ ary_embed_size(long capa)
 static bool
 ary_embeddable_p(long capa)
 {
-    return rb_gc_size_allocatable_p(ary_embed_size(capa));
+    const long embed_len_max = RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT;
+
+    return capa <= embed_len_max && rb_gc_size_allocatable_p(ary_embed_size(capa));
 }
 
 bool
@@ -900,9 +906,9 @@ static VALUE
 init_fake_ary_flags(void)
 {
     struct RArray fake_ary = {0};
-    fake_ary.basic.flags = T_ARRAY;
+    fake_ary.basic.flags = T_ARRAY | RARRAY_FAKEARY;
     VALUE ary = (VALUE)&fake_ary;
-    RBASIC_SET_SHAPE_ID(ary, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
+    RBASIC_SET_FULL_SHAPE_ID(ary, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
     rb_ary_freeze(ary);
     return fake_ary.basic.flags;
 }
@@ -2378,6 +2384,24 @@ rb_ary_set_len(VALUE ary, long len)
         rb_bug("probable buffer overflow: %ld for %ld", len, capa);
     }
     ARY_SET_LEN(ary, len);
+}
+
+VALUE
+rb_ary_modify_expand(VALUE ary, long expand)
+{
+    long len = RARRAY_LEN(ary);
+
+    if (expand < 0) {
+        rb_raise(rb_eArgError, "negative expanding array size");
+    }
+    if (expand >= ARY_MAX_SIZE - len) {
+        rb_raise(rb_eArgError, " size too big");
+    }
+    rb_ary_modify_check(ary);
+    if (len + expand > ARY_CAPA(ary)) {
+        ary_resize_capa(ary, len + expand);
+    }
+    return ary;
 }
 
 VALUE

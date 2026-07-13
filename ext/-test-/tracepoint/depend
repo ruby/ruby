@@ -156,7 +156,6 @@ gc_hook.o: $(hdrdir)/ruby/internal/variable.h
 gc_hook.o: $(hdrdir)/ruby/internal/warning_push.h
 gc_hook.o: $(hdrdir)/ruby/internal/xmalloc.h
 gc_hook.o: $(hdrdir)/ruby/missing.h
-gc_hook.o: $(hdrdir)/ruby/onigmo.h
 gc_hook.o: $(hdrdir)/ruby/ruby.h
 gc_hook.o: $(hdrdir)/ruby/st.h
 gc_hook.o: $(hdrdir)/ruby/subst.h
@@ -318,7 +317,6 @@ tracepoint.o: $(hdrdir)/ruby/internal/variable.h
 tracepoint.o: $(hdrdir)/ruby/internal/warning_push.h
 tracepoint.o: $(hdrdir)/ruby/internal/xmalloc.h
 tracepoint.o: $(hdrdir)/ruby/missing.h
-tracepoint.o: $(hdrdir)/ruby/onigmo.h
 tracepoint.o: $(hdrdir)/ruby/ruby.h
 tracepoint.o: $(hdrdir)/ruby/st.h
 tracepoint.o: $(hdrdir)/ruby/subst.h

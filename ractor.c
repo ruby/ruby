@@ -237,6 +237,12 @@ ractor_mark(void *ptr)
 
     if (!checking_shareable) {
         // may unshareable objects
+
+        /* objects this Ractor pinned via rb_gc_register_mark_object (the
+         * pin_array_list wrapper itself is an unshareable internal object;
+         * updated in ractor_update_references) */
+        if (r->mark_object_ary) rb_gc_mark_movable(r->mark_object_ary);
+
         rb_gc_mark(r->r_stdin);
         rb_gc_mark(r->r_stdout);
         rb_gc_mark(r->r_stderr);
@@ -313,13 +319,23 @@ ractor_memsize(const void *ptr)
     return sizeof(rb_ractor_t) + ractor_sync_memsize(r);
 }
 
+static void
+ractor_update_references(void *ptr)
+{
+    rb_ractor_t *r = (rb_ractor_t *)ptr;
+    /* the registered mark objects list is marked movable in ractor_mark */
+    if (r->mark_object_ary) {
+        r->mark_object_ary = rb_gc_location(r->mark_object_ary);
+    }
+}
+
 static const rb_data_type_t ractor_data_type = {
     "ractor",
     {
         ractor_mark,
         ractor_free,
         ractor_memsize,
-        NULL, // update
+        ractor_update_references,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY /* | RUBY_TYPED_WB_PROTECTED */
 };
@@ -437,6 +453,9 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
 
     RB_VM_LOCK();
     {
+        /* keep this Ractor's registered mark objects alive under the main Ractor */
+        if (cr->mark_object_ary) rb_vm_ractor_migrate_mark_objects(vm->ractor.main_ractor, cr);
+
         RUBY_DEBUG_LOG("ractor.cnt:%u-- terminate_waiting:%d",
                        vm->ractor.cnt,  vm->ractor.sync.terminate_waiting);
 
@@ -757,7 +776,6 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const c
     }
 }
 
-void rb_threadptr_remove(rb_thread_t *th);
 
 void
 rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
@@ -766,7 +784,6 @@ rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
     RUBY_DEBUG_LOG("r->threads.cnt:%d--", cr->threads.cnt);
     ractor_check_blocking(cr, cr->threads.cnt - 1, __FILE__, __LINE__);
 
-    rb_threadptr_remove(th);
 
     if (cr->threads.cnt == 1) {
         vm_remove_ractor(th->vm, cr);
@@ -2032,7 +2049,7 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
     }
     else {
         VALUE type = RB_BUILTIN_TYPE(obj);
-        size_t slot_size = rb_gc_obj_slot_size(obj);
+        size_t slot_size = rb_obj_shape_slot_size(obj);
         VALUE moved = rb_newobj(GET_EC(), 0, type, RBASIC_SHAPE_ID(obj), wb_protected_types[type], slot_size);
         MEMZERO(((struct RBasic *)moved) + 1, char, slot_size - sizeof(struct RBasic));
         data->replacement = (VALUE)moved;
@@ -2050,7 +2067,7 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     memcpy(
         (char *)data->replacement + sizeof(VALUE),
         (char *)obj + sizeof(VALUE),
-        rb_gc_obj_slot_size(obj) - sizeof(VALUE)
+        rb_obj_shape_slot_size(obj) - sizeof(VALUE)
     );
 
     // We've copied obj's references to the replacement
@@ -2060,8 +2077,6 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     if (UNLIKELY(rb_obj_gen_fields_p(obj))) {
         rb_replace_generic_ivar(data->replacement, obj);
     }
-
-    rb_gc_obj_id_moved(data->replacement);
 
     VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_PROMOTED);
 

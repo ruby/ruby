@@ -11429,9 +11429,8 @@ mod tests {
         asm.stack_push(Type::Flonum);
         asm.stack_push(Type::CString);
 
-        let mut value_array: [u64; 2] = [0, 3];
-        let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
-        jit.pc = pc;
+        let mut fake_encoded_iseq: [VALUE; 2] = [VALUE(0), VALUE(3)];
+        jit.pc = &mut fake_encoded_iseq[0];
 
         let mut status = gen_opt_reverse(&mut jit, &mut asm);
 
@@ -11442,8 +11441,9 @@ mod tests {
         assert_eq!(Type::Fixnum, asm.ctx.get_opnd_type(StackOpnd(0)));
 
         // Try again with an even number of elements.
+        fake_encoded_iseq[1] = VALUE(4);
+        let _ = fake_encoded_iseq;
         asm.stack_push(Type::Nil);
-        value_array[1] = 4;
         status = gen_opt_reverse(&mut jit, &mut asm);
 
         assert_eq!(status, Some(KeepCompiling));

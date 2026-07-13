@@ -235,8 +235,10 @@ pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
 pub const SHAPE_ID_NUM_BITS: u32 = 32;
 pub const ZJIT_STACK_MAP_VREG_TAG: u32 = 8;
+pub const ZJIT_STACK_MAP_SKIP_TAG: u32 = 16;
 pub const ZJIT_STACK_MAP_SHIFT: u32 = 8;
 pub const ZJIT_JIT_RETURN_C_FRAME: u32 = 1;
+pub const RB_GC_ZJIT_FASTPATH_DATA_WORDS: u32 = 19;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;
 pub const RUBY_Qfalse: ruby_special_consts = 0;
 pub const RUBY_Qnil: ruby_special_consts = 4;
@@ -340,6 +342,29 @@ pub const RARRAY_EMBED_LEN_MASK: ruby_rarray_flags = 4161536;
 pub type ruby_rarray_flags = u32;
 pub const RARRAY_EMBED_LEN_SHIFT: ruby_rarray_consts = 15;
 pub type ruby_rarray_consts = u32;
+#[repr(C)]
+pub struct RArray {
+    pub basic: RBasic,
+    pub as_: RArray__bindgen_ty_1,
+}
+#[repr(C)]
+pub struct RArray__bindgen_ty_1 {
+    pub heap: __BindgenUnionField<RArray__bindgen_ty_1__bindgen_ty_1>,
+    pub ary: __BindgenUnionField<[VALUE; 1usize]>,
+    pub bindgen_union_field: [u64; 3usize],
+}
+#[repr(C)]
+pub struct RArray__bindgen_ty_1__bindgen_ty_1 {
+    pub len: ::std::os::raw::c_long,
+    pub aux: RArray__bindgen_ty_1__bindgen_ty_1__bindgen_ty_1,
+    pub ptr: *const VALUE,
+}
+#[repr(C)]
+pub struct RArray__bindgen_ty_1__bindgen_ty_1__bindgen_ty_1 {
+    pub capa: __BindgenUnionField<::std::os::raw::c_long>,
+    pub shared_root: __BindgenUnionField<VALUE>,
+    pub bindgen_union_field: u64,
+}
 pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 8192;
 pub type ruby_rmodule_flags = u32;
 pub const ROBJECT_HEAP: ruby_robject_flags = 65536;
@@ -415,7 +440,8 @@ pub const BOP_CMP: ruby_basic_operators = 31;
 pub const BOP_DEFAULT: ruby_basic_operators = 32;
 pub const BOP_PACK: ruby_basic_operators = 33;
 pub const BOP_INCLUDE_P: ruby_basic_operators = 34;
-pub const BOP_LAST_: ruby_basic_operators = 35;
+pub const BOP_YIELD: ruby_basic_operators = 35;
+pub const BOP_LAST_: ruby_basic_operators = 36;
 pub type ruby_basic_operators = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
 #[repr(C)]
@@ -1551,7 +1577,7 @@ pub struct rb_call_data {
     pub ci: *const rb_callinfo,
     pub cc: *const rb_callcache,
 }
-pub const RSTRING_CHILLED: ruby_rstring_private_flags = 49152;
+pub const RSTRING_CHILLED: ruby_rstring_private_flags = 16384;
 pub type ruby_rstring_private_flags = u32;
 pub const RHASH_PASS_AS_KEYWORDS: ruby_rhash_flags = 8192;
 pub const RHASH_PROC_DEFAULT: ruby_rhash_flags = 16384;
@@ -1925,11 +1951,14 @@ pub struct zjit_jit_frame {
 }
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
 pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 288;
+pub const RUBY_OFFSET_THREAD_RACTOR: zjit_struct_offsets = 24;
 pub type zjit_struct_offsets = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
 pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
 pub const RCLASS_OFFSET_PRIME_FIELDS_OBJ: jit_bindgen_constants = 40;
 pub const TDATA_OFFSET_FIELDS_OBJ: jit_bindgen_constants = 16;
+pub const RUBY_OFFSET_RHASH_IFNONE: jit_bindgen_constants = 16;
+pub const RUBY_RHASH_AR_TABLE_MAX_SIZE: jit_bindgen_constants = 8;
 pub const RUBY_OFFSET_RSTRING_LEN: jit_bindgen_constants = 16;
 pub const RB_SHAPE_FLAG_SHIFT: jit_bindgen_constants = 32;
 pub const RUBY_OFFSET_EC_CFP: jit_bindgen_constants = 16;
@@ -1941,6 +1970,50 @@ pub type jit_bindgen_constants = i32;
 pub const rb_invalid_shape_id: shape_id_t = 524287;
 pub type rb_iseq_param_keyword_struct =
     rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword;
+pub const RB_GC_ZJIT_FASTPATH_DEFAULT: rb_gc_zjit_fastpath_kind = 1;
+pub const RB_GC_ZJIT_FASTPATH_MMTK: rb_gc_zjit_fastpath_kind = 2;
+pub type rb_gc_zjit_fastpath_kind = u32;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union rb_gc_zjit_fastpath_data {
+    pub words: [usize; 19usize],
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct rb_gc_zjit_fastpath {
+    pub kind: rb_gc_zjit_fastpath_kind,
+    pub data: rb_gc_zjit_fastpath_data,
+}
+#[repr(C)]
+pub struct rb_gc_zjit_default_new_obj_fastpath {
+    pub cursor_offset: usize,
+    pub cursor_end_offset: usize,
+    pub slot_size: usize,
+    pub flags: VALUE,
+    pub klass: VALUE,
+}
+#[repr(C)]
+pub struct rb_gc_zjit_mmtk_new_obj_fastpath {
+    pub objspace: *const ::std::os::raw::c_void,
+    pub objspace_total_allocated_objects_offset: usize,
+    pub ractor_cache_mutator_offset: usize,
+    pub ractor_cache_bump_pointer_offset: usize,
+    pub ractor_cache_obj_free_parallel_buf_offset: usize,
+    pub ractor_cache_obj_free_parallel_count_offset: usize,
+    pub bump_pointer_cursor_offset: usize,
+    pub bump_pointer_limit_offset: usize,
+    pub min_obj_align: usize,
+    pub payload_size: usize,
+    pub total_alloc_size: usize,
+    pub allocation_semantics_default: u32,
+    pub gc_stress_p_func: usize,
+    pub newobj_tracing_p_func: usize,
+    pub post_alloc_func: usize,
+    pub obj_free_buf_capacity_minus_one: usize,
+    pub value_size_shift: usize,
+    pub flags: VALUE,
+    pub klass: VALUE,
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct succ_index_table {
@@ -2032,6 +2105,7 @@ unsafe extern "C" {
         argv: *const VALUE,
         klass: VALUE,
     ) -> VALUE;
+    pub fn rb_any_to_s(obj: VALUE) -> VALUE;
     pub fn rb_obj_is_kind_of(obj: VALUE, klass: VALUE) -> VALUE;
     pub fn rb_obj_alloc(klass: VALUE) -> VALUE;
     pub fn rb_obj_frozen_p(obj: VALUE) -> VALUE;
@@ -2127,7 +2201,6 @@ unsafe extern "C" {
         len: VALUE,
         empty: ::std::os::raw::c_int,
     ) -> VALUE;
-    pub fn rb_obj_as_string_result(str_: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_str_concat_literals(num: usize, strary: *const VALUE) -> VALUE;
     pub fn rb_ec_str_resurrect(
         ec: *mut rb_execution_context_struct,
@@ -2161,6 +2234,12 @@ unsafe extern "C" {
     pub fn rb_iseqw_to_iseq(iseqw: VALUE) -> *const rb_iseq_t;
     pub fn rb_iseq_label(iseq: *const rb_iseq_t) -> VALUE;
     pub fn rb_iseq_defined_string(type_: defined_type) -> VALUE;
+    pub fn rb_zjit_hash_new_size() -> usize;
+    pub fn rb_zjit_class_allocate_instance_fastpath(
+        klass: VALUE,
+        size_out: *mut usize,
+        shape_id_out: *mut shape_id_t,
+    ) -> bool;
     pub fn rb_profile_frames(
         start: ::std::os::raw::c_int,
         limit: ::std::os::raw::c_int,

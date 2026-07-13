@@ -447,6 +447,73 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
     }
 }
 
+// A coroutine thread's epilogue, run from thread_start_func_2 while th is
+// still valid (and, until the living-set removal, still GC-reachable).
+// Everything that touches th happens here; co_start then only makes the
+// final transfer, touching the execution-owned tctx alone.
+static void
+coroutine_thread_terminated(rb_thread_t *th)
+{
+    struct rb_thread_context *tctx = (struct rb_thread_context *)th->sched.context;
+    struct rb_thread_sched *sched = TH_SCHED(th);
+    rb_ractor_t *r = th->ractor;
+    bool last = (th->invoke_type == thread_invoke_type_ractor_proc);
+    bool is_dnt = th_has_dedicated_nt(th);
+
+    // VM destruct tears down the heap and then unsets ruby_current_vm_ptr;
+    // this native thread still frees the dead context afterwards (the nt
+    // loop's reclaim uses ruby_xfree and the stack-pool geometry via
+    // GET_VM()). Make destruct wait until the reclaim finished. (Observed:
+    // an assert_separately child exiting right after a Ractor finished
+    // crashed at GET_VM()->default_params, offset 0x2600, on two arches.)
+    RUBY_ATOMIC_INC(th->vm->ractor.sched.winding_cnt);
+
+    rb_thread_t *wake_th;
+
+    thread_sched_lock(sched, th);
+    {
+        // designate the successor (running = next from readyq, or NULL); for
+        // a dedicated nt (will_switch false) this also enqueues the Ractor.
+        thread_sched_to_dead_common(sched, th);
+
+        // Only the successor WE designated here may be enqueued by this
+        // epilogue (below, after the living-set removal). If readyq was
+        // empty, running is now NULL and a waker (e.g. the timer thread)
+        // that later installs a runnable thread enqueues the Ractor itself
+        // -- enqueuing "whatever is running" at that point would duplicate
+        // its entry. While running is non-NULL, nobody else re-assigns it,
+        // so wake_th stays valid until we enqueue.
+        wake_th = is_dnt ? NULL : sched->running;
+
+        tctx->nt = th->nt;        // stash the final transfer target for co_start
+        native_thread_assign(NULL, th);
+        th->sched.context = NULL; // the wrapper's dfree must not reclaim tctx
+    }
+    thread_sched_unlock(sched, th);
+
+    // Leave the living set. This is the dying thread's last access to th --
+    // the removal needs the current ec (VM lock), and after it the GC may
+    // collect th (and, for a Ractor's main thread, the Ractor).
+    // (interrupt_lock stays valid up to here -- a concurrent terminate_all
+    // may interrupt any still-listed thread; it is destroyed in thread_free.)
+    rb_ractor_living_threads_remove(r, th);
+
+    if (last) {
+        rb_current_ec_set(NULL); // TLS only; r may be collectable already
+    }
+    else {
+        rb_ractor_set_current_ec(r, NULL); // r alive: it has other threads
+
+        if (wake_th && wake_th->nt == NULL) {
+            // enqueue the successor designated above -- exactly once per
+            // "runnable but unserved" period, by its designator.
+            thread_sched_lock(sched, NULL);
+            ractor_sched_enq(wake_th->vm, r);
+            thread_sched_unlock(sched, NULL);
+        }
+    }
+}
+
 #ifdef __APPLE__
 # define co_start ruby_coroutine_start
 #else
@@ -475,38 +542,17 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
         RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED, th);
         call_thread_start_func_2(th);
     }
-    thread_sched_lock(sched, NULL);
-
-    RUBY_DEBUG_LOG("terminated th:%d", (int)th->serial);
-
-    // Thread is terminated
-
-    struct rb_native_thread *nt = th->nt;
-    bool is_dnt = th_has_dedicated_nt(th);
-    native_thread_assign(NULL, th);
-    rb_ractor_set_current_ec(th->ractor, NULL);
-
-    if (is_dnt) {
-        // SNT became DNT while running. Just return to the nt_context
-
-        th->sched.finished = true;
-        coroutine_transfer0(self, nt->nt_context, true);
-    }
-    else {
-        rb_thread_t *next_th = sched->running;
-
-        if (next_th && !next_th->nt) {
-            // switch to the next thread
-            thread_sched_set_unlocked(sched, NULL);
-            th->sched.finished = true;
-            thread_sched_switch0(th->sched.context, next_th, nt, true);
-        }
-        else {
-            // switch to the next Ractor
-            th->sched.finished = true;
-            coroutine_transfer0(self, nt->nt_context, true);
-        }
-    }
+    // Thread is terminated. coroutine_thread_terminated (run from
+    // thread_start_func_2 while th was still valid) already left the living
+    // set and stashed the transfer target, so th / its Ractor may already be
+    // collected. Only tctx is touched here: mark it dead and transfer back to
+    // this native thread's own context, where the nt loop reclaims tctx.
+    struct rb_thread_context *tctx = (struct rb_thread_context *)self;
+    tctx->dead = true;
+    // Hand this context to the nt's loop, which reclaims it right after the
+    // final transfer returns from switch0.
+    tctx->nt->dead_co = &tctx->co;
+    coroutine_transfer0(&tctx->co, tctx->nt->nt_context, true);
 
     rb_bug("unreachable");
 }
@@ -533,9 +579,12 @@ native_thread_create_shared(rb_thread_t *th)
     th->sched.context_stack = machine_stack;
     th->sched.context_stack_size = machine_stack_size;
 
-    th->sched.context = ruby_xmalloc(sizeof(struct coroutine_context));
-    coroutine_initialize(th->sched.context, co_start, machine_stack, machine_stack_size);
-    th->sched.context->argument = th;
+    struct rb_thread_context *tctx = ruby_xmalloc(sizeof(struct rb_thread_context));
+    tctx->stack = machine_stack;
+    tctx->dead = false;
+    th->sched.context = &tctx->co;
+    coroutine_initialize(&tctx->co, co_start, machine_stack, machine_stack_size);
+    tctx->co.argument = th;
 
     RUBY_DEBUG_LOG("th:%u vm_stack:%p machine_stack:%p", rb_th_serial(th), vm_stack, machine_stack);
     thread_sched_to_ready(TH_SCHED(th), th);

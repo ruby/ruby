@@ -1776,6 +1776,11 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             size++;
                         }
 
+                        if (size > VM_CALL_KW_LEN_MAX) {
+                            COMPILE_ERROR(iseq, node_location->line, "too many keyword arguments (%d, maximum is %d)",
+                                          (int) size, (int) VM_CALL_KW_LEN_MAX);
+                        }
+
                         *kw_arg = rb_xmalloc_mul_add(size, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
                         *flags |= VM_CALL_KWARG;
 
@@ -6601,6 +6606,11 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     //                                                   ^^^^^^^^
     // Keywords create an internal variable on the parse tree
     if (keywords_list && keywords_list->size) {
+        if (keywords_list->size > VM_CALL_KW_LEN_MAX) {
+            COMPILE_ERROR(iseq, node_location->line, "too many keyword parameters (%d, maximum is %d)",
+                          (int) keywords_list->size, (int) VM_CALL_KW_LEN_MAX);
+        }
+
         keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
         keyword->num = (int) keywords_list->size;
 
@@ -7500,7 +7510,7 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
         PUSH_INSN(ret, location, putself);
     }
     else {
-        if (method_id == idCall && PM_NODE_TYPE_P(node->receiver, PM_LOCAL_VARIABLE_READ_NODE)) {
+        if ((method_id == idCall || method_id == idAREF || method_id == idYield || method_id == idEqq) && PM_NODE_TYPE_P(node->receiver, PM_LOCAL_VARIABLE_READ_NODE)) {
             const pm_local_variable_read_node_t *read_node_cast = (const pm_local_variable_read_node_t *) node->receiver;
             uint32_t node_id = node->receiver->node_id;
             int idx, level;

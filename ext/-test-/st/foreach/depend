@@ -156,7 +156,6 @@ foreach.o: $(hdrdir)/ruby/internal/variable.h
 foreach.o: $(hdrdir)/ruby/internal/warning_push.h
 foreach.o: $(hdrdir)/ruby/internal/xmalloc.h
 foreach.o: $(hdrdir)/ruby/missing.h
-foreach.o: $(hdrdir)/ruby/onigmo.h
 foreach.o: $(hdrdir)/ruby/ruby.h
 foreach.o: $(hdrdir)/ruby/st.h
 foreach.o: $(hdrdir)/ruby/subst.h

@@ -698,7 +698,7 @@ clean-local:: clean-runnable
 	-$(Q)$(RMALL) dump_ast$(BUILD_EXEEXT)*
 	-$(Q)$(RMALL) target
 	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine target \
-	  $(PRISM_BUILD_DIR)/*/ $(PRISM_BUILD_DIR) tmp \
+	  $(PRISM_BUILD_DIR)/*/ $(PRISM_BUILD_DIR) gc/default gc tmp \
 	2> $(NULL) || $(NULLCMD)
 
 bin/clean-runnable:: PHONY
@@ -1316,7 +1316,7 @@ $(MAINOBJ): $(srcdir)/$(MAINSRC)
 probes.dmyh:
 	$(BASERUBY) $(tooldir)/gen_dummy_probes.rb $(srcdir)/probes.d > $@
 
-probes.h: {$(VPATH)}probes.$(DTRACE_EXT)
+probes.h: {$(VPATH)}probes.$(DTRACE_EXT) $(srcdir)/vm_opts.h
 
 prereq: incs srcs preludes PHONY
 
@@ -1440,15 +1440,26 @@ COMPARE_RUBY = $(BASERUBY)
 BENCH_RUBY = $(RUNRUBY)
 BENCH_OPTS = --output=markdown --output-compare -v
 ITEM =
-ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '$(ITEM)' -o -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb' | sort)
+ARGS =
 OPTS =
 
-# See benchmark/README.md for details.
+# Select the benchmark files with Ruby instead of `find | sort`, so the
+# recipe runs on any platform regardless of the shell.  When ARGS is
+# empty, collect the files matching ITEM under benchmark/.  Executables
+# are passed with forward slashes because benchmark-driver splits them
+# with Shellwords, which eats backslashes.  See benchmark/README.md.
 benchmark: miniruby$(EXEEXT) update-benchmark-driver PHONY
-	$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
-	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
-	            --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
-	            $(BENCH_OPTS) $(ARGS) $(OPTS)
+	$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib \
+	    -e "files = %w[$(ARGS)]" \
+	    -e "files = Dir.glob(['$(ITEM)', '*$(ITEM)*.yml', '*$(ITEM)*.rb'], base: '$(srcdir)/benchmark').reject(&:empty?).sort.uniq.map {|f| '$(srcdir)/benchmark/' + f} if files.empty?" \
+	    -e "if sep = File::ALT_SEPARATOR" \
+	    -e   "ARGV.map! {|a| a.start_with?('--executables') ? a.gsub(sep, '/') : a}" \
+	    -e "end" \
+	    -e "ARGV.concat(files)" \
+	    -e "load '$(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver'" -- \
+	    --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
+	    --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
+	    $(BENCH_OPTS) $(OPTS)
 
 run.gdb:
 	echo set breakpoint pending on         > run.gdb
@@ -1598,7 +1609,7 @@ no-install-for-test-bundled-gems: no-update-default-gemspecs
 yes-install-for-test-bundled-gems: yes-update-default-gemspecs
 	$(XRUBY) -C "$(srcdir)" -r./tool/lib/gem_env.rb bin/gem \
 		install --no-document --conservative \
-		"hoe" "json-schema:5.1.0" "test-unit-rr" "simplecov" "simplecov-html" "simplecov-json" "rspec" "zeitwerk" \
+		"hoe" "json-schema:5.1.0" "test-unit-rr" "simplecov" "rspec" "zeitwerk" \
 		"sinatra" "rack" "tilt" "mustermann" "base64" "compact_index" "rack-test" "logger" "kpeg" "tracer" "minitest-mock"
 
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch

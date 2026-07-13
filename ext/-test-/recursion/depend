@@ -156,7 +156,6 @@ recursion.o: $(hdrdir)/ruby/internal/variable.h
 recursion.o: $(hdrdir)/ruby/internal/warning_push.h
 recursion.o: $(hdrdir)/ruby/internal/xmalloc.h
 recursion.o: $(hdrdir)/ruby/missing.h
-recursion.o: $(hdrdir)/ruby/onigmo.h
 recursion.o: $(hdrdir)/ruby/ruby.h
 recursion.o: $(hdrdir)/ruby/st.h
 recursion.o: $(hdrdir)/ruby/subst.h

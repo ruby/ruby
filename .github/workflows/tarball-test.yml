@@ -91,6 +91,11 @@ jobs:
   windows:
     needs: tarball
     if: ${{ ! needs.tarball.outputs.skip }}
+    # For fork pull requests the GITHUB_TOKEN is capped to read-only, so
+    # they can only download vcpkg packages; uploads happen on push.
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/tarball-windows.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}

@@ -4,15 +4,19 @@
 // This file contains definitions ZJIT exposes to the CRuby codebase
 //
 
+#include "shape.h" // for shape_id_t
+
 // ZJIT_STATS controls whether to support runtime counters in the interpreter
 #ifndef ZJIT_STATS
 # define ZJIT_STATS (USE_ZJIT && RUBY_DEBUG)
 #endif
 
-// Stack map entries are either immediate Ruby VALUEs or tagged native-stack
-// locations. Stack maps never contain heap VALUEs, so 0x08 is available: it is
-// not Qfalse (0), and its low 3 bits are zero, so RB_SPECIAL_CONST_P is false.
+// Stack map entries are either immediate Ruby VALUEs, tagged native-stack
+// locations, or tagged skip counts. Stack maps never contain heap VALUEs, so
+// these tags are available: they are not Qfalse (0), and their low 3 bits are
+// zero, so RB_SPECIAL_CONST_P is false.
 #define ZJIT_STACK_MAP_VREG_TAG 0x08
+#define ZJIT_STACK_MAP_SKIP_TAG 0x10
 #define ZJIT_STACK_MAP_TAG_MASK 0xff
 #define ZJIT_STACK_MAP_SHIFT 8
 
@@ -24,6 +28,18 @@ ZJIT_STACK_MAP_VREG_P(VALUE entry)
 
 static inline size_t
 ZJIT_STACK_MAP_VREG_INDEX(VALUE entry)
+{
+    return entry >> ZJIT_STACK_MAP_SHIFT;
+}
+
+static inline bool
+ZJIT_STACK_MAP_SKIP_P(VALUE entry)
+{
+    return (entry & ZJIT_STACK_MAP_TAG_MASK) == ZJIT_STACK_MAP_SKIP_TAG;
+}
+
+static inline size_t
+ZJIT_STACK_MAP_SKIP_SIZE(VALUE entry)
 {
     return entry >> ZJIT_STACK_MAP_SHIFT;
 }
@@ -43,12 +59,11 @@ typedef struct zjit_jit_frame {
     // Always false for C frames.
     bool materialize_block_code;
 
-    // Number of Ruby stack slots described by stack[].
-    // rb_zjit_materialize_frames() copies them to cfp->sp - stack_size.
+    // Number of stack map entries in stack[].
     uint32_t stack_size;
     // Flexible array of stack map entries. Each entry is either an immediate
-    // VALUE or a tagged native-stack index from cfp->jit_return for a value
-    // kept by the JIT.
+    // VALUE, a tagged native-stack index from cfp->jit_return for a value
+    // kept by the JIT, or a tagged count of VM stack slots to skip.
     VALUE stack[];
 } zjit_jit_frame_t;
 
@@ -77,6 +92,8 @@ void rb_zjit_invalidate_no_singleton_class(VALUE klass);
 void rb_zjit_invalidate_root_box(void);
 void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_frame);
 void rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
+size_t rb_zjit_hash_new_size(void);
+bool rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, shape_id_t *shape_id_out);
 
 // Special value for cfp->jit_return that means "this is a C method frame, use
 // rb_zjit_c_frame as the JITFrame". We don't control the native stack layout

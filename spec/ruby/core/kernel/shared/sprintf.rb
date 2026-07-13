@@ -460,6 +460,51 @@ describe :kernel_sprintf, shared: true do
         }.should.raise(ArgumentError)
       end
 
+      ruby_version_is ""..."3.4" do
+        it "formats single % character before a newline as literal %" do
+          @method.call("%\n").should == "%\n"
+          @method.call("foo%\n").should == "foo%\n"
+          @method.call("%\n.3f").should == "%\n.3f"
+        end
+
+        it "formats single % character before a NUL as literal %" do
+          @method.call("%\0").should == "%\0"
+          @method.call("foo%\0").should == "foo%\0"
+          @method.call("%\0.3f").should == "%\0.3f"
+        end
+
+        it "raises an error if single % appears anywhere else" do
+          -> { @method.call(" % ") }.should.raise(ArgumentError)
+          -> { @method.call("foo%quux") }.should.raise(ArgumentError)
+        end
+
+        it "raises an error if NULL or \\n appear anywhere else in the format string" do
+          begin
+            old_debug, $DEBUG = $DEBUG, false
+
+            -> { @method.call("%.\n3f", 1.2) }.should.raise(ArgumentError)
+            -> { @method.call("%.3\nf", 1.2) }.should.raise(ArgumentError)
+            -> { @method.call("%.\03f", 1.2) }.should.raise(ArgumentError)
+            -> { @method.call("%.3\0f", 1.2) }.should.raise(ArgumentError)
+          ensure
+            $DEBUG = old_debug
+          end
+        end
+      end
+
+      ruby_version_is "3.4" do
+        it "raises ArgumentError if not followed by a conversion specifier" do
+          -> { @method.call("%") }.should.raise(ArgumentError, /incomplete format specifier/)
+          -> { @method.call("%\n") }.should.raise(ArgumentError, /malformed format string/)
+          -> { @method.call("%\0") }.should.raise(ArgumentError, /malformed format string/)
+          -> { @method.call(" % ") }.should.raise(ArgumentError, /malformed format string/)
+          -> { @method.call("%.\n3f") }.should.raise(ArgumentError, /malformed format string/)
+          -> { @method.call("%.3\nf") }.should.raise(ArgumentError, /malformed format string/)
+          -> { @method.call("%.\03f") }.should.raise(ArgumentError, /malformed format string/)
+          -> { @method.call("%.3\0f") }.should.raise(ArgumentError, /malformed format string/)
+        end
+      end
+
       it "is escaped by %" do
         @method.call("%%").should == "%"
         @method.call("%%d").should == "%d"
@@ -843,6 +888,18 @@ describe :kernel_sprintf, shared: true do
         -> {
           @method.call("%*10d", 10, 112)
         }.should.raise(ArgumentError)
+      end
+
+      ruby_version_is ""..."3.4" do
+        it "replaces trailing absolute argument specifier without type with percent sign" do
+          @method.call("hello %1$", "foo").should == "hello %"
+        end
+      end
+
+      ruby_version_is "3.4" do
+        it "raises ArgumentError if absolute argument specifier is followed by a conversion specifier" do
+          -> { @method.call("hello %1$", "foo") }.should.raise(ArgumentError, /malformed format string/)
+        end
       end
     end
   end

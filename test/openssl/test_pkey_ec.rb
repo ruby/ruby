@@ -80,6 +80,17 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal key.to_der, deserialized.to_der
   end
 
+  def test_get_param
+    unless openssl?(3, 0, 0) || OpenSSL::PKey::PKey.method_defined?(:get_param)
+      omit "EVP_PKEY_get_params() is not supported"
+    end
+    key = Fixtures.pkey("p256")
+    assert_equal("prime256v1", key.get_param("group"))
+    assert_equal(Encoding::UTF_8, key.get_param("group").encoding)
+    assert_equal(key.group.order, key.get_param("order"))
+    assert_kind_of(OpenSSL::BN, key.get_param("order"))
+  end
+
   def test_check_key
     omit_on_fips
 

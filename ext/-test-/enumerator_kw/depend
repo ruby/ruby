@@ -156,7 +156,6 @@ enumerator_kw.o: $(hdrdir)/ruby/internal/variable.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/warning_push.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/xmalloc.h
 enumerator_kw.o: $(hdrdir)/ruby/missing.h
-enumerator_kw.o: $(hdrdir)/ruby/onigmo.h
 enumerator_kw.o: $(hdrdir)/ruby/ruby.h
 enumerator_kw.o: $(hdrdir)/ruby/st.h
 enumerator_kw.o: $(hdrdir)/ruby/subst.h

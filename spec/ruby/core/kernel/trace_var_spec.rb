@@ -52,3 +52,9 @@ describe "Kernel#trace_var" do
     end.should.raise(ArgumentError)
   end
 end
+
+describe "Kernel.trace_var" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:trace_var)
+  end
+end

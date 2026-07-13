@@ -11,7 +11,9 @@ describe "Kernel#exit" do
 end
 
 describe "Kernel.exit" do
-  it_behaves_like :process_exit, :exit, Kernel
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:exit)
+  end
 end
 
 describe "Kernel#exit!" do
@@ -23,5 +25,7 @@ describe "Kernel#exit!" do
 end
 
 describe "Kernel.exit!" do
-  it_behaves_like :process_exit!, :exit!, "Kernel"
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:exit!)
+  end
 end

@@ -47,7 +47,7 @@ jobs:
             specopts: '-T --zjit-disable-hir-opt -T --zjit-call-threshold=1'
             configure: '--enable-zjit=dev'
 
-          - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit.rb
+          - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit_cli.rb
             configure: '--enable-yjit=dev --enable-zjit'
             rust_version: "1.85.0"
 
@@ -98,7 +98,7 @@ jobs:
           rustup install ${{ matrix.rust_version }} --profile minimal
           rustup default ${{ matrix.rust_version }}
 
-      - uses: taiki-e/install-action@4684b8405694ae9dd42c9f39ba901a70ae83f4a3 # v2.82.9
+      - uses: taiki-e/install-action@c7eb1735f09259a5035e8e5d44b1406b1cddc0fb # v2.83.0
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}

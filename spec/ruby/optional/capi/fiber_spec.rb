@@ -46,6 +46,10 @@ describe "C-API Fiber function" do
       fiber.should.instance_of?(Fiber)
       fiber.resume(42).should == "42"
     end
+
+    it "passes non-Ruby pointers to the fiber callback" do
+      @s.rb_fiber_new_with_pointer.should == true
+    end
   end
 
   describe "rb_fiber_raise" do

@@ -16,6 +16,8 @@
 #include "ruby/ruby.h"          /* for rb_event_flag_t */
 #include "vm_core.h"            /* for GET_EC() */
 
+struct rb_gc_zjit_fastpath;
+
 #ifndef USE_MODULAR_GC
 # define USE_MODULAR_GC 0
 #endif
@@ -197,15 +199,16 @@ RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add(size_t, size_t, size_t);
 void *rb_xrealloc_mul_add(const void *, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
-void rb_gc_obj_id_moved(VALUE obj);
 void rb_gc_register_pinning_obj(VALUE obj);
 rb_execution_context_t *rb_gc_get_ec(void);
 
 void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
 void rb_gc_ractor_cache_free(void *cache);
+bool rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
 
 bool rb_gc_size_allocatable_p(size_t size);
 size_t rb_gc_size_slot_size(size_t size);
+size_t rb_gc_max_allocation_size(void);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 

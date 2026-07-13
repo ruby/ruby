@@ -251,4 +251,50 @@ RSpec.describe Bundler::ParallelInstaller do
       expect(makeflags_during).to eq(makeflags_before)
     end
   end
+
+  describe "make jobserver on BSD" do
+    # BSD make (the default `make` on FreeBSD) can't parse the GNU
+    # `--jobserver-auth` and aborts every native extension build, so the
+    # jobserver must be skipped there.
+    it "leaves MAKEFLAGS untouched" do
+      parallel_installer = Bundler::ParallelInstaller.new(nil, [], 5, false, false)
+
+      makeflags_before = ENV["MAKEFLAGS"]
+      makeflags_during = :not_yielded
+
+      old_make = ENV["MAKE"]
+      ENV.delete("MAKE")
+      allow(Gem).to receive(:freebsd_platform?).and_return(true)
+      begin
+        parallel_installer.send(:with_jobserver) do
+          makeflags_during = ENV["MAKEFLAGS"]
+        end
+      ensure
+        ENV["MAKE"] = old_make
+      end
+
+      expect(makeflags_during).to eq(makeflags_before)
+    end
+
+    # A BSD user who opts into gmake gets a make that understands the
+    # jobserver, so it should still be set up.
+    it "sets up the jobserver when gmake is used" do
+      parallel_installer = Bundler::ParallelInstaller.new(nil, [], 5, false, false)
+
+      makeflags_during = :not_yielded
+
+      old_make = ENV["MAKE"]
+      ENV["MAKE"] = "gmake"
+      allow(Gem).to receive(:freebsd_platform?).and_return(true)
+      begin
+        parallel_installer.send(:with_jobserver) do
+          makeflags_during = ENV["MAKEFLAGS"]
+        end
+      ensure
+        ENV["MAKE"] = old_make
+      end
+
+      expect(makeflags_during).to include("--jobserver-auth=")
+    end
+  end
 end

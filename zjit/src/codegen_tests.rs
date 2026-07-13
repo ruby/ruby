@@ -544,6 +544,166 @@ fn test_getblockparamproxy_polymorphic_none_and_iseq_and_proc() {
 }
 
 #[test]
+fn test_yield_inline_self_is_captured_self() {
+    // The inlined frame's self must be the block's captured self, not the yielding receiver.
+    set_call_threshold(2);
+    eval("
+        class Yielder
+          def run = yield
+        end
+        class C
+          def initialize(v) = @v = v
+          def go(y) = y.run { @v * 2 }
+        end
+        Y = Yielder.new
+        C.new(21).go(Y)
+        C.new(21).go(Y)
+    ");
+    assert_snapshot!(assert_compiles("C.new(21).go(Y)"), @"42");
+}
+
+#[test]
+fn test_yield_iseq_guard_miss_recompiles() {
+    set_call_threshold(2);
+    eval("
+        def invoke = yield(41)
+        invoke { |x| x * 2 }
+        invoke { |x| x * 2 }
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("[invoke { |x| x + 1 }, invoke { |x| x * 2 }]"), @"[42, 82]");
+}
+
+#[test]
+fn test_yield_inline_invocation_with_args() {
+    // Plain yield with two args to a matching-arity block inlines and returns correctly.
+    set_call_threshold(2);
+    eval("
+        def foo = yield(3, 4)
+        def test = foo { |a, b| a + b }
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"7");
+}
+
+#[test]
+fn test_yield_inline_invocation_live_stack_below_args() {
+    // A live value sits on the stack below the yield args; the no-receiver-slot SP math
+    // must preserve it so `x +` sees the right operand.
+    set_call_threshold(2);
+    eval("
+        def foo(x) = x + yield(1, 2)
+        def test = foo(10) { |a, b| a + b }
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"13");
+}
+
+#[test]
+fn test_yield_inlined_caller_block_dispatches_without_guards() {
+    // When the yielding method is inlined into a caller that passes a literal block, the block
+    // handler is written into the inlined frame's EP from a compile-time constant, so the yield
+    // dispatches with no tag/iseq guards. assert_inlines requires the method to actually inline
+    // and to run with no side exits, exercising the guard-free InvokeBlockIseqDirect machine code.
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def two_yields = (yield 1) + (yield 2)
+            def test = two_yields { |x| x * 10 }
+            test
+            test
+        "), @"30");
+    });
+}
+
+#[test]
+fn test_yield_with_lambda_arg() {
+    // A lambda passed via &l is a proc handler (not imemo_iseq): yield falls back but runs.
+    set_call_threshold(2);
+    eval("
+        def foo = yield(5)
+        def test = foo(&L)
+        L = ->(x) { x * 10 }
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"50");
+}
+
+#[test]
+fn test_yield_break() {
+    set_call_threshold(2);
+    eval("
+        def foo = yield
+        def test = foo { break 5 }
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"5");
+}
+
+#[test]
+fn test_yield_non_local_return() {
+    set_call_threshold(2);
+    eval("
+        def inner = yield
+        def test
+          inner { return 42 }
+          99
+        end
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"42");
+}
+
+#[test]
+fn test_yield_autosplat() {
+    // {|a, b|} auto-splats a single Array arg for yield (falls back).
+    set_call_threshold(2);
+    eval("
+        def via_yield = yield([3, 4])
+        def test_yield = via_yield { |a, b| a + b }
+        test_yield; test_yield
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test_yield"), @"7");
+}
+
+#[test]
+fn test_yield_next() {
+    // next(val) compiles to leave (not throw), so yield inlines invocation and returns val.
+    set_call_threshold(2);
+    eval("
+        def via_yield = yield
+        def test_yield = via_yield { next 7 }
+        test_yield; test_yield
+    ");
+    assert_snapshot!(assert_compiles("test_yield"), @"7");
+}
+
+#[test]
+fn test_yield_inline_ensure_runs() {
+    // The ensure body must run on the normal inlined invocation yield path.
+    set_call_threshold(2);
+    eval("
+        def foo = yield
+        $log = []
+        def driver
+          foo do
+            begin
+              42
+            ensure
+              $log << :ensured
+            end
+          end
+        end
+        driver
+        driver
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("$log.clear; [driver, $log]"), @"[42, [:ensured]]");
+}
+
+#[test]
 fn test_getblockparam() {
     eval("
         def test(&blk)
@@ -812,6 +972,96 @@ fn test_send_optional_arguments() {
         entry
         entry
     "), @"[[1, 2], [3, 4]]");
+}
+
+#[test]
+fn test_send_rest_arguments() {
+    eval("
+        def test(*args) = args
+        def entry = test(1, 2, 3)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[1, 2, 3]");
+}
+
+#[test]
+fn test_send_many_rest_arguments() {
+    eval("
+        def test(*args) = args.length
+        def entry = test(1, 2, 3, 4, 5, 6, 7)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"7");
+}
+
+#[test]
+fn test_send_rest_arguments_with_post() {
+    eval("
+        def test(a, *args, z) = [a, args, z]
+        def entry = test(1, 2, 3, 4)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[1, [2, 3], 4]");
+}
+
+#[test]
+fn test_send_rest_arguments_with_keyword() {
+    eval("
+        def test(*args, k:) = [args, k]
+        def entry = test(1, 2, k: 40)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[[1, 2], 40]");
+}
+
+#[test]
+fn test_send_rest_arguments_with_optional_keyword_default() {
+    eval("
+        def test(*args, k: 40) = [args, k]
+        def entry = test(1, 2)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[[1, 2], 40]");
+}
+
+#[test]
+fn test_send_optional_and_rest_arguments() {
+    eval("
+        def test(a, b = 2, *rest) = [a, b, rest]
+        def entry = [test(1), test(3, 4), test(5, 6, 7, 8)]
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[[1, 2, []], [3, 4, []], [5, 6, [7, 8]]]");
+}
+
+#[test]
+fn test_send_rest_arguments_with_keyword_to_positional_hash() {
+    eval("
+        def test(*args) = args
+        def entry = test(k: 1)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[{k: 1}]");
+}
+
+#[test]
+fn test_send_rest_arguments_with_block_literal() {
+    eval("
+        def test(*args) = yield args.length
+        def entry = test(1, 2, 3) { |n| n + 4 }
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"7");
+}
+
+#[test]
+fn test_send_rest_arguments_with_block_param() {
+    eval("
+        def test(*args, &block) = block.call(args.length)
+        def entry = test(1, 2, 3) { |n| n + 5 }
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"8");
 }
 
 #[test]
@@ -2044,6 +2294,28 @@ fn test_invokebuiltin_delegate() {
 }
 
 #[test]
+fn test_kernel_integer_exception_false_returns_nil() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def test = Integer('x', exception: false) ? 1 : 0;
+            test
+            test
+        "), @"0");
+    });
+}
+
+#[test]
+fn test_kernel_float_exception_false_returns_nil() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def test = Float('x', exception: false) ? 1 : 0;
+            test
+            test
+        "), @"0");
+    });
+}
+
+#[test]
 fn test_opt_plus_const() {
     assert_snapshot!(inspect("
         def test = 1 + 2
@@ -2873,6 +3145,119 @@ fn test_new_hash_empty() {
     ");
     assert_contains_opcode("test", YARVINSN_newhash);
     assert_snapshot!(assert_compiles("test"), @"{}");
+}
+
+// Exercises the empty-hash GC fast path under GC pressure. Guards against
+// baking object flags as a GC-managed VALUE: T_HASH (8) has no immediate-mask
+// bits set, so misclassifying it as a heap object records a bogus GC offset
+// and crashes during marking.
+#[test]
+fn test_new_hash_empty_gc_stress() {
+    eval("
+        def make = {}
+    ");
+    assert_contains_opcode("make", YARVINSN_newhash);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make
+          h = make
+          h[:a] = 1
+          [h.class, h.size, h.default, h]
+        ensure
+          GC.stress = false
+        end
+    "#), @"[Hash, 1, nil, {a: 1}]");
+}
+
+// Static-symbol keys hash and compare without running Ruby, so NewHash takes the
+// leaf bulk-insert fast path into an inline-allocated ar_table. Runs under GC
+// stress to guard the leaf-call preparation.
+#[test]
+fn test_new_hash_static_sym_keys_gc_stress() {
+    eval("
+        def make(a, b) = {x: a, y: b}
+    ");
+    assert_contains_opcode("make", YARVINSN_newhash);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make(1, 2)
+          h = make(:foo, [3])
+          [h.class, h.size, h[:x], h[:y], h[:z], h.default, h]
+        ensure
+          GC.stress = false
+        end
+    "#), @"[Hash, 2, :foo, [3], nil, nil, {x: :foo, y: [3]}]");
+}
+
+// Eight pairs fills an inline embedded ar_table (the fast path); nine crosses
+// RHASH_AR_TABLE_MAX_SIZE, so it's built as a pre-sized st_table instead. Both stay
+// on the static-symbol leaf path, so this guards the ar_table and st_table routes.
+#[test]
+fn test_new_hash_static_sym_ar_table_boundary() {
+    eval("
+        def eight(v) = {a:v,b:v,c:v,d:v,e:v,f:v,g:v,h:v}
+        def nine(v)  = {a:v,b:v,c:v,d:v,e:v,f:v,g:v,h:v,i:v}
+    ");
+    assert_contains_opcode("eight", YARVINSN_newhash);
+    assert_contains_opcode("nine", YARVINSN_newhash);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          [eight(7).size, eight(7)[:h], nine([9]).size, nine([9])[:i]]
+        ensure
+          GC.stress = false
+        end
+    "#), @"[8, 7, 9, [9]]");
+}
+
+// Dynamic symbol keys hash and compare without running Ruby, so NewHash takes the
+// leaf bulk-insert fast path into an inline-allocated ar_table. Runs under GC
+// stress to guard the leaf-call preparation.
+#[test]
+fn test_new_hash_dynamic_sym_keys_gc_stress() {
+    eval(r#"
+        def make(k, v) = { :"x_#{k}" => v, :"y_#{k}" => v }
+    "#);
+    assert_contains_opcode("make", YARVINSN_newhash);
+    assert_contains_opcode("make", YARVINSN_intern);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make("warm", 0)
+          h = make("k", [3])
+          [h.class, h.size, h[:"x_k"], h[:"y_k"]]
+        ensure
+          GC.stress = false
+        end
+    "#), @r#"[Hash, 2, [3], [3]]"#);
+}
+
+#[test]
+fn test_object_alloc_gc_stress() {
+    eval("
+        class Foo
+          def initialize
+            @a = 1
+            @b = 2
+          end
+          def sum = @a + @b
+        end
+        def make = Foo.new
+    ");
+    assert_contains_opcode("make", YARVINSN_opt_new);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make
+          foo = make
+          foo.instance_variable_set(:@c, 3)
+          [foo.class, foo.sum, foo.instance_variables]
+        ensure
+          GC.stress = false
+        end
+    "#), @"[Foo, 3, [:@a, :@b, :@c]]");
 }
 
 #[test]
@@ -3875,6 +4260,29 @@ fn test_setinstancevariable() {
 }
 
 #[test]
+fn test_polymorphic_setinstancevariable_with_shape_transitions() {
+    set_call_threshold(3);
+    assert_snapshot!(inspect(r#"
+        class C
+          def set(value) = @a = value
+        end
+
+        normal = C.new
+        with_b = C.new
+        with_b.instance_variable_set(:@b, true)
+        normal.set(:profile_normal)
+        with_b.set(:profile_with_b)
+
+        normal = C.new
+        with_b = C.new
+        with_b.instance_variable_set(:@b, true)
+        results = [normal.set(:normal), with_b.set(:with_b)]
+        results << normal.instance_variable_get(:@a)
+        results << with_b.instance_variable_get(:@a)
+    "#), @"[:normal, :with_b, :normal, :with_b]");
+}
+
+#[test]
 fn test_getclassvariable() {
     assert_snapshot!(inspect("
         class Foo
@@ -4684,6 +5092,46 @@ fn test_profile_frames_from_signal_handler() {
     assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
 }
 
+// A direct JIT-to-JIT call switches the CFP register before entering the callee.
+// Signal profilers must not observe the callee through ec->cfp until the callee's
+// cfp->jit_return points at a valid JITFrame.
+#[cfg(all(
+    any(target_os = "linux", target_os = "macos"),
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+))]
+#[test]
+fn test_profile_frames_during_direct_jit_to_jit_entry() {
+    with_inlining_threshold(0, || {
+        eval(r#"
+            def profiled_direct_callee(value)
+              value + 1
+            end
+
+            def profiled_direct_loop(n)
+              i = 0
+              value = 0
+              while i < n
+                value = profiled_direct_callee(value)
+                i += 1
+              end
+              value
+            end
+
+            # Compile both methods and patch the caller's SendDirect site before
+            # arming the sampler.
+            profiled_direct_callee(0)
+            profiled_direct_callee(0)
+            profiled_direct_loop(1)
+            profiled_direct_loop(1)
+            profiled_direct_loop(1)
+        "#);
+
+        let profiler = signal_profiler::Profiler::start(10);
+        assert_snapshot!(assert_compiles("profiled_direct_loop(1_000_000)"), @"1000000");
+        assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
+    });
+}
+
 #[test]
 fn test_profile_under_nested_jit_call() {
     assert_snapshot!(inspect("
@@ -5298,10 +5746,13 @@ fn test_invokeblock() {
         def test
           yield
         end
-        test { 41 }
+        def entry
+          test { 42 }
+        end
+        entry
     ");
     assert_contains_opcode("test", YARVINSN_invokeblock);
-    assert_snapshot!(assert_compiles("test { 42 }"), @"42");
+    assert_snapshot!(assert_compiles("entry"), @"42");
 }
 
 #[test]
@@ -5310,10 +5761,13 @@ fn test_invokeblock_with_args() {
         def test(x, y)
           yield x, y
         end
-        test(1, 2) { |a, b| a + b }
+        def entry
+          test(1, 2) { |a, b| a + b }
+        end
+        entry
     ");
     assert_contains_opcode("test", YARVINSN_invokeblock);
-    assert_snapshot!(assert_compiles("test(1, 2) { |a, b| a + b }"), @"3");
+    assert_snapshot!(assert_compiles("entry"), @"3");
 }
 
 #[test]
@@ -5325,7 +5779,9 @@ fn test_invokeblock_no_block_given() {
         test { }
     ");
     assert_contains_opcode("test", YARVINSN_invokeblock);
-    assert_snapshot!(assert_compiles("test"), @":error");
+    // Compiled expecting an ISEQ block; calling with none misses the handler guard and
+    // deopts, so the interpreter raises LocalJumpError (rescued to :error).
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @":error");
 }
 
 #[test]
@@ -5336,14 +5792,15 @@ fn test_invokeblock_multiple_yields() {
           yield 2
           yield 3
         end
-        test { |x| x }
+        def entry
+          results = []
+          test { |x| results << x }
+          results
+        end
+        entry
     ");
     assert_contains_opcode("test", YARVINSN_invokeblock);
-    assert_snapshot!(assert_compiles("
-        results = []
-        test { |x| results << x }
-        results
-    "), @"[1, 2, 3]");
+    assert_snapshot!(assert_compiles("entry"), @"[1, 2, 3]");
 }
 
 #[test]
@@ -6231,6 +6688,23 @@ fn test_inlined_method_with_invokeblock() {
 }
 
 #[test]
+fn test_inlined_method_with_invokeblock_raise_materializes_stack() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def callee = [1, 2, yield]
+            def test
+              callee { raise }
+            rescue
+              :rescued
+            end
+
+            test
+            test
+        "), @":rescued");
+    });
+}
+
+#[test]
 fn test_inlined_method_with_block_param() {
     with_inlining(|| {
         assert_snapshot!(assert_inlines("
@@ -6245,6 +6719,24 @@ fn test_inlined_method_with_block_param() {
             test(10)
             test(10)
         "), @"12");
+    });
+}
+
+#[test]
+fn test_inlined_method_that_forwards_block_arg_raise_materializes_stack() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def inner = yield
+            def callee(&block) = [1, 2, inner(&block)]
+            def test
+              callee { raise }
+            rescue
+              :rescued
+            end
+
+            test
+            test
+        "), @":rescued");
     });
 }
 
@@ -6485,4 +6977,171 @@ fn test_getlocal_level_zero_after_setlocal_wc_0() {
         end
         test
     "#), @"2");
+}
+
+#[test]
+fn test_uncached_getconstant_path() {
+    set_call_threshold(1);
+    eval("
+        def test = RUBY_COPYRIGHT
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_getconstant_path);
+    // RUBY_COPYRIGHT is version-dependent, so compare against its runtime value
+    // rather than a fixed snapshot.
+    assert_eq!(assert_compiles_allowing_exits("test"), inspect("RUBY_COPYRIGHT"));
+}
+
+#[test]
+fn test_line_tracepoint_on_c_method() {
+    set_call_threshold(1);
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        events = []
+        events.instance_variable_set(
+          :@tp,
+          TracePoint.new(:line) { |tp| events << [tp.event, tp.lineno] if tp.path == __FILE__ }
+        )
+        def events.to_str
+          @tp.enable; ''
+        end
+
+        # Stay in generated code while enabling tracing
+        def events.compiled(obj)
+          String(obj)
+          @tp.disable; __LINE__
+        end
+
+        line = events.compiled(events)
+        events[0][-1] = (events[0][-1] == line)
+
+        events.to_s # can't dump events as it's a singleton object AND it has a TracePoint instance variable, which also can't be dumped
+    "#), @r#""[[:line, true]]""#);
+}
+
+#[test]
+fn test_targeted_line_tracepoint_in_c_method_call() {
+    set_call_threshold(1);
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        events = []
+        events.instance_variable_set(:@tp, TracePoint.new(:line) { |tp| events << tp.lineno })
+        def events.to_str
+          @tp.enable(target: method(:compiled))
+          ''
+        end
+
+        # Stay in generated code while enabling tracing
+        def events.compiled(obj)
+          String(obj)
+          __LINE__
+        end
+
+        line = events.compiled(events)
+        events[0] = (events[0] == line)
+
+        events.to_s # can't dump events as it's a singleton object AND it has a TracePoint instance variable, which also can't be dumped
+    "#), @r#""[true]""#);
+}
+
+#[test]
+fn test_regression_cfp_sp_set_correctly_before_leaf_gc_call() {
+    set_call_threshold(14);
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        def check(l, r)
+          return 1 unless l
+          1 + check(*l) + check(*r)
+        end
+
+        def tree(depth)
+          # This duparray is our leaf-gc target.
+          return [nil, nil] unless depth > 0
+
+          # Modify the local and pass it to the following calls.
+          depth -= 1
+          [tree(depth), tree(depth)]
+        end
+
+        def test
+          GC.stress = true
+          2.times do
+            t = tree(11)
+            check(*t)
+          end
+          :ok
+        end
+
+        test
+    "#), @":ok");
+}
+
+#[test]
+fn test_regression_gc_stress_with_lazy_block_code() {
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        def allocate_array
+          [1, 2, 3]
+        end
+
+        begin
+          GC.stress = true
+          allocate_array
+          allocate_array
+          :ok
+        ensure
+          GC.stress = false
+        end
+    "#), @":ok");
+}
+
+#[test]
+fn test_float_arithmetic() {
+    set_call_threshold(1);
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 1.5 + 2.5; test"), @"4.0");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 2.0 * 3.0; test"), @"6.0");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 3.5 - 2.0; test"), @"1.5");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 5.0 / 2.0; test"), @"2.5");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 1.5 * 3; test"), @"4.5"); // Float * Fixnum
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (Float::NAN + 1.0).nan?; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = Float::INFINITY * 2.0; test"), @"Infinity");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 3.7.to_i; test"), @"3");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (-2.9).to_i; test"), @"-2");
+}
+
+#[test]
+fn test_send_backtrace() {
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        def jit_frame2 = caller     # 1
+        def jit_frame1 = jit_frame2 # 2
+        def entry = jit_frame1      # 3
+        entry # profile send        # 4
+        entry                       # 5
+    "#), @r#"["<compiled>:3:in 'Object#jit_frame1'", "<compiled>:4:in 'Object#entry'", "<compiled>:6:in '<compiled>'", "-e:in 'RubyVM::InstructionSequence#eval'"]"#);
+}
+
+// Regression test: when specialized_instruction is disabled (as power_assert does),
+// eval'd code uses `send` instead of `opt_send_without_block`, producing SendNoProfiles.
+// The `times` call with a literal block is the SendNoProfiles send whose exit profiling
+// triggers recompilation of `run`. After recompilation, `make`'s eval("proc { }") crashes
+// in vm_make_env_each because the caller frame's EP[-1] (specval) has a stale value.
+#[test]
+fn test_send_no_profiles_with_disabled_specialized_instruction() {
+    set_call_threshold(1);
+    assert_snapshot!(inspect(r#"
+        RubyVM::InstructionSequence.compile_option = { specialized_instruction: false }
+        eval <<~'INNERRUBY'
+          def make = eval("proc { }")
+          def run(n) = n.times { make }
+        INNERRUBY
+        run(6)
+        :ok
+    "#), @":ok");
+}
+
+#[test]
+fn test_array_each_is_defined_in_ruby() {
+    assert_snapshot!(inspect("Array.instance_method(:each).source_location&.first"), @r#""<internal:array>""#);
 }

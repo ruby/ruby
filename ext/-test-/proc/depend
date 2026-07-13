@@ -156,7 +156,6 @@ init.o: $(hdrdir)/ruby/internal/variable.h
 init.o: $(hdrdir)/ruby/internal/warning_push.h
 init.o: $(hdrdir)/ruby/internal/xmalloc.h
 init.o: $(hdrdir)/ruby/missing.h
-init.o: $(hdrdir)/ruby/onigmo.h
 init.o: $(hdrdir)/ruby/ruby.h
 init.o: $(hdrdir)/ruby/st.h
 init.o: $(hdrdir)/ruby/subst.h
@@ -318,7 +317,6 @@ receiver.o: $(hdrdir)/ruby/internal/variable.h
 receiver.o: $(hdrdir)/ruby/internal/warning_push.h
 receiver.o: $(hdrdir)/ruby/internal/xmalloc.h
 receiver.o: $(hdrdir)/ruby/missing.h
-receiver.o: $(hdrdir)/ruby/onigmo.h
 receiver.o: $(hdrdir)/ruby/ruby.h
 receiver.o: $(hdrdir)/ruby/st.h
 receiver.o: $(hdrdir)/ruby/subst.h
@@ -480,7 +478,6 @@ super.o: $(hdrdir)/ruby/internal/variable.h
 super.o: $(hdrdir)/ruby/internal/warning_push.h
 super.o: $(hdrdir)/ruby/internal/xmalloc.h
 super.o: $(hdrdir)/ruby/missing.h
-super.o: $(hdrdir)/ruby/onigmo.h
 super.o: $(hdrdir)/ruby/ruby.h
 super.o: $(hdrdir)/ruby/st.h
 super.o: $(hdrdir)/ruby/subst.h

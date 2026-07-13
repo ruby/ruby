@@ -194,7 +194,6 @@ rb_gc_get_ractor_newobj_cache(void)
 void
 rb_gc_initialize_vm_context(struct rb_gc_vm_context *context)
 {
-    rb_native_mutex_initialize(&context->lock);
     context->ec = GET_EC();
 }
 
@@ -377,9 +376,7 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
 void
 rb_gc_obj_changed_slot_size(VALUE obj, size_t slot_size)
 {
-    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
-
-    RBASIC_SET_SHAPE_ID_WITH_CAPACITY(obj, rb_obj_shape_transition_capacity(obj, rb_shape_capacity_for_slot_size(slot_size)));
+    RBASIC_SET_FULL_SHAPE_ID(obj, rb_obj_shape_transition_slot_size(obj, slot_size));
 }
 
 void rb_vm_update_references(void *ptr);
@@ -589,7 +586,7 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #endif
 
 static const char *obj_type_name(VALUE obj);
-static st_table *id2ref_tbl;
+
 #include "gc/default/default.c"
 
 #if USE_MODULAR_GC && !defined(HAVE_DLOPEN)
@@ -622,9 +619,11 @@ typedef struct gc_function_map {
     struct rb_gc_vm_context *(*get_vm_context)(void *objspace_ptr);
     // Object allocation
     VALUE (*new_obj)(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size);
+    bool (*zjit_new_obj_fastpath)(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
     size_t (*obj_slot_size)(VALUE obj);
     size_t (*size_slot_size)(void *objspace_ptr, size_t size);
     bool (*size_allocatable_p)(size_t size);
+    size_t (*max_allocation_size)(void);
     // Malloc
     void *(*malloc)(void *objspace_ptr, size_t size, bool gc_allowed);
     void *(*calloc)(void *objspace_ptr, size_t size, bool gc_allowed);
@@ -800,9 +799,11 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(get_vm_context);
     // Object allocation
     load_modular_gc_func(new_obj);
+    load_modular_gc_func(zjit_new_obj_fastpath);
     load_modular_gc_func(obj_slot_size);
     load_modular_gc_func(size_slot_size);
     load_modular_gc_func(size_allocatable_p);
+    load_modular_gc_func(max_allocation_size);
     // Malloc
     load_modular_gc_func(malloc);
     load_modular_gc_func(calloc);
@@ -887,9 +888,11 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_get_vm_context rb_gc_functions.get_vm_context
 // Object allocation
 # define rb_gc_impl_new_obj rb_gc_functions.new_obj
+# define rb_gc_impl_zjit_new_obj_fastpath rb_gc_functions.zjit_new_obj_fastpath
 # define rb_gc_impl_obj_slot_size rb_gc_functions.obj_slot_size
 # define rb_gc_impl_size_slot_size rb_gc_functions.size_slot_size
 # define rb_gc_impl_size_allocatable_p rb_gc_functions.size_allocatable_p
+# define rb_gc_impl_max_allocation_size rb_gc_functions.max_allocation_size
 // Malloc
 # define rb_gc_impl_malloc rb_gc_functions.malloc
 # define rb_gc_impl_calloc rb_gc_functions.calloc
@@ -1034,19 +1037,23 @@ rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape
     VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, wb_protected, size, &actual_alloc_size);
 
     GC_ASSERT(actual_alloc_size >= size);
-    shape_id = (shape_id & ~SHAPE_ID_CAPACITY_MASK) | rb_shape_id_with_capacity(rb_shape_capacity_for_slot_size(actual_alloc_size));
+    shape_id = rb_shape_transition_slot_size(shape_id, actual_alloc_size);
 
 #if RACTOR_CHECK_MODE
     void rb_ractor_setup_belonging(VALUE obj);
     rb_ractor_setup_belonging(obj);
 #endif
 
-    RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, shape_id);
+    RBASIC_SET_FULL_SHAPE_ID_NO_CHECKS(obj, shape_id);
 
     gc_validate_pc(obj);
 
     if (UNLIKELY(rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_NEWOBJ))) {
         gc_newobj_hook(obj);
+    }
+
+    if (RUBY_DTRACE_GC_OBJ_NEW_ENABLED()) {
+        RUBY_DTRACE_GC_OBJ_NEW((void*)obj, flags);
     }
 
 #if RGENGC_CHECK_MODE
@@ -1093,10 +1100,20 @@ rb_newobj_of(VALUE klass, VALUE flags, size_t size)
 static
 VALUE class_allocate_complex_instance(VALUE klass, uint32_t capacity)
 {
-    shape_id_t initial_shape_id = rb_shape_id_with_robject_layout(0);
+    shape_id_t initial_shape_id = rb_shape_transition_robject(0);
     VALUE obj = rb_newobj_of_with_shape(klass, T_OBJECT, initial_shape_id, sizeof(struct RObject));
     rb_obj_init_complex(obj, rb_st_init_numtable_with_size(capacity));
     return obj;
+}
+
+static inline size_t
+robject_embedded_size(uint32_t fields_count)
+{
+    size_t size = rb_obj_embedded_size(fields_count);
+    if (!rb_gc_size_allocatable_p(size)) {
+        size = sizeof(struct RObject);
+    }
+    return size;
 }
 
 VALUE
@@ -1106,19 +1123,16 @@ rb_class_allocate_instance(VALUE klass)
     VALUE obj;
 
     // Directly start as COMPLEX if we know we're over the limit.
-    RUBY_ASSERT(SHAPE_MAX_CAPACITY > 0);
-    if (RB_UNLIKELY(index_tbl_num_entries > SHAPE_MAX_CAPACITY)) {
+    RUBY_ASSERT(rb_shape_max_capacity() > 0);
+    if (RB_UNLIKELY(index_tbl_num_entries > rb_shape_max_capacity())) {
         obj = class_allocate_complex_instance(klass, index_tbl_num_entries);
     }
     else {
-        size_t size = rb_obj_embedded_size(index_tbl_num_entries);
-        if (!rb_gc_size_allocatable_p(size)) {
-            size = sizeof(struct RObject);
-        }
+        size_t size = robject_embedded_size(index_tbl_num_entries);
 
         // There might be a NEWOBJ tracepoint callback, and it may set fields.
         // So the shape must be passed to `NEWOBJ_OF`.
-        obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_id_with_robject_layout(0), size);
+        obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_transition_robject(0), size);
 
         #if RUBY_DEBUG
             VALUE *ptr = ROBJECT_FIELDS(obj);
@@ -1137,6 +1151,25 @@ rb_class_allocate_instance(VALUE klass)
 
     return obj;
 }
+
+#if USE_ZJIT
+bool
+rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, shape_id_t *shape_id_out)
+{
+    uint32_t index_tbl_num_entries = RCLASS_MAX_IV_COUNT(klass);
+
+    RUBY_ASSERT(rb_shape_max_capacity() > 0);
+    if (RB_UNLIKELY(index_tbl_num_entries > rb_shape_max_capacity())) {
+        return false;
+    }
+
+    size_t size = robject_embedded_size(index_tbl_num_entries);
+    *size_out = size;
+    *shape_id_out = rb_shape_transition_slot_size(rb_shape_transition_robject(0),
+                                                  rb_gc_size_slot_size(size));
+    return true;
+}
+#endif
 
 void
 rb_gc_register_pinning_obj(VALUE obj)
@@ -1346,7 +1379,7 @@ rb_gc_imemo_needs_cleanup_p(VALUE obj)
         return ((rb_imemo_tmpbuf_t *)obj)->ptr != NULL;
 
       case imemo_fields:
-        return FL_TEST_RAW(obj, OBJ_FIELD_HEAP) || (id2ref_tbl && rb_obj_shape_has_id(obj));
+        return FL_TEST_RAW(obj, OBJ_FIELD_HEAP);
     }
     UNREACHABLE_RETURN(true);
 }
@@ -1358,7 +1391,6 @@ rb_gc_imemo_needs_cleanup_p(VALUE obj)
  * Objects that return false are:
  * - Simple embedded objects without external allocations
  * - Objects without finalizers
- * - Objects without object IDs registered in id2ref
  * - Objects without generic instance variables
  *
  * This is used by the GC sweep fast path to avoid function call overhead
@@ -1398,7 +1430,6 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
     }
 
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-    if (id2ref_tbl && rb_shape_has_object_id(shape_id)) return true;
 
     switch (flags & RUBY_T_MASK) {
       case T_OBJECT:
@@ -1534,7 +1565,13 @@ rb_gc_obj_free(void *objspace, VALUE obj)
 
     RB_DEBUG_COUNTER_INC(obj_free);
 
-    switch (BUILTIN_TYPE(obj)) {
+    enum ruby_value_type builtin_type = BUILTIN_TYPE(obj);
+
+    if (RUBY_DTRACE_GC_OBJ_FREE_ENABLED()) {
+        RUBY_DTRACE_GC_OBJ_FREE((void*)obj, RBASIC(obj)->flags);
+    }
+
+    switch (builtin_type) {
       case T_NIL:
       case T_FIXNUM:
       case T_TRUE:
@@ -1545,7 +1582,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         break;
     }
 
-    switch (BUILTIN_TYPE(obj)) {
+    switch (builtin_type) {
       case T_OBJECT:
         if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
             if (rb_obj_shape_complex_p(obj)) {
@@ -2041,7 +2078,6 @@ rb_objspace_garbage_object_p(VALUE obj)
 
 #define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
 #define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
-static VALUE id2ref_value = 0;
 
 #if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
 static size_t object_id_counter = 1;
@@ -2063,75 +2099,7 @@ generate_next_object_id(void)
 #endif
 }
 
-void
-rb_gc_obj_id_moved(VALUE obj)
-{
-    if (UNLIKELY(id2ref_tbl)) {
-        st_insert(id2ref_tbl, (st_data_t)rb_obj_id(obj), (st_data_t)obj);
-    }
-}
-
-static int
-object_id_cmp(st_data_t x, st_data_t y)
-{
-    if (RB_TYPE_P(x, T_BIGNUM)) {
-        return !rb_big_eql(x, y);
-    }
-    else {
-        return x != y;
-    }
-}
-
-static st_index_t
-object_id_hash(st_data_t n)
-{
-    return FIX2LONG(rb_hash((VALUE)n));
-}
-
-static const struct st_hash_type object_id_hash_type = {
-    object_id_cmp,
-    object_id_hash,
-};
-
 static void gc_mark_tbl_no_pin(st_table *table);
-
-static void
-id2ref_tbl_mark(void *data)
-{
-    st_table *table = (st_table *)data;
-    if (UNLIKELY(!RB_POSFIXABLE(LAST_OBJECT_ID()))) {
-        // It's very unlikely, but if enough object ids were generated, keys may be T_BIGNUM
-        rb_mark_set(table);
-    }
-    // We purposely don't mark values, as they are weak references.
-    // rb_gc_obj_free_vm_weak_references takes care of cleaning them up.
-}
-
-static size_t
-id2ref_tbl_memsize(const void *data)
-{
-    return rb_st_memsize(data);
-}
-
-static void
-id2ref_tbl_free(void *data)
-{
-    id2ref_tbl = NULL; // clear global ref
-    st_table *table = (st_table *)data;
-    st_free_table(table);
-}
-
-static const rb_data_type_t id2ref_tbl_type = {
-    .wrap_struct_name = "VM/_id2ref_table",
-    .function = {
-        .dmark = id2ref_tbl_mark,
-        .dfree = id2ref_tbl_free,
-        .dsize = id2ref_tbl_memsize,
-        // dcompact function not required because the table is reference updated
-        // in rb_gc_vm_weak_table_foreach
-    },
-    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
-};
 
 static VALUE
 class_object_id(VALUE klass)
@@ -2143,9 +2111,6 @@ class_object_id(VALUE klass)
         VALUE existing_id = RUBY_ATOMIC_VALUE_CAS(RCLASS(klass)->object_id, 0, id);
         if (existing_id) {
             id = existing_id;
-        }
-        else if (RB_UNLIKELY(id2ref_tbl)) {
-            st_insert(id2ref_tbl, id, klass);
         }
         RB_GC_VM_UNLOCK(lock_lev);
     }
@@ -2190,11 +2155,6 @@ object_id0(VALUE obj)
 
     RUBY_ASSERT(rb_obj_shape_has_id(obj));
 
-    if (RB_UNLIKELY(id2ref_tbl)) {
-        RB_VM_LOCKING() {
-            st_insert(id2ref_tbl, (st_data_t)id, (st_data_t)obj);
-        }
-    }
     return id;
 }
 
@@ -2225,130 +2185,10 @@ object_id(VALUE obj)
     return object_id0(obj);
 }
 
-static void
-build_id2ref_i(VALUE obj, void *data)
-{
-    st_table *id2ref_tbl = (st_table *)data;
-
-    switch (BUILTIN_TYPE(obj)) {
-      case T_CLASS:
-      case T_MODULE:
-        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
-        if (RCLASS(obj)->object_id) {
-            st_insert(id2ref_tbl, RCLASS(obj)->object_id, obj);
-        }
-        break;
-      case T_IMEMO:
-        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
-        if (IMEMO_TYPE_P(obj, imemo_fields) && rb_obj_shape_has_id(obj)) {
-            st_insert(id2ref_tbl, rb_obj_id(obj), rb_imemo_fields_owner(obj));
-        }
-        break;
-      case T_OBJECT:
-        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
-        if (rb_obj_shape_has_id(obj)) {
-            st_insert(id2ref_tbl, rb_obj_id(obj), obj);
-        }
-        break;
-      default:
-        // For generic_fields, the T_IMEMO/fields is responsible for populating the entry.
-        break;
-    }
-}
-
-static VALUE
-object_id_to_ref(void *objspace_ptr, VALUE object_id)
-{
-    rb_objspace_t *objspace = objspace_ptr;
-
-    unsigned int lev = RB_GC_VM_LOCK();
-
-    if (!id2ref_tbl) {
-        rb_gc_vm_barrier(); // stop other ractors
-
-        // GC Must not trigger while we build the table, otherwise if we end
-        // up freeing an object that had an ID, we might try to delete it from
-        // the table even though it wasn't inserted yet.
-        st_table *tmp_id2ref_tbl = st_init_table(&object_id_hash_type);
-        VALUE tmp_id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, tmp_id2ref_tbl);
-
-        // build_id2ref_i will most certainly malloc, which could trigger GC and sweep
-        // objects we just added to the table.
-        // By calling rb_gc_disable() we also save having to handle potentially garbage objects.
-        bool gc_disabled = RTEST(rb_gc_disable());
-        {
-            id2ref_tbl = tmp_id2ref_tbl;
-            id2ref_value = tmp_id2ref_value;
-
-            rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
-        }
-        if (!gc_disabled) rb_gc_enable();
-    }
-
-    VALUE obj;
-    bool found = st_lookup(id2ref_tbl, object_id, &obj) && !rb_gc_impl_garbage_object_p(objspace, obj);
-
-    RB_GC_VM_UNLOCK(lev);
-
-    if (found) {
-        return obj;
-    }
-
-    if (rb_funcall(object_id, rb_intern(">="), 1, ULL2NUM(LAST_OBJECT_ID()))) {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not an id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
-    }
-    else {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is a recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
-    }
-}
-
-static inline void
-obj_free_object_id(VALUE obj)
-{
-    VALUE obj_id = 0;
-    if (RB_UNLIKELY(id2ref_tbl)) {
-        switch (BUILTIN_TYPE(obj)) {
-          case T_CLASS:
-          case T_MODULE:
-            obj_id = RCLASS(obj)->object_id;
-            break;
-          case T_IMEMO:
-            if (!IMEMO_TYPE_P(obj, imemo_fields)) {
-                return;
-            }
-            // fallthrough
-          case T_OBJECT:
-            {
-            shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-            if (rb_shape_has_object_id(shape_id)) {
-                obj_id = object_id_get(obj, shape_id);
-            }
-            break;
-          }
-          default:
-            // For generic_fields, the T_IMEMO/fields is responsible for freeing the id.
-            return;
-        }
-
-        if (RB_UNLIKELY(obj_id)) {
-            RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj_id, T_BIGNUM));
-
-            if (!st_delete(id2ref_tbl, (st_data_t *)&obj_id, NULL)) {
-                // The the object is a T_IMEMO/fields, then it's possible the actual object
-                // has been garbage collected already.
-                if (!RB_TYPE_P(obj, T_IMEMO)) {
-                    rb_bug("Object ID seen, but not in _id2ref table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
-                }
-            }
-        }
-    }
-}
-
 void
 rb_gc_obj_free_vm_weak_references(VALUE obj)
 {
     ASSUME(!RB_SPECIAL_CONST_P(obj));
-    obj_free_object_id(obj);
 
     if (rb_obj_gen_fields_p(obj)) {
         rb_free_generic_ivar(obj);
@@ -2378,67 +2218,6 @@ rb_gc_obj_free_vm_weak_references(VALUE obj)
       default:
         break;
     }
-}
-
-/*
- *  call-seq:
- *     ObjectSpace._id2ref(object_id) -> an_object
- *
- *  Converts an object id to a reference to the object. May not be
- *  called on an object id passed as a parameter to a finalizer.
- *
- *     s = "I am a string"                    #=> "I am a string"
- *     r = ObjectSpace._id2ref(s.object_id)   #=> "I am a string"
- *     r == s                                 #=> true
- *
- *  On multi-ractor mode, if the object is not shareable, it raises
- *  RangeError.
- *
- *  This method is deprecated and should no longer be used.
- */
-
-static VALUE
-id2ref(VALUE objid)
-{
-    objid = rb_to_int(objid);
-    if (FIXNUM_P(objid) || rb_big_size(objid) <= SIZEOF_VOIDP) {
-        VALUE ptr = (VALUE)NUM2PTR(objid);
-        if (SPECIAL_CONST_P(ptr)) {
-            if (ptr == Qtrue) return Qtrue;
-            if (ptr == Qfalse) return Qfalse;
-            if (NIL_P(ptr)) return Qnil;
-            if (FIXNUM_P(ptr)) return ptr;
-            if (FLONUM_P(ptr)) return ptr;
-
-            if (SYMBOL_P(ptr)) {
-                // Check that the symbol is valid
-                if (rb_static_id_valid_p(SYM2ID(ptr))) {
-                    return ptr;
-                }
-                else {
-                    rb_raise(rb_eRangeError, "%p is not a symbol id value", (void *)ptr);
-                }
-            }
-
-            rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not an id value", rb_int2str(objid, 10));
-        }
-    }
-
-    VALUE obj = object_id_to_ref(rb_gc_get_objspace(), objid);
-    if (!rb_multi_ractor_p() || rb_ractor_shareable_p(obj)) {
-        return obj;
-    }
-    else {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is the id of an unshareable object on multi-ractor", rb_int2str(objid, 10));
-    }
-}
-
-/* :nodoc: */
-static VALUE
-os_id2ref(VALUE os, VALUE objid)
-{
-    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "ObjectSpace._id2ref is deprecated");
-    return id2ref(objid);
 }
 
 static VALUE
@@ -2877,11 +2656,22 @@ ruby_stack_check(void)
 
 /* ==================== Marking ==================== */
 
+/* The traversal mark redirect is per-Ractor, except on a modular GC where
+ * marking can run on worker threads with no current EC and it lives in the VM.
+ * GC_MARK_FUNC_DATA_SLOTP() points at the active slot; a non-modular build pays
+ * nothing extra over a plain GET_VM() (one GET_RACTOR(), no NULL check). */
+#if USE_MODULAR_GC
+#  define GC_MARK_FUNC_DATA_SLOTP()  (&GET_VM()->gc.mark_func_data)
+#else
+#  define GC_MARK_FUNC_DATA_SLOTP()  (&GET_RACTOR()->mark_func_data)
+#endif
+
 #define RB_GC_MARK_OR_TRAVERSE(func, obj_or_ptr, obj, check_obj) do { \
     if (!RB_SPECIAL_CONST_P(obj)) { \
-        rb_vm_t *vm = GET_VM(); \
-        void *objspace = vm->gc.objspace; \
-        if (LIKELY(vm->gc.mark_func_data == NULL)) { \
+        struct gc_mark_func_data_struct **mfdp = GC_MARK_FUNC_DATA_SLOTP(); \
+        struct gc_mark_func_data_struct *mark_func_data = *mfdp; \
+        void *objspace = GET_VM()->gc.objspace; \
+        if (LIKELY(mark_func_data == NULL)) { \
             GC_ASSERT(rb_gc_impl_during_gc_p(objspace)); \
             (func)(objspace, (obj_or_ptr)); \
         } \
@@ -2890,10 +2680,9 @@ ruby_stack_check(void)
                     !rb_gc_impl_garbage_object_p(objspace, obj) : \
                 true) { \
             GC_ASSERT(!rb_gc_impl_during_gc_p(objspace)); \
-            struct gc_mark_func_data_struct *mark_func_data = vm->gc.mark_func_data; \
-            vm->gc.mark_func_data = NULL; \
+            *mfdp = NULL; \
             mark_func_data->mark_func((obj), mark_func_data->data); \
-            vm->gc.mark_func_data = mark_func_data; \
+            *mfdp = mark_func_data; \
         } \
     } \
 } while (0)
@@ -3711,6 +3500,17 @@ rb_gc_ractor_cache_free(void *cache)
     rb_gc_impl_ractor_cache_free(rb_gc_get_objspace(), cache);
 }
 
+bool
+rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath)
+{
+#if RACTOR_CHECK_MODE || defined(RUBY_ASAN_ENABLED)
+    (void)rb_gc_impl_zjit_new_obj_fastpath;
+    return false;
+#else
+    return rb_gc_impl_zjit_new_obj_fastpath(rb_gc_get_objspace(), alloc_size, flags, klass, fastpath);
+#endif
+}
+
 void
 rb_gc_register_mark_object(VALUE obj)
 {
@@ -4009,6 +3809,12 @@ rb_gc_size_allocatable_p(size_t size)
     return rb_gc_impl_size_allocatable_p(size);
 }
 
+size_t
+rb_gc_max_allocation_size(void)
+{
+    return rb_gc_impl_max_allocation_size();
+}
+
 static enum rb_id_table_iterator_result
 update_id_table(VALUE *value, void *data, int existing)
 {
@@ -4179,33 +3985,6 @@ vm_weak_table_sym_set_foreach(VALUE *sym_ptr, void *data)
 struct st_table *rb_generic_fields_tbl_get(void);
 
 static int
-vm_weak_table_id2ref_foreach(st_data_t key, st_data_t value, st_data_t data, int error)
-{
-    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
-
-    if (!iter_data->weak_only && !FIXNUM_P((VALUE)key)) {
-        int ret = iter_data->callback((VALUE)key, iter_data->data);
-        if (ret != ST_CONTINUE) return ret;
-    }
-
-    return iter_data->callback((VALUE)value, iter_data->data);
-}
-
-static int
-vm_weak_table_id2ref_foreach_update(st_data_t *key, st_data_t *value, st_data_t data, int existing)
-{
-    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
-
-    iter_data->update_callback((VALUE *)value, iter_data->data);
-
-    if (!iter_data->weak_only && !FIXNUM_P((VALUE)*key)) {
-        iter_data->update_callback((VALUE *)key, iter_data->data);
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
 vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
 {
     struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
@@ -4224,7 +4003,7 @@ vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
         // set the shape on it so that the GC finalizer won't try to remove
         // it again.  A "root shape" indicates to the GC that this object
         // has no fields on it, hence it won't be in the gen fields table.
-        RBASIC_SET_SHAPE_ID((VALUE)key, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
+        RBASIC_SET_SHAPE_ID((VALUE)key, ROOT_SHAPE_ID);
         return ST_DELETE;
 
       case ST_REPLACE: {
@@ -4324,17 +4103,6 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
             vm_weak_table_sym_set_foreach,
             &foreach_data
         );
-        break;
-      }
-      case RB_GC_VM_ID2REF_TABLE: {
-        if (id2ref_tbl) {
-            st_foreach_with_replace(
-                id2ref_tbl,
-                vm_weak_table_id2ref_foreach,
-                vm_weak_table_id2ref_foreach_update,
-                (st_data_t)&foreach_data
-            );
-        }
         break;
       }
       case RB_GC_VM_GENERIC_FIELDS_TABLE: {
@@ -4781,16 +4549,16 @@ rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *
         if (rb_gc_impl_during_gc_p(rb_gc_get_objspace())) rb_bug("rb_objspace_reachable_objects_from() is not supported while during GC");
 
         if (!RB_SPECIAL_CONST_P(obj)) {
-            rb_vm_t *vm = GET_VM();
-            struct gc_mark_func_data_struct *prev_mfd = vm->gc.mark_func_data;
+            struct gc_mark_func_data_struct **mfdp = GC_MARK_FUNC_DATA_SLOTP();
+            struct gc_mark_func_data_struct *prev_mfd = *mfdp;
             struct gc_mark_func_data_struct mfd = {
                 .mark_func = func,
                 .data = data,
             };
 
-            vm->gc.mark_func_data = &mfd;
+            *mfdp = &mfd;
             rb_gc_mark_children(rb_gc_get_objspace(), obj);
-            vm->gc.mark_func_data = prev_mfd;
+            *mfdp = prev_mfd;
         }
     }
 }
@@ -4820,16 +4588,17 @@ rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE,
         .data = passing_data,
     };
 
-    struct gc_mark_func_data_struct *prev_mfd = vm->gc.mark_func_data;
+    struct gc_mark_func_data_struct **mfdp = GC_MARK_FUNC_DATA_SLOTP();
+    struct gc_mark_func_data_struct *prev_mfd = *mfdp;
     struct gc_mark_func_data_struct mfd = {
         .mark_func = root_objects_from,
         .data = &data,
     };
 
-    vm->gc.mark_func_data = &mfd;
+    *mfdp = &mfd;
     rb_gc_save_machine_context();
     rb_gc_mark_roots(vm->gc.objspace, &data.category);
-    vm->gc.mark_func_data = prev_mfd;
+    *mfdp = prev_mfd;
 }
 
 /*
@@ -5413,6 +5182,10 @@ static void *ruby_xmalloc_body(size_t size);
 void *
 ruby_xmalloc(size_t size)
 {
+    if (RUBY_DTRACE_GC_XMALLOC_ENABLED()) {
+        RUBY_DTRACE_GC_XMALLOC(1, size);
+    }
+
     return handle_malloc_failure(ruby_xmalloc_body(size));
 }
 
@@ -5455,6 +5228,10 @@ static void *ruby_xmalloc2_body(size_t n, size_t size);
 void *
 ruby_xmalloc2(size_t n, size_t size)
 {
+    if (RUBY_DTRACE_GC_XMALLOC_ENABLED()) {
+        RUBY_DTRACE_GC_XMALLOC(n, size);
+    }
+
     return handle_malloc_failure(ruby_xmalloc2_body(n, size));
 }
 
@@ -5469,6 +5246,10 @@ static void *ruby_xcalloc_body(size_t n, size_t size);
 void *
 ruby_xcalloc(size_t n, size_t size)
 {
+    if (RUBY_DTRACE_GC_XCALLOC_ENABLED()) {
+        RUBY_DTRACE_GC_XCALLOC(n, size);
+    }
+
     return handle_malloc_failure(ruby_xcalloc_body(n, size));
 }
 
@@ -5532,9 +5313,30 @@ ruby_xrealloc2(void *ptr, size_t n, size_t size)
 #ifdef ruby_xfree_sized
 #undef ruby_xfree_sized
 #endif
+
+/*
+ * This is a debugging flag for measuring the cost of `xfree`.
+ * It can be enabled at compile time using `-DRUBY_NO_FREE`.
+ * At run time, if the `RUBY_NO_FREE` environment variable is set to "1",
+ * then `xfree` will not free any memory.
+ */
+#ifdef RUBY_NO_FREE
+static bool g_nofree = false;
+#endif
+
 void
 ruby_xfree_sized(void *x, size_t size)
 {
+#ifdef RUBY_NO_FREE
+    if (g_nofree) {
+        return;
+    }
+#endif
+
+    if (RUBY_DTRACE_GC_XFREE_ENABLED()) {
+        RUBY_DTRACE_GC_XFREE(x, size);
+    }
+
     if (LIKELY(x)) {
         /* It's possible for a C extension's pthread destructor function set by pthread_key_create
          * to be called after ruby_vm_destruct and attempt to free memory. Fall back to mimfree in
@@ -5798,9 +5600,15 @@ rb_gc_checking_shareable(void)
 void
 Init_GC(void)
 {
-#undef rb_intern
-    rb_gc_register_address(&id2ref_value);
+#ifdef RUBY_NO_FREE
+    const char* nofree_str = getenv("RUBY_NO_FREE");
+    if (nofree_str && strcmp(nofree_str, "1") == 0) {
+        fprintf(stderr, "WARNING: Enabling no-free mode! xfree() will never free anything!\n");
+        g_nofree = true;
+    }
+#endif
 
+#undef rb_intern
     malloc_offset = gc_compute_malloc_offset();
 
     rb_mGC = rb_define_module("GC");
@@ -5811,8 +5619,6 @@ Init_GC(void)
 
     rb_define_module_function(rb_mObjSpace, "define_finalizer", define_final, -1);
     rb_define_module_function(rb_mObjSpace, "undefine_finalizer", undefine_final, 1);
-
-    rb_define_module_function(rb_mObjSpace, "_id2ref", os_id2ref, 1);
 
     rb_vm_register_special_exception(ruby_error_nomemory, rb_eNoMemError, "failed to allocate memory");
 

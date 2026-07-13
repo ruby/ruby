@@ -2003,7 +2003,7 @@ lazy_to_enum(int argc, VALUE *argv, VALUE self)
 
     if (argc > 0) {
         --argc;
-        meth = *argv++;
+        meth = rb_to_symbol(*argv++);
     }
     if (RTEST((super_meth = rb_hash_aref(lazy_use_super_method, meth)))) {
         meth = super_meth;

@@ -532,6 +532,22 @@ pHuzvY5zEapuu1JhjHLUd+OE8rVVM999DUXo/IDLsWyRCphCiYfVXJNogd9rB0Ta
     end
   end
 
+  def test_get_param
+    unless openssl?(3, 0, 0) || OpenSSL::PKey::PKey.method_defined?(:get_param)
+      omit "EVP_PKEY_get_params() is not supported"
+    end
+    key = Fixtures.pkey("rsa2048")
+    assert_kind_of(OpenSSL::BN, key.get_param("n"))
+    assert_equal(key.n, key.get_param("n"))
+    assert_equal(key.e, key.get_param("e"))
+    assert_equal(key.d, key.get_param("d"))
+    assert_equal(key.p, key.get_param("rsa-factor1"))
+    assert_equal(key.q, key.get_param("rsa-factor2"))
+    assert_equal(key.dmp1, key.get_param("rsa-exponent1"))
+    assert_equal(key.dmq1, key.get_param("rsa-exponent2"))
+    assert_equal(key.iqmp, key.get_param("rsa-coefficient1"))
+  end
+
   def test_dup
     key = Fixtures.pkey("rsa-1")
     key2 = key.dup

@@ -122,6 +122,8 @@ unsafe extern "C" {
         ci: *const rb_callinfo,
     ) -> *const rb_callable_method_entry_t;
 
+    pub fn rb_zjit_offset_ractor_newobj_cache() -> usize;
+
     // Floats within range will be encoded without creating objects in the heap.
     // (Range is 0x3000000000000001 to 0x4fffffffffffffff (1.7272337110188893E-77 to 2.3158417847463237E+77).
     pub fn rb_float_new(d: f64) -> VALUE;
@@ -394,15 +396,8 @@ pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
 }
 
 /// Return a poison value to be set above the stack top to verify leafness.
-#[cfg(not(test))]
 pub fn vm_stack_canary() -> u64 {
     unsafe { rb_vm_stack_canary() }.as_u64()
-}
-
-/// Avoid linking the C function in `cargo test`
-#[cfg(test)]
-pub fn vm_stack_canary() -> u64 {
-    0
 }
 
 /// Opaque execution-context type from vm_core.h

@@ -161,11 +161,11 @@ struct rb_blocking_region_buffer {
     enum rb_thread_status prev_status;
 };
 
-static int unblock_function_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, int fail_if_interrupted);
+static int unblock_function_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, int flags);
 static void unblock_function_clear(rb_thread_t *th);
 
 static inline int blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
-                                        rb_unblock_function_t *ubf, void *arg, int fail_if_interrupted);
+                                        rb_unblock_function_t *ubf, void *arg, int flags);
 static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region);
 
 #define THREAD_BLOCKING_BEGIN(th) do { \
@@ -187,11 +187,12 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 #else
 #define only_if_constant(expr, notconst) notconst
 #endif
-#define BLOCKING_REGION(th, exec, ubf, ubfarg, fail_if_interrupted) do { \
+#define RB_NOGVL_FAIL_FLAGS (RB_NOGVL_INTR_FAIL | RB_NOGVL_PENDING_INTR_FAIL)
+#define BLOCKING_REGION(th, exec, ubf, ubfarg, flags) do { \
     struct rb_blocking_region_buffer __region; \
-    if (blocking_region_begin(th, &__region, (ubf), (ubfarg), fail_if_interrupted) || \
-        /* always return true unless fail_if_interrupted */ \
-        !only_if_constant(fail_if_interrupted, TRUE)) { \
+    if (blocking_region_begin(th, &__region, (ubf), (ubfarg), flags) || \
+        /* always return true unless one of the fail flags is set */ \
+        !only_if_constant((flags) & RB_NOGVL_FAIL_FLAGS, TRUE)) { \
         /* Important that this is inlined into the macro, and not part of \
          * blocking_region_begin - see bug #20493 */ \
         RB_VM_SAVE_MACHINE_CONTEXT(th); \
@@ -318,16 +319,21 @@ rb_nativethread_lock_unlock(rb_nativethread_lock_t *lock)
 }
 
 static int
-unblock_function_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, int fail_if_interrupted)
+unblock_function_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, int flags)
 {
     do {
-        if (fail_if_interrupted) {
+        if (flags & RB_NOGVL_INTR_FAIL) {
             if (RUBY_VM_INTERRUPTED_ANY(th->ec)) {
                 return FALSE;
             }
         }
         else {
             RUBY_VM_CHECK_INTS(th->ec);
+        }
+        if (flags & RB_NOGVL_PENDING_INTR_FAIL) {
+            if (!rb_threadptr_pending_interrupt_empty_p(th)) {
+                return FALSE;
+            }
         }
 
         rb_native_mutex_lock(&th->interrupt_lock);
@@ -535,10 +541,19 @@ thread_cleanup_func(void *th_ptr, int atfork)
     if (atfork) {
         native_thread_destroy_atfork(th->nt);
         th->nt = NULL;
+        // The copied interrupt_lock may have been held at the moment of
+        // fork (interrupters run concurrently); reinitialize it so that
+        // thread_free's destroy is well-defined in the child.
+        rb_native_mutex_initialize(&th->interrupt_lock);
         return;
     }
 
-    rb_native_mutex_destroy(&th->interrupt_lock);
+    // interrupt_lock is destroyed in thread_free: while th is in its
+    // Ractor's living set, anyone (terminate_all on the Ractor's main
+    // thread, Thread#kill/#raise) may lock it -- and the living set keeps
+    // the Thread object marked, so it cannot reach thread_free while
+    // listed. Destroying it anywhere during teardown leaves a window where
+    // a concurrent interrupter locks a destroyed mutex (EINVAL).
 }
 
 void
@@ -807,6 +822,16 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     thread_cleanup_func(th, FALSE);
     VM_ASSERT(th->ec->vm_stack == NULL);
 
+#if defined(USE_MN_THREADS) && USE_MN_THREADS
+    if (th_has_coroutine(th)) {
+        // Run the coroutine thread's epilogue here, while th is still valid;
+        // co_start then only makes the final transfer (see
+        // coroutine_thread_terminated in thread_pthread_mn.c).
+        coroutine_thread_terminated(th);
+        return 0;
+    }
+#endif
+
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
         // after rb_ractor_living_threads_remove()
         // GC will happen anytime and this ractor can be collected (and destroy GVL).
@@ -907,8 +932,6 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
         th->pending_interrupt_mask_stack = rb_ary_dup(current_th->pending_interrupt_mask_stack);
         RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
     }
-
-    rb_native_mutex_initialize(&th->interrupt_lock);
 
     RUBY_DEBUG_LOG("r:%u th:%u", rb_ractor_id(th->ractor), rb_th_serial(th));
 
@@ -1543,7 +1566,7 @@ rb_thread_schedule(void)
 
 static inline int
 blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
-                      rb_unblock_function_t *ubf, void *arg, int fail_if_interrupted)
+                      rb_unblock_function_t *ubf, void *arg, int flags)
 {
 #ifdef RUBY_ASSERT_CRITICAL_SECTION
     VM_ASSERT(ruby_assert_critical_section_entered == 0);
@@ -1551,7 +1574,7 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
     VM_ASSERT(th == GET_THREAD());
 
     region->prev_status = th->status;
-    if (unblock_function_set(th, ubf, arg, fail_if_interrupted)) {
+    if (unblock_function_set(th, ubf, arg, flags)) {
         th->blocking_region_buffer = region;
         th->status = THREAD_STOPPED;
         rb_ractor_blocking_threads_inc(th->ractor, __FILE__, __LINE__);
@@ -1617,6 +1640,19 @@ rb_nogvl(void *(*func)(void *), void *data1,
          rb_unblock_function_t *ubf, void *data2,
          int flags)
 {
+    rb_execution_context_t *ec = GET_EC();
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
+
+    if (
+        (flags & RB_NOGVL_PENDING_INTR_FAIL) &&
+        !rb_threadptr_pending_interrupt_empty_p(th)
+    ) {
+        /* Match the in-region skip path, which leaves errno at saved_errno (0)
+         * because the function was never called. */
+        rb_errno_set(0);
+        return 0;
+    }
+
     if (flags & RB_NOGVL_OFFLOAD_SAFE) {
         VALUE scheduler = rb_fiber_scheduler_current();
         if (scheduler != Qnil) {
@@ -1632,8 +1668,6 @@ rb_nogvl(void *(*func)(void *), void *data1,
     }
 
     void *val = 0;
-    rb_execution_context_t *ec = GET_EC();
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
     bool is_main_thread = vm->ractor.main_thread == th;
     int saved_errno = 0;
@@ -1650,7 +1684,7 @@ rb_nogvl(void *(*func)(void *), void *data1,
     BLOCKING_REGION(th, {
         val = func(data1);
         saved_errno = rb_errno();
-    }, ubf, data2, flags & RB_NOGVL_INTR_FAIL);
+    }, ubf, data2, flags);
     vm = saved_vm;
 
     if (is_main_thread) vm->ubf_async_safe = 0;
@@ -2793,6 +2827,29 @@ rb_threadptr_signal_raise(rb_thread_t *th, int sig)
     argv[0] = rb_eSignal;
     argv[1] = INT2FIX(sig);
     rb_threadptr_raise(th->vm->ractor.main_thread, 2, argv);
+}
+
+void
+rb_threadptr_interrupt_raise(rb_thread_t *th)
+{
+    rb_thread_t *target_th = th->vm->ractor.main_thread;
+
+    if (rb_threadptr_dead(target_th)) {
+        return;
+    }
+
+    /* Preserve the traditional no-message Interrupt from default SIGINT. */
+    VALUE exc = rb_exc_new(rb_eInterrupt, 0, 0);
+
+    /* making an exception object can switch thread,
+       so we need to check thread deadness again */
+    if (rb_threadptr_dead(target_th)) {
+        return;
+    }
+
+    rb_ec_setup_exception(GET_EC(), exc, Qundef);
+    rb_threadptr_pending_interrupt_enque(target_th, exc);
+    rb_threadptr_interrupt(target_th);
 }
 
 void
@@ -6106,6 +6163,7 @@ rb_reset_coverages(void)
     rb_clear_coverages();
     rb_iseq_remove_coverage_all();
     GET_VM()->coverages = Qfalse;
+    GET_VM()->me2counter = Qnil;
 }
 
 VALUE
@@ -6343,4 +6401,3 @@ rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
     rb_thread_t *main_th = target_r->threads.main;
     rb_threadptr_interrupt_exec(main_th, func, data, flags | rb_interrupt_exec_flag_new_thread);
 }
-

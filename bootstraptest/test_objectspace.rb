@@ -1,19 +1,4 @@
 assert_normal_exit %q{
-  eval("", TOPLEVEL_BINDING)
-  minobj = ObjectSpace.to_enum(:each_object).min_by {|a| a.object_id }
-  maxobj = ObjectSpace.to_enum(:each_object).max_by {|a| a.object_id }
-  (((minobj.object_id-100)..(minobj.object_id+100))+
-   ((maxobj.object_id-100)..(maxobj.object_id+100))).each {|id|
-    begin
-      o = ObjectSpace._id2ref(id)
-    rescue RangeError
-      next
-    end
-    o.inspect if defined?(o.inspect)
-  }
-}, '[ruby-dev:31911]'
-
-assert_normal_exit %q{
   ary = (1..10).to_a
   ary.permutation(2) {|x|
     if x == [1,2]
@@ -44,12 +29,3 @@ assert_normal_exit %q{
     Thread.new {}
   end
 }, '[ruby-core:37858]'
-
-assert_equal 'ok', %q{
-  objects_and_ids = 1000.times.map { o = Object.new; [o, o.object_id] }
-  objects_and_ids.each { |expected, id|
-    actual = ObjectSpace._id2ref(id)
-    raise "expected #{expected.inspect}, got #{actual.inspect}" unless actual.equal?(expected)
-  }
-  'ok'
-}

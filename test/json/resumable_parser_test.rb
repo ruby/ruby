@@ -175,6 +175,23 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_resumed_parsing('123 ', trailing_bytes: 1)
   end
 
+  def test_large_numbers_split_across_feeds_are_decoded_correctly
+    {
+      '12345678901234567890123456789012345678901234567890 ' => 12345678901234567890123456789012345678901234567890,
+      '-98765432109876543210987654321 ' => -98765432109876543210987654321,
+      '3.14159265358979323846264338327950288 ' => 3.14159265358979323846264338327950288,
+      '-1.5e-300 ' => -1.5e-300,
+    }.each do |doc, expected|
+      parser = new_parser
+      value = nil
+      doc.each_char do |char|
+        parser << char
+        value = parser.value if parser.parse
+      end
+      assert_equal expected, value, doc.inspect
+    end
+  end
+
   def test_nul_byte_is_a_syntax_error
     # A NUL byte in a structural position must raise, not stall forever waiting for more input
     # (peek() returns 0 both at EOS and for a literal NUL byte).
@@ -239,6 +256,105 @@ class JSONResumageParserTest < Test::Unit::TestCase
     values << parser.value while parser.parse
 
     assert_equal [[1], [3]], values
+  end
+
+  def test_trailing_comma_split_across_feed_boundary
+    # With allow_trailing_comma the closing bracket may arrive in a later chunk
+    # than the comma; consuming the comma must not lose the ability to close.
+    parser = new_parser(allow_trailing_comma: true)
+    parser << '[1,'
+    refute parser.parse
+    parser << ']'
+    assert parser.parse
+    assert_equal [1], parser.value
+
+    parser = new_parser(allow_trailing_comma: true)
+    parser << '{"a":1,'
+    refute parser.parse
+    parser << '}'
+    assert parser.parse
+    assert_equal({ "a" => 1 }, parser.value)
+
+    # The boundary can also fall after an inner comma, then after the outer one.
+    parser = new_parser(allow_trailing_comma: true)
+    parser << '[[1,'
+    refute parser.parse
+    parser << '],]'
+    assert parser.parse
+    assert_equal [[1]], parser.value
+  end
+
+  def test_trailing_comma_byte_by_byte
+    parser = new_parser(allow_trailing_comma: true)
+    '[1, 2, ]'.each_char { |c| parser << c; parser.parse }
+    assert_equal [1, 2], parser.value
+
+    parser = new_parser(allow_trailing_comma: true)
+    '{ "a": 1, }'.each_char { |c| parser << c; parser.parse }
+    assert_equal({ "a" => 1 }, parser.value)
+  end
+
+  def test_comment_after_comma_split_across_feed_boundary
+    # A comment right after a ',' straddling a feed boundary must not drop the
+    # comma: the value/key it separates must still be parsed on resume.
+    # The array case needs allow_trailing_comma: without it the array comma path
+    # commits its phase before eating the comment, so only the trailing-comma
+    # path exercises the eat-before-commit bug (the object path always did).
+    parser = new_parser(allow_comments: true, allow_trailing_comma: true)
+    parser << '[1,/*'
+    refute parser.parse
+    parser << '*/2]'
+    assert parser.parse
+    assert_equal [1, 2], parser.value
+
+    parser = new_parser(allow_comments: true)
+    parser << '{"a":1,/*'
+    refute parser.parse
+    parser << '*/"b":2}'
+    assert parser.parse
+    assert_equal({ "a" => 1, "b" => 2 }, parser.value)
+  end
+
+  def test_comment_after_container_open_split_across_feed_boundary
+    # A comment right after '[' or '{' straddling a feed boundary must not drop
+    # the opening token: it is consumed before its frame is pushed, so the
+    # suspension must resume from the bracket, not from inside the comment.
+    parser = new_parser(allow_comments: true)
+    parser << '[/*'
+    refute parser.parse
+    parser << '*/1]'
+    assert parser.parse
+    assert_equal [1], parser.value
+
+    parser = new_parser(allow_comments: true)
+    parser << '{/*'
+    refute parser.parse
+    parser << '*/"a":1}'
+    assert parser.parse
+    assert_equal({ "a" => 1 }, parser.value)
+
+    parser = new_parser(allow_comments: true)
+    parser << '[ /*'
+    refute parser.parse
+    parser << '*/ ]'
+    assert parser.parse
+    assert_equal [], parser.value
+
+    # The boundary can even split the comment marker itself.
+    parser = new_parser(allow_comments: true)
+    parser << '[/'
+    refute parser.parse
+    parser << '**/1]'
+    assert parser.parse
+    assert_equal [1], parser.value
+
+    # Line comments suspend the same way when their newline hasn't arrived.
+    parser = new_parser(allow_comments: true)
+    parser << '[//'
+    refute parser.parse
+    parser << "x\n1]"
+    assert parser.parse
+    assert_equal [1], parser.value
   end
 
   def test_rest

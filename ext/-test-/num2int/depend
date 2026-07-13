@@ -156,7 +156,6 @@ num2int.o: $(hdrdir)/ruby/internal/variable.h
 num2int.o: $(hdrdir)/ruby/internal/warning_push.h
 num2int.o: $(hdrdir)/ruby/internal/xmalloc.h
 num2int.o: $(hdrdir)/ruby/missing.h
-num2int.o: $(hdrdir)/ruby/onigmo.h
 num2int.o: $(hdrdir)/ruby/ruby.h
 num2int.o: $(hdrdir)/ruby/st.h
 num2int.o: $(hdrdir)/ruby/subst.h

@@ -44,6 +44,25 @@ VALUE fiber_spec_rb_fiber_new(VALUE self) {
   return rb_fiber_new(fiber_spec_rb_fiber_new_function, Qnil);
 }
 
+struct rb_fiber_new_pointer_data {
+  int magic;
+};
+
+VALUE fiber_spec_rb_fiber_new_pointer_function(RB_BLOCK_CALL_FUNC_ARGLIST(args, value)) {
+  struct rb_fiber_new_pointer_data *data = (struct rb_fiber_new_pointer_data *)value;
+  if (data->magic != 0x1234) {
+    rb_raise(rb_eRuntimeError, "invalid fiber pointer");
+  }
+
+  return Qtrue;
+}
+
+VALUE fiber_spec_rb_fiber_new_with_pointer(VALUE self) {
+  struct rb_fiber_new_pointer_data data = { 0x1234 };
+  VALUE fiber = rb_fiber_new(fiber_spec_rb_fiber_new_pointer_function, (VALUE)&data);
+  return rb_fiber_resume(fiber, 0, NULL);
+}
+
 VALUE fiber_spec_rb_fiber_raise(int argc, VALUE *argv, VALUE self) {
   VALUE fiber = argv[0];
   return rb_fiber_raise(fiber, argc-1, argv+1);
@@ -56,6 +75,7 @@ void Init_fiber_spec(void) {
   rb_define_method(cls, "rb_fiber_resume", fiber_spec_rb_fiber_resume, 2);
   rb_define_method(cls, "rb_fiber_yield", fiber_spec_rb_fiber_yield, 1);
   rb_define_method(cls, "rb_fiber_new", fiber_spec_rb_fiber_new, 0);
+  rb_define_method(cls, "rb_fiber_new_with_pointer", fiber_spec_rb_fiber_new_with_pointer, 0);
   rb_define_method(cls, "rb_fiber_raise", fiber_spec_rb_fiber_raise, -1);
 }
 

@@ -238,6 +238,10 @@ strscan_memsize(const void *ptr)
     return size;
 }
 
+#ifndef RUBY_TYPED_THREAD_SAFE_FREE
+#define RUBY_TYPED_THREAD_SAFE_FREE RUBY_TYPED_FREE_IMMEDIATELY
+#endif
+
 static const rb_data_type_t strscanner_type = {
     .wrap_struct_name = "StringScanner",
     .function = {
@@ -248,7 +252,7 @@ static const rb_data_type_t strscanner_type = {
         .dcompact = strscan_compact,
 #endif
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE

@@ -516,7 +516,7 @@ shape_grow_capa(attr_index_t current_capa)
 {
     size_t next_size = rb_obj_embedded_size(current_capa + 1);
     if (UNLIKELY(!rb_gc_size_allocatable_p(next_size))) {
-        return SHAPE_MAX_CAPACITY;
+        return rb_shape_max_capacity();
     }
 
     attr_index_t next_capa = rb_shape_capacity_for_slot_size(rb_gc_size_slot_size(next_size));
@@ -700,7 +700,7 @@ rb_shape_transition_object_id(shape_id_t original_shape_id)
 
     bool dont_care;
     rb_shape_t *shape = NULL;
-    if (LIKELY(original_shape->next_field_index < SHAPE_MAX_CAPACITY)) {
+    if (LIKELY(original_shape->next_field_index < rb_shape_max_capacity())) {
         shape = get_next_shape_internal(original_shape, id_object_id, SHAPE_OBJ_ID, &dont_care, true);
     }
     if (!shape) {
@@ -765,8 +765,9 @@ shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE klass, ID id
     }
 #endif
 
-    RUBY_ASSERT(SHAPE_MAX_CAPACITY > 0);
-    if (UNLIKELY(shape->next_field_index >= SHAPE_MAX_CAPACITY)) {
+    RUBY_ASSERT(SHAPE_ID_CAPACITY_MAX > 0);
+    RUBY_ASSERT(rb_shape_max_capacity() > 0);
+    if (UNLIKELY(shape->next_field_index >= rb_shape_max_capacity())) {
         return NULL;
     }
 
@@ -1243,6 +1244,21 @@ rb_shape_expected_layout(VALUE obj)
 }
 
 bool
+rb_shape_verify_capacity_consistency_p(VALUE obj)
+{
+    switch (BUILTIN_TYPE(obj)) {
+      case T_IMEMO:
+        return IMEMO_TYPE_P(obj, imemo_fields);
+      case T_STRING:
+        return !FL_TEST_RAW(obj, FL_USER19); // STR_FAKESTR
+      case T_ARRAY:
+        return !FL_TEST_RAW(obj, RARRAY_FAKEARY);
+      default:
+        return true;
+    }
+}
+
+bool
 rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 {
     if (shape_id == INVALID_SHAPE_ID) {
@@ -1304,9 +1320,10 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         }
     }
 
-    attr_index_t shape_id_capacity = rb_shape_capacity(shape_id);
-    if (RB_TYPE_P(obj, T_OBJECT)) {
+    if (rb_shape_verify_capacity_consistency_p(obj)) {
+        attr_index_t shape_id_capacity = rb_shape_embedded_capacity(shape_id);
         RUBY_ASSERT(shape_id_capacity > 0);
+
         size_t shape_id_slot_size = shape_id_capacity * sizeof(VALUE) + sizeof(struct RBasic);
         size_t actual_slot_size = rb_gc_obj_slot_size(obj);
 
@@ -1388,7 +1405,7 @@ shape_id_t_to_rb_cShape(shape_id_t shape_id)
             INT2NUM(shape->parent_offset),
             rb_shape_edge_name(shape),
             INT2NUM(shape->next_field_index),
-            INT2NUM(rb_shape_capacity(shape_id)),
+            INT2NUM(rb_shape_embedded_capacity(shape_id)),
             INT2NUM(shape->type),
             INT2NUM(RSHAPE_CAPACITY(shape_id)));
     rb_obj_freeze(obj);
@@ -1558,6 +1575,10 @@ rb_shape_find_by_id(VALUE mod, VALUE id)
 void
 Init_default_shapes(void)
 {
+    attr_index_t max_capacity = (attr_index_t)((rb_gc_max_allocation_size() - sizeof(struct RBasic)) / sizeof(VALUE));
+    if (max_capacity > SHAPE_ID_CAPACITY_MAX) max_capacity = SHAPE_ID_CAPACITY_MAX;
+    rb_shape_tree.max_capacity = max_capacity;
+
 #ifdef HAVE_MMAP
     size_t shape_list_mmap_size = rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError);
     rb_shape_tree.shape_list = (rb_shape_t *)mmap(NULL, shape_list_mmap_size,
@@ -1651,7 +1672,7 @@ Init_shape(void)
     rb_define_const(rb_cShape, "SHAPE_ID_NUM_BITS", INT2NUM(SHAPE_ID_NUM_BITS));
     rb_define_const(rb_cShape, "SHAPE_FLAG_SHIFT", INT2NUM(SHAPE_FLAG_SHIFT));
     rb_define_const(rb_cShape, "SHAPE_MAX_VARIATIONS", INT2NUM(SHAPE_MAX_VARIATIONS));
-    rb_define_const(rb_cShape, "SHAPE_MAX_FIELDS", INT2NUM(SHAPE_MAX_CAPACITY));
+    rb_define_const(rb_cShape, "SHAPE_MAX_FIELDS", INT2NUM(rb_shape_max_capacity()));
     rb_define_const(rb_cShape, "SIZEOF_RB_SHAPE_T", INT2NUM(sizeof(rb_shape_t)));
     rb_define_const(rb_cShape, "SIZEOF_REDBLACK_NODE_T", INT2NUM(sizeof(redblack_node_t)));
     rb_define_const(rb_cShape, "SHAPE_BUFFER_SIZE", INT2NUM(sizeof(rb_shape_t) * SHAPE_BUFFER_SIZE));

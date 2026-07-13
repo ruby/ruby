@@ -40,6 +40,8 @@
 #include <time.h>
 #include <signal.h>
 
+#include "probes.h"
+
 #if defined __APPLE__
 # include <AvailabilityMacros.h>
 #endif
@@ -329,6 +331,23 @@ static void timer_thread_wakeup(void);
 static void timer_thread_wakeup_locked(rb_vm_t *vm);
 static void timer_thread_wakeup_force(void);
 static void thread_sched_switch(rb_thread_t *cth, rb_thread_t *next_th);
+static void ractor_sched_cancel_enq(rb_vm_t *vm, struct rb_thread_sched *sched);
+#if USE_MN_THREADS
+// A coroutine thread's execution context: the coroutine_context (first, so
+// th->sched.context points at the whole block) plus what is needed to free
+// it without the rb_thread_t. Owned by the execution: the dying thread marks
+// it dead before its final transfer, and whichever context RESUMES from that
+// transfer frees it -- the resume itself proves the transfer's register save
+// into this block has completed, so no further synchronization is needed.
+struct rb_thread_context {
+    struct coroutine_context co; // must be first
+    void *stack;                 // the coroutine machine stack (pool stack)
+    struct rb_native_thread *nt; // final transfer target, stashed at termination
+    bool dead;
+};
+
+static bool thread_sched_reclaim(struct coroutine_context *dead_co);
+#endif
 static void coroutine_transfer0(struct coroutine_context *transfer_from,
                                 struct coroutine_context *transfer_to, bool to_dead);
 
@@ -689,6 +708,10 @@ thread_sched_set_running(struct rb_thread_sched *sched, rb_thread_t *th)
     RUBY_DEBUG_LOG("th:%u->th:%u", rb_th_serial(sched->running), rb_th_serial(th));
     VM_ASSERT(sched->running != th);
 
+    if (RUBY_DTRACE_RTS_SET_RUNNING_ENABLED()) {
+        RUBY_DTRACE_RTS_SET_RUNNING(sched, sched->running, th);
+    }
+
     sched->running = th;
 }
 
@@ -846,6 +869,12 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
         // TODO: This optimization should also be made to work for MN_THREADS
         if (th->has_dedicated_nt && th == sched->runnable_hot_th && (sched->running == NULL || sched->running->has_dedicated_nt)) {
             RUBY_DEBUG_LOG("(nt) stealing: hot-th:%u.  running:%u", rb_th_serial(th), rb_th_serial(sched->running));
+
+            // th serves itself on its own nt, displacing the enqueued
+            // running thread back to the readyq: cancel the entry that was
+            // posted for it (a later dequeue would find this Ractor served
+            // and its next enqueue would double-list the node)
+            ractor_sched_cancel_enq(th->vm, sched);
 
             // If there is a thread set to run, move it back to the front of the readyq
             if (sched->running != NULL) {
@@ -1039,6 +1068,10 @@ thread_sched_to_dead_common(struct rb_thread_sched *sched, rb_thread_t *th)
 
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
+    // A dying coroutine thread (will_switch=true here) does NOT wake the
+    // next thread now: it is still winding down (co_start's epilogue), and
+    // the same Ractor must not have two threads executing at once. The
+    // epilogue enqueues the Ractor after its last rb_ractor_t access.
     thread_sched_wakeup_next_thread(sched, th, !th_has_dedicated_nt(th));
 
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_EXITED, th);
@@ -1223,6 +1256,7 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 
     ccan_list_head_init(&sched->readyq);
     sched->readyq_cnt = 0;
+    ccan_list_node_init(&sched->grq_node); // self-linked = not enqueued
 
 #if USE_MN_THREADS
     if (!atfork) sched->enable_mn_threads = true; // MN is enabled on Ractors
@@ -1254,7 +1288,6 @@ coroutine_transfer0(struct coroutine_context *transfer_from, struct coroutine_co
    __sanitizer_finish_switch_fiber(transfer_from->fake_stack,
                                    (const void**)&returning_from->stack_base, &returning_from->stack_size);
 #endif
-
 }
 
 static void
@@ -1264,6 +1297,10 @@ thread_sched_switch0(struct coroutine_context *current_cont, rb_thread_t *next_t
     VM_ASSERT(next_th->nt == NULL);
 
     RUBY_DEBUG_LOG("next_th:%u", rb_th_serial(next_th));
+
+    // this direct transfer serves next_th without a dequeue; cancel its
+    // Ractor's outstanding grq entry (no-op when nothing is enqueued)
+    ractor_sched_cancel_enq(next_th->vm, TH_SCHED(next_th));
 
     ruby_thread_set_native(next_th);
     native_thread_assign(nt, next_th);
@@ -1300,6 +1337,41 @@ grq_size(rb_vm_t *vm, rb_ractor_t *cr)
 }
 #endif
 
+// ruby_vm_destruct: wait until no native thread is between a coroutine
+// epilogue and its reclaim -- past that point the reclaim frees through the
+// (about to be destroyed) objspace and reads the (about to be unset) VM.
+// Runs without the VM lock, which the epilogue needs to progress.
+void
+rb_thread_sched_wait_winding(rb_vm_t *vm)
+{
+    while (RUBY_ATOMIC_LOAD(vm->ractor.sched.winding_cnt) > 0) {
+        native_thread_yield();
+    }
+}
+
+// A direct service of a runnable thread (direct transfer or the hot-thread
+// steal) bypasses the grq; cancel the Ractor's outstanding entry so that
+// "enqueued <=> runnable and unserved" keeps holding. The caller holds the
+// per-Ractor sched lock, so no concurrent enqueue can relink the node: a
+// self-linked read needs no lock (the common case -- direct switches whose
+// transition never enqueued). A linked read can race only with a dequeue,
+// hence the recheck under the grq lock.
+static void
+ractor_sched_cancel_enq(rb_vm_t *vm, struct rb_thread_sched *sched)
+{
+    if (sched->grq_node.next != &sched->grq_node) {
+        ractor_sched_lock(vm, NULL);
+        {
+            if (sched->grq_node.next != &sched->grq_node) {
+                ccan_list_del_init(&sched->grq_node);
+                VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
+                vm->ractor.sched.grq_cnt--;
+            }
+        }
+        ractor_sched_unlock(vm, NULL);
+    }
+}
+
 static void
 ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 {
@@ -1311,14 +1383,16 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 
     ractor_sched_lock(vm, cr);
     {
-#if VM_CHECK_MODE > 0
-        // check if grq contains r
-        rb_ractor_t *tr;
-        ccan_list_for_each(&vm->ractor.sched.grq, tr, threads.sched.grq_node) {
-            VM_ASSERT(r != tr);
+        // Precondition: not already enqueued (the grq_node is self-linked).
+        // This holds because every service of a runnable-but-unserved thread
+        // either dequeues the entry (the nt scheduling loop) or cancels it
+        // (direct transfers / the hot-thread steal; see
+        // ractor_sched_cancel_enq) -- re-adding a linked node would corrupt
+        // the queue, so check unconditionally (a CHECK-mode-only assert
+        // would miss it: the race needs timing that CHECK builds perturb).
+        if (sched->grq_node.next != &sched->grq_node) {
+            rb_bug("ractor_sched_enq: already enqueued");
         }
-#endif
-
         ccan_list_add_tail(&vm->ractor.sched.grq, &sched->grq_node);
         vm->ractor.sched.grq_cnt++;
         VM_ASSERT(grq_size(vm, cr) == vm->ractor.sched.grq_cnt);
@@ -1382,6 +1456,7 @@ ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
         VM_ASSERT(rb_current_execution_context(false) == NULL);
 
         if (r) {
+            ccan_list_node_init(&r->threads.sched.grq_node); // back to self-linked
             VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
             vm->ractor.sched.grq_cnt--;
             RUBY_DEBUG_LOG("r:%d grq_cnt:%u", (int)rb_ractor_id(r), vm->ractor.sched.grq_cnt);
@@ -1589,10 +1664,16 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
         ractor_sched_lock(vm, cr);
         {
             // running_cnt
-            vm->ractor.sched.barrier_waiting_cnt++;
-            RUBY_DEBUG_LOG("waiting_cnt:%u serial:%u", vm->ractor.sched.barrier_waiting_cnt, barrier_serial);
-
-            ractor_sched_barrier_join_signal_locked(vm);
+            /* A not-yet-running thread (blocking/terminating, joined only to
+             * sync) must not be counted, or barrier_waiting_cnt > running_cnt-1. */
+            if (cr->threads.sched.is_running) {
+                vm->ractor.sched.barrier_waiting_cnt++;
+                RUBY_DEBUG_LOG("waiting_cnt:%u serial:%u", vm->ractor.sched.barrier_waiting_cnt, barrier_serial);
+                ractor_sched_barrier_join_signal_locked(vm);
+            }
+            else {
+                RUBY_DEBUG_LOG("join without counting (not running) serial:%u", barrier_serial);
+            }
             ractor_sched_barrier_join_wait_locked(vm, cr->threads.sched.running);
         }
         ractor_sched_unlock(vm, cr);
@@ -1665,6 +1746,11 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     rb_native_cond_initialize(&vm->ractor.sched.barrier_release_cond);
 
     ccan_list_head_init(&vm->ractor.sched.grq);
+    vm->ractor.sched.grq_cnt = 0; // the list was just emptied; reset the count with it
+    // Threads that were winding down in the parent do not exist in the child;
+    // without this reset the child's ruby_vm_destruct would wait for their
+    // reclaim (which never comes) forever.
+    vm->ractor.sched.winding_cnt = 0;
     ccan_list_head_init(&vm->ractor.sched.timeslice_threads);
     ccan_list_head_init(&vm->ractor.sched.running_threads);
 
@@ -2345,19 +2431,38 @@ nt_start(void *ptr)
             if (r) {
                 struct rb_thread_sched *sched = &r->threads.sched;
 
+                bool locked = true;
+
                 thread_sched_lock(sched, NULL);
                 {
                     rb_thread_t *next_th = sched->running;
 
                     if (next_th && next_th->nt == NULL) {
                         RUBY_DEBUG_LOG("nt:%d next_th:%d", (int)nt->serial, (int)next_th->serial);
+#if USE_MN_THREADS
                         thread_sched_switch0(nt->nt_context, next_th, nt, false);
+
+                        // If a coroutine terminated during the transfer, co_start
+                        // recorded it in nt->dead_co (switch0's return value is
+                        // backend-dependent, unusable; see thread_pthread.h).
+                        struct coroutine_context *dead_co = nt->dead_co;
+                        nt->dead_co = NULL;
+                        if (thread_sched_reclaim(dead_co)) {
+                            // it already released the sched lock before its
+                            // transfer (its Ractor may be gone): leave sched be.
+                            locked = false;
+                        }
+#else
+                        thread_sched_switch0(nt->nt_context, next_th, nt, false);
+#endif
                     }
                     else {
                         RUBY_DEBUG_LOG("no schedulable threads -- next_th:%p", next_th);
                     }
                 }
-                thread_sched_unlock(sched, NULL);
+                if (locked) {
+                    thread_sched_unlock(sched, NULL);
+                }
             }
             else {
                 // timeout -> deleted.
@@ -2378,26 +2483,29 @@ static int native_thread_create_shared(rb_thread_t *th);
 
 #if USE_MN_THREADS
 static void nt_free_stack(void *mstack);
-#endif
 
-void
-rb_threadptr_remove(rb_thread_t *th)
+
+// Reclaim the context a coroutine thread recorded in nt->dead_co before its
+// final transfer (co_start's epilogue). Our running here proves that transfer's
+// register save into the block completed. Returns true when a thread did
+// terminate -- it RELEASED the sched lock before transferring; NULL/false means
+// a live yield, where the loop still owns the lock.
+static bool
+thread_sched_reclaim(struct coroutine_context *dead_co)
 {
-#if USE_MN_THREADS
-    if (th->sched.malloc_stack) {
-        // dedicated
-        return;
-    }
-    else {
-        rb_vm_t *vm = th->vm;
-        th->sched.finished = false;
+    struct rb_thread_context *tctx = (struct rb_thread_context *)dead_co;
 
-        RB_VM_LOCKING() {
-            ccan_list_add(&vm->ractor.sched.zombie_threads, &th->sched.node.zombie_threads);
-        }
+    if (tctx != NULL && tctx->dead) {
+        nt_free_stack(tctx->stack);
+        SIZED_FREE(tctx);
+        // pairs with the increment at the top of coroutine_thread_terminated:
+        // a waiting VM destruct may proceed once this reclaim is done
+        RUBY_ATOMIC_DEC(GET_VM()->ractor.sched.winding_cnt);
+        return true;
     }
-#endif
+    return false;
 }
+#endif
 
 void
 rb_threadptr_sched_free(rb_thread_t *th)
@@ -2408,14 +2516,16 @@ rb_threadptr_sched_free(rb_thread_t *th)
         SIZED_FREE_N((VALUE *)th->sched.context_stack, th->sched.context_stack_size);
         native_thread_destroy(th->nt);
     }
-    else {
-        nt_free_stack(th->sched.context_stack);
+    else if (th->sched.context != NULL) {
+        // a coroutine thread that never reached its epilogue (never started);
+        // a terminated one is reclaimed by whoever resumed from its final
+        // transfer (thread_sched_reclaim), and cleared this pointer.
+        struct rb_thread_context *tctx = (struct rb_thread_context *)th->sched.context;
+        nt_free_stack(tctx->stack);
+        SIZED_FREE(tctx);
+        th->sched.context = NULL;
         // TODO: how to free nt and nt->altstack?
     }
-
-    SIZED_FREE(th->sched.context);
-    th->sched.context = NULL;
-    // VM_ASSERT(th->sched.context == NULL);
 #else
     SIZED_FREE_N((VALUE *)th->sched.context_stack, th->sched.context_stack_size);
     native_thread_destroy(th->nt);
@@ -2424,21 +2534,6 @@ rb_threadptr_sched_free(rb_thread_t *th)
     th->nt = NULL;
 }
 
-void
-rb_thread_sched_mark_zombies(rb_vm_t *vm)
-{
-    if (!ccan_list_empty(&vm->ractor.sched.zombie_threads)) {
-        rb_thread_t *zombie_th, *next_zombie_th;
-        ccan_list_for_each_safe(&vm->ractor.sched.zombie_threads, zombie_th, next_zombie_th, sched.node.zombie_threads) {
-            if (zombie_th->sched.finished) {
-                ccan_list_del_init(&zombie_th->sched.node.zombie_threads);
-            }
-            else {
-                rb_gc_mark(zombie_th->self);
-            }
-        }
-    }
-}
 
 static int
 native_thread_create(rb_thread_t *th)

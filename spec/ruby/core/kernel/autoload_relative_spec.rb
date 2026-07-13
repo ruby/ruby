@@ -1,8 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-# Specs for Kernel#autoload_relative
-
 ruby_version_is "4.1" do
   describe "Kernel#autoload_relative" do
     before :each do
@@ -109,6 +107,12 @@ ruby_version_is "4.1" do
           end
         RUBY
       end
+    end
+  end
+
+  describe "Kernel.autoload_relative" do
+    it "is a public method" do
+      Kernel.public_methods(false).should.include?(:autoload_relative)
     end
   end
 end

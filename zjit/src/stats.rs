@@ -232,10 +232,14 @@ make_counters! {
         exit_block_param_proxy_not_proc,
         exit_block_param_proxy_fallback_miss,
         exit_block_param_proxy_profile_not_covered,
+        exit_invoke_block_handler_not_iseq,
+        exit_invoke_block_iseq_changed,
         exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
         exit_too_many_args_for_lir,
         exit_no_profile_send,
+        exit_no_profile_getivar,
+        exit_no_profile_setivar,
         exit_splatkw_not_nil_or_hash,
         exit_splatkw_polymorphic,
         exit_splatkw_not_profiled,
@@ -306,6 +310,7 @@ make_counters! {
         inline_iseq_optimized_send_count,
         non_variadic_cfunc_optimized_send_count,
         variadic_cfunc_optimized_send_count,
+        block_iseq_direct_optimized_send_count,
     }
 
     // Ivar fallback counters that are summed as dynamic_setivar_count
@@ -432,7 +437,6 @@ make_counters! {
     unspecialized_super_def_type_null,
 
     // Unsupported parameter features
-    complex_arg_pass_param_rest,
     complex_arg_pass_param_post,
     complex_arg_pass_param_kwrest,
     complex_arg_pass_param_block,
@@ -449,6 +453,9 @@ make_counters! {
     complex_arg_pass_caller_super,
     complex_arg_pass_caller_zsuper,
     complex_arg_pass_caller_forwarding,
+
+    // Unsupported argument conversions
+    complex_arg_pass_keyword_to_positional_hash,
 
     // Writes to the VM frame
     vm_write_jit_frame_count,
@@ -637,6 +644,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         BlockParamProxyNotProc       => exit_block_param_proxy_not_proc,
         BlockParamProxyFallbackMiss => exit_block_param_proxy_fallback_miss,
         BlockParamProxyProfileNotCovered => exit_block_param_proxy_profile_not_covered,
+        InvokeBlockHandlerNotIseq     => exit_invoke_block_handler_not_iseq,
+        InvokeBlockIseqChanged        => exit_invoke_block_iseq_changed,
         BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
         TooManyArgsForLir             => exit_too_many_args_for_lir,
@@ -662,6 +671,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
                                       => exit_patchpoint_root_box_only,
         SendWhileTracing              => exit_send_while_tracing,
         NoProfileSend                 => exit_no_profile_send,
+        NoProfileGetIvar              => exit_no_profile_getivar,
+        NoProfileSetIvar              => exit_no_profile_setivar,
         InvokeBlockNotIfunc           => exit_invokeblock_not_ifunc,
     }
 }
@@ -1028,7 +1039,7 @@ pub fn zjit_alloc_bytes() -> usize {
 /// Record a Perfetto duration event spanning the execution of `func`.
 /// Uses Begin/End pairs so nested calls produce properly nested slices.
 pub fn trace_compile_phase<F, R>(name: &str, func: F) -> R where F: FnOnce() -> R {
-    if !get_option!(trace_compiles) {
+    if !get_option!(trace_compiles, /*default=*/false) {
         return func();
     }
     if let Some(tracer) = ZJITState::get_tracer() {

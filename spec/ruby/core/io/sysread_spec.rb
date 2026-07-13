@@ -103,7 +103,7 @@ describe "IO#sysread on a file" do
 
   it "discards the existing buffer content upon error" do
     buffer = +"existing content"
-    @file.seek(0, :END)
+    @file.seek(0, IO::SEEK_END)
     -> { @file.sysread(1, buffer) }.should.raise(EOFError)
     buffer.should.empty?
   end

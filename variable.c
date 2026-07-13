@@ -1343,7 +1343,7 @@ rb_free_generic_ivar(VALUE obj)
                 }
             }
         }
-        RBASIC_SET_SHAPE_ID(obj, rb_shape_layout(RBASIC_SHAPE_ID(obj)) | ROOT_SHAPE_ID);
+        RBASIC_SET_SHAPE_ID(obj, ROOT_SHAPE_ID);
     }
 }
 
@@ -1395,7 +1395,7 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
         }
     }
 
-    RBASIC_SET_SHAPE_ID(obj, rb_shape_layout(RBASIC_SHAPE_ID(obj)) | RBASIC_SHAPE_ID(fields_obj));
+    RBASIC_SET_SHAPE_ID(obj, RBASIC_SHAPE_ID(fields_obj));
 }
 
 void
@@ -1710,7 +1710,6 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
             size_t trailing_fields = new_fields_count - removed_index;
 
             MEMMOVE(&fields[removed_index], &fields[removed_index + 1], VALUE, trailing_fields);
-            RUBY_ASSERT(rb_shape_layout(next_shape_id) == SHAPE_ID_LAYOUT_ROBJECT);
             RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
 
             if (FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP)) {
@@ -1733,7 +1732,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         }
     }
 
-    RBASIC_SET_SHAPE_ID(obj, rb_shape_layout(RBASIC_SHAPE_ID(obj)) | next_shape_id);
+    RBASIC_SET_SHAPE_ID(obj, next_shape_id);
     if (fields_obj != original_fields_obj) {
         switch (type) {
           case T_OBJECT:
@@ -1844,10 +1843,11 @@ imemo_fields_set(VALUE owner, VALUE fields_obj, shape_id_t target_shape_id, ID f
         RUBY_ASSERT(field_name);
         st_insert(table, (st_data_t)field_name, (st_data_t)val);
         RB_OBJ_WRITTEN(fields_obj, Qundef, val);
-        RBASIC_SET_SHAPE_ID(fields_obj, rb_shape_id_with_robject_layout(target_shape_id));
+        RBASIC_SET_SHAPE_ID(fields_obj, target_shape_id);
     }
     else {
         attr_index_t index = RSHAPE_INDEX(target_shape_id);
+
         if (concurrent || index >= RSHAPE_CAPACITY(current_shape_id)) {
             return imemo_fields_copy_append(owner, original_fields_obj, current_shape_id, target_shape_id, val);
         }
@@ -1856,7 +1856,7 @@ imemo_fields_set(VALUE owner, VALUE fields_obj, shape_id_t target_shape_id, ID f
         RB_OBJ_WRITE(fields_obj, &table[index], val);
 
         if (index >= RSHAPE_LEN(current_shape_id)) {
-            RBASIC_SET_SHAPE_ID(fields_obj, rb_shape_id_with_robject_layout(target_shape_id));
+            RBASIC_SET_SHAPE_ID(fields_obj, target_shape_id);
         }
     }
 
@@ -2008,7 +2008,7 @@ rb_obj_freeze_inline(VALUE x)
     if (RB_FL_ABLE(x)) {
         RB_FL_SET_RAW(x, RUBY_FL_FREEZE);
         if (TYPE(x) == T_STRING) {
-            RB_FL_UNSET_RAW(x, FL_USER2 | FL_USER3); // STR_CHILLED
+            RB_FL_UNSET_RAW(x, FL_USER2); // STR_CHILLED
         }
 
         // rb_obj_freeze_inline(String)
@@ -2305,7 +2305,7 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
         }
 
         if (!RSHAPE_LEN(dest_shape_id)) {
-            RBASIC_SET_SHAPE_ID(dest, rb_shape_layout(RBASIC_SHAPE_ID(dest)) | dest_shape_id);
+            RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
             return;
         }
 
@@ -4688,7 +4688,7 @@ class_ivar_set(VALUE obj, ID id, VALUE val, bool *new_ivar)
     // TODO: What should we set as the T_CLASS shape_id?
     // In most case we can replicate the single `fields_obj` shape
     // but in namespaced case? Perhaps INVALID_SHAPE_ID?
-    RBASIC_SET_SHAPE_ID(obj, rb_shape_layout(RBASIC_SHAPE_ID(obj)) | RBASIC_SHAPE_ID(new_fields_obj));
+    RBASIC_SET_SHAPE_ID(obj, RBASIC_SHAPE_ID(new_fields_obj));
     return index;
 }
 
@@ -4713,7 +4713,7 @@ rb_fields_tbl_copy(VALUE dst, VALUE src)
     VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(src);
     if (fields_obj) {
         RCLASS_WRITABLE_SET_FIELDS_OBJ(dst, rb_imemo_fields_clone(fields_obj));
-        RBASIC_SET_SHAPE_ID(dst, rb_shape_layout(RBASIC_SHAPE_ID(dst)) | RBASIC_SHAPE_ID(src));
+        RBASIC_SET_SHAPE_ID(dst, RBASIC_SHAPE_ID(src));
     }
 }
 

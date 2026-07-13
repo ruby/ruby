@@ -69,6 +69,17 @@ struct rb_ractor_struct {
     struct rb_ractor_pub pub;
     struct rb_ractor_sync sync;
 
+    /* objects pinned via rb_gc_register_mark_object; this Ractor owns them and
+     * marks them, and hands them to the main Ractor when it terminates. */
+    VALUE mark_object_ary;
+
+#if !USE_MODULAR_GC
+    /* traversal-API mark redirect (NULL outside a traversal).  Per Ractor so a
+     * concurrent traversal on another Ractor is never observed.  A modular GC
+     * keeps this in the VM instead (vm->gc.mark_func_data). */
+    struct gc_mark_func_data_struct *mark_func_data;
+#endif
+
     // thread management
     struct {
         struct ccan_list_head set;
@@ -136,6 +147,7 @@ rb_ractor_self(const rb_ractor_t *r)
 
 rb_ractor_t *rb_ractor_main_alloc(void);
 void rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *main_ractor, rb_thread_t *main_thread);
+void rb_vm_ractor_migrate_mark_objects(rb_ractor_t *dst, rb_ractor_t *src);
 void rb_ractor_atexit(rb_execution_context_t *ec, VALUE result);
 void rb_ractor_atexit_exception(rb_execution_context_t *ec);
 void rb_ractor_teardown(rb_execution_context_t *ec);
