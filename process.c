@@ -4119,6 +4119,12 @@ rb_fork_ruby(int *status)
     int try_gc = 1, err = 0;
     struct child_handler_disabler_state old;
 
+    // DIAGNOSTIC: time the parent-side fork path (before_fork barrier .. after_fork)
+    static int forkt_on = -1;
+    if (forkt_on < 0) forkt_on = getenv("RUBY_FORK_TIMING") ? 1 : 0;
+    struct timespec forkt0;
+    if (forkt_on) clock_gettime(CLOCK_MONOTONIC, &forkt0);
+
     do {
         prefork();
 
@@ -4146,6 +4152,17 @@ rb_fork_ruby(int *status)
 
         /* repeat while fork failed but retryable */
     } while (pid < 0 && handle_fork_error(err, &child, NULL, &try_gc) == 0);
+
+    if (forkt_on && pid > 0) { // DIAGNOSTIC: parent path duration
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        const double dt = (double)(now.tv_sec - forkt0.tv_sec)
+                        + (double)(now.tv_nsec - forkt0.tv_nsec) / 1e9;
+        if (dt > 0.3) {
+            fprintf(stderr, "[FORKT] parent fork path +%.3fs (child pid=%d)\n", dt, (int)pid);
+            fflush(stderr);
+        }
+    }
 
     if (status) *status = child.status;
 

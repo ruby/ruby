@@ -757,6 +757,24 @@ rb_wakelog(const char *fmt, ...)
     if (live < 0) live = getenv("RUBY_WAKELOG_STDERR") ? 1 : 0;
     if (live) { fprintf(stderr, "[WK] %s\n", wakelog_buf[i]); }
 }
+// DIAGNOSTIC: fork-lifecycle timing. Armed in the fork child (thread_sched_atfork);
+// a stage prints only when suspiciously late, so healthy runs stay silent.
+static struct timespec rb_forkt_t0;
+static int rb_forkt_on;
+void
+rb_forkt_probe(const char *stage)
+{
+    if (!rb_forkt_on) return;
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    const double dt = (double)(now.tv_sec - rb_forkt_t0.tv_sec)
+                    + (double)(now.tv_nsec - rb_forkt_t0.tv_nsec) / 1e9;
+    if (dt > 0.3) {
+        fprintf(stderr, "[FORKT] child %s +%.3fs pid=%d\n", stage, dt, (int)getpid());
+        fflush(stderr);
+    }
+}
+
 static void
 wakelog_dump(FILE *e)
 {
@@ -1811,6 +1829,10 @@ void rb_internal_thread_event_hooks_rw_lock_atfork(void);
 static void
 thread_sched_atfork(struct rb_thread_sched *sched)
 {
+    if (getenv("RUBY_FORK_TIMING")) { // DIAGNOSTIC: start the child lifecycle clock
+        clock_gettime(CLOCK_MONOTONIC, &rb_forkt_t0);
+        rb_forkt_on = 1;
+    }
     current_fork_gen++;
     rb_thread_sched_init(sched, true);
     rb_thread_t *th =  GET_THREAD();

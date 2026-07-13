@@ -65,6 +65,7 @@ extern ID ruby_static_id_cause;
 int
 ruby_setup(void)
 {
+    rb_forkt_probe("ec_cleanup"); // DIAGNOSTIC
     enum ruby_tag_type state;
 
     if (GET_VM())

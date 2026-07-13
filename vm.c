@@ -3427,6 +3427,7 @@ void rb_objspace_free_objects(void *objspace);
 int
 ruby_vm_destruct(rb_vm_t *vm)
 {
+    rb_forkt_probe("vm_destruct"); // DIAGNOSTIC
     {
         // wait for native threads still winding down a dead coroutine: their
         // reclaim frees through the objspace this function is about to
@@ -3503,6 +3504,7 @@ ruby_vm_destruct(rb_vm_t *vm)
         }
     }
     RUBY_FREE_LEAVE("vm");
+    rb_forkt_probe("vm_destruct_end"); // DIAGNOSTIC
     return 0;
 }
 

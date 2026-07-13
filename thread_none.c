@@ -311,6 +311,11 @@ rb_wakelog(const char *fmt, ...) // DIAGNOSTIC stub (no threads backend)
 }
 
 void
+rb_forkt_probe(const char *stage) // DIAGNOSTIC stub
+{
+}
+
+void
 rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
 {
     // do nothing

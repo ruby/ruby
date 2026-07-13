@@ -2061,6 +2061,7 @@ rb_define_finalizer(VALUE obj, VALUE block)
 void
 rb_objspace_call_finalizer(void)
 {
+    rb_forkt_probe("call_finalizer"); // DIAGNOSTIC
     rb_gc_impl_shutdown_call_finalizer(rb_gc_get_objspace());
 }
 

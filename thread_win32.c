@@ -1035,3 +1035,8 @@ void
 rb_wakelog(const char *fmt, ...)
 {
 }
+
+void
+rb_forkt_probe(const char *stage)
+{
+}

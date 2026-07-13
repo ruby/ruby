@@ -469,6 +469,7 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 void
 rb_thread_terminate_all(rb_thread_t *th)
 {
+    rb_forkt_probe("terminate_all"); // DIAGNOSTIC
     rb_ractor_t *cr = th->ractor;
     rb_execution_context_t * volatile ec = th->ec;
     volatile int sleeping = 0;
@@ -2694,10 +2695,12 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
         terminate_interrupt = interrupt & TERMINATE_INTERRUPT_MASK; // request from other ractors
 
         if (interrupt & VM_BARRIER_INTERRUPT_MASK) {
+#ifndef _WIN32
             {
                 const char *s = getenv("RUBY_BARRIER_SLEEP_US"); // DIAGNOSTIC: widen join window
                 if (s) { int us = atoi(s); if (us > 0) usleep(us); }
             }
+#endif
             RB_VM_LOCKING();
         }
 
