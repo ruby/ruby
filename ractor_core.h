@@ -42,6 +42,11 @@ struct rb_ractor_sync {
     rb_ractor_t *successor;
     VALUE legacy;
     bool legacy_exc;
+
+    // DIAGNOSTIC: the port id the current receive loop is polling (set once
+    // per receive entry; read only by the hang-time watchdog). +1 biased so 0
+    // means "not receiving".
+    size_t dbg_recv_port_id1;
 };
 
 // created
