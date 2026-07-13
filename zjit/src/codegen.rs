@@ -475,19 +475,19 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                 let perf_symbol = hir_perf_symbol_range_start(&mut asm, &insn);
 
                 let result = match &insn {
-                    Insn::CondBranch { val, if_true, if_false } => {
-                        let val_opnd = jit.get_opnd(*val);
-                        let true_target = hir_to_lir[if_true.target.0].unwrap();
-                        let false_target = hir_to_lir[if_false.target.0].unwrap();
+                    Insn::CondBranch(cb_insn) => {
+                        let val_opnd = jit.get_opnd(cb_insn.val);
+                        let true_target = hir_to_lir[cb_insn.if_true.target.0].unwrap();
+                        let false_target = hir_to_lir[cb_insn.if_false.target.0].unwrap();
 
                         let true_branch = lir::BranchEdge {
                             target: true_target,
-                            args: if_true.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                            args: cb_insn.if_true.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                         };
 
                         let false_branch = lir::BranchEdge {
                             target: false_target,
-                            args: if_false.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                            args: cb_insn.if_false.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                         };
 
                         asm.test(val_opnd, val_opnd);
@@ -788,8 +788,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ArrayMax { ref elements, state } => gen_array_max(jit, asm, function, opnds!(elements), &function.frame_state(state)),
         &Insn::ArrayMin { ref elements, state } => gen_array_min(jit, asm, function, opnds!(elements), &function.frame_state(state)),
         &Insn::Throw { state, .. } => no_output!(gen_throw(jit, asm, function, &function.frame_state(state))),
-        &Insn::CondBranch { .. }
-        | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
+        &Insn::CondBranch(_) | &Insn::Jump(_) | Insn::Entries { .. } => unreachable!(),
     };
 
     assert!(insn.has_output(), "Cannot write LIR output of HIR instruction with no output: {insn}");

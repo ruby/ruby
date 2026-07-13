@@ -6311,7 +6311,7 @@ pub(crate) mod hir_build_tests {
         let bb3 = function.new_block(0);
 
         let v1 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb0, Insn::CondBranch { val: v1, if_true: edge(bb2), if_false: edge(bb1) });
+        let _ = function.push_insn(bb0, Insn::CondBranch(Box::new(CondBranchData { val: v1, if_true: edge(bb2), if_false: edge(bb1) })));
         function.push_insn(bb1, Insn::Jump(edge(bb3)));
         function.push_insn(bb2, Insn::Jump(edge(bb3)));
 
@@ -6337,7 +6337,7 @@ pub(crate) mod hir_build_tests {
 
          // Construct two separate jump instructions.
          let v1 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
-         let _ = function.push_insn(bb0, Insn::CondBranch { val: v1, if_true: edge(bb1), if_false: edge(bb1)});
+         let _ = function.push_insn(bb0, Insn::CondBranch(Box::new(CondBranchData { val: v1, if_true: edge(bb1), if_false: edge(bb1)})));
 
          let retval = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
          function.push_insn(bb1, Insn::Return { val: retval });
@@ -6417,7 +6417,7 @@ pub(crate) mod hir_build_tests {
         let bb3 = function.new_block(0);
 
         let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb0, Insn::CondBranch { val, if_true: edge(bb1), if_false: edge(bb2) });
+        let _ = function.push_insn(bb0, Insn::CondBranch(Box::new(CondBranchData { val, if_true: edge(bb1), if_false: edge(bb2) })));
 
         function.push_insn(bb2, Insn::Jump(edge(bb3)));
         function.push_insn(bb1, Insn::Jump(edge(bb3)));
@@ -6465,12 +6465,12 @@ pub(crate) mod hir_build_tests {
         function.push_insn(bb0, Insn::Jump(edge(bb1)));
 
         let v0 = function.push_insn(bb1, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb1, Insn::CondBranch { val: v0, if_true: edge(bb2), if_false: edge(bb4) });
+        let _ = function.push_insn(bb1, Insn::CondBranch(Box::new(CondBranchData { val: v0, if_true: edge(bb2), if_false: edge(bb4) })));
 
         function.push_insn(bb2, Insn::Jump(edge(bb3)));
 
         let v1 = function.push_insn(bb3, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb3, Insn::CondBranch { val: v1, if_true: edge(bb5), if_false: edge(bb7) });
+        let _ = function.push_insn(bb3, Insn::CondBranch(Box::new(CondBranchData { val: v1, if_true: edge(bb5), if_false: edge(bb7) })));
 
         function.push_insn(bb4, Insn::Jump(edge(bb5)));
 
@@ -6530,17 +6530,17 @@ pub(crate) mod hir_build_tests {
         let bb5 = function.new_block(0);
 
         let v0 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb0, Insn::CondBranch { val: v0, if_true: edge(bb1), if_false: edge(bb4) });
+        let _ = function.push_insn(bb0, Insn::CondBranch(Box::new(CondBranchData { val: v0, if_true: edge(bb1), if_false: edge(bb4) })));
 
         let v1 = function.push_insn(bb1, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb1, Insn::CondBranch { val: v1, if_true: edge(bb2), if_false: edge(bb3) });
+        let _ = function.push_insn(bb1, Insn::CondBranch(Box::new(CondBranchData { val: v1, if_true: edge(bb2), if_false: edge(bb3) })));
 
         function.push_insn(bb2, Insn::Jump(edge(bb3)));
 
         function.push_insn(bb4, Insn::Jump(edge(bb5)));
 
         let v2 = function.push_insn(bb5, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb5, Insn::CondBranch { val: v2, if_true: edge(bb3), if_false: edge(bb4) });
+        let _ = function.push_insn(bb5, Insn::CondBranch(Box::new(CondBranchData { val: v2, if_true: edge(bb3), if_false: edge(bb4) })));
 
         let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
         function.push_insn(bb3, Insn::Return { val: retval });
@@ -6650,7 +6650,7 @@ mod loop_info_tests {
         function.push_insn(bb0, Insn::Jump(edge(bb2)));
 
         let val = function.push_insn(bb2, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb2, Insn::CondBranch { val, if_true: edge(bb1), if_false: edge(bb3) });
+        let _ = function.push_insn(bb2, Insn::CondBranch(Box::new(CondBranchData { val, if_true: edge(bb1), if_false: edge(bb3) })));
         let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
         let _ = function.push_insn(bb3, Insn::Return { val: retval });
 
@@ -6714,10 +6714,10 @@ mod loop_info_tests {
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
 
         let cond = function.push_insn(bb2, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb2, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb3) });
+        let _ = function.push_insn(bb2, Insn::CondBranch(Box::new(CondBranchData { val: cond, if_true: edge(bb1), if_false: edge(bb3) })));
 
         let cond = function.push_insn(bb3, Insn::Const { val: Const::Value(Qtrue) });
-        let _ = function.push_insn(bb3, Insn::CondBranch { val: cond, if_true: edge(bb0), if_false: edge(bb4) });
+        let _ = function.push_insn(bb3, Insn::CondBranch(Box::new(CondBranchData { val: cond, if_true: edge(bb0), if_false: edge(bb4) })));
 
         let retval = function.push_insn(bb4, Insn::Const { val: Const::CBool(true) });
         let _ = function.push_insn(bb4, Insn::Return { val: retval });
@@ -6789,17 +6789,17 @@ mod loop_info_tests {
         let bb6 = function.new_block(0);
 
         let cond = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb0, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb3) });
+        let _ = function.push_insn(bb0, Insn::CondBranch(Box::new(CondBranchData { val: cond, if_true: edge(bb1), if_false: edge(bb3) })));
 
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
 
-        let _ = function.push_insn(bb2, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb5) });
+        let _ = function.push_insn(bb2, Insn::CondBranch(Box::new(CondBranchData { val: cond, if_true: edge(bb1), if_false: edge(bb5) })));
 
         function.push_insn(bb3, Insn::Jump(edge(bb4)));
 
-        let _ = function.push_insn(bb4, Insn::CondBranch { val: cond, if_true: edge(bb3), if_false: edge(bb5) });
+        let _ = function.push_insn(bb4, Insn::CondBranch(Box::new(CondBranchData { val: cond, if_true: edge(bb3), if_false: edge(bb5) })));
 
-        let _ = function.push_insn(bb5, Insn::CondBranch { val: cond, if_true: edge(bb0), if_false: edge(bb6) });
+        let _ = function.push_insn(bb5, Insn::CondBranch(Box::new(CondBranchData { val: cond, if_true: edge(bb0), if_false: edge(bb6) })));
 
         let retval = function.push_insn(bb6, Insn::Const { val: Const::CBool(true) });
         let _ = function.push_insn(bb6, Insn::Return { val: retval });
@@ -6943,9 +6943,9 @@ mod loop_info_tests {
         let _ = function.push_insn(bb0, Insn::Jump(edge(bb1)));
         let _ = function.push_insn(bb1, Insn::Jump(edge(bb2)));
         let _ = function.push_insn(bb2, Insn::Jump(edge(bb3)));
-        let _ = function.push_insn(bb3, Insn::CondBranch {val: cond, if_true: edge(bb2), if_false: edge(bb4) });
-        let _ = function.push_insn(bb4, Insn::CondBranch {val: cond, if_true: edge(bb1), if_false: edge(bb5) });
-        let _ = function.push_insn(bb5, Insn::CondBranch {val: cond, if_true: edge(bb0), if_false: edge(bb6) });
+        let _ = function.push_insn(bb3, Insn::CondBranch(Box::new(CondBranchData {val: cond, if_true: edge(bb2), if_false: edge(bb4) })));
+        let _ = function.push_insn(bb4, Insn::CondBranch(Box::new(CondBranchData {val: cond, if_true: edge(bb1), if_false: edge(bb5) })));
+        let _ = function.push_insn(bb5, Insn::CondBranch(Box::new(CondBranchData {val: cond, if_true: edge(bb0), if_false: edge(bb6) })));
         function.push_insn(bb6, Insn::Unreachable);
 
         function.seal_entries();
@@ -7055,7 +7055,7 @@ mod iongraph_tests {
         let bb2 = function.new_block(0);
 
         let cond = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
-        function.push_insn(bb0, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb2) });
+        function.push_insn(bb0, Insn::CondBranch(Box::new(CondBranchData { val: cond, if_true: edge(bb1), if_false: edge(bb2) })));
 
         let retval1 = function.push_insn(bb2, Insn::Const { val: Const::CBool(false) });
         function.push_insn(bb2, Insn::Return { val: retval1 });
@@ -7080,7 +7080,7 @@ mod iongraph_tests {
         function.push_insn(bb0, Insn::Jump(edge(bb2)));
 
         let val = function.push_insn(bb2, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb2, Insn::CondBranch { val, if_true: edge(bb1), if_false: edge(bb3) });
+        let _ = function.push_insn(bb2, Insn::CondBranch(Box::new(CondBranchData { val, if_true: edge(bb1), if_false: edge(bb3) })));
         let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
         let _ = function.push_insn(bb3, Insn::Return { val: retval });
 
@@ -7099,7 +7099,7 @@ mod iongraph_tests {
         let bb2 = function.new_block(0);
 
         let cond = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
-        function.push_insn(bb0, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb2) });
+        function.push_insn(bb0, Insn::CondBranch(Box::new(CondBranchData { val: cond, if_true: edge(bb1), if_false: edge(bb2) })));
 
         let retval1 = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
         function.push_insn(bb1, Insn::Return { val: retval1 });
