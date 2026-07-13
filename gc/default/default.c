@@ -4136,10 +4136,6 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
     }
 }
 
-#if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
-__attribute__((noinline))
-#endif
-
 #if GC_CAN_COMPILE_COMPACTION
 static void gc_sort_heap_by_compare_func(rb_objspace_t *objspace, gc_compact_compare_func compare_func);
 static int compare_pinned_slots(const void *left, const void *right, void *d);
