@@ -100,11 +100,54 @@ path_cmp(VALUE self, VALUE other)
 }
 
 /*
- * Return a pathname which is substituted by String#sub.
+ * :markup: markdown
  *
- *	path1 = Pathname.new('/usr/bin/perl')
- *	path1.sub('perl', 'ruby')
- *	    #=> #<Pathname:/usr/bin/ruby>
+ * call-seq:
+ *   sub(pattern, replacement) -> new_pathname
+ *   sub(pattern) {|match| ... } -> new_pathname
+ *
+ * Returns a new pathname whose path is the path in `self`,
+ * after the specified substitutions.
+ *
+ * Argument `pattern` may be a string or a Regexp;
+ * argument `replacement` may be a string or a hash.
+ *
+ * Varying types for the argument values makes this method very versatile.
+ *
+ * Below are some simple examples;
+ * for many more related examples (using strings, not pathnames),
+ * see [Substitution Methods](rdoc-ref:String@Substitution+Methods).
+ *
+ * With arguments `pattern` and string `replacement` given,
+ * replaces the first matching substring with the given replacement string:
+ *
+ * ```ruby
+ * pn = Pathname('abracadabra.txt') # => #<Pathname:abracadabra.txt>
+ * pn.sub('bra', 'xyzzy')           # => #<Pathname:axyzzycadabra.txt>
+ * pn.sub(/bra/, 'xyzzy')           # => #<Pathname:axyzzycadabra.txt>
+ * pn.sub('nope', 'xyzzy')          # => #<Pathname:abracadabra.txt>
+ * ```
+ *
+ * With arguments `pattern` and hash `replacement` given,
+ * replaces the first matching substring with a value from the given replacement hash,
+ * or removes it:
+ *
+ * ```ruby
+ * h = {'a' => 'A', 'b' => 'B', 'c' => 'C'}
+ * pn.sub('b', h) # => #<Pathname:aBracadabra.txt>
+ * pn.sub(/b/, h) # => #<Pathname:aBracadabra.txt>
+ * pn.sub(/d/, h) # => #<Pathname:abracaabra.txt>  # 'd' removed.
+ * ```
+ *
+ * With argument `pattern` and a block given,
+ * calls the block with the first matching substring;
+ * replaces that substring with the block’s return value:
+ *
+ * ```ruby
+ * pn.sub('b') {|match| match.upcase } # => #<Pathname:aBracadabra.txt>
+ * pn.sub(/X/) {|match| match.upcase } # => #<Pathname:abracadabra.txt>
+ * ```
+ *
  */
 static VALUE
 path_sub(int argc, VALUE *argv, VALUE self)
@@ -234,12 +277,20 @@ has_separator_p(VALUE self, VALUE path)
 }
 
 /*
- * Return a pathname with +repl+ added as a suffix to the basename.
+ * :markup: markdown
  *
- * If self has no extension part, +repl+ is appended.
+ * call-seq:
+ *   sub_ext(replacement) -> new_pathname
  *
- *	Pathname.new('/usr/bin/shutdown').sub_ext('.rb')
- *	    #=> #<Pathname:/usr/bin/shutdown.rb>
+ * Returns a new pathname whose path is the path in `self`,
+ * after specified changes:
+ *
+ * ```ruby
+ * Pathname('t.tmp').sub_ext('.txt') # => #<Pathname:t.txt>     # Extension replaced.
+ * Pathname('temp').sub_ext('.txt')  # => #<Pathname:temp.txt>  # Extension added.
+ * Pathname('t.tmp').sub_ext('')     # => #<Pathname:t>         # Extension removed.
+ * ```
+ *
  */
 static VALUE
 path_sub_ext(VALUE self, VALUE repl)

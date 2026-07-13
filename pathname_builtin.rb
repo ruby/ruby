@@ -281,12 +281,21 @@ class Pathname
     @path.hash
   end
 
-  # Return the path as a String.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   to_s -> string
+  #
+  # Returns a copy of the string path in `self`:
+  #
+  # ```ruby
+  # Pathname('nosuch/foo/bar').to_s # => "nosuch/foo/bar"
+  # ```
+  #
   def to_s
     @path.dup
   end
 
-  # to_path is implemented so Pathname objects are usable with File.open, etc.
   alias to_path to_s
 
   def inspect # :nodoc:
@@ -1133,7 +1142,30 @@ class Pathname    # * File *
   #
   def readlines(...) File.readlines(@path, ...) end
 
-  # See <tt>File.sysopen</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   sysopen(mode = 'r', permissions = 0666) -> integer
+  #
+  # Opens the file at the path in `self` with the given mode and permissions;
+  # returns the integer file descriptor.
+  #
+  # If the file is to be readable, it must exist;
+  # if the file is to be writable and does not exist,
+  # it is created with the given permissions:
+  #
+  # ```ruby
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('foo')
+  # fd = pn.sysopen             # => 5
+  # IO.new(fd).close
+  # fd = pn.sysopen('w')        # => 5
+  # IO.new(fd).close
+  # fd = pn.sysopen('r', 0o644) # => 5
+  # IO.new(fd).close
+  # pn.delete
+  # ```
+  #
   def sysopen(...) File.sysopen(@path, ...) end
 
   # call-seq:
@@ -1606,7 +1638,20 @@ class Pathname    # * File *
   # Raises SystemCallError if the entry cannot be renamed.
   def rename(to) File.rename(@path, to) end
 
-  # See <tt>File.stat</tt>.  Returns a <tt>File::Stat</tt> object.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   stat -> File::Stat
+  #
+  # Returns a File::Stat object for the entry at the path in `self`:
+  #
+  # ```ruby
+  # Pathname('README.md').stat.inspect
+  # => "#<File::Stat dev=0x10302, ino=22941341, mode=0100664, nlink=1, uid=1000, gid=1000, rdev=0x0, size=3469, blksize=4096, blocks=8, atime=2026-07-10 15:24:17.476506084 -0500, mtime=2026-07-07 10:23:27.320088262 -0500, ctime=2026-07-07 10:23:27.320088262 -0500>"
+  # Pathname('doc').stat.inspect
+  # => "#<File::Stat dev=0x10302, ino=22941930, mode=040775, nlink=22, uid=1000, gid=1000, rdev=0x0, size=4096, blksize=4096, blocks=8, atime=2026-07-11 10:05:20.480330738 -0500, mtime=2026-07-11 10:05:06.34333645 -0500, ctime=2026-07-11 10:05:06.34333645 -0500>"
+  # ```
+  #
   def stat() File.stat(@path) end
 
   #
@@ -1657,10 +1702,73 @@ class Pathname    # * File *
   # See also: #read, #readlink, #symlink?.
   def make_symlink(old) File.symlink(old, @path) end
 
-  # See <tt>File.truncate</tt>.  Truncate the file to +length+ bytes.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   truncate(size) -> 0
+  #
+  # Adjusts the size of file at the path in `self` to the given `size`;
+  # returns `0`:
+  #
+  # ```ruby
+  # pn.write('0123456789')
+  # pn.size # => 10
+  # pn.truncate(5)
+  # pn.size # => 5
+  # pn.read # => "01234"
+  # ```
+  #
+  # Pads on the right with null characters if necessary:
+  #
+  # ```ruby
+  # pn.truncate(10)
+  # pn.size # => 10
+  # pn.read # => "01234\u0000\u0000\u0000\u0000\u0000"
+  # ```
+  #
   def truncate(length) File.truncate(@path, length) end
 
-  # See <tt>File.utime</tt>.  Update the access and modification times.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   utime(atime, mtime) -> 1
+  #
+  # For the entry at the path in `self`,
+  # updates its access time to the given `atime`
+  # and its modification time to the given `mtime`;
+  # each given time may be a Time object, an integer representing a time,
+  # or `nil` (meaning Time.now):
+  #
+  # ```ruby
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('foo')
+  # pn.stat.atime   # => 1969-12-31 18:00:00 -0600
+  # pn.stat.mtime   # => 2026-07-11 16:12:15.832556524 -0500
+  # pn.utime(0, 0)
+  # pn.stat.atime   # => 1969-12-31 18:00:00 -0600
+  # pn.stat.mtime   # => 1969-12-31 18:00:00 -0600
+  # pn.utime(nil, nil)
+  # pn.stat.atime   # => 2026-07-11 16:13:06.982646673 -0500
+  # pn.stat.mtime   # => 2026-07-11 16:13:04.983530291 -0500
+  # time = Time.now # => 2026-07-11 16:13:40.190110708 -0500
+  # pn.utime(time, time)
+  # pn.stat.atime   # => 2026-07-11 16:13:51.99317823 -0500
+  # pn.stat.mtime   # => 2026-07-11 16:13:40.190110708 -0500
+  # ```
+  #
+  # Follows symbolic links:
+  #
+  # ```ruby
+  # link_pn = Pathname('link')
+  # link_pn.make_symlink(pn)
+  # link_pn.stat.atime # => 2026-07-11 16:13:51.99317823 -0500
+  # link_pn.stat.mtime # => 2026-07-11 16:13:40.190110708 -0500
+  # link_pn.utime(0, 0)
+  # pn.stat.atime      # => 1969-12-31 18:00:00 -0600
+  # pn.stat.mtime      # => 1969-12-31 18:00:00 -0600
+  # pn.delete
+  # link_pn.delete
+  # ```
   def utime(atime, mtime) File.utime(atime, mtime, @path) end
 
   # :markup: markdown
@@ -1831,8 +1939,20 @@ class Pathname    # * File *
   #
   def expand_path(...) self.class.new(File.expand_path(@path, ...)) end
 
-  # See <tt>File.split</tt>.  Returns the #dirname and the #basename in an
-  # Array.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   split -> array
+  #
+  # Returns a 2-element array containing #dirname and #basename:
+  #
+  # ```ruby
+  # Pathname('lib/pathname.rb').split # => [#<Pathname:lib>, #<Pathname:pathname.rb>]
+  # Pathname('README.md').split       # => [#<Pathname:.>, #<Pathname:README.md>]
+  # Pathname('').split                # => [#<Pathname:.>, #<Pathname:>]
+  # Pathname('nosuch/foo/bar').split  # => [#<Pathname:nosuch/foo>, #<Pathname:bar>]
+  # ```
+  #
   def split()
     array = File.split(@path)
     raise TypeError, 'wrong argument type nil (expected Array)' unless Array === array
@@ -2071,7 +2191,27 @@ class Pathname    # * FileTest *
   #
   def pipe?() FileTest.pipe?(@path) end
 
-  # See <tt>FileTest.socket?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   socket? -> true or false
+  #
+  # Returns whether the path in `self` points to a socket entry:
+  #
+  # ```ruby
+  # require 'socket'
+  # path = 'doc/socket'
+  # server = UNIXServer.new(path) # => #<UNIXServer:doc/socket>
+  # pn = Pathname(path)           # => #<Pathname:doc/socket>
+  # pn.socket?                    # => true
+  # server.close
+  # pn.unlink
+  # Pathname('README.md').socket? # => false
+  # Pathname('nosuch').socket?    # => false
+  # ```
+  #
+  # Returns `false` on Windows.
+  #
   def socket?() FileTest.socket?(@path) end
 
   # :markup: markdown
@@ -2116,7 +2256,28 @@ class Pathname    # * FileTest *
   #
   def readable?() FileTest.readable?(@path) end
 
-  # See <tt>FileTest.world_readable?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   world_readable? -> integer or nil
+  #
+  # If the entry at the path in `self` is readable by others,
+  # returns the integer permissions for the entry:
+  #
+  # ```ruby
+  # Pathname('/etc/passwd').world_readable?.to_s(8) # => "644"
+  # ```
+  #
+  # Otherwise, returns `nil`:
+  #
+  # ```ruby
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('foo')
+  # pn.chmod(0o0)
+  # pn.world_readable? # => nil
+  # pn.delete
+  # ```
+  #
   def world_readable?() File.world_readable?(@path) end
 
   # :markup: markdown
@@ -2129,7 +2290,28 @@ class Pathname    # * FileTest *
   # instead of the effective ids.
   def readable_real?() FileTest.readable_real?(@path) end
 
-  # See <tt>FileTest.setuid?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   setuid? -> true or false
+  #
+  # Returns whether the [setuid bit](https://en.wikipedia.org/wiki/Setuid) is set
+  # in the permissions for the entry at the path in `self`:
+  #
+  # ```ruby
+  # # Create a file and get its permissions and setuid? setting.
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('foo')
+  # mode = pn.stat.mode.to_s(8) # => "100664"
+  # pn.setuid?                  # => false
+  # # Set the bit.
+  # pn.chmod(0o4644)
+  # mode = pn.stat.mode.to_s(8) # => "104644"
+  # pn.setuid?                  # => true
+  # pn.delete                   # Clean up.
+  # ```
+  #
+  # On Windows, the bit is never set; the method always returns `false`.
   def setuid?() FileTest.setuid?(@path) end
 
   # :markup: markdown
@@ -2200,7 +2382,26 @@ class Pathname    # * FileTest *
   # ```
   #
   def size?() FileTest.size?(@path) end
-  # See <tt>FileTest.sticky?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   sticky? -> true or false
+  #
+  # Returns whether the [sticky bit](https://en.wikipedia.org/wiki/Sticky_bit) is set
+  # for the entry at the path in `self`:
+  #
+  # ```ruby
+  # pn = Pathname('t.tmp')
+  # pn.write('foo')
+  # pn.stat.mode.to_s(8) # => "100664"
+  # pn.sticky?           # => false
+  # pn.chmod(0o1644)
+  # pn.stat.mode.to_s(8) # => "101644"
+  # pn.sticky?           # => true
+  # pn.delete
+  # ```
+  #
+  # Returns `false` on Windows.
   def sticky?() FileTest.sticky?(@path) end
 
   # :markup: markdown
@@ -2227,7 +2428,28 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.writable?</tt>.
   def writable?() FileTest.writable?(@path) end
 
-  # See <tt>FileTest.world_writable?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   world_writable? -> integer or nil
+  #
+  # If the entry at the path in `self` is writable by others,
+  # returns the integer permissions for the entry:
+  #
+  # ```ruby
+  # Pathname('/tmp').world_writable?.to_s(8) # => "777"
+  # ```
+  #
+  # Otherwise, returns `nil`:
+  #
+  # ```ruby
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('foo')
+  # pn.chmod(0o0)
+  # pn.world_writable? # => nil
+  # pn.delete
+  # ```
+  #
   def world_writable?() File.world_writable?(@path) end
 
   # See <tt>FileTest.writable_real?</tt>.
@@ -2411,18 +2633,14 @@ class Pathname    # * mixed *
   # :markup: markdown
   #
   # call-seq:
-  #   unlink -> 1 or 0
+  #   unlink -> 0 or 1
   #
-  # Removes the file or directory represented by `self`, using:
-  #
-  # - File.unlink, if `self` represents a file; returns `1`.
-  # - Dir.unlink, if `self` represents a directory; returns `0`.
-  #
-  # Examples:
+  # Removes the entry represented by `self`;
+  # returns `0` if a directory, `1` if a file:
   #
   # ```ruby
-  # Pathname(Tempfile.create).unlink   # => 1
   # Pathname(Pathname.mktmpdir).unlink # => 0
+  # Pathname(Tempfile.create).unlink   # => 1
   # ```
   #
   def unlink()
