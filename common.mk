@@ -1316,7 +1316,7 @@ $(MAINOBJ): $(srcdir)/$(MAINSRC)
 probes.dmyh:
 	$(BASERUBY) $(tooldir)/gen_dummy_probes.rb $(srcdir)/probes.d > $@
 
-probes.h: {$(VPATH)}probes.$(DTRACE_EXT)
+probes.h: {$(VPATH)}probes.$(DTRACE_EXT) $(srcdir)/vm_opts.h
 
 prereq: incs srcs preludes PHONY
 
