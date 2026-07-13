@@ -47,6 +47,7 @@ require "zlib"
 require_relative "mock_gem_ui"
 require_relative "pem_utilities"
 require_relative "fake_credential_backend"
+require_relative "pqc_utilities"
 
 # JRuby on Windows raises TypeError inside File.symlink (the wincode helper
 # trips on a nil path), so any test that exercises Gem::Installer's symlink
@@ -1682,6 +1683,14 @@ Also, a list:
   end
 
   include Gem::PEMUtilities
+
+  include Gem::PQCUtilities
+
+  def omit_unless_support_pqc
+    without_pqc_support do |message|
+      omit message
+    end
+  end
 end
 
 # https://github.com/seattlerb/minitest/blob/13c48a03d84a2a87855a4de0c959f96800100357/lib/minitest/mock.rb#L192
