@@ -655,8 +655,15 @@ dump_port_i(st_data_t key, st_data_t val, st_data_t arg)
     struct ractor_queue *rq = (struct ractor_queue *)val;
     int n = 0;
     struct ractor_basket *b;
-    ccan_list_for_each(&rq->set, b, node) n++;
-    fprintf(e, "     port=%u len=%d closed=%d\n", (unsigned)key, n, (int)rq->closed);
+    char head[96] = "";
+    ccan_list_for_each(&rq->set, b, node) {
+        if (n == 0) {
+            snprintf(head, sizeof(head), " head={type=%d port_id=%u v=%p exc=%d}",
+                     (int)b->type, (unsigned)b->port_id, (void *)b->p.v, (int)b->p.exception);
+        }
+        n++;
+    }
+    fprintf(e, "     port=%u rq=%p len=%d closed=%d%s\n", (unsigned)key, (void *)rq, n, (int)rq->closed, head);
     return ST_CONTINUE;
 }
 
