@@ -3542,10 +3542,16 @@ watchdog_func(void *ptr)
     const char *s = getenv("RUBY_WATCHDOG_SEC");
     int sec = s ? atoi(s) : 90;
     if (sec <= 0) return NULL;
+    // EINTR-proof sleep: an interrupted nanosleep must not fire the dump early.
+    // Dump only -- killing is the test harness's job (btest SIGKILLs on its own
+    // timeout); the old abort() here killed slow-but-healthy tests at <sec>s.
+    // A few dumps 30s apart give a progress rate (true hang vs merely slow).
     struct timespec ts = { .tv_sec = sec, .tv_nsec = 0 };
-    nanosleep(&ts, NULL);
-    watchdog_dump(vm);
-    abort();
+    for (int i = 0; i < 4; i++) {
+        while (nanosleep(&ts, &ts) != 0 && errno == EINTR) continue;
+        watchdog_dump(vm);
+        ts.tv_sec = 30; ts.tv_nsec = 0;
+    }
     return NULL;
 }
 
@@ -3553,6 +3559,12 @@ static void
 watchdog_start(void)
 {
     if (!getenv("RUBY_WATCHDOG_SEC")) return;
+    // The timer thread is recreated on every fork and this rides along; only
+    // one watchdog per process, or each fork iteration would breed another
+    // aborting thread (the abort then fires <sec> after some random fork).
+    static pid_t wd_pid;
+    if (wd_pid == getpid()) return;
+    wd_pid = getpid();
     static pthread_t wd;
     pthread_create(&wd, NULL, watchdog_func, GET_VM());
     pthread_detach(wd);
