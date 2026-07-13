@@ -112,6 +112,8 @@ rb_ec_exec_end_proc(rb_execution_context_t * ec)
 {
     enum ruby_tag_type state;
     volatile VALUE errinfo = ec->errinfo;
+    /* Share only among END/at_exit handlers to avoid repeated causes. */
+    VALUE shown_causes = 0;
     volatile bool finished = false;
 
     while (!finished) {
@@ -123,8 +125,10 @@ rb_ec_exec_end_proc(rb_execution_context_t * ec)
         }
         EC_POP_TAG();
         if (state != TAG_NONE) {
-            error_handle(ec, ec->errinfo, state);
-            if (!NIL_P(ec->errinfo)) errinfo = ec->errinfo;
+            VALUE err = ec->errinfo;
+            add_shown_cause(errinfo, &shown_causes);
+            error_handle_with_shown_causes(ec, err, state, &shown_causes);
+            if (!NIL_P(err)) errinfo = err;
         }
     }
 
