@@ -1224,7 +1224,7 @@ rb_shape_expected_layout(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        return SHAPE_ID_LAYOUT_ROBJECT;
+        return FL_TEST_RAW(obj, ROBJECT_HEAP) ? SHAPE_ID_LAYOUT_EXTENDED : SHAPE_ID_LAYOUT_ROBJECT;
       case T_CLASS:
       case T_MODULE:
         if (FL_TEST_RAW(obj, RCLASS_BOXABLE)) {
@@ -1232,7 +1232,7 @@ rb_shape_expected_layout(VALUE obj)
         }
         return SHAPE_ID_LAYOUT_RCLASS;
       case T_DATA:
-        return SHAPE_ID_LAYOUT_RDATA;
+        return SHAPE_ID_LAYOUT_EXTENDED;
       case T_IMEMO:
         if (IMEMO_TYPE_P(obj, imemo_fields)) {
             return SHAPE_ID_LAYOUT_ROBJECT;
@@ -1240,6 +1240,23 @@ rb_shape_expected_layout(VALUE obj)
         return SHAPE_ID_LAYOUT_OTHER;
       default:
         return SHAPE_ID_LAYOUT_OTHER;
+    }
+}
+
+static const char *
+shape_layout_name(shape_id_t shape_id)
+{
+    switch (rb_shape_layout(shape_id)) {
+      case SHAPE_ID_LAYOUT_ROBJECT:
+        return "robject";
+      case SHAPE_ID_LAYOUT_RCLASS:
+        return "rclass";
+      case SHAPE_ID_LAYOUT_EXTENDED:
+        return "extended (or RData)";
+      case SHAPE_ID_LAYOUT_OTHER:
+        return "other";
+      default:
+        return "invalid";
     }
 }
 
@@ -1268,8 +1285,8 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
     shape_id_t actual_layout = rb_shape_layout(rb_obj_shape_id(obj));
     shape_id_t expected_layout = rb_shape_expected_layout(obj);
     if (actual_layout != expected_layout) {
-        rb_bug("shape_id layout mismatch: expected=%x actual=%x shape_id=%u obj=%s",
-                expected_layout, actual_layout, shape_id, rb_obj_info(obj));
+        rb_bug("shape_id layout mismatch: expected=%s actual=%s shape_id=%u obj=%s",
+                shape_layout_name(expected_layout), shape_layout_name(actual_layout), shape_id, rb_obj_info(obj));
     }
 
     if (shape_id == ROOT_SHAPE_ID) {
@@ -1373,8 +1390,8 @@ shape_layout(VALUE self)
         return ID2SYM(rb_intern("robject"));
       case SHAPE_ID_LAYOUT_RCLASS:
         return ID2SYM(rb_intern("rclass"));
-      case SHAPE_ID_LAYOUT_RDATA:
-        return ID2SYM(rb_intern("rdata"));
+      case SHAPE_ID_LAYOUT_EXTENDED:
+        return ID2SYM(rb_intern("extended_or_rdata"));
       case SHAPE_ID_LAYOUT_OTHER:
         return ID2SYM(rb_intern("other"));
       default:

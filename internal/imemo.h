@@ -245,11 +245,7 @@ struct rb_fields {
             VALUE fields[1];
         } embed;
         struct {
-            VALUE *ptr;
-        } external;
-        struct {
-            // Note: the st_table could be embedded, but complex T_CLASS should be rare to
-            // non-existent, so not really worth the trouble.
+            // TODO: the st_table should be embedded
             st_table *table;
         } complex;
     } as;
@@ -260,8 +256,6 @@ struct rb_fields {
 #define OBJ_FIELD_HEAP ROBJECT_HEAP
 STATIC_ASSERT(imemo_fields_flags, OBJ_FIELD_HEAP == IMEMO_FL_USER0);
 STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.ary) == offsetof(struct rb_fields, as.embed.fields));
-STATIC_ASSERT(imemo_fields_external_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.external.ptr));
-STATIC_ASSERT(imemo_fields_complex_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.complex.table));
 
 #define IMEMO_OBJ_FIELDS(fields) ((struct rb_fields *)fields)
 
@@ -309,11 +303,18 @@ rb_imemo_fields_ptr(VALUE fields_obj)
     RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
 
     if (UNLIKELY(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP))) {
-        return IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr;
+        if (RB_TYPE_P(fields_obj, T_OBJECT)) {
+            fields_obj = ROBJECT(fields_obj)->as.extended;
+        }
+        RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields));
+
+        // This will go away once we embed the `st_table` inside `IMEMO/fields`.
+        if (UNLIKELY(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP))) {
+            return (VALUE *)IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table;
+        }
     }
-    else {
-        return IMEMO_OBJ_FIELDS(fields_obj)->as.embed.fields;
-    }
+
+    return IMEMO_OBJ_FIELDS(fields_obj)->as.embed.fields;
 }
 
 static inline st_table *
@@ -323,7 +324,7 @@ rb_imemo_fields_complex_tbl(VALUE fields_obj)
         return NULL;
     }
 
-    RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
+    RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields));
     RUBY_ASSERT(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP));
 
     // Some codepaths unconditionally access the fields_ptr, and assume it can be used as st_table if the

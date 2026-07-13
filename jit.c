@@ -29,7 +29,7 @@
 
 enum jit_bindgen_constants {
     // Field offsets for the RObject struct
-    ROBJECT_OFFSET_AS_HEAP_FIELDS = offsetof(struct RObject, as.heap.fields),
+    ROBJECT_OFFSET_AS_HEAP_FIELDS = offsetof(struct RObject, as.extended),
     ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
 
     // Field offset for prime classext's fields_obj from a class pointer

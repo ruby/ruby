@@ -1513,11 +1513,13 @@ pub const SHAPE_ID_FL_FROZEN: shape_id_fl_type = 134217728;
 pub const SHAPE_ID_FL_HAS_OBJECT_ID: shape_id_fl_type = 268435456;
 pub const SHAPE_ID_LAYOUT_ROBJECT: shape_id_fl_type = 0;
 pub const SHAPE_ID_LAYOUT_RCLASS: shape_id_fl_type = 536870912;
+pub const SHAPE_ID_LAYOUT_EXTENDED: shape_id_fl_type = 1073741824;
 pub const SHAPE_ID_LAYOUT_RDATA: shape_id_fl_type = 1073741824;
 pub const SHAPE_ID_LAYOUT_OTHER: shape_id_fl_type = 1610612736;
 pub const SHAPE_ID_LAYOUT_MASK: shape_id_fl_type = 1610612736;
 pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 402653184;
 pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 2146959360;
+pub const SHAPE_ID_FL_PRIVATE_MASK: shape_id_fl_type = 1677197312;
 pub type shape_id_fl_type = u32;
 pub const CONST_DEPRECATED: rb_const_flag_t = 256;
 pub const CONST_VISIBILITY_MASK: rb_const_flag_t = 255;
@@ -2192,7 +2194,6 @@ unsafe extern "C" {
     pub fn rb_ivar_get_at_no_ractor_check(obj: VALUE, index: attr_index_t) -> VALUE;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
-    pub fn rb_ensure_iv_list_size(obj: VALUE, current_len: u32, newsize: u32);
     pub fn rb_vm_barrier();
     pub fn rb_str_byte_substr(str_: VALUE, beg: VALUE, len: VALUE) -> VALUE;
     pub fn rb_str_substr_two_fixnums(

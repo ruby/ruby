@@ -3015,20 +3015,20 @@ fn gen_get_ivar(
         }
         Some(ivar_index) => {
             let ivar_opnd = if receiver_t_object {
-                if comptime_receiver.embedded_p() {
-                   // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+                let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
 
+                // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+                if comptime_receiver.embedded_p() {
                    // Load the variable
-                   let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
                    Opnd::mem(64, recv, offs)
-               } else {
+                } else {
                    // Compile time value is *not* embedded.
 
-                   // Get a pointer to the extended table
+                   // Get the T_IMEMO/fields
                    let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
-                   // Read the ivar from the extended table
-                   Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32)
+                   // Read the ivar from the T_IMEMO/fields
+                   Opnd::mem(64, tbl_opnd, offs)
                }
             } else {
                 asm_comment!(asm, "call rb_ivar_get_at()");
@@ -3080,6 +3080,33 @@ fn gen_getinstancevariable(
     )
 }
 
+fn gen_trigger_wb(
+    asm: &mut Assembler,
+    recv: Opnd,
+    write_val: Opnd)
+{
+    asm.spill_regs(); // for ccall (unconditionally spill them for RegMappings consistency)
+    let skip_wb = asm.new_label("skip_wb");
+    // If the value we're writing is an immediate, we don't need to WB
+    asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
+    asm.jnz(skip_wb);
+
+    // If the value we're writing is nil or false, we don't need to WB
+    asm.cmp(write_val, Qnil.into());
+    asm.jbe(skip_wb);
+
+    asm_comment!(asm, "write barrier");
+    asm.ccall(
+        rb_gc_writebarrier as *const u8,
+        vec![
+            recv,
+            write_val,
+        ]
+    );
+
+    asm.write_label(skip_wb);
+}
+
 // Generate an IV write.
 // This function doesn't deal with writing the shape, or expanding an object
 // to use an IV buffer if necessary.  That is the callers responsibility
@@ -3089,30 +3116,44 @@ fn gen_write_iv(
     recv: Opnd,
     ivar_index: usize,
     set_value: Opnd,
-    extension_needed: bool)
+    extension_needed: bool,
+    skip_wb: bool)
 {
     // Compile time self is embedded and the ivar index lands within the object
     let embed_test_result = comptime_receiver.embedded_p() && !extension_needed;
 
+    let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
+
     if embed_test_result {
         // Find the IV offset
-        let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
         let ivar_opnd = Opnd::mem(64, recv, offs);
 
         // Write the IV
         asm_comment!(asm, "write IV");
         asm.mov(ivar_opnd, set_value);
+
+        // If we know the stack value is an immediate, there's no need to
+        // generate WB code.
+        if !skip_wb {
+            gen_trigger_wb(asm, recv, set_value);
+        }
     } else {
         // Compile time value is *not* embedded.
 
-        // Get a pointer to the extended table
+        // Get a pointer to the extended T_IMEMO/fields
         let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
         // Write the ivar in to the extended table
-        let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
+        let ivar_opnd = Opnd::mem(64, tbl_opnd, offs);
 
         asm_comment!(asm, "write IV");
         asm.mov(ivar_opnd, set_value);
+
+        // If we know the stack value is an immediate, there's no need to
+        // generate WB code.
+        if !skip_wb {
+            gen_trigger_wb(asm, tbl_opnd, set_value);
+        }
     }
 }
 
@@ -3183,7 +3224,7 @@ fn gen_set_ivar(
 
     // The current shape doesn't contain this iv, we need to transition to another shape.
     let mut new_shape_complex = false;
-    let new_shape = if !shape_complex && receiver_t_object && ivar_index.is_none() {
+    if !shape_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape_id = comptime_receiver.shape_id_of();
         // We don't need to check about imemo_fields here because we're definitely looking at a T_OBJECT.
         let klass = unsafe { rb_obj_class(comptime_receiver) };
@@ -3218,7 +3259,7 @@ fn gen_set_ivar(
 
     // If the receiver isn't a T_OBJECT, then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || shape_complex || new_shape_complex || megamorphic {
+    if !receiver_t_object || shape_complex || new_shape_complex || megamorphic || ivar_index.is_none() {
         // The function could raise FrozenError.
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_non_leaf_call(jit, asm);
@@ -3252,7 +3293,7 @@ fn gen_set_ivar(
         }
     } else {
         // Get the receiver
-        let mut recv = asm.load(if let StackOpnd(index) = recv_opnd {
+        let recv = asm.load(if let StackOpnd(index) = recv_opnd {
             asm.stack_opnd(index as i32)
         } else {
             Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
@@ -3278,44 +3319,8 @@ fn gen_set_ivar(
         let write_val;
 
         match ivar_index {
-            // If we don't have an instance variable index, then we need to
-            // transition out of the current shape.
             None => {
-                let (new_shape_id, needs_extension, ivar_index) = new_shape.unwrap();
-                if let Some((current_capacity, new_capacity)) = needs_extension {
-                    // Generate the C call so that runtime code will increase
-                    // the capacity and set the buffer.
-                    asm_comment!(asm, "call rb_ensure_iv_list_size");
-
-                    // It allocates so can trigger GC, which takes the VM lock
-                    // so could yield to a different ractor.
-                    jit_prepare_call_with_gc(jit, asm);
-                    asm.ccall(rb_ensure_iv_list_size as *const u8,
-                              vec![
-                                  recv,
-                                  Opnd::UImm(current_capacity.into()),
-                                  Opnd::UImm(new_capacity.into())
-                              ]
-                    );
-
-                    // Load the receiver again after the function call
-                    recv = asm.load(if let StackOpnd(index) = recv_opnd {
-                        asm.stack_opnd(index as i32)
-                    } else {
-                        Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
-                    });
-                }
-
-                write_val = asm.stack_opnd(0);
-                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, needs_extension.is_some());
-
-                asm_comment!(asm, "write shape");
-
-                let shape_id_offset = unsafe { rb_shape_id_offset() };
-                let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
-
-                // Store the new shape
-                asm.store(shape_opnd, Opnd::UImm(new_shape_id as u64));
+                panic!("ivar_index None should have been delegated to rb_vm_set_ivar_id")
             },
 
             Some(ivar_index) => {
@@ -3325,33 +3330,8 @@ fn gen_set_ivar(
                 // made the transition already, then there's no reason to
                 // update the shape on the object.  Just set the IV.
                 write_val = asm.stack_opnd(0);
-                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false);
+                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false, stack_type.is_imm());
             },
-        }
-
-        // If we know the stack value is an immediate, there's no need to
-        // generate WB code.
-        if !stack_type.is_imm() {
-            asm.spill_regs(); // for ccall (unconditionally spill them for RegMappings consistency)
-            let skip_wb = asm.new_label("skip_wb");
-            // If the value we're writing is an immediate, we don't need to WB
-            asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
-            asm.jnz(skip_wb);
-
-            // If the value we're writing is nil or false, we don't need to WB
-            asm.cmp(write_val, Qnil.into());
-            asm.jbe(skip_wb);
-
-            asm_comment!(asm, "write barrier");
-            asm.ccall(
-                rb_gc_writebarrier as *const u8,
-                vec![
-                    recv,
-                    write_val,
-                ]
-            );
-
-            asm.write_label(skip_wb);
         }
     }
     let write_val = asm.stack_pop(1); // Keep write_val on stack during ccall for GC

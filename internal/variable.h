@@ -71,6 +71,5 @@ VALUE rb_gvar_get(ID);
 VALUE rb_gvar_set(ID, VALUE);
 VALUE rb_gvar_defined(ID);
 void rb_const_warn_if_deprecated(const rb_const_entry_t *, VALUE, ID);
-void rb_ensure_iv_list_size(VALUE obj, uint32_t current_len, uint32_t newsize);
 
 #endif /* INTERNAL_VARIABLE_H */
