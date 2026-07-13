@@ -1452,7 +1452,9 @@ benchmark: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib \
 	    -e "files = %w[$(ARGS)]" \
 	    -e "files = Dir.glob(['$(ITEM)', '*$(ITEM)*.yml', '*$(ITEM)*.rb'], base: '$(srcdir)/benchmark').reject(&:empty?).sort.uniq.map {|f| '$(srcdir)/benchmark/' + f} if files.empty?" \
-	    -e "ARGV.map! {|a| a.start_with?('--executables') ? a.gsub(92.chr, '/') : a}" \
+	    -e "if sep = File::ALT_SEPARATOR" \
+	    -e   "ARGV.map! {|a| a.start_with?('--executables') ? a.gsub(sep, '/') : a}" \
+	    -e "end" \
 	    -e "ARGV.concat(files)" \
 	    -e "load '$(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver'" -- \
 	    --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
