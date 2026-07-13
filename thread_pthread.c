@@ -3335,6 +3335,10 @@ watchdog_dump(rb_vm_t *vm)
             vm->ractor.sched.barrier_serial, vm->ractor.sched.grq_cnt,
             (void *)vm->ractor.sched.barrier_ractor);
     fprintf(e, "vm->ractor: cnt=%u blocking_cnt=%u\n", vm->ractor.cnt, vm->ractor.blocking_cnt);
+    {
+        void rb_gc_diag_compact_state(FILE *);
+        rb_gc_diag_compact_state(e);
+    }
 
     rb_ractor_t *r;
     ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {

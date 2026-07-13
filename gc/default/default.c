@@ -4610,6 +4610,16 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
 }
 #endif
 
+// DIAGNOSTIC (dump-only): compaction state for the hang-time watchdog.
+void
+rb_gc_diag_compact_state(FILE *e)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)rb_gc_get_objspace();
+    fprintf(e, "gc: during_compacting=%d read_barrier_faults=%zu\n",
+            (int)objspace->flags.during_compacting,
+            objspace->profile.read_barrier_faults);
+}
+
 static void
 gc_compact_start(rb_objspace_t *objspace)
 {
