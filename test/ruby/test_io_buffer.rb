@@ -304,6 +304,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     buffer.resize(0)
     assert_equal 0, buffer.size
+    assert_equal "", buffer.get_string
 
     buffer.resize(1)
     assert_equal 1, buffer.size
@@ -325,6 +326,25 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(IO::Buffer::InvalidatedError) do
       slice.resize(16)
     end
+  end
+
+  def test_resize_freed
+    buffer = IO::Buffer.new(16)
+    buffer.free
+
+    buffer.resize(8)
+    assert_equal 8, buffer.size
+    assert_equal "\0" * 8, buffer.get_string
+  end
+
+  def test_resize_zero_freed
+    buffer = IO::Buffer.new(16)
+    buffer.free
+
+    # Re-allocating an empty buffer makes it accessible again:
+    buffer.resize(0)
+    assert_equal 0, buffer.size
+    assert_equal "", buffer.get_string
   end
 
   def test_compare_same_size
@@ -419,6 +439,50 @@ class TestIOBuffer < Test::Unit::TestCase
       buffer.set_string("Hola")
     end
     assert_equal "Ciao! World", hello
+  end
+
+  def test_free_raises_on_access
+    buffer = IO::Buffer.new(16)
+    buffer.free
+
+    assert_predicate buffer, :null?
+
+    assert_raise(IO::Buffer::AllocationError) {buffer.get_string}
+    assert_raise(IO::Buffer::AllocationError) {buffer.get_value(:U8, 0)}
+    assert_raise(IO::Buffer::AllocationError) {buffer.set_string("!")}
+    assert_raise(IO::Buffer::AllocationError) {buffer.dup}
+  end
+
+  def test_free_string_mapped_raises_on_access
+    buffer = IO::Buffer.for("Hello World".freeze)
+    buffer.free
+
+    assert_raise(IO::Buffer::AllocationError) {buffer.get_string}
+  end
+
+  def test_free_twice_raises_on_access
+    buffer = IO::Buffer.new(16)
+    buffer.free
+    buffer.free
+
+    assert_raise(IO::Buffer::AllocationError) {buffer.get_string}
+  end
+
+  def test_zero_length_free
+    buffer = IO::Buffer.new(0)
+    assert_equal "", buffer.get_string
+
+    buffer.free
+    assert_raise(IO::Buffer::AllocationError) {buffer.get_string}
+  end
+
+  def test_string_mapped_free_after_block
+    buffer = nil
+    IO::Buffer.for("Hello World") do |mapped|
+      buffer = mapped
+    end
+
+    assert_raise(IO::Buffer::AllocationError) {buffer.get_string}
   end
 
   def test_locked

@@ -48,6 +48,8 @@ enum rb_io_buffer_flags {
     // A mapped buffer that is also shared.
     RB_IO_BUFFER_SHARED = 8,
 
+    // 16 is used internally by io_buffer.c.
+
     // The buffer is locked and cannot be resized.
     // More specifically, it means we can't change the base address or size.
     // A buffer is typically locked before a system call that uses the data.
