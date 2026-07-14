@@ -243,6 +243,10 @@ module Bundler
       fetchers.first.api_fetcher?
     end
 
+    def release_resolution_memory!
+      @fetchers&.each(&:release_resolution_memory!)
+    end
+
     def gem_remote_fetcher
       @gem_remote_fetcher ||= begin
         require_relative "fetcher/gem_remote_fetcher"

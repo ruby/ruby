@@ -14,20 +14,6 @@ require "rubygems/package"
 class TestGemRemoteFetcherLocalSSLServer < Gem::TestCase
   include Gem::DefaultUserInteraction
 
-  # Generated via:
-  #   x = OpenSSL::PKey::DH.new(2048) # wait a while...
-  #   x.to_s => pem
-  TEST_KEY_DH2048 = OpenSSL::PKey::DH.new <<-_END_OF_PEM_
------BEGIN DH PARAMETERS-----
-MIIBCAKCAQEA3Ze2EHSfYkZLUn557torAmjBgPsqzbodaRaGZtgK1gEU+9nNJaFV
-G1JKhmGUiEDyIW7idsBpe4sX/Wqjnp48Lr8IeI/SlEzLdoGpf05iRYXC8Cm9o8aM
-cfmVgoSEAo9YLBpzoji2jHkO7Q5IPt4zxbTdlmmGFLc/GO9q7LGHhC+rcMcNTGsM
-49AnILNn49pq4Y72jSwdmvq4psHZwwFBbPwLdw6bLUDDCN90jfqvYt18muwUxDiN
-NP0fuvVAIB158VnQ0liHSwcl6+9vE1mL0Jo/qEXQxl0+UdKDjaGfTsn6HIrwTnmJ
-PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
------END DH PARAMETERS-----
-    _END_OF_PEM_
-
   def setup
     super
     @ssl_server_thread = nil
@@ -54,6 +40,16 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     end
   end
 
+  def test_pqc_ssl_connection
+    omit_unless_support_pqc
+
+    ssl_server = start_ssl_server(mode: :pqc)
+    temp_ca_cert = File.join(__dir__, "mldsa65_ca_cert.pem")
+    with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
+      fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
+    end
+  end
+
   def test_ssl_client_cert_auth_connection
     ssl_server = start_ssl_server(
       { verify_mode: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
@@ -61,6 +57,25 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     temp_ca_cert = File.join(__dir__, "ca_cert.pem")
     temp_client_cert = File.join(__dir__, "client.pem")
+
+    with_configured_fetcher(
+      ":ssl_ca_cert: #{temp_ca_cert}\n" \
+      ":ssl_client_cert: #{temp_client_cert}\n"
+    ) do |fetcher|
+      fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
+    end
+  end
+
+  def test_pqc_ssl_client_cert_auth_connection
+    omit_unless_support_pqc
+
+    ssl_server = start_ssl_server(
+      mode: :pqc,
+      verify_mode: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
+    )
+
+    temp_ca_cert = File.join(__dir__, "mldsa65_ca_cert.pem")
+    temp_client_cert = File.join(__dir__, "mldsa65_client.pem")
 
     with_configured_fetcher(
       ":ssl_ca_cert: #{temp_ca_cert}\n" \
@@ -149,13 +164,27 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     Gem.configuration = nil
   end
 
+  # mode:
+  #   :non_pqc - Run single server with PQC-unsupported RSA (default)
+  #   :pqc     - Run single server with PQC-supported key exchange,
+  #              X25519MLKEM768, and PQC-supported certificate, ML-DSA-65
   def start_ssl_server(config = {})
+    mode = config.fetch(:mode, :non_pqc)
     server = TCPServer.new(0)
     ctx = OpenSSL::SSL::SSLContext.new
-    ctx.cert = cert("ssl_cert.pem")
-    ctx.key = key("ssl_key.pem")
-    ctx.ca_file = File.join(__dir__, "ca_cert.pem")
-    ctx.tmp_dh_callback = proc { TEST_KEY_DH2048 }
+
+    case mode
+    when :non_pqc
+      ctx.cert = cert("ssl_cert.pem")
+      ctx.key = key("ssl_key.pem")
+      ctx.ca_file = File.join(__dir__, "ca_cert.pem")
+    when :pqc
+      ctx.cert = cert("mldsa65_ssl_cert.pem")
+      ctx.key = key("mldsa65_ssl_key.pem")
+      ctx.ca_file = File.join(__dir__, "mldsa65_ca_cert.pem")
+      ctx.groups = "X25519MLKEM768"
+    end
+
     ctx.verify_mode = config[:verify_mode] if config[:verify_mode]
     @ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)
     @ssl_server_thread = Thread.new do
@@ -190,6 +219,17 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def key(filename)
-    OpenSSL::PKey::RSA.new(File.read(File.join(__dir__, filename)))
+    OpenSSL::PKey.read(File.read(File.join(__dir__, filename)))
+  end
+
+  def omit_unless_support_pqc
+    # PQC algorithms ML-KEM and ML-DSA require OpenSSL >= 3.5.
+    # https://openssl-library.org/post/2025-04-08-openssl-35-final-release/
+    omit "PQC algorithms require OpenSSL >= 3.5" unless
+      OpenSSL::OPENSSL_VERSION_NUMBER >= 0x30500000
+    # ctx.groups (OpenSSL::SSL::SSLContext#groups) used in start_ssl_server
+    # mode :pqc requires Ruby OpenSSL >= 4.0.
+    omit "PQC test requires Ruby OpenSSL >= 4.0" unless
+      Gem::Version.new(OpenSSL::VERSION) >= Gem::Version.new("4.0")
   end
 end if Gem::HAVE_OPENSSL

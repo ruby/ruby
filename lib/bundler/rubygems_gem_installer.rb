@@ -4,6 +4,11 @@ require "rubygems/installer"
 
 module Bundler
   class RubyGemsGemInstaller < Gem::Installer
+    # Cap how many jobserver slots a single gem's `make` may grab so that one
+    # gem with many recipes doesn't starve the others sharing the pool. Beyond
+    # a handful of jobs the extra parallelism rarely pays off in practice.
+    MAX_JOBS_PER_GEM = 3
+
     def check_executable_overwrite(filename)
       # Bundler needs to install gems regardless of binstub overwriting
     end
@@ -101,10 +106,18 @@ module Bundler
     end
 
     def build_jobs
-      Bundler.settings[:jobs] || super
+      @jobserver_read_io&.read_nonblock(MAX_JOBS_PER_GEM, @jobserver_tokens)
+      acquired_jobs = @jobserver_tokens.empty? ? nil : @jobserver_tokens.size
+
+      acquired_jobs || Bundler.settings[:jobs] || super
+    rescue IO::WaitReadable, EOFError
+      1
     end
 
     def build_extensions
+      @jobserver_tokens = +""
+      @jobserver_read_io, @jobserver_write_io = connect_to_jobserver
+
       extension_cache_path = options[:bundler_extension_cache_path]
       extension_dir = spec.extension_dir
       unless extension_cache_path && extension_dir
@@ -128,6 +141,11 @@ module Bundler
           FileUtils.cp_r extension_dir, extension_cache_path
         end
       end
+    ensure
+      unless @jobserver_tokens.empty?
+        @jobserver_write_io.write(@jobserver_tokens)
+        @jobserver_write_io.flush
+      end
     end
 
     def spec
@@ -143,6 +161,21 @@ module Bundler
     end
 
     private
+
+    def connect_to_jobserver
+      return unless ENV["MAKEFLAGS"]
+      # We append our own --jobserver-auth, so read the last one. Otherwise a
+      # parent jobserver's descriptors (e.g. `bundle install` run under
+      # `make -j`) would be picked up instead of the pool ParallelInstaller created.
+      read_fd, write_fd = ENV["MAKEFLAGS"].scan(/--jobserver-auth=(\d+),(\d+)/).last
+
+      return unless read_fd && write_fd
+
+      # Pass explicit modes. On POSIX, IO.new detects the descriptor's access
+      # mode, but on Windows it can't, so the write end would default to read
+      # mode and raise "IOError: not opened for writing" when releasing slots.
+      [IO.new(read_fd.to_i, "r", autoclose: false), IO.new(write_fd.to_i, "w", autoclose: false)]
+    end
 
     def prepare_extension_build(extension_dir)
       SharedHelpers.filesystem_access(extension_dir, :create) do
