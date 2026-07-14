@@ -24,9 +24,9 @@ Gem::Specification.new do |s|
 
   s.metadata = {
     "bug_tracker_uri" => "https://github.com/ruby/rubygems/issues?q=is%3Aopen+is%3Aissue+label%3ABundler",
-    "changelog_uri" => "https://github.com/ruby/rubygems/blob/master/bundler/CHANGELOG.md",
+    "changelog_uri" => "https://github.com/ruby/rubygems/blob/master/CHANGELOG-bundler.md",
     "homepage_uri" => "https://bundler.io/",
-    "source_code_uri" => "https://github.com/ruby/rubygems/tree/master/bundler",
+    "source_code_uri" => "https://github.com/ruby/rubygems",
   }
 
   s.required_ruby_version     = ">= 3.2.0"

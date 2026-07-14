@@ -397,10 +397,6 @@ module Bundler
 
       contents = to_lock
 
-      # Convert to \r\n if the existing lock has them
-      # i.e., Windows with `git config core.autocrlf=true`
-      contents.gsub!(/\n/, "\r\n") if @lockfile_contents.match?("\r\n")
-
       if @locked_bundler_version
         locked_major = @locked_bundler_version.segments.first
         current_major = bundler_version_to_lock.segments.first
@@ -419,6 +415,14 @@ module Bundler
       if Bundler.frozen_bundle?
         Bundler.ui.error "Cannot write a changed lockfile while frozen."
         return
+      end
+
+      # Convert to \r\n if the existing lock has them, i.e., Windows with
+      # `git config core.autocrlf=true`. Detect from the bytes on disk because
+      # reading in text mode strips carriage returns on Windows, which would
+      # otherwise defeat this check and rewrite a `\r\n` lockfile with `\n`.
+      if File.exist?(file) && SharedHelpers.filesystem_access(file, :read) {|p| File.binread(p).include?("\r\n") }
+        contents.gsub!(/\n/, "\r\n")
       end
 
       begin

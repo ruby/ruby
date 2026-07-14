@@ -602,8 +602,11 @@ module Bundler
 
           trace_line = backtrace.find {|l| l.include?(dsl_path) } || trace_line
           return m unless trace_line
-          line_number = trace_line.split(":")[1].to_i - 1
+          # Match the line number right before `:in` or the end of the line so a
+          # Windows drive letter like `C:` does not get mistaken for the number.
+          line_number = trace_line[/:(\d+)(?::in\b|\z)/, 1]
           return m unless line_number
+          line_number = line_number.to_i - 1
 
           lines      = contents.lines.to_a
           indent     = " #  "

@@ -5,7 +5,7 @@ require_relative "vendored_tsort"
 module Bundler
   class SpecSet
     include Enumerable
-    include TSort
+    include Gem::TSort
 
     def initialize(specs)
       @specs = specs
@@ -315,7 +315,7 @@ module Bundler
 
     def sorted
       @sorted ||= ([@specs.find {|s| s.name == "rake" }] + tsort).compact.uniq
-    rescue TSort::Cyclic => error
+    rescue Gem::TSort::Cyclic => error
       cgems = extract_circular_gems(error)
       raise CyclicDependencyError, "Your bundle requires gems that depend" \
         " on each other, creating an infinite loop. Please remove either" \
