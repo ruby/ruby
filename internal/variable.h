@@ -49,7 +49,7 @@ VALUE rb_mod_set_temporary_name(VALUE, VALUE);
 
 void rb_obj_replace_fields(VALUE obj, VALUE fields_obj);
 void rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table);
-void rb_evict_ivars_to_hash(VALUE obj);
+VALUE rb_obj_complex_fields_build(VALUE obj);
 VALUE rb_obj_field_get(VALUE obj, shape_id_t target_shape_id);
 void rb_ivar_set_internal(VALUE obj, ID id, VALUE val);
 void rb_ivar_foreach_buffered(VALUE obj, int (*func)(ID name, VALUE val, st_data_t arg), st_data_t arg);

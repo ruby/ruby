@@ -267,7 +267,6 @@ shape_id_t rb_shape_transition_add_ivar_no_warnings(shape_id_t shape_id, ID id, 
 shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
 shape_id_t rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id);
 void rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALUE *src_buf, shape_id_t src_shape_id);
-void rb_shape_copy_complex_ivars(VALUE dest, VALUE src);
 
 static inline bool
 rb_shape_frozen_p(shape_id_t shape_id)
