@@ -7028,8 +7028,14 @@ impl Function {
             }
             Insn::GuardLess { left, right, .. }
             | Insn::GuardGreaterEq { left, right, .. } => {
-                self.assert_subtype(insn_id, left, types::CInt64)?;
-                self.assert_subtype(insn_id, right, types::CInt64)
+                // TODO: Expand this to other matching C integer sizes when we need them.
+                let left_type = self.type_of(left);
+                if left_type.is_subtype(types::CInt64) {
+                    self.assert_subtype(insn_id, right, types::CInt64)
+                } else {
+                    self.assert_subtype(insn_id, left, types::CUInt64)?;
+                    self.assert_subtype(insn_id, right, types::CUInt64)
+                }
             },
             Insn::StringGetbyte { string, index } => {
                 self.assert_subtype(insn_id, string, types::String)?;
