@@ -220,6 +220,14 @@ rb_str_eql_internal(const VALUE str1, const VALUE str2)
     return Qfalse;
 }
 
+static inline bool
+rb_streql_cstr(VALUE str, const char *lit, size_t len)
+{
+    if ((size_t)RSTRING_LEN(str) != len) return false;
+    return memcmp(RSTRING_PTR(str), lit, len) == 0;
+}
+#define rb_streql_lit(str, lit) rb_streql_cstr(str, lit, rb_strlen_lit(lit))
+
 #if __has_builtin(__builtin_constant_p)
 # define rb_fstring_cstr(str) \
     (__builtin_constant_p(str) ? \

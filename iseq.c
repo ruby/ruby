@@ -616,7 +616,7 @@ iseq_location_setup(rb_iseq_t *iseq, VALUE name, VALUE path, VALUE realpath, int
     RB_OBJ_WRITE(iseq, &loc->base_label, name);
     loc->first_lineno = first_lineno;
 
-    if (ISEQ_BODY(iseq)->local_iseq == iseq && strcmp(RSTRING_PTR(name), "initialize") == 0) {
+    if (ISEQ_BODY(iseq)->local_iseq == iseq && rb_streql_lit(name, "initialize")) {
         ISEQ_BODY(iseq)->param.flags.use_block = 1;
     }
 
