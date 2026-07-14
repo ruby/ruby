@@ -154,7 +154,7 @@ static VALUE rb_cProcessTms;
 #define WSTOPSIG        WEXITSTATUS
 #endif
 
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 #define HAVE_44BSD_SETUID 1
 #define HAVE_44BSD_SETGID 1
 #endif
@@ -164,20 +164,11 @@ static VALUE rb_cProcessTms;
 #undef HAVE_SETRGID
 #endif
 
-#ifdef BROKEN_SETREUID
-#define setreuid ruby_setreuid
-int setreuid(rb_uid_t ruid, rb_uid_t euid);
-#endif
-#ifdef BROKEN_SETREGID
-#define setregid ruby_setregid
-int setregid(rb_gid_t rgid, rb_gid_t egid);
-#endif
-
 #if defined(HAVE_44BSD_SETUID) || defined(__APPLE__)
-#if !defined(USE_SETREUID) && !defined(BROKEN_SETREUID)
+#if !defined(USE_SETREUID)
 #define OBSOLETE_SETREUID 1
 #endif
-#if !defined(USE_SETREGID) && !defined(BROKEN_SETREGID)
+#if !defined(USE_SETREGID)
 #define OBSOLETE_SETREGID 1
 #endif
 #endif
@@ -6293,21 +6284,6 @@ proc_setuid(VALUE obj, VALUE id)
 
 static rb_uid_t SAVED_USER_ID = -1;
 
-#ifdef BROKEN_SETREUID
-int
-setreuid(rb_uid_t ruid, rb_uid_t euid)
-{
-    if (ruid != (rb_uid_t)-1 && ruid != getuid()) {
-        if (euid == (rb_uid_t)-1) euid = geteuid();
-        if (setuid(ruid) < 0) return -1;
-    }
-    if (euid != (rb_uid_t)-1 && euid != geteuid()) {
-        if (seteuid(euid) < 0) return -1;
-    }
-    return 0;
-}
-#endif
-
 /*
  *  call-seq:
  *     Process::UID.change_privilege(user)   -> integer
@@ -7006,21 +6982,6 @@ rb_daemon(int nochdir, int noclose)
  */
 
 static rb_gid_t SAVED_GROUP_ID = -1;
-
-#ifdef BROKEN_SETREGID
-int
-setregid(rb_gid_t rgid, rb_gid_t egid)
-{
-    if (rgid != (rb_gid_t)-1 && rgid != getgid()) {
-        if (egid == (rb_gid_t)-1) egid = getegid();
-        if (setgid(rgid) < 0) return -1;
-    }
-    if (egid != (rb_gid_t)-1 && egid != getegid()) {
-        if (setegid(egid) < 0) return -1;
-    }
-    return 0;
-}
-#endif
 
 /*
  *  call-seq:
