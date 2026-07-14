@@ -5103,6 +5103,9 @@ impl Function {
                 let SendDirectData { recv, cme, iseq, args, kw_bits, jit_entry_idx, block: call_block, state, .. } = *data;
                 // SendDirect invariant: block is either None or BlockIseq.
                 // BlockArg is rejected upstream during type specialization.
+                // TODO(max): If we accept BlockArg here, we need to change the folding of Defined
+                // in HIR construction for the defined opcode to check the send flags of the method
+                // being inlined, too.
                 let blockiseq: Option<IseqPtr> = call_block.map(|bh| match bh {
                     BlockHandler::BlockIseq(bi) => bi,
                     BlockHandler::BlockArg => unreachable!("BlockArg in SendDirect"),
@@ -8239,18 +8242,31 @@ fn add_iseq_to_hir(
                         // Similar to gen_is_block_given
                         Insn::Const { val: Const::Value(Qnil) }
                     } else {
-                        // For DEFINED_YIELD, codegen materializes the local EP inline (similar to
-                        // gen_is_block_given) to check for a block handler. Precompute the lexical
-                        // distance from this iseq up to local_iseq so codegen does not have to
-                        // walk the parent chain. Any DEFINED_YIELD reaching this branch has a
-                        // method local_iseq by construction -- the above branch has already
-                        // diverted the non-method case to Qnil.
-                        let lep_level = if op_type == DEFINED_YIELD as usize {
-                            get_lvar_level(iseq)
+                        if op_type == DEFINED_YIELD as usize && matches!(mode, AddIseqMode::Inlined { .. }) {
+                            // If we are inlining a method that has a blockiseq handler, we can fold Defined(DEFINED_YIELD).
+                            // TODO(max): If we handle non-blockiseq block arguments such as
+                            // &:symbol or just &block forwarding, we need to revisit this and
+                            // check flags.
+                            let has_block = matches!(mode, AddIseqMode::Inlined { blockiseq: Some(_), .. });
+                            if has_block {
+                                Insn::Const { val: Const::Value(pushval) }
+                            } else {
+                                Insn::Const { val: Const::Value(Qnil) }
+                            }
                         } else {
-                            0
-                        };
-                        Insn::Defined { op_type, obj, pushval, v, lep_level, state: exit_id }
+                            // For DEFINED_YIELD, codegen materializes the local EP inline (similar to
+                            // gen_is_block_given) to check for a block handler. Precompute the lexical
+                            // distance from this iseq up to local_iseq so codegen does not have to
+                            // walk the parent chain. Any DEFINED_YIELD reaching this branch has a
+                            // method local_iseq by construction -- the above branch has already
+                            // diverted the non-method case to Qnil.
+                            let lep_level = if op_type == DEFINED_YIELD as usize {
+                                get_lvar_level(iseq)
+                            } else {
+                                0
+                            };
+                            Insn::Defined { op_type, obj, pushval, v, lep_level, state: exit_id }
+                        }
                     };
                     state.stack_push(fun.push_insn(block, insn));
                 }
