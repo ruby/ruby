@@ -3287,7 +3287,7 @@ impl Function {
             Insn::FixnumAnd  { .. } => types::Fixnum,
             Insn::FixnumOr   { .. } => types::Fixnum,
             Insn::FixnumXor  { .. } => types::Fixnum,
-            Insn::IntAnd { .. } => types::CInt64,
+            Insn::IntAnd { left, .. } => self.type_of(*left).unspecialized(),
             Insn::IntOr { left, .. } => self.type_of(*left).unspecialized(),
             Insn::FixnumLShift { .. } => types::Fixnum,
             Insn::FixnumRShift { .. } => types::Fixnum,
@@ -5458,12 +5458,8 @@ impl Function {
         }
 
         match profiled_type.shape().layout() {
-            ShapeLayout::RObject => {
+            ShapeLayout::RObject | ShapeLayout::RData => {
                 // OK
-            }
-            ShapeLayout::RData => {
-                // FIXME: we side exit for now as we're missing SHAPE_ID_FL_PRIVATE_MASK handling.
-                return Err(Counter::setivar_fallback_not_t_object);
             }
             _ => {
                 return Err(Counter::setivar_fallback_not_t_object);
@@ -5485,8 +5481,6 @@ impl Function {
             // Current shape does not contain this ivar; do a shape transition.
             let current_shape_id = profiled_type.shape();
             let class = profiled_type.class();
-            // We're only looking at T_OBJECT so ignore all of the imemo stuff.
-            assert!(profiled_type.flags().is_t_object());
             next_shape = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id.0, id, class) });
             // If the VM ran out of shapes, or this class generated too many leaf,
             // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
@@ -5536,10 +5530,15 @@ impl Function {
             let shape_id_offset = unsafe { rb_shape_id_offset() };
 
             if !embedded {
-                // FIXME: We need to strip the SHAPE_ID_FL_PRIVATE_MASK from the shape for `ivar_storage`.
-                // see `RBASIC_SET_SHAPE_ID`.
-                // This path is currently dead code, see the FIXME in `prepare_optimized_setivar`
-                self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id, num_bits: types::CShape.num_bits() });
+                // Transition the shape of the storage object but leave the
+                // SHAPE_ID_FL_PRIVATE_MASK bits unchanged. See `RBASIC_SET_SHAPE_ID`.
+                debug_assert_eq!(types::CShape.num_bits(), 32);
+                let owner_next_shape_masked = self.push_insn(block, Insn::Const { val: Const::CUInt32(spec.next_shape.0 & !SHAPE_ID_FL_PRIVATE_MASK) });
+                let storage_current_shape = self.load_shape(block, ivar_storage);
+                let private_mask = self.push_insn(block, Insn::Const { val: Const::CUInt32(SHAPE_ID_FL_PRIVATE_MASK) });
+                let storage_current_shape_masked = self.push_insn(block, Insn::IntAnd { left: storage_current_shape, right: private_mask });
+                let storage_next_shape = self.push_insn(block, Insn::IntOr { left: storage_current_shape_masked, right: owner_next_shape_masked });
+                self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: FieldName::shape_id, offset: shape_id_offset, val: storage_next_shape, num_bits: types::CShape.num_bits() });
             }
             self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id, num_bits: types::CShape.num_bits() });
         }
@@ -6951,6 +6950,11 @@ impl Function {
                     self.assert_subtype(insn_id, right, types::CInt64)
                 } else if left_type.is_subtype(types::CUInt64) {
                     self.assert_subtype(insn_id, right, types::CUInt64)
+                } else if left_type.is_subtype(types::CShape) {
+                    debug_assert_eq!(types::CShape.num_bits(), 32);
+                    self.assert_subtype(insn_id, right, types::CUInt32)
+                } else if left_type.is_subtype(types::CUInt32) {
+                    self.assert_subtype(insn_id, right, types::CUInt32)
                 } else {
                     let all_ints = types::CInt64.union(types::CUInt64);
                     self.assert_subtype(insn_id, left, all_ints)?;
@@ -7047,8 +7051,14 @@ impl Function {
             }
             Insn::GuardLess { left, right, .. }
             | Insn::GuardGreaterEq { left, right, .. } => {
-                self.assert_subtype(insn_id, left, types::CInt64)?;
-                self.assert_subtype(insn_id, right, types::CInt64)
+                // TODO: Expand this to other matching C integer sizes when we need them.
+                let left_type = self.type_of(left);
+                if left_type.is_subtype(types::CInt64) {
+                    self.assert_subtype(insn_id, right, types::CInt64)
+                } else {
+                    self.assert_subtype(insn_id, left, types::CUInt64)?;
+                    self.assert_subtype(insn_id, right, types::CUInt64)
+                }
             },
             Insn::StringGetbyte { string, index } => {
                 self.assert_subtype(insn_id, string, types::String)?;
