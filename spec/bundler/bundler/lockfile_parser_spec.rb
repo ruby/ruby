@@ -252,6 +252,25 @@ RSpec.describe Bundler::LockfileParser do
       end
     end
 
+    context "when a plugin source's plugin is not installed" do
+      let(:lockfile_contents) { <<~L + super().sub("DEPENDENCIES\n", "DEPENDENCIES\n  private_gem!\n") }
+        PLUGIN SOURCE
+          remote: https://example.com/private
+          type: not_installed_plugin_type
+          specs:
+            private_gem (1.2.3)
+
+      L
+
+      it "parses dependencies and specs using a placeholder source" do
+        expect(subject.valid?).to be(true)
+        expect(subject.dependencies.keys).to include("private_gem", "peiji-san", "rake")
+        private_spec = subject.specs.find {|s| s.name == "private_gem" }
+        expect(private_spec.version).to eq(v("1.2.3"))
+        expect(private_spec.source).to be_a(Bundler::Plugin::UnloadedSource)
+      end
+    end
+
     context "when CHECKSUMS has duplicate checksums in the lockfile that don't match" do
       let(:bad_checksum) { "sha256=c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11" }
       let(:lockfile_contents) { super().split(/(?<=CHECKSUMS\n)/m).insert(1, "  rake (10.3.2) #{bad_checksum}\n").join }

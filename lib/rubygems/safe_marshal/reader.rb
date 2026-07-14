@@ -28,6 +28,8 @@ module Gem
 
       def initialize(io)
         @io = io
+        @object_links = {}
+        @symbol_links = {}
       end
 
       def read!
@@ -191,7 +193,7 @@ module Gem
 
       def read_symbol_link
         offset = read_integer
-        Elements::SymbolLink.new(offset)
+        @symbol_links[offset] ||= Elements::SymbolLink.new(offset)
       end
 
       def read_user_marshal
@@ -200,43 +202,9 @@ module Gem
         Elements::UserMarshal.new(name, data)
       end
 
-      # profiling bundle install --full-index shows that
-      # offset 6 is by far the most common object link,
-      # so we special case it to avoid allocating a new
-      # object a third of the time.
-      # the following are all the object links that
-      # appear more than 10000 times in my profiling
-
-      OBJECT_LINKS = {
-        6 => Elements::ObjectLink.new(6).freeze,
-        30 => Elements::ObjectLink.new(30).freeze,
-        81 => Elements::ObjectLink.new(81).freeze,
-        34 => Elements::ObjectLink.new(34).freeze,
-        38 => Elements::ObjectLink.new(38).freeze,
-        50 => Elements::ObjectLink.new(50).freeze,
-        91 => Elements::ObjectLink.new(91).freeze,
-        42 => Elements::ObjectLink.new(42).freeze,
-        46 => Elements::ObjectLink.new(46).freeze,
-        150 => Elements::ObjectLink.new(150).freeze,
-        100 => Elements::ObjectLink.new(100).freeze,
-        104 => Elements::ObjectLink.new(104).freeze,
-        108 => Elements::ObjectLink.new(108).freeze,
-        242 => Elements::ObjectLink.new(242).freeze,
-        246 => Elements::ObjectLink.new(246).freeze,
-        139 => Elements::ObjectLink.new(139).freeze,
-        143 => Elements::ObjectLink.new(143).freeze,
-        114 => Elements::ObjectLink.new(114).freeze,
-        308 => Elements::ObjectLink.new(308).freeze,
-        200 => Elements::ObjectLink.new(200).freeze,
-        54 => Elements::ObjectLink.new(54).freeze,
-        62 => Elements::ObjectLink.new(62).freeze,
-        1_286_245 => Elements::ObjectLink.new(1_286_245).freeze,
-      }.freeze
-      private_constant :OBJECT_LINKS
-
       def read_object_link
         offset = read_integer
-        OBJECT_LINKS[offset] || Elements::ObjectLink.new(offset)
+        @object_links[offset] ||= Elements::ObjectLink.new(offset)
       end
 
       EMPTY_HASH = Elements::Hash.new([].freeze).freeze

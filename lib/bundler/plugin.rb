@@ -4,11 +4,12 @@ require_relative "plugin/api"
 
 module Bundler
   module Plugin
-    autoload :DSL,        File.expand_path("plugin/dsl", __dir__)
-    autoload :Events,     File.expand_path("plugin/events", __dir__)
-    autoload :Index,      File.expand_path("plugin/index", __dir__)
-    autoload :Installer,  File.expand_path("plugin/installer", __dir__)
-    autoload :SourceList, File.expand_path("plugin/source_list", __dir__)
+    autoload :DSL,            File.expand_path("plugin/dsl", __dir__)
+    autoload :Events,         File.expand_path("plugin/events", __dir__)
+    autoload :Index,          File.expand_path("plugin/index", __dir__)
+    autoload :Installer,      File.expand_path("plugin/installer", __dir__)
+    autoload :SourceList,     File.expand_path("plugin/source_list", __dir__)
+    autoload :UnloadedSource, File.expand_path("plugin/unloaded_source", __dir__)
 
     class MalformattedPlugin < PluginError; end
     class UndefinedCommandError < PluginError; end
@@ -199,9 +200,14 @@ module Bundler
     # @return [API::Source] the instance of the class that handles the source
     #                       type passed in locked_opts
     def from_lock(locked_opts)
+      opts = locked_opts.merge("uri" => locked_opts["remote"])
+      # use an inert placeholder when the plugin handling this source is not
+      # installed, so that the lockfile can still be parsed
+      return UnloadedSource.new(opts) unless source?(locked_opts["type"])
+
       src = source(locked_opts["type"])
 
-      src.new(locked_opts.merge("uri" => locked_opts["remote"]))
+      src.new(opts)
     end
 
     # To be called via the API to register a hooks and corresponding block that
