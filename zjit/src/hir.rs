@@ -3269,7 +3269,7 @@ impl Function {
             Insn::FixnumAnd  { .. } => types::Fixnum,
             Insn::FixnumOr   { .. } => types::Fixnum,
             Insn::FixnumXor  { .. } => types::Fixnum,
-            Insn::IntAnd { .. } => types::CInt64,
+            Insn::IntAnd { left, .. } => self.type_of(*left).unspecialized(),
             Insn::IntOr { left, .. } => self.type_of(*left).unspecialized(),
             Insn::FixnumLShift { .. } => types::Fixnum,
             Insn::FixnumRShift { .. } => types::Fixnum,
@@ -5510,9 +5510,15 @@ impl Function {
             let shape_id_offset = unsafe { rb_shape_id_offset() };
 
             if !embedded {
-                let stripped_shape = ShapeId(spec.next_shape.0 & !SHAPE_ID_FL_PRIVATE_MASK);
-                let stripped_val = self.push_insn(block, Insn::Const { val: Const::CShape(stripped_shape) });
-                self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: FieldName::shape_id, offset: shape_id_offset, val: stripped_val, num_bits: types::CShape.num_bits() });
+                // Transition the shape of the storage object but leave the
+                // SHAPE_ID_FL_PRIVATE_MASK bits unchanged.
+                debug_assert_eq!(types::CShape.num_bits(), 32);
+                let owner_next_shape_masked = self.push_insn(block, Insn::Const { val: Const::CUInt32(spec.next_shape.0 & !SHAPE_ID_FL_PRIVATE_MASK) });
+                let storage_current_shape = self.load_shape(block, ivar_storage);
+                let private_mask = self.push_insn(block, Insn::Const { val: Const::CUInt32(SHAPE_ID_FL_PRIVATE_MASK) });
+                let storage_current_shape_masked = self.push_insn(block, Insn::IntAnd { left: storage_current_shape, right: private_mask });
+                let storage_next_shape = self.push_insn(block, Insn::IntOr { left: storage_current_shape_masked, right: owner_next_shape_masked });
+                self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: FieldName::shape_id, offset: shape_id_offset, val: storage_next_shape, num_bits: types::CShape.num_bits() });
             }
             self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id, num_bits: types::CShape.num_bits() });
         }
@@ -6924,6 +6930,11 @@ impl Function {
                     self.assert_subtype(insn_id, right, types::CInt64)
                 } else if left_type.is_subtype(types::CUInt64) {
                     self.assert_subtype(insn_id, right, types::CUInt64)
+                } else if left_type.is_subtype(types::CShape) {
+                    debug_assert_eq!(types::CShape.num_bits(), 32);
+                    self.assert_subtype(insn_id, right, types::CUInt32)
+                } else if left_type.is_subtype(types::CUInt32) {
+                    self.assert_subtype(insn_id, right, types::CUInt32)
                 } else {
                     let all_ints = types::CInt64.union(types::CUInt64);
                     self.assert_subtype(insn_id, left, all_ints)?;

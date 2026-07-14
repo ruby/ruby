@@ -9849,8 +9849,12 @@ mod hir_opt_tests {
           StoreField v17, :@b@0x1002, v10
           WriteBarrier v17, v10
           v20:CShape[0x1003] = Const CShape(0x1003)
-          v21:CShape[0x1004] = Const CShape(0x1004)
-          StoreField v17, :shape_id@0x1000, v21
+          v21:CUInt32[8] = Const CUInt32(8)
+          v22:CShape = LoadField v17, :shape_id@0x1000
+          v23:CUInt32[1677197312] = Const CUInt32(1677197312)
+          v24:CShape = IntAnd v22, v23
+          v25:CShape = IntOr v24, v21
+          StoreField v17, :shape_id@0x1000, v25
           StoreField v14, :shape_id@0x1000, v20
           CheckInterrupts
           Return v10
