@@ -7479,9 +7479,9 @@ impl FrameState {
         args
     }
 
-    /// Get the opcode for the current instruction
+    /// Get the bare opcode for the current instruction.
     pub fn get_opcode(&self) -> i32 {
-        unsafe { rb_iseq_opcode_at_pc(self.iseq, self.pc) }
+        unsafe { rb_zjit_insn_to_bare_insn(rb_iseq_opcode_at_pc(self.iseq, self.pc)) }
     }
 
     pub fn print<'a>(&'a self, ptr_map: &'a PtrPrintMap) -> FrameStatePrinter<'a> {
@@ -7793,6 +7793,15 @@ fn add_iseq_to_hir(
     iseq: *const rb_iseq_t,
     mode: AddIseqMode,
 ) -> Result<AddIseqResult, ParseError> {
+    // An inlined ISEQ may not have run in the interpreter enough to install
+    // profiling instructions of its own. Its materialized frame needs them so
+    // a recompile exit can profile the rest of the callee normally. The callee
+    // is shared state, so one outer ISEQ reaching its final version cannot
+    // disable profiling needed by a different non-final outer ISEQ.
+    if matches!(mode, AddIseqMode::Inlined { .. }) {
+        unsafe { rb_zjit_profile_enable(iseq) };
+    }
+
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new();
 

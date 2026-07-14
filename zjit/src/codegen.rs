@@ -3339,8 +3339,15 @@ fn gen_stack_overflow_check(jit: &mut JITState, asm: &mut Assembler, function: &
 
 /// Convert ISEQ into High-level IR
 fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
-    // Convert ZJIT instructions back to bare instructions
-    unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+    let payload = get_or_create_iseq_payload(iseq);
+    let final_version = payload.versions.len() + 1 >= max_iseq_versions();
+
+    // Lazy compilation can bypass the interpreter profiling threshold. Make
+    // sure the first non-final version still has zjit_* instructions for later
+    // exits. Later versions keep those instructions without re-enabling them.
+    if payload.versions.is_empty() && !final_version {
+        unsafe { crate::cruby::rb_zjit_profile_enable(iseq) };
+    }
 
     // Reject ISEQs with very large temp stacks.
     // We cannot encode too large offsets to access locals in arm64.
@@ -3364,6 +3371,17 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
         trace_compile_phase("optimize", || function.optimize());
     }
     function.dump_hir();
+
+    // Keep zjit_* instructions profiling through every version that can be
+    // recompiled. The final version cannot use another profile, so remove the
+    // interpreter profiling overhead then. This applies only to the compiled
+    // root; an inlined ISEQ can also belong to another non-final compiled owner.
+    // Do this after building HIR because a recursive inline can re-enable
+    // profiling on the same ISEQ.
+    if final_version {
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+    }
+
     Ok(function)
 }
 
@@ -3437,8 +3455,8 @@ macro_rules! c_callable {
 pub(crate) use c_callable;
 
 c_callable! {
-    /// Called from JIT side-exit code to profile operands and trigger recompilation.
-    /// Once enough profiles are gathered, invalidates the compiled unit for recompilation.
+    /// Called from a recompile side exit to invalidate the compiled unit once
+    /// its interpreter profiling window has completed.
     ///
     /// `compiled_iseq_raw` is the ISEQ that was actually compiled. For an exit out
     /// of inlined code, the inliner folds the callee's body into the outer ISEQ, so
@@ -3467,12 +3485,9 @@ c_callable! {
                 crate::profile::profile_recompile_insn(ec)
             });
 
-            // Once we have enough profiles, invalidate the compiled unit so it
-            // recompiles and reads the freshly recorded profile. We invalidate
-            // `compiled_iseq` rather than `frame_iseq` because an inlined callee has no
-            // compiled code of its own; the outer function it was folded into is what
-            // actually got compiled.
             if should_recompile {
+                // An inlined callee has no compiled version of its own, so invalidate
+                // the outer ISEQ that contains the failing guard.
                 let payload = get_or_create_iseq_payload(compiled_iseq);
                 if let Some(version) = payload.versions.last_mut() {
                     let cb = ZJITState::get_code_block();

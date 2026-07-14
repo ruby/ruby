@@ -112,46 +112,47 @@ fn profile_insn_sample(
 fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
     let profiler = &mut Profiler::new(ec);
     let profile = &mut get_or_create_iseq_payload(profiler.iseq).profile;
-    let _ = profile_insn_sample(bare_opcode, profiler, profile);
 
-    // Once we profile the instruction enough times, we stop profiling it.
+    if profile.entry_mut(profiler.insn_idx).profiles_remaining == 0 {
+        return;
+    }
+
+    let _ = profile_insn_sample(bare_opcode, profiler, profile);
     let entry = profile.entry_mut(profiler.insn_idx);
     entry.profiles_remaining = entry.profiles_remaining.saturating_sub(1);
-    if entry.profiles_remaining == 0 {
-        unsafe { rb_zjit_iseq_insn_set(profiler.iseq, profiler.insn_idx as u32, bare_opcode); }
-    }
 }
 
-/// Profile the instruction at the current CFP for a recompile side exit.
+/// Start or observe a whole-ISEQ interpreter profiling window after a
+/// recompile exit. Return true once the instruction at the current control
+/// frame has collected enough samples to compile the next version.
 pub fn profile_recompile_insn(ec: EcPtr) -> bool {
-    let profiler = &mut Profiler::new(ec);
-    let pc = unsafe { get_cfp_pc(profiler.cfp) };
-    let bare_opcode = unsafe {
-        rb_zjit_insn_to_bare_insn(rb_iseq_opcode_at_pc(profiler.iseq, pc))
-    } as ruby_vminsn_type;
+    let profiler = &Profiler::new(ec);
     let profile = &mut get_or_create_iseq_payload(profiler.iseq).profile;
 
-    let is_send = matches!(bare_opcode, YARVINSN_send | YARVINSN_opt_send_without_block);
-    // For now, send recompile exits only fill in missing profiles. Once the send site
-    // has finished profiling, don't recompile it on later exits.
-    if is_send && profile.done_profiling_at(profiler.insn_idx) {
-        return false;
-    }
-    // For now, non-send recompile exits reset the profiling counter before requesting recompilation
-    // so that we can collect enough samples.
-    if !is_send && profile.done_profiling_at(profiler.insn_idx) {
-        profile.entry_mut(profiler.insn_idx)
-            .set_profiles_remaining(get_option!(num_profiles));
+    if profile.entry_mut(profiler.insn_idx).recompile_profile_started {
+        let entry = profile.entry_mut(profiler.insn_idx);
+        let done = entry.profiles_remaining == 0;
+        if done {
+            entry.recompile_profile_started = false;
+        }
+        return done;
     }
 
-    // If this opcode can't be sampled here, this exit has no profile data to collect.
-    if !profile_insn_sample(bare_opcode, profiler, profile) {
-        return false;
+    let num_profiles = get_option!(num_profiles);
+    if num_profiles == 0 {
+        return true;
+    }
+
+    // Re-arm existing entries so the interpreter profiles the whole ISEQ, not
+    // just the instruction that caused the exit. A newly reached zjit_* site
+    // creates its entry with the same initial counter in entry_mut().
+    for entry in &mut profile.entries {
+        entry.profiles_remaining = num_profiles;
     }
 
     let entry = profile.entry_mut(profiler.insn_idx);
-    entry.profiles_remaining = entry.profiles_remaining.saturating_sub(1);
-    entry.profiles_remaining == 0
+    entry.recompile_profile_started = true;
+    false
 }
 
 /// Return the argc as stated in the calldata plus:
@@ -413,8 +414,10 @@ pub struct ProfileEntry {
     insn_idx: u32,
     /// Type information of YARV instruction operands
     opnd_types: Vec<TypeDistribution>,
-    /// Number of profiles remaining before recompilation. Counts down from --zjit-num-profiles.
+    /// Number of samples left in this instruction's current profiling window.
     profiles_remaining: NumProfiles,
+    /// Whether a recompile exit is waiting for this entry's counter to reach zero.
+    recompile_profile_started: bool,
 }
 
 impl ProfileEntry {
@@ -451,6 +454,7 @@ impl IseqProfile {
                     insn_idx: idx,
                     opnd_types: Vec::new(),
                     profiles_remaining: get_option!(num_profiles),
+                    recompile_profile_started: false,
                 });
                 &mut self.entries[i]
             }
@@ -462,11 +466,6 @@ impl IseqProfile {
         let idx = insn_idx as u32;
         self.entries.binary_search_by_key(&idx, |e| e.insn_idx)
             .ok().map(|i| &self.entries[i])
-    }
-
-    /// Check if enough profiles have been gathered for this instruction.
-    pub fn done_profiling_at(&self, insn_idx: YarvInsnIdx) -> bool {
-        self.entry(insn_idx).map_or(false, |e| e.profiles_remaining == 0)
     }
 
     /// Get profiled operand types for a given instruction index

@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold};
+use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_num_profiles};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -120,6 +120,29 @@ fn test_putobject() {
         test
         test
     "), @"1");
+}
+
+#[test]
+fn test_recompile_exit_waits_for_interpreter_profiles() {
+    set_call_threshold(2);
+    set_num_profiles(2);
+    eval("
+        def recompile_profile_window(a, b) = a + b
+        recompile_profile_window(1, 2)
+        recompile_profile_window(1, 2)
+    ");
+
+    let iseq = get_method_iseq("self", "recompile_profile_window");
+    assert_eq!(get_or_create_iseq_payload(iseq).versions.len(), 1);
+
+    eval("recompile_profile_window(1.5, 2.5)");
+    eval("recompile_profile_window(1.5, 2.5)");
+    assert_eq!(get_or_create_iseq_payload(iseq).versions.len(), 1);
+
+    eval("recompile_profile_window(1.5, 2.5)");
+    let payload = get_or_create_iseq_payload(iseq);
+    assert_eq!(payload.versions.len(), 1);
+    assert!(unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
 }
 
 #[test]

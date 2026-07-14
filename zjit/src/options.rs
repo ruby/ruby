@@ -647,6 +647,14 @@ pub fn set_inline_threshold(inline_threshold: InlineThreshold) {
     unsafe { OPTIONS.as_mut().unwrap().inline_threshold = inline_threshold; }
 }
 
+/// Update --zjit-num-profiles for testing
+#[cfg(test)]
+pub fn set_num_profiles(num_profiles: NumProfiles) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().num_profiles = num_profiles; }
+    update_profile_threshold();
+}
+
 /// Enable --zjit-stats for testing
 #[cfg(test)]
 pub fn enable_zjit_stats() {
