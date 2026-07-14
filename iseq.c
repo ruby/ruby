@@ -1359,8 +1359,8 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
 {
     rb_iseq_t *iseq = NULL;
     rb_compile_option_t option;
-#if !defined(__GNUC__) || (__GNUC__ == 4 && __GNUC_MINOR__ == 8)
-# define INITIALIZED volatile /* suppress warnings by gcc 4.8 */
+#if !defined(__GNUC__)
+# define INITIALIZED volatile /* suppress warnings */
 #else
 # define INITIALIZED /* volatile */
 #endif
