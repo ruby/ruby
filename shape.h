@@ -267,7 +267,7 @@ shape_id_t rb_shape_transition_add_ivar_no_warnings(shape_id_t shape_id, ID id, 
 shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
 shape_id_t rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id);
 void rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALUE *src_buf, shape_id_t src_shape_id);
-void rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table);
+void rb_shape_copy_complex_ivars(VALUE dest, VALUE src);
 
 static inline bool
 rb_shape_frozen_p(shape_id_t shape_id)
@@ -498,9 +498,21 @@ rb_obj_using_gen_fields_table_p(VALUE obj)
 }
 
 static inline shape_id_t
+rb_shape_transition_layout(shape_id_t shape_id, shape_id_t layout)
+{
+    return (shape_id & (~SHAPE_ID_LAYOUT_MASK)) | layout;
+}
+
+static inline shape_id_t
 rb_shape_transition_robject(shape_id_t shape_id)
 {
-    return (shape_id & ~SHAPE_ID_LAYOUT_MASK) | SHAPE_ID_LAYOUT_ROBJECT;
+    return rb_shape_transition_layout(shape_id, SHAPE_ID_LAYOUT_ROBJECT);
+}
+
+static inline shape_id_t
+rb_shape_transition_extended(shape_id_t shape_id)
+{
+    return rb_shape_transition_layout(shape_id, SHAPE_ID_LAYOUT_EXTENDED);
 }
 
 static inline shape_id_t
@@ -546,12 +558,6 @@ static inline shape_id_t
 rb_shape_transition_slot_size(shape_id_t shape_id, size_t slot_size)
 {
     return rb_shape_transition_capacity(shape_id, rb_shape_capacity_for_slot_size(slot_size));
-}
-
-static inline shape_id_t
-rb_shape_transition_layout(shape_id_t shape_id, shape_id_t layout)
-{
-    return (shape_id & (~SHAPE_ID_LAYOUT_MASK)) | layout;
 }
 
 shape_id_t rb_shape_transition_object_id(shape_id_t shape_id);

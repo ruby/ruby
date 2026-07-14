@@ -1606,49 +1606,35 @@ rb_attr_get(VALUE obj, ID id)
 void rb_obj_copy_fields_to_hash_table(VALUE obj, st_table *table);
 static VALUE imemo_fields_complex_from_obj(VALUE owner, VALUE source_fields_obj, shape_id_t shape_id);
 
-static shape_id_t
-obj_transition_complex(VALUE obj, st_table *table)
-{
-    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO));
-
-    shape_id_t shape_id = rb_obj_shape_transition_complex(obj);
-    VALUE fields_obj = rb_imemo_fields_new_complex_tbl(obj, shape_id, table, RB_OBJ_SHAREABLE_P(obj));
-
-    rb_obj_set_fields(obj, fields_obj, 0, 0);
-    RBASIC_SET_SHAPE_ID(obj, shape_id);
-
-    RUBY_ASSERT(FL_TEST_RAW(fields_obj, ROBJECT_HEAP));
-    RUBY_ASSERT(rb_obj_shape_complex_p(obj));
-    RUBY_ASSERT(rb_obj_shape_complex_p(fields_obj));
-
-    return shape_id;
-}
-
 // Copy all object fields, including ivars and internal object_id, etc
 static shape_id_t
 rb_evict_fields_to_hash(VALUE obj)
 {
+    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
     RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
 
-    st_table *table = st_init_numtable_with_size(RSHAPE_LEN(RBASIC_SHAPE_ID(obj)));
+    shape_id_t new_shape_id = rb_obj_shape_transition_complex(obj);
+    VALUE fields_obj = rb_imemo_fields_new_complex(obj, new_shape_id, RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), false);
+    st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
     rb_obj_copy_fields_to_hash_table(obj, table);
-    shape_id_t new_shape_id = obj_transition_complex(obj, table);
+    ROBJECT_SET_EXTENDED(obj, fields_obj);
+    RBASIC_SET_FULL_SHAPE_ID(obj, rb_shape_transition_extended(new_shape_id));
 
-    RUBY_ASSERT(rb_obj_shape_complex_p(obj));
     return new_shape_id;
 }
 
 void
 rb_evict_ivars_to_hash(VALUE obj)
 {
+    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
     RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
 
-    st_table *table = st_init_numtable_with_size(rb_ivar_count(obj));
-
-    // Evacuate all previous values from shape into id_table
+    shape_id_t new_shape_id = rb_obj_shape_transition_complex(obj);
+    VALUE fields_obj = rb_imemo_fields_new_complex(obj, new_shape_id, rb_ivar_count(obj), false);
+    st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
     rb_obj_copy_ivs_to_hash_table(obj, table);
-    obj_transition_complex(obj, table);
+    ROBJECT_SET_EXTENDED(obj, fields_obj);
+    RBASIC_SET_FULL_SHAPE_ID(obj, rb_shape_transition_extended(new_shape_id));
 
     RUBY_ASSERT(rb_obj_shape_complex_p(obj));
 }
@@ -1781,23 +1767,6 @@ VALUE
 rb_attr_delete(VALUE obj, ID id)
 {
     return rb_ivar_delete(obj, id, Qnil);
-}
-
-void
-rb_obj_init_complex(VALUE obj, st_table *table)
-{
-    // This method is meant to be called on newly allocated object.
-    RUBY_ASSERT(rb_shape_canonical_p(RBASIC_SHAPE_ID(obj)));
-    RUBY_ASSERT(RSHAPE_LEN(RBASIC_SHAPE_ID(obj)) == 0);
-
-    if (rb_obj_shape_complex_p(obj)) {
-        shape_id_t shape_id = rb_obj_shape_transition_complex(obj);
-        VALUE fields_obj = rb_imemo_fields_new_complex_tbl(obj, shape_id, table, false);
-        ROBJECT_SET_EXTENDED(obj, fields_obj);
-    }
-    else {
-        obj_transition_complex(obj, table);
-    }
 }
 
 static int
@@ -2317,7 +2286,9 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
         }
 
         if (rb_shape_complex_p(src_shape_id)) {
-            rb_shape_copy_complex_ivars(dest, obj, src_shape_id, rb_imemo_fields_complex_tbl(fields_obj));
+            VALUE clone = rb_imemo_fields_new_complex_empty(dest);
+            rb_shape_copy_complex_ivars(clone, fields_obj);
+            rb_obj_set_fields(dest, clone, 0, 0);
             return;
         }
 
@@ -2329,9 +2300,10 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
 
             dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
             if (UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
-                st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
+                new_fields_obj = rb_imemo_fields_new_complex(dest, dest_shape_id, rb_ivar_count(obj), false);
+                st_table *table = rb_imemo_fields_complex_tbl(new_fields_obj);
                 rb_obj_copy_ivs_to_hash_table(obj, table);
-                rb_obj_init_complex(dest, table);
+                rb_obj_replace_fields(dest, new_fields_obj);
                 return;
             }
         }

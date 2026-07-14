@@ -245,8 +245,7 @@ struct rb_fields {
             VALUE fields[1];
         } embed;
         struct {
-            // TODO: the st_table should be embedded
-            st_table *table;
+            st_table table;
         } complex;
     } as;
 };
@@ -281,7 +280,7 @@ rb_imemo_subclasses_entries(VALUE v)
 VALUE rb_imemo_fields_new(VALUE owner, /* shape_id_t */ uint32_t shape_id, bool shareable);
 VALUE rb_imemo_subclasses_new(uint32_t capacity);
 VALUE rb_imemo_fields_new_complex(VALUE owner, /* shape_id_t */ uint32_t shape_id, size_t capa, bool shareable);
-VALUE rb_imemo_fields_new_complex_tbl(VALUE owner, /* shape_id_t */ uint32_t shape_id, st_table *tbl, bool shareable);
+VALUE rb_imemo_fields_new_complex_empty(VALUE owner);
 VALUE rb_imemo_fields_clone(VALUE fields_obj);
 void rb_imemo_fields_clear(VALUE fields_obj);
 
@@ -303,15 +302,9 @@ rb_imemo_fields_ptr(VALUE fields_obj)
     RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
 
     if (UNLIKELY(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP))) {
-        if (RB_TYPE_P(fields_obj, T_OBJECT)) {
-            fields_obj = ROBJECT(fields_obj)->as.extended;
-        }
+        RUBY_ASSERT(RB_TYPE_P(fields_obj, T_OBJECT));
+        fields_obj = ROBJECT(fields_obj)->as.extended;
         RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields));
-
-        // This will go away once we embed the `st_table` inside `IMEMO/fields`.
-        if (UNLIKELY(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP))) {
-            return (VALUE *)IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table;
-        }
     }
 
     return IMEMO_OBJ_FIELDS(fields_obj)->as.embed.fields;
@@ -325,13 +318,13 @@ rb_imemo_fields_complex_tbl(VALUE fields_obj)
     }
 
     RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields));
-    RUBY_ASSERT(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP));
+    RUBY_ASSERT(!FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP));
 
     // Some codepaths unconditionally access the fields_ptr, and assume it can be used as st_table if the
     // shape is complex.
-    RUBY_ASSERT((st_table *)rb_imemo_fields_ptr(fields_obj) == IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table);
+    RUBY_ASSERT((st_table *)rb_imemo_fields_ptr(fields_obj) == &IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table);
 
-    return IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table;
+    return &IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table;
 }
 
 #endif /* INTERNAL_IMEMO_H */
