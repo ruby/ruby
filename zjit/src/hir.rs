@@ -1868,6 +1868,19 @@ impl Insn {
 
         abstract_heaps::Allocator.includes(self.effects_of().write_bits())
     }
+
+    fn counts_against_inlining_budget(&self) -> bool {
+        match self {
+            // Don't count metadata-only instructions.
+            Insn::Comment { .. }
+            | Insn::IncrCounter { .. }
+            | Insn::IncrCounterPtr { .. }
+            | Insn::Snapshot { .. }
+            | Insn::PatchPoint { .. }
+            => false,
+            _ => true,
+        }
+    }
 }
 
 /// Print adaptor for [`Insn`]. See [`PtrPrintMap`].
@@ -2710,6 +2723,10 @@ pub struct Function {
     /// fulfilling `(0..=opt_num)` optional parameters.
     jit_entry_blocks: Vec<BlockId>,
     profiles: Option<ProfileOracle>,
+    /// Rough estimate for the number of (actually executable) instructions in the function. Does
+    /// not count Snapshot, PatchPoint, etc.
+    /// Currently updated by `infer_types` as a heuristic but that is not a guarantee.
+    num_instructions: usize,
 }
 
 /// The kind of a value an ISEQ returns
@@ -2842,6 +2859,7 @@ impl Function {
             jit_entry_blocks: vec![],
             param_types: vec![],
             profiles: None,
+            num_instructions: 0,
         }
     }
 
@@ -3386,10 +3404,14 @@ impl Function {
         let rpo = self.reverse_post_order();
         loop {
             let mut changed = false;
+            let mut num_instructions = 0;
             for &block in &rpo {
                 if !reachable.get(block) { continue; }
                 for i in 0..self.blocks[block.0].insns.len() {
                     let insn_id = self.blocks[block.0].insns[i];
+                    if self.insns[insn_id.0].counts_against_inlining_budget() {
+                        num_instructions += 1;
+                    }
                     // Instructions without output, including branch instructions, can't be targets
                     // of make_equal_to, so we don't need find() here.
                     let insn_type = match &self.insns[insn_id.0] {
@@ -3438,6 +3460,7 @@ impl Function {
                 }
             }
             if !changed {
+                self.num_instructions = num_instructions;
                 break;
             }
         }
@@ -4982,14 +5005,11 @@ impl Function {
             return false;
         }
 
-        // Per-caller cumulative budget. self.insns is append-only (InsnIds are stable
-        // indices), so its len() is a high-water mark of total HIR instructions ever
-        // allocated for this function — not the final compiled size. Once that count
-        // crosses the budget, every further callee is rejected and the optimization
-        // fixed-point loop reaches its terminal iteration. See `Options::inline_budget`
-        // for the full unit/semantics caveat.
+        // Per-caller cumulative budget. Once that count crosses the budget, every further callee
+        // is rejected and the optimization fixed-point loop reaches its terminal iteration. See
+        // `Options::inline_budget` for the full unit/semantics caveat.
         let budget = get_option!(inline_budget);
-        if budget != INLINE_BUDGET_UNLIMITED && self.insns.len() > budget {
+        if budget != INLINE_BUDGET_UNLIMITED && self.num_instructions > budget {
             incr_counter!(inline_reject_budget_exceeded);
             return false;
         }
@@ -5163,6 +5183,9 @@ impl Function {
                         continue;
                     }
                 };
+
+                // Bump the rough estimate of new instructions added by inlining this function
+                self.num_instructions += self.insns.len() - pre_insns_len;
 
                 // Past the point of no return: commit the inlining.
                 incr_counter!(inline_method_count);
