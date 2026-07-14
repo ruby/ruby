@@ -2648,3 +2648,23 @@ assert_equal 'ok', %q{
   end
   :ok
 }
+
+# Forking while other Ractors are alive takes a VM barrier in the parent; the
+# child inherits that scheduler/barrier state and must reset it. Exercises the
+# parent-side fork barrier and the child teardown, then checks the surviving
+# Ractors still work.
+assert_equal 'ok', %q{
+  begin
+    rs = 5.times.map { Ractor.new { Ractor.receive } }
+    10.times do
+      pid = fork { GC.start }
+      _, status = Process.waitpid2(pid)
+      raise "child failed" unless status.success?
+    end
+    rs.each { |r| r.send(nil) }
+    rs.each(&:value)
+    :ok
+  rescue NotImplementedError
+    :ok  # platform without fork
+  end
+}
