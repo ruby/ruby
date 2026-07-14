@@ -5435,10 +5435,7 @@ impl Function {
         }
 
         match profiled_type.shape().layout() {
-            ShapeLayout::RObject => {
-                // OK
-            }
-            ShapeLayout::RData => {
+            ShapeLayout::RObject | ShapeLayout::RData => {
                 // OK
             }
             _ => {
@@ -5511,7 +5508,7 @@ impl Function {
 
             if !embedded {
                 // Transition the shape of the storage object but leave the
-                // SHAPE_ID_FL_PRIVATE_MASK bits unchanged.
+                // SHAPE_ID_FL_PRIVATE_MASK bits unchanged. See `RBASIC_SET_SHAPE_ID`.
                 debug_assert_eq!(types::CShape.num_bits(), 32);
                 let owner_next_shape_masked = self.push_insn(block, Insn::Const { val: Const::CUInt32(spec.next_shape.0 & !SHAPE_ID_FL_PRIVATE_MASK) });
                 let storage_current_shape = self.load_shape(block, ivar_storage);
