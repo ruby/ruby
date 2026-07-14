@@ -5397,7 +5397,7 @@ impl Function {
         let layout = recv_type.shape().layout();
 
         match layout {
-            ShapeLayout::RClass | ShapeLayout::RData => {
+            ShapeLayout::RClass | ShapeLayout::Extended => {
                 let offset = if layout == ShapeLayout::RClass {
                     RCLASS_OFFSET_PRIME_FIELDS_OBJ
                 } else {
@@ -5464,7 +5464,7 @@ impl Function {
             ShapeLayout::RObject => {
                 // OK
             }
-            ShapeLayout::RData => {
+            ShapeLayout::Extended => {
                 // FIXME: we side exit for now as we're missing SHAPE_ID_FL_PRIVATE_MASK handling.
                 return Err(Counter::setivar_fallback_not_t_object);
             }
@@ -5522,7 +5522,7 @@ impl Function {
             ShapeLayout::RObject => { // AKA embedded
                 (self_val, true)
             },
-            ShapeLayout::RData => { // AKA extended
+            ShapeLayout::Extended => {
                 let fields = self.load_field(block, self_val, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::BasicObject);
                 (fields, false)
             },
