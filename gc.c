@@ -384,6 +384,7 @@ rb_gc_obj_changed_slot_size(VALUE obj, size_t slot_size)
         MEMCPY(embedded_fields, extended_fields, VALUE, RSHAPE_LEN(RBASIC_SHAPE_ID(obj)));
         FL_UNSET_RAW(obj, ROBJECT_HEAP);
         shape_id = rb_shape_transition_robject(shape_id);
+        rb_gc_writebarrier_remember(obj);
     }
 
     RBASIC_SET_FULL_SHAPE_ID(obj, shape_id);
