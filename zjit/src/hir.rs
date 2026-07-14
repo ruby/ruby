@@ -8430,10 +8430,10 @@ fn add_iseq_to_hir(
                     }
                 }
                 YARVINSN_branchunless | YARVINSN_branchunless_without_ints => {
-                    if opcode == YARVINSN_branchunless {
+                    let offset = get_arg(pc, 0).as_i64();
+                    if opcode == YARVINSN_branchunless && offset < 0 {
                         fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     }
-                    let offset = get_arg(pc, 0).as_i64();
                     let val = state.stack_pop()?;
                     let test_id = fun.push_insn(block, Insn::Test { val });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
@@ -8458,10 +8458,10 @@ fn add_iseq_to_hir(
                     queue.push_back((state.clone(), target, target_idx, local_inval));
                 }
                 YARVINSN_branchif | YARVINSN_branchif_without_ints => {
-                    if opcode == YARVINSN_branchif {
+                    let offset = get_arg(pc, 0).as_i64();
+                    if opcode == YARVINSN_branchif && offset < 0 {
                         fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     }
-                    let offset = get_arg(pc, 0).as_i64();
                     let val = state.stack_pop()?;
                     let test_id = fun.push_insn(block, Insn::Test { val });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
@@ -8487,10 +8487,10 @@ fn add_iseq_to_hir(
                     queue.push_back((state.clone(), target, target_idx, local_inval));
                 }
                 YARVINSN_branchnil | YARVINSN_branchnil_without_ints => {
-                    if opcode == YARVINSN_branchnil {
+                    let offset = get_arg(pc, 0).as_i64();
+                    if opcode == YARVINSN_branchnil && offset < 0 {
                         fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     }
-                    let offset = get_arg(pc, 0).as_i64();
                     let val = state.stack_pop()?;
                     let test_id = fun.push_insn(block, Insn::HasType { val, expected: types::NilClass });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
@@ -8552,7 +8552,7 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_jump | YARVINSN_jump_without_ints => {
                     let offset = get_arg(pc, 0).as_i64();
-                    if opcode == YARVINSN_jump {
+                    if opcode == YARVINSN_jump && offset < 0 {
                         fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     }
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
