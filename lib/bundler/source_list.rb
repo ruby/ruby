@@ -169,6 +169,10 @@ module Bundler
         # locked sources never include credentials so always prefer remotes from the gemfile
         replacement_source.remotes = gemfile_source.remotes
 
+        # cooldowns are only ever declared in the Gemfile, so carry them over
+        # along with the remotes they apply to
+        replacement_source.remote_cooldowns = gemfile_source.remote_cooldowns
+
         yield replacement_source if block_given?
 
         replacement_source
