@@ -1616,19 +1616,22 @@ rb_dir_getwd_ospath_slowpath(void)
 VALUE
 rb_dir_getwd_ospath(void)
 {
-    char buf[PATH_MAX];
+    char buf[PATH_MAX < LONG_MAX ? PATH_MAX : -1];
     char *path = getcwd(buf, PATH_MAX);
     if (!path) {
         return rb_dir_getwd_ospath_slowpath();
     }
+    size_t len = strlen(path);
+    RBIMPL_ASSERT_OR_ASSUME(len < PATH_MAX);
 
     VALUE cached_cwd = RUBY_ATOMIC_VALUE_LOAD(last_cwd);
 
-    if (!cached_cwd || strcmp(RSTRING_PTR(cached_cwd), path) != 0) {
+    if (!cached_cwd || (size_t)RSTRING_LEN(cached_cwd) != len ||
+        memcmp(RSTRING_PTR(cached_cwd), path, len) != 0) {
 #ifdef __APPLE__
-        cached_cwd = rb_str_normalize_ospath(path, strlen(path));
+        cached_cwd = rb_str_normalize_ospath(path, (long)len);
 #else
-        cached_cwd = rb_str_new2(path);
+        cached_cwd = rb_str_new(path, (long)len);
 #endif
         rb_str_freeze(cached_cwd);
         RUBY_ATOMIC_VALUE_SET(last_cwd, cached_cwd);
