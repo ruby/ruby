@@ -5460,18 +5460,11 @@ impl Function {
             return Err(Counter::setivar_fallback_immediate);
         }
 
-        match profiled_type.shape().layout() {
-            ShapeLayout::RObject => {
-                // OK
-            }
-            ShapeLayout::Extended => {
-                // FIXME: we side exit for now as we're missing SHAPE_ID_FL_PRIVATE_MASK handling.
-                return Err(Counter::setivar_fallback_not_t_object);
-            }
-            _ => {
-                return Err(Counter::setivar_fallback_not_t_object);
-            }
-        }
+        let extended_robject = match profiled_type.shape().layout() {
+            ShapeLayout::RObject => false,
+            ShapeLayout::Extended if profiled_type.flags().is_t_object() => true,
+            _ => return Err(Counter::setivar_fallback_not_t_object),
+        };
 
         assert!(profiled_type.shape().is_valid());
         if profiled_type.shape().is_frozen() {
@@ -5485,6 +5478,13 @@ impl Function {
         let mut ivar_index: attr_index_t = 0;
         let mut next_shape = profiled_type.shape();
         if !unsafe { rb_shape_get_iv_index(profiled_type.shape().0, id, &mut ivar_index) } {
+            // Updating the fields object's shape requires preserving its private layout and
+            // capacity bits, which can differ from the owning RObject's. Existing ivars do not
+            // change either shape, so they can still use the fast path.
+            if extended_robject {
+                return Err(Counter::setivar_fallback_shape_transition);
+            }
+
             // Current shape does not contain this ivar; do a shape transition.
             let current_shape_id = profiled_type.shape();
             let class = profiled_type.class();
