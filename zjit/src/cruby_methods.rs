@@ -536,7 +536,7 @@ fn guard_string_coderange(fun: &mut hir::Function, block: hir::BlockId, args: &[
     let flags = fun.load_rbasic_flags(block, recv);
     let mask = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CUInt64(RUBY_ENC_CODERANGE_MASK.into()) });
     let cr = fun.push_insn(block, hir::Insn::IntAnd { left: flags, right: mask });
-    let min_known = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(RUBY_ENC_CODERANGE_7BIT.into()) });
+    let min_known = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CUInt64(RUBY_ENC_CODERANGE_7BIT.into()) });
     Some(fun.push_insn(block, hir::Insn::GuardGreaterEq { left: cr, right: min_known, reason: Box::new(SideExitReason::GuardGreaterEq), state }))
 }
 
