@@ -2712,6 +2712,7 @@ pub struct Function {
     profiles: Option<ProfileOracle>,
     /// Rough estimate for the number of (actually executable) instructions in the function. Does
     /// not count Snapshot, PatchPoint, etc.
+    /// Currently updated by `infer_types` as a heuristic but that is not a guarantee.
     num_instructions: usize,
 }
 
