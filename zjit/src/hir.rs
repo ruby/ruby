@@ -8204,9 +8204,17 @@ fn add_iseq_to_hir(
                         // Similar to gen_is_block_given
                         Insn::Const { val: Const::Value(Qnil) }
                     } else {
-                        if op_type == DEFINED_YIELD as usize && matches!(mode, AddIseqMode::Inlined { blockiseq: Some(_), .. }) {
+                        if op_type == DEFINED_YIELD as usize && matches!(mode, AddIseqMode::Inlined { .. }) {
                             // If we are inlining a method that has a blockiseq handler, we can fold Defined(DEFINED_YIELD).
-                            Insn::Const { val: Const::Value(pushval) }
+                            // TODO(max): If we handle non-blockiseq block arguments such as
+                            // &:symbol or just &block forwarding, we need to revisit this and
+                            // check flags.
+                            let has_block = matches!(mode, AddIseqMode::Inlined { blockiseq: Some(_), .. });
+                            if has_block {
+                                Insn::Const { val: Const::Value(pushval) }
+                            } else {
+                                Insn::Const { val: Const::Value(Qnil) }
+                            }
                         } else {
                             // For DEFINED_YIELD, codegen materializes the local EP inline (similar to
                             // gen_is_block_given) to check for a block handler. Precompute the lexical

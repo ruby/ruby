@@ -17247,7 +17247,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_inline_without_block_does_not_fold_defined_yield() {
+    fn test_inline_without_block_folds_defined_yield() {
         eval(r"
             def foo = defined?(yield)
             def test = foo
@@ -17267,8 +17267,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
           PushInlineFrame v18 (0x1038)
-          v25:NilClass = Const Value(nil)
-          v27:StringExact|NilClass = Defined yield, v25
+          v27:NilClass = Const Value(nil)
           CheckInterrupts
           PopInlineFrame
           Return v27
