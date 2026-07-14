@@ -1868,6 +1868,19 @@ impl Insn {
 
         abstract_heaps::Allocator.includes(self.effects_of().write_bits())
     }
+
+    fn counts_against_inlining_budget(&self) -> bool {
+        match self {
+            // Don't count metadata-only instructions.
+            Insn::Comment { .. }
+            | Insn::IncrCounter { .. }
+            | Insn::IncrCounterPtr { .. }
+            | Insn::Snapshot { .. }
+            | Insn::PatchPoint { .. }
+            => false,
+            _ => true,
+        }
+    }
 }
 
 /// Print adaptor for [`Insn`]. See [`PtrPrintMap`].
@@ -3396,11 +3409,13 @@ impl Function {
                 if !reachable.get(block) { continue; }
                 for i in 0..self.blocks[block.0].insns.len() {
                     let insn_id = self.blocks[block.0].insns[i];
+                    if self.insns[insn_id.0].counts_against_inlining_budget() {
+                        num_instructions += 1;
+                    }
                     // Instructions without output, including branch instructions, can't be targets
                     // of make_equal_to, so we don't need find() here.
                     let insn_type = match &self.insns[insn_id.0] {
                         Insn::CondBranch { val, if_true, if_false } => {
-                            num_instructions += 1;
                             assert!(!self.type_of(*val).bit_equal(types::Empty));
                             if self.type_of(*val).could_be(Type::from_cbool(true)) {
                                 reachable.insert(if_true.target);
@@ -3424,7 +3439,6 @@ impl Function {
                             continue;
                         }
                         &Insn::Jump(BranchEdge { target, ref args }) => {
-                            num_instructions += 1;
                             reachable.insert(target);
                             let arg_types: Vec<Type> = args.iter().map(|a| self.type_of(*a)).collect();
                             for (idx, arg_type) in arg_types.into_iter().enumerate() {
@@ -3440,17 +3454,7 @@ impl Function {
                             continue;
                         }
                         insn if insn.has_output() => self.infer_type(insn_id),
-                        Insn::Comment { .. }
-                        | Insn::IncrCounter { .. }
-                        | Insn::IncrCounterPtr { .. }
-                        | Insn::Snapshot { .. }
-                        | Insn::PatchPoint { .. }
-                        // Don't count metadata-only instructions.
-                        => continue,
-                        _ => {
-                            num_instructions += 1;
-                            continue
-                        }
+                        _ => continue,
                     };
                     changed |= set_type!(insn_id, insn_type);
                 }
