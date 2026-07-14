@@ -1691,6 +1691,10 @@ Also, a list:
       omit message
     end
   end
+
+  def omit_if_support_ml_dsa_key
+    omit "OpenSSL supports ML-DSA" if Gem::PQCUtilities.support_ml_dsa_key?
+  end
 end
 
 # https://github.com/seattlerb/minitest/blob/13c48a03d84a2a87855a4de0c959f96800100357/lib/minitest/mock.rb#L192

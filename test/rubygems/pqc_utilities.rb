@@ -35,6 +35,28 @@ module Gem::PQCUtilities
     end
   end
 
+  ##
+  # Returns whether the runtime OpenSSL can generate ML-DSA keys.
+  # Unlike support_pqc_handshake?, this only probes key generation.
+  # Gem::Security.create_key tests need it.
+  # Handshake cannot be used to judge ML-DSA key availability on
+  # OpenSSL >= 3.5 with Ruby OpenSSL < 4.0.0, where support_pqc_handshake? is
+  # false due to Ruby OpenSSL's missing methods but
+  # OpenSSL::PKey.generate_key succeeds.
+
+  def self.support_ml_dsa_key?
+    return @support_ml_dsa_key unless @support_ml_dsa_key.nil?
+
+    @support_ml_dsa_key =
+      begin
+        OpenSSL::PKey.generate_key("ML-DSA-65")
+        true
+      # NoMethodError: JRuby 10.1.0.0's Ruby OpenSSL lacks generate_key.
+      rescue OpenSSL::PKey::PKeyError, NoMethodError
+        false
+      end
+  end
+
   # Probe an actual PQC handshake between a forced-PQC server and a
   # default-configured client, mirroring what the integration tests exercise.
   # Memoized so the probe runs at most once per process.
