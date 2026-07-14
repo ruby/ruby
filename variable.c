@@ -2282,7 +2282,8 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
     if (fields_obj) {
         unsigned long src_num_ivs = rb_ivar_count(fields_obj);
         if (!src_num_ivs) {
-            goto clear;
+            rb_free_generic_ivar(dest);
+            return;
         }
 
         shape_id_t initial_shape_id = rb_obj_shape_id(dest);
@@ -2308,10 +2309,6 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
 
         rb_obj_replace_fields(dest, new_fields_obj);
     }
-    return;
-
-  clear:
-    rb_free_generic_ivar(dest);
 }
 
 void
