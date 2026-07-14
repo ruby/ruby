@@ -1199,11 +1199,16 @@ rb_alias_variable(ID name1, ID name2)
 }
 
 static void
-IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(ID id)
+IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(VALUE obj, ID id)
 {
     if (UNLIKELY(!rb_ractor_main_p())) {
         if (rb_is_instance_id(id)) { // check only normal ivars
-            rb_raise(rb_eRactorIsolationError, "can not set instance variables of classes/modules by non-main Ractors");
+            rb_raise(
+                rb_eRactorIsolationError,
+                "can not set instance variables of classes/modules by non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")",
+                rb_id2str(id),
+                obj
+            );
         }
     }
 }
@@ -1595,7 +1600,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     int type = BUILTIN_TYPE(obj);
 
     if (type == T_CLASS || type == T_MODULE) {
-        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(obj, id);
 
         if (rb_multi_ractor_p()) {
             concurrent = true;
@@ -1968,7 +1973,7 @@ ivar_set(VALUE obj, ID id, VALUE val)
       case T_CLASS:
       case T_MODULE:
         {
-            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(obj, id);
             bool dontcare;
             return class_ivar_set(obj, id, val, &dontcare);
         }
@@ -2262,7 +2267,7 @@ rb_field_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, 
       case T_CLASS:
       case T_MODULE:
         {
-            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(0);
+            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(obj, 0);
             VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             if (fields_obj) {
                 imemo_fields_each(fields_obj, func, arg, ivar_only);
