@@ -12571,9 +12571,9 @@ mod hir_opt_tests {
           v23:StringExact = GuardType v10, StringExact recompile
           v24:CUInt64 = LoadField v23, :RBASIC_FLAGS@0x1040
           v25:CUInt64[3145728] = Const CUInt64(3145728)
-          v26:CInt64 = IntAnd v24, v25
-          v27:CInt64[1048576] = Const CInt64(1048576)
-          v28:CInt64 = GuardGreaterEq v26, v27
+          v26:CUInt64 = IntAnd v24, v25
+          v27:CUInt64[1048576] = Const CUInt64(1048576)
+          v28:CUInt64 = GuardGreaterEq v26, v27
           v29:CInt64[1048576] = Const CInt64(1048576)
           v30:CBool = IsBitEqual v28, v29
           v31:BoolExact = BoxBool v30
