@@ -1276,7 +1276,13 @@ class_ivar_set_ractor_check(VALUE klass, ID id)
 {
     if (rb_is_instance_id(id) && // check only normal ivars
         UNLIKELY(!rb_class_owned_p(klass))) {
-        rb_raise(rb_eRactorIsolationError, "can not set instance variables of classes/modules created by another Ractor");
+        rb_raise(
+            rb_eRactorIsolationError,
+            "can not set instance variables of classes/modules "
+            "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
+            rb_id2str(id),
+            rb_class_path(klass)
+        );
     }
 }
 
@@ -1629,7 +1635,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
                 "can not get unshareable values from instance variables of classes/modules "
                 "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
                 rb_id2str(id),
-                obj
+                rb_class_path(obj)
             );
         }
     }
@@ -1661,8 +1667,13 @@ rb_ivar_get_at(VALUE obj, attr_index_t index, ID id)
             VALUE val = rb_imemo_fields_ptr(fields_obj)[index];
 
             if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
-                rb_raise(rb_eRactorIsolationError,
-                        "can not get unshareable values from instance variables of classes/modules created by another Ractor");
+                rb_raise(
+                    rb_eRactorIsolationError,
+                    "can not get unshareable values from instance variables of classes/modules "
+                    "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
+                    rb_id2str(id),
+                    rb_class_path(obj)
+                );
             }
 
             return val;
