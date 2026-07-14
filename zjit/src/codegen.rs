@@ -2071,13 +2071,13 @@ fn gen_string_copy(jit: &mut JITState, asm: &mut Assembler, function: &Function,
         return slow_path(asm);
     };
     debug_assert_eq!(src_bytes.len(), len as usize);
-    let mut buf = vec![0u8; padded_size];
-    buf[..src_bytes.len()].copy_from_slice(src_bytes);
+    let mut string_bytes = vec![0u8; padded_size];
+    string_bytes[..src_bytes.len()].copy_from_slice(src_bytes);
 
     gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, full_flags, klass,
         &|asm, obj| {
             asm.store(Opnd::mem(VALUE_BITS, obj, RUBY_OFFSET_RSTRING_LEN), Opnd::Imm(len));
-            for (i, chunk) in buf.chunks_exact(8).enumerate() {
+            for (i, chunk) in string_bytes.chunks_exact(8).enumerate() {
                 let word = u64::from_le_bytes(chunk.try_into().unwrap());
                 let offset = RUBY_OFFSET_RSTRING_AS_ARY + (i as i32) * 8;
                 asm.store(Opnd::mem(64, obj, offset), Opnd::UImm(word));
