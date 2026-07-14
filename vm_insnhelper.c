@@ -6548,7 +6548,11 @@ rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const
     if (ice && vm_ic_hit_p(ice, GET_EP())) {
         val = ice->value;
 
-        VM_ASSERT(val == vm_get_ev_const_chain(ec, segments));
+        // On a non-main ractor another ractor can concurrently reassign a
+        // shareable constant (which invalidates ICs asynchronously), so the
+        // cached-but-still-shareable value may legitimately differ from a
+        // freshly recomputed chain. Only assert equality when single-ractor.
+        VM_ASSERT(val == vm_get_ev_const_chain(ec, segments) || rb_multi_ractor_p());
     }
     else {
         ruby_vm_constant_cache_misses++;
