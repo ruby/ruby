@@ -134,6 +134,7 @@ enum shape_flags {
 typedef struct {
     rb_shape_t *shape_list;
     attr_index_t max_capacity;
+    ID id_object_id;
 } rb_shape_tree_t;
 
 RUBY_SYMBOL_EXPORT_BEGIN
