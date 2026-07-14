@@ -12,6 +12,11 @@ on:
         required: false
         type: boolean
         default: false
+      full-matrix:
+        description: 'Run the full test matrix (nightly schedule and release verification). Off, the default, runs a single smoke check.'
+        required: false
+        type: boolean
+        default: false
     secrets:
       SIMPLER_ALERTS_URL:
         required: false
@@ -24,16 +29,17 @@ permissions:
 jobs:
   macos:
     strategy:
+      # The smoke matrix keeps only what is tarball-specific: that the
+      # packaged tarball configures, builds and installs. macos.yml runs the
+      # same test tasks from the git tree on every PR/push already.
+      # macos-15-intel: the runner image ships a pre-installed Ruby under
+      # /usr/local whose gems dir collides with the default prefix on Intel.
+      # Use an isolated prefix so RDoc generation does not scan that stale
+      # default-gem stub.
       matrix:
-        test_task: [check, test-bundled-gems, test-bundler-parallel]
-        os: [macos-26, macos-15, macos-14]
-        include:
-          - os: macos-15-intel
-            test_task: check
-            # The runner image ships a pre-installed Ruby under /usr/local whose
-            # gems dir collides with the default prefix on Intel. Use an isolated
-            # prefix so RDoc generation does not scan that stale default-gem stub.
-            prefix: /tmp/ruby-prefix
+        test_task: ${{ inputs.full-matrix && fromJSON('["check", "test-bundled-gems", "test-bundler-parallel"]') || fromJSON('["check"]') }}
+        os: ${{ inputs.full-matrix && fromJSON('["macos-26", "macos-15", "macos-14"]') || fromJSON('["macos-26"]') }}
+        include: ${{ inputs.full-matrix && fromJSON('[{"os":"macos-15-intel", "test_task":"check", "prefix":"/tmp/ruby-prefix"}]') || fromJSON('[]') }}
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
