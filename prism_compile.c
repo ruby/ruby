@@ -3534,26 +3534,8 @@ pm_compile_builtin_attr(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_a
         }
 
         VALUE symbol = pm_static_literal_value(iseq, argument, scope_node);
-        VALUE string = rb_sym2str(symbol);
-
-        if (strcmp(RSTRING_PTR(string), "leaf") == 0) {
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_LEAF;
-        }
-        else if (strcmp(RSTRING_PTR(string), "inline_block") == 0) {
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_INLINE_BLOCK;
-        }
-        else if (strcmp(RSTRING_PTR(string), "use_block") == 0) {
-            iseq_set_use_block(iseq);
-        }
-        else if (strcmp(RSTRING_PTR(string), "c_trace") == 0) {
-            // Let the iseq act like a C method in backtraces
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_C_TRACE;
-        }
-        else if (strcmp(RSTRING_PTR(string), "without_interrupts") == 0) {
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_WITHOUT_INTERRUPTS;
-        }
-        else {
-            COMPILE_ERROR(iseq, node_location->line, "unknown argument to attr!: %s", RSTRING_PTR(string));
+        if (compile_builtin_attr_symbol(iseq, symbol) != COMPILE_OK) {
+            COMPILE_ERROR(iseq, node_location->line, "unknown argument to attr!: %" PRIsVALUE, symbol);
             return COMPILE_NG;
         }
     }

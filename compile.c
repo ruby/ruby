@@ -9273,12 +9273,37 @@ delegate_call_p(const rb_iseq_t *iseq, unsigned int argc, const LINK_ANCHOR *arg
     }
 }
 
+static int
+compile_builtin_attr_symbol(rb_iseq_t *iseq, VALUE symbol)
+{
+    VALUE string = rb_sym2str(symbol);
+    if (rb_streql_lit(string, "leaf")) {
+        ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_LEAF;
+    }
+    else if (rb_streql_lit(string, "inline_block")) {
+        ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_INLINE_BLOCK;
+    }
+    else if (rb_streql_lit(string, "use_block")) {
+        iseq_set_use_block(iseq);
+    }
+    else if (rb_streql_lit(string, "c_trace")) {
+        // Let the iseq act like a C method in backtraces
+        ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_C_TRACE;
+    }
+    else if (rb_streql_lit(string, "without_interrupts")) {
+        ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_WITHOUT_INTERRUPTS;
+    }
+    else {
+        return COMPILE_NG;
+    }
+    return COMPILE_OK;
+}
+
 // Compile Primitive.attr! :leaf, ...
 static int
 compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
 {
     VALUE symbol;
-    VALUE string;
     if (!node) goto no_arg;
     while (node) {
         if (!nd_type_p(node, NODE_LIST)) goto bad_arg;
@@ -9295,27 +9320,7 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
         }
 
         if (!SYMBOL_P(symbol)) goto non_symbol_arg;
-
-        string = rb_sym2str(symbol);
-        if (strcmp(RSTRING_PTR(string), "leaf") == 0) {
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_LEAF;
-        }
-        else if (strcmp(RSTRING_PTR(string), "inline_block") == 0) {
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_INLINE_BLOCK;
-        }
-        else if (strcmp(RSTRING_PTR(string), "use_block") == 0) {
-            iseq_set_use_block(iseq);
-        }
-        else if (strcmp(RSTRING_PTR(string), "c_trace") == 0) {
-            // Let the iseq act like a C method in backtraces
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_C_TRACE;
-        }
-        else if (strcmp(RSTRING_PTR(string), "without_interrupts") == 0) {
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_WITHOUT_INTERRUPTS;
-        }
-        else {
-            goto unknown_arg;
-        }
+        if (compile_builtin_attr_symbol(iseq, symbol) != COMPILE_OK) goto unknown_arg;
         node = next;
     }
     return COMPILE_OK;
@@ -9326,7 +9331,7 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
     COMPILE_ERROR(ERROR_ARGS "non symbol argument to attr!: %s", rb_builtin_class_name(symbol));
     return COMPILE_NG;
   unknown_arg:
-    COMPILE_ERROR(ERROR_ARGS "unknown argument to attr!: %s", RSTRING_PTR(string));
+    COMPILE_ERROR(ERROR_ARGS "unknown argument to attr!: %" PRIsVALUE, symbol);
     return COMPILE_NG;
   bad_arg:
     UNKNOWN_NODE("attr!", node, COMPILE_NG);
