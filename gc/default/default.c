@@ -7611,13 +7611,6 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, struct heap_page *src_pa
 
     RVALUE_AGE_SET(dest, age);
 
-    /* A re-embedded object (rb_gc_obj_changed_slot_size) references its
-     * former fields_obj's contents directly; the write-barrier history
-     * lived on the discarded fields_obj, so remember the object. */
-    if (src_slot_size != slot_size && age >= RVALUE_OLD_AGE && !remembered) {
-        rgengc_remember(objspace, dest);
-    }
-
     /* Assign forwarding address */
     RMOVED(src)->flags = T_MOVED;
     RMOVED(src)->dummy = Qundef;
