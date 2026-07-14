@@ -376,17 +376,7 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
 void
 rb_gc_obj_changed_slot_size(VALUE obj, size_t slot_size)
 {
-    shape_id_t shape_id = rb_obj_shape_transition_capacity(obj, rb_shape_capacity_for_slot_size(slot_size));
-
-    if (RB_TYPE_P(obj, T_OBJECT) && FL_TEST_RAW(obj, ROBJECT_HEAP) && !rb_obj_shape_complex_p(obj)) {
-        VALUE *embedded_fields = ROBJECT_EMBEDDED_FIELDS(obj);
-        VALUE *extended_fields = ROBJECT_FIELDS(obj);
-        MEMCPY(embedded_fields, extended_fields, VALUE, RSHAPE_LEN(RBASIC_SHAPE_ID(obj)));
-        FL_UNSET_RAW(obj, ROBJECT_HEAP);
-        shape_id = rb_shape_transition_robject(shape_id);
-    }
-
-    RBASIC_SET_FULL_SHAPE_ID(obj, shape_id);
+    RBASIC_SET_FULL_SHAPE_ID(obj, rb_obj_shape_transition_capacity(obj, rb_shape_capacity_for_slot_size(slot_size)));
 }
 
 void rb_vm_update_references(void *ptr);
@@ -3668,12 +3658,23 @@ gc_ref_update_array(void *objspace, VALUE v)
 static void
 gc_ref_update_object(void *objspace, VALUE v)
 {
+    shape_id_t shape_id = RBASIC_SHAPE_ID(v);
+
     if (FL_TEST_RAW(v, ROBJECT_HEAP)) {
         UPDATE_IF_MOVED(objspace, ROBJECT(v)->as.extended);
+
+        if (!rb_shape_complex_p(shape_id) && rb_shape_embedded_capacity(shape_id) >= RSHAPE_LEN(shape_id)) {
+            VALUE *embedded_fields = ROBJECT_EMBEDDED_FIELDS(v);
+            VALUE *extended_fields = ROBJECT_FIELDS(v);
+            MEMCPY(embedded_fields, extended_fields, VALUE, RSHAPE_LEN(shape_id));
+            FL_UNSET_RAW(v, ROBJECT_HEAP);
+            RBASIC_SET_FULL_SHAPE_ID(v, rb_shape_transition_robject(shape_id));
+            rb_gc_writebarrier_remember(v);
+        }
     }
     else {
         VALUE *ptr = ROBJECT_FIELDS(v);
-        for (uint32_t i = 0; i < ROBJECT_FIELDS_COUNT(v); i++) {
+        for (uint32_t i = 0; i < RSHAPE_LEN(shape_id); i++) {
             UPDATE_IF_MOVED(objspace, ptr[i]);
         }
     }
