@@ -256,8 +256,7 @@ module Bundler
 
       if use_git
         Bundler.ui.info "\nInitializing git repo in #{target}"
-        require "shellwords"
-        `git init #{target.to_s.shellescape}`
+        IO.popen(["git", "init", target.to_s], &:read)
 
         config[:git_default_branch] = File.read("#{target}/.git/HEAD").split("/").last.chomp
       end

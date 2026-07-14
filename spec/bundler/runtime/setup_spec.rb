@@ -1161,8 +1161,6 @@ end
     end
 
     it "error intelligently if the gemspec has a LoadError" do
-      skip "whitespace issue?" if Gem.win_platform?
-
       ref = update_git "bar", gemspec: false do |s|
         s.write "bar.gemspec", "require 'foobarbaz'"
       end.ref_for("HEAD")
