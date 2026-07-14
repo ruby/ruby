@@ -11,7 +11,7 @@ module Bundler
       API_REQUEST_SIZE = 100
       REQUIRE_MUTEX = Mutex.new
 
-      attr_accessor :remotes
+      attr_accessor :remotes, :remote_cooldowns
 
       def initialize(options = {})
         @options = options

@@ -60,6 +60,21 @@ class TestGemInstaller < Gem::InstallerTestCase
     end
   end
 
+  def test_app_script_text_escapes_executable_name
+    installer = setup_base_installer
+
+    malicious = "evil');system('id');#"
+    @spec.bindir = "bin"
+    write_file @spec.bin_file(malicious) do |io|
+      io.puts "#!/usr/bin/ruby"
+    end
+
+    wrapper = installer.app_script_text malicious
+
+    assert_includes wrapper, %q{Gem.activate_and_load_bin_path('a', 'evil\');system(\'id\');#', version)}
+    assert_includes wrapper, %q{load Gem.activate_bin_path('a', 'evil\');system(\'id\');#', version)}
+  end
+
   def test_check_executable_overwrite
     installer = setup_base_installer
 
@@ -1476,6 +1491,39 @@ class TestGemInstaller < Gem::InstallerTestCase
     refute_match(/I am a shiny gem!/, @ui.output)
   end
 
+  def test_install_sanitizes_post_install_message
+    # Use for_spec so the in-memory message reaches the installer verbatim;
+    # building a gem would escape the control characters during serialization.
+    @spec = setup_base_spec
+    @spec.post_install_message = "shiny \e]2;pwn\a gem"
+
+    installer = Gem::Installer.for_spec @spec, post_install_message: true
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      installer.install
+    end
+
+    assert_match(/shiny \.\]2;pwn\. gem/, @ui.output)
+    refute_match(/\e\]2;pwn/, @ui.output)
+  end
+
+  def test_install_handles_non_string_post_install_message
+    # post_install_message may be a non-String (the gemspec schema allows an
+    # array), so sanitizing must not assume it responds to gsub.
+    @spec = setup_base_spec
+    @spec.post_install_message = %w[one two]
+
+    installer = Gem::Installer.for_spec @spec, post_install_message: true
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      installer.install
+    end
+
+    assert_match(/one/, @ui.output)
+  end
+
   def test_install_extension_dir
     gemhome2 = "#{@gemhome}2"
 
@@ -1913,6 +1961,82 @@ class TestGemInstaller < Gem::InstallerTestCase
         installer.pre_install_checks
       end
       assert_equal "#<Gem::Specification name=malicious version=1> has an invalid dependencies", e.message
+    end
+  end
+
+  def test_pre_install_checks_malicious_executables_before_eval
+    spec = util_spec "malicious", "1"
+    def spec.full_name # so the spec is buildable
+      "malicious-1"
+    end
+
+    def spec.validate(*args); end
+    spec.executables = ["../../../tmp/malicious"]
+
+    util_build_gem spec
+
+    gem = File.join(@gemhome, "cache", spec.file_name)
+
+    use_ui @ui do
+      installer = Gem::Installer.at gem
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid executable", e.message
+    end
+  end
+
+  def test_pre_install_checks_malicious_bindir_before_eval
+    spec = util_spec "malicious", "1"
+    def spec.full_name # so the spec is buildable
+      "malicious-1"
+    end
+
+    def spec.validate(*args); end
+    spec.bindir = "../../../tmp/malicious"
+
+    util_build_gem spec
+
+    gem = File.join(@gemhome, "cache", spec.file_name)
+
+    use_ui @ui do
+      installer = Gem::Installer.at gem
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid bindir", e.message
+    end
+  end
+
+  def test_pre_install_checks_non_string_executable
+    spec = util_spec "malicious", "1"
+    def spec.validate(*args); end
+    spec.executables = [nil]
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid executable", e.message
+    end
+  end
+
+  def test_pre_install_checks_non_string_bindir
+    spec = util_spec "malicious", "1"
+    def spec.validate(*args); end
+    spec.bindir = true
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid bindir", e.message
     end
   end
 
