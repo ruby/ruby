@@ -32,35 +32,6 @@ env:
   CARGO_HTTP_MULTIPLEXING: false
 
 jobs:
-  cargo:
-    name: cargo test
-
-    runs-on: macos-26
-
-    if: >-
-      ${{!(false
-      || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/cargo'))
-      )}}
-
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-
-      - run: RUST_BACKTRACE=1 cargo test
-        working-directory: yjit
-
-      # Also compile and test with all features enabled
-      - run: RUST_BACKTRACE=1 cargo test --all-features
-        working-directory: yjit
-
-      # Check that we can build in release mode too
-      - run: cargo build --release
-        working-directory: yjit
-
   make:
     strategy:
       matrix:
@@ -68,6 +39,10 @@ jobs:
           - test_task: 'check'
             configure: '--enable-yjit'
             yjit_opts: '--yjit'
+            # Run the Rust unit tests on one entry only; a separate job
+            # would occupy another runner from the org-wide macOS
+            # concurrency pool just for ~1 minute of cargo.
+            cargo: true
           - test_task: 'check'
             configure: '--enable-yjit=dev'
             yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx --yjit-code-gc'
@@ -176,6 +151,25 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
+
+      # Run even when an earlier test step failed, so a Ruby-side failure
+      # does not mask the Rust unit test result.
+      - name: cargo test
+        run: RUST_BACKTRACE=1 cargo test
+        working-directory: src/yjit
+        if: ${{ matrix.cargo && !cancelled() }}
+
+      # Also compile and test with all features enabled
+      - name: cargo test --all-features
+        run: RUST_BACKTRACE=1 cargo test --all-features
+        working-directory: src/yjit
+        if: ${{ matrix.cargo && !cancelled() }}
+
+      # Check that we can build in release mode too
+      - name: cargo build --release
+        run: cargo build --release
+        working-directory: src/yjit
+        if: ${{ matrix.cargo && !cancelled() }}
 
       - name: Dump crash logs
         if: ${{ failure() }}
