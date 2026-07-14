@@ -33,8 +33,6 @@
 #define MAX_SHAPE_ID (INVALID_SHAPE_ID - 1)
 #define ANCESTOR_SEARCH_MAX_DEPTH 2
 
-static ID id_object_id;
-
 // Should be on its own cache line
 static RUBY_ALIGNAS(128) rb_atomic_t redblack_cache_size;
 
@@ -701,7 +699,7 @@ rb_shape_transition_object_id(shape_id_t original_shape_id)
     bool dont_care;
     rb_shape_t *shape = NULL;
     if (LIKELY(original_shape->next_field_index < rb_shape_max_capacity())) {
-        shape = get_next_shape_internal(original_shape, id_object_id, SHAPE_OBJ_ID, &dont_care, true);
+        shape = get_next_shape_internal(original_shape, rb_shape_tree.id_object_id, SHAPE_OBJ_ID, &dont_care, true);
     }
     if (!shape) {
         return rb_shape_layout(original_shape_id) | ROOT_COMPLEX_WITH_OBJ_ID | RSHAPE_FLAGS(original_shape_id);
@@ -1612,7 +1610,7 @@ Init_default_shapes(void)
         rb_memerror();
     }
 
-    id_object_id = rb_make_internal_id();
+    rb_shape_tree.id_object_id = rb_make_internal_id();
 
 #ifdef HAVE_MMAP
     size_t shape_cache_mmap_size = rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError);
@@ -1647,11 +1645,11 @@ Init_default_shapes(void)
     RUBY_ASSERT(!(SHAPE_OFFSET(root) & SHAPE_ID_HAS_IVAR_MASK));
 
     bool dontcare;
-    rb_shape_t *root_with_obj_id = get_next_shape_internal(root, id_object_id, SHAPE_OBJ_ID, &dontcare, true);
+    rb_shape_t *root_with_obj_id = get_next_shape_internal(root, rb_shape_tree.id_object_id, SHAPE_OBJ_ID, &dontcare, true);
     RUBY_ASSERT(root_with_obj_id);
     RUBY_ASSERT(SHAPE_OFFSET(root_with_obj_id) == ROOT_SHAPE_WITH_OBJ_ID);
     RUBY_ASSERT(root_with_obj_id->type == SHAPE_OBJ_ID);
-    RUBY_ASSERT(root_with_obj_id->edge_name == id_object_id);
+    RUBY_ASSERT(root_with_obj_id->edge_name == rb_shape_tree.id_object_id);
     RUBY_ASSERT(root_with_obj_id->next_field_index == 1);
     RUBY_ASSERT(!(SHAPE_OFFSET(root_with_obj_id) & SHAPE_ID_HAS_IVAR_MASK));
     (void)root_with_obj_id;

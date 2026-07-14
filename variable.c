@@ -2185,7 +2185,7 @@ each_hash_iv(st_data_t id, st_data_t val, st_data_t data)
 {
     struct iv_itr_data * itr_data = (struct iv_itr_data *)data;
     rb_ivar_foreach_callback_func *callback = itr_data->func;
-    if (is_internal_id((ID)id)) {
+    if ((ID)id == rb_shape_tree.id_object_id) {
         return ST_CONTINUE;
     }
     return callback((ID)id, (VALUE)val, itr_data->arg);
