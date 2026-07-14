@@ -11735,10 +11735,10 @@ opobj_inspect(VALUE obj)
     if (!SPECIAL_CONST_P(obj) && !RBASIC_CLASS(obj)) {
         switch (BUILTIN_TYPE(obj)) {
           case T_STRING:
-            obj = rb_str_new_cstr(RSTRING_PTR(obj));
+            obj = rb_str_resurrect(obj);
             break;
           case T_ARRAY:
-            obj = rb_ary_dup(obj);
+            obj = rb_ary_resurrect(obj);
             break;
           default:
             break;
