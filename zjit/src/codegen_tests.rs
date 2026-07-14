@@ -3302,6 +3302,26 @@ fn test_string_copy_large_gc_stress() {
 }
 
 #[test]
+fn test_string_copy_memcpy_gc_stress() {
+    eval(r#"
+        # frozen_string_literal: false
+        def make = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+    "#);
+    assert_contains_opcode("make", YARVINSN_dupstring);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make
+          s = make
+          s << "!"
+          [s.class, s.frozen?, s.length, s.end_with?("!")]
+        ensure
+          GC.stress = false
+        end
+    "#), @"[String, false, 157, true]");
+}
+
+#[test]
 fn test_string_copy_chilled_gc_stress() {
     eval(r#"
         def make = "hello world"
