@@ -2436,6 +2436,8 @@ compare_posix_sh(const void *key, const void *el)
 }
 #endif
 
+#define append_terminator(buf) rb_str_buf_cat(buf, "", 1) /* append '\0' */
+
 static void
 rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VALUE execarg_obj)
 {
@@ -2493,7 +2495,10 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
             "while",		/* reserved */
         };
         const char *p;
+        const char *const s = rb_str_null_check(prog);
+        const char *const e = RSTRING_END(prog);
         struct string_part first = {0, 0};
+        int has_slash = 0;
         int has_meta = 0;
         /*
          * meta characters:
@@ -2519,7 +2524,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
          * =    Assignment preceding command name
          * %    (used in Parameter Expansion)
          */
-        for (p = RSTRING_PTR(prog); *p; p++) {
+        for (p = s; p < e; p++) {
             if (*p == ' ' || *p == '\t') {
                 if (first.ptr && !first.len) first.len = p - first.ptr;
             }
@@ -2533,15 +2538,17 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
                     has_meta = 1;
                 }
                 else if (*p == '/') {
-                    first.len = 0x100; /* longer than any posix_sh_cmds */
+                    has_slash = 1;
                 }
             }
             if (has_meta)
                 break;
         }
-        if (!has_meta && first.ptr) {
+        if (!has_meta) {
+            if (!first.ptr) first.ptr = e;
             if (!first.len) first.len = p - first.ptr;
             if (first.len > 0 && first.len <= sizeof(posix_sh_cmds[0]) &&
+                !has_slash &&
                 bsearch(&first, posix_sh_cmds, numberof(posix_sh_cmds), sizeof(posix_sh_cmds[0]), compare_posix_sh))
                 has_meta = 1;
         }
@@ -2552,21 +2559,22 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
         if (!eargp->use_shell) {
             VALUE argv_buf;
             argv_buf = hide_obj(rb_str_buf_new(0));
-            p = RSTRING_PTR(prog);
-            while (*p) {
-                while (*p == ' ' || *p == '\t')
+            rb_str_buf_cat(argv_buf, first.ptr, first.len);
+            append_terminator(argv_buf);
+            for (p = first.ptr + first.len; p < e;) {
+                while (p < e && (*p == ' ' || *p == '\t'))
                     p++;
-                if (*p) {
+                if (p < e) {
                     const char *w = p;
-                    while (*p && *p != ' ' && *p != '\t')
+                    while (p < e && *p != ' ' && *p != '\t')
                         p++;
                     rb_str_buf_cat(argv_buf, w, p-w);
-                    rb_str_buf_cat(argv_buf, "", 1); /* append '\0' */
+                    append_terminator(argv_buf);
                 }
             }
             eargp->invoke.cmd.argv_buf = argv_buf;
             eargp->invoke.cmd.command_name =
-                hide_obj(rb_str_subseq(argv_buf, 0, strlen(RSTRING_PTR(argv_buf))));
+                hide_obj(rb_str_subseq(argv_buf, 0, first.len));
             rb_enc_copy(eargp->invoke.cmd.command_name, prog);
         }
     }
@@ -2596,7 +2604,8 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
             arg = EXPORT_STR(arg);
             s = RSTRING_PTR(arg);
 #endif
-            rb_str_buf_cat(argv_buf, s, RSTRING_LEN(arg) + 1); /* include '\0' */
+            rb_str_buf_cat(argv_buf, s, RSTRING_LEN(arg));
+            append_terminator(argv_buf);
         }
         eargp->invoke.cmd.argv_buf = argv_buf;
     }
@@ -2676,7 +2685,7 @@ fill_envp_buf_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     rb_str_buf_cat2(envp_buf, StringValueCStr(key));
     rb_str_buf_cat2(envp_buf, "=");
     rb_str_buf_cat2(envp_buf, StringValueCStr(val));
-    rb_str_buf_cat(envp_buf, "", 1); /* append '\0' */
+    append_terminator(envp_buf);
 
     return ST_CONTINUE;
 }
