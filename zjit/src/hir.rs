@@ -5083,6 +5083,9 @@ impl Function {
                 let SendDirectData { recv, cme, iseq, args, kw_bits, jit_entry_idx, block: call_block, state, .. } = *data;
                 // SendDirect invariant: block is either None or BlockIseq.
                 // BlockArg is rejected upstream during type specialization.
+                // TODO(max): If we accept BlockArg here, we need to change the folding of Defined
+                // in HIR construction for the defined opcode to check the send flags of the method
+                // being inlined, too.
                 let blockiseq: Option<IseqPtr> = call_block.map(|bh| match bh {
                     BlockHandler::BlockIseq(bi) => bi,
                     BlockHandler::BlockArg => unreachable!("BlockArg in SendDirect"),
