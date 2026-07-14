@@ -342,10 +342,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     shape_id_t dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
     if (UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
-        VALUE fields_obj = rb_imemo_fields_new_complex(dest, dest_shape_id, rb_ivar_count(obj), false);
-        st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
-        rb_obj_copy_ivs_to_hash_table(obj, table);
-        rb_obj_replace_fields(dest, fields_obj);
+        rb_obj_replace_fields(dest, rb_obj_complex_fields_build(obj));
         return;
     }
 

@@ -9,7 +9,6 @@
 #include "internal/object.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
-#include "internal/st.h"
 #include "variable.h"
 #include <stdbool.h>
 
@@ -1153,24 +1152,6 @@ rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALU
             src_shape = RSHAPE(src_shape->parent_offset);
         }
     }
-}
-
-void
-rb_shape_copy_complex_ivars(VALUE dest, VALUE src)
-{
-    RUBY_ASSERT(IMEMO_TYPE_P(src, imemo_fields));
-    RUBY_ASSERT(IMEMO_TYPE_P(dest, imemo_fields));
-
-    shape_id_t dest_shape_id = RBASIC_SHAPE_ID(src);
-    st_table *dest_table = rb_imemo_fields_complex_tbl(dest);
-    st_replace(dest_table, rb_imemo_fields_complex_tbl(src));
-
-    if (rb_shape_has_object_id(dest_shape_id)) {
-        st_data_t stkey = (st_data_t)id_object_id;
-        st_delete(dest_table, &stkey, NULL);
-    }
-
-    RBASIC_SET_SHAPE_ID(dest, ROOT_COMPLEX_SHAPE_ID);
 }
 
 size_t

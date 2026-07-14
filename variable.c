@@ -1623,20 +1623,13 @@ rb_evict_fields_to_hash(VALUE obj)
     return new_shape_id;
 }
 
-void
-rb_evict_ivars_to_hash(VALUE obj)
+VALUE
+rb_obj_complex_fields_build(VALUE obj)
 {
-    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
-    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
-
-    shape_id_t new_shape_id = rb_obj_shape_transition_complex(obj);
-    VALUE fields_obj = rb_imemo_fields_new_complex(obj, new_shape_id, rb_ivar_count(obj), false);
+    VALUE fields_obj = rb_imemo_fields_new_complex(obj, ROOT_COMPLEX_SHAPE_ID, rb_ivar_count(obj), false);
     st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
     rb_obj_copy_ivs_to_hash_table(obj, table);
-    ROBJECT_SET_EXTENDED(obj, fields_obj);
-    RBASIC_SET_FULL_SHAPE_ID(obj, rb_shape_transition_extended(new_shape_id));
-
-    RUBY_ASSERT(rb_obj_shape_complex_p(obj));
+    return fields_obj;
 }
 
 static VALUE
@@ -2290,10 +2283,7 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
         shape_id_t dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
 
         if (UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
-            new_fields_obj = rb_imemo_fields_new_complex(dest, dest_shape_id, rb_ivar_count(obj), false);
-            st_table *table = rb_imemo_fields_complex_tbl(new_fields_obj);
-            rb_obj_copy_ivs_to_hash_table(obj, table);
-            rb_obj_replace_fields(dest, new_fields_obj);
+            rb_obj_replace_fields(dest, rb_obj_complex_fields_build(obj));
             return;
         }
 

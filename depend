@@ -16680,7 +16680,6 @@ shape.$(OBJEXT): $(top_srcdir)/internal/object.h
 shape.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 shape.$(OBJEXT): $(top_srcdir)/internal/serial.h
 shape.$(OBJEXT): $(top_srcdir)/internal/set_table.h
-shape.$(OBJEXT): $(top_srcdir)/internal/st.h
 shape.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 shape.$(OBJEXT): $(top_srcdir)/internal/string.h
 shape.$(OBJEXT): $(top_srcdir)/internal/struct.h
