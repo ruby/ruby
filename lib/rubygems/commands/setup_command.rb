@@ -355,15 +355,29 @@ By default, this RubyGems will install gem as:
       loaded_from = current_default_spec.loaded_from
       File.delete(loaded_from)
 
-      # Remove previous default gem executables if they were not shadowed by a regular gem
-      FileUtils.rm_rf current_default_spec.full_gem_path if all_specs_current_version.size == 1
+      previous_specs_dir = File.dirname(loaded_from)
 
-      File.dirname(loaded_from)
+      # Remove previous default gem executables if they were not shadowed by a
+      # regular gem. They live under the same root as the previous default
+      # gemspec, which is not necessarily default_dir.
+      if all_specs_current_version.size == 1
+        previous_root = File.dirname(File.dirname(previous_specs_dir))
+        FileUtils.rm_rf File.join(previous_root, "gems", current_default_spec.full_name)
+      end
+
+      previous_specs_dir
     else
       target_specs_dir = File.join(default_dir, "specifications", "default")
       mkdir_p target_specs_dir, mode: 0o755
       target_specs_dir
     end
+
+    # Root directory that specs_dir belongs to. It may differ from default_dir
+    # when Gem.default_specifications_dir is customized to live under a
+    # different root, like Homebrew does. Executables must be extracted under
+    # the same root as the default gemspec, since that's where activation of
+    # the default gem will look for them.
+    bundler_install_dir = File.dirname(File.dirname(specs_dir))
 
     new_bundler_spec = Gem::Specification.load("bundler.gemspec")
     full_name = new_bundler_spec.full_name
@@ -397,7 +411,7 @@ By default, this RubyGems will install gem as:
         format_executable: options[:format_executable],
         force: options[:force],
         bin_dir: bin_dir,
-        install_dir: default_dir,
+        install_dir: bundler_install_dir,
         wrappers: true
       )
       # We need to install only executable and default spec files.
