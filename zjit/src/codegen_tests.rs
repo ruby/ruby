@@ -7145,3 +7145,33 @@ fn test_send_no_profiles_with_disabled_specialized_instruction() {
 fn test_array_each_is_defined_in_ruby() {
     assert_snapshot!(inspect("Array.instance_method(:each).source_location&.first"), @r#""<internal:array>""#);
 }
+
+#[test]
+fn test_forward_fallback_with_lightweight_frame_reads_cfp() {
+    assert_snapshot!(inspect(r#"
+      class Base
+        def foo(...)
+          "base"
+        end
+      end
+
+      class Child < Base
+        def foo(...)
+          bar do
+            super
+          end
+        end
+
+        def bar
+          yield
+        end
+      end
+
+      c = Child.new
+      100.times do
+        Array.new(50) { |n| n * n }
+        c.foo(1, 2, 3)
+      end
+      :done
+    "#), @":done");
+}

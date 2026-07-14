@@ -1184,7 +1184,7 @@ vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *r
     CALL_INFO site_ci = cd->ci;
     VALUE bh = Qundef;
 
-    RUBY_ASSERT(ISEQ_BODY(ISEQ_BODY(GET_ISEQ())->local_iseq)->param.flags.forwardable);
+    RUBY_ASSERT(ISEQ_BODY(ISEQ_BODY(CFP_ISEQ(reg_cfp))->local_iseq)->param.flags.forwardable);
     CALL_INFO caller_ci = (CALL_INFO)TOPN(0);
 
     unsigned int site_argc = vm_ci_argc(site_ci);
