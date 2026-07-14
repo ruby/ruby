@@ -443,7 +443,9 @@ static inline const struct rb_callable_method_entry_struct *
 vm_cc_cme(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc));
+    // rb_multi_ractor_p(): a refinement cc may be invalidated by another ractor
+    // mid-call (see vm_cc_invalidate() above).
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc) || rb_multi_ractor_p());
     VM_ASSERT(cc_check_class(cc->klass));
     VM_ASSERT(cc->call_ == NULL   || // not initialized yet
               !vm_cc_markable(cc) ||
@@ -458,7 +460,8 @@ vm_cc_call(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc->call_ != NULL);
-    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc));
+    // rb_multi_ractor_p(): see vm_cc_cme().
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc) || rb_multi_ractor_p());
     VM_ASSERT(cc_check_class(cc->klass));
     return cc->call_;
 }
