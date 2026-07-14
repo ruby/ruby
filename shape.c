@@ -1094,8 +1094,16 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 shape_id_t
 rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
 {
-    RUBY_ASSERT(!rb_shape_complex_p(initial_shape_id));
-    RUBY_ASSERT(!rb_shape_complex_p(dest_shape_id));
+    RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
+
+    if (RB_UNLIKELY(rb_shape_complex_p(initial_shape_id))) {
+        // The class has been marked as too complex.
+        return initial_shape_id;
+    }
+
+    if (RB_UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
+        return rb_shape_transition_complex(initial_shape_id);
+    }
 
     shape_id_t next_shape_id;
     // The shape has a SHAPE_OBJ_ID edge, it needs to be rebuilt.

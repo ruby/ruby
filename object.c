@@ -337,16 +337,6 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
 
     shape_id_t src_shape_id = RBASIC_SHAPE_ID(obj);
-
-    if (rb_shape_complex_p(src_shape_id)) {
-        VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
-        VALUE clone = rb_imemo_fields_new_complex_empty(dest);
-        rb_shape_copy_complex_ivars(clone, fields_obj);
-        ROBJECT_SET_EXTENDED(dest, clone);
-        RBASIC_SET_SHAPE_ID_WITH_LAYOUT(dest, ROOT_COMPLEX_SHAPE_ID, SHAPE_ID_LAYOUT_EXTENDED);
-        return;
-    }
-
     shape_id_t initial_shape_id = RBASIC_SHAPE_ID(dest);
     RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
 

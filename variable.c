@@ -2285,27 +2285,15 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
             goto clear;
         }
 
-        if (rb_shape_complex_p(src_shape_id)) {
-            VALUE clone = rb_imemo_fields_new_complex_empty(dest);
-            rb_shape_copy_complex_ivars(clone, fields_obj);
-            rb_obj_set_fields(dest, clone, 0, 0);
-            return;
-        }
-
-        shape_id_t dest_shape_id = src_shape_id;
         shape_id_t initial_shape_id = rb_obj_shape_id(dest);
+        shape_id_t dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
 
-        if (!rb_shape_canonical_p(src_shape_id)) {
-            RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
-
-            dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
-            if (UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
-                new_fields_obj = rb_imemo_fields_new_complex(dest, dest_shape_id, rb_ivar_count(obj), false);
-                st_table *table = rb_imemo_fields_complex_tbl(new_fields_obj);
-                rb_obj_copy_ivs_to_hash_table(obj, table);
-                rb_obj_replace_fields(dest, new_fields_obj);
-                return;
-            }
+        if (UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
+            new_fields_obj = rb_imemo_fields_new_complex(dest, dest_shape_id, rb_ivar_count(obj), false);
+            st_table *table = rb_imemo_fields_complex_tbl(new_fields_obj);
+            rb_obj_copy_ivs_to_hash_table(obj, table);
+            rb_obj_replace_fields(dest, new_fields_obj);
+            return;
         }
 
         if (!RSHAPE_LEN(dest_shape_id)) {
