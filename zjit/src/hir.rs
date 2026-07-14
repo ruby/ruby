@@ -5439,8 +5439,7 @@ impl Function {
                 // OK
             }
             ShapeLayout::RData => {
-                // FIXME: we side exit for now as we're missing SHAPE_ID_FL_PRIVATE_MASK handling.
-                return Err(Counter::setivar_fallback_not_t_object);
+                // OK
             }
             _ => {
                 return Err(Counter::setivar_fallback_not_t_object);
@@ -5462,8 +5461,6 @@ impl Function {
             // Current shape does not contain this ivar; do a shape transition.
             let current_shape_id = profiled_type.shape();
             let class = profiled_type.class();
-            // We're only looking at T_OBJECT so ignore all of the imemo stuff.
-            assert!(profiled_type.flags().is_t_object());
             next_shape = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id.0, id, class) });
             // If the VM ran out of shapes, or this class generated too many leaf,
             // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
@@ -5513,10 +5510,9 @@ impl Function {
             let shape_id_offset = unsafe { rb_shape_id_offset() };
 
             if !embedded {
-                // FIXME: We need to strip the SHAPE_ID_FL_PRIVATE_MASK from the shape for `ivar_storage`.
-                // see `RBASIC_SET_SHAPE_ID`.
-                // This path is currently dead code, see the FIXME in `prepare_optimized_setivar`
-                self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id, num_bits: types::CShape.num_bits() });
+                let stripped_shape = ShapeId(spec.next_shape.0 & !SHAPE_ID_FL_PRIVATE_MASK);
+                let stripped_val = self.push_insn(block, Insn::Const { val: Const::CShape(stripped_shape) });
+                self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: FieldName::shape_id, offset: shape_id_offset, val: stripped_val, num_bits: types::CShape.num_bits() });
             }
             self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id, num_bits: types::CShape.num_bits() });
         }

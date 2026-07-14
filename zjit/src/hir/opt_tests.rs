@@ -9781,6 +9781,83 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_setivar_on_t_data() {
+        // T_DATA uses fields_obj for instance variables.
+        eval("
+            class C < Thread
+              def test = @a = 2
+            end
+            obj = C.new { }
+            obj.join
+            obj.instance_variable_set(:@a, 1)
+            obj.test
+            TEST = C.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[2] = Const Value(2)
+          PatchPoint SingleRactorMode
+          v14:HeapBasicObject = GuardType v6, HeapBasicObject
+          v15:CShape = LoadField v14, :shape_id@0x1000
+          v16:CShape[0x1001] = GuardBitEquals v15, CShape(0x1001) recompile
+          v17:BasicObject = LoadField v14, :as_heap@0x1002
+          StoreField v17, :@a@0x1002, v10
+          WriteBarrier v17, v10
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_optimize_setivar_on_t_data_with_transition() {
+        // T_DATA uses fields_obj for instance variables.
+        eval("
+            class C < Thread
+              def test = @b = 2
+            end
+            obj = C.new { }
+            obj.join
+            obj.test
+            TEST = C.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[2] = Const Value(2)
+          PatchPoint SingleRactorMode
+          v14:HeapBasicObject = GuardType v6, HeapBasicObject
+          v15:CShape = LoadField v14, :shape_id@0x1000
+          v16:CShape[0x1001] = GuardBitEquals v15, CShape(0x1001) recompile
+          v17:BasicObject = LoadField v14, :as_heap@0x1002
+          StoreField v17, :@b@0x1002, v10
+          WriteBarrier v17, v10
+          v20:CShape[0x1003] = Const CShape(0x1003)
+          v21:CShape[0x1004] = Const CShape(0x1004)
+          StoreField v17, :shape_id@0x1000, v21
+          StoreField v14, :shape_id@0x1000, v20
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
     fn test_optimize_send_with_block() {
         eval(r#"
             def test = [1, 2, 3].map { |x| x * 2 }
