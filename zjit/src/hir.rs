@@ -2980,6 +2980,13 @@ impl Function {
         }
     }
 
+    /// Return whether the representative of `insn_id` is a `SendDirect` without
+    /// cloning the instruction or resolving its operands.
+    fn is_send_direct(&self, insn_id: InsnId) -> bool {
+        let insn_id = self.union_find.borrow().find_const(insn_id);
+        matches!(&self.insns[insn_id.0], Insn::SendDirect(..))
+    }
+
     fn new_block(&mut self, insn_idx: u32) -> BlockId {
         let id = BlockId(self.blocks.len());
         let block = Block {
@@ -5062,7 +5069,7 @@ impl Function {
             let mut search_start = 0;
             loop {
                 let Some(offset) = self.blocks[block.0].insns[search_start..].iter()
-                    .position(|&id| matches!(self.find(id), Insn::SendDirect(..)))
+                    .position(|&id| self.is_send_direct(id))
                 else {
                     break;
                 };
@@ -5171,7 +5178,7 @@ impl Function {
                 // pre-Send body, before the PushLightweightFrame and Jump we add
                 // last).
                 let tail = self.blocks[block.0].insns.split_off(send_pos);
-                debug_assert!(matches!(self.find(tail[0]), Insn::SendDirect(..)));
+                debug_assert!(self.is_send_direct(tail[0]));
 
                 let omitted_opt_num = opt_num - passed_opt_num;
                 let positional_kw_end = lead_num + opt_num + rest_slots + post_num + kw_num;
