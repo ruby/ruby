@@ -9,6 +9,7 @@
 #include "internal/object.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
+#include "internal/st.h"
 #include "variable.h"
 #include <stdbool.h>
 
@@ -1147,16 +1148,21 @@ rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALU
 }
 
 void
-rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table)
+rb_shape_copy_complex_ivars(VALUE dest, VALUE src)
 {
-    // obj is COMPLEX so we can copy its iv_hash
-    st_table *table = st_copy(fields_table);
-    if (rb_shape_has_object_id(src_shape_id)) {
-        st_data_t id = (st_data_t)id_object_id;
-        st_delete(table, &id, NULL);
+    RUBY_ASSERT(IMEMO_TYPE_P(src, imemo_fields));
+    RUBY_ASSERT(IMEMO_TYPE_P(dest, imemo_fields));
+
+    shape_id_t dest_shape_id = RBASIC_SHAPE_ID(src);
+    st_table *dest_table = rb_imemo_fields_complex_tbl(dest);
+    st_replace(dest_table, rb_imemo_fields_complex_tbl(src));
+
+    if (rb_shape_has_object_id(dest_shape_id)) {
+        st_data_t stkey = (st_data_t)id_object_id;
+        st_delete(dest_table, &stkey, NULL);
     }
-    rb_obj_init_complex(dest, table);
-    rb_gc_writebarrier_remember(dest);
+
+    RBASIC_SET_SHAPE_ID(dest, ROOT_COMPLEX_SHAPE_ID);
 }
 
 size_t
@@ -1295,36 +1301,39 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 
     rb_shape_t *shape = RSHAPE(shape_id);
 
-    bool has_object_id = false;
-    while (shape->parent_offset != INVALID_SHAPE_ID) {
-        if (shape->type == SHAPE_OBJ_ID) {
-            has_object_id = true;
-            break;
-        }
-        shape = RSHAPE(shape->parent_offset);
-    }
-
-    if (rb_shape_has_object_id(shape_id)) {
-        if (!has_object_id) {
-            rb_bug("shape_id claim having obj_id but doesn't shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
-        }
-    }
-    else {
-        if (has_object_id) {
-            rb_bug("shape_id claim not having obj_id but it does shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
-        }
-    }
-
     // Make sure SHAPE_ID_HAS_IVAR_MASK is valid.
     if (rb_shape_complex_p(shape_id)) {
         RUBY_ASSERT(shape_id & SHAPE_ID_HAS_IVAR_MASK);
 
         // Ensure complex object don't appear as embedded
-        if (RB_TYPE_P(obj, T_OBJECT) || IMEMO_TYPE_P(obj, imemo_fields)) {
+        if (RB_TYPE_P(obj, T_OBJECT)) {
             RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
+        }
+        else if (IMEMO_TYPE_P(obj, imemo_fields)) {
+            RUBY_ASSERT(!FL_TEST_RAW(obj, ROBJECT_HEAP));
         }
     }
     else {
+        bool has_object_id = false;
+        while (shape->parent_offset != INVALID_SHAPE_ID) {
+            if (shape->type == SHAPE_OBJ_ID) {
+                has_object_id = true;
+                break;
+            }
+            shape = RSHAPE(shape->parent_offset);
+        }
+
+        if (rb_shape_has_object_id(shape_id)) {
+            if (!has_object_id) {
+                rb_bug("shape_id claim having obj_id but doesn't shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
+            }
+        }
+        else {
+            if (has_object_id) {
+                rb_bug("shape_id claim not having obj_id but it does shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
+            }
+        }
+
         attr_index_t ivar_count = RSHAPE_LEN(shape_id);
         if (has_object_id) {
             ivar_count--;
