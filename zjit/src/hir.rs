@@ -537,6 +537,7 @@ pub enum SideExitReason {
     UnhandledYARVInsn(u32),
     UnhandledCallType(CallType),
     UnhandledBlockArg,
+    BlockArgNotNil,
     TooManyKeywordParameters,
     TooManyArgsForLir,
     FixnumAddOverflow,
@@ -704,6 +705,8 @@ pub enum SendFallbackReason {
     SendCfuncArrayVariadic,
     SendNotOptimizedMethodType(MethodType),
     SendNotOptimizedNeedPermission,
+    /// The block argument is not nil, so we can't optimize to SendWithoutBlockDirect
+    SendBlockArgNotNil,
     CCallWithFrameTooManyArgs,
     ObjToStringNotString,
     TooManyArgsForLir,
@@ -778,6 +781,7 @@ impl Display for SendFallbackReason {
             SendCfuncVariadic => write!(f, "Send: C function is variadic"),
             SendCfuncArrayVariadic => write!(f, "Send: C function expects array variadic"),
             SendNotOptimizedMethodType(method_type) => write!(f, "Send: unsupported method type {:?}", method_type),
+            SendBlockArgNotNil => write!(f, "Send: block argument is not nil"),
             CCallWithFrameTooManyArgs => write!(f, "CCallWithFrame: too many arguments"),
             ObjToStringNotString => write!(f, "ObjToString: result is not a string"),
             TooManyArgsForLir => write!(f, "Too many arguments for LIR"),
@@ -2531,7 +2535,7 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     let params = unsafe { iseq.params() };
 
     let callee_has_block_param = 0 != params.flags.has_block();
-    let caller_passes_block_arg = (unsafe { rb_vm_ci_flag(ci) } & VM_CALL_ARGS_BLOCKARG) != 0;
+    let caller_passes_block_arg = has_block && (unsafe { rb_vm_ci_flag(ci) } & VM_CALL_ARGS_BLOCKARG) != 0;
 
     use Counter::*;
     if 0 != params.flags.forwardable() { count_failure(complex_arg_pass_param_forwardable) }
@@ -4044,7 +4048,7 @@ impl Function {
                     Insn::Send { recv, block: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
                         self.try_rewrite_uminus(block, insn_id, recv, state),
                     ref send@Insn::Send { mut recv, cd, state, block: send_block, ref args, .. } => {
-                        let has_block = send_block.is_some();
+                        let mut has_block = send_block.is_some();
                         let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), state) {
                             ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
                             ReceiverTypeResolution::Monomorphic { profiled_type }
@@ -4105,9 +4109,63 @@ impl Function {
                             def_type = unsafe { get_cme_def_type(cme) };
                         }
 
+                        // Check if we can optimize `foo(&block)` where block is nil to a send without block.
+                        // `state` keeps referring to the pre-send frame state (block arg still on the
+                        // stack). Any guard that side-exits before the call re-executes the `send` in
+                        // the interpreter, so it must reconstruct the stack with the block arg present.
+                        // Only the direct-send frame setup uses `send_frame_state`, which has the nil
+                        // block arg stripped from the stack.
+                        let mut send_block = send_block;
+                        let mut send_frame_state = state;
+                        let mut args = args.to_vec();
+                        let mut stripped_nil_block = false;
+                        if send_block == Some(BlockHandler::BlockArg) && def_type == VM_METHOD_TYPE_ISEQ {
+                            // The block arg is the last element in args
+                            if let Some(&block_arg) = args.last() {
+                                let statically_nil = self.is_a(block_arg, types::NilClass);
+                                let profiled_nil = self.profiled_type_of_at(block_arg, state)
+                                    .map_or(false, |pt| pt.is_nil());
+                                if statically_nil || profiled_nil {
+                                    if !statically_nil {
+                                        // Guard needed when relying on profiled type. Uses the original
+                                        // `state` so a side exit re-executes the send with the block
+                                        // arg still on the VM stack.
+                                        //
+                                        // Recompile on exit so a site that starts seeing non-nil
+                                        // blocks re-profiles the block arg and drops this speculation
+                                        // (falling back to a dynamic send) instead of paying the guard
+                                        // side exit repeatedly. This matches the receiver GuardType
+                                        // below and the getblockparamproxy BlockParamProxyNotNil guard.
+                                        self.push_insn(block, Insn::GuardBitEquals {
+                                            val: block_arg,
+                                            expected: Const::Value(Qnil),
+                                            reason: Box::new(SideExitReason::BlockArgNotNil),
+                                            state,
+                                            recompile: Some(Recompile),
+                                        });
+                                    }
+                                    // Strip nil block arg and treat as no block
+                                    args = args[..args.len() - 1].to_vec();
+                                    send_block = None;
+                                    has_block = false;
+                                    stripped_nil_block = true;
+                                    // Frame state for the direct send only: the block arg is removed
+                                    // from the stack so the callee frame is laid out correctly.
+                                    let new_state = self.frame_state(state).with_replaced_args(&args, args.len() + 1);
+                                    send_frame_state = self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) });
+                                } else {
+                                    // Can't prove block arg is nil
+                                    self.set_dynamic_send_reason(insn_id, SendBlockArgNotNil);
+                                    self.push_insn_id(block, insn_id); continue;
+                                }
+                            }
+                        }
+
                         // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendDirect`.
                         // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) and C methods handle their own argument constraints (e.g., kw_splat for Proc call).
-                        if def_type != VM_METHOD_TYPE_OPTIMIZED && def_type != VM_METHOD_TYPE_CFUNC && unspecializable_call_type(flags) {
+                        // Mask out ARGS_BLOCKARG only if we've already handled the nil block arg case above.
+                        let flags_for_check = if stripped_nil_block { flags & !VM_CALL_ARGS_BLOCKARG } else { flags };
+                        if def_type != VM_METHOD_TYPE_OPTIMIZED && def_type != VM_METHOD_TYPE_CFUNC && unspecializable_call_type(flags_for_check) {
                             self.count_complex_call_features(block, flags);
                             self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                             self.push_insn_id(block, insn_id); continue;
@@ -4123,7 +4181,7 @@ impl Function {
                             }
 
                             // Check if the args are compatible before emitting any assmptions
-                            let Ok(SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx }) = self.prepare_direct_send_args(block, &args, ci, iseq, state)
+                            let Ok(SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx }) = self.prepare_direct_send_args(block, &args, ci, iseq, send_frame_state)
                                 .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
                                 self.push_insn_id(block, insn_id); continue;
                             };
@@ -4163,7 +4221,7 @@ impl Function {
                             }
 
                             // Check if the args are compatible before emitting any assmptions
-                            let Ok(SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx }) = self.prepare_direct_send_args(block, &args, ci, iseq, state)
+                            let Ok(SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx }) = self.prepare_direct_send_args(block, &args, ci, iseq, send_frame_state)
                                 .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
                                 self.push_insn_id(block, insn_id); continue;
                             };
