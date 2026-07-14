@@ -1603,33 +1603,19 @@ rb_attr_get(VALUE obj, ID id)
     return rb_ivar_lookup(obj, id, Qnil);
 }
 
-void rb_obj_copy_fields_to_hash_table(VALUE obj, st_table *table);
-static VALUE imemo_fields_complex_from_obj(VALUE owner, VALUE source_fields_obj, shape_id_t shape_id);
+static VALUE imemo_fields_evacutate_to_complex(VALUE owner, VALUE source_fields_obj, shape_id_t shape_id, int extra_capa);
 
-// Copy all object fields, including ivars and internal object_id, etc
 static shape_id_t
-rb_evict_fields_to_hash(VALUE obj)
+rb_obj_convert_too_complex(VALUE obj, VALUE fields_obj, shape_id_t shape_id)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
     RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
 
-    shape_id_t new_shape_id = rb_obj_shape_transition_complex(obj);
-    VALUE fields_obj = rb_imemo_fields_new_complex(obj, new_shape_id, RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), false);
-    st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
-    rb_obj_copy_fields_to_hash_table(obj, table);
-    ROBJECT_SET_EXTENDED(obj, fields_obj);
-    RBASIC_SET_FULL_SHAPE_ID(obj, rb_shape_transition_extended(new_shape_id));
-
-    return new_shape_id;
-}
-
-VALUE
-rb_obj_complex_fields_build(VALUE obj)
-{
-    VALUE fields_obj = rb_imemo_fields_new_complex(obj, ROOT_COMPLEX_SHAPE_ID, rb_ivar_count(obj), false);
-    st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
-    rb_obj_copy_ivs_to_hash_table(obj, table);
-    return fields_obj;
+    shape_id = rb_shape_transition_complex(shape_id);
+    VALUE new_fields_obj = imemo_fields_evacutate_to_complex(obj, fields_obj, shape_id, 1);
+    ROBJECT_SET_EXTENDED(obj, new_fields_obj);
+    RBASIC_SET_SHAPE_ID_WITH_LAYOUT(obj, shape_id, SHAPE_ID_LAYOUT_EXTENDED);
+    return shape_id;
 }
 
 static VALUE
@@ -1676,7 +1662,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 
     if (UNLIKELY(rb_shape_complex_p(next_shape_id))) {
         if (UNLIKELY(!rb_shape_complex_p(old_shape_id))) {
-            fields_obj = imemo_fields_complex_from_obj(obj, fields_obj, next_shape_id);
+            fields_obj = imemo_fields_evacutate_to_complex(obj, fields_obj, next_shape_id, -1);
         }
         st_data_t key = id;
         if (!st_delete(rb_imemo_fields_complex_tbl(fields_obj), &key, (st_data_t *)&val)) {
@@ -1776,14 +1762,29 @@ imemo_fields_complex_from_obj_i(ID key, VALUE val, st_data_t arg)
 }
 
 static VALUE
-imemo_fields_complex_from_obj(VALUE owner, VALUE source_fields_obj, shape_id_t shape_id)
+imemo_fields_complex_from_obj(VALUE owner, VALUE source, shape_id_t shape_id, bool ivar_only, int extra_capa)
 {
-    attr_index_t len = source_fields_obj ? RSHAPE_LEN(RBASIC_SHAPE_ID(source_fields_obj)) : 0;
-    VALUE fields_obj = rb_imemo_fields_new_complex(owner, shape_id, len + 1, RB_OBJ_SHAREABLE_P(owner));
+    attr_index_t len = source ? RSHAPE_LEN(RBASIC_SHAPE_ID(source)) : 0;
+    int capa = (len + extra_capa);
+    RUBY_ASSERT(capa >= 0);
 
-    rb_field_foreach(source_fields_obj, imemo_fields_complex_from_obj_i, (st_data_t)fields_obj, false);
+    VALUE fields_obj = rb_imemo_fields_new_complex(owner, shape_id, capa, RB_OBJ_SHAREABLE_P(owner));
+
+    rb_field_foreach(source, imemo_fields_complex_from_obj_i, (st_data_t)fields_obj, ivar_only);
 
     return fields_obj;
+}
+
+static VALUE
+imemo_fields_evacutate_to_complex(VALUE owner, VALUE source, shape_id_t shape_id, int extra_capa)
+{
+    return imemo_fields_complex_from_obj(owner, source, shape_id, false, extra_capa);
+}
+
+VALUE
+rb_obj_complex_fields_build(VALUE obj)
+{
+    return imemo_fields_complex_from_obj(obj, obj, ROOT_COMPLEX_SHAPE_ID, true, 0);
 }
 
 static VALUE
@@ -1823,7 +1824,7 @@ imemo_fields_set(VALUE owner, VALUE fields_obj, shape_id_t target_shape_id, ID f
             }
         }
         else {
-            fields_obj = imemo_fields_complex_from_obj(owner, original_fields_obj, target_shape_id);
+            fields_obj = imemo_fields_evacutate_to_complex(owner, original_fields_obj, target_shape_id, 1);
             current_shape_id = target_shape_id;
         }
 
@@ -1892,39 +1893,18 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
     return generic_field_set(obj, target_shape_id, id, val);
 }
 
-static int
-rb_obj_copy_ivs_to_hash_table_i(ID key, VALUE val, st_data_t arg)
-{
-    RUBY_ASSERT(!st_lookup((st_table *)arg, (st_data_t)key, NULL));
-
-    st_add_direct((st_table *)arg, (st_data_t)key, (st_data_t)val);
-    return ST_CONTINUE;
-}
-
-void
-rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table)
-{
-    rb_ivar_foreach(obj, rb_obj_copy_ivs_to_hash_table_i, (st_data_t)table);
-}
-
-void
-rb_obj_copy_fields_to_hash_table(VALUE obj, st_table *table)
-{
-    rb_field_foreach(obj, rb_obj_copy_ivs_to_hash_table_i, (st_data_t)table, false);
-}
-
 static attr_index_t
 obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
 {
+    // may be T_OBJECT or imemo_fields
+    VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
     shape_id_t current_shape_id = RBASIC_SHAPE_ID(obj);
 
     if (UNLIKELY(rb_shape_complex_p(target_shape_id))) {
         if (UNLIKELY(!rb_shape_complex_p(current_shape_id))) {
-            current_shape_id = rb_evict_fields_to_hash(obj);
+            current_shape_id = rb_obj_convert_too_complex(obj, fields_obj, current_shape_id);
+            fields_obj = ROBJECT_FIELDS_OBJ(obj);
         }
-
-        // may be T_OBJECT or imemo_fields
-        VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
 
         RUBY_ASSERT(rb_obj_shape_complex_p(obj));
         RUBY_ASSERT(rb_obj_shape_complex_p(fields_obj));
@@ -1946,9 +1926,6 @@ obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
     }
     else {
         attr_index_t index = RSHAPE_INDEX(target_shape_id);
-
-        // may be T_OBJECT or imemo_fields
-        VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
 
         if (index < RSHAPE_LEN(current_shape_id)) {
             // Replace existing value;
@@ -4591,7 +4568,7 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
     next_shape_id = generic_shape_ivar(fields_obj, id, &new_ivar);
 
     if (UNLIKELY(rb_shape_complex_p(next_shape_id))) {
-        fields_obj = imemo_fields_complex_from_obj(klass, fields_obj, next_shape_id);
+        fields_obj = imemo_fields_evacutate_to_complex(klass, fields_obj, next_shape_id, 1);
         goto complex;
     }
 
