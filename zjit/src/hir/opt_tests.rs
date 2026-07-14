@@ -6704,6 +6704,49 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_specialize_monomorphic_setivar_on_extended_robject() {
+        let obj = eval(r#"
+            class ExtendedSetIvar
+              def test(value)
+                @v0 = value
+              end
+            end
+
+            OBJ = ExtendedSetIvar.new
+            10.times { |i| OBJ.instance_variable_set(:"@v#{i}", i) }
+            OBJ.test(10)
+            TEST = ExtendedSetIvar.instance_method(:test)
+            OBJ
+        "#);
+        assert!(!obj.embedded_p());
+
+        assert_snapshot!(hir_string_proc("TEST"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :value@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :value@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint SingleRactorMode
+          v17:HeapBasicObject = GuardType v9, HeapBasicObject
+          v18:CShape = LoadField v17, :shape_id@0x1001
+          v19:CShape[0x1002] = GuardBitEquals v18, CShape(0x1002) recompile
+          v20:BasicObject = LoadField v17, :as_heap@0x1003
+          StoreField v20, :@v0@0x1003, v10
+          WriteBarrier v20, v10
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
     fn test_specialize_monomorphic_setivar_with_shape_transition() {
         eval("
             def test = @foo = 5
