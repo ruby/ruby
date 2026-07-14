@@ -8204,18 +8204,23 @@ fn add_iseq_to_hir(
                         // Similar to gen_is_block_given
                         Insn::Const { val: Const::Value(Qnil) }
                     } else {
-                        // For DEFINED_YIELD, codegen materializes the local EP inline (similar to
-                        // gen_is_block_given) to check for a block handler. Precompute the lexical
-                        // distance from this iseq up to local_iseq so codegen does not have to
-                        // walk the parent chain. Any DEFINED_YIELD reaching this branch has a
-                        // method local_iseq by construction -- the above branch has already
-                        // diverted the non-method case to Qnil.
-                        let lep_level = if op_type == DEFINED_YIELD as usize {
-                            get_lvar_level(iseq)
+                        if op_type == DEFINED_YIELD as usize && matches!(mode, AddIseqMode::Inlined { blockiseq: Some(_), .. }) {
+                            // If we are inlining a method that has a blockiseq handler, we can fold Defined(DEFINED_YIELD).
+                            Insn::Const { val: Const::Value(pushval) }
                         } else {
-                            0
-                        };
-                        Insn::Defined { op_type, obj, pushval, v, lep_level, state: exit_id }
+                            // For DEFINED_YIELD, codegen materializes the local EP inline (similar to
+                            // gen_is_block_given) to check for a block handler. Precompute the lexical
+                            // distance from this iseq up to local_iseq so codegen does not have to
+                            // walk the parent chain. Any DEFINED_YIELD reaching this branch has a
+                            // method local_iseq by construction -- the above branch has already
+                            // diverted the non-method case to Qnil.
+                            let lep_level = if op_type == DEFINED_YIELD as usize {
+                                get_lvar_level(iseq)
+                            } else {
+                                0
+                            };
+                            Insn::Defined { op_type, obj, pushval, v, lep_level, state: exit_id }
+                        }
                     };
                     state.stack_push(fun.push_insn(block, insn));
                 }

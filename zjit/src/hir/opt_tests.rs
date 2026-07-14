@@ -17219,6 +17219,113 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_with_block_folds_defined_yield() {
+        eval(r"
+            def foo = defined?(yield)
+            def test = foo { |x| x }
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame v18 (0x1038)
+          v27:StringExact[VALUE(0x1040)] = Const Value(VALUE(0x1040))
+          CheckInterrupts
+          PopInlineFrame
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_inline_without_block_does_not_fold_defined_yield() {
+        eval(r"
+            def foo = defined?(yield)
+            def test = foo
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame v18 (0x1038)
+          v25:NilClass = Const Value(nil)
+          v27:StringExact|NilClass = Defined yield, v25
+          CheckInterrupts
+          PopInlineFrame
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_inline_array_each_with_block_folds_defined_yield() {
+        set_inline_threshold(100);
+        eval(r"
+            def test = [1, 2, 3].each { |x| x }
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v11:ArrayExact = ArrayDup v10
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, each@0x1010, cme:0x1018)
+          PushInlineFrame v11 (0x1040)
+          v51:Fixnum[0] = Const Value(0)
+          Jump bb10(v11, v51)
+        bb10(v64:ArrayExact, v65:Fixnum):
+          v69:CInt64 = ArrayLength v64
+          v70:Fixnum = BoxFixnum v69
+          v71:BoolExact = FixnumGe v65, v70
+          v73:CBool = Test v71
+          CondBranch v73, bb13(), bb9(v64, v65)
+        bb13():
+          CheckInterrupts
+          PopInlineFrame
+          Return v64
+        bb9(v86:ArrayExact, v87:Fixnum):
+          v92:CInt64 = UnboxFixnum v87
+          v93:BasicObject = ArrayAref v86, v92
+          v95:CPtr = GetEP 0
+          v96:CInt64 = LoadField v95, :VM_ENV_DATA_INDEX_SPECVAL@0x1048
+          v97:CInt64[-4] = Const CInt64(-4)
+          v98:CInt64 = IntAnd v96, v97
+          v99:BasicObject = InvokeBlockIseqDirect (0x1050), v98, v93
+          v103:Fixnum[1] = Const Value(1)
+          v104:Fixnum = FixnumAdd v87, v103
+          PatchPoint NoEPEscape(each)
+          Jump bb10(v86, v104)
+        ");
+    }
+
+    #[test]
     fn test_delete_duplicate_store() {
         eval("
             class C
