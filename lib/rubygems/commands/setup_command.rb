@@ -414,11 +414,11 @@ By default, this RubyGems will install gem as:
         install_dir: bundler_install_dir,
         wrappers: true
       )
-      # We need to install only executable and default spec files.
-      # lib/bundler.rb and lib/bundler/* are available under the site_ruby directory.
+      # We only need to install the executables here. The default spec was
+      # already written above, and lib/bundler.rb and lib/bundler/* are
+      # available under the site_ruby directory.
       installer.extract_bin
       installer.generate_bin
-      installer.write_default_spec
     ensure
       FileUtils.rm_f built_gem
     end
