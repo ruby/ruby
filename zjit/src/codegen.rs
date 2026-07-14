@@ -2024,6 +2024,8 @@ fn gen_invokesuperforward(
     )
 }
 
+const STR_INLINE_STORE_MAX_BYTES: usize = 128;
+
 /// Compile a string resurrection
 fn gen_string_copy(jit: &mut JITState, asm: &mut Assembler, function: &Function, val_id: InsnId, recv: Opnd, chilled: bool, state: &FrameState) -> Opnd {
     // TODO: split rb_ec_str_resurrect into separate functions
@@ -2045,17 +2047,32 @@ fn gen_string_copy(jit: &mut JITState, asm: &mut Assembler, function: &Function,
         return slow_path(asm);
     }
 
-    let padded_size = byte_size.next_multiple_of(8);
+    let full_flags = flags.as_u64();
+    let klass = unsafe { rb_cString };
 
+    // Because inline stores are 8 bytes, storing large embedded strings would
+    // generate a large number of stores (!125 for a string in the 1024b size
+    // pool). Here we choose an arbitrary threshold (128 bytes, or 16 stores),
+    // above which we'll emit a C call to memcpy instead of multiple stores.
+    if byte_size > STR_INLINE_STORE_MAX_BYTES {
+        return gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, full_flags, klass,
+            &|asm, obj| {
+                asm.store(Opnd::mem(VALUE_BITS, obj, RUBY_OFFSET_RSTRING_LEN), Opnd::Imm(len));
+                let src_obj = asm.load(Opnd::Value(src));
+                let src_ptr = asm.lea(Opnd::mem(64, src_obj, RUBY_OFFSET_RSTRING_AS_ARY));
+                let dst_ptr = asm.lea(Opnd::mem(64, obj, RUBY_OFFSET_RSTRING_AS_ARY));
+                asm.ccall(memcpy as *const u8, vec![dst_ptr, src_ptr, Opnd::UImm(byte_size as u64)]);
+            },
+            slow_path);
+    }
+
+    let padded_size = byte_size.next_multiple_of(8);
     let Some(src_bytes) = (unsafe { src.as_rstring_byte_slice() }) else {
         return slow_path(asm);
     };
     debug_assert_eq!(src_bytes.len(), len as usize);
     let mut buf = vec![0u8; padded_size];
     buf[..src_bytes.len()].copy_from_slice(src_bytes);
-
-    let full_flags = flags.as_u64();
-    let klass = unsafe { rb_cString };
 
     gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, full_flags, klass,
         &|asm, obj| {
@@ -2067,6 +2084,10 @@ fn gen_string_copy(jit: &mut JITState, asm: &mut Assembler, function: &Function,
             }
         },
         slow_path)
+}
+
+unsafe extern "C" {
+    fn memcpy(dst: *mut c_void, src: *const c_void, n: usize) -> *mut c_void;
 }
 
 fn gen_string_equal(asm: &mut Assembler, left: Opnd, right: Opnd) -> lir::Opnd {
