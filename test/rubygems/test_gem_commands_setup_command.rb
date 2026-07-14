@@ -253,6 +253,12 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     previous_default_gem_dir = File.join(@gemhome, "gems", "bundler-1.15.4")
     write_file File.join(previous_default_gem_dir, "exe", "bundle")
 
+    # A regular gem of the same version installed at the default dir, which is
+    # promoted to the default gem and must be removed. Its files live under
+    # default_dir, not under the default gemspec root.
+    normal_gem_dir = File.join(gemhome2, "gems", "bundler-#{bundler_version}")
+    write_file File.join(normal_gem_dir, "lib", "bundler.rb")
+
     @cmd.install_default_bundler_gem bin_dir
 
     # expect to remove other versions of bundler gemspecs on default specification directory.
@@ -262,6 +268,9 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     # expect to remove the previous default version executables, which live
     # next to the removed gemspec, not under the new default dir.
     assert_path_not_exist previous_default_gem_dir
+
+    # expect to remove the promoted regular gem's files under default_dir.
+    assert_path_not_exist normal_gem_dir
 
     # expect executables to be installed under the same root as the default
     # gemspec, since that's where activation of the default gem looks for them.

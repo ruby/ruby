@@ -386,19 +386,20 @@ By default, this RubyGems will install gem as:
     default_spec_path = File.join(specs_dir, gemspec_path)
     Gem.write_binary(default_spec_path, new_bundler_spec.to_ruby)
 
-    bundler_spec = Gem::Specification.load(default_spec_path)
-
     # Remove gemspec that was same version of vendored bundler.
     normal_gemspec = File.join(default_dir, "specifications", gemspec_path)
     if File.file? normal_gemspec
       File.delete normal_gemspec
     end
 
-    # Remove gem files that were same version of vendored bundler.
-    if File.directory? bundler_spec.gems_dir
-      Dir.entries(bundler_spec.gems_dir).
-        select {|default_gem| File.basename(default_gem) == full_name }.
-        each {|default_gem| rm_r File.join(bundler_spec.gems_dir, default_gem) }
+    # Remove gem files that were same version of vendored bundler. A regular
+    # gem lives under default_dir, which is not necessarily the same root as
+    # the default gemspec.
+    normal_gems_dir = File.join(default_dir, "gems")
+    if File.directory? normal_gems_dir
+      Dir.entries(normal_gems_dir).
+        select {|normal_gem| File.basename(normal_gem) == full_name }.
+        each {|normal_gem| rm_r File.join(normal_gems_dir, normal_gem) }
     end
 
     require_relative "../installer"
