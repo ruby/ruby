@@ -452,7 +452,7 @@ location_absolute_path_m(VALUE self)
 static VALUE
 location_format(VALUE file, int lineno, VALUE name)
 {
-    VALUE s = rb_enc_sprintf(rb_enc_compatible(file, name), "%s", RSTRING_PTR(file));
+    VALUE s = rb_enc_sprintf(rb_enc_compatible(file, name), "%"PRIsVALUE, file);
     if (lineno != 0) {
         rb_str_catf(s, ":%d", lineno);
     }
@@ -461,7 +461,7 @@ location_format(VALUE file, int lineno, VALUE name)
         rb_str_cat_cstr(s, "unknown method");
     }
     else {
-        rb_str_catf(s, "'%s'", RSTRING_PTR(name));
+        rb_str_catf(s, "'%"PRIsVALUE"'", name);
     }
     RB_GC_GUARD(name);
     return s;
