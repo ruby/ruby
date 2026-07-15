@@ -4085,20 +4085,30 @@ impl Function {
                             | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => (profiled_type.class(), Some(profiled_type)),
                             ReceiverTypeResolution::SkewedMegamorphic { .. }
                             | ReceiverTypeResolution::Megamorphic => {
-                                if get_option!(stats) {
-                                    let reason = if has_block { SendMegamorphic } else { SendWithoutBlockMegamorphic };
-                                    self.set_dynamic_send_reason(insn_id, reason);
+                                if let Some(class) = self.type_of(recv).runtime_exact_ruby_class() {
+                                    // Ignore the megamorphic profile; we know the type statically.
+                                    (class, None)
+                                } else {
+                                    if get_option!(stats) {
+                                        let reason = if has_block { SendMegamorphic } else { SendWithoutBlockMegamorphic };
+                                        self.set_dynamic_send_reason(insn_id, reason);
+                                    }
+                                    self.push_insn_id(block, insn_id);
+                                    continue;
                                 }
-                                self.push_insn_id(block, insn_id);
-                                continue;
                             }
                             ReceiverTypeResolution::Polymorphic => {
-                                if get_option!(stats) {
-                                    let reason = if has_block { SendPolymorphic } else { SendWithoutBlockPolymorphic };
-                                    self.set_dynamic_send_reason(insn_id, reason);
+                                if let Some(class) = self.type_of(recv).runtime_exact_ruby_class() {
+                                    // Ignore the polymorphic profile; we know the type statically.
+                                    (class, None)
+                                } else {
+                                    if get_option!(stats) {
+                                        let reason = if has_block { SendPolymorphic } else { SendWithoutBlockPolymorphic };
+                                        self.set_dynamic_send_reason(insn_id, reason);
+                                    }
+                                    self.push_insn_id(block, insn_id);
+                                    continue;
                                 }
-                                self.push_insn_id(block, insn_id);
-                                continue;
                             }
                             ReceiverTypeResolution::NoProfile => {
                                 let reason = if has_block { SendNoProfiles } else { SendWithoutBlockNoProfiles };
