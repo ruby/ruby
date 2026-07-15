@@ -332,7 +332,7 @@ impl ProfiledType {
                           flags: Flags::immediate() };
         }
         let mut flags = Flags::none();
-        if obj.embedded_p() {
+        if obj.shape_id_of().layout() == ShapeLayout::RObject {
             flags.0 |= Flags::IS_EMBEDDED;
         }
         if obj.struct_embedded_p() {

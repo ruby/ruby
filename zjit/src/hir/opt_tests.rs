@@ -6706,7 +6706,7 @@ mod hir_opt_tests {
             TEST = ExtendedSetIvar.instance_method(:test)
             OBJ
         "#);
-        assert!(!obj.embedded_p());
+        assert!(obj.layout() == ShapeLayout::Extended);
 
         assert_snapshot!(hir_string_proc("TEST"), @"
         fn test@<compiled>:4:
@@ -17016,7 +17016,7 @@ mod hir_opt_tests {
             OBJ
         "#);
         // Skip builds where five ivars already force heap-backed storage.
-        if !obj.embedded_p() {
+        if obj.layout() != ShapeLayout::RObject {
             return;
         }
 
@@ -17027,7 +17027,7 @@ mod hir_opt_tests {
             probe.instance_variable_set(:@overflow, 1)
             probe
         "#);
-        if probe.embedded_p() {
+        if probe.layout() == ShapeLayout::RObject {
             return;
         }
         eval("OBJ.test");
