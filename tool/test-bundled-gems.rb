@@ -128,6 +128,8 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   when "csv"
     first_timeout = 30
+    test_command = [ruby, *run_opts, "-C", "#{gem_dir}/src/#{gem}", "run-test.rb"]
+    test_command << "--ignore-name=/ractor/" if /mswin|mingw/ =~ RUBY_PLATFORM
 
   when "win32ole"
     next unless /mswin|mingw/ =~ RUBY_PLATFORM
