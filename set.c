@@ -1198,7 +1198,7 @@ set_i_intersection(VALUE set, VALUE other)
  *
  *  Returns whether the given +object+ is an element of +self+:
  *
- *    set = [0, :zero, '0']
+ *    set = Set[0, :zero, '0']
  *    set.include?('0')    # => true
  *    set.include?('zero') # => false
  *
@@ -1585,7 +1585,7 @@ set_each_i(st_data_t key, st_data_t dummy)
  *
  *    sum = 0
  *    Set[1, 2, 3].each {|i| sum += i }
- *    sum => 6
+ *    sum # => 6
  *
  *  With no block given, returns an Enumerator.
  */
