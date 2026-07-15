@@ -2205,6 +2205,8 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
 {
     VALUE super;
 
+    // an uninitialized class is still somebody's, and this writes its superclass
+    rb_class_modify_check(klass);
     if (RCLASS_SUPER(klass) != 0 || klass == rb_cBasicObject) {
         rb_raise(rb_eTypeError, "already initialized class");
     }

@@ -869,8 +869,8 @@ assert_equal '99', %q{
   Ractor.new { inner = 99; eval("inner").to_s }.value
 }
 
-# ivar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal "can not get unshareable values from instance variables of classes/modules from non-main Ractors (@iv from C)", <<~'RUBY', frozen_string_literal: false
+# ivar in shareable-objects are not allowed to access from non-owner Ractor
+assert_equal "can not get unshareable values from instance variables of classes/modules created by another Ractor (@iv from C)", <<~'RUBY', frozen_string_literal: false
   class C
     @iv = 'str'
   end
@@ -1175,8 +1175,97 @@ assert_equal 'true', %q{
   r.value
 }
 
+# A shareable object belongs to no single Ractor, so its singleton class is the
+# main Ractor's rather than the one which materialized it
+assert_equal 'true', %q{
+  r = Ractor.new do
+    begin
+      Ractor.main.define_singleton_method(:zzz) { :sub }
+      :not_raised
+    rescue Ractor::IsolationError
+      :raised
+    end
+  end
+  raised = r.value
+  Ractor.main.define_singleton_method(:zzz) { :main }
+  (raised == :raised && Ractor.main.zzz == :main).to_s
+}
+
+# The constant inline cache is keyed on the Ractor which filled it, so a non-owner
+# can not be handed an unshareable constant through a cache the owner primed
+assert_equal 'Ractor::IsolationError', %q{
+  port = Ractor::Port.new
+  r = Ractor.new(port) do |port|
+    k = Class.new
+    k.const_set(:X, [1, 2, 3])
+    m = Module.new
+    m.const_set(:K, k)
+    m.module_eval("def self.rd = K::X")
+    m.rd                       # the owner fills the cache
+    port << m
+    Ractor.receive
+  end
+  m = port.receive
+  res = begin
+    m.rd
+    'no error'
+  rescue Ractor::IsolationError
+    'Ractor::IsolationError'
+  end
+  r << nil
+  r.join
+  res
+}
+
+# Class#initialize writes the superclass of an uninitialized class, so it is
+# owner-only like any other modification
+assert_equal 'can not modify K because it is created by another Ractor', %q{
+  K = Class.allocate
+
+  r = Ractor.new { K.send(:initialize, Struct) }
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# Module#refine writes its refinement tables into the receiver, so the receiver
+# must be owned too
+assert_equal 'can not modify M because it is created by another Ractor', %q{
+  module M; end
+
+  r = Ractor.new do
+    M.send(:refine, Class.new) { def z = 1 }
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# ... and so does Module#ruby2_keywords, which rewrites a method definition
+assert_equal 'can not modify M because it is created by another Ractor', %q{
+  module M
+    def m(*a) = a
+  end
+
+  r = Ractor.new do
+    M.send(:ruby2_keywords, :m)
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
 # Getting non-shareable objects via constants by other Ractors is not allowed
-assert_equal 'can not access non-shareable objects in constant C::CONST by non-main Ractor.', <<~'RUBY', frozen_string_literal: false
+assert_equal 'can not access non-shareable objects in constant C::CONST of a class/module created by another Ractor.', <<~'RUBY', frozen_string_literal: false
   class C
     CONST = 'str'
   end
@@ -1191,7 +1280,7 @@ assert_equal 'can not access non-shareable objects in constant C::CONST by non-m
   RUBY
 
 # Constant cache should care about non-shareable constants
-assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", <<~'RUBY', frozen_string_literal: false
+assert_equal "can not access non-shareable objects in constant Object::STR of a class/module created by another Ractor.", <<~'RUBY', frozen_string_literal: false
   STR = "hello"
   def str; STR; end
   s = str() # fill const cache
@@ -1203,7 +1292,7 @@ assert_equal "can not access non-shareable objects in constant Object::STR by no
 RUBY
 
 # The correct constant path shall be reported
-assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", <<~'RUBY', frozen_string_literal: false
+assert_equal "can not access non-shareable objects in constant Object::STR of a class/module created by another Ractor.", <<~'RUBY', frozen_string_literal: false
   STR = "hello"
   module M
     def self.str; STR; end
@@ -1216,8 +1305,8 @@ assert_equal "can not access non-shareable objects in constant Object::STR by no
   end
 RUBY
 
-# Setting non-shareable objects into constants by other Ractors is not allowed
-assert_equal 'can not set constants with non-shareable objects by non-main Ractors', <<~'RUBY', frozen_string_literal: false
+# Setting constants of classes created by other Ractors is not allowed
+assert_equal 'can not set constants of classes/modules created by another Ractor', <<~'RUBY', frozen_string_literal: false
   class C
   end
   r = Ractor.new do
@@ -1733,17 +1822,10 @@ assert_equal 'true', %q{
 }
 
 # check method cache invalidation
+# (the owner Ractor redefines methods while another Ractor calls them)
 assert_equal 'true', %q{
   class Foo
     def hello = nil
-  end
-
-  r1 = Ractor.new do
-    1000.times do
-      class Foo
-        def hello = nil
-      end
-    end
   end
 
   r2 = Ractor.new do
@@ -1753,7 +1835,12 @@ assert_equal 'true', %q{
     end
   end
 
-  r1.value
+  1000.times do
+    class Foo
+      def hello = nil
+    end
+  end
+
   r2.value
 
   true
@@ -2603,21 +2690,23 @@ RUBY
 assert_equal 'ok', <<~'RUBY'
 
 begin
-  CLASSES = 1000.times.map { Class.new }.freeze
-
+  # Each Ractor creates its own class (it can only define bmethods on classes
+  # it owns) and returns it after defining the bmethod.
   # This would be better to run in parallel, but there's a bug with lambda
   # creation and YJIT causing crashes in dev mode
-  ractors = CLASSES.map do |klass|
-    Ractor.new(klass) do |klass|
+  ractors = 1000.times.map do
+    Ractor.new do
+      klass = Class.new
       Ractor.receive
       klass.define_method(:foo) {}
+      klass
     end
   end
 
-  ractors.each do |ractor|
+  CLASSES = ractors.map do |ractor|
     ractor << nil
-    ractor.join
-  end
+    ractor.value
+  end.freeze
 
   ractors.clear
   GC.start
