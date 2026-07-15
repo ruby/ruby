@@ -50,7 +50,6 @@
 #include "internal/vm.h"
 #include "ruby_assert.h"
 #include "vm_core.h"
-#include "ractor_core.h"
 #include "yjit.h"
 #include "zjit.h"
 
@@ -1764,7 +1763,8 @@ exc_message(VALUE exc)
 
 // Whether error_highlight, did_you_mean, and syntax_suggest have already
 // been loaded (lazily on the first error, or eagerly via Process.warmup).
-static bool decoration_gems_loaded = false;
+// Ractors run in parallel, so the load is claimed by an atomic exchange.
+static rb_atomic_t decoration_gems_loaded = 0;
 
 static VALUE
 load_decoration_gem(VALUE feature)
@@ -1797,13 +1797,14 @@ require_decoration_gems(void)
 }
 
 // Load the decoration gems on the first error display instead of at boot.
+// In non-main Ractors rb_require_string delegates the require to the main
+// Ractor, so this works from any Ractor.
 // Returns whether the caller should re-dispatch to pick up the
 // detailed_message decorators the gems prepend.
 static bool
 lazy_load_decoration_gems(VALUE exc)
 {
-    if (decoration_gems_loaded || !rb_ractor_main_p()) return false;
-    decoration_gems_loaded = true;
+    if (ATOMIC_EXCHANGE(decoration_gems_loaded, 1)) return false;
 
     // When entered through super from a decorator already sitting above
     // this method, the caller decorates the result; re-dispatching would
@@ -1820,8 +1821,7 @@ lazy_load_decoration_gems(VALUE exc)
 void
 rb_eager_load_detailed_message_extension(void)
 {
-    if (decoration_gems_loaded || !rb_ractor_main_p()) return;
-    decoration_gems_loaded = true;
+    if (ATOMIC_EXCHANGE(decoration_gems_loaded, 1)) return;
 
     require_decoration_gems();
 }
