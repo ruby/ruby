@@ -96,6 +96,17 @@ jobs:
           sudo sysctl -w kern.coredump=1
           sudo chmod -R +rwx /cores/
 
+      - name: Disable ReportCrash
+        # We don't want this service running on every crash signal. When it's running, processes must wait for
+        # the service to gather process info before they can finish. We have tests that test our crash signal
+        # handling and this service can take a while to run which can time our tests out.
+        run: |
+          launchctl bootout gui/"$(id -u)"/com.apple.ReportCrash 2>/dev/null || true
+          launchctl disable gui/"$(id -u)"/com.apple.ReportCrash 2>/dev/null || true
+          sudo launchctl bootout system/com.apple.ReportCrash.Root 2>/dev/null || true
+          sudo launchctl disable system/com.apple.ReportCrash.Root 2>/dev/null || true
+        continue-on-error: true
+
       - name: Delete unused SDKs
         # To free up disk space to not run out during the run
         run: |
