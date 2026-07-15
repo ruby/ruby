@@ -12,7 +12,7 @@ rake                13.4.2  https://github.com/ruby/rake
 test-unit           3.7.8   https://github.com/test-unit/test-unit
 rexml               3.4.4   https://github.com/ruby/rexml
 rss                 0.3.3   https://github.com/ruby/rss
-net-imap            0.6.4.1 https://github.com/ruby/net-imap 20d4f2c39dcc12307a6b30b497565770e89b66e3
+net-imap            0.6.4.1 https://github.com/ruby/net-imap
 net-smtp            0.5.1   https://github.com/ruby/net-smtp
 matrix              0.4.3   https://github.com/ruby/matrix
 prime               0.1.4   https://github.com/ruby/prime
