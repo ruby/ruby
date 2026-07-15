@@ -4112,7 +4112,11 @@ rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t 
     data.r = GET_RACTOR();
 
     iseq_add_local_tracepoint_i(iseq, (void *)&data);
-    if (0) fprintf(stderr, "Iseq disasm:\n:%s", RSTRING_PTR(rb_iseq_disasm(iseq))); /* for debug */
+    if (0) {
+        VALUE disasm = rb_iseq_disasm(iseq);
+        fprintf(stderr, "Iseq disasm:\n:%.*s",
+                RSTRING_LENINT(disasm), RSTRING_PTR(disasm));
+    }
     return data.n;
 }
 

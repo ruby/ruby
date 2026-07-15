@@ -2481,8 +2481,9 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                             lobj->sp = sp;
                         }
                         else if (lobj->sp != sp) {
-                            debugs("%s:%d: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
-                                   RSTRING_PTR(rb_iseq_path(iseq)), line,
+                            VALUE path = rb_iseq_path(iseq);
+                            debugs("%.*s:%d: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
+                                   RSTRING_LENINT(path), RSTRING_PTR(path), line,
                                    lobj->label_no, lobj->sp, sp);
                         }
                     }
@@ -2497,8 +2498,9 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                 }
                 else {
                     if (lobj->sp != sp) {
-                        debugs("%s:%d: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
-                                RSTRING_PTR(rb_iseq_path(iseq)), line,
+                        VALUE path = rb_iseq_path(iseq);
+                        debugs("%.*s:%d: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
+                                RSTRING_LENINT(path), RSTRING_PTR(path), line,
                                 lobj->label_no, lobj->sp, sp);
                     }
                     sp = lobj->sp;
@@ -2645,8 +2647,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                 LABEL *lobj = (LABEL *)list;
                 lobj->position = code_index;
                 if (lobj->sp != sp) {
-                    debugs("%s: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
-                           RSTRING_PTR(rb_iseq_path(iseq)),
+                    VALUE path = rb_iseq_path(iseq);
+                    debugs("%.*s: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
+                           RSTRING_LENINT(path), RSTRING_PTR(path),
                            lobj->label_no, lobj->sp, sp);
                 }
                 sp = lobj->sp;
@@ -2870,8 +2873,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
             {
                 LABEL *lobj = (LABEL *)list;
                 if (lobj->sp != sp) {
-                    debugs("%s: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
-                           RSTRING_PTR(rb_iseq_path(iseq)),
+                    VALUE path = rb_iseq_path(iseq);
+                    debugs("%.*s: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
+                           RSTRING_LENINT(path), RSTRING_PTR(path),
                            lobj->label_no, lobj->sp, sp);
                 }
                 sp = lobj->sp;
