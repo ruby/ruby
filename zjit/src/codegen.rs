@@ -17,7 +17,7 @@ use crate::invariants::{
 };
 use crate::gc::append_gc_offsets;
 use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
-use crate::state::ZJITState;
+use crate::state::{ZJITState, rb_zjit_record_exit_stack};
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
@@ -25,7 +25,7 @@ use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NAT
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason};
 use crate::hir_type::{types, Type};
-use crate::options::{get_option, InlineDepth, PerfMap, DEFAULT_MAX_VERSIONS};
+use crate::options::{get_option, InlineDepth, PerfMap, TraceExits, DEFAULT_MAX_VERSIONS};
 use crate::cast::IntoUsize;
 
 /// Maximum number of compiled versions per ISEQ.
@@ -194,8 +194,11 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
                 panic!("Failed to compile: {iseq_location}: {err:?}");
             }
 
-            // For --zjit-stats, generate an entry that just increments exit_compilation_failure and exits
-            if get_option!(stats) {
+            // Install an entry that increments the compile-error counters (--zjit-stats)
+            // and/or records the exit stack (--zjit-trace-exits) at runtime before falling
+            // back to the interpreter. gen_compile_error_counter emits only what each
+            // option needs, so a plain compile failure with neither enabled still returns null.
+            if get_option!(stats) || should_record_compile_error_exit(err) {
                 code_ptr = gen_compile_error_counter(cb, err);
             }
         }
@@ -3587,6 +3590,17 @@ c_callable! {
                 if get_option!(stats) {
                     incr_counter_by(exit_counter_for_compile_error(compile_error), 1);
                 }
+
+                // Record this bail-to-interpreter in the Perfetto trace so stub-hit exits
+                // show up alongside LIR-emitted side exits under --zjit-trace-exits. Unlike
+                // the entry-point path, function_stub_hit already runs at the runtime exit,
+                // so we record directly here rather than emitting a ccall into a stub; the
+                // reason string is only borrowed for the duration of the synchronous call.
+                if should_record_compile_error_exit(compile_error) {
+                    let reason = std::ffi::CString::new(format!("CompileError: {compile_error:?}"))
+                        .unwrap_or_else(|_| std::ffi::CString::new("CompileError").unwrap());
+                    rb_zjit_record_exit_stack(reason.as_ptr());
+                }
             }
 
             // If we already know we can't compile the ISEQ, or there is insufficient native
@@ -3895,12 +3909,45 @@ fn gen_string_append_codepoint(jit: &mut JITState, asm: &mut Assembler, function
     asm_ccall!(asm, rb_jit_str_concat_codepoint, string, val)
 }
 
-/// Generate a JIT entry that just increments exit_compilation_failure and exits
+/// Whether a bail-to-interpreter caused by `compile_error` should be recorded in the
+/// Perfetto trace, honoring the --zjit-trace-exits counter filter. Mirrors the
+/// counter-filtering logic in [Assembler::compile_exits].
+fn should_record_compile_error_exit(compile_error: &CompileError) -> bool {
+    get_option!(trace_side_exits).map(|trace| match trace {
+        TraceExits::All => true,
+        TraceExits::Counter(counter) => counter == exit_counter_for_compile_error(compile_error),
+    }).unwrap_or(false)
+}
+
+/// Generate a JIT entry that increments the compile-error counters (--zjit-stats) and,
+/// when --zjit-trace-exits is enabled, records the exit stack before returning to the
+/// interpreter. The record happens via a ccall so it runs at the real runtime exit
+/// (each time the un-compilable ISEQ is entered), mirroring [Assembler::compile_exits].
 fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
     asm.new_block_without_id("compile_error_counter");
-    gen_incr_counter(&mut asm, exit_compile_error);
-    gen_incr_counter(&mut asm, exit_counter_for_compile_error(compile_error));
+
+    // A ccall requires an aligned native frame; the counter-only path needs none.
+    let record_exit = should_record_compile_error_exit(compile_error);
+    if record_exit {
+        asm.frame_setup(&[]);
+    }
+
+    if get_option!(stats) {
+        gen_incr_counter(&mut asm, exit_compile_error);
+        gen_incr_counter(&mut asm, exit_counter_for_compile_error(compile_error));
+    }
+
+    if record_exit {
+        // Leak the reason CString so the pointer stays valid for the life of the stub;
+        // the ccall reads it every time the exit is taken. See compile_exit() in lir.rs.
+        let reason = std::ffi::CString::new(format!("CompileError: {compile_error:?}"))
+            .unwrap_or_else(|_| std::ffi::CString::new("CompileError").unwrap());
+        let reason_ptr = reason.into_raw() as *const u8;
+        asm_ccall!(asm, rb_zjit_record_exit_stack, Opnd::const_ptr(reason_ptr));
+        asm.frame_teardown(&[]);
+    }
+
     asm.cret(Qundef.into());
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
