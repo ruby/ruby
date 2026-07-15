@@ -11540,8 +11540,7 @@ error_generic:
         error = rb_exc_new3(rb_eLoadError, message);
         rb_ivar_set(error, rb_intern_const("@path"), filepath);
     } else {
-        error = rb_syserr_new(err, RSTRING_PTR(filepath));
-        RB_GC_GUARD(filepath);
+        error = rb_syserr_new_str(err, filepath);
     }
 
     return error;
