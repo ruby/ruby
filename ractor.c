@@ -1232,18 +1232,28 @@ enum obj_traverse_iterator_result {
     traverse_stop,
 };
 
+// enter_func runs pre-order on every visit of an object, including revisits.
+//
+// leave_func runs only after everything reachable from obj has been entered
+// without a stop.
 typedef enum obj_traverse_iterator_result (*rb_obj_traverse_enter_func)(VALUE obj);
 typedef enum obj_traverse_iterator_result (*rb_obj_traverse_leave_func)(VALUE obj);
-typedef enum obj_traverse_iterator_result (*rb_obj_traverse_final_func)(VALUE obj);
 
-static enum obj_traverse_iterator_result null_leave(VALUE obj);
+#define OBJ_TRAVERSE_REC_STACK_SIZE 8
 
 struct obj_traverse_data {
     rb_obj_traverse_enter_func enter_func;
     rb_obj_traverse_leave_func leave_func;
 
+    VALUE rec_stack[OBJ_TRAVERSE_REC_STACK_SIZE];
+    int rec_stack_len;
+
     st_table *rec;
     VALUE rec_hash;
+
+    // Once a cycle is found, leave_func is deferred: objects stay in rec
+    // and are finalized in one batch when the traversal completes.
+    bool cyclic;
 };
 
 
@@ -1282,15 +1292,103 @@ obj_traverse_reachable_i(VALUE obj, void *ptr)
     }
 }
 
-static struct st_table *
-obj_traverse_rec(struct obj_traverse_data *data)
+// Traverse obj's children via its GC mark function. Returns 1 to stop.
+static int
+obj_traverse_reachable(VALUE obj, struct obj_traverse_data *data)
 {
-    if (UNLIKELY(!data->rec)) {
-        data->rec_hash = rb_ident_hash_new();
-        rb_obj_hide(data->rec_hash);
-        data->rec = RHASH_ST_TABLE(data->rec_hash);
+    struct obj_traverse_callback_data d = {
+        .stop = false,
+        .data = data,
+    };
+    RB_VM_LOCKING_NO_BARRIER() {
+        rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
     }
-    return data->rec;
+    return d.stop;
+}
+
+// Returns true if obj was already recorded as visited.
+static bool
+obj_traverse_rec_insert_hash(struct obj_traverse_data *data, VALUE obj)
+{
+    if (st_insert(data->rec, obj, 1)) return true;
+    RB_OBJ_WRITTEN(data->rec_hash, Qundef, obj);
+    return false;
+}
+
+// Returns true if obj was already recorded as visited.
+static bool
+obj_traverse_rec_insert(struct obj_traverse_data *data, VALUE obj)
+{
+    if (data->rec) return obj_traverse_rec_insert_hash(data, obj);
+
+    for (int i = 0; i < data->rec_stack_len; i++) {
+        if (data->rec_stack[i] == obj) return true;
+    }
+
+    if (data->rec_stack_len < OBJ_TRAVERSE_REC_STACK_SIZE) {
+        data->rec_stack[data->rec_stack_len++] = obj;
+        return false;
+    }
+
+    data->rec_hash = rb_ident_hash_new();
+    rb_obj_hide(data->rec_hash);
+    data->rec = RHASH_ST_TABLE(data->rec_hash);
+
+    for (int i = 0; i < data->rec_stack_len; i++) {
+        obj_traverse_rec_insert_hash(data, data->rec_stack[i]);
+    }
+    return obj_traverse_rec_insert_hash(data, obj);
+}
+
+// Enter/leave nest strictly, so obj is always the most recent entry.
+static void
+obj_traverse_rec_remove(struct obj_traverse_data *data, VALUE obj)
+{
+    if (data->rec) {
+        st_data_t key = (st_data_t)obj;
+        st_delete(data->rec, &key, NULL);
+    }
+    else {
+        data->rec_stack_len--;
+    }
+}
+
+struct obj_traverse_finalize_data {
+    rb_obj_traverse_leave_func leave_func;
+    bool stop;
+};
+
+static int
+obj_traverse_finalize_hash_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    struct obj_traverse_finalize_data *d = (struct obj_traverse_finalize_data *)arg;
+
+    if (d->leave_func((VALUE)key) == traverse_stop) {
+        d->stop = true;
+        return ST_STOP;
+    }
+
+    return ST_CONTINUE;
+}
+
+// Runs the deferred leave_func calls. Returns true if stopped.
+static bool
+obj_traverse_finalize_rec(struct obj_traverse_data *data)
+{
+    if (data->rec) {
+        struct obj_traverse_finalize_data d = {
+            .leave_func = data->leave_func,
+            .stop = false,
+        };
+        st_foreach(data->rec, obj_traverse_finalize_hash_i, (st_data_t)&d);
+        return d.stop;
+    }
+    else {
+        for (int i = 0; i < data->rec_stack_len; i++) {
+            if (data->leave_func(data->rec_stack[i]) == traverse_stop) return true;
+        }
+        return false;
+    }
 }
 
 static int
@@ -1317,18 +1415,19 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
       case traverse_stop: return 1; // stop search
     }
 
-    if (UNLIKELY(st_insert(obj_traverse_rec(data), obj, 1))) {
-        // already traversed
+    if (UNLIKELY(obj_traverse_rec_insert(data, obj))) {
+        data->cyclic = true;
         return 0;
     }
-    RB_OBJ_WRITTEN(data->rec_hash, Qundef, obj);
 
-    struct obj_traverse_callback_data d = {
-        .stop = false,
-        .data = data,
-    };
-    rb_ivar_foreach(obj, obj_traverse_ivar_foreach_i, (st_data_t)&d);
-    if (d.stop) return 1;
+    if (rb_obj_shape_has_ivars(obj)) {
+        struct obj_traverse_callback_data d = {
+            .stop = false,
+            .data = data,
+        };
+        rb_ivar_foreach(obj, obj_traverse_ivar_foreach_i, (st_data_t)&d);
+        if (d.stop) return 1;
+    }
 
     switch (BUILTIN_TYPE(obj)) {
       // no child node
@@ -1349,7 +1448,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
             rb_ary_cancel_sharing(obj);
 
             for (int i = 0; i < RARRAY_LENINT(obj); i++) {
-                VALUE e = rb_ary_entry(obj, i);
+                VALUE e = RARRAY_AREF(obj, i);
                 if (obj_traverse_i(e, data)) return 1;
             }
         }
@@ -1393,17 +1492,29 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         break;
 
       case T_DATA:
-      case T_IMEMO:
         {
-            struct obj_traverse_callback_data d = {
-                .stop = false,
-                .data = data,
-            };
-            RB_VM_LOCKING_NO_BARRIER() {
-                rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
+            void *const ptr = RTYPEDDATA_GET_DATA(obj);
+            const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+
+            if (!ptr || !type->function.dmark) {
+                // no references (the class and ivars are handled elsewhere)
             }
-            if (d.stop) return 1;
+            else if (type->flags & RUBY_TYPED_DECL_MARKING) {
+                const size_t *offsets = (const size_t *)(uintptr_t)type->function.dmark;
+                for (; *offsets != RUBY_REF_END; offsets++) {
+                    VALUE ref = *(VALUE *)((char *)ptr + *offsets);
+                    if (obj_traverse_i(ref, data)) return 1;
+                }
+            }
+            else {
+                if (obj_traverse_reachable(obj, data)) return 1;
+            }
         }
+        break;
+
+      case T_IMEMO:
+        // TODO: Not sure this can actually happen; traverse rather than crash.
+        if (obj_traverse_reachable(obj, data)) return 1;
         break;
 
       // unreachable
@@ -1415,28 +1526,13 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         rb_bug("unreachable");
     }
 
-    if (data->leave_func(obj) == traverse_stop) {
-        return 1;
-    }
-    else {
+    if (data->cyclic) {
         return 0;
     }
-}
 
-struct rb_obj_traverse_final_data {
-    rb_obj_traverse_final_func final_func;
-    int stopped;
-};
-
-static int
-obj_traverse_final_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    struct rb_obj_traverse_final_data *data = (void *)arg;
-    if (data->final_func(key)) {
-        data->stopped = 1;
-        return ST_STOP;
-    }
-    return ST_CONTINUE;
+    enum obj_traverse_iterator_result result = data->leave_func(obj);
+    obj_traverse_rec_remove(data, obj);
+    return result == traverse_stop;
 }
 
 // 0: traverse all
@@ -1444,8 +1540,7 @@ obj_traverse_final_i(st_data_t key, st_data_t val, st_data_t arg)
 static int
 rb_obj_traverse(VALUE obj,
                 rb_obj_traverse_enter_func enter_func,
-                rb_obj_traverse_leave_func leave_func,
-                rb_obj_traverse_final_func final_func)
+                rb_obj_traverse_leave_func leave_func)
 {
     struct obj_traverse_data data = {
         .enter_func = enter_func,
@@ -1453,13 +1548,13 @@ rb_obj_traverse(VALUE obj,
         .rec = NULL,
     };
 
-    if (obj_traverse_i(obj, &data)) return 1;
-    if (final_func && data.rec) {
-        struct rb_obj_traverse_final_data f = {final_func, 0};
-        st_foreach(data.rec, obj_traverse_final_i, (st_data_t)&f);
-        return f.stopped;
+    int stopped = obj_traverse_i(obj, &data);
+
+    if (!stopped && data.cyclic) {
+        if (obj_traverse_finalize_rec(&data)) stopped = 1;
     }
-    return 0;
+
+    return stopped;
 }
 
 static int
@@ -1515,6 +1610,26 @@ make_shareable_check_shareable_freeze(VALUE obj, enum obj_traverse_iterator_resu
 }
 
 static int obj_refer_only_shareables_p(VALUE obj);
+static enum obj_traverse_iterator_result mark_shareable(VALUE obj);
+
+// A leaf object has no ivars and no other VALUE references to traverse.
+static bool
+make_shareable_leaf_p(VALUE obj)
+{
+    if (rb_obj_shape_has_ivars(obj)) return false;
+
+    switch (BUILTIN_TYPE(obj)) {
+      case T_STRING:
+      case T_FLOAT:
+      case T_BIGNUM:
+      case T_REGEXP:
+      case T_SYMBOL:
+      case T_OBJECT:
+        return true;
+      default:
+        return false;
+    }
+}
 
 static enum obj_traverse_iterator_result
 make_shareable_check_shareable(VALUE obj)
@@ -1569,13 +1684,22 @@ make_shareable_check_shareable(VALUE obj)
         break;
     }
 
-    return make_shareable_check_shareable_freeze(obj, traverse_cont);
+    enum obj_traverse_iterator_result result =
+        make_shareable_check_shareable_freeze(obj, traverse_cont);
+
+    // A frozen leaf can be marked shareable here, skipping the rec table.
+    if (result == traverse_cont && make_shareable_leaf_p(obj)) {
+        mark_shareable(obj);
+        return traverse_skip;
+    }
+
+    return result;
 }
 
 static enum obj_traverse_iterator_result
 mark_shareable(VALUE obj)
 {
-    if (RB_TYPE_P(obj, T_STRING)) {
+    if (RB_BUILTIN_TYPE(obj) == T_STRING) {
         rb_str_make_independent(obj);
     }
 
@@ -1588,7 +1712,7 @@ rb_ractor_make_shareable(VALUE obj)
 {
     rb_obj_traverse(obj,
                     make_shareable_check_shareable,
-                    null_leave, mark_shareable);
+                    mark_shareable);
     return obj;
 }
 
@@ -1643,8 +1767,7 @@ bool
 rb_ractor_shareable_p_continue(VALUE obj)
 {
     if (rb_obj_traverse(obj,
-                        shareable_p_enter, null_leave,
-                        mark_shareable)) {
+                        shareable_p_enter, mark_shareable)) {
         return false;
     }
     else {
@@ -1670,19 +1793,19 @@ reset_belonging_enter(VALUE obj)
         return traverse_cont;
     }
 }
-#endif
 
 static enum obj_traverse_iterator_result
 null_leave(VALUE obj)
 {
     return traverse_cont;
 }
+#endif
 
 static VALUE
 ractor_reset_belonging(VALUE obj)
 {
 #if RACTOR_CHECK_MODE > 0
-    rb_obj_traverse(obj, reset_belonging_enter, null_leave, NULL);
+    rb_obj_traverse(obj, reset_belonging_enter, null_leave);
 #endif
     return obj;
 }
@@ -1913,7 +2036,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             rb_ary_cancel_sharing(obj);
 
             for (int i = 0; i < RARRAY_LENINT(obj); i++) {
-                VALUE e = rb_ary_entry(obj, i);
+                VALUE e = RARRAY_AREF(obj, i);
 
                 if (obj_traverse_replace_i(e, data)) {
                     return 1;
