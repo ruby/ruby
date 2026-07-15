@@ -1288,6 +1288,71 @@ CODE
     assert_not_empty(S("not"))
   end
 
+  def test_blank?
+    # An empty string is blank.
+    assert_predicate(S(""), :blank?)
+
+    # ASCII whitespace is blank, individually and as a run.
+    assert_predicate(S(" "), :blank?)
+    assert_predicate(S("\t\n\v\f\r"), :blank?)
+
+    # Every Unicode White_Space code point is blank under a Unicode encoding.
+    unicode_ws = [
+      "\u{9}", "\u{A}", "\u{B}", "\u{C}", "\u{D}",  # HORIZONTAL TAB..CARRIAGE RETURN
+      "\u{20}",                                       # SPACE
+      "\u{85}",                                       # NEXT LINE (NEL)
+      "\u{A0}",                                       # NO-BREAK SPACE
+      "\u{1680}",                                     # OGHAM SPACE MARK
+      "\u{2000}", "\u{2001}", "\u{2002}", "\u{2003}", "\u{2004}",
+      "\u{2005}", "\u{2006}", "\u{2007}", "\u{2008}", "\u{2009}", "\u{200A}",
+      "\u{2028}",                                     # LINE SEPARATOR
+      "\u{2029}",                                     # PARAGRAPH SEPARATOR
+      "\u{202F}",                                     # NARROW NO-BREAK SPACE
+      "\u{205F}",                                     # MEDIUM MATHEMATICAL SPACE
+      "\u{3000}",                                     # IDEOGRAPHIC SPACE
+    ]
+    unicode_ws.each do |c|
+      assert_predicate(S(c), :blank?, "U+%04X should be blank" % c.ord)
+    end
+    # A run composed solely of assorted Unicode White_Space is still blank.
+    assert_predicate(S(unicode_ws.join), :blank?)
+
+    # Any non-space content makes the string non-blank.
+    assert_not_predicate(S("x"), :blank?)
+    assert_not_predicate(S(" \tfoo"), :blank?)
+
+    # Invisible but non-White_Space code points are NOT blank.
+    assert_not_predicate(S("\u{0}"), :blank?)      # NUL
+    assert_not_predicate(S("\u{200B}"), :blank?)   # ZERO WIDTH SPACE
+    assert_not_predicate(S("\u{FEFF}"), :blank?)   # ZERO WIDTH NO-BREAK SPACE (BOM)
+    assert_not_predicate(S("\u{180E}"), :blank?)   # MONGOLIAN VOWEL SEPARATOR (no longer White_Space)
+
+    # U+00A0 is blank under UTF-8, but a standalone 0xA0 byte under
+    # ASCII-8BIT has no Unicode meaning and is not blank.
+    assert_predicate(S("\u{A0}"), :blank?)
+    assert_not_predicate(S("\xA0").force_encoding(Encoding::ASCII_8BIT), :blank?)
+
+    # White_Space holds across other Unicode/single-byte encodings too:
+    # U+3000 under UTF-16LE and U+00A0 under ISO-8859-1 are both blank.
+    assert_predicate(S("\u{3000}").encode("UTF-16LE"), :blank?)
+    assert_predicate(S("\u{A0}").encode("ISO-8859-1"), :blank?)
+
+    # Malformed UTF-8 consisting only of an invalid byte raises ArgumentError.
+    assert_raise(ArgumentError) { S("\xFF").force_encoding(Encoding::UTF_8).blank? }
+
+    # A frozen whitespace string is still blank.
+    assert_predicate(S(" ").freeze, :blank?)
+
+    # A non-whitespace character under UTF-16LE is not blank.
+    assert_not_predicate(S("x").encode("UTF-16LE"), :blank?)
+
+    utf16le_dagger = S("  ").force_encoding(Encoding::UTF_16LE)
+    assert_not_predicate(utf16le_dagger, :blank?)
+
+    # An ASCII-space prefix does not mask malformed UTF-8 reached while scanning.
+    assert_raise(ArgumentError) { S(" \xFF").force_encoding(Encoding::UTF_8).blank? }
+  end
+
   def test_end_with?
     assert_send([S("hello"), :end_with?, S("llo")])
     assert_not_send([S("hello"), :end_with?, S("ll")])
