@@ -27,10 +27,8 @@ Note: We're only listing outstanding class updates.
 
 * Array
 
-    * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
-      and signed LEB128 encoded integers. [[Feature #21785]]
-    * `Array#pack` accepts a new format `^` that returns the current offset.
-      Useful when combined with variable width formats like LEB128. [[Feature #21796]]
+    * `Array#pack` accepts new formats `R` and `r` for unsigned and signed
+      LEB128 encoded integers. [[Feature #21785]]
 
 * ENV
 
@@ -66,6 +64,14 @@ Note: We're only listing outstanding class updates.
 
     * A deprecated behavior, `Set#to_set`, `Range#to_set`, and
       `Enumerable#to_set` accepting arguments, was removed.  [[Feature #21390]]
+
+* String
+
+    * `String#unpack` and `String#unpack1` accept new formats `R` and `r`
+      for unsigned and signed LEB128 encoded integers. [[Feature #21785]]
+    * `String#unpack` and `String#unpack1` accept a new format `^` that
+      returns the current offset.  Useful when combined with variable
+      width formats like LEB128. [[Feature #21796]]
 
 * Symbol
 
