@@ -68,7 +68,7 @@ enum PreparedNewObjFastpath {
     Mmtk(RbGcZjitMmtkNewObjFastpath),
 }
 
-pub(super) fn gc_fast_path_new_obj(
+pub(super) fn gc_fastpath_new_obj(
     jit: &mut JITState,
     asm: &mut Assembler,
     alloc_size: usize,
