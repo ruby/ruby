@@ -4140,7 +4140,7 @@ static VALUE
 time_zonelocal(VALUE time, VALUE off)
 {
     VALUE zone = off;
-    if (zone_localtime(zone, time)) return time;
+    if (maybe_tzobj_p(zone) && zone_localtime(zone, time)) return time;
 
     if (NIL_P(off = utc_offset_arg(off))) {
         off = zone;
