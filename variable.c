@@ -1207,8 +1207,16 @@ class_ivar_set_ractor_check(VALUE klass, ID id)
     }
 }
 
+// Class variables are shared across the whole inheritance chain (and their
+// storage location can even migrate over time), so no single owner Ractor can
+// be defined for them. They are not covered by the class ownership
+// relaxation: only the main Ractor can set them, and non-shareable values can
+// only be read from the main Ractor, as before. Note that the ownership
+// *restriction* still applies on top of this: rb_cvar_set() additionally
+// checks that the class the variable is actually written into is owned, so
+// class fields keep a single writer Ractor.
 static void
-CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(VALUE klass, ID id)
+cvar_set_ractor_check(VALUE klass, ID id)
 {
     if (UNLIKELY(!rb_ractor_main_p())) {
         rb_raise(rb_eRactorIsolationError, "can not set class variables from non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")", rb_id2str(id), klass);
@@ -4144,7 +4152,9 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
                        ID2SYM(id), rb_class_name(original_module(front)),
                        rb_class_name(original_module(target)));
         }
-        if (BUILTIN_TYPE(front) == T_CLASS) {
+        if (BUILTIN_TYPE(front) == T_CLASS && rb_class_owned_p(front)) {
+            // Removing the duplicated entry is just clean-up; skip it when
+            // `front` is owned by another Ractor (its owner will clean it up).
             rb_ivar_delete(front, id, Qundef);
         }
     }
@@ -4179,7 +4189,7 @@ find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
 void
 rb_cvar_set(VALUE klass, ID id, VALUE val)
 {
-    CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(klass, id);
+    cvar_set_ractor_check(klass, id);
 
     VALUE tmp, front = 0, target = 0;
 
@@ -4195,6 +4205,10 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     if (RB_TYPE_P(target, T_ICLASS)) {
         target = RBASIC(target)->klass;
     }
+    // cvars are outside the ownership relaxation, but a write still must not
+    // cross the ownership boundary (e.g. main writing into another Ractor's
+    // class), so that class fields keep a single writer Ractor.
+    rb_class_owner_check(target);
     check_before_mod_set(target, id, val, "class variable");
 
     bool new_cvar = rb_class_ivar_set(target, id, val);
