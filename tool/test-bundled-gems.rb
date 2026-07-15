@@ -157,6 +157,10 @@ trap(:INT) do
   end
 end
 
+heavy_tests = %w[rbs debug reline win32ole irb drb net-imap rdoc typeprof racc rake]
+others = heavy_tests.size
+jobs.sort_by! {|job| heavy_tests.index(job[:gem]) || (others += 1)}
+
 results = Array.new(jobs.size)
 queue = Queue.new
 jobs.each_with_index { |j, i| queue << [j, i] }
