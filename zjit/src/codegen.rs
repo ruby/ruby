@@ -2030,11 +2030,12 @@ const STR_INLINE_STORE_MAX_BYTES: usize = 128;
 fn gen_string_copy(jit: &mut JITState, asm: &mut Assembler, function: &Function, val_id: InsnId, recv: Opnd, chilled: bool, state: &FrameState) -> Opnd {
     // TODO: split rb_ec_str_resurrect into separate functions
     gen_prepare_leaf_call_with_gc(asm, state);
-    let slow_path = |asm: &mut Assembler| asm_ccall!(asm, rb_ec_str_resurrect, EC, recv, (chilled as i64).into());
 
     let Some(src) = function.type_of(val_id).ruby_object() else {
-        return slow_path(asm);
+        return asm_ccall!(asm, rb_ec_str_resurrect, EC, recv, (chilled as i64).into());
     };
+
+    let slow_path = |asm: &mut Assembler| asm_ccall!(asm, rb_ec_str_resurrect, EC, Opnd::Value(src), (chilled as i64).into());
 
     let mut alloc_size: usize = 0;
     let mut flags: VALUE = VALUE(0);
