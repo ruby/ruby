@@ -889,6 +889,12 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
 
     if (DEBUG) fprintf(stderr, "fiber_pool_stack_release: %p used=%"PRIuSIZE"\n", stack->base, stack->pool->used);
 
+    /* 別 Ractor の acquire と競合しないよう pool アクセスを直列化する。
+     * Ractor ごとの GC sweep は VM lock 無しで fiber を解放しうる。release は稀なので
+     * NO_BARRIER で取得し、形成中の global barrier に合流しない。 */
+    unsigned int lev;
+    RB_VM_LOCK_ENTER_LEV_NB(&lev);
+
     // Copy the stack details into the vacancy area:
     vacancy->stack = *stack;
     // After this point, be careful about updating/using state in stack, since it's copied to the vacancy area.
@@ -919,6 +925,8 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
         fiber_pool_stack_free(&vacancy->stack);
     }
 #endif
+
+    RB_VM_LOCK_LEAVE_LEV_NB(&lev);
 }
 
 static inline void
@@ -1034,11 +1042,9 @@ fiber_stack_release(rb_fiber_t * fiber)
 static void
 fiber_stack_release_locked(rb_fiber_t *fiber)
 {
-    if (!ruby_vm_during_cleanup) {
-        // We can't try to acquire the VM lock here because MMTK calls free in its own native thread which has no ec.
-        // This assertion will fail on MMTK but we currently don't have CI for debug releases of MMTK, so we can assert for now.
-        ASSERT_vm_locking_with_barrier();
-    }
+    /* GC の解放処理から呼ばれる。Ractor ごとの objspace では barrier 無し・VM lock
+     * 無しの sweep なので、pool への返却側 (fiber_pool_stack_release) が lock を取る。
+     * ここでは VM lock の assertion を置かない。 */
     fiber_stack_release(fiber);
 }
 
@@ -1307,12 +1313,11 @@ fiber_memsize(const void *ptr)
     const rb_fiber_t *fiber = ptr;
     size_t size = sizeof(*fiber);
     const rb_execution_context_t *saved_ec = &fiber->cont.saved_ec;
-    const rb_thread_t *th = rb_ec_thread_ptr(saved_ec);
 
-    /*
-     * vm.c::thread_memsize already counts th->ec->local_storage
-     */
-    if (saved_ec->local_storage && fiber != th->root_fiber) {
+    /* root fiber の local_storage は vm.c の thread_memsize が計上済み。
+     * first_proc != 0 は thread を deref せず非 root fiber を選ぶ
+     * (fiber != th->root_fiber と等価)。 */
+    if (saved_ec->local_storage && fiber->first_proc != 0) {
         size += rb_id_table_memsize(saved_ec->local_storage);
         size += rb_obj_memsize_of(saved_ec->storage);
     }
