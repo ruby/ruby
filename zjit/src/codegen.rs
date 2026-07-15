@@ -2067,6 +2067,9 @@ fn gen_string_copy(jit: &mut JITState, asm: &mut Assembler, function: &Function,
             slow_path);
     }
 
+    // Pre-process string data into 8 byte chunks and take care of padding
+    // outside the loop, so we can keep the complexity out of the fast path
+    // loop.
     let padded_size = byte_size.next_multiple_of(8);
     let Some(src_bytes) = (unsafe { src.as_rstring_byte_slice() }) else {
         return slow_path(asm);
