@@ -1305,6 +1305,65 @@ assert_equal "can not access non-shareable objects in constant Object::STR of a 
   end
 RUBY
 
+# Copying a class/module created by another Ractor raises if its constants or
+# fields refer to unshareable objects
+assert_equal 'can not copy a class/module created by another Ractor because constant CONST refers to an unshareable object', <<~'RUBY', frozen_string_literal: false
+  class C
+    CONST = 'str'
+  end
+
+  r = Ractor.new { C.dup }
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+  RUBY
+
+assert_equal 'can not copy a class/module created by another Ractor because variable @iv refers to an unshareable object', <<~'RUBY', frozen_string_literal: false
+  class C
+    @iv = 'str'
+  end
+
+  r = Ractor.new { C.dup }
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+  RUBY
+
+# ... the metaclass is checked too, because the copy carries it over
+assert_equal 'can not copy a class/module created by another Ractor because variable @secret refers to an unshareable object', <<~'RUBY', frozen_string_literal: false
+  class C; end
+  C.singleton_class.instance_variable_set(:@secret, 'str')
+
+  r = Ractor.new { C.dup }
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+  RUBY
+
+# ... and the copy of a class which refers to nothing unshareable belongs to the
+# copying Ractor, which is a way to modify a foreign class without mutating it
+assert_equal 'copy orig', %q{
+  class C
+    CONST = 1
+    def m = 'orig'
+  end
+
+  Ractor.new do
+    k = C.dup
+    k.class_eval { def m = 'copy' }
+    "#{k.new.m} #{C.new.m}"
+  end.value
+}
+
 # Setting constants of classes created by other Ractors is not allowed
 assert_equal 'can not set constants of classes/modules created by another Ractor', <<~'RUBY', frozen_string_literal: false
   class C
