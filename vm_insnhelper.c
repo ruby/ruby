@@ -1108,10 +1108,10 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                             return 1;
                         }
                         else {
-                            if (UNLIKELY(!rb_ractor_main_p())) {
+                            if (UNLIKELY(!rb_class_owned_p(klass))) {
                                 if (!rb_ractor_shareable_p(val)) {
                                     rb_raise(rb_eRactorIsolationError,
-                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" by non-main ractor.", rb_class_path(klass), rb_id2str(id));
+                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(klass), rb_id2str(id));
                                 }
                             }
                             return val;
@@ -1221,10 +1221,10 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
       case T_CLASS:
       case T_MODULE:
         {
-            if (UNLIKELY(!rb_ractor_main_p())) {
-                // For two reasons we can only use the fast path on the main
-                // ractor.
-                // First, only the main ractor is allowed to set ivars on classes
+            if (UNLIKELY(!rb_class_owned_p(obj))) {
+                // For two reasons we can only use the fast path on the Ractor
+                // that owns the class.
+                // First, only the owner Ractor is allowed to set ivars on classes
                 // and modules. So we can skip locking.
                 // Second, other ractors need to check the shareability of the
                 // values returned from the class ivars.
@@ -1394,7 +1394,7 @@ NOINLINE(static VALUE vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache ca
 static VALUE
 vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache cache)
 {
-    if (UNLIKELY(!rb_ractor_main_p())) {
+    if (UNLIKELY(!rb_class_owned_p(obj))) {
         return Qundef;
     }
 

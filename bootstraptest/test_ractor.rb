@@ -845,8 +845,8 @@ assert_equal '99', %q{
   Ractor.new { inner = 99; eval("inner").to_s }.value
 }
 
-# ivar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal "can not get unshareable values from instance variables of classes/modules from non-main Ractors (@iv from C)", <<~'RUBY', frozen_string_literal: false
+# ivar in shareable-objects are not allowed to access from non-owner Ractor
+assert_equal "can not get unshareable values from instance variables of classes/modules created by another Ractor (@iv from C)", <<~'RUBY', frozen_string_literal: false
   class C
     @iv = 'str'
   end
@@ -1152,7 +1152,7 @@ assert_equal 'true', %q{
 }
 
 # Getting non-shareable objects via constants by other Ractors is not allowed
-assert_equal 'can not access non-shareable objects in constant C::CONST by non-main Ractor.', <<~'RUBY', frozen_string_literal: false
+assert_equal 'can not access non-shareable objects in constant C::CONST of a class/module created by another Ractor.', <<~'RUBY', frozen_string_literal: false
   class C
     CONST = 'str'
   end
@@ -1167,7 +1167,7 @@ assert_equal 'can not access non-shareable objects in constant C::CONST by non-m
   RUBY
 
 # Constant cache should care about non-shareable constants
-assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", <<~'RUBY', frozen_string_literal: false
+assert_equal "can not access non-shareable objects in constant Object::STR of a class/module created by another Ractor.", <<~'RUBY', frozen_string_literal: false
   STR = "hello"
   def str; STR; end
   s = str() # fill const cache
@@ -1179,7 +1179,7 @@ assert_equal "can not access non-shareable objects in constant Object::STR by no
 RUBY
 
 # The correct constant path shall be reported
-assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", <<~'RUBY', frozen_string_literal: false
+assert_equal "can not access non-shareable objects in constant Object::STR of a class/module created by another Ractor.", <<~'RUBY', frozen_string_literal: false
   STR = "hello"
   module M
     def self.str; STR; end
@@ -1192,8 +1192,8 @@ assert_equal "can not access non-shareable objects in constant Object::STR by no
   end
 RUBY
 
-# Setting non-shareable objects into constants by other Ractors is not allowed
-assert_equal 'can not set constants with non-shareable objects by non-main Ractors', <<~'RUBY', frozen_string_literal: false
+# Setting constants of classes created by other Ractors is not allowed
+assert_equal 'can not set constants of classes/modules created by another Ractor', <<~'RUBY', frozen_string_literal: false
   class C
   end
   r = Ractor.new do
@@ -1707,17 +1707,10 @@ assert_equal 'true', %q{
 }
 
 # check method cache invalidation
+# (the owner Ractor redefines methods while another Ractor calls them)
 assert_equal 'true', %q{
   class Foo
     def hello = nil
-  end
-
-  r1 = Ractor.new do
-    1000.times do
-      class Foo
-        def hello = nil
-      end
-    end
   end
 
   r2 = Ractor.new do
@@ -1727,7 +1720,12 @@ assert_equal 'true', %q{
     end
   end
 
-  r1.value
+  1000.times do
+    class Foo
+      def hello = nil
+    end
+  end
+
   r2.value
 
   true
@@ -2559,21 +2557,23 @@ RUBY
 assert_equal 'ok', <<~'RUBY'
 
 begin
-  CLASSES = 1000.times.map { Class.new }.freeze
-
+  # Each Ractor creates its own class (it can only define bmethods on classes
+  # it owns) and returns it after defining the bmethod.
   # This would be better to run in parallel, but there's a bug with lambda
   # creation and YJIT causing crashes in dev mode
-  ractors = CLASSES.map do |klass|
-    Ractor.new(klass) do |klass|
+  ractors = 1000.times.map do
+    Ractor.new do
+      klass = Class.new
       Ractor.receive
       klass.define_method(:foo) {}
+      klass
     end
   end
 
-  ractors.each do |ractor|
+  CLASSES = ractors.map do |ractor|
     ractor << nil
-    ractor.join
-  end
+    ractor.value
+  end.freeze
 
   ractors.clear
   GC.start
