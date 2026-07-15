@@ -229,6 +229,24 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_create_many_ports_with_gc_stress
+    # Rebuilding the ports table on insertion can run GC under the ractor lock.
+    # It is a prohibited lock ordering, asserted in vm_lock_enter() on RUBY_DEBUG builds.
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive } # enter multi-ractor mode and keep it
+      begin
+        GC.stress = true
+        ports = 40.times.map { Ractor::Port.new }
+      ensure
+        GC.stress = false
+      end
+      assert_equal 40, ports.count
+      ports.each(&:close)
+      r.send(nil)
+      r.join
+    RUBY
+  end
+
   def test_fork_raise_isolation_error
     assert_ractor(<<~'RUBY')
       ractor = Ractor.new do
