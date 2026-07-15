@@ -694,16 +694,6 @@ rb_imemo_fields_complex_tbl(VALUE fields_obj)
     return &IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table;
 }
 
-static inline st_table *
-ROBJECT_FIELDS_HASH(VALUE obj)
-{
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(rb_obj_shape_complex_p(obj));
-    RUBY_ASSERT(rb_obj_shape_extended_p(obj));
-
-    return rb_imemo_fields_complex_tbl(ROBJECT(obj)->as.extended);
-}
-
 static inline VALUE
 ROBJECT_FIELDS_OBJ(VALUE obj)
 {
