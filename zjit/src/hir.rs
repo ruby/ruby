@@ -4071,16 +4071,12 @@ impl Function {
                             | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => (profiled_type.class(), Some(profiled_type)),
                             ReceiverTypeResolution::SkewedMegamorphic { .. }
                             | ReceiverTypeResolution::Megamorphic => {
-                                if get_option!(stats) {
-                                    self.set_dynamic_send_reason(insn_id, SendMegamorphic);
-                                }
+                                self.set_dynamic_send_reason(insn_id, SendMegamorphic);
                                 self.push_insn_id(block, insn_id);
                                 continue;
                             }
                             ReceiverTypeResolution::Polymorphic => {
-                                if get_option!(stats) {
-                                    self.set_dynamic_send_reason(insn_id, SendPolymorphic);
-                                }
+                                self.set_dynamic_send_reason(insn_id, SendPolymorphic);
                                 self.push_insn_id(block, insn_id);
                                 continue;
                             }
