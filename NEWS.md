@@ -52,7 +52,14 @@ Note: We're only listing outstanding class updates.
 
 * ObjectSpace
 
-    *  `ObjectSpace._id2ref` was removed.  [[Feature #22135]]
+    * `ObjectSpace._id2ref` was removed.  [[Feature #22135]]
+
+* Proc
+
+    * `Proc#refined` is added. It returns a new Proc that behaves like the
+      receiver but with the refinements activated by the given modules
+      ineffect inside its body, without affecting the original Proc.
+      [[Feature #22097]]
 
 * Regexp
 
