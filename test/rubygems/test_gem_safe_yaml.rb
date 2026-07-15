@@ -1100,6 +1100,18 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "data", result["other"]
   end
 
+  def test_load_crlf_with_sequence
+    yaml = <<~YAML.gsub("\n", "\r\n")
+      ---
+      nested_hash:
+        contains_array:
+        - "quoted item"
+        - plain item
+    YAML
+
+    assert_equal({ "nested_hash" => { "contains_array" => ["quoted item", "plain item"] } }, yaml_load(yaml))
+  end
+
   def test_load_version_requirement_old_tag
     yaml = <<~YAML
       !ruby/object:Gem::Version::Requirement

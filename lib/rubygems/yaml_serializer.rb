@@ -52,7 +52,7 @@ module Gem
       }.freeze
 
       def initialize(source)
-        @lines = source.split("\n")
+        @lines = source.split(/\r?\n/)
         @anchors = {}
         @depth = 0
         strip_document_prefix
