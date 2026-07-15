@@ -245,6 +245,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21981]: https://bugs.ruby-lang.org/issues/21981
 [Feature #22137]: https://bugs.ruby-lang.org/issues/22137
 [Feature #22139]: https://bugs.ruby-lang.org/issues/22139
+[Feature #22185]: https://bugs.ruby-lang.org/issues/22185
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
 [RubyGems-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/v4.0.5
