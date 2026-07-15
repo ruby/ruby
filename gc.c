@@ -1380,7 +1380,7 @@ rb_gc_imemo_needs_cleanup_p(VALUE obj)
         return ((rb_imemo_tmpbuf_t *)obj)->ptr != NULL;
 
       case imemo_fields:
-        return FL_TEST_RAW(obj, OBJ_FIELD_HEAP);
+        return rb_obj_shape_complex_p(obj);
     }
     UNREACHABLE_RETURN(true);
 }
