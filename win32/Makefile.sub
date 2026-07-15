@@ -320,7 +320,7 @@ LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
 MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
-MISSING = $(MISSING) explicit_bzero.obj
+MISSING = $(MISSING) explicit_bzero.obj memrchr.obj
 !endif
 DLNOBJ = dln.obj
 
