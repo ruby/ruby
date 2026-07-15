@@ -3196,6 +3196,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     rb_check_frozen(module);
+    rb_class_owner_check(module);
 
     for (i = 0; i < argc; i++) {
         VALUE v = argv[i];
