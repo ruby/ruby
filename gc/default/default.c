@@ -1520,6 +1520,7 @@ check_rvalue_consistency_force(rb_objspace_t *objspace, const VALUE obj, int ter
                     err++;
                     goto skip;
                 }
+                empty_page = empty_page->free_next;
             }
             fprintf(stderr, "check_rvalue_consistency: %p is not a Ruby object.\n", (void *)obj);
             err++;
