@@ -1137,8 +1137,11 @@ rb_class_allocate_instance(VALUE klass)
 
         #if RUBY_DEBUG
             VALUE *ptr = ROBJECT_FIELDS(obj);
-            size_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
-            for (size_t i = fields_count; i < ROBJECT_FIELDS_CAPACITY(obj); i++) {
+            shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+            attr_index_t fields_count = RSHAPE_LEN(shape_id);
+            attr_index_t capacity = RSHAPE_CAPACITY(shape_id);
+
+            for (attr_index_t i = fields_count; i < capacity; i++) {
                 ptr[i] = Qundef;
             }
         #endif
@@ -3378,7 +3381,7 @@ rb_gc_obj_optimal_size(VALUE obj)
             return sizeof(struct RObject);
         }
         else {
-            size_t size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(obj));
+            size_t size = rb_obj_embedded_size(RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj)));
             if (rb_gc_size_allocatable_p(size)) {
                 return size;
             }
@@ -4876,12 +4879,13 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             switch (imemo_type(obj)) {
               case imemo_fields:
                 {
-                    if (rb_obj_shape_complex_p(obj)) {
+                    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+                    if (rb_shape_complex_p(shape_id)) {
                         size_t hash_len = rb_st_table_size(rb_imemo_fields_complex_tbl(obj));
                         APPEND_F("(complex) len:%zu", hash_len);
                     }
                     else {
-                        APPEND_F("(embed) len:%d capa:%d", RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), ROBJECT_FIELDS_CAPACITY(obj));
+                        APPEND_F("(embed) len:%d capa:%d", RSHAPE_LEN(shape_id), RSHAPE_CAPACITY(shape_id));
                     }
 
                     APPEND_S("owner -> ");

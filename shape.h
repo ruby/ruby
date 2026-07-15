@@ -694,16 +694,6 @@ rb_imemo_fields_complex_tbl(VALUE fields_obj)
     return &IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table;
 }
 
-static inline uint32_t
-ROBJECT_FIELDS_CAPACITY(VALUE obj)
-{
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    // Asking for capacity doesn't make sense when the object is using
-    // a hash table for storing instance variables
-    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
-    return RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj));
-}
-
 static inline st_table *
 ROBJECT_FIELDS_HASH(VALUE obj)
 {
