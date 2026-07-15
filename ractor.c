@@ -2081,11 +2081,17 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     }
 
     VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_PROMOTED);
+    shape_id_t shape_id = (RBASIC_SHAPE_ID(obj) & SHAPE_ID_CAPACITY_MASK) | ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_ROBJECT | SHAPE_ID_FL_FROZEN;
 
     // Avoid mutations using bind_call, etc.
     MEMZERO((char *)obj, char, sizeof(struct RBasic));
     RBASIC(obj)->flags = flags;
     RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
+
+    // The husk keeps its original (larger) slot, so give it a field-less shape
+    // sized to that slot; otherwise compaction's slot_size == shape_slot_size
+    // invariant is violated.
+    RBASIC_SET_FULL_SHAPE_ID(obj, shape_id);
     return traverse_cont;
 }
 
