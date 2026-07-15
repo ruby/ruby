@@ -2233,6 +2233,10 @@ invalid_utc_offset(VALUE zone)
 static VALUE
 utc_offset_arg(VALUE arg)
 {
+    if (RB_INTEGER_TYPE_P(arg)) {
+        return arg;
+    }
+
     VALUE tmp;
     if (!NIL_P(tmp = rb_check_string_type(arg))) {
         int n = 0;
