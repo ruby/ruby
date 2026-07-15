@@ -238,12 +238,14 @@ void *
 rb_gc_get_objspace(void)
 {
     rb_ractor_t *cr = rb_current_ractor_raw(false);
-    if (cr != NULL && cr->objspace != NULL) {
-        return cr->objspace;
+    if (cr == NULL) {
+        /* current Ractor を持たないスレッド（GVL 無しの native thread が
+         * thread_sched_reclaim で free する等）では main Ractor の objspace を使う。 */
+        return GET_VM()->ractor.main_ractor->objspace;
     }
-    /* 起動直後や current Ractor を持たないスレッドでは、main Ractor の
-     * objspace を使う。VM 自体は global objspace しか指していない。 */
-    return GET_VM()->ractor.main_ractor->objspace;
+    /* 生きている current Ractor は必ず objspace を持つ。 */
+    RUBY_ASSERT(cr->objspace != NULL);
+    return cr->objspace;
 }
 
 void
