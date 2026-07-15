@@ -404,6 +404,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       before do
         allow(File).to receive(:expand_path).and_return("#{install_path}/bundler/setup")
+        allow(Gem).to receive(:bin_path).and_return("#{install_path}/bundler/setup")
       end
 
       # RUBYOPT is split on whitespace with no quoting mechanism, so an
