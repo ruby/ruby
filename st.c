@@ -3268,7 +3268,7 @@ set_foreach_check(set_table *tab, set_foreach_check_callback_func *func, st_data
 
 /* Set up array KEYS by at most SIZE keys of head table TAB entries.
    Return the number of keys set up in array KEYS.  */
-inline st_index_t
+st_index_t
 set_keys(set_table *tab, st_data_t *keys, st_index_t size)
 {
     st_index_t i, bound;
