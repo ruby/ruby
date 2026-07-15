@@ -261,7 +261,7 @@ pub type YarvInsnIdx = usize;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ShapeId(pub u32);
 
- #[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub enum ShapeLayout {
     RObject,
     RClass,
@@ -648,7 +648,7 @@ impl VALUE {
         }
     }
 
-    pub fn layout(self) ->  ShapeLayout {
+    pub fn layout(self) -> ShapeLayout {
         self.shape_id_of().layout()
     }
 

@@ -331,6 +331,14 @@ pub struct rb_cref_t {
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
 
+#[derive(PartialEq, Eq)]
+pub enum ShapeLayout {
+    RObject,
+    RClass,
+    Extended,
+    Other,
+}
+
 impl VALUE {
     /// Dump info about the value to the console similarly to rp(VALUE)
     pub fn dump_info(self) {
@@ -450,6 +458,16 @@ impl VALUE {
 
     pub fn shape_id_of(self) -> u32 {
         unsafe { rb_obj_shape_id(self) }
+    }
+
+    pub fn shape_layout(self) -> ShapeLayout {
+        match self.shape_id_of() & SHAPE_ID_LAYOUT_MASK {
+            SHAPE_ID_LAYOUT_ROBJECT => ShapeLayout::RObject,
+            SHAPE_ID_LAYOUT_RCLASS => ShapeLayout::RClass,
+            SHAPE_ID_LAYOUT_EXTENDED => ShapeLayout::Extended,
+            SHAPE_ID_LAYOUT_OTHER => ShapeLayout::Other,
+            layout => unreachable!("unknown shape layout bits: {layout:#x}"),
+        }
     }
 
     pub fn embedded_p(self) -> bool {
