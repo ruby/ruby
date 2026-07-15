@@ -2925,8 +2925,6 @@ mark_const_entry_i(VALUE value, void *objspace)
 {
     const rb_const_entry_t *ce = (const rb_const_entry_t *)value;
 
-    /* unshareable な定数値は shref 記録を持つので、shareable 制約チェックは
-     * それらを辿る。 */
     gc_mark_internal(ce->value);
     gc_mark_internal(ce->file); // TODO: ce->file should be shareable?
 
@@ -3258,9 +3256,6 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE box_value, void *a
     }
     mark_m_tbl(objspace, RCLASSEXT_M_TBL(ext));
 
-    /* クラスレベルの fields やクラス変数キャッシュは unshareable なことがある。
-     * write barrier がそれらを shref として記録するので、shareable 制約チェックが
-     * 辿れる。 */
     gc_mark_internal(RCLASSEXT_FIELDS_OBJ(ext));
     gc_mark_internal(RCLASSEXT_CVC_TBL(ext));
 
@@ -3361,8 +3356,6 @@ rb_gc_mark_children(void *objspace, VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
         if (FL_TEST_RAW(obj, FL_SINGLETON)) {
-            /* shareable な特異クラスの attached object は unshareable なことがある。
-             * shref 記録がそれを覆う。 */
             gc_mark_internal(RCLASS_ATTACHED_OBJECT(obj));
         }
         // Continue to the shared T_CLASS/T_MODULE
