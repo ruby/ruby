@@ -35,6 +35,8 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 //      29-30 SHAPE_ID_LAYOUT_MASK
 //              The object's physical field layout.
 
+STATIC_ASSERT(robject_rdata_fields_offset, offsetof(struct RObject, as.extended) == offsetof(struct RTypedData, fields_obj));
+
 enum shape_id_fl_type {
 #define RBIMPL_SHAPE_ID_FL(n) (1<<(SHAPE_ID_FL_USHIFT+n))
 
@@ -52,19 +54,25 @@ enum shape_id_fl_type {
     // are found in the fields_obj found on the rclass struct
     SHAPE_ID_LAYOUT_RCLASS = RBIMPL_SHAPE_ID_FL(3),
 
-    // Means this object is an RData or RTypedData and IVs are found in the
-    // fields_obj found on the RData/RTypedData struct
-    SHAPE_ID_LAYOUT_RDATA = RBIMPL_SHAPE_ID_FL(4),
+    // Means this object is an extened RObject or a RTypedData and IVs are found in the
+    // fields_obj found on the RObject/RTypedData struct at offset `sizeof(VALUE) * 2`.
+    SHAPE_ID_LAYOUT_EXTENDED = RBIMPL_SHAPE_ID_FL(4),
+    SHAPE_ID_LAYOUT_RDATA = SHAPE_ID_LAYOUT_EXTENDED,
 
     // Means this is a complicated object: boxable classes, structs, objects
     // that store IVs on the geniv table
-    SHAPE_ID_LAYOUT_OTHER = SHAPE_ID_LAYOUT_RCLASS | SHAPE_ID_LAYOUT_RDATA,
+    SHAPE_ID_LAYOUT_OTHER = SHAPE_ID_LAYOUT_RCLASS | SHAPE_ID_LAYOUT_EXTENDED,
 
     SHAPE_ID_LAYOUT_MASK = SHAPE_ID_LAYOUT_OTHER,
 
     SHAPE_ID_FL_NON_CANONICAL_MASK = SHAPE_ID_FL_FROZEN | SHAPE_ID_FL_HAS_OBJECT_ID,
     SHAPE_ID_FLAGS_MASK = SHAPE_ID_CAPACITY_MASK | SHAPE_ID_FL_NON_CANONICAL_MASK | SHAPE_ID_FL_COMPLEX | SHAPE_ID_LAYOUT_MASK,
 
+    // These parts of the shape id are specific to the object.
+    // Typically, when replicating a shape transition from an object to
+    // its IMEMO/fields, these bits should be stripped.
+    // All other bits are shared between an IMEMO/fields and its owner.
+    SHAPE_ID_FL_PRIVATE_MASK = SHAPE_ID_LAYOUT_MASK|SHAPE_ID_CAPACITY_MASK,
 #undef RBIMPL_SHAPE_ID_FL
 };
 
@@ -126,6 +134,7 @@ enum shape_flags {
 typedef struct {
     rb_shape_t *shape_list;
     attr_index_t max_capacity;
+    ID id_object_id;
 } rb_shape_tree_t;
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -201,16 +210,27 @@ RBASIC_SET_FULL_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     RUBY_ASSERT(rb_shape_verify_consistency(obj, shape_id));
 }
 
+static inline shape_id_t rb_shape_transition_layout(shape_id_t, shape_id_t);
+
+static inline void
+RBASIC_SET_SHAPE_ID_WITH_LAYOUT(VALUE obj, shape_id_t target_shape_id, shape_id_t layout)
+{
+    RUBY_ASSERT((layout & SHAPE_ID_LAYOUT_MASK) == layout);
+    shape_id_t current_shape_id = RBASIC_SHAPE_ID(obj);
+    current_shape_id = rb_shape_transition_layout(current_shape_id, layout);
+    current_shape_id = (current_shape_id & SHAPE_ID_FL_PRIVATE_MASK) | (target_shape_id & ~SHAPE_ID_FL_PRIVATE_MASK);
+    RBASIC_SET_FULL_SHAPE_ID(obj, current_shape_id);
+}
+
 static inline void
 RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
 
-    shape_id = (
-        (shape_id & ~(SHAPE_ID_CAPACITY_MASK|SHAPE_ID_LAYOUT_MASK)) |
-        (RBASIC_SHAPE_ID(obj) & (SHAPE_ID_CAPACITY_MASK|SHAPE_ID_LAYOUT_MASK))
-    );
-    RBASIC_SET_FULL_SHAPE_ID(obj, shape_id);
+    RBASIC_SET_FULL_SHAPE_ID(obj, (
+        (shape_id & ~SHAPE_ID_FL_PRIVATE_MASK) |
+        (RBASIC_SHAPE_ID(obj) & SHAPE_ID_FL_PRIVATE_MASK)
+    ));
 }
 
 static inline shape_id_t
@@ -248,7 +268,6 @@ shape_id_t rb_shape_transition_add_ivar_no_warnings(shape_id_t shape_id, ID id, 
 shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
 shape_id_t rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id);
 void rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALUE *src_buf, shape_id_t src_shape_id);
-void rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table);
 
 static inline bool
 rb_shape_frozen_p(shape_id_t shape_id)
@@ -380,17 +399,7 @@ ROBJECT_FIELDS_HASH(VALUE obj)
     RUBY_ASSERT(rb_obj_shape_complex_p(obj));
     RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
 
-    return ROBJECT(obj)->as.hash;
-}
-
-static inline void
-ROBJECT_SET_FIELDS_HASH(VALUE obj, st_table *tbl)
-{
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(rb_obj_shape_complex_p(obj));
-    RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
-
-    ROBJECT(obj)->as.hash = tbl;
+    return rb_imemo_fields_complex_tbl(ROBJECT(obj)->as.extended);
 }
 
 static inline uint32_t
@@ -489,9 +498,21 @@ rb_obj_using_gen_fields_table_p(VALUE obj)
 }
 
 static inline shape_id_t
+rb_shape_transition_layout(shape_id_t shape_id, shape_id_t layout)
+{
+    return (shape_id & (~SHAPE_ID_LAYOUT_MASK)) | layout;
+}
+
+static inline shape_id_t
 rb_shape_transition_robject(shape_id_t shape_id)
 {
-    return (shape_id & ~SHAPE_ID_LAYOUT_MASK) | SHAPE_ID_LAYOUT_ROBJECT;
+    return rb_shape_transition_layout(shape_id, SHAPE_ID_LAYOUT_ROBJECT);
+}
+
+static inline shape_id_t
+rb_shape_transition_extended(shape_id_t shape_id)
+{
+    return rb_shape_transition_layout(shape_id, SHAPE_ID_LAYOUT_EXTENDED);
 }
 
 static inline shape_id_t

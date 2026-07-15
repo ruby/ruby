@@ -160,11 +160,10 @@ main(void)
     return c != value_nan();
 }
 <<
-	@( \
-	  $(CC) -O2 $@.c && .\$@ || \
-	  (set bug=%ERRORLEVEL% & \
-	  echo This compiler has an optimization bug) \
-	) & $(WIN32DIR:/=\)\rm.bat $@.* & exit /b %bug%
+	@($(CC) -O2 $@.c && .\$@) || \
+	  (echo This compiler has an optimization bug & \
+	  $(WIN32DIR:/=\)\rm.bat $@.* & exit /b 1)
+	@$(WIN32DIR:/=\)\rm.bat $@.*
 
 -version-: nul verconf.mk
 

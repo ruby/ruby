@@ -265,7 +265,7 @@ pub struct ShapeId(pub u32);
 pub enum ShapeLayout {
     RObject,
     RClass,
-    RData,
+    Extended,
     Other,
 }
 
@@ -288,7 +288,7 @@ impl ShapeId {
         match self.0 & SHAPE_ID_LAYOUT_MASK {
             SHAPE_ID_LAYOUT_ROBJECT => ShapeLayout::RObject,
             SHAPE_ID_LAYOUT_RCLASS => ShapeLayout::RClass,
-            SHAPE_ID_LAYOUT_RDATA => ShapeLayout::RData,
+            SHAPE_ID_LAYOUT_EXTENDED => ShapeLayout::Extended,
             SHAPE_ID_LAYOUT_OTHER => ShapeLayout::Other,
             layout => unreachable!("unknown shape layout bits: {layout:#x}"),
         }

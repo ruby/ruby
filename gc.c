@@ -376,7 +376,8 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
 void
 rb_gc_obj_changed_slot_size(VALUE obj, size_t slot_size)
 {
-    RBASIC_SET_FULL_SHAPE_ID(obj, rb_obj_shape_transition_slot_size(obj, slot_size));
+    shape_id_t shape_id = rb_obj_shape_transition_capacity(obj, rb_shape_capacity_for_slot_size(slot_size));
+    RBASIC_SET_FULL_SHAPE_ID(obj, shape_id);
 }
 
 void rb_vm_update_references(void *ptr);
@@ -1100,9 +1101,9 @@ rb_newobj_of(VALUE klass, VALUE flags, size_t size)
 static
 VALUE class_allocate_complex_instance(VALUE klass, uint32_t capacity)
 {
-    shape_id_t initial_shape_id = rb_shape_transition_robject(0);
-    VALUE obj = rb_newobj_of_with_shape(klass, T_OBJECT, initial_shape_id, sizeof(struct RObject));
-    rb_obj_init_complex(obj, rb_st_init_numtable_with_size(capacity));
+    VALUE obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_transition_extended(ROOT_COMPLEX_SHAPE_ID), sizeof(struct RObject));
+    VALUE fields_obj = rb_imemo_fields_new_complex(obj, ROOT_COMPLEX_SHAPE_ID, capacity, false);
+    ROBJECT_SET_EXTENDED(obj, fields_obj);
     return obj;
 }
 
@@ -1584,19 +1585,6 @@ rb_gc_obj_free(void *objspace, VALUE obj)
 
     switch (builtin_type) {
       case T_OBJECT:
-        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-            if (rb_obj_shape_complex_p(obj)) {
-                RB_DEBUG_COUNTER_INC(obj_obj_complex);
-                st_free_table(ROBJECT_FIELDS_HASH(obj));
-            }
-            else {
-                SIZED_FREE_N(ROBJECT(obj)->as.heap.fields, ROBJECT_FIELDS_CAPACITY(obj));
-                RB_DEBUG_COUNTER_INC(obj_obj_ptr);
-            }
-        }
-        else {
-            RB_DEBUG_COUNTER_INC(obj_obj_embed);
-        }
         break;
       case T_MODULE:
       case T_CLASS:
@@ -2372,14 +2360,6 @@ rb_obj_memsize_of(VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-            if (rb_obj_shape_complex_p(obj)) {
-                size += rb_st_memsize(ROBJECT_FIELDS_HASH(obj));
-            }
-            else {
-                size += ROBJECT_FIELDS_CAPACITY(obj) * sizeof(VALUE);
-            }
-        }
         break;
       case T_MODULE:
       case T_CLASS:
@@ -3303,12 +3283,13 @@ rb_gc_mark_children(void *objspace, VALUE obj)
 
       case T_OBJECT: {
         uint32_t len;
-        if (rb_obj_shape_complex_p(obj)) {
-            gc_mark_tbl_no_pin(ROBJECT_FIELDS_HASH(obj));
-            len = ROBJECT_FIELDS_COUNT_COMPLEX(obj);
+        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            if (!rb_gc_checking_shareable()) {
+                gc_mark_internal(ROBJECT(obj)->as.extended);
+            }
         }
         else {
-            const VALUE * const ptr = ROBJECT_FIELDS(obj);
+            const VALUE * const ptr = ROBJECT(obj)->as.ary;
 
             len = ROBJECT_FIELDS_COUNT_NOT_COMPLEX(obj);
             for (uint32_t i = 0; i < len; i++) {
@@ -3678,25 +3659,26 @@ gc_ref_update_array(void *objspace, VALUE v)
 static void
 gc_ref_update_object(void *objspace, VALUE v)
 {
-    VALUE *ptr = ROBJECT_FIELDS(v);
+    RUBY_ASSERT(rb_gc_obj_slot_size(v) == rb_obj_shape_slot_size(v));
+    shape_id_t shape_id = RBASIC_SHAPE_ID(v);
 
     if (FL_TEST_RAW(v, ROBJECT_HEAP)) {
-        if (rb_obj_shape_complex_p(v)) {
-            gc_ref_update_table_values_only(ROBJECT_FIELDS_HASH(v));
-            return;
-        }
+        UPDATE_IF_MOVED(objspace, ROBJECT(v)->as.extended);
 
-        size_t slot_size = rb_gc_obj_slot_size(v);
-        size_t embed_size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(v));
-        if (slot_size >= embed_size) {
-            // Object can be re-embedded
-            memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
-            SIZED_FREE_N(ptr, ROBJECT_FIELDS_CAPACITY(v));
+        if (!rb_shape_complex_p(shape_id) && rb_shape_embedded_capacity(shape_id) >= RSHAPE_LEN(shape_id)) {
+            VALUE *embedded_fields = ROBJECT_EMBEDDED_FIELDS(v);
+            VALUE *extended_fields = ROBJECT_FIELDS(v);
+            MEMCPY(embedded_fields, extended_fields, VALUE, RSHAPE_LEN(shape_id));
             FL_UNSET_RAW(v, ROBJECT_HEAP);
-            ptr = ROBJECT(v)->as.ary;
+            RBASIC_SET_FULL_SHAPE_ID(v, rb_shape_transition_robject(shape_id));
+            rb_gc_writebarrier_remember(v);
+        }
+        else {
+            return;
         }
     }
 
+    VALUE *ptr = ROBJECT_FIELDS(v);
     for (uint32_t i = 0; i < ROBJECT_FIELDS_COUNT(v); i++) {
         UPDATE_IF_MOVED(objspace, ptr[i]);
     }
@@ -4860,11 +4842,11 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                         APPEND_F("(complex) len:%zu", hash_len);
                     }
                     else {
-                        APPEND_F("(embed) len:%d capa:%d", RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), ROBJECT_FIELDS_CAPACITY(obj));
+                        APPEND_F("len:%d capa:%d extended:%p", RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), ROBJECT_FIELDS_CAPACITY(obj), (void *)ROBJECT_FIELDS_OBJ(obj));
                     }
                 }
                 else {
-                    APPEND_F("len:%d capa:%d ptr:%p", RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), ROBJECT_FIELDS_CAPACITY(obj), (void *)ROBJECT_FIELDS(obj));
+                    APPEND_F("(embed) len:%d capa:%d", RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), ROBJECT_FIELDS_CAPACITY(obj));
                 }
             }
             break;
@@ -4889,6 +4871,21 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             APPEND_F("<%s> ", rb_imemo_name(imemo_type(obj)));
 
             switch (imemo_type(obj)) {
+              case imemo_fields:
+                {
+                    if (rb_obj_shape_complex_p(obj)) {
+                        size_t hash_len = rb_st_table_size(rb_imemo_fields_complex_tbl(obj));
+                        APPEND_F("(complex) len:%zu", hash_len);
+                    }
+                    else {
+                        APPEND_F("(embed) len:%d capa:%d", RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), ROBJECT_FIELDS_CAPACITY(obj));
+                    }
+
+                    APPEND_S("owner -> ");
+                    rb_raw_obj_info(BUFF_ARGS, CLASS_OF(obj));
+
+                    break;
+                }
               case imemo_ment:
                 {
                     const rb_method_entry_t *me = (const rb_method_entry_t *)obj;

@@ -33,8 +33,6 @@
 #define MAX_SHAPE_ID (INVALID_SHAPE_ID - 1)
 #define ANCESTOR_SEARCH_MAX_DEPTH 2
 
-static ID id_object_id;
-
 // Should be on its own cache line
 static RUBY_ALIGNAS(128) rb_atomic_t redblack_cache_size;
 
@@ -701,7 +699,7 @@ rb_shape_transition_object_id(shape_id_t original_shape_id)
     bool dont_care;
     rb_shape_t *shape = NULL;
     if (LIKELY(original_shape->next_field_index < rb_shape_max_capacity())) {
-        shape = get_next_shape_internal(original_shape, id_object_id, SHAPE_OBJ_ID, &dont_care, true);
+        shape = get_next_shape_internal(original_shape, rb_shape_tree.id_object_id, SHAPE_OBJ_ID, &dont_care, true);
     }
     if (!shape) {
         return rb_shape_layout(original_shape_id) | ROOT_COMPLEX_WITH_OBJ_ID | RSHAPE_FLAGS(original_shape_id);
@@ -1093,8 +1091,16 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 shape_id_t
 rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
 {
-    RUBY_ASSERT(!rb_shape_complex_p(initial_shape_id));
-    RUBY_ASSERT(!rb_shape_complex_p(dest_shape_id));
+    RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
+
+    if (RB_UNLIKELY(rb_shape_complex_p(initial_shape_id))) {
+        // The class has been marked as too complex.
+        return initial_shape_id;
+    }
+
+    if (RB_UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
+        return rb_shape_transition_complex(initial_shape_id);
+    }
 
     shape_id_t next_shape_id;
     // The shape has a SHAPE_OBJ_ID edge, it needs to be rebuilt.
@@ -1144,19 +1150,6 @@ rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALU
             src_shape = RSHAPE(src_shape->parent_offset);
         }
     }
-}
-
-void
-rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table)
-{
-    // obj is COMPLEX so we can copy its iv_hash
-    st_table *table = st_copy(fields_table);
-    if (rb_shape_has_object_id(src_shape_id)) {
-        st_data_t id = (st_data_t)id_object_id;
-        st_delete(table, &id, NULL);
-    }
-    rb_obj_init_complex(dest, table);
-    rb_gc_writebarrier_remember(dest);
 }
 
 size_t
@@ -1224,7 +1217,7 @@ rb_shape_expected_layout(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        return SHAPE_ID_LAYOUT_ROBJECT;
+        return FL_TEST_RAW(obj, ROBJECT_HEAP) ? SHAPE_ID_LAYOUT_EXTENDED : SHAPE_ID_LAYOUT_ROBJECT;
       case T_CLASS:
       case T_MODULE:
         if (FL_TEST_RAW(obj, RCLASS_BOXABLE)) {
@@ -1232,7 +1225,7 @@ rb_shape_expected_layout(VALUE obj)
         }
         return SHAPE_ID_LAYOUT_RCLASS;
       case T_DATA:
-        return SHAPE_ID_LAYOUT_RDATA;
+        return SHAPE_ID_LAYOUT_EXTENDED;
       case T_IMEMO:
         if (IMEMO_TYPE_P(obj, imemo_fields)) {
             return SHAPE_ID_LAYOUT_ROBJECT;
@@ -1240,6 +1233,23 @@ rb_shape_expected_layout(VALUE obj)
         return SHAPE_ID_LAYOUT_OTHER;
       default:
         return SHAPE_ID_LAYOUT_OTHER;
+    }
+}
+
+static const char *
+shape_layout_name(shape_id_t shape_id)
+{
+    switch (rb_shape_layout(shape_id)) {
+      case SHAPE_ID_LAYOUT_ROBJECT:
+        return "robject";
+      case SHAPE_ID_LAYOUT_RCLASS:
+        return "rclass";
+      case SHAPE_ID_LAYOUT_EXTENDED:
+        return "extended (or RData)";
+      case SHAPE_ID_LAYOUT_OTHER:
+        return "other";
+      default:
+        return "invalid";
     }
 }
 
@@ -1268,8 +1278,8 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
     shape_id_t actual_layout = rb_shape_layout(rb_obj_shape_id(obj));
     shape_id_t expected_layout = rb_shape_expected_layout(obj);
     if (actual_layout != expected_layout) {
-        rb_bug("shape_id layout mismatch: expected=%x actual=%x shape_id=%u obj=%s",
-                expected_layout, actual_layout, shape_id, rb_obj_info(obj));
+        rb_bug("shape_id layout mismatch: expected=%s actual=%s shape_id=%u obj=%s",
+                shape_layout_name(expected_layout), shape_layout_name(actual_layout), shape_id, rb_obj_info(obj));
     }
 
     if (shape_id == ROOT_SHAPE_ID) {
@@ -1278,36 +1288,39 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 
     rb_shape_t *shape = RSHAPE(shape_id);
 
-    bool has_object_id = false;
-    while (shape->parent_offset != INVALID_SHAPE_ID) {
-        if (shape->type == SHAPE_OBJ_ID) {
-            has_object_id = true;
-            break;
-        }
-        shape = RSHAPE(shape->parent_offset);
-    }
-
-    if (rb_shape_has_object_id(shape_id)) {
-        if (!has_object_id) {
-            rb_bug("shape_id claim having obj_id but doesn't shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
-        }
-    }
-    else {
-        if (has_object_id) {
-            rb_bug("shape_id claim not having obj_id but it does shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
-        }
-    }
-
     // Make sure SHAPE_ID_HAS_IVAR_MASK is valid.
     if (rb_shape_complex_p(shape_id)) {
         RUBY_ASSERT(shape_id & SHAPE_ID_HAS_IVAR_MASK);
 
         // Ensure complex object don't appear as embedded
-        if (RB_TYPE_P(obj, T_OBJECT) || IMEMO_TYPE_P(obj, imemo_fields)) {
+        if (RB_TYPE_P(obj, T_OBJECT)) {
             RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
+        }
+        else if (IMEMO_TYPE_P(obj, imemo_fields)) {
+            RUBY_ASSERT(!FL_TEST_RAW(obj, ROBJECT_HEAP));
         }
     }
     else {
+        bool has_object_id = false;
+        while (shape->parent_offset != INVALID_SHAPE_ID) {
+            if (shape->type == SHAPE_OBJ_ID) {
+                has_object_id = true;
+                break;
+            }
+            shape = RSHAPE(shape->parent_offset);
+        }
+
+        if (rb_shape_has_object_id(shape_id)) {
+            if (!has_object_id) {
+                rb_bug("shape_id claim having obj_id but doesn't shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
+            }
+        }
+        else {
+            if (has_object_id) {
+                rb_bug("shape_id claim not having obj_id but it does shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
+            }
+        }
+
         attr_index_t ivar_count = RSHAPE_LEN(shape_id);
         if (has_object_id) {
             ivar_count--;
@@ -1373,8 +1386,8 @@ shape_layout(VALUE self)
         return ID2SYM(rb_intern("robject"));
       case SHAPE_ID_LAYOUT_RCLASS:
         return ID2SYM(rb_intern("rclass"));
-      case SHAPE_ID_LAYOUT_RDATA:
-        return ID2SYM(rb_intern("rdata"));
+      case SHAPE_ID_LAYOUT_EXTENDED:
+        return ID2SYM(rb_intern("extended_or_rdata"));
       case SHAPE_ID_LAYOUT_OTHER:
         return ID2SYM(rb_intern("other"));
       default:
@@ -1597,7 +1610,7 @@ Init_default_shapes(void)
         rb_memerror();
     }
 
-    id_object_id = rb_make_internal_id();
+    rb_shape_tree.id_object_id = rb_make_internal_id();
 
 #ifdef HAVE_MMAP
     size_t shape_cache_mmap_size = rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError);
@@ -1632,11 +1645,11 @@ Init_default_shapes(void)
     RUBY_ASSERT(!(SHAPE_OFFSET(root) & SHAPE_ID_HAS_IVAR_MASK));
 
     bool dontcare;
-    rb_shape_t *root_with_obj_id = get_next_shape_internal(root, id_object_id, SHAPE_OBJ_ID, &dontcare, true);
+    rb_shape_t *root_with_obj_id = get_next_shape_internal(root, rb_shape_tree.id_object_id, SHAPE_OBJ_ID, &dontcare, true);
     RUBY_ASSERT(root_with_obj_id);
     RUBY_ASSERT(SHAPE_OFFSET(root_with_obj_id) == ROOT_SHAPE_WITH_OBJ_ID);
     RUBY_ASSERT(root_with_obj_id->type == SHAPE_OBJ_ID);
-    RUBY_ASSERT(root_with_obj_id->edge_name == id_object_id);
+    RUBY_ASSERT(root_with_obj_id->edge_name == rb_shape_tree.id_object_id);
     RUBY_ASSERT(root_with_obj_id->next_field_index == 1);
     RUBY_ASSERT(!(SHAPE_OFFSET(root_with_obj_id) & SHAPE_ID_HAS_IVAR_MASK));
     (void)root_with_obj_id;

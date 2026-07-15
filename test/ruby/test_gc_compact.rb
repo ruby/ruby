@@ -485,4 +485,24 @@ class TestGCCompact < Test::Unit::TestCase
       assert_equal("hello", obj.instance_variable_get(:@str))
     RUBY
   end
+
+  def test_object_reembedding
+    assert_separately([], <<~'RUBY')
+      GC.auto_compact = true
+
+      objs = []
+      30.times.map { Class.new }.map do |k|
+        50.times.each do
+          obj = k.new
+          rand(0..30).times do |i|
+            obj.instance_variable_set(:"@v#{i}", i)
+          end
+          objs << obj
+        end
+      end
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      assert :ok
+    RUBY
+  end
 end

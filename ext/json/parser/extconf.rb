@@ -15,22 +15,6 @@ have_func("rb_hash_new_capa", "ruby.h") # RUBY_VERSION >= 3.2
 have_func("rb_hash_bulk_insert", "ruby.h") # Missing on TruffleRuby
 have_func("ruby_xfree_sized", "ruby.h") # RUBY_VERSION >= 4.1
 
-def have_builtin_func(name, check_expr, opt = "", &b)
-  checking_for checking_message(name.funcall_style, nil, opt) do
-    if try_compile(<<SRC, opt, &b)
-int foo;
-int main() { #{check_expr}; return 0; }
-SRC
-      $defs.push(format("-DHAVE_BUILTIN_%s", name.tr_cpp))
-      true
-    else
-      false
-    end
-  end
-end
-
-have_builtin_func("__builtin_clzll", "__builtin_clzll(0)")
-
 if have_header("x86intrin.h")
   have_func("_lzcnt_u64", "x86intrin.h")
 end

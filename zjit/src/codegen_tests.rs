@@ -975,6 +975,96 @@ fn test_send_optional_arguments() {
 }
 
 #[test]
+fn test_send_rest_arguments() {
+    eval("
+        def test(*args) = args
+        def entry = test(1, 2, 3)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[1, 2, 3]");
+}
+
+#[test]
+fn test_send_many_rest_arguments() {
+    eval("
+        def test(*args) = args.length
+        def entry = test(1, 2, 3, 4, 5, 6, 7)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"7");
+}
+
+#[test]
+fn test_send_rest_arguments_with_post() {
+    eval("
+        def test(a, *args, z) = [a, args, z]
+        def entry = test(1, 2, 3, 4)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[1, [2, 3], 4]");
+}
+
+#[test]
+fn test_send_rest_arguments_with_keyword() {
+    eval("
+        def test(*args, k:) = [args, k]
+        def entry = test(1, 2, k: 40)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[[1, 2], 40]");
+}
+
+#[test]
+fn test_send_rest_arguments_with_optional_keyword_default() {
+    eval("
+        def test(*args, k: 40) = [args, k]
+        def entry = test(1, 2)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[[1, 2], 40]");
+}
+
+#[test]
+fn test_send_optional_and_rest_arguments() {
+    eval("
+        def test(a, b = 2, *rest) = [a, b, rest]
+        def entry = [test(1), test(3, 4), test(5, 6, 7, 8)]
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[[1, 2, []], [3, 4, []], [5, 6, [7, 8]]]");
+}
+
+#[test]
+fn test_send_rest_arguments_with_keyword_to_positional_hash() {
+    eval("
+        def test(*args) = args
+        def entry = test(k: 1)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[{k: 1}]");
+}
+
+#[test]
+fn test_send_rest_arguments_with_block_literal() {
+    eval("
+        def test(*args) = yield args.length
+        def entry = test(1, 2, 3) { |n| n + 4 }
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"7");
+}
+
+#[test]
+fn test_send_rest_arguments_with_block_param() {
+    eval("
+        def test(*args, &block) = block.call(args.length)
+        def entry = test(1, 2, 3) { |n| n + 5 }
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"8");
+}
+
+#[test]
 fn test_send_nil_block_arg() {
     assert_snapshot!(inspect("
         def test = block_given?
@@ -4170,6 +4260,29 @@ fn test_setinstancevariable() {
 }
 
 #[test]
+fn test_polymorphic_setinstancevariable_with_shape_transitions() {
+    set_call_threshold(3);
+    assert_snapshot!(inspect(r#"
+        class C
+          def set(value) = @a = value
+        end
+
+        normal = C.new
+        with_b = C.new
+        with_b.instance_variable_set(:@b, true)
+        normal.set(:profile_normal)
+        with_b.set(:profile_with_b)
+
+        normal = C.new
+        with_b = C.new
+        with_b.instance_variable_set(:@b, true)
+        results = [normal.set(:normal), with_b.set(:with_b)]
+        results << normal.instance_variable_get(:@a)
+        results << with_b.instance_variable_get(:@a)
+    "#), @"[:normal, :with_b, :normal, :with_b]");
+}
+
+#[test]
 fn test_getclassvariable() {
     assert_snapshot!(inspect("
         class Foo
@@ -7031,4 +7144,34 @@ fn test_send_no_profiles_with_disabled_specialized_instruction() {
 #[test]
 fn test_array_each_is_defined_in_ruby() {
     assert_snapshot!(inspect("Array.instance_method(:each).source_location&.first"), @r#""<internal:array>""#);
+}
+
+#[test]
+fn test_forward_fallback_with_lightweight_frame_reads_cfp() {
+    assert_snapshot!(inspect(r#"
+      class Base
+        def foo(...)
+          "base"
+        end
+      end
+
+      class Child < Base
+        def foo(...)
+          bar do
+            super
+          end
+        end
+
+        def bar
+          yield
+        end
+      end
+
+      c = Child.new
+      100.times do
+        Array.new(50) { |n| n * n }
+        c.foo(1, 2, 3)
+      end
+      :done
+    "#), @":done");
 }

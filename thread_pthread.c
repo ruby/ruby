@@ -1664,16 +1664,13 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
         ractor_sched_lock(vm, cr);
         {
             // running_cnt
-            /* A not-yet-running thread (blocking/terminating, joined only to
-             * sync) must not be counted, or barrier_waiting_cnt > running_cnt-1. */
-            if (cr->threads.sched.is_running) {
-                vm->ractor.sched.barrier_waiting_cnt++;
-                RUBY_DEBUG_LOG("waiting_cnt:%u serial:%u", vm->ractor.sched.barrier_waiting_cnt, barrier_serial);
-                ractor_sched_barrier_join_signal_locked(vm);
-            }
-            else {
-                RUBY_DEBUG_LOG("join without counting (not running) serial:%u", barrier_serial);
-            }
+            /* Every joiner is a member of the running set: a dying thread now
+             * leaves the living set before handing over its scheduler slot. */
+            VM_ASSERT(ractor_sched_running_threads_contain_p(vm, GET_THREAD()));
+            vm->ractor.sched.barrier_waiting_cnt++;
+            RUBY_DEBUG_LOG("waiting_cnt:%u serial:%u", vm->ractor.sched.barrier_waiting_cnt, barrier_serial);
+
+            ractor_sched_barrier_join_signal_locked(vm);
             ractor_sched_barrier_join_wait_locked(vm, cr->threads.sched.running);
         }
         ractor_sched_unlock(vm, cr);
@@ -1747,6 +1744,12 @@ thread_sched_atfork(struct rb_thread_sched *sched)
 
     ccan_list_head_init(&vm->ractor.sched.grq);
     vm->ractor.sched.grq_cnt = 0; // the list was just emptied; reset the count with it
+    // A fork during a VM barrier leaves the child with barrier state that can
+    // never complete (the other ractors are gone); reset it like the rest.
+    vm->ractor.sched.barrier_waiting = false;
+    vm->ractor.sched.barrier_waiting_cnt = 0;
+    vm->ractor.sched.barrier_ractor = NULL;
+    vm->ractor.sched.barrier_lock_rec = 0;
     // Threads that were winding down in the parent do not exist in the child;
     // without this reset the child's ruby_vm_destruct would wait for their
     // reclaim (which never comes) forever.
@@ -2500,6 +2503,7 @@ thread_sched_reclaim(struct coroutine_context *dead_co)
         SIZED_FREE(tctx);
         // pairs with the increment at the top of coroutine_thread_terminated:
         // a waiting VM destruct may proceed once this reclaim is done
+        VM_ASSERT(RUBY_ATOMIC_LOAD(GET_VM()->ractor.sched.winding_cnt) > 0);
         RUBY_ATOMIC_DEC(GET_VM()->ractor.sched.winding_cnt);
         return true;
     }

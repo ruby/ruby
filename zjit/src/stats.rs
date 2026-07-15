@@ -195,6 +195,7 @@ make_counters! {
         exit_unhandled_splat,
         exit_unhandled_kwarg,
         exit_unhandled_block_arg,
+        exit_block_arg_not_nil,
         exit_unknown_special_variable,
         exit_unhandled_hir_insn,
         exit_unhandled_yarv_insn,
@@ -238,6 +239,7 @@ make_counters! {
         exit_too_many_args_for_lir,
         exit_no_profile_send,
         exit_no_profile_getivar,
+        exit_no_profile_setivar,
         exit_splatkw_not_nil_or_hash,
         exit_splatkw_polymorphic,
         exit_splatkw_not_profiled,
@@ -270,6 +272,7 @@ make_counters! {
         send_fallback_send_no_profiles,
         send_fallback_send_not_optimized_method_type,
         send_fallback_send_not_optimized_need_permission,
+        send_fallback_send_block_arg_not_nil,
         send_fallback_ccall_with_frame_too_many_args,
         send_fallback_argc_param_mismatch,
         // The call has at least one feature on the caller or callee side
@@ -434,7 +437,6 @@ make_counters! {
     unspecialized_super_def_type_null,
 
     // Unsupported parameter features
-    complex_arg_pass_param_rest,
     complex_arg_pass_param_post,
     complex_arg_pass_param_kwrest,
     complex_arg_pass_param_block,
@@ -451,6 +453,9 @@ make_counters! {
     complex_arg_pass_caller_super,
     complex_arg_pass_caller_zsuper,
     complex_arg_pass_caller_forwarding,
+
+    // Unsupported argument conversions
+    complex_arg_pass_keyword_to_positional_hash,
 
     // Writes to the VM frame
     vm_write_jit_frame_count,
@@ -615,6 +620,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         UnhandledHIRUnknown(_)        => exit_unhandled_hir_insn,
         UnhandledYARVInsn(_)          => exit_unhandled_yarv_insn,
         UnhandledBlockArg             => exit_unhandled_block_arg,
+        BlockArgNotNil                => exit_block_arg_not_nil,
         FixnumAddOverflow             => exit_fixnum_add_overflow,
         FixnumSubOverflow             => exit_fixnum_sub_overflow,
         FixnumMultOverflow            => exit_fixnum_mult_overflow,
@@ -666,6 +672,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         SendWhileTracing              => exit_send_while_tracing,
         NoProfileSend                 => exit_no_profile_send,
         NoProfileGetIvar              => exit_no_profile_getivar,
+        NoProfileSetIvar              => exit_no_profile_setivar,
         InvokeBlockNotIfunc           => exit_invokeblock_not_ifunc,
     }
 }
@@ -709,6 +716,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
+        SendBlockArgNotNil                        => send_fallback_send_block_arg_not_nil,
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
         SuperCallWithBlock                        => send_fallback_super_call_with_block,
