@@ -3182,12 +3182,6 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     }
     rb_native_mutex_unlock(&vm->gc.registered_globals.lock);
 
-    /* 同様に、非main Ractor の at_exit/END proc は VM グローバルな end_procs の
-     * C リストに載るが、実体はその Ractor の objspace にあり、この walk だけが
-     * root にできる。 */
-    MARK_CHECKPOINT("end_proc");
-    rb_mark_end_proc();
-
     /* 非main Ractor の String trap ハンドラも VM グローバルな vm->trap_list.cmd[]
      * にある。整列した VALUE の固定長配列（signal.c が ACCESS_ONCE を使う）なので
      * lock 不要。競合しても walk は新旧どちらかのハンドラを読み、両方生きている。 */
@@ -3198,6 +3192,12 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
      * そこにあるため）。非main Ractor の confined GC はそれらを走査しない。
      * global GC は全部を走査する。 */
     if (global_gc || objspace == vm->ractor.main_ractor->objspace) {
+        /* at_exit/END proc は main Ractor しか登録できない（非main は IsolationError）。
+         * end_procs は lock 無しの連結リストなので、登録と同一スレッドの main か STW の
+         * global GC だけが走査する。非main の local GC は触らない。 */
+        MARK_CHECKPOINT("end_proc");
+        rb_mark_end_proc();
+
         MARK_CHECKPOINT("vm");
         /* rb_vm_mark は他 Ractor が VM lock 下で書き換える VM グローバルな weak 表を走査する。
          * main の local GC は本来 lock-free なので、この区間だけ no-barrier VM lock を取る。
