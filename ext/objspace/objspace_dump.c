@@ -597,9 +597,12 @@ dump_object(VALUE obj, struct dump_config *dc)
         }
 
         dump_append(dc, ", \"ivars\":");
-        dump_append_lu(dc, ROBJECT_FIELDS_COUNT(obj));
         if (rb_obj_shape_complex_p(obj)) {
+            dump_append_lu(dc, rb_st_table_size(ROBJECT_FIELDS_HASH(obj)));
             dump_append(dc, ", \"complex_shape\":true");
+        }
+        else {
+            dump_append_lu(dc, RSHAPE_LEN(RBASIC_SHAPE_ID(obj)));
         }
         break;
 

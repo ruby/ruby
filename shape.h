@@ -714,31 +714,6 @@ ROBJECT_FIELDS_HASH(VALUE obj)
     return rb_imemo_fields_complex_tbl(ROBJECT(obj)->as.extended);
 }
 
-static inline uint32_t
-ROBJECT_FIELDS_COUNT_COMPLEX(VALUE obj)
-{
-    return (uint32_t)rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
-}
-
-static inline uint32_t
-ROBJECT_FIELDS_COUNT_NOT_COMPLEX(VALUE obj)
-{
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
-    return RSHAPE(RBASIC_SHAPE_ID(obj))->next_field_index;
-}
-
-static inline uint32_t
-ROBJECT_FIELDS_COUNT(VALUE obj)
-{
-    if (rb_obj_shape_complex_p(obj)) {
-        return ROBJECT_FIELDS_COUNT_COMPLEX(obj);
-    }
-    else {
-        return ROBJECT_FIELDS_COUNT_NOT_COMPLEX(obj);
-    }
-}
-
 static inline VALUE
 ROBJECT_FIELDS_OBJ(VALUE obj)
 {
