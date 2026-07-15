@@ -1924,7 +1924,7 @@ fn id_is_empty(id: ID) -> bool {
 
 /// Construct a qualified method name for display/debug output.
 /// Returns strings like "Array#length" for instance methods or "Foo.bar" for singleton methods.
-fn qualified_method_name(class: VALUE, method_id: ID) -> String {
+pub(crate) fn qualified_method_name(class: VALUE, method_id: ID) -> String {
     let method_name = method_id.contents_lossy();
     // rb_zjit_singleton_class_p also checks if it's a class
     if unsafe { rb_zjit_singleton_class_p(class) } {
