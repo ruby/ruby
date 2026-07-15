@@ -274,6 +274,7 @@ RSpec.describe "bundle outdated" do
       build_repo2 do
         build_git "foo", path: lib_path("foo")
         build_git "zebra", path: lib_path("zebra")
+        build_gem "zondrian", "1.2"
       end
 
       install_gemfile <<-G
@@ -284,6 +285,7 @@ RSpec.describe "bundle outdated" do
         group :development, :test do
           gem 'activesupport', '2.3.5'
           gem "duradura", '7.0'
+          gem "zondrian", '1.2'
         end
       G
     end
@@ -298,15 +300,17 @@ RSpec.describe "bundle outdated" do
         build_gem "activesupport", "3.0"
         build_gem "terranova", "9"
         build_gem "duradura", "8.0"
+        build_gem "zondrian", "1.3"
       end
 
       bundle "outdated --groups", raise_on_error: false
 
       expected_output = <<~TABLE.strip
         Gem            Current  Latest  Requested  Groups             Release Date
+        terranova      8        9       = 8        default
         activesupport  2.3.5    3.0     = 2.3.5    development, test
         duradura       7.0      8.0     = 7.0      development, test
-        terranova      8        9       = 8        default
+        zondrian       1.2      1.3     = 1.2      development, test
       TABLE
 
       expect(out).to end_with(expected_output)

@@ -209,7 +209,7 @@ module Bundler
         )
       end
 
-      print_indented([table_header] + data)
+      print_indented([table_header] + data, !options_include_groups)
     end
 
     def print_gem(current_spec, active_spec, dependency, groups)
@@ -323,7 +323,7 @@ module Bundler
       version_section.to_a[0].to_i
     end
 
-    def print_indented(matrix)
+    def print_indented(matrix, sort = true)
       header = matrix[0]
       data = matrix[1..-1]
 
@@ -333,7 +333,7 @@ module Bundler
 
       Bundler.ui.info justify(header, column_sizes)
 
-      data.sort_by! {|row| row[0] }
+      data.sort_by! {|row| row[0] } if sort
 
       data.each do |row|
         Bundler.ui.info justify(row, column_sizes)
