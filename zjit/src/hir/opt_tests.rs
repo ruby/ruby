@@ -1671,7 +1671,7 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v11:BasicObject = Send v6, :foo # SendFallbackReason: SendWithoutBlock: unsupported method type Null
+          v11:BasicObject = Send v6, :foo # SendFallbackReason: Send: unsupported method type Null
           CheckInterrupts
           Return v11
         ");
@@ -3801,7 +3801,7 @@ mod hir_opt_tests {
           v42:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1048))
           Jump bb8(v42, v52)
         bb8(v32:BasicObject, v33:BasicObject):
-          v47:BasicObject = Send v32, :call, v11, v13 # SendFallbackReason: SendWithoutBlock: unsupported optimized method type BlockCall
+          v47:BasicObject = Send v32, :call, v11, v13 # SendFallbackReason: Send: unsupported optimized method type BlockCall
           CheckInterrupts
           PopInlineFrame
           Return v47
@@ -8442,7 +8442,7 @@ mod hir_opt_tests {
           v60:TrueClass = Const Value(true)
           Jump bb7(v60)
         bb11():
-          v48:BasicObject = Send v31, :! # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          v48:BasicObject = Send v31, :! # SendFallbackReason: Send: polymorphic fallback
           Jump bb7(v48)
         bb7(v35:BasicObject):
           CheckInterrupts
@@ -9761,7 +9761,7 @@ mod hir_opt_tests {
           v31:BasicObject = GetIvar v19, :@foo
           Jump bb4(v31)
         bb6():
-          v22:BasicObject = Send v10, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          v22:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v22)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -10094,7 +10094,7 @@ mod hir_opt_tests {
           v54:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1048))
           Jump bb13(v54, v27)
         bb13(v44:BasicObject, v45:BasicObject):
-          v57:BasicObject = Send v44, :call # SendFallbackReason: SendWithoutBlock: no profile data available
+          v57:BasicObject = Send v44, :call # SendFallbackReason: Send: no profile data available
           CheckInterrupts
           Jump bb4(v57)
         bb6(v62:ObjectSubclass[class_exact*:Object@VALUE(0x1000)], v63:BasicObject):
@@ -15764,7 +15764,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Obj)
           v12:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v14:BasicObject = Send v12, :secret # SendFallbackReason: SendWithoutBlock: method private or protected and no FCALL
+          v14:BasicObject = Send v12, :secret # SendFallbackReason: Send: method private or protected and no FCALL
           CheckInterrupts
           Return v14
         ");
@@ -15819,7 +15819,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Obj)
           v12:BasicObjectExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v14:BasicObject = Send v12, :initialize # SendFallbackReason: SendWithoutBlock: method private or protected and no FCALL
+          v14:BasicObject = Send v12, :initialize # SendFallbackReason: Send: method private or protected and no FCALL
           CheckInterrupts
           Return v14
         ");
@@ -15847,7 +15847,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Obj)
           v12:ObjectExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v14:BasicObject = Send v12, :toplevel_method # SendFallbackReason: SendWithoutBlock: method private or protected and no FCALL
+          v14:BasicObject = Send v12, :toplevel_method # SendFallbackReason: Send: method private or protected and no FCALL
           CheckInterrupts
           Return v14
         ");
@@ -15906,7 +15906,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Obj)
           v12:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v14:BasicObject = Send v12, :secret # SendFallbackReason: SendWithoutBlock: method private or protected and no FCALL
+          v14:BasicObject = Send v12, :secret # SendFallbackReason: Send: method private or protected and no FCALL
           CheckInterrupts
           Return v14
         ");
@@ -16719,7 +16719,7 @@ mod hir_opt_tests {
           v45:Fixnum[4] = Const Value(4)
           Jump bb4(v45)
         bb8():
-          v28:BasicObject = Send v10, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          v28:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           v31:Fixnum[2] = Const Value(2)
@@ -16772,7 +16772,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1040, itself@0x1010, cme:0x1018)
           Jump bb4(v25)
         bb8():
-          v28:BasicObject = Send v10, :itself # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          v28:BasicObject = Send v10, :itself # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -16828,7 +16828,7 @@ mod hir_opt_tests {
           v40:StringExact = CCallVariadic v25, :Integer#to_s@0x1040
           Jump bb4(v40)
         bb8():
-          v28:BasicObject = Send v10, :to_s # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -16881,7 +16881,7 @@ mod hir_opt_tests {
           v40:BasicObject = CCallWithFrame v25, :Float#to_s@0x1040
           Jump bb4(v40)
         bb8():
-          v28:BasicObject = Send v10, :to_s # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -16934,7 +16934,7 @@ mod hir_opt_tests {
           v38:StringExact = InvokeBuiltin leaf <inline_expr>, v25
           Jump bb4(v38)
         bb8():
-          v28:BasicObject = Send v10, :to_s # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -16983,7 +16983,7 @@ mod hir_opt_tests {
           v31:Fixnum[3] = Const Value(3)
           Jump bb4(v31)
         bb6():
-          v22:BasicObject = Send v10, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          v22:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v22)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -17708,7 +17708,7 @@ mod hir_opt_tests {
         bb5():
           v18:Truthy = RefineType v10, Truthy
           v22:Fixnum[42] = Const Value(42)
-          v24:BasicObject = Send v9, :greet_final, v22 # SendFallbackReason: SendWithoutBlock: no profile data available
+          v24:BasicObject = Send v9, :greet_final, v22 # SendFallbackReason: Send: no profile data available
           CheckInterrupts
           Return v24
         bb4(v29:BasicObject, v30:Falsy):
@@ -18501,7 +18501,7 @@ mod hir_opt_tests {
           v45:BasicObject = CCallWithFrame v30, :Float#*@0x1040, v13
           Jump bb4(v45)
         bb8():
-          v33:BasicObject = Send v12, :*, v13 # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          v33:BasicObject = Send v12, :*, v13 # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v33)
         bb4(v20:BasicObject):
           CheckInterrupts
@@ -19995,7 +19995,7 @@ mod hir_opt_tests {
           v44:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1050))
           Jump bb8(v44, v53)
         bb8(v34:BasicObject, v35:BasicObject):
-          v48:BasicObject = Send v34, :call, v10 # SendFallbackReason: SendWithoutBlock: unsupported optimized method type BlockCall
+          v48:BasicObject = Send v34, :call, v10 # SendFallbackReason: Send: unsupported optimized method type BlockCall
           CheckInterrupts
           PopInlineFrame
           PatchPoint NoEPEscape(test)
