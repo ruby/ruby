@@ -1627,6 +1627,7 @@ module Prism
       # Optional scopes to pass to the parser.
       attr_reader :scopes #: Array[Array[Symbol]]?
 
+      # :nodoc:
       #: (?scopes: Array[Array[Symbol]]?) -> void
       def initialize(scopes: nil)
         super()
