@@ -773,9 +773,6 @@ typedef struct rb_vm_struct {
     unsigned int thread_ignore_deadlock: 1;
 
     /* object management */
-    VALUE **global_object_list;
-    size_t global_object_list_size;
-    size_t global_object_list_capa;
     const VALUE special_exceptions[ruby_special_error_count];
 
     /* Ruby Box */
@@ -807,14 +804,41 @@ typedef struct rb_vm_struct {
     int coverage_mode;
 
     struct {
-        struct rb_objspace *objspace;
+        /* VM は rb_global_objspace(page pool 等のプロセス全体の GC データ)のみを
+         * 指す。各 Ractor は r->objspace で自分の rb_objspace を所有し、boot
+         * objspace は main Ractor に属する。 */
+        struct rb_global_objspace *global_objspace;
+        /* 終了したがまだ継承されていない Ractor の objspace 群。誰も変更しないが
+         * global GC は毎回列挙する必要がある(取りこぼすと stale mark bits = UAF)。
+         * owner_slot は死んだ Ractor の r->objspace で、継承時に VM lock 下でクリア。 */
+        struct rb_objspace_zombie {
+            void *objspace;
+            void **owner_slot;
+            /* この zombie の所有 Ractor(終了して vm->ractor.set を外れたがまだ未 merge)。
+             * global GC の generic_fields weak pass が owner の per-Ractor 表を舐めるのに
+             * 使う。orphan(Ractor object 回収済み)は NULL で、表は main へ移送済み。 */
+            struct rb_ractor_struct *owner;
+            /* この zombie が保持する heap page 数(retire 時に測定、各 global cycle
+             * の barrier 下で更新)。下の合計値はエントリ単位で正確に同期する。 */
+            size_t pages;
+        } *zombie_objspaces;
+        size_t zombie_objspaces_count;
+        size_t zombie_objspaces_capa;
+        /* ledger 全体の .pages の合計。global cycle 間では上限値
+         * (zombie のヒープは増えず、global cycle でのみ縮む)。 */
+        size_t zombie_total_pages;
+
 #if USE_MODULAR_GC
-        /* A modular GC (e.g. MMTk) may mark on worker threads that have no
-         * current EC, so the traversal mark redirect must be reachable without
-         * a Ractor and lives here.  Otherwise it is per-Ractor
-         * (rb_ractor_t.mark_func_data). */
         struct gc_mark_func_data_struct *mark_func_data;
 #endif
+        /* rb_gc_register_address の登録先は VM に 1 つ。登録スロットには後から別
+         * objspace の値が入り得るので per-Ractor 分割せず、全 Ractor の GC が root
+         * walk で保守的に見る。lock は leaf、register/unregister は cold path。 */
+        struct {
+            rb_nativethread_lock_t lock;
+            VALUE **addrs;              /* rb_gc_register_address: *addr を mark_maybe */
+            size_t addrs_cnt, addrs_capa;
+        } registered_globals;
     } gc;
 
     rb_at_exit_list *at_exit;

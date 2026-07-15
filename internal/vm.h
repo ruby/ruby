@@ -114,6 +114,7 @@ VALUE rb_vm_backtrace_locations(int argc, const VALUE * argv, struct rb_executio
 VALUE rb_make_backtrace(void);
 void rb_backtrace_print_as_bugreport(FILE*);
 int rb_backtrace_p(VALUE obj);
+VALUE rb_backtrace_dup(VALUE btobj);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);
 VALUE rb_location_ary_to_backtrace(VALUE ary);
