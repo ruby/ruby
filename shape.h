@@ -2,7 +2,6 @@
 #define RUBY_SHAPE_H
 
 #include "internal/gc.h"
-#include "internal/struct.h"
 
 typedef uint8_t attr_index_t;
 typedef uint32_t shape_id_t;
@@ -477,24 +476,6 @@ rb_obj_gen_fields_p(VALUE obj)
           break;
     }
     return rb_obj_shape_has_fields(obj);
-}
-
-static inline bool
-rb_obj_using_gen_fields_table_p(VALUE obj)
-{
-    switch (BUILTIN_TYPE(obj)) {
-      case T_DATA:
-        return false;
-
-      case T_STRUCT:
-        if (!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) return false;
-        break;
-
-      default:
-        break;
-    }
-
-    return rb_obj_gen_fields_p(obj);
 }
 
 static inline shape_id_t
