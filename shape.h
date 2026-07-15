@@ -412,12 +412,7 @@ rb_imemo_fields_ptr(VALUE fields_obj)
         return NULL;
     }
 
-    if (UNLIKELY(rb_obj_shape_extended_p(fields_obj))) {
-        RUBY_ASSERT(RB_TYPE_P(fields_obj, T_OBJECT));
-        fields_obj = ROBJECT(fields_obj)->as.extended;
-        RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields));
-    }
-
+    RUBY_ASSERT(rb_obj_shape_embedded_p(fields_obj));
     return IMEMO_OBJ_FIELDS(fields_obj)->as.embed.fields;
 }
 

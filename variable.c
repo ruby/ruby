@@ -2154,7 +2154,9 @@ obj_fields_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, b
         .ivar_only = ivar_only,
     };
 
+    VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+
     if (rb_shape_complex_p(shape_id)) {
         st_foreach_safe(ROBJECT_FIELDS_HASH(obj), each_hash_iv, (st_data_t)&itr_data);
     }
