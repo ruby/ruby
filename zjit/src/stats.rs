@@ -665,13 +665,13 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
     use crate::hir::SendFallbackReason::*;
     use crate::stats::Counter::*;
     match reason {
-        SendCfuncNotVariadic          => send_fallback_send_cfunc_not_variadic,
+        SendCfuncNotVariadic                      => send_fallback_send_cfunc_not_variadic,
         SendNotOptimizedMethodTypeOptimized(_)
                                                   => send_fallback_send_not_optimized_method_type_optimized,
         TooManyArgsForLir                         => send_fallback_too_many_args_for_lir,
-        SendBopRedefined              => send_fallback_send_bop_redefined,
-        SendOperandsNotFixnum         => send_fallback_send_operands_not_fixnum,
-        SendPolymorphicFallback       => send_fallback_send_polymorphic_fallback,
+        SendBopRedefined                          => send_fallback_send_bop_redefined,
+        SendOperandsNotFixnum                     => send_fallback_send_operands_not_fixnum,
+        SendPolymorphicFallback                   => send_fallback_send_polymorphic_fallback,
         SendDirectKeywordMismatch                 => send_fallback_send_direct_keyword_mismatch,
         SendDirectKeywordCountMismatch            => send_fallback_send_direct_keyword_count_mismatch,
         SendDirectMissingKeyword                  => send_fallback_send_direct_missing_keyword,
