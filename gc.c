@@ -2150,15 +2150,6 @@ rb_objspace_garbage_object_p(VALUE obj)
     return !SPECIAL_CONST_P(obj) && rb_gc_impl_garbage_object_p(rb_gc_get_objspace(), obj);
 }
 
-/* obj が現在の objspace のヒープにある生きたオブジェクトか。stale になり得る
- * 逆ポインタ（終了中の zombie スレッドの self や Ractor 等）を mark する前の
- * 防御的ガードに使う。teardown の mark 経路が使う薄い公開ラッパ。 */
-bool
-rb_gc_pointer_to_heap_p(VALUE obj)
-{
-    return !SPECIAL_CONST_P(obj) && rb_gc_impl_live_object_p(rb_gc_get_objspace(), (void *)obj);
-}
-
 #define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
 #define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
 
