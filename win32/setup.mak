@@ -33,7 +33,6 @@ i386-mswin32: -prologue- -i386- -epilogue-
 i486-mswin32: -prologue- -i486- -epilogue-
 i586-mswin32: -prologue- -i586- -epilogue-
 i686-mswin32: -prologue- -i686- -epilogue-
-alpha-mswin32: -prologue- -alpha- -epilogue-
 x64-mswin64: -prologue- -x64- -epilogue-
 arm64-mswin64: -prologue- -arm64- -epilogue-
 
@@ -232,14 +231,6 @@ MACHINE = x86
 !if defined($(CPU))
 $(CPU) = $(PROCESSOR_LEVEL)
 !endif
-#endif
-
--alpha-: -osname32-
-	@$(CPP) -Tc <<"checking if compiler is for $(@:-=)" >>$(MAKEFILE)
-#ifndef _M_ALPHA
-#error Not compiler for $(@:-=)
-#else
-MACHINE = $(@:-=)
 #endif
 <<
 
