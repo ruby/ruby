@@ -141,6 +141,8 @@ class TestRactor < Test::Unit::TestCase
   end
 
   def test_sending_object_with_broken_clone
+    # メッセージの複製はユーザ可視の #clone を呼ばないので、壊れた #clone は送信を
+    # 壊せない。代わりに #clone が定義する特異クラスで複製不可になる
     assert_ractor(<<~'RUBY')
       o = Object.new
       def o.clone
@@ -150,7 +152,7 @@ class TestRactor < Test::Unit::TestCase
       error = assert_raise Ractor::Error do
         ractor.send(o)
       end
-      assert_match "#clone returned self", error.message
+      assert_match "can not copy", error.message
     RUBY
   end
 
@@ -398,6 +400,66 @@ class TestRactor < Test::Unit::TestCase
     assert_ractor(<<~'RUBY')
       Fiber[:key] = "creator"
       assert_nil Ractor.new { Fiber[:key] }.value
+    RUBY
+  end
+
+  # per-Ractor GC では finalizer の登録・テーブル・実行はすべてオブジェクトの
+  # Ractor に属する。他 Ractor のオブジェクト（shareable も含む）への定義は拒否する
+  def test_define_finalizer_on_foreign_object
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      r = Ractor.new do
+        results = []
+        own = Object.new
+        ObjectSpace.define_finalizer(own, proc {})
+        results << :own_ok
+        begin
+          ObjectSpace.define_finalizer(String, proc {})  # main's class
+          results << :define_did_not_raise
+        rescue Ractor::IsolationError
+          results << :define_raised
+        end
+        begin
+          ObjectSpace.undefine_finalizer(String)
+          results << :undefine_did_not_raise
+        rescue Ractor::IsolationError
+          results << :undefine_raised
+        end
+        results
+      end
+      assert_equal [:own_ok, :define_raised, :undefine_raised], r.value
+      GC.verify_internal_consistency
+    RUBY
+  end
+
+  # ObjectSpace.each_object は呼び出し元 Ractor 自身の objspace の全オブジェクトと、
+  # 他の生存 Ractor が持つ shareable を列挙する（他 Ractor の unshareable は列挙しない）
+  def test_each_object_own_all_and_foreign_shareables
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      class Marker; end
+      main_un = 5.times.map { Marker.new }
+      main_sh = 3.times.map { Ractor.make_shareable(Marker.new) }
+      ready = Ractor::Port.new
+      ch = Ractor.new(ready) do |ready_port|
+        un = 7.times.map { Marker.new }               # unshareable なので見えてはならない
+        sh = 4.times.map { Ractor.make_shareable(Marker.new) }
+        ready_port << :built
+        Ractor.receive                                # この objspace を生かし続ける
+        [un.size, sh.size]
+      end
+      ready.receive                                   # 子がマーカーを作り終えた
+
+      seen = 0
+      ObjectSpace.each_object(Marker) { seen += 1 }
+      # 自分の 8（unshareable 5 + shareable 3）＋子の shareable 4
+      assert_equal 12, seen
+
+      ch.send(:go)
+      ch.value
+      # 走査中もルートを生かしておく
+      assert_equal 5, main_un.size
+      assert_equal 3, main_sh.size
     RUBY
   end
 

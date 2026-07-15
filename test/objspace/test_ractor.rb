@@ -13,6 +13,27 @@ class TestObjSpaceRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # dump_all / memsize_of_all は全 Ractor の objspace を対象にし、
+  # 他 Ractor の unshareable オブジェクトも含める
+  def test_dump_all_covers_all_ractors
+    assert_ractor(<<~'RUBY', require: 'objspace')
+      ready = Ractor::Port.new
+      ch = Ractor.new(ready) do |port|
+        marker = +"RLGC_DUMP_MARKER_FOREIGN"
+        port << :built
+        Ractor.receive
+        marker.size
+      end
+      ready.receive
+
+      dump = ObjectSpace.dump_all(output: :string)
+      assert_include dump, "RLGC_DUMP_MARKER_FOREIGN"
+
+      ch.send(:go)
+      ch.value
+    RUBY
+  end
+
   def test_undefine_finalizer
     assert_ractor(<<~'RUBY', timeout: 20, require: 'objspace', signal: :SEGV)
       def fin
