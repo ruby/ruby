@@ -1624,11 +1624,13 @@ module Prism
         end
       end
 
-      attr_accessor :scopes # :nodoc:
+      # Optional scopes to pass to the parser.
+      attr_reader :scopes #: Array[Array[Symbol]]?
 
-      def initialize scopes:nil # :nodoc:
+      #: (?scopes: Array[Array[Symbol]]?) -> void
+      def initialize(scopes: nil)
         super()
-        self.scopes = [scopes] if scopes
+        @scopes = scopes
       end
 
       # Parse the given source and translate it into the seattlerb/ruby_parser
