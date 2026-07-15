@@ -1114,12 +1114,13 @@ oldbt_print(void *data, VALUE file, int lineno, VALUE name)
     FILE *fp = (FILE *)data;
 
     if (NIL_P(name)) {
-        fprintf(fp, "\tfrom %s:%d:in unknown method\n",
-                RSTRING_PTR(file), lineno);
+        fprintf(fp, "\tfrom %.*s:%d:in unknown method\n",
+                RSTRING_LENINT(file), RSTRING_PTR(file), lineno);
     }
     else {
-        fprintf(fp, "\tfrom %s:%d:in '%s'\n",
-                RSTRING_PTR(file), lineno, RSTRING_PTR(name));
+        fprintf(fp, "\tfrom %.*s:%d:in '%.*s'\n",
+                RSTRING_LENINT(file), RSTRING_PTR(file), lineno,
+                RSTRING_LENINT(name), RSTRING_PTR(name));
     }
 }
 
@@ -1148,16 +1149,20 @@ oldbt_bugreport(void *arg, VALUE file, int line, VALUE method)
     struct oldbt_bugreport_arg *p = arg;
     FILE *fp = p->fp;
     const char *filename = NIL_P(file) ? "ruby" : RSTRING_PTR(file);
+    int filename_len = NIL_P(file) ? 4 : RSTRING_LENINT(file);
     if (!p->count) {
         fprintf(fp, "-- Ruby level backtrace information "
                 "----------------------------------------\n");
         p->count = 1;
     }
     if (NIL_P(method)) {
-        fprintf(fp, "%s:%d:in unknown method\n", filename, line);
+        fprintf(fp, "%.*s:%d:in unknown method\n",
+                filename_len, filename, line);
     }
     else {
-        fprintf(fp, "%s:%d:in '%s'\n", filename, line, RSTRING_PTR(method));
+        fprintf(fp, "%.*s:%d:in '%.*s'\n",
+                filename_len, filename, line,
+                RSTRING_LENINT(method), RSTRING_PTR(method));
     }
 }
 
