@@ -785,8 +785,8 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
         rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
         rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
         if (UNLIKELY(!NIL_P(arg.unknown_keywords))) {
-            rb_raise(rb_eArgError, "unknown keywords: %s",
-                     RSTRING_PTR(rb_ary_join(arg.unknown_keywords, rb_str_new2(", "))));
+            rb_raise(rb_eArgError, "unknown keywords: %"PRIsVALUE,
+                     rb_ary_join(arg.unknown_keywords, rb_str_new2(", ")));
         }
     }
     else {
