@@ -116,6 +116,9 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     first_timeout *= 3
 
   when "debug"
+    # needs pty
+    next unless /mswin|mingw/ =~ RUBY_PLATFORM
+
     # Since debug gem requires debug.so in child processes without
     # activating the gem, we preset necessary paths in RUBYLIB
     # environment variable.
