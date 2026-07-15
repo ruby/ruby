@@ -1100,6 +1100,11 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "data", result["other"]
   end
 
+  def test_dump_crlf_string_roundtrip
+    obj = { "pem" => "line one\r\nline two\r\n" }
+    assert_equal obj, yaml_load(yaml_dump(obj))
+  end
+
   def test_load_crlf_with_sequence
     yaml = <<~YAML.gsub("\n", "\r\n")
       ---
