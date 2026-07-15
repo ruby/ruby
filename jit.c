@@ -16,6 +16,7 @@
 #include "internal/gc.h"
 #include "vm_sync.h"
 #include "internal/fixnum.h"
+#include "internal/hash.h"
 #include "internal/string.h"
 #include "internal/class.h"
 #include "internal/imemo.h"
@@ -28,7 +29,7 @@
 
 enum jit_bindgen_constants {
     // Field offsets for the RObject struct
-    ROBJECT_OFFSET_AS_HEAP_FIELDS = offsetof(struct RObject, as.heap.fields),
+    ROBJECT_OFFSET_AS_HEAP_FIELDS = offsetof(struct RObject, as.extended),
     ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
 
     // Field offset for prime classext's fields_obj from a class pointer
@@ -36,6 +37,12 @@ enum jit_bindgen_constants {
 
     // Field offset for fields_obj in T_DATA
     TDATA_OFFSET_FIELDS_OBJ = offsetof(struct RTypedData, fields_obj),
+
+    // Field offset for the RHash struct
+    RUBY_OFFSET_RHASH_IFNONE = offsetof(struct RHash, ifnone),
+
+    // Max pairs an embedded ar_table hash holds before it converts to an st_table
+    RUBY_RHASH_AR_TABLE_MAX_SIZE = RHASH_AR_TABLE_MAX_SIZE,
 
     // Field offsets for the RString struct
     RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len),
@@ -227,7 +234,8 @@ rb_optimized_call(VALUE recv, rb_execution_context_t *ec, int argc, VALUE *argv,
 {
     rb_proc_t *proc;
     GetProcPtr(recv, proc);
-    return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler);
+    return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler,
+                             rb_proc_refinements_cref(recv));
 }
 
 unsigned int

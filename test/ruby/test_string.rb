@@ -678,7 +678,7 @@ CODE
     omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     require 'objspace'
-    base_slot_size = GC.stat_heap(0, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]
+    base_slot_size = 64
     small_obj_size = (base_slot_size / 2)
     large_obj_size = base_slot_size * 2
 
@@ -1482,6 +1482,16 @@ CODE
     assert_equal("abcdX", S("abcd").insert(4, 'X'))
     assert_equal("abXcd", S("abcd").insert(-3, 'X'))
     assert_equal("abcdX", S("abcd").insert(-1, 'X'))
+    assert_equal("Xabcd", S("abcd").insert(-5, 'X'))
+    assert_equal("こんbarにちは", S("こんにちは").insert(2, 'bar'))
+
+    str = S("abcd")
+    assert_same(str, str.insert(2, 'X'))
+
+    assert_raise(IndexError) { S("abcd").insert(5, 'X') }
+    assert_raise(IndexError) { S("abcd").insert(-6, 'X') }
+    assert_raise(TypeError) { S("abcd").insert(2, 42) }
+    assert_raise(FrozenError) { S("abcd").freeze.insert(2, 'X') }
   end
 
   def test_intern

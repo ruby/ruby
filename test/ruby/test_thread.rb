@@ -847,6 +847,40 @@ class TestThread < Test::Unit::TestCase
     assert_equal(:ok, r)
   end
 
+  def test_handle_interrupt_masks_sigint
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      omit "SIGINT handling differs on Windows"
+    end
+
+    assert_in_out_err([], <<-INPUT, %w(outer false), [])
+      waiting = Thread::Queue.new
+      release = Thread::Queue.new
+      inner = false
+
+      Thread.new do
+        waiting.pop
+        Process.kill(:INT, Process.pid)
+        release.push(true)
+      end
+
+      begin
+        Thread.handle_interrupt(SignalException => :never) do
+          begin
+            waiting.push(true)
+            release.pop
+          rescue Interrupt
+            inner = true
+            raise
+          end
+        end
+      rescue Interrupt
+        puts "outer"
+      end
+
+      puts inner
+    INPUT
+  end
+
   def test_handle_interrupt_and_io
     assert_in_out_err([], <<-INPUT, %w(ok), [])
       th_waiting = true
@@ -1480,8 +1514,6 @@ q.pop
   end
 
   def test_thread_interrupt_for_killed_thread
-    pend "hang-up" if /mswin|mingw/ =~ RUBY_PLATFORM
-
     opts = { timeout: 5, timeout_error: nil }
 
     assert_normal_exit(<<-_end, '[Bug #8996]', **opts)

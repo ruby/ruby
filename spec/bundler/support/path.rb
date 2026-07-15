@@ -79,6 +79,10 @@ module Spec
       @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
+    def rubygems_test_dir
+      @rubygems_test_dir ||= source_root.join("test/rubygems")
+    end
+
     def man_dir
       @man_dir ||= lib_dir.join("bundler/man")
     end
@@ -125,6 +129,16 @@ module Spec
       else
         source_root.join("tmp")
       end
+    end
+
+    # On Windows there is no relative path between different drives, and much of
+    # the spec setup (temp home, bundled app, caches) lives under the temp dir.
+    # When the temp dir is on a different drive than the source tree, examples
+    # that compare or look up paths across the two cannot be set up correctly.
+    def tmp_and_source_on_different_drives?
+      return false unless Gem.win_platform?
+      drive = ->(path) { path.to_s[/\A[a-zA-Z]:/]&.upcase }
+      drive[tmp_root] != drive[source_root]
     end
 
     # Bump this version whenever you make a breaking change to the spec setup

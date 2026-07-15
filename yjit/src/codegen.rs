@@ -3015,20 +3015,20 @@ fn gen_get_ivar(
         }
         Some(ivar_index) => {
             let ivar_opnd = if receiver_t_object {
-                if comptime_receiver.embedded_p() {
-                   // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+                let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
 
+                // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+                if comptime_receiver.embedded_p() {
                    // Load the variable
-                   let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
                    Opnd::mem(64, recv, offs)
-               } else {
+                } else {
                    // Compile time value is *not* embedded.
 
-                   // Get a pointer to the extended table
+                   // Get the T_IMEMO/fields
                    let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
-                   // Read the ivar from the extended table
-                   Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32)
+                   // Read the ivar from the T_IMEMO/fields
+                   Opnd::mem(64, tbl_opnd, offs)
                }
             } else {
                 asm_comment!(asm, "call rb_ivar_get_at()");
@@ -3080,6 +3080,33 @@ fn gen_getinstancevariable(
     )
 }
 
+fn gen_trigger_wb(
+    asm: &mut Assembler,
+    recv: Opnd,
+    write_val: Opnd)
+{
+    asm.spill_regs(); // for ccall (unconditionally spill them for RegMappings consistency)
+    let skip_wb = asm.new_label("skip_wb");
+    // If the value we're writing is an immediate, we don't need to WB
+    asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
+    asm.jnz(skip_wb);
+
+    // If the value we're writing is nil or false, we don't need to WB
+    asm.cmp(write_val, Qnil.into());
+    asm.jbe(skip_wb);
+
+    asm_comment!(asm, "write barrier");
+    asm.ccall(
+        rb_gc_writebarrier as *const u8,
+        vec![
+            recv,
+            write_val,
+        ]
+    );
+
+    asm.write_label(skip_wb);
+}
+
 // Generate an IV write.
 // This function doesn't deal with writing the shape, or expanding an object
 // to use an IV buffer if necessary.  That is the callers responsibility
@@ -3089,30 +3116,44 @@ fn gen_write_iv(
     recv: Opnd,
     ivar_index: usize,
     set_value: Opnd,
-    extension_needed: bool)
+    extension_needed: bool,
+    skip_wb: bool)
 {
     // Compile time self is embedded and the ivar index lands within the object
     let embed_test_result = comptime_receiver.embedded_p() && !extension_needed;
 
+    let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
+
     if embed_test_result {
         // Find the IV offset
-        let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
         let ivar_opnd = Opnd::mem(64, recv, offs);
 
         // Write the IV
         asm_comment!(asm, "write IV");
         asm.mov(ivar_opnd, set_value);
+
+        // If we know the stack value is an immediate, there's no need to
+        // generate WB code.
+        if !skip_wb {
+            gen_trigger_wb(asm, recv, set_value);
+        }
     } else {
         // Compile time value is *not* embedded.
 
-        // Get a pointer to the extended table
+        // Get a pointer to the extended T_IMEMO/fields
         let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
         // Write the ivar in to the extended table
-        let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
+        let ivar_opnd = Opnd::mem(64, tbl_opnd, offs);
 
         asm_comment!(asm, "write IV");
         asm.mov(ivar_opnd, set_value);
+
+        // If we know the stack value is an immediate, there's no need to
+        // generate WB code.
+        if !skip_wb {
+            gen_trigger_wb(asm, tbl_opnd, set_value);
+        }
     }
 }
 
@@ -3183,7 +3224,7 @@ fn gen_set_ivar(
 
     // The current shape doesn't contain this iv, we need to transition to another shape.
     let mut new_shape_complex = false;
-    let new_shape = if !shape_complex && receiver_t_object && ivar_index.is_none() {
+    if !shape_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape_id = comptime_receiver.shape_id_of();
         // We don't need to check about imemo_fields here because we're definitely looking at a T_OBJECT.
         let klass = unsafe { rb_obj_class(comptime_receiver) };
@@ -3218,7 +3259,7 @@ fn gen_set_ivar(
 
     // If the receiver isn't a T_OBJECT, then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || shape_complex || new_shape_complex || megamorphic {
+    if !receiver_t_object || shape_complex || new_shape_complex || megamorphic || ivar_index.is_none() {
         // The function could raise FrozenError.
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_non_leaf_call(jit, asm);
@@ -3252,7 +3293,7 @@ fn gen_set_ivar(
         }
     } else {
         // Get the receiver
-        let mut recv = asm.load(if let StackOpnd(index) = recv_opnd {
+        let recv = asm.load(if let StackOpnd(index) = recv_opnd {
             asm.stack_opnd(index as i32)
         } else {
             Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
@@ -3278,44 +3319,8 @@ fn gen_set_ivar(
         let write_val;
 
         match ivar_index {
-            // If we don't have an instance variable index, then we need to
-            // transition out of the current shape.
             None => {
-                let (new_shape_id, needs_extension, ivar_index) = new_shape.unwrap();
-                if let Some((current_capacity, new_capacity)) = needs_extension {
-                    // Generate the C call so that runtime code will increase
-                    // the capacity and set the buffer.
-                    asm_comment!(asm, "call rb_ensure_iv_list_size");
-
-                    // It allocates so can trigger GC, which takes the VM lock
-                    // so could yield to a different ractor.
-                    jit_prepare_call_with_gc(jit, asm);
-                    asm.ccall(rb_ensure_iv_list_size as *const u8,
-                              vec![
-                                  recv,
-                                  Opnd::UImm(current_capacity.into()),
-                                  Opnd::UImm(new_capacity.into())
-                              ]
-                    );
-
-                    // Load the receiver again after the function call
-                    recv = asm.load(if let StackOpnd(index) = recv_opnd {
-                        asm.stack_opnd(index as i32)
-                    } else {
-                        Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
-                    });
-                }
-
-                write_val = asm.stack_opnd(0);
-                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, needs_extension.is_some());
-
-                asm_comment!(asm, "write shape");
-
-                let shape_id_offset = unsafe { rb_shape_id_offset() };
-                let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
-
-                // Store the new shape
-                asm.store(shape_opnd, Opnd::UImm(new_shape_id as u64));
+                panic!("ivar_index None should have been delegated to rb_vm_set_ivar_id")
             },
 
             Some(ivar_index) => {
@@ -3325,33 +3330,8 @@ fn gen_set_ivar(
                 // made the transition already, then there's no reason to
                 // update the shape on the object.  Just set the IV.
                 write_val = asm.stack_opnd(0);
-                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false);
+                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false, stack_type.is_imm());
             },
-        }
-
-        // If we know the stack value is an immediate, there's no need to
-        // generate WB code.
-        if !stack_type.is_imm() {
-            asm.spill_regs(); // for ccall (unconditionally spill them for RegMappings consistency)
-            let skip_wb = asm.new_label("skip_wb");
-            // If the value we're writing is an immediate, we don't need to WB
-            asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
-            asm.jnz(skip_wb);
-
-            // If the value we're writing is nil or false, we don't need to WB
-            asm.cmp(write_val, Qnil.into());
-            asm.jbe(skip_wb);
-
-            asm_comment!(asm, "write barrier");
-            asm.ccall(
-                rb_gc_writebarrier as *const u8,
-                vec![
-                    recv,
-                    write_val,
-                ]
-            );
-
-            asm.write_label(skip_wb);
         }
     }
     let write_val = asm.stack_pop(1); // Keep write_val on stack during ccall for GC
@@ -7486,7 +7466,7 @@ fn gen_send_bmethod(
     }
 
     let frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
-    perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None) }
+    perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None, false) }
 }
 
 /// The kind of a value an ISEQ returns
@@ -7582,6 +7562,10 @@ fn gen_send_iseq(
     flags: u32,
     argc: i32,
     captured_opnd: Option<Opnd>,
+    // The block param proxy receiver is on the stack below the args. self/EP come from
+    // the captured block (as for invokeblock); the proxy is shifted off after the
+    // overflow check so the rest of the frame setup is a plain invokeblock.
+    proxy_recv: bool,
 ) -> Option<CodegenStatus> {
     // Argument count. We will change this as we gather values from
     // sources to satisfy the callee's parameters. To help make sense
@@ -7747,6 +7731,13 @@ fn gen_send_iseq(
                 && !get_iseq_flags_ambiguous_param0(iseq)
         };
     if block_arg0_splat {
+        // The block param proxy removes its receiver from the stack only after the
+        // overflow check (see proxy_recv below). arg0 auto-splat needs a side exit past
+        // that point, which can't reconstruct the proxy at the opt_send_without_block PC.
+        if proxy_recv {
+            gen_counter_incr(jit, asm, Counter::send_bpp_arg0_splat);
+            return None;
+        }
         // If block_arg0_splat, we still need side exits after splat, but
         // the splat modifies the stack which breaks side exits. So bail out.
         if splat_call {
@@ -7876,7 +7867,7 @@ fn gen_send_iseq(
             }
             IseqReturn::Value(value) => {
                 // Pop receiver and arguments
-                asm.stack_pop(argc as usize + if captured_opnd.is_some() { 0 } else { 1 });
+                asm.stack_pop(argc as usize + if captured_opnd.is_some() && !proxy_recv { 0 } else { 1 });
 
                 // Push the return value
                 let stack_ret = asm.stack_push(Type::from(value));
@@ -7902,6 +7893,11 @@ fn gen_send_iseq(
     let stack_limit = asm.lea(asm.ctx.sp_opnd(locals_offs));
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
+
+    // Remove the block param proxy receiver from the stack, mirroring vm_invoke_block_opt_call
+    if proxy_recv {
+        handle_opt_send_shift_stack(asm, argc);
+    }
 
     if iseq_has_rest && splat_call {
         // Insert length guard for a call to copy_splat_args_for_rest_callee()
@@ -9155,9 +9151,11 @@ fn gen_send_general(
 
     // Don't compile calls through singleton classes to avoid retaining the receiver.
     // Make an exception for class methods since classes tend to be retained anyways.
-    // Also compile calls on top_self to help tests.
+    // Also compile calls on top_self to help tests. The block param proxy is an
+    // immortal global root, so retaining it is a non-issue.
     if VALUE(0) != unsafe { FL_TEST(comptime_recv_klass, VALUE(RUBY_FL_SINGLETON as usize)) }
         && comptime_recv != unsafe { rb_vm_top_self() }
+        && comptime_recv != unsafe { rb_block_param_proxy }
         && !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_CLASS) }
         && !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_MODULE) } {
         gen_counter_incr(jit, asm, Counter::send_singleton_class);
@@ -9244,7 +9242,7 @@ fn gen_send_general(
             VM_METHOD_TYPE_ISEQ => {
                 let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                 let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-                return perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, None, cme, block, flags, argc, None) };
+                return perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, None, cme, block, flags, argc, None, false) };
             }
             VM_METHOD_TYPE_CFUNC => {
                 return perf_call! { gen_send_cfunc(
@@ -9489,8 +9487,7 @@ fn gen_send_general(
                         return jump_to_next_insn(jit, asm);
                     }
                     OPTIMIZED_METHOD_TYPE_BLOCK_CALL => {
-                        gen_counter_incr(jit, asm, Counter::send_optimized_method_block_call);
-                        return None;
+                        return gen_send_block_param_proxy(jit, asm, ci, block, flags, argc);
                     }
                     OPTIMIZED_METHOD_TYPE_STRUCT_AREF => {
                         if flags & VM_CALL_ARGS_SPLAT != 0 {
@@ -9770,7 +9767,7 @@ fn gen_invokeblock_specialized(
             Counter::guard_invokeblock_iseq_block_changed,
         );
 
-        perf_call! { gen_send_iseq(jit, asm, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd)) }
+        perf_call! { gen_send_iseq(jit, asm, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd), false) }
     } else if comptime_handler.0 & 0x3 == 0x3 { // VM_BH_IFUNC_P
         // We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
         if flags & VM_CALL_ARGS_SPLAT != 0 {
@@ -9829,6 +9826,87 @@ fn gen_invokeblock_specialized(
         gen_counter_incr(jit, asm, Counter::invokeblock_proc);
         None
     }
+}
+
+// blk.call where blk is the block param proxy. Inline the block invocation the way invokeblock does
+// instead of dispatching through the proxy's singleton method. The receiver's singleton class was already
+// guarded by the caller, which is enough to prove the receiver is the (unique) block param proxy.
+fn gen_send_block_param_proxy(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ci: *const rb_callinfo,
+    block: Option<BlockHandler>,
+    flags: u32,
+    argc: i32,
+) -> Option<CodegenStatus> {
+    // Anything fancier than a plain call falls back to dynamic dispatch, which
+    // materializes a Proc and dispatches normally (also handling redefinition).
+    if block.is_some() {
+        gen_counter_incr(jit, asm, Counter::send_bpp_not_simple);
+        return None;
+    }
+    if flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_OPT_SEND) != 0 {
+        gen_counter_incr(jit, asm, Counter::send_bpp_not_simple);
+        return None;
+    }
+
+    // Fall back to dynamic dispatch if this callsite is megamorphic
+    if asm.ctx.get_chain_depth() >= SEND_MAX_DEPTH {
+        gen_counter_incr(jit, asm, Counter::send_bpp_megamorphic);
+        return None;
+    }
+
+    // The block handler lives in the local EP: the same source both the interpreter's
+    // vm_call_opt_block_call and the getblockparamproxy instruction read from.
+    let cfp = jit.get_cfp();
+    let lep = unsafe { rb_vm_ep_local_ep(get_cfp_ep(cfp)) };
+    let comptime_handler = unsafe { *lep.offset(VM_ENV_DATA_INDEX_SPECVAL as isize) };
+
+    // Only specialize an ISEQ block; other block handler types fall back to dynamic dispatch.
+    if comptime_handler.0 & 0x3 != 0x1 { // VM_BH_ISEQ_BLOCK_P
+        gen_counter_incr(jit, asm, Counter::send_bpp_not_iseq_block);
+        return None;
+    }
+
+    if !assume_bop_not_redefined(jit, asm, PROC_REDEFINED_OP_FLAG, BOP_CALL) {
+        return None;
+    }
+
+    gen_counter_incr(jit, asm, Counter::send_bpp_dispatch);
+
+    asm_comment!(asm, "get local EP");
+    let ep_opnd = gen_get_lep(jit, asm);
+    let block_handler_opnd = asm.load(
+        Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
+    );
+
+    asm_comment!(asm, "guard block_handler type");
+    let tag_opnd = asm.and(block_handler_opnd, 0x3.into());
+    asm.cmp(tag_opnd, 0x1.into()); // VM_BH_ISEQ_BLOCK_P
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        SEND_MAX_DEPTH,
+        Counter::guard_invokeblock_tag_changed,
+    );
+
+    let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
+    let comptime_iseq = unsafe { *comptime_captured.code.iseq.as_ref() };
+
+    asm_comment!(asm, "guard known ISEQ");
+    let captured_opnd = asm.and(block_handler_opnd, Opnd::Imm(!0x3));
+    let iseq_opnd = asm.load(Opnd::mem(64, captured_opnd, SIZEOF_VALUE_I32 * 2));
+    asm.cmp(iseq_opnd, VALUE::from(comptime_iseq).into());
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        SEND_MAX_DEPTH,
+        Counter::guard_invokeblock_iseq_block_changed,
+    );
+
+    perf_call! { gen_send_iseq(jit, asm, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd), true) }
 }
 
 fn gen_invokesuper(
@@ -10000,7 +10078,7 @@ fn gen_invokesuper_specialized(
         VM_METHOD_TYPE_ISEQ => {
             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
             let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-            perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None) }
+            perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None, false) }
         }
         VM_METHOD_TYPE_CFUNC => {
             perf_call! { gen_send_cfunc(jit, asm, ci, cme, Some(block), None, ci_flags, argc) }
@@ -11331,9 +11409,8 @@ mod tests {
         asm.stack_push(Type::Flonum);
         asm.stack_push(Type::CString);
 
-        let mut value_array: [u64; 2] = [0, 3];
-        let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
-        jit.pc = pc;
+        let mut fake_encoded_iseq: [VALUE; 2] = [VALUE(0), VALUE(3)];
+        jit.pc = &mut fake_encoded_iseq[0];
 
         let mut status = gen_opt_reverse(&mut jit, &mut asm);
 
@@ -11344,8 +11421,9 @@ mod tests {
         assert_eq!(Type::Fixnum, asm.ctx.get_opnd_type(StackOpnd(0)));
 
         // Try again with an even number of elements.
+        fake_encoded_iseq[1] = VALUE(4);
+        let _ = fake_encoded_iseq;
         asm.stack_push(Type::Nil);
-        value_array[1] = 4;
         status = gen_opt_reverse(&mut jit, &mut asm);
 
         assert_eq!(status, Some(KeepCompiling));

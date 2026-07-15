@@ -24,6 +24,7 @@
 #include "internal/missing.h"
 #include "internal/object.h"
 #include "internal/proc.h"
+#include "internal/ractor.h"
 #include "internal/re.h"
 #include "internal/ruby_parser.h"
 #include "internal/st.h"
@@ -359,8 +360,8 @@ ref_delete_symkey(VALUE key, VALUE value, VALUE unused)
     return SYMBOL_P(key) ? ST_DELETE : ST_CONTINUE;
 }
 
-static rb_cref_t *
-vm_cref_dup(const rb_cref_t *cref)
+rb_cref_t *
+rb_vm_cref_dup(const rb_cref_t *cref)
 {
     const rb_scope_visibility_t *visi = CREF_SCOPE_VISI(cref);
     rb_cref_t *next_cref = CREF_NEXT(cref), *new_cref;
@@ -378,7 +379,6 @@ vm_cref_dup(const rb_cref_t *cref)
 
     return new_cref;
 }
-
 
 rb_cref_t *
 rb_vm_cref_dup_without_refinements(const rb_cref_t *cref)
@@ -423,7 +423,9 @@ vm_cref_dump(const char *mesg, const rb_cref_t *cref)
     ruby_debug_printf("vm_cref_dump: %s (%p)\n", mesg, (void *)cref);
 
     while (cref) {
-        ruby_debug_printf("= cref| klass: %s\n", RSTRING_PTR(rb_class_path(CREF_CLASS(cref))));
+        VALUE path = rb_class_path(CREF_CLASS(cref));
+        ruby_debug_printf("= cref| klass: %.*s\n",
+                          RSTRING_LENINT(path), RSTRING_PTR(path));
         cref = CREF_NEXT(cref);
     }
 }
@@ -453,7 +455,7 @@ static VALUE vm_make_env_object(const rb_execution_context_t *ec, rb_control_fra
 static VALUE vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
                                   int argc, const VALUE *argv, int kw_splat, VALUE block_handler,
                                   const rb_callable_method_entry_t *me);
-static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
+static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler, const rb_cref_t *cref);
 
 #if USE_YJIT
 // Counter to serve as a proxy for execution time, total number of calls
@@ -1338,7 +1340,7 @@ proc_create(VALUE klass, const struct rb_block *block, int8_t is_from_method, in
 }
 
 VALUE
-rb_proc_dup(VALUE self)
+rb_proc_dup_0(VALUE self)
 {
     VALUE procval;
     rb_proc_t *src;
@@ -1354,8 +1356,42 @@ rb_proc_dup(VALUE self)
         break;
     }
 
+    if (src->is_refined) {
+        rb_proc_t *dst;
+        GetProcPtr(procval, dst);
+        dst->is_refined = 1;
+    }
+
     if (RB_OBJ_SHAREABLE_P(self)) RB_OBJ_SET_SHAREABLE(procval);
     RB_GC_GUARD(self); /* for: body = rb_proc_dup(body) */
+    return procval;
+}
+
+VALUE
+rb_proc_dup(VALUE self)
+{
+    VALUE procval = rb_proc_dup_0(self);
+    const rb_cref_t *cref = rb_proc_refinements_cref(self);
+    if (cref) rb_proc_set_refinements_cref(procval, cref);
+    return procval;
+}
+
+/* Proc#refined: build a Proc that runs `iseq` (a copy of self's block iseq)
+ * with `cref` as its refinement cref, sharing self's environment. */
+VALUE
+rb_proc_dup_with_iseq_and_cref(VALUE self, const rb_iseq_t *iseq, const rb_cref_t *cref)
+{
+    rb_proc_t *src;
+    GetProcPtr(self, src);
+    VM_ASSERT(vm_block_type(&src->block) == block_type_iseq);
+
+    struct rb_block block = src->block;
+    block.as.captured.code.iseq = iseq;
+
+    VALUE procval = proc_create(rb_obj_class(self), &block, src->is_from_method, src->is_lambda);
+    rb_proc_set_refinements_cref(procval, cref);
+
+    RB_GC_GUARD(self);
     return procval;
 }
 
@@ -1841,11 +1877,17 @@ invoke_block_from_c_bh(rb_execution_context_t *ec, VALUE block_handler,
         return vm_yield_with_symbol(ec, VM_BH_TO_SYMBOL(block_handler),
                                     argc, argv, kw_splat, passed_block_handler);
       case block_handler_type_proc:
-        if (force_blockarg == FALSE) {
-            is_lambda = block_proc_is_lambda(VM_BH_TO_PROC(block_handler));
+        {
+            VALUE procval = VM_BH_TO_PROC(block_handler);
+            rb_proc_t *po;
+            GetProcPtr(procval, po);
+            if (po->is_refined) cref = rb_proc_refinements_cref(procval);
+            if (force_blockarg == FALSE) {
+                is_lambda = po->is_lambda;
+            }
+            block_handler = vm_block_to_block_handler(&po->block);
+            goto again;
         }
-        block_handler = vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler));
-        goto again;
     }
     VM_UNREACHABLE(invoke_block_from_c_splattable);
     return Qundef;
@@ -1896,12 +1938,14 @@ ALWAYS_INLINE(static VALUE
               invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
                                        VALUE self, int argc, const VALUE *argv,
                                        int kw_splat, VALUE passed_block_handler, int is_lambda,
+                                       const rb_cref_t *cref,
                                        const rb_callable_method_entry_t *me));
 
 static inline VALUE
 invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
                          VALUE self, int argc, const VALUE *argv,
                          int kw_splat, VALUE passed_block_handler, int is_lambda,
+                         const rb_cref_t *cref,
                          const rb_callable_method_entry_t *me)
 {
     const struct rb_block *block = &proc->block;
@@ -1909,7 +1953,7 @@ invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
   again:
     switch (vm_block_type(block)) {
       case block_type_iseq:
-        return invoke_iseq_block_from_c(ec, &block->as.captured, self, argc, argv, kw_splat, passed_block_handler, NULL, is_lambda, me);
+        return invoke_iseq_block_from_c(ec, &block->as.captured, self, argc, argv, kw_splat, passed_block_handler, cref, is_lambda, me);
       case block_type_ifunc:
         if (kw_splat == 1) {
             VALUE keyword_hash = argv[argc-1];
@@ -1937,21 +1981,24 @@ invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
 
 static VALUE
 vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
-               int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler)
+               int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler,
+               const rb_cref_t *cref)
 {
-    return invoke_block_from_c_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler, proc->is_lambda, NULL);
+    return invoke_block_from_c_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler, proc->is_lambda, cref, NULL);
 }
 
 static VALUE
 vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
                      int argc, const VALUE *argv, int kw_splat, VALUE block_handler, const rb_callable_method_entry_t *me)
 {
-    return invoke_block_from_c_proc(ec, proc, self, argc, argv, kw_splat, block_handler, TRUE, me);
+    /* bmethod procs never carry a refinement cref (Proc#refined rejects them) */
+    return invoke_block_from_c_proc(ec, proc, self, argc, argv, kw_splat, block_handler, TRUE, NULL, me);
 }
 
 VALUE
 rb_vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc,
-                  int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler)
+                  int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler,
+                  const rb_cref_t *cref)
 {
     VALUE self = vm_block_self(&proc->block);
     vm_block_handler_verify(passed_block_handler);
@@ -1960,13 +2007,14 @@ rb_vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc,
         return vm_invoke_bmethod(ec, proc, self, argc, argv, kw_splat, passed_block_handler, NULL);
     }
     else {
-        return vm_invoke_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler);
+        return vm_invoke_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler, cref);
     }
 }
 
 VALUE
 rb_vm_invoke_proc_with_self(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
-                            int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler)
+                            int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler,
+                            const rb_cref_t *cref)
 {
     vm_block_handler_verify(passed_block_handler);
 
@@ -1974,7 +2022,7 @@ rb_vm_invoke_proc_with_self(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
         return vm_invoke_bmethod(ec, proc, self, argc, argv, kw_splat, passed_block_handler, NULL);
     }
     else {
-        return vm_invoke_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler);
+        return vm_invoke_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler, cref);
     }
 }
 
@@ -2292,7 +2340,7 @@ short ruby_vm_redefined_flag[BOP_LAST_];
 static st_table *vm_opt_method_def_table = 0;
 static st_table *vm_opt_mid_table = 0;
 
-void
+static void
 rb_free_vm_opt_tables(void)
 {
     st_free_table(vm_opt_method_def_table);
@@ -2462,6 +2510,7 @@ vm_init_redefined_flag(void)
     OP(Min, MIN), (C(Array));
     OP(Hash, HASH), (C(Array));
     OP(Call, CALL), (C(Proc));
+    OP(Yield, YIELD), (C(Proc));
     OP(And, AND), (C(Integer));
     OP(Or, OR), (C(Integer));
     OP(NilP, NIL_P), (C(NilClass));
@@ -2502,6 +2551,7 @@ vm_redefinition_bop_for_id(ID mid)
     OP(Min, MIN);
     OP(Hash, HASH);
     OP(Call, CALL);
+    OP(Yield, YIELD);
     OP(And, AND);
     OP(Or, OR);
     OP(NilP, NIL_P);
@@ -2856,17 +2906,22 @@ rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t 
             // jit_return, so this restores older ZJIT frames from stack maps.
             int32_t stack_size = (int32_t)jit_frame->stack_size;
             if (stack_size > 0) {
-                VALUE *stack = cfp->sp - stack_size;
+                VALUE *stack = cfp->sp;
                 for (int32_t i = 0; i < stack_size; i++) {
                     VALUE entry = jit_frame->stack[i];
                     if (ZJIT_STACK_MAP_VREG_P(entry)) {
                         // Decode a native stack slot offset generated by ZJIT's backend.
                         // It's an offset from NATIVE_BASE_PTR, which is copied into
                         // cfp->jit_return, to the encoded stack slot.
-                        stack[i] = ((VALUE *)cfp->jit_return)[-(ssize_t)ZJIT_STACK_MAP_VREG_INDEX(entry)];
+                        stack--;
+                        *stack = ((VALUE *)cfp->jit_return)[-(ssize_t)ZJIT_STACK_MAP_VREG_INDEX(entry)];
+                    }
+                    else if (ZJIT_STACK_MAP_SKIP_P(entry)) {
+                        stack -= ZJIT_STACK_MAP_SKIP_SIZE(entry);
                     }
                     else {
-                        stack[i] = entry;
+                        stack--;
+                        *stack = entry;
                     }
                 }
             }
@@ -3282,7 +3337,6 @@ rb_vm_update_references(void *ptr)
         rb_vm_t *vm = ptr;
 
         vm->self = rb_gc_location(vm->self);
-        vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
         vm->orig_progname = rb_gc_location(vm->orig_progname);
         vm->cc_refinement_set = rb_gc_location(vm->cc_refinement_set);
 
@@ -3337,7 +3391,6 @@ vm_mark_negative_cme(VALUE val, void *dmy)
     return ID_TABLE_CONTINUE;
 }
 
-void rb_thread_sched_mark_zombies(rb_vm_t *vm);
 
 void
 rb_vm_mark(void *ptr)
@@ -3369,7 +3422,14 @@ rb_vm_mark(void *ptr)
             rb_box_entry_mark(vm->main_box);
         }
 
-        rb_gc_mark_movable(vm->mark_object_ary);
+        /* The main Ractor's registered mark objects (rb_gc_register_mark_object)
+         * are process-lifetime pins.  Mark them here as well as from ractor_mark
+         * so they stay live before the main Ractor joins vm->ractor.set, e.g.
+         * during early boot under GC.stress. */
+        if (vm->ractor.main_ractor && vm->ractor.main_ractor->mark_object_ary) {
+            rb_gc_mark_movable(vm->ractor.main_ractor->mark_object_ary);
+        }
+
         rb_gc_mark_movable(vm->orig_progname);
         rb_gc_mark_movable(vm->coverages);
         rb_gc_mark_movable(vm->me2counter);
@@ -3393,8 +3453,6 @@ rb_vm_mark(void *ptr)
                 }
             }
         }
-
-        rb_thread_sched_mark_zombies(vm);
     }
 
     RUBY_MARK_LEAVE("vm");
@@ -3416,6 +3474,14 @@ void rb_objspace_free_objects(void *objspace);
 int
 ruby_vm_destruct(rb_vm_t *vm)
 {
+    {
+        // wait for native threads still winding down a dead coroutine: their
+        // reclaim frees through the objspace this function is about to
+        // destroy (see coroutine_thread_terminated)
+        void rb_thread_sched_wait_winding(rb_vm_t *vm);
+        rb_thread_sched_wait_winding(vm);
+    }
+
     RUBY_FREE_ENTER("vm");
     ruby_vm_during_cleanup = true;
 
@@ -3876,6 +3942,9 @@ thread_free(void *ptr)
     RUBY_FREE_ENTER("thread");
 
     rb_threadptr_sched_free(th);
+    // destroyed here rather than during teardown: nothing can interrupt a
+    // thread that is unreachable and off its Ractor's living set
+    rb_native_mutex_destroy(&th->interrupt_lock);
 
     if (th->locking_mutex != Qfalse) {
         rb_bug("thread_free: locking_mutex must be NULL (%p:%p)", (void *)th, (void *)th->locking_mutex);
@@ -3991,6 +4060,10 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->self = self;
 
     ccan_list_head_init(&th->interrupt_exec_tasks);
+    // initialized here (not at thread creation) so that every Thread object
+    // -- including allocated-but-never-started ones -- owns a valid mutex:
+    // thread_free destroys it unconditionally
+    rb_native_mutex_initialize(&th->interrupt_lock);
 
     rb_threadptr_root_fiber_setup(th);
 
@@ -4096,6 +4169,7 @@ m_core_undef_method(VALUE self, VALUE cbase, VALUE sym)
 static VALUE
 m_core_set_postexe(VALUE self)
 {
+    rb_ractor_ensure_main_ractor("can not use END{} in non-main Ractors");
     rb_set_end_proc(rb_call_end_proc, rb_block_proc());
     return Qnil;
 }
@@ -4621,8 +4695,11 @@ Init_VM(void)
     vm_init_redefined_flag();
 
     rb_block_param_proxy = rb_obj_alloc(rb_cObject);
-    rb_add_method_optimized(rb_singleton_class(rb_block_param_proxy), idCall,
-                            OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
+    VALUE proxy_singleton = rb_singleton_class(rb_block_param_proxy);
+    rb_add_method_optimized(proxy_singleton, idCall,  OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
+    rb_add_method_optimized(proxy_singleton, idAREF,  OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
+    rb_add_method_optimized(proxy_singleton, idYield, OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
+    rb_add_method_optimized(proxy_singleton, idEqq,   OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
     rb_obj_freeze(rb_block_param_proxy);
     rb_vm_register_global_object(rb_block_param_proxy);
 
@@ -4800,13 +4877,35 @@ rb_vm_register_global_object(VALUE obj)
         break;
     }
     RB_VM_LOCKING() {
-        VALUE list = GET_VM()->mark_object_ary;
+        rb_ractor_t *cr = GET_RACTOR();
+        if (!cr->mark_object_ary) cr->mark_object_ary = pin_array_list_new(Qnil);
+        VALUE list = cr->mark_object_ary;
         VALUE head = pin_array_list_append(list, obj);
         if (head != list) {
-            GET_VM()->mark_object_ary = head;
+            cr->mark_object_ary = head;
         }
         RB_GC_GUARD(obj);
     }
+}
+
+/* Hand src's registered mark objects to dst (used when a Ractor terminates:
+ * these are process-lifetime pins, so the main Ractor keeps them alive). */
+void
+rb_vm_ractor_migrate_mark_objects(rb_ractor_t *dst, rb_ractor_t *src)
+{
+    ASSERT_vm_locking();
+    VALUE list = src->mark_object_ary;
+    while (!NIL_P(list) && list) {
+        struct pin_array_list *array_list;
+        TypedData_Get_Struct(list, struct pin_array_list, &pin_array_list_type, array_list);
+        for (long i = 0; i < array_list->len; i++) {
+            if (!dst->mark_object_ary) dst->mark_object_ary = pin_array_list_new(Qnil);
+            VALUE head = pin_array_list_append(dst->mark_object_ary, array_list->array[i]);
+            if (head != dst->mark_object_ary) dst->mark_object_ary = head;
+        }
+        list = array_list->next;
+    }
+    src->mark_object_ary = 0;
 }
 
 VALUE rb_cc_refinement_set_create(void);
@@ -4816,8 +4915,8 @@ Init_vm_objects(void)
 {
     rb_vm_t *vm = GET_VM();
 
-    /* initialize mark object array, hash */
-    vm->mark_object_ary = pin_array_list_new(Qnil);
+    /* mark object arrays are per-Ractor (rb_ractor_t.mark_object_ary),
+     * lazily created on first rb_gc_register_mark_object */
     st_init_existing_table_with_size(&vm->ci_table, &vm_ci_hashtype, 0);
     vm->cc_refinement_set = rb_cc_refinement_set_create();
 }
@@ -5142,15 +5241,6 @@ usage_analysis_register_clear(VALUE self)
     return usage_analysis_clear(self, usage_hash);
 }
 
-#else
-
-MAYBE_UNUSED(static void (*ruby_vm_collect_usage_func_insn)(int insn)) = 0;
-MAYBE_UNUSED(static void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op)) = 0;
-MAYBE_UNUSED(static void (*ruby_vm_collect_usage_func_register)(int reg, int isset)) = 0;
-
-#endif
-
-#if VM_COLLECT_USAGE_DETAILS
 /* @param insn instruction number */
 static void
 vm_collect_usage_insn(int insn)

@@ -34,6 +34,21 @@ platform_is :windows, :darwin, :freebsd, :netbsd, :linux do
     rescue NotImplementedError => e
       e.message.should.start_with?(*not_implemented_messages)
     end
+
+    platform_is :linux do
+      guard -> { File.directory?('/proc') } do
+        it "raises NotImplementedError for a filesystem that does not support birthtime" do
+          # check if birthtime works on a regular file first
+          begin
+            File.birthtime(__FILE__)
+          rescue NotImplementedError
+            skip
+          end
+
+          -> { File.birthtime('/proc') }.should.raise(NotImplementedError, "birthtime is unimplemented on this filesystem")
+        end
+      end
+    end
   end
 
   describe "File#birthtime" do

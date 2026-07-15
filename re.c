@@ -32,12 +32,21 @@
 #include "ruby/util.h"
 #include "ractor_core.h"
 
+struct RRegexp_and_re_pattern_buffer {
+    struct RRegexp re;
+    struct re_pattern_buffer pattern; /* a.k.a. OnigRegexType, defined in onigmo.h */
+};
+
 /* Flags of RRegexp
  *
  * 4:     KCODE_FIXED
  *            The regexp has "fixed encoding", meaning it can't be match against any ASCII-compatible string.
+ * 5:     RREGEXP_INITIALIZED
+ *            The regexp has been fully initialized and can be used.
  * 6:     REG_ENCODING_NONE
  *            The regexp has no encoding. Means the `n` modifier was used.
+ * 10-16: ENCODING
+ *            Stores the encoding of the regexp.
  */
 
 #define KCODE_FIXED FL_USER4
@@ -370,10 +379,16 @@ rb_char_to_option_kcode(int c, int *option, int *kcode)
     return 1;
 }
 
+static bool
+reg_initialized_p(VALUE re)
+{
+    return FL_TEST_RAW(re, RREGEXP_INITIALIZED) && RREGEXP_SRC(re) && RREGEXP_SRC_PTR(re);
+}
+
 static void
 rb_reg_check(VALUE re)
 {
-    if (!RREGEXP_PTR(re) || !RREGEXP_SRC(re) || !RREGEXP_SRC_PTR(re)) {
+    if (!reg_initialized_p(re)) {
         rb_raise(rb_eTypeError, "uninitialized Regexp");
     }
 }
@@ -541,7 +556,7 @@ rb_reg_source(VALUE re)
 static VALUE
 rb_reg_inspect(VALUE re)
 {
-    if (!RREGEXP_PTR(re) || !RREGEXP_SRC(re) || !RREGEXP_SRC_PTR(re)) {
+    if (!reg_initialized_p(re)) {
         return rb_any_to_s(re);
     }
     return rb_reg_desc(re);
@@ -884,32 +899,29 @@ rb_reg_named_captures(VALUE re)
 }
 
 static int
-onig_new_with_source(regex_t** reg, const UChar* pattern, const UChar* pattern_end,
+onig_new_with_source(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
                      OnigOptionType option, OnigEncoding enc, const OnigSyntaxType* syntax,
                      OnigErrorInfo* einfo, const char *sourcefile, int sourceline)
 {
     int r;
 
-    *reg = (regex_t* )malloc(sizeof(regex_t));
-    if (IS_NULL(*reg)) return ONIGERR_MEMORY;
+    if (IS_NULL(reg)) return ONIGERR_MEMORY;
 
-    r = onig_reg_init(*reg, option, ONIGENC_CASE_FOLD_DEFAULT, enc, syntax);
+    r = onig_reg_init(reg, option, ONIGENC_CASE_FOLD_DEFAULT, enc, syntax);
     if (r) goto err;
 
-    r = onig_compile_ruby(*reg, pattern, pattern_end, einfo, sourcefile, sourceline);
+    r = onig_compile_ruby(reg, pattern, pattern_end, einfo, sourcefile, sourceline);
     if (r) {
       err:
-        onig_free(*reg);
-        *reg = NULL;
+        onig_free_body(reg);
     }
     return r;
 }
 
-static Regexp*
-make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_buffer err,
+static bool
+make_regexp(Regexp *rp, const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_buffer err,
         const char *sourcefile, int sourceline)
 {
-    Regexp *rp;
     int r;
     OnigErrorInfo einfo;
 
@@ -920,13 +932,13 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
        from that.
     */
 
-    r = onig_new_with_source(&rp, (UChar*)s, (UChar*)(s + len), flags,
+    r = onig_new_with_source(rp, (UChar*)s, (UChar*)(s + len), flags,
                  enc, OnigDefaultSyntax, &einfo, sourcefile, sourceline);
     if (r) {
         onig_error_code_to_str((UChar*)err, r, &einfo);
-        return 0;
+        return false;
     }
-    return rp;
+    return true;
 }
 
 
@@ -2558,7 +2570,7 @@ match_named_captures(int argc, VALUE *argv, VALUE match)
     hash = rb_hash_new();
     struct named_captures_data data = { hash, match, symbolize_names };
 
-    onig_foreach_name(RREGEXP(RMATCH(match)->regexp)->ptr, match_named_captures_iter, &data);
+    onig_foreach_name(RREGEXP_PTR(RMATCH(match)->regexp), match_named_captures_iter, &data);
 
     return hash;
 }
@@ -3395,7 +3407,7 @@ static void
 rb_reg_initialize_check(VALUE obj)
 {
     rb_check_frozen(obj);
-    if (RREGEXP_PTR(obj)) {
+    if (FL_TEST_RAW(obj, RREGEXP_INITIALIZED)) {
         rb_raise(rb_eTypeError, "already initialized regexp");
     }
 }
@@ -3444,10 +3456,12 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
         re->basic.flags |= REG_ENCODING_NONE;
     }
 
-    re->ptr = make_regexp(RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
+    bool success = make_regexp(RREGEXP_PTR(obj), RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
                           options & ARG_REG_OPTION_MASK, err,
                           sourcefile, sourceline);
-    if (!re->ptr) return -1;
+    if (!success) return -1;
+    FL_SET_RAW(obj, RREGEXP_INITIALIZED);
+
     if (RBASIC_CLASS(obj) == rb_cRegexp) {
         OBJ_FREEZE(obj);
     }
@@ -3493,10 +3507,10 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
 VALUE
 rb_reg_s_alloc(VALUE klass)
 {
-    NEWOBJ_OF(re, struct RRegexp, klass, T_REGEXP, sizeof(struct RRegexp));
+    NEWOBJ_OF(re, struct RRegexp, klass, T_REGEXP, sizeof(struct RRegexp_and_re_pattern_buffer));
 
-    re->ptr = 0;
-    RB_OBJ_WRITE(re, &re->src, 0);
+    MEMZERO(RREGEXP_PTR((VALUE)re), struct re_pattern_buffer, 1);
+    RB_OBJ_WRITE((VALUE)re, &re->src, 0);
     re->usecnt = 0;
 
     return (VALUE)re;
@@ -3655,11 +3669,15 @@ rb_reg_equal(VALUE re1, VALUE re2)
     // src is a fstring, so a pointer comparison is enough
     RUBY_ASSERT(FL_TEST_RAW(RREGEXP_SRC(re1), RSTRING_FSTR));
     RUBY_ASSERT(FL_TEST_RAW(RREGEXP_SRC(re2), RSTRING_FSTR));
-    if (RREGEXP_SRC(re1) != RREGEXP_SRC(re2)) return Qfalse;
 
     if (FL_TEST(re1, KCODE_FIXED) != FL_TEST(re2, KCODE_FIXED)) return Qfalse;
     if (RREGEXP_PTR(re1)->options != RREGEXP_PTR(re2)->options) return Qfalse;
-    return RBOOL(ENCODING_GET(re1) == ENCODING_GET(re2));
+    if (RREGEXP_SRC_LEN(re1) != RREGEXP_SRC_LEN(re2)) return Qfalse;
+    if (ENCODING_GET(re1) != ENCODING_GET(re2)) return Qfalse;
+
+    if (RREGEXP_SRC(re1) == RREGEXP_SRC(re2)) return Qtrue;
+    if (RREGEXP_SRC_PTR(re1) == RREGEXP_SRC_PTR(re2)) return Qtrue;
+    return RBOOL(memcmp(RREGEXP_SRC_PTR(re1), RREGEXP_SRC_PTR(re2), RREGEXP_SRC_LEN(re1)) == 0);
 }
 
 /*
@@ -4104,14 +4122,13 @@ static VALUE
 reg_copy(VALUE copy, VALUE orig)
 {
     int r;
-    regex_t *re;
-
     rb_reg_initialize_check(copy);
-    if ((r = onig_reg_copy(&re, RREGEXP_PTR(orig))) != 0) {
+    if ((r = onig_reg_copy_body(RREGEXP_PTR(copy), RREGEXP_PTR(orig))) != 0) {
         /* ONIGERR_MEMORY only */
         rb_raise(rb_eRegexpError, "%s", onig_error_code_to_format(r));
     }
-    RREGEXP_PTR(copy) = re;
+    FL_SET_RAW(copy, RREGEXP_INITIALIZED);
+
     RB_OBJ_WRITE(copy, &RREGEXP(copy)->src, RREGEXP(orig)->src);
     RREGEXP_PTR(copy)->timelimit = RREGEXP_PTR(orig)->timelimit;
     rb_enc_copy(copy, orig);

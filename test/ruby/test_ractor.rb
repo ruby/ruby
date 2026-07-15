@@ -240,6 +240,28 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end if Process.respond_to?(:fork)
 
+  def test_at_exit_raise_isolation_error
+    assert_ractor(<<~'RUBY')
+      ractor = Ractor.new do
+        at_exit { }
+      rescue Ractor::IsolationError => e
+        e
+      end
+      assert_equal Ractor::IsolationError, ractor.value.class
+    RUBY
+  end
+
+  def test_END_raise_isolation_error
+    assert_ractor(<<~'RUBY', ignore_stderr: true)
+      ractor = Ractor.new do
+        END { nil }
+      rescue Ractor::IsolationError => e
+        e
+      end
+      assert_equal Ractor::IsolationError, ractor.value.class
+    RUBY
+  end
+
   def test_require_raises_and_no_ractor_belonging_issue
     assert_ractor(<<~'RUBY')
       require "tempfile"
@@ -370,6 +392,13 @@ class TestRactor < Test::Unit::TestCase
         yield
       end
     end
+  end
+
+  def test_ractor_does_not_inherit_fiber_storage
+    assert_ractor(<<~'RUBY')
+      Fiber[:key] = "creator"
+      assert_nil Ractor.new { Fiber[:key] }.value
+    RUBY
   end
 
   def assert_make_shareable(obj)

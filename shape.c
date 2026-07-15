@@ -33,8 +33,6 @@
 #define MAX_SHAPE_ID (INVALID_SHAPE_ID - 1)
 #define ANCESTOR_SEARCH_MAX_DEPTH 2
 
-static ID id_object_id;
-
 // Should be on its own cache line
 static RUBY_ALIGNAS(128) rb_atomic_t redblack_cache_size;
 
@@ -317,7 +315,7 @@ rb_shape_tree_t rb_shape_tree = { 0 };
 // Should be on its own cache line
 static RUBY_ALIGNAS(128) rb_atomic_t shape_next_id;
 
-rb_shape_t *
+static rb_shape_t *
 rb_shape_get_root_shape(void)
 {
     return rb_shape_tree.shape_list;
@@ -411,12 +409,13 @@ rb_obj_shape_id(VALUE obj)
         VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
         shape_id_t base = ROOT_SHAPE_ID;
         if (fields_obj) {
-            // Remove the layout from the fields object.  We want to
-            // combine the shape of the fields object with the layout of the
-            // class / module object.
-            base = RBASIC_SHAPE_ID(fields_obj) & ~SHAPE_ID_LAYOUT_MASK;
+            // Remove the layout and capacity from the fields object. We want to
+            // combine the shape tree state of the fields object with the layout
+            // and object slot capacity of the class / module object.
+            base = RBASIC_SHAPE_ID(fields_obj) & ~(SHAPE_ID_LAYOUT_MASK | SHAPE_ID_CAPACITY_MASK);
         }
-        return rb_shape_layout(RBASIC_SHAPE_ID(obj)) | base;
+        shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+        return rb_shape_layout(shape_id) | (shape_id & SHAPE_ID_CAPACITY_MASK) | base;
     }
     return RBASIC_SHAPE_ID(obj);
 }
@@ -513,17 +512,14 @@ redblack_cache_ancestors(rb_shape_t *shape)
 static attr_index_t
 shape_grow_capa(attr_index_t current_capa)
 {
-    const attr_index_t *capacities = rb_shape_tree.capacities;
-    size_t heaps_count = rb_shape_tree.heaps_count;
-
-    // First try to use the next size that will be embeddable in a larger object slot.
-    for (size_t i = 0; i < heaps_count; i++) {
-        attr_index_t capa = capacities[i];
-        if (capa > current_capa) {
-            return capa;
-        }
+    size_t next_size = rb_obj_embedded_size(current_capa + 1);
+    if (UNLIKELY(!rb_gc_size_allocatable_p(next_size))) {
+        return rb_shape_max_capacity();
     }
-    return capacities[rb_shape_tree.heaps_count - 1];
+
+    attr_index_t next_capa = rb_shape_capacity_for_slot_size(rb_gc_size_slot_size(next_size));
+    RUBY_ASSERT(next_capa > current_capa);
+    return next_capa;
 }
 
 static rb_shape_t *
@@ -702,8 +698,8 @@ rb_shape_transition_object_id(shape_id_t original_shape_id)
 
     bool dont_care;
     rb_shape_t *shape = NULL;
-    if (LIKELY(original_shape->next_field_index < rb_shape_tree.max_capacity)) {
-        shape = get_next_shape_internal(original_shape, id_object_id, SHAPE_OBJ_ID, &dont_care, true);
+    if (LIKELY(original_shape->next_field_index < rb_shape_max_capacity())) {
+        shape = get_next_shape_internal(original_shape, rb_shape_tree.id_object_id, SHAPE_OBJ_ID, &dont_care, true);
     }
     if (!shape) {
         return rb_shape_layout(original_shape_id) | ROOT_COMPLEX_WITH_OBJ_ID | RSHAPE_FLAGS(original_shape_id);
@@ -727,29 +723,6 @@ rb_shape_object_id(shape_id_t original_shape_id)
     }
 
     return SHAPE_ID(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID;
-}
-
-/*
- * This function is used for assertions where we don't want to increment
- * max_iv_count
- */
-static inline rb_shape_t *
-shape_get_next_iv_shape(rb_shape_t *shape, ID id)
-{
-    RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
-    bool dont_care;
-    return get_next_shape_internal(shape, id, SHAPE_IVAR, &dont_care, true);
-}
-
-shape_id_t
-rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id)
-{
-    rb_shape_t *shape = RSHAPE(shape_id);
-    rb_shape_t *next_shape = shape_get_next_iv_shape(shape, id);
-    if (!next_shape) {
-        return INVALID_SHAPE_ID;
-    }
-    return SHAPE_OFFSET(next_shape);
 }
 
 static bool
@@ -790,8 +763,9 @@ shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE klass, ID id
     }
 #endif
 
-    RUBY_ASSERT(rb_shape_tree.max_capacity > 0);
-    if (UNLIKELY(shape->next_field_index >= rb_shape_tree.max_capacity)) {
+    RUBY_ASSERT(SHAPE_ID_CAPACITY_MAX > 0);
+    RUBY_ASSERT(rb_shape_max_capacity() > 0);
+    if (UNLIKELY(shape->next_field_index >= rb_shape_max_capacity())) {
         return NULL;
     }
 
@@ -1099,9 +1073,11 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
     }
 
     switch ((enum shape_type)dest_shape->type) {
-      case SHAPE_IVAR:
-        midway_shape = shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
+      case SHAPE_IVAR: {
+        bool dont_care;
+        midway_shape = get_next_shape_internal(midway_shape, dest_shape->edge_name, SHAPE_IVAR, &dont_care, true);
         break;
+      }
       case SHAPE_OBJ_ID:
       case SHAPE_ROOT:
         break;
@@ -1115,8 +1091,16 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 shape_id_t
 rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
 {
-    RUBY_ASSERT(!rb_shape_complex_p(initial_shape_id));
-    RUBY_ASSERT(!rb_shape_complex_p(dest_shape_id));
+    RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
+
+    if (RB_UNLIKELY(rb_shape_complex_p(initial_shape_id))) {
+        // The class has been marked as too complex.
+        return initial_shape_id;
+    }
+
+    if (RB_UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
+        return rb_shape_transition_complex(initial_shape_id);
+    }
 
     shape_id_t next_shape_id;
     // The shape has a SHAPE_OBJ_ID edge, it needs to be rebuilt.
@@ -1166,19 +1150,6 @@ rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALU
             src_shape = RSHAPE(src_shape->parent_offset);
         }
     }
-}
-
-void
-rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table)
-{
-    // obj is COMPLEX so we can copy its iv_hash
-    st_table *table = st_copy(fields_table);
-    if (rb_shape_has_object_id(src_shape_id)) {
-        st_data_t id = (st_data_t)id_object_id;
-        st_delete(table, &id, NULL);
-    }
-    rb_obj_init_complex(dest, table);
-    rb_gc_writebarrier_remember(dest);
 }
 
 size_t
@@ -1245,8 +1216,9 @@ static shape_id_t
 rb_shape_expected_layout(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-        return SHAPE_ID_LAYOUT_ROBJECT;
+      case T_OBJECT: {
+          return SHAPE_ID_LAYOUT_ROBJECT;
+      }
       case T_CLASS:
       case T_MODULE:
         if (FL_TEST_RAW(obj, RCLASS_BOXABLE)) {
@@ -1254,7 +1226,7 @@ rb_shape_expected_layout(VALUE obj)
         }
         return SHAPE_ID_LAYOUT_RCLASS;
       case T_DATA:
-        return SHAPE_ID_LAYOUT_RDATA;
+        return SHAPE_ID_LAYOUT_EXTENDED;
       case T_IMEMO:
         if (IMEMO_TYPE_P(obj, imemo_fields)) {
             return SHAPE_ID_LAYOUT_ROBJECT;
@@ -1262,6 +1234,38 @@ rb_shape_expected_layout(VALUE obj)
         return SHAPE_ID_LAYOUT_OTHER;
       default:
         return SHAPE_ID_LAYOUT_OTHER;
+    }
+}
+
+static const char *
+shape_layout_name(shape_id_t shape_id)
+{
+    switch (rb_shape_layout(shape_id)) {
+      case SHAPE_ID_LAYOUT_ROBJECT:
+        return "robject";
+      case SHAPE_ID_LAYOUT_RCLASS:
+        return "rclass";
+      case SHAPE_ID_LAYOUT_EXTENDED:
+        return "extended (or RData)";
+      case SHAPE_ID_LAYOUT_OTHER:
+        return "other";
+      default:
+        return "invalid";
+    }
+}
+
+bool
+rb_shape_verify_capacity_consistency_p(VALUE obj)
+{
+    switch (BUILTIN_TYPE(obj)) {
+      case T_IMEMO:
+        return IMEMO_TYPE_P(obj, imemo_fields);
+      case T_STRING:
+        return !FL_TEST_RAW(obj, FL_USER19); // STR_FAKESTR
+      case T_ARRAY:
+        return !FL_TEST_RAW(obj, RARRAY_FAKEARY);
+      default:
+        return true;
     }
 }
 
@@ -1275,8 +1279,10 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
     shape_id_t actual_layout = rb_shape_layout(rb_obj_shape_id(obj));
     shape_id_t expected_layout = rb_shape_expected_layout(obj);
     if (actual_layout != expected_layout) {
-        rb_bug("shape_id layout mismatch: expected=%x actual=%x shape_id=%u obj=%s",
-                expected_layout, actual_layout, shape_id, rb_obj_info(obj));
+        if (!(RB_TYPE_P(obj, T_OBJECT) && actual_layout == SHAPE_ID_LAYOUT_EXTENDED)) {
+            rb_bug("shape_id layout mismatch: expected=%s actual=%s shape_id=%u obj=%s",
+                    shape_layout_name(expected_layout), shape_layout_name(actual_layout), shape_id, rb_obj_info(obj));
+        }
     }
 
     if (shape_id == ROOT_SHAPE_ID) {
@@ -1285,36 +1291,39 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 
     rb_shape_t *shape = RSHAPE(shape_id);
 
-    bool has_object_id = false;
-    while (shape->parent_offset != INVALID_SHAPE_ID) {
-        if (shape->type == SHAPE_OBJ_ID) {
-            has_object_id = true;
-            break;
-        }
-        shape = RSHAPE(shape->parent_offset);
-    }
-
-    if (rb_shape_has_object_id(shape_id)) {
-        if (!has_object_id) {
-            rb_bug("shape_id claim having obj_id but doesn't shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
-        }
-    }
-    else {
-        if (has_object_id) {
-            rb_bug("shape_id claim not having obj_id but it does shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
-        }
-    }
-
     // Make sure SHAPE_ID_HAS_IVAR_MASK is valid.
     if (rb_shape_complex_p(shape_id)) {
         RUBY_ASSERT(shape_id & SHAPE_ID_HAS_IVAR_MASK);
 
         // Ensure complex object don't appear as embedded
-        if (RB_TYPE_P(obj, T_OBJECT) || IMEMO_TYPE_P(obj, imemo_fields)) {
-            RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
+        if (RB_TYPE_P(obj, T_OBJECT)) {
+            RUBY_ASSERT(rb_obj_shape_extended_p(obj));
+        }
+        else if (IMEMO_TYPE_P(obj, imemo_fields)) {
+            RUBY_ASSERT(rb_obj_shape_embedded_p(obj));
         }
     }
     else {
+        bool has_object_id = false;
+        while (shape->parent_offset != INVALID_SHAPE_ID) {
+            if (shape->type == SHAPE_OBJ_ID) {
+                has_object_id = true;
+                break;
+            }
+            shape = RSHAPE(shape->parent_offset);
+        }
+
+        if (rb_shape_has_object_id(shape_id)) {
+            if (!has_object_id) {
+                rb_bug("shape_id claim having obj_id but doesn't shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
+            }
+        }
+        else {
+            if (has_object_id) {
+                rb_bug("shape_id claim not having obj_id but it does shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
+            }
+        }
+
         attr_index_t ivar_count = RSHAPE_LEN(shape_id);
         if (has_object_id) {
             ivar_count--;
@@ -1327,19 +1336,15 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         }
     }
 
-    uint8_t flags_heap_index = rb_shape_heap_index(shape_id);
-    if (RB_TYPE_P(obj, T_OBJECT)) {
-        RUBY_ASSERT(flags_heap_index > 0);
-        size_t shape_id_slot_size = rb_shape_tree.capacities[flags_heap_index - 1] * sizeof(VALUE) + sizeof(struct RBasic);
+    if (rb_shape_verify_capacity_consistency_p(obj)) {
+        attr_index_t shape_id_capacity = rb_shape_embedded_capacity(shape_id);
+        RUBY_ASSERT(shape_id_capacity > 0);
+
+        size_t shape_id_slot_size = shape_id_capacity * sizeof(VALUE) + sizeof(struct RBasic);
         size_t actual_slot_size = rb_gc_obj_slot_size(obj);
 
         if (shape_id_slot_size != actual_slot_size) {
-            rb_bug("shape_id heap_index flags mismatch: shape_id_slot_size=%zu, gc_slot_size=%zu\n", shape_id_slot_size, actual_slot_size);
-        }
-    }
-    else {
-        if (flags_heap_index) {
-            rb_bug("shape_id indicate heap_index > 0 but object is not T_OBJECT: %s", rb_obj_info(obj));
+            rb_bug("shape_id capacity flags mismatch: shape_id_slot_size=%zu, gc_slot_size=%zu\n", shape_id_slot_size, actual_slot_size);
         }
     }
 
@@ -1384,8 +1389,8 @@ shape_layout(VALUE self)
         return ID2SYM(rb_intern("robject"));
       case SHAPE_ID_LAYOUT_RCLASS:
         return ID2SYM(rb_intern("rclass"));
-      case SHAPE_ID_LAYOUT_RDATA:
-        return ID2SYM(rb_intern("rdata"));
+      case SHAPE_ID_LAYOUT_EXTENDED:
+        return ID2SYM(rb_intern("extended_or_rdata"));
       case SHAPE_ID_LAYOUT_OTHER:
         return ID2SYM(rb_intern("other"));
       default:
@@ -1416,7 +1421,7 @@ shape_id_t_to_rb_cShape(shape_id_t shape_id)
             INT2NUM(shape->parent_offset),
             rb_shape_edge_name(shape),
             INT2NUM(shape->next_field_index),
-            INT2NUM(rb_shape_heap_index(shape_id)),
+            INT2NUM(rb_shape_embedded_capacity(shape_id)),
             INT2NUM(shape->type),
             INT2NUM(RSHAPE_CAPACITY(shape_id)));
     rb_obj_freeze(obj);
@@ -1586,29 +1591,9 @@ rb_shape_find_by_id(VALUE mod, VALUE id)
 void
 Init_default_shapes(void)
 {
-    size_t *heap_sizes = rb_gc_heap_sizes();
-    size_t heaps_count = 0;
-    while (heap_sizes[heaps_count]) {
-        heaps_count++;
-    }
-
-    if (heaps_count > SHAPE_ID_HEAP_INDEX_MAX) {
-        rb_bug("Init_default_shapes initialized with %zu heaps, only up to %u are supported", heaps_count, SHAPE_ID_HEAP_INDEX_MAX);
-    }
-
-    size_t index;
-    for (index = 0; index < heaps_count; index++) {
-        if (heap_sizes[index] > sizeof(struct RBasic)) {
-            size_t capa = (heap_sizes[index] - sizeof(struct RBasic)) / sizeof(VALUE);
-            RUBY_ASSERT(capa < ATTR_INDEX_NOT_SET);
-            rb_shape_tree.capacities[index] = (attr_index_t)capa;
-        }
-        else {
-            rb_shape_tree.capacities[index] = 0;
-        }
-    }
-    rb_shape_tree.heaps_count = heaps_count;
-    rb_shape_tree.max_capacity = rb_shape_tree.capacities[heaps_count - 1];
+    attr_index_t max_capacity = (attr_index_t)((rb_gc_max_allocation_size() - sizeof(struct RBasic)) / sizeof(VALUE));
+    if (max_capacity > SHAPE_ID_CAPACITY_MAX) max_capacity = SHAPE_ID_CAPACITY_MAX;
+    rb_shape_tree.max_capacity = max_capacity;
 
 #ifdef HAVE_MMAP
     size_t shape_list_mmap_size = rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError);
@@ -1628,7 +1613,7 @@ Init_default_shapes(void)
         rb_memerror();
     }
 
-    id_object_id = rb_make_internal_id();
+    rb_shape_tree.id_object_id = rb_make_internal_id();
 
 #ifdef HAVE_MMAP
     size_t shape_cache_mmap_size = rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError);
@@ -1663,11 +1648,11 @@ Init_default_shapes(void)
     RUBY_ASSERT(!(SHAPE_OFFSET(root) & SHAPE_ID_HAS_IVAR_MASK));
 
     bool dontcare;
-    rb_shape_t *root_with_obj_id = get_next_shape_internal(root, id_object_id, SHAPE_OBJ_ID, &dontcare, true);
+    rb_shape_t *root_with_obj_id = get_next_shape_internal(root, rb_shape_tree.id_object_id, SHAPE_OBJ_ID, &dontcare, true);
     RUBY_ASSERT(root_with_obj_id);
     RUBY_ASSERT(SHAPE_OFFSET(root_with_obj_id) == ROOT_SHAPE_WITH_OBJ_ID);
     RUBY_ASSERT(root_with_obj_id->type == SHAPE_OBJ_ID);
-    RUBY_ASSERT(root_with_obj_id->edge_name == id_object_id);
+    RUBY_ASSERT(root_with_obj_id->edge_name == rb_shape_tree.id_object_id);
     RUBY_ASSERT(root_with_obj_id->next_field_index == 1);
     RUBY_ASSERT(!(SHAPE_OFFSET(root_with_obj_id) & SHAPE_ID_HAS_IVAR_MASK));
     (void)root_with_obj_id;
@@ -1685,7 +1670,7 @@ Init_shape(void)
             "parent_offset",
             "edge_name",
             "next_field_index",
-            "heap_index",
+            "embedded_capacity",
             "type",
             "capacity",
             NULL);
@@ -1703,7 +1688,7 @@ Init_shape(void)
     rb_define_const(rb_cShape, "SHAPE_ID_NUM_BITS", INT2NUM(SHAPE_ID_NUM_BITS));
     rb_define_const(rb_cShape, "SHAPE_FLAG_SHIFT", INT2NUM(SHAPE_FLAG_SHIFT));
     rb_define_const(rb_cShape, "SHAPE_MAX_VARIATIONS", INT2NUM(SHAPE_MAX_VARIATIONS));
-    rb_define_const(rb_cShape, "SHAPE_MAX_FIELDS", INT2NUM(rb_shape_tree.max_capacity));
+    rb_define_const(rb_cShape, "SHAPE_MAX_FIELDS", INT2NUM(rb_shape_max_capacity()));
     rb_define_const(rb_cShape, "SIZEOF_RB_SHAPE_T", INT2NUM(sizeof(rb_shape_t)));
     rb_define_const(rb_cShape, "SIZEOF_REDBLACK_NODE_T", INT2NUM(sizeof(redblack_node_t)));
     rb_define_const(rb_cShape, "SHAPE_BUFFER_SIZE", INT2NUM(sizeof(rb_shape_t) * SHAPE_BUFFER_SIZE));

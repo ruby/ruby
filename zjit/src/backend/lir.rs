@@ -1,10 +1,11 @@
+use std::cell::RefCell;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fmt;
 use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
-use crate::codegen::{local_size_and_idx_to_ep_offset, perf_symbol_range_start, perf_symbol_range_end};
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame};
+use crate::codegen::{perf_symbol_range_start, perf_symbol_range_end, register_with_perf};
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, PerfMap, get_option};
@@ -13,14 +14,32 @@ use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_coun
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 use crate::state::{ZJITState, rb_zjit_record_exit_stack};
+use crate::cast::IntoUsize;
 
 /// LIR Block ID. Unique ID for each block, and also defined in LIR so
 /// we can differentiate it from HIR block ids.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
 pub struct BlockId(pub usize);
 
+/// Underlying integer width of a virtual-register id. Narrow to keep `Opnd`/`Mem` small.
+pub type VRegIdBase = u32;
+/// Width of a stack-slot index inside `MemBase`. Separate id space from `VRegId`.
+pub type StackIdx = u32;
+
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
-pub struct VRegId(pub usize);
+pub struct VRegId(pub VRegIdBase);
+
+impl IntoUsize for VRegId {
+    fn to_usize(self) -> usize {
+        self.0.to_usize()
+    }
+}
+
+impl From<usize> for VRegId {
+    fn from(val: usize) -> Self {
+        VRegId(val.try_into().unwrap())
+    }
+}
 
 impl From<BlockId> for usize {
     fn from(val: BlockId) -> Self {
@@ -28,10 +47,23 @@ impl From<BlockId> for usize {
     }
 }
 
-impl From<VRegId> for usize {
-    fn from(val: VRegId) -> Self {
-        val.0
-    }
+impl<T> std::ops::Index<VRegId> for [T] {
+    type Output = T;
+    #[inline]
+    fn index(&self, i: VRegId) -> &T { &self[i.to_usize()] }
+}
+impl<T> std::ops::IndexMut<VRegId> for [T] {
+    #[inline]
+    fn index_mut(&mut self, i: VRegId) -> &mut T { &mut self[i.to_usize()] }
+}
+impl<T> std::ops::Index<VRegId> for Vec<T> {
+    type Output = T;
+    #[inline]
+    fn index(&self, i: VRegId) -> &T { &self[i.to_usize()] }
+}
+impl<T> std::ops::IndexMut<VRegId> for Vec<T> {
+    #[inline]
+    fn index_mut(&mut self, i: VRegId) -> &mut T { &mut self[i.to_usize()] }
 }
 
 impl std::fmt::Display for BlockId {
@@ -139,7 +171,7 @@ impl BasicBlock {
         assert!(self.insns.last().unwrap().is_terminator());
         let extract_edge = |insn: &Insn| -> Option<BranchEdge> {
             if let Some(Target::Block(edge)) = insn.target() {
-                Some(edge.clone())
+                Some((**edge).clone())
             } else {
                 None
             }
@@ -219,13 +251,13 @@ pub enum MemBase
     /// Stack slot: a direct stack access. `stack_membase_to_mem()` turns this
     /// into `[NATIVE_BASE_PTR + disp]`, so scratch splitting can use it as a
     /// normal memory operand without first loading a pointer from the stack.
-    Stack { stack_idx: usize, num_bits: u8 },
+    Stack { stack_idx: StackIdx, num_bits: u8 },
     /// A pointer stored in a stack slot, used as a memory base.
     /// Unlike Stack, this first loads the pointer value from the stack slot
     /// into a scratch register, then uses that register as the base for the
     /// memory access with the Mem's displacement.
     /// Created when a VReg used as MemBase is spilled to the stack.
-    StackIndirect { stack_idx: usize },
+    StackIndirect { stack_idx: StackIdx },
 }
 
 // Memory location
@@ -421,6 +453,11 @@ impl Opnd
         }
     }
 
+    /// Unwrap the index of a VReg as a `usize`, for raw-`usize` APIs (bitsets, etc.).
+    pub fn vreg_idx_usize(&self) -> usize {
+        self.vreg_idx().to_usize()
+    }
+
     /// Extract VReg indices from this operand, including memory base VRegs.
     /// Returns an iterator over all VRegIds referenced by this operand.
     pub fn vreg_ids(&self) -> impl Iterator<Item = VRegId> {
@@ -465,10 +502,10 @@ impl Opnd
     pub fn map_index(self, indices: &[usize]) -> Opnd {
         match self {
             Opnd::VReg { idx, num_bits } => {
-                Opnd::VReg { idx: VRegId(indices[idx.0]), num_bits }
+                Opnd::VReg { idx: indices[idx].into(), num_bits }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
-                Opnd::Mem(Mem { base: MemBase::VReg(VRegId(indices[idx.0])), disp, num_bits })
+                Opnd::Mem(Mem { base: MemBase::VReg(indices[idx].into()), disp, num_bits })
             },
             _ => self
         }
@@ -549,22 +586,32 @@ pub struct SideExit {
     pub stack: Vec<Opnd>,
     pub locals: Vec<Opnd>,
     pub iseq: IseqPtr,
-    /// If set, the side exit will call the recompile function with these arguments
-    /// to profile the send and invalidate the ISEQ for recompilation.
+    /// Stack map for older inlined frames that are not written directly by this
+    /// side exit. The current frame's stack and locals are still handled by
+    /// `stack` and `locals` above.
+    pub stack_map: Option<StackMap>,
+    /// If set, the side exit will profile the current instruction and invalidate
+    /// the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
 }
 
-/// Arguments for the recompile callback on side exit.
+/// Metadata for the recompile callback on side exit.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExitRecompile {
-    /// The frame's own iseq, where the runtime profile is recorded at `insn_idx`.
-    /// For an exit out of inlined code this is the inlined callee.
-    pub frame_iseq: Opnd,
     /// The compiled unit whose version must be invalidated to force a recompile. For inlined
     /// methods, this will be the outer function it was inlined into.
     pub compiled_iseq: Opnd,
     pub insn_idx: u32,
-    pub strategy: hir::Recompile,
+}
+
+/// Payload of `Target::SideExit`, boxed to keep `Target` (and every `Insn`
+/// variant that embeds it) small.
+#[derive(Clone)]
+pub struct SideExitTarget {
+    /// Context used for compiling the side exit.
+    pub exit: SideExit,
+    /// We use this to increment exit counters.
+    pub reason: SideExitReason,
 }
 
 /// Branch target (something that we can jump to)
@@ -576,15 +623,10 @@ pub enum Target
     CodePtr(CodePtr),
     /// A label within the generated code
     Label(Label),
-    /// An LIR branch edge
-    Block(BranchEdge),
-    /// Side exit to the interpreter
-    SideExit {
-        /// Context used for compiling the side exit
-        exit: SideExit,
-        /// We use this to increment exit counters
-        reason: SideExitReason,
-    },
+    /// An LIR branch edge. Boxed to keep `Target` small.
+    Block(Box<BranchEdge>),
+    /// Side exit to the interpreter. Boxed (see `SideExitTarget`) to keep `Target` small.
+    SideExit(Box<SideExitTarget>),
 }
 
 impl fmt::Debug for Target {
@@ -606,8 +648,8 @@ impl fmt::Debug for Target {
                     write!(f, "))")
                 }
             }
-            Target::SideExit { exit, reason } => {
-                write!(f, "SideExit {{ exit: {:?}, reason: {:?} }}", exit, reason)
+            Target::SideExit(data) => {
+                write!(f, "SideExit {{ exit: {:?}, reason: {:?} }}", data.exit, data.reason)
             }
         }
     }
@@ -637,6 +679,45 @@ impl From<CodePtr> for Target {
 }
 
 type PosMarkerFn = Rc<dyn Fn(CodePtr, &CodeBlock)>;
+
+/// All fields of `Insn::CCall`, boxed to keep `Insn` small. The operand-bearing
+/// fields (`opnds`, `stack_map`) are reached through the box by the operand
+/// iteration macros -- `opnds` directly (via `.iter()`/`.iter_mut()`) and
+/// `stack_map` via a per-iterator reborrow, the same idea as `PatchPointData`.
+#[derive(Clone)]
+pub struct CCallData {
+    /// The arguments to the C call.
+    pub opnds: Vec<Opnd>,
+    /// VM stack contents to materialize a JIT frame if the call side-exits.
+    pub stack_map: Option<StackMap>,
+    /// The function pointer to be called. This should be Opnd::const_ptr
+    /// (Opnd::UImm) in most cases. gen_entry_trampoline() uses Opnd::Reg.
+    pub fptr: Opnd,
+    /// Optional PosMarker to remember the start address of the C call.
+    /// It's embedded here to insert the PosMarker after push instructions
+    /// that are split from this CCall during register assignment.
+    pub start_marker: Option<PosMarkerFn>,
+    /// Optional PosMarker to remember the end address of the C call.
+    /// It's embedded here to insert the PosMarker before pop instructions
+    /// that are split from this CCall during register assignment.
+    pub end_marker: Option<PosMarkerFn>,
+    pub out: Opnd,
+}
+
+/// Cold fields of `Insn::PatchPoint`, boxed to keep `Insn` small. `target` is
+/// operand-bearing (it's a `Target::SideExit` until `compile_exits` lowers it to
+/// a `Target::Label`), so the operand-iteration macros reach it through the box
+/// via a per-iterator reborrow -- the same idea as `CCallData` and the HIR
+/// `CCallWithFrame` pattern.
+#[derive(Clone)]
+pub struct PatchPointData {
+    /// Patch point target. Rewritten to a jump to a side exit on invalidation.
+    pub target: Target,
+    /// The invariant whose violation triggers invalidation of this patch point.
+    pub invariant: Invariant,
+    /// ISEQ version invalidated to force a recompile when the invariant breaks.
+    pub version: IseqVersionRef,
+}
 
 /// ZJIT Low-level IR instruction
 #[derive(Clone)]
@@ -683,21 +764,9 @@ pub enum Insn {
     CPushPair(Opnd, Opnd),
 
     // C function call with N arguments (variadic)
+    // All fields are boxed (see `CCallData`) to keep `Insn` small.
     CCall {
-        opnds: Vec<Opnd>,
-        /// The function pointer to be called. This should be Opnd::const_ptr
-        /// (Opnd::UImm) in most cases. gen_entry_trampoline() uses Opnd::Reg.
-        fptr: Opnd,
-        /// Optional PosMarker to remember the start address of the C call.
-        /// It's embedded here to insert the PosMarker after push instructions
-        /// that are split from this CCall during register assignment.
-        start_marker: Option<PosMarkerFn>,
-        /// Optional PosMarker to remember the end address of the C call.
-        /// It's embedded here to insert the PosMarker before pop instructions
-        /// that are split from this CCall during register assignment.
-        end_marker: Option<PosMarkerFn>,
-        out: Opnd,
-        stack_map: Option<StackMap>,
+        data: Box<CCallData>,
     },
 
     // C function return
@@ -818,7 +887,8 @@ pub enum Insn {
     Or { left: Opnd, right: Opnd, out: Opnd },
 
     /// Patch point that will be rewritten to a jump to a side exit on invalidation.
-    PatchPoint { target: Target, invariant: Invariant, version: IseqVersionRef },
+    /// Cold fields are boxed (see `PatchPointData`) to keep `Insn` small.
+    PatchPoint(Box<PatchPointData>),
 
     /// Make sure the last PatchPoint has enough space to insert a jump.
     /// We insert this instruction at the end of each block so that the jump
@@ -827,6 +897,10 @@ pub enum Insn {
 
     // Mark a position in the generated code
     PosMarker(PosMarkerFn),
+
+    /// Mark a position at the end of the current LIR block.
+    /// This is lowered to PosMarker during linearize_instructions().
+    PosMarkerAtBlockEnd(PosMarkerFn),
 
     /// Shift a value right by a certain amount (signed).
     RShift { opnd: Opnd, shift: Opnd, out: Opnd },
@@ -852,11 +926,18 @@ pub enum Insn {
 }
 
 macro_rules! target_for_each_operand_impl {
-    ($self:expr, $visit_many:ident) => {
+    ($self:expr, $visit_one:ident, $visit_many:ident, $reborrow:ident) => {
         match $self {
-            Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
-                visit_many!(stack);
-                visit_many!(locals);
+            Target::SideExit(data) => {
+                visit_many!(data.exit.stack);
+                visit_many!(data.exit.locals);
+                if let Some(StackMap { stack, .. }) = $reborrow!(data.exit.stack_map) {
+                    for entry in stack {
+                        if let StackMapEntry::Opnd(opnd) = entry {
+                            visit_one!(opnd);
+                        }
+                    }
+                }
             }
             Target::Block(edge) => {
                 visit_many!(edge.args);
@@ -870,7 +951,7 @@ macro_rules! target_for_each_operand_impl {
 /// macro for a single `Opnd` field and `$visit_many` macro for a slice/`Vec` of `Opnd`s. Used by
 /// both `for_each_operand` and `for_each_operand_mut`.
 macro_rules! for_each_operand_impl {
-    ($self:expr, $visit_one:ident, $visit_many:ident $(, $const:expr)?) => {
+    ($self:expr, $visit_one:ident, $visit_many:ident, $reborrow:ident $(, $const:expr)?) => {
         match $self {
             Insn::Jbe(target) |
             Insn::Jb(target) |
@@ -885,14 +966,18 @@ macro_rules! for_each_operand_impl {
             Insn::JoMul(target) |
             Insn::Jz(target) |
             Insn::Label(target) |
-            Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint { target, .. } => {
-                target_for_each_operand_impl!(target, $visit_many);
+            Insn::LeaJumpTarget { target, .. } => {
+                target_for_each_operand_impl!(target, $visit_one, $visit_many, $reborrow);
+            }
+            // `target` is behind a Box. `$reborrow` turns the box field into a `&`/`&mut Target`
+            // matching the iterator, so the same operand-walk works for both.
+            Insn::PatchPoint(data) => {
+                target_for_each_operand_impl!($reborrow!(data.target), $visit_one, $visit_many, $reborrow);
             }
             Insn::Joz(opnd, target) |
             Insn::Jonz(opnd, target) => {
                 visit_one!(opnd);
-                target_for_each_operand_impl!(target, $visit_many);
+                target_for_each_operand_impl!(target, $visit_one, $visit_many, $reborrow);
             }
 
             Insn::BakeString(_) |
@@ -900,7 +985,8 @@ macro_rules! for_each_operand_impl {
             Insn::Comment(_) |
             Insn::CPop { .. } |
             Insn::PadPatchPoint |
-            Insn::PosMarker(_) => {},
+            Insn::PosMarker(_) |
+            Insn::PosMarkerAtBlockEnd(_) => {},
 
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
@@ -940,10 +1026,17 @@ macro_rules! for_each_operand_impl {
                 visit_one!(opnd0);
                 visit_one!(opnd1);
             }
-            Insn::CCall { opnds, stack_map, .. } => {
-                visit_many!(opnds);
-                if let Some(StackMap { stack, .. }) = stack_map {
-                    visit_many!(stack);
+            Insn::CCall { data } => {
+                visit_many!(data.opnds);
+                // `data` is behind a Box. `$reborrow` turns the box field into a `&`/`&mut
+                // Option<StackMap>` matching the iterator, so the same operand-walk works for
+                // both.
+                if let Some(StackMap { stack, .. }) = $reborrow!(data.stack_map) {
+                    for entry in stack {
+                        if let StackMapEntry::Opnd(opnd) = entry {
+                            visit_one!(opnd);
+                        }
+                    }
                 }
             }
             // only iterate over preserved in the const iterator
@@ -970,23 +1063,26 @@ impl Insn {
     pub fn for_each_operand(&self, mut f: impl FnMut(Opnd)) {
         macro_rules! visit_one { ($id:expr) => { f(*$id) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id) } }; }
+        macro_rules! reborrow { ($e:expr) => { & $e }; }
         // Extra () is a throw-away parameter to avoid iterating over FrameSetup/FrameTeardown
         // preserved in the mutable iterator.
-        for_each_operand_impl!(self, visit_one, visit_many, ());
+        for_each_operand_impl!(self, visit_one, visit_many, reborrow, ());
     }
 
     /// Call `f` on a mutable reference to each operand (Opnd) of this instruction.
     pub fn for_each_operand_mut(&mut self, mut f: impl FnMut(&mut Opnd)) {
         macro_rules! visit_one { ($id:expr) => { f($id) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
-        for_each_operand_impl!(self, visit_one, visit_many);
+        macro_rules! reborrow { ($e:expr) => { &mut $e }; }
+        for_each_operand_impl!(self, visit_one, visit_many, reborrow);
     }
 
     /// Call `f` on each operand, short-circuiting on the first error.
     pub fn try_for_each_operand<E>(&self, mut f: impl FnMut(Opnd) -> Result<(), E>) -> Result<(), E> {
         macro_rules! visit_one { ($id:expr) => { f(*$id)? }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id)? } }; }
-        for_each_operand_impl!(self, visit_one, visit_many, ());
+        macro_rules! reborrow { ($e:expr) => { & $e }; }
+        for_each_operand_impl!(self, visit_one, visit_many, reborrow, ());
         Ok(())
     }
 
@@ -1008,10 +1104,10 @@ impl Insn {
             Insn::Joz(_, target) |
             Insn::Jonz(_, target) |
             Insn::Label(target) |
-            Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint { target, .. } => {
+            Insn::LeaJumpTarget { target, .. } => {
                 Some(target)
             }
+            Insn::PatchPoint(data) => Some(&mut data.target),
             _ => None,
         }
     }
@@ -1070,9 +1166,10 @@ impl Insn {
             Insn::Mov { .. } => "Mov",
             Insn::Not { .. } => "Not",
             Insn::Or { .. } => "Or",
-            Insn::PatchPoint { .. } => "PatchPoint",
+            Insn::PatchPoint(..) => "PatchPoint",
             Insn::PadPatchPoint => "PadPatchPoint",
             Insn::PosMarker(_) => "PosMarker",
+            Insn::PosMarkerAtBlockEnd(_) => "PosMarkerAtBlockEnd",
             Insn::RShift { .. } => "RShift",
             Insn::Store { .. } => "Store",
             Insn::Sub { .. } => "Sub",
@@ -1089,7 +1186,6 @@ impl Insn {
         match self {
             Insn::Add { out, .. } |
             Insn::And { out, .. } |
-            Insn::CCall { out, .. } |
             Insn::CPop { out, .. } |
             Insn::CSelE { out, .. } |
             Insn::CSelG { out, .. } |
@@ -1111,6 +1207,7 @@ impl Insn {
             Insn::Mul { out, .. } |
             Insn::URShift { out, .. } |
             Insn::Xor { out, .. } => Some(out),
+            Insn::CCall { data, .. } => Some(&data.out),
             _ => None
         }
     }
@@ -1121,7 +1218,6 @@ impl Insn {
         match self {
             Insn::Add { out, .. } |
             Insn::And { out, .. } |
-            Insn::CCall { out, .. } |
             Insn::CPop { out, .. } |
             Insn::CSelE { out, .. } |
             Insn::CSelG { out, .. } |
@@ -1143,6 +1239,7 @@ impl Insn {
             Insn::Mul { out, .. } |
             Insn::URShift { out, .. } |
             Insn::Xor { out, .. } => Some(out),
+            Insn::CCall { data, .. } => Some(&mut data.out),
             _ => None
         }
     }
@@ -1165,8 +1262,8 @@ impl Insn {
             Insn::Joz(_, target) |
             Insn::Jonz(_, target) |
             Insn::Label(target) |
-            Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint { target, .. } => Some(target),
+            Insn::LeaJumpTarget { target, .. } => Some(target),
+            Insn::PatchPoint(data) => Some(&data.target),
             _ => None
         }
     }
@@ -1265,12 +1362,12 @@ impl LiveRange {
 #[derive(Clone)]
 pub struct Interval {
     pub range: LiveRange,
-    pub id: usize,
+    pub id: VRegId,
 }
 
 impl Interval {
     /// Create a new Interval with no range
-    pub fn new(i: usize) -> Self {
+    pub fn new(i: VRegId) -> Self {
         Self {
             range: LiveRange {
                 start: None,
@@ -1402,15 +1499,18 @@ const JIT_FRAME_OFFSET_FROM_JIT_RETURN: usize = 1;
 ///                                | +-------------------------+ |
 ///                                v | opnds.first()           | v
 ///                                  +-------------------------+
-///                                ^ | register spill slot 0   | ^
+///                                ^ | allocator spill slot 0  | ^
 ///                                | +-------------------------+ |
 ///                                | |          ...            | | stack_idx for "slot N" in StackState::stack_map_index_for_spill
+///                num_spill_slots | +-------------------------+ |
+///                                v | allocator spill slot X  | |
+///                                  +-------------------------+ |
+///                                ^ | side-exit stack-map     | |
+///                                | | capture slot 0          | |
 ///                                | +-------------------------+ |
-///                num_spill_slots | | register spill slot N   | v
-///                                | +-------------------------+
-///                                | |          ...            |
-///                                | +-------------------------+
-///                                v | register spill slot X   |
+/// num_side_exit_stack_map_slots  | |          ...            | |
+///                                | +-------------------------+ |
+///                                v | capture slot X          | v
 ///                                  +-------------------------+
 ///                                  | FrameSetup align slot   | if needed
 ///                                  +-------------------------+
@@ -1423,17 +1523,21 @@ pub struct StackState {
 
     /// The number of stack slots needed by register allocator spills.
     pub(crate) num_spill_slots: usize,
+
+    /// The maximum number of stack slots needed to capture side-exit stack-map
+    /// operands that cannot be encoded directly.
+    pub(crate) num_side_exit_stack_map_slots: usize,
 }
 
 impl StackState {
     /// Initialize an empty stack state.
     fn new() -> Self {
-        StackState { stack_base_idx: 0, num_spill_slots: 0 }
+        StackState { stack_base_idx: 0, num_spill_slots: 0, num_side_exit_stack_map_slots: 0 }
     }
 
     /// Initialize a stack state with a fixed number of reserved stack slots.
     fn new_with_stack_slots(stack_base_idx: usize) -> Self {
-        StackState { stack_base_idx, num_spill_slots: 0 }
+        StackState { stack_base_idx, num_spill_slots: 0, num_side_exit_stack_map_slots: 0 }
     }
 
     /// Reserve native stack slots for JITFrame storage and stack-allocated operands.
@@ -1445,9 +1549,9 @@ impl StackState {
     }
 
     /// Return the total number of native stack slots used for the frame's
-    /// reserved data and register allocator spills.
+    /// reserved data, register allocator spills, and side-exit captures.
     pub(crate) fn stack_slot_count(&self) -> usize {
-        self.stack_base_idx + self.num_spill_slots
+        self.stack_base_idx + self.num_spill_slots + self.num_side_exit_stack_map_slots
     }
 
     /// Return the stack-map index for a VReg stored below StackState-managed
@@ -1469,12 +1573,18 @@ impl StackState {
     /// Return a stack index for a register saved by handle_caller_saved_regs().
     fn stack_idx_for_caller_saved_reg(&self, caller_saved_reg_idx: usize) -> usize {
         let frame_alignment_slots = self.stack_slot_count() % 2;
-        self.num_spill_slots + frame_alignment_slots + caller_saved_reg_idx
+        self.num_spill_slots + self.num_side_exit_stack_map_slots + frame_alignment_slots + caller_saved_reg_idx
+    }
+
+    /// Return a stack index reserved for side-exit stack-map register capture.
+    fn stack_idx_for_side_exit_stack_map(&self, slot_idx: usize) -> usize {
+        assert!(slot_idx < self.num_side_exit_stack_map_slots);
+        self.num_spill_slots + slot_idx
     }
 
     /// Convert a stack index to the `disp` of the stack slot
-    fn stack_idx_to_disp(&self, stack_idx: usize) -> i32 {
-        (self.stack_base_idx + stack_idx + 1) as i32 * -SIZEOF_VALUE_I32
+    fn stack_idx_to_disp(&self, stack_idx: StackIdx) -> i32 {
+        (self.stack_base_idx + stack_idx.to_usize() + 1) as i32 * -SIZEOF_VALUE_I32
     }
 
     /// Convert MemBase::Stack to Mem
@@ -1490,18 +1600,31 @@ impl StackState {
 }
 
 /// Stack map to materialize Ruby stack slots from JIT-kept values.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct StackMap {
     /// Ruby stack slots to reconstruct if this frame is materialized.
-    /// Each operand must be either an immediate Ruby VALUE or a VReg whose
-    /// final register/spill location will be encoded after register allocation.
-    stack: Vec<Opnd>,
+    stack: Vec<StackMapEntry>,
     /// Heap-allocated JITFrame whose trailing stack map storage receives the
     /// encoded entries once this CCall's register allocation is known.
     jit_frame: *const zjit_jit_frame,
     /// Inlining depth of the frame whose stack is described by this map.
     /// Stack-map indexes are decoded from that frame's cfp->jit_return.
     frame_depth: usize,
+}
+
+impl StackMap {
+    pub fn new(stack: Vec<StackMapEntry>, jit_frame: *const zjit_jit_frame, frame_depth: usize) -> Self {
+        Self { stack, jit_frame, frame_depth }
+    }
+}
+
+/// Entry in a JITFrame stack map.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum StackMapEntry {
+    /// Immediate Ruby VALUE or VReg to materialize.
+    Opnd(Opnd),
+    /// Number of VM stack slots to skip when materializing across inlined frames.
+    Skip(usize),
 }
 
 /// Initial capacity for asm.insns vector
@@ -1697,6 +1820,43 @@ impl Assembler
     }
 
     pub fn linearize_instructions(&self) -> Vec<Insn> {
+        // Wrap instructions emitted by `push_insns` with PosMarkers and record
+        // the emitted byte range under `symbol_name` in the perf map.
+        fn push_insns_with_perf_symbol(
+            insns: &mut Vec<Insn>,
+            symbol_name: &str,
+            push_insns: impl FnOnce(&mut Vec<Insn>),
+        ) {
+            // ISEQ perf symbols cover the whole compiled ISEQ, including this
+            // padding. HIR perf needs a separate symbol because the padding
+            // doesn't belong to any HIR instruction.
+            if get_option!(perf) != Some(PerfMap::HIR) {
+                push_insns(insns);
+                return;
+            }
+
+            let symbol_name = symbol_name.to_string();
+            let start = Rc::new(RefCell::new(None));
+            let current = start.clone();
+            insns.push(Insn::PosMarker(Rc::new(move |code_ptr, _| {
+                let mut current = current.borrow_mut();
+                assert!(current.is_none(), "perf symbol range already open");
+                *current = Some(code_ptr);
+            })));
+
+            push_insns(insns);
+
+            insns.push(Insn::PosMarker(Rc::new(move |end, cb| {
+                if let Some(start) = start.borrow_mut().take() {
+                    let start_addr = start.raw_addr(cb);
+                    let end_addr = end.raw_addr(cb);
+                    if start_addr < end_addr {
+                        register_with_perf(symbol_name.clone(), start_addr, end_addr - start_addr);
+                    }
+                }
+            })));
+        }
+
         // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
 
@@ -1708,12 +1868,20 @@ impl Assembler
             // Entry blocks shouldn't ever be preceded by something that can
             // stomp on this block.
             if !block.is_entry {
-                insns.push(Insn::PadPatchPoint);
+                push_insns_with_perf_symbol(&mut insns, "PadPatchPoint", |insns| {
+                    insns.push(Insn::PadPatchPoint);
+                });
             }
 
             // Process each instruction, expanding branch params if needed
+            let mut block_end_pos_marker = None;
             for insn in &block.insns {
-                self.expand_branch_insn(insn, &mut insns);
+                if let Insn::PosMarkerAtBlockEnd(marker) = insn {
+                    assert!(block_end_pos_marker.is_none(), "only one PosMarkerAtBlockEnd is supported per block");
+                    block_end_pos_marker = Some(marker.clone());
+                } else {
+                    self.expand_branch_insn(insn, &mut insns);
+                }
             }
 
             // Eliminate redundant jumps: if the last instruction is an
@@ -1728,9 +1896,15 @@ impl Assembler
                 }
             }
 
+            if let Some(marker) = block_end_pos_marker {
+                insns.push(Insn::PosMarker(marker));
+            }
+
             // Make sure we don't stomp on the next function
             if block_id.0 == num_blocks - 1 {
-                insns.push(Insn::PadPatchPoint);
+                push_insns_with_perf_symbol(&mut insns, "PadPatchPoint", |insns| {
+                    insns.push(Insn::PadPatchPoint);
+                });
             }
         }
         insns
@@ -1802,7 +1976,7 @@ impl Assembler
 
     /// Build an Opnd::VReg
     pub fn new_vreg(&mut self, num_bits: u8) -> Opnd {
-        let vreg = Opnd::VReg { idx: VRegId(self.num_vregs), num_bits };
+        let vreg = Opnd::VReg { idx: self.num_vregs.into(), num_bits };
         self.num_vregs += 1;
         vreg
     }
@@ -1905,10 +2079,10 @@ impl Assembler
                     {
                         if let Some(Opnd::VReg { idx: out_idx, .. }) = prev.out_opnd() {
                             if out_idx == idx
-                                && intervals[idx.0].born_at(prev_id.0)
-                                && intervals[idx.0].dies_at(insn_id.0)
+                                && intervals[*idx].born_at(prev_id.0)
+                                && intervals[*idx].dies_at(insn_id.0)
                             {
-                                preferred[idx.0].get_or_insert(*dest_reg);
+                                preferred[*idx].get_or_insert(*dest_reg);
                             }
                         }
                     }
@@ -1956,8 +2130,9 @@ impl Assembler
                 } else {
                     if let Some(allocation) = assignment[active_interval.id] {
                         if let Some(reg) = allocation.alloc_pool_index(num_registers) {
+                            let was_not_there_before = free_registers.insert(reg);
                             assert!(
-                                free_registers.insert(reg),
+                                was_not_there_before,
                                 "attempted to return allocator register {:?} to the free pool more than once",
                                 allocation.assigned_reg().unwrap(),
                             );
@@ -2079,7 +2254,7 @@ impl Assembler
                 let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = edge.args
                     .iter()
                     .zip(params.iter())
-                    .filter(|(_arg, param)| assignments[param.vreg_idx().0].is_some() )
+                    .filter(|(_arg, param)| assignments[param.vreg_idx()].is_some() )
                     .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> {
                         destination: Self::rewritten_opnd(*param, assignments),
                         source: Self::rewritten_opnd(*arg, assignments),
@@ -2114,10 +2289,10 @@ impl Assembler
                     for mov in moves {
                         self.basic_blocks[new_block_id.0].push_insn(mov);
                     }
-                    self.basic_blocks[new_block_id.0].push_insn(Insn::Jmp(Target::Block(BranchEdge {
+                    self.basic_blocks[new_block_id.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge {
                         target: successor,
                         args: vec![],
-                    })));
+                    }))));
 
                     // Redirect predecessor's branch to the new block
                     let pred_insns = &mut self.basic_blocks[pred_id.0].insns;
@@ -2245,20 +2420,21 @@ impl Assembler
             let mut new_ids = Vec::with_capacity(old_ids.len());
 
             for (insn, insn_id) in old_insns.into_iter().zip(old_ids.into_iter()) {
-                if let Insn::CCall { opnds, out, start_marker, end_marker, fptr, stack_map } = insn {
+                if let Insn::CCall { data } = insn {
+                    let CCallData { opnds, stack_map, out, start_marker, end_marker, fptr } = *data;
                     let insn_number = insn_id.map(|id| id.0).unwrap_or(0);
                     // Do we have a case where a ccall is emitted, but nobody
                     // uses the result?
                     let call_result_live = out.is_vreg()
-                        && intervals[out.vreg_idx().0]
+                        && intervals[out.vreg_idx()]
                             .range
                             .end
                             .is_some_and(|end| end > insn_number);
 
                     // Build a set of VRegIds that can be referenced by JITFrame for materializing the VM stack
-                    let stack_vreg_ids: HashSet<usize> = if let Some(StackMap { stack, .. }) = &stack_map {
-                        stack.iter().filter_map(|opnd| match opnd {
-                            Opnd::VReg { idx: VRegId(vreg_id), .. } => Some(*vreg_id),
+                    let stack_vreg_ids: HashSet<VRegId> = if let Some(StackMap { stack, .. }) = &stack_map {
+                        stack.iter().filter_map(|entry| match entry {
+                            StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => Some(*idx),
                             _ => None,
                         }).collect()
                     } else {
@@ -2269,7 +2445,7 @@ impl Assembler
                     // We need to preserve the "surviving" registers past the ccall,
                     // so we're going to push them all on the stack, then pop
                     // after we make the ccall
-                    let survivors: Vec<usize> = intervals.iter()
+                    let survivors: Vec<VRegId> = intervals.iter()
                         .filter(|interval| {
                             // We need to spill register intervals on this CCall in two cases:
                             // 1) The VReg is referenced in an instruction after the CCall
@@ -2302,18 +2478,28 @@ impl Assembler
 
                     if let Some(StackMap { stack, jit_frame, frame_depth }) = stack_map {
                         assert_eq!(unsafe { (*jit_frame).stack_size } as usize, stack.len());
-                        for (idx, stack_opnd) in stack.iter().enumerate() {
-                            let entry = match stack_opnd {
-                                Opnd::UImm(value) => {
-                                    let value = VALUE(*value as usize);
+                        for (idx, stack_entry) in stack.iter().enumerate() {
+                            let entry = match *stack_entry {
+                                StackMapEntry::Opnd(Opnd::Value(value)) => {
                                     // TODO: Investigate using a constant pool to track any value reference in the stack map
                                     assert!(value.special_const_p(), "StackMap should only materialize immediate VALUEs, but got: {value:?}");
                                     value
                                 }
-                                Opnd::VReg { idx: VRegId(vreg_id), .. } => {
-                                    let vreg_stack_index = match assignments[*vreg_id].expect("StackMap VReg should have an allocation") {
+                                StackMapEntry::Opnd(Opnd::UImm(value)) => {
+                                    let value = VALUE(value as usize);
+                                    // TODO: Investigate using a constant pool to track any value reference in the stack map
+                                    assert!(value.special_const_p(), "StackMap should only materialize immediate VALUEs, but got: {value:?}");
+                                    value
+                                }
+                                StackMapEntry::Skip(size) => {
+                                    let encoded = (size << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_SKIP_TAG as usize;
+                                    debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap skip should not look like an immediate VALUE");
+                                    VALUE(encoded)
+                                }
+                                StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) => {
+                                    let vreg_stack_index = match assignments[vreg].expect("StackMap VReg should have an allocation") {
                                         Allocation::Reg(_) | Allocation::Fixed(_) => {
-                                            let caller_saved_reg_idx = survivors.iter().position(|&survivor_id| survivor_id == *vreg_id).unwrap();
+                                            let caller_saved_reg_idx = survivors.iter().position(|&survivor_id| survivor_id == vreg).unwrap();
                                             let stack_idx = self.stack_state.stack_idx_for_caller_saved_reg(caller_saved_reg_idx);
                                             self.stack_state.stack_map_index_for_spill(stack_idx, frame_depth)
                                         }
@@ -2327,7 +2513,7 @@ impl Assembler
                                     debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap VReg should not look like an immediate VALUE");
                                     VALUE(encoded)
                                 }
-                                _ => unreachable!("unexpected operand in StackMap: {stack_opnd:?}"),
+                                _ => unreachable!("unexpected entry in StackMap: {stack_entry:?}"),
                             };
                             unsafe { (*jit_frame.cast_mut()).stack.as_mut_ptr().add(idx).write(entry); }
                         }
@@ -2370,13 +2556,15 @@ impl Assembler
 
                     // The CCall itself
                     new_insns.push(Insn::CCall {
-                        out: C_RET_OPND,
-                        opnds: vec![],  // We've moved everything in to ccall regs, so this should
-                                        // be empty now
-                        start_marker: None,
-                        end_marker: None,
-                        fptr,
-                        stack_map: None,
+                        data: Box::new(CCallData {
+                            opnds: vec![],  // We've moved everything in to ccall regs, so this should
+                                            // be empty now
+                            stack_map: None,
+                            out: C_RET_OPND,
+                            start_marker: None,
+                            end_marker: None,
+                            fptr,
+                        }),
                     });
                     new_ids.push(insn_id);
 
@@ -2430,6 +2618,40 @@ impl Assembler
         }
     }
 
+    /// Return the maximum number of stack-map entries that any side exit needs
+    /// to copy into reserved native stack slots.
+    pub fn side_exit_stack_map_slots(&self, assignments: &[Option<Allocation>]) -> usize {
+        self.block_order().into_iter().fold(0, |max_slots, block_id| {
+            let block = &self.basic_blocks[block_id.0];
+            block.insns.iter().fold(max_slots, |max_slots, insn| {
+                let slots = insn.target().map(|target| Self::side_exit_target_stack_map_slots(target, assignments)).unwrap_or(0);
+                max_slots.max(slots)
+            })
+        })
+    }
+
+    fn side_exit_target_stack_map_slots(target: &Target, assignments: &[Option<Allocation>]) -> usize {
+        let Target::SideExit(data) = target else {
+            return 0;
+        };
+        let Some(StackMap { stack, .. }) = &data.exit.stack_map else {
+            return 0;
+        };
+
+        stack.iter().filter(|entry| match entry {
+            StackMapEntry::Opnd(Opnd::Value(value)) => !value.special_const_p(),
+            StackMapEntry::Opnd(Opnd::UImm(value)) => !VALUE(*value as usize).special_const_p(),
+            StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => {
+                matches!(
+                    assignments[idx.to_usize()].expect("StackMap VReg should have an allocation"),
+                    Allocation::Reg(_) | Allocation::Fixed(_)
+                )
+            }
+            StackMapEntry::Opnd(Opnd::Reg(_)) => true,
+            _ => false,
+        }).count()
+    }
+
     /// Walk every instruction and replace VReg operands with the physical
     /// register (or stack slot) from the allocation assignments.
     fn rewrite_instructions(&mut self, assignments: &[Option<Allocation>]) {
@@ -2456,7 +2678,7 @@ impl Assembler
 
         match opnd {
             Opnd::VReg { idx, num_bits } => {
-                if let Some(assignment) = assignments[idx.0] {
+                if let Some(assignment) = assignments[*idx] {
                     match assignment {
                         Allocation::Reg(n) => {
                             let mut reg = regs[n];
@@ -2470,7 +2692,7 @@ impl Assembler
                         Allocation::Stack(n) => {
                             let num_bits = *num_bits;
                             *opnd = Opnd::Mem(Mem {
-                                base: MemBase::Stack { stack_idx: n, num_bits },
+                                base: MemBase::Stack { stack_idx: n.try_into().unwrap(), num_bits },
                                 disp: 0,
                                 num_bits,
                             });
@@ -2481,7 +2703,7 @@ impl Assembler
                 }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
-                match assignments[idx.0].unwrap() {
+                match assignments[*idx].unwrap() {
                     Allocation::Reg(n) => {
                         if let Opnd::Mem(mem) = opnd {
                             mem.base = MemBase::Reg(regs[n].reg_no);
@@ -2497,7 +2719,7 @@ impl Assembler
                         // Mark it as StackIndirect so arm64_scratch_split can load
                         // the pointer from the stack into a scratch register.
                         if let Opnd::Mem(mem) = opnd {
-                            mem.base = MemBase::StackIndirect { stack_idx: n };
+                            mem.base = MemBase::StackIndirect { stack_idx: n.try_into().unwrap() };
                         }
                     }
                 }
@@ -2542,9 +2764,75 @@ impl Assembler
     /// Returns the exit code as a list of instructions to be appended after the main
     /// code is linearized and split.
     pub fn compile_exits(&mut self) -> Vec<Insn> {
+        fn immediate_stack_map_value(opnd: Opnd) -> Option<VALUE> {
+            let value = match opnd {
+                Opnd::Value(value) => value,
+                Opnd::UImm(value) => VALUE(value as usize),
+                _ => unreachable!("unexpected immediate StackMap operand: {opnd:?}"),
+            };
+            value.special_const_p().then_some(value)
+        }
+
+        fn encode_stack_map_index(asm: &Assembler, stack_idx: usize, frame_depth: usize) -> VALUE {
+            let vreg_stack_index = asm.stack_state.stack_map_index_for_spill(stack_idx, frame_depth);
+            let encoded = (vreg_stack_index << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_VREG_TAG as usize;
+            debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap VReg should not look like an immediate VALUE");
+            VALUE(encoded)
+        }
+
+        fn capture_stack_map_opnd(asm: &mut Assembler, opnd: Opnd, capture_idx: &mut usize, frame_depth: usize) -> VALUE {
+            let stack_idx = asm.stack_state.stack_idx_for_side_exit_stack_map(*capture_idx);
+            *capture_idx += 1;
+            let capture_slot = Opnd::Mem(Mem {
+                base: MemBase::Stack { stack_idx: stack_idx.try_into().unwrap(), num_bits: 64 },
+                disp: 0,
+                num_bits: 64,
+            });
+            let opnd = if matches!(opnd, Opnd::Reg(_)) { opnd.with_num_bits(64) } else { opnd };
+            asm.store(capture_slot, opnd);
+            encode_stack_map_index(asm, stack_idx, frame_depth)
+        }
+
+        fn compile_exit_stack_map(asm: &mut Assembler, stack_map: &StackMap) {
+            let StackMap { stack, jit_frame, frame_depth } = stack_map;
+            let jit_frame = *jit_frame;
+            assert_eq!(unsafe { (*jit_frame).stack_size } as usize, stack.len());
+
+            let mut capture_idx = 0;
+            for (idx, stack_entry) in stack.iter().enumerate() {
+                let entry = match *stack_entry {
+                    StackMapEntry::Opnd(Opnd::Value(_) | Opnd::UImm(_)) => {
+                        let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
+                        immediate_stack_map_value(opnd)
+                            .unwrap_or_else(|| capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth))
+                    }
+                    StackMapEntry::Skip(size) => {
+                        let encoded = (size << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_SKIP_TAG as usize;
+                        debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap skip should not look like an immediate VALUE");
+                        VALUE(encoded)
+                    }
+                    StackMapEntry::Opnd(Opnd::Mem(Mem { base: MemBase::Stack { stack_idx, .. }, disp, .. })) => {
+                        assert_eq!(disp, 0, "StackMap stack slot should not have a displacement");
+                        encode_stack_map_index(asm, stack_idx.to_usize(), *frame_depth)
+                    }
+                    StackMapEntry::Opnd(Opnd::Reg(_)) => {
+                        let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
+                        capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth)
+                    }
+                    _ => unreachable!("unexpected entry in SideExit StackMap: {stack_entry:?}"),
+                };
+                unsafe { (*jit_frame.cast_mut()).stack.as_mut_ptr().add(idx).write(entry); }
+            }
+
+            assert!(capture_idx <= asm.stack_state.num_side_exit_stack_map_slots);
+            asm_comment!(asm, "install side-exit JITFrame for caller depth {}", frame_depth);
+            let jit_frame_slot = Opnd::mem(64, NATIVE_BASE_PTR, -((*frame_depth as i32 + 1) * SIZEOF_VALUE_I32));
+            asm.store(jit_frame_slot, Opnd::const_ptr(jit_frame));
+        }
+
         /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals, iseq, .. } = exit;
+            let SideExit { pc, stack, locals, iseq, stack_map, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
@@ -2575,6 +2863,10 @@ impl Assembler
                     asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                 }
             }
+
+            if let Some(stack_map) = stack_map {
+                compile_exit_stack_map(asm, stack_map);
+            }
         }
 
         /// Tear down the JIT frame and return to the interpreter.
@@ -2588,15 +2880,10 @@ impl Assembler
                 let payload = get_or_create_iseq_payload(exit.iseq);
                 payload.reset_profiles_remaining(recompile.insn_idx as YarvInsnIdx);
                 use crate::codegen::exit_recompile;
-                let (profile_kind, profile_payload) = recompile.strategy.to_c_args();
                 asm_comment!(asm, "profile and maybe recompile");
                 asm_ccall!(asm, exit_recompile,
                     EC,
-                    recompile.frame_iseq,
-                    recompile.compiled_iseq,
-                    recompile.insn_idx.into(),
-                    profile_kind.into(),
-                    profile_payload.into()
+                    recompile.compiled_iseq
                 );
             }
         }
@@ -2640,7 +2927,7 @@ impl Assembler
         for block_id in self.block_order() {
             let block = &self.basic_blocks[block_id.0];
             for (idx, insn) in block.insns.iter().enumerate() {
-                if let Some(target @ Target::SideExit { .. }) = insn.target() {
+                if let Some(target @ Target::SideExit(..)) = insn.target() {
                     targets.insert((block_id.0, idx), target.clone());
                 }
             }
@@ -2678,7 +2965,8 @@ impl Assembler
         for ((block_id, idx), target) in targets {
             // Compile a side exit. Note that this is past register assignment,
             // so you can't use an instruction that returns a VReg.
-            if let Target::SideExit { exit: exit @ SideExit { pc, .. }, reason } = target {
+            if let Target::SideExit(data) = target {
+                let SideExitTarget { exit, reason } = *data;
                 // Only record the exit if `trace_side_exits` is defined and the counter is either the one specified
                 let should_record_exit = get_option!(trace_side_exits).map(|trace| match trace {
                     TraceExits::All => true,
@@ -2722,7 +3010,7 @@ impl Assembler
                 } else {
                     let new_exit = self.new_label("side_exit");
                     self.write_label(new_exit.clone());
-                    asm_comment!(self, "Exit: {pc}");
+                    asm_comment!(self, "Exit: {}", exit.pc);
                     compile_exit(self, &exit, None);
                     compiled_exits.insert(exit, new_exit.unwrap_label());
                     new_exit
@@ -2850,15 +3138,15 @@ impl Assembler
                 // If the instruction has an output that is a VReg, add to kill set
                 if let Some(out) = insn.out_opnd() {
                     if let Opnd::VReg { idx, .. } = out {
-                        kill_set.insert(idx.0);
+                        kill_set.insert(idx.to_usize());
                     }
                 }
 
                 // For all input operands that are VRegs (including memory base VRegs), add to gen set
                 insn.for_each_operand(|opnd| {
                     for idx in opnd.vreg_ids() {
-                        assert!(!kill_set.get(idx.0));
-                        gen_set.insert(idx.0);
+                        assert!(!kill_set.get(idx.to_usize()));
+                        gen_set.insert(idx.to_usize());
                     }
                 });
             }
@@ -2866,7 +3154,7 @@ impl Assembler
             // Add block parameters to kill set
             for param in &block.parameters {
                 if let Opnd::VReg { idx, .. } = param {
-                    kill_set.insert(idx.0);
+                    kill_set.insert(idx.to_usize());
                 }
             }
 
@@ -2883,7 +3171,7 @@ impl Assembler
     pub fn build_intervals(&self, live_in: Vec<BitSet<usize>>) -> Vec<Interval> {
         let num_vregs = self.num_vregs;
         let mut intervals: Vec<Interval> = (0..num_vregs)
-            .map(|i| Interval::new(i))
+            .map(|i| Interval::new(i.into()))
             .collect();
 
         let blocks = self.block_order();
@@ -2899,7 +3187,7 @@ impl Assembler
 
             // Add out_vregs to live set
             for idx in block.out_vregs() {
-                live.insert(idx.0);
+                live.insert(idx.to_usize());
             }
 
             // For each live vreg, add entire block range
@@ -2915,14 +3203,14 @@ impl Assembler
                 // If instruction has VReg output, set_from
                 if let Some(out) = insn.out_opnd() {
                     if let Opnd::VReg { idx, .. } = out {
-                        intervals[idx.0].set_from(insn_id.0);
+                        intervals[*idx].set_from(insn_id.0);
                     }
                 }
 
                 // For each VReg input (including memory base VRegs), add_range from block start to insn
                 insn.for_each_operand(|opnd| {
                     for idx in opnd.vreg_ids() {
-                        intervals[idx.0].add_range(block.from.0, insn_id.0);
+                        intervals[idx].add_range(block.from.0, insn_id.0);
                     }
                 });
             }
@@ -3106,7 +3394,7 @@ fn format_insn_compact(asm: &Assembler, insn: &Insn) -> String {
         match target {
             Target::CodePtr(code_ptr) => output.push_str(&format!(" {code_ptr:?}")),
             Target::Label(Label(label_idx)) => output.push_str(&format!(" {}", asm.label_names[*label_idx])),
-            Target::SideExit { reason, .. } => output.push_str(&format!(" Exit({reason})")),
+            Target::SideExit(data) => output.push_str(&format!(" Exit({})", data.reason)),
             Target::Block(edge) => {
                 let label = asm.block_label(edge.target);
                 let name = &asm.label_names[label.0];
@@ -3127,7 +3415,7 @@ fn format_insn_compact(asm: &Assembler, insn: &Insn) -> String {
     }
 
     // Print operands (but skip branch args since they're already printed with target)
-    if let Some(Target::SideExit { .. }) = insn.target() {
+    if let Some(Target::SideExit(..)) = insn.target() {
         match insn {
             Insn::Joz(opnd, _) |
             Insn::Jonz(opnd, _) |
@@ -3231,7 +3519,7 @@ impl fmt::Display for Assembler {
                             match target {
                                 Target::CodePtr(code_ptr) => write!(f, " {code_ptr:?}")?,
                                 Target::Label(Label(label_idx)) => write!(f, " {}", label_name(self, *label_idx, &label_counts))?,
-                                Target::SideExit { reason, .. } => write!(f, " Exit({reason})")?,
+                                Target::SideExit(data) => write!(f, " Exit({})", data.reason)?,
                                 Target::Block(edge) => {
                                     let label = self.block_label(edge.target);
                                     let name = label_name(self, label.0, &label_counts);
@@ -3252,7 +3540,7 @@ impl fmt::Display for Assembler {
                         }
 
                         // Print list of operands
-                        if let Some(Target::SideExit { .. }) = insn.target() {
+                        if let Some(Target::SideExit(..)) = insn.target() {
                             // If the instruction has a SideExit, avoid using opnd_iter(), which has stack/locals.
                             // Here, only handle instructions that have both Opnd and Target.
                             match insn {
@@ -3406,7 +3694,7 @@ impl Assembler {
         let out = self.new_vreg(Opnd::match_num_bits(&opnds));
         let fptr = Opnd::const_ptr(fptr);
         let stack_map = self.stack_map.take();
-        self.push_insn(Insn::CCall { fptr, opnds, start_marker: None, end_marker: None, out, stack_map });
+        self.push_insn(Insn::CCall { data: Box::new(CCallData { opnds, stack_map, fptr, start_marker: None, end_marker: None, out }) });
         self.clear_stack_canary(canary_opnd);
         out
     }
@@ -3416,7 +3704,7 @@ impl Assembler {
     pub fn ccall_into(&mut self, out: Opnd, fptr: *const u8, opnds: Vec<Opnd>) {
         let fptr = Opnd::const_ptr(fptr);
         let stack_map = self.stack_map.take();
-        self.push_insn(Insn::CCall { fptr, opnds, start_marker: None, end_marker: None, out, stack_map });
+        self.push_insn(Insn::CCall { data: Box::new(CCallData { opnds, stack_map, fptr, start_marker: None, end_marker: None, out }) });
     }
 
     /// Call a C function stored in a register
@@ -3424,7 +3712,7 @@ impl Assembler {
         assert!(matches!(fptr, Opnd::Reg(_)), "ccall_reg must be called with Opnd::Reg: {fptr:?}");
         let out = self.new_vreg(num_bits);
         let stack_map = self.stack_map.take();
-        self.push_insn(Insn::CCall { fptr, opnds: vec![], start_marker: None, end_marker: None, out, stack_map });
+        self.push_insn(Insn::CCall { data: Box::new(CCallData { opnds: vec![], stack_map, fptr, start_marker: None, end_marker: None, out }) });
         out
     }
 
@@ -3440,22 +3728,31 @@ impl Assembler {
         let out = self.new_vreg(Opnd::match_num_bits(&opnds));
         let stack_map = self.stack_map.take();
         self.push_insn(Insn::CCall {
-            fptr: Opnd::const_ptr(fptr),
-            opnds,
-            start_marker: Some(Rc::new(start_marker)),
-            end_marker: Some(Rc::new(end_marker)),
-            out,
-            stack_map,
+            data: Box::new(CCallData {
+                opnds,
+                stack_map,
+                fptr: Opnd::const_ptr(fptr),
+                start_marker: Some(Rc::new(start_marker)),
+                end_marker: Some(Rc::new(end_marker)),
+                out,
+            }),
         });
         out
     }
 
     pub fn count_call_to(&mut self, fn_name: &str) {
+        self.count_call_to_with(|| fn_name.to_string());
+    }
+
+    /// Like [`Assembler::count_call_to`], but only builds the name when stats are
+    /// enabled. Use for callers where computing the name is non-trivial (e.g.
+    /// resolving a `Class#method` string) so no-stats builds don't pay for it.
+    pub fn count_call_to_with(&mut self, fn_name: impl FnOnce() -> String) {
         // We emit ccalls while initializing the JIT. Unfortunately, we skip those because
         // otherwise we have no counter pointers to read.
         if crate::state::ZJITState::has_instance() && get_option!(stats) {
             let ccall_counter_pointers = crate::state::ZJITState::get_ccall_counter_pointers();
-            let counter_ptr = ccall_counter_pointers.entry(fn_name.to_string()).or_insert_with(|| Box::new(0));
+            let counter_ptr = ccall_counter_pointers.entry(fn_name()).or_insert_with(|| Box::new(0));
             let counter_ptr: &mut u64 = counter_ptr.as_mut();
             self.incr_counter(Opnd::const_ptr(counter_ptr), 1.into());
         }
@@ -3656,7 +3953,7 @@ impl Assembler {
     }
 
     pub fn patch_point(&mut self, target: Target, invariant: Invariant, version: IseqVersionRef) {
-        self.push_insn(Insn::PatchPoint { target, invariant, version });
+        self.push_insn(Insn::PatchPoint(Box::new(PatchPointData { target, invariant, version })));
     }
 
     pub fn pad_patch_point(&mut self) {
@@ -3665,6 +3962,34 @@ impl Assembler {
 
     pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr, &CodeBlock) + 'static) {
         self.push_insn(Insn::PosMarker(Rc::new(marker_fn)));
+    }
+
+    /// Insert a marker that linearize_instructions lowers to a PosMarker at the
+    /// end of the current block, after its terminator instructions.
+    pub fn pos_marker_at_block_end(&mut self, marker_fn: impl Fn(CodePtr, &CodeBlock) + 'static) {
+        let block_id = self.current_block_id;
+        let block = &self.basic_blocks[block_id.0];
+        let len = block.insns.len();
+        assert!(
+            len > 0 && block.insns[len - 1].is_terminator(),
+            "pos_marker_at_block_end requires the current block to end with a terminator"
+        );
+
+        // A block may end with two terminators, such as a conditional jump
+        // followed by an unconditional jump. Keep the pseudo-instruction before
+        // the whole terminator suffix so the LIR block itself still ends with
+        // terminators; linearize_instructions emits the real PosMarker after the
+        // block's instructions.
+        let insert_pos = if block.insns.get(len - 2).is_some_and(Insn::is_terminator) {
+            len - 2
+        } else {
+            len - 1
+        };
+
+        self.idx += 1;
+        let block = &mut self.basic_blocks[block_id.0];
+        block.insns.insert(insert_pos, Insn::PosMarkerAtBlockEnd(Rc::new(marker_fn)));
+        block.insn_ids.insert(insert_pos, None);
     }
 
     #[must_use]
@@ -3683,9 +4008,9 @@ impl Assembler {
     /// HIR function currently reserves multiple native JITFrame slots, one per
     /// inlining depth, stack-map indexes must be encoded relative to the target
     /// frame's own cfp->jit_return.
-    pub fn stack_map(&mut self, stack: Vec<Opnd>, jit_frame: *const zjit_jit_frame, frame_depth: usize) {
+    pub fn stack_map(&mut self, stack: Vec<StackMapEntry>, jit_frame: *const zjit_jit_frame, frame_depth: usize) {
         assert!(self.stack_map.is_none());
-        self.stack_map = Some(StackMap { stack, jit_frame, frame_depth });
+        self.stack_map = Some(StackMap::new(stack, jit_frame, frame_depth));
     }
 
     pub fn store(&mut self, dest: Opnd, src: Opnd) {
@@ -3801,6 +4126,24 @@ mod tests {
 
     fn scratch_reg() -> Opnd {
         Assembler::new_with_scratch_reg().1
+    }
+
+    #[test]
+    fn test_size_of_insn() {
+        // PatchPoint (PatchPointData), CCall (CCallData), and Target (Block/SideExit
+        // payloads) are all boxed, so none dominates the enum. The floor is now the
+        // 3-operand arithmetic/CSel variants: 3 * Opnd (48) + 8 discriminant (Opnd has
+        // no niche to absorb it) = 56. Going lower means boxing the hottest insns.
+        assert_eq!(std::mem::size_of::<Insn>(), 56);
+    }
+
+    #[test]
+    fn test_size_of_opnd() {
+        assert_eq!(std::mem::size_of::<VRegId>(), 4);
+        assert_eq!(std::mem::size_of::<MemBase>(), 8);
+        assert_eq!(std::mem::size_of::<Mem>(), 16);
+        assert_eq!(std::mem::size_of::<Opnd>(), 16);
+        assert_eq!(std::mem::size_of::<Target>(), 16);
     }
 
     #[test]
@@ -3972,10 +4315,10 @@ mod tests {
         asm.write_label(label_b1);
         asm.basic_blocks[b1.0].add_parameter(r10);
         asm.basic_blocks[b1.0].add_parameter(r11);
-        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(BranchEdge {
+        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge {
             target: b2,
             args: vec![Opnd::UImm(1), r11],
-        })));
+        }))));
 
         // Build b2: define(r12, r13) { cmp(r13, imm(1)); blt(...) }
         asm.set_current_block(b2);
@@ -3984,8 +4327,8 @@ mod tests {
         asm.basic_blocks[b2.0].add_parameter(r12);
         asm.basic_blocks[b2.0].add_parameter(r13);
         asm.basic_blocks[b2.0].push_insn(Insn::Cmp { left: r13, right: Opnd::UImm(1) });
-        asm.basic_blocks[b2.0].push_insn(Insn::Jl(Target::Block(BranchEdge { target: b4, args: vec![] })));
-        asm.basic_blocks[b2.0].push_insn(Insn::Jmp(Target::Block(BranchEdge { target: b3, args: vec![] })));
+        asm.basic_blocks[b2.0].push_insn(Insn::Jl(Target::Block(Box::new(BranchEdge { target: b4, args: vec![] }))));
+        asm.basic_blocks[b2.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge { target: b3, args: vec![] }))));
 
         // Build b3: r14 = mul(r12, r13); r15 = sub(r13, imm(1)); jump(edge(b2, [r14, r15]))
         asm.set_current_block(b3);
@@ -3995,10 +4338,10 @@ mod tests {
         let r15 = asm.new_vreg(64);
         asm.basic_blocks[b3.0].push_insn(Insn::Mul { left: r12, right: r13, out: r14 });
         asm.basic_blocks[b3.0].push_insn(Insn::Sub { left: r13, right: Opnd::UImm(1), out: r15 });
-        asm.basic_blocks[b3.0].push_insn(Insn::Jmp(Target::Block(BranchEdge {
+        asm.basic_blocks[b3.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge {
             target: b2,
             args: vec![r14, r15],
-        })));
+        }))));
 
         // Build b4: out = add(r10, r12); ret out
         asm.set_current_block(b4);
@@ -4022,18 +4365,18 @@ mod tests {
         assert_eq!(bitset_to_vreg_indices(&live_in[b1.0], num_vregs), vec![]);
 
         // b2: [r10] - r10 is live-in (used in b4 which is reachable)
-        assert_eq!(bitset_to_vreg_indices(&live_in[b2.0], num_vregs), vec![r10.vreg_idx().0]);
+        assert_eq!(bitset_to_vreg_indices(&live_in[b2.0], num_vregs), vec![r10.vreg_idx_usize()]);
 
         // b3: [r10, r12, r13] - all are live-in
         assert_eq!(
             bitset_to_vreg_indices(&live_in[b3.0], num_vregs),
-            vec![r10.vreg_idx().0, r12.vreg_idx().0, r13.vreg_idx().0]
+            vec![r10.vreg_idx_usize(), r12.vreg_idx_usize(), r13.vreg_idx_usize()]
         );
 
         // b4: [r10, r12] - both are live-in
         assert_eq!(
             bitset_to_vreg_indices(&live_in[b4.0], num_vregs),
-            vec![r10.vreg_idx().0, r12.vreg_idx().0]
+            vec![r10.vreg_idx_usize(), r12.vreg_idx_usize()]
         );
     }
 
@@ -4097,10 +4440,10 @@ mod tests {
         asm.set_current_block(b1);
         let label_b1 = asm.new_label("bb0");
         asm.write_label(label_b1);
-        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(BranchEdge {
+        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge {
             target: b2,
             args: vec![Opnd::mem(64, base, 8)],
-        })));
+        }))));
 
         let out_vregs = asm.basic_blocks[b1.0].out_vregs();
         assert_eq!(out_vregs, vec![base.vreg_idx()]);
@@ -4108,7 +4451,7 @@ mod tests {
 
     #[test]
     fn test_interval_add_range() {
-        let mut interval = Interval::new(1);
+        let mut interval = Interval::new(VRegId(1));
 
         // Add range to empty interval
         interval.add_range(5, 10);
@@ -4128,7 +4471,7 @@ mod tests {
 
     #[test]
     fn test_interval_survives() {
-        let mut interval = Interval::new(1);
+        let mut interval = Interval::new(VRegId(1));
         interval.add_range(3, 10);
 
         assert!(!interval.survives(2));  // Before range
@@ -4140,7 +4483,7 @@ mod tests {
 
     #[test]
     fn test_interval_set_from() {
-        let mut interval = Interval::new(1);
+        let mut interval = Interval::new(VRegId(1));
 
         // With no range, sets both start and end
         interval.set_from(10);
@@ -4157,14 +4500,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "Invalid range")]
     fn test_interval_add_range_invalid() {
-        let mut interval = Interval::new(1);
+        let mut interval = Interval::new(VRegId(1));
         interval.add_range(10, 5);
     }
 
     #[test]
     #[should_panic(expected = "survives called on interval with no range")]
     fn test_interval_survives_panics_without_range() {
-        let interval = Interval::new(1);
+        let interval = Interval::new(VRegId(1));
         interval.survives(5);
     }
 
@@ -4191,23 +4534,23 @@ mod tests {
 
         // Assert expected ranges
         // Note: Rust CFG differs from Ruby due to conditional branches requiring two instructions (Jl + Jmp)
-        assert_eq!(intervals[r10_idx.0].range.start, Some(16));
-        assert_eq!(intervals[r10_idx.0].range.end, Some(38));
+        assert_eq!(intervals[r10_idx].range.start, Some(16));
+        assert_eq!(intervals[r10_idx].range.end, Some(38));
 
-        assert_eq!(intervals[r11_idx.0].range.start, Some(16));
-        assert_eq!(intervals[r11_idx.0].range.end, Some(20));
+        assert_eq!(intervals[r11_idx].range.start, Some(16));
+        assert_eq!(intervals[r11_idx].range.end, Some(20));
 
-        assert_eq!(intervals[r12_idx.0].range.start, Some(20));
-        assert_eq!(intervals[r12_idx.0].range.end, Some(38));
+        assert_eq!(intervals[r12_idx].range.start, Some(20));
+        assert_eq!(intervals[r12_idx].range.end, Some(38));
 
-        assert_eq!(intervals[r13_idx.0].range.start, Some(20));
-        assert_eq!(intervals[r13_idx.0].range.end, Some(32));
+        assert_eq!(intervals[r13_idx].range.start, Some(20));
+        assert_eq!(intervals[r13_idx].range.end, Some(32));
 
-        assert_eq!(intervals[r14_idx.0].range.start, Some(30));
-        assert_eq!(intervals[r14_idx.0].range.end, Some(36));
+        assert_eq!(intervals[r14_idx].range.start, Some(30));
+        assert_eq!(intervals[r14_idx].range.end, Some(36));
 
-        assert_eq!(intervals[r15_idx.0].range.start, Some(32));
-        assert_eq!(intervals[r15_idx.0].range.end, Some(36));
+        assert_eq!(intervals[r15_idx].range.start, Some(32));
+        assert_eq!(intervals[r15_idx].range.end, Some(36));
     }
 
     #[test]
@@ -4246,12 +4589,12 @@ mod tests {
         // r13: [20,38) gets Reg(2)
         // r14: [36,42) gets Reg(1) (r12 expired, reuses its register)
         // r15: [38,42) gets Reg(2) (r13 expired, reuses its register)
-        assert_eq!(assignments[r10_idx.0], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r11_idx.0], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r12_idx.0], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r13_idx.0], Some(Allocation::Reg(2)));
-        assert_eq!(assignments[r14_idx.0], Some(Allocation::Reg(3)));
-        assert_eq!(assignments[r15_idx.0], Some(Allocation::Reg(2)));
+        assert_eq!(assignments[r10_idx], Some(Allocation::Reg(0)));
+        assert_eq!(assignments[r11_idx], Some(Allocation::Reg(1)));
+        assert_eq!(assignments[r12_idx], Some(Allocation::Reg(1)));
+        assert_eq!(assignments[r13_idx], Some(Allocation::Reg(2)));
+        assert_eq!(assignments[r14_idx], Some(Allocation::Reg(3)));
+        assert_eq!(assignments[r15_idx], Some(Allocation::Reg(2)));
     }
 
     #[test]
@@ -4274,12 +4617,12 @@ mod tests {
         let r15_idx = if let Opnd::VReg { idx, .. } = r15 { idx } else { panic!() };
 
         assert_eq!(num_stack_slots, 1);
-        assert_eq!(assignments[r10_idx.0], Some(Allocation::Stack(0)));
-        assert_eq!(assignments[r11_idx.0], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r12_idx.0], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r13_idx.0], Some(Allocation::Reg(2)));
-        assert_eq!(assignments[r14_idx.0], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r15_idx.0], Some(Allocation::Reg(2)));
+        assert_eq!(assignments[r10_idx], Some(Allocation::Stack(0)));
+        assert_eq!(assignments[r11_idx], Some(Allocation::Reg(1)));
+        assert_eq!(assignments[r12_idx], Some(Allocation::Reg(1)));
+        assert_eq!(assignments[r13_idx], Some(Allocation::Reg(2)));
+        assert_eq!(assignments[r14_idx], Some(Allocation::Reg(0)));
+        assert_eq!(assignments[r15_idx], Some(Allocation::Reg(2)));
     }
 
     #[test]
@@ -4302,12 +4645,12 @@ mod tests {
         let r15_idx = if let Opnd::VReg { idx, .. } = r15 { idx } else { panic!() };
 
         assert_eq!(num_stack_slots, 3);
-        assert_eq!(assignments[r10_idx.0], Some(Allocation::Stack(0)));
-        assert_eq!(assignments[r11_idx.0], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r12_idx.0], Some(Allocation::Stack(1)));
-        assert_eq!(assignments[r13_idx.0], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r14_idx.0], Some(Allocation::Stack(2)));
-        assert_eq!(assignments[r15_idx.0], Some(Allocation::Reg(0)));
+        assert_eq!(assignments[r10_idx], Some(Allocation::Stack(0)));
+        assert_eq!(assignments[r11_idx], Some(Allocation::Reg(0)));
+        assert_eq!(assignments[r12_idx], Some(Allocation::Stack(1)));
+        assert_eq!(assignments[r13_idx], Some(Allocation::Reg(0)));
+        assert_eq!(assignments[r14_idx], Some(Allocation::Stack(2)));
+        assert_eq!(assignments[r15_idx], Some(Allocation::Reg(0)));
     }
 
     #[test]
@@ -4329,11 +4672,11 @@ mod tests {
         let preferred_registers = asm.preferred_register_assignments(&intervals);
 
         let vreg_idx = new_sp.vreg_idx();
-        assert_eq!(preferred_registers[vreg_idx.0], Some(sp.unwrap_reg()));
+        assert_eq!(preferred_registers[vreg_idx], Some(sp.unwrap_reg()));
 
         let (assignments, num_stack_slots) = asm.linear_scan(intervals, 0, &preferred_registers);
         assert_eq!(num_stack_slots, 0);
-        assert_eq!(assignments[vreg_idx.0], Some(Allocation::Fixed(sp.unwrap_reg())));
+        assert_eq!(assignments[vreg_idx], Some(Allocation::Fixed(sp.unwrap_reg())));
     }
 
     #[test]
@@ -4482,8 +4825,8 @@ mod tests {
         asm.basic_blocks[b1.0].push_insn(Insn::Add { left: Opnd::UImm(123), right: Opnd::UImm(0), out: v0 });
         asm.basic_blocks[b1.0].push_insn(Insn::Add { left: v0, right: Opnd::UImm(456), out: v1 });
         asm.basic_blocks[b1.0].push_insn(Insn::Cmp { left: v1, right: Opnd::UImm(0) });
-        asm.basic_blocks[b1.0].push_insn(Insn::Jl(Target::Block(BranchEdge { target: b2, args: vec![v0] })));
-        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(BranchEdge { target: b3, args: vec![v1] })));
+        asm.basic_blocks[b1.0].push_insn(Insn::Jl(Target::Block(Box::new(BranchEdge { target: b2, args: vec![v0] }))));
+        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge { target: b3, args: vec![v1] }))));
 
         // b2(v2): v3 = Add(v2, 789), Jmp(b3, [v3])
         asm.set_current_block(b2);
@@ -4493,7 +4836,7 @@ mod tests {
         asm.basic_blocks[b2.0].add_parameter(v2);
         let v3 = asm.new_vreg(64);
         asm.basic_blocks[b2.0].push_insn(Insn::Add { left: v2, right: Opnd::UImm(789), out: v3 });
-        asm.basic_blocks[b2.0].push_insn(Insn::Jmp(Target::Block(BranchEdge { target: b3, args: vec![v3] })));
+        asm.basic_blocks[b2.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge { target: b3, args: vec![v3] }))));
 
         // b3(v4): CRet(v4)
         asm.set_current_block(b3);
@@ -4520,8 +4863,8 @@ mod tests {
         assert_eq!(asm.basic_blocks.len(), 3);
 
         // Verify v1 and v4 have different allocations (so moves are needed)
-        let v1_alloc = assignments[v1.vreg_idx().0].unwrap();
-        let v4_alloc = assignments[v4.vreg_idx().0].unwrap();
+        let v1_alloc = assignments[v1.vreg_idx()].unwrap();
+        let v4_alloc = assignments[v4.vreg_idx()].unwrap();
         assert_ne!(v1_alloc, v4_alloc, "Test setup: v1 and v4 should have different allocations");
 
         asm.resolve_ssa(&intervals, &assignments);
@@ -4556,7 +4899,7 @@ mod tests {
         assert!(has_mov, "Expected Mov in split block for v1->v4");
 
         // b2->b3 is not a critical edge (b2 has single succ), so moves go before Jmp in b2
-        let v3_alloc = assignments[v3.vreg_idx().0].unwrap();
+        let v3_alloc = assignments[v3.vreg_idx()].unwrap();
         let b2_insns = &asm.basic_blocks[b2.0].insns;
         if v3_alloc != v4_alloc {
             // Check that a Mov was inserted before the Jmp in b2
@@ -4592,12 +4935,14 @@ mod tests {
         // v3 = CCall { fptr: UImm(0xF00), opnds: [v2] }
         let v3 = asm.new_vreg(64);
         asm.basic_blocks[b1.0].push_insn(Insn::CCall {
-            opnds: vec![v2],
-            fptr: Opnd::UImm(0xF00),
-            start_marker: None,
-            end_marker: None,
-            out: v3,
-            stack_map: None,
+            data: Box::new(CCallData {
+                opnds: vec![v2],
+                stack_map: None,
+                fptr: Opnd::UImm(0xF00),
+                start_marker: None,
+                end_marker: None,
+                out: v3,
+            }),
         });
 
         // v4 = Add(v3, v1)
@@ -4623,10 +4968,10 @@ mod tests {
         let regs = &ALLOC_REGS[..num_regs];
 
         // v0 should be spilled (long-lived, only 2 regs)
-        assert!(matches!(assignments[v0.vreg_idx().0], Some(Allocation::Stack(_))),
+        assert!(matches!(assignments[v0.vreg_idx()], Some(Allocation::Stack(_))),
             "v0 should be spilled to stack");
         // v1 should be in a register
-        assert!(matches!(assignments[v1.vreg_idx().0], Some(Allocation::Reg(_))),
+        assert!(matches!(assignments[v1.vreg_idx()], Some(Allocation::Reg(_))),
             "v1 should be in a register");
 
         // Run the pipeline: handle_caller_saved_regs then resolve_ssa
@@ -4642,7 +4987,7 @@ mod tests {
         assert!(!pushes.is_empty(), "Expected at least one saved register across CCall");
 
         // The survivor register should match v1's allocation
-        let v1_reg = match assignments[v1.vreg_idx().0].unwrap() {
+        let v1_reg = match assignments[v1.vreg_idx()].unwrap() {
             Allocation::Reg(n) => Opnd::Reg(regs[n]),
             Allocation::Fixed(reg) => Opnd::Reg(reg),
             _ => unreachable!(),
@@ -4654,8 +4999,8 @@ mod tests {
 
         // The CCall should have empty opnds and out = C_RET_OPND (rewritten to regs[0])
         let ccall = insns.iter().find(|i| matches!(i, Insn::CCall { .. })).unwrap();
-        if let Insn::CCall { opnds, .. } = ccall {
-            assert!(opnds.is_empty(), "CCall opnds should be empty after handle_caller_saved_regs");
+        if let Insn::CCall { data } = ccall {
+            assert!(data.opnds.is_empty(), "CCall opnds should be empty after handle_caller_saved_regs");
         }
 
         // v0 should be rewritten to a Stack operand

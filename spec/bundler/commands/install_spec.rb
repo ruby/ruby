@@ -1349,6 +1349,11 @@ RSpec.describe "bundle install with gem sources" do
         skip "This example is runnable when RubyGems::Installer implements `build_jobs`"
       end
 
+      # The make jobserver is a GNU make feature. On Windows extensions are built
+      # with nmake, which has no `-j` jobserver (and an inherited `-j` MAKEFLAGS
+      # even breaks nmake), so the slot count these examples assert never appears.
+      skip "The make jobserver is not available on Windows (nmake)" if mswin?
+
       @old_makeflags = ENV["MAKEFLAGS"]
       @gemspec = nil
 
@@ -1389,7 +1394,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(gem_make_out).not_to include("make -j8")
     end
 
-    it "uses 3 slots from the available pool when running the compilation of an extension" do
+    it "uses 3 slots from the available pool when running the compilation of an extension", rubygems: ">= 4.1.0.dev" do
       ENV.delete("MAKEFLAGS")
 
       install_gemfile(<<~G, env: { "BUNDLE_JOBS" => "8" })
@@ -1402,7 +1407,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(gem_make_out).to include("make -j3")
     end
 
-    it "consumes 3 slots from the pool when BUNDLE_JOBS isn't set" do
+    it "consumes 3 slots from the pool when BUNDLE_JOBS isn't set", rubygems: ">= 4.1.0.dev" do
       ENV.delete("MAKEFLAGS")
 
       install_gemfile(<<~G)

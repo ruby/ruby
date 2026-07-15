@@ -439,6 +439,12 @@ rb_yjit_shape_obj_complex_p(VALUE obj)
     return rb_obj_shape_complex_p(obj);
 }
 
+bool
+rb_yjit_shape_obj_embedded_p(VALUE obj)
+{
+    return rb_obj_shape_embedded_p(obj);
+}
+
 attr_index_t
 rb_yjit_shape_capacity(shape_id_t shape_id)
 {

@@ -52,7 +52,7 @@ module Gem
       }.freeze
 
       def initialize(source)
-        @lines = source.split("\n")
+        @lines = source.split(/\r?\n/)
         @anchors = {}
         @depth = 0
         strip_document_prefix
@@ -815,7 +815,9 @@ module Gem
       end
 
       def emit_string(str, indent, quote: false)
-        if str.include?("\n")
+        # A CR cannot be represented in a block scalar because parsing
+        # normalizes CRLF line breaks to LF, so quote and escape instead.
+        if str.include?("\n") && !str.include?("\r")
           emit_block_scalar(str, indent)
         elsif needs_quoting?(str, quote)
           " #{quote_string(str)}\n"

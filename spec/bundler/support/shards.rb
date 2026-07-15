@@ -10,6 +10,7 @@ module Spec
     EXAMPLE_MAPPINGS = {
       shard_a: [
         "spec/runtime/setup_spec.rb",
+        "spec/runtime/setup_gems_spec.rb",
         "spec/commands/install_spec.rb",
         "spec/commands/add_spec.rb",
         "spec/install/gems/compact_index_spec.rb",
@@ -52,9 +53,13 @@ module Spec
         "spec/bundler/ui_spec.rb",
         "spec/bundler/plugin/source_list_spec.rb",
         "spec/bundler/source/path_spec.rb",
+        "spec/lock/lockfile_spec.rb",
+        "spec/runtime/inline_spec.rb",
       ],
       shard_b: [
         "spec/install/gemfile/git_spec.rb",
+        "spec/install/gemfile/git_overrides_spec.rb",
+        "spec/install/gemfile/git_extensions_spec.rb",
         "spec/install/gems/standalone_spec.rb",
         "spec/commands/lock_spec.rb",
         "spec/cache/gems_spec.rb",
@@ -64,7 +69,6 @@ module Spec
         "spec/plugins/install_spec.rb",
         "spec/commands/binstubs_spec.rb",
         "spec/install/gems/flex_spec.rb",
-        "spec/runtime/inline_spec.rb",
         "spec/commands/post_bundle_message_spec.rb",
         "spec/runtime/executable_spec.rb",
         "spec/lock/git_spec.rb",
@@ -99,6 +103,7 @@ module Spec
       ],
       shard_c: [
         "spec/commands/newgem_spec.rb",
+        "spec/commands/newgem_options_spec.rb",
         "spec/commands/exec_spec.rb",
         "spec/commands/clean_spec.rb",
         "spec/commands/platform_spec.rb",
@@ -107,7 +112,6 @@ module Spec
         "spec/commands/cache_spec.rb",
         "spec/commands/check_spec.rb",
         "spec/commands/list_spec.rb",
-        "spec/install/path_spec.rb",
         "spec/bundler/cli_spec.rb",
         "spec/install/bundler_spec.rb",
         "spec/install/git_spec.rb",
@@ -147,8 +151,9 @@ module Spec
         "spec/bundler/resolver/cooldown_spec.rb",
         "spec/install/cooldown_spec.rb",
         "spec/commands/outdated_spec.rb",
+        "spec/commands/outdated_filters_spec.rb",
         "spec/commands/update_spec.rb",
-        "spec/lock/lockfile_spec.rb",
+        "spec/commands/update_scenarios_spec.rb",
         "spec/install/deploy_spec.rb",
         "spec/install/gemfile/sources_spec.rb",
         "spec/runtime/self_management_spec.rb",
@@ -194,6 +199,9 @@ module Spec
         "spec/install/gems/no_install_plugin_spec.rb",
         "spec/bundler/override_spec.rb",
         "spec/install/gemfile/override_spec.rb",
+        "spec/install/path_spec.rb",
+        "spec/bundler/fetcher/gem_remote_fetcher_local_ssl_server_spec.rb",
+        "spec/bundler/plugin/unloaded_source_spec.rb",
       ],
     }.freeze
   end

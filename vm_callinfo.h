@@ -61,6 +61,20 @@ rb_callinfo_kwarg_bytes(int keyword_len)
         rb_eRuntimeError);
 }
 
+static inline void
+rb_callinfo_kwarg_retain(struct rb_callinfo_kwarg *kwarg)
+{
+    if (kwarg) RUBY_ATOMIC_INC(kwarg->references);
+}
+
+static inline void
+rb_callinfo_kwarg_release(struct rb_callinfo_kwarg *kwarg)
+{
+    if (kwarg && RUBY_ATOMIC_FETCH_SUB(kwarg->references, 1) == 1) {
+        ruby_xfree_sized(kwarg, rb_callinfo_kwarg_bytes(kwarg->keyword_len));
+    }
+}
+
 // imemo_callinfo
 struct rb_callinfo {
     VALUE flags;
@@ -425,11 +439,26 @@ vm_cc_valid(const struct rb_callcache *cc)
     return !UNDEF_P(cc->klass);
 }
 
+/* Whether another ractor may have invalidated this cc mid-use (see
+ * vm_cc_invalidate()). Extensions cannot use rb_multi_ractor_p() here: with
+ * assertions enabled at -O0 (e.g. --enable-yjit=dev on macOS) the inline
+ * materializes references to core-internal globals (ruby_current_vm_ptr,
+ * ruby_single_main_ractor) that are not exported to them, and objspace.bundle
+ * fails to load. RUBY_EXPORT marks a core TU. */
+#ifdef RUBY_EXPORT
+# define VM_CC_RACED_P() rb_multi_ractor_p()
+#else
+# define VM_CC_RACED_P() true
+#endif
+
 static inline const struct rb_callable_method_entry_struct *
 vm_cc_cme(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc));
+    // VM_CC_RACED_P(): another ractor can invalidate this cc (klass = Qundef)
+    // while a call using it is in flight; cme_/call_ stay intact, so the call
+    // proceeds with the method resolved before the redefinition.
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc) || VM_CC_RACED_P());
     VM_ASSERT(cc_check_class(cc->klass));
     VM_ASSERT(cc->call_ == NULL   || // not initialized yet
               !vm_cc_markable(cc) ||
@@ -444,7 +473,7 @@ vm_cc_call(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc->call_ != NULL);
-    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc));
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc) || VM_CC_RACED_P());
     VM_ASSERT(cc_check_class(cc->klass));
     return cc->call_;
 }
@@ -587,11 +616,19 @@ struct rb_class_cc_entries {
     int len;
     const struct rb_callable_method_entry_struct *cme;
     struct rb_class_cc_entries_entry {
-        unsigned int argc;
-        unsigned int flag;
         const struct rb_callcache *cc;
+        unsigned int argc;
+        unsigned short flag;
+        unsigned short kw_len;
     } entries[FLEX_ARY_LEN];
 };
+
+/* entries[].flag is an unsigned short, so every VM_CALL flag bit must fit in 16 bits. */
+STATIC_ASSERT(cc_entries_flag_fits_in_short, VM_CALL__END <= 16);
+
+/* entries[].kw_len is an unsigned short, so a call site cannot carry, nor a method
+   declare, more keyword arguments than this.  Enforced at compile time. */
+#define VM_CALL_KW_LEN_MAX UINT16_MAX
 
 static inline size_t
 vm_ccs_alloc_size(size_t capa)
@@ -626,8 +663,8 @@ vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t 
 
         fprintf(stderr, "iseq_overload:%d, cme:%p (def:%p), cm_cc_cme(cc):%p (def:%p)\n",
                 (int)cme->def->iseq_overload,
-                cme, cme->def,
-                vm_cc_cme(cc), vm_cc_cme(cc)->def);
+                (void *)cme, (void *)cme->def,
+                (void *)vm_cc_cme(cc), (void *)vm_cc_cme(cc)->def);
         rp(cme);
         rp(vm_cc_cme(cc));
         rp(rb_vm_lookup_overloaded_cme(cme));

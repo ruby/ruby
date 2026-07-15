@@ -83,6 +83,11 @@ jobs:
     uses: ./.github/workflows/tarball-macos.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
+      # Full fan-out only for workflow_dispatch (nightly schedule and release
+      # verification); pull requests and pushes run a single smoke check.
+      # Only macOS is trimmed: its org-wide concurrency pool of 50 runners
+      # saturates during peak hours, while Linux and Windows have headroom.
+      full-matrix: ${{ github.event_name == 'workflow_dispatch' }}
       notify-release-channel: ${{ github.event_name == 'workflow_dispatch' && inputs.notify-release-channel || false }}
     secrets:
       SIMPLER_ALERTS_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
@@ -91,6 +96,11 @@ jobs:
   windows:
     needs: tarball
     if: ${{ ! needs.tarball.outputs.skip }}
+    # For fork pull requests the GITHUB_TOKEN is capped to read-only, so
+    # they can only download vcpkg packages; uploads happen on push.
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/tarball-windows.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}

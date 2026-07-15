@@ -2624,6 +2624,8 @@ name_err_mesg_to_str(VALUE obj)
         int state = 0;
         rb_encoding *usascii = rb_usascii_encoding();
 
+#define rb_memsearch_lit(str, v) \
+    rb_memsearch((str), rb_strlen_lit(str), RSTRING_PTR(v), RSTRING_LEN(v), rb_enc_get(v))
 #define FAKE_CSTR(v, str) rb_setup_fake_str((v), (str), rb_strlen_lit(str), usascii)
         c = s = FAKE_CSTR(&s_str, "");
         obj = ptr->recv;
@@ -2638,7 +2640,7 @@ name_err_mesg_to_str(VALUE obj)
             c = d = FAKE_CSTR(&d_str, "false");
             break;
           default:
-            if (strstr(RSTRING_PTR(mesg), "%2$s")) {
+            if (rb_memsearch_lit("%2$s", mesg) >= 0) {
                 d = rb_protect(name_err_mesg_receiver_name, obj, &state);
                 if (state || NIL_OR_UNDEF_P(d))
                     d = rb_protect(rb_inspect, obj, &state);
@@ -4269,15 +4271,6 @@ rb_warn_unchilled_literal(VALUE obj)
         }
         rb_warn_category(mesg, rb_warning_category_to_name(category));
     }
-}
-
-void
-rb_warn_unchilled_symbol_to_s(VALUE obj)
-{
-    rb_category_warn(
-        RB_WARN_CATEGORY_DEPRECATED,
-        "string returned by :%s.to_s will be frozen in the future", RSTRING_PTR(obj)
-    );
 }
 
 #undef rb_check_frozen

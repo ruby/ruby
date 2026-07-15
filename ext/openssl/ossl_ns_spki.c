@@ -9,14 +9,6 @@
  */
 #include "ossl.h"
 
-#define NewSPKI(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_netscape_spki_type, 0)
-#define SetSPKI(obj, spki) do { \
-    if (!(spki)) { \
-        ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (spki); \
-} while (0)
 #define GetSPKI(obj, spki) do { \
     TypedData_Get_Struct((obj), NETSCAPE_SPKI, &ossl_netscape_spki_type, (spki)); \
     if (!(spki)) { \
@@ -56,16 +48,7 @@ static const rb_data_type_t ossl_netscape_spki_type = {
 static VALUE
 ossl_spki_alloc(VALUE klass)
 {
-    NETSCAPE_SPKI *spki;
-    VALUE obj;
-
-    obj = NewSPKI(klass);
-    if (!(spki = NETSCAPE_SPKI_new())) {
-        ossl_raise(eSPKIError, NULL);
-    }
-    SetSPKI(obj, spki);
-
-    return obj;
+    return TypedData_Wrap_Struct(klass, &ossl_netscape_spki_type, NULL);
 }
 
 /*
@@ -82,7 +65,13 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
     VALUE buffer;
     const unsigned char *p;
 
-    if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
+    rb_scan_args(argc, argv, "01", &buffer);
+    ossl_want_uninitialized(self, &ossl_netscape_spki_type);
+    if (argc == 0) {
+        spki = NETSCAPE_SPKI_new();
+        if (!spki)
+            ossl_raise(eSPKIError, "NETSCAPE_SPKI_new");
+        RTYPEDDATA_DATA(self) = spki;
         return self;
     }
     StringValue(buffer);
@@ -93,8 +82,7 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
             ossl_raise(eSPKIError, NULL);
         }
     }
-    NETSCAPE_SPKI_free(DATA_PTR(self));
-    SetSPKI(self, spki);
+    RTYPEDDATA_DATA(self) = spki;
 
     return self;
 }

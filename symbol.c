@@ -278,6 +278,9 @@ set_id_entry(rb_symbols_t *symbols, rb_id_serial_t num, VALUE str, VALUE sym)
     if (idx >= (size_t)RARRAY_LEN(ids) || NIL_P(id_entry_list = rb_ary_entry(ids, (long)idx))) {
         rb_darray_make(&entries, ID_ENTRY_UNIT);
         id_entry_list = TypedData_Wrap_Struct(0, &sym_id_entry_list_type, entries);
+        /* Reachable from every Ractor via the global symbol table, so mark it
+         * shareable. */
+        RB_OBJ_SET_SHAREABLE(id_entry_list);
         rb_ary_store(ids, (long)idx, id_entry_list);
     }
     else {

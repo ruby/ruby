@@ -46,9 +46,6 @@
 
 /* Flags of RObject
  *
- * 4:    ROBJECT_HEAP
- *           The object has its instance variables in a separately allocated buffer.
- *           This can be either a flat buffer of reference, or an st_table for complex objects.
  */
 
 /*!
@@ -337,21 +334,12 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
 
     shape_id_t src_shape_id = RBASIC_SHAPE_ID(obj);
-
-    if (rb_shape_complex_p(src_shape_id)) {
-        rb_shape_copy_complex_ivars(dest, obj, src_shape_id, ROBJECT_FIELDS_HASH(obj));
-        return;
-    }
-
     shape_id_t initial_shape_id = RBASIC_SHAPE_ID(dest);
     RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
 
     shape_id_t dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
     if (UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
-        st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
-        rb_obj_copy_ivs_to_hash_table(obj, table);
-        rb_obj_init_complex(dest, table);
-
+        rb_obj_replace_fields(dest, rb_obj_complex_fields_build(obj));
         return;
     }
 
@@ -363,12 +351,17 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     RUBY_ASSERT(src_num_ivs <= dest_capa);
     if (initial_capa < dest_capa) {
-        rb_ensure_iv_list_size(dest, 0, dest_capa);
-        dest_buf = ROBJECT_FIELDS(dest);
-    }
+        // We we need to transition the object to an extended layout.
+        rb_obj_replace_fields(dest, rb_imemo_fields_new(dest, dest_shape_id, false));
 
-    rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
-    RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
+        dest_buf = ROBJECT_FIELDS(dest);
+        rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
+        RBASIC_SET_SHAPE_ID_WITH_LAYOUT(dest, dest_shape_id, SHAPE_ID_LAYOUT_EXTENDED);
+    }
+    else {
+        rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
+        RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
+    }
 }
 
 static void
@@ -453,13 +446,13 @@ rb_immutable_obj_clone(int argc, VALUE *argv, VALUE obj)
 VALUE
 rb_get_freeze_opt(int argc, VALUE *argv)
 {
-    static ID keyword_ids[1];
+    /* idFreeze (== :freeze) is preinterned before any Ruby code runs, so use it
+     * directly instead of lazily initializing a shared static, which races when
+     * Ractors run this concurrently. */
+    const ID keyword_ids[1] = { idFreeze };
     VALUE opt;
     VALUE kwfreeze = Qnil;
 
-    if (!keyword_ids[0]) {
-        CONST_ID(keyword_ids[0], "freeze");
-    }
     rb_scan_args(argc, argv, "0:", &opt);
     if (!NIL_P(opt)) {
         rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
@@ -476,6 +469,29 @@ immutable_obj_clone(VALUE obj, VALUE kwfreeze)
         rb_raise(rb_eArgError, "can't unfreeze %"PRIsVALUE,
                  rb_obj_class(obj));
     return obj;
+}
+
+/* Cache of the `{freeze: true/false}` keyword hash passed to #initialize_clone.
+ * Ractors may reach this concurrently, so build a fully populated, frozen and
+ * pinned hash locally and publish it with a single atomic CAS: any value another
+ * thread can observe in the static is already complete, and a builder that loses
+ * the CAS just discards its hash. (The old lazy init published an empty hash that
+ * a second thread could read and freeze before the first finished filling it.) */
+static VALUE freeze_true_hash, freeze_false_hash;
+
+static VALUE
+clone_freeze_kwarg_hash(VALUE *cache, VALUE freeze_value)
+{
+    VALUE h = RUBY_ATOMIC_VALUE_LOAD(*cache);
+    if (!h) {
+        h = rb_hash_new();
+        rb_hash_aset(h, ID2SYM(idFreeze), freeze_value);
+        rb_obj_freeze(h);
+        rb_vm_register_global_object(h); /* pin before publishing */
+        VALUE prev = RUBY_ATOMIC_VALUE_CAS(*cache, 0, h);
+        if (prev) h = prev; /* lost the race; our h becomes garbage */
+    }
+    return h;
 }
 
 VALUE
@@ -506,31 +522,15 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         }
         break;
       case Qtrue: {
-        static VALUE freeze_true_hash;
-        if (!freeze_true_hash) {
-            freeze_true_hash = rb_hash_new();
-            rb_vm_register_global_object(freeze_true_hash);
-            rb_hash_aset(freeze_true_hash, ID2SYM(idFreeze), Qtrue);
-            rb_obj_freeze(freeze_true_hash);
-        }
-
         argv[0] = obj;
-        argv[1] = freeze_true_hash;
+        argv[1] = clone_freeze_kwarg_hash(&freeze_true_hash, Qtrue);
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         OBJ_FREEZE(clone);
         break;
       }
       case Qfalse: {
-        static VALUE freeze_false_hash;
-        if (!freeze_false_hash) {
-            freeze_false_hash = rb_hash_new();
-            rb_vm_register_global_object(freeze_false_hash);
-            rb_hash_aset(freeze_false_hash, ID2SYM(idFreeze), Qfalse);
-            rb_obj_freeze(freeze_false_hash);
-        }
-
         argv[0] = obj;
-        argv[1] = freeze_false_hash;
+        argv[1] = clone_freeze_kwarg_hash(&freeze_false_hash, Qfalse);
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         break;
       }
@@ -3351,13 +3351,9 @@ rb_check_convert_type(VALUE val, int type, const char *tname, const char *method
 
 /*! \private */
 VALUE
-rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
+rb_check_convert_type_with_id_slow(VALUE val, int type, const char *tname, ID method)
 {
-    VALUE v;
-
-    /* always convert T_DATA */
-    if (TYPE(val) == type && type != T_DATA) return val;
-    v = convert_type_with_id(val, tname, method, FALSE, -1);
+    VALUE v = convert_type_with_id(val, tname, method, FALSE, -1);
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
         rb_cant_convert_invalid_return(val, tname, rb_id2name(method), v);
@@ -3568,7 +3564,6 @@ rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, i
     d = strtod(p, &end);
     if (errno == ERANGE) {
         OutOfRange();
-        rb_warning("Float %.*s%s out of range", w, p, ellipsis);
         errno = 0;
     }
     if (p == end) {
@@ -3651,7 +3646,6 @@ rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, i
         d = strtod(p, &end);
         if (errno == ERANGE) {
             OutOfRange();
-            rb_warning("Float %.*s%s out of range", w, p, ellipsis);
             errno = 0;
         }
         if (badcheck) {

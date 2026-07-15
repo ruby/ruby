@@ -173,7 +173,7 @@ strio.gets  # Raises IOError: not opened for reading
 Mode specified as one of:
 
 - String: `'r+'`.
-- Constant: `File::RDRW`.
+- Constant: `File::RDWR`.
 
 Initial state:
 

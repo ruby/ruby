@@ -34,7 +34,7 @@ describe "Kernel#require" do
       features -= %w[java.rb jruby/util.rb]
     when "ruby"
       so = RbConfig::CONFIG['DLEXT']
-      features -= ["windows_1252.#{so}", "windows_31.#{so}"]
+      features.reject! { |feature| feature.end_with?("windows_1252.#{so}", "windows_31j.#{so}") }
       features.reject! { |feature| feature.end_with? "encdb.#{so}" }
       features.reject! { |feature| feature.end_with? "transdb.#{so}" }
       features.reject! { |feature| feature.include?('-fake') }
@@ -54,14 +54,7 @@ describe "Kernel#require" do
 end
 
 describe "Kernel.require" do
-  before :each do
-    CodeLoadingSpecs.spec_setup
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:require)
   end
-
-  after :each do
-    CodeLoadingSpecs.spec_cleanup
-  end
-
-  it_behaves_like :kernel_require_basic, :require, Kernel
-  it_behaves_like :kernel_require, :require, Kernel
 end

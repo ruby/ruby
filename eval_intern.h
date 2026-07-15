@@ -125,9 +125,8 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 
 #define EC_REPUSH_TAG() (void)(_ec->tag = &_tag)
 
-#if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8) || defined __clang__
-/* This macro prevents GCC 4.6--4.8 from emitting maybe-uninitialized warnings.
- * This macro also prevents Clang from dumping core in EC_EXEC_TAG().
+#if defined __clang__
+/* This macro prevents Clang from dumping core in EC_EXEC_TAG().
  * (I confirmed Clang 4.0.1 and 5.0.0.)
  */
 # define VAR_FROM_MEMORY(var) __extension__(*(__typeof__(var) volatile *)&(var))
@@ -190,6 +189,7 @@ rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 #define CREF_FL_OMOD_SHARED      IMEMO_FL_USER2
 #define CREF_FL_SINGLETON        IMEMO_FL_USER3
 #define CREF_FL_DYNAMIC_CREF IMEMO_FL_USER4
+#define CREF_FL_REFINED_PROC IMEMO_FL_USER5
 
 static inline int CREF_SINGLETON(const rb_cref_t *cref);
 
@@ -291,6 +291,18 @@ static inline void
 CREF_OMOD_SHARED_UNSET(rb_cref_t *cref)
 {
     cref->flags &= ~CREF_FL_OMOD_SHARED;
+}
+
+static inline int
+CREF_REFINED_PROC(const rb_cref_t *cref)
+{
+    return cref->flags & CREF_FL_REFINED_PROC;
+}
+
+static inline void
+CREF_REFINED_PROC_SET(rb_cref_t *cref)
+{
+    cref->flags |= CREF_FL_REFINED_PROC;
 }
 
 enum {

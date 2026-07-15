@@ -124,10 +124,7 @@
 #endif
 
 /* Detection of __VA_OPT__ */
-#if ! defined(HAVE_VA_ARGS_MACRO)
-# undef HAVE___VA_OPT__
-
-#elif defined(__cplusplus)
+#if defined(__cplusplus)
 # if __cplusplus > 201703L
 #  define HAVE___VA_OPT__
 # else

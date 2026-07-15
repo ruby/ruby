@@ -39,7 +39,11 @@ STRINGIO_VERSION = "3.2.1.dev";
 static inline bool
 str_chilled_p(VALUE str)
 {
-#if (RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR >= 4) || RUBY_API_VERSION_MAJOR >= 4
+#if RUBY_API_VERSION_CODE >= 40100
+    // Do not attempt to modify chilled strings on Ruby 4.1+
+    // RUBY_FL_USER2 == STR_CHILLED
+    return FL_TEST_RAW(str, RUBY_FL_USER2);
+#elif RUBY_API_VERSION_CODE >= 30400
     // Do not attempt to modify chilled strings on Ruby 3.4+
     // RUBY_FL_USER2 == STR_CHILLED_LITERAL
     // RUBY_FL_USER3 == STR_CHILLED_SYMBOL_TO_S
@@ -112,6 +116,10 @@ strio_memsize(const void *p)
     return sizeof(struct StringIO);
 }
 
+#ifndef RUBY_TYPED_THREAD_SAFE_FREE
+#define RUBY_TYPED_THREAD_SAFE_FREE RUBY_TYPED_FREE_IMMEDIATELY
+#endif
+
 static const rb_data_type_t strio_data_type = {
     "strio",
     {
@@ -119,7 +127,7 @@ static const rb_data_type_t strio_data_type = {
 	strio_free,
 	strio_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 #define check_strio(self) ((struct StringIO*)rb_check_typeddata((self), &strio_data_type))
@@ -1443,7 +1451,8 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 		p = RSTRING_PTR(str);
 		bm_init_skip(skip, p, n);
 		if ((pos = bm_search(p, n, s, e - s, skip)) >= 0) {
-		    e = s + pos + (arg->chomp ? 0 : n);
+		    e = s + pos + n;
+		    if (arg->chomp) w = n;
 		}
 	    }
 	}

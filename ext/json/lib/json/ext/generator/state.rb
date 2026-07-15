@@ -54,6 +54,7 @@ module JSON
             strict: strict?,
             depth: depth,
             buffer_initial_length: buffer_initial_length,
+            sort_keys: sort_keys
           }
 
           allow_duplicate_key = allow_duplicate_key?

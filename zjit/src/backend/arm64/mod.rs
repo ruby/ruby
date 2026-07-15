@@ -110,7 +110,9 @@ fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
     let start = cb.get_write_ptr();
     emit_jmp_ptr(cb, dst_ptr, true);
     let end = cb.get_write_ptr();
-    unsafe { rb_jit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
+    trace_compile_phase("invalidate_icache", || {
+        unsafe { rb_jit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
+    });
 }
 
 fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
@@ -476,7 +478,7 @@ impl Assembler {
                     same_opnd_if_test && if let Some(
                             Insn::Jz(target) | Insn::Je(target) | Insn::Jnz(target) | Insn::Jne(target)
                         ) = iterator.peek() {
-                            matches!(target, Target::SideExit { .. })
+                            matches!(target, Target::SideExit(..))
                         } else {
                             false
                         }
@@ -815,11 +817,11 @@ impl Assembler {
                     asm.push_insn(insn);
                 }
                 // For compile_exits, support splitting simple C arguments here
-                Insn::CCall { opnds, .. } if !opnds.is_empty() => {
-                    for (i, opnd) in opnds.iter().enumerate() {
+                Insn::CCall { data } if !data.opnds.is_empty() => {
+                    for (i, opnd) in data.opnds.iter().enumerate() {
                         asm.load_into(C_ARG_OPNDS[i], *opnd);
                     }
-                    *opnds = vec![];
+                    data.opnds = vec![];
                     asm.push_insn(insn);
                 }
                 // For compile_exits, support splitting simple return values here
@@ -890,8 +892,8 @@ impl Assembler {
                         _ => asm.push_insn(insn),
                     }
                 }
-                &mut Insn::PatchPoint { ref target, invariant, version } => {
-                    split_patch_point(asm, target, invariant, version);
+                &mut Insn::PatchPoint(ref data) => {
+                    split_patch_point(asm, &data.target, data.invariant, data.version);
                 }
                 _ => {
                     asm.push_insn(insn);
@@ -987,7 +989,7 @@ impl Assembler {
                 },
                 Target::Label(l) => l,
                 Target::Block(ref edge) => asm.block_label(edge.target),
-                Target::SideExit { .. } => {
+                Target::SideExit(..) => {
                     unreachable!("Target::SideExit should have been compiled by compile_exits")
                 },
             };
@@ -1120,6 +1122,9 @@ impl Assembler {
                 Insn::PosMarker(..) => {
                     pos_markers.push((insn_idx, cb.get_write_ptr()))
                 }
+                Insn::PosMarkerAtBlockEnd(..) => {
+                    unreachable!("PosMarkerAtBlockEnd should have been lowered by linearize_instructions");
+                },
                 Insn::BakeString(text) => {
                     for byte in text.as_bytes() {
                         cb.write_byte(*byte);
@@ -1431,7 +1436,8 @@ impl Assembler {
                     // First operand is popped from the lower stack address
                     ldp_post(cb, first_pop, second_pop, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
                 },
-                Insn::CCall { fptr, .. } => {
+                Insn::CCall { data, .. } => {
+                    let fptr = &data.fptr;
                     match fptr {
                         Opnd::UImm(fptr) => {
                             // The offset to the call target in bytes
@@ -1498,7 +1504,7 @@ impl Assembler {
                                 }
                             });
                         },
-                        Target::SideExit { .. } => {
+                        Target::SideExit(..) => {
                             unreachable!("Target::SideExit should have been compiled by compile_exits")
                         },
                     };
@@ -1533,7 +1539,7 @@ impl Assembler {
                 Insn::Jonz(opnd, target) => {
                     emit_cmp_zero_jump(cb, opnd.into(), false, target.clone());
                 },
-                Insn::PatchPoint { .. } => unreachable!("PatchPoint should have been lowered to PadPatchPoint in arm64_scratch_split"),
+                Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PadPatchPoint in arm64_scratch_split"),
                 Insn::PadPatchPoint => {
                     // If patch points are too close to each other or the end of the block, fill nop instructions
                     if let Some(last_patch_pos) = last_patch_pos {
@@ -1638,6 +1644,7 @@ impl Assembler {
             let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(intervals.clone(), regs.len(), &preferred_registers));
 
             asm.stack_state.num_spill_slots = num_stack_slots;
+            asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&assignments);
             let stack_slot_count = asm.stack_state.stack_slot_count();
             if stack_slot_count > Self::MAX_FRAME_STACK_SLOTS {
                 return Err(CompileError::NativeStackTooLarge);
@@ -1664,7 +1671,7 @@ impl Assembler {
             }
 
             // Update FrameSetup slot_count now that StackState knows the
-            // register allocator spill count.
+            // register allocator spill and side-exit capture counts.
             trace_compile_phase("count_stack_slots", || {
                 for block in asm.basic_blocks.iter_mut() {
                     for insn in block.insns.iter_mut() {
@@ -1725,8 +1732,10 @@ impl Assembler {
 
             cb.link_labels().or(Err(CompileError::LabelLinkingFailure))?;
 
-            // Invalidate icache for newly written out region so we don't run stale code.
-            unsafe { rb_jit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
+            trace_compile_phase("invalidate_icache", || {
+                // Invalidate icache for newly written out region so we don't run stale code.
+                unsafe { rb_jit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
+            });
 
             Ok((start_ptr, gc_offsets))
         })
@@ -1773,7 +1782,7 @@ mod tests {
 
         let val64 = asm.add(CFP, Opnd::UImm(64));
         asm.store(Opnd::mem(64, SP, 0x10), val64);
-        let side_exit = Target::SideExit { reason: SideExitReason::Interrupt, exit: SideExit { pc: 0.into(), iseq: std::ptr::null(), stack: vec![], locals: vec![], recompile: None } };
+        let side_exit = Target::SideExit(Box::new(SideExitTarget { reason: SideExitReason::Interrupt, exit: SideExit { pc: 0.into(), iseq: std::ptr::null(), stack: vec![], locals: vec![], stack_map: None, recompile: None } }));
         asm.push_insn(Insn::Joz(val64, side_exit));
         asm.mov(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32));
         asm.mov(C_ARG_OPNDS[1], Opnd::mem(64, SP, -8));

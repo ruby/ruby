@@ -1077,6 +1077,26 @@ rb_f_require_relative(VALUE obj, VALUE fname)
     return rb_require_relative_entrypoint(fname);
 }
 
+static char *
+find_ext(VALUE str, char **ptr, const char **end)
+{
+    long len = RSTRING_LEN(str);
+    *ptr = RSTRING_PTR(str);
+    *end = *ptr + len;
+    return memrchr(*ptr, '.', len);
+}
+
+static bool
+ext_equal(const char *ext, const char *end, const char *suffix, size_t len)
+{
+    return (size_t)(end - ext) == len && memcmp(ext, suffix, len) == 0;
+}
+
+#define EXT_RB_P(ext, end) ext_equal(ext, end, ".rb", rb_strlen_lit(".rb"))
+#define EXT_SO_P(ext, end) (ext_equal(ext, end, ".so", rb_strlen_lit(".so")) || \
+                            ext_equal(ext, end, ".o", rb_strlen_lit(".o")))
+#define EXT_DLEXT_P(ext, end) ext_equal(ext, end, DLEXT, rb_strlen_lit(DLEXT))
+
 typedef int (*feature_func)(const rb_box_t *box, const char *feature, const char *ext, int rb, int expanded, const char **fn);
 
 static int
@@ -1085,25 +1105,25 @@ search_required(const rb_box_t *box, VALUE fname, volatile VALUE *path, feature_
     VALUE tmp;
     char *ext, *ftptr;
     int ft = 0;
-    const char *loading;
+    const char *ftend, *loading;
 
     *path = 0;
-    ext = strrchr(ftptr = RSTRING_PTR(fname), '.');
-    if (ext && !strchr(ext, '/')) {
-        if (IS_RBEXT(ext)) {
+    ext = find_ext(fname, &ftptr, &ftend);
+    if (ext && !memchr(ext, '/', ftend - ext)) {
+        if (EXT_RB_P(ext, ftend)) {
             if (rb_feature_p(box, ftptr, ext, TRUE, FALSE, &loading)) {
                 if (loading) *path = rb_filesystem_str_new_cstr(loading);
                 return 'r';
             }
             if ((tmp = rb_find_file(fname)) != 0) {
-                ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
+                ext = find_ext(tmp, &ftptr, &ftend);
                 if (!rb_feature_p(box, ftptr, ext, TRUE, TRUE, &loading) || loading)
                     *path = tmp;
                 return 'r';
             }
             return 0;
         }
-        else if (IS_SOEXT(ext)) {
+        else if (EXT_SO_P(ext, ftend)) {
             if (rb_feature_p(box, ftptr, ext, FALSE, FALSE, &loading)) {
                 if (loading) *path = rb_filesystem_str_new_cstr(loading);
                 return 's';
@@ -1112,19 +1132,19 @@ search_required(const rb_box_t *box, VALUE fname, volatile VALUE *path, feature_
             rb_str_cat2(tmp, DLEXT);
             OBJ_FREEZE(tmp);
             if ((tmp = rb_find_file(tmp)) != 0) {
-                ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
+                ext = find_ext(tmp, &ftptr, &ftend);
                 if (!rb_feature_p(box, ftptr, ext, FALSE, TRUE, &loading) || loading)
                     *path = tmp;
                 return 's';
             }
         }
-        else if (IS_DLEXT(ext)) {
+        else if (EXT_DLEXT_P(ext, ftend)) {
             if (rb_feature_p(box, ftptr, ext, FALSE, FALSE, &loading)) {
                 if (loading) *path = rb_filesystem_str_new_cstr(loading);
                 return 's';
             }
             if ((tmp = rb_find_file(fname)) != 0) {
-                ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
+                ext = find_ext(tmp, &ftptr, &ftend);
                 if (!rb_feature_p(box, ftptr, ext, FALSE, TRUE, &loading) || loading)
                     *path = tmp;
                 return 's';
@@ -1173,7 +1193,7 @@ search_required(const rb_box_t *box, VALUE fname, volatile VALUE *path, feature_
         }
         /* fall through */
       case loadable_ext_rb:
-        ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
+        ext = find_ext(tmp, &ftptr, &ftend);
         if (rb_feature_p(box, ftptr, ext, type == loadable_ext_rb, TRUE, &loading) && !loading)
             break;
         *path = tmp;

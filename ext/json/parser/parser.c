@@ -768,22 +768,34 @@ static const rb_data_type_t JSON_ParserConfig_type;
 
 const char *COMMENT_DEPRECATION_MESSAGE = "Encountered comment in JSON. This will raise an error in json 3.0 unless enabled via `allow_comments: true`";
 NOINLINE(static) void
-json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
+json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config, const char *resume_pos)
 {
     if (config->on_comment == JSON_RAISE) {
         raise_syntax_error("unexpected token %s", state);
     }
 
     const char *start = state->cursor;
+    // An incomplete comment suspends a resumable parse by rewinding the cursor
+    // and throwing. Callers that already consumed a token not yet committed to
+    // the frame stack pass resume_pos so the rewind re-reads that token too.
+    // Non-resumable error positions keep pointing at the comment either way.
+    const char *rewind_pos = (state->parser && resume_pos) ? resume_pos : start;
     state->cursor++;
 
     switch (peek(state)) {
         case '/': {
-            state->cursor = memchr(state->cursor, '\n', state->end - state->cursor);
-            if (!state->cursor) {
+            const char *newline = memchr(state->cursor, '\n', state->end - state->cursor);
+            if (!newline) {
+                // state->parser marks resumable mode, where the buffer end is only a
+                // chunk boundary: the terminating newline may still arrive, so leave
+                // the comment unterminated instead of consuming to end as a one-shot
+                // parse would.
+                if (state->parser) {
+                    raise_eos_error_at("unterminated comment, expected end of line", state, rewind_pos);
+                }
                 state->cursor = state->end;
             } else {
-                state->cursor++;
+                state->cursor = newline + 1;
             }
             break;
         }
@@ -793,7 +805,7 @@ json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
             while (true) {
                 const char *next_match = memchr(state->cursor, '*', state->end - state->cursor);
                 if (!next_match) {
-                    raise_eos_error_at("unterminated comment, expected closing '*/'", state, start);
+                    raise_eos_error_at("unterminated comment, expected closing '*/'", state, rewind_pos);
                 }
 
                 state->cursor = next_match + 1;
@@ -805,7 +817,7 @@ json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
             break;
         }
         default:
-            raise_parse_error_at("unexpected token %s", state, start, eos(state));
+            raise_parse_error_at("unexpected token %s", state, eos(state) ? rewind_pos : start, eos(state));
             break;
     }
 
@@ -816,7 +828,7 @@ json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
 }
 
 ALWAYS_INLINE(static) void
-json_eat_whitespace(JSON_ParserState *state, JSON_ParserConfig *config, bool include_comments)
+json_eat_whitespace_resume_at(JSON_ParserState *state, JSON_ParserConfig *config, bool include_comments, const char *resume_pos)
 {
     while (true) {
         switch (peek(state)) {
@@ -851,13 +863,19 @@ json_eat_whitespace(JSON_ParserState *state, JSON_ParserConfig *config, bool inc
                     return;
                 }
 
-                json_eat_comments(state, config);
+                json_eat_comments(state, config, resume_pos);
                 break;
 
             default:
                 return;
         }
     }
+}
+
+ALWAYS_INLINE(static) void
+json_eat_whitespace(JSON_ParserState *state, JSON_ParserConfig *config, bool include_comments)
+{
+    json_eat_whitespace_resume_at(state, config, include_comments, NULL);
 }
 
 static inline VALUE build_string(const char *start, const char *end, bool intern, bool symbolize)
@@ -1133,6 +1151,13 @@ static inline VALUE json_decode_float(JSON_ParserConfig *config, uint64_t mantis
     }
 
     if (RB_UNLIKELY(mantissa_digits > 18 || mantissa_digits + exponent < -307)) {
+        // If the value is so small that it definitely underflows to 0.0, return early
+        // to avoid triggering a "Float out of range" warning from rb_cstr_to_dbl.
+        // When mantissa_digits + exponent < -324, value < 10^(-324) < DBL_TRUE_MIN/2,
+        // so it rounds to 0 in IEEE 754 round-to-nearest.
+        if (RB_UNLIKELY(mantissa_digits + exponent < -324)) {
+            return rb_float_new(negative ? -0.0 : 0.0);
+        }
         return json_decode_large_float(start, end - start);
     }
 
@@ -1432,7 +1457,7 @@ static inline int json_parse_digits(JSON_ParserState *state, uint64_t *accumulat
     return (int)(state->cursor - start);
 }
 
-static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig *config, bool negative, const char *start)
+static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig *config, bool negative, const char *start, bool resumable)
 {
     bool integer = true;
     const char first_digit = *state->cursor;
@@ -1487,6 +1512,16 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
         } else {
             exponent = negative_exponent ? -(int64_t)abs_exponent : (int64_t)abs_exponent;
         }
+    }
+
+    // A number touching the end of the buffer may still grow in a later chunk,
+    // so the caller will rewind and wait. Decoding it now would build a value
+    // -- for a long run of digits, an expensive bignum -- only to discard it,
+    // and repeating that on every resumed chunk is quadratic in the number's
+    // length. The digit scan above already advanced the cursor, which is all
+    // the caller needs to detect the incomplete number.
+    if (RB_UNLIKELY(resumable && eos(state))) {
+        return Qundef;
     }
 
     if (integer) {
@@ -1566,6 +1601,13 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
     JSON_PHASE_VALUE: {
         json_eat_whitespace(state, config, true);
 
+        // A trailing comma lands us here expecting an element but finding the
+        // closing bracket; hand off to ARRAY_COMMA to close. An empty array
+        // closes inline at '[', so this position is only reached after a ','.
+        if (config->allow_trailing_comma && frame->type == JSON_FRAME_ARRAY && peek(state) == ']') {
+            goto JSON_PHASE_ARRAY_COMMA;
+        }
+
         VALUE value;
         const char *value_start = state->cursor;
 
@@ -1606,7 +1648,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
             case '-': {
                 state->cursor++;
 
-                value = json_parse_number(state, config, true, value_start);
+                value = json_parse_number(state, config, true, value_start, resumable);
 
                 if (RB_UNLIKELY(UNDEF_P(value) && config->allow_nan && peek(state) == 'I')) {
                     state->cursor = value_start;
@@ -1629,7 +1671,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
             }
 
             case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': {
-                value = json_parse_number(state, config, false, value_start);
+                value = json_parse_number(state, config, false, value_start, resumable);
 
                 // Top level numbers are ambiguous when parsing streams, we can't
                 // know if we parsed all the digits if we hit EOS.
@@ -1661,7 +1703,9 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
 
             case '[': {
                 state->cursor++;
-                json_eat_whitespace(state, config, true);
+                // The '[' is consumed but its frame is only pushed below, so a
+                // comment suspending here must resume from the bracket.
+                json_eat_whitespace_resume_at(state, config, true, value_start);
 
                 const char next = peek(state);
                 if (next == ']') {
@@ -1690,7 +1734,8 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
 
             case '{': {
                 state->cursor++;
-                json_eat_whitespace(state, config, true);
+                // Same as '[': the frame is only pushed below.
+                json_eat_whitespace_resume_at(state, config, true, value_start);
 
                 if (peek(state) == '}') {
                     state->cursor++;
@@ -1747,6 +1792,13 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
         JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
 
         json_eat_whitespace(state, config, true);
+
+        // A trailing comma lands us here expecting a key but finding the closing
+        // brace; hand off to OBJECT_COMMA to close. An empty object closes inline
+        // at '{', so this position is only reached after a ','.
+        if (config->allow_trailing_comma && peek(state) == '}') {
+            goto JSON_PHASE_OBJECT_COMMA;
+        }
 
         const char *start = state->cursor;
 
@@ -1810,13 +1862,10 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
 
         if (RB_LIKELY(next_char == ',')) {
             state->cursor++;
-            if (config->allow_trailing_comma) {
-                json_eat_whitespace(state, config, true);
-                if (peek(state) == ']') {
-                    // Trailing comma: stay in COMMA to close on the next iteration.
-                    goto JSON_PHASE_ARRAY_COMMA;
-                }
-            }
+            // Commit the phase before eating the whitespace that follows: an
+            // incomplete comment there would suspend the parse, and a phase not
+            // yet advanced past the ',' would drop it on resume. A trailing comma
+            // is recognized in JSON_PHASE_VALUE once the ']' is in the buffer.
             frame->phase = JSON_PHASE_VALUE;
             goto JSON_PHASE_VALUE;
         } else if (next_char == ']') {
@@ -1855,15 +1904,10 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
 
         if (RB_LIKELY(next_char == ',')) {
             state->cursor++;
-            json_eat_whitespace(state, config, true);
-
-            if (config->allow_trailing_comma) {
-                if (peek(state) == '}') {
-                    // Trailing comma: stay in COMMA to close on the next iteration.
-                    goto JSON_PHASE_OBJECT_COMMA;
-                }
-            }
-
+            // Commit the phase before eating the whitespace that follows: an
+            // incomplete comment there would suspend the parse, and a phase not
+            // yet advanced past the ',' would drop it on resume. A trailing comma
+            // is recognized in JSON_PHASE_OBJECT_KEY once the '}' is in the buffer.
             frame->phase = JSON_PHASE_OBJECT_KEY;
             goto JSON_PHASE_OBJECT_KEY;
         } else if (next_char == '}') {
@@ -2618,11 +2662,16 @@ static VALUE cResumableParser_partial_value_body(VALUE self)
         missing_object_value = 1;
     }
 
-    // Copy the value stack as we need to mutate it.
+    // Copy the value stack as we need to mutate it. The collapse loop folds each
+    // open container by popping its entries and pushing the single result, so a
+    // parent always reclaims its child's slot; head exceeds its live size by at
+    // most one, either for the missing-value placeholder pushed below or for the
+    // result of folding an empty innermost container. That one spare slot keeps
+    // rvalue_stack_push from growing (reallocating) this ALLOCV buffer.
     long capa = parser.value_stack.head;
-    parser.value_stack.capa = (capa + missing_object_value);
-    VALUE tmpbuf, *value_stack_buffer = ALLOCV_N(VALUE, tmpbuf, capa + missing_object_value);
-    MEMCPY(value_stack_buffer, parser.value_stack.ptr, VALUE, parser.value_stack.capa);
+    parser.value_stack.capa = capa + 1;
+    VALUE tmpbuf, *value_stack_buffer = ALLOCV_N(VALUE, tmpbuf, parser.value_stack.capa);
+    MEMCPY(value_stack_buffer, parser.value_stack.ptr, VALUE, capa);
     parser.value_stack.ptr = value_stack_buffer;
 
     JSON_ParserState *state = &parser.state;
@@ -2726,6 +2775,41 @@ static VALUE cResumableParser_eos_p(VALUE self)
 }
 
 /*
+ * call-seq: partial_value? -> true or false
+ *
+ * Returns whether a document is currently under construction: an unclosed
+ * container, a key awaiting its value, etc.
+ *
+ * It answers the same question as <tt>!partial_value.nil?</tt>, but as a
+ * cheap predicate on the parser's internal state, without materializing the
+ * partially parsed Ruby objects:
+ *   parser << '{"a":1,'
+ *   parser.parse # => false
+ *   parser.partial_value? # => true
+ *
+ * A fully parsed document whose value hasn't been retrieved yet is not under
+ * construction: #value? returns true and #partial_value? returns false.
+ */
+static VALUE cResumableParser_partial_value_p(VALUE self)
+{
+    JSON_ResumableParser *parser = cResumableParser_get(self);
+
+    // Mirror of #value?: values on the stack while the document isn't DONE
+    // belong to a partially built document. A container whose first key or
+    // element hasn't been parsed yet has no frame nor value registered (the
+    // tokenizer rewinds to the container start on EOS), so that state is
+    // observable through the buffer (#eos?/#rest) instead, keeping this
+    // predicate consistent with #partial_value returning nil.
+    if (parser->value_stack.head > 0) {
+        json_frame *frame = json_frame_stack_peek(&parser->frames);
+        if (frame->phase != JSON_PHASE_DONE) {
+            return Qtrue;
+        }
+    }
+    return Qfalse;
+}
+
+/*
  * call-seq: parsed_bytes -> integer
  *
  * Returns the number of bytes parsed since the start of the current partial value.
@@ -2781,6 +2865,7 @@ void Init_parser(void)
     rb_define_method(cResumableParser, "value", cResumableParser_value, 0);
     rb_define_method(cResumableParser, "value?", cResumableParser_value_p, 0);
     rb_define_method(cResumableParser, "partial_value", cResumableParser_partial_value, 0);
+    rb_define_method(cResumableParser, "partial_value?", cResumableParser_partial_value_p, 0);
     rb_define_method(cResumableParser, "clear", cResumableParser_clear, 0);
     rb_define_method(cResumableParser, "rest", cResumableParser_rest, 0);
     rb_define_method(cResumableParser, "eos?", cResumableParser_eos_p, 0);

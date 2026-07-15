@@ -1,6 +1,7 @@
 #include "ruby/internal/config.h"
 
 #include <signal.h>
+#include <string.h>
 
 #ifndef _WIN32
 # include <sys/mman.h>
@@ -72,6 +73,13 @@ rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
 #endif
 
 #include "probes.h"
+
+#define RUBY_DTRACE_GC_HOOK(name, ...) \
+    do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name(__VA_ARGS__);} while (0)
+
+#if USE_ZJIT
+# include "gc/default/zjit_fastpath.h"
+#endif
 
 #ifdef BUILDING_MODULAR_GC
 # define RB_DEBUG_COUNTER_INC(_name) ((void)0)
@@ -237,6 +245,7 @@ typedef struct ractor_newobj_heap_cache {
     uintptr_t cursor_end;
     struct free_region *next_region;
     struct heap_page *using_page;
+    uintptr_t region_end;
     size_t allocated_objects_count;
 } rb_ractor_newobj_heap_cache_t;
 
@@ -310,10 +319,8 @@ static ruby_gc_params_t gc_params = {
 #endif
 #if RGENGC_DEBUG < 0 && !defined(_MSC_VER)
 # define RGENGC_DEBUG_ENABLED(level) (-(RGENGC_DEBUG) >= (level) && ruby_rgengc_debug >= (level))
-#elif defined(HAVE_VA_ARGS_MACRO)
-# define RGENGC_DEBUG_ENABLED(level) ((RGENGC_DEBUG) >= (level))
 #else
-# define RGENGC_DEBUG_ENABLED(level) 0
+# define RGENGC_DEBUG_ENABLED(level) ((RGENGC_DEBUG) >= (level))
 #endif
 int ruby_rgengc_debug;
 
@@ -411,6 +418,7 @@ typedef enum {
 
 typedef struct gc_profile_record {
     unsigned int flags;
+    size_t sequence;
 
     double gc_time;
     double gc_invoke_time;
@@ -630,6 +638,9 @@ typedef struct rb_objspace {
         gc_profile_record *current_record;
         size_t next_index;
         size_t size;
+        size_t record_count;
+        size_t max_records;
+        size_t record_sequence;
 
 #if GC_PROFILE_MORE_DETAIL
         double prepare_time;
@@ -1321,12 +1332,8 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 #define gc_prof_record(objspace) (objspace)->profile.current_record
 #define gc_prof_enabled(objspace) ((objspace)->profile.run && (objspace)->profile.current_record)
 
-#ifdef HAVE_VA_ARGS_MACRO
-# define gc_report(level, objspace, ...) \
+#define gc_report(level, objspace, ...) \
     if (!RGENGC_DEBUG_ENABLED(level)) {} else gc_report_body(level, objspace, __VA_ARGS__)
-#else
-# define gc_report if (!RGENGC_DEBUG_ENABLED(0)) {} else gc_report_body
-#endif
 PRINTF_ARGS(static void gc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...), 3, 4);
 
 static void gc_finalize_deferred(void *dmy);
@@ -2454,28 +2461,55 @@ heap_slot_size(unsigned char pool_id)
     return pool_slot_sizes[pool_id] - RVALUE_OVERHEAD;
 }
 
+size_t
+rb_gc_impl_max_allocation_size(void)
+{
+    return heap_slot_size(HEAP_COUNT - 1);
+}
+
 bool
 rb_gc_impl_size_allocatable_p(size_t size)
 {
-    return size + RVALUE_OVERHEAD <= pool_slot_sizes[HEAP_COUNT - 1];
+    return size <= rb_gc_impl_max_allocation_size();
 }
 
-static const size_t ALLOCATED_COUNT_STEP = 1024;
-static void
-ractor_cache_flush_count(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache)
+static inline void
+gc_bump_flush_alloc_count(rb_ractor_newobj_heap_cache_t *heap_cache, rb_heap_t *heap)
 {
-    for (int heap_idx = 0; heap_idx < HEAP_COUNT; heap_idx++) {
-        rb_ractor_newobj_heap_cache_t *heap_cache = &cache->heap_caches[heap_idx];
-
-        rb_heap_t *heap = &heaps[heap_idx];
+    if (heap_cache->allocated_objects_count > 0) {
         RUBY_ATOMIC_SIZE_ADD(heap->total_allocated_objects, heap_cache->allocated_objects_count);
         heap_cache->allocated_objects_count = 0;
     }
 }
 
-static inline bool
-ractor_cache_advance_region(rb_ractor_newobj_heap_cache_t *heap_cache)
+static void
+ractor_cache_flush_count(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cache)
 {
+    for (int heap_idx = 0; heap_idx < HEAP_COUNT; heap_idx++) {
+        gc_bump_flush_alloc_count(&gc_cache->heap_caches[heap_idx], &heaps[heap_idx]);
+    }
+}
+
+static inline void
+ractor_cache_open_window(rb_objspace_t *objspace, rb_ractor_newobj_heap_cache_t *heap_cache,
+                         size_t heap_idx)
+{
+    uintptr_t end = heap_cache->region_end;
+
+    if (RB_UNLIKELY(is_incremental_marking(objspace))) {
+        uintptr_t window_end = heap_cache->cursor + INCREMENTAL_MARK_STEP_ALLOCATIONS * pool_slot_sizes[heap_idx];
+        if (window_end < end) end = window_end;
+    }
+
+    heap_cache->cursor_end = end;
+}
+
+static inline bool
+ractor_cache_advance_region(rb_objspace_t *objspace, rb_ractor_newobj_heap_cache_t *heap_cache,
+                            size_t heap_idx)
+{
+    gc_bump_flush_alloc_count(heap_cache, &heaps[heap_idx]);
+
     struct free_region *region = heap_cache->next_region;
     if (region == NULL) {
         return false;
@@ -2484,50 +2518,41 @@ ractor_cache_advance_region(rb_ractor_newobj_heap_cache_t *heap_cache)
     rb_asan_unpoison_object((VALUE)region, false);
     GC_ASSERT(RB_TYPE_P((VALUE)region, T_NONE));
     heap_cache->cursor = (uintptr_t)region;
-    heap_cache->cursor_end = region->end;
+    heap_cache->region_end = region->end;
     heap_cache->next_region = region->next;
     rb_asan_poison_object((VALUE)region);
+
+    ractor_cache_open_window(objspace, heap_cache, heap_idx);
 
     return true;
 }
 
 static inline VALUE
-ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache,
+ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cache,
                            size_t heap_idx)
 {
-    rb_ractor_newobj_heap_cache_t *heap_cache = &cache->heap_caches[heap_idx];
+    rb_ractor_newobj_heap_cache_t *heap_cache = &gc_cache->heap_caches[heap_idx];
+    size_t slot_size = pool_slot_sizes[heap_idx];
 
     uintptr_t cursor = heap_cache->cursor;
-    if (RB_UNLIKELY(cursor >= heap_cache->cursor_end)) {
-        if (!ractor_cache_advance_region(heap_cache)) {
+    if (RB_UNLIKELY(cursor + slot_size > heap_cache->cursor_end)) {
+        if (RB_UNLIKELY(is_incremental_marking(objspace))) {
+            return Qfalse;
+        }
+
+        if (!ractor_cache_advance_region(objspace, heap_cache, heap_idx)) {
             return Qfalse;
         }
         cursor = heap_cache->cursor;
     }
 
-    if (RB_UNLIKELY(is_incremental_marking(objspace))) {
-        // Not allowed to allocate without running an incremental marking step
-        if (cache->incremental_mark_step_allocated_slots >= INCREMENTAL_MARK_STEP_ALLOCATIONS) {
-            return Qfalse;
-        }
-
-        cache->incremental_mark_step_allocated_slots++;
-    }
-
     VALUE obj = (VALUE)cursor;
     rb_asan_unpoison_object(obj, true);
-    heap_cache->cursor = cursor + pool_slot_sizes[heap_idx];
-
+    heap_cache->cursor = cursor + slot_size;
     heap_cache->allocated_objects_count++;
-    rb_heap_t *heap = &heaps[heap_idx];
-    if (heap_cache->allocated_objects_count >= ALLOCATED_COUNT_STEP) {
-        RUBY_ATOMIC_SIZE_ADD(heap->total_allocated_objects, heap_cache->allocated_objects_count);
-        heap_cache->allocated_objects_count = 0;
-    }
 
 #if RGENGC_CHECK_MODE
     GC_ASSERT(rb_gc_impl_obj_slot_size(obj) == heap_slot_size(heap_idx));
-    // zero clear
     MEMZERO((char *)obj, char, heap_slot_size(heap_idx));
 #endif
     return obj;
@@ -2553,14 +2578,14 @@ heap_next_free_page(rb_objspace_t *objspace, rb_heap_t *heap)
 }
 
 static inline void
-ractor_cache_set_page(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx,
+ractor_cache_set_page(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cache, size_t heap_idx,
                       struct heap_page *page)
 {
     gc_report(3, objspace, "ractor_set_cache: Using page %p\n", (void *)page->body);
 
-    rb_ractor_newobj_heap_cache_t *heap_cache = &cache->heap_caches[heap_idx];
+    rb_ractor_newobj_heap_cache_t *heap_cache = &gc_cache->heap_caches[heap_idx];
 
-    GC_ASSERT(heap_cache->cursor >= heap_cache->cursor_end);
+    GC_ASSERT(heap_cache->cursor + pool_slot_sizes[heap_idx] > heap_cache->cursor_end);
     GC_ASSERT(heap_cache->next_region == NULL);
     GC_ASSERT(page->free_slots != 0);
     GC_ASSERT(page->free_region != NULL);
@@ -2571,9 +2596,11 @@ ractor_cache_set_page(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, 
     rb_asan_unpoison_object((VALUE)region, false);
     GC_ASSERT(RB_TYPE_P((VALUE)region, T_NONE));
     heap_cache->cursor = (uintptr_t)region;
-    heap_cache->cursor_end = region->end;
+    heap_cache->region_end = region->end;
     heap_cache->next_region = region->next;
     rb_asan_poison_object((VALUE)region);
+
+    ractor_cache_open_window(objspace, heap_cache, heap_idx);
 
     page->free_slots = 0;
     page->free_region = NULL;
@@ -2606,31 +2633,54 @@ heap_idx_for_size(size_t size)
 }
 
 size_t
-rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
+rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
 {
-    return heap_idx_for_size(size);
+    return heap_slot_size((unsigned char)heap_idx_for_size(size));
 }
 
-
-static size_t heap_sizes[HEAP_COUNT + 1] = { 0 };
-
-size_t *
-rb_gc_impl_heap_sizes(void *objspace_ptr)
+bool
+rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass,
+                                 struct rb_gc_zjit_fastpath *fastpath)
 {
-    if (heap_sizes[0] == 0) {
-        for (unsigned char i = 0; i < HEAP_COUNT; i++) {
-            heap_sizes[i] = heap_slot_size(i);
+#if USE_ZJIT
+    size_t heap_idx = 0;
+    size_t slot_size = 0;
+    for (; pool_slot_sizes[heap_idx] != 0; heap_idx++) {
+        if (alloc_size <= pool_slot_sizes[heap_idx]) {
+            slot_size = pool_slot_sizes[heap_idx];
+            break;
         }
     }
+    if (slot_size == 0) return false;
 
-    return heap_sizes;
+    size_t base = offsetof(rb_ractor_newobj_cache_t, heap_caches) +
+                  heap_idx * sizeof(rb_ractor_newobj_heap_cache_t);
+
+    struct rb_gc_zjit_default_new_obj_fastpath default_fastpath = {
+        base + offsetof(rb_ractor_newobj_heap_cache_t, cursor),
+        base + offsetof(rb_ractor_newobj_heap_cache_t, cursor_end),
+        slot_size,
+        flags,
+        klass
+    };
+
+    memset(fastpath, 0, sizeof(*fastpath));
+    fastpath->kind = RB_GC_ZJIT_FASTPATH_DEFAULT;
+    memcpy(fastpath->data.words, &default_fastpath, sizeof(default_fastpath));
+
+    return true;
+#else
+    return false;
+#endif
 }
 
-NOINLINE(static VALUE newobj_cache_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx, bool vm_locked));
+NOINLINE(static VALUE newobj_bump_pointer_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cache, size_t heap_idx, bool vm_locked));
 
 static VALUE
-newobj_cache_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx, bool vm_locked)
+newobj_bump_pointer_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cache, size_t heap_idx, bool vm_locked)
 {
+    rb_ractor_newobj_cache_t *cache = gc_cache;
+    rb_ractor_newobj_heap_cache_t *heap_cache = &cache->heap_caches[heap_idx];
     rb_heap_t *heap = &heaps[heap_idx];
     VALUE obj = Qfalse;
 
@@ -2642,56 +2692,6 @@ newobj_cache_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size
         unlock_vm = true;
     }
 
-    {
-        if (is_incremental_marking(objspace)) {
-            gc_continue(objspace, heap);
-            cache->incremental_mark_step_allocated_slots = 0;
-
-            // Retry allocation after resetting incremental_mark_step_allocated_slots
-            obj = ractor_cache_allocate_slot(objspace, cache, heap_idx);
-        }
-
-        if (obj == Qfalse) {
-            // Get next free page (possibly running GC)
-            struct heap_page *page = heap_next_free_page(objspace, heap);
-            ractor_cache_set_page(objspace, cache, heap_idx, page);
-
-            // Retry allocation after moving to new page
-            obj = ractor_cache_allocate_slot(objspace, cache, heap_idx);
-        }
-    }
-
-    if (unlock_vm) {
-        RB_GC_CR_UNLOCK(lev);
-    }
-
-    if (RB_UNLIKELY(obj == Qfalse)) {
-        rb_memerror();
-    }
-    return obj;
-}
-
-static VALUE
-newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx, bool vm_locked)
-{
-    VALUE obj = ractor_cache_allocate_slot(objspace, cache, heap_idx);
-
-    if (RB_UNLIKELY(obj == Qfalse)) {
-        obj = newobj_cache_miss(objspace, cache, heap_idx, vm_locked);
-    }
-
-    return obj;
-}
-
-ALWAYS_INLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, int wb_protected, size_t heap_idx));
-
-static inline VALUE
-newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, int wb_protected, size_t heap_idx)
-{
-    VALUE obj;
-    unsigned int lev;
-
-    lev = RB_GC_CR_LOCK();
     {
         if (RB_UNLIKELY(during_gc || ruby_gc_stressful)) {
             if (during_gc) {
@@ -2710,7 +2710,72 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_new
             }
         }
 
-        obj = newobj_alloc(objspace, cache, heap_idx, true);
+        if (is_incremental_marking(objspace)) {
+            cache->incremental_mark_step_allocated_slots += heap_cache->allocated_objects_count;
+            gc_bump_flush_alloc_count(heap_cache, heap);
+
+            if (cache->incremental_mark_step_allocated_slots >= INCREMENTAL_MARK_STEP_ALLOCATIONS) {
+                gc_continue(objspace, heap);
+                cache->incremental_mark_step_allocated_slots = 0;
+            }
+
+            if (heap_cache->cursor + pool_slot_sizes[heap_idx] <= heap_cache->region_end) {
+                ractor_cache_open_window(objspace, heap_cache, heap_idx);
+                obj = ractor_cache_allocate_slot(objspace, gc_cache, heap_idx);
+            }
+        }
+
+        if (obj == Qfalse) {
+            if (ractor_cache_advance_region(objspace, heap_cache, heap_idx)) {
+                obj = ractor_cache_allocate_slot(objspace, gc_cache, heap_idx);
+            }
+        }
+
+        if (obj == Qfalse) {
+            struct heap_page *page = heap_next_free_page(objspace, heap);
+            ractor_cache_set_page(objspace, gc_cache, heap_idx, page);
+
+            obj = ractor_cache_allocate_slot(objspace, gc_cache, heap_idx);
+        }
+
+        if (RB_UNLIKELY(ruby_gc_stressful)) {
+            heap_cache->cursor_end = heap_cache->cursor;
+        }
+    }
+
+    if (unlock_vm) {
+        RB_GC_CR_UNLOCK(lev);
+    }
+
+    if (RB_UNLIKELY(obj == Qfalse)) {
+        rb_memerror();
+    }
+    return obj;
+}
+
+static VALUE
+newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cache, size_t heap_idx, bool vm_locked)
+{
+    VALUE obj = ractor_cache_allocate_slot(objspace, gc_cache, heap_idx);
+
+    if (RB_UNLIKELY(obj == Qfalse)) {
+        obj = newobj_bump_pointer_miss(objspace, gc_cache, heap_idx, vm_locked);
+    }
+
+    return obj;
+}
+
+ALWAYS_INLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cache, int wb_protected, size_t heap_idx));
+
+static inline VALUE
+newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cache, int wb_protected, size_t heap_idx)
+{
+    VALUE obj;
+    unsigned int lev;
+
+    lev = RB_GC_CR_LOCK();
+    {
+        obj = newobj_alloc(objspace, gc_cache, heap_idx, true);
         newobj_init(klass, flags, wb_protected, objspace, obj);
     }
     RB_GC_CR_UNLOCK(lev);
@@ -2719,24 +2784,24 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_new
 }
 
 NOINLINE(static VALUE newobj_slowpath_wb_protected(VALUE klass, VALUE flags,
-                                                   rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx));
+                                                   rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cache, size_t heap_idx));
 NOINLINE(static VALUE newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags,
-                                                     rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx));
+                                                     rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cache, size_t heap_idx));
 
 static VALUE
-newobj_slowpath_wb_protected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx)
+newobj_slowpath_wb_protected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cache, size_t heap_idx)
 {
-    return newobj_slowpath(klass, flags, objspace, cache, TRUE, heap_idx);
+    return newobj_slowpath(klass, flags, objspace, gc_cache, TRUE, heap_idx);
 }
 
 static VALUE
-newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx)
+newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cache, size_t heap_idx)
 {
-    return newobj_slowpath(klass, flags, objspace, cache, FALSE, heap_idx);
+    return newobj_slowpath(klass, flags, objspace, gc_cache, FALSE, heap_idx);
 }
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size)
 {
     VALUE obj;
     rb_objspace_t *objspace = objspace_ptr;
@@ -2751,20 +2816,21 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     }
 
     size_t heap_idx = heap_idx_for_size(alloc_size);
+    *actual_alloc_size = heap_slot_size((unsigned char)heap_idx);
 
-    rb_ractor_newobj_cache_t *cache = (rb_ractor_newobj_cache_t *)cache_ptr;
+    rb_ractor_newobj_cache_t *gc_cache = (rb_ractor_newobj_cache_t *)cache_ptr;
 
     if (!RB_UNLIKELY(during_gc || ruby_gc_stressful) &&
             wb_protected) {
-        obj = newobj_alloc(objspace, cache, heap_idx, false);
+        obj = newobj_alloc(objspace, gc_cache, heap_idx, false);
         newobj_init(klass, flags, wb_protected, objspace, obj);
     }
     else {
         RB_DEBUG_COUNTER_INC(obj_newobj_slowpath);
 
         obj = wb_protected ?
-          newobj_slowpath_wb_protected(klass, flags, objspace, cache, heap_idx) :
-          newobj_slowpath_wb_unprotected(klass, flags, objspace, cache, heap_idx);
+          newobj_slowpath_wb_protected(klass, flags, objspace, gc_cache, heap_idx) :
+          newobj_slowpath_wb_unprotected(klass, flags, objspace, gc_cache, heap_idx);
     }
 
     return obj;
@@ -3485,7 +3551,6 @@ heap_page_alloc_slot_from_region(struct heap_page *free_page)
 
     asan_unlock_freelist(free_page);
     if (new_start < region_end) {
-        /* Shrink the region: rewrite its header one slot forward. */
         VALUE next_start = (VALUE)new_start;
         rb_asan_unpoison_object(next_start, false);
         struct free_region *new_region = (struct free_region *)new_start;
@@ -3496,7 +3561,6 @@ heap_page_alloc_slot_from_region(struct heap_page *free_page)
         free_page->free_region = new_region;
     }
     else {
-        /* The region held a single slot. */
         free_page->free_region = next;
     }
     asan_lock_freelist(free_page);
@@ -3521,7 +3585,6 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
 
     uintptr_t dest_slot = heap_page_alloc_slot_from_region(free_page);
     if (dest_slot == 0) {
-        /* if we can't get a slot then the page must be full */
         return false;
     }
     VALUE dest = (VALUE)dest_slot;
@@ -4017,12 +4080,12 @@ heap_page_flush_cache_regions(struct heap_page *page, rb_ractor_newobj_heap_cach
 {
     struct free_region *chain = heap_cache->next_region;
 
-    if (heap_cache->cursor < heap_cache->cursor_end) {
+    if (heap_cache->cursor < heap_cache->region_end) {
         VALUE start = (VALUE)heap_cache->cursor;
         rb_asan_unpoison_object(start, false);
         struct free_region *remnant = (struct free_region *)start;
         remnant->flags = 0;
-        remnant->end = heap_cache->cursor_end;
+        remnant->end = heap_cache->region_end;
         remnant->next = chain;
         rb_asan_poison_object(start);
         chain = remnant;
@@ -4067,10 +4130,6 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
     }
 }
 
-#if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
-__attribute__((noinline))
-#endif
-
 #if GC_CAN_COMPILE_COMPACTION
 static void gc_sort_heap_by_compare_func(rb_objspace_t *objspace, gc_compact_compare_func compare_func);
 static int compare_pinned_slots(const void *left, const void *right, void *d);
@@ -4079,18 +4138,17 @@ static int compare_pinned_slots(const void *left, const void *right, void *d);
 static void
 gc_ractor_newobj_cache_clear(void *c, void *data)
 {
-    rb_objspace_t *objspace = rb_gc_get_objspace();
-    rb_ractor_newobj_cache_t *newobj_cache = c;
+    rb_objspace_t *objspace = data;
+    rb_ractor_newobj_cache_t *gc_cache = c;
+    rb_ractor_newobj_cache_t *newobj_cache = gc_cache;
 
     newobj_cache->incremental_mark_step_allocated_slots = 0;
 
     for (size_t heap_idx = 0; heap_idx < HEAP_COUNT; heap_idx++) {
-
         rb_ractor_newobj_heap_cache_t *cache = &newobj_cache->heap_caches[heap_idx];
 
         rb_heap_t *heap = &heaps[heap_idx];
-        RUBY_ATOMIC_SIZE_ADD(heap->total_allocated_objects, cache->allocated_objects_count);
-        cache->allocated_objects_count = 0;
+        gc_bump_flush_alloc_count(cache, heap);
 
         struct heap_page *page = cache->using_page;
         RUBY_DEBUG_LOG("ractor using_page:%p cursor:%p", (void *)page, (void *)cache->cursor);
@@ -4100,9 +4158,21 @@ gc_ractor_newobj_cache_clear(void *c, void *data)
         }
 
         cache->using_page = NULL;
+        cache->next_region = NULL;
+        cache->region_end = 0;
         cache->cursor = 0;
         cache->cursor_end = 0;
-        cache->next_region = NULL;
+    }
+}
+
+static void
+gc_ractor_newobj_cache_exhaust(void *c, void *data)
+{
+    rb_ractor_newobj_cache_t *gc_cache = c;
+
+    for (size_t heap_idx = 0; heap_idx < HEAP_COUNT; heap_idx++) {
+        rb_ractor_newobj_heap_cache_t *heap_cache = &gc_cache->heap_caches[heap_idx];
+        heap_cache->cursor_end = heap_cache->cursor;
     }
 }
 
@@ -4193,7 +4263,7 @@ gc_sweep_start(rb_objspace_t *objspace)
         }
     }
 
-    rb_gc_ractor_newobj_cache_foreach(gc_ractor_newobj_cache_clear, NULL);
+    rb_gc_ractor_newobj_cache_foreach(gc_ractor_newobj_cache_clear, objspace);
 }
 
 static void
@@ -4301,6 +4371,8 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
         };
         gc_sweep_page(objspace, heap, &ctx);
         int free_slots = ctx.freed_slots + ctx.empty_slots;
+
+        RUBY_DTRACE_GC_HOOK(SWEEP_PAGE, ctx.page->slot_size, ctx.final_slots, ctx.freed_slots, ctx.empty_slots);
 
         heap->sweeping_page = ccan_list_next(&heap->pages, sweep_page, page_node);
 
@@ -5063,12 +5135,13 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
         }
         gc_mark_children(objspace, obj);
 
+        popped_count++;
+
         if (incremental) {
             if (RGENGC_CHECK_MODE && !RVALUE_MARKING(objspace, obj)) {
                 rb_bug("gc_mark_stacked_objects: incremental, but marking bit is 0");
             }
             CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
-            popped_count++;
 
             if (popped_count + (objspace->marked_slots - marked_slots_at_the_beginning) > count) {
                 break;
@@ -5078,6 +5151,8 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
             /* just ignore marking bits */
         }
     }
+
+    RUBY_DTRACE_GC_HOOK(MARK_STACKED_OBJECTS, popped_count);
 
     if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
 
@@ -6245,6 +6320,10 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
 
     mark_roots(objspace, NULL);
 
+    if (is_incremental_marking(objspace)) {
+        rb_gc_ractor_newobj_cache_foreach(gc_ractor_newobj_cache_exhaust, NULL);
+    }
+
     gc_report(1, objspace, "gc_marks_start: (%s) end, stack in %"PRIdSIZE"\n",
               full_mark ? "full" : "minor", mark_stack_size(&objspace->mark_stack));
 }
@@ -6702,17 +6781,20 @@ rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor)
 
     objspace->live_ractor_cache_count++;
 
-    return calloc1(sizeof(rb_ractor_newobj_cache_t));
+    rb_ractor_newobj_cache_t *gc_cache = calloc1(sizeof(rb_ractor_newobj_cache_t));
+
+    return gc_cache;
 }
 
 void
-rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache)
+rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
+    rb_ractor_newobj_cache_t *gc_cache = cache_ptr;
 
     objspace->live_ractor_cache_count--;
-    gc_ractor_newobj_cache_clear(cache, NULL);
-    free(cache);
+    gc_ractor_newobj_cache_clear(gc_cache, objspace);
+    free(gc_cache);
 }
 
 static void
@@ -7123,6 +7205,8 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
 {
     *lock_lev = RB_GC_VM_LOCK();
 
+    RUBY_DTRACE_GC_HOOK(ENTER, event);
+
     if (objspace->profile.run) {
         switch (event) {
           case gc_enter_event_start:
@@ -7169,6 +7253,8 @@ static inline void
 gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
     GC_ASSERT(during_gc != 0);
+
+    RUBY_DTRACE_GC_HOOK(EXIT, event);
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_EXIT);
 
@@ -7249,6 +7335,8 @@ gc_sweeping_enter(rb_objspace_t *objspace)
     if (MEASURE_GC) {
         gc_clock_start(&objspace->profile.sweeping_start_time);
     }
+
+    rb_gc_initialize_vm_context(&objspace->vm_context);
 }
 
 static void
@@ -7478,8 +7566,8 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, struct heap_page *src_pa
     /* Move the object */
     memcpy((void *)dest, (void *)src, MIN(src_slot_size, slot_size));
 
-    if (src_slot_size != slot_size && RB_TYPE_P(src, T_OBJECT)) {
-        rb_gc_obj_changed_pool(dest, dest_page->heap - heaps);
+    if (src_slot_size != slot_size) {
+        rb_gc_obj_changed_slot_size(dest, slot_size - RVALUE_OVERHEAD);
     }
 
     if (RVALUE_OVERHEAD > 0) {
@@ -7522,6 +7610,14 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, struct heap_page *src_pa
     }
 
     RVALUE_AGE_SET(dest, age);
+
+    /* A re-embedded object (rb_gc_obj_changed_slot_size) references its
+     * former fields_obj's contents directly; the write-barrier history
+     * lived on the discarded fields_obj, so remember the object. */
+    if (src_slot_size != slot_size && age >= RVALUE_OLD_AGE && !remembered) {
+        rgengc_remember(objspace, dest);
+    }
+
     /* Assign forwarding address */
     RMOVED(src)->flags = T_MOVED;
     RMOVED(src)->dummy = Qundef;
@@ -8338,6 +8434,10 @@ rb_gc_impl_stress_set(void *objspace_ptr, VALUE flag)
 
     objspace->flags.gc_stressful = RTEST(flag);
     objspace->gc_stress_mode = flag;
+
+    if (objspace->flags.gc_stressful) {
+        rb_gc_ractor_newobj_cache_foreach(gc_ractor_newobj_cache_exhaust, NULL);
+    }
 }
 
 static int
@@ -8964,6 +9064,8 @@ rb_gc_impl_adjust_memory_usage(void *objspace_ptr, ssize_t diff)
 */
 
 #define GC_PROFILE_RECORD_DEFAULT_SIZE 100
+#define GC_PROFILE_RECORD_DEFAULT_MAX_RECORDS 4096
+#define GC_PROFILE_RECORD_UNBOUNDED 0
 
 static bool
 current_process_time(struct timespec *ts)
@@ -9037,35 +9139,80 @@ elapsed_hrtime_from(rb_hrtime_t start)
 }
 
 
+static inline size_t
+gc_profile_record_count(rb_objspace_t *objspace)
+{
+    return objspace->profile.record_count;
+}
+
+static inline size_t
+gc_profile_record_index(rb_objspace_t *objspace, size_t logical_index)
+{
+    if (objspace->profile.max_records != GC_PROFILE_RECORD_UNBOUNDED &&
+            objspace->profile.record_count == objspace->profile.size) {
+        return (objspace->profile.next_index + logical_index) % objspace->profile.size;
+    }
+    else {
+        return logical_index;
+    }
+}
+
+static void
+gc_profile_records_free(rb_objspace_t *objspace)
+{
+    void *p = objspace->profile.records;
+    objspace->profile.records = NULL;
+    objspace->profile.size = 0;
+    objspace->profile.next_index = 0;
+    objspace->profile.record_count = 0;
+    objspace->profile.current_record = 0;
+    free(p);
+}
+
 static inline void
 gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason)
 {
     if (objspace->profile.run) {
-        size_t index = objspace->profile.next_index;
+        size_t index;
         gc_profile_record *record;
 
-        /* create new record */
-        objspace->profile.next_index++;
+        if (objspace->profile.max_records == GC_PROFILE_RECORD_UNBOUNDED) {
+            index = objspace->profile.record_count++;
+            objspace->profile.next_index = objspace->profile.record_count;
 
-        if (!objspace->profile.records) {
-            objspace->profile.size = GC_PROFILE_RECORD_DEFAULT_SIZE;
-            objspace->profile.records = malloc(xmalloc2_size(sizeof(gc_profile_record), objspace->profile.size));
+            if (!objspace->profile.records) {
+                objspace->profile.size = GC_PROFILE_RECORD_DEFAULT_SIZE;
+                objspace->profile.records = malloc(xmalloc2_size(sizeof(gc_profile_record), objspace->profile.size));
+            }
+            if (index >= objspace->profile.size) {
+                void *ptr;
+                objspace->profile.size += 1000;
+                ptr = realloc(objspace->profile.records, xmalloc2_size(sizeof(gc_profile_record), objspace->profile.size));
+                if (!ptr) rb_memerror();
+                objspace->profile.records = ptr;
+            }
         }
-        if (index >= objspace->profile.size) {
-            void *ptr;
-            objspace->profile.size += 1000;
-            ptr = realloc(objspace->profile.records, xmalloc2_size(sizeof(gc_profile_record), objspace->profile.size));
-            if (!ptr) rb_memerror();
-            objspace->profile.records = ptr;
+        else {
+            if (!objspace->profile.records) {
+                objspace->profile.size = objspace->profile.max_records;
+                objspace->profile.records = malloc(xmalloc2_size(sizeof(gc_profile_record), objspace->profile.size));
+            }
+            index = objspace->profile.next_index;
+            objspace->profile.next_index = (objspace->profile.next_index + 1) % objspace->profile.size;
+            if (objspace->profile.record_count < objspace->profile.size) {
+                objspace->profile.record_count++;
+            }
         }
+
         if (!objspace->profile.records) {
             rb_bug("gc_profile malloc or realloc miss");
         }
-        record = objspace->profile.current_record = &objspace->profile.records[objspace->profile.next_index - 1];
+        record = objspace->profile.current_record = &objspace->profile.records[index];
         MEMZERO(record, gc_profile_record, 1);
 
         /* setup before-GC parameter */
         record->flags = reason | (ruby_gc_stressful ? GPR_FLAG_STRESS : 0);
+        record->sequence = objspace->profile.record_sequence++;
         record->gc_invoke_wall_time = rb_hrtime_sub(rb_hrtime_now(),
                 objspace->profile.invoke_wall_time);
 #if MALLOC_ALLOCATED_SIZE
@@ -9122,9 +9269,6 @@ gc_prof_timer_stop(rb_objspace_t *objspace)
         record->gc_wall_time = elapsed_hrtime_from(objspace->profile.gc_wall_start_time);
     }
 }
-
-#define RUBY_DTRACE_GC_HOOK(name) \
-    do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name();} while (0)
 
 static inline void
 gc_prof_mark_timer_start(rb_objspace_t *objspace)
@@ -9246,21 +9390,70 @@ static VALUE
 gc_profile_clear(VALUE _)
 {
     rb_objspace_t *objspace = rb_gc_get_objspace();
-    void *p = objspace->profile.records;
-    objspace->profile.records = NULL;
-    objspace->profile.size = 0;
-    objspace->profile.next_index = 0;
-    objspace->profile.current_record = 0;
-    free(p);
+    gc_profile_records_free(objspace);
     return Qnil;
 }
 
 /*
  *  call-seq:
- *     GC::Profiler.raw_data	-> [Hash, ...]
+ *     GC::Profiler.configure(max_records: 4096) -> nil
  *
- *  Returns an Array of individual raw profile data Hashes ordered
- *  from earliest to latest by +:GC_INVOKE_TIME+.
+ *  Configures how many raw profile records are retained by
+ *  GC::Profiler.raw_data.
+ *
+ *  The profiler keeps at most +max_records+ records in a bounded ring buffer.
+ *  When the buffer is full, newer GC records overwrite the oldest retained
+ *  records.  The default limit is 4096 records.
+ *
+ *  Pass +nil+ to restore the historical unbounded behavior:
+ *
+ *    GC::Profiler.configure(max_records: nil)
+ *
+ *  Changing +max_records+ clears existing raw profile data.  This method does
+ *  not enable or disable the profiler; use GC::Profiler.enable and
+ *  GC::Profiler.disable for that.
+ */
+
+static VALUE
+gc_profile_configure(int argc, VALUE *argv, VALUE _)
+{
+    static ID keywords[1] = {0};
+    VALUE options, max_records;
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+
+    if (!keywords[0]) {
+        keywords[0] = rb_intern("max_records");
+    }
+
+    rb_scan_args_kw(rb_keyword_given_p(), argc, argv, ":", &options);
+    rb_get_kwargs(options, keywords, 0, 1, &max_records);
+
+    if (max_records == Qundef) {
+        return Qnil;
+    }
+    else if (NIL_P(max_records)) {
+        objspace->profile.max_records = GC_PROFILE_RECORD_UNBOUNDED;
+    }
+    else {
+        long value = NUM2LONG(max_records);
+        if (value <= 0) {
+            rb_raise(rb_eArgError, "max_records must be positive or nil");
+        }
+        objspace->profile.max_records = (size_t)value;
+    }
+
+    gc_profile_records_free(objspace);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     GC::Profiler.raw_data(limit: nil, since: nil) -> [Hash, ...]
+ *
+ *  Returns an Array of retained raw profile data Hashes ordered from earliest
+ *  to latest by +:GC_INVOKE_TIME+.  +limit:+ returns at most the newest
+ *  retained records.  +since:+ returns records with +:GC_SEQUENCE+ greater
+ *  than the given sequence.
  *
  *  For example:
  *
@@ -9286,6 +9479,8 @@ gc_profile_clear(VALUE _)
  *
  *  The keys mean:
  *
+ *  +:GC_SEQUENCE+::
+ *	Monotonically increasing sequence number for this profiler record.
  *  +:GC_TIME+::
  *	CPU time elapsed in seconds for this GC run.  This is process CPU time,
  *	not elapsed wall-clock time.
@@ -9356,22 +9551,70 @@ gc_profile_clear(VALUE _)
  */
 
 static VALUE
-gc_profile_record_get(VALUE _)
+gc_profile_record_get(int argc, VALUE *argv, VALUE _)
 {
-    VALUE prof;
+    static ID keywords[2] = {0};
+    VALUE prof, options, limit_value, since_value;
     VALUE gc_profile = rb_ary_new();
-    size_t i;
+    size_t i, count, matching = 0, skip = 0, limit = SIZE_MAX, since = 0;
+    bool use_since = false;
     rb_objspace_t *objspace = rb_gc_get_objspace();
+
+    if (!keywords[0]) {
+        keywords[0] = rb_intern("limit");
+        keywords[1] = rb_intern("since");
+    }
+
+    rb_scan_args_kw(rb_keyword_given_p(), argc, argv, ":", &options);
+    VALUE values[2] = {Qundef, Qundef};
+    rb_get_kwargs(options, keywords, 0, 2, values);
+    limit_value = values[0];
+    since_value = values[1];
+
+    if (limit_value != Qundef && !NIL_P(limit_value)) {
+        long value = NUM2LONG(limit_value);
+        if (value < 0) {
+            rb_raise(rb_eArgError, "limit must be non-negative");
+        }
+        limit = (size_t)value;
+    }
+    if (since_value != Qundef && !NIL_P(since_value)) {
+        long value = NUM2LONG(since_value);
+        if (value < 0) {
+            rb_raise(rb_eArgError, "since must be non-negative");
+        }
+        since = (size_t)value;
+        use_since = true;
+    }
 
     if (!objspace->profile.run) {
         return Qnil;
     }
 
-    for (i =0; i < objspace->profile.next_index; i++) {
-        gc_profile_record *record = &objspace->profile.records[i];
+    count = gc_profile_record_count(objspace);
+    for (i = 0; i < count; i++) {
+        gc_profile_record *record = &objspace->profile.records[gc_profile_record_index(objspace, i)];
+        if (!use_since || record->sequence > since) {
+            matching++;
+        }
+    }
+    if (limit < matching) {
+        skip = matching - limit;
+    }
+
+    for (i = 0; i < count; i++) {
+        gc_profile_record *record = &objspace->profile.records[gc_profile_record_index(objspace, i)];
+        if (use_since && record->sequence <= since) {
+            continue;
+        }
+        if (skip > 0) {
+            skip--;
+            continue;
+        }
 
         prof = rb_hash_new();
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_FLAGS")), gc_info_decode(objspace, rb_hash_new(), record->flags));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_SEQUENCE")), SIZET2NUM(record->sequence));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_TIME")), DBL2NUM(record->gc_time));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_INVOKE_TIME")), DBL2NUM(record->gc_invoke_time));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_WALL_TIME")),
@@ -9459,7 +9702,7 @@ static void
 gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 {
     rb_objspace_t *objspace = rb_gc_get_objspace();
-    size_t count = objspace->profile.next_index;
+    size_t count = gc_profile_record_count(objspace);
 #ifdef MAJOR_REASON_MAX
     char reason_str[MAJOR_REASON_MAX];
 #endif
@@ -9472,7 +9715,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
         append(out, rb_str_new_cstr("Index    Invoke Time(sec)       Use Size(byte)     Total Size(byte)         Total Object                    GC Time(ms)\n"));
 
         for (i = 0; i < count; i++) {
-            record = &objspace->profile.records[i];
+            record = &objspace->profile.records[gc_profile_record_index(objspace, i)];
             append(out, rb_sprintf("%5"PRIuSIZE" %19.3f %20"PRIuSIZE" %20"PRIuSIZE" %20"PRIuSIZE" %30.20f\n",
                                    i+1, record->gc_invoke_time, record->heap_use_size,
                                    record->heap_total_size, record->heap_total_objects, record->gc_time*1000));
@@ -9497,7 +9740,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
         append(out, rb_str_new_cstr(str));
 
         for (i = 0; i < count; i++) {
-            record = &objspace->profile.records[i];
+            record = &objspace->profile.records[gc_profile_record_index(objspace, i)];
             append(out, rb_sprintf("%5"PRIuSIZE" %4s/%c/%6s%c %13"PRIuSIZE" %15"PRIuSIZE
 #if CALC_EXACT_MALLOC_SIZE
                                    " %15"PRIuSIZE
@@ -9603,12 +9846,12 @@ gc_profile_total_time(VALUE self)
     double time = 0;
     rb_objspace_t *objspace = rb_gc_get_objspace();
 
-    if (objspace->profile.run && objspace->profile.next_index > 0) {
+    if (objspace->profile.run && gc_profile_record_count(objspace) > 0) {
         size_t i;
-        size_t count = objspace->profile.next_index;
+        size_t count = gc_profile_record_count(objspace);
 
         for (i = 0; i < count; i++) {
-            time += objspace->profile.records[i].gc_time;
+            time += objspace->profile.records[gc_profile_record_index(objspace, i)].gc_time;
         }
     }
     return DBL2NUM(time);
@@ -9663,7 +9906,7 @@ gc_profile_disable(VALUE _)
     return Qnil;
 }
 
-void
+static void
 rb_gc_verify_internal_consistency(void)
 {
     gc_verify_internal_consistency(rb_gc_get_objspace());
@@ -10062,7 +10305,7 @@ rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
     objspace->fork_vm_lock_lev = 0;
 
     if (pid == 0) { /* child process */
-        rb_gc_ractor_newobj_cache_foreach(gc_ractor_newobj_cache_clear, NULL);
+        rb_gc_ractor_newobj_cache_foreach(gc_ractor_newobj_cache_clear, objspace);
     }
 }
 
@@ -10176,6 +10419,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 
     objspace->profile.invoke_time = getrusage_time();
     objspace->profile.invoke_wall_time = rb_hrtime_now();
+    objspace->profile.max_records = GC_PROFILE_RECORD_DEFAULT_MAX_RECORDS;
     finalizer_table = st_init_numtable();
 }
 
@@ -10195,7 +10439,7 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_BITMAP_SIZE")), SIZET2NUM(HEAP_PAGE_BITMAP_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_SIZE")), SIZET2NUM(HEAP_PAGE_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_COUNT")), LONG2FIX(HEAP_COUNT));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(heap_slot_size(HEAP_COUNT - 1)));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), SIZET2NUM(rb_gc_impl_max_allocation_size()));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), LONG2FIX(RVALUE_OLD_AGE));
     if (RB_BUG_INSTEAD_OF_RB_MEMERROR+0) {
         rb_hash_aset(gc_constants, ID2SYM(rb_intern("RB_BUG_INSTEAD_OF_RB_MEMERROR")), Qtrue);
@@ -10260,9 +10504,10 @@ rb_gc_impl_init(void)
     VALUE rb_mProfiler = rb_define_module_under(rb_mGC, "Profiler");
     rb_define_singleton_method(rb_mProfiler, "enabled?", gc_profile_enable_get, 0);
     rb_define_singleton_method(rb_mProfiler, "enable", gc_profile_enable, 0);
-    rb_define_singleton_method(rb_mProfiler, "raw_data", gc_profile_record_get, 0);
+    rb_define_singleton_method(rb_mProfiler, "raw_data", gc_profile_record_get, -1);
     rb_define_singleton_method(rb_mProfiler, "disable", gc_profile_disable, 0);
     rb_define_singleton_method(rb_mProfiler, "clear", gc_profile_clear, 0);
+    rb_define_singleton_method(rb_mProfiler, "configure", gc_profile_configure, -1);
     rb_define_singleton_method(rb_mProfiler, "result", gc_profile_result, 0);
     rb_define_singleton_method(rb_mProfiler, "report", gc_profile_report, -1);
     rb_define_singleton_method(rb_mProfiler, "total_time", gc_profile_total_time, 0);

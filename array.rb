@@ -285,23 +285,24 @@ class Array
       end
     end
 
-    if Primitive.rb_builtin_basic_definition_p(:find)
-      undef :find
+    # TODO: Temporarily disabled because it is not compatible and fails multiple spec/ruby/core/array specs
+    # if Primitive.rb_builtin_basic_definition_p(:find)
+    #   undef :find
 
-      def find(if_none_proc = nil) # :nodoc:
-        Primitive.attr! :inline_block, :c_trace, :without_interrupts
+    #   def find(if_none_proc = nil) # :nodoc:
+    #     Primitive.attr! :inline_block, :c_trace, :without_interrupts
 
-        unless defined?(yield)
-          return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
-        end
-        i = 0
-        until Primitive.rb_jit_ary_at_end(i)
-          value = Primitive.rb_jit_ary_at(i)
-          return value if yield(value)
-          i = Primitive.rb_jit_fixnum_inc(i)
-        end
-        if_none_proc&.call
-      end
-    end
+    #     unless defined?(yield)
+    #       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
+    #     end
+    #     i = 0
+    #     until Primitive.rb_jit_ary_at_end(i)
+    #       value = Primitive.rb_jit_ary_at(i)
+    #       return value if yield(value)
+    #       i = Primitive.rb_jit_fixnum_inc(i)
+    #     end
+    #     if_none_proc&.call
+    #   end
+    # end
   end
 end

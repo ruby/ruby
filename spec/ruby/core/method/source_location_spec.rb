@@ -19,15 +19,15 @@ describe "Method#source_location" do
   it "sets the last value to an Integer representing the line on which the method was defined" do
     line = @method.source_location.last
     line.should.instance_of?(Integer)
-    line.should == 5
+    line.should == MethodSpecs::SourceLocation::LOCATION_LINE
   end
 
   it "returns the last place the method was defined" do
-    MethodSpecs::SourceLocation.method(:redefined).source_location.last.should == 13
+    MethodSpecs::SourceLocation.method(:redefined).source_location.last.should == MethodSpecs::SourceLocation::REDEFINED_LINE
   end
 
   it "returns the location of the original method even if it was aliased" do
-    MethodSpecs::SourceLocation.new.method(:aka).source_location.last.should == 17
+    MethodSpecs::SourceLocation.new.method(:aka).source_location.last.should == MethodSpecs::SourceLocation::ORIGINAL_LINE
   end
 
   it "works for methods defined with a block" do

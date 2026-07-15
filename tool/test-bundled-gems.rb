@@ -9,6 +9,11 @@ require_relative 'lib/test/jobserver'
 
 ENV.delete("GNUMAKEFLAGS")
 
+# net-imap's test helper enables SimpleCov, but its released versions still
+# call the pre-1.0.0 `SimpleCov.formatters=` API that breaks with simplecov
+# 1.0.0. Coverage of bundled gems is not collected in CI, so disable it.
+ENV["SIMPLECOV_DISABLE"] = "1"
+
 github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
 DEFAULT_ALLOWED_FAILURES = RUBY_PLATFORM =~ /mswin|mingw/ ? [
@@ -16,6 +21,35 @@ DEFAULT_ALLOWED_FAILURES = RUBY_PLATFORM =~ /mswin|mingw/ ? [
   'irb',
   'csv',
 ] : []
+
+# minitest's assertion tests compare against unified diff output produced by
+# the `diff` command, so they fail spuriously when it is not available.
+diff_available = ENV["PATH"].to_s.split(File::PATH_SEPARATOR).any? do |dir|
+  next false if dir.empty?
+  exe = File.join(dir, "diff")
+  File.executable?(exe) || (/mswin|mingw/ =~ RUBY_PLATFORM && File.file?("#{exe}.exe"))
+end
+DEFAULT_ALLOWED_FAILURES << 'minitest' unless diff_available
+
+# rake's TestBacktraceSuppression#test_system_dir_suppressed expects rake to
+# suppress RbConfig's rubylibprefix from backtraces. In an uninstalled
+# out-of-tree build it is a POSIX "/usr"-style prefix that File.expand_path
+# turns into a drive-prefixed path on Windows, which no longer matches rake's
+# suppression pattern, so the test fails.
+if /mswin|mingw/ =~ RUBY_PLATFORM && RbConfig::CONFIG["rubylibprefix"] !~ /\A[a-zA-Z]:/
+  DEFAULT_ALLOWED_FAILURES << 'rake'
+end
+
+# rbs's stdlib Resolv tests need to resolve "localhost"; allow its failures on
+# hosts where the Resolv library cannot resolve it.
+begin
+  require 'resolv'
+  Resolv.getaddress('localhost')
+rescue LoadError
+rescue Resolv::ResolvError
+  DEFAULT_ALLOWED_FAILURES << 'rbs'
+end
+
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
 allowed_failures = allowed_failures.split(',').concat(DEFAULT_ALLOWED_FAILURES).uniq.reject(&:empty?)
 

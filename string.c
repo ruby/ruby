@@ -90,11 +90,8 @@ VALUE rb_cSymbol;
  *            The string is not embedded. When a string is embedded, the contents
  *            follow the header. When a string is not embedded, the contents is
  *            on a separately allocated buffer.
- * 2:     STR_CHILLED_LITERAL (will be frozen in a future version)
+ * 2:     STR_CHILLED (will be frozen in a future version)
  *            The string was allocated as a literal in a file without an explicit `frozen_string_literal` comment.
- *            It emits a deprecation warning when mutated for the first time.
- * 3:     STR_CHILLED_SYMBOL_TO_S (will be frozen in a future version)
- *            The string was allocated by the `Symbol#to_s` method.
  *            It emits a deprecation warning when mutated for the first time.
  * 4:     STR_PRECOMPUTED_HASH
  *            The string is embedded and has its precomputed hashcode stored
@@ -131,7 +128,6 @@ VALUE rb_cSymbol;
 #define STR_BORROWED FL_USER6
 #define STR_TMPLOCK FL_USER7
 #define STR_NOFREE FL_USER18
-#define STR_FAKESTR FL_USER19
 
 #define STR_SET_NOEMBED(str) do {\
     FL_SET((str), STR_NOEMBED);\
@@ -223,7 +219,7 @@ SHARABLE_SUBSTRING_P(VALUE str, long beg, long len)
 static inline long
 str_embed_capa(VALUE str)
 {
-    return rb_gc_obj_slot_size(str) - offsetof(struct RString, as.embed.ary);
+    return rb_obj_shape_slot_size(str) - offsetof(struct RString, as.embed.ary);
 }
 
 bool
@@ -630,7 +626,7 @@ static VALUE
 setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
 {
     fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|STR_NOFREE|STR_FAKESTR;
-    RBASIC_SET_SHAPE_ID((VALUE)fake_str, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
+    RBASIC_SET_FULL_SHAPE_ID((VALUE)fake_str, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
 
     if (!name) {
         RUBY_ASSERT_ALWAYS(len == 0);
@@ -2036,7 +2032,7 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str, bool chil
         str_duplicate_setup_heap(klass, str, new_str);
     }
     if (chilled) {
-        FL_SET_RAW(new_str, STR_CHILLED_LITERAL);
+        FL_SET_RAW(new_str, STR_CHILLED);
     }
     return new_str;
 }
@@ -2047,7 +2043,7 @@ rb_str_with_debug_created_info(VALUE str, VALUE path, int line)
     VALUE debug_info = rb_ary_new_from_args(2, path, INT2FIX(line));
     if (OBJ_FROZEN_RAW(str)) str = rb_str_dup(str);
     rb_ivar_set(str, id_debug_created_info, rb_ary_freeze(debug_info));
-    FL_SET_RAW(str, STR_CHILLED_LITERAL);
+    FL_SET_RAW(str, STR_CHILLED);
     return rb_str_freeze(str);
 }
 
@@ -4766,19 +4762,6 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     }
     return Qnil;
 }
-
-#ifndef HAVE_MEMRCHR
-static void*
-memrchr(const char *search_str, int chr, long search_len)
-{
-    const char *ptr = search_str + search_len;
-    while (ptr > search_str) {
-        if ((unsigned char)*(--ptr) == chr) return (void *)ptr;
-    }
-
-    return ((void *)0);
-}
-#endif
 
 static long
 str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
@@ -12442,9 +12425,7 @@ sym_inspect(VALUE sym)
 VALUE
 rb_sym_to_s(VALUE sym)
 {
-    VALUE str = str_new_shared(rb_cString, rb_sym2str(sym));
-    FL_SET_RAW(str, STR_CHILLED_SYMBOL_TO_S);
-    return str;
+    return rb_sym2str(sym);
 }
 
 VALUE
@@ -12620,20 +12601,6 @@ static VALUE
 sym_length(VALUE sym)
 {
     return rb_str_length(rb_sym2str(sym));
-}
-
-/*
- *  call-seq:
- *    empty? -> true or false
- *
- *  Returns +true+ if +self+ is <tt>:''</tt>, +false+ otherwise.
- *
- */
-
-static VALUE
-sym_empty(VALUE sym)
-{
-    return rb_str_empty(rb_sym2str(sym));
 }
 
 /*
@@ -13072,7 +13039,6 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "slice", sym_aref, -1);
     rb_define_method(rb_cSymbol, "length", sym_length, 0);
     rb_define_method(rb_cSymbol, "size", sym_length, 0);
-    rb_define_method(rb_cSymbol, "empty?", sym_empty, 0);
     rb_define_method(rb_cSymbol, "match", sym_match_m, -1);
     rb_define_method(rb_cSymbol, "match?", sym_match_m_p, -1);
 

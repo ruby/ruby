@@ -550,7 +550,7 @@ nogvl_getch(void *p)
 
 /*
  * call-seq:
- *   io.getch(min: nil, time: nil, intr: nil) -> char
+ *   io.getch(min: nil, time: nil, intr: nil) -> char or nil
  *
  * Reads and returns a character in raw mode.
  *
@@ -1776,7 +1776,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *   io.getch(min: nil, time: nil, intr: nil) -> char
+ *   io.getch(min: nil, time: nil, intr: nil) -> char or nil
  *
  * See IO#getch.
  */

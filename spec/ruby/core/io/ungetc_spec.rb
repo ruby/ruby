@@ -105,7 +105,7 @@ describe "IO#ungetc" do
 
   it "raises TypeError if passed nil" do
     @io.getc.should == ?V
-    proc{@io.ungetc(nil)}.should.raise(TypeError)
+    proc{@io.ungetc(nil)}.should raise_consistent_error(TypeError, /no implicit conversion of nil into String/)
   end
 
   it "puts one or more characters back in the stream" do

@@ -498,23 +498,26 @@ pub extern "C" fn rb_zjit_record_exit_stack(reason: *const std::ffi::c_char) {
 
 /// Wrap a closure in a Perfetto duration event with category "invalidation"
 /// and a Ruby backtrace captured on the begin event.
-pub fn trace_invalidation<F, R>(reason: &str, func: F) -> R where F: FnOnce() -> R {
+pub fn trace_invalidation<RF, F, R>(reason_func: RF, func: F) -> R
+    where RF: FnOnce() -> String, F: FnOnce() -> R {
     if !get_option!(trace_invalidation) {
         return func();
     }
 
     // Capture backtrace and emit begin event before patching
     let frames = capture_ruby_frames();
+    let mut reason: String = "".into();
     if let Some(tracer) = ZJITState::get_tracer() {
         let ts = tracer.elapsed_ns();
-        tracer.write_duration_begin("invalidation", reason, ts, &frames);
+        reason = reason_func();
+        tracer.write_duration_begin("invalidation", &reason, ts, &frames);
     }
 
     let result = func();
 
     if let Some(tracer) = ZJITState::get_tracer() {
         let ts = tracer.elapsed_ns();
-        tracer.write_duration_end("invalidation", reason, ts);
+        tracer.write_duration_end("invalidation", &reason, ts);
     }
     result
 }

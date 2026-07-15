@@ -2,6 +2,28 @@
 # frozen_string_literal: true
 require 'mkmf'
 
+# Experimental, opt-in libfyaml backend.  Only used when psych is built with
+# --enable-libfyaml.  Without the flag nothing below changes and the default
+# libyaml backend is built exactly as before.
+if enable_config("libfyaml", false)
+  if $mswin or $mingw or $cygwin
+    abort "The libfyaml backend (--enable-libfyaml) is not supported on Windows"
+  end
+  unless pkg_config('libfyaml')
+    abort "libfyaml was requested with --enable-libfyaml but was not found via pkg-config"
+  end
+  # libfyaml 0.8 and earlier crash psych's emitter, so require a known-good
+  # version rather than building something that segfaults at runtime.
+  pkgconfig = ENV["PKG_CONFIG"] || "pkg-config"
+  unless system(pkgconfig, "--atleast-version=0.9", "libfyaml")
+    abort "The libfyaml backend requires libfyaml 0.9 or newer"
+  end
+  $defs << "-DPSYCH_USE_LIBFYAML"
+
+  create_makefile 'psych'
+  return
+end
+
 if $mswin or $mingw or $cygwin
   $CPPFLAGS << " -DYAML_DECLARE_STATIC"
 end

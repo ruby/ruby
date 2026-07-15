@@ -38,8 +38,6 @@ struct rb_gc_obj_suffix {
 #endif
 
 struct rb_gc_vm_context {
-    rb_nativethread_lock_t lock;
-
     struct rb_execution_context_struct *ec;
 };
 
@@ -50,7 +48,6 @@ enum rb_gc_vm_weak_tables {
     RB_GC_VM_CI_TABLE,
     RB_GC_VM_OVERLOADED_CME_TABLE,
     RB_GC_VM_GLOBAL_SYMBOLS_TABLE,
-    RB_GC_VM_ID2REF_TABLE,
     RB_GC_VM_GENERIC_FIELDS_TABLE,
     RB_GC_VM_FROZEN_STRINGS_TABLE,
     RB_GC_VM_WEAK_TABLE_COUNT
@@ -110,7 +107,7 @@ MODULAR_GC_FN void rb_gc_mark_roots(void *objspace, const char **categoryp);
 MODULAR_GC_FN void rb_gc_ractor_newobj_cache_foreach(void (*func)(void *cache, void *data), void *data);
 MODULAR_GC_FN bool rb_gc_multi_ractor_p(void);
 MODULAR_GC_FN bool rb_gc_shutdown_call_finalizer_p(VALUE obj);
-MODULAR_GC_FN void rb_gc_obj_changed_pool(VALUE obj, size_t heap_id);
+MODULAR_GC_FN void rb_gc_obj_changed_slot_size(VALUE obj, size_t slot_size);
 MODULAR_GC_FN void rb_gc_prepare_heap_process_object(VALUE obj);
 MODULAR_GC_FN bool rb_memerror_reentered(void);
 MODULAR_GC_FN bool rb_obj_id_p(VALUE);

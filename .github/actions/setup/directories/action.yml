@@ -114,7 +114,7 @@ runs:
         fetch-depth: ${{ inputs.fetch-depth }}
         persist-credentials: false
 
-    - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ inputs.srcdir }}/.downloaded-cache
         key: ${{ runner.os }}-${{ runner.arch }}-downloaded-cache
@@ -127,7 +127,7 @@ runs:
     # because they are the ones that clone the complete set into gems/src; other
     # jobs would otherwise save a partial gems/src and poison the shared key.
     - if: inputs.bundled-gems-src-cache == 'true'
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ inputs.srcdir }}/gems/src
         key: ${{ runner.os }}-${{ runner.arch }}-bundled-gems-src-${{ hashFiles(format('{0}/gems/bundled_gems', inputs.srcdir)) }}

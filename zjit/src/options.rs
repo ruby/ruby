@@ -15,6 +15,9 @@ pub enum PerfMap {
     HIR,
 }
 
+/// Default maximum number of compiled versions per ISEQ.
+pub const DEFAULT_MAX_VERSIONS: usize = 4;
+
 /// Default --zjit-num-profiles
 const DEFAULT_NUM_PROFILES: NumProfiles = 5;
 pub type NumProfiles = u16;
@@ -25,11 +28,15 @@ pub const DEFAULT_CALL_THRESHOLD: CallThreshold = 30;
 pub type CallThreshold = u64;
 
 /// Default --zjit-inline-threshold
-pub const DEFAULT_INLINE_THRESHOLD: InlineThreshold = 0;
+/// TODO (nirvdrum 2026-06-25): 30 has proven to work well with ruby-bench, but we should finely
+/// tune across more workloads.
+pub const DEFAULT_INLINE_THRESHOLD: InlineThreshold = 30;
 pub type InlineThreshold = usize;
 
 /// Default --zjit-inline-budget
-pub const DEFAULT_INLINE_BUDGET: InlineBudget = 500;
+/// TODO (nirvdrum 2026-06-25): 200 has proven to strike a good balance between memory usage and
+/// run time performance on ruby-bench, but we should finely tune across more workloads.
+pub const DEFAULT_INLINE_BUDGET: InlineBudget = 200;
 pub const INLINE_BUDGET_UNLIMITED: InlineBudget = 0;
 pub type InlineBudget = usize;
 
@@ -142,27 +149,16 @@ pub struct Options {
     pub inline_threshold: InlineThreshold,
 
     /// Per-caller cumulative size budget for inlining, measured as the caller
-    /// `Function`'s `insns.len()` at the moment `should_inline` is consulted (during
+    /// `Function::num_instructions` at the moment `should_inline` is consulted (during
     /// `inline_methods` inside the `optimize()` fixed-point loop). Once a caller has
     /// grown past this many HIR instructions, `should_inline` rejects further callees,
     /// bounding runaway code-size growth from depth-N inlining (and providing the
     /// optimization fixed-point loop's effective terminating condition).
     /// `INLINE_BUDGET_UNLIMITED` disables the budget.
     ///
-    /// Caveat on the unit: `self.insns` is append-only across the whole pipeline —
-    /// `InsnId`s are stable indices into it, so passes never shrink it. `len()` is
-    /// therefore a high-water mark of total HIR instructions ever allocated for the
-    /// function, including ones that later optimization passes mark dead via
-    /// `eliminate_dead_code` or alias away via `union_find`. By the time
-    /// `should_inline` runs in a given fixed-point iteration, `self.insns.len()` has
-    /// already been bumped by `iseq_to_hir`'s initial build, then by `type_specialize`
-    /// and the trivial `inline` pass, and (in iterations 2+) by every prior pass in
-    /// the loop including the previous round's `inline_methods`. It is a useful proxy
-    /// for "compile work done" but not for "size of the compiled output".
-    ///
     /// Note: this is a different unit than `inline_threshold` — that field is callee
-    /// YARV bytecode words; this one is caller HIR instructions, allocation high-water
-    /// mark. They aren't directly comparable; YARV → HIR typically expands roughly 1-3x.
+    /// YARV bytecode words; this one is caller HIR instructions. They aren't directly comparable;
+    /// YARV → HIR typically expands roughly 1-3x.
     pub inline_budget: InlineBudget,
 
     /// Set of qualified method names (e.g. `Class#method`, `Module::Class.method`) that
@@ -212,7 +208,7 @@ impl Default for Options {
             perf: None,
             allowed_iseqs: None,
             log_compiled_iseqs: None,
-            max_versions: 2,
+            max_versions: DEFAULT_MAX_VERSIONS,
             inline_threshold: DEFAULT_INLINE_THRESHOLD,
             inline_budget: DEFAULT_INLINE_BUDGET as InlineBudget,
             inline_deny: HashSet::new(),
@@ -328,6 +324,9 @@ macro_rules! get_option {
     // once before any Ruby code executes
     ($option_name:ident) => {
         unsafe { crate::options::OPTIONS.as_ref() }.unwrap().$option_name
+    };
+    ($option_name:ident, $default:expr) => {
+        unsafe { crate::options::OPTIONS.as_ref() }.map(|opts| opts.$option_name).unwrap_or($default)
     };
 }
 pub(crate) use get_option;
@@ -632,6 +631,13 @@ pub fn set_call_threshold(call_threshold: CallThreshold) {
     unsafe { rb_zjit_call_threshold = call_threshold; }
     rb_zjit_prepare_options();
     update_profile_threshold();
+}
+
+/// Update --zjit-max-versions for testing
+#[cfg(test)]
+pub fn set_max_versions(max_versions: usize) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().max_versions = max_versions; }
 }
 
 /// Update --zjit-inline-threshold for testing

@@ -31,6 +31,19 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 /* process.c */
 
 /**
+ * Returns the Ruby value representing a waitpid(2) outcome.
+ *
+ * This is intended for Fiber Scheduler implementations of process_wait. The
+ * returned value should be returned from the scheduler hook.
+ *
+ * @param[in] pid The process ID returned by waitpid(2), or -1 on error.
+ * @param[in] status The "waitpid status", as returned by waitpid(2). This is NOT the exit status/exit code, see waitpid(2).
+ * @param[in] error Error code when pid is -1.
+ * @return The Ruby value representing this process wait result.
+ */
+VALUE rb_process_status_for(rb_pid_t pid, int status, int error);
+
+/**
  * Wait for the specified process to terminate, reap it, and return its status.
  *
  * @param[in] pid The process ID to wait for.

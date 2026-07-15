@@ -1962,6 +1962,10 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
         kw++;
         node = node->nd_next;
     }
+    if (kw > VM_CALL_KW_LEN_MAX) {
+        COMPILE_ERROR(ERROR_ARGS_AT(RNODE(args->kw_args)) "too many keyword parameters (%d, maximum is %d)",
+                      kw, (int)VM_CALL_KW_LEN_MAX);
+    }
     arg_size += kw;
     keyword->bits_start = arg_size++;
 
@@ -2477,8 +2481,9 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                             lobj->sp = sp;
                         }
                         else if (lobj->sp != sp) {
-                            debugs("%s:%d: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
-                                   RSTRING_PTR(rb_iseq_path(iseq)), line,
+                            VALUE path = rb_iseq_path(iseq);
+                            debugs("%.*s:%d: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
+                                   RSTRING_LENINT(path), RSTRING_PTR(path), line,
                                    lobj->label_no, lobj->sp, sp);
                         }
                     }
@@ -2493,8 +2498,9 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                 }
                 else {
                     if (lobj->sp != sp) {
-                        debugs("%s:%d: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
-                                RSTRING_PTR(rb_iseq_path(iseq)), line,
+                        VALUE path = rb_iseq_path(iseq);
+                        debugs("%.*s:%d: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
+                                RSTRING_LENINT(path), RSTRING_PTR(path), line,
                                 lobj->label_no, lobj->sp, sp);
                     }
                     sp = lobj->sp;
@@ -2641,8 +2647,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                 LABEL *lobj = (LABEL *)list;
                 lobj->position = code_index;
                 if (lobj->sp != sp) {
-                    debugs("%s: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
-                           RSTRING_PTR(rb_iseq_path(iseq)),
+                    VALUE path = rb_iseq_path(iseq);
+                    debugs("%.*s: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
+                           RSTRING_LENINT(path), RSTRING_PTR(path),
                            lobj->label_no, lobj->sp, sp);
                 }
                 sp = lobj->sp;
@@ -2866,8 +2873,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
             {
                 LABEL *lobj = (LABEL *)list;
                 if (lobj->sp != sp) {
-                    debugs("%s: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
-                           RSTRING_PTR(rb_iseq_path(iseq)),
+                    VALUE path = rb_iseq_path(iseq);
+                    debugs("%.*s: sp inconsistency found but ignored (" LABEL_FORMAT " sp: %d, calculated sp: %d)\n",
+                           RSTRING_LENINT(path), RSTRING_PTR(path),
                            lobj->label_no, lobj->sp, sp);
                 }
                 sp = lobj->sp;
@@ -3698,8 +3706,9 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 if (IS_INSN(&nobj->link) && IS_INSN_ID(nobj, jump)) {
                     if (!replace_destination(iobj, nobj)) break;
                 }
-                else if (prev_dup && IS_INSN_ID(nobj, dup) &&
+                else if (prev_dup && IS_INSN(&nobj->link) && IS_INSN_ID(nobj, dup) &&
                          !!(nobj = (INSN *)nobj->link.next) &&
+                         IS_INSN(&nobj->link) &&
                          /* basic blocks, with no labels in the middle */
                          nobj->insn_id == iobj->insn_id) {
                     /*
@@ -3786,7 +3795,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                     break;
                 }
                 else break;
-                nobj = (INSN *)get_destination_insn(nobj);
+                {
+                    LINK_ELEMENT *dest = get_destination_insn(nobj);
+                    if (!dest || !IS_INSN(dest)) break;
+                    nobj = (INSN *)dest;
+                }
             }
         }
     }
@@ -4357,7 +4370,9 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
         INSN *niobj = (INSN *)iobj->link.next;
         if ((IS_INSN_ID(niobj, getlocal) ||
              IS_INSN_ID(niobj, getinstancevariable) ||
-             IS_INSN_ID(niobj, putself)) &&
+             IS_INSN_ID(niobj, putself) ||
+             IS_INSN_ID(niobj, putobject) ||
+             IS_INSN_ID(niobj, putnil)) &&
             IS_NEXT_INSN_ID(&niobj->link, send)) {
 
             LINK_ELEMENT *sendobj = &(niobj->link); // Below we call ->next;
@@ -5068,6 +5083,12 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         {
             int len = 0;
             VALUE key_index = node_hash_unique_key_index(iseq, RNODE_HASH(root_node), &len);
+
+            if (len > VM_CALL_KW_LEN_MAX) {
+                COMPILE_ERROR(ERROR_ARGS_AT(root_node) "too many keyword arguments (%d, maximum is %d)",
+                              len, (int)VM_CALL_KW_LEN_MAX);
+            }
+
             struct rb_callinfo_kwarg *kw_arg =
                 rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
             VALUE *keywords = kw_arg->keywords;
@@ -9256,12 +9277,37 @@ delegate_call_p(const rb_iseq_t *iseq, unsigned int argc, const LINK_ANCHOR *arg
     }
 }
 
+static int
+compile_builtin_attr_symbol(rb_iseq_t *iseq, VALUE symbol)
+{
+    VALUE string = rb_sym2str(symbol);
+    if (rb_streql_lit(string, "leaf")) {
+        ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_LEAF;
+    }
+    else if (rb_streql_lit(string, "inline_block")) {
+        ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_INLINE_BLOCK;
+    }
+    else if (rb_streql_lit(string, "use_block")) {
+        iseq_set_use_block(iseq);
+    }
+    else if (rb_streql_lit(string, "c_trace")) {
+        // Let the iseq act like a C method in backtraces
+        ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_C_TRACE;
+    }
+    else if (rb_streql_lit(string, "without_interrupts")) {
+        ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_WITHOUT_INTERRUPTS;
+    }
+    else {
+        return COMPILE_NG;
+    }
+    return COMPILE_OK;
+}
+
 // Compile Primitive.attr! :leaf, ...
 static int
 compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
 {
     VALUE symbol;
-    VALUE string;
     if (!node) goto no_arg;
     while (node) {
         if (!nd_type_p(node, NODE_LIST)) goto bad_arg;
@@ -9278,27 +9324,7 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
         }
 
         if (!SYMBOL_P(symbol)) goto non_symbol_arg;
-
-        string = rb_sym2str(symbol);
-        if (strcmp(RSTRING_PTR(string), "leaf") == 0) {
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_LEAF;
-        }
-        else if (strcmp(RSTRING_PTR(string), "inline_block") == 0) {
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_INLINE_BLOCK;
-        }
-        else if (strcmp(RSTRING_PTR(string), "use_block") == 0) {
-            iseq_set_use_block(iseq);
-        }
-        else if (strcmp(RSTRING_PTR(string), "c_trace") == 0) {
-            // Let the iseq act like a C method in backtraces
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_C_TRACE;
-        }
-        else if (strcmp(RSTRING_PTR(string), "without_interrupts") == 0) {
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_WITHOUT_INTERRUPTS;
-        }
-        else {
-            goto unknown_arg;
-        }
+        if (compile_builtin_attr_symbol(iseq, symbol) != COMPILE_OK) goto unknown_arg;
         node = next;
     }
     return COMPILE_OK;
@@ -9309,7 +9335,7 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
     COMPILE_ERROR(ERROR_ARGS "non symbol argument to attr!: %s", rb_builtin_class_name(symbol));
     return COMPILE_NG;
   unknown_arg:
-    COMPILE_ERROR(ERROR_ARGS "unknown argument to attr!: %s", RSTRING_PTR(string));
+    COMPILE_ERROR(ERROR_ARGS "unknown argument to attr!: %" PRIsVALUE, symbol);
     return COMPILE_NG;
   bad_arg:
     UNKNOWN_NODE("attr!", node, COMPILE_NG);
@@ -9593,7 +9619,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
             int idx, level;
 
-            if (mid == idCall &&
+            if ((mid == idCall || mid == idAREF || mid == idYield || mid == idEqq) &&
                 nd_type_p(get_nd_recv(node), NODE_LVAR) &&
                 iseq_block_param_id_p(iseq, RNODE_LVAR(get_nd_recv(node))->nd_vid, &idx, &level)) {
                 ADD_INSN2(recv, get_nd_recv(node), getblockparamproxy, INT2FIX(idx + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
@@ -11713,10 +11739,10 @@ opobj_inspect(VALUE obj)
     if (!SPECIAL_CONST_P(obj) && !RBASIC_CLASS(obj)) {
         switch (BUILTIN_TYPE(obj)) {
           case T_STRING:
-            obj = rb_str_new_cstr(RSTRING_PTR(obj));
+            obj = rb_str_resurrect(obj);
             break;
           case T_ARRAY:
-            obj = rb_ary_dup(obj);
+            obj = rb_ary_resurrect(obj);
             break;
           default:
             break;
@@ -13696,8 +13722,9 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     const ibf_offset_t lvar_states_offset = ibf_dump_lvar_states(dump, iseq);
     const unsigned int catch_table_size =   body->catch_table ? body->catch_table->size : 0;
     const ibf_offset_t catch_table_offset = ibf_dump_catch_table(dump, iseq);
-    const int parent_iseq_index =           ibf_dump_iseq(dump, ISEQ_BODY(iseq)->parent_iseq);
-    const int local_iseq_index =            ibf_dump_iseq(dump, ISEQ_BODY(iseq)->local_iseq);
+    /* a NULL parent (persisted root) and references outside a Proc#refined subtree dump come out absent (-1) */
+    const int parent_iseq_index =           ibf_table_lookup(dump->iseq_table, (st_data_t)ISEQ_BODY(iseq)->parent_iseq);
+    const int local_iseq_index =            ibf_table_lookup(dump->iseq_table, (st_data_t)ISEQ_BODY(iseq)->local_iseq);
     const int mandatory_only_iseq_index =   ibf_dump_iseq(dump, ISEQ_BODY(iseq)->mandatory_only_iseq);
     const ibf_offset_t ci_entries_offset =  ibf_dump_ci_entries(dump, iseq);
     const ibf_offset_t outer_variables_offset = ibf_dump_outer_variables(dump, iseq);
@@ -14858,24 +14885,10 @@ ibf_dump_setup(struct ibf_dump *dump, VALUE dumper_obj)
     dump->current_buffer = &dump->global_buffer;
 }
 
-VALUE
-rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
+static VALUE
+iseq_ibf_dump_0(struct ibf_dump *dump, const rb_iseq_t *iseq, VALUE opt)
 {
-    struct ibf_dump *dump;
     struct ibf_header header = {{0}};
-    VALUE dump_obj;
-    VALUE str;
-
-    if (ISEQ_BODY(iseq)->parent_iseq != NULL ||
-        ISEQ_BODY(iseq)->local_iseq != iseq) {
-        rb_raise(rb_eRuntimeError, "should be top of iseq");
-    }
-    if (RTEST(ISEQ_COVERAGE(iseq))) {
-        rb_raise(rb_eRuntimeError, "should not compile with coverage");
-    }
-
-    dump_obj = TypedData_Make_Struct(0, struct ibf_dump, &ibf_dump_type, dump);
-    ibf_dump_setup(dump, dump_obj);
 
     ibf_dump_write(dump, &header, sizeof(header));
     ibf_dump_iseq(dump, iseq);
@@ -14904,7 +14917,28 @@ rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
 
     ibf_dump_overwrite(dump, &header, sizeof(header), 0);
 
-    str = dump->global_buffer.str;
+    return dump->global_buffer.str;
+}
+
+VALUE
+rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
+{
+    struct ibf_dump *dump;
+    VALUE dump_obj;
+    VALUE str;
+
+    if (ISEQ_BODY(iseq)->parent_iseq != NULL ||
+        ISEQ_BODY(iseq)->local_iseq != iseq) {
+        rb_raise(rb_eRuntimeError, "should be top of iseq");
+    }
+    if (RTEST(ISEQ_COVERAGE(iseq))) {
+        rb_raise(rb_eRuntimeError, "should not compile with coverage");
+    }
+
+    dump_obj = TypedData_Make_Struct(0, struct ibf_dump, &ibf_dump_type, dump);
+    ibf_dump_setup(dump, dump_obj);
+
+    str = iseq_ibf_dump_0(dump, iseq, opt);
     RB_GC_GUARD(dump_obj);
     return str;
 }
@@ -14970,7 +15004,7 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
             fprintf(stderr, "ibf_load_iseq: new iseq=%p\n", (void *)iseq);
 #endif
             FL_SET((VALUE)iseq, ISEQ_NOT_LOADED_YET);
-            iseq->aux.loader.obj = load->loader_obj;
+            RB_OBJ_WRITE((VALUE)iseq, &iseq->aux.loader.obj, load->loader_obj);
             iseq->aux.loader.index = iseq_index;
 #if IBF_ISEQ_DEBUG
             fprintf(stderr, "ibf_load_iseq: iseq=%p loader_obj=%p index=%d\n",
@@ -15108,6 +15142,91 @@ rb_iseq_ibf_load_bytes(const char *bytes, size_t size)
 
     RB_GC_GUARD(loader_obj);
     return iseq;
+}
+
+/* collect the iseq table into an array indexed by iseq-list index */
+static int
+ibf_dump_iseq_table_collect_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    const rb_iseq_t **srcs = (const rb_iseq_t **)arg;
+    srcs[(int)val] = (const rb_iseq_t *)key;
+    return ST_CONTINUE;
+}
+
+/* pc2branchindex (branch coverage) is per-iseq, so pair each copy with its
+ * source by list index */
+static void
+iseq_subtree_copy_pc2branchindex(const struct ibf_dump *dump, const struct ibf_load *load)
+{
+    unsigned int iseq_count = (unsigned int)dump->iseq_table->num_entries;
+    VALUE srcs_buf;
+    const rb_iseq_t **srcs = ALLOCV_N(const rb_iseq_t *, srcs_buf, iseq_count);
+    st_foreach(dump->iseq_table, ibf_dump_iseq_table_collect_i, (st_data_t)srcs);
+
+    for (unsigned int i = 0; i < iseq_count; i++) {
+        rb_iseq_t *copy = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)i);
+        VALUE pc2branchindex = ISEQ_PC2BRANCHINDEX(srcs[i]);
+        if (pc2branchindex != Qnil) {
+            ISEQ_PC2BRANCHINDEX_SET(copy, pc2branchindex);
+        }
+    }
+
+    ALLOCV_END(srcs_buf);
+}
+
+/* Deep-copy an iseq subtree with independent inline caches for Proc#refined */
+const rb_iseq_t *
+rb_iseq_dup_with_independent_caches(const rb_iseq_t *src_root)
+{
+    struct ibf_dump *dump;
+    VALUE dump_obj;
+    VALUE str;
+
+    /* --- dump the subtree --- */
+    dump_obj = TypedData_Make_Struct(0, struct ibf_dump, &ibf_dump_type, dump);
+    ibf_dump_setup(dump, dump_obj);
+
+    str = iseq_ibf_dump_0(dump, src_root, Qnil);
+
+    /* --- load it back --- */
+    struct ibf_load *load;
+    VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
+    ibf_load_setup(load, loader_obj, str);
+
+    /* What the loader could not reconstruct is the same for every iseq in
+     * the subtree: the only absent parent is the top's, every absent
+     * local_iseq is the source's local root (runtime walks compare it
+     * against the original frames, so a copy must not stand in), and
+     * pathobj/script_lines/coverage are per-file values. */
+    const struct rb_iseq_constant_body *sb = ISEQ_BODY(src_root);
+    unsigned int iseq_count = (unsigned int)dump->iseq_table->num_entries;
+    const rb_iseq_t *result = NULL;
+    for (unsigned int i = 0; i < iseq_count; i++) {
+        rb_iseq_t *copy = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)i);
+        /* force completion even under USE_LAZY_LOAD */
+        if (FL_TEST((VALUE)copy, ISEQ_NOT_LOADED_YET)) {
+            rb_ibf_load_iseq_complete(copy);
+        }
+
+        struct rb_iseq_constant_body *cb = ISEQ_BODY(copy);
+        if (!cb->local_iseq) RB_OBJ_WRITE(copy, &cb->local_iseq, sb->local_iseq);
+        RB_OBJ_WRITE(copy, &cb->location.pathobj, sb->location.pathobj);
+        RB_OBJ_WRITE(copy, &cb->variable.script_lines, sb->variable.script_lines);
+        ISEQ_COVERAGE_SET(copy, ISEQ_COVERAGE(src_root));
+
+        if (i == 0) {
+            RB_OBJ_WRITE(copy, &cb->parent_iseq, sb->parent_iseq);
+            result = copy;
+        }
+    }
+
+    if (ISEQ_PC2BRANCHINDEX(src_root) != Qnil) {
+        iseq_subtree_copy_pc2branchindex(dump, load);
+    }
+
+    RB_GC_GUARD(dump_obj);
+    RB_GC_GUARD(loader_obj);
+    return result;
 }
 
 VALUE

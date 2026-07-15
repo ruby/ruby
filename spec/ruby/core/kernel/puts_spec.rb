@@ -25,5 +25,7 @@ describe "Kernel#puts" do
 end
 
 describe "Kernel.puts" do
-  it "needs to be reviewed for spec completeness"
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:puts)
+  end
 end

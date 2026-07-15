@@ -368,24 +368,49 @@ pm_source_stream_read(pm_source_t *source) {
 #define LINE_SIZE 4096
     char line[LINE_SIZE];
 
-    while (memset(line, '\n', LINE_SIZE), source->stream.fgets(line, LINE_SIZE, source->stream.stream) != NULL) {
-        size_t length = LINE_SIZE;
-        while (length > 0 && line[length - 1] == '\n') length--;
+    /*
+     * A chunk read from the stream may legitimately contain embedded NUL bytes,
+     * so the NUL terminator written by fgets cannot be located with strlen.
+     * Instead we prefill the buffer with a non-NUL sentinel before each read;
+     * the terminator is then the only NUL at or after the data, so it can be
+     * found by scanning from the end. The value only needs to differ from '\0'.
+     */
+#define LINE_FILL 0xff
 
-        if (length == LINE_SIZE) {
-            /*
-             * If we read a line that is the maximum size and it doesn't end
-             * with a newline, then we'll just append it to the buffer and
-             * continue reading.
-             */
-            length--;
-            pm_buffer_append_string(buffer, line, length);
-            continue;
+    while (memset(line, LINE_FILL, LINE_SIZE), source->stream.fgets(line, LINE_SIZE, source->stream.stream) != NULL) {
+        /*
+         * Locate the NUL terminator written by fgets (the last NUL in the
+         * buffer) to recover the length of the chunk, then drop the terminator.
+         */
+        size_t length = LINE_SIZE;
+        while (length > 0 && line[length - 1] != '\0') length--;
+        if (length > 0) length--;
+
+        /*
+         * An empty chunk means the stream returned an empty string instead of
+         * signaling EOF (a well-behaved stream never does this). We can't make
+         * progress on it, so stop reading rather than spinning forever.
+         */
+        if (length == 0) {
+            break;
         }
 
-        /* Append the line to the buffer. */
-        length--;
+        /* Append the chunk to the buffer. */
         pm_buffer_append_string(buffer, line, length);
+
+        bool newline = (line[length - 1] == '\n');
+
+        /*
+         * A chunk with no trailing newline is either a line longer than the
+         * read buffer (keep reading the rest of it) or the final line at EOF.
+         * This is the only place the stream's EOF state changes what we do
+         * next, so it is the only place we ask the stream whether it has hit
+         * EOF. A newline-terminated line needs no such check: if it happens to
+         * be the last line, the next fgets returns NULL and ends the loop.
+         */
+        if (!newline && !source->stream.feof(source->stream.stream)) {
+            continue;
+        }
 
         /*
          * Check if the line matches the __END__ marker. If it does, then stop
@@ -418,14 +443,16 @@ pm_source_stream_read(pm_source_t *source) {
         }
 
         /*
-         * All data should be read via gets. If the string returned by gets
-         * _doesn't_ end with a newline, then we assume we hit EOF condition.
+         * A chunk that reached here without a trailing newline is the final
+         * line at EOF (the check above would have continued otherwise), so
+         * there is nothing more to read.
          */
-        if (source->stream.feof(source->stream.stream)) {
+        if (!newline) {
             break;
         }
     }
 
+#undef LINE_FILL
 #undef LINE_SIZE
 
     source->stream.eof = true;

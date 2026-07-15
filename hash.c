@@ -49,6 +49,7 @@
 #include "ruby/ractor.h"
 #include "vm_sync.h"
 #include "builtin.h"
+#include "zjit.h"
 
 /* Flags of RHash
  *
@@ -712,7 +713,7 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
         RUBY_ASSERT(rb_gc_obj_slot_size(hash) >= sizeof(struct RHash) + sizeof(ar_table));
 
         // prepare hash values
-        do {
+        while (1) {
             st_data_t keys[RHASH_AR_TABLE_MAX_SIZE];
             bound = RHASH_AR_TABLE_BOUND(hash);
             size = RHASH_AR_TABLE_SIZE(hash);
@@ -727,7 +728,9 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
             if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) return RHASH_ST_TABLE(hash);
             if (UNLIKELY(RHASH_AR_TABLE_BOUND(hash) != bound)) continue;
             if (UNLIKELY(ar_each_key(ar, bound, ar_each_key_cmp, keys, NULL, NULL))) continue;
-        } while (0);
+
+            break;
+        }
 
         // make st
         st_table tab;
@@ -1438,10 +1441,16 @@ compact_after_delete(VALUE hash)
     }
 }
 
+static inline size_t
+hash_slot_size(bool st)
+{
+    return sizeof(struct RHash) + (st ? sizeof(st_table) : sizeof(ar_table));
+}
+
 static VALUE
 hash_alloc_flags(VALUE klass, VALUE flags, VALUE ifnone, bool st)
 {
-    const size_t size = sizeof(struct RHash) + (st ? sizeof(st_table) : sizeof(ar_table));
+    const size_t size = hash_slot_size(st);
     VALUE hash = rb_newobj_of(klass, T_HASH | flags, size);
     return rb_hash_set_ifnone(hash, ifnone);
 }
@@ -1452,6 +1461,14 @@ hash_alloc(VALUE klass)
     /* Allocate to be able to fit both st_table and ar_table. */
     return hash_alloc_flags(klass, 0, Qnil, sizeof(st_table) > sizeof(ar_table));
 }
+
+#if USE_ZJIT
+size_t
+rb_zjit_hash_new_size(void)
+{
+    return hash_slot_size(sizeof(st_table) > sizeof(ar_table));
+}
+#endif
 
 static VALUE
 empty_hash_alloc(VALUE klass)
@@ -2080,7 +2097,7 @@ rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
  *
  *  If the key is found, returns its value:
  *
- *    {foo: 0, bar: 1, baz: 2}
+ *    h = {foo: 0, bar: 1, baz: 2}
  *    h[:bar] # => 1
  *
  *  Otherwise, returns a default value (see {Hash Default}[rdoc-ref:Hash@Hash+Default]).

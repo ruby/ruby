@@ -1,0 +1,8 @@
+prelude: |
+  sym0  = :""
+  sym8  = :abcdefgh
+  GC.disable
+benchmark:
+  symbol_empty-0:  sym0.empty?
+  symbol_empty-8:  sym8.empty?
+loop_count: 20000000

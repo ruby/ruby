@@ -44,7 +44,7 @@ describe "IO#advise" do
   it "raises a NotImplementedError if advise is not recognized" do
     ->{
       @io.advise(:foo)
-    }.should.raise(NotImplementedError)
+    }.should.raise(NotImplementedError, "Unsupported advice: :foo")
   end
 
   it "supports the normal advice type" do

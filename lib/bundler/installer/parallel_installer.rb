@@ -125,7 +125,7 @@ module Bundler
       # every native extension build with `fatal error U1065: invalid option
       # '-'`. Skip the jobserver when nmake is in use. Other Windows toolchains
       # such as mingw use GNU make and keep working through the inherited pipe.
-      return yield if nmake?
+      return yield if nmake? || bsd_make?
 
       begin
         r, w = IO.pipe
@@ -153,6 +153,12 @@ module Bundler
       make = ENV["MAKE"] || ENV["make"]
       make ||= "nmake" if RUBY_PLATFORM.include?("mswin")
       /\bnmake/i.match?(make.to_s)
+    end
+
+    def bsd_make?
+      return false unless Gem.freebsd_platform?
+      make = ENV["MAKE"] || ENV["make"] || "make"
+      !/\bgmake/i.match?(make)
     end
 
     def install_serially

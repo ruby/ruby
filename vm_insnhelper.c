@@ -908,7 +908,7 @@ cref_replace_with_duplicated_cref_each_frame(const VALUE *vptr, int can_be_svar,
         switch (imemo_type(v)) {
           case imemo_cref:
             cref = (rb_cref_t *)v;
-            new_cref = vm_cref_dup(cref);
+            new_cref = rb_vm_cref_dup(cref);
             if (parent) {
                 RB_OBJ_WRITE(parent, vptr, new_cref);
             }
@@ -1216,7 +1216,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        fields_obj = obj;
+        fields_obj = ROBJECT_FIELDS_OBJ(obj);
         break;
       case T_CLASS:
       case T_MODULE:
@@ -1404,7 +1404,7 @@ vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache cache)
     }
 
     shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
-    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, cache);
+    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, RBASIC_SHAPE_ID(fields_obj), cache);
     if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
         return Qundef;
     }
@@ -1412,8 +1412,7 @@ vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache cache)
     RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
 
     if (shape_id != dest_shape_id) {
-        // The dest_shape_id comes from the fields_obj
-        RBASIC_SET_SHAPE_ID(obj, SHAPE_ID_LAYOUT_RCLASS | (dest_shape_id & ~SHAPE_ID_LAYOUT_MASK));
+        RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
         RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
     }
 
@@ -1426,21 +1425,22 @@ NOINLINE(static VALUE vm_setivar_default(VALUE obj, ID id, VALUE val, rb_setivar
 static VALUE
 vm_setivar_default(VALUE obj, ID id, VALUE val, rb_setivar_cache cache)
 {
+    VALUE fields_obj = rb_obj_fields(obj, id);
+    if (UNLIKELY(!fields_obj)) {
+        return Qundef;
+    }
+
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, cache);
+    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, RBASIC_SHAPE_ID(fields_obj), cache);
     if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
         return Qundef;
     }
 
-    VALUE fields_obj = rb_obj_fields(obj, id);
-    RUBY_ASSERT(fields_obj);
     RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
 
     if (shape_id != dest_shape_id) {
         RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
-        // The dest_shape_id comes from the owner, but fields_obj must always
-        // have layout RObject, so give the fields_object the right layout.
-        RBASIC_SET_SHAPE_ID(fields_obj, rb_shape_id_with_robject_layout(dest_shape_id));
+        RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
     }
 
     RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
@@ -1458,14 +1458,18 @@ vm_setivar(VALUE obj, VALUE val, rb_setivar_cache cache)
             VM_ASSERT(!rb_ractor_shareable_p(obj) || rb_obj_frozen_p(obj));
 
             shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-            shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, cache);
+            shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, shape_id, cache);
             if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
                 break;
             }
 
-            RB_OBJ_WRITE(obj, &ROBJECT_FIELDS(obj)[cache.index], val);
+            VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
+            RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
             if (shape_id != dest_shape_id) {
                 RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
+                if (fields_obj != obj) {
+                    RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
+                }
             }
 
             RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
@@ -1954,9 +1958,11 @@ vm_ccs_push(VALUE cc_tbl, ID mid, struct rb_class_cc_entries *ccs, const struct 
     }
     VM_ASSERT(ccs->len < ccs->capa);
 
+    const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(ci);
     const int pos = ccs->len++;
     ccs->entries[pos].argc = vm_ci_argc(ci);
-    ccs->entries[pos].flag = vm_ci_flag(ci);
+    ccs->entries[pos].flag = (unsigned short)vm_ci_flag(ci);
+    ccs->entries[pos].kw_len = (unsigned short)(kwarg ? kwarg->keyword_len : 0);
     RB_OBJ_WRITE(cc_tbl, &ccs->entries[pos].cc, cc);
 
     if (RB_DEBUG_COUNTER_SETMAX(ccs_maxlen, ccs->len)) {
@@ -1971,9 +1977,10 @@ rb_vm_ccs_dump(struct rb_class_cc_entries *ccs)
 {
     ruby_debug_printf("ccs:%p (%d,%d)\n", (void *)ccs, ccs->len, ccs->capa);
     for (int i=0; i<ccs->len; i++) {
-        ruby_debug_printf("CCS CI ID:flag:%x argc:%u\n",
+        ruby_debug_printf("CCS CI ID:flag:%x argc:%u kw_len:%u\n",
                 ccs->entries[i].flag,
-                ccs->entries[i].argc);
+                ccs->entries[i].argc,
+                ccs->entries[i].kw_len);
         rp(ccs->entries[i].cc);
     }
 }
@@ -2118,19 +2125,25 @@ retry:
                 VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
 
                 // We already know the method id is correct because we had
-                // to look up the ccs_data by method id.  All we need to
-                // compare is argc and flag
+                // to look up the ccs_data by method id.  We compare argc and
+                // flag, plus the keyword argument count: two call sites with
+                // the same argc and flag can still differ in how many of the
+                // arguments are keywords (e.g. `m(a: 1, b: 2)` vs `m(1, b: 2)`),
+                // which selects a different argument setup fastpath.
+                const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(ci);
                 unsigned int argc = vm_ci_argc(ci);
                 unsigned int flag = vm_ci_flag(ci);
+                unsigned int kw_len = kwarg ? kwarg->keyword_len : 0;
 
                 for (int i=0; i<ccs_len; i++) {
                     unsigned int ccs_ci_argc = ccs->entries[i].argc;
                     unsigned int ccs_ci_flag = ccs->entries[i].flag;
+                    unsigned int ccs_ci_kw_len = ccs->entries[i].kw_len;
                     const struct rb_callcache *ccs_cc = ccs->entries[i].cc;
 
                     VM_ASSERT(IMEMO_TYPE_P(ccs_cc, imemo_callcache));
 
-                    if (ccs_ci_argc == argc && ccs_ci_flag == flag) {
+                    if (ccs_ci_argc == argc && ccs_ci_flag == flag && ccs_ci_kw_len == kw_len) {
                         RB_DEBUG_COUNTER_INC(cc_found_in_ccs);
 
                         VM_ASSERT(vm_cc_cme(ccs_cc)->called_id == mid);
@@ -4652,7 +4665,15 @@ vm_call_opt_block_call(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
     VALUE block_handler = VM_ENV_BLOCK_HANDLER(VM_CF_LEP(reg_cfp));
     const struct rb_callinfo *ci = calling->cd->ci;
 
-    if (BASIC_OP_UNREDEFINED_P(BOP_CALL, PROC_REDEFINED_OP_FLAG)) {
+    enum ruby_basic_operators bop;
+    switch (vm_ci_mid(ci)) {
+      case idAREF:  bop = BOP_AREF;  break;
+      case idYield: bop = BOP_YIELD; break;
+      case idEqq:   bop = BOP_EQQ;   break;
+      default:      bop = BOP_CALL;  break;
+    }
+
+    if (BASIC_OP_UNREDEFINED_P(bop, PROC_REDEFINED_OP_FLAG)) {
         return vm_invoke_block_opt_call(ec, reg_cfp, calling, ci, block_handler);
     }
     else {
@@ -5277,9 +5298,9 @@ vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int
 /* ruby iseq -> ruby block */
 
 static VALUE
-vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
-                     struct rb_calling_info *calling, const struct rb_callinfo *ci,
-                     bool is_lambda, VALUE block_handler)
+vm_invoke_iseq_block_with_cref(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                               struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                               bool is_lambda, VALUE block_handler, const rb_cref_t *cref)
 {
     const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(block_handler);
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
@@ -5291,15 +5312,24 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 
     SET_SP(rsp);
 
+    /* cref is normally 0; Proc#refined supplies a refinement cref */
     vm_push_frame(ec, iseq,
                   frame_flag,
                   captured->self,
-                  VM_GUARDED_PREV_EP(captured->ep), 0,
+                  VM_GUARDED_PREV_EP(captured->ep), (VALUE)cref,
                   ISEQ_BODY(iseq)->iseq_encoded + opt_pc,
                   rsp + arg_size,
                   ISEQ_BODY(iseq)->local_table_size - arg_size, ISEQ_BODY(iseq)->stack_max);
 
     return Qundef;
+}
+
+static VALUE
+vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                     struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                     bool is_lambda, VALUE block_handler)
+{
+    return vm_invoke_iseq_block_with_cref(ec, reg_cfp, calling, ci, is_lambda, block_handler, NULL);
 }
 
 static VALUE
@@ -5365,11 +5395,9 @@ vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     return val;
 }
 
-static VALUE
-vm_proc_to_block_handler(VALUE procval)
+static inline VALUE
+vm_block_to_block_handler(const struct rb_block *block)
 {
-    const struct rb_block *block = vm_proc_block(procval);
-
     switch (vm_block_type(block)) {
       case block_type_iseq:
         return VM_BH_FROM_ISEQ_BLOCK(&block->as.captured);
@@ -5385,14 +5413,44 @@ vm_proc_to_block_handler(VALUE procval)
 }
 
 static VALUE
+vm_proc_to_block_handler(VALUE procval)
+{
+    return vm_block_to_block_handler(vm_proc_block(procval));
+}
+
+NOINLINE(static VALUE
+vm_invoke_proc_block_with_cref(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                               struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                               bool is_lambda, VALUE block_handler, VALUE refined_procval));
+static VALUE
+vm_invoke_proc_block_with_cref(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                               struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                               bool is_lambda, VALUE block_handler, VALUE refined_procval)
+{
+    const rb_cref_t *cref = rb_proc_refinements_cref(refined_procval);
+    return vm_invoke_iseq_block_with_cref(ec, reg_cfp, calling, ci, is_lambda, block_handler, cref);
+}
+
+static VALUE
 vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                      struct rb_calling_info *calling, const struct rb_callinfo *ci,
                      bool is_lambda, VALUE block_handler)
 {
+    VALUE refined_procval = 0;
+
     while (vm_block_handler_type(block_handler) == block_handler_type_proc) {
-        VALUE proc = VM_BH_TO_PROC(block_handler);
-        is_lambda = block_proc_is_lambda(proc);
-        block_handler = vm_proc_to_block_handler(proc);
+        VALUE procval = VM_BH_TO_PROC(block_handler);
+        rb_proc_t *po;
+        GetProcPtr(procval, po);
+        if (po->is_refined) refined_procval = procval;
+        is_lambda = po->is_lambda;
+        block_handler = vm_block_to_block_handler(&po->block);
+    }
+
+    if (UNLIKELY(refined_procval) && vm_block_handler_type(block_handler) == block_handler_type_iseq) {
+        /* should not be inlined so that vm_invoke_proc_block stays leaf/frameless. */
+        return vm_invoke_proc_block_with_cref(ec, reg_cfp, calling, ci, is_lambda, block_handler,
+                                              refined_procval);
     }
 
     return vm_invoke_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
@@ -6171,9 +6229,6 @@ vm_objtostring(struct rb_control_frame_struct *reg_cfp, VALUE recv, CALL_DATA cd
     switch (type) {
       case T_SYMBOL:
         if (check_method_basic_definition(cme)) {
-            // rb_sym_to_s() allocates a mutable string, but since we are only
-            // going to use this string for interpolation, it's fine to use the
-            // frozen string.
             return rb_sym2str(recv);
         }
         break;
@@ -6530,7 +6585,11 @@ rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const
     if (ice && vm_ic_hit_p(ice, GET_EP())) {
         val = ice->value;
 
-        VM_ASSERT(val == vm_get_ev_const_chain(ec, segments));
+        // On a non-main ractor another ractor can concurrently reassign a
+        // shareable constant (which invalidates ICs asynchronously), so the
+        // cached-but-still-shareable value may legitimately differ from a
+        // freshly recomputed chain. Only assert equality when single-ractor.
+        VM_ASSERT(val == vm_get_ev_const_chain(ec, segments) || rb_multi_ractor_p());
     }
     else {
         ruby_vm_constant_cache_misses++;
@@ -7236,12 +7295,14 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             rb_event_flag_t bmethod_events = ractor_events | bmethod_local_events;
 
             if (0) {
-                ruby_debug_printf("vm_trace>>%4d (%4x) - %s:%d %s\n",
+                VALUE path = rb_iseq_path(iseq);
+                VALUE label = rb_iseq_label(iseq);
+                ruby_debug_printf("vm_trace>>%4d (%4x) - %.*s:%d %.*s\n",
                                   (int)pos,
                                   (int)pc_events,
-                                  RSTRING_PTR(rb_iseq_path(iseq)),
+                                  RSTRING_LENINT(path), RSTRING_PTR(path),
                                   (int)rb_iseq_line_no(iseq, pos),
-                                  RSTRING_PTR(rb_iseq_label(iseq)));
+                                  RSTRING_LENINT(label), RSTRING_PTR(label));
             }
             VM_ASSERT(reg_cfp->pc == pc);
             VM_ASSERT(pc_events != 0);

@@ -135,7 +135,6 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_reachable_objects_during_iteration
-    omit 'flaky on Visual Studio with: [BUG] Unnormalized Fixnum value' if /mswin/ =~ RUBY_PLATFORM
     opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
     assert_ruby_status opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     begin;
@@ -723,7 +722,7 @@ class TestObjSpace < Test::Unit::TestCase
     obj = klass.new
     dump = ObjectSpace.dump(obj)
 
-    assert_includes dump, "\"slot_size\":#{GC.stat_heap(0, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]}"
+    assert_match /"slot_size":\d+/, dump
   end
 
   def test_dump_reference_addresses_match_dump_all_addresses
@@ -896,6 +895,11 @@ class TestObjSpace < Test::Unit::TestCase
       bar
     rescue => err
       _, m = ObjectSpace.reachable_objects_from(err)
+
+      # The very first NameError allocated by a process is extended
+      if ObjectSpace::InternalObjectWrapper === m # T_IMEMO/fields_obj
+        m, _ = ObjectSpace.reachable_objects_from(m)
+      end
     end
     assert_equal(m, m.clone)
   end

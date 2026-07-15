@@ -652,15 +652,6 @@ describe "CApiObject" do
     end
   end
 
-  describe "OBJ_TAINT" do
-  end
-
-  describe "OBJ_TAINTED" do
-  end
-
-  describe "OBJ_INFECT" do
-  end
-
   describe "rb_obj_freeze" do
     it "freezes the object passed to it" do
       obj = ""
@@ -699,9 +690,6 @@ describe "CApiObject" do
       obj.freeze
       obj.frozen?.should == true
     end
-  end
-
-  describe "rb_obj_taint" do
   end
 
   describe "rb_check_frozen" do

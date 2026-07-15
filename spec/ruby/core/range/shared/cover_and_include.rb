@@ -83,4 +83,14 @@ describe :range_cover_and_include, shared: true do
     ('A'..'C').send(@method, 20.9).should == false
     ('A'...'C').send(@method, 'C').should == false
   end
+
+  it "returns false if other is not an element of self for endless ranges" do
+    (1..).send(@method, 0.4).should == false
+    (0.5...).send(@method, 0.4).should == false
+  end
+
+  it "returns false if other is not an element of self for beginless ranges" do
+    (..10).send(@method, 12.4).should == false
+    (...10.5).send(@method, 12.4).should == false
+  end
 end

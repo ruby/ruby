@@ -785,8 +785,8 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
         rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
         rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
         if (UNLIKELY(!NIL_P(arg.unknown_keywords))) {
-            rb_raise(rb_eArgError, "unknown keywords: %s",
-                     RSTRING_PTR(rb_ary_join(arg.unknown_keywords, rb_str_new2(", "))));
+            rb_raise(rb_eArgError, "unknown keywords: %"PRIsVALUE,
+                     rb_ary_join(arg.unknown_keywords, rb_str_new2(", ")));
         }
     }
     else {
@@ -829,7 +829,9 @@ struct_alloc(VALUE klass)
 
     VALUE flags = T_STRUCT;
 
-    if (n > 0 && rb_gc_size_allocatable_p(embedded_size)) {
+    const long embed_len_max = RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT;
+
+    if (n > 0 && n <= embed_len_max && rb_gc_size_allocatable_p(embedded_size)) {
         flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
         if (RCLASS_MAX_IV_COUNT(klass) == 0) {
             // We set the flag before calling `NEWOBJ_OF` in case a NEWOBJ tracepoint does
@@ -840,7 +842,7 @@ struct_alloc(VALUE klass)
         NEWOBJ_OF(st, struct RStruct, klass, flags, embedded_size);
         if (RCLASS_MAX_IV_COUNT(klass) == 0) {
             if (!rb_obj_shape_has_fields((VALUE)st)
-                    && embedded_size < rb_gc_obj_slot_size((VALUE)st)) {
+                    && embedded_size < rb_obj_shape_slot_size((VALUE)st)) {
                 FL_UNSET_RAW((VALUE)st, RSTRUCT_GEN_FIELDS);
                 RSTRUCT_SET_FIELDS_OBJ((VALUE)st, 0);
             }

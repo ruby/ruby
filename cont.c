@@ -2187,7 +2187,9 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
 static inline rb_fiber_t*
 fiber_current(void)
 {
-    rb_execution_context_t *ec = GET_EC();
+    /* Called right after a coroutine transfer: an inlined GET_EC() may read a
+     * TLS pointer cached before the NT migration, so force a fresh load. */
+    rb_execution_context_t *ec = rb_current_ec_noinline();
     return ec->fiber_ptr;
 }
 
@@ -2657,7 +2659,8 @@ rb_fiber_start(rb_fiber_t *fiber)
         th->ec->root_svar = Qfalse;
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
-        cont->value = rb_vm_invoke_proc(th->ec, proc, argc, argv, cont->kw_splat, VM_BLOCK_HANDLER_NONE);
+        cont->value = rb_vm_invoke_proc(th->ec, proc, argc, argv, cont->kw_splat, VM_BLOCK_HANDLER_NONE,
+                                        rb_proc_refinements_cref(fiber->first_proc));
     }
     EC_POP_TAG();
 

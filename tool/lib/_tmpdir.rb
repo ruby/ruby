@@ -21,10 +21,18 @@ rescue Errno::EEXIST
 end
 # warn "tmpdir(#{tmpdir.size}) = #{tmpdir}"
 
+# Bundler's spec helpers walk up the directory tree looking for `.bundle`,
+# stopping once they see a `tmp` directory (Bundler::SharedHelpers#search_up).
+# On Windows the temp dir lives under the user home (%LOCALAPPDATA%\Temp), so
+# without a `tmp` marker the search escapes the sandbox and picks up the real
+# ~/.bundle. Create one so the search stops at the temp root.
+Dir.mkdir(File.join(tmpdir, "tmp"))
+
 pid = $$
 END {
   if pid == $$
     begin
+      Dir.rmdir(File.join(tmpdir, "tmp"))
       Dir.rmdir(tmpdir)
     rescue Errno::ENOENT
     rescue Errno::ENOTEMPTY
@@ -102,4 +110,5 @@ END {
   end
 }
 
-ENV["TMPDIR"] = ENV["SPEC_TEMP_DIR"] = ENV["GEM_TEST_TMPDIR"] = tmpdir
+ENV["TMPDIR"] = ENV["GEM_TEST_TMPDIR"] = tmpdir
+ENV["SPEC_TEMP_DIR"] = File.join(tmpdir, "spec")

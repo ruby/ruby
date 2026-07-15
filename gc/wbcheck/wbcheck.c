@@ -498,6 +498,13 @@ rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor)
     return NULL;
 }
 
+bool
+rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass,
+                                 struct rb_gc_zjit_fastpath *fastpath)
+{
+    return false;
+}
+
 void
 rb_gc_impl_set_params(void *objspace_ptr)
 {
@@ -518,7 +525,7 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX])));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(MAX_HEAP_SIZE));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), SIZET2NUM(rb_gc_impl_max_allocation_size()));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_COUNT")), LONG2FIX(HEAP_COUNT));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("SIZE_POOL_COUNT")), LONG2FIX(HEAP_COUNT));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), INT2FIX(3));
@@ -534,12 +541,6 @@ rb_gc_impl_init(void)
     rb_define_singleton_method(rb_mGC, "latest_compact_info", rb_f_notimplement, 0);
     rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
     // Stub implementation
-}
-
-size_t *
-rb_gc_impl_heap_sizes(void *objspace_ptr)
-{
-    return heap_sizes;
 }
 
 // Shutdown
@@ -1075,7 +1076,7 @@ lock_and_maybe_gc(void *objspace_ptr)
 }
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size)
 {
     unsigned int lev = RB_GC_VM_LOCK();
     rb_gc_vm_barrier();
@@ -1084,11 +1085,13 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     maybe_gc(objspace_ptr);
 
     // Ensure minimum allocation size of BASE_SLOT_SIZE
-    alloc_size = heap_sizes[rb_gc_impl_heap_id_for_size(objspace_ptr, alloc_size)];
+    alloc_size = rb_gc_impl_size_slot_size(objspace_ptr, alloc_size);
 
     // Allocate memory for the object
     VALUE *mem = malloc(alloc_size);
     if (!mem) rb_bug("FIXME: malloc failed");
+
+    *actual_alloc_size = alloc_size;
 
     // Initialize the object
     VALUE obj = (VALUE)mem;
@@ -1119,10 +1122,10 @@ rb_gc_impl_obj_slot_size(VALUE obj)
 }
 
 size_t
-rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
+rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
 {
     for (int i = 0; i < HEAP_COUNT; i++) {
-        if (size <= heap_sizes[i]) return i;
+        if (size <= heap_sizes[i]) return heap_sizes[i];
     }
     rb_bug("size too big");
 }
@@ -1131,7 +1134,13 @@ bool
 rb_gc_impl_size_allocatable_p(size_t size)
 {
     // Only allow sizes up to the largest heap size
-    return size <= MAX_HEAP_SIZE;
+    return size <= rb_gc_impl_max_allocation_size();
+}
+
+size_t
+rb_gc_impl_max_allocation_size(void)
+{
+    return MAX_HEAP_SIZE;
 }
 
 // Malloc
@@ -1952,4 +1961,3 @@ rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
     }
     rb_gc_impl_copy_finalizer(objspace_ptr, dest, obj);
 }
-

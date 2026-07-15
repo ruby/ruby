@@ -69,5 +69,7 @@ describe "Kernel#srand" do
 end
 
 describe "Kernel.srand" do
-  it "needs to be reviewed for spec completeness"
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:srand)
+  end
 end

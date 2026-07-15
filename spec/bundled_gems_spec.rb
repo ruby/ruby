@@ -388,6 +388,12 @@ RSpec.describe "bundled_gems.rb" do
     end
 
     context "with bundle environment" do
+      # Windows has no executable bit or shebang dispatch, so running the
+      # script directly is rejected by bundler as "not executable". Invoke it
+      # through ruby there. What matters here is force_activate's behavior under
+      # the bundle environment, not shebang execution (covered by another spec).
+      let(:exec_command) { Gem.win_platform? ? "exec ruby ./script.rb" : "exec ./script.rb" }
+
       before do
         code = <<-RUBY
           #!/usr/bin/env ruby
@@ -400,13 +406,13 @@ RSpec.describe "bundled_gems.rb" do
 
       it "lockfile is available" do
         bundle "install"
-        bundle "exec ./script.rb"
+        bundle exec_command
 
         expect(err).to include("gem install csv")
       end
 
       it "lockfile is not available" do
-        bundle "exec ./script.rb"
+        bundle exec_command
 
         expect(err).to include("gem install csv")
       end

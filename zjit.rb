@@ -102,7 +102,6 @@ class << RubyVM::ZJIT
 
     # Show fallback counters, ordered by the typical amount of fallbacks for the prefix at the time
     print_counters_with_prefix(prefix: 'unspecialized_send_def_type_', prompt: 'not optimized method types for send', buf:, stats:, limit: 20)
-    print_counters_with_prefix(prefix: 'unspecialized_send_without_block_def_type_', prompt: 'not optimized method types for send_without_block', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'unspecialized_super_def_type_', prompt: 'not optimized method types for super', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'uncategorized_fallback_yarv_insn_', prompt: 'instructions with uncategorized fallback reason', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'send fallback reasons', buf:, stats:, limit: 20)
@@ -152,9 +151,12 @@ class << RubyVM::ZJIT
       :compile_hir_build_time_ns,
       :compile_hir_strength_reduce_time_ns,
       :compile_hir_inline_methods_time_ns,
+      :compile_hir_optimize_load_store_time_ns,
       :compile_hir_canonicalize_time_ns,
       :compile_hir_fold_constants_time_ns,
       :compile_hir_clean_cfg_time_ns,
+      :compile_hir_remove_redundant_patch_points_time_ns,
+      :compile_hir_remove_duplicate_check_interrupts_time_ns,
       :compile_hir_eliminate_dead_code_time_ns,
       :compile_lir_time_ns,
       :profile_time_ns,

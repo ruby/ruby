@@ -29,7 +29,7 @@ void rb_class_modify_check(VALUE);
 NORETURN(VALUE rb_f_raise(int argc, VALUE *argv));
 VALUE rb_exception_setup(int argc, VALUE *argv);
 void rb_refinement_setup(struct rb_refinements_data *data, VALUE module, VALUE klass);
-void rb_vm_using_module(VALUE module);
+void rb_using_module_recursive(rb_cref_t *cref, VALUE module);
 VALUE rb_top_main_class(const char *method);
 VALUE rb_ec_ensure(rb_execution_context_t *ec, VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2);
 

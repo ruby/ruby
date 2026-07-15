@@ -80,6 +80,16 @@ describe "Hash#compare_by_identity" do
     @h[o].should == :o
   end
 
+  it "regards two empty hashes equal, even if one isn't compare_by_identity" do
+    @h.should == @idh
+  end
+
+  it "doesn't regard two hashes equal when they differ only by compare_by_identity" do
+    @h[1] = 2
+    @idh[1] = 2
+    @h.should_not == @idh
+  end
+
   it "raises a FrozenError on frozen hashes" do
     @h = @h.freeze
     -> { @h.compare_by_identity }.should.raise(FrozenError)

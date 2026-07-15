@@ -895,7 +895,7 @@ rb_io_set_timeout(VALUE self, VALUE timeout)
 
     rb_io_t *fptr = rb_io_get_fptr(self);
 
-    fptr->timeout = timeout;
+    RB_OBJ_WRITE(self, &fptr->timeout, timeout);
 
     return self;
 }
@@ -12141,7 +12141,7 @@ io_s_foreach(VALUE v)
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
  *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
- *  - {Line Options}[rdoc-ref:IO@Line+IO].
+ *  - {Line Input Options}[rdoc-ref:IO@Line+Input+Options].
  *
  *  Returns an Enumerator if no block is given.
  *
@@ -12217,7 +12217,7 @@ io_s_readlines(VALUE v)
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
  *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
- *  - {Line Options}[rdoc-ref:IO@Line+IO].
+ *  - {Line Input Options}[rdoc-ref:IO@Line+Input+Options].
  *
  */
 
@@ -15253,7 +15253,12 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  === Line Input
  *
  *  Class \IO supports line-oriented input for
- *  {files}[rdoc-ref:IO@File+Line+Input] and {IO streams}[rdoc-ref:IO@Stream+Line+Input]
+ *  {files}[rdoc-ref:IO@File+Line+Input] and {IO streams}[rdoc-ref:IO@Stream+Line+Input].
+ *
+ *  ==== Line Input Options
+ *
+ *  Optional keyword argument +chomp+ (default: +false+)
+ *  specifies whether line separators are to be excluded from the result of a read.
  *
  *  ==== \File Line Input
  *

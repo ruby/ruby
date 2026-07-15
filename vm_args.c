@@ -1149,7 +1149,10 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
                     rb_ary_push(callback_arg, ref);
                     OBJ_FREEZE(callback_arg);
                     func = rb_func_lambda_new(refine_sym_proc_call, callback_arg, 1, UNLIMITED_ARGUMENTS);
-                    rb_hash_aset(ref, block_code, func);
+                    /* the table is frozen when it belongs to a Proc#refined memo; skip the cache then */
+                    if (!OBJ_FROZEN(ref)) {
+                        rb_hash_aset(ref, block_code, func);
+                    }
                 }
                 block_code = func;
             }
@@ -1184,7 +1187,7 @@ vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *r
     CALL_INFO site_ci = cd->ci;
     VALUE bh = Qundef;
 
-    RUBY_ASSERT(ISEQ_BODY(ISEQ_BODY(GET_ISEQ())->local_iseq)->param.flags.forwardable);
+    RUBY_ASSERT(ISEQ_BODY(ISEQ_BODY(CFP_ISEQ(reg_cfp))->local_iseq)->param.flags.forwardable);
     CALL_INFO caller_ci = (CALL_INFO)TOPN(0);
 
     unsigned int site_argc = vm_ci_argc(site_ci);

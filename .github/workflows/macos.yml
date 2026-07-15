@@ -30,12 +30,12 @@ jobs:
           - test_task: check
             os: macos-15
             configure_args: '--with-gcc=gcc-14'
+          # No dedicated --with-gmp job: gmp is enabled by default and
+          # setup/macos passes --with-gmp-dir to every job, so each check
+          # here already builds and tests with -lgmp.
           - test_task: check
             os: macos-26
             configure_args: '--with-jemalloc --with-opt-dir=$(brew --prefix jemalloc)'
-          - test_task: check
-            os: macos-26
-            configure_args: '--with-gmp'
           - test_task: test-all
             test_opts: --repeat-count=2
             os: macos-26

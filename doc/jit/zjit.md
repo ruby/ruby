@@ -287,27 +287,27 @@ cd zjit && cargo insta review
 
 Test changes will be reviewed alongside code changes.
 
-### Running integration tests
+### Running smoke tests
 
-This command runs Ruby execution tests.
-
-```bash
-make test-all TESTS="test/ruby/test_zjit.rb"
-```
-
-You can also run a single test case by matching the method name:
-
-```bash
-make test-all TESTS="test/ruby/test_zjit.rb -n TestZJIT#test_putobject"
-```
-
-### Running all tests
-
-Runs both `make zjit-test` and `test/ruby/test_zjit.rb`:
+Runs both `make zjit-test` and `test/ruby/test_zjit_cli.rb`:
 
 ```bash
 make zjit-check
 ```
+
+### Integration testing
+
+A thorough test run will want to enable ZJIT on Ruby workloads. Some
+test suites written in Ruby in this repository accepts the `RUN_OPTS`
+Make macro for passing ruby(1) command-line arguments:
+
+```bash
+make test-all RUN_OPTS='--zjit-call-threshold=2'
+make btest RUN_OPTS='--zjit-call-threshold=1'
+```
+
+See [Testing Ruby](rdoc-ref:contributing/testing_ruby.md) for a list of
+test suites.
 
 ## Statistics Collection
 

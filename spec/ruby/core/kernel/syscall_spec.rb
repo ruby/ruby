@@ -8,5 +8,7 @@ describe "Kernel#syscall" do
 end
 
 describe "Kernel.syscall" do
-  it "needs to be reviewed for spec completeness"
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:syscall)
+  end
 end

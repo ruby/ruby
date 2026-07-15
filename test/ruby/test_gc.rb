@@ -194,8 +194,14 @@ class TestGc < Test::Unit::TestCase
   def test_stat_single
     omit 'stress' if GC.stress
 
-    stat = GC.stat
-    assert_equal stat[:count], GC.stat(:count)
+    # GC.stat and GC.stat(:count) are two separate reads of :count. If a GC
+    # runs between them (e.g. triggered by an allocation on another thread),
+    # :count changes and the two reads disagree. Disable GC so both reads
+    # observe the same :count.
+    EnvUtil.without_gc do
+      stat = GC.stat
+      assert_equal stat[:count], GC.stat(:count)
+    end
     assert_raise(ArgumentError){ GC.stat(:invalid) }
   end
 
@@ -578,6 +584,39 @@ class TestGc < Test::Unit::TestCase
     assert GC::Profiler.raw_data
   ensure
     GC::Profiler.disable
+  end
+
+  def test_profiler_raw_data_limit
+    assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 30)
+      GC::Profiler.configure(max_records: 2)
+      GC::Profiler.enable
+      GC::Profiler.clear
+
+      3.times { GC.start }
+      records = GC::Profiler.raw_data
+
+      assert_equal 2, records.size
+      assert_operator records[0][:GC_SEQUENCE], :<, records[1][:GC_SEQUENCE]
+      assert_equal records, GC::Profiler.raw_data(limit: 100)
+      assert_equal [records.last], GC::Profiler.raw_data(limit: 1)
+    RUBY
+  end
+
+  def test_profiler_raw_data_since
+    assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 30)
+      GC::Profiler.configure(max_records: 4)
+      GC::Profiler.enable
+      GC::Profiler.clear
+
+      GC.start
+      sequence = GC::Profiler.raw_data.last[:GC_SEQUENCE]
+      2.times { GC.start }
+      records = GC::Profiler.raw_data(since: sequence)
+
+      assert_equal 2, records.size
+      assert_operator records[0][:GC_SEQUENCE], :>, sequence
+      assert_operator records[0][:GC_SEQUENCE], :<, records[1][:GC_SEQUENCE]
+    RUBY
   end
 
   def test_profiler_raw_data_includes_wall_time

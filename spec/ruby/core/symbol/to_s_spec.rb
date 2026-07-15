@@ -16,7 +16,7 @@ describe "Symbol#to_s" do
     symbol.to_s.encoding.should == Encoding::US_ASCII
   end
 
-  ruby_version_is "3.4" do
+  ruby_version_is "3.4"..."4.1" do
     it "warns about mutating returned string" do
       -> { :bad!.to_s.upcase! }.should complain(/warning: string returned by :bad!.to_s will be frozen in the future/)
     end
@@ -27,6 +27,12 @@ describe "Symbol#to_s" do
       -> { :bad!.to_s.upcase! }.should_not complain
     ensure
       Warning[:deprecated] = deprecated
+    end
+  end
+
+  ruby_version_is "4.1" do
+    it "returns a frozen string" do
+      :test.to_s.frozen?.should == true
     end
   end
 end

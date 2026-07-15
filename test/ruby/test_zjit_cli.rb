@@ -1,14 +1,22 @@
 # frozen_string_literal: true
 #
 # This set of tests can be run with:
-# make test-all TESTS=test/ruby/test_zjit.rb
+#
+#     make test/ruby/test_zjit_cli.rb
+#
+# Test ZJIT through the command-line interface. This relatively heavy-weight
+# way to test is only necessary when exercising command-line options, stats,
+# environment variables, or process-level behavior. Tests that only exercise
+# codegen should be added to the Rust test harness (`codegen_tests.rs`)
+# instead: it parallelizes better and allows for easy inspection of VM internal
+# states.
 
 require 'test/unit'
 require 'envutil'
 require_relative '../lib/jit_support'
 return unless JITSupport.zjit_supported?
 
-class TestZJIT < Test::Unit::TestCase
+class TestZJITCLI < Test::Unit::TestCase
   def test_enabled
     assert_runs 'false', <<~RUBY, zjit: false
       RubyVM::ZJIT.enabled?
@@ -187,13 +195,6 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_new], call_threshold: 2
   end
 
-  def test_uncached_getconstant_path
-    assert_compiles RUBY_COPYRIGHT.dump, %q{
-      def test = RUBY_COPYRIGHT
-      test
-    }, call_threshold: 1, insns: [:opt_getconstant_path]
-  end
-
   def test_getconstant_path_autoload
     # A constant-referencing expression can run arbitrary code through Kernel#autoload.
     Dir.mktmpdir('autoload') do |tmpdir|
@@ -206,22 +207,6 @@ class TestZJIT < Test::Unit::TestCase
         test
       }, call_threshold: 1, insns: [:opt_getconstant_path]
     end
-  end
-
-  def test_send_backtrace
-    backtrace = [
-      "-e:2:in 'Object#jit_frame1'",
-      "-e:3:in 'Object#entry'",
-      "-e:5:in 'block in <main>'",
-      "-e:6:in '<main>'",
-    ]
-    assert_compiles backtrace.inspect, %q{
-      def jit_frame2 = caller     # 1
-      def jit_frame1 = jit_frame2 # 2
-      def entry = jit_frame1      # 3
-      entry # profile send        # 4
-      entry                       # 5
-    }, call_threshold: 2
   end
 
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
@@ -300,105 +285,6 @@ class TestZJIT < Test::Unit::TestCase
     }, stats: true
   end
 
-  def test_zjit_option_uses_array_each_in_ruby
-    omit 'ZJIT wrongly compiles Array#each, so it is disabled for now'
-    assert_runs '"<internal:array>"', %q{
-      Array.instance_method(:each).source_location&.first
-    }
-  end
-
-  def test_line_tracepoint_on_c_method
-    assert_compiles '"[[:line, true]]"', %q{
-      events = []
-      events.instance_variable_set(
-        :@tp,
-        TracePoint.new(:line) { |tp| events << [tp.event, tp.lineno] if tp.path == __FILE__ }
-      )
-      def events.to_str
-        @tp.enable; ''
-      end
-
-      # Stay in generated code while enabling tracing
-      def events.compiled(obj)
-        String(obj)
-        @tp.disable; __LINE__
-      end
-
-      line = events.compiled(events)
-      events[0][-1] = (events[0][-1] == line)
-
-      events.to_s # can't dump events as it's a singleton object AND it has a TracePoint instance variable, which also can't be dumped
-    }
-  end
-
-  def test_targeted_line_tracepoint_in_c_method_call
-    assert_compiles '"[true]"', %q{
-      events = []
-      events.instance_variable_set(:@tp, TracePoint.new(:line) { |tp| events << tp.lineno })
-      def events.to_str
-        @tp.enable(target: method(:compiled))
-        ''
-      end
-
-      # Stay in generated code while enabling tracing
-      def events.compiled(obj)
-        String(obj)
-        __LINE__
-      end
-
-      line = events.compiled(events)
-      events[0] = (events[0] == line)
-
-      events.to_s # can't dump events as it's a singleton object AND it has a TracePoint instance variable, which also can't be dumped
-    }
-  end
-
-  def test_regression_cfp_sp_set_correctly_before_leaf_gc_call
-    assert_compiles ':ok', %q{
-      def check(l, r)
-        return 1 unless l
-        1 + check(*l) + check(*r)
-      end
-
-      def tree(depth)
-        # This duparray is our leaf-gc target.
-        return [nil, nil] unless depth > 0
-
-        # Modify the local and pass it to the following calls.
-        depth -= 1
-        [tree(depth), tree(depth)]
-      end
-
-      def test
-        GC.stress = true
-        2.times do
-          t = tree(11)
-          check(*t)
-        end
-        :ok
-      end
-
-      test
-    }, call_threshold: 14, num_profiles: 5
-  end
-
-  def test_regression_gc_stress_with_lazy_block_code
-    assert_compiles ':ok', %q{
-      def allocate_array
-        [1, 2, 3]
-      end
-
-      begin
-        GC.stress = true
-        allocate_array
-        allocate_array
-        :ok
-      ensure
-        GC.stress = false
-      end
-    }
-  end
-
   def test_exit_tracing
     # Smoke test: --zjit-trace-exits writes a Fuchsia trace (.fxt) file to /tmp
     assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-exits'])
@@ -418,33 +304,54 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
-  def test_send_no_profiles_with_disabled_specialized_instruction
-    # Regression test: when specialized_instruction is disabled (as power_assert does),
-    # eval'd code uses `send` instead of `opt_send_without_block`, producing SendNoProfiles.
-    # The `times` call with a literal block is the SendNoProfiles send whose exit profiling
-    # triggers recompilation of `run`. After recompilation, `make`'s eval("proc { }") crashes
-    # in vm_make_env_each because the caller frame's EP[-1] (specval) has a stale value.
-    assert_runs ':ok', <<~RUBY
-      RubyVM::InstructionSequence.compile_option = { specialized_instruction: false }
-      eval <<~'INNERRUBY'
-        def make = eval("proc { }")
-        def run(n) = n.times { make }
-      INNERRUBY
-      run(6)
-      :ok
+  def test_send_forwarded_block_arg_nil_then_non_nil
+    # Regression test: when a forwarded &block arg is profiled as nil, the nil
+    # block optimization must update the frame state to match the stripped args.
+    # Otherwise the saved SP is off by one, causing a stack consistency error
+    # when the guard side-exits for a non-nil block.
+    assert_runs ':ok', <<~RUBY, call_threshold: 2
+      def inner(callable = nil, &block)
+        callable || block
+      end
+
+      def outer(&block)
+        inner(&block)
+      end
+
+      100.times { outer }
+      result = outer { |x| x }
+      result.is_a?(Proc) ? :ok : :fail
     RUBY
   end
 
-  def test_float_arithmetic
-    assert_compiles '4.0', 'def test = 1.5 + 2.5; test'
-    assert_compiles '6.0', 'def test = 2.0 * 3.0; test'
-    assert_compiles '1.5', 'def test = 3.5 - 2.0; test'
-    assert_compiles '2.5', 'def test = 5.0 / 2.0; test'
-    assert_compiles '4.5', 'def test = 1.5 * 3; test' # Float * Fixnum
-    assert_compiles 'true', 'def test = (Float::NAN + 1.0).nan?; test'
-    assert_compiles 'Infinity', 'def test = Float::INFINITY * 2.0; test'
-    assert_compiles '3', 'def test = 3.7.to_i; test'
-    assert_compiles '-2', 'def test = (-2.9).to_i; test'
+  def test_send_forwarded_nil_block_arg_with_polymorphic_receiver
+    # Regression test: the nil block optimization strips the block arg from the
+    # frame state used to set up the callee frame, but the pre-call guards
+    # (receiver GuardType, method-redefinition PatchPoint) must keep using the
+    # original frame state that still has the block arg on the stack. Otherwise a
+    # guard side-exit re-executes the send with a stack that is missing the block
+    # arg slot, corrupting the pushed frame's EP (VM_ENV_FLAGS assertion failure).
+    # A polymorphic receiver forces the receiver GuardType to side-exit.
+    assert_runs ':ok', <<~RUBY, call_threshold: 2
+      class Base
+        def self.inner(model, name, &block)
+          block ? block.call : model
+        end
+        def self.outer(model, name, &block)
+          inner(model, name, &block)
+        end
+      end
+      class A < Base; end
+      class B < Base; end
+      class C < Base; end
+      class D < Base; end
+
+      1000.times do |i|
+        klass = [A, B, C, D][i % 4]
+        klass.outer(i, :n)
+      end
+      :ok
+    RUBY
   end
 
   private

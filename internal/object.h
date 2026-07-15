@@ -20,8 +20,15 @@ VALUE rb_obj_dig(int argc, VALUE *argv, VALUE self, VALUE notfound);
 VALUE rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze);
 VALUE rb_obj_dup_setup(VALUE obj, VALUE dup);
 VALUE rb_immutable_obj_clone(int, VALUE *, VALUE);
-VALUE rb_check_convert_type_with_id(VALUE,int,const char*,ID);
+VALUE rb_check_convert_type_with_id_slow(VALUE,int,const char*,ID);
 int rb_bool_expected(VALUE, const char *, int raise);
+
+static inline VALUE
+rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
+{
+    if (RB_TYPE_P(val, type) && type != T_DATA) return val;
+    return rb_check_convert_type_with_id_slow(val, type, tname, method);
+}
 static inline void RBASIC_CLEAR_CLASS(VALUE obj);
 static inline void RBASIC_SET_CLASS_RAW(VALUE obj, VALUE klass);
 static inline void RBASIC_SET_CLASS(VALUE obj, VALUE klass);
@@ -59,6 +66,14 @@ RBASIC_SET_CLASS(VALUE obj, VALUE klass)
     VALUE oldv = RBASIC_CLASS(obj);
     RBASIC_SET_CLASS_RAW(obj, klass);
     RB_OBJ_WRITTEN(obj, oldv, klass);
+}
+
+static inline void
+ROBJECT_SET_EXTENDED(VALUE obj, VALUE fields_obj)
+{
+    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
+    RUBY_ASSERT(RB_TYPE_P(fields_obj, T_IMEMO));
+    RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.extended, fields_obj);
 }
 
 static inline size_t

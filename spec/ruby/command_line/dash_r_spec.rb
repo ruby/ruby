@@ -25,4 +25,9 @@ describe "The -r command line option" do
     out.should_not.include?("REQUIRED")
     out.should.include?("No such file or directory")
   end
+
+  it "requires in order when given multiple times" do
+    ruby_exe("", options: "-r#{fixture(__FILE__, "test_file.rb")} -r#{fixture(__FILE__, "verbose.rb")}").
+      should == "REQUIRED\nfalse\n"
+  end
 end

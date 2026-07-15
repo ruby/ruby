@@ -245,23 +245,14 @@ struct rb_fields {
             VALUE fields[1];
         } embed;
         struct {
-            VALUE *ptr;
-        } external;
-        struct {
-            // Note: the st_table could be embedded, but complex T_CLASS should be rare to
-            // non-existent, so not really worth the trouble.
-            st_table *table;
+            st_table table;
         } complex;
     } as;
 };
 
 // IMEMO/fields and T_OBJECT have exactly the same layout.
 // This is useful for JIT and common codepaths.
-#define OBJ_FIELD_HEAP ROBJECT_HEAP
-STATIC_ASSERT(imemo_fields_flags, OBJ_FIELD_HEAP == IMEMO_FL_USER0);
 STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.ary) == offsetof(struct rb_fields, as.embed.fields));
-STATIC_ASSERT(imemo_fields_external_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.external.ptr));
-STATIC_ASSERT(imemo_fields_complex_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.complex.table));
 
 #define IMEMO_OBJ_FIELDS(fields) ((struct rb_fields *)fields)
 
@@ -287,7 +278,7 @@ rb_imemo_subclasses_entries(VALUE v)
 VALUE rb_imemo_fields_new(VALUE owner, /* shape_id_t */ uint32_t shape_id, bool shareable);
 VALUE rb_imemo_subclasses_new(uint32_t capacity);
 VALUE rb_imemo_fields_new_complex(VALUE owner, /* shape_id_t */ uint32_t shape_id, size_t capa, bool shareable);
-VALUE rb_imemo_fields_new_complex_tbl(VALUE owner, /* shape_id_t */ uint32_t shape_id, st_table *tbl, bool shareable);
+VALUE rb_imemo_fields_new_complex_empty(VALUE owner);
 VALUE rb_imemo_fields_clone(VALUE fields_obj);
 void rb_imemo_fields_clear(VALUE fields_obj);
 
@@ -297,40 +288,6 @@ rb_imemo_fields_owner(VALUE fields_obj)
     RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields));
 
     return CLASS_OF(fields_obj);
-}
-
-static inline VALUE *
-rb_imemo_fields_ptr(VALUE fields_obj)
-{
-    if (!fields_obj) {
-        return NULL;
-    }
-
-    RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
-
-    if (UNLIKELY(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP))) {
-        return IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr;
-    }
-    else {
-        return IMEMO_OBJ_FIELDS(fields_obj)->as.embed.fields;
-    }
-}
-
-static inline st_table *
-rb_imemo_fields_complex_tbl(VALUE fields_obj)
-{
-    if (!fields_obj) {
-        return NULL;
-    }
-
-    RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
-    RUBY_ASSERT(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP));
-
-    // Some codepaths unconditionally access the fields_ptr, and assume it can be used as st_table if the
-    // shape is complex.
-    RUBY_ASSERT((st_table *)rb_imemo_fields_ptr(fields_obj) == IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table);
-
-    return IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table;
 }
 
 #endif /* INTERNAL_IMEMO_H */

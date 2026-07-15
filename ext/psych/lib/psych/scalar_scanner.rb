@@ -24,6 +24,18 @@ module Psych
                          |[-+]?(?:0|[1-9](?:[0-9]|,[0-9]|_[0-9])*) (?# base 10)
                          |[-+]?0x[_,]*[0-9a-fA-F][0-9a-fA-F_,]*    (?# base 16))$/x
 
+    # YAML 1.1 treats yes/no/on/off as booleans in addition to true/false,
+    # while YAML 1.2's core schema only recognizes true/false.  The default
+    # libyaml backend keeps the 1.1 set for backward compatibility; the
+    # experimental libfyaml backend follows 1.2.
+    if defined?(Psych::BACKEND) && Psych::BACKEND == 'libfyaml'
+      BOOLEAN_TRUE  = /^true$/i
+      BOOLEAN_FALSE = /^false$/i
+    else
+      BOOLEAN_TRUE  = /^(yes|true|on)$/i
+      BOOLEAN_FALSE = /^(no|false|off)$/i
+    end
+
     attr_reader :class_loader
 
     # Create a new scanner
@@ -48,9 +60,9 @@ module Psych
           string
         elsif string == '~' || string.match?(/^null$/i)
           nil
-        elsif string.match?(/^(yes|true|on)$/i)
+        elsif string.match?(BOOLEAN_TRUE)
           true
-        elsif string.match?(/^(no|false|off)$/i)
+        elsif string.match?(BOOLEAN_FALSE)
           false
         else
           string

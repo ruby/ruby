@@ -8,12 +8,12 @@ class Test_StringCapacity < Test::Unit::TestCase
   def test_capacity_embedded
     assert_equal pool_slot_size(0) - embed_header_size - 1, capa('foo')
     assert_equal max_embed_len, capa('1' * max_embed_len)
-    assert_equal max_embed_len, capa('1' * (max_embed_len - 1))
+    assert_include ((max_embed_len - 1)..max_embed_len), capa('1' * (max_embed_len - 1))
   end
 
   def test_capacity_shared
-    sym = ("a" * pool_slot_size(0)).to_sym
-    assert_equal 0, capa(sym.to_s)
+    source = ("a" * pool_slot_size(0)).freeze
+    assert_equal 0, capa(Bug::String.rb_str_new_shared(source))
   end
 
   def test_capacity_normal

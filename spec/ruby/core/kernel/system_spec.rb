@@ -1,16 +1,20 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe :kernel_system, shared: true do
+describe "Kernel#system" do
+  it "is a private method" do
+    Kernel.private_instance_methods(false).should.include?(:system)
+  end
+
   it "executes the specified command in a subprocess" do
-    -> { @object.system("echo a") }.should output_to_fd("a\n")
+    -> { system("echo a") }.should output_to_fd("a\n")
 
     $?.should.instance_of? Process::Status
     $?.should.success?
   end
 
   it "returns true when the command exits with a zero exit status" do
-    @object.system(ruby_cmd('exit 0')).should == true
+    system(ruby_cmd('exit 0')).should == true
 
     $?.should.instance_of? Process::Status
     $?.should.success?
@@ -18,7 +22,7 @@ describe :kernel_system, shared: true do
   end
 
   it "returns false when the command exits with a non-zero exit status" do
-    @object.system(ruby_cmd('exit 1')).should == false
+    system(ruby_cmd('exit 1')).should == false
 
     $?.should.instance_of? Process::Status
     $?.should_not.success?
@@ -26,15 +30,15 @@ describe :kernel_system, shared: true do
   end
 
   it "raises RuntimeError when `exception: true` is given and the command exits with a non-zero exit status" do
-    -> { @object.system(ruby_cmd('exit 1'), exception: true) }.should.raise(RuntimeError)
+    -> { system(ruby_cmd('exit 1'), exception: true) }.should.raise(RuntimeError)
   end
 
   it "raises Errno::ENOENT when `exception: true` is given and the specified command does not exist" do
-    -> { @object.system('feature_14386', exception: true) }.should.raise(Errno::ENOENT)
+    -> { system('feature_14386', exception: true) }.should.raise(Errno::ENOENT)
   end
 
   it "returns nil when command execution fails" do
-    @object.system("sad").should == nil
+    system("sad").should == nil
 
     $?.should.instance_of? Process::Status
     $?.pid.should.is_a?(Integer)
@@ -42,7 +46,7 @@ describe :kernel_system, shared: true do
   end
 
   it "does not write to stderr when command execution fails" do
-    -> { @object.system("sad") }.should output_to_fd("", STDERR)
+    -> { system("sad") }.should output_to_fd("", STDERR)
   end
 
   platform_is_not :windows do
@@ -55,12 +59,12 @@ describe :kernel_system, shared: true do
     end
 
     it "executes with `sh` if the command contains shell characters" do
-      -> { @object.system("echo $0") }.should output_to_fd("sh\n")
+      -> { system("echo $0") }.should output_to_fd("sh\n")
     end
 
     it "ignores SHELL env var and always uses `sh`" do
       ENV['SHELL'] = "/bin/fakeshell"
-      -> { @object.system("echo $0") }.should output_to_fd("sh\n")
+      -> { system("echo $0") }.should output_to_fd("sh\n")
     end
   end
 
@@ -77,7 +81,7 @@ describe :kernel_system, shared: true do
     end
 
     it "executes with `sh` if the command is executable but not binary and there is no shebang" do
-      -> { @object.system(@shell_command) }.should output_to_fd(ENV['PATH'] + "\n")
+      -> { system(@shell_command) }.should output_to_fd(ENV['PATH'] + "\n")
     end
   end
 
@@ -94,39 +98,33 @@ describe :kernel_system, shared: true do
   end
 
   it "expands shell variables when given a single string argument" do
-    -> { @object.system("echo #{@shell_var}") }.should output_to_fd("foo\n")
+    -> { system("echo #{@shell_var}") }.should output_to_fd("foo\n")
   end
 
   platform_is_not :windows do
     it "does not expand shell variables when given multiples arguments" do
-      -> { @object.system("echo", @shell_var) }.should output_to_fd("#{@shell_var}\n")
+      -> { system("echo", @shell_var) }.should output_to_fd("#{@shell_var}\n")
     end
   end
 
   platform_is :windows do
     it "does expand shell variables when given multiples arguments" do
       # See https://bugs.ruby-lang.org/issues/12231
-      -> { @object.system("echo", @shell_var) }.should output_to_fd("foo\n")
+      -> { system("echo", @shell_var) }.should output_to_fd("foo\n")
     end
   end
 
   platform_is :windows do
     it "runs commands starting with any number of @ using shell" do
       `#{ruby_cmd("p system 'does_not_exist'")} 2>NUL`.chomp.should == "nil"
-      @object.system('@does_not_exist 2>NUL').should == false
-      @object.system("@@@#{ruby_cmd('exit 0')}").should == true
+      system('@does_not_exist 2>NUL').should == false
+      system("@@@#{ruby_cmd('exit 0')}").should == true
     end
   end
 end
 
-describe "Kernel#system" do
-  it "is a private method" do
-    Kernel.private_instance_methods(false).should.include?(:system)
-  end
-
-  it_behaves_like :kernel_system, :system, KernelSpecs::Method.new
-end
-
 describe "Kernel.system" do
-  it_behaves_like :kernel_system, :system, Kernel
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:system)
+  end
 end
