@@ -399,6 +399,33 @@ RSpec.describe Bundler::SharedHelpers do
       it_behaves_like "ENV['RUBYOPT'] gets set correctly"
     end
 
+    context "when bundler install path contains whitespace" do
+      let(:install_path) { "/opt/ruby with space/lib" }
+
+      before do
+        allow(File).to receive(:expand_path).and_return("#{install_path}/bundler/setup")
+      end
+
+      # RUBYOPT is split on whitespace with no quoting mechanism, so an
+      # absolute -r path containing spaces would make every child ruby fail
+      # to boot with "invalid switch in RUBYOPT".
+      it "requires bundler/setup by feature name instead of absolute path" do
+        subject.set_bundle_environment
+        expect(ENV["RUBYOPT"].split(" ")).to start_with("-rbundler/setup")
+      end
+
+      it "does not inject the space-containing path into RUBYOPT" do
+        subject.set_bundle_environment
+        expect(ENV["RUBYOPT"]).not_to include(install_path)
+      end
+
+      it "is idempotent" do
+        subject.set_bundle_environment
+        subject.set_bundle_environment
+        expect(ENV["RUBYOPT"].split(" ").grep(%r{\A-r.*bundler/setup\z}).length).to eq(1)
+      end
+    end
+
     context "ENV['RUBYLIB'] does not exist" do
       before { ENV.delete("RUBYLIB") }
 

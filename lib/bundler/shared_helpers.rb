@@ -347,7 +347,12 @@ module Bundler
 
     def set_rubyopt
       rubyopt = [ENV["RUBYOPT"]].compact
-      setup_require = "-r#{File.expand_path("setup", __dir__)}"
+      setup_path = File.expand_path("setup", __dir__)
+      # RUBYOPT is split on whitespace with no quoting mechanism, so an
+      # absolute path containing spaces would be torn apart. Fall back to
+      # requiring by feature name; set_rubylib puts our lib directory first
+      # on the child's load path.
+      setup_require = /\s/.match?(setup_path) ? "-rbundler/setup" : "-r#{setup_path}"
       return if !rubyopt.empty? && rubyopt.first.include?(setup_require)
       rubyopt.unshift setup_require
       Bundler::SharedHelpers.set_env "RUBYOPT", rubyopt.join(" ")
