@@ -1434,7 +1434,6 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
 
     switch (flags & RUBY_T_MASK) {
       case T_OBJECT:
-        if (flags & ROBJECT_HEAP) return true;
         return false;
 
       case T_DATA:
@@ -3300,18 +3299,18 @@ rb_gc_mark_children(void *objspace, VALUE obj)
       }
 
       case T_OBJECT: {
-        uint32_t len;
-        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-            if (!rb_gc_checking_shareable()) {
-                gc_mark_internal(ROBJECT(obj)->as.extended);
+        shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+        if (rb_shape_embedded_p(shape_id)) {
+            uint32_t len = RSHAPE_LEN(shape_id);
+            const VALUE * const ptr = ROBJECT(obj)->as.ary;
+
+            for (uint32_t i = 0; i < len; i++) {
+                gc_mark_internal(ptr[i]);
             }
         }
         else {
-            const VALUE * const ptr = ROBJECT(obj)->as.ary;
-
-            len = ROBJECT_FIELDS_COUNT_NOT_COMPLEX(obj);
-            for (uint32_t i = 0; i < len; i++) {
-                gc_mark_internal(ptr[i]);
+            if (!rb_gc_checking_shareable()) {
+                gc_mark_internal(ROBJECT(obj)->as.extended);
             }
         }
         break;
@@ -3680,15 +3679,15 @@ gc_ref_update_object(void *objspace, VALUE v)
     RUBY_ASSERT(rb_gc_obj_slot_size(v) == rb_obj_shape_slot_size(v));
     shape_id_t shape_id = RBASIC_SHAPE_ID(v);
 
-    if (FL_TEST_RAW(v, ROBJECT_HEAP)) {
+    if (!rb_shape_embedded_p(shape_id)) {
         UPDATE_IF_MOVED(objspace, ROBJECT(v)->as.extended);
 
         if (!rb_shape_complex_p(shape_id) && rb_shape_embedded_capacity(shape_id) >= RSHAPE_LEN(shape_id)) {
             VALUE *embedded_fields = ROBJECT_EMBEDDED_FIELDS(v);
             VALUE *extended_fields = ROBJECT_FIELDS(v);
             MEMCPY(embedded_fields, extended_fields, VALUE, RSHAPE_LEN(shape_id));
-            FL_UNSET_RAW(v, ROBJECT_HEAP);
-            RBASIC_SET_FULL_SHAPE_ID(v, rb_shape_transition_robject(shape_id));
+            shape_id = rb_shape_transition_robject(shape_id);
+            RBASIC_SET_FULL_SHAPE_ID(v, shape_id);
             rb_gc_writebarrier_remember(v);
         }
         else {
@@ -3697,7 +3696,8 @@ gc_ref_update_object(void *objspace, VALUE v)
     }
 
     VALUE *ptr = ROBJECT_FIELDS(v);
-    for (uint32_t i = 0; i < ROBJECT_FIELDS_COUNT(v); i++) {
+    attr_index_t len = RSHAPE_LEN(shape_id);
+    for (attr_index_t i = 0; i < len; i++) {
         UPDATE_IF_MOVED(objspace, ptr[i]);
     }
 }
@@ -4855,17 +4855,19 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             }
           case T_OBJECT:
             {
-                if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-                    if (rb_obj_shape_complex_p(obj)) {
-                        size_t hash_len = rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
-                        APPEND_F("(complex) len:%zu", hash_len);
-                    }
-                    else {
-                        APPEND_F("len:%d capa:%d extended:%p", RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), ROBJECT_FIELDS_CAPACITY(obj), (void *)ROBJECT_FIELDS_OBJ(obj));
-                    }
+                shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+                if (rb_shape_embedded_p(shape_id)) {
+                    APPEND_F("(embed) len:%d capa:%d", RSHAPE_LEN(shape_id), RSHAPE_CAPACITY(shape_id));
                 }
                 else {
-                    APPEND_F("(embed) len:%d capa:%d", RSHAPE_LEN(RBASIC_SHAPE_ID(obj)), ROBJECT_FIELDS_CAPACITY(obj));
+                    VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
+                    if (rb_shape_complex_p(shape_id)) {
+                        size_t hash_len = rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
+                        APPEND_F("(complex) len:%zu extended:%p", hash_len, (void *)fields_obj);
+                    }
+                    else {
+                        APPEND_F("(extended) len:%d capa:%d extended:%p", RSHAPE_LEN(shape_id), RSHAPE_CAPACITY(shape_id), (void *)fields_obj);
+                    }
                 }
             }
             break;

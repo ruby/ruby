@@ -1710,10 +1710,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     if (fields_obj != original_fields_obj) {
         switch (type) {
           case T_OBJECT:
-            if (!fields_obj) {
-                FL_UNSET_RAW(obj, ROBJECT_HEAP);
-            }
-            else if (fields_obj != obj) {
+            if (fields_obj && fields_obj != obj) {
                 ROBJECT_SET_EXTENDED(obj, fields_obj);
             }
             break;

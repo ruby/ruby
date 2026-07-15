@@ -68,35 +68,12 @@ RBASIC_SET_CLASS(VALUE obj, VALUE klass)
     RB_OBJ_WRITTEN(obj, oldv, klass);
 }
 
-static inline VALUE
-ROBJECT_FIELDS_OBJ(VALUE obj)
-{
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-
-    return FL_TEST_RAW(obj, ROBJECT_HEAP) ? ROBJECT(obj)->as.extended : obj;
-}
-
-static inline VALUE *
-ROBJECT_EMBEDDED_FIELDS(VALUE obj)
-{
-    return ROBJECT(obj)->as.ary;
-}
-
-static inline VALUE *
-ROBJECT_FIELDS(VALUE obj)
-{
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-
-    return ROBJECT_EMBEDDED_FIELDS(ROBJECT_FIELDS_OBJ(obj));
-}
-
 static inline void
 ROBJECT_SET_EXTENDED(VALUE obj, VALUE fields_obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
     RUBY_ASSERT(RB_TYPE_P(fields_obj, T_IMEMO));
     RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.extended, fields_obj);
-    FL_SET_RAW(obj, ROBJECT_HEAP);
 }
 
 static inline size_t

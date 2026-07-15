@@ -1216,8 +1216,9 @@ static shape_id_t
 rb_shape_expected_layout(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-        return FL_TEST_RAW(obj, ROBJECT_HEAP) ? SHAPE_ID_LAYOUT_EXTENDED : SHAPE_ID_LAYOUT_ROBJECT;
+      case T_OBJECT: {
+          return SHAPE_ID_LAYOUT_ROBJECT;
+      }
       case T_CLASS:
       case T_MODULE:
         if (FL_TEST_RAW(obj, RCLASS_BOXABLE)) {
@@ -1278,8 +1279,10 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
     shape_id_t actual_layout = rb_shape_layout(rb_obj_shape_id(obj));
     shape_id_t expected_layout = rb_shape_expected_layout(obj);
     if (actual_layout != expected_layout) {
-        rb_bug("shape_id layout mismatch: expected=%s actual=%s shape_id=%u obj=%s",
-                shape_layout_name(expected_layout), shape_layout_name(actual_layout), shape_id, rb_obj_info(obj));
+        if (!(RB_TYPE_P(obj, T_OBJECT) && actual_layout == SHAPE_ID_LAYOUT_EXTENDED)) {
+            rb_bug("shape_id layout mismatch: expected=%s actual=%s shape_id=%u obj=%s",
+                    shape_layout_name(expected_layout), shape_layout_name(actual_layout), shape_id, rb_obj_info(obj));
+        }
     }
 
     if (shape_id == ROOT_SHAPE_ID) {
@@ -1294,10 +1297,10 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 
         // Ensure complex object don't appear as embedded
         if (RB_TYPE_P(obj, T_OBJECT)) {
-            RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
+            RUBY_ASSERT(rb_obj_shape_extended_p(obj));
         }
         else if (IMEMO_TYPE_P(obj, imemo_fields)) {
-            RUBY_ASSERT(!FL_TEST_RAW(obj, ROBJECT_HEAP));
+            RUBY_ASSERT(rb_obj_shape_embedded_p(obj));
         }
     }
     else {

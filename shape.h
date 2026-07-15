@@ -191,6 +191,30 @@ rb_shape_layout(shape_id_t shape_id)
     return shape_id & SHAPE_ID_LAYOUT_MASK;
 }
 
+static inline bool
+rb_shape_embedded_p(shape_id_t shape_id)
+{
+    return rb_shape_layout(shape_id) == SHAPE_ID_LAYOUT_ROBJECT;
+}
+
+static inline bool
+rb_shape_extended_p(shape_id_t shape_id)
+{
+    return rb_shape_layout(shape_id) == SHAPE_ID_LAYOUT_EXTENDED;
+}
+
+static inline bool
+rb_obj_shape_embedded_p(VALUE obj)
+{
+    return rb_shape_embedded_p(RBASIC_SHAPE_ID(obj));
+}
+
+static inline bool
+rb_obj_shape_extended_p(VALUE obj)
+{
+    return rb_shape_extended_p(RBASIC_SHAPE_ID(obj));
+}
+
 // Assigns the entire shape_id.
 // shape_id_t is composed of two parts:
 //  - The layout and capacity part, which never changes except on GC compaction.
@@ -381,49 +405,20 @@ RSHAPE_EDGE_NAME(shape_id_t shape_id)
     return RSHAPE(shape_id)->edge_name;
 }
 
-static inline uint32_t
-ROBJECT_FIELDS_CAPACITY(VALUE obj)
+static inline VALUE *
+rb_imemo_fields_ptr(VALUE fields_obj)
 {
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    // Asking for capacity doesn't make sense when the object is using
-    // a hash table for storing instance variables
-    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
-    return RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj));
-}
-
-static inline st_table *
-ROBJECT_FIELDS_HASH(VALUE obj)
-{
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(rb_obj_shape_complex_p(obj));
-    RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
-
-    return rb_imemo_fields_complex_tbl(ROBJECT(obj)->as.extended);
-}
-
-static inline uint32_t
-ROBJECT_FIELDS_COUNT_COMPLEX(VALUE obj)
-{
-    return (uint32_t)rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
-}
-
-static inline uint32_t
-ROBJECT_FIELDS_COUNT_NOT_COMPLEX(VALUE obj)
-{
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
-    return RSHAPE(RBASIC_SHAPE_ID(obj))->next_field_index;
-}
-
-static inline uint32_t
-ROBJECT_FIELDS_COUNT(VALUE obj)
-{
-    if (rb_obj_shape_complex_p(obj)) {
-        return ROBJECT_FIELDS_COUNT_COMPLEX(obj);
+    if (!fields_obj) {
+        return NULL;
     }
-    else {
-        return ROBJECT_FIELDS_COUNT_NOT_COMPLEX(obj);
+
+    if (UNLIKELY(rb_obj_shape_extended_p(fields_obj))) {
+        RUBY_ASSERT(RB_TYPE_P(fields_obj, T_OBJECT));
+        fields_obj = ROBJECT(fields_obj)->as.extended;
+        RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields));
     }
+
+    return IMEMO_OBJ_FIELDS(fields_obj)->as.embed.fields;
 }
 
 static inline uint32_t
@@ -686,6 +681,89 @@ rb_setivar_cache_revalidate(shape_id_t shape_id, shape_id_t fields_shape_id, rb_
 
     // We use the cached offset, but combined with the current shape flags.
     return rb_shape_transition_offset(shape_id, cache.dest_shape_offset);
+}
+
+static inline st_table *
+rb_imemo_fields_complex_tbl(VALUE fields_obj)
+{
+    if (!fields_obj) {
+        return NULL;
+    }
+
+    RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields));
+
+    // Some codepaths unconditionally access the fields_ptr, and assume it can be used as st_table if the
+    // shape is complex.
+    RUBY_ASSERT((st_table *)rb_imemo_fields_ptr(fields_obj) == &IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table);
+
+    return &IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table;
+}
+
+static inline uint32_t
+ROBJECT_FIELDS_CAPACITY(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+    // Asking for capacity doesn't make sense when the object is using
+    // a hash table for storing instance variables
+    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
+    return RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj));
+}
+
+static inline st_table *
+ROBJECT_FIELDS_HASH(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+    RUBY_ASSERT(rb_obj_shape_complex_p(obj));
+    RUBY_ASSERT(rb_obj_shape_extended_p(obj));
+
+    return rb_imemo_fields_complex_tbl(ROBJECT(obj)->as.extended);
+}
+
+static inline uint32_t
+ROBJECT_FIELDS_COUNT_COMPLEX(VALUE obj)
+{
+    return (uint32_t)rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
+}
+
+static inline uint32_t
+ROBJECT_FIELDS_COUNT_NOT_COMPLEX(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
+    return RSHAPE(RBASIC_SHAPE_ID(obj))->next_field_index;
+}
+
+static inline uint32_t
+ROBJECT_FIELDS_COUNT(VALUE obj)
+{
+    if (rb_obj_shape_complex_p(obj)) {
+        return ROBJECT_FIELDS_COUNT_COMPLEX(obj);
+    }
+    else {
+        return ROBJECT_FIELDS_COUNT_NOT_COMPLEX(obj);
+    }
+}
+
+static inline VALUE
+ROBJECT_FIELDS_OBJ(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    return rb_obj_shape_embedded_p(obj) ? obj : ROBJECT(obj)->as.extended;
+}
+
+static inline VALUE *
+ROBJECT_EMBEDDED_FIELDS(VALUE obj)
+{
+    return ROBJECT(obj)->as.ary;
+}
+
+static inline VALUE *
+ROBJECT_FIELDS(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    return ROBJECT_EMBEDDED_FIELDS(ROBJECT_FIELDS_OBJ(obj));
 }
 
 #endif
