@@ -3110,6 +3110,11 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE box_value, void *a
         gc_mark_internal(RCLASSEXT_SUBCLASSES(ext));
     }
     gc_mark_internal(RCLASSEXT_CLASSPATH(ext));
+    if (RCLASSEXT_OWNER_RACTOR(ext)) {
+        // Keep the owner Ractor object alive so that ownership comparison
+        // never sees a dangling/reused reference.
+        gc_mark_internal(RCLASSEXT_OWNER_RACTOR(ext));
+    }
 }
 
 static void
@@ -3851,6 +3856,7 @@ update_classext_values(rb_objspace_t *objspace, rb_classext_t *ext, bool is_icla
     UPDATE_IF_MOVED(objspace, RCLASSEXT_ORIGIN(ext));
     UPDATE_IF_MOVED(objspace, RCLASSEXT_REFINED_CLASS(ext));
     UPDATE_IF_MOVED(objspace, RCLASSEXT_CLASSPATH(ext));
+    UPDATE_IF_MOVED(objspace, RCLASSEXT_OWNER_RACTOR(ext));
     if (is_iclass) {
         UPDATE_IF_MOVED(objspace, RCLASSEXT_INCLUDER(ext));
     }
