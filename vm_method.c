@@ -1513,9 +1513,9 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
             }
             if (iseq) {
                 rb_warning(
-                    "method redefined; discarding old %"PRIsVALUE"\n%s:%d: warning: previous definition of %"PRIsVALUE" was here",
+                    "method redefined; discarding old %"PRIsVALUE"\n%"PRIsVALUE":%d: warning: previous definition of %"PRIsVALUE" was here",
                     rb_id2str(mid),
-                    RSTRING_PTR(rb_iseq_path(iseq)),
+                    rb_iseq_path(iseq),
                     ISEQ_BODY(iseq)->location.first_lineno,
                     rb_id2str(old_def->original_id)
                 );
@@ -1832,9 +1832,9 @@ search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined)
     if (me == NULL) RB_DEBUG_COUNTER_INC(mc_search_notfound);
 
     VM_ASSERT(me == NULL || !METHOD_ENTRY_INVALIDATED(me),
-              "invalid me, mid:%s, klass:%s(%s)",
+              "invalid me, mid:%s, klass:%"PRIsVALUE"(%s)",
               rb_id2name(id),
-              RTEST(rb_mod_name(klass)) ? RSTRING_PTR(rb_mod_name(klass)) : "anonymous",
+              RTEST(rb_mod_name(klass)) ? rb_mod_name(klass) : rb_str_new_lit("anonymous"),
               rb_obj_info(klass));
     return me;
 }

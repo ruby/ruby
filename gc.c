@@ -4659,9 +4659,10 @@ rb_raw_iseq_info(char *const buff, const size_t buff_size, const rb_iseq_t *iseq
     if (buff_size > 0 && ISEQ_BODY(iseq) && ISEQ_BODY(iseq)->location.label && !RB_TYPE_P(ISEQ_BODY(iseq)->location.pathobj, T_MOVED)) {
         VALUE path = rb_iseq_path(iseq);
         int n = ISEQ_BODY(iseq)->location.first_lineno;
-        snprintf(buff, buff_size, " %s@%s:%d",
-                 RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
-                 RSTRING_PTR(path), n);
+        VALUE label = ISEQ_BODY(iseq)->location.label;
+        snprintf(buff, buff_size, " %.*s@%.*s:%d",
+                 RSTRING_LENINT(label), RSTRING_PTR(label),
+                 RSTRING_LENINT(path), RSTRING_PTR(path), n);
     }
 }
 
@@ -4733,7 +4734,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
         else if (RTEST(RBASIC(obj)->klass)) {
             VALUE class_path = rb_mod_name(RBASIC(obj)->klass);
             if (!NIL_P(class_path)) {
-                APPEND_F("%s ", RSTRING_PTR(class_path));
+                APPEND_F("%.*s ", str_len_no_raise(class_path), RSTRING_PTR(class_path));
             }
         }
     }
@@ -4797,7 +4798,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             VALUE fstr = RSYMBOL(obj)->fstr;
             ID id = RSYMBOL(obj)->id;
             if (RB_TYPE_P(fstr, T_STRING)) {
-                APPEND_F(":%s id:%d", RSTRING_PTR(fstr), (unsigned int)id);
+                APPEND_F(":%.*s id:%d", str_len_no_raise(fstr), RSTRING_PTR(fstr), (unsigned int)id);
             }
             else {
                 APPEND_F("(%p) id:%d", (void *)fstr, (unsigned int)id);
@@ -4819,7 +4820,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             {
                 VALUE class_path = rb_mod_name(obj);
                 if (!NIL_P(class_path)) {
-                    APPEND_F("%s", RSTRING_PTR(class_path));
+                    APPEND_F("%.*s", str_len_no_raise(class_path), RSTRING_PTR(class_path));
                 }
                 else {
                     APPEND_S("(anon)");
@@ -4830,7 +4831,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             {
                 VALUE class_path = rb_mod_name(RBASIC_CLASS(obj));
                 if (!NIL_P(class_path)) {
-                    APPEND_F("src:%s", RSTRING_PTR(class_path));
+                    APPEND_F("src:%.*s", str_len_no_raise(class_path), RSTRING_PTR(class_path));
                 }
                 break;
             }
@@ -4936,9 +4937,20 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                     const struct rb_callcache *cc = (const struct rb_callcache *)obj;
                     VALUE class_path = vm_cc_valid(cc) ? rb_mod_name(cc->klass) : Qnil;
                     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
+                    const char *class_name;
+                    int class_name_len;
 
-                    APPEND_F("(klass:%s cme:%s%s (%p) call:%p",
-                             NIL_P(class_path) ? (vm_cc_valid(cc) ? "??" : "<NULL>") : RSTRING_PTR(class_path),
+                    if (NIL_P(class_path)) {
+                        class_name = vm_cc_valid(cc) ? "??" : "<NULL>";
+                        class_name_len = vm_cc_valid(cc) ? 2 : 6;
+                    }
+                    else {
+                        class_name = RSTRING_PTR(class_path);
+                        class_name_len = str_len_no_raise(class_path);
+                    }
+
+                    APPEND_F("(klass:%.*s cme:%s%s (%p) call:%p",
+                             class_name_len, class_name,
                              cme ? rb_id2name(cme->called_id) : "<NULL>",
                              cme ? (METHOD_ENTRY_INVALIDATED(cme) ? " [inv]" : "") : "",
                              (void *)cme,

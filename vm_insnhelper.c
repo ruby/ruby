@@ -7258,12 +7258,14 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             rb_event_flag_t bmethod_events = ractor_events | bmethod_local_events;
 
             if (0) {
-                ruby_debug_printf("vm_trace>>%4d (%4x) - %s:%d %s\n",
+                VALUE path = rb_iseq_path(iseq);
+                VALUE label = rb_iseq_label(iseq);
+                ruby_debug_printf("vm_trace>>%4d (%4x) - %.*s:%d %.*s\n",
                                   (int)pos,
                                   (int)pc_events,
-                                  RSTRING_PTR(rb_iseq_path(iseq)),
+                                  RSTRING_LENINT(path), RSTRING_PTR(path),
                                   (int)rb_iseq_line_no(iseq, pos),
-                                  RSTRING_PTR(rb_iseq_label(iseq)));
+                                  RSTRING_LENINT(label), RSTRING_PTR(label));
             }
             VM_ASSERT(reg_cfp->pc == pc);
             VM_ASSERT(pc_events != 0);

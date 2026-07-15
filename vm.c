@@ -424,7 +424,9 @@ vm_cref_dump(const char *mesg, const rb_cref_t *cref)
     ruby_debug_printf("vm_cref_dump: %s (%p)\n", mesg, (void *)cref);
 
     while (cref) {
-        ruby_debug_printf("= cref| klass: %s\n", RSTRING_PTR(rb_class_path(CREF_CLASS(cref))));
+        VALUE path = rb_class_path(CREF_CLASS(cref));
+        ruby_debug_printf("= cref| klass: %.*s\n",
+                          RSTRING_LENINT(path), RSTRING_PTR(path));
         cref = CREF_NEXT(cref);
     }
 }

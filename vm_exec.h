@@ -67,10 +67,11 @@ error !
 
 #define INSN_ENTRY_SIG(insn) \
   if (0) { \
-      ruby_debug_printf("exec: %s@(%"PRIdPTRDIFF", %"PRIdPTRDIFF")@%s:%u\n", #insn, \
+      VALUE path = rb_iseq_path(CFP_ISEQ(reg_cfp)); \
+      ruby_debug_printf("exec: %s@(%"PRIdPTRDIFF", %"PRIdPTRDIFF")@%.*s:%u\n", #insn, \
                         (reg_pc - ISEQ_BODY(CFP_ISEQ(reg_cfp))->iseq_encoded), \
                         (reg_cfp->pc - ISEQ_BODY(CFP_ISEQ(reg_cfp))->iseq_encoded), \
-                        RSTRING_PTR(rb_iseq_path(CFP_ISEQ(reg_cfp))), \
+                        RSTRING_LENINT(path), RSTRING_PTR(path), \
                         rb_iseq_line_no(CFP_ISEQ(reg_cfp), reg_pc - ISEQ_BODY(CFP_ISEQ(reg_cfp))->iseq_encoded)); \
   }
 
