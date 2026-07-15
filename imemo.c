@@ -613,7 +613,7 @@ static inline void
 imemo_fields_free(struct rb_fields *fields)
 {
     if (rb_obj_shape_complex_p((VALUE)fields)) {
-        st_free_table(&fields->as.complex.table);
+        st_free_embedded_table(&fields->as.complex.table);
     }
 }
 
