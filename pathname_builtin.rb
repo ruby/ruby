@@ -305,7 +305,7 @@ class Pathname
   # :markup: markdown
   #
   # call-seq:
-  #   mkpath(permissions = 0775) -> self
+  #   mkpath(mode: nil) -> self
   #
   # Creates a directory at the path in `self`;
   # creates intermediate directories as needed:
@@ -318,7 +318,7 @@ class Pathname
   # pn.rmtree     # Clean up.
   # ```
   #
-  # Directories are created with the given permissions;
+  # When `mode` is given, directories are created with those permissions;
   # see {File Permissions}[rdoc-ref:File@File+Permissions].
   # The permissions for already-existing directories are not changed.
   def mkpath(mode: nil)
