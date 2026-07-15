@@ -1896,10 +1896,10 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 if (d.stop) return 1;
             }
             else {
-                uint32_t len = ROBJECT_FIELDS_COUNT_NOT_COMPLEX(obj);
+                attr_index_t len = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
                 VALUE *ptr = ROBJECT_FIELDS(obj);
 
-                for (uint32_t i = 0; i < len; i++) {
+                for (attr_index_t i = 0; i < len; i++) {
                     CHECK_AND_REPLACE(obj, ptr[i]);
                 }
             }
