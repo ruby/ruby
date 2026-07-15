@@ -973,6 +973,43 @@ rb_module_check_initializable(VALUE mod)
     }
 }
 
+static enum rb_id_table_iterator_result
+init_copy_check_const_i(ID id, VALUE v, void *data)
+{
+    const rb_const_entry_t *ce = (const rb_const_entry_t *)v;
+    if (!UNDEF_P(ce->value) && !rb_ractor_shareable_p(ce->value)) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not copy a class/module created by another Ractor because "
+                 "constant %"PRIsVALUE" refers to an unshareable object", rb_id2str(id));
+    }
+    return ID_TABLE_CONTINUE;
+}
+
+static int
+init_copy_check_field_i(ID id, VALUE val, st_data_t arg)
+{
+    if ((rb_is_instance_id(id) || rb_is_class_id(id)) && !rb_ractor_shareable_p(val)) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not copy a class/module created by another Ractor because "
+                 "variable %"PRIsVALUE" refers to an unshareable object", rb_id2str(id));
+    }
+    return ST_CONTINUE;
+}
+
+// When copying a class/module created by another Ractor, the copy belongs to
+// the current Ractor, so its tables must not leak unshareable objects owned
+// by the source's Ractor.
+static void
+init_copy_owner_check(VALUE orig)
+{
+    if (!rb_class_owned_p(orig)) {
+        if (RCLASS_CONST_TBL(orig)) {
+            rb_id_table_foreach(RCLASS_CONST_TBL(orig), init_copy_check_const_i, NULL);
+        }
+        rb_ivar_foreach_buffered(orig, init_copy_check_field_i, 0);
+    }
+}
+
 /* :nodoc: */
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
@@ -994,6 +1031,8 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 
     RUBY_ASSERT(RB_TYPE_P(orig, T_CLASS) || RB_TYPE_P(orig, T_MODULE));
     RUBY_ASSERT(BUILTIN_TYPE(clone) == BUILTIN_TYPE(orig));
+
+    init_copy_owner_check(orig);
 
     rb_class_set_initialized(clone);
 
