@@ -143,7 +143,7 @@ struct rb_ractor_struct {
     bool main_ractor;
     void *newobj_cache;
 
-    /* この Ractor の objspace。main Ractor は rb_objspace_alloc で boot objspace を
+    /* この Ractor の objspace。main Ractor は rb_gc_init_objspaces で boot objspace を
      * 受け取る。非main Ractor は自分の objspace を持つまで（NULL の間）main と共有する。 */
     void *objspace;
 

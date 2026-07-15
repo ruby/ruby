@@ -634,7 +634,7 @@ rb_ractor_main_alloc(void)
 {
     rb_ractor_t *r = &_main_ractor;
     /* main Ractor は objspace 生成前に確保されるので、newobj cache は後で
-     * Init_BareVM（rb_objspace_alloc が r->objspace を設定した後）で作る。 */
+     * Init_BareVM（rb_gc_init_objspaces が r->objspace を設定した後）で作る。 */
     ruby_single_main_ractor = r;
 
     return r;
@@ -744,7 +744,7 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
 
     /* 全 Ractor は objspace を持つ。thread が走る前に存在させる必要がある
      * （最初の allocation が rb_gc_get_objspace 経由でそこへ行く）。 */
-    r->objspace = rb_gc_objspace_alloc_local();
+    r->objspace = rb_gc_objspace_alloc();
 
     rb_yjit_before_ractor_spawn();
     rb_zjit_before_ractor_spawn();

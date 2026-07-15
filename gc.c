@@ -982,8 +982,8 @@ asan_death_callback(void)
 
 static VALUE initial_stress = Qfalse;
 
-void *
-rb_objspace_alloc(void)
+void
+rb_gc_init_objspaces(void)
 {
 #if USE_MODULAR_GC
     ruby_modular_gc_init();
@@ -1004,14 +1004,12 @@ rb_objspace_alloc(void)
 #ifdef RUBY_ASAN_ENABLED
     __sanitizer_set_death_callback(asan_death_callback);
 #endif
-
-    return objspace;
 }
 
 /* 新しい非main Ractor の objspace を確保する。生成側 Ractor のスレッド上で、
  * 新 Ractor が動き出す前に呼ばれる。GC 設定は生成側から引き継ぐ。 */
 void *
-rb_gc_objspace_alloc_local(void)
+rb_gc_objspace_alloc(void)
 {
     void *parent_objspace = rb_gc_get_objspace();
 

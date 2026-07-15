@@ -303,7 +303,7 @@ void rb_gc_writebarrier_remember(VALUE obj);
 void rb_gc_obj_became_shareable(VALUE obj);
 void rb_gc_pin_in_flight_message(VALUE obj);
 bool rb_gc_current_ractor_materializing_p(void);
-void *rb_gc_objspace_alloc_local(void);
+void *rb_gc_objspace_alloc(void);
 void rb_gc_objspace_retire(void **objspace_slot);
 void rb_gc_objspace_absorb_into_current(void **objspace_slot);
 void rb_gc_objspace_absorb_all_zombies(void);

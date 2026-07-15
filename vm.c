@@ -4732,10 +4732,10 @@ Init_BareVM(void)
     vm_init2(vm);
 
     ruby_current_vm_ptr = vm;
-    /* boot objspace は main Ractor に属するので、rb_objspace_alloc が割り当てる
+    /* boot objspace は main Ractor に属するので、rb_gc_init_objspaces が割り当てる
      * 前に main Ractor が存在していなければならない。 */
     vm->ractor.main_ractor = rb_ractor_main_alloc();
-    rb_objspace_alloc();
+    rb_gc_init_objspaces();
     vm->ractor.main_ractor->newobj_cache = rb_gc_ractor_cache_alloc(vm->ractor.main_ractor);
     rb_id_table_init(&vm->negative_cme_table, 16);
     st_init_existing_numtable_with_size(&vm->overloaded_cme_table, 0);
