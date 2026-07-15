@@ -889,7 +889,7 @@ class ERB
   #
   # ```
   # erb = ERB.new(template, eoutvar: '_foo')
-  # puts template.src.split('; ')
+  # puts erb.src.split('; ')
   # #coding:UTF-8
   # _foo = +''
   # _foo.<< "The time is ".freeze
