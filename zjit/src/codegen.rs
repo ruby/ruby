@@ -2068,7 +2068,7 @@ fn gen_new_array(
     let flags = (RUBY_T_ARRAY as u64) | (RARRAY_EMBED_FLAG as u64);
     let klass = unsafe { rb_cArray };
 
-    gc_fastpath::gc_fast_path_new_obj(jit, asm, alloc_size, flags, klass, |asm| {
+    gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass, |asm| {
         asm_ccall!(asm, rb_ec_ary_new_from_values, EC, 0i64.into(), Opnd::UImm(0))
     })
 }
@@ -2361,11 +2361,11 @@ fn gen_new_hash(
         let flags = RUBY_T_HASH as u64;
         let klass = unsafe { rb_cHash };
 
-        let hash = gc_fastpath::gc_fast_path_new_obj(jit, asm, alloc_size, flags, klass, |asm| {
+        let hash = gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass, |asm| {
             asm_ccall!(asm, rb_hash_new,)
         });
         // TODO: this runs on the slow path too, where rb_hash_new already set
-        // ifnone. A fast-path-only init hook in gc_fast_path_new_obj would avoid
+        // ifnone. A fast-path-only init hook in gc_fastpath_new_obj would avoid
         // the redundant store and be reusable for other types.
         asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
         hash
@@ -2381,11 +2381,11 @@ fn gen_new_hash(
             let flags = RUBY_T_HASH as u64;
             let klass = unsafe { rb_cHash };
 
-            let hash = gc_fastpath::gc_fast_path_new_obj(jit, asm, alloc_size, flags, klass, |asm| {
+            let hash = gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass, |asm| {
                 asm_ccall!(asm, rb_hash_new_with_size, num_pairs.into())
             });
             // TODO: this runs on the slow path too, where rb_hash_new already set
-            // ifnone. A fast-path-only init hook in gc_fast_path_new_obj would avoid
+            // ifnone. A fast-path-only init hook in gc_fastpath_new_obj would avoid
             // the redundant store and be reusable for other types.
             asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
             hash
@@ -2450,7 +2450,7 @@ fn gen_object_alloc_class(jit: &mut JITState, asm: &mut Assembler, class: VALUE,
         };
         if has_fastpath {
             let flags = (RUBY_T_OBJECT as u64) | ((shape_id as u64) << RB_SHAPE_FLAG_SHIFT as u64);
-            gc_fastpath::gc_fast_path_new_obj(jit, asm, alloc_size, flags, class, |asm| {
+            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, class, |asm| {
                 asm_ccall!(asm, rb_class_allocate_instance, class.into())
             })
         } else {
