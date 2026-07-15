@@ -2019,32 +2019,12 @@ rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val
 static VALUE
 ivar_defined0(VALUE obj, ID id)
 {
-    attr_index_t index;
-
     if (rb_obj_shape_complex_p(obj)) {
+        // defined? doesn't require ractor checks
+        VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
+        st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
+
         VALUE idx;
-        st_table *table = NULL;
-        switch (BUILTIN_TYPE(obj)) {
-          case T_CLASS:
-          case T_MODULE:
-            rb_bug("Unreachable");
-            break;
-
-          case T_IMEMO:
-            RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
-            table = rb_imemo_fields_complex_tbl(obj);
-            break;
-
-          case T_OBJECT:
-            table = ROBJECT_FIELDS_HASH(obj);
-            break;
-
-          default: {
-            VALUE fields_obj = rb_obj_fields_no_ractor_check(obj); // defined? doesn't require ractor checks
-            table = rb_imemo_fields_complex_tbl(fields_obj);
-          }
-        }
-
         if (!table || !rb_st_lookup(table, id, &idx)) {
             return Qfalse;
         }
@@ -2052,6 +2032,7 @@ ivar_defined0(VALUE obj, ID id)
         return Qtrue;
     }
     else {
+        attr_index_t index;
         return RBOOL(rb_shape_get_iv_index(RBASIC_SHAPE_ID(obj), id, &index));
     }
 }
@@ -2158,10 +2139,10 @@ obj_fields_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, b
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
 
     if (rb_shape_complex_p(shape_id)) {
-        st_foreach_safe(ROBJECT_FIELDS_HASH(obj), each_hash_iv, (st_data_t)&itr_data);
+        st_foreach_safe(rb_imemo_fields_complex_tbl(fields_obj), each_hash_iv, (st_data_t)&itr_data);
     }
     else {
-        itr_data.fields = ROBJECT_FIELDS(obj);
+        itr_data.fields = rb_imemo_fields_ptr(fields_obj);
         itr_data.shape_id = shape_id;
         iterate_over_shapes(shape_id, func, &itr_data);
     }
