@@ -123,6 +123,12 @@ pub struct Options {
     /// Frequency of tracing side exits.
     pub trace_side_exits_sample_interval: usize,
 
+    /// Trace and write fallback source maps to /tmp for stackprof.
+    pub trace_fallbacks: bool,
+
+    /// Frequency of tracing fallbacks.
+    pub trace_fallbacks_sample_interval: usize,
+
     /// Trace compilation phases as Perfetto duration events.
     pub trace_compiles: bool,
 
@@ -203,6 +209,8 @@ impl Default for Options {
             dump_disasm: None,
             trace_side_exits: None,
             trace_side_exits_sample_interval: 0,
+            trace_fallbacks: false,
+            trace_fallbacks_sample_interval: 0,
             trace_compiles: false,
             trace_invalidation: false,
             perf: None,
@@ -501,6 +509,17 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             }
             // `sample_interval ` must provide a string that can be validly parsed to a `usize`.
             options.trace_side_exits_sample_interval = sample_interval.parse::<usize>().ok()?;
+        }
+
+        ("trace-fallbacks", "") => {
+            options.trace_fallbacks = true;
+        }
+
+        ("trace-fallbacks-sample-rate", sample_interval) => {
+            // If not already set, then set it.
+            options.trace_fallbacks = true;
+            // `sample_interval ` must provide a string that can be validly parsed to a `usize`.
+            options.trace_fallbacks_sample_interval = sample_interval.parse::<usize>().ok()?;
         }
 
         ("trace-compiles", "") => options.trace_compiles = true,
