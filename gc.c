@@ -1857,19 +1857,21 @@ os_obj_of_i(void *vstart, void *vend, size_t stride, void *data)
 /* os_obj_of_i と同じだが yield せず配列に集める。他 Ractor の shareable は barrier 下で
  * 走査され yield が危険なため（os_obj_of 参照）。純 C でオブジェクトを確保しない
  * （rb_ary_push は領域を伸ばすだけ）ので safepoint に到達しない。 */
-struct os_collect_struct {
+struct os_shareable_collect_struct {
     VALUE of;
     VALUE buffer;
 };
 
 static int
-os_obj_collect_i(void *vstart, void *vend, size_t stride, void *data)
+os_shareable_collect_i(void *vstart, void *vend, size_t stride, void *data)
 {
-    struct os_collect_struct *ocs = (struct os_collect_struct *)data;
+    struct os_shareable_collect_struct *ocs = (struct os_shareable_collect_struct *)data;
 
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
-        if (!internal_object_p(v)) {
+        /* foreign な Ractor の objspace を歩くので shareable のみ集める。walk 側も
+         * shareable_bits で絞るが、unshareable を露出しないようここでも明示的に確認する。 */
+        if (rb_ractor_shareable_p(v) && !internal_object_p(v)) {
             if (!ocs->of || rb_obj_is_kind_of(v, ocs->of)) {
                 rb_ary_push(ocs->buffer, v);
             }
@@ -1896,7 +1898,7 @@ os_obj_of(VALUE of)
      * barrier 保持中しか読めず、barrier 下でユーザブロックを走らせると VM lock 破綻や
      * deadlock を招くので、GC を無効化し純 C で buffer に集めてから barrier 外で yield する。 */
     if (rb_multi_ractor_p()) {
-        struct os_collect_struct ocs;
+        struct os_shareable_collect_struct ocs;
         ocs.of = of;
         ocs.buffer = rb_ary_new();
 
@@ -1909,7 +1911,7 @@ os_obj_of(VALUE of)
             rb_ractor_t *r;
             ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
                 if (r->objspace && r->objspace != self) {
-                    rb_gc_impl_each_objects_shareable(r->objspace, os_obj_collect_i, &ocs);
+                    rb_gc_impl_each_objects_shareable(r->objspace, os_shareable_collect_i, &ocs);
                 }
             }
         }
