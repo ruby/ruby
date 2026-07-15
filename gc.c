@@ -3156,6 +3156,24 @@ gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE box_value, void *a
 
 #define TYPED_DATA_REFS_OFFSET_LIST(d) (size_t *)(uintptr_t)RTYPEDDATA_TYPE(d)->function.dmark
 
+static inline bool
+rb_obj_using_gen_fields_table_p(VALUE obj)
+{
+    switch (BUILTIN_TYPE(obj)) {
+      case T_DATA:
+        return false;
+
+      case T_STRUCT:
+        if (!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) return false;
+        break;
+
+      default:
+        break;
+    }
+
+    return rb_obj_gen_fields_p(obj);
+}
+
 void
 rb_gc_move_obj_during_marking(VALUE from, VALUE to)
 {
