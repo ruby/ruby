@@ -1293,27 +1293,34 @@ obj_use_generic_fields_tbl_p(VALUE obj)
 VALUE
 rb_obj_fields(VALUE obj, ID field_name)
 {
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO));
     ivar_ractor_check(obj, field_name);
 
-    VALUE fields_obj = 0;
-    if (rb_obj_shape_has_fields(obj)) {
-        switch (BUILTIN_TYPE(obj)) {
-          case T_OBJECT:
-            fields_obj = ROBJECT_FIELDS_OBJ(obj);
-            break;
-          case T_DATA:
-            fields_obj = RTYPEDDATA(obj)->fields_obj;
-            break;
-          case T_STRUCT:
-            if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
-                fields_obj = RSTRUCT_FIELDS_OBJ(obj);
-                break;
-            }
-            goto generic_fields;
-          default:
-          generic_fields:
-            {
+    switch (BUILTIN_TYPE(obj)) {
+      case T_IMEMO:
+        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
+        return obj;
+
+      case T_OBJECT:
+        return ROBJECT_FIELDS_OBJ(obj);
+
+      case T_CLASS:
+      case T_MODULE:
+        return RCLASS_WRITABLE_FIELDS_OBJ(obj);
+
+      case T_DATA:
+        return RTYPEDDATA(obj)->fields_obj;
+
+      case T_STRUCT:
+        if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
+            return RSTRUCT_FIELDS_OBJ(obj);
+        }
+        goto generic_fields;
+      default:
+      generic_fields:
+        {
+            VALUE fields_obj = 0;
+
+            if (rb_obj_shape_has_fields(obj)) {
                 rb_execution_context_t *ec = GET_EC();
                 if (ec->gen_fields_cache.obj == obj && !UNDEF_P(ec->gen_fields_cache.fields_obj) && rb_imemo_fields_owner(ec->gen_fields_cache.fields_obj) == obj) {
                     fields_obj = ec->gen_fields_cache.fields_obj;
@@ -1325,9 +1332,10 @@ rb_obj_fields(VALUE obj, ID field_name)
                     ec->gen_fields_cache.obj = obj;
                 }
             }
+
+            return fields_obj;
         }
     }
-    return fields_obj;
 }
 
 void
@@ -1450,24 +1458,7 @@ rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
     RUBY_ASSERT(!SPECIAL_CONST_P(obj));
     RUBY_ASSERT(RSHAPE_TYPE_P(target_shape_id, SHAPE_IVAR) || RSHAPE_TYPE_P(target_shape_id, SHAPE_OBJ_ID));
 
-    VALUE fields_obj;
-
-    switch (BUILTIN_TYPE(obj)) {
-      case T_CLASS:
-      case T_MODULE:
-        fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
-        break;
-      case T_OBJECT:
-        fields_obj = ROBJECT_FIELDS_OBJ(obj);
-        break;
-      case T_IMEMO:
-        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
-        fields_obj = obj;
-        break;
-      default:
-        fields_obj = rb_obj_fields(obj, RSHAPE_EDGE_NAME(target_shape_id));
-        break;
-    }
+    VALUE fields_obj = rb_obj_fields(obj, RSHAPE_EDGE_NAME(target_shape_id));
 
     if (UNLIKELY(rb_shape_complex_p(target_shape_id))) {
         st_table *fields_hash = rb_imemo_fields_complex_tbl(fields_obj);
@@ -1486,35 +1477,9 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 {
     if (SPECIAL_CONST_P(obj)) return undef;
 
-    VALUE fields_obj;
-
-    switch (BUILTIN_TYPE(obj)) {
-      case T_CLASS:
-      case T_MODULE:
-        {
-            VALUE val = rb_ivar_lookup(RCLASS_WRITABLE_FIELDS_OBJ(obj), id, undef);
-            if (val != undef &&
-                    rb_is_instance_id(id) &&
-                    UNLIKELY(!rb_ractor_main_p()) &&
-                    !rb_ractor_shareable_p(val)) {
-                rb_raise(rb_eRactorIsolationError,
-                        "can not get unshareable values from instance variables of classes/modules from non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")",
-                        rb_id2str(id), obj);
-            }
-            return val;
-        }
-      case T_IMEMO:
-        // Handled like T_OBJECT
-        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
-        fields_obj = obj;
-        break;
-      case T_OBJECT:
-        fields_obj = ROBJECT_FIELDS_OBJ(obj);
-        break;
-      default:
-        fields_obj = rb_obj_fields(obj, id);
-        break;
-    }
+    int type = BUILTIN_TYPE(obj);
+    bool is_class = type == T_CLASS || type == T_MODULE;
+    VALUE fields_obj = rb_obj_fields(obj, is_class ? 0 : id);
 
     if (!fields_obj) {
         return undef;
@@ -1522,21 +1487,34 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 
     shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
 
+    VALUE val = undef;
     if (UNLIKELY(rb_shape_complex_p(shape_id))) {
         st_table *iv_table = rb_imemo_fields_complex_tbl(fields_obj);
-        VALUE val;
-        if (rb_st_lookup(iv_table, (st_data_t)id, (st_data_t *)&val)) {
-            return val;
+        if (!rb_st_lookup(iv_table, (st_data_t)id, (st_data_t *)&val)) {
+            return undef;
         }
-        return undef;
+    }
+    else {
+        attr_index_t index = 0;
+        if (!rb_shape_get_iv_index(shape_id, id, &index)) {
+            return undef;
+        }
+        val = rb_imemo_fields_ptr(fields_obj)[index];
     }
 
-    attr_index_t index = 0;
-    if (rb_shape_get_iv_index(shape_id, id, &index)) {
-        return rb_imemo_fields_ptr(fields_obj)[index];
+    if (is_class && val != undef && rb_is_instance_id(id)) {
+        if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
+            rb_raise(
+                rb_eRactorIsolationError,
+                "can not get unshareable values from instance variables of classes/modules from "
+                "non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")",
+                rb_id2str(id),
+                obj
+            );
+        }
     }
 
-    return undef;
+    return val;
 }
 
 VALUE
@@ -1582,18 +1560,7 @@ rb_ivar_get_at_no_ractor_check(VALUE obj, attr_index_t index)
 {
     // Used by JITs, but never for T_OBJECT.
 
-    VALUE fields_obj;
-    switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-        UNREACHABLE_RETURN(Qundef);
-      case T_CLASS:
-      case T_MODULE:
-        fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
-        break;
-      default:
-        fields_obj = rb_obj_fields_no_ractor_check(obj);
-        break;
-    }
+    VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
     return rb_imemo_fields_ptr(fields_obj)[index];
 }
 
@@ -1624,29 +1591,18 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     rb_check_frozen(obj);
 
     VALUE val = undef;
-    VALUE fields_obj;
     bool concurrent = false;
     int type = BUILTIN_TYPE(obj);
 
-    switch(type) {
-      case T_CLASS:
-      case T_MODULE:
+    if (type == T_CLASS || type == T_MODULE) {
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
 
-        fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
         if (rb_multi_ractor_p()) {
             concurrent = true;
         }
-        break;
-      case T_OBJECT:
-        fields_obj = ROBJECT_FIELDS_OBJ(obj);
-        break;
-      default: {
-        fields_obj = rb_obj_fields(obj, id);
-        break;
-      }
     }
 
+    VALUE fields_obj = rb_obj_fields(obj, id);
     if (!fields_obj) {
         return undef;
     }
@@ -2371,51 +2327,15 @@ rb_ivar_count(VALUE obj)
     if (SPECIAL_CONST_P(obj)) return 0;
 
     st_index_t iv_count = 0;
-    switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-        iv_count = ROBJECT_FIELDS_COUNT(obj);
-        break;
+    VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
 
-      case T_CLASS:
-      case T_MODULE:
-        {
-            VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
-            if (!fields_obj) {
-                return 0;
-            }
-            if (rb_obj_shape_complex_p(fields_obj)) {
-                iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
-            }
-            else {
-                iv_count = RBASIC_FIELDS_COUNT(fields_obj);
-            }
-        }
-        break;
-
-      case T_IMEMO:
-        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
-
-        if (rb_obj_shape_complex_p(obj)) {
-            iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(obj));
+    if (fields_obj) {
+        if (rb_obj_shape_complex_p(fields_obj)) {
+            iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
         }
         else {
             iv_count = RBASIC_FIELDS_COUNT(obj);
         }
-        break;
-
-      default:
-        {
-            VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
-            if (fields_obj) {
-                if (rb_obj_shape_complex_p(fields_obj)) {
-                    iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
-                }
-                else {
-                    iv_count = RBASIC_FIELDS_COUNT(obj);
-                }
-            }
-        }
-        break;
     }
 
     if (rb_obj_shape_has_id(obj)) {
