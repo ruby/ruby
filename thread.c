@@ -589,7 +589,8 @@ rb_vm_proc_local_ep(VALUE proc)
 
 // for ractor, defined in vm.c
 VALUE rb_vm_invoke_proc_with_self(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
-                                  int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler);
+                                  int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler,
+                                  const rb_cref_t *cref);
 
 static VALUE
 thread_do_start_proc(rb_thread_t *th)
@@ -600,6 +601,7 @@ thread_do_start_proc(rb_thread_t *th)
     VALUE procval = th->invoke_arg.proc.proc;
     rb_proc_t *proc;
     GetProcPtr(procval, proc);
+    const rb_cref_t *cref = rb_proc_refinements_cref(procval);
 
     th->ec->errinfo = Qnil;
     th->ec->root_lep = rb_vm_proc_local_ep(procval);
@@ -621,7 +623,8 @@ thread_do_start_proc(rb_thread_t *th)
             th->ec, proc, self,
             args_len, args_ptr,
             th->invoke_arg.proc.kw_splat,
-            VM_BLOCK_HANDLER_NONE
+            VM_BLOCK_HANDLER_NONE,
+            cref
         );
     }
     else {
@@ -642,7 +645,8 @@ thread_do_start_proc(rb_thread_t *th)
             th->ec, proc,
             args_len, args_ptr,
             th->invoke_arg.proc.kw_splat,
-            VM_BLOCK_HANDLER_NONE
+            VM_BLOCK_HANDLER_NONE,
+            cref
         );
     }
 }

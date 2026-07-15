@@ -1462,15 +1462,20 @@ using_refinement(VALUE klass, VALUE module, VALUE arg)
     return ST_CONTINUE;
 }
 
-static void
-using_module_recursive(const rb_cref_t *cref, VALUE klass)
+/*!
+ * \private
+ * rb_using_module without the refinement method cache flush, for a fresh
+ * cref that no call site references yet (Proc#refined).
+ */
+void
+rb_using_module_recursive(rb_cref_t *cref, VALUE klass)
 {
     ID id_refinements;
     VALUE super, module, refinements;
 
     super = RCLASS_SUPER(klass);
     if (super) {
-        using_module_recursive(cref, super);
+        rb_using_module_recursive(cref, super);
     }
     switch (BUILTIN_TYPE(klass)) {
       case T_MODULE:
@@ -1496,10 +1501,10 @@ using_module_recursive(const rb_cref_t *cref, VALUE klass)
  * \private
  */
 static void
-rb_using_module(const rb_cref_t *cref, VALUE module)
+rb_using_module(rb_cref_t *cref, VALUE module)
 {
     Check_Type(module, T_MODULE);
-    using_module_recursive(cref, module);
+    rb_using_module_recursive(cref, module);
     rb_clear_all_refinement_method_cache();
 }
 
@@ -1638,6 +1643,21 @@ ignored_block(VALUE module, const char *klass)
     rb_warn("%s""using doesn't call the given block""%s.", klass, anon);
 }
 
+/* Reject `using` anywhere inside a refined proc's body: the procs sharing
+ * the memoized iseq copy (and its call caches) must all run under the same
+ * refinement set. */
+static void
+check_not_refined_proc_scope(const char *using_name)
+{
+    const rb_cref_t *cref;
+    for (cref = rb_vm_cref(); cref; cref = CREF_NEXT(cref)) {
+        if (CREF_REFINED_PROC(cref)) {
+            rb_raise(rb_eRuntimeError,
+                     "%s is not permitted in a proc with refinements", using_name);
+        }
+    }
+}
+
 /*
  *  call-seq:
  *     using(module)    -> self
@@ -1661,6 +1681,7 @@ mod_using(VALUE self, VALUE module)
     if (rb_block_given_p()) {
         ignored_block(module, "Module#");
     }
+    check_not_refined_proc_scope("Module#using");
     rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
     return self;
 }
@@ -2004,6 +2025,7 @@ top_using(VALUE self, VALUE module)
     if (rb_block_given_p()) {
         ignored_block(module, "main.");
     }
+    check_not_refined_proc_scope("main.using");
     rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
     return self;
 }

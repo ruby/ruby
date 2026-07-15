@@ -13713,8 +13713,9 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     const ibf_offset_t lvar_states_offset = ibf_dump_lvar_states(dump, iseq);
     const unsigned int catch_table_size =   body->catch_table ? body->catch_table->size : 0;
     const ibf_offset_t catch_table_offset = ibf_dump_catch_table(dump, iseq);
-    const int parent_iseq_index =           ibf_dump_iseq(dump, ISEQ_BODY(iseq)->parent_iseq);
-    const int local_iseq_index =            ibf_dump_iseq(dump, ISEQ_BODY(iseq)->local_iseq);
+    /* a NULL parent (persisted root) and references outside a Proc#refined subtree dump come out absent (-1) */
+    const int parent_iseq_index =           ibf_table_lookup(dump->iseq_table, (st_data_t)ISEQ_BODY(iseq)->parent_iseq);
+    const int local_iseq_index =            ibf_table_lookup(dump->iseq_table, (st_data_t)ISEQ_BODY(iseq)->local_iseq);
     const int mandatory_only_iseq_index =   ibf_dump_iseq(dump, ISEQ_BODY(iseq)->mandatory_only_iseq);
     const ibf_offset_t ci_entries_offset =  ibf_dump_ci_entries(dump, iseq);
     const ibf_offset_t outer_variables_offset = ibf_dump_outer_variables(dump, iseq);
@@ -14875,24 +14876,10 @@ ibf_dump_setup(struct ibf_dump *dump, VALUE dumper_obj)
     dump->current_buffer = &dump->global_buffer;
 }
 
-VALUE
-rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
+static VALUE
+iseq_ibf_dump_0(struct ibf_dump *dump, const rb_iseq_t *iseq, VALUE opt)
 {
-    struct ibf_dump *dump;
     struct ibf_header header = {{0}};
-    VALUE dump_obj;
-    VALUE str;
-
-    if (ISEQ_BODY(iseq)->parent_iseq != NULL ||
-        ISEQ_BODY(iseq)->local_iseq != iseq) {
-        rb_raise(rb_eRuntimeError, "should be top of iseq");
-    }
-    if (RTEST(ISEQ_COVERAGE(iseq))) {
-        rb_raise(rb_eRuntimeError, "should not compile with coverage");
-    }
-
-    dump_obj = TypedData_Make_Struct(0, struct ibf_dump, &ibf_dump_type, dump);
-    ibf_dump_setup(dump, dump_obj);
 
     ibf_dump_write(dump, &header, sizeof(header));
     ibf_dump_iseq(dump, iseq);
@@ -14921,7 +14908,28 @@ rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
 
     ibf_dump_overwrite(dump, &header, sizeof(header), 0);
 
-    str = dump->global_buffer.str;
+    return dump->global_buffer.str;
+}
+
+VALUE
+rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
+{
+    struct ibf_dump *dump;
+    VALUE dump_obj;
+    VALUE str;
+
+    if (ISEQ_BODY(iseq)->parent_iseq != NULL ||
+        ISEQ_BODY(iseq)->local_iseq != iseq) {
+        rb_raise(rb_eRuntimeError, "should be top of iseq");
+    }
+    if (RTEST(ISEQ_COVERAGE(iseq))) {
+        rb_raise(rb_eRuntimeError, "should not compile with coverage");
+    }
+
+    dump_obj = TypedData_Make_Struct(0, struct ibf_dump, &ibf_dump_type, dump);
+    ibf_dump_setup(dump, dump_obj);
+
+    str = iseq_ibf_dump_0(dump, iseq, opt);
     RB_GC_GUARD(dump_obj);
     return str;
 }
@@ -15125,6 +15133,91 @@ rb_iseq_ibf_load_bytes(const char *bytes, size_t size)
 
     RB_GC_GUARD(loader_obj);
     return iseq;
+}
+
+/* collect the iseq table into an array indexed by iseq-list index */
+static int
+ibf_dump_iseq_table_collect_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    const rb_iseq_t **srcs = (const rb_iseq_t **)arg;
+    srcs[(int)val] = (const rb_iseq_t *)key;
+    return ST_CONTINUE;
+}
+
+/* pc2branchindex (branch coverage) is per-iseq, so pair each copy with its
+ * source by list index */
+static void
+iseq_subtree_copy_pc2branchindex(const struct ibf_dump *dump, const struct ibf_load *load)
+{
+    unsigned int iseq_count = (unsigned int)dump->iseq_table->num_entries;
+    VALUE srcs_buf;
+    const rb_iseq_t **srcs = ALLOCV_N(const rb_iseq_t *, srcs_buf, iseq_count);
+    st_foreach(dump->iseq_table, ibf_dump_iseq_table_collect_i, (st_data_t)srcs);
+
+    for (unsigned int i = 0; i < iseq_count; i++) {
+        rb_iseq_t *copy = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)i);
+        VALUE pc2branchindex = ISEQ_PC2BRANCHINDEX(srcs[i]);
+        if (pc2branchindex != Qnil) {
+            ISEQ_PC2BRANCHINDEX_SET(copy, pc2branchindex);
+        }
+    }
+
+    ALLOCV_END(srcs_buf);
+}
+
+/* Deep-copy an iseq subtree with independent inline caches for Proc#refined */
+const rb_iseq_t *
+rb_iseq_dup_with_independent_caches(const rb_iseq_t *src_root)
+{
+    struct ibf_dump *dump;
+    VALUE dump_obj;
+    VALUE str;
+
+    /* --- dump the subtree --- */
+    dump_obj = TypedData_Make_Struct(0, struct ibf_dump, &ibf_dump_type, dump);
+    ibf_dump_setup(dump, dump_obj);
+
+    str = iseq_ibf_dump_0(dump, src_root, Qnil);
+
+    /* --- load it back --- */
+    struct ibf_load *load;
+    VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
+    ibf_load_setup(load, loader_obj, str);
+
+    /* What the loader could not reconstruct is the same for every iseq in
+     * the subtree: the only absent parent is the top's, every absent
+     * local_iseq is the source's local root (runtime walks compare it
+     * against the original frames, so a copy must not stand in), and
+     * pathobj/script_lines/coverage are per-file values. */
+    const struct rb_iseq_constant_body *sb = ISEQ_BODY(src_root);
+    unsigned int iseq_count = (unsigned int)dump->iseq_table->num_entries;
+    const rb_iseq_t *result = NULL;
+    for (unsigned int i = 0; i < iseq_count; i++) {
+        rb_iseq_t *copy = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)i);
+        /* force completion even under USE_LAZY_LOAD */
+        if (FL_TEST((VALUE)copy, ISEQ_NOT_LOADED_YET)) {
+            rb_ibf_load_iseq_complete(copy);
+        }
+
+        struct rb_iseq_constant_body *cb = ISEQ_BODY(copy);
+        if (!cb->local_iseq) RB_OBJ_WRITE(copy, &cb->local_iseq, sb->local_iseq);
+        RB_OBJ_WRITE(copy, &cb->location.pathobj, sb->location.pathobj);
+        RB_OBJ_WRITE(copy, &cb->variable.script_lines, sb->variable.script_lines);
+        ISEQ_COVERAGE_SET(copy, ISEQ_COVERAGE(src_root));
+
+        if (i == 0) {
+            RB_OBJ_WRITE(copy, &cb->parent_iseq, sb->parent_iseq);
+            result = copy;
+        }
+    }
+
+    if (ISEQ_PC2BRANCHINDEX(src_root) != Qnil) {
+        iseq_subtree_copy_pc2branchindex(dump, load);
+    }
+
+    RB_GC_GUARD(dump_obj);
+    RB_GC_GUARD(loader_obj);
+    return result;
 }
 
 VALUE

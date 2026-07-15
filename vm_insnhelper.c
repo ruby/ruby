@@ -908,7 +908,7 @@ cref_replace_with_duplicated_cref_each_frame(const VALUE *vptr, int can_be_svar,
         switch (imemo_type(v)) {
           case imemo_cref:
             cref = (rb_cref_t *)v;
-            new_cref = vm_cref_dup(cref);
+            new_cref = rb_vm_cref_dup(cref);
             if (parent) {
                 RB_OBJ_WRITE(parent, vptr, new_cref);
             }
@@ -5298,9 +5298,9 @@ vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int
 /* ruby iseq -> ruby block */
 
 static VALUE
-vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
-                     struct rb_calling_info *calling, const struct rb_callinfo *ci,
-                     bool is_lambda, VALUE block_handler)
+vm_invoke_iseq_block_with_cref(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                               struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                               bool is_lambda, VALUE block_handler, const rb_cref_t *cref)
 {
     const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(block_handler);
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
@@ -5312,15 +5312,24 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 
     SET_SP(rsp);
 
+    /* cref is normally 0; Proc#refined supplies a refinement cref */
     vm_push_frame(ec, iseq,
                   frame_flag,
                   captured->self,
-                  VM_GUARDED_PREV_EP(captured->ep), 0,
+                  VM_GUARDED_PREV_EP(captured->ep), (VALUE)cref,
                   ISEQ_BODY(iseq)->iseq_encoded + opt_pc,
                   rsp + arg_size,
                   ISEQ_BODY(iseq)->local_table_size - arg_size, ISEQ_BODY(iseq)->stack_max);
 
     return Qundef;
+}
+
+static VALUE
+vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                     struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                     bool is_lambda, VALUE block_handler)
+{
+    return vm_invoke_iseq_block_with_cref(ec, reg_cfp, calling, ci, is_lambda, block_handler, NULL);
 }
 
 static VALUE
@@ -5386,11 +5395,9 @@ vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     return val;
 }
 
-static VALUE
-vm_proc_to_block_handler(VALUE procval)
+static inline VALUE
+vm_block_to_block_handler(const struct rb_block *block)
 {
-    const struct rb_block *block = vm_proc_block(procval);
-
     switch (vm_block_type(block)) {
       case block_type_iseq:
         return VM_BH_FROM_ISEQ_BLOCK(&block->as.captured);
@@ -5406,14 +5413,44 @@ vm_proc_to_block_handler(VALUE procval)
 }
 
 static VALUE
+vm_proc_to_block_handler(VALUE procval)
+{
+    return vm_block_to_block_handler(vm_proc_block(procval));
+}
+
+NOINLINE(static VALUE
+vm_invoke_proc_block_with_cref(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                               struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                               bool is_lambda, VALUE block_handler, VALUE refined_procval));
+static VALUE
+vm_invoke_proc_block_with_cref(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                               struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                               bool is_lambda, VALUE block_handler, VALUE refined_procval)
+{
+    const rb_cref_t *cref = rb_proc_refinements_cref(refined_procval);
+    return vm_invoke_iseq_block_with_cref(ec, reg_cfp, calling, ci, is_lambda, block_handler, cref);
+}
+
+static VALUE
 vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                      struct rb_calling_info *calling, const struct rb_callinfo *ci,
                      bool is_lambda, VALUE block_handler)
 {
+    VALUE refined_procval = 0;
+
     while (vm_block_handler_type(block_handler) == block_handler_type_proc) {
-        VALUE proc = VM_BH_TO_PROC(block_handler);
-        is_lambda = block_proc_is_lambda(proc);
-        block_handler = vm_proc_to_block_handler(proc);
+        VALUE procval = VM_BH_TO_PROC(block_handler);
+        rb_proc_t *po;
+        GetProcPtr(procval, po);
+        if (po->is_refined) refined_procval = procval;
+        is_lambda = po->is_lambda;
+        block_handler = vm_block_to_block_handler(&po->block);
+    }
+
+    if (UNLIKELY(refined_procval) && vm_block_handler_type(block_handler) == block_handler_type_iseq) {
+        /* should not be inlined so that vm_invoke_proc_block stays leaf/frameless. */
+        return vm_invoke_proc_block_with_cref(ec, reg_cfp, calling, ci, is_lambda, block_handler,
+                                              refined_procval);
     }
 
     return vm_invoke_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
