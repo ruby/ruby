@@ -3741,11 +3741,18 @@ impl Assembler {
     }
 
     pub fn count_call_to(&mut self, fn_name: &str) {
+        self.count_call_to_with(|| fn_name.to_string());
+    }
+
+    /// Like [`Assembler::count_call_to`], but only builds the name when stats are
+    /// enabled. Use for callers where computing the name is non-trivial (e.g.
+    /// resolving a `Class#method` string) so no-stats builds don't pay for it.
+    pub fn count_call_to_with(&mut self, fn_name: impl FnOnce() -> String) {
         // We emit ccalls while initializing the JIT. Unfortunately, we skip those because
         // otherwise we have no counter pointers to read.
         if crate::state::ZJITState::has_instance() && get_option!(stats) {
             let ccall_counter_pointers = crate::state::ZJITState::get_ccall_counter_pointers();
-            let counter_ptr = ccall_counter_pointers.entry(fn_name.to_string()).or_insert_with(|| Box::new(0));
+            let counter_ptr = ccall_counter_pointers.entry(fn_name()).or_insert_with(|| Box::new(0));
             let counter_ptr: &mut u64 = counter_ptr.as_mut();
             self.incr_counter(Opnd::const_ptr(counter_ptr), 1.into());
         }

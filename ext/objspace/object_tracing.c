@@ -390,7 +390,7 @@ object_allocations_reporter_i(st_data_t key, st_data_t val, st_data_t ptr)
     fprintf(out, "@%s:%lu", info->path ? info->path : "", info->line);
     if (!NIL_P(info->mid)) {
         VALUE m = rb_sym2str(info->mid);
-        fprintf(out, " (%s)", RSTRING_PTR(m));
+        fprintf(out, " (%.*s)", RSTRING_LENINT(m), RSTRING_PTR(m));
     }
     fprintf(out, ")\n");
 

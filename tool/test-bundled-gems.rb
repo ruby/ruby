@@ -9,6 +9,11 @@ require_relative 'lib/test/jobserver'
 
 ENV.delete("GNUMAKEFLAGS")
 
+# net-imap's test helper enables SimpleCov, but its released versions still
+# call the pre-1.0.0 `SimpleCov.formatters=` API that breaks with simplecov
+# 1.0.0. Coverage of bundled gems is not collected in CI, so disable it.
+ENV["SIMPLECOV_DISABLE"] = "1"
+
 github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
 DEFAULT_ALLOWED_FAILURES = RUBY_PLATFORM =~ /mswin|mingw/ ? [
@@ -111,6 +116,9 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     first_timeout *= 3
 
   when "debug"
+    # needs pty
+    next unless /mswin|mingw/ =~ RUBY_PLATFORM
+
     # Since debug gem requires debug.so in child processes without
     # activating the gem, we preset necessary paths in RUBYLIB
     # environment variable.
@@ -123,6 +131,8 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   when "csv"
     first_timeout = 30
+    test_command = [ruby, *run_opts, "-C", "#{gem_dir}/src/#{gem}", "run-test.rb"]
+    test_command << "--ignore-name=/ractor/" if /mswin|mingw/ =~ RUBY_PLATFORM
 
   when "win32ole"
     next unless /mswin|mingw/ =~ RUBY_PLATFORM
@@ -146,6 +156,10 @@ trap(:INT) do
     Process.kill("#{signal_prefix}INT", pid) rescue nil
   end
 end
+
+heavy_tests = %w[rbs debug reline win32ole irb drb net-imap rdoc typeprof racc rake]
+others = heavy_tests.size
+jobs.sort_by! {|job| heavy_tests.index(job[:gem]) || (others += 1)}
 
 results = Array.new(jobs.size)
 queue = Queue.new

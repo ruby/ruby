@@ -439,11 +439,26 @@ vm_cc_valid(const struct rb_callcache *cc)
     return !UNDEF_P(cc->klass);
 }
 
+/* Whether another ractor may have invalidated this cc mid-use (see
+ * vm_cc_invalidate()). Extensions cannot use rb_multi_ractor_p() here: with
+ * assertions enabled at -O0 (e.g. --enable-yjit=dev on macOS) the inline
+ * materializes references to core-internal globals (ruby_current_vm_ptr,
+ * ruby_single_main_ractor) that are not exported to them, and objspace.bundle
+ * fails to load. RUBY_EXPORT marks a core TU. */
+#ifdef RUBY_EXPORT
+# define VM_CC_RACED_P() rb_multi_ractor_p()
+#else
+# define VM_CC_RACED_P() true
+#endif
+
 static inline const struct rb_callable_method_entry_struct *
 vm_cc_cme(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc));
+    // VM_CC_RACED_P(): another ractor can invalidate this cc (klass = Qundef)
+    // while a call using it is in flight; cme_/call_ stay intact, so the call
+    // proceeds with the method resolved before the redefinition.
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc) || VM_CC_RACED_P());
     VM_ASSERT(cc_check_class(cc->klass));
     VM_ASSERT(cc->call_ == NULL   || // not initialized yet
               !vm_cc_markable(cc) ||
@@ -458,7 +473,7 @@ vm_cc_call(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc->call_ != NULL);
-    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc));
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc) || VM_CC_RACED_P());
     VM_ASSERT(cc_check_class(cc->klass));
     return cc->call_;
 }

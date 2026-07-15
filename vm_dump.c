@@ -59,6 +59,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     char ep_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
     int line = 0;
+    int iseq_name_len = -1;
     const char *magic, *iseq_name = "-", *selfstr = "-", *biseq_name = "-";
     VALUE tmp;
     const rb_iseq_t *iseq = NULL;
@@ -131,18 +132,22 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
         else if (SYMBOL_P((VALUE)iseq)) {
             tmp = rb_sym2str((VALUE)iseq);
             iseq_name = RSTRING_PTR(tmp);
-            snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
+            iseq_name_len = RSTRING_LENINT(tmp);
+            snprintf(posbuf, MAX_POSBUF, ":%.*s", iseq_name_len, iseq_name);
             line = -1;
         }
         else {
             if (CFP_PC(cfp)) {
                 pc = CFP_PC(cfp) - ISEQ_BODY(iseq)->iseq_encoded;
                 iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
+                iseq_name_len = RSTRING_LENINT(ISEQ_BODY(iseq)->location.label);
                 if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
                     line = rb_vm_get_sourceline(cfp);
                 }
                 if (line) {
-                    snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
+                    VALUE path = rb_iseq_path(iseq);
+                    snprintf(posbuf, MAX_POSBUF, "%.*s:%d",
+                             RSTRING_LENINT(path), RSTRING_PTR(path), line);
                 }
             }
             else {
@@ -183,7 +188,12 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     }
     if (0) {
         kprintf("              \t");
-        kprintf("iseq: %-24s ", iseq_name);
+        if (iseq_name_len < 0) {
+            kprintf("iseq: %-24s ", iseq_name);
+        }
+        else {
+            kprintf("iseq: %-24.*s ", iseq_name_len, iseq_name);
+        }
         kprintf("self: %-24s ", selfstr);
         kprintf("%-1s ", biseq_name);
     }
@@ -286,7 +296,7 @@ box_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_contro
     char ep_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
     int line = 0;
-    const char *magic, *iseq_name = "-";
+    const char *magic;
     VALUE tmp;
     const rb_iseq_t *iseq = NULL;
     const rb_box_t *box = NULL;
@@ -347,35 +357,27 @@ box_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_contro
     if (cfp && CFP_ISEQ(cfp)) {
 #define RUBY_VM_IFUNC_P(ptr) IMEMO_TYPE_P(ptr, imemo_ifunc)
         const rb_iseq_t *resolved_iseq = CFP_ISEQ(cfp);
-        if (RUBY_VM_IFUNC_P(resolved_iseq)) {
-            iseq_name = "<ifunc>";
-        }
-        else if (SYMBOL_P((VALUE)resolved_iseq)) {
+        if (SYMBOL_P((VALUE)resolved_iseq)) {
             tmp = rb_sym2str((VALUE)resolved_iseq);
-            iseq_name = RSTRING_PTR(tmp);
-            snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
+            snprintf(posbuf, MAX_POSBUF, ":%.*s",
+                     RSTRING_LENINT(tmp), RSTRING_PTR(tmp));
             line = -1;
         }
-        else {
-            if (CFP_PC(cfp)) {
-                iseq = resolved_iseq;
-                pc = CFP_PC(cfp) - ISEQ_BODY(iseq)->iseq_encoded;
-                iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
-                if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
-                    line = rb_vm_get_sourceline(cfp);
-                }
-                if (line) {
-                    snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
-                }
+        else if (!RUBY_VM_IFUNC_P(resolved_iseq) && CFP_PC(cfp)) {
+            iseq = resolved_iseq;
+            pc = CFP_PC(cfp) - ISEQ_BODY(iseq)->iseq_encoded;
+            if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
+                line = rb_vm_get_sourceline(cfp);
             }
-            else {
-                iseq_name = "<dummy_frame>";
+            if (line) {
+                VALUE path = rb_iseq_path(iseq);
+                snprintf(posbuf, MAX_POSBUF, "%.*s:%d",
+                         RSTRING_LENINT(path), RSTRING_PTR(path), line);
             }
         }
     }
     else if (me != NULL && IMEMO_TYPE_P(me, imemo_ment)) {
-        iseq_name = rb_id2name(me->def->original_id);
-        snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
+        snprintf(posbuf, MAX_POSBUF, ":%s", rb_id2name(me->def->original_id));
         line = -1;
     }
 

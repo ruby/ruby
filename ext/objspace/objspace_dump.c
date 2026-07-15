@@ -591,17 +591,23 @@ dump_object(VALUE obj, struct dump_config *dc)
         dump_append(dc, "\"");
         break;
 
-      case T_OBJECT:
-        if (!FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+      case T_OBJECT: {
+        shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+
+        if (rb_shape_embedded_p(shape_id)) {
             dump_append(dc, ", \"embedded\":true");
         }
 
         dump_append(dc, ", \"ivars\":");
-        dump_append_lu(dc, ROBJECT_FIELDS_COUNT(obj));
-        if (rb_obj_shape_complex_p(obj)) {
+        if (rb_shape_complex_p(shape_id)) {
+            dump_append_lu(dc, rb_st_table_size(rb_imemo_fields_complex_tbl(ROBJECT_FIELDS_OBJ(obj))));
             dump_append(dc, ", \"complex_shape\":true");
         }
+        else {
+            dump_append_lu(dc, RSHAPE_LEN(shape_id));
+        }
         break;
+      }
 
       case T_FILE:
         fptr = RFILE(obj)->fptr;

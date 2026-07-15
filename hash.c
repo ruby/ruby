@@ -2097,7 +2097,7 @@ rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
  *
  *  If the key is found, returns its value:
  *
- *    {foo: 0, bar: 1, baz: 2}
+ *    h = {foo: 0, bar: 1, baz: 2}
  *    h[:bar] # => 1
  *
  *  Otherwise, returns a default value (see {Hash Default}[rdoc-ref:Hash@Hash+Default]).

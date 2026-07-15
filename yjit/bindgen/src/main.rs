@@ -88,6 +88,7 @@ fn main() {
         .allowlist_function("rb_shape_get_iv_index")
         .allowlist_function("rb_shape_transition_add_ivar_no_warnings")
         .allowlist_function("rb_yjit_shape_obj_complex_p")
+        .allowlist_function("rb_yjit_shape_obj_embedded_p")
         .allowlist_function("rb_yjit_shape_capacity")
         .allowlist_function("rb_yjit_shape_index")
         .allowlist_var("SHAPE_ID_NUM_BITS")

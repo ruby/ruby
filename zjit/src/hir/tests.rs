@@ -405,19 +405,18 @@ pub(crate) mod hir_build_tests {
           PatchPoint StableConstantNames(0x1008, Integer)
           v20:ClassSubclass[Integer@0x1010] = Const Value(VALUE(0x1010))
           v22:BasicObject = CheckMatch v10, v20, CASE
+          v24:CBool = Test v22
+          v25:Truthy = RefineType v22, Truthy
+          CondBranch v24, bb4(v9, v10, v14, v10), bb5()
+        bb4(v37:BasicObject, v38:BasicObject, v39:NilClass, v40:BasicObject):
+          v45:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          v25:CBool = Test v22
-          v26:Truthy = RefineType v22, Truthy
-          CondBranch v25, bb4(v9, v10, v14, v10), bb5()
-        bb4(v38:BasicObject, v39:BasicObject, v40:NilClass, v41:BasicObject):
-          v46:Fixnum[1] = Const Value(1)
-          CheckInterrupts
-          Return v46
+          Return v45
         bb5():
-          v28:Falsy = RefineType v22, Falsy
-          v33:Fixnum[2] = Const Value(2)
+          v27:Falsy = RefineType v22, Falsy
+          v32:Fixnum[2] = Const Value(2)
           CheckInterrupts
-          Return v33
+          Return v32
         ");
     }
 
@@ -452,19 +451,18 @@ pub(crate) mod hir_build_tests {
           v16:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v17:ArrayExact = ArrayDup v16
           v19:BasicObject = CheckMatch v10, v17, CASE|ARRAY
+          v21:CBool = Test v19
+          v22:Truthy = RefineType v19, Truthy
+          CondBranch v21, bb4(v9, v10, v10), bb5()
+        bb4(v33:BasicObject, v34:BasicObject, v35:BasicObject):
+          v40:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          v22:CBool = Test v19
-          v23:Truthy = RefineType v19, Truthy
-          CondBranch v22, bb4(v9, v10, v10), bb5()
-        bb4(v34:BasicObject, v35:BasicObject, v36:BasicObject):
-          v41:Fixnum[1] = Const Value(1)
-          CheckInterrupts
-          Return v41
+          Return v40
         bb5():
-          v25:Falsy = RefineType v19, Falsy
-          v29:Fixnum[2] = Const Value(2)
+          v24:Falsy = RefineType v19, Falsy
+          v28:Fixnum[2] = Const Value(2)
           CheckInterrupts
-          Return v29
+          Return v28
         ");
     }
 
@@ -497,19 +495,18 @@ pub(crate) mod hir_build_tests {
           v12:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v13:ArrayExact = ArrayDup v12
           v15:BasicObject = CheckMatch v10, v13, WHEN|ARRAY
+          v17:CBool = Test v15
+          v18:Truthy = RefineType v15, Truthy
+          CondBranch v17, bb4(v6), bb5()
+        bb4(v28:BasicObject):
+          v32:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          v18:CBool = Test v15
-          v19:Truthy = RefineType v15, Truthy
-          CondBranch v18, bb4(v6), bb5()
-        bb4(v29:BasicObject):
-          v33:Fixnum[1] = Const Value(1)
-          CheckInterrupts
-          Return v33
+          Return v32
         bb5():
-          v21:Falsy = RefineType v15, Falsy
-          v24:Fixnum[2] = Const Value(2)
+          v20:Falsy = RefineType v15, Falsy
+          v23:Fixnum[2] = Const Value(2)
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 
@@ -1378,19 +1375,18 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:TrueClass|NilClass = DefinedIvar v6, :@foo
-          CheckInterrupts
-          v13:CBool = Test v10
-          v14:NilClass = RefineType v10, Falsy
-          CondBranch v13, bb5(), bb4(v6)
+          v12:CBool = Test v10
+          v13:NilClass = RefineType v10, Falsy
+          CondBranch v12, bb5(), bb4(v6)
         bb5():
-          v16:TrueClass = RefineType v10, Truthy
-          v19:Fixnum[3] = Const Value(3)
+          v15:TrueClass = RefineType v10, Truthy
+          v18:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v19
-        bb4(v24:BasicObject):
-          v28:Fixnum[4] = Const Value(4)
+          Return v18
+        bb4(v23:BasicObject):
+          v27:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v28
+          Return v27
         ");
     }
 
@@ -1496,19 +1492,18 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :cond@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          CheckInterrupts
-          v16:CBool = Test v10
-          v17:Falsy = RefineType v10, Falsy
-          CondBranch v16, bb5(), bb4(v9, v17)
+          v15:CBool = Test v10
+          v16:Falsy = RefineType v10, Falsy
+          CondBranch v15, bb5(), bb4(v9, v16)
         bb5():
-          v19:Truthy = RefineType v10, Truthy
-          v22:Fixnum[3] = Const Value(3)
+          v18:Truthy = RefineType v10, Truthy
+          v21:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v22
-        bb4(v27:BasicObject, v28:Falsy):
-          v32:Fixnum[4] = Const Value(4)
+          Return v21
+        bb4(v26:BasicObject, v27:Falsy):
+          v31:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v32
+          Return v31
         ");
     }
 
@@ -1540,21 +1535,19 @@ pub(crate) mod hir_build_tests {
           v9:NilClass = Const Value(nil)
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
-          CheckInterrupts
-          v19:CBool = Test v12
-          v20:Falsy = RefineType v12, Falsy
-          CondBranch v19, bb6(), bb4(v11, v20, v13)
+          v18:CBool = Test v12
+          v19:Falsy = RefineType v12, Falsy
+          CondBranch v18, bb6(), bb4(v11, v19, v13)
         bb6():
-          v22:Truthy = RefineType v12, Truthy
-          v25:Fixnum[3] = Const Value(3)
+          v21:Truthy = RefineType v12, Truthy
+          v24:Fixnum[3] = Const Value(3)
+          Jump bb5(v11, v21, v24)
+        bb4(v28:BasicObject, v29:Falsy, v30:NilClass):
+          v34:Fixnum[4] = Const Value(4)
+          Jump bb5(v28, v29, v34)
+        bb5(v37:BasicObject, v38:BasicObject, v39:Fixnum):
           CheckInterrupts
-          Jump bb5(v11, v22, v25)
-        bb4(v30:BasicObject, v31:Falsy, v32:NilClass):
-          v36:Fixnum[4] = Const Value(4)
-          Jump bb5(v30, v31, v36)
-        bb5(v39:BasicObject, v40:BasicObject, v41:Fixnum):
-          CheckInterrupts
-          Return v41
+          Return v39
         ");
     }
 
@@ -1879,26 +1872,25 @@ pub(crate) mod hir_build_tests {
         bb3(v10:BasicObject, v11:NilClass, v12:NilClass):
           v16:Fixnum[0] = Const Value(0)
           v20:Fixnum[10] = Const Value(10)
-          CheckInterrupts
           Jump bb5(v10, v16, v20)
-        bb5(v26:BasicObject, v27:BasicObject, v28:BasicObject):
-          v32:Fixnum[0] = Const Value(0)
-          v35:BasicObject = Send v28, :>, v32 # SendFallbackReason: Uncategorized(opt_gt)
+        bb5(v25:BasicObject, v26:BasicObject, v27:BasicObject):
+          v31:Fixnum[0] = Const Value(0)
+          v34:BasicObject = Send v27, :>, v31 # SendFallbackReason: Uncategorized(opt_gt)
           CheckInterrupts
-          v38:CBool = Test v35
-          v39:Truthy = RefineType v35, Truthy
-          CondBranch v38, bb4(v26, v27, v28), bb6()
-        bb4(v51:BasicObject, v52:BasicObject, v53:BasicObject):
-          v58:Fixnum[1] = Const Value(1)
-          v61:BasicObject = Send v52, :+, v58 # SendFallbackReason: Uncategorized(opt_plus)
-          v66:Fixnum[1] = Const Value(1)
-          v69:BasicObject = Send v53, :-, v66 # SendFallbackReason: Uncategorized(opt_minus)
-          Jump bb5(v51, v61, v69)
+          v37:CBool = Test v34
+          v38:Truthy = RefineType v34, Truthy
+          CondBranch v37, bb4(v25, v26, v27), bb6()
+        bb4(v50:BasicObject, v51:BasicObject, v52:BasicObject):
+          v57:Fixnum[1] = Const Value(1)
+          v60:BasicObject = Send v51, :+, v57 # SendFallbackReason: Uncategorized(opt_plus)
+          v65:Fixnum[1] = Const Value(1)
+          v68:BasicObject = Send v52, :-, v65 # SendFallbackReason: Uncategorized(opt_minus)
+          Jump bb5(v50, v60, v68)
         bb6():
-          v41:Falsy = RefineType v35, Falsy
-          v43:NilClass = Const Value(nil)
+          v40:Falsy = RefineType v34, Falsy
+          v42:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v27
+          Return v26
         ");
     }
 
@@ -1957,19 +1949,18 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v5, v6)
         bb3(v8:BasicObject, v9:NilClass):
           v13:TrueClass = Const Value(true)
-          CheckInterrupts
-          v19:CBool[true] = Test v13
-          v20 = RefineType v13, Falsy
-          CondBranch v19, bb5(), bb4(v8, v20)
+          v18:CBool[true] = Test v13
+          v19 = RefineType v13, Falsy
+          CondBranch v18, bb5(), bb4(v8, v19)
         bb5():
-          v22:TrueClass = RefineType v13, Truthy
-          v25:Fixnum[3] = Const Value(3)
+          v21:TrueClass = RefineType v13, Truthy
+          v24:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v25
-        bb4(v30, v31):
-          v35 = Const Value(4)
+          Return v24
+        bb4(v29, v30):
+          v34 = Const Value(4)
           CheckInterrupts
-          Return v35
+          Return v34
         ");
     }
 
@@ -2824,14 +2815,13 @@ pub(crate) mod hir_build_tests {
         bb6():
           v17:HeapBasicObject = ObjectAlloc v10
           v19:BasicObject = Send v17, :initialize # SendFallbackReason: Uncategorized(opt_send_without_block)
-          CheckInterrupts
           Jump bb5(v6, v17, v19)
-        bb4(v23:BasicObject, v24:NilClass, v25:BasicObject):
-          v28:BasicObject = Send v25, :new # SendFallbackReason: Uncategorized(opt_send_without_block)
-          Jump bb5(v23, v28, v24)
-        bb5(v31:BasicObject, v32:BasicObject, v33:BasicObject):
+        bb4(v22:BasicObject, v23:NilClass, v24:BasicObject):
+          v27:BasicObject = Send v24, :new # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb5(v22, v27, v23)
+        bb5(v30:BasicObject, v31:BasicObject, v32:BasicObject):
           CheckInterrupts
-          Return v32
+          Return v31
         ");
     }
 
@@ -4873,17 +4863,16 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :x@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          CheckInterrupts
-          v17:CBool = HasType v10, NilClass
-          v18:NilClass = Const Value(nil)
-          CondBranch v17, bb4(v9, v18, v18), bb5()
+          v16:CBool = HasType v10, NilClass
+          v17:NilClass = Const Value(nil)
+          CondBranch v16, bb4(v9, v17, v17), bb5()
         bb5():
-          v20:NotNil = RefineType v10, NotNil
-          v22:BasicObject = Send v20, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
-          Jump bb4(v9, v20, v22)
-        bb4(v24:BasicObject, v25:BasicObject, v26:BasicObject):
+          v19:NotNil = RefineType v10, NotNil
+          v21:BasicObject = Send v19, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb4(v9, v19, v21)
+        bb4(v23:BasicObject, v24:BasicObject, v25:BasicObject):
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -4914,27 +4903,25 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :x@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          CheckInterrupts
-          v16:CBool = Test v10
-          v17:Falsy = RefineType v10, Falsy
-          CondBranch v16, bb6(), bb4(v9, v17)
+          v15:CBool = Test v10
+          v16:Falsy = RefineType v10, Falsy
+          CondBranch v15, bb6(), bb4(v9, v16)
         bb6():
-          v19:Truthy = RefineType v10, Truthy
-          CheckInterrupts
-          v25:CBool[false] = HasType v19, NilClass
-          v26:NilClass = Const Value(nil)
-          CondBranch v25, bb5(v9, v26, v26), bb7()
+          v18:Truthy = RefineType v10, Truthy
+          v23:CBool[false] = HasType v18, NilClass
+          v24:NilClass = Const Value(nil)
+          CondBranch v23, bb5(v9, v24, v24), bb7()
         bb7():
-          v28:Truthy = RefineType v19, NotNil
-          v30:BasicObject = Send v28, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v26:Truthy = RefineType v18, NotNil
+          v28:BasicObject = Send v26, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v30
-        bb4(v35:BasicObject, v36:Falsy):
-          v40:Fixnum[4] = Const Value(4)
-          Jump bb5(v35, v36, v40)
-        bb5(v42:BasicObject, v43:Falsy, v44:Fixnum[4]):
+          Return v28
+        bb4(v33:BasicObject, v34:Falsy):
+          v38:Fixnum[4] = Const Value(4)
+          Jump bb5(v33, v34, v38)
+        bb5(v40:BasicObject, v41:Falsy, v42:Fixnum[4]):
           CheckInterrupts
-          Return v44
+          Return v42
         ");
     }
 
@@ -4971,39 +4958,36 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :x@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          CheckInterrupts
-          v16:CBool = Test v10
-          v17:Falsy = RefineType v10, Falsy
-          CondBranch v16, bb7(), bb6(v9, v17)
+          v15:CBool = Test v10
+          v16:Falsy = RefineType v10, Falsy
+          CondBranch v15, bb7(), bb6(v9, v16)
         bb7():
-          v19:Truthy = RefineType v10, Truthy
-          CheckInterrupts
-          v24:CBool[true] = Test v19
-          v25 = RefineType v19, Falsy
-          CondBranch v24, bb8(), bb5(v9, v25)
+          v18:Truthy = RefineType v10, Truthy
+          v22:CBool[true] = Test v18
+          v23 = RefineType v18, Falsy
+          CondBranch v22, bb8(), bb5(v9, v23)
         bb8():
-          v27:Truthy = RefineType v19, Truthy
-          CheckInterrupts
-          v32:CBool[true] = Test v27
-          v33 = RefineType v27, Falsy
-          CondBranch v32, bb9(), bb4(v9, v33)
+          v25:Truthy = RefineType v18, Truthy
+          v29:CBool[true] = Test v25
+          v30 = RefineType v25, Falsy
+          CondBranch v29, bb9(), bb4(v9, v30)
         bb9():
-          v35:Truthy = RefineType v27, Truthy
-          v38:Fixnum[3] = Const Value(3)
+          v32:Truthy = RefineType v25, Truthy
+          v35:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v38
-        bb4(v63, v64):
-          v68 = Const Value(4)
+          Return v35
+        bb4(v60, v61):
+          v65 = Const Value(4)
           CheckInterrupts
-          Return v68
-        bb5(v53, v54):
-          v58 = Const Value(5)
+          Return v65
+        bb5(v50, v51):
+          v55 = Const Value(5)
           CheckInterrupts
-          Return v58
-        bb6(v43:BasicObject, v44:Falsy):
-          v48:Fixnum[6] = Const Value(6)
+          Return v55
+        bb6(v40:BasicObject, v41:Falsy):
+          v45:Fixnum[6] = Const Value(6)
           CheckInterrupts
-          Return v48
+          Return v45
         ");
     }
 
@@ -5152,19 +5136,18 @@ pub(crate) mod hir_build_tests {
           v43:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb8(v43, v22)
         bb8(v33:BasicObject, v34:BasicObject):
-          CheckInterrupts
-          v47:CBool = Test v33
-          v48:Falsy = RefineType v33, Falsy
-          CondBranch v47, bb9(), bb4(v18, v19, v20, v21, v34, v27)
+          v46:CBool = Test v33
+          v47:Falsy = RefineType v33, Falsy
+          CondBranch v46, bb9(), bb4(v18, v19, v20, v21, v34, v27)
         bb9():
-          v50:Truthy = RefineType v33, Truthy
-          v54:BasicObject = InvokeBlock v27 # SendFallbackReason: InvokeBlock: not yet specialized
-          v57:BasicObject = InvokeBuiltin dir_s_close, v18, v27
+          v49:Truthy = RefineType v33, Truthy
+          v53:BasicObject = InvokeBlock v27 # SendFallbackReason: InvokeBlock: not yet specialized
+          v56:BasicObject = InvokeBuiltin dir_s_close, v18, v27
           CheckInterrupts
-          Return v54
-        bb4(v63:BasicObject, v64:BasicObject, v65:BasicObject, v66:BasicObject, v67:BasicObject, v68:BasicObject):
+          Return v53
+        bb4(v62:BasicObject, v63:BasicObject, v64:BasicObject, v65:BasicObject, v66:BasicObject, v67:BasicObject):
           CheckInterrupts
-          Return v68
+          Return v67
         ");
     }
 
@@ -5295,19 +5278,18 @@ pub(crate) mod hir_build_tests {
           v17:Fixnum[0] = Const Value(0)
           v19:Fixnum[1] = Const Value(1)
           v22:BasicObject = Send v10, :[], v17, v19 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v25:CBool = Test v22
+          v26:Truthy = RefineType v22, Truthy
+          CondBranch v25, bb4(v9, v10, v14, v10, v17, v19, v26), bb5()
+        bb4(v40:BasicObject, v41:BasicObject, v42:NilClass, v43:BasicObject, v44:Fixnum[0], v45:Fixnum[1], v46:Truthy):
           CheckInterrupts
-          v26:CBool = Test v22
-          v27:Truthy = RefineType v22, Truthy
-          CondBranch v26, bb4(v9, v10, v14, v10, v17, v19, v27), bb5()
-        bb4(v41:BasicObject, v42:BasicObject, v43:NilClass, v44:BasicObject, v45:Fixnum[0], v46:Fixnum[1], v47:Truthy):
-          CheckInterrupts
-          Return v47
+          Return v46
         bb5():
-          v29:Falsy = RefineType v22, Falsy
-          v32:Fixnum[2] = Const Value(2)
-          v35:BasicObject = Send v10, :[]=, v17, v19, v32 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v28:Falsy = RefineType v22, Falsy
+          v31:Fixnum[2] = Const Value(2)
+          v34:BasicObject = Send v10, :[]=, v17, v19, v31 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v32
+          Return v31
         ");
     }
 
@@ -5844,19 +5826,18 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v10)
         bb3(v12:BasicObject, v13:BasicObject, v14:BasicObject):
           v17:BoolExact = FixnumBitCheck v14, 0
-          CheckInterrupts
-          v20:CBool = Test v17
-          v21:TrueClass = RefineType v17, Truthy
-          CondBranch v20, bb4(v12, v13, v14), bb5()
+          v19:CBool = Test v17
+          v20:TrueClass = RefineType v17, Truthy
+          CondBranch v19, bb4(v12, v13, v14), bb5()
         bb5():
-          v23:FalseClass = RefineType v17, Falsy
-          v25:Fixnum[1] = Const Value(1)
-          v27:Fixnum[1] = Const Value(1)
-          v30:BasicObject = Send v25, :+, v27 # SendFallbackReason: Uncategorized(opt_plus)
-          Jump bb4(v12, v30, v14)
-        bb4(v33:BasicObject, v34:BasicObject, v35:BasicObject):
+          v22:FalseClass = RefineType v17, Falsy
+          v24:Fixnum[1] = Const Value(1)
+          v26:Fixnum[1] = Const Value(1)
+          v29:BasicObject = Send v24, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
+          Jump bb4(v12, v29, v14)
+        bb4(v32:BasicObject, v33:BasicObject, v34:BasicObject):
           CheckInterrupts
-          Return v34
+          Return v33
         ");
     }
 

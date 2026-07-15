@@ -4763,19 +4763,6 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     return Qnil;
 }
 
-#ifndef HAVE_MEMRCHR
-static void*
-memrchr(const char *search_str, int chr, long search_len)
-{
-    const char *ptr = search_str + search_len;
-    while (ptr > search_str) {
-        if ((unsigned char)*(--ptr) == chr) return (void *)ptr;
-    }
-
-    return ((void *)0);
-}
-#endif
-
 static long
 str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 {

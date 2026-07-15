@@ -1881,14 +1881,16 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_OBJECT:
         {
-            if (rb_obj_shape_complex_p(obj)) {
+            VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
+            shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
+            if (rb_shape_complex_p(shape_id)) {
                 struct obj_traverse_replace_callback_data d = {
                     .stop = false,
                     .data = data,
                     .src = obj,
                 };
                 rb_st_foreach_with_replace(
-                    ROBJECT_FIELDS_HASH(obj),
+                    rb_imemo_fields_complex_tbl(fields_obj),
                     obj_iv_hash_traverse_replace_foreach_i,
                     obj_iv_hash_traverse_replace_i,
                     (st_data_t)&d
@@ -1896,10 +1898,10 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 if (d.stop) return 1;
             }
             else {
-                uint32_t len = ROBJECT_FIELDS_COUNT_NOT_COMPLEX(obj);
-                VALUE *ptr = ROBJECT_FIELDS(obj);
+                attr_index_t len = RSHAPE_LEN(shape_id);
+                VALUE *ptr = rb_imemo_fields_ptr(fields_obj);
 
-                for (uint32_t i = 0; i < len; i++) {
+                for (attr_index_t i = 0; i < len; i++) {
                     CHECK_AND_REPLACE(obj, ptr[i]);
                 }
             }

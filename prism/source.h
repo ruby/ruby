@@ -24,6 +24,13 @@ typedef struct pm_source_t pm_source_t;
  * This function is used to retrieve a line of input from a stream. It closely
  * mirrors that of fgets so that fgets can be used as the default
  * implementation.
+ *
+ * As with fgets, implementations MUST write at most `size` bytes into
+ * `string`, including the terminating NUL byte (i.e. at most `size - 1` bytes
+ * of data followed by a '\0'). The caller relies on this bound for memory
+ * safety, so an implementation that reads from a source which may return more
+ * data than requested (for example a multi-byte-aware `gets`) is responsible
+ * for clamping the amount it copies. Returns `string`, or NULL on EOF.
  */
 typedef char * (pm_source_stream_fgets_t)(char *string, int size, void *stream);
 

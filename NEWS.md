@@ -27,10 +27,11 @@ Note: We're only listing outstanding class updates.
 
 * Array
 
-    * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
-      and signed LEB128 encoded integers. [[Feature #21785]]
-    * `Array#pack` accepts a new format `^` that returns the current offset.
-      Useful when combined with variable width formats like LEB128. [[Feature #21796]]
+    * `Array#pack` accepts new formats `R` and `r` for unsigned and signed
+      LEB128 encoded integers. [[Feature #21785]]
+    * `Array#pack` accepts new formats `x!` and `@!` to align the current
+      offset to a byte boundary or to the ABI alignment of another
+      directive. [[Feature #22185]]
 
 * ENV
 
@@ -54,7 +55,19 @@ Note: We're only listing outstanding class updates.
 
 * ObjectSpace
 
-    *  `ObjectSpace._id2ref` was removed.  [[Feature #22135]]
+    * `ObjectSpace._id2ref` was removed.  [[Feature #22135]]
+
+* Proc
+
+    * `Proc#refined` is added. It returns a new Proc that behaves like the
+      receiver but with the refinements activated by the given modules
+      ineffect inside its body, without affecting the original Proc.
+      [[Feature #22097]]
+
+* Range
+
+    * `Range#clamp` is added. It returns a new `Range` instance whose
+      begin and end values are clamped to the given bounds. [[Feature #22175]]
 
 * Regexp
 
@@ -66,6 +79,17 @@ Note: We're only listing outstanding class updates.
 
     * A deprecated behavior, `Set#to_set`, `Range#to_set`, and
       `Enumerable#to_set` accepting arguments, was removed.  [[Feature #21390]]
+
+* String
+
+    * `String#unpack` and `String#unpack1` accept new formats `R` and `r`
+      for unsigned and signed LEB128 encoded integers. [[Feature #21785]]
+    * `String#unpack` and `String#unpack1` accept a new format `^` that
+      returns the current offset.  Useful when combined with variable
+      width formats like LEB128. [[Feature #21796]]
+    * `String#unpack` and `String#unpack1` accept new formats `x!` and
+      `@!` to align the current offset to a byte boundary or to the ABI
+      alignment of another directive. [[Feature #22185]]
 
 * Symbol
 
@@ -226,6 +250,8 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21981]: https://bugs.ruby-lang.org/issues/21981
 [Feature #22137]: https://bugs.ruby-lang.org/issues/22137
 [Feature #22139]: https://bugs.ruby-lang.org/issues/22139
+[Feature #22175]: https://bugs.ruby-lang.org/issues/22175
+[Feature #22185]: https://bugs.ruby-lang.org/issues/22185
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
 [RubyGems-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/v4.0.5

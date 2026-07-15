@@ -1344,10 +1344,6 @@ main()
 		AC_CHECK_FUNCS(_wfreopen_s)
 		AC_LIBOBJ([langinfo])
 		],
-[bsdi*], [	LIBS="-lm $LIBS"
-		AC_DEFINE(BROKEN_SETREUID, 1)
-		AC_DEFINE(BROKEN_SETREGID, 1)
-                ac_cv_sizeof_rlim_t=8],
 [freebsd*], [	LIBS="-lm $LIBS"
 		ac_cv_func_getpeername=no
 		ac_cv_func_getsockname=no
@@ -2135,6 +2131,7 @@ AC_REPLACE_FUNCS(flock)
 AC_REPLACE_FUNCS(hypot)
 AC_REPLACE_FUNCS(lgamma_r)
 AC_REPLACE_FUNCS(memmove)
+AC_REPLACE_FUNCS(memrchr)
 AC_REPLACE_FUNCS(nan)
 AC_REPLACE_FUNCS(nextafter)
 AC_REPLACE_FUNCS(setproctitle)
@@ -2250,7 +2247,6 @@ AC_CHECK_FUNCS(mblen)
 AC_CHECK_FUNCS(memalign)
 AC_CHECK_FUNCS(memset_s)
 AC_CHECK_FUNCS(writev)
-AC_CHECK_FUNCS(memrchr)
 AC_CHECK_FUNCS(memmem)
 AC_CHECK_FUNCS(mkfifo)
 AC_CHECK_FUNCS(mknod)
@@ -3112,7 +3108,7 @@ AS_IF([test "$ac_cv_header_mach_o_loader_h" = yes], [
 ])
 
 AS_CASE(["$target_os"],
-[linux* | gnu* | k*bsd*-gnu | bsdi* | kopensolaris*-gnu], [
+[linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu], [
     AS_IF([test "$rb_cv_binary_elf" = no], [
 	AC_MSG_ERROR(Not ELF)
     ], [
@@ -3147,7 +3143,7 @@ STATIC=
       # mkmf.rb's have_header() to fail if the desired resource happens to be
       # installed in the /usr/local tree.
       RUBY_APPEND_OPTION(CCDLFLAGS, -fno-common)],
-    [bsdi*|cygwin*|msys*|mingw*|aix*|interix*], [ ],
+    [cygwin*|msys*|mingw*|aix*|interix*], [ ],
     [
       RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC)])
   ], [
@@ -3206,10 +3202,7 @@ AC_SUBST(EXTOBJS)
 			rb_cv_dlopen=yes],
 	[osf*], [	: ${LDSHARED='$(LD) -shared -expect_unresolved "*"'}
 			rb_cv_dlopen=yes],
-	[bsdi3*], [	AS_CASE(["$CC"],
-			[*shlicc*], [	: ${LDSHARED='$(CC) -r'}
-					rb_cv_dlopen=yes])],
-	[linux* | gnu* | k*bsd*-gnu | netbsd* | bsdi* | kopensolaris*-gnu | haiku*], [
+	[linux* | gnu* | k*bsd*-gnu | netbsd* | kopensolaris*-gnu | haiku*], [
 			: ${LDSHARED='$(CC) -shared'}
 			AS_IF([test "$rb_cv_binary_elf" = yes], [
 			    LDFLAGS="$LDFLAGS -Wl,-export-dynamic"

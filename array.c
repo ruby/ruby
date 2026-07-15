@@ -7724,7 +7724,7 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
  *  If no argument is given, returns an array of 1-element arrays,
  *  each containing an element of +self+:
  *
- *    a.product # => [[0], [1], [2]]
+ *    [0, 1, 2].product # => [[0], [1], [2]]
  *
  *  With a block given, calls the block with each combination; returns +self+:
  *

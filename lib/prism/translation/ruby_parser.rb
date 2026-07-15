@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 # :markup: markdown
 
+require "timeout"
+
 begin
   require "sexp"
 rescue LoadError
@@ -1560,7 +1562,7 @@ module Prism
 
         # Create a new compiler with the given options.
         def copy_compiler(in_def: self.in_def, in_pattern: self.in_pattern)
-          Compiler.new(file, in_def: in_def, in_pattern: in_pattern)
+          self.class.new(file, in_def: in_def, in_pattern: in_pattern)
         end
 
         # Create a new Sexp object from the given prism node and arguments.
@@ -1622,18 +1624,26 @@ module Prism
         end
       end
 
-      private_constant :Compiler
+      # Optional scopes to pass to the parser.
+      attr_reader :scopes #: Array[Array[Symbol]]?
+
+      # :nodoc:
+      #: (?scopes: Array[Array[Symbol]]?) -> void
+      def initialize(scopes: nil)
+        super()
+        @scopes = scopes
+      end
 
       # Parse the given source and translate it into the seattlerb/ruby_parser
       # gem's Sexp format.
       def parse(source, filepath = "(string)")
-        translate(Prism.parse(source, filepath: filepath, partial_script: true), filepath)
+        translate(Prism.parse(source, filepath: filepath, partial_script: true, scopes: scopes), filepath)
       end
 
       # Parse the given file and translate it into the seattlerb/ruby_parser
       # gem's Sexp format.
       def parse_file(filepath)
-        translate(Prism.parse_file(filepath, partial_script: true), filepath)
+        translate(Prism.parse_file(filepath, partial_script: true, scopes: scopes), filepath)
       end
 
       # Parse the give file and translate it into the
@@ -1647,14 +1657,14 @@ module Prism
       class << self
         # Parse the given source and translate it into the seattlerb/ruby_parser
         # gem's Sexp format.
-        def parse(source, filepath = "(string)")
-          new.parse(source, filepath)
+        def parse(source, filepath = "(string)", scopes: nil)
+          new(scopes: scopes).parse(source, filepath)
         end
 
         # Parse the given file and translate it into the seattlerb/ruby_parser
         # gem's Sexp format.
-        def parse_file(filepath)
-          new.parse_file(filepath)
+        def parse_file(filepath, scopes: nil)
+          new(scopes: scopes).parse_file(filepath)
         end
       end
 
@@ -1669,7 +1679,7 @@ module Prism
         end
 
         result.attach_comments!
-        result.value.accept(Compiler.new(filepath))
+        result.value.accept(self.class::Compiler.new(filepath))
       end
     end
   end

@@ -328,7 +328,7 @@ class IPAddr
     end
   end
 
-  # Returns true if the ipaddr is a link-local address.  IPv4
+  # Returns true if the ipaddr is a link-local unicast address.  IPv4
   # addresses in 169.254.0.0/16 reserved by RFC 3927 and link-local
   # IPv6 Unicast Addresses in fe80::/10 reserved by RFC 4291 are
   # considered link-local. Link-local IPv4 addresses in the
@@ -341,6 +341,44 @@ class IPAddr
       @addr & 0xffc0_0000_0000_0000_0000_0000_0000_0000 == 0xfe80_0000_0000_0000_0000_0000_0000_0000 || # fe80::/10
         (@addr >> 32 == 0xffff && (
           @addr & 0xffff0000 == 0xa9fe0000 # ::ffff:169.254.0.0/16
+        ))
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
+  alias link_local_unicast? link_local?
+
+  # Returns true if the ipaddr is a multicast address. IPv4
+  # addresses in 224.0.0.0/4 and IPv6 multicast addresses
+  # in ff00::/8 are considered multicast. Multicast IPv4 addresses in the
+  # IPv4-mapped IPv6 address range are also considered multicast.
+  def multicast?
+    case @family
+    when Socket::AF_INET
+      @addr & 0xf0000000 == 0xe0000000 # 224.0.0.0/4
+    when Socket::AF_INET6
+      @addr & 0xff00_0000_0000_0000_0000_0000_0000_0000 == 0xff00_0000_0000_0000_0000_0000_0000_0000 || # ff00::/8
+        (@addr >> 32 == 0xffff &&
+          @addr & 0xf0000000 == 0xe0000000 # ::ffff:224.0.0.0/4
+        )
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
+  # Returns true if the ipaddr is a link-local multicast address. IPv4
+  # addresses in 224.0.0.0/24 and link-local IPv6 Multicast Addresses in ff02::/16
+  # are considered link-local multicast. Link-local multicast IPv4 addresses in the
+  # IPv4-mapped IPv6 address range are also considered link-local multicast.
+  def link_local_multicast?
+    case @family
+    when Socket::AF_INET
+      @addr & 0xffffff00 == 0xe0000000 # 224.0.0.0/24 Local Network Control Block
+    when Socket::AF_INET6
+      @addr & 0xffff_0000_0000_0000_0000_0000_0000_0000 == 0xff02_0000_0000_0000_0000_0000_0000_0000 || # ff02::/16
+        (@addr >> 32 == 0xffff && (
+          @addr & 0xffff0000 == 0xe0000000 # ::ffff:224.0.0.0/24
         ))
     else
       raise AddressFamilyError, "unsupported address family"

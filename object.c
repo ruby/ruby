@@ -46,9 +46,6 @@
 
 /* Flags of RObject
  *
- * 4:    ROBJECT_HEAP
- *           The object has its instance variables in a separately allocated buffer.
- *           This can be either a flat buffer of reference, or an st_table for complex objects.
  */
 
 /*!
@@ -355,8 +352,8 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     RUBY_ASSERT(src_num_ivs <= dest_capa);
     if (initial_capa < dest_capa) {
         // We we need to transition the object to an extended layout.
-        VALUE fields_obj = rb_imemo_fields_new(dest, dest_shape_id, false);
-        ROBJECT_SET_EXTENDED(dest, fields_obj);
+        rb_obj_replace_fields(dest, rb_imemo_fields_new(dest, dest_shape_id, false));
+
         dest_buf = ROBJECT_FIELDS(dest);
         rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
         RBASIC_SET_SHAPE_ID_WITH_LAYOUT(dest, dest_shape_id, SHAPE_ID_LAYOUT_EXTENDED);

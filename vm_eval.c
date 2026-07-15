@@ -290,7 +290,8 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
             {
                 rb_proc_t *proc;
                 GetProcPtr(calling->recv, proc);
-                ret = rb_vm_invoke_proc(ec, proc, calling->argc, argv, calling->kw_splat, calling->block_handler);
+                ret = rb_vm_invoke_proc(ec, proc, calling->argc, argv, calling->kw_splat, calling->block_handler,
+                                        rb_proc_refinements_cref(calling->recv));
                 goto success;
             }
           case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
@@ -2005,7 +2006,7 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
     /* TODO: what the code checking? */
     if (!cref && block.as.captured.code.val) {
         rb_cref_t *orig_cref = vm_get_cref(vm_block_ep(&block));
-        cref = vm_cref_dup(orig_cref);
+        cref = rb_vm_cref_dup(orig_cref);
     }
     vm_set_eval_stack(ec, iseq, cref, &block);
 
@@ -2217,6 +2218,7 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
     const VALUE *ep = NULL;
     rb_cref_t *cref;
     int is_lambda = FALSE;
+    const rb_cref_t *proc_cref = NULL;
 
     if (block_handler != VM_BLOCK_HANDLER_NONE) {
       again:
@@ -2232,8 +2234,14 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
             new_block_handler = VM_BH_FROM_IFUNC_BLOCK(&new_captured);
             break;
           case block_handler_type_proc:
-            is_lambda = rb_proc_lambda_p(block_handler) != Qfalse;
-            block_handler = vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler));
+            {
+                VALUE procval = VM_BH_TO_PROC(block_handler);
+                rb_proc_t *po;
+                GetProcPtr(procval, po);
+                is_lambda = po->is_lambda;
+                if (po->is_refined) proc_cref = rb_proc_refinements_cref(procval);
+                block_handler = vm_block_to_block_handler(&po->block);
+            }
             goto again;
           case block_handler_type_symbol:
             return rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)),
@@ -2249,6 +2257,11 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
 
     VM_ASSERT(singleton || RB_TYPE_P(self, T_MODULE) || RB_TYPE_P(self, T_CLASS));
     cref = vm_cref_push(ec, self, ep, TRUE, singleton);
+
+    if (proc_cref && !NIL_P(CREF_REFINEMENTS(proc_cref))) {
+        CREF_REFINEMENTS_SET(cref, rb_hash_dup(CREF_REFINEMENTS(proc_cref)));
+        CREF_REFINED_PROC_SET(cref);
+    }
 
     return vm_yield_with_cref(ec, argc, argv, kw_splat, cref, is_lambda);
 }

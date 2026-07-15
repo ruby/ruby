@@ -156,6 +156,20 @@ module RangeSpecs
   class MyRange < Range
   end
 
+  class DuckRange
+    def initialize(beg, end_, exclude_end = false)
+      @begin = beg
+      @end = end_
+      @exclude_end = exclude_end
+    end
+
+    attr_reader :begin, :end
+
+    def exclude_end?
+      @exclude_end
+    end
+  end
+
   class ComparisonError < RuntimeError
   end
 end
