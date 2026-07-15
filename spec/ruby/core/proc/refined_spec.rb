@@ -6,8 +6,8 @@ ruby_version_is "4.1" do
     it "returns a new Proc with the refinements of the given module activated inside its body" do
       pr = -> s { s.shout }
       refined = pr.refined(ProcRefinedSpecs::StringShout)
-      refined.should be_an_instance_of(Proc)
-      refined.should_not equal(pr)
+      refined.should.instance_of?(Proc)
+      refined.should_not.equal?(pr)
       refined.call("hi").should == "HI!"
     end
 
