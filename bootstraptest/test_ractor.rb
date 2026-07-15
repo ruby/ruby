@@ -2668,3 +2668,27 @@ assert_equal 'ok', %q{
     :ok  # platform without fork
   end
 }
+
+# A moved object's source is neutralized into a RactorMovedObject husk that
+# stays in its original (possibly larger) slot. It must be given a shape whose
+# slot size matches that slot, or a later compaction in the receiver trips the
+# slot_size == shape_slot_size invariant (RGENGC_CHECK_MODE) / corrupts the slot.
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    while (o = Ractor.receive)
+      begin
+        GC.compact
+      rescue NotImplementedError
+        # no-op on platforms without GC.compact (e.g. MMTk)
+      end
+    end
+    :ok
+  end
+  500.times do
+    o = Object.new
+    12.times { |i| o.instance_variable_set("@i#{i}", i) }  # overflow to a larger slot
+    r.send(o, move: true)
+  end
+  r.send(nil)
+  r.value
+}
