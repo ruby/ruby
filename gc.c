@@ -1404,22 +1404,21 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
 
     if (flags & FL_FINALIZE) return true;
 
-    switch (flags & RUBY_T_MASK) {
-      case T_IMEMO:
+    if ((flags & RUBY_T_MASK) == T_IMEMO) {
         return rb_gc_imemo_needs_cleanup_p(obj);
+    }
 
-      case T_DATA:
-      case T_OBJECT:
-      case T_STRING:
-      case T_ARRAY:
-      case T_HASH:
-      case T_BIGNUM:
-      case T_STRUCT:
+    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+    if (rb_shape_has_fields(shape_id) && rb_shape_layout(shape_id) == SHAPE_ID_LAYOUT_OTHER) {
+        return true;
+    }
+
+    switch (flags & RUBY_T_MASK) {
       case T_FLOAT:
       case T_RATIONAL:
       case T_COMPLEX:
-      case T_MATCH:
-        break;
+      case T_OBJECT:
+        return false;
 
       case T_FILE:
       case T_SYMBOL:
@@ -1428,13 +1427,9 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
       case T_MODULE:
       case T_REGEXP:
         return true;
-    }
 
-    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-
-    switch (flags & RUBY_T_MASK) {
-      case T_OBJECT:
-        return false;
+      case T_IMEMO:
+        UNREACHABLE_RETURN(true);
 
       case T_DATA:
         {
@@ -1449,38 +1444,25 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
         return true;
 
       case T_STRING:
-        if (flags & (RSTRING_NOEMBED | RSTRING_FSTR)) return true;
-        return rb_shape_has_fields(shape_id);
+        return (flags & (RSTRING_NOEMBED | RSTRING_FSTR));
 
       case T_ARRAY:
-        if (!(flags & RARRAY_EMBED_FLAG)) return true;
-        return rb_shape_has_fields(shape_id);
+        return !(flags & RARRAY_EMBED_FLAG);
 
       case T_HASH:
-        if (flags & RHASH_ST_TABLE_FLAG) return true;
-        return rb_shape_has_fields(shape_id);
+        return !(flags & RHASH_ST_TABLE_FLAG);
 
       case T_MATCH:
-        if ((flags & (RMATCH_ONIG | RMATCH_OFFSETS_EXTERNAL)) || USE_DEBUG_COUNTER) return true;
-        return rb_shape_has_fields(shape_id);
+        return !((flags & (RMATCH_ONIG | RMATCH_OFFSETS_EXTERNAL)) || USE_DEBUG_COUNTER);
 
       case T_BIGNUM:
-        if (!(flags & BIGNUM_EMBED_FLAG)) return true;
-        return rb_shape_has_fields(shape_id);
+        return !(flags & BIGNUM_EMBED_FLAG);
 
       case T_STRUCT:
-        if (!(flags & RSTRUCT_EMBED_LEN_MASK)) return true;
-        if (flags & RSTRUCT_GEN_FIELDS) return rb_shape_has_fields(shape_id);
-        return false;
-
-      case T_FLOAT:
-      case T_RATIONAL:
-      case T_COMPLEX:
-        return rb_shape_has_fields(shape_id);
-
-      default:
-        UNREACHABLE_RETURN(true);
+        return !(flags & RSTRUCT_EMBED_LEN_MASK);
     }
+
+    UNREACHABLE_RETURN(true);
 }
 
 static void
