@@ -571,6 +571,15 @@ rb_mmtk_builder_init(void)
 }
 
 void *
+rb_gc_impl_global_objspace_alloc(void)
+{
+    /* MMTk はまだ global objspace を使わない。boot が保存できるよう
+     * 非 NULL のダミーを返す。 */
+    static char rlgc_global_objspace_placeholder;
+    return &rlgc_global_objspace_placeholder;
+}
+
+void *
 rb_gc_impl_objspace_alloc(void)
 {
     MMTk_Builder *builder = rb_mmtk_builder_init();
@@ -1186,6 +1195,18 @@ rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
 }
 
 void
+rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
+{
+    /* MMTk はページ単位の shareable ビットを持たない。 */
+}
+
+void
+rb_gc_impl_pin_in_flight_message(void *objspace_ptr, VALUE obj)
+{
+    /* MMTk は objspace が単一なので pin するものがない。 */
+}
+
+void
 rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
     struct MMTk_ractor_cache *cache = rb_gc_get_ractor_newobj_cache();
@@ -1724,4 +1745,30 @@ const char *
 rb_gc_impl_active_gc_name(void)
 {
     return "mmtk";
+}
+
+bool
+rb_gc_impl_during_global_gc_p(void *objspace_ptr)
+{
+    return false;
+}
+
+bool
+rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
+{
+    /* objspace が単一なので objspace 間の pin 管理は不要 */
+    return false;
+}
+
+size_t
+rb_gc_impl_heap_page_count(void *objspace_ptr)
+{
+    /* objspace が単一なので zombie 台帳は常に空 */
+    return 0;
+}
+
+void
+rb_gc_impl_objspace_absorb(void *dst_ptr, void *src_ptr)
+{
+    /* objspace が単一 */
 }

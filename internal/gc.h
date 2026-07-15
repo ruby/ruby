@@ -174,12 +174,15 @@ struct rb_gc_object_metadata_entry {
  * need to temporarily disable the GC to allow the malloc to happen.
  * Allocating memory during GC is a bad idea, so use this only when absolutely
  * necessary. */
+/* 抑止するのは現 objspace の再入 GC だけ（malloc はこの Ractor 内で起きる）なので
+ * local disable を使う。GC 中 malloc ガードはプロセス全体でなく per-objspace の
+ * dont_gc フラグを見る。 */
 #define DURING_GC_COULD_MALLOC_REGION_START() \
     assert(rb_during_gc()); \
-    VALUE _already_disabled = rb_gc_disable_no_rest()
+    VALUE _already_disabled = rb_gc_local_disable_no_rest()
 
 #define DURING_GC_COULD_MALLOC_REGION_END() \
-    if (_already_disabled == Qfalse) rb_gc_enable()
+    if (_already_disabled == Qfalse) rb_gc_local_enable()
 
 /* gc.c */
 RUBY_ATTR_MALLOC void *ruby_mimmalloc(size_t size);
@@ -231,6 +234,7 @@ void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), v
 void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *data);
 int rb_objspace_internal_object_p(VALUE obj);
 int rb_objspace_garbage_object_p(VALUE obj);
+bool rb_gc_pointer_to_heap_p(VALUE obj);
 void rb_gc_declare_weak_references(VALUE obj);
 bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 
@@ -238,9 +242,19 @@ void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),
     void *data);
 
+void rb_objspace_each_objects_local(
+    int (*callback)(void *start, void *end, size_t stride, void *data),
+    void *data);
+
 size_t rb_gc_obj_slot_size(VALUE obj);
 
 VALUE rb_gc_disable_no_rest(void);
+/* 現 Ractor の objspace だけを対象にした local な GC 無効/有効化。プロセス全体になった
+ * rb_gc_disable* とは違い自分の objspace の GC のみ抑止する。上の
+ * DURING_GC_COULD_MALLOC_REGION が同梱拡張で展開するため export する。 */
+VALUE rb_gc_local_enable(void);
+VALUE rb_gc_local_disable(void);
+VALUE rb_gc_local_disable_no_rest(void);
 
 #define RB_GC_MAX_NAME_LEN 20
 
@@ -286,6 +300,18 @@ rb_obj_atomic_write(
 
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);
 void rb_gc_writebarrier_remember(VALUE obj);
+void rb_gc_obj_became_shareable(VALUE obj);
+void rb_gc_pin_in_flight_message(VALUE obj);
+bool rb_gc_current_ractor_materializing_p(void);
+void *rb_gc_objspace_alloc_local(void);
+void rb_gc_objspace_retire(void **objspace_slot);
+void rb_gc_objspace_absorb_into_current(void **objspace_slot);
+void rb_gc_objspace_absorb_all_zombies(void);
+void rb_gc_objspace_disown(void *objspace);
+void rb_gc_zombie_objspaces_atfork(void);
+void rb_gc_finish_in_flight_gc(void);
+bool rb_gc_during_global_gc_p(void);
+bool rb_gc_single_objspace_p(void);
 const char *rb_obj_info(VALUE obj);
 void ruby_annotate_mmap(const void *addr, unsigned long size, const char *name);
 
