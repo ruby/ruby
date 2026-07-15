@@ -213,7 +213,7 @@ set /a MSC_VER_UPPER = MSC_VER/20*20+19
 #elif _MSC_VER >= 1900
 set /a MSC_VER_LOWER = MSC_VER/10*10+0
 set /a MSC_VER_UPPER = MSC_VER/10*10+9
-#elif _MSC_VER < 1400
+#else
 # error Unsupported VC++ compiler
 #endif
 set MSC_VER
