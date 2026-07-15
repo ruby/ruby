@@ -2,6 +2,7 @@
 
 require "bundler/compact_index_client"
 require "bundler/compact_index_client/cache_file"
+require "tmpdir"
 
 RSpec.describe Bundler::CompactIndexClient::CacheFile do
   let(:path) { Pathname.new(Dir.mktmpdir("localpath")).join("versions") }
