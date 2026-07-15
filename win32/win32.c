@@ -6708,9 +6708,6 @@ rb_w32_pipe(int fds[2])
 static int
 console_emulator_p(void)
 {
-#ifdef _WIN32_WCE
-    return FALSE;
-#else
     const void *const func = WriteConsoleW;
     HMODULE k;
     MEMORY_BASIC_INFORMATION m;
@@ -6722,7 +6719,6 @@ console_emulator_p(void)
     k = GetModuleHandle("kernel32.dll");
     if (!k) return FALSE;
     return (HMODULE)m.AllocationBase != k;
-#endif
 }
 
 /* License: Ruby's */
