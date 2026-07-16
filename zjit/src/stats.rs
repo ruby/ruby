@@ -452,13 +452,6 @@ make_counters! {
     load_field_count,
     store_field_count,
 
-    invokeblock_handler_monomorphic_iseq,
-    invokeblock_handler_monomorphic_ifunc,
-    invokeblock_handler_monomorphic_other,
-    invokeblock_handler_polymorphic,
-    invokeblock_handler_megamorphic,
-    invokeblock_handler_no_profiles,
-
     // HIR-level method inliner counters. Most rejection counters are incremented
     // once per SendDirect the inliner considers. inline_reject_budget_exceeded may
     // be incremented only once, rather than once per SendDirect, if the caller
@@ -471,15 +464,6 @@ make_counters! {
     inline_reject_compile_failure,
     inline_reject_no_returns,
     inline_reject_budget_exceeded,
-
-    getblockparamproxy_handler_iseq,
-    getblockparamproxy_handler_ifunc,
-    getblockparamproxy_handler_symbol,
-    getblockparamproxy_handler_proc,
-    getblockparamproxy_handler_nil,
-    getblockparamproxy_handler_polymorphic,
-    getblockparamproxy_handler_megamorphic,
-    getblockparamproxy_handler_no_profiles,
 }
 
 /// Increase a counter by a specified amount

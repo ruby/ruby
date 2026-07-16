@@ -7933,64 +7933,10 @@ fn add_iseq_to_hir(
             } else if opcode == YARVINSN_definedivar || opcode == YARVINSN_trace_definedivar {
                 profiles.profile_self(exit_id, &exit_state, self_param);
             } else if opcode == YARVINSN_invokeblock || opcode == YARVINSN_trace_invokeblock {
-                if get_option!(stats) {
-                    let iseq_insn_idx = exit_state.insn_idx;
-                    if let Some(operand_types) = payload.profile.get_operand_types(iseq_insn_idx) {
-                        if let [self_type_distribution] = &operand_types[..] {
-                            let summary = TypeDistributionSummary::new(&self_type_distribution);
-                            if summary.is_monomorphic() {
-                                let obj = summary.bucket(0).class();
-                                if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 } {
-                                    fun.count(block, Counter::invokeblock_handler_monomorphic_iseq);
-                                } else if unsafe { rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1 } {
-                                    fun.count(block, Counter::invokeblock_handler_monomorphic_ifunc);
-                                } else {
-                                    fun.count(block, Counter::invokeblock_handler_monomorphic_other);
-                                }
-                            } else if summary.is_skewed_polymorphic() || summary.is_polymorphic() {
-                                fun.count(block, Counter::invokeblock_handler_polymorphic);
-                            } else if summary.is_skewed_megamorphic() || summary.is_megamorphic() {
-                                fun.count(block, Counter::invokeblock_handler_megamorphic);
-                            } else {
-                                fun.count(block, Counter::invokeblock_handler_no_profiles);
-                            }
-                        } else {
-                            fun.count(block, Counter::invokeblock_handler_no_profiles);
-                        }
-                    }
-                }
+                // Do nothing
             } else if opcode == YARVINSN_getblockparamproxy || opcode == YARVINSN_trace_getblockparamproxy {
-                if get_option!(stats) {
-                    let iseq_insn_idx = exit_state.insn_idx;
-                    if let Some([block_handler_distribution]) = payload.profile.get_operand_types(iseq_insn_idx) {
-                        let summary = TypeDistributionSummary::new(block_handler_distribution);
-
-                        if summary.is_monomorphic() {
-                            let obj = summary.bucket(0).class();
-                            if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1} {
-                                fun.count(block, Counter::getblockparamproxy_handler_iseq);
-                            } else if unsafe { rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1} {
-                                fun.count(block, Counter::getblockparamproxy_handler_ifunc);
-                            }
-                            else if obj.nil_p() {
-                                fun.count(block, Counter::getblockparamproxy_handler_nil);
-                            }
-                            else if obj.symbol_p() {
-                                fun.count(block, Counter::getblockparamproxy_handler_symbol);
-                            } else if unsafe { rb_obj_is_proc(obj).test() } {
-                                fun.count(block, Counter::getblockparamproxy_handler_proc);
-                            }
-                        } else if summary.is_polymorphic() || summary.is_skewed_polymorphic() {
-                          fun.count(block, Counter::getblockparamproxy_handler_polymorphic);
-                        } else if summary.is_megamorphic() || summary.is_skewed_megamorphic() {
-                          fun.count(block, Counter::getblockparamproxy_handler_megamorphic);
-                        }
-                    } else {
-                        fun.count(block, Counter::getblockparamproxy_handler_no_profiles);
-                    }
-                }
-            }
-            else {
+                // Do nothing
+            } else {
                 profiles.profile_stack(exit_id, &exit_state);
             }
 
