@@ -487,3 +487,12 @@ race:rb_gc_impl_handle_weak_references_alive_p
 # generational write barrier / the entire bytecode interpreter) and could mask real
 # WB races, so it is left unsuppressed and recognized on sight in triage. The campaign
 # scripts filter this exact signature (insns.def:888) so it does not crowd the logs.
+
+# UPSTREAM YJIT/ZJIT per-insn counter (vm_exec.h rb_vm_insn_count, not RLGCv2):
+# vm_exec_core's INSN_ENTRY does a plain `rb_vm_insn_count++` on a process-global
+# uint64 when built with YJIT/ZJIT. Two Ractors executing bytecode concurrently
+# race on it; a lost increment only skews a JIT stats counter. Same benign
+# non-atomic-global-counter family as rb_iseq_translate_threaded_code. Observed
+# via h_objid_compact / n4_method_churn_hierarchy (TSan exit 66); the write
+# frames symbolize to vm_exec_core (inlined), so suppress by the global's name.
+race:rb_vm_insn_count
