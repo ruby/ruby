@@ -2884,14 +2884,15 @@ vm_exec_loop(rb_execution_context_t *ec, enum ruby_tag_type state,
 
 #if USE_ZJIT
 // Materialize JITFrame-enabled CFP into interpreter-compatible CFP
-void
-rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
+static void
+zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp, bool materialize_target)
 {
     if (!rb_zjit_enabled_p) return;
     const rb_control_frame_t *end_cfp = ec->tag->cfp;
     VM_ASSERT(cfp <= end_cfp);
 
     while (true) {
+        if (cfp == end_cfp && !materialize_target) break;
         if (CFP_ZJIT_FRAME_P(cfp)) {
             const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
             cfp->pc = jit_frame->pc;
@@ -2930,6 +2931,20 @@ rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t 
         if (end_cfp == cfp) break;
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
+}
+
+void
+rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
+{
+    zjit_materialize_frames(ec, cfp, true);
+}
+
+void
+rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
+{
+    // A ZJIT frame active before the tag's setjmp is below it on the native
+    // stack and survives longjmp. Materialize only the frames unwound above it.
+    zjit_materialize_frames(ec, cfp, !ec->tag->zjit_frame_active);
 }
 #endif
 
