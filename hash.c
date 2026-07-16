@@ -6686,19 +6686,19 @@ env_except(int argc, VALUE *argv, VALUE _)
 }
 
 /*
- * call-seq:
- *   ENV.reject { |name, value| block } -> hash of name/value pairs
- *   ENV.reject                         -> an_enumerator
+ *  call-seq:
+ *    ENV.reject {|name, value| ... } -> hash
+ *    ENV.reject                      -> new_enumerator
  *
- * Yields each environment variable name and its value as a 2-element Array.
- * Returns a Hash whose items are determined by the block.
- * When the block returns a truthy value, the name/value pair is ignored;
- * otherwise the pair is added to the return Hash:
- *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
- *   ENV.reject { |name, value| name.start_with?('b') } # => {"foo"=>"0"}
- * Returns an Enumerator if no block given:
- *   e = ENV.reject
- *   e.each { |name, value| name.start_with?('b') } # => {"foo"=>"0"}
+ *  Yields each environment variable name and its value as a 2-element Array.
+ *  Returns a Hash whose items are determined by the block.
+ *  When the block returns a truthy value, the name/value pair is ignored;
+ *  otherwise the pair is added to the return Hash:
+ *
+ *    ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ *    ENV.reject { |name, value| name.start_with?('b') } # => {"foo"=>"0"}
+ *
+ *  Returns a new Enumerator if no block is given.
  */
 static VALUE
 env_reject(VALUE _)
