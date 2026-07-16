@@ -3143,7 +3143,7 @@ STATIC=
       # mkmf.rb's have_header() to fail if the desired resource happens to be
       # installed in the /usr/local tree.
       RUBY_APPEND_OPTION(CCDLFLAGS, -fno-common)],
-    [cygwin*|msys*|mingw*|aix*|interix*], [ ],
+    [cygwin*|msys*|mingw*|aix*], [ ],
     [
       RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC)])
   ], [
@@ -3204,9 +3204,6 @@ AC_SUBST(EXTOBJS)
 			AS_IF([test "$rb_cv_binary_elf" = yes], [
 			    LDFLAGS="$LDFLAGS -Wl,-export-dynamic"
 			])
-			rb_cv_dlopen=yes],
-	[interix*], [	: ${LDSHARED='$(CC) -shared'}
-			XLDFLAGS="$XLDFLAGS -Wl,-E"
 			rb_cv_dlopen=yes],
 	[freebsd*|dragonfly*], [
 			: ${LDSHARED='$(CC) -shared'}
@@ -3729,9 +3726,6 @@ AS_CASE("$enable_shared", [yes], [
 	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,*_threadptr_*'
 	])
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "' $(XLDFLAGS)'
-	],
-    [interix*], [
-	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
 	],
     [cygwin*|msys*|mingw*|mswin*], [
 	LIBRUBY_RELATIVE=yes
