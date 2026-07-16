@@ -1236,6 +1236,21 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_spawn_trailing_backslash
+    return unless windows?
+    [
+      ["AA BB\\"],
+      ["AA BB\\", "CC"],
+      ["AA BB\\\\", "CC"],
+      ["C:\\Program Files\\Foo\\", "--verbose"],
+      ["AA BB", "CC"],          # control: no trailing backslash
+      ["AA\\", "CC"],           # control: no space, so it is not quoted
+    ].each do |args|
+      out = IO.popen([EnvUtil.rubybin, "-e", "STDOUT.binmode; print Marshal.dump(ARGV)", *args], "rb", &:read)
+      assert_equal(args, Marshal.load(out), "[Bug #22199] argv did not round-trip: #{args.inspect}")
+    end
+  end
+
   def test_exec_wordsplit
     with_tmpchdir {|d|
       File.write("script", <<-'End')
