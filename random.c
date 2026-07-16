@@ -41,7 +41,6 @@
 #ifdef _WIN32
 # include <winsock2.h>
 # include <windows.h>
-# include <wincrypt.h>
 # include <bcrypt.h>
 #endif
 
@@ -555,64 +554,8 @@ fill_random_bytes_lib(void *buf, size_t size)
     return 0;
 }
 #elif defined(_WIN32)
-
-#ifndef DWORD_MAX
-# define DWORD_MAX (~(DWORD)0UL)
-#endif
-
-# if defined(CRYPT_VERIFYCONTEXT)
-/* Although HCRYPTPROV is not a HANDLE, it looks like
- * INVALID_HANDLE_VALUE is not a valid value */
-static const HCRYPTPROV INVALID_HCRYPTPROV = (HCRYPTPROV)INVALID_HANDLE_VALUE;
-
-static void
-release_crypt(VALUE arg)
-{
-    HCRYPTPROV *ptr = (void *)arg;
-    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*ptr, INVALID_HCRYPTPROV);
-    if (prov && prov != INVALID_HCRYPTPROV) {
-        CryptReleaseContext(prov, 0);
-    }
-}
-
 static int
-fill_random_bytes_crypt(void *seed, size_t size)
-{
-    static HCRYPTPROV perm_prov;
-    HCRYPTPROV prov = perm_prov, old_prov;
-    if (!prov) {
-        if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
-            prov = INVALID_HCRYPTPROV;
-        }
-        old_prov = (HCRYPTPROV)ATOMIC_PTR_CAS(perm_prov, 0, prov);
-        if (LIKELY(!old_prov)) { /* no other threads acquired */
-            if (prov != INVALID_HCRYPTPROV) {
-                /* register only once; perm_prov == 0 at the first call only */
-                rb_set_end_proc(release_crypt, (VALUE)&perm_prov);
-            }
-        }
-        else {			/* another thread acquired */
-            if (prov != INVALID_HCRYPTPROV) {
-                CryptReleaseContext(prov, 0);
-            }
-            prov = old_prov;
-        }
-    }
-    if (prov == INVALID_HCRYPTPROV) return -1;
-    while (size > 0) {
-        DWORD n = (size > (size_t)DWORD_MAX) ? DWORD_MAX/2+1 : (DWORD)size;
-        if (!CryptGenRandom(prov, n, seed)) return -1;
-        seed = (char *)seed + n;
-        size -= n;
-    }
-    return 0;
-}
-# else
-#   define fill_random_bytes_crypt(seed, size) -1
-# endif
-
-static int
-fill_random_bytes_bcrypt(void *seed, size_t size)
+fill_random_bytes_lib(void *seed, size_t size)
 {
     while (size > 0) {
         ULONG n = (size > (size_t)ULONG_MAX) ? ULONG_MAX/2+1 : (ULONG)size;
@@ -622,13 +565,6 @@ fill_random_bytes_bcrypt(void *seed, size_t size)
         size -= n;
     }
     return 0;
-}
-
-static int
-fill_random_bytes_lib(void *seed, size_t size)
-{
-    if (fill_random_bytes_bcrypt(seed, size) == 0) return 0;
-    return fill_random_bytes_crypt(seed, size);
 }
 #else
 # define fill_random_bytes_lib(seed, size) -1
