@@ -513,7 +513,7 @@ See [syntax/comments.rdoc](../syntax/comments.rdoc) for more details.
 
 ### Shareable procs
 
-Procs and lambdas are normally unshareable objects, even when they are frozen. `Ractor.shareable_proc { expr }` creates a shareable Proc, and `Ractor.shareable_lambda { expr }` creates a shareable lambda. Each method returns a shareable copy of its block. When an existing Proc supplies the block, its lambda semantics are preserved. `Ractor.make_shareable` can instead make a supported existing Proc shareable in place, provided its `self` is already shareable.
+Procs and lambdas are normally unshareable objects, even when they are frozen. `Ractor.shareable_proc { expr }` creates a shareable Proc, and `Ractor.shareable_lambda { expr }` creates a shareable lambda. Each method returns a shareable copy of its block. When a supported existing Proc supplies the block, its lambda semantics are preserved. `Ractor.make_shareable` can instead make a supported existing Proc shareable in place, provided its `self` is already shareable.
 
 Whether copied or converted in place, the Proc may read outer variables whose values are shareable, provided Ruby's static analysis does not find that those variables may be reassigned in the surrounding scope or within the block. Their values are captured in an environment isolated from the original. Capturing an unshareable value or a variable that may be reassigned raises `Ractor::IsolationError`. For a Proc created by `Ractor.shareable_proc` or `Ractor.shareable_lambda`, `self` is changed to `nil` by default, although a shareable value can be provided with the `self:` keyword.
 
@@ -532,7 +532,7 @@ rescue Ractor::IsolationError
 end
 ```
 
-When a Proc supplies the body of a method dynamically defined with `Module#define_method` and the method will be used from different ractors, the Proc must be shareable. `define_method` can instead accept a `Method` or `UnboundMethod`. Another option is to use `Module#class_eval` or `Module#module_eval` with a String. Even though the shareable proc's `self` is initially bound to `nil`, `define_method` will bind `self` to the correct value in the method.
+When a Proc supplies the body of a method dynamically defined with `Module#define_method` and the method will be used from different ractors, the Proc must be shareable. Alternatively, you can use `Module#class_eval` or `Module#module_eval` with a String. Even though the shareable proc's `self` is initially bound to `nil`, `define_method` will bind `self` to the correct value in the method.
 
 ```ruby
 class A
