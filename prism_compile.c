@@ -11630,31 +11630,48 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
     return error;
 }
 
-struct rb_stdin_wrapper {
-    VALUE rb_stdin;
-    int eof_seen;
-};
-
-static int
-pm_parse_stdin_eof(void *stream)
-{
-    struct rb_stdin_wrapper * wrapped_stdin = (struct rb_stdin_wrapper *)stream;
-    return wrapped_stdin->eof_seen;
-}
-
 VALUE rb_io_gets_limit_internal(VALUE io, long limit);
 
 /**
- * An implementation of fgets that is suitable for use with Ruby IO objects.
+ * Report whether the stream has reached EOF. The stream reader uses this to
+ * tell a line that is longer than the read buffer (keep reading) apart from the
+ * final line of input with no trailing newline (stop). We ask the IO directly
+ * rather than inferring EOF from a short read, which is unreliable once we
+ * request fewer bytes than the buffer can hold (see pm_parse_stdin_fgets).
+ */
+static int
+pm_parse_stdin_eof(void *stream)
+{
+    return RTEST(rb_io_eof((VALUE) stream));
+}
+
+/**
+ * The largest number of bytes a single character can occupy in any encoding
+ * that Ruby supports (CESU-8). Ruby's line reader treats a `gets` limit as a
+ * soft limit: to avoid splitting a multi-byte character it may return up to
+ * `MAX_ENC_LEN - 1` more bytes than requested. Reserving `MAX_ENC_LEN` bytes of
+ * headroom therefore leaves room for both that overshoot and the terminating
+ * NUL byte.
+ */
+#define MAX_ENC_LEN 6
+
+/**
+ * An implementation of fgets that is suitable for use with Ruby IO objects. As
+ * required by pm_source_stream_fgets_t, this never writes more than `size`
+ * bytes into `string` (including the terminating NUL byte).
  */
 static char *
 pm_parse_stdin_fgets(char *string, int size, void *stream)
 {
-    RUBY_ASSERT(size > 0);
+    RUBY_ASSERT(size > MAX_ENC_LEN);
 
-    struct rb_stdin_wrapper * wrapped_stdin = (struct rb_stdin_wrapper *)stream;
-
-    VALUE line = rb_io_gets_limit_internal(wrapped_stdin->rb_stdin, size - 1);
+    /*
+     * Request fewer bytes than the buffer can hold. Ruby's line reader may
+     * return more bytes than requested when the limit falls in the middle of a
+     * multi-byte character, and the reserved headroom guarantees the result
+     * still fits.
+     */
+    VALUE line = rb_io_gets_limit_internal((VALUE) stream, size - MAX_ENC_LEN);
     if (NIL_P(line)) {
         return NULL;
     }
@@ -11662,18 +11679,23 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
     const char *cstr = RSTRING_PTR(line);
     long length = RSTRING_LEN(line);
 
-    memcpy(string, cstr, length);
-    string[length] = '\0';
-
-    // We're reading strings from stdin via gets.  We'll assume that if the
-    // string is smaller than the requested length, and doesn't end with a
-    // newline, that we hit EOF.
-    if (length < (size - 1) && string[length - 1] != '\n') {
-        wrapped_stdin->eof_seen = 1;
+    /*
+     * Defensively clamp the copy. The line reader relaxes the limit to avoid
+     * splitting a multi-byte character, so the returned string can be longer
+     * than requested; we must never write past the caller's buffer. One byte
+     * is reserved for the NUL terminator.
+     */
+    if (length > (long) (size - 1)) {
+        length = (long) (size - 1);
     }
+
+    memcpy(string, cstr, (size_t) length);
+    string[length] = '\0';
 
     return string;
 }
+
+#undef MAX_ENC_LEN
 
 // We need access to this function when we're done parsing stdin.
 void rb_reset_argf_lineno(long n);
@@ -11688,12 +11710,7 @@ pm_parse_stdin(pm_parse_result_t *result)
 {
     pm_options_frozen_string_literal_init(result->options);
 
-    struct rb_stdin_wrapper wrapped_stdin = {
-        rb_stdin,
-        0
-    };
-
-    result->source = pm_source_stream_new((void *) &wrapped_stdin, pm_parse_stdin_fgets, pm_parse_stdin_eof);
+    result->source = pm_source_stream_new((void *) rb_stdin, pm_parse_stdin_fgets, pm_parse_stdin_eof);
     pm_node_t *node = pm_parse_stream(&result->parser, result->arena, result->source, result->options);
 
     // When we're done parsing, we reset $. because we don't want the fact that
