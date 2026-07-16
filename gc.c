@@ -3135,12 +3135,9 @@ static inline bool
 rb_obj_using_gen_fields_table_p(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
+      case T_STRUCT:
       case T_DATA:
         return false;
-
-      case T_STRUCT:
-        if (!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) return false;
-        break;
 
       default:
         break;
@@ -3335,9 +3332,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
             gc_mark_internal(ptr[i]);
         }
 
-        if (rb_obj_shape_has_fields(obj) && !FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) {
-            gc_mark_internal(RSTRUCT_FIELDS_OBJ(obj));
-        }
+        gc_mark_internal(RSTRUCT_FIELDS_OBJ(obj));
 
         break;
       }
@@ -4287,14 +4282,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
                 UPDATE_IF_MOVED(objspace, ptr[i]);
             }
 
-            if (RSTRUCT_EMBED_LEN(obj)) {
-                if (!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) {
-                    UPDATE_IF_MOVED(objspace, ptr[len]);
-                }
-            }
-            else {
-                UPDATE_IF_MOVED(objspace, RSTRUCT(obj)->as.heap.fields_obj);
-            }
+            UPDATE_IF_MOVED(objspace, RSTRUCT(obj)->fields_obj);
         }
         break;
       default:

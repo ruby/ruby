@@ -9352,8 +9352,8 @@ mod hir_opt_tests {
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           v12:CShape = LoadField v11, :shape_id@0x1000
           v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001) recompile
-          v14:CAttrIndex[0] = Const CAttrIndex(0)
-          v15:BasicObject = CCall v11, :rb_ivar_get_at_no_ractor_check@0x1002, v14
+          v14:RubyValue = LoadField v11, :fields_obj@0x1002
+          v15:BasicObject = LoadField v14, :@a@0x1002
           CheckInterrupts
           Return v15
         ");

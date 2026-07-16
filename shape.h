@@ -107,7 +107,7 @@ typedef uint32_t redblack_id_t;
 enum shape_type {
     SHAPE_ROOT,
     SHAPE_IVAR,
-    SHAPE_OBJ_ID,
+    SHAPE_OBJ_ID
 };
 
 struct rb_shape {
