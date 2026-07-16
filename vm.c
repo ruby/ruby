@@ -4684,7 +4684,7 @@ Init_VM(void)
         rb_define_global_const("TOPLEVEL_BINDING", rb_binding_new());
 
 #ifdef _WIN32
-        rb_objspace_gc_enable(rb_gc_get_objspace());
+        rb_objspace_gc_enable(vm->ractor.main_ractor->objspace);
 #endif
     }
     vm_init_redefined_flag();
