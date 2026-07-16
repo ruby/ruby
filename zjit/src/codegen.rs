@@ -213,7 +213,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
 fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) -> Result<CodePtr, CompileError> {
     // We don't support exception handlers yet
     if jit_exception {
-        return Err(CompileError::ExceptionHandler);
+        return gen_exception_handler_counter(cb);
     }
 
     let iseq_name = iseq_get_location(iseq, 0);
@@ -525,7 +525,6 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
                     gen_incr_counter(&mut asm, exit_counter_for_unhandled_hir_insn(&insn));
                     let reason = match insn {
-                        Insn::Throw { .. }         => SideExitReason::UnhandledHIRThrow,
                         Insn::InvokeBuiltin { .. } => SideExitReason::UnhandledHIRInvokeBuiltin,
                         _                          => SideExitReason::UnhandledHIRUnknown(insn_id),
                     };
@@ -784,7 +783,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::IsA { val, class } => gen_is_a(jit, asm, opnd!(val), opnd!(class)),
         &Insn::ArrayMax { ref elements, state } => gen_array_max(jit, asm, function, opnds!(elements), &function.frame_state(state)),
         &Insn::ArrayMin { ref elements, state } => gen_array_min(jit, asm, function, opnds!(elements), &function.frame_state(state)),
-        &Insn::Throw { state, .. } => return Err(state),
+        &Insn::Throw { state, .. } => no_output!(gen_throw(jit, asm, function, &function.frame_state(state))),
         &Insn::CondBranch { .. }
         | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
     };
@@ -2582,6 +2581,12 @@ fn gen_return(asm: &mut Assembler, val: lir::Opnd) {
     asm.cret(C_RET_OPND);
 }
 
+fn gen_throw(jit: &mut JITState, asm: &mut Assembler, function: &Function, state: &FrameState) {
+    // TODO: Consider calling rb_vm_throw and propagating ec->tag->state to the interpreter.
+    // Also consider making it a jump on method inlining.
+    gen_side_exit(jit, asm, function, &SideExitReason::Throw, None, state);
+}
+
 /// Compile Fixnum + Fixnum
 fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, function: &Function, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> lir::Opnd {
     // Add left + right and test for overflow
@@ -3963,6 +3968,19 @@ fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -
     asm.new_block_without_id("compile_error_counter");
     gen_incr_counter(&mut asm, exit_compile_error);
     gen_incr_counter(&mut asm, exit_counter_for_compile_error(compile_error));
+    asm.cret(Qundef.into());
+
+    asm.compile(cb).map(|(code_ptr, gc_offsets)| {
+        assert_eq!(0, gc_offsets.len());
+        code_ptr
+    })
+}
+
+/// Generate a JIT entry that just increments exit_exception_handler and exits
+fn gen_exception_handler_counter(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
+    let mut asm = Assembler::new();
+    asm.new_block_without_id("exception_handler_counter");
+    gen_incr_counter(&mut asm, Counter::exit_exception_handler);
     asm.cret(Qundef.into());
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
