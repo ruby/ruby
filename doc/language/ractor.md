@@ -513,17 +513,20 @@ See [syntax/comments.rdoc](../syntax/comments.rdoc) for more details.
 
 ### Shareable procs
 
-Procs and lambdas are unshareable objects, even when they are frozen. To create a shareable Proc, you must use `Ractor.shareable_proc { expr }`. Much like during Ractor creation, the proc's block is isolated from its outer environment, so it cannot access variables from the outside scope. `self` is also changed within the Proc to be `nil` by default, although a `self:` keyword can be provided if you want to customize the value to a different shareable object.
+Procs and lambdas are normally unshareable objects, even when they are frozen. `Ractor.shareable_proc { expr }` creates a shareable Proc, and `Ractor.shareable_lambda { expr }` creates a shareable lambda. Each method returns a shareable copy of its block. `Ractor.make_shareable` can instead make an existing Proc shareable in place, provided its `self` is already shareable.
+
+Whether copied or converted in place, the Proc may read outer variables whose values are shareable, provided Ruby's static analysis does not find that those variables may be reassigned in the surrounding scope or within the block. Their values are captured in an environment isolated from the original. Capturing an unshareable value or a variable that may be reassigned raises `Ractor::IsolationError`. For a Proc created by `Ractor.shareable_proc` or `Ractor.shareable_lambda`, `self` is changed to `nil` by default, although a shareable value can be provided with the `self:` keyword.
 
 ```ruby
-p = Ractor.shareable_proc { p self }
-p.call #=> nil
+value = 42
+p = Ractor.shareable_proc { [self, value] }
+p.call #=> [nil, 42]
 ```
 
 ```ruby
 begin
-  a = 1
-  pr = Ractor.shareable_proc { p a }
+  values = []
+  pr = Ractor.shareable_proc { values }
   pr.call # never gets here
 rescue Ractor::IsolationError
 end
@@ -533,9 +536,7 @@ In order to dynamically define a method with `Module#define_method` that can be 
 
 ```ruby
 class A
-  define_method(:testing, Ractor.shareable_proc do
-    p self
-  end)
+  define_method(:testing, Ractor.shareable_proc { p self })
 end
 Ractor.new do
   a = A.new
@@ -543,7 +544,7 @@ Ractor.new do
 end.join
 ```
 
-This isolation must be done to prevent the method from accessing and assigning captured outer variables across ractors.
+The Proc's isolated environment prevents assignments to captured outer variables from crossing ractors.
 
 ### Ractor-local storage
 
