@@ -14,25 +14,25 @@ describe "Base64#strict_decode64" do
   it "raises ArgumentError when the given string contains CR" do
     -> do
       Base64.strict_decode64("U2VuZCByZWluZm9yY2VtZW50cw==\r")
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 
   it "raises ArgumentError when the given string contains LF" do
     -> do
       Base64.strict_decode64("U2VuZCByZWluZm9yY2VtZW50cw==\n")
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 
   it "raises ArgumentError when the given string has wrong padding" do
     -> do
       Base64.strict_decode64("=U2VuZCByZWluZm9yY2VtZW50cw==")
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 
   it "raises ArgumentError when the given string contains an invalid character" do
     -> do
       Base64.strict_decode64("%3D")
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 
   it "returns a binary encoded string" do

@@ -1,8 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-# Specs for Kernel#autoload_relative
-
 ruby_version_is "4.1" do
   describe "Kernel#autoload_relative" do
     before :each do
@@ -23,15 +21,15 @@ ruby_version_is "4.1" do
     end
 
     it "is a private method" do
-      Kernel.should have_private_instance_method(:autoload_relative)
+      Kernel.private_instance_methods(false).should.include?(:autoload_relative)
     end
 
     it "registers a file to load relative to the current file" do
       KernelSpecs.autoload_relative :KSAutoloadRelativeA, "fixtures/autoload_relative_b.rb"
       path = KernelSpecs.autoload?(:KSAutoloadRelativeA)
-      path.should_not be_nil
+      path.should_not == nil
       path.should.end_with?("autoload_relative_b.rb")
-      File.exist?(path).should be_true
+      File.exist?(path).should == true
     end
 
     it "loads the file when the constant is accessed" do
@@ -41,7 +39,7 @@ ruby_version_is "4.1" do
 
     it "sets the autoload constant in the constant table" do
       KernelSpecs.autoload_relative :KSAutoloadRelativeC, "fixtures/autoload_relative_b.rb"
-      KernelSpecs.should have_constant(:KSAutoloadRelativeC)
+      KernelSpecs.should.const_defined?(:KSAutoloadRelativeC, false)
     end
 
     it "can autoload in instance_eval with a file context" do
@@ -55,32 +53,32 @@ ruby_version_is "4.1" do
     it "raises LoadError if called from eval without file context" do
       -> {
         eval('autoload_relative :Foo, "foo.rb"')
-      }.should raise_error(LoadError, /autoload_relative called without file context/)
+      }.should.raise(LoadError, /autoload_relative called without file context/)
     end
 
     it "accepts both string and symbol for constant name" do
       KernelSpecs.autoload_relative :KSAutoloadRelativeE, "fixtures/autoload_relative_b.rb"
       KernelSpecs.autoload_relative "KSAutoloadRelativeF", "fixtures/autoload_relative_b.rb"
 
-      KernelSpecs.should have_constant(:KSAutoloadRelativeE)
-      KernelSpecs.should have_constant(:KSAutoloadRelativeF)
+      KernelSpecs.should.const_defined?(:KSAutoloadRelativeE, false)
+      KernelSpecs.should.const_defined?(:KSAutoloadRelativeF, false)
     end
 
     it "returns nil" do
-      KernelSpecs.autoload_relative(:KSAutoloadRelativeG, "fixtures/autoload_relative_b.rb").should be_nil
+      KernelSpecs.autoload_relative(:KSAutoloadRelativeG, "fixtures/autoload_relative_b.rb").should == nil
     end
 
     it "resolves nested directory paths correctly" do
       -> {
         autoload_relative :NestedTest, "../kernel/fixtures/autoload_relative_b.rb"
         autoload?(:NestedTest)
-      }.should_not raise_error
+      }.should_not.raise
     end
 
     it "resolves paths starting with ./" do
       KernelSpecs.autoload_relative :KSAutoloadRelativeH, "./fixtures/autoload_relative_b.rb"
       path = KernelSpecs.autoload?(:KSAutoloadRelativeH)
-      path.should_not be_nil
+      path.should_not == nil
       path.should.end_with?("autoload_relative_b.rb")
     end
 
@@ -90,9 +88,9 @@ ruby_version_is "4.1" do
       begin
         KernelSpecs.autoload_relative :KSAutoloadRelativeI, "fixtures/autoload_relative_b.rb"
         path = KernelSpecs.autoload?(:KSAutoloadRelativeI)
-        path.should_not be_nil
+        path.should_not == nil
         # Should still resolve even with empty $LOAD_PATH
-        File.exist?(path).should be_true
+        File.exist?(path).should == true
       ensure
         $LOAD_PATH.replace(original_load_path)
       end
@@ -100,7 +98,7 @@ ruby_version_is "4.1" do
 
     describe "when Object is frozen" do
       it "raises a FrozenError before defining the constant" do
-        ruby_exe(<<-RUBY).should include("FrozenError")
+        ruby_exe(<<-RUBY).should.include?("FrozenError")
           Object.freeze
           begin
             autoload_relative :Foo, "autoload_b.rb"
@@ -109,6 +107,12 @@ ruby_version_is "4.1" do
           end
         RUBY
       end
+    end
+  end
+
+  describe "Kernel.autoload_relative" do
+    it "is a public method" do
+      Kernel.public_methods(false).should.include?(:autoload_relative)
     end
   end
 end

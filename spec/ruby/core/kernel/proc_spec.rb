@@ -4,22 +4,22 @@ require_relative 'shared/lambda'
 
 # The functionality of Proc objects is specified in core/proc
 
-describe "Kernel.proc" do
+describe "Kernel#proc" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:proc)
+    Kernel.private_instance_methods(false).should.include?(:proc)
   end
 
   it "creates a proc-style Proc if given a literal block" do
     l = proc { 42 }
-    l.lambda?.should be_false
+    l.lambda?.should == false
   end
 
   it "returned the passed Proc if given an existing Proc" do
     some_lambda = -> {}
-    some_lambda.lambda?.should be_true
+    some_lambda.lambda?.should == true
     l = proc(&some_lambda)
-    l.should equal(some_lambda)
-    l.lambda?.should be_true
+    l.should.equal?(some_lambda)
+    l.lambda?.should == true
   end
 
   it_behaves_like :kernel_lambda, :proc
@@ -31,7 +31,7 @@ describe "Kernel.proc" do
       @reached_end_of_method = true
     end
     test
-    @reached_end_of_method.should be_nil
+    @reached_end_of_method.should == nil
   end
 end
 
@@ -43,6 +43,12 @@ describe "Kernel#proc" do
   it "raises an ArgumentError when passed no block" do
     -> {
       some_method { "hello" }
-    }.should raise_error(ArgumentError, 'tried to create Proc object without a block')
+    }.should.raise(ArgumentError, 'tried to create Proc object without a block')
+  end
+end
+
+describe "Kernel.proc" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:proc)
   end
 end

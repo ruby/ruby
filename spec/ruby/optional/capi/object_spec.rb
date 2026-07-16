@@ -64,7 +64,7 @@ describe "CApiObject" do
     it "allocates a new uninitialized object" do
       o = @o.rb_obj_alloc(CApiObjectSpecs::Alloc)
       o.class.should == CApiObjectSpecs::Alloc
-      o.initialized.should be_nil
+      o.initialized.should == nil
     end
   end
 
@@ -77,17 +77,17 @@ describe "CApiObject" do
 
       obj2.foo.should == obj1.foo
 
-      obj2.should_not equal(obj1)
+      obj2.should_not.equal?(obj1)
     end
   end
 
   describe "rb_obj_call_init" do
     it "sends #initialize" do
       o = @o.rb_obj_alloc(CApiObjectSpecs::Alloc)
-      o.initialized.should be_nil
+      o.initialized.should == nil
 
       @o.rb_obj_call_init(o, 2, [:one, :two])
-      o.initialized.should be_true
+      o.initialized.should == true
       o.arguments.should == [:one, :two]
     end
 
@@ -235,7 +235,7 @@ describe "CApiObject" do
   describe "rb_obj_instance_variables" do
     it "returns an array with instance variable names as symbols" do
       o = ObjectTest.new
-      @o.rb_obj_instance_variables(o).should include(:@foo)
+      @o.rb_obj_instance_variables(o).should.include?(:@foo)
     end
   end
 
@@ -244,21 +244,21 @@ describe "CApiObject" do
       ary = [1, 2]
       ary.should_not_receive(:to_ary)
 
-      @o.rb_check_convert_type(ary, "Array", "to_ary").should equal(ary)
+      @o.rb_check_convert_type(ary, "Array", "to_ary").should.equal?(ary)
     end
 
     it "returns the passed object and does not call the converting method if the object is a subclass of the specified type" do
       obj = CApiObjectSpecs::SubArray.new
       obj.should_not_receive(:to_array)
 
-      @o.rb_check_convert_type(obj, "Array", "to_array").should equal(obj)
+      @o.rb_check_convert_type(obj, "Array", "to_array").should.equal?(obj)
     end
 
     it "returns nil if the converting method returns nil" do
       obj = mock("rb_check_convert_type")
       obj.should_receive(:to_array).and_return(nil)
 
-      @o.rb_check_convert_type(obj, "Array", "to_array").should be_nil
+      @o.rb_check_convert_type(obj, "Array", "to_array").should == nil
     end
 
     it "raises a TypeError if the converting method returns an object that is not the specified type" do
@@ -267,7 +267,7 @@ describe "CApiObject" do
 
       -> do
         @o.rb_check_convert_type(obj, "Array", "to_array")
-      end.should raise_error(TypeError)
+      end.should.raise(TypeError)
     end
   end
 
@@ -276,14 +276,14 @@ describe "CApiObject" do
       ary = [1, 2]
       ary.should_not_receive(:to_ary)
 
-      @o.rb_convert_type(ary, "Array", "to_ary").should equal(ary)
+      @o.rb_convert_type(ary, "Array", "to_ary").should.equal?(ary)
     end
 
     it "returns the passed object and does not call the converting method if the object is a subclass of the specified type" do
       obj = CApiObjectSpecs::SubArray.new
       obj.should_not_receive(:to_array)
 
-      @o.rb_convert_type(obj, "Array", "to_array").should equal(obj)
+      @o.rb_convert_type(obj, "Array", "to_array").should.equal?(obj)
     end
 
     it "raises a TypeError if the converting method returns nil" do
@@ -292,7 +292,7 @@ describe "CApiObject" do
 
       -> do
         @o.rb_convert_type(obj, "Array", "to_array")
-      end.should raise_error(TypeError)
+      end.should.raise(TypeError)
     end
 
     it "raises a TypeError if the converting method returns an object that is not the specified type" do
@@ -301,109 +301,109 @@ describe "CApiObject" do
 
       -> do
         @o.rb_convert_type(obj, "Array", "to_array")
-      end.should raise_error(TypeError)
+      end.should.raise(TypeError)
     end
   end
 
   describe "rb_check_array_type" do
     it "returns the argument if it's an Array" do
       x = Array.new
-      @o.rb_check_array_type(x).should equal(x)
+      @o.rb_check_array_type(x).should.equal?(x)
     end
 
     it "returns the argument if it's a kind of Array" do
       x = AryChild.new
-      @o.rb_check_array_type(x).should equal(x)
+      @o.rb_check_array_type(x).should.equal?(x)
     end
 
     it "returns nil when the argument does not respond to #to_ary" do
-      @o.rb_check_array_type(Object.new).should be_nil
+      @o.rb_check_array_type(Object.new).should == nil
     end
 
     it "sends #to_ary to the argument and returns the result if it's nil" do
       obj = mock("to_ary")
       obj.should_receive(:to_ary).and_return(nil)
-      @o.rb_check_array_type(obj).should be_nil
+      @o.rb_check_array_type(obj).should == nil
     end
 
     it "sends #to_ary to the argument and returns the result if it's an Array" do
       x = Array.new
       obj = mock("to_ary")
       obj.should_receive(:to_ary).and_return(x)
-      @o.rb_check_array_type(obj).should equal(x)
+      @o.rb_check_array_type(obj).should.equal?(x)
     end
 
     it "sends #to_ary to the argument and returns the result if it's a kind of Array" do
       x = AryChild.new
       obj = mock("to_ary")
       obj.should_receive(:to_ary).and_return(x)
-      @o.rb_check_array_type(obj).should equal(x)
+      @o.rb_check_array_type(obj).should.equal?(x)
     end
 
     it "sends #to_ary to the argument and raises TypeError if it's not a kind of Array" do
       obj = mock("to_ary")
       obj.should_receive(:to_ary).and_return(Object.new)
-      -> { @o.rb_check_array_type obj }.should raise_error(TypeError)
+      -> { @o.rb_check_array_type obj }.should.raise(TypeError)
     end
 
     it "does not rescue exceptions raised by #to_ary" do
       obj = mock("to_ary")
       obj.should_receive(:to_ary).and_raise(FrozenError)
-      -> { @o.rb_check_array_type obj }.should raise_error(FrozenError)
+      -> { @o.rb_check_array_type obj }.should.raise(FrozenError)
     end
   end
 
   describe "rb_check_string_type" do
     it "returns the argument if it's a String" do
       x = String.new
-      @o.rb_check_string_type(x).should equal(x)
+      @o.rb_check_string_type(x).should.equal?(x)
     end
 
     it "returns the argument if it's a kind of String" do
       x = StrChild.new
-      @o.rb_check_string_type(x).should equal(x)
+      @o.rb_check_string_type(x).should.equal?(x)
     end
 
     it "returns nil when the argument does not respond to #to_str" do
-      @o.rb_check_string_type(Object.new).should be_nil
+      @o.rb_check_string_type(Object.new).should == nil
     end
 
     it "sends #to_str to the argument and returns the result if it's nil" do
       obj = mock("to_str")
       obj.should_receive(:to_str).and_return(nil)
-      @o.rb_check_string_type(obj).should be_nil
+      @o.rb_check_string_type(obj).should == nil
     end
 
     it "sends #to_str to the argument and returns the result if it's a String" do
       x = String.new
       obj = mock("to_str")
       obj.should_receive(:to_str).and_return(x)
-      @o.rb_check_string_type(obj).should equal(x)
+      @o.rb_check_string_type(obj).should.equal?(x)
     end
 
     it "sends #to_str to the argument and returns the result if it's a kind of String" do
       x = StrChild.new
       obj = mock("to_str")
       obj.should_receive(:to_str).and_return(x)
-      @o.rb_check_string_type(obj).should equal(x)
+      @o.rb_check_string_type(obj).should.equal?(x)
     end
 
     it "sends #to_str to the argument and raises TypeError if it's not a kind of String" do
       obj = mock("to_str")
       obj.should_receive(:to_str).and_return(Object.new)
-      -> { @o.rb_check_string_type obj }.should raise_error(TypeError)
+      -> { @o.rb_check_string_type obj }.should.raise(TypeError)
     end
 
     it "does not rescue exceptions raised by #to_str" do
       obj = mock("to_str")
       obj.should_receive(:to_str).and_raise(RuntimeError)
-      -> { @o.rb_check_string_type obj }.should raise_error(RuntimeError)
+      -> { @o.rb_check_string_type obj }.should.raise(RuntimeError)
     end
   end
 
   describe "rb_check_to_integer" do
     it "returns the object when passed a Fixnum" do
-      @o.rb_check_to_integer(5, "to_int").should equal(5)
+      @o.rb_check_to_integer(5, "to_int").should.equal?(5)
     end
 
     it "returns the object when passed a Bignum" do
@@ -414,7 +414,7 @@ describe "CApiObject" do
       obj = mock("rb_check_to_integer")
       obj.should_receive(:to_integer).and_return(10)
 
-      @o.rb_check_to_integer(obj, "to_integer").should equal(10)
+      @o.rb_check_to_integer(obj, "to_integer").should.equal?(10)
     end
 
     it "calls the converting method and returns a Bignum value" do
@@ -428,23 +428,23 @@ describe "CApiObject" do
       obj = mock("rb_check_to_integer")
       obj.should_receive(:to_integer).and_return(nil)
 
-      @o.rb_check_to_integer(obj, "to_integer").should be_nil
+      @o.rb_check_to_integer(obj, "to_integer").should == nil
     end
 
     it "returns nil when the converting method does not return an Integer" do
       obj = mock("rb_check_to_integer")
       obj.should_receive(:to_integer).and_return("string")
 
-      @o.rb_check_to_integer(obj, "to_integer").should be_nil
+      @o.rb_check_to_integer(obj, "to_integer").should == nil
     end
   end
 
   describe "FL_ABLE" do
     it "returns correct boolean for type" do
-      @o.FL_ABLE(Object.new).should be_true
-      @o.FL_ABLE(true).should be_false
-      @o.FL_ABLE(nil).should be_false
-      @o.FL_ABLE(1).should be_false
+      @o.FL_ABLE(Object.new).should == true
+      @o.FL_ABLE(true).should == false
+      @o.FL_ABLE(nil).should == false
+      @o.FL_ABLE(1).should == false
     end
   end
 
@@ -476,9 +476,9 @@ describe "CApiObject" do
 
     it "returns the singleton class if it exists" do
       o = ObjectTest.new
-      @o.rb_class_of(o).should equal ObjectTest
+      @o.rb_class_of(o).should.equal? ObjectTest
       s = o.singleton_class
-      @o.rb_class_of(o).should equal s
+      @o.rb_class_of(o).should.equal? s
     end
   end
 
@@ -493,7 +493,7 @@ describe "CApiObject" do
     it "does not return the singleton class if it exists" do
       o = ObjectTest.new
       o.singleton_class
-      @o.rb_obj_class(o).should equal ObjectTest
+      @o.rb_obj_class(o).should.equal? ObjectTest
     end
   end
 
@@ -553,15 +553,15 @@ describe "CApiObject" do
     it "raises an exception if the object is not of the expected type" do
       -> {
         @o.rb_check_type([], Object.new)
-      }.should raise_error(TypeError, 'wrong argument type Array (expected Object)')
+      }.should.raise(TypeError, 'wrong argument type Array (expected Object)')
 
       -> {
         @o.rb_check_type(ObjectTest, Module.new)
-      }.should raise_error(TypeError, 'wrong argument type Class (expected Module)')
+      }.should.raise(TypeError, 'wrong argument type Class (expected Module)')
 
       -> {
         @o.rb_check_type(nil, "string")
-      }.should raise_error(TypeError, 'wrong argument type nil (expected String)')
+      }.should.raise(TypeError, 'wrong argument type nil (expected String)')
     end
   end
 
@@ -592,49 +592,49 @@ describe "CApiObject" do
 
   describe "RTEST" do
     it "returns C false if passed Qfalse" do
-      @o.RTEST(false).should be_false
+      @o.RTEST(false).should == false
     end
 
     it "returns C false if passed Qnil" do
-      @o.RTEST(nil).should be_false
+      @o.RTEST(nil).should == false
     end
 
     it "returns C true if passed Qtrue" do
-      @o.RTEST(true).should be_true
+      @o.RTEST(true).should == true
     end
 
     it "returns C true if passed a Symbol" do
-      @o.RTEST(:test).should be_true
+      @o.RTEST(:test).should == true
     end
 
     it "returns C true if passed an Object" do
-      @o.RTEST(Object.new).should be_true
+      @o.RTEST(Object.new).should == true
     end
   end
 
   describe "rb_special_const_p" do
     it "returns true if passed Qfalse" do
-      @o.rb_special_const_p(false).should be_true
+      @o.rb_special_const_p(false).should == true
     end
 
     it "returns true if passed Qtrue" do
-      @o.rb_special_const_p(true).should be_true
+      @o.rb_special_const_p(true).should == true
     end
 
     it "returns true if passed Qnil" do
-      @o.rb_special_const_p(nil).should be_true
+      @o.rb_special_const_p(nil).should == true
     end
 
     it "returns true if passed a Symbol" do
-      @o.rb_special_const_p(:test).should be_true
+      @o.rb_special_const_p(:test).should == true
     end
 
     it "returns true if passed a Fixnum" do
-      @o.rb_special_const_p(10).should be_true
+      @o.rb_special_const_p(10).should == true
     end
 
     it "returns false if passed an Object" do
-      @o.rb_special_const_p(Object.new).should be_false
+      @o.rb_special_const_p(Object.new).should == false
     end
   end
 
@@ -652,20 +652,11 @@ describe "CApiObject" do
     end
   end
 
-  describe "OBJ_TAINT" do
-  end
-
-  describe "OBJ_TAINTED" do
-  end
-
-  describe "OBJ_INFECT" do
-  end
-
   describe "rb_obj_freeze" do
     it "freezes the object passed to it" do
       obj = ""
       @o.rb_obj_freeze(obj).should == obj
-      obj.frozen?.should be_true
+      obj.frozen?.should == true
     end
   end
 
@@ -674,7 +665,7 @@ describe "CApiObject" do
       obj = ObjectTest
       -> do
         @o.rb_obj_instance_eval(obj) { include Kernel }
-      end.should_not raise_error(NoMethodError)
+      end.should_not.raise(NoMethodError)
     end
   end
 
@@ -701,17 +692,14 @@ describe "CApiObject" do
     end
   end
 
-  describe "rb_obj_taint" do
-  end
-
   describe "rb_check_frozen" do
     it "raises a FrozenError if the obj is frozen" do
-      -> { @o.rb_check_frozen("".freeze) }.should raise_error(FrozenError)
+      -> { @o.rb_check_frozen("".freeze) }.should.raise(FrozenError)
     end
 
     it "does nothing when object isn't frozen" do
       obj = +""
-      -> { @o.rb_check_frozen(obj) }.should_not raise_error(TypeError)
+      -> { @o.rb_check_frozen(obj) }.should_not.raise(TypeError)
     end
   end
 
@@ -719,13 +707,13 @@ describe "CApiObject" do
     it "converts an Integer to string" do
       obj = 1
       i = @o.rb_any_to_s(obj)
-      i.should be_kind_of(String)
+      i.should.is_a?(String)
     end
 
     it "converts an Object to string" do
       obj = Object.new
       i = @o.rb_any_to_s(obj)
-      i.should be_kind_of(String)
+      i.should.is_a?(String)
     end
   end
 
@@ -751,61 +739,61 @@ describe "CApiObject" do
     it "raises a TypeError if #to_int does not return an Integer" do
       x = mock("to_int")
       x.should_receive(:to_int).and_return("5")
-      -> { @o.rb_to_int(x) }.should raise_error(TypeError)
+      -> { @o.rb_to_int(x) }.should.raise(TypeError)
     end
 
     it "raises a TypeError if called with nil" do
-      -> { @o.rb_to_int(nil) }.should raise_error(TypeError)
+      -> { @o.rb_to_int(nil) }.should.raise(TypeError)
     end
 
     it "raises a TypeError if called with true" do
-      -> { @o.rb_to_int(true) }.should raise_error(TypeError)
+      -> { @o.rb_to_int(true) }.should.raise(TypeError)
     end
 
     it "raises a TypeError if called with false" do
-      -> { @o.rb_to_int(false) }.should raise_error(TypeError)
+      -> { @o.rb_to_int(false) }.should.raise(TypeError)
     end
 
     it "raises a TypeError if called with a String" do
-      -> { @o.rb_to_int("1") }.should raise_error(TypeError)
+      -> { @o.rb_to_int("1") }.should.raise(TypeError)
     end
   end
 
   describe "rb_equal" do
     it "returns true if the arguments are the same exact object" do
       s = "hello"
-      @o.rb_equal(s, s).should be_true
+      @o.rb_equal(s, s).should == true
     end
 
     it "calls == to check equality and coerces to true/false" do
       m = mock("string")
       m.should_receive(:==).and_return(8)
-      @o.rb_equal(m, "hello").should be_true
+      @o.rb_equal(m, "hello").should == true
 
       m2 = mock("string")
       m2.should_receive(:==).and_return(nil)
-      @o.rb_equal(m2, "hello").should be_false
+      @o.rb_equal(m2, "hello").should == false
     end
   end
 
   describe "rb_class_inherited_p" do
 
     it "returns true if mod equals arg" do
-      @o.rb_class_inherited_p(Array, Array).should be_true
+      @o.rb_class_inherited_p(Array, Array).should == true
     end
 
     it "returns true if mod is a subclass of arg" do
-      @o.rb_class_inherited_p(Array, Object).should be_true
+      @o.rb_class_inherited_p(Array, Object).should == true
     end
 
     it "returns nil if mod is not a subclass of arg" do
-      @o.rb_class_inherited_p(Array, Hash).should be_nil
+      @o.rb_class_inherited_p(Array, Hash).should == nil
     end
 
     it "raises a TypeError if arg is no class or module" do
       ->{
         @o.rb_class_inherited_p(1, 2)
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
 
   end
@@ -929,7 +917,7 @@ describe "CApiObject" do
         @o.rb_define_alloc_func(klass)
         obj = klass.allocate
         obj.class.should.equal?(klass)
-        obj.should have_instance_variable(:@from_custom_allocator)
+        obj.should.instance_variable_defined?(:@from_custom_allocator)
       end
 
       it "sets up the allocator for a subclass of String" do
@@ -937,7 +925,7 @@ describe "CApiObject" do
         @o.rb_define_alloc_func(klass)
         obj = klass.allocate
         obj.class.should.equal?(klass)
-        obj.should have_instance_variable(:@from_custom_allocator)
+        obj.should.instance_variable_defined?(:@from_custom_allocator)
         obj.should == ""
       end
 
@@ -946,7 +934,7 @@ describe "CApiObject" do
         @o.rb_define_alloc_func(klass)
         obj = klass.allocate
         obj.class.should.equal?(klass)
-        obj.should have_instance_variable(:@from_custom_allocator)
+        obj.should.instance_variable_defined?(:@from_custom_allocator)
         obj.should == []
       end
     end

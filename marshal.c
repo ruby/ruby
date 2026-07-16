@@ -30,6 +30,7 @@
 #include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
+#include "internal/re.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
 #include "internal/util.h"
@@ -98,7 +99,7 @@ shortlen(size_t len, BDIGIT *ds)
 #define TYPE_LINK	'@'
 
 static ID s_dump, s_load, s_mdump, s_mload;
-static ID s_dump_data, s_load_data, s_alloc, s_call;
+static ID s_dump_data, s_load_data, s_call;
 static ID s_getbyte, s_read, s_write, s_binmode;
 static ID s_encoding_short, s_ruby2_keywords_flag;
 #define s_encoding_long rb_id_encoding()
@@ -109,7 +110,6 @@ static ID s_encoding_short, s_ruby2_keywords_flag;
 #define name_s_mload	"marshal_load"
 #define name_s_dump_data "_dump_data"
 #define name_s_load_data "_load_data"
-#define name_s_alloc	"_alloc"
 #define name_s_call	"call"
 #define name_s_getbyte	"getbyte"
 #define name_s_read	"read"
@@ -236,7 +236,7 @@ memsize_dump_arg(const void *ptr)
 static const rb_data_type_t dump_arg_data = {
     "dump_arg",
     {mark_dump_arg, free_dump_arg, memsize_dump_arg,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -727,26 +727,9 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
 static void
 w_ivar_each(VALUE obj, st_index_t num, struct dump_call_arg *arg)
 {
-    shape_id_t shape_id = rb_obj_shape_id(arg->obj);
     struct w_ivar_arg ivarg = {arg, num};
     if (!num) return;
-    rb_ivar_foreach(obj, w_obj_each, (st_data_t)&ivarg);
-
-    shape_id_t actual_shape_id = rb_obj_shape_id(arg->obj);
-    if (shape_id != actual_shape_id) {
-        // If the shape tree got _shorter_ then we probably removed an IV
-        // If the shape tree got longer, then we probably added an IV.
-        // The exception message might not be accurate when someone adds and
-        // removes the same number of IVs, but they will still get an exception
-        if (rb_shape_depth(shape_id) > rb_shape_depth(rb_obj_shape_id(arg->obj))) {
-            rb_raise(rb_eRuntimeError, "instance variable removed from %"PRIsVALUE" instance",
-                    CLASS_OF(arg->obj));
-        }
-        else {
-            rb_raise(rb_eRuntimeError, "instance variable added to %"PRIsVALUE" instance",
-                    CLASS_OF(arg->obj));
-        }
-    }
+    rb_ivar_foreach_buffered(obj, w_obj_each, (st_data_t)&ivarg);
 }
 
 static void
@@ -946,8 +929,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
         hasiv = has_ivars(obj, (encname = encoding_name(obj, arg)), &ivobj);
         {
             st_data_t compat_data;
-            rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC(obj)->klass);
-            if (st_lookup(compat_allocator_tbl,
+            VALUE klass = CLASS_OF(obj);
+            rb_alloc_func_t allocator = RCLASS_SINGLETON_P(klass) ? 0 : rb_get_alloc_func(klass);
+            if (allocator && st_lookup(compat_allocator_tbl,
                           (st_data_t)allocator,
                           &compat_data)) {
                 marshal_compat_t *compat = (marshal_compat_t*)compat_data;
@@ -1257,6 +1241,7 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
 struct load_arg {
     VALUE src;
     char *buf;
+    long bufsize;
     long buflen;
     long readable;
     long offset;
@@ -1315,7 +1300,7 @@ memsize_load_arg(const void *ptr)
 static const rb_data_type_t load_arg_data = {
     "load_arg",
     {mark_load_arg, free_load_arg, memsize_load_arg,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
 #define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
@@ -1342,15 +1327,23 @@ static unsigned char
 r_byte1_buffered(struct load_arg *arg)
 {
     if (arg->buflen == 0) {
-        long readable = arg->readable < BUFSIZ ? arg->readable : BUFSIZ;
+        long readable = arg->readable < arg->bufsize ? arg->readable : arg->bufsize;
+        long read_len;
         VALUE str, n = LONG2NUM(readable);
 
         str = load_funcall(arg, arg->src, s_read, 1, &n);
         if (NIL_P(str)) too_short();
         StringValue(str);
-        memcpy(arg->buf, RSTRING_PTR(str), RSTRING_LEN(str));
+        read_len = RSTRING_LEN(str);
+        if (UNLIKELY(read_len < readable)) too_short();
+        if (UNLIKELY(read_len > arg->bufsize)) {
+            arg->buf = ruby_sized_realloc_n(arg->buf, read_len, 1, arg->bufsize);
+            arg->bufsize = read_len;
+        }
+        memcpy(arg->buf, RSTRING_PTR(str), read_len);
         arg->offset = 0;
-        arg->buflen = RSTRING_LEN(str);
+        arg->buflen = read_len;
+        RB_GC_GUARD(str);
     }
     arg->buflen--;
     return arg->buf[arg->offset++];
@@ -1437,6 +1430,18 @@ ruby_marshal_read_long(const char **buf, long len)
     return x;
 }
 
+static long
+r_keep_readable(struct load_arg *arg, long len, size_t size)
+{
+    if (UNLIKELY(len < 0)) {
+        rb_raise(rb_eArgError, "negative length");
+    }
+    if (UNLIKELY((unsigned long)len > SIZE_MAX / size || arg->readable >= LONG_MAX - len)) {
+        rb_raise(rb_eArgError, "marshaled data too big");
+    }
+    return len;
+}
+
 static VALUE
 r_bytes1(long len, struct load_arg *arg)
 {
@@ -1466,7 +1471,7 @@ r_bytes1_buffered(long len, struct load_arg *arg)
         long tmp_len, read_len, need_len = len - buflen;
         VALUE tmp, n;
 
-        readable = readable < BUFSIZ ? readable : BUFSIZ;
+        readable = readable < arg->bufsize ? readable : arg->bufsize;
         read_len = need_len > readable ? need_len : readable;
         n = LONG2NUM(read_len);
         tmp = load_funcall(arg, arg->src, s_read, 1, &n);
@@ -1731,7 +1736,10 @@ r_ivar_encoding(VALUE obj, struct load_arg *arg, VALUE sym, VALUE val)
     int idx = sym2encidx(sym, val);
     if (idx >= 0) {
         if (rb_enc_capable(obj)) {
-            rb_enc_associate_index(obj, idx);
+            // Check if needed to avoid rb_check_frozen() check for Regexps
+            if (rb_enc_get_index(obj) != idx) {
+                rb_enc_associate_index(obj, idx);
+            }
         }
         else {
             rb_raise(rb_eArgError, "%"PRIsVALUE" is not enc_capable", obj);
@@ -1854,17 +1862,17 @@ append_extmod(VALUE obj, VALUE extmod)
         override_ivar_error(type, str); \
     } while (0)
 
-static VALUE r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int type);
+static VALUE r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE extmod, int type);
 
 static VALUE
 r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
 {
     int type = r_byte(arg);
-    return r_object_for(arg, partial, ivp, extmod, type);
+    return r_object_for(arg, partial, ivp, 0, extmod, type);
 }
 
 static VALUE
-r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int type)
+r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE extmod, int type)
 {
     VALUE (*hash_new_with_size)(st_index_t) = rb_hash_new_with_size;
     VALUE v = Qnil;
@@ -1879,6 +1887,9 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
         }
         v = (VALUE)link;
         if (!st_lookup(arg->partial_objects, (st_data_t)v, &link)) {
+            if (arg->freeze && RB_TYPE_P(v, T_STRING)) {
+                v = rb_str_to_interned_str(v);
+            }
             v = r_post_proc(v, arg);
         }
         break;
@@ -1937,12 +1948,12 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             }
             type = r_byte(arg);
             if ((c == rb_cHash) &&
-                /* Hack for compare_by_identify */
+                /* Hack for compare_by_identity */
                 (type == TYPE_HASH || type == TYPE_HASH_DEF)) {
                 hash_new_with_size = rb_ident_hash_new_with_size;
                 goto type_hash;
             }
-            v = r_object_for(arg, partial, 0, extmod, type);
+            v = r_object_for(arg, partial, 0, c, extmod, type);
             if (RB_SPECIAL_CONST_P(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
                 goto format_error;
             }
@@ -2014,7 +2025,10 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             int sign;
 
             sign = r_byte(arg);
-            len = r_long(arg);
+            if (sign != '+' && sign != '-') {
+                rb_raise(rb_eArgError, "invalid Bignum sign");
+            }
+            len = r_keep_readable(arg, r_long(arg), 2);
 
             if (SIZEOF_VALUE >= 8 && len <= 4) {
                 // Representable within uintptr, likely FIXNUM
@@ -2079,7 +2093,10 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 }
                 rb_str_set_len(str, dst - ptr);
             }
-            VALUE regexp = rb_reg_new_str(str, options);
+            if (!klass) {
+                klass = rb_cRegexp;
+            }
+            VALUE regexp = rb_reg_init_str(rb_reg_s_alloc(klass), str, options);
             r_copy_ivar(regexp, str);
 
             v = r_entry0(regexp, idx, arg);
@@ -2089,7 +2106,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
 
       case TYPE_ARRAY:
         {
-            long len = r_long(arg);
+            long len = r_keep_readable(arg, r_long(arg), 1);
 
             v = rb_ary_new2(len);
             v = r_entry(v, arg);
@@ -2107,7 +2124,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
       case TYPE_HASH_DEF:
       type_hash:
         {
-            long len = r_long(arg);
+            long len = r_keep_readable(arg, r_long(arg), 2);
 
             v = hash_new_with_size(len);
             v = r_entry(v, arg);
@@ -2133,7 +2150,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             VALUE slot;
             st_index_t idx = r_prepare(arg);
             VALUE klass = path2class(r_unique(arg));
-            long len = r_long(arg);
+            long len = r_keep_readable(arg, r_long(arg), 2);
 
             v = rb_obj_alloc(klass);
             if (!RB_TYPE_P(v, T_STRUCT)) {
@@ -2350,8 +2367,9 @@ r_object(struct load_arg *arg)
 static void
 clear_load_arg(struct load_arg *arg)
 {
-    ruby_sized_xfree(arg->buf, BUFSIZ);
+    ruby_xfree_sized(arg->buf, arg->bufsize);
     arg->buf = NULL;
+    arg->bufsize = 0;
     arg->buflen = 0;
     arg->offset = 0;
     arg->readable = 0;
@@ -2397,10 +2415,14 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze)
     arg->readable = 0;
     arg->freeze = freeze;
 
-    if (NIL_P(v))
+    if (NIL_P(v)) {
+        arg->bufsize = BUFSIZ;
         arg->buf = xmalloc(BUFSIZ);
-    else
+    }
+    else {
+        arg->bufsize = 0;
         arg->buf = 0;
+    }
 
     major = r_byte(arg);
     minor = r_byte(arg);
@@ -2554,7 +2576,6 @@ Init_marshal(void)
     set_id(s_mload);
     set_id(s_dump_data);
     set_id(s_load_data);
-    set_id(s_alloc);
     set_id(s_call);
     set_id(s_getbyte);
     set_id(s_read);
@@ -2615,7 +2636,7 @@ static const rb_data_type_t marshal_compat_type = {
         .dsize = marshal_compat_table_memsize,
         .dcompact = marshal_compat_table_mark_and_move,
     },
-    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY,
+    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE,
 };
 
 static st_table *

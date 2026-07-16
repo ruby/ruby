@@ -27,17 +27,17 @@ describe "Module#method_defined?" do
   it "does not search Object or Kernel when called on a module" do
     m = Module.new
 
-    m.method_defined?(:module_specs_public_method_on_kernel).should be_false
+    m.method_defined?(:module_specs_public_method_on_kernel).should == false
   end
 
   it "raises a TypeError when the given object is not a string/symbol" do
     c = Class.new
     o = mock('123')
 
-    -> { c.method_defined?(o) }.should raise_error(TypeError)
+    -> { c.method_defined?(o) }.should.raise(TypeError)
 
     o.should_receive(:to_str).and_return(123)
-    -> { c.method_defined?(o) }.should raise_error(TypeError)
+    -> { c.method_defined?(o) }.should.raise(TypeError)
   end
 
   it "converts the given name to a string using to_str" do

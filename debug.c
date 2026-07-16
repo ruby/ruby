@@ -52,7 +52,6 @@ const union {
     enum ruby_econv_flag_type   econv_flag_types;
     rb_econv_result_t           econv_result;
     enum ruby_preserved_encindex encoding_index;
-    enum ruby_robject_flags     robject_flags;
     enum ruby_rmodule_flags     rmodule_flags;
     enum ruby_rstring_flags     rstring_flags;
     enum ruby_rarray_flags      rarray_flags;

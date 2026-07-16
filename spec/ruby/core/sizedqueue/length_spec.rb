@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative '../../shared/queue/length'
 
 describe "SizedQueue#length" do
-  it_behaves_like :queue_length, :length, -> { SizedQueue.new(10) }
+  it "is an alias of SizedQueue#size" do
+    SizedQueue.instance_method(:length).should == SizedQueue.instance_method(:size)
+  end
 end

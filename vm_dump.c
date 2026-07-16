@@ -37,6 +37,7 @@
 #include "iseq.h"
 #include "vm_core.h"
 #include "ractor_core.h"
+#include "zjit.h"
 
 #define MAX_POSBUF 128
 
@@ -58,6 +59,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     char ep_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
     int line = 0;
+    int iseq_name_len = -1;
     const char *magic, *iseq_name = "-", *selfstr = "-", *biseq_name = "-";
     VALUE tmp;
     const rb_iseq_t *iseq = NULL;
@@ -89,6 +91,9 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
         break;
       case VM_FRAME_MAGIC_CFUNC:
         magic = "CFUNC";
+        if (me) {
+            box = me->def->box;
+        }
         break;
       case VM_FRAME_MAGIC_IFUNC:
         magic = "IFUNC";
@@ -118,27 +123,31 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
         selfstr = "";
     }
 
-    if (cfp->iseq != 0) {
+    if (CFP_ISEQ(cfp)) {
+        iseq = CFP_ISEQ(cfp);
 #define RUBY_VM_IFUNC_P(ptr) IMEMO_TYPE_P(ptr, imemo_ifunc)
-        if (RUBY_VM_IFUNC_P(cfp->iseq)) {
+        if (RUBY_VM_IFUNC_P(iseq)) {
             iseq_name = "<ifunc>";
         }
-        else if (SYMBOL_P((VALUE)cfp->iseq)) {
-            tmp = rb_sym2str((VALUE)cfp->iseq);
+        else if (SYMBOL_P((VALUE)iseq)) {
+            tmp = rb_sym2str((VALUE)iseq);
             iseq_name = RSTRING_PTR(tmp);
-            snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
+            iseq_name_len = RSTRING_LENINT(tmp);
+            snprintf(posbuf, MAX_POSBUF, ":%.*s", iseq_name_len, iseq_name);
             line = -1;
         }
         else {
-            if (cfp->pc) {
-                iseq = cfp->iseq;
-                pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
+            if (CFP_PC(cfp)) {
+                pc = CFP_PC(cfp) - ISEQ_BODY(iseq)->iseq_encoded;
                 iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
+                iseq_name_len = RSTRING_LENINT(ISEQ_BODY(iseq)->location.label);
                 if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
                     line = rb_vm_get_sourceline(cfp);
                 }
                 if (line) {
-                    snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
+                    VALUE path = rb_iseq_path(iseq);
+                    snprintf(posbuf, MAX_POSBUF, "%.*s:%d",
+                             RSTRING_LENINT(path), RSTRING_PTR(path), line);
                 }
             }
             else {
@@ -169,6 +178,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     else {
         kprintf("b:---- ");
     }
+    kprintf("r:%p ", cfp->jit_return);
     kprintf("%-6s", magic);
     if (line) {
         kprintf(" %s", posbuf);
@@ -178,7 +188,12 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     }
     if (0) {
         kprintf("              \t");
-        kprintf("iseq: %-24s ", iseq_name);
+        if (iseq_name_len < 0) {
+            kprintf("iseq: %-24s ", iseq_name);
+        }
+        else {
+            kprintf("iseq: %-24.*s ", iseq_name_len, iseq_name);
+        }
         kprintf("self: %-24s ", selfstr);
         kprintf("%-1s ", biseq_name);
     }
@@ -208,7 +223,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
             if (ISEQ_BODY(iseq)->local_table_size > 0) {
                 kprintf("  lvars:\n");
                 for (unsigned int i=0; i<ISEQ_BODY(iseq)->local_table_size; i++) {
-                    const VALUE *argv = cfp->ep - ISEQ_BODY(cfp->iseq)->local_table_size - VM_ENV_DATA_SIZE + 1;
+                    const VALUE *argv = cfp->ep - ISEQ_BODY(CFP_ISEQ(cfp))->local_table_size - VM_ENV_DATA_SIZE + 1;
                     kprintf("    %s: %s\n",
                             rb_id2name(ISEQ_BODY(iseq)->local_table[i]),
                             rb_raw_obj_info(buff, 0x100, argv[i]));
@@ -281,7 +296,7 @@ box_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_contro
     char ep_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
     int line = 0;
-    const char *magic, *iseq_name = "-";
+    const char *magic;
     VALUE tmp;
     const rb_iseq_t *iseq = NULL;
     const rb_box_t *box = NULL;
@@ -339,37 +354,30 @@ box_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_contro
         break;
     }
 
-    if (cfp && cfp->iseq != 0) {
+    if (cfp && CFP_ISEQ(cfp)) {
 #define RUBY_VM_IFUNC_P(ptr) IMEMO_TYPE_P(ptr, imemo_ifunc)
-        if (RUBY_VM_IFUNC_P(cfp->iseq)) {
-            iseq_name = "<ifunc>";
-        }
-        else if (SYMBOL_P((VALUE)cfp->iseq)) {
-            tmp = rb_sym2str((VALUE)cfp->iseq);
-            iseq_name = RSTRING_PTR(tmp);
-            snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
+        const rb_iseq_t *resolved_iseq = CFP_ISEQ(cfp);
+        if (SYMBOL_P((VALUE)resolved_iseq)) {
+            tmp = rb_sym2str((VALUE)resolved_iseq);
+            snprintf(posbuf, MAX_POSBUF, ":%.*s",
+                     RSTRING_LENINT(tmp), RSTRING_PTR(tmp));
             line = -1;
         }
-        else {
-            if (cfp->pc) {
-                iseq = cfp->iseq;
-                pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
-                iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
-                if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
-                    line = rb_vm_get_sourceline(cfp);
-                }
-                if (line) {
-                    snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
-                }
+        else if (!RUBY_VM_IFUNC_P(resolved_iseq) && CFP_PC(cfp)) {
+            iseq = resolved_iseq;
+            pc = CFP_PC(cfp) - ISEQ_BODY(iseq)->iseq_encoded;
+            if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
+                line = rb_vm_get_sourceline(cfp);
             }
-            else {
-                iseq_name = "<dummy_frame>";
+            if (line) {
+                VALUE path = rb_iseq_path(iseq);
+                snprintf(posbuf, MAX_POSBUF, "%.*s:%d",
+                         RSTRING_LENINT(path), RSTRING_PTR(path), line);
             }
         }
     }
     else if (me != NULL && IMEMO_TYPE_P(me, imemo_ment)) {
-        iseq_name = rb_id2name(me->def->original_id);
-        snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
+        snprintf(posbuf, MAX_POSBUF, ":%s", rb_id2name(me->def->original_id));
         line = -1;
     }
 
@@ -564,9 +572,9 @@ static const VALUE *
 vm_base_ptr(const rb_control_frame_t *cfp)
 {
     const rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    const VALUE *bp = prev_cfp->sp + ISEQ_BODY(cfp->iseq)->local_table_size + VM_ENV_DATA_SIZE;
+    const VALUE *bp = prev_cfp->sp + ISEQ_BODY(CFP_ISEQ(cfp))->local_table_size + VM_ENV_DATA_SIZE;
 
-    if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_METHOD || VM_FRAME_BMETHOD_P(cfp)) {
+    if (ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_METHOD || VM_FRAME_BMETHOD_P(cfp)) {
         bp += 1;
     }
     return bp;
@@ -581,7 +589,7 @@ vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *c
     const VALUE *ep = cfp->ep;
 
     if (VM_FRAME_RUBYFRAME_P(cfp)) {
-        const rb_iseq_t *iseq = cfp->iseq;
+        const rb_iseq_t *iseq = CFP_ISEQ(cfp);
         argc = ISEQ_BODY(iseq)->param.lead_num;
         local_table_size = ISEQ_BODY(iseq)->local_table_size;
     }
@@ -652,7 +660,7 @@ rb_vmdebug_debug_print_register(const rb_execution_context_t *ec, FILE *errout)
     ptrdiff_t cfpi;
 
     if (VM_FRAME_RUBYFRAME_P(cfp)) {
-        pc = cfp->pc - ISEQ_BODY(cfp->iseq)->iseq_encoded;
+        pc = cfp->pc - ISEQ_BODY(CFP_ISEQ(cfp))->iseq_encoded;
     }
 
     if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
@@ -677,7 +685,7 @@ rb_vmdebug_thread_dump_regs(VALUE thval, FILE *errout)
 bool
 rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE *_pc, FILE *errout)
 {
-    const rb_iseq_t *iseq = cfp->iseq;
+    const rb_iseq_t *iseq = CFP_ISEQ(cfp);
 
     if (iseq != 0) {
         ptrdiff_t pc = _pc - ISEQ_BODY(iseq)->iseq_encoded;
@@ -1435,9 +1443,26 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
         kprintf("-- Threading information "
                 "---------------------------------------------------\n");
         kprintf("Total ractor count: %u\n", vm->ractor.cnt);
-        kprintf("Ruby thread count for this ractor: %u\n", rb_ec_ractor_ptr(ec)->threads.cnt);
-        if (ec->thread_ptr->scheduler != Qnil) {
+        const rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+        if (cr) {
+            kprintf("Ruby thread count for this ractor: %u\n", cr->threads.cnt);
+        }
+        if (ec->thread_ptr && ec->thread_ptr->scheduler != Qnil) {
             kprintf("Note that the Fiber scheduler is enabled\n");
+        }
+        kputs("\n");
+    }
+    else {
+        /* No Ruby level information is available: there is no current execution
+         * context, or the VM is not ready.  State it explicitly instead of
+         * silently jumping to the machine register context. */
+        kprintf("-- Control frame information "
+                "-----------------------------------------------\n");
+        if (!vm) {
+            kprintf("  The VM is not available.\n");
+        }
+        else {
+            kprintf("  No Ruby execution context on the current thread.\n");
         }
         kputs("\n");
     }
@@ -1521,7 +1546,7 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     }
 
     {
-#ifndef RUBY_ASAN_ENABLED
+#if !defined(RUBY_ASAN_ENABLED) && !USE_MODULAR_GC
 # ifdef PROC_MAPS_NAME
         {
             FILE *fp = fopen(PROC_MAPS_NAME, "r");

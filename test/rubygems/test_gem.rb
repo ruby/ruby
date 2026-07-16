@@ -150,6 +150,8 @@ class TestGem < Gem::TestCase
   end
 
   def assert_self_install_permissions(format_executable: false, data_mode: 0o640)
+    omit "FileUtils.install signature differs on JRuby/Windows" if Gem.win_platform? && Gem.java_platform?
+
     mask = Gem.win_platform? ? 0o700 : 0o777
     options = {
       dir_mode: 0o500,
@@ -199,7 +201,8 @@ class TestGem < Gem::TestCase
     end
     assert_equal(expected, result)
   ensure
-    File.chmod(0o755, *Dir.glob(@gemhome + "/gems/**/"))
+    files = Dir.glob(@gemhome + "/gems/**/")
+    File.chmod(0o755, *files) unless files.empty?
   end
 
   def test_require_missing
@@ -310,7 +313,7 @@ class TestGem < Gem::TestCase
     assert_equal %w[a-1 b-2 c-2], loaded_spec_names
   end
 
-  def test_activate_bin_path_raises_a_meaningful_error_if_a_gem_thats_finally_activated_has_orphaned_dependencies
+  def test_activate_bin_path_backtracks_when_highest_version_has_orphaned_dependencies
     a1 = util_spec "a", "1" do |s|
       s.executables = ["exec"]
       s.add_dependency "b"
@@ -328,13 +331,11 @@ class TestGem < Gem::TestCase
 
     install_specs c1, b1, b2, a1
 
-    # c2 is missing, and b2 which has it as a dependency will be activated, so we should get an error about the orphaned dependency
+    # c2 is missing, but the resolver backtracks from b2 to b1 which
+    # works with c1, finding a valid solution despite partial installation
+    load Gem.activate_bin_path("a", "exec", ">= 0")
 
-    e = assert_raise Gem::UnsatisfiableDependencyError do
-      load Gem.activate_bin_path("a", "exec", ">= 0")
-    end
-
-    assert_equal "Unable to resolve dependency: 'b (>= 0)' requires 'c (= 2)'", e.message
+    assert_equal %w[a-1 b-1 c-1], loaded_spec_names
   end
 
   def test_activate_bin_path_in_debug_mode
@@ -1304,10 +1305,14 @@ class TestGem < Gem::TestCase
       refute Gem.try_activate "nonexistent"
     end
 
-    expected = "Ignoring ext-1 because its extensions are not built. " \
-               "Try: gem pristine ext --version 1\n"
+    if RUBY_ENGINE == "jruby"
+      assert_equal "", err
+    else
+      expected = "Ignoring ext-1 because its extensions are not built. " \
+                 "Try: gem pristine ext --version 1\n"
 
-    assert_equal expected, err
+      assert_equal expected, err
+    end
   end
 
   def test_self_use_paths_with_nils
@@ -1653,6 +1658,27 @@ class TestGem < Gem::TestCase
     assert_equal new_style, Gem.find_unresolved_default_spec("bar.rb")
     assert_nil              Gem.find_unresolved_default_spec("exec")
     assert_nil              Gem.find_unresolved_default_spec("README")
+  end
+
+  def test_register_default_spec_new_style_with_native_extension
+    Gem.clear_default_specs
+
+    dlext = RbConfig::CONFIG["DLEXT"]
+
+    new_style = Gem::Specification.new do |spec|
+      spec.name = "my_ext"
+      spec.version = "1.0"
+      spec.files = ["lib/my_ext.rb", "my_ext_core.#{dlext}", "ext/my_ext/my_ext_core.c", "README.md"]
+      spec.require_paths = ["lib"]
+    end
+
+    Gem.register_default_spec new_style
+
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext.rb")
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext_core")
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext_core.#{dlext}")
+    assert_nil              Gem.find_unresolved_default_spec("ext/my_ext/my_ext_core.c")
+    assert_nil              Gem.find_unresolved_default_spec("README.md")
   end
 
   def test_register_default_spec_old_style_with_folder_starting_with_lib

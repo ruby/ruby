@@ -40,6 +40,7 @@ p p 1, &block => 2, &block
                     ^ unexpected '&', ignoring it
 
 p p p 1 => 2 => 3 => 4
+             ^~ unexpected '=>', expecting end-of-input
                   ^~ unexpected '=>', expecting end-of-input
                   ^~ unexpected '=>', ignoring it
 

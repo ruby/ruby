@@ -79,7 +79,7 @@ RSpec.describe "bundle pristine" do
 
     it "displays warning and ignores changes when a local config exists" do
       spec = find_spec("foo")
-      bundle "config set local.#{spec.name} #{lib_path(spec.name)}"
+      bundle_config "local.#{spec.name} #{lib_path(spec.name)}"
 
       changes_txt = Pathname.new(spec.full_gem_path).join("lib/changes.txt")
       FileUtils.touch(changes_txt)
@@ -227,11 +227,12 @@ RSpec.describe "bundle pristine" do
     let(:very_simple_binary) { find_spec("very_simple_binary") }
     let(:c_ext_dir)          { Pathname.new(very_simple_binary.full_gem_path).join("ext") }
     let(:build_opt)          { "--with-ext-lib=#{c_ext_dir}" }
-    before { bundle "config set build.very_simple_binary -- #{build_opt}" }
+    before { bundle_config "build.very_simple_binary -- #{build_opt}" }
 
     # This just verifies that the generated Makefile from the c_ext gem makes
     # use of the build_args from the bundle config
     it "applies the config when installing the gem" do
+      skip "the generated Makefile uses MSVC `-libpath:` syntax instead of `-L` on Windows" if mswin?
       bundle "pristine"
 
       makefile_contents = File.read(c_ext_dir.join("Makefile").to_s)
@@ -244,11 +245,12 @@ RSpec.describe "bundle pristine" do
     let(:git_with_ext) { find_spec("git_with_ext") }
     let(:c_ext_dir)          { Pathname.new(git_with_ext.full_gem_path).join("ext") }
     let(:build_opt)          { "--with-ext-lib=#{c_ext_dir}" }
-    before { bundle "config set build.git_with_ext -- #{build_opt}" }
+    before { bundle_config "build.git_with_ext -- #{build_opt}" }
 
     # This just verifies that the generated Makefile from the c_ext gem makes
     # use of the build_args from the bundle config
     it "applies the config when installing the gem" do
+      skip "the generated Makefile uses MSVC `-libpath:` syntax instead of `-L` on Windows" if mswin?
       bundle "pristine"
 
       makefile_contents = File.read(c_ext_dir.join("Makefile").to_s)

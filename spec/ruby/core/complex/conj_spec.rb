@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/conjugate'
 
 describe "Complex#conj" do
-  it_behaves_like :complex_conjugate, :conj
+  it "is an alias of Complex#conjugate" do
+    Complex.instance_method(:conj).should == Complex.instance_method(:conjugate)
+  end
 end

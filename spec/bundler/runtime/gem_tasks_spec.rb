@@ -132,7 +132,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
     before do
       define_local_gem_using_gem_tasks
 
-      bundle "config set path vendor/bundle"
+      bundle_config "path vendor/bundle"
     end
 
     it "works", :ruby_repo do

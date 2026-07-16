@@ -889,7 +889,7 @@ class ERB
   #
   # ```
   # erb = ERB.new(template, eoutvar: '_foo')
-  # puts template.src.split('; ')
+  # puts erb.src.split('; ')
   # #coding:UTF-8
   # _foo = +''
   # _foo.<< "The time is ".freeze
@@ -1087,6 +1087,9 @@ class ERB
   # ```
   #
   def def_method(mod, methodname, fname='(ERB)')
+    unless @_init.equal?(self.class.singleton_class)
+      raise ArgumentError, "not initialized"
+    end
     src = self.src.sub(/^(?!#|$)/) {"def #{methodname}\n"} << "\nend\n"
     mod.module_eval do
       eval(src, binding, fname, -1)

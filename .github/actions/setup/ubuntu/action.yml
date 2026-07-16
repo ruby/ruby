@@ -24,18 +24,38 @@ runs:
   using: composite
 
   steps:
+    - id: uname
+      name: uname
+      shell: bash
+      env:
+        arch: ${{ inputs.arch }}
+      run: |
+        setarch="${arch:+setarch $arch --}"
+        # normalize `uname`
+        if uname=$(${setarch} uname -m 2> /dev/null); then
+          # `setarch` works, `$arch` is a valid architecture name.
+          echo "setarch=${setarch}" >> "$GITHUB_OUTPUT"
+        else
+          # if `setarch` failed, take the given `arch` as-is.
+          uname="${arch}"
+          setarch=""
+        fi
+        echo "uname=$uname" >> "$GITHUB_OUTPUT"
+        echo "dpkg=${uname/686/386}" >> "$GITHUB_OUTPUT"
+
     - name: set SETARCH
       shell: bash
       run: echo "SETARCH=${setarch}" >> "$GITHUB_ENV" # zizmor: ignore[github-env]
       env:
-        setarch: ${{ inputs.arch && format('setarch {0} --', inputs.arch) }}
+        setarch: ${{ steps.uname.outputs.setarch }} # validated
 
-    - id: uname
-      name: uname
+    - name: dpkg setup
       shell: bash
-      run: |
-        echo uname=`${SETARCH} uname -m` >> "$GITHUB_OUTPUT"
-        echo dpkg=`${SETARCH} uname -m | sed s/686/386/` >> "$GITHUB_OUTPUT"
+      run: sudo dpkg --add-architecture "${dpkg}"
+      # `dpkg` is valid, also `uname`.
+      if: ${{ inputs.arch }}
+      env:
+        dpkg: ${{ steps.uname.outputs.dpkg }}
 
     - name: apt-get
       shell: bash
@@ -43,7 +63,6 @@ runs:
         arch: ${{ inputs.arch && format(':{0}', steps.uname.outputs.dpkg) || '' }}
       run: |
         set -x
-        ${arch:+sudo dpkg --add-architecture ${arch#:}}
         sudo apt-get update -qq || :
         sudo apt-get install --no-install-recommends -qq -y -o=Dpkg::Use-Pty=0 \
         ${arch:+cross}build-essential${arch/:/-} \

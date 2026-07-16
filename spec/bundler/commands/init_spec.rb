@@ -119,7 +119,7 @@ RSpec.describe "bundle init" do
   end
 
   context "when init_gems_rb setting is enabled" do
-    before { bundle "config set init_gems_rb true" }
+    before { bundle_config "init_gems_rb true" }
 
     it "generates a gems.rb" do
       bundle :init

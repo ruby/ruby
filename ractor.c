@@ -237,6 +237,12 @@ ractor_mark(void *ptr)
 
     if (!checking_shareable) {
         // may unshareable objects
+
+        /* objects this Ractor pinned via rb_gc_register_mark_object (the
+         * pin_array_list wrapper itself is an unshareable internal object;
+         * updated in ractor_update_references) */
+        if (r->mark_object_ary) rb_gc_mark_movable(r->mark_object_ary);
+
         rb_gc_mark(r->r_stdin);
         rb_gc_mark(r->r_stdout);
         rb_gc_mark(r->r_stderr);
@@ -313,13 +319,23 @@ ractor_memsize(const void *ptr)
     return sizeof(rb_ractor_t) + ractor_sync_memsize(r);
 }
 
+static void
+ractor_update_references(void *ptr)
+{
+    rb_ractor_t *r = (rb_ractor_t *)ptr;
+    /* the registered mark objects list is marked movable in ractor_mark */
+    if (r->mark_object_ary) {
+        r->mark_object_ary = rb_gc_location(r->mark_object_ary);
+    }
+}
+
 static const rb_data_type_t ractor_data_type = {
     "ractor",
     {
         ractor_mark,
         ractor_free,
         ractor_memsize,
-        NULL, // update
+        ractor_update_references,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY /* | RUBY_TYPED_WB_PROTECTED */
 };
@@ -437,6 +453,9 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
 
     RB_VM_LOCK();
     {
+        /* keep this Ractor's registered mark objects alive under the main Ractor */
+        if (cr->mark_object_ary) rb_vm_ractor_migrate_mark_objects(vm->ractor.main_ractor, cr);
+
         RUBY_DEBUG_LOG("ractor.cnt:%u-- terminate_waiting:%d",
                        vm->ractor.cnt,  vm->ractor.sync.terminate_waiting);
 
@@ -757,7 +776,6 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const c
     }
 }
 
-void rb_threadptr_remove(rb_thread_t *th);
 
 void
 rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
@@ -766,7 +784,6 @@ rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
     RUBY_DEBUG_LOG("r->threads.cnt:%d--", cr->threads.cnt);
     ractor_check_blocking(cr, cr->threads.cnt - 1, __FILE__, __LINE__);
 
-    rb_threadptr_remove(th);
 
     if (cr->threads.cnt == 1) {
         vm_remove_ractor(th->vm, cr);
@@ -1265,11 +1282,26 @@ obj_traverse_reachable_i(VALUE obj, void *ptr)
     }
 }
 
+// Traverse obj's children via its GC mark function. Returns 1 to stop.
+static int
+obj_traverse_reachable(VALUE obj, struct obj_traverse_data *data)
+{
+    struct obj_traverse_callback_data d = {
+        .stop = false,
+        .data = data,
+    };
+    RB_VM_LOCKING_NO_BARRIER() {
+        rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
+    }
+    return d.stop;
+}
+
 static struct st_table *
 obj_traverse_rec(struct obj_traverse_data *data)
 {
     if (UNLIKELY(!data->rec)) {
         data->rec_hash = rb_ident_hash_new();
+        rb_obj_hide(data->rec_hash);
         data->rec = RHASH_ST_TABLE(data->rec_hash);
     }
     return data->rec;
@@ -1305,12 +1337,14 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
     }
     RB_OBJ_WRITTEN(data->rec_hash, Qundef, obj);
 
-    struct obj_traverse_callback_data d = {
-        .stop = false,
-        .data = data,
-    };
-    rb_ivar_foreach(obj, obj_traverse_ivar_foreach_i, (st_data_t)&d);
-    if (d.stop) return 1;
+    if (rb_obj_shape_has_ivars(obj)) {
+        struct obj_traverse_callback_data d = {
+            .stop = false,
+            .data = data,
+        };
+        rb_ivar_foreach(obj, obj_traverse_ivar_foreach_i, (st_data_t)&d);
+        if (d.stop) return 1;
+    }
 
     switch (BUILTIN_TYPE(obj)) {
       // no child node
@@ -1331,7 +1365,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
             rb_ary_cancel_sharing(obj);
 
             for (int i = 0; i < RARRAY_LENINT(obj); i++) {
-                VALUE e = rb_ary_entry(obj, i);
+                VALUE e = RARRAY_AREF(obj, i);
                 if (obj_traverse_i(e, data)) return 1;
             }
         }
@@ -1375,17 +1409,29 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         break;
 
       case T_DATA:
-      case T_IMEMO:
         {
-            struct obj_traverse_callback_data d = {
-                .stop = false,
-                .data = data,
-            };
-            RB_VM_LOCKING_NO_BARRIER() {
-                rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
+            void *const ptr = RTYPEDDATA_GET_DATA(obj);
+            const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+
+            if (!ptr || !type->function.dmark) {
+                // no references (the class and ivars are handled elsewhere)
             }
-            if (d.stop) return 1;
+            else if (type->flags & RUBY_TYPED_DECL_MARKING) {
+                const size_t *offsets = (const size_t *)(uintptr_t)type->function.dmark;
+                for (; *offsets != RUBY_REF_END; offsets++) {
+                    VALUE ref = *(VALUE *)((char *)ptr + *offsets);
+                    if (obj_traverse_i(ref, data)) return 1;
+                }
+            }
+            else {
+                if (obj_traverse_reachable(obj, data)) return 1;
+            }
         }
+        break;
+
+      case T_IMEMO:
+        // TODO: Not sure this can actually happen; traverse rather than crash.
+        if (obj_traverse_reachable(obj, data)) return 1;
         break;
 
       // unreachable
@@ -1450,7 +1496,7 @@ allow_frozen_shareable_p(VALUE obj)
     if (!RB_TYPE_P(obj, T_DATA)) {
         return true;
     }
-    else if (RTYPEDDATA_P(obj)) {
+    else {
         const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
         if (type->flags & RUBY_TYPED_FROZEN_SHAREABLE) {
             return true;
@@ -1460,11 +1506,29 @@ allow_frozen_shareable_p(VALUE obj)
     return false;
 }
 
+static void
+make_shareable_freeze(VALUE obj)
+{
+    VALUE klass = RBASIC_CLASS(obj);
+    if (klass == rb_cString && BASIC_OP_UNREDEFINED_P(BOP_FREEZE, STRING_REDEFINED_OP_FLAG)) {
+        rb_str_freeze(obj);
+    }
+    else if (klass == rb_cArray && BASIC_OP_UNREDEFINED_P(BOP_FREEZE, ARRAY_REDEFINED_OP_FLAG)) {
+        rb_ary_freeze(obj);
+    }
+    else if (klass == rb_cHash && BASIC_OP_UNREDEFINED_P(BOP_FREEZE, HASH_REDEFINED_OP_FLAG)) {
+        rb_hash_freeze(obj);
+    }
+    else {
+        rb_funcall(obj, idFreeze, 0);
+    }
+}
+
 static enum obj_traverse_iterator_result
 make_shareable_check_shareable_freeze(VALUE obj, enum obj_traverse_iterator_result result)
 {
     if (!RB_OBJ_FROZEN_RAW(obj)) {
-        rb_funcall(obj, idFreeze, 0);
+        make_shareable_freeze(obj);
 
         if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
             rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
@@ -1539,7 +1603,7 @@ make_shareable_check_shareable(VALUE obj)
 static enum obj_traverse_iterator_result
 mark_shareable(VALUE obj)
 {
-    if (RB_TYPE_P(obj, T_STRING)) {
+    if (RB_BUILTIN_TYPE(obj) == T_STRING) {
         rb_str_make_independent(obj);
     }
 
@@ -1777,6 +1841,11 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         return 0;
     }
 
+    if (UNLIKELY(data->rec && st_lookup(data->rec, (st_data_t)obj, &replacement))) {
+        data->replacement = (VALUE)replacement;
+        return 0;
+    }
+
     switch (data->enter_func(obj, data)) {
       case traverse_cont: break;
       case traverse_skip: return 0; // skip children
@@ -1784,16 +1853,9 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     }
 
     replacement = (st_data_t)data->replacement;
-
-    if (UNLIKELY(st_lookup(obj_traverse_replace_rec(data), (st_data_t)obj, &replacement))) {
-        data->replacement = (VALUE)replacement;
-        return 0;
-    }
-    else {
-        st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, replacement);
-        RB_OBJ_WRITTEN(data->rec_hash, Qundef, obj);
-        RB_OBJ_WRITTEN(data->rec_hash, Qundef, replacement);
-    }
+    st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, replacement);
+    RB_OBJ_WRITTEN(data->rec_hash, Qundef, obj);
+    RB_OBJ_WRITTEN(data->rec_hash, Qundef, replacement);
 
     if (!data->move) {
         obj = replacement;
@@ -1808,7 +1870,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     if (UNLIKELY(rb_obj_gen_fields_p(obj))) {
         VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
 
-        if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
+        if (UNLIKELY(rb_obj_shape_complex_p(obj))) {
             struct obj_traverse_replace_callback_data d = {
                 .stop = false,
                 .data = data,
@@ -1845,14 +1907,16 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_OBJECT:
         {
-            if (rb_shape_obj_too_complex_p(obj)) {
+            VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
+            shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
+            if (rb_shape_complex_p(shape_id)) {
                 struct obj_traverse_replace_callback_data d = {
                     .stop = false,
                     .data = data,
                     .src = obj,
                 };
                 rb_st_foreach_with_replace(
-                    ROBJECT_FIELDS_HASH(obj),
+                    rb_imemo_fields_complex_tbl(fields_obj),
                     obj_iv_hash_traverse_replace_foreach_i,
                     obj_iv_hash_traverse_replace_i,
                     (st_data_t)&d
@@ -1860,10 +1924,10 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 if (d.stop) return 1;
             }
             else {
-                uint32_t len = ROBJECT_FIELDS_COUNT_NOT_COMPLEX(obj);
-                VALUE *ptr = ROBJECT_FIELDS(obj);
+                attr_index_t len = RSHAPE_LEN(shape_id);
+                VALUE *ptr = rb_imemo_fields_ptr(fields_obj);
 
-                for (uint32_t i = 0; i < len; i++) {
+                for (attr_index_t i = 0; i < len; i++) {
                     CHECK_AND_REPLACE(obj, ptr[i]);
                 }
             }
@@ -1875,7 +1939,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             rb_ary_cancel_sharing(obj);
 
             for (int i = 0; i < RARRAY_LENINT(obj); i++) {
-                VALUE e = rb_ary_entry(obj, i);
+                VALUE e = RARRAY_AREF(obj, i);
 
                 if (obj_traverse_replace_i(e, data)) {
                     return 1;
@@ -1992,16 +2056,16 @@ rb_obj_traverse_replace(VALUE obj,
 }
 
 static const bool wb_protected_types[RUBY_T_MASK] = {
-    [T_OBJECT] = RGENGC_WB_PROTECTED_OBJECT,
-    [T_HASH] = RGENGC_WB_PROTECTED_HASH,
-    [T_ARRAY] = RGENGC_WB_PROTECTED_ARRAY,
-    [T_STRING] = RGENGC_WB_PROTECTED_STRING,
-    [T_STRUCT] = RGENGC_WB_PROTECTED_STRUCT,
-    [T_COMPLEX] = RGENGC_WB_PROTECTED_COMPLEX,
-    [T_REGEXP] = RGENGC_WB_PROTECTED_REGEXP,
-    [T_MATCH] = RGENGC_WB_PROTECTED_MATCH,
-    [T_FLOAT] = RGENGC_WB_PROTECTED_FLOAT,
-    [T_RATIONAL] = RGENGC_WB_PROTECTED_RATIONAL,
+    [T_OBJECT] = true,
+    [T_HASH] = true,
+    [T_ARRAY] = true,
+    [T_STRING] = true,
+    [T_STRUCT] = true,
+    [T_COMPLEX] = true,
+    [T_REGEXP] = true,
+    [T_MATCH] = true,
+    [T_FLOAT] = true,
+    [T_RATIONAL] = true,
 };
 
 static enum obj_traverse_iterator_result
@@ -2013,10 +2077,9 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
     }
     else {
         VALUE type = RB_BUILTIN_TYPE(obj);
-        size_t slot_size = rb_gc_obj_slot_size(obj);
-        type |= wb_protected_types[type] ? FL_WB_PROTECTED : 0;
-        NEWOBJ_OF(moved, struct RBasic, 0, type, slot_size, 0);
-        MEMZERO(&moved[1], char, slot_size - sizeof(*moved));
+        size_t slot_size = rb_obj_shape_slot_size(obj);
+        VALUE moved = rb_newobj(GET_EC(), 0, type, RBASIC_SHAPE_ID(obj), wb_protected_types[type], slot_size);
+        MEMZERO(((struct RBasic *)moved) + 1, char, slot_size - sizeof(struct RBasic));
         data->replacement = (VALUE)moved;
         return traverse_cont;
     }
@@ -2032,7 +2095,7 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     memcpy(
         (char *)data->replacement + sizeof(VALUE),
         (char *)obj + sizeof(VALUE),
-        rb_gc_obj_slot_size(obj) - sizeof(VALUE)
+        rb_obj_shape_slot_size(obj) - sizeof(VALUE)
     );
 
     // We've copied obj's references to the replacement
@@ -2043,14 +2106,18 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
         rb_replace_generic_ivar(data->replacement, obj);
     }
 
-    rb_gc_obj_id_moved(data->replacement);
-
     VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_PROMOTED);
+    shape_id_t shape_id = (RBASIC_SHAPE_ID(obj) & SHAPE_ID_CAPACITY_MASK) | ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_ROBJECT | SHAPE_ID_FL_FROZEN;
 
     // Avoid mutations using bind_call, etc.
     MEMZERO((char *)obj, char, sizeof(struct RBasic));
     RBASIC(obj)->flags = flags;
     RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
+
+    // The husk keeps its original (larger) slot, so give it a field-less shape
+    // sized to that slot; otherwise compaction's slot_size == shape_slot_size
+    // invariant is violated.
+    RBASIC_SET_FULL_SHAPE_ID(obj, shape_id);
     return traverse_cont;
 }
 
@@ -2066,6 +2133,31 @@ ractor_move(VALUE obj)
     }
 }
 
+static VALUE
+ractor_call_clone_try(VALUE obj)
+{
+    return rb_funcall(obj, idClone, 0);
+}
+
+static VALUE
+ractor_call_clone_rescue(VALUE obj, VALUE exc)
+{
+    rb_raise(rb_eRactorError, "can't clone unshareable instance of %"PRIsVALUE, rb_class_of(obj));
+    UNREACHABLE_RETURN(Qnil);
+}
+
+static VALUE
+ractor_obj_clone(VALUE obj)
+{
+    VALUE clone = rb_rescue(ractor_call_clone_try, obj, ractor_call_clone_rescue, obj);
+
+    if (obj == clone) {
+        rb_raise(rb_eRactorError, "#clone returned self");
+    }
+
+    return clone;
+}
+
 static enum obj_traverse_iterator_result
 copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
 {
@@ -2074,10 +2166,7 @@ copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
         return traverse_skip;
     }
     else {
-        if (!rb_get_alloc_func(rb_obj_class(obj))) {
-            rb_raise(rb_eRactorError, "can not copy unshareable object %+"PRIsVALUE, obj);
-        }
-        data->replacement = rb_obj_clone(obj);
+        data->replacement = ractor_obj_clone(obj);
         return traverse_cont;
     }
 }
@@ -2450,7 +2539,7 @@ static const rb_data_type_t cross_ractor_require_data_type = {
         NULL, // memsize
         NULL, // compact
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE

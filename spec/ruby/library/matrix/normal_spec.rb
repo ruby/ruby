@@ -20,7 +20,7 @@ describe "Matrix.normal?" do
     ].each do |rectangular_matrix|
       -> {
         rectangular_matrix.normal?
-      }.should raise_error(Matrix::ErrDimensionMismatch)
+      }.should.raise(Matrix::ErrDimensionMismatch)
     end
   end
 end

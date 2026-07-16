@@ -13,6 +13,8 @@ void *ruby_xmalloc(size_t size) { return malloc(size); }
 void *ruby_xcalloc(size_t nelems, size_t elemsiz) { return calloc(nelems, elemsiz); }
 void *ruby_xrealloc(void *ptr, size_t newsiz) { return realloc(ptr, newsiz); }
 void ruby_xfree(void *ptr) { free(ptr); }
+void ruby_xfree_sized(void *ptr, size_t _oldsize) { free(ptr); }
+void *ruby_xrealloc_sized(void *ptr, size_t newsiz, size_t _oldsiz) { return realloc(ptr, newsiz); }
 
 #include "prism.h"
 

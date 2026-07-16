@@ -27,13 +27,6 @@
 #include "builtin.h"
 #include "ruby/internal/attr/nonstring.h"
 
-#if defined(USE_SYMBOL_GC) && !(USE_SYMBOL_GC+0)
-# undef USE_SYMBOL_GC
-# define USE_SYMBOL_GC 0
-#else
-# undef USE_SYMBOL_GC
-# define USE_SYMBOL_GC 1
-#endif
 #if defined(SYMBOL_DEBUG) && (SYMBOL_DEBUG+0)
 # undef SYMBOL_DEBUG
 # define SYMBOL_DEBUG 1
@@ -216,7 +209,7 @@ static const rb_data_type_t sym_id_entry_list_type = {
         sym_id_entry_list_memsize,
         sym_id_entry_list_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 static int
@@ -285,6 +278,9 @@ set_id_entry(rb_symbols_t *symbols, rb_id_serial_t num, VALUE str, VALUE sym)
     if (idx >= (size_t)RARRAY_LEN(ids) || NIL_P(id_entry_list = rb_ary_entry(ids, (long)idx))) {
         rb_darray_make(&entries, ID_ENTRY_UNIT);
         id_entry_list = TypedData_Wrap_Struct(0, &sym_id_entry_list_type, entries);
+        /* Reachable from every Ractor via the global symbol table, so mark it
+         * shareable. */
+        RB_OBJ_SET_SHAREABLE(id_entry_list);
         rb_ary_store(ids, (long)idx, id_entry_list);
     }
     else {
@@ -310,7 +306,7 @@ sym_set_create(VALUE sym, void *data)
     VALUE str = dup_string_for_create(static_sym_entry->str);
 
     if (create_dynamic_symbol) {
-        NEWOBJ_OF(obj, struct RSymbol, rb_cSymbol, T_SYMBOL | FL_WB_PROTECTED, sizeof(struct RSymbol), 0);
+        NEWOBJ_OF(obj, struct RSymbol, rb_cSymbol, T_SYMBOL, sizeof(struct RSymbol));
 
         rb_encoding *enc = rb_enc_get(str);
         rb_enc_set_index((VALUE)obj, rb_enc_to_index(enc));

@@ -15,9 +15,9 @@ module Bundler
       Gem::Platform.sort_and_filter_best_platform_match(matching, platform)
     end
 
-    def self.select_best_local_platform_match(specs, force_ruby: false)
+    def self.select_best_local_platform_match(specs, force_ruby: false, locked_platforms: nil)
       local = Bundler.local_platform
-      matching = select_all_platform_match(specs, local, force_ruby: force_ruby).filter_map(&:materialized_for_installation)
+      matching = select_all_platform_match(specs, local, force_ruby: force_ruby).filter_map {|spec| spec.materialized_for_installation(locked_platforms) }
 
       Gem::Platform.sort_best_platform_match(matching, local)
     end

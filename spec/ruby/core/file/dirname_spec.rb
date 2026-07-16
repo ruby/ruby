@@ -25,7 +25,7 @@ describe "File.dirname" do
     it "raises ArgumentError if the level is negative" do
       -> {
         File.dirname('/home/jason', -1)
-      }.should raise_error(ArgumentError, "negative level: -1")
+      }.should.raise(ArgumentError, "negative level: -1")
     end
 
     it "returns '/' when level exceeds the number of segments in the path" do
@@ -41,7 +41,7 @@ describe "File.dirname" do
   end
 
   it "returns a String" do
-    File.dirname("foo").should be_kind_of(String)
+    File.dirname("foo").should.is_a?(String)
   end
 
   it "does not modify its argument" do
@@ -83,7 +83,7 @@ describe "File.dirname" do
       path = "/foo/bar".encode(enc)
       -> {
         File.dirname(path)
-      }.should raise_error(Encoding::CompatibilityError)
+      }.should.raise(Encoding::CompatibilityError)
     end
   end
 
@@ -96,7 +96,7 @@ describe "File.dirname" do
   it "handles Shift JIS 0x5C (\\) as second byte of a multi-byte sequence" do
     # dir/fileソname.txt
     path = "dir/file\x83\x5cname.txt".b.force_encoding(Encoding::SHIFT_JIS)
-    path.valid_encoding?.should be_true
+    path.valid_encoding?.should == true
     File.dirname(path).should == "dir"
   end
 
@@ -124,7 +124,7 @@ describe "File.dirname" do
     it "handles Shift JIS 0x5C (\\) as second byte of a multi-byte sequence (windows)" do
       # dir\fileソname.txt
       path = "dir\\file\x83\x5cname.txt".b.force_encoding(Encoding::SHIFT_JIS)
-      path.valid_encoding?.should be_true
+      path.valid_encoding?.should == true
       File.dirname(path).should == "dir"
     end
   end
@@ -134,10 +134,10 @@ describe "File.dirname" do
   end
 
   it "raises a TypeError if not passed a String type" do
-    -> { File.dirname(nil)   }.should raise_error(TypeError)
-    -> { File.dirname(0)     }.should raise_error(TypeError)
-    -> { File.dirname(true)  }.should raise_error(TypeError)
-    -> { File.dirname(false) }.should raise_error(TypeError)
+    -> { File.dirname(nil)   }.should.raise(TypeError)
+    -> { File.dirname(0)     }.should.raise(TypeError)
+    -> { File.dirname(true)  }.should.raise(TypeError)
+    -> { File.dirname(false) }.should.raise(TypeError)
   end
 
   # Windows specific tests

@@ -77,6 +77,7 @@ class LeakChecker
         end
         (h[fd] ||= []) << [io, autoclose, inspect]
       }
+      inspect = {}
       fd_leaked.select! {|fd|
         str = ''.dup
         pos = nil
@@ -98,6 +99,7 @@ class LeakChecker
             s = io.stat
           rescue Errno::EBADF
             # something un-stat-able
+            live2.delete(fd)
             next
           else
             next if /darwin/ =~ RUBY_PLATFORM and [0, -1].include?(s.dev)
@@ -106,15 +108,47 @@ class LeakChecker
             io&.close
           end
         end
-        puts "Leaked file descriptor: #{test_name}: #{fd}#{str}"
-        puts "  The IO was created at #{pos}" if pos
+        inspect[fd] = [str, pos]
         true
       }
       unless fd_leaked.empty?
         unless @@try_lsof == false
-          @@try_lsof |= system(*%W[lsof -w -a -d #{fd_leaked.minmax.uniq.join("-")} -p #$$], out: Test::Unit::Runner.output)
+          begin
+            open_list = IO.popen(%W[lsof -w -a -d #{fd_leaked.minmax.uniq.join("-")} -p #$$], &:readlines)
+          rescue
+            @@try_lsof = false
+          else
+            @@try_lsof |= $?.success?
+          end
+          if header = open_list&.shift
+            columns = header.split
+            fd_index, type_index, node_index = %w'FD TYPE NODE'.map {|n| columns.index(n)}
+            open_list.reject! do |of|
+              of = of.chomp.split(' ', node_index + 2)
+              if of[node_index] == 'TCP' and of.last.end_with?('(CLOSE_WAIT)', '(CLOSED)')
+                # Sometimes TCP sockets still live in the kernel space
+                # but have been closed in the user space.
+                skip = true
+              elsif of[type_index] == 'systm'
+                # AF_SYSTEM on macOS is kept alive
+                skip = true
+              end
+              if skip
+                fd = of[fd_index].to_i
+                inspect.delete(fd)
+                h.delete(fd)
+                live2.delete(fd)
+              end
+              skip
+            end
+            puts(header, open_list) unless open_list.empty?
+          end
         end
       end
+      inspect.each {|fd, (str, pos)|
+        puts "Leaked file descriptor: #{test_name}: #{fd}#{str}"
+        puts "  The IO was created at #{pos}" if pos
+      }
       h.each {|fd, list|
         next if list.length <= 1
         if 1 < list.count {|io, autoclose, inspect| autoclose }
@@ -156,7 +190,7 @@ class LeakChecker
       [prev_count, []]
     else
       tempfiles = ObjectSpace.each_object(Tempfile).reject {|t|
-        t.instance_variables.empty? || t.closed?
+        t.instance_variables.empty? || (t.closed? rescue true)
       }
       [count, tempfiles]
     end

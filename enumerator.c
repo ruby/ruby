@@ -280,7 +280,7 @@ static const rb_data_type_t enumerator_data_type = {
         NULL, // Nothing allocated externally, so don't need a memsize function
         NULL,
     },
-    0, NULL, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
+    0, NULL, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct enumerator *
@@ -311,7 +311,7 @@ static const rb_data_type_t proc_entry_data_type = {
         NULL, // Nothing allocated externally, so don't need a memsize function
         proc_entry_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct proc_entry *
@@ -1103,6 +1103,7 @@ enumerator_rewind(VALUE obj)
 
 static struct generator *generator_ptr(VALUE obj);
 static VALUE append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args);
+static VALUE append_method_args(VALUE obj, VALUE str, VALUE default_args);
 
 static VALUE
 inspect_enumerator(VALUE obj, VALUE dummy, int recur)
@@ -1175,7 +1176,7 @@ kwd_append(VALUE key, VALUE val, VALUE str)
 static VALUE
 append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
 {
-    VALUE method, eargs;
+    VALUE method;
 
     method = rb_attr_get(obj, id_method);
     if (method != Qfalse) {
@@ -1189,6 +1190,13 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
         rb_str_buf_cat2(str, ":");
         rb_str_buf_append(str, method);
     }
+    return append_method_args(obj, str, default_args);
+}
+
+static VALUE
+append_method_args(VALUE obj, VALUE str, VALUE default_args)
+{
+    VALUE eargs;
 
     eargs = rb_attr_get(obj, id_arguments);
     if (NIL_P(eargs)) {
@@ -1218,10 +1226,11 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
             if (!NIL_P(kwds)) {
                 rb_hash_foreach(kwds, kwd_append, str);
             }
-            rb_str_set_len(str, RSTRING_LEN(str)-2);
+            rb_str_set_len(str, RSTRING_LEN(str)-2); /* drop the last ", " */
             rb_str_buf_cat2(str, ")");
         }
     }
+    RB_GC_GUARD(eargs);
 
     return str;
 }
@@ -1323,7 +1332,7 @@ static const rb_data_type_t yielder_data_type = {
         NULL,
         yielder_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct yielder *
@@ -1447,7 +1456,7 @@ static const rb_data_type_t generator_data_type = {
         NULL,
         generator_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct generator *
@@ -1994,7 +2003,7 @@ lazy_to_enum(int argc, VALUE *argv, VALUE self)
 
     if (argc > 0) {
         --argc;
-        meth = *argv++;
+        meth = rb_to_symbol(*argv++);
     }
     if (RTEST((super_meth = rb_hash_aref(lazy_use_super_method, meth)))) {
         meth = super_meth;
@@ -2978,7 +2987,7 @@ static const rb_data_type_t producer_data_type = {
         producer_memsize,
         producer_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct producer *
@@ -3196,7 +3205,7 @@ static const rb_data_type_t enum_chain_data_type = {
         enum_chain_memsize,
         enum_chain_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 static struct enum_chain *
@@ -3511,7 +3520,7 @@ static const rb_data_type_t enum_product_data_type = {
         enum_product_memsize,
         enum_product_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 static struct enum_product *
@@ -3849,7 +3858,7 @@ static const rb_data_type_t arith_seq_data_type = {
         NULL,
     },
     .parent = &enumerator_data_type,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -4340,7 +4349,7 @@ static VALUE
 arith_seq_inspect(VALUE self)
 {
     struct enumerator *e;
-    VALUE eobj, str, eargs;
+    VALUE eobj, str;
     int range_p;
 
     TypedData_Get_Struct(self, struct enumerator, &enumerator_data_type, e);
@@ -4354,39 +4363,7 @@ arith_seq_inspect(VALUE self)
     str = rb_sprintf("(%s%"PRIsVALUE"%s.", range_p ? "(" : "", eobj, range_p ? ")" : "");
 
     rb_str_buf_append(str, rb_id2str(e->meth));
-
-    eargs = rb_attr_get(eobj, id_arguments);
-    if (NIL_P(eargs)) {
-        eargs = e->args;
-    }
-    if (eargs != Qfalse) {
-        long argc = RARRAY_LEN(eargs);
-        const VALUE *argv = RARRAY_CONST_PTR(eargs); /* WB: no new reference */
-
-        if (argc > 0) {
-            VALUE kwds = Qnil;
-
-            rb_str_buf_cat2(str, "(");
-
-            if (RB_TYPE_P(argv[argc-1], T_HASH)) {
-                int all_key = TRUE;
-                rb_hash_foreach(argv[argc-1], key_symbol_p, (VALUE)&all_key);
-                if (all_key) kwds = argv[--argc];
-            }
-
-            while (argc--) {
-                VALUE arg = *argv++;
-
-                rb_str_append(str, rb_inspect(arg));
-                rb_str_buf_cat2(str, ", ");
-            }
-            if (!NIL_P(kwds)) {
-                rb_hash_foreach(kwds, kwd_append, str);
-            }
-            rb_str_set_len(str, RSTRING_LEN(str)-2); /* drop the last ", " */
-            rb_str_buf_cat2(str, ")");
-        }
-    }
+    append_method_args(eobj, str, e->args);
 
     rb_str_buf_cat2(str, ")");
 
@@ -4729,7 +4706,7 @@ InitVM_Enumerator(void)
     rb_eStopIteration = rb_define_class("StopIteration", rb_eIndexError);
     rb_define_method(rb_eStopIteration, "result", stop_result, 0);
 
-    /* Generator */
+    /* :nodoc: Generator */
     rb_cGenerator = rb_define_class_under(rb_cEnumerator, "Generator", rb_cObject);
     rb_include_module(rb_cGenerator, rb_mEnumerable);
     rb_define_alloc_func(rb_cGenerator, generator_allocate);
@@ -4737,7 +4714,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cGenerator, "initialize_copy", generator_init_copy, 1);
     rb_define_method(rb_cGenerator, "each", generator_each, -1);
 
-    /* Yielder */
+    /* :nodoc: Yielder */
     rb_cYielder = rb_define_class_under(rb_cEnumerator, "Yielder", rb_cObject);
     rb_define_alloc_func(rb_cYielder, yielder_allocate);
     rb_define_method(rb_cYielder, "initialize", yielder_initialize, 0);
@@ -4745,7 +4722,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cYielder, "<<", yielder_yield_push, 1);
     rb_define_method(rb_cYielder, "to_proc", yielder_to_proc, 0);
 
-    /* Producer */
+    /* :nodoc: Producer */
     rb_cEnumProducer = rb_define_class_under(rb_cEnumerator, "Producer", rb_cObject);
     rb_define_alloc_func(rb_cEnumProducer, producer_allocate);
     rb_define_method(rb_cEnumProducer, "each", producer_each, 0);

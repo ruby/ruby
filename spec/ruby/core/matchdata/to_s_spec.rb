@@ -8,6 +8,6 @@ describe "MatchData#to_s" do
 
   it "returns an instance of String when given a String subclass" do
     str = MatchDataSpecs::MyString.new("THX1138.")
-    /(.)(.)(\d+)(\d)/.match(str).to_s.should be_an_instance_of(String)
+    /(.)(.)(\d+)(\d)/.match(str).to_s.should.instance_of?(String)
   end
 end

@@ -87,7 +87,8 @@ fn main() {
         .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")
         .allowlist_function("rb_shape_transition_add_ivar_no_warnings")
-        .allowlist_function("rb_yjit_shape_obj_too_complex_p")
+        .allowlist_function("rb_yjit_shape_obj_complex_p")
+        .allowlist_function("rb_yjit_shape_obj_embedded_p")
         .allowlist_function("rb_yjit_shape_capacity")
         .allowlist_function("rb_yjit_shape_index")
         .allowlist_var("SHAPE_ID_NUM_BITS")
@@ -99,7 +100,6 @@ fn main() {
         .allowlist_function("rb_hash_new")
         .allowlist_function("rb_hash_new_with_size")
         .allowlist_function("rb_hash_resurrect")
-        .allowlist_function("rb_hash_stlike_foreach")
         .allowlist_function("rb_to_hash_type")
         .allowlist_type("st_retval")
         .allowlist_function("rb_hash_aset")
@@ -181,7 +181,7 @@ fn main() {
         .allowlist_function("rb_reg_match_post")
         .allowlist_function("rb_reg_match_last")
         .allowlist_function("rb_reg_nth_match")
-        .allowlist_function("rb_reg_new_ary")
+        .allowlist_function("rb_reg_new_from_values")
 
         // `ruby_value_type` is a C enum and this stops it from
         // prefixing all the members with the name of the type
@@ -277,13 +277,15 @@ fn main() {
         .allowlist_function("rb_jit_str_concat_codepoint")
         .allowlist_type("rstring_offsets")
         .allowlist_function("rb_assert_holding_vm_lock")
-        .allowlist_function("rb_jit_shape_too_complex_p")
+        .allowlist_function("rb_jit_shape_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")
         .allowlist_type("jit_bindgen_constants")
         .allowlist_function("rb_vm_barrier")
+        .allowlist_function("rb_yjit_cdhash_all_fixnum_p")
+        .allowlist_function("rb_yjit_cdhash_lookup")
 
         // Not sure why it's picking these up, but don't.
         .blocklist_type("FILE")

@@ -33,7 +33,6 @@ i386-mswin32: -prologue- -i386- -epilogue-
 i486-mswin32: -prologue- -i486- -epilogue-
 i586-mswin32: -prologue- -i586- -epilogue-
 i686-mswin32: -prologue- -i686- -epilogue-
-alpha-mswin32: -prologue- -alpha- -epilogue-
 x64-mswin64: -prologue- -x64- -epilogue-
 arm64-mswin64: -prologue- -arm64- -epilogue-
 
@@ -160,11 +159,10 @@ main(void)
     return c != value_nan();
 }
 <<
-	@( \
-	  $(CC) -O2 $@.c && .\$@ || \
-	  (set bug=%ERRORLEVEL% & \
-	  echo This compiler has an optimization bug) \
-	) & $(WIN32DIR:/=\)\rm.bat $@.* & exit /b %bug%
+	@($(CC) -O2 $@.c && .\$@) || \
+	  (echo This compiler has an optimization bug & \
+	  $(WIN32DIR:/=\)\rm.bat $@.* & exit /b 1)
+	@$(WIN32DIR:/=\)\rm.bat $@.*
 
 -version-: nul verconf.mk
 
@@ -215,7 +213,7 @@ set /a MSC_VER_UPPER = MSC_VER/20*20+19
 #elif _MSC_VER >= 1900
 set /a MSC_VER_LOWER = MSC_VER/10*10+0
 set /a MSC_VER_UPPER = MSC_VER/10*10+9
-#elif _MSC_VER < 1400
+#else
 # error Unsupported VC++ compiler
 #endif
 set MSC_VER
@@ -233,14 +231,6 @@ MACHINE = x86
 !if defined($(CPU))
 $(CPU) = $(PROCESSOR_LEVEL)
 !endif
-#endif
-
--alpha-: -osname32-
-	@$(CPP) -Tc <<"checking if compiler is for $(@:-=)" >>$(MAKEFILE)
-#ifndef _M_ALPHA
-#error Not compiler for $(@:-=)
-#else
-MACHINE = $(@:-=)
 #endif
 <<
 

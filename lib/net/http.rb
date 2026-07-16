@@ -82,6 +82,7 @@ module Net   #:nodoc:
   #       body = 'Some text'
   #       http.post(path, body)  # Can also have a block.
   #       http.put(path, body)
+  #       http.query(path, body) # Can also have a block.
   #       http.delete(path)
   #       http.options(path)
   #       http.trace(path)
@@ -207,6 +208,7 @@ module Net   #:nodoc:
   #   - #options: OPTIONS.
   #   - #trace: TRACE.
   #   - #patch: PATCH.
+  #   - #query, #request_query: QUERY.
   #
   # - {WebDAV methods}[https://en.wikipedia.org/wiki/WebDAV#Implementation]:
   #
@@ -553,6 +555,8 @@ module Net   #:nodoc:
   #   Sends a PROPPATCH request and returns a response object.
   # - {#put}[rdoc-ref:Net::HTTP#put]:
   #   Sends a PUT request and returns a response object.
+  # - {#query}[rdoc-ref:Net::HTTP#query]:
+  #   Sends a QUERY request and returns a response object.
   # - {#request}[rdoc-ref:Net::HTTP#request]:
   #   Sends a request and returns a response object.
   # - {#request_get}[rdoc-ref:Net::HTTP#request_get]:
@@ -1304,7 +1308,7 @@ module Net   #:nodoc:
 
     # Sets whether to determine the proxy from environment variable
     # '<tt>ENV['http_proxy']</tt>';
-    # see {Proxy Using ENV['http_proxy']}[rdoc-ref:Net::HTTP@Proxy+Using+ENVHTTPProxy].
+    # see {Proxy Using ENV}[rdoc-ref:Net::HTTP@Proxy+Using+ENVHTTPProxy].
     attr_writer :proxy_from_env
 
     # Sets the proxy address;
@@ -1550,11 +1554,11 @@ module Net   #:nodoc:
     attr_accessor :cert_store
 
     # Sets or returns the available SSL ciphers.
-    # See {OpenSSL::SSL::SSLContext#ciphers=}[OpenSSL::SSL::SSL::Context#ciphers=].
+    # See {OpenSSL::SSL::SSLContext#ciphers=}[rdoc-ref:OpenSSL::SSL::SSLContext#ciphers=].
     attr_accessor :ciphers
 
     # Sets or returns the extra X509 certificates to be added to the certificate chain.
-    # See {OpenSSL::SSL::SSLContext#add_certificate}[OpenSSL::SSL::SSL::Context#add_certificate].
+    # See {OpenSSL::SSL::SSLContext#add_certificate}[rdoc-ref:OpenSSL::SSL::SSLContext#add_certificate].
     attr_accessor :extra_chain_cert
 
     # Sets or returns the OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
@@ -1564,15 +1568,15 @@ module Net   #:nodoc:
     attr_accessor :ssl_timeout
 
     # Sets or returns the SSL version.
-    # See {OpenSSL::SSL::SSLContext#ssl_version=}[OpenSSL::SSL::SSL::Context#ssl_version=].
+    # See {OpenSSL::SSL::SSLContext#ssl_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#ssl_version=].
     attr_accessor :ssl_version
 
     # Sets or returns the minimum SSL version.
-    # See {OpenSSL::SSL::SSLContext#min_version=}[OpenSSL::SSL::SSL::Context#min_version=].
+    # See {OpenSSL::SSL::SSLContext#min_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#min_version=].
     attr_accessor :min_version
 
     # Sets or returns the maximum SSL version.
-    # See {OpenSSL::SSL::SSLContext#max_version=}[OpenSSL::SSL::SSL::Context#max_version=].
+    # See {OpenSSL::SSL::SSLContext#max_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#max_version=].
     attr_accessor :max_version
 
     # Sets or returns the callback for the server certification verification.
@@ -1588,7 +1592,7 @@ module Net   #:nodoc:
 
     # Sets or returns whether to verify that the server certificate is valid
     # for the hostname.
-    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[OpenSSL::SSL::SSL::Context#verify_hostname=].
+    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[rdoc-ref:OpenSSL::SSL::SSLContext#verify_hostname].
     attr_accessor :verify_hostname
 
     # Returns the X509 certificate chain (an array of strings)
@@ -2101,6 +2105,25 @@ module Net   #:nodoc:
       send_entity(path, data, initheader, dest, Patch, &block)
     end
 
+    # Sends a QUERY request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Query object
+    # created from string +path+, string +data+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http = Net::HTTP.new(hostname)
+    #   http.query('/todos/1', data) # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # Related:
+    #
+    # - Net::HTTP::Query: request class for \HTTP method QUERY.
+    # - Net::HTTP.query: sends QUERY request, returns response body.
+    #
+    def query(path, data, initheader = nil, dest = nil, &block) # :yield: +body_segment+
+      send_entity(path, data, initheader, dest, Query, &block)
+    end
+
     # Sends a PUT request to the server;
     # returns an instance of a subclass of Net::HTTPResponse.
     #
@@ -2335,6 +2358,36 @@ module Net   #:nodoc:
       request Put.new(path, initheader), data, &block
     end
 
+    # Sends a QUERY request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Query object
+    # created from string +path+, string +body+, and initial headers hash +initheader+.
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.query('/todos/1', 'xyzzy')
+    #   # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # With no block given, returns the response object:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.request_query('/todos') # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # With a block given, calls the block with the response object
+    # and returns the response object:
+    #
+    #   http.request_query('/todos') do |res|
+    #     p res
+    #   end # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # Output:
+    #
+    #   #<Net::HTTPOK 200 OK readbody=false>
+    #
+    def request_query(path, data, initheader = nil, &block) # :yield: +response+
+      request Query.new(path, initheader), data, &block
+    end
+
     alias get2   request_get    #:nodoc: obsolete
     alias head2  request_head   #:nodoc: obsolete
     alias post2  request_post   #:nodoc: obsolete
@@ -2430,7 +2483,7 @@ module Net   #:nodoc:
 
     # :stopdoc:
 
-    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/.freeze # :nodoc:
+    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE QUERY/.freeze # :nodoc:
 
     def transport_request(req)
       count = 0

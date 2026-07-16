@@ -10,7 +10,7 @@ RSpec.describe "bundle install" do
         gem "myrack"
       G
 
-      config "BUNDLE_SYSTEM_BINDIR" => system_gem_path("altbin").to_s
+      bundle_config "BUNDLE_SYSTEM_BINDIR" => system_gem_path("altbin").to_s
       bundle :install
       expect(the_bundle).to include_gems "myrack 1.0.0"
       expect(system_gem_path("altbin/myrackup")).to exist

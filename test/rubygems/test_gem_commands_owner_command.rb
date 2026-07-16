@@ -416,7 +416,8 @@ EOF
       end
     end
 
-    assert_match @stub_fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
+    webauthn_verification_request = @stub_fetcher.requests.find {|req| req.path == "/api/v1/webauthn_verification" }
+    assert_match webauthn_verification_request["Authorization"], Gem.configuration.rubygems_api_key
     assert_match "You have enabled multi-factor authentication. Please visit the following URL " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
       "you can re-run the gem signin command with the `--otp [your_code]` option.", @stub_ui.output

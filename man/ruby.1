@@ -1,5 +1,5 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd February 24, 2026
+.Dd July 10, 2026
 .Dt RUBY 1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
@@ -141,7 +141,7 @@ to see how they are being developed and used.
 The Ruby interpreter accepts the following command-line options (switches).
 They are quite similar to those of
 .Xr perl 1 .
-.Bl -tag -width "1234567890123" -compact
+.Bl -tag -width "--encoding" -compact
 .Pp
 .It Fl -copyright
 Prints the copyright notice, and quits immediately without running any
@@ -536,7 +536,9 @@ The custom default buffer size of
 .Pp
 .It Ev RUBY_MAX_CPU
 The maximum number of native threads used by M:N Threads scheduler
-Introduced in Ruby 3.3, default: 8.
+Introduced in Ruby 3.3, default: number of online CPUs.
+As non-main ractors use M:N Threads scheduler, this also sets the
+maximum number of native threads that non-main ractors will use.
 .Pp
 .It Ev RUBY_MN_THREADS
 If set to
@@ -700,6 +702,16 @@ Frees stacks of pooled fibers, if set to 1.
 Do not free the stacks if set to 0.
 Introduced in Ruby 2.7, default: 1 (no growth)
 .Pp
+.It Ev RUBY_SHARED_FIBER_POOL_MAXIMUM_COUNT
+If set to a non-negative integer, the shared fiber pool cannot allocate more
+than that many stacks; further fiber creation may fail with
+.Va FiberError .
+Unset or 0 means no explicit cap (subject to process limits).
+.Pp
+.It Ev RUBY_SHARED_FIBER_POOL_MINIMUM_COUNT
+Initial and minimum growth chunk size for the shared fiber pool (stacks).
+Unset uses the implementation default.
+.Pp
 .El
 .Sh STACK SIZE ENVIRONMENT
 Stack size environment variables are implementation-dependent and
@@ -796,6 +808,7 @@ When set to
 .Li 0
 or left unset, the fast fallback feature is enabled.
 Introduced in Ruby 3.4, default: unset.
+.El
 .Sh SEE ALSO
 .Bl -hang -compact -width "https://www.ruby-toolbox.com/"
 .It Lk https://www.ruby-lang.org/

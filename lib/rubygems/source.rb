@@ -109,6 +109,13 @@ class Gem::Source
 
     spec_file_name = name_tuple.spec_name
 
+    # The name tuple comes from a remote index and is not otherwise
+    # validated, so refuse anything that would escape the spec cache
+    # directory when used as a path component.
+    if File.basename(spec_file_name) != spec_file_name
+      raise Gem::Exception, "malformed spec name: #{spec_file_name.inspect}"
+    end
+
     source_uri = enforce_trailing_slash(uri) + "#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}"
 
     cache_dir = cache_dir source_uri
@@ -155,34 +162,25 @@ class Gem::Source
   # :latest     => Return the list of only the highest version of each gem
   # :prerelease => Return the list of all prerelease only specs
   #
+  # The compact index is used when the source provides it, falling back
+  # to the Marshal spec indexes.
 
   def load_specs(type)
-    file       = FILES[type]
-    fetcher    = Gem::RemoteFetcher.fetcher
-    file_name  = "#{file}.#{Gem.marshal_version}"
-    spec_path  = enforce_trailing_slash(uri) + "#{file_name}.gz"
-    cache_dir  = cache_dir spec_path
-    local_file = File.join(cache_dir, file_name)
-    retried    = false
+    load_compact_index_specs(type) || load_marshal_specs(type)
+  end
 
-    if update_cache?
-      require "fileutils"
-      FileUtils.mkdir_p cache_dir
-    end
+  ##
+  # The compact index client for this source, caching under
+  # Gem.spec_cache_dir. Also used by Gem::Resolver::APISet.
 
-    spec_dump = fetcher.cache_update_path spec_path, local_file, update_cache?
+  def compact_index_client # :nodoc:
+    @compact_index_client ||= begin
+      require_relative "compact_index_client"
 
-    Gem.load_safe_marshal
-    begin
-      Gem::NameTuple.from_list Gem::SafeMarshal.safe_load(spec_dump)
-    rescue ArgumentError
-      if update_cache? && !retried
-        FileUtils.rm local_file
-        retried = true
-        retry
-      else
-        raise Gem::Exception.new("Invalid spec cache file in #{local_file}")
-      end
+      index_uri = compact_index_uri
+
+      Gem::CompactIndexClient.new(compact_index_cache_dir(index_uri),
+        Gem::CompactIndexClient::HTTPFetcher.new(index_uri))
     end
   end
 
@@ -217,18 +215,108 @@ class Gem::Source
 
   private
 
-  def new_dependency_resolver_set
-    return Gem::Resolver::IndexSet.new self if uri.scheme == "file"
+  def load_marshal_specs(type)
+    file       = FILES[type]
+    fetcher    = Gem::RemoteFetcher.fetcher
+    file_name  = "#{file}.#{Gem.marshal_version}"
+    spec_path  = enforce_trailing_slash(uri) + "#{file_name}.gz"
+    cache_dir  = cache_dir spec_path
+    local_file = File.join(cache_dir, file_name)
+    retried    = false
 
-    fetch_uri = if uri.host == "rubygems.org"
+    if update_cache?
+      require "fileutils"
+      FileUtils.mkdir_p cache_dir
+    end
+
+    spec_dump = fetcher.cache_update_path spec_path, local_file, update_cache?
+
+    Gem.load_safe_marshal
+    begin
+      Gem::NameTuple.from_list Gem::SafeMarshal.safe_load(spec_dump)
+    rescue ArgumentError
+      if update_cache? && !retried
+        FileUtils.rm local_file
+        retried = true
+        retry
+      else
+        raise Gem::Exception.new("Invalid spec cache file in #{local_file}")
+      end
+    end
+  end
+
+  ##
+  # Builds the name tuple list for +type+ from the compact index versions
+  # file. Returns nil when the source does not provide a usable compact
+  # index, so the caller can fall back to the Marshal spec indexes.
+
+  def load_compact_index_specs(type)
+    return unless %w[http https].include?(uri.scheme)
+
+    versions = compact_index_versions
+    return if versions.nil? || versions.empty?
+
+    tuples = []
+
+    versions.each_value do |rows|
+      gem_tuples = rows.filter_map do |name, version_string, platform|
+        next unless Gem::Version.correct?(version_string)
+
+        version = Gem::Version.new(version_string)
+        next if version.prerelease? != (type == :prerelease)
+
+        Gem::NameTuple.new(name, version, platform || "ruby")
+      end
+
+      gem_tuples = max_versions_by_platform(gem_tuples) if type == :latest
+
+      tuples.concat(gem_tuples)
+    end
+
+    tuples
+  end
+
+  def compact_index_versions
+    @compact_index_versions ||= compact_index_client.versions
+  rescue Gem::RemoteFetcher::FetchError, Gem::CompactIndexClient::Error
+    @compact_index_versions = {}
+    nil
+  end
+
+  def max_versions_by_platform(tuples)
+    tuples.group_by(&:platform).map {|_, platform_tuples| platform_tuples.max_by(&:version) }
+  end
+
+  def compact_index_uri
+    if uri.host == "rubygems.org"
       index_uri = uri.dup
       index_uri.host = "index.rubygems.org"
       index_uri
     else
       uri
     end
+  end
 
-    bundler_api_uri = enforce_trailing_slash(fetch_uri) + "versions"
+  def compact_index_cache_dir(index_uri)
+    if update_cache?
+      # Correct for windows paths
+      escaped_path = index_uri.path.sub(%r{^/([a-z]):/}i, '/\\1-/')
+
+      File.join Gem.spec_cache_dir, "compact_index",
+        "#{index_uri.host}%#{index_uri.port}", *escaped_path.split("/").reject(&:empty?)
+    else
+      require "tmpdir"
+      require "fileutils"
+      dir = Dir.mktmpdir "gem_compact_index"
+      at_exit { FileUtils.rm_rf dir }
+      dir
+    end
+  end
+
+  def new_dependency_resolver_set
+    return Gem::Resolver::IndexSet.new self if uri.scheme == "file"
+
+    bundler_api_uri = enforce_trailing_slash(compact_index_uri) + "versions"
 
     begin
       fetcher = Gem::RemoteFetcher.fetcher

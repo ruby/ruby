@@ -12,7 +12,7 @@ platform_is :windows do
     end
 
     it "returns true" do
-      @ole_type.visible?.should be_true
+      @ole_type.visible?.should == true
     end
 
   end

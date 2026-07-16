@@ -65,8 +65,8 @@ describe "Integer#fdiv" do
   end
 
   it "returns NaN when the argument is NaN" do
-    -1.fdiv(nan_value).nan?.should be_true
-    1.fdiv(nan_value).nan?.should be_true
+    -1.fdiv(nan_value).nan?.should == true
+    1.fdiv(nan_value).nan?.should == true
   end
 
   it "returns Infinity when the argument is 0" do
@@ -86,11 +86,11 @@ describe "Integer#fdiv" do
   end
 
   it "raises a TypeError when argument isn't numeric" do
-    -> { 1.fdiv(mock('non-numeric')) }.should raise_error(TypeError)
+    -> { 1.fdiv(mock('non-numeric')) }.should.raise(TypeError)
   end
 
   it "raises an ArgumentError when passed multiple arguments" do
-    -> { 1.fdiv(6,0.2) }.should raise_error(ArgumentError)
+    -> { 1.fdiv(6,0.2) }.should.raise(ArgumentError)
   end
 
   it "follows the coercion protocol" do

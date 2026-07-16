@@ -7,7 +7,7 @@ describe "Addrinfo#ipv6?" do
     end
 
     it "returns true" do
-      @addrinfo.ipv6?.should be_false
+      @addrinfo.ipv6?.should == false
     end
   end
 
@@ -17,7 +17,7 @@ describe "Addrinfo#ipv6?" do
     end
 
     it "returns false" do
-      @addrinfo.ipv6?.should be_true
+      @addrinfo.ipv6?.should == true
     end
   end
 
@@ -27,7 +27,7 @@ describe "Addrinfo#ipv6?" do
     end
 
     it "returns false" do
-      @addrinfo.ipv6?.should be_false
+      @addrinfo.ipv6?.should == false
     end
   end
 end

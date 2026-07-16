@@ -9,14 +9,6 @@
  */
 #include "ossl.h"
 
-#define NewX509Name(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_x509name_type, 0)
-#define SetX509Name(obj, name) do { \
-    if (!(name)) { \
-        ossl_raise(rb_eRuntimeError, "Name wasn't initialized."); \
-    } \
-    RTYPEDDATA_DATA(obj) = (name); \
-} while (0)
 #define GetX509Name(obj, name) do { \
     TypedData_Get_Struct((obj), X509_NAME, &ossl_x509name_type, (name)); \
     if (!(name)) { \
@@ -49,20 +41,27 @@ static const rb_data_type_t ossl_x509name_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
+static VALUE
+ossl_x509name_alloc(VALUE klass)
+{
+    return TypedData_Wrap_Struct(klass, &ossl_x509name_type, NULL);
+}
+
 /*
  * Public
  */
 VALUE
-ossl_x509name_new(X509_NAME *name)
+ossl_x509name_new(const X509_NAME *name)
 {
     X509_NAME *new;
     VALUE obj;
 
-    obj = NewX509Name(cX509Name);
-    new = X509_NAME_dup(name);
+    obj = ossl_x509name_alloc(cX509Name);
+    /* OpenSSL 1.1.1 takes a non-const pointer */
+    new = X509_NAME_dup((X509_NAME *)name);
     if (!new)
         ossl_raise(eX509NameError, "X509_NAME_dup");
-    SetX509Name(obj, new);
+    RTYPEDDATA_DATA(obj) = new;
 
     return obj;
 }
@@ -80,21 +79,6 @@ GetX509NamePtr(VALUE obj)
 /*
  * Private
  */
-static VALUE
-ossl_x509name_alloc(VALUE klass)
-{
-    X509_NAME *name;
-    VALUE obj;
-
-    obj = NewX509Name(klass);
-    if (!(name = X509_NAME_new())) {
-        ossl_raise(eX509NameError, NULL);
-    }
-    SetX509Name(obj, name);
-
-    return obj;
-}
-
 static ID id_aref;
 static VALUE ossl_x509name_add_entry(int, VALUE*, VALUE);
 #define rb_aref(obj, key) rb_funcall((obj), id_aref, 1, (key))
@@ -140,34 +124,33 @@ ossl_x509name_init_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 static VALUE
 ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 {
-    X509_NAME *name;
-    VALUE arg, template;
+    VALUE arg, template, tmp = Qnil;
 
-    GetX509Name(self, name);
-    if (rb_scan_args(argc, argv, "02", &arg, &template) == 0) {
+    rb_scan_args(argc, argv, "02", &arg, &template);
+    ossl_want_uninitialized(self, &ossl_x509name_type);
+
+    if (argc == 0 || !NIL_P((tmp = rb_check_array_type(arg)))) {
+        X509_NAME *name = X509_NAME_new();
+        if (!name)
+            ossl_raise(eX509NameError, "X509_NAME_new");
+        RTYPEDDATA_DATA(self) = name;
+
+        if (argc > 0) {
+            if (NIL_P(template))
+                template = OBJECT_TYPE_TEMPLATE;
+            rb_block_call(tmp, rb_intern("each"), 0, 0, ossl_x509name_init_i,
+                          rb_ary_new_from_args(2, self, template));
+        }
         return self;
     }
-    else {
-        VALUE tmp = rb_check_array_type(arg);
-        if (!NIL_P(tmp)) {
-            VALUE args;
-            if(NIL_P(template)) template = OBJECT_TYPE_TEMPLATE;
-            args = rb_ary_new3(2, self, template);
-            rb_block_call(tmp, rb_intern("each"), 0, 0, ossl_x509name_init_i, args);
-        }
-        else{
-            const unsigned char *p;
-            VALUE str = ossl_to_der_if_possible(arg);
-            X509_NAME *x;
-            StringValue(str);
-            p = (unsigned char *)RSTRING_PTR(str);
-            x = d2i_X509_NAME(&name, &p, RSTRING_LEN(str));
-            DATA_PTR(self) = name;
-            if(!x){
-                ossl_raise(eX509NameError, NULL);
-            }
-        }
-    }
+
+    VALUE str = ossl_to_der_if_possible(arg);
+    StringValue(str);
+    const unsigned char *p = (unsigned char *)RSTRING_PTR(str);
+    X509_NAME *name = d2i_X509_NAME(NULL, &p, RSTRING_LEN(str));
+    if (!name)
+        ossl_raise(eX509NameError, "d2i_X509_NAME");
+    RTYPEDDATA_DATA(self) = name;
 
     return self;
 }
@@ -176,18 +159,15 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_x509name_initialize_copy(VALUE self, VALUE other)
 {
-    X509_NAME *name, *name_other, *name_new;
+    X509_NAME *name_other, *name_new;
 
-    rb_check_frozen(self);
-    GetX509Name(self, name);
+    ossl_want_uninitialized(self, &ossl_x509name_type);
     GetX509Name(other, name_other);
 
     name_new = X509_NAME_dup(name_other);
     if (!name_new)
         ossl_raise(eX509NameError, "X509_NAME_dup");
-
-    SetX509Name(self, name_new);
-    X509_NAME_free(name);
+    RTYPEDDATA_DATA(self) = name_new;
 
     return self;
 }
@@ -365,11 +345,17 @@ static int
 ossl_x509name_cmp0(VALUE self, VALUE other)
 {
     X509_NAME *name1, *name2;
+    int result;
 
     GetX509Name(self, name1);
     GetX509Name(other, name2);
 
-    return X509_NAME_cmp(name1, name2);
+    result = X509_NAME_cmp(name1, name2);
+    if (result == -2) {
+        ossl_raise(eX509NameError, NULL);
+    }
+
+    return result;
 }
 
 /*

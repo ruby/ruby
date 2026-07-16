@@ -4,6 +4,10 @@ on:
     branches:
       - master
       - 'ruby_*_*'
+
+permissions:
+  contents: read
+
 jobs:
   hooks:
     name: Post-push hooks
@@ -11,6 +15,8 @@ jobs:
     if: ${{ github.repository == 'ruby/ruby' }}
     steps:
       - name: Sync git.ruby-lang.org
+        id: sync-git
+        continue-on-error: true
         run: |
           mkdir -p ~/.ssh
           (umask 066; printenv RUBY_GIT_SYNC_PRIVATE_KEY > ~/.ssh/id_ed25519)
@@ -22,13 +28,14 @@ jobs:
         if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_') }}
 
       - name: Fetch changesets on bugs.ruby-lang.org
+        continue-on-error: true
         run: |
           curl "https://bugs.ruby-lang.org/sys/fetch_changesets?key=${REDMINE_SYS_API_KEY}" -s --fail-with-body -w '* status: %{http_code}\n'
         env:
           REDMINE_SYS_API_KEY: ${{ secrets.REDMINE_SYS_API_KEY }}
         if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_') }}
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2 # zizmor: ignore[artipacked]
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 500 # for notify-slack-commits
           token: ${{ secrets.MATZBOT_AUTO_UPDATE_TOKEN }}
@@ -69,6 +76,8 @@ jobs:
         if: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Push PR notes to GitHub
+        id: pr-notes
+        continue-on-error: true
         run: ruby tool/notes-github-pr.rb "$(pwd)/.git" "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
         env:
           GITHUB_OLD_SHA: ${{ github.event.before }}
@@ -78,6 +87,10 @@ jobs:
           GIT_COMMITTER_NAME: git
           EMAIL: svn-admin@ruby-lang.org
         if: ${{ github.ref == 'refs/heads/master' }}
+
+      - name: Check for failures
+        run: exit 1
+        if: ${{ steps.sync-git.outcome == 'failure' || steps.pr-notes.outcome == 'failure' }}
 
       - uses: ./.github/actions/slack
         with:

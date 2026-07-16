@@ -20,6 +20,11 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Work around transient crates.io download failures (curl HTTP/2 framing / partial transfer)
+  CARGO_NET_RETRY: 10
+  CARGO_HTTP_MULTIPLEXING: false
+
 jobs:
   rust-warnings:
     env:
@@ -32,11 +37,11 @@ jobs:
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/cargo'))
       )}}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 

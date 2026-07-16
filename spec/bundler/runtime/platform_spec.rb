@@ -219,7 +219,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       gem "platform_specific"
     G
 
-    bundle "config set force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
 
     bundle "install"
 
@@ -233,7 +233,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       gem "platform_specific"
     G
 
-    bundle "config set force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
 
     bundle "install"
 
@@ -247,7 +247,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       gem "platform_specific"
     G
 
-    bundle "config set force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
 
     bundle "install"
 
@@ -377,7 +377,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         gem "platform_specific"
       G
 
-      bundle "config set force_ruby_platform true"
+      bundle_config "force_ruby_platform true"
 
       bundle "install"
 
@@ -398,7 +398,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     bundle :lock
 
     simulate_platform "x86-mswin32" do
-      bundle "config set force_ruby_platform true"
+      bundle_config "force_ruby_platform true"
       bundle "install"
 
       expect(the_bundle).to include_gems "myrack 1.0"

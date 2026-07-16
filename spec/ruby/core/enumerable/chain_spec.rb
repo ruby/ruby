@@ -18,6 +18,6 @@ describe "Enumerable#chain" do
   end
 
   it "returns an Enumerator::Chain if given a block" do
-    EnumerableSpecs::Numerous.new.chain.should be_an_instance_of(Enumerator::Chain)
+    EnumerableSpecs::Numerous.new.chain.should.instance_of?(Enumerator::Chain)
   end
 end

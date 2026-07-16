@@ -321,6 +321,12 @@ pub fn brk(cb: &mut CodeBlock, imm16: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// UDF - permanently undefined instruction
+pub fn udf(cb: &mut CodeBlock, imm16: u16) {
+    let bytes: [u8; 4] = Udf::udf(imm16).into();
+    cb.write_bytes(&bytes);
+}
+
 /// CMP - compare rn and rm, update flags
 pub fn cmp(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rn, rm) {

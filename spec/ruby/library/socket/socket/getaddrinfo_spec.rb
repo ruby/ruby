@@ -43,7 +43,7 @@ describe "Socket.getaddrinfo" do
       addrinfo.each do |a|
         case a.last
         when Socket::IPPROTO_UDP, Socket::IPPROTO_TCP
-          expected.should include(a)
+          expected.should.include?(a)
         else
           # don't check this. It's some weird protocol we don't know about
           # so we can't spec it.
@@ -90,7 +90,7 @@ describe "Socket.getaddrinfo" do
         ["AF_INET6", 9, "::", "::", Socket::AF_INET6, Socket::SOCK_STREAM, Socket::IPPROTO_TCP],
         ["AF_INET6", 9, "0:0:0:0:0:0:0:0", "0:0:0:0:0:0:0:0", Socket::AF_INET6, Socket::SOCK_STREAM, Socket::IPPROTO_TCP]
       ]
-      res.each { |a| expected.should include(a) }
+      res.each { |a| expected.should.include?(a) }
     end
 
     it "accepts empty addresses for IPv6 non-passive sockets" do
@@ -104,13 +104,13 @@ describe "Socket.getaddrinfo" do
         ["AF_INET6", 9, "::1", "::1", Socket::AF_INET6, Socket::SOCK_STREAM, Socket::IPPROTO_TCP],
         ["AF_INET6", 9, "0:0:0:0:0:0:0:1", "0:0:0:0:0:0:0:1", Socket::AF_INET6, Socket::SOCK_STREAM, Socket::IPPROTO_TCP]
       ]
-      res.each { |a| expected.should include(a) }
+      res.each { |a| expected.should.include?(a) }
     end
 
     it "raises ResolutionError when fails to resolve address" do
       -> {
         Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX")
-      }.should raise_error(Socket::ResolutionError) { |e|
+      }.should.raise(Socket::ResolutionError) { |e|
         [Socket::EAI_FAMILY, Socket::EAI_FAIL].should.include?(e.error_code)
       }
     end
@@ -120,7 +120,7 @@ end
 describe 'Socket.getaddrinfo' do
   describe 'without global reverse lookups' do
     it 'returns an Array' do
-      Socket.getaddrinfo(nil, 'ftp').should be_an_instance_of(Array)
+      Socket.getaddrinfo(nil, 'ftp').should.instance_of?(Array)
     end
 
     it 'accepts an Integer as the address family' do
@@ -131,8 +131,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
-      array[5].should be_kind_of(Integer)
-      array[6].should be_kind_of(Integer)
+      array[5].should.is_a?(Integer)
+      array[6].should.is_a?(Integer)
     end
 
     it 'accepts an Integer as the address family using IPv6' do
@@ -143,8 +143,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '::1'
       array[3].should == '::1'
       array[4].should == Socket::AF_INET6
-      array[5].should be_kind_of(Integer)
-      array[6].should be_kind_of(Integer)
+      array[5].should.is_a?(Integer)
+      array[6].should.is_a?(Integer)
     end
 
     it 'accepts a Symbol as the address family' do
@@ -155,8 +155,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
-      array[5].should be_kind_of(Integer)
-      array[6].should be_kind_of(Integer)
+      array[5].should.is_a?(Integer)
+      array[6].should.is_a?(Integer)
     end
 
     it 'accepts a Symbol as the address family using IPv6' do
@@ -167,8 +167,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '::1'
       array[3].should == '::1'
       array[4].should == Socket::AF_INET6
-      array[5].should be_kind_of(Integer)
-      array[6].should be_kind_of(Integer)
+      array[5].should.is_a?(Integer)
+      array[6].should.is_a?(Integer)
     end
 
     it 'accepts a String as the address family' do
@@ -179,8 +179,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
-      array[5].should be_kind_of(Integer)
-      array[6].should be_kind_of(Integer)
+      array[5].should.is_a?(Integer)
+      array[6].should.is_a?(Integer)
     end
 
     it 'accepts a String as the address family using IPv6' do
@@ -191,8 +191,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '::1'
       array[3].should == '::1'
       array[4].should == Socket::AF_INET6
-      array[5].should be_kind_of(Integer)
-      array[6].should be_kind_of(Integer)
+      array[5].should.is_a?(Integer)
+      array[6].should.is_a?(Integer)
     end
 
     it 'accepts an object responding to #to_str as the host' do
@@ -207,8 +207,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
-      array[5].should be_kind_of(Integer)
-      array[6].should be_kind_of(Integer)
+      array[5].should.is_a?(Integer)
+      array[6].should.is_a?(Integer)
     end
 
     it 'accepts an object responding to #to_str as the address family' do
@@ -223,8 +223,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
-      array[5].should be_kind_of(Integer)
-      array[6].should be_kind_of(Integer)
+      array[5].should.is_a?(Integer)
+      array[6].should.is_a?(Integer)
     end
 
     it 'accepts an Integer as the socket type' do
@@ -237,7 +237,7 @@ describe 'Socket.getaddrinfo' do
         Socket::AF_INET,
         Socket::SOCK_STREAM,
       ]
-      [0, Socket::IPPROTO_TCP].should include(proto)
+      [0, Socket::IPPROTO_TCP].should.include?(proto)
     end
 
     it 'accepts a Symbol as the socket type' do
@@ -250,7 +250,7 @@ describe 'Socket.getaddrinfo' do
         Socket::AF_INET,
         Socket::SOCK_STREAM,
       ]
-      [0, Socket::IPPROTO_TCP].should include(proto)
+      [0, Socket::IPPROTO_TCP].should.include?(proto)
     end
 
     it 'accepts a String as the socket type' do
@@ -263,7 +263,7 @@ describe 'Socket.getaddrinfo' do
         Socket::AF_INET,
         Socket::SOCK_STREAM,
       ]
-      [0, Socket::IPPROTO_TCP].should include(proto)
+      [0, Socket::IPPROTO_TCP].should.include?(proto)
     end
 
     it 'accepts an object responding to #to_str as the socket type' do
@@ -280,7 +280,7 @@ describe 'Socket.getaddrinfo' do
         Socket::AF_INET,
         Socket::SOCK_STREAM,
       ]
-      [0, Socket::IPPROTO_TCP].should include(proto)
+      [0, Socket::IPPROTO_TCP].should.include?(proto)
     end
 
     platform_is_not :windows do
@@ -294,7 +294,7 @@ describe 'Socket.getaddrinfo' do
           Socket::AF_INET,
           Socket::SOCK_DGRAM,
         ]
-        [0, Socket::IPPROTO_UDP].should include(proto)
+        [0, Socket::IPPROTO_UDP].should.include?(proto)
       end
     end
 
@@ -309,7 +309,7 @@ describe 'Socket.getaddrinfo' do
         Socket::AF_INET,
         Socket::SOCK_STREAM,
       ]
-      [0, Socket::IPPROTO_TCP].should include(proto)
+      [0, Socket::IPPROTO_TCP].should.include?(proto)
     end
 
     it 'performs a reverse lookup when the reverse_lookup argument is true' do
@@ -319,7 +319,7 @@ describe 'Socket.getaddrinfo' do
       addr[0].should == 'AF_INET'
       addr[1].should == 21
 
-      addr[2].should be_an_instance_of(String)
+      addr[2].should.instance_of?(String)
       addr[2].should_not == addr[3]
 
       addr[3].should == '127.0.0.1'
@@ -332,7 +332,7 @@ describe 'Socket.getaddrinfo' do
       addr[0].should == 'AF_INET'
       addr[1].should == 21
 
-      addr[2].should be_an_instance_of(String)
+      addr[2].should.instance_of?(String)
       addr[2].should_not == addr[3]
 
       addr[3].should == '127.0.0.1'
@@ -349,7 +349,7 @@ describe 'Socket.getaddrinfo' do
         Socket::AF_INET,
         Socket::SOCK_STREAM,
       ]
-      [0, Socket::IPPROTO_TCP].should include(proto)
+      [0, Socket::IPPROTO_TCP].should.include?(proto)
     end
   end
 
@@ -372,7 +372,7 @@ describe 'Socket.getaddrinfo' do
       # We don't have control over this value and there's no way to test this
       # without relying on Socket.getaddrinfo()'s own behaviour (meaning this
       # test would faily any way of the method was not implemented correctly).
-      addr[2].should be_an_instance_of(String)
+      addr[2].should.instance_of?(String)
       addr[2].should_not == addr[3]
 
       addr[3].should == '127.0.0.1'

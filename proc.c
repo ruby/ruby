@@ -19,6 +19,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
+#include "internal/vm.h"
 #include "method.h"
 #include "iseq.h"
 #include "vm_core.h"
@@ -43,11 +44,201 @@ VALUE rb_cUnboundMethod;
 VALUE rb_cMethod;
 VALUE rb_cBinding;
 VALUE rb_cProc;
+static VALUE rb_cSourceRange;
 
 static rb_block_call_func bmcall;
 static int method_arity(VALUE);
 static int method_min_max_arity(VALUE, int *max);
 static VALUE proc_binding(VALUE self);
+
+struct source_range_data {
+    VALUE path;
+    VALUE absolute_path;
+    int start_line;
+    int start_column;
+    int end_line;
+    int end_column;
+};
+
+static size_t
+source_range_memsize(const void *ptr)
+{
+    return sizeof(struct source_range_data);
+}
+
+RUBY_REFERENCES(source_range_refs) = {
+    RUBY_REF_EDGE(struct source_range_data, path),
+    RUBY_REF_EDGE(struct source_range_data, absolute_path),
+    RUBY_REF_END
+};
+
+static const rb_data_type_t source_range_data_type = {
+    "source_range",
+    {
+        RUBY_REFS_LIST_PTR(source_range_refs),
+        RUBY_TYPED_DEFAULT_FREE,
+        source_range_memsize,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING
+};
+
+static VALUE
+source_range_new(const rb_iseq_t *iseq)
+{
+    if (!iseq) {
+        return Qnil;
+    }
+    rb_iseq_check(iseq);
+
+    VALUE path = rb_iseq_path(iseq);
+    VALUE absolute_path = rb_iseq_realpath(iseq);
+    if (NIL_P(path) && NIL_P(absolute_path)) {
+        return Qnil;
+    }
+
+    int start_line, start_column, end_line, end_column;
+    rb_iseq_code_location(iseq, &start_line, &start_column, &end_line, &end_column);
+
+    struct source_range_data *data;
+    VALUE obj = TypedData_Make_Struct(rb_cSourceRange, struct source_range_data, &source_range_data_type, data);
+    RB_OBJ_WRITE(obj, &data->path, path);
+    RB_OBJ_WRITE(obj, &data->absolute_path, absolute_path);
+    data->start_line = start_line;
+    data->start_column = start_column;
+    data->end_line = end_line;
+    data->end_column = end_column;
+
+    return obj;
+}
+
+static struct source_range_data *
+source_range_data_get(VALUE self)
+{
+    struct source_range_data *data;
+    TypedData_Get_Struct(self, struct source_range_data, &source_range_data_type, data);
+    return data;
+}
+
+/*
+ * call-seq:
+ *    source_range.path  -> String
+ *
+ * Returns the source path for the callable associated with this source range.
+ * This is the same path returned as the first element of #source_location.
+ */
+static VALUE
+source_range_path(VALUE self)
+{
+    return source_range_data_get(self)->path;
+}
+
+/*
+ * call-seq:
+ *    source_range.absolute_path  -> String or nil
+ *
+ * Returns the absolute source path for the callable associated with this source
+ * range, or +nil+ if the source has no absolute path, such as eval'd code.
+ */
+static VALUE
+source_range_absolute_path(VALUE self)
+{
+    return source_range_data_get(self)->absolute_path;
+}
+
+/*
+ * call-seq:
+ *    source_range.start_line  -> Integer
+ *
+ * Returns the 1-indexed line number where this source range starts.
+ */
+static VALUE
+source_range_start_line(VALUE self)
+{
+    return INT2NUM(source_range_data_get(self)->start_line);
+}
+
+/*
+ * call-seq:
+ *    source_range.start_column  -> Integer
+ *
+ * Returns the 0-indexed byte column where this source range starts.
+ *
+ *   -> {}.source_range.start_column     # => 0 # the '->'
+ *   l = -> {}.source_range.start_column # => 4 # the '->'
+ *   proc {}.source_range.start_column   # => 5 # the '{'
+ *   method(def m = 42).source_range.start_column # => 7 # the 'def'
+ */
+static VALUE
+source_range_start_column(VALUE self)
+{
+    return INT2NUM(source_range_data_get(self)->start_column);
+}
+
+/*
+ * call-seq:
+ *    source_range.end_line  -> Integer
+ *
+ * Returns the 1-indexed line number where this source range ends.
+ *
+ * Note that this does not include a potential heredoc that spans beyond the callable's end, for example:
+ *
+ *   proc { <<~HEREDOC }.source_range.end_line # => 1
+ *     heredoc
+ *     contents
+ *   HEREDOC
+ *
+ * To get the location of the final HEREDOC you can use +Prism.find(Proc|Method|UnboundMethod)+ and then compute the maximum end_line and end_column.
+ */
+static VALUE
+source_range_end_line(VALUE self)
+{
+    return INT2NUM(source_range_data_get(self)->end_line);
+}
+
+/*
+ * call-seq:
+ *    source_range.end_column  -> Integer
+ *
+ * Returns the 0-indexed byte column where this source range ends.
+ *
+ * Note that this does not include a potential heredoc that spans beyond the callable's end, for example:
+ *
+ *   proc { <<~HEREDOC }.source_range.end_column # => 19
+ *     heredoc
+ *     contents
+ *   HEREDOC
+ *
+ * To get the location of the final HEREDOC you can use +Prism.find(Proc|Method|UnboundMethod)+ and then compute the maximum end_line and end_column.
+ */
+static VALUE
+source_range_end_column(VALUE self)
+{
+    return INT2NUM(source_range_data_get(self)->end_column);
+}
+
+/*
+ * call-seq:
+ *    source_range.inspect  -> String
+ *
+ * Returns a human-readable string with the #absolute_path if available,
+ * otherwise the #path, and the start and end coordinates.
+ */
+static VALUE
+source_range_inspect(VALUE self)
+{
+    struct source_range_data *data = source_range_data_get(self);
+    VALUE str = rb_str_new_cstr("#<Ruby::SourceRange ");
+    VALUE path = NIL_P(data->absolute_path) ? data->path : data->absolute_path;
+
+    VM_ASSERT(!NIL_P(path));
+    rb_str_append(str, path);
+
+    rb_str_catf(str, ":(%d,%d)-(%d,%d)>",
+                data->start_line, data->start_column,
+                data->end_line, data->end_column);
+
+    return str;
+}
 
 /* Proc */
 
@@ -77,11 +268,32 @@ block_mark_and_move(struct rb_block *block)
     }
 }
 
+/* hidden ivar holding a refined proc's cref; see Proc#refined */
+static ID id_refinements_cref;
+
 static void
 proc_mark_and_move(void *ptr)
 {
     rb_proc_t *proc = ptr;
     block_mark_and_move((struct rb_block *)&proc->block);
+}
+
+const rb_cref_t *
+rb_proc_refinements_cref(VALUE procval)
+{
+    rb_proc_t *proc;
+    GetProcPtr(procval, proc);
+    if (!proc->is_refined) return NULL;
+    return (const rb_cref_t *)rb_ivar_get(procval, id_refinements_cref);
+}
+
+void
+rb_proc_set_refinements_cref(VALUE procval, const rb_cref_t *cref)
+{
+    rb_proc_t *proc;
+    GetProcPtr(procval, proc);
+    rb_ivar_set(procval, id_refinements_cref, (VALUE)cref);
+    proc->is_refined = 1;
 }
 
 typedef struct {
@@ -106,7 +318,7 @@ const rb_data_type_t ruby_proc_data_type = {
         proc_memsize,
         proc_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 #define proc_data_type ruby_proc_data_type
@@ -128,7 +340,7 @@ rb_obj_is_proc(VALUE proc)
 static VALUE
 proc_clone(VALUE self)
 {
-    VALUE procval = rb_proc_dup(self);
+    VALUE procval = rb_proc_dup_0(self);
     return rb_obj_clone_setup(self, procval, Qnil);
 }
 
@@ -136,8 +348,209 @@ proc_clone(VALUE self)
 static VALUE
 proc_dup(VALUE self)
 {
-    VALUE procval = rb_proc_dup(self);
+    VALUE procval = rb_proc_dup_0(self);
     return rb_obj_dup_setup(self, procval);
+}
+
+rb_cref_t *rb_vm_get_cref(const VALUE *ep);
+VALUE rb_proc_dup_with_iseq_and_cref(VALUE self, const rb_iseq_t *iseq, const rb_cref_t *cref);
+
+/* Proc#refined memoizes the most recent {copied iseq, cref} pair per
+ * source iseq, since rb_iseq_dup_with_independent_caches is expensive.
+ * The memo lives in a hidden identity Hash (source iseq -> frozen Array):
+ *
+ *   [base_cref, copied_iseq, cref, mod1, mod2, ...]
+ *
+ * keyed by (base_cref, modules).
+ * An entry is retained for the VM's lifetime */
+
+enum refinement_memo_index {
+    REFINEMENT_MEMO_BASE_CREF,   /* key: captured cref of the source proc */
+    REFINEMENT_MEMO_COPIED_ISEQ, /* value: copied iseq with independent caches */
+    REFINEMENT_MEMO_CREF,        /* value: cref with refinements activated */
+    REFINEMENT_MEMO_MODS         /* key: modules, in argument order */
+};
+
+static VALUE refinement_memo_map; /* set once under the VM lock */
+
+static bool
+refinement_memo_key_match(VALUE memo, VALUE base_cref, long argc, const VALUE *mods)
+{
+    const VALUE *p = RARRAY_CONST_PTR(memo);
+    if (p[REFINEMENT_MEMO_BASE_CREF] != base_cref) return false;
+    if (RARRAY_LEN(memo) - REFINEMENT_MEMO_MODS != argc) return false;
+    for (long i = 0; i < argc; i++) {
+        if (p[REFINEMENT_MEMO_MODS + i] != mods[i]) return false;
+    }
+    return true;
+}
+
+static bool
+refinement_memo_lookup(const rb_iseq_t *src_iseq, VALUE base_cref,
+                       long argc, const VALUE *mods,
+                       const rb_iseq_t **iseq_out, const rb_cref_t **cref_out)
+{
+    VM_ASSERT(ISEQ_BODY(src_iseq)->type == ISEQ_TYPE_BLOCK);
+    VALUE memo = Qnil;
+    RB_VM_LOCKING() {
+        if (refinement_memo_map) {
+            memo = rb_hash_lookup(refinement_memo_map, (VALUE)src_iseq);
+        }
+    }
+    if (!NIL_P(memo)) {
+        const VALUE *p = RARRAY_CONST_PTR(memo);
+        if (refinement_memo_key_match(memo, base_cref, argc, mods)) {
+            const rb_iseq_t *copied_iseq = (const rb_iseq_t *)p[REFINEMENT_MEMO_COPIED_ISEQ];
+            if (ISEQ_BODY(copied_iseq)->param.flags.ruby2_keywords ==
+                ISEQ_BODY(src_iseq)->param.flags.ruby2_keywords) {
+                *iseq_out = copied_iseq;
+                *cref_out = (const rb_cref_t *)p[REFINEMENT_MEMO_CREF];
+                return true;
+            }
+            rb_category_warn(
+                RB_WARN_CATEGORY_PERFORMANCE,
+                "Proc#refined re-copies the block because the ruby2_keywords flag changed after the copy was memoized"
+            );
+            return false;
+        }
+        rb_category_warn(
+            RB_WARN_CATEGORY_PERFORMANCE,
+            "Proc#refined called with different modules for the same block disables memoization"
+        );
+    }
+    return false;
+}
+
+static void
+refinement_memo_store(const rb_iseq_t *src_iseq, VALUE base_cref,
+                      long argc, const VALUE *mods,
+                      const rb_iseq_t *copied_iseq, const rb_cref_t *cref)
+{
+    VM_ASSERT(ISEQ_BODY(src_iseq)->type == ISEQ_TYPE_BLOCK);
+
+    VALUE memo = rb_ary_hidden_new(REFINEMENT_MEMO_MODS + argc);
+    rb_ary_push(memo, base_cref);
+    rb_ary_push(memo, (VALUE)copied_iseq);
+    rb_ary_push(memo, (VALUE)cref);
+    for (long i = 0; i < argc; i++) {
+        rb_ary_push(memo, mods[i]);
+    }
+    OBJ_FREEZE(memo);
+
+    /* create the map outside the lock; losing the race just discards it */
+    VALUE new_map = 0;
+    if (!refinement_memo_map) {
+        new_map = rb_obj_hide(rb_ident_hash_new());
+    }
+
+    RB_VM_LOCKING() {
+        if (!refinement_memo_map) {
+            rb_vm_register_global_object(new_map);
+            refinement_memo_map = new_map;
+        }
+        rb_hash_aset(refinement_memo_map, (VALUE)src_iseq, memo);
+    }
+}
+
+/*
+ * call-seq:
+ *   prc.refined(mod, ...) -> a_proc
+ *
+ * Returns a new Proc that behaves like the receiver but with the refinements
+ * activated by the given modules in effect inside its body.  The receiver is
+ * left unchanged.
+ *
+ *   module StringRefinement
+ *     refine String do
+ *       def shout = upcase + "!"
+ *     end
+ *   end
+ *
+ *   original = ->(s) { s.shout }
+ *   refined_proc = original.refined(StringRefinement)
+ *   refined_proc.call("hi")  #=> "HI!"
+ *   original.call("hi")      #=> NoMethodError
+ *
+ * Only Procs created from a Ruby block are supported; calling this on a Proc
+ * backed by a C function, a Symbol, or a method raises ArgumentError.
+ *
+ * Calling this method on a Proc that already has refinements applied by this
+ * method also raises ArgumentError.  To activate the refinements of multiple
+ * modules, pass them all in a single call:
+ *
+ *   refined_proc = original.refined(StringRefinement, OtherRefinement)
+ *
+ * The refinement set of the returned Proc is fixed when it is created:
+ * calling +using+ inside its body raises RuntimeError.
+ *
+ * The refinements are in effect throughout the body, including nested blocks
+ * and methods defined with +def+ inside it.  As with a +def+ inside a +using+
+ * scope, such a method keeps the refinements even when it is called later:
+ *
+ *   refined_proc = ->(s) {
+ *     -> { s.shout }.call          # nested block: "HI!"
+ *   }.refined(StringRefinement)
+ *
+ *   refined_proc = -> {
+ *     obj = Object.new
+ *     def obj.shout_hi = "hi".shout  # the method sees the refinement
+ *     obj.shout_hi                   #=> "HI!"
+ *   }.refined(StringRefinement)
+ *
+ * This method copies the instruction sequence of the block and of all of its
+ * nested blocks so that the copy can resolve methods through the refinements
+ * without affecting the original Proc.  Applying refinements therefore
+ * increases memory use roughly in proportion to the size of the block.  The
+ * copy is cached and reused for the same receiver and the same modules.
+ */
+static VALUE
+proc_refined(int argc, VALUE *argv, VALUE self)
+{
+    rb_proc_t *src;
+    GetProcPtr(self, src);
+
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+
+    if (vm_block_type(&src->block) != block_type_iseq || src->is_from_method) {
+        rb_raise(rb_eArgError, "can't apply refinements to a Proc without a Ruby block");
+    }
+
+    if (src->is_refined) {
+        rb_raise(rb_eArgError, "can't apply refinements to a Proc that already has refinements");
+    }
+
+    for (int i = 0; i < argc; i++) {
+        Check_Type(argv[i], T_MODULE);
+    }
+
+    VALUE base_cref = (VALUE)rb_vm_get_cref(src->block.as.captured.ep);
+    const rb_iseq_t *src_iseq = src->block.as.captured.code.iseq;
+
+    const rb_iseq_t *new_iseq;
+    const rb_cref_t *new_cref;
+    if (!refinement_memo_lookup(src_iseq, base_cref, argc, argv, &new_iseq, &new_cref)) {
+        new_iseq = rb_iseq_dup_with_independent_caches(src_iseq);
+        rb_cref_t *cref = rb_vm_cref_dup((const rb_cref_t *)base_cref);
+        /* rb_using_module_recursive modifies shared subclass lists */
+        RB_VM_LOCKING() {
+            for (int i = 0; i < argc; i++) {
+                rb_using_module_recursive(cref, argv[i]);
+            }
+        }
+        /* Freeze the refinements table and mark it shareable so the memoized
+         * cref can be reused from any Ractor. */
+        VALUE refs = CREF_REFINEMENTS(cref);
+        if (!NIL_P(refs)) {
+            OBJ_FREEZE(refs);
+            RB_OBJ_SET_SHAREABLE(refs);
+        }
+        CREF_OMOD_SHARED_SET(cref);
+        CREF_REFINED_PROC_SET(cref);
+        new_cref = cref;
+        refinement_memo_store(src_iseq, base_cref, argc, argv, new_iseq, new_cref);
+    }
+
+    return rb_proc_dup_with_iseq_and_cref(self, new_iseq, new_cref);
 }
 
 /*
@@ -285,7 +698,7 @@ const rb_data_type_t ruby_binding_data_type = {
         binding_memsize,
         binding_mark_and_move,
     },
-    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 VALUE
@@ -359,7 +772,7 @@ rb_binding_new(void)
  *
  *     # evaluate template in context of the object
  *     eval(template, user.get_binding)
- *     #=> {:name=>"Joan", :position=>"manager"}
+ *     #=> {name: "Joan", position: "manager"}
  *
  *  Binding#local_variable_get can be used to access the variables
  *  whose names are reserved Ruby keywords:
@@ -385,19 +798,31 @@ rb_f_binding(VALUE self)
 }
 
 /*
- *  call-seq:
- *     binding.eval(string [, filename [,lineno]])  -> obj
+ * call-seq:
+ *    binding.eval(string, filename = default_filename, lineno = 1) -> obj
  *
- *  Evaluates the Ruby expression(s) in <em>string</em>, in the
- *  <em>binding</em>'s context.  If the optional <em>filename</em> and
- *  <em>lineno</em> parameters are present, they will be used when
- *  reporting syntax errors.
+ * Evaluates the Ruby expression(s) in +string+ in the context of
+ * +self+. Returns the result of the last expression:
  *
- *     def get_binding(param)
- *       binding
- *     end
+ *     def get_binding(param) = binding
  *     b = get_binding("hello")
  *     b.eval("param")   #=> "hello"
+ *
+ * If the optional +filename+ is given, it will be used as the
+ * filename of the evaluation (for <tt>__FILE__</tt> and errors).
+ * Otherwise, it will default to <tt>(eval at __FILE__:__LINE__)</tt>
+ * where <tt>__FILE__</tt> and <tt>__LINE__</tt> are the filename and
+ * line number of the caller, respectively:
+ *
+ *     b.eval("puts __FILE__") # => "(eval at test.rb:4)"
+ *     b.eval("puts __FILE__", "foobar.rb") # => "foobar.rb"
+ *
+ * If the optional +lineno+ is given, it will be used as the
+ * line number of the evaluation (for <tt>__LINE__</tt> and errors).
+ * Otherwise, it will default to 1:
+ *
+ *     b.eval("puts __LINE__") # => 1
+ *     b.eval("puts __LINE__", "foobar.rb", 10) # => 10
  */
 
 static VALUE
@@ -1132,10 +1557,16 @@ rb_proc_call_kw(VALUE self, VALUE args, int kw_splat)
     VALUE vret;
     rb_proc_t *proc;
     int argc = check_argc(RARRAY_LEN(args));
-    const VALUE *argv = RARRAY_CONST_PTR(args);
+
+    // rb_vm_invoke_proc may end up modifying argv as part of calling and so we
+    // must use RARRAY_PTR, which marks the array as WB_UNPROTECTED instead of
+    // RARRAY_CONST_PTR. Unfortunately this is worse for GC.
+    // See invoke_block_from_c_proc
+    VALUE *argv = RARRAY_PTR(args);
     GetProcPtr(self, proc);
     vret = rb_vm_invoke_proc(GET_EC(), proc, argc, argv,
-                             kw_splat, VM_BLOCK_HANDLER_NONE);
+                             kw_splat, VM_BLOCK_HANDLER_NONE,
+                             rb_proc_refinements_cref(self));
     RB_GC_GUARD(self);
     RB_GC_GUARD(args);
     return vret;
@@ -1160,7 +1591,8 @@ rb_proc_call_with_block_kw(VALUE self, int argc, const VALUE *argv, VALUE passed
     VALUE vret;
     rb_proc_t *proc;
     GetProcPtr(self, proc);
-    vret = rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, proc_to_block_handler(passed_procval));
+    vret = rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, proc_to_block_handler(passed_procval),
+                             rb_proc_refinements_cref(self));
     RB_GC_GUARD(self);
     return vret;
 }
@@ -1515,20 +1947,14 @@ proc_eq(VALUE self, VALUE other)
 static VALUE
 iseq_location(const rb_iseq_t *iseq)
 {
-    VALUE loc[5];
-    int i = 0;
+    VALUE loc[2];
 
     if (!iseq) return Qnil;
     rb_iseq_check(iseq);
-    loc[i++] = rb_iseq_path(iseq);
-    const rb_code_location_t *cl = &ISEQ_BODY(iseq)->location.code_location;
-    loc[i++] = RB_INT2NUM(cl->beg_pos.lineno);
-    loc[i++] = RB_INT2NUM(cl->beg_pos.column);
-    loc[i++] = RB_INT2NUM(cl->end_pos.lineno);
-    loc[i++] = RB_INT2NUM(cl->end_pos.column);
-    RUBY_ASSERT_ALWAYS(i == numberof(loc));
+    loc[0] = rb_iseq_path(iseq);
+    loc[1] = RB_INT2NUM(ISEQ_BODY(iseq)->location.first_lineno);
 
-    return rb_ary_new_from_values(i, loc);
+    return rb_ary_new4(2, loc);
 }
 
 VALUE
@@ -1539,23 +1965,35 @@ rb_iseq_location(const rb_iseq_t *iseq)
 
 /*
  * call-seq:
- *    prc.source_location  -> [String, Integer, Integer, Integer, Integer]
+ *    prc.source_location  -> [String, Integer]
  *
- * Returns the location where the Proc was defined.
- * The returned Array contains:
- *   (1) the Ruby source filename
- *   (2) the line number where the definition starts
- *   (3) the position where the definition starts, in number of bytes from the start of the line
- *   (4) the line number where the definition ends
- *   (5) the position where the definitions ends, in number of bytes from the start of the line
- *
- * This method will return +nil+ if the Proc was not defined in Ruby (i.e. native).
+ * Returns the Ruby source filename and line number containing this proc
+ * or +nil+ if this proc was not defined in Ruby (i.e. native).
  */
 
 VALUE
 rb_proc_location(VALUE self)
 {
     return iseq_location(rb_proc_get_iseq(self, 0));
+}
+
+/*
+ * call-seq:
+ *    prc.source_range  -> Ruby::SourceRange or nil
+ *
+ * Returns a Ruby::SourceRange for this proc, or +nil+ if this proc was
+ * not defined in Ruby (i.e. native) or has no source path.
+ *
+ * The returned Ruby::SourceRange includes the source path, absolute path when
+ * available, and the start and end line and byte-column coordinates.
+ *
+ * See https://github.com/ruby/spec/blob/master/core/proc/source_range_spec.rb
+ * for the location of start/end line/column in various cases.
+ */
+static VALUE
+rb_proc_source_range(VALUE self)
+{
+    return source_range_new(rb_proc_get_iseq(self, 0));
 }
 
 VALUE
@@ -1808,7 +2246,7 @@ static const rb_data_type_t method_data_type = {
         NULL, // No external memory to report,
         bm_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_FROZEN_SHAREABLE_NO_REC
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_FROZEN_SHAREABLE_NO_REC
 };
 
 VALUE
@@ -1861,6 +2299,8 @@ mnew_missing_by_name(VALUE klass, VALUE obj, VALUE *name, int scope, VALUE mclas
     return mnew_missing(klass, obj, SYM2ID(vid), mclass);
 }
 
+VALUE rb_zsuper_to_super(int argc, VALUE *argv, VALUE self);
+
 static VALUE
 mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
               VALUE obj, ID id, VALUE mclass, int scope, int error)
@@ -1886,8 +2326,9 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
             rb_print_inaccessible(klass, id, visi);
         }
     }
-    if (me->def->type == VM_METHOD_TYPE_ZSUPER) {
-        if (me->defined_class) {
+    if (me->def->type == VM_METHOD_TYPE_ZSUPER ||
+            (me->def->type == VM_METHOD_TYPE_CFUNC && me->def->body.cfunc.func == (rb_cfunc_t)rb_zsuper_to_super)) {
+        if (me->def->type == VM_METHOD_TYPE_ZSUPER && me->defined_class) {
             VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
             id = me->def->original_id;
             me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
@@ -2479,6 +2920,14 @@ rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const str
         RB_GC_GUARD(body);
     }
     else {
+        rb_proc_t *body_proc;
+        GetProcPtr(body, body_proc);
+        /* A bmethod never reads the refinement cref carried on the proc;
+         * reject rather than silently drop the refinements. */
+        if (body_proc->is_refined) {
+            rb_raise(rb_eArgError,
+                     "can't define a method from a Proc with refinements");
+        }
         VALUE procval = rb_proc_dup(body);
         if (vm_proc_iseq(procval) != NULL) {
             rb_proc_t *proc;
@@ -2626,7 +3075,7 @@ method_clone(VALUE self)
     struct METHOD *orig, *data;
 
     TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
-    clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
+    clone = TypedData_Make_Struct(rb_obj_class(self), struct METHOD, &method_data_type, data);
     rb_obj_clone_setup(self, clone, Qnil);
     RB_OBJ_WRITE(clone, &data->recv, orig->recv);
     RB_OBJ_WRITE(clone, &data->klass, orig->klass);
@@ -2644,7 +3093,7 @@ method_dup(VALUE self)
     struct METHOD *orig, *data;
 
     TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
-    clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
+    clone = TypedData_Make_Struct(rb_obj_class(self), struct METHOD, &method_data_type, data);
     rb_obj_dup_setup(self, clone);
     RB_OBJ_WRITE(clone, &data->recv, orig->recv);
     RB_OBJ_WRITE(clone, &data->klass, orig->klass);
@@ -3079,7 +3528,11 @@ original_method_entry(VALUE mod, ID id)
 
     while ((me = rb_method_entry(mod, id)) != 0) {
         const rb_method_definition_t *def = me->def;
-        if (def->type != VM_METHOD_TYPE_ZSUPER) break;
+
+        if (def->type != VM_METHOD_TYPE_ZSUPER &&
+            (def->type != VM_METHOD_TYPE_CFUNC ||
+             def->body.cfunc.func != (rb_cfunc_t)rb_zsuper_to_super)) break;
+
         mod = RCLASS_SUPER(me->owner);
         id = def->original_id;
     }
@@ -3200,23 +3653,49 @@ rb_method_entry_location(const rb_method_entry_t *me)
 
 /*
  * call-seq:
- *    meth.source_location  -> [String, Integer, Integer, Integer, Integer]
+ *    source_location -> location
  *
- * Returns the location where the method was defined.
- * The returned Array contains:
- *   (1) the Ruby source filename
- *   (2) the line number where the definition starts
- *   (3) the position where the definition starts, in number of bytes from the start of the line
- *   (4) the line number where the definition ends
- *   (5) the position where the definitions ends, in number of bytes from the start of the line
+ * Returns a two-element array containing the Ruby source filename
+ * as a string and the line number integer where +self+ is defined:
  *
- * This method will return +nil+ if the method was not defined in Ruby (i.e. native).
+ *     def greeting = "hello"
+ *     method(:greeting).source_location # => ["test.rb", 1]
+ *
+ * Returns nil if +self+ is not a method defined in Ruby (i.e. defined
+ * using native code):
+ *
+ *     Kernel.method(:puts).source_location # => nil
  */
 
 VALUE
 rb_method_location(VALUE method)
 {
     return method_def_location(rb_method_def(method));
+}
+
+static VALUE
+method_def_source_range(const rb_method_definition_t *def)
+{
+    return source_range_new(method_def_iseq(def));
+}
+
+/*
+ * call-seq:
+ *    meth.source_range  -> Ruby::SourceRange or nil
+ *
+ * Returns a Ruby::SourceRange for this method, or +nil+ if this method
+ * was not defined in Ruby (i.e. native) or has no source path.
+ *
+ * The returned Ruby::SourceRange includes the source path, absolute path when
+ * available, and the start and end line and byte-column coordinates.
+ *
+ * See https://github.com/ruby/spec/blob/master/core/method/shared/source_range.rb
+ * for the location of start/end line/column in various cases.
+ */
+static VALUE
+rb_method_source_range(VALUE method)
+{
+    return method_def_source_range(rb_method_def(method));
 }
 
 static const rb_method_definition_t *
@@ -3305,6 +3784,18 @@ static VALUE
 rb_method_parameters(VALUE method)
 {
     return method_def_parameters(rb_method_def(method));
+}
+
+static inline VALUE
+append_param_name(VALUE str, VALUE name, const char *unnamed)
+{
+    if (!NIL_P(name)) {
+        rb_str_append(str, rb_sym2str(name));
+    }
+    else if (unnamed) {
+        rb_str_cat_cstr(str, unnamed);
+    }
+    return str;
 }
 
 /*
@@ -3455,50 +3946,30 @@ method_inspect(VALUE method)
                 name = RARRAY_AREF(pair, 1);
             }
             else {
-                // FIXME: can it be reduced to switch/case?
-                if (kind == req || kind == opt) {
-                    name = rb_str_new2("_");
-                }
-                else if (kind == rest || kind == keyrest) {
-                    name = rb_str_new2("");
-                }
-                else if (kind == block) {
-                    name = rb_str_new2("block");
-                }
-                else if (kind == nokey) {
-                    name = rb_str_new2("nil");
-                }
-                else if (kind == noblock) {
-                    name = rb_str_new2("nil");
-                }
-                else {
-                    name = Qnil;
-                }
+                name = Qnil;
             }
 
             if (kind == req) {
-                rb_str_catf(str, "%"PRIsVALUE, name);
+                append_param_name(str, name, "_");
             }
             else if (kind == opt) {
-                rb_str_catf(str, "%"PRIsVALUE"=...", name);
+                rb_str_cat_cstr(append_param_name(str, name, "_"), "=...");
             }
             else if (kind == keyreq) {
-                rb_str_catf(str, "%"PRIsVALUE":", name);
+                rb_str_cat_cstr(append_param_name(str, name, NULL), ":");
             }
             else if (kind == key) {
-                rb_str_catf(str, "%"PRIsVALUE": ...", name);
+                rb_str_cat_cstr(append_param_name(str, name, NULL), ": ...");
             }
             else if (kind == rest) {
-                if (name == ID2SYM('*')) {
-                    rb_str_cat_cstr(str, forwarding ? "..." : "*");
-                }
-                else {
-                    rb_str_catf(str, "*%"PRIsVALUE, name);
+                rb_str_cat_cstr(str, forwarding ? "..." : "*");
+                if (name != ID2SYM('*')) {
+                    append_param_name(str, name, NULL);
                 }
             }
             else if (kind == keyrest) {
                 if (name != ID2SYM(idPow)) {
-                    rb_str_catf(str, "**%"PRIsVALUE, name);
+                    append_param_name(rb_str_cat_cstr(str, "**"), name, NULL);
                 }
                 else if (i > 0) {
                     rb_str_set_len(str, RSTRING_LEN(str) - 2);
@@ -3517,7 +3988,7 @@ method_inspect(VALUE method)
                     }
                 }
                 else {
-                    rb_str_catf(str, "&%"PRIsVALUE, name);
+                    append_param_name(rb_str_cat_cstr(str, "&"), name, NULL);
                 }
             }
             else if (kind == nokey) {
@@ -3591,6 +4062,8 @@ method_to_proc(VALUE method)
 }
 
 extern VALUE rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner);
+extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
+rb_cref_t * rb_vm_get_cref(const VALUE *ep);
 
 /*
  * call-seq:
@@ -3617,11 +4090,76 @@ method_super_method(VALUE method)
         mid = data->me->def->body.alias.original_me->def->original_id;
     }
     else {
-        super_class = RCLASS_SUPER(RCLASS_ORIGIN(iclass));
+        VALUE klass = iclass;
+        if (RICLASS_FOR_REFINEMENT_P(klass)) {
+            // Refined methods need this check before superclass determination
+            klass = RBASIC(klass)->klass;
+        }
+        super_class = RCLASS_SUPER(RCLASS_ORIGIN(klass));
         mid = data->me->def->original_id;
     }
     if (!super_class) return Qnil;
-    me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, mid, &iclass);
+
+    // For refined methods, skip refinements for the same definition, but consider
+    // refinements for superclass methods
+    const rb_method_definition_t *skip_def = RICLASS_FOR_REFINEMENT_P(iclass) ? data->me->def : NULL;
+
+    // Use the CREF of the Method/UnboundMethod, not the CREF of the caller of super_method.
+    // We must avoid the use of rb_callable_method_entry_with_refinements, as that will
+    // implicitly use the refinements activated in of the caller of super_method.
+    const rb_cref_t *cref = NULL;
+    switch (data->me->def->type) {
+      case VM_METHOD_TYPE_ISEQ:
+        cref = data->me->def->body.iseq.cref;
+        break;
+      case VM_METHOD_TYPE_BMETHOD: {
+        const rb_proc_t *proc;
+        GetProcPtr(data->me->def->body.bmethod.proc, proc);
+        const struct rb_block *block = &proc->block;
+        if (vm_block_type(block) == block_type_iseq)
+            cref = rb_vm_get_cref(block->as.captured.ep);
+        break;
+      }
+      default:
+        break;
+    }
+    VALUE klass = super_class;
+    me = NULL;
+    while (klass) {
+        const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
+        if (!cme) break;
+        if (cme->def->type != VM_METHOD_TYPE_REFINED) {
+            me = (rb_method_entry_t *)cme;
+            iclass = cme->defined_class;
+            break;
+        }
+        // Look through all CREF scopes for a refinement for cme->owner, mirroring
+        // the loop in search_refined_method.
+        const rb_cref_t *c;
+        for (c = cref; c; c = CREF_NEXT(c)) {
+            VALUE refs = CREF_REFINEMENTS(c);
+            if (NIL_P(refs)) continue;
+            VALUE r = rb_hash_lookup(refs, cme->owner);
+            if (NIL_P(r)) continue;
+            const rb_callable_method_entry_t *ref_cme = rb_callable_method_entry(r, mid);
+            if (!ref_cme) break;
+            if (ref_cme->def->type == VM_METHOD_TYPE_REFINED) continue;
+            if (skip_def && rb_method_definition_eq(ref_cme->def, skip_def)) continue;
+            me = (rb_method_entry_t *)ref_cme;
+            iclass = ref_cme->defined_class;
+            break;
+        }
+        if (me) break;
+        // No refined method found. Use orig_me if available, or normal method lookup
+        // in superclass otherwise.
+        const rb_method_entry_t *orig_me = cme->def->body.refined.orig_me;
+        if (orig_me) {
+            me = (rb_method_entry_t *)orig_me;
+            iclass = orig_me->defined_class ? orig_me->defined_class : cme->defined_class;
+            break;
+        }
+        klass = RCLASS_SUPER(cme->defined_class);
+    }
     if (!me) return Qnil;
     return mnew_internal(me, me->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
 }
@@ -3804,7 +4342,15 @@ curry(RB_BLOCK_CALL_FUNC_ARGLIST(_, args))
         return arity;
     }
     else {
-        return rb_proc_call_with_block(proc, check_argc(RARRAY_LEN(passed)), RARRAY_CONST_PTR(passed), blockarg);
+        // `passed` is the only reference keeping this array (and thus the
+        // buffer that RARRAY_CONST_PTR points into) alive, but it is otherwise
+        // unused after this point. Without RB_GC_GUARD the compiler may drop it
+        // before the call returns, so conservative stack marking misses it and
+        // GC can reclaim the array while it is still being read as argv,
+        // crashing with "try to mark T_NONE object".
+        VALUE result = rb_proc_call_with_block(proc, check_argc(RARRAY_LEN(passed)), RARRAY_CONST_PTR(passed), blockarg);
+        RB_GC_GUARD(passed);
+        return result;
     }
 }
 
@@ -4200,6 +4746,28 @@ proc_ruby2_keywords(VALUE procval)
  */
 
 /*
+ *  Document-class: Ruby::SourceRange
+ *
+ *  An object representing the source-code range for a Ruby callable.
+ *
+ *  Source ranges are returned by Proc#source_range, Method#source_range, and
+ *  UnboundMethod#source_range. They include the source path, absolute path when
+ *  available, start line, start byte column, end line, and end byte column.
+ *
+ *  The primary purpose of this class is to implement `Prism.find` precisely and cleanly on all Ruby implementations,
+ *  in a way which does not depend on implementation details like `node_id`.
+ *  For that we need the start/end line/column and the absolute_path, which is exactly what this class provides.
+ *
+ *  The user of `Prism.find` can then tweak the result as desired to, for example,
+ *  include heredocs as mentioned in Ruby::SourceRange#end_line.
+ *  Or for Proc#source_range to include the method to which the block is passed.
+ *
+ *  Note that the returned source range is not always an evaluable fragment by itself,
+ *  notably because heredocs can go beyond the `end` of the method and
+ *  for blocks because the range starts at `{`/`do`.
+ */
+
+/*
  *  Document-class: Proc
  *
  * A +Proc+ object is an encapsulation of a block of code, which can be stored
@@ -4566,6 +5134,22 @@ void
 Init_Proc(void)
 {
 #undef rb_intern
+    id_refinements_cref = rb_make_internal_id();
+
+    VALUE mRuby = rb_define_module("Ruby");
+
+    /* Ruby::SourceRange */
+    rb_cSourceRange = rb_define_class_under(mRuby, "SourceRange", rb_cObject);
+    rb_undef_alloc_func(rb_cSourceRange);
+    rb_undef_method(CLASS_OF(rb_cSourceRange), "new");
+    rb_define_method(rb_cSourceRange, "path", source_range_path, 0);
+    rb_define_method(rb_cSourceRange, "absolute_path", source_range_absolute_path, 0);
+    rb_define_method(rb_cSourceRange, "start_line", source_range_start_line, 0);
+    rb_define_method(rb_cSourceRange, "start_column", source_range_start_column, 0);
+    rb_define_method(rb_cSourceRange, "end_line", source_range_end_line, 0);
+    rb_define_method(rb_cSourceRange, "end_column", source_range_end_column, 0);
+    rb_define_method(rb_cSourceRange, "inspect", source_range_inspect, 0);
+
     /* Proc */
     rb_cProc = rb_define_class("Proc", rb_cObject);
     rb_undef_alloc_func(rb_cProc);
@@ -4587,6 +5171,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "clone", proc_clone, 0);
     rb_define_method(rb_cProc, "dup", proc_dup, 0);
+    rb_define_method(rb_cProc, "refined", proc_refined, -1);
     rb_define_method(rb_cProc, "hash", proc_hash, 0);
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
     rb_define_alias(rb_cProc, "inspect", "to_s");
@@ -4598,6 +5183,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "==", proc_eq, 1);
     rb_define_method(rb_cProc, "eql?", proc_eq, 1);
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
+    rb_define_method(rb_cProc, "source_range", rb_proc_source_range, 0);
     rb_define_method(rb_cProc, "parameters", rb_proc_parameters, -1);
     rb_define_method(rb_cProc, "ruby2_keywords", proc_ruby2_keywords, 0);
     // rb_define_method(rb_cProc, "isolate", rb_proc_isolate, 0); is not accepted.
@@ -4639,6 +5225,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "owner", method_owner, 0);
     rb_define_method(rb_cMethod, "unbind", method_unbind, 0);
     rb_define_method(rb_cMethod, "source_location", rb_method_location, 0);
+    rb_define_method(rb_cMethod, "source_range", rb_method_source_range, 0);
     rb_define_method(rb_cMethod, "parameters", rb_method_parameters, 0);
     rb_define_method(rb_cMethod, "super_method", method_super_method, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
@@ -4665,6 +5252,7 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "bind", umethod_bind, 1);
     rb_define_method(rb_cUnboundMethod, "bind_call", umethod_bind_call, -1);
     rb_define_method(rb_cUnboundMethod, "source_location", rb_method_location, 0);
+    rb_define_method(rb_cUnboundMethod, "source_range", rb_method_source_range, 0);
     rb_define_method(rb_cUnboundMethod, "parameters", rb_method_parameters, 0);
     rb_define_method(rb_cUnboundMethod, "super_method", method_super_method, 0);
 

@@ -3,14 +3,12 @@ require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
 require_relative 'shared/encodings'
-require_relative 'shared/taint'
 
 describe "Array#pack with format 'B'" do
   it_behaves_like :array_pack_basic, 'B'
   it_behaves_like :array_pack_basic_non_float, 'B'
   it_behaves_like :array_pack_arguments, 'B'
   it_behaves_like :array_pack_hex, 'B'
-  it_behaves_like :array_pack_taint, 'B'
 
   it "calls #to_str to convert an Object to a String" do
     obj = mock("pack B string")
@@ -19,8 +17,8 @@ describe "Array#pack with format 'B'" do
   end
 
   it "will not implicitly convert a number to a string" do
-    -> { [0].pack('B') }.should raise_error(TypeError)
-    -> { [0].pack('b') }.should raise_error(TypeError)
+    -> { [0].pack('B') }.should.raise(TypeError)
+    -> { [0].pack('b') }.should.raise(TypeError)
   end
 
   it "encodes one bit for each character starting with the most significant bit" do
@@ -66,7 +64,6 @@ describe "Array#pack with format 'b'" do
   it_behaves_like :array_pack_basic_non_float, 'b'
   it_behaves_like :array_pack_arguments, 'b'
   it_behaves_like :array_pack_hex, 'b'
-  it_behaves_like :array_pack_taint, 'b'
 
   it "calls #to_str to convert an Object to a String" do
     obj = mock("pack H string")

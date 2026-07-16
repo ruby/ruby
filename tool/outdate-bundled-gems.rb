@@ -101,7 +101,7 @@ class Removal
     (@defaults ||= {}).fetch(spec) do
       File.open(prefixed(spec)) do |f|
         if /^# default: (\S+) (\d+\.\d+)/ =~ f.gets("")
-          File.mtime(prefixed($1)) <= Time.at(Rational($2))
+          File.mtime($1) <= Time.at(Rational($2))
         else
           false
         end
@@ -146,14 +146,14 @@ end
 
 srcdir.glob(".bundle/specifications/*.gemspec") do |spec|
   unless srcdir.directory?(".bundle/gems/#{File.basename(spec, '.gemspec')}/")
-    next if srcdir.default_gem?(srcdir.prefixed(spec))
+    next if srcdir.default_gem?(spec)
     srcdir.unlink(spec)
   end
 end
 
 curdir.glob(".bundle/specifications/*.gemspec") do |spec|
   unless srcdir.directory?(".bundle/gems/#{File.basename(spec, '.gemspec')}")
-    next if srcdir.default_gem?(curdir.prefixed(spec))
+    next if curdir.default_gem?(spec)
     curdir.unlink(spec)
   end
 end

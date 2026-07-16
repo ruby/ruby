@@ -132,18 +132,22 @@ thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
     if (GVL_DEBUG) fprintf(stderr, "gvl acquire (%p): acquire\n", th);
 }
 
-#define thread_sched_to_dead thread_sched_to_waiting
-
 static void
-thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
+thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th, bool yield_immediately)
 {
     ReleaseMutex(sched->lock);
 }
 
 static void
+thread_sched_to_dead(struct rb_thread_sched *sched, rb_thread_t *th)
+{
+    thread_sched_to_waiting(sched, th, true);
+}
+
+static void
 thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    thread_sched_to_waiting(sched, th);
+    thread_sched_to_waiting(sched, th, true);
     native_thread_yield();
     thread_sched_to_running(sched, th);
 }
@@ -906,17 +910,7 @@ rb_threadptr_sched_free(rb_thread_t *th)
     ruby_xfree(th->sched.vm_stack);
 }
 
-void
-rb_threadptr_remove(rb_thread_t *th)
-{
-    // do nothing
-}
 
-void
-rb_thread_sched_mark_zombies(rb_vm_t *vm)
-{
-    // do nothing
-}
 
 static bool
 vm_barrier_finish_p(rb_vm_t *vm)
@@ -1027,3 +1021,11 @@ rb_thread_malloc_stack_set(rb_thread_t *th, void *stack, size_t stack_size)
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
+
+void
+rb_thread_sched_wait_winding(rb_vm_t *vm)
+{
+    // no coroutine (M:N) threads on this implementation: nothing winds down
+    // after leaving the living set (see thread_pthread.c)
+    (void)vm;
+}

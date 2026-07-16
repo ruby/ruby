@@ -22,7 +22,7 @@ describe "BasicSocket#recv" do
       client.close
     end
     Thread.pass while t.status and t.status != "sleep"
-    t.status.should_not be_nil
+    t.status.should_not == nil
 
     socket = TCPSocket.new('127.0.0.1', @port)
     socket.send('hello', 0)
@@ -44,7 +44,7 @@ describe "BasicSocket#recv" do
       client.close
     end
     Thread.pass while t.status and t.status != "sleep"
-    t.status.should_not be_nil
+    t.status.should_not == nil
 
     socket = TCPSocket.new('127.0.0.1', @port)
     socket.send('helloU', Socket::MSG_OOB)
@@ -64,7 +64,7 @@ describe "BasicSocket#recv" do
       client.close
     end
     Thread.pass while t.status and t.status != "sleep"
-    t.status.should_not be_nil
+    t.status.should_not == nil
 
     socket = TCPSocket.new('127.0.0.1', @port)
     socket.write("firstline\377secondline\377")
@@ -193,12 +193,12 @@ describe "BasicSocket#recv" do
         end
 
         Thread.pass while t.status and t.status != "sleep"
-        t.status.should_not be_nil
+        t.status.should_not == nil
 
         socket = TCPSocket.new('127.0.0.1', @port)
         socket.close
 
-        t.value.should be_nil
+        t.value.should == nil
       end
     end
 

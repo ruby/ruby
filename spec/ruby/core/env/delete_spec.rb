@@ -50,6 +50,6 @@ describe "ENV.delete" do
   end
 
   it "raises TypeError if the argument is not a String and does not respond to #to_str" do
-    -> { ENV.delete(Object.new) }.should raise_error(TypeError, "no implicit conversion of Object into String")
+    -> { ENV.delete(Object.new) }.should.raise(TypeError, "no implicit conversion of Object into String")
   end
 end

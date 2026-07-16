@@ -687,6 +687,8 @@ ONIG_EXTERN const OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIGERR_NEVER_ENDING_RECURSION                       -221
 #define ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY        -222
 #define ONIGERR_INVALID_CHAR_PROPERTY_NAME                   -223
+#define ONIGERR_TOO_MANY_RANGE_REPEAT                        -224
+#define ONIGERR_TOO_MANY_NULL_CHECK                          -225
 #define ONIGERR_INVALID_CODE_POINT_VALUE                     -400
 #define ONIGERR_INVALID_WIDE_CHAR_VALUE                      -400
 #define ONIGERR_TOO_BIG_WIDE_CHAR_VALUE                      -401
@@ -846,6 +848,8 @@ ONIG_EXTERN
 void onig_free_body(OnigRegex);
 ONIG_EXTERN
 int onig_reg_copy(OnigRegex* reg, OnigRegex orig_reg);
+ONIG_EXTERN
+int onig_reg_copy_body(OnigRegex reg, OnigRegex orig_reg);
 ONIG_EXTERN
 OnigPosition onig_scan(OnigRegex reg, const OnigUChar* str, const OnigUChar* end, OnigRegion* region, OnigOptionType option, int (*scan_callback)(OnigPosition, OnigPosition, OnigRegion*, void*), void* callback_arg);
 ONIG_EXTERN

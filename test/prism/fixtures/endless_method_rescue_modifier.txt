@@ -1,0 +1,11 @@
+def f = a rescue b
+
+def f = a rescue b rescue c
+
+baz def f = a rescue z do end
+
+bar(baz def f = a rescue z do end)
+
+foo(def f = x rescue y rescue y do end)
+
+baz def f = a rescue b rescue c { }

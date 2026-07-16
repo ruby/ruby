@@ -798,7 +798,7 @@ class TestThread < Test::Unit::TestCase
 
   def for_test_handle_interrupt_with_return
     Thread.handle_interrupt(Object => :never){
-      Thread.current.raise RuntimeError.new("have to be rescured")
+      Thread.current.raise RuntimeError.new("have to be rescued")
       return
     }
   rescue
@@ -815,7 +815,7 @@ class TestThread < Test::Unit::TestCase
     assert_nothing_raised do
       begin
         Thread.handle_interrupt(Object => :never){
-          Thread.current.raise RuntimeError.new("have to be rescured")
+          Thread.current.raise RuntimeError.new("have to be rescued")
           break
         }
       rescue
@@ -845,6 +845,40 @@ class TestThread < Test::Unit::TestCase
     }
     assert_raise(e) {q << true; th.join}
     assert_equal(:ok, r)
+  end
+
+  def test_handle_interrupt_masks_sigint
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      omit "SIGINT handling differs on Windows"
+    end
+
+    assert_in_out_err([], <<-INPUT, %w(outer false), [])
+      waiting = Thread::Queue.new
+      release = Thread::Queue.new
+      inner = false
+
+      Thread.new do
+        waiting.pop
+        Process.kill(:INT, Process.pid)
+        release.push(true)
+      end
+
+      begin
+        Thread.handle_interrupt(SignalException => :never) do
+          begin
+            waiting.push(true)
+            release.pop
+          rescue Interrupt
+            inner = true
+            raise
+          end
+        end
+      rescue Interrupt
+        puts "outer"
+      end
+
+      puts inner
+    INPUT
   end
 
   def test_handle_interrupt_and_io
@@ -1480,8 +1514,6 @@ q.pop
   end
 
   def test_thread_interrupt_for_killed_thread
-    pend "hang-up" if /mswin|mingw/ =~ RUBY_PLATFORM
-
     opts = { timeout: 5, timeout_error: nil }
 
     assert_normal_exit(<<-_end, '[Bug #8996]', **opts)
@@ -1592,10 +1624,9 @@ q.pop
     INPUT
   end
 
-  # [Bug #21342]
   def test_unlock_locked_mutex_with_collected_fiber
-    bug21127 = '[ruby-core:120930] [Bug #21127]'
-    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug21127)
+    bug21342 = '[ruby-core:122121] [Bug #21342]'
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug21342)
     begin;
       5.times do
         m = Mutex.new
@@ -1667,7 +1698,7 @@ q.pop
 
   # [Bug #21926]
   def test_thread_join_during_finalizers
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
     begin;
       require 'open3'
 
@@ -1682,12 +1713,15 @@ q.pop
             stdin.close rescue nil
             stdout.close rescue nil
             stderr.close rescue nil
-            wait_thread.value
+            # On some GC implementations (e.g. mmtk), finalizers run as postponed
+            # jobs which can execute on any thread, including the wait_thread itself.
+            # Guard against joining the current thread.
+            wait_thread.value unless Thread.current == wait_thread
           end
         end
       end
 
-      50.times { ProcessWrapper.new }
+      20.times { ProcessWrapper.new }
       GC.stress = true
       1000.times { Object.new }
     end;

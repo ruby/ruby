@@ -1655,7 +1655,7 @@ has_redirection(const char *cmd, UINT cp)
           case '%':
             if (*++ptr != '_' && !ISALPHA(*ptr)) break;
             while (*++ptr == '_' || ISALNUM(*ptr));
-            if (*ptr++ == '%') return TRUE;
+            if (*ptr && *ptr++ == '%') return TRUE;
             break;
 
           case '\\':
@@ -5284,8 +5284,33 @@ w32_symlink(UINT cp, const char *src, const char *link)
     MultiByteToWideChar(cp, 0, src, -1, wsrc, len1);
     MultiByteToWideChar(cp, 0, link, -1, wlink, len2);
     translate_wchar(wsrc, L'/', L'\\');
+    translate_wchar(wlink, L'/', L'\\');
 
-    atts = GetFileAttributesW(wsrc);
+    /* A relative target is interpreted relative to the directory of the link,
+       not the current directory.  Resolve it there to decide whether to create
+       a directory symlink; otherwise a relative target pointing at a directory
+       would wrongly become a file symlink when the current directory differs
+       from the link's directory. */
+    {
+        WCHAR *sep;
+        int independent =
+            (((wsrc[0] >= L'A' && wsrc[0] <= L'Z') ||
+              (wsrc[0] >= L'a' && wsrc[0] <= L'z')) && wsrc[1] == L':') ||
+            wsrc[0] == L'\\';
+        if (!independent && (sep = wcsrchr(wlink, L'\\')) != NULL) {
+            VALUE buf2;
+            size_t dirlen = sep - wlink + 1;
+            size_t srclen = wcslen(wsrc) + 1;
+            WCHAR *fullsrc = ALLOCV_N(WCHAR, buf2, dirlen + srclen);
+            MEMCPY(fullsrc, wlink, WCHAR, dirlen);
+            MEMCPY(fullsrc + dirlen, wsrc, WCHAR, srclen);
+            atts = GetFileAttributesW(fullsrc);
+            ALLOCV_END(buf2);
+        }
+        else {
+            atts = GetFileAttributesW(wsrc);
+        }
+    }
     if (atts != -1 && atts & FILE_ATTRIBUTE_DIRECTORY)
         flag = SYMBOLIC_LINK_FLAG_DIRECTORY;
     ret = CreateSymbolicLinkW(wlink, wsrc, flag |= create_flag);
@@ -6603,7 +6628,7 @@ rb_w32_pipe(int fds[2])
 
     memcpy(name, prefix, width_of_prefix);
     snprintf(name + width_of_prefix, width_of_ids, "%.*"PRI_PIDT_PREFIX"x-%.*lx",
-             width_of_pid, rb_w32_getpid(), width_of_serial, InterlockedIncrement(&serial)-1);
+             width_of_pid, rb_w32_getpid(), width_of_serial, (unsigned long)(InterlockedIncrement(&serial)-1));
 
     sec.nLength = sizeof(sec);
     sec.lpSecurityDescriptor = NULL;
@@ -6683,9 +6708,6 @@ rb_w32_pipe(int fds[2])
 static int
 console_emulator_p(void)
 {
-#ifdef _WIN32_WCE
-    return FALSE;
-#else
     const void *const func = WriteConsoleW;
     HMODULE k;
     MEMORY_BASIC_INFORMATION m;
@@ -6697,7 +6719,6 @@ console_emulator_p(void)
     k = GetModuleHandle("kernel32.dll");
     if (!k) return FALSE;
     return (HMODULE)m.AllocationBase != k;
-#endif
 }
 
 /* License: Ruby's */

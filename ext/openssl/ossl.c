@@ -231,6 +231,16 @@ VALUE mOSSL;
  */
 VALUE eOSSLError;
 
+void
+ossl_want_uninitialized(VALUE self, const rb_data_type_t *type)
+{
+    if (rb_check_typeddata(self, type)) {
+        rb_raise(rb_eTypeError, "%"PRIsVALUE" already initialized",
+                 rb_obj_class(self));
+    }
+    rb_check_frozen(self);
+}
+
 /*
  * Convert to DER string
  */
@@ -527,10 +537,18 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
 static VALUE
 ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
 {
-    const unsigned char *p1 = (const unsigned char *)StringValuePtr(str1);
-    const unsigned char *p2 = (const unsigned char *)StringValuePtr(str2);
-    long len1 = RSTRING_LEN(str1);
-    long len2 = RSTRING_LEN(str2);
+    const unsigned char *p1;
+    const unsigned char *p2;
+    long len1;
+    long len2;
+
+    StringValue(str1);
+    StringValue(str2);
+
+    p1 = (const unsigned char *)RSTRING_PTR(str1);
+    p2 = (const unsigned char *)RSTRING_PTR(str2);
+    len1 = RSTRING_LEN(str1);
+    len2 = RSTRING_LEN(str2);
 
     if (len1 != len2) {
         ossl_raise(rb_eArgError, "inputs must be of equal length");
@@ -1140,6 +1158,7 @@ Init_openssl(void)
     Init_ossl_digest();
     Init_ossl_engine();
     Init_ossl_hmac();
+    Init_ossl_hpke();
     Init_ossl_kdf();
     Init_ossl_ns_spki();
     Init_ossl_ocsp();

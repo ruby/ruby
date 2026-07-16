@@ -917,7 +917,7 @@ RSpec.describe "bundle install with gem sources" do
 
   describe "when requesting a quiet install via --quiet" do
     it "should be quiet if there are no warnings" do
-      bundle "config set force_ruby_platform true"
+      bundle_config "force_ruby_platform true"
 
       gemfile <<-G
         source "https://gem.repo1"
@@ -930,7 +930,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "should still display warnings and errors" do
-      bundle "config set force_ruby_platform true"
+      bundle_config "force_ruby_platform true"
 
       create_file("install_with_warning.rb", <<~RUBY)
         require "#{lib_dir}/bundler"
@@ -975,7 +975,7 @@ RSpec.describe "bundle install with gem sources" do
     it "should display a proper message to explain the problem" do
       FileUtils.chmod(0o500, bundle_path)
 
-      bundle "config set --local path vendor"
+      bundle_config "path vendor"
       bundle :install, raise_on_error: false
       expect(err).to include(bundle_path.to_s)
       expect(err).to include("grant executable permissions")
@@ -995,7 +995,7 @@ RSpec.describe "bundle install with gem sources" do
 
     it "should display a proper message to explain the problem" do
       FileUtils.chmod("-x", gems_path)
-      bundle "config set --local path vendor"
+      bundle_config "path vendor"
 
       begin
         bundle :install, raise_on_error: false
@@ -1025,7 +1025,7 @@ RSpec.describe "bundle install with gem sources" do
 
     it "should display a proper message to explain the problem" do
       FileUtils.chmod("-x", full_gem_path)
-      bundle "config set --local path vendor"
+      bundle_config "path vendor"
 
       begin
         bundle :install, raise_on_error: false
@@ -1055,7 +1055,7 @@ RSpec.describe "bundle install with gem sources" do
 
     it "should display a proper message to explain the problem" do
       FileUtils.chmod("-x", bin_dir)
-      bundle "config set --local path vendor"
+      bundle_config "path vendor"
 
       begin
         bundle :install, raise_on_error: false
@@ -1085,7 +1085,7 @@ RSpec.describe "bundle install with gem sources" do
 
     it "should display a proper message to explain the problem" do
       FileUtils.chmod("-w", bin_dir)
-      bundle "config set --local path vendor"
+      bundle_config "path vendor"
 
       begin
         bundle :install, raise_on_error: false
@@ -1115,7 +1115,7 @@ RSpec.describe "bundle install with gem sources" do
 
     it "should display a proper message to explain the problem" do
       FileUtils.chmod("-x", extensions_path)
-      bundle "config set --local path vendor"
+      bundle_config "path vendor"
 
       begin
         bundle :install, raise_on_error: false
@@ -1150,7 +1150,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "should display a proper message to explain the problem" do
-      bundle "config set --local path vendor"
+      bundle_config "path vendor"
       bundle :install
       expect(out).to include("Bundle complete!")
       expect(err).to be_empty
@@ -1186,7 +1186,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "should still work" do
-      bundle "config set --local path vendor"
+      bundle_config "path vendor"
       bundle :install
       expect(out).to include("Bundle complete!")
       expect(err).to be_empty
@@ -1221,7 +1221,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "should display a proper message to explain the problem" do
-      bundle "config set --local path vendor"
+      bundle_config "path vendor"
       bundle :install
       expect(out).to include("Bundle complete!")
       expect(err).to be_empty
@@ -1252,7 +1252,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "does not try to remove the directory and thus don't abort with an error about unsafe directory removal" do
-      bundle "config set --local path vendor"
+      bundle_config "path vendor"
 
       FileUtils.mkdir_p(gems_path)
       FileUtils.chmod(0o777, gems_path)
@@ -1276,7 +1276,7 @@ RSpec.describe "bundle install with gem sources" do
     it "should display a proper message to explain the problem" do
       FileUtils.chmod(0o500, cache_path)
 
-      bundle "config set --local path vendor"
+      bundle_config "path vendor"
       bundle :install, raise_on_error: false
       expect(err).to include(cache_path.to_s)
       expect(err).to include("grant write permissions")
@@ -1291,7 +1291,7 @@ RSpec.describe "bundle install with gem sources" do
         source "https://gem.repo1"
         gem 'myrack'
       G
-      bundle "config path vendor/bundle"
+      bundle_config "path vendor/bundle"
       bundle :install
       expect(out).to include("Bundle complete!")
       expect(err).to be_empty
@@ -1306,11 +1306,53 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when using umask 002 and setgid bit", :permissions do
+    let(:gems_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems") }
+    let(:foo_path) { gems_path.join("foo-1.0.0") }
+
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.write "CHANGELOG.md", "foo"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+        gem 'foo'
+      G
+
+      FileUtils.mkdir_p(gems_path)
+      FileUtils.chmod("g+s", gems_path)
+    end
+
+    it "should create the gem directory with proper permissions" do
+      with_umask(0o002) do
+        bundle_config "path vendor"
+        bundle :install
+        expect(out).to include("Bundle complete!")
+        expect(err).to be_empty
+        # Linux's SysV-derived mkdir(2) propagates the set-group-ID bit
+        # from the parent directory to newly created subdirectories. BSD
+        # (including macOS) inherits the parent's group via mkdir(2) but
+        # does not copy the set-group-ID bit itself, so the expected
+        # mode differs by platform.
+        expected = RUBY_PLATFORM.include?("darwin") ? 0o0775 : 0o2775
+        expect(File.stat(foo_path).mode & 0o7777).to eq(expected)
+      end
+    end
+  end
+
   describe "parallel make" do
     before do
       unless Gem::Installer.private_method_defined?(:build_jobs)
         skip "This example is runnable when RubyGems::Installer implements `build_jobs`"
       end
+
+      # The make jobserver is a GNU make feature. On Windows extensions are built
+      # with nmake, which has no `-j` jobserver (and an inherited `-j` MAKEFLAGS
+      # even breaks nmake), so the slot count these examples assert never appears.
+      skip "The make jobserver is not available on Windows (nmake)" if mswin?
 
       @old_makeflags = ENV["MAKEFLAGS"]
       @gemspec = nil
@@ -1352,7 +1394,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(gem_make_out).not_to include("make -j8")
     end
 
-    it "pass down the BUNDLE_JOBS to RubyGems when running the compilation of an extension" do
+    it "uses 3 slots from the available pool when running the compilation of an extension", rubygems: ">= 4.1.0.dev" do
       ENV.delete("MAKEFLAGS")
 
       install_gemfile(<<~G, env: { "BUNDLE_JOBS" => "8" })
@@ -1362,10 +1404,10 @@ RSpec.describe "bundle install with gem sources" do
 
       gem_make_out = File.read(File.join(@gemspec.extension_dir, "gem_make.out"))
 
-      expect(gem_make_out).to include("make -j8")
+      expect(gem_make_out).to include("make -j3")
     end
 
-    it "uses nprocessors by default" do
+    it "consumes 3 slots from the pool when BUNDLE_JOBS isn't set", rubygems: ">= 4.1.0.dev" do
       ENV.delete("MAKEFLAGS")
 
       install_gemfile(<<~G)
@@ -1375,7 +1417,49 @@ RSpec.describe "bundle install with gem sources" do
 
       gem_make_out = File.read(File.join(@gemspec.extension_dir, "gem_make.out"))
 
-      expect(gem_make_out).to include("make -j#{Etc.nprocessors + 1}")
+      expect(gem_make_out).to include("make -j3")
+    end
+  end
+
+  describe "when a native extension requires a transitive dependency at build time" do
+    before do
+      build_repo4 do
+        build_gem "alpha", "1.0.0" do |s|
+          extension = "ext/alpha/extconf.rb"
+          s.extensions = extension
+          s.write(extension, <<~CODE)
+            require "mkmf"
+            sleep 1
+            create_makefile("alpha")
+          CODE
+          s.write "lib/alpha.rb", "ALPHA = '1.0.0'"
+        end
+
+        build_gem "beta", "1.0.0" do |s|
+          s.add_dependency "alpha"
+          s.write "lib/beta.rb", "require 'alpha'\nBETA = '1.0.0'"
+        end
+
+        build_gem "gamma", "1.0.0" do |s|
+          s.add_dependency "beta"
+          extension = "ext/gamma/extconf.rb"
+          s.extensions = extension
+          s.write(extension, <<~EXTCONF)
+            require "beta"
+            require "mkmf"
+            create_makefile("gamma")
+          EXTCONF
+        end
+      end
+    end
+
+    it "installs successfully" do
+      install_gemfile <<~G
+        source "https://gem.repo4"
+        gem "gamma"
+      G
+
+      expect(the_bundle).to include_gems "alpha 1.0.0", "beta 1.0.0", "gamma 1.0.0"
     end
   end
 
@@ -1399,7 +1483,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "works" do
-      bundle "config path #{app_path}/vendor/bundle", dir: app_path
+      bundle "config set path #{app_path}/vendor/bundle", dir: app_path
 
       install_gemfile app_path.join("Gemfile"),<<~G, dir: app_path
         source "https://gem.repo4"
@@ -1414,7 +1498,7 @@ RSpec.describe "bundle install with gem sources" do
         source "https://gem.repo1"
         gem "myrack"
       G
-      bundle "config set --local path bundle"
+      bundle_config "path bundle"
       bundle "install", standalone: true
     end
 
@@ -1504,7 +1588,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "fails loudly if frozen mode set" do
-      bundle "config set --local deployment true"
+      bundle_config "deployment true"
       bundle "install", raise_on_error: false
 
       expect(err).to eq(
@@ -1580,7 +1664,7 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "automatically fixes the lockfile" do
-      bundle "config set --local path vendor/bundle"
+      bundle_config "path vendor/bundle"
 
       simulate_platform "x86_64-linux" do
         bundle "install", artifice: "compact_index"
@@ -1654,18 +1738,19 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "raises a clear error message when frozen" do
-      bundle "config set frozen true"
+      bundle_config "frozen true"
       bundle "install", raise_on_error: false
 
       expect(exitstatus).to eq(41)
-      expect(err).to eq("Bundler found incorrect dependencies in the lockfile for myrack_middleware-1.0")
+      expect(err).to include("Bundler found incorrect dependencies in the lockfile for myrack_middleware-1.0")
+      expect(err).to include("myrack: gemspec specifies = 0.9.1, not in lockfile")
     end
 
     it "updates the lockfile when not frozen" do
       missing_dep = "myrack (0.9.1)"
       expect(lockfile).not_to include(missing_dep)
 
-      bundle "config set frozen false"
+      bundle_config "frozen false"
       bundle :install
 
       expect(lockfile).to include(missing_dep)
@@ -1693,7 +1778,7 @@ RSpec.describe "bundle install with gem sources" do
 
   context "with only option" do
     before do
-      bundle "config set only a:b"
+      bundle_config "only a:b"
     end
 
     it "installs only gems of the specified groups" do
@@ -1807,7 +1892,7 @@ RSpec.describe "bundle install with gem sources" do
     before do
       symlinked_bundled_app = tmp("bundled_app-symlink")
       File.symlink(bundled_app, symlinked_bundled_app)
-      bundle "config path #{File.join(symlinked_bundled_app, ".vendor")}"
+      bundle_config "path #{File.join(symlinked_bundled_app, ".vendor")}"
 
       binman_path = tmp("binman")
       FileUtils.mkdir_p binman_path
@@ -1946,7 +2031,7 @@ RSpec.describe "bundle install with gem sources" do
   end
 
   it "only installs executable files in bin" do
-    bundle "config set --local path vendor/bundle"
+    bundle_config "path vendor/bundle"
 
     install_gemfile <<~G
       source "https://gem.repo1"

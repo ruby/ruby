@@ -7,8 +7,8 @@ describe "Hash#transform_keys" do
 
   it "returns new hash" do
     ret = @hash.transform_keys(&:succ)
-    ret.should_not equal(@hash)
-    ret.should be_an_instance_of(Hash)
+    ret.should_not.equal?(@hash)
+    ret.should.instance_of?(Hash)
   end
 
   it "sets the result as transformed keys with the given block" do
@@ -22,13 +22,13 @@ describe "Hash#transform_keys" do
   it "makes both hashes to share values" do
     value = [1, 2, 3]
     new_hash = { a: value }.transform_keys(&:upcase)
-    new_hash[:A].should equal(value)
+    new_hash[:A].should.equal?(value)
   end
 
   context "when no block is given" do
     it "returns a sized Enumerator" do
       enumerator = @hash.transform_keys
-      enumerator.should be_an_instance_of(Enumerator)
+      enumerator.should.instance_of?(Enumerator)
       enumerator.size.should == @hash.size
       enumerator.each(&:succ).should == { b: 1, c: 2, d: 3 }
     end
@@ -57,17 +57,17 @@ describe "Hash#transform_keys" do
 
   it "does not retain the default value" do
     h = Hash.new(1)
-    h.transform_keys(&:succ).default.should be_nil
+    h.transform_keys(&:succ).default.should == nil
     h[:a] = 1
-    h.transform_keys(&:succ).default.should be_nil
+    h.transform_keys(&:succ).default.should == nil
   end
 
   it "does not retain the default_proc" do
     pr = proc { |h, k| h[k] = [] }
     h = Hash.new(&pr)
-    h.transform_values(&:succ).default_proc.should be_nil
+    h.transform_values(&:succ).default_proc.should == nil
     h[:a] = 1
-    h.transform_values(&:succ).default_proc.should be_nil
+    h.transform_values(&:succ).default_proc.should == nil
   end
 
   it "does not retain compare_by_identity flag" do
@@ -84,7 +84,7 @@ describe "Hash#transform_keys!" do
   end
 
   it "returns self" do
-    @hash.transform_keys!(&:succ).should equal(@hash)
+    @hash.transform_keys!(&:succ).should.equal?(@hash)
   end
 
   it "updates self as transformed values with the given block" do
@@ -112,7 +112,7 @@ describe "Hash#transform_keys!" do
   context "when no block is given" do
     it "returns a sized Enumerator" do
       enumerator = @hash.transform_keys!
-      enumerator.should be_an_instance_of(Enumerator)
+      enumerator.should.instance_of?(Enumerator)
       enumerator.size.should == @hash.size
       enumerator.each(&:upcase).should == { A: 1, B: 2, C: 3, D: 4 }
     end
@@ -129,21 +129,21 @@ describe "Hash#transform_keys!" do
     end
 
     it "raises a FrozenError on an empty hash" do
-      ->{ {}.freeze.transform_keys!(&:upcase) }.should raise_error(FrozenError)
+      ->{ {}.freeze.transform_keys!(&:upcase) }.should.raise(FrozenError)
     end
 
     it "keeps pairs and raises a FrozenError" do
-      ->{ @hash.transform_keys!(&:upcase) }.should raise_error(FrozenError)
+      ->{ @hash.transform_keys!(&:upcase) }.should.raise(FrozenError)
       @hash.should == @initial_pairs
     end
 
     it "raises a FrozenError on hash argument" do
-      ->{ @hash.transform_keys!({ a: :A, b: :B, c: :C }) }.should raise_error(FrozenError)
+      ->{ @hash.transform_keys!({ a: :A, b: :B, c: :C }) }.should.raise(FrozenError)
     end
 
     context "when no block is given" do
       it "does not raise an exception" do
-        @hash.transform_keys!.should be_an_instance_of(Enumerator)
+        @hash.transform_keys!.should.instance_of?(Enumerator)
       end
     end
   end

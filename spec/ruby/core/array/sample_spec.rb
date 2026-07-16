@@ -14,23 +14,23 @@ describe "Array#sample" do
   end
 
   it "returns nil for an empty Array" do
-    [].sample.should be_nil
+    [].sample.should == nil
   end
 
   it "returns nil for an empty array when called without n and a Random is given" do
-    [].sample(random: Random.new(42)).should be_nil
+    [].sample(random: Random.new(42)).should == nil
   end
 
   it "returns a single value when not passed a count" do
-    [4].sample.should equal(4)
+    [4].sample.should.equal?(4)
   end
 
   it "returns a single value when not passed a count and a Random is given" do
-    [4].sample(random: Random.new(42)).should equal(4)
+    [4].sample(random: Random.new(42)).should.equal?(4)
   end
 
   it "returns a single value when not passed a count and a Random class is given" do
-    [4].sample(random: Random).should equal(4)
+    [4].sample(random: Random).should.equal?(4)
   end
 
   it "returns an empty Array when passed zero" do
@@ -38,12 +38,12 @@ describe "Array#sample" do
   end
 
   it "returns an Array of elements when passed a count" do
-    [1, 2, 3, 4].sample(3).should be_an_instance_of(Array)
+    [1, 2, 3, 4].sample(3).should.instance_of?(Array)
   end
 
   it "returns elements from the Array" do
     array = [1, 2, 3, 4]
-    array.sample(3).all? { |x| array.should include(x) }
+    array.sample(3).all? { |x| array.should.include?(x) }
   end
 
   it "returns at most the number of elements in the Array" do
@@ -67,11 +67,11 @@ describe "Array#sample" do
   end
 
   it "raises ArgumentError when passed a negative count" do
-    -> { [1, 2].sample(-1) }.should raise_error(ArgumentError)
+    -> { [1, 2].sample(-1) }.should.raise(ArgumentError)
   end
 
   it "does not return subclass instances with Array subclass" do
-    ArraySpecs::MyArray[1, 2, 3].sample(2).should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, 2, 3].sample(2).should.instance_of?(Array)
   end
 
   describe "with options" do
@@ -79,13 +79,13 @@ describe "Array#sample" do
       obj = mock("array_sample_random")
       obj.should_receive(:rand).and_return(0.5)
 
-      [1, 2].sample(random: obj).should be_an_instance_of(Integer)
+      [1, 2].sample(random: obj).should.instance_of?(Integer)
     end
 
     it "raises a NoMethodError if an object passed for the RNG does not define #rand" do
       obj = BasicObject.new
 
-      -> { [1, 2].sample(random: obj) }.should raise_error(NoMethodError)
+      -> { [1, 2].sample(random: obj) }.should.raise(NoMethodError)
     end
 
     describe "when the object returned by #rand is an Integer" do
@@ -105,21 +105,21 @@ describe "Array#sample" do
         random = mock("array_sample_random")
         random.should_receive(:rand).and_return(-1)
 
-        -> { [1, 2].sample(random: random) }.should raise_error(RangeError)
+        -> { [1, 2].sample(random: random) }.should.raise(RangeError)
       end
 
       it "raises a RangeError if the value is equal to the Array size" do
         random = mock("array_sample_random")
         random.should_receive(:rand).and_return(2)
 
-        -> { [1, 2].sample(random: random) }.should raise_error(RangeError)
+        -> { [1, 2].sample(random: random) }.should.raise(RangeError)
       end
 
       it "raises a RangeError if the value is greater than the Array size" do
         random = mock("array_sample_random")
         random.should_receive(:rand).and_return(3)
 
-        -> { [1, 2].sample(random: random) }.should raise_error(RangeError)
+        -> { [1, 2].sample(random: random) }.should.raise(RangeError)
       end
     end
   end
@@ -140,7 +140,7 @@ describe "Array#sample" do
       random = mock("array_sample_random")
       random.should_receive(:rand).and_return(value)
 
-      -> { [1, 2].sample(random: random) }.should raise_error(RangeError)
+      -> { [1, 2].sample(random: random) }.should.raise(RangeError)
     end
 
     it "raises a RangeError if the value is equal to the Array size" do
@@ -149,7 +149,7 @@ describe "Array#sample" do
       random = mock("array_sample_random")
       random.should_receive(:rand).and_return(value)
 
-      -> { [1, 2].sample(random: random) }.should raise_error(RangeError)
+      -> { [1, 2].sample(random: random) }.should.raise(RangeError)
     end
   end
 end

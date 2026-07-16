@@ -507,7 +507,7 @@ assert_equal 'false', %q{
 }
 
 # To copy the object, now Marshal#dump is used
-assert_match /can not copy unshareable object/, %q{
+assert_match /can't clone unshareable instance of Thread/, %q{
   obj = Thread.new{}
   begin
     r = Ractor.new obj do |msg|
@@ -654,6 +654,29 @@ assert_equal '[0, 1]', %q{
   rescue Ractor::MovedError
     a2.inspect
   end
+}
+
+# move preserves aliasing inside the moved object graph
+assert_equal 'true', %q{
+  r = Ractor.new do
+    Ractor.receive
+  end
+
+  leaf = +"leaf"
+  moved = r.send([leaf, leaf], move: true).value
+  moved[0].equal?(moved[1])
+}
+
+# move handles cyclic references safely and preserves aliasing
+assert_equal 'true', %q{
+  r = Ractor.new do
+    Ractor.receive
+  end
+
+  a = []
+  a << a
+  moved = r.send(a, move: true).value
+  moved.equal?(moved[0])
 }
 
 # unshareable frozen objects should still be frozen in new ractor after move
@@ -1255,37 +1278,6 @@ assert_equal '0', %q{
     n
   }.value
 }
-
-# ObjectSpace._id2ref can not handle unshareable objects with Ractors
-assert_equal 'ok', <<~'RUBY', frozen_string_literal: false
-  s = 'hello'
-
-  Ractor.new s.object_id do |id ;s|
-    begin
-      s = ObjectSpace._id2ref(id)
-    rescue => e
-      :ok
-    end
-  end.value
-RUBY
-
-# Inserting into the id2ref table should be Ractor-safe
-assert_equal 'ok', <<~'RUBY'
-  # Force all calls to Kernel#object_id to insert into the id2ref table
-  obj = Object.new
-  ObjectSpace._id2ref(obj.object_id) rescue nil
-
-  10.times.map do
-    Ractor.new do
-      10_000.times do
-        a = Object.new
-        a.object_id
-      end
-    end
-  end.map(&:value)
-
-  :ok
-RUBY
 
 # Ractor.make_shareable(obj)
 assert_equal 'true', <<~'RUBY', frozen_string_literal: false
@@ -2163,7 +2155,7 @@ assert_equal 'ok', %q{
 
 # move object with complex generic ivars
 assert_equal 'ok', %q{
-  # Make Array too_complex
+  # Make Array complex
   30.times { |i| [].instance_variable_set(:"@complex#{i}", 1) }
 
   ractor = Ractor.new { Ractor.receive }
@@ -2175,22 +2167,9 @@ assert_equal 'ok', %q{
   roundtripped_obj.instance_variable_get(:@array1) == [1] ? :ok : roundtripped_obj
 }
 
-# move object with generic ivars and existing id2ref table
-# [Bug #21664]
-assert_equal 'ok', %q{
-  obj = [1]
-  obj.instance_variable_set("@field", :ok)
-  ObjectSpace._id2ref(obj.object_id) # build id2ref table
-
-  ractor = Ractor.new { Ractor.receive }
-  ractor.send(obj, move: true)
-  obj = ractor.value
-  obj.instance_variable_get("@field")
-}
-
 # copy object with complex generic ivars
 assert_equal 'ok', %q{
-  # Make Array too_complex
+  # Make Array complex
   30.times { |i| [].instance_variable_set(:"@complex#{i}", 1) }
 
   ractor = Ractor.new { Ractor.receive }
@@ -2643,3 +2622,96 @@ rescue ThreadError => e
   end
 end
 RUBY
+
+# Concurrent super calls with keyword arguments must not race on the
+# callinfo kwarg reference count. [Bug #22075]
+assert_equal 'ok', %q{
+  class Base
+    def foo(a:, b:, c:) = a
+  end
+
+  class Sub < Base
+    def foo(a:, b:, c:) = super(a: a, b: b, c: c)
+  end
+
+  4.times.map do
+    Ractor.new do
+      obj = Sub.new
+      100_000.times { obj.foo(a: 1, b: 2, c: 3) }
+    end
+  end.each(&:join)
+
+  :ok
+}
+
+# A thread terminating (here: the pipe writer) while another Ractor runs a
+# compaction barrier must not corrupt the machine context of a thread blocked
+# in IO, whose locked read buffer lives only on that machine stack.
+assert_equal 'ok', %q{
+  Warning[:experimental] = false
+  can_compact = begin
+    GC.compact
+    true
+  rescue NotImplementedError
+    false
+  end
+  if can_compact
+    b = Ractor.new do
+      10.times do
+        r, w = IO.pipe
+        t = Thread.new { w.write("x" * 40); w.close }
+        r.read
+        r.close
+        t.join
+      end
+      :ok
+    end
+    a = Ractor.new { 20.times { GC.compact }; :ok }
+    [a, b].each(&:value)
+  end
+  :ok
+}
+
+# Forking while other Ractors are alive takes a VM barrier in the parent; the
+# child inherits that scheduler/barrier state and must reset it. Exercises the
+# parent-side fork barrier and the child teardown, then checks the surviving
+# Ractors still work.
+assert_equal 'ok', %q{
+  begin
+    rs = 5.times.map { Ractor.new { Ractor.receive } }
+    10.times do
+      pid = fork { GC.start }
+      _, status = Process.waitpid2(pid)
+      raise "child failed" unless status.success?
+    end
+    rs.each { |r| r.send(nil) }
+    rs.each(&:value)
+    :ok
+  rescue NotImplementedError
+    :ok  # platform without fork
+  end
+}
+
+# A moved object's source is neutralized into a RactorMovedObject husk that
+# stays in its original (possibly larger) slot. It must be given a shape whose
+# slot size matches that slot, or a later compaction in the receiver trips the
+# slot_size == shape_slot_size invariant (RGENGC_CHECK_MODE) / corrupts the slot.
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    while (o = Ractor.receive)
+      begin
+        GC.compact
+      rescue NotImplementedError
+        # no-op on platforms without GC.compact (e.g. MMTk)
+      end
+    end
+    :ok
+  end
+  500.times do
+    o = Object.new
+    12.times { |i| o.instance_variable_set("@i#{i}", i) }  # overflow to a larger slot
+    r.send(o, move: true)
+  end
+  r.send(nil)
+  r.value
+}

@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 # The common logarithm, having base 10
 describe "Math.log10" do
   it "returns a float" do
-    Math.log10(1).should be_kind_of(Float)
+    Math.log10(1).should.is_a?(Float)
   end
 
   it "returns the base-10 logarithm of the argument" do
@@ -16,23 +16,23 @@ describe "Math.log10" do
   end
 
   it "raises an Math::DomainError if the argument is less than 0" do
-    -> { Math.log10(-1e-15) }.should raise_error(Math::DomainError)
+    -> { Math.log10(-1e-15) }.should.raise(Math::DomainError)
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.log10("test") }.should raise_error(TypeError)
+    -> { Math.log10("test") }.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed a numerical argument as a string" do
-    -> { Math.log10("1.0") }.should raise_error(TypeError)
+    -> { Math.log10("1.0") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
-    Math.log10(nan_value).nan?.should be_true
+    Math.log10(nan_value).nan?.should == true
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.log10(nil) }.should raise_error(TypeError)
+    -> { Math.log10(nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

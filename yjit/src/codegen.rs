@@ -2764,7 +2764,7 @@ fn gen_newhash(
     Some(KeepCompiling)
 }
 
-fn gen_putstring(
+fn gen_dupstring(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
@@ -2784,7 +2784,7 @@ fn gen_putstring(
     Some(KeepCompiling)
 }
 
-fn gen_putchilledstring(
+fn gen_dupchilledstring(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
@@ -2950,7 +2950,7 @@ fn gen_get_ivar(
 
     // NOTE: This assumes T_OBJECT can't ever have the same shape_id as any other type.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !comptime_receiver.heap_object_p() || comptime_receiver.shape_too_complex() || megamorphic {
+    if !comptime_receiver.heap_object_p() || comptime_receiver.shape_complex() || megamorphic {
         // General case. Call rb_ivar_get().
         // VALUE rb_ivar_get(VALUE obj, ID id)
         asm_comment!(asm, "call rb_ivar_get()");
@@ -2975,7 +2975,7 @@ fn gen_get_ivar(
 
     let ivar_index = unsafe {
         let shape_id = comptime_receiver.shape_id_of();
-        let mut ivar_index: u16 = 0;
+        let mut ivar_index: attr_index_t = 0;
         if rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index) {
             Some(ivar_index as usize)
         } else {
@@ -3015,20 +3015,20 @@ fn gen_get_ivar(
         }
         Some(ivar_index) => {
             let ivar_opnd = if receiver_t_object {
-                if comptime_receiver.embedded_p() {
-                   // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+                let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
 
+                // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+                if comptime_receiver.embedded_p() {
                    // Load the variable
-                   let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
                    Opnd::mem(64, recv, offs)
-               } else {
+                } else {
                    // Compile time value is *not* embedded.
 
-                   // Get a pointer to the extended table
+                   // Get the T_IMEMO/fields
                    let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
-                   // Read the ivar from the extended table
-                   Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32)
+                   // Read the ivar from the T_IMEMO/fields
+                   Opnd::mem(64, tbl_opnd, offs)
                }
             } else {
                 asm_comment!(asm, "call rb_ivar_get_at()");
@@ -3080,6 +3080,33 @@ fn gen_getinstancevariable(
     )
 }
 
+fn gen_trigger_wb(
+    asm: &mut Assembler,
+    recv: Opnd,
+    write_val: Opnd)
+{
+    asm.spill_regs(); // for ccall (unconditionally spill them for RegMappings consistency)
+    let skip_wb = asm.new_label("skip_wb");
+    // If the value we're writing is an immediate, we don't need to WB
+    asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
+    asm.jnz(skip_wb);
+
+    // If the value we're writing is nil or false, we don't need to WB
+    asm.cmp(write_val, Qnil.into());
+    asm.jbe(skip_wb);
+
+    asm_comment!(asm, "write barrier");
+    asm.ccall(
+        rb_gc_writebarrier as *const u8,
+        vec![
+            recv,
+            write_val,
+        ]
+    );
+
+    asm.write_label(skip_wb);
+}
+
 // Generate an IV write.
 // This function doesn't deal with writing the shape, or expanding an object
 // to use an IV buffer if necessary.  That is the callers responsibility
@@ -3089,30 +3116,44 @@ fn gen_write_iv(
     recv: Opnd,
     ivar_index: usize,
     set_value: Opnd,
-    extension_needed: bool)
+    extension_needed: bool,
+    skip_wb: bool)
 {
     // Compile time self is embedded and the ivar index lands within the object
     let embed_test_result = comptime_receiver.embedded_p() && !extension_needed;
 
+    let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
+
     if embed_test_result {
         // Find the IV offset
-        let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
         let ivar_opnd = Opnd::mem(64, recv, offs);
 
         // Write the IV
         asm_comment!(asm, "write IV");
         asm.mov(ivar_opnd, set_value);
+
+        // If we know the stack value is an immediate, there's no need to
+        // generate WB code.
+        if !skip_wb {
+            gen_trigger_wb(asm, recv, set_value);
+        }
     } else {
         // Compile time value is *not* embedded.
 
-        // Get a pointer to the extended table
+        // Get a pointer to the extended T_IMEMO/fields
         let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
         // Write the ivar in to the extended table
-        let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
+        let ivar_opnd = Opnd::mem(64, tbl_opnd, offs);
 
         asm_comment!(asm, "write IV");
         asm.mov(ivar_opnd, set_value);
+
+        // If we know the stack value is an immediate, there's no need to
+        // generate WB code.
+        if !skip_wb {
+            gen_trigger_wb(asm, tbl_opnd, set_value);
+        }
     }
 }
 
@@ -3168,10 +3209,10 @@ fn gen_set_ivar(
     }
 
     // Get the iv index
-    let shape_too_complex = comptime_receiver.shape_too_complex();
-    let ivar_index = if !comptime_receiver.special_const_p() && !shape_too_complex {
+    let shape_complex = comptime_receiver.shape_complex();
+    let ivar_index = if !comptime_receiver.special_const_p() && !shape_complex {
         let shape_id = comptime_receiver.shape_id_of();
-        let mut ivar_index: u16 = 0;
+        let mut ivar_index: attr_index_t = 0;
         if unsafe { rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index) } {
             Some(ivar_index as usize)
         } else {
@@ -3182,23 +3223,23 @@ fn gen_set_ivar(
     };
 
     // The current shape doesn't contain this iv, we need to transition to another shape.
-    let mut new_shape_too_complex = false;
-    let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
+    let mut new_shape_complex = false;
+    if !shape_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape_id = comptime_receiver.shape_id_of();
         // We don't need to check about imemo_fields here because we're definitely looking at a T_OBJECT.
         let klass = unsafe { rb_obj_class(comptime_receiver) };
-        let next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(klass, current_shape_id, ivar_name) };
+        let next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id, ivar_name, klass) };
 
         // If the VM ran out of shapes, or this class generated too many leaf,
-        // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
-        new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id) };
-        if new_shape_too_complex {
+        // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
+        new_shape_complex = unsafe { rb_jit_shape_complex_p(next_shape_id) };
+        if new_shape_complex {
             Some((next_shape_id, None, 0_usize))
         } else {
             let current_capacity = unsafe { rb_yjit_shape_capacity(current_shape_id) };
             let next_capacity = unsafe { rb_yjit_shape_capacity(next_shape_id) };
 
-            // If the new shape has a different capacity, or is TOO_COMPLEX, we'll have to
+            // If the new shape has a different capacity, or is COMPLEX, we'll have to
             // reallocate it.
             let needs_extension = next_capacity != current_capacity;
 
@@ -3218,7 +3259,7 @@ fn gen_set_ivar(
 
     // If the receiver isn't a T_OBJECT, then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || shape_too_complex || new_shape_too_complex || megamorphic {
+    if !receiver_t_object || shape_complex || new_shape_complex || megamorphic || ivar_index.is_none() {
         // The function could raise FrozenError.
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_non_leaf_call(jit, asm);
@@ -3252,7 +3293,7 @@ fn gen_set_ivar(
         }
     } else {
         // Get the receiver
-        let mut recv = asm.load(if let StackOpnd(index) = recv_opnd {
+        let recv = asm.load(if let StackOpnd(index) = recv_opnd {
             asm.stack_opnd(index as i32)
         } else {
             Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
@@ -3278,44 +3319,8 @@ fn gen_set_ivar(
         let write_val;
 
         match ivar_index {
-            // If we don't have an instance variable index, then we need to
-            // transition out of the current shape.
             None => {
-                let (new_shape_id, needs_extension, ivar_index) = new_shape.unwrap();
-                if let Some((current_capacity, new_capacity)) = needs_extension {
-                    // Generate the C call so that runtime code will increase
-                    // the capacity and set the buffer.
-                    asm_comment!(asm, "call rb_ensure_iv_list_size");
-
-                    // It allocates so can trigger GC, which takes the VM lock
-                    // so could yield to a different ractor.
-                    jit_prepare_call_with_gc(jit, asm);
-                    asm.ccall(rb_ensure_iv_list_size as *const u8,
-                              vec![
-                                  recv,
-                                  Opnd::UImm(current_capacity.into()),
-                                  Opnd::UImm(new_capacity.into())
-                              ]
-                    );
-
-                    // Load the receiver again after the function call
-                    recv = asm.load(if let StackOpnd(index) = recv_opnd {
-                        asm.stack_opnd(index as i32)
-                    } else {
-                        Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
-                    });
-                }
-
-                write_val = asm.stack_opnd(0);
-                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, needs_extension.is_some());
-
-                asm_comment!(asm, "write shape");
-
-                let shape_id_offset = unsafe { rb_shape_id_offset() };
-                let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
-
-                // Store the new shape
-                asm.store(shape_opnd, Opnd::UImm(new_shape_id as u64));
+                panic!("ivar_index None should have been delegated to rb_vm_set_ivar_id")
             },
 
             Some(ivar_index) => {
@@ -3325,33 +3330,8 @@ fn gen_set_ivar(
                 // made the transition already, then there's no reason to
                 // update the shape on the object.  Just set the IV.
                 write_val = asm.stack_opnd(0);
-                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false);
+                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false, stack_type.is_imm());
             },
-        }
-
-        // If we know the stack value is an immediate, there's no need to
-        // generate WB code.
-        if !stack_type.is_imm() {
-            asm.spill_regs(); // for ccall (unconditionally spill them for RegMappings consistency)
-            let skip_wb = asm.new_label("skip_wb");
-            // If the value we're writing is an immediate, we don't need to WB
-            asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
-            asm.jnz(skip_wb);
-
-            // If the value we're writing is nil or false, we don't need to WB
-            asm.cmp(write_val, Qnil.into());
-            asm.jbe(skip_wb);
-
-            asm_comment!(asm, "write barrier");
-            asm.ccall(
-                rb_gc_writebarrier as *const u8,
-                vec![
-                    recv,
-                    write_val,
-                ]
-            );
-
-            asm.write_label(skip_wb);
         }
     }
     let write_val = asm.stack_pop(1); // Keep write_val on stack during ccall for GC
@@ -3435,7 +3415,7 @@ fn gen_definedivar(
     // Specialize base on compile time values
     let comptime_receiver = jit.peek_at_self();
 
-    if comptime_receiver.special_const_p() || comptime_receiver.shape_too_complex() || asm.ctx.get_chain_depth() >= GET_IVAR_MAX_DEPTH {
+    if comptime_receiver.special_const_p() || comptime_receiver.shape_complex() || asm.ctx.get_chain_depth() >= GET_IVAR_MAX_DEPTH {
         // Fall back to calling rb_ivar_defined
 
         // Save the PC and SP because the callee may allocate
@@ -3461,7 +3441,7 @@ fn gen_definedivar(
 
     let shape_id = comptime_receiver.shape_id_of();
     let ivar_exists = unsafe {
-        let mut ivar_index: u16 = 0;
+        let mut ivar_index: attr_index_t = 0;
         rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index)
     };
 
@@ -4651,21 +4631,8 @@ fn gen_opt_case_dispatch(
 
     // Check that all cases are fixnums to avoid having to register BOP assumptions on
     // all the types that case hashes support. This spends compile time to save memory.
-    fn case_hash_all_fixnum_p(hash: VALUE) -> bool {
-        let mut all_fixnum = true;
-        unsafe {
-            unsafe extern "C" fn per_case(key: st_data_t, _value: st_data_t, data: st_data_t) -> c_int {
-                (if VALUE(key as usize).fixnum_p() {
-                    ST_CONTINUE
-                } else {
-                    (data as *mut bool).write(false);
-                    ST_STOP
-                }) as c_int
-            }
-            rb_hash_stlike_foreach(hash, Some(per_case), (&mut all_fixnum) as *mut _ as st_data_t);
-        }
-
-        all_fixnum
+    fn case_hash_all_fixnum_p(cdhash: VALUE) -> bool {
+        unsafe { rb_yjit_cdhash_all_fixnum_p(cdhash) }
     }
 
     // If megamorphic, fallback to compiling branch instructions after opt_case_dispatch
@@ -4692,12 +4659,11 @@ fn gen_opt_case_dispatch(
 
         // Get the offset for the compile-time key
         let mut offset = 0;
-        unsafe { rb_hash_stlike_lookup(case_hash, comptime_key.0 as _, &mut offset) };
-        let jump_offset = if offset == 0 {
+        let jump_offset = if unsafe { rb_yjit_cdhash_lookup(case_hash, comptime_key.0 as _, &mut offset) } == 0 {
             // NOTE: If we hit the else branch with various values, it could negatively impact the performance.
             else_offset
         } else {
-            (offset as u32) >> 1 // FIX2LONG
+            offset as u32
         };
 
         // Jump to the offset of case or else
@@ -6819,8 +6785,8 @@ enum SpecVal {
 pub enum BlockHandler {
     // send, invokesuper: blockiseq operand
     BlockISeq(IseqPtr),
-    // invokesuper: GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
-    LEPSpecVal,
+    // For invokesuper; equivalent to GET_BLOCK_HANDLER()
+    FindFromCurrentFrame,
     // part of the allocate-free block forwarding scheme
     BlockParamProxy,
     // To avoid holding the block arg (e.g. proc and symbol) across C calls,
@@ -6884,9 +6850,20 @@ fn gen_push_frame(
                     let cfp_self = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
                     asm.or(cfp_self, Opnd::Imm(1))
                 }
-                BlockHandler::LEPSpecVal => {
-                    let lep_opnd = gen_get_lep(jit, asm);
-                    asm.load(Opnd::mem(64, lep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
+                BlockHandler::FindFromCurrentFrame => {
+                    // Find the calling frame's block handler. Similar shape to implementation for
+                    // defined?(yield). See also: vm_caller_setup_arg_block() with is_super, which
+                    // ends up in VM_CF_BLOCK_HANDLER().
+                    //
+                    // When the calling ISEQ is rooted in a ISEQ_TYPE_METHOD, the block handler is
+                    // at local_ep[VM_ENV_DATA_INDEX_SPECVAL]. Otherwise, the frame has no block
+                    // handler.
+                    if ISEQ_TYPE_METHOD == unsafe { rb_get_iseq_body_type(rb_get_iseq_body_local_iseq(jit.iseq)) } {
+                        let lep_opnd = gen_get_lep(jit, asm);
+                        asm.load(Opnd::mem(64, lep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
+                    } else {
+                        VM_BLOCK_HANDLER_NONE.into()
+                    }
                 }
                 BlockHandler::BlockParamProxy => {
                     let ep_opnd = gen_get_lep(jit, asm);
@@ -7489,7 +7466,7 @@ fn gen_send_bmethod(
     }
 
     let frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
-    perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None) }
+    perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None, false) }
 }
 
 /// The kind of a value an ISEQ returns
@@ -7585,6 +7562,10 @@ fn gen_send_iseq(
     flags: u32,
     argc: i32,
     captured_opnd: Option<Opnd>,
+    // The block param proxy receiver is on the stack below the args. self/EP come from
+    // the captured block (as for invokeblock); the proxy is shifted off after the
+    // overflow check so the rest of the frame setup is a plain invokeblock.
+    proxy_recv: bool,
 ) -> Option<CodegenStatus> {
     // Argument count. We will change this as we gather values from
     // sources to satisfy the callee's parameters. To help make sense
@@ -7750,6 +7731,13 @@ fn gen_send_iseq(
                 && !get_iseq_flags_ambiguous_param0(iseq)
         };
     if block_arg0_splat {
+        // The block param proxy removes its receiver from the stack only after the
+        // overflow check (see proxy_recv below). arg0 auto-splat needs a side exit past
+        // that point, which can't reconstruct the proxy at the opt_send_without_block PC.
+        if proxy_recv {
+            gen_counter_incr(jit, asm, Counter::send_bpp_arg0_splat);
+            return None;
+        }
         // If block_arg0_splat, we still need side exits after splat, but
         // the splat modifies the stack which breaks side exits. So bail out.
         if splat_call {
@@ -7879,7 +7867,7 @@ fn gen_send_iseq(
             }
             IseqReturn::Value(value) => {
                 // Pop receiver and arguments
-                asm.stack_pop(argc as usize + if captured_opnd.is_some() { 0 } else { 1 });
+                asm.stack_pop(argc as usize + if captured_opnd.is_some() && !proxy_recv { 0 } else { 1 });
 
                 // Push the return value
                 let stack_ret = asm.stack_push(Type::from(value));
@@ -7905,6 +7893,11 @@ fn gen_send_iseq(
     let stack_limit = asm.lea(asm.ctx.sp_opnd(locals_offs));
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
+
+    // Remove the block param proxy receiver from the stack, mirroring vm_invoke_block_opt_call
+    if proxy_recv {
+        handle_opt_send_shift_stack(asm, argc);
+    }
 
     if iseq_has_rest && splat_call {
         // Insert length guard for a call to copy_splat_args_for_rest_callee()
@@ -8987,9 +8980,9 @@ fn gen_struct_aref(
         handle_opt_send_shift_stack(asm, argc);
     }
 
-    // All structs from the same Struct class should have the same
+    // All structs from the same Struct class and shape_id should have the same
     // length. So if our comptime_recv is embedded all runtime
-    // structs of the same class should be as well, and the same is
+    // structs of the same class and shape_id should be as well, and the same is
     // true of the converse.
     let embedded = unsafe { FL_TEST_RAW(comptime_recv, VALUE(RSTRUCT_EMBED_LEN_MASK)) };
 
@@ -9158,9 +9151,11 @@ fn gen_send_general(
 
     // Don't compile calls through singleton classes to avoid retaining the receiver.
     // Make an exception for class methods since classes tend to be retained anyways.
-    // Also compile calls on top_self to help tests.
+    // Also compile calls on top_self to help tests. The block param proxy is an
+    // immortal global root, so retaining it is a non-issue.
     if VALUE(0) != unsafe { FL_TEST(comptime_recv_klass, VALUE(RUBY_FL_SINGLETON as usize)) }
         && comptime_recv != unsafe { rb_vm_top_self() }
+        && comptime_recv != unsafe { rb_block_param_proxy }
         && !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_CLASS) }
         && !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_MODULE) } {
         gen_counter_incr(jit, asm, Counter::send_singleton_class);
@@ -9247,7 +9242,7 @@ fn gen_send_general(
             VM_METHOD_TYPE_ISEQ => {
                 let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                 let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-                return perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, None, cme, block, flags, argc, None) };
+                return perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, None, cme, block, flags, argc, None, false) };
             }
             VM_METHOD_TYPE_CFUNC => {
                 return perf_call! { gen_send_cfunc(
@@ -9492,8 +9487,7 @@ fn gen_send_general(
                         return jump_to_next_insn(jit, asm);
                     }
                     OPTIMIZED_METHOD_TYPE_BLOCK_CALL => {
-                        gen_counter_incr(jit, asm, Counter::send_optimized_method_block_call);
-                        return None;
+                        return gen_send_block_param_proxy(jit, asm, ci, block, flags, argc);
                     }
                     OPTIMIZED_METHOD_TYPE_STRUCT_AREF => {
                         if flags & VM_CALL_ARGS_SPLAT != 0 {
@@ -9773,7 +9767,7 @@ fn gen_invokeblock_specialized(
             Counter::guard_invokeblock_iseq_block_changed,
         );
 
-        perf_call! { gen_send_iseq(jit, asm, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd)) }
+        perf_call! { gen_send_iseq(jit, asm, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd), false) }
     } else if comptime_handler.0 & 0x3 == 0x3 { // VM_BH_IFUNC_P
         // We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
         if flags & VM_CALL_ARGS_SPLAT != 0 {
@@ -9832,6 +9826,87 @@ fn gen_invokeblock_specialized(
         gen_counter_incr(jit, asm, Counter::invokeblock_proc);
         None
     }
+}
+
+// blk.call where blk is the block param proxy. Inline the block invocation the way invokeblock does
+// instead of dispatching through the proxy's singleton method. The receiver's singleton class was already
+// guarded by the caller, which is enough to prove the receiver is the (unique) block param proxy.
+fn gen_send_block_param_proxy(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ci: *const rb_callinfo,
+    block: Option<BlockHandler>,
+    flags: u32,
+    argc: i32,
+) -> Option<CodegenStatus> {
+    // Anything fancier than a plain call falls back to dynamic dispatch, which
+    // materializes a Proc and dispatches normally (also handling redefinition).
+    if block.is_some() {
+        gen_counter_incr(jit, asm, Counter::send_bpp_not_simple);
+        return None;
+    }
+    if flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_OPT_SEND) != 0 {
+        gen_counter_incr(jit, asm, Counter::send_bpp_not_simple);
+        return None;
+    }
+
+    // Fall back to dynamic dispatch if this callsite is megamorphic
+    if asm.ctx.get_chain_depth() >= SEND_MAX_DEPTH {
+        gen_counter_incr(jit, asm, Counter::send_bpp_megamorphic);
+        return None;
+    }
+
+    // The block handler lives in the local EP: the same source both the interpreter's
+    // vm_call_opt_block_call and the getblockparamproxy instruction read from.
+    let cfp = jit.get_cfp();
+    let lep = unsafe { rb_vm_ep_local_ep(get_cfp_ep(cfp)) };
+    let comptime_handler = unsafe { *lep.offset(VM_ENV_DATA_INDEX_SPECVAL as isize) };
+
+    // Only specialize an ISEQ block; other block handler types fall back to dynamic dispatch.
+    if comptime_handler.0 & 0x3 != 0x1 { // VM_BH_ISEQ_BLOCK_P
+        gen_counter_incr(jit, asm, Counter::send_bpp_not_iseq_block);
+        return None;
+    }
+
+    if !assume_bop_not_redefined(jit, asm, PROC_REDEFINED_OP_FLAG, BOP_CALL) {
+        return None;
+    }
+
+    gen_counter_incr(jit, asm, Counter::send_bpp_dispatch);
+
+    asm_comment!(asm, "get local EP");
+    let ep_opnd = gen_get_lep(jit, asm);
+    let block_handler_opnd = asm.load(
+        Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
+    );
+
+    asm_comment!(asm, "guard block_handler type");
+    let tag_opnd = asm.and(block_handler_opnd, 0x3.into());
+    asm.cmp(tag_opnd, 0x1.into()); // VM_BH_ISEQ_BLOCK_P
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        SEND_MAX_DEPTH,
+        Counter::guard_invokeblock_tag_changed,
+    );
+
+    let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
+    let comptime_iseq = unsafe { *comptime_captured.code.iseq.as_ref() };
+
+    asm_comment!(asm, "guard known ISEQ");
+    let captured_opnd = asm.and(block_handler_opnd, Opnd::Imm(!0x3));
+    let iseq_opnd = asm.load(Opnd::mem(64, captured_opnd, SIZEOF_VALUE_I32 * 2));
+    asm.cmp(iseq_opnd, VALUE::from(comptime_iseq).into());
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        SEND_MAX_DEPTH,
+        Counter::guard_invokeblock_iseq_block_changed,
+    );
+
+    perf_call! { gen_send_iseq(jit, asm, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd), true) }
 }
 
 fn gen_invokesuper(
@@ -9894,7 +9969,7 @@ fn gen_invokesuper_specialized(
     let block = if let Some(iseq) = jit.get_arg(1).as_optional_ptr() {
         BlockHandler::BlockISeq(iseq)
     } else {
-        BlockHandler::LEPSpecVal
+        BlockHandler::FindFromCurrentFrame
     };
 
     // Fallback to dynamic dispatch if this callsite is megamorphic
@@ -10003,7 +10078,7 @@ fn gen_invokesuper_specialized(
         VM_METHOD_TYPE_ISEQ => {
             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
             let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-            perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None) }
+            perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None, false) }
         }
         VM_METHOD_TYPE_CFUNC => {
             perf_call! { gen_send_cfunc(jit, asm, ci, cme, Some(block), None, ci_flags, argc) }
@@ -10194,45 +10269,18 @@ fn gen_toregexp(
     let opt = jit.get_arg(0).as_i64();
     let cnt = jit.get_arg(1).as_usize();
 
-    // Save the PC and SP because this allocates an object and could
-    // raise an exception.
+    // Allocates objects and could raise an exception.
     jit_prepare_non_leaf_call(jit, asm);
 
     let values_ptr = asm.lea(asm.ctx.sp_opnd(-(cnt as i32)));
 
-    let ary = asm.ccall(
-        rb_ary_tmp_new_from_values as *const u8,
-        vec![
-            Opnd::Imm(0),
-            cnt.into(),
-            values_ptr,
-        ]
+    let regexp = asm.ccall(
+        rb_reg_new_from_values as _,
+        vec![cnt.into(), values_ptr, opt.into()],
     );
     asm.stack_pop(cnt); // Let ccall spill them
-
-    // Save the array so we can clear it later
-    asm.cpush(ary);
-    asm.cpush(ary); // Alignment
-
-    let val = asm.ccall(
-        rb_reg_new_ary as *const u8,
-        vec![
-            ary,
-            Opnd::Imm(opt),
-        ]
-    );
-
-    // The actual regex is in RAX now.  Pop the temp array from
-    // rb_ary_tmp_new_from_values into C arg regs so we can clear it
-    let ary = asm.cpop(); // Alignment
-    asm.cpop_into(ary);
-
-    // The value we want to push on the stack is in RAX right now
     let stack_ret = asm.stack_push(Type::UnknownHeap);
-    asm.mov(stack_ret, val);
-
-    // Clear the temp array.
-    asm.ccall(rb_ary_clear as *const u8, vec![ary]);
+    asm.mov(stack_ret, regexp);
 
     Some(KeepCompiling)
 }
@@ -10814,8 +10862,8 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_concattoarray => Some(gen_concattoarray),
         YARVINSN_pushtoarray => Some(gen_pushtoarray),
         YARVINSN_newrange => Some(gen_newrange),
-        YARVINSN_putstring => Some(gen_putstring),
-        YARVINSN_putchilledstring => Some(gen_putchilledstring),
+        YARVINSN_dupstring => Some(gen_dupstring),
+        YARVINSN_dupchilledstring => Some(gen_dupchilledstring),
         YARVINSN_expandarray => Some(gen_expandarray),
         YARVINSN_defined => Some(gen_defined),
         YARVINSN_definedivar => Some(gen_definedivar),
@@ -11361,9 +11409,8 @@ mod tests {
         asm.stack_push(Type::Flonum);
         asm.stack_push(Type::CString);
 
-        let mut value_array: [u64; 2] = [0, 3];
-        let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
-        jit.pc = pc;
+        let mut fake_encoded_iseq: [VALUE; 2] = [VALUE(0), VALUE(3)];
+        jit.pc = &mut fake_encoded_iseq[0];
 
         let mut status = gen_opt_reverse(&mut jit, &mut asm);
 
@@ -11374,8 +11421,9 @@ mod tests {
         assert_eq!(Type::Fixnum, asm.ctx.get_opnd_type(StackOpnd(0)));
 
         // Try again with an even number of elements.
+        fake_encoded_iseq[1] = VALUE(4);
+        let _ = fake_encoded_iseq;
         asm.stack_push(Type::Nil);
-        value_array[1] = 4;
         status = gen_opt_reverse(&mut jit, &mut asm);
 
         assert_eq!(status, Some(KeepCompiling));

@@ -3,7 +3,6 @@ require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
 require_relative 'shared/unicode'
-require_relative 'shared/taint'
 
 describe "Array#pack with format 'U'" do
   it_behaves_like :array_pack_basic, 'U'
@@ -16,7 +15,6 @@ describe "Array#pack with format 'u'" do
   it_behaves_like :array_pack_basic, 'u'
   it_behaves_like :array_pack_basic_non_float, 'u'
   it_behaves_like :array_pack_arguments, 'u'
-  it_behaves_like :array_pack_taint, 'u'
 
   it "calls #to_str to convert an Object to a String" do
     obj = mock("pack u string")
@@ -25,7 +23,7 @@ describe "Array#pack with format 'u'" do
   end
 
   it "will not implicitly convert a number to a string" do
-    -> { [0].pack('u') }.should raise_error(TypeError)
+    -> { [0].pack('u') }.should.raise(TypeError)
   end
 
   it "encodes an empty string as an empty string" do
@@ -122,16 +120,16 @@ describe "Array#pack with format 'u'" do
 
   it "raises a TypeError if #to_str does not return a String" do
     obj = mock("pack m non-string")
-    -> { [obj].pack("u") }.should raise_error(TypeError)
+    -> { [obj].pack("u") }.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed nil" do
-    -> { [nil].pack("u") }.should raise_error(TypeError)
+    -> { [nil].pack("u") }.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed an Integer" do
-    -> { [0].pack("u") }.should raise_error(TypeError)
-    -> { [bignum_value].pack("u") }.should raise_error(TypeError)
+    -> { [0].pack("u") }.should.raise(TypeError)
+    -> { [bignum_value].pack("u") }.should.raise(TypeError)
   end
 
   it "sets the output string to US-ASCII encoding" do

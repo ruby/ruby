@@ -236,29 +236,20 @@ class RbInspector(LLDBInterface):
             elif rval.is_type("RUBY_T_DATA"):
                 tRTypedData = self.target.FindFirstType("struct RTypedData").GetPointerType()
                 val = val.Cast(tRTypedData)
-                is_typed_data = self.ruby_globals.get("RUBY_TYPED_FL_IS_TYPED_DATA", None)
-                if is_typed_data:
-                    typed = rval.flags & is_typed_data
-                else:
-                    typed = val.GetValueForExpressionPath("->typed_flag").GetValueAsUnsigned() == 1
 
-                if typed:
-                    type = val.GetValueForExpressionPath("->type").GetValueAsUnsigned()
-                    embed = (type & 1)
-                    if embed:
-                        flaginfo += "[EMBED] "
-                    type = self.frame.EvaluateExpression("(rb_data_type_t *)%0#x" % (type & ~1))
-                    print("T_DATA: %s%s" %
-                          (flaginfo, type.GetValueForExpressionPath("->wrap_struct_name")),
-                          file=self.result)
-                    print("%s", type.Dereference(), file=self.result)
-                    ptr = val.GetValueForExpressionPath("->data")
-                    if embed:
-                        ptr = ptr.AddressOf()
-                    self._append_expression("(void *)%0#x" % ptr.GetValueAsUnsigned())
-                else:
-                    print("T_DATA:", file=self.result)
-                    self._append_expression("*(struct RData *) %0#x" % val.GetValueAsUnsigned())
+                type = val.GetValueForExpressionPath("->type").GetValueAsUnsigned()
+                embed = (type & 1)
+                if embed:
+                    flaginfo += "[EMBED] "
+                type = self.frame.EvaluateExpression("(rb_data_type_t *)%0#x" % (type & ~1))
+                print("T_DATA: %s%s" %
+                      (flaginfo, type.GetValueForExpressionPath("->wrap_struct_name")),
+                      file=self.result)
+                print("%s", type.Dereference(), file=self.result)
+                ptr = val.GetValueForExpressionPath("->data")
+                if embed:
+                    ptr = ptr.AddressOf()
+                self._append_expression("(void *)%0#x" % ptr.GetValueAsUnsigned())
 
             elif rval.is_type("RUBY_T_IMEMO"):
                 imemo_type = ((rval.flags >> self.ruby_globals["RUBY_FL_USHIFT"])

@@ -476,6 +476,7 @@ class TestGemRequire < Gem::TestCase
 
   def test_realworld_default_gem
     omit "this test can't work under ruby-core setup" if ruby_repo?
+    omit "JRuby on Windows does not register json as a default gem the same way" if Gem.win_platform? && Gem.java_platform?
 
     cmd = <<-RUBY
       $stderr = $stdout
@@ -786,6 +787,8 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_require_does_not_crash_when_utilizing_bundler_version_finder
+    omit "JRuby on Windows hits a different require path" if Gem.win_platform? && Gem.java_platform?
+
     a1 = util_spec "a", "1.1", { "bundler" => ">= 0" }
     a2 = util_spec "a", "1.2", { "bundler" => ">= 0" }
     b1 = util_spec "bundler", "2.3.7"

@@ -9,8 +9,12 @@ RSpec.describe Bundler::GemHelper do
   let(:app_gemspec_path) { app_path.join("#{app_name}.gemspec") }
 
   before(:each) do
-    global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__LINTER" => "false",
-                  "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false"
+    bundle_config_global "gem.mit false"
+    bundle_config_global "gem.test false"
+    bundle_config_global "gem.coc false"
+    bundle_config_global "gem.linter false"
+    bundle_config_global "gem.ci false"
+    bundle_config_global "gem.changelog false"
     git("config --global init.defaultBranch main")
     bundle "gem #{app_name}"
     prepare_gemspec(app_gemspec_path)

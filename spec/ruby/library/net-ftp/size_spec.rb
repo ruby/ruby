@@ -25,27 +25,27 @@ ruby_version_is ""..."4.1" do
     end
 
     it "returns the size of the passed file as Integer" do
-      @ftp.size("test.file").should eql(1024)
+      @ftp.size("test.file").should.eql?(1024)
     end
 
     it "raises a Net::FTPPermError when the response code is 500" do
       @server.should_receive(:size).and_respond("500 Syntax error, command unrecognized.")
-      -> { @ftp.size("test.file") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.size("test.file") }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 501" do
       @server.should_receive(:size).and_respond("501 Syntax error in parameters or arguments.")
-      -> { @ftp.size("test.file") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.size("test.file") }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPTempError when the response code is 421" do
       @server.should_receive(:size).and_respond("421 Service not available, closing control connection.")
-      -> { @ftp.size("test.file") }.should raise_error(Net::FTPTempError)
+      -> { @ftp.size("test.file") }.should.raise(Net::FTPTempError)
     end
 
     it "raises a Net::FTPPermError when the response code is 550" do
       @server.should_receive(:size).and_respond("550 Requested action not taken.")
-      -> { @ftp.size("test.file") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.size("test.file") }.should.raise(Net::FTPPermError)
     end
   end
 end

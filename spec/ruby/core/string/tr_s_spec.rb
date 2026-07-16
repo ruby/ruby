@@ -54,7 +54,7 @@ describe "String#tr_s" do
   end
 
   it "returns String instances when called on a subclass" do
-    StringSpecs::MyString.new("hello").tr_s("e", "a").should be_an_instance_of(String)
+    StringSpecs::MyString.new("hello").tr_s("e", "a").should.instance_of?(String)
   end
 
   # http://redmine.ruby-lang.org/issues/show/1839
@@ -124,8 +124,8 @@ describe "String#tr_s!" do
 
   it "raises a FrozenError if self is frozen" do
     s = "hello".freeze
-    -> { s.tr_s!("el", "ar") }.should raise_error(FrozenError)
-    -> { s.tr_s!("l", "r")   }.should raise_error(FrozenError)
-    -> { s.tr_s!("", "")     }.should raise_error(FrozenError)
+    -> { s.tr_s!("el", "ar") }.should.raise(FrozenError)
+    -> { s.tr_s!("l", "r")   }.should.raise(FrozenError)
+    -> { s.tr_s!("", "")     }.should.raise(FrozenError)
   end
 end

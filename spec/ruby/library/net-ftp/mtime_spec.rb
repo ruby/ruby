@@ -42,12 +42,12 @@ ruby_version_is ""..."4.1" do
 
     it "raises a Net::FTPPermError when the response code is 550" do
       @server.should_receive(:mdtm).and_respond("550 Requested action not taken.")
-      -> { @ftp.mtime("test.file") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.mtime("test.file") }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPTempError when the response code is 421" do
       @server.should_receive(:mdtm).and_respond("421 Service not available, closing control connection.")
-      -> { @ftp.mtime("test.file") }.should raise_error(Net::FTPTempError)
+      -> { @ftp.mtime("test.file") }.should.raise(Net::FTPTempError)
     end
   end
 end

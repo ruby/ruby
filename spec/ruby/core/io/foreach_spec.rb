@@ -28,7 +28,7 @@ describe "IO.foreach" do
         ScratchPad.recorded.should == ["hello\n", "line2\n"]
       end
 
-      platform_is_not :windows do
+      guard -> { Process.respond_to?(:fork) } do
         it "gets data from a fork when passed -" do
           parent_pid = $$
 
@@ -49,10 +49,23 @@ describe "IO.foreach" do
 
     # https://bugs.ruby-lang.org/issues/19630
     it "warns about deprecation given a path with a pipe" do
-      cmd = "|echo ok"
       -> {
-        IO.foreach(cmd).to_a
+        IO.foreach("|echo ok").to_a
       }.should complain(/IO process creation with a leading '\|'/)
+    end
+  end
+
+  ruby_version_is "4.0" do
+    platform_is_not :windows do
+      it "raises Errno::ENOENT when path starts with a pipe" do
+        -> { IO.foreach("|echo ok").to_a }.should.raise(Errno::ENOENT)
+      end
+    end
+
+    platform_is :windows do
+      it "raises Errno::EINVAL when path starts with a pipe" do
+        -> { IO.foreach("|echo ok").to_a }.should.raise(Errno::EINVAL)
+      end
     end
   end
 end
@@ -73,12 +86,12 @@ describe "IO.foreach" do
   it "sets $_ to nil" do
     $_ = "test"
     IO.foreach(@name) { }
-    $_.should be_nil
+    $_.should == nil
   end
 
   describe "when no block is given" do
     it "returns an Enumerator" do
-      IO.foreach(@name).should be_an_instance_of(Enumerator)
+      IO.foreach(@name).should.instance_of?(Enumerator)
       IO.foreach(@name).to_a.should == IOSpecs.lines
     end
 

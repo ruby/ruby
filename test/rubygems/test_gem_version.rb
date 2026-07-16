@@ -165,25 +165,25 @@ class TestGemVersion < Gem::TestCase
   end
 
   def test_approximate_recommendation
-    assert_approximate_equal "~> 1.0", "1"
+    assert_approximate_equal ">= 1.0", "1"
     assert_approximate_satisfies_itself "1"
 
-    assert_approximate_equal "~> 1.0", "1.0"
+    assert_approximate_equal ">= 1.0", "1.0"
     assert_approximate_satisfies_itself "1.0"
 
-    assert_approximate_equal "~> 1.2", "1.2"
+    assert_approximate_equal ">= 1.2", "1.2"
     assert_approximate_satisfies_itself "1.2"
 
-    assert_approximate_equal "~> 1.2", "1.2.0"
+    assert_approximate_equal ">= 1.2", "1.2.0"
     assert_approximate_satisfies_itself "1.2.0"
 
-    assert_approximate_equal "~> 1.2", "1.2.3"
+    assert_approximate_equal ">= 1.2", "1.2.3"
     assert_approximate_satisfies_itself "1.2.3"
 
-    assert_approximate_equal "~> 1.2.a", "1.2.3.a.4"
+    assert_approximate_equal ">= 1.2.a", "1.2.3.a.4"
     assert_approximate_satisfies_itself "1.2.3.a.4"
 
-    assert_approximate_equal "~> 1.9.a", "1.9.0.dev"
+    assert_approximate_equal ">= 1.9.a", "1.9.0.dev"
     assert_approximate_satisfies_itself "1.9.0.dev"
   end
 
@@ -218,6 +218,20 @@ class TestGemVersion < Gem::TestCase
 
   def test_sort_key_is_not_computed_on_huge_numbers
     assert_nil v("2.30.1.250000").send(:sort_key)
+  end
+
+  def test_sort_key_on_timestamped_version
+    a = v("1.0.0")
+    b = v("0.0.1.20220404083012")
+
+    assert_operator a, :>, b
+  end
+
+  def test_sort_key_when_segment_is_higher_than_radix
+    a = v("0.7.0")
+    b = v("0.6.63000")
+
+    assert_operator(a, :>, b)
   end
 
   def test_sort_key_is_used_for_comparison

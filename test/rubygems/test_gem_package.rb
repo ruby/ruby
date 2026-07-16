@@ -33,6 +33,25 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert package.spec
   end
 
+  def test_class_new_old_format_forwards_security_policy
+    pend "jruby can't require the simple_gem file" if Gem.java_platform?
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
+    require_relative "simple_gem"
+    File.open "old_format.gem", "wb" do |io|
+      io.write SIMPLE_GEM
+    end
+
+    package = Gem::Package.new "old_format.gem", Gem::Security::HighSecurity
+
+    e = assert_raise Gem::Security::Exception do
+      package.verify
+    end
+
+    assert_equal "old format gems do not contain signatures " \
+                 "and cannot be verified",
+                 e.message
+  end
+
   def test_add_checksums
     gem_io = StringIO.new
 
@@ -175,6 +194,9 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_add_files_symlink
+    unless symlink_supported?
+      omit("symlink - developer mode must be enabled on Windows")
+    end
     spec = Gem::Specification.new
     spec.files = %w[lib/code.rb lib/code_sym.rb lib/code_sym2.rb]
 
@@ -185,16 +207,8 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
 
     # NOTE: 'code.rb' is correct, because it's relative to lib/code_sym.rb
-    begin
-      File.symlink("code.rb", "lib/code_sym.rb")
-      File.symlink("../lib/code.rb", "lib/code_sym2.rb")
-    rescue Errno::EACCES => e
-      if Gem.win_platform?
-        pend "symlink - must be admin with no UAC on Windows"
-      else
-        raise e
-      end
-    end
+    File.symlink("code.rb", "lib/code_sym.rb")
+    File.symlink("../lib/code.rb", "lib/code_sym2.rb")
 
     package = Gem::Package.new "bogus.gem"
     package.spec = spec
@@ -583,25 +597,71 @@ class TestGemPackage < Gem::Package::TarTestCase
       tar.add_symlink "lib/foo.rb", "../relative.rb", 0o644
     end
 
-    begin
-      package.extract_tar_gz tgz_io, @destination
-    rescue Errno::EACCES => e
-      if Gem.win_platform?
-        pend "symlink - must be admin with no UAC on Windows"
-      else
-        raise e
-      end
-    end
+    package.extract_tar_gz tgz_io, @destination
 
     extracted = File.join @destination, "lib/foo.rb"
     assert_path_exist extracted
-    assert_equal "../relative.rb",
-                 File.readlink(extracted)
+    if symlink_supported?
+      assert_equal "../relative.rb",
+                   File.readlink(extracted)
+    end
     assert_equal "hi",
+                 File.read(extracted),
+                 "should read file content either by following symlink or on Windows by reading copy"
+  end
+
+  def test_extract_tar_gz_symlink_directory
+    package = Gem::Package.new @gem
+    package.verify
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_symlink "link", "lib/orig", 0o644
+      tar.mkdir       "lib", 0o755
+      tar.mkdir       "lib/orig", 0o755
+      tar.add_file    "lib/orig/file.rb", 0o644 do |io|
+        io.write "ok"
+      end
+    end
+
+    package.extract_tar_gz tgz_io, @destination
+    extracted = File.join @destination, "link/file.rb"
+    assert_path_exist extracted
+    if symlink_supported?
+      assert_equal "lib/orig",
+                   File.readlink(File.dirname(extracted))
+    end
+    assert_equal "ok",
                  File.read(extracted)
   end
 
+  def test_extract_tar_gz_rejects_preexisting_symlink_escape
+    omit "Symlinks not supported or not enabled" unless symlink_supported?
+
+    package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "lib/owned.txt", 0o644 do |io|
+        io.write "poc-content"
+      end
+    end
+
+    escape_dir = File.join(@tempdir, "escape")
+    FileUtils.mkdir_p escape_dir
+
+    FileUtils.rm_rf File.join(@destination, "lib")
+    File.symlink escape_dir, File.join(@destination, "lib")
+
+    escaped = File.join(escape_dir, "owned.txt")
+
+    assert_raise Gem::Package::PathError do
+      package.extract_tar_gz tgz_io, @destination
+    end
+
+    refute File.exist?(escaped), "must not write outside extraction root via symlink"
+  end
+
   def test_extract_symlink_into_symlink_dir
+    omit "Symlinks not supported or not enabled" unless symlink_supported?
     package = Gem::Package.new @gem
     tgz_io = util_tar_gz do |tar|
       tar.mkdir       "lib", 0o755
@@ -665,13 +725,9 @@ class TestGemPackage < Gem::Package::TarTestCase
     destination_subdir = File.join @destination, "subdir"
     FileUtils.mkdir_p destination_subdir
 
-    expected_exceptions = Gem.win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
-
-    e = assert_raise(*expected_exceptions) do
+    e = assert_raise(Gem::Package::SymlinkError) do
       package.extract_tar_gz tgz_io, destination_subdir
     end
-
-    pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
 
     assert_equal("installing symlink 'lib/link' pointing to parent path #{@destination} of " \
                 "#{destination_subdir} is not allowed", e.message)
@@ -700,13 +756,9 @@ class TestGemPackage < Gem::Package::TarTestCase
       tar.add_symlink "link/dir", ".", 16_877
     end
 
-    expected_exceptions = Gem.win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
-
-    e = assert_raise(*expected_exceptions) do
+    e = assert_raise(Gem::Package::SymlinkError) do
       package.extract_tar_gz tgz_io, destination_subdir
     end
-
-    pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
 
     assert_equal("installing symlink 'link' pointing to parent path #{destination_user_dir} of " \
                 "#{destination_subdir} is not allowed", e.message)
@@ -783,79 +835,100 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
   end
 
-  def test_install_location
+  # The following tests exercise install_location's path resolution and
+  # traversal protection through the real extraction path (extract_tar_gz)
+  # rather than calling the private helper directly. The absolute-path case is
+  # already covered by test_extract_tar_gz_absolute.
+
+  def test_extract_tar_gz_basic_file
     package = Gem::Package.new @gem
 
-    file = "file.rb".dup
-
-    destination = package.install_location file, @destination
-
-    assert_equal File.join(@destination, "file.rb"), destination
-  end
-
-  def test_install_location_absolute
-    package = Gem::Package.new @gem
-
-    e = assert_raise Gem::Package::PathError do
-      package.install_location "/absolute.rb", @destination
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "file.rb", 0o644 do |io|
+        io.write "hi"
+      end
     end
 
-    assert_equal("installing into parent path /absolute.rb of " \
-                 "#{@destination} is not allowed", e.message)
+    package.extract_tar_gz tgz_io, @destination
+
+    extracted = File.join @destination, "file.rb"
+    assert_path_exist extracted
+    assert_equal "hi", File.read(extracted)
   end
 
-  def test_install_location_dots
+  def test_extract_tar_gz_collapses_parent_dots
     package = Gem::Package.new @gem
 
-    file = "file.rb"
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "foo/../bar/file.rb", 0o644 do |io|
+        io.write "hi"
+      end
+    end
 
-    destination = File.join @destination, "foo", "..", "bar"
+    package.extract_tar_gz tgz_io, @destination
 
-    FileUtils.mkdir_p File.join @destination, "foo"
-    FileUtils.mkdir_p File.expand_path destination
-
-    destination = package.install_location file, destination
-
-    # this test only fails on ruby missing File.realpath
-    assert_equal File.join(@destination, "bar", "file.rb"), destination
+    extracted = File.join @destination, "bar", "file.rb"
+    assert_path_exist extracted
+    assert_equal "hi", File.read(extracted)
+    assert_path_not_exist File.join(@destination, "foo")
   end
 
-  def test_install_location_extra_slash
+  def test_extract_tar_gz_collapses_extra_slash
     package = Gem::Package.new @gem
 
-    file = "foo//file.rb".dup
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "foo//file.rb", 0o644 do |io|
+        io.write "hi"
+      end
+    end
 
-    destination = package.install_location file, @destination
+    package.extract_tar_gz tgz_io, @destination
 
-    assert_equal File.join(@destination, "foo", "file.rb"), destination
+    extracted = File.join @destination, "foo", "file.rb"
+    assert_path_exist extracted
+    assert_equal "hi", File.read(extracted)
   end
 
-  def test_install_location_relative
+  def test_extract_tar_gz_rejects_relative_escape
     package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "../relative.rb", 0o644 do |io|
+        io.write "hi"
+      end
+    end
 
     e = assert_raise Gem::Package::PathError do
-      package.install_location "../relative.rb", @destination
+      package.extract_tar_gz tgz_io, @destination
     end
 
     parent = File.expand_path File.join @destination, "../relative.rb"
 
     assert_equal("installing into parent path #{parent} of " \
                  "#{@destination} is not allowed", e.message)
+    assert_path_not_exist parent
   end
 
-  def test_install_location_suffix
+  def test_extract_tar_gz_rejects_suffix_escape
     package = Gem::Package.new @gem
 
     filename = "../#{File.basename(@destination)}suffix.rb"
 
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file filename, 0o644 do |io|
+        io.write "hi"
+      end
+    end
+
     e = assert_raise Gem::Package::PathError do
-      package.install_location filename, @destination
+      package.extract_tar_gz tgz_io, @destination
     end
 
     parent = File.expand_path File.join @destination, filename
 
     assert_equal("installing into parent path #{parent} of " \
                  "#{@destination} is not allowed", e.message)
+    assert_path_not_exist parent
   end
 
   def test_load_spec_from_metadata

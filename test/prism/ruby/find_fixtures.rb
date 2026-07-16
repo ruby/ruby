@@ -45,7 +45,6 @@ module Prism
     end
 
     module ForLoop
-      items = [1, 2, 3]
       for_proc = nil
       o = Object.new
       def o.each(&block) = block.call(block)

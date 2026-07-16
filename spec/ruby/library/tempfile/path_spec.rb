@@ -21,6 +21,6 @@ describe "Tempfile#path" do
     end
 
     path[0, tmpdir.length].should == tmpdir
-    path.should include("specs")
+    path.should.include?("specs")
   end
 end

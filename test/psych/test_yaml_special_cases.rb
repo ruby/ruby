@@ -42,6 +42,7 @@ module Psych
     end
 
     def test_off
+      omit 'off is a plain string on the YAML 1.2 libfyaml backend' if libfyaml?
       s = "off"
       assert_equal false, Psych.load(s)
       assert_equal [false], Psych.load_stream(s)

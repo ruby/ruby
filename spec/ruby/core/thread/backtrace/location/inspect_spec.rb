@@ -8,6 +8,6 @@ describe 'Thread::Backtrace::Location#inspect' do
   end
 
   it 'converts the call frame to a String' do
-    @frame.inspect.should include("#{__FILE__}:#{@line}:in ")
+    @frame.inspect.should.include?("#{__FILE__}:#{@line}:in ")
   end
 end

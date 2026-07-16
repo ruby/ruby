@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/update'
 
 describe "Hash#update" do
-  it_behaves_like :hash_update, :update
+  it "is an alias of Hash#merge!" do
+    Hash.instance_method(:update).should == Hash.instance_method(:merge!)
+  end
 end

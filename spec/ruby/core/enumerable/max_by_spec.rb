@@ -4,7 +4,7 @@ require_relative 'shared/enumerable_enumeratorized'
 
 describe "Enumerable#max_by" do
   it "returns an enumerator if no block" do
-    EnumerableSpecs::Numerous.new(42).max_by.should be_an_instance_of(Enumerator)
+    EnumerableSpecs::Numerous.new(42).max_by.should.instance_of?(Enumerator)
   end
 
   it "returns nil if #each yields no objects" do
@@ -18,7 +18,7 @@ describe "Enumerable#max_by" do
 
   it "returns the object that appears first in #each in case of a tie" do
     a, b, c = '1', '2', '2'
-    EnumerableSpecs::Numerous.new(a, b, c).max_by {|obj| obj.to_i }.should equal(b)
+    EnumerableSpecs::Numerous.new(a, b, c).max_by {|obj| obj.to_i }.should.equal?(b)
   end
 
   it "uses max.<=>(current) to determine order" do
@@ -48,7 +48,7 @@ describe "Enumerable#max_by" do
 
     context "without a block" do
       it "returns an enumerator" do
-        @enum.max_by(2).should be_an_instance_of(Enumerator)
+        @enum.max_by(2).should.instance_of?(Enumerator)
       end
     end
 
@@ -67,7 +67,7 @@ describe "Enumerable#max_by" do
 
       context "when n is negative" do
         it "raises an ArgumentError" do
-          -> { @enum.max_by(-1) { |i| i.to_s } }.should raise_error(ArgumentError)
+          -> { @enum.max_by(-1) { |i| i.to_s } }.should.raise(ArgumentError)
         end
       end
     end

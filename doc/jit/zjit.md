@@ -146,7 +146,8 @@ ZJIT options:
   --zjit-stats[=quiet]
                   Enable collecting ZJIT statistics (=quiet to suppress output).
   --zjit-disable  Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable.
-  --zjit-perf     Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf.
+  --zjit-perf[=iseq|hir]
+                  Dump symbols for Linux perf /tmp/perf-{}.map (default: iseq).
   --zjit-log-compiled-iseqs=path
                   Log compiled ISEQs to the file. The file will be truncated.
   --zjit-trace-exits[=counter]
@@ -155,6 +156,59 @@ ZJIT options:
                   Frequency at which to record side exits. Must be `usize`.
 $
 ```
+
+### Profiling with Linux perf
+
+`--zjit-perf` allows you to profile JIT-ed methods along with other native functions using Linux perf.
+When you run Ruby with `perf record`, perf looks up `/tmp/perf-{pid}.map` to resolve symbols in JIT code,
+and this option lets ZJIT write ISEQ symbols into that file.
+
+#### Call graph
+
+Here's an example way to use this option with [Firefox Profiler](https://profiler.firefox.com)
+(See also: [Profiling with Linux perf](https://profiler.firefox.com/docs/#/./guide-perf-profiling)):
+
+```bash
+# Compile the interpreter with frame pointers enabled
+./configure --enable-zjit --prefix=$HOME/.rubies/ruby-zjit --disable-install-doc cflags=-fno-omit-frame-pointer
+make -j && make install
+
+# [Optional] Allow running perf without sudo
+echo 0 | sudo tee /proc/sys/kernel/kptr_restrict
+echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+
+# Profile Ruby with --zjit-perf
+cd ../ruby-bench
+PERF="record --call-graph fp" ruby --zjit-perf -Iharness-perf benchmarks/liquid-render/benchmark.rb
+
+# View results on Firefox Profiler https://profiler.firefox.com.
+# Create /tmp/test.perf as below and upload it using "Load a profile from file".
+perf script --fields +pid > /tmp/test.perf
+```
+
+#### ZJIT HIR
+
+You can also profile the number of cycles consumed by code generated from each kind of HIR instruction.
+
+```bash
+# Install perf
+apt-get install linux-tools-common linux-tools-generic linux-tools-`uname -r`
+
+# [Optional] Allow running perf without sudo
+echo 0 | sudo tee /proc/sys/kernel/kptr_restrict
+echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+
+# Profile Ruby with --zjit-perf=hir
+cd ../ruby-bench
+PERF=record ruby --zjit-perf=hir -Iharness-perf benchmarks/lobsters/benchmark.rb
+
+# Aggregate results
+perf script > /tmp/perf.txt
+../ruby/misc/jit_perf.rb /tmp/perf.txt
+```
+
+This aggregation script reads the text output from `perf script`, so it does not require `perf`
+to be built with scripting support.
 
 ### Source level documentation
 
@@ -233,27 +287,27 @@ cd zjit && cargo insta review
 
 Test changes will be reviewed alongside code changes.
 
-### Running integration tests
+### Running smoke tests
 
-This command runs Ruby execution tests.
-
-```bash
-make test-all TESTS="test/ruby/test_zjit.rb"
-```
-
-You can also run a single test case by matching the method name:
-
-```bash
-make test-all TESTS="test/ruby/test_zjit.rb -n TestZJIT#test_putobject"
-```
-
-### Running all tests
-
-Runs both `make zjit-test` and `test/ruby/test_zjit.rb`:
+Runs both `make zjit-test` and `test/ruby/test_zjit_cli.rb`:
 
 ```bash
 make zjit-check
 ```
+
+### Integration testing
+
+A thorough test run will want to enable ZJIT on Ruby workloads. Some
+test suites written in Ruby in this repository accepts the `RUN_OPTS`
+Make macro for passing ruby(1) command-line arguments:
+
+```bash
+make test-all RUN_OPTS='--zjit-call-threshold=2'
+make btest RUN_OPTS='--zjit-call-threshold=1'
+```
+
+See [Testing Ruby](rdoc-ref:contributing/testing_ruby.md) for a list of
+test suites.
 
 ## Statistics Collection
 
@@ -294,17 +348,63 @@ This metric only appears when ZJIT is built with `--enable-zjit=stats` [or more]
 
 ### Tracing side exits
 
-Through [Stackprof](https://github.com/tmm1/stackprof), detailed information about the methods that the JIT side-exits from can be displayed after some execution of a program. Optionally, you can use `--zjit-trace-exits-sample-rate=N` to sample every N-th occurrence. Enabling `--zjit-trace-exits-sample-rate=N` will automatically enable `--zjit-trace-exits`.
+`--zjit-trace-exits` records a backtrace every time compiled code takes a
+side exit.  The output is a [Fuchsia Trace Format](https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format)
+(`.fxt`) file written to `/tmp/perfetto-{pid}.fxt`, which can be opened
+directly in [Perfetto UI](https://ui.perfetto.dev/) or queried with the
+[Perfetto trace processor](https://perfetto.dev/docs/quickstart/trace-analysis).
 
 ```bash
-./miniruby --zjit-trace-exits script.rb
+$ ./miniruby --zjit-trace-exits -e '
+def poly(x)
+  x.to_s
+end
+
+30.times { poly(1) }
+30.times { poly("hello") }
+30.times { poly(:sym) }
+'
+ZJIT: writing trace exits to /tmp/perfetto-123456.fxt
 ```
 
-A file called `zjit_exits_{pid}.dump` will be created in the same directory as `script.rb`. Viewing the side exited methods can be done with Stackprof:
+To find the hottest side-exit locations, open the `.fxt` file in
+[Perfetto UI](https://ui.perfetto.dev/) and run an SQL query via the
+"Query (SQL)" tab in the bottom panel. Alternatively, download
+`trace_processor_shell` to query from the command line:
 
 ```bash
-stackprof path/to/zjit_exits_{pid}.dump
+curl -Lo /tmp/trace_processor_shell https://get.perfetto.dev/trace_processor
+chmod +x /tmp/trace_processor_shell
+
+/tmp/trace_processor_shell /tmp/perfetto-123456.fxt -Q "
+SELECT reason, backtrace, count(*) AS exits FROM (
+  SELECT
+    s.id,
+    s.name AS reason,
+    group_concat(a.display_value, ' <- ') AS backtrace
+  FROM slice s
+  JOIN args a USING(arg_set_id)
+  WHERE s.category = 'side_exit'
+  GROUP BY s.id
+)
+GROUP BY reason, backtrace
+ORDER BY exits DESC
+LIMIT 30
+"
 ```
+
+Example output:
+
+```
+"reason","backtrace","exits"
+"GuardType(Fixnum)","Object#poly (-e) <- block in <main> (-e) <- Integer#times (<internal:numeric>) <- <main> (-e)",60
+```
+
+You can also trace a specific counter with `--zjit-trace-exits=<counter_name>`
+(e.g. `--zjit-trace-exits=exit_compile_error`), or downsample with
+`--zjit-trace-exits-sample-rate=N` to record every N-th exit.
+Enabling `--zjit-trace-exits-sample-rate=N` will automatically enable
+`--zjit-trace-exits`.
 
 ### Viewing HIR as text
 
@@ -318,7 +418,6 @@ Note that this disables profiling. To inject interpreter profiles into ZJIT, con
 
 ```bash
 ./miniruby --zjit --zjit-dump-hir -e "30.times { 1 + 1 }"
-```
 ```
 
 ### Viewing HIR in Iongraph

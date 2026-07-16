@@ -152,7 +152,7 @@ module Prism
     #--
     #: (Source source, Location location) -> node
     def default_node(source, location)
-      MissingNode.new(source, -1, location, 0)
+      ErrorRecoveryNode.new(source, -1, location, 0, nil)
     end
 
     private

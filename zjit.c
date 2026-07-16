@@ -23,118 +23,39 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "ractor_core.h"
 
 // This build config impacts the pointer tagging scheme and we only want to
 // support one scheme for simplicity.
 STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 
 enum zjit_struct_offsets {
-    ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param)
+    ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param),
+    ISEQ_BODY_OFFSET_OUTER_VARIABLES = offsetof(struct rb_iseq_constant_body, outer_variables),
+    RUBY_OFFSET_THREAD_RACTOR = offsetof(rb_thread_t, ractor),
 };
 
-// For a given raw_sample (frame), set the hash with the caller's
-// name, file, and line number. Return the  hash with collected frame_info.
-static void
-rb_zjit_add_frame(VALUE hash, VALUE frame)
-{
-    VALUE frame_id = PTR2NUM(frame);
-
-    if (RTEST(rb_hash_aref(hash, frame_id))) {
-        return;
-    }
-    else {
-        VALUE frame_info = rb_hash_new();
-        // Full label for the frame
-        VALUE name = rb_profile_frame_full_label(frame);
-        // Absolute path of the frame from rb_iseq_realpath
-        VALUE file = rb_profile_frame_absolute_path(frame);
-        // Line number of the frame
-        VALUE line = rb_profile_frame_first_lineno(frame);
-
-        // If absolute path isn't available use the rb_iseq_path
-        if (NIL_P(file)) {
-            file = rb_profile_frame_path(frame);
-        }
-
-        rb_hash_aset(frame_info, ID2SYM(rb_intern("name")), name);
-        rb_hash_aset(frame_info, ID2SYM(rb_intern("file")), file);
-        rb_hash_aset(frame_info, ID2SYM(rb_intern("samples")), INT2NUM(0));
-        rb_hash_aset(frame_info, ID2SYM(rb_intern("total_samples")), INT2NUM(0));
-        rb_hash_aset(frame_info, ID2SYM(rb_intern("edges")), rb_hash_new());
-        rb_hash_aset(frame_info, ID2SYM(rb_intern("lines")), rb_hash_new());
-
-        if (line != INT2FIX(0)) {
-            rb_hash_aset(frame_info, ID2SYM(rb_intern("line")), line);
-        }
-
-       rb_hash_aset(hash, frame_id, frame_info);
-    }
-}
-
-// Parses the ZjitExitLocations raw_samples and line_samples collected by
-// rb_zjit_record_exit_stack and turns them into 3 hashes (raw, lines, and frames) to
-// be used by RubyVM::ZJIT.exit_locations. zjit_raw_samples represents the raw frames information
-// (without name, file, and line), and zjit_line_samples represents the line information
-// of the iseq caller.
-VALUE
-rb_zjit_exit_locations_dict(VALUE *zjit_raw_samples, int *zjit_line_samples, int samples_len)
-{
-    VALUE result = rb_hash_new();
-    VALUE raw_samples = rb_ary_new_capa(samples_len);
-    VALUE line_samples = rb_ary_new_capa(samples_len);
-    VALUE frames = rb_hash_new();
-    int idx = 0;
-
-    // While the index is less than samples_len, parse zjit_raw_samples and
-    // zjit_line_samples, then add casted values to raw_samples and line_samples array.
-    while (idx < samples_len) {
-        int num = (int)zjit_raw_samples[idx];
-        int line_num = (int)zjit_line_samples[idx];
-        idx++;
-
-        // + 1 as we append an additional sample for the insn
-        rb_ary_push(raw_samples, SIZET2NUM(num + 1));
-        rb_ary_push(line_samples, INT2NUM(line_num + 1));
-
-        // Loop through the length of samples_len and add data to the
-        // frames hash. Also push the current value onto the raw_samples
-        // and line_samples array respectively.
-        for (int o = 0; o < num; o++) {
-            rb_zjit_add_frame(frames, zjit_raw_samples[idx]);
-            rb_ary_push(raw_samples, SIZET2NUM(zjit_raw_samples[idx]));
-            rb_ary_push(line_samples, INT2NUM(zjit_line_samples[idx]));
-            idx++;
-        }
-
-        rb_ary_push(raw_samples, SIZET2NUM(zjit_raw_samples[idx]));
-        rb_ary_push(line_samples, INT2NUM(zjit_line_samples[idx]));
-        idx++;
-
-        rb_ary_push(raw_samples, SIZET2NUM(zjit_raw_samples[idx]));
-        rb_ary_push(line_samples, INT2NUM(zjit_line_samples[idx]));
-        idx++;
-    }
-
-    // Set add the raw_samples, line_samples, and frames to the results
-    // hash.
-    rb_hash_aset(result, ID2SYM(rb_intern("raw")), raw_samples);
-    rb_hash_aset(result, ID2SYM(rb_intern("lines")), line_samples);
-    rb_hash_aset(result, ID2SYM(rb_intern("frames")), frames);
-
-    return result;
-}
+// Special JITFrame used by all C method calls. We don't control the native
+// stack layout for C frames, so cfp->jit_return points at this static frame
+// via the ZJIT_JIT_RETURN_C_FRAME sentinel instead of a per-call allocation.
+const zjit_jit_frame_t rb_zjit_c_frame = (zjit_jit_frame_t) {
+    .pc = 0,
+    .iseq = 0,
+    .materialize_block_code = false,
+};
 
 void rb_zjit_profile_disable(const rb_iseq_t *iseq);
+int rb_zjit_insn_to_bare_insn(int insn);
 
 void
-rb_zjit_compile_iseq(const rb_iseq_t *iseq, bool jit_exception)
+rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {
     RB_VM_LOCKING() {
         rb_vm_barrier();
 
         // Compile a block version starting at the current instruction
-        uint8_t *rb_zjit_iseq_gen_entry_point(const rb_iseq_t *iseq, bool jit_exception); // defined in Rust
-        uintptr_t code_ptr = (uintptr_t)rb_zjit_iseq_gen_entry_point(iseq, jit_exception);
+        uint8_t *rb_zjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception); // defined in Rust
+        uintptr_t code_ptr = (uintptr_t)rb_zjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
         if (jit_exception) {
             iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
@@ -189,6 +110,13 @@ rb_zjit_profile_disable(const rb_iseq_t *iseq)
     }
 }
 
+// Map `zjit_* instructions back to their bare form. This is an identity function for all others.
+int
+rb_zjit_insn_to_bare_insn(int insn)
+{
+    return vm_zjit_insn_to_bare_insn(insn);
+}
+
 // Update a YARV instruction to a given opcode (to disable ZJIT profiling).
 void
 rb_zjit_iseq_insn_set(const rb_iseq_t *iseq, unsigned int insn_idx, enum ruby_vminsn_type bare_insn)
@@ -238,6 +166,12 @@ bool
 rb_zjit_singleton_class_p(VALUE klass)
 {
     return RCLASS_SINGLETON_P(klass);
+}
+
+size_t
+rb_zjit_offset_ractor_newobj_cache(void)
+{
+    return offsetof(rb_ractor_t, newobj_cache);
 }
 
 VALUE

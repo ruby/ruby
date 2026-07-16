@@ -58,11 +58,11 @@ platform_is_not :windows do
     end
 
     it "raises a SystemCallError if the file descriptor given is not valid" do
-      -> { Dir.for_fd(-1) }.should raise_error(SystemCallError, "Bad file descriptor - fdopendir")
+      -> { Dir.for_fd(-1) }.should.raise(SystemCallError, "Bad file descriptor - fdopendir")
     end
 
     it "raises a SystemCallError if the file descriptor given is not for a directory" do
-      -> { Dir.for_fd $stdout.fileno }.should raise_error(SystemCallError, "Not a directory - fdopendir")
+      -> { Dir.for_fd $stdout.fileno }.should.raise(SystemCallError, "Not a directory - fdopendir")
     end
   end
 end
@@ -70,7 +70,7 @@ end
 platform_is :windows do
   describe "Dir.for_fd" do
     it "raises NotImplementedError" do
-      -> { Dir.for_fd 1 }.should raise_error(NotImplementedError)
+      -> { Dir.for_fd 1 }.should.raise(NotImplementedError)
     end
   end
 end

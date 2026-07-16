@@ -11,7 +11,7 @@ describe :string_chars, shared: true do
 
   it "returns self" do
     s = StringSpecs::MyString.new "hello"
-    s.send(@method){}.should equal(s)
+    s.send(@method){}.should.equal?(s)
   end
 
   it "is unicode aware" do
@@ -33,7 +33,7 @@ describe :string_chars, shared: true do
   it "works if the String's contents is invalid for its encoding" do
     xA4 = [0xA4].pack('C')
     xA4.force_encoding('UTF-8')
-    xA4.valid_encoding?.should be_false
+    xA4.valid_encoding?.should == false
     xA4.send(@method).to_a.should == [xA4.force_encoding("UTF-8")]
   end
 

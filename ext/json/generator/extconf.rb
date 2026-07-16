@@ -5,6 +5,9 @@ if RUBY_ENGINE == 'truffleruby'
   File.write('Makefile', dummy_makefile("").join)
 else
   append_cflags("-std=c99")
+  have_const("RUBY_TYPED_EMBEDDABLE", "ruby.h") # RUBY_VERSION >= 3.3
+  have_func("ruby_xfree_sized", "ruby.h") # RUBY_VERSION >= 4.1
+
   $defs << "-DJSON_GENERATOR"
   $defs << "-DJSON_DEBUG" if ENV.fetch("JSON_DEBUG", "0") != "0"
 

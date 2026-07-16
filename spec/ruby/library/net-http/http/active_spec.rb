@@ -1,8 +1,8 @@
 require_relative '../../../spec_helper'
 require 'net/http'
-require_relative 'fixtures/http_server'
-require_relative 'shared/started'
 
 describe "Net::HTTP#active?" do
-  it_behaves_like :net_http_started_p, :active?
+  it "is an alias of Net::HTTP#started?" do
+    Net::HTTP.instance_method(:active?).should == Net::HTTP.instance_method(:started?)
+  end
 end

@@ -40,12 +40,12 @@ jobs:
       security-events: write
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
       - name: Run zizmor
-        uses: zizmorcore/zizmor-action@71321a20a9ded102f6e9ce5718a2fcec2c4f70d8 # v0.5.2
+        uses: zizmorcore/zizmor-action@6599ee8b7a49aef6a770f63d261d214911a7ce02 # v0.6.0
         continue-on-error: true
 
   analyze:
@@ -54,18 +54,15 @@ jobs:
     permissions:
       actions: read # for github/codeql-action/init to get workflow details
       contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/autobuild to send a status report
+      security-events: write # for github/codeql-action/upload-sarif to send a status report
     # CodeQL fails to run pull requests from dependabot due to missing write access to upload results.
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
-
-    env:
-      enable_install_doc: no
 
     strategy:
       fail-fast: false
@@ -76,43 +73,26 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
-      - name: Install libraries
-        if: ${{ contains(matrix.os, 'macos') }}
-        uses: ./.github/actions/setup/macos
-
-      - name: Install libraries
-        if : ${{ matrix.os == 'ubuntu-latest' }}
-        uses: ./.github/actions/setup/ubuntu
-
-      - uses: ./.github/actions/setup/directories
-
-      - name: Remove an obsolete rubygems vendored file
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
-
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
+        uses: github/codeql-action/init@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
         with:
           languages: ${{ matrix.language }}
-          trap-caching: false
-          debug: true
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
+          build-mode: none
+          config-file: .github/codeql/codeql-config.yml
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
+        uses: github/codeql-action/analyze@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
         with:
           category: '/language:${{ matrix.language }}'
           upload: False
           output: sarif-results
 
       - name: filter-sarif
-        uses: advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1.0.1.1
+        uses: advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1
         with:
           patterns: |
             +**/*.rb
@@ -120,6 +100,7 @@ jobs:
             -lib/uri/rfc3986_parser.rb:rb/overly-large-range
             -lib/bundler/vendor/uri/lib/uri/mailto.rb:rb/overly-large-range
             -lib/bundler/vendor/uri/lib/uri/rfc3986_parser.rb:rb/overly-large-range
+            -spec/ruby/core/regexp/timeout_spec.rb:rb/redos
             -test/ruby/test_io.rb:rb/non-constant-kernel-open
             -test/open-uri/test_open-uri.rb:rb/non-constant-kernel-open
             -test/open-uri/test_ssl.rb:rb/non-constant-kernel-open
@@ -134,8 +115,19 @@ jobs:
         if: ${{ matrix.language == 'ruby' }}
         continue-on-error: true
 
+      - name: filter-sarif
+        uses: advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1
+        with:
+          patterns: |
+            +**/*.c
+            +**/*.h
+          input: sarif-results/${{ matrix.language }}.sarif
+          output: sarif-results/${{ matrix.language }}.sarif
+        if: ${{ matrix.language == 'cpp' }}
+        continue-on-error: true
+
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
+        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
         with:
           sarif_file: sarif-results/${{ matrix.language }}.sarif
         continue-on-error: true

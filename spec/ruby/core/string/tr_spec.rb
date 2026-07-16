@@ -30,11 +30,11 @@ describe "String#tr" do
   end
 
   it "raises an ArgumentError a descending range in the replacement as containing just the start character" do
-    -> { "hello".tr("a-y", "z-b") }.should raise_error(ArgumentError)
+    -> { "hello".tr("a-y", "z-b") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError a descending range in the source as empty" do
-    -> { "hello".tr("l-a", "z") }.should raise_error(ArgumentError)
+    -> { "hello".tr("l-a", "z") }.should.raise(ArgumentError)
   end
 
   it "translates chars not in from_string when it starts with a ^" do
@@ -66,7 +66,7 @@ describe "String#tr" do
   end
 
   it "returns Stringinstances when called on a subclass" do
-    StringSpecs::MyString.new("hello").tr("e", "a").should be_an_instance_of(String)
+    StringSpecs::MyString.new("hello").tr("e", "a").should.instance_of?(String)
   end
 
   # http://redmine.ruby-lang.org/issues/show/1839
@@ -119,8 +119,8 @@ describe "String#tr!" do
 
   it "raises a FrozenError if self is frozen" do
     s = "abcdefghijklmnopqR".freeze
-    -> { s.tr!("cdefg", "12") }.should raise_error(FrozenError)
-    -> { s.tr!("R", "S")      }.should raise_error(FrozenError)
-    -> { s.tr!("", "")        }.should raise_error(FrozenError)
+    -> { s.tr!("cdefg", "12") }.should.raise(FrozenError)
+    -> { s.tr!("R", "S")      }.should.raise(FrozenError)
+    -> { s.tr!("", "")        }.should.raise(FrozenError)
   end
 end

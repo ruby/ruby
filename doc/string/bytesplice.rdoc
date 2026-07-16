@@ -20,7 +20,7 @@ And either count may be zero (i.e., specifying an empty string):
   '0123456789'.bytesplice(0, 0, 'abc') # => "abc0123456789" # Empty target.
 
 In the second form, just as in the first,
-arugments +offset+ and +length+ determine the target bytes;
+arguments +offset+ and +length+ determine the target bytes;
 argument +str+ _contains_ the source bytes,
 and the additional arguments +str_offset+ and +str_length+
 determine the actual source bytes:
@@ -42,7 +42,7 @@ and the source bytes are all of the given +str+:
   '0123456789'.bytesplice(0...0, 'abc') # => "abc0123456789" # Empty target.
 
 In the fourth form, just as in the third,
-arugment +range+ determines the target bytes;
+argument +range+ determines the target bytes;
 argument +str+ _contains_ the source bytes,
 and the additional argument +str_range+
 determines the actual source bytes:
@@ -63,4 +63,3 @@ and so has character boundaries at offsets 0, 3, 6, 9, 12, and 15.
   'こんにちは'.bytesplice(0, 3, 'abc') # => "abcんにちは"
   'こんにちは'.bytesplice(1, 3, 'abc') # Raises IndexError.
   'こんにちは'.bytesplice(0, 2, 'abc') # Raises IndexError.
-

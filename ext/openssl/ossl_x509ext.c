@@ -9,14 +9,6 @@
  */
 #include "ossl.h"
 
-#define NewX509Ext(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_x509ext_type, 0)
-#define SetX509Ext(obj, ext) do { \
-    if (!(ext)) { \
-        ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (ext); \
-} while (0)
 #define GetX509Ext(obj, ext) do { \
     TypedData_Get_Struct((obj), X509_EXTENSION, &ossl_x509ext_type, (ext)); \
     if (!(ext)) { \
@@ -58,20 +50,27 @@ static const rb_data_type_t ossl_x509ext_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
+static VALUE
+ossl_x509ext_alloc(VALUE klass)
+{
+    return TypedData_Wrap_Struct(klass, &ossl_x509ext_type, NULL);
+}
+
 /*
  * Public
  */
 VALUE
-ossl_x509ext_new(X509_EXTENSION *ext)
+ossl_x509ext_new(const X509_EXTENSION *ext)
 {
     X509_EXTENSION *new;
     VALUE obj;
 
-    obj = NewX509Ext(cX509Ext);
-    new = X509_EXTENSION_dup(ext);
+    obj = ossl_x509ext_alloc(cX509Ext);
+    /* OpenSSL 1.1.1 takes a non-const pointer */
+    new = X509_EXTENSION_dup((X509_EXTENSION *)ext);
     if (!new)
         ossl_raise(eX509ExtError, "X509_EXTENSION_dup");
-    SetX509Ext(obj, new);
+    RTYPEDDATA_DATA(obj) = new;
 
     return obj;
 }
@@ -220,7 +219,7 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     StringValueCStr(valstr);
 
     GetX509ExtFactory(self, ctx);
-    obj = NewX509Ext(cX509Ext);
+    obj = ossl_x509ext_alloc(cX509Ext);
     rconf = rb_iv_get(self, "@config");
     conf = NIL_P(rconf) ? NULL : GetConfig(rconf);
     X509V3_set_nconf(ctx, conf);
@@ -230,7 +229,7 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     if (!ext){
         ossl_raise(eX509ExtError, "%"PRIsVALUE" = %"PRIsVALUE, oid, valstr);
     }
-    SetX509Ext(obj, ext);
+    RTYPEDDATA_DATA(obj) = ext;
 
     return obj;
 }
@@ -238,20 +237,6 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
 /*
  * Ext
  */
-static VALUE
-ossl_x509ext_alloc(VALUE klass)
-{
-    X509_EXTENSION *ext;
-    VALUE obj;
-
-    obj = NewX509Ext(klass);
-    if(!(ext = X509_EXTENSION_new())){
-        ossl_raise(eX509ExtError, NULL);
-    }
-    SetX509Ext(obj, ext);
-
-    return obj;
-}
 
 /*
  * call-seq:
@@ -270,19 +255,26 @@ ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE oid, value, critical;
     const unsigned char *p;
-    X509_EXTENSION *ext, *x;
+    X509_EXTENSION *ext;
 
-    GetX509Ext(self, ext);
-    if(rb_scan_args(argc, argv, "12", &oid, &value, &critical) == 1){
+    rb_scan_args(argc, argv, "12", &oid, &value, &critical);
+    ossl_want_uninitialized(self, &ossl_x509ext_type);
+    if (argc == 1) {
         oid = ossl_to_der_if_possible(oid);
         StringValue(oid);
         p = (unsigned char *)RSTRING_PTR(oid);
-        x = d2i_X509_EXTENSION(&ext, &p, RSTRING_LEN(oid));
-        DATA_PTR(self) = ext;
-        if(!x)
-            ossl_raise(eX509ExtError, NULL);
+        ext = d2i_X509_EXTENSION(NULL, &p, RSTRING_LEN(oid));
+        if (!ext)
+            ossl_raise(eX509ExtError, "d2i_X509_EXTENSION");
+        RTYPEDDATA_DATA(self) = ext;
         return self;
     }
+
+    ext = X509_EXTENSION_new();
+    if (!ext)
+        ossl_raise(eX509ExtError, "X509_EXTENSION_new");
+    RTYPEDDATA_DATA(self) = ext;
+
     rb_funcall(self, rb_intern("oid="), 1, oid);
     rb_funcall(self, rb_intern("value="), 1, value);
     if(argc > 2) rb_funcall(self, rb_intern("critical="), 1, critical);
@@ -294,18 +286,15 @@ ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_x509ext_initialize_copy(VALUE self, VALUE other)
 {
-    X509_EXTENSION *ext, *ext_other, *ext_new;
+    X509_EXTENSION *ext_other, *ext_new;
 
-    rb_check_frozen(self);
-    GetX509Ext(self, ext);
+    ossl_want_uninitialized(self, &ossl_x509ext_type);
     GetX509Ext(other, ext_other);
 
     ext_new = X509_EXTENSION_dup(ext_other);
     if (!ext_new)
         ossl_raise(eX509ExtError, "X509_EXTENSION_dup");
-
-    SetX509Ext(self, ext_new);
-    X509_EXTENSION_free(ext);
+    RTYPEDDATA_DATA(self) = ext_new;
 
     return self;
 }
@@ -338,12 +327,20 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
     GetX509Ext(self, ext);
     data = ossl_to_der_if_possible(data);
     StringValue(data);
-    asn1s = X509_EXTENSION_get_data(ext);
 
+    asn1s = ASN1_OCTET_STRING_new();
+    if (!asn1s)
+        ossl_raise(eX509ExtError, "ASN1_OCTET_STRING_new");
     if (!ASN1_OCTET_STRING_set(asn1s, (unsigned char *)RSTRING_PTR(data),
                                RSTRING_LENINT(data))) {
+        ASN1_OCTET_STRING_free(asn1s);
         ossl_raise(eX509ExtError, "ASN1_OCTET_STRING_set");
     }
+    if (!X509_EXTENSION_set_data(ext, asn1s)) {
+        ASN1_OCTET_STRING_free(asn1s);
+        ossl_raise(eX509ExtError, "X509_EXTENSION_set_data");
+    }
+    ASN1_OCTET_STRING_free(asn1s);
 
     return data;
 }
@@ -386,7 +383,7 @@ ossl_x509ext_get_value(VALUE obj)
     if (!(out = BIO_new(BIO_s_mem())))
         ossl_raise(eX509ExtError, NULL);
     if (!X509V3_EXT_print(out, ext, 0, 0))
-        ASN1_STRING_print(out, (ASN1_STRING *)X509_EXTENSION_get_data(ext));
+        ASN1_STRING_print(out, X509_EXTENSION_get_data(ext));
     ret = ossl_membio2str(out);
 
     return ret;
@@ -396,7 +393,7 @@ static VALUE
 ossl_x509ext_get_value_der(VALUE obj)
 {
     X509_EXTENSION *ext;
-    ASN1_OCTET_STRING *value;
+    const ASN1_OCTET_STRING *value;
 
     GetX509Ext(obj, ext);
     if ((value = X509_EXTENSION_get_data(ext)) == NULL)

@@ -26,14 +26,14 @@ module TestNetHTTPUtils
     def start
       @thread = Thread.new do
         loop do
-          socket = (@ssl_server || @server).accept
+          socket = server.accept
           run(socket)
         rescue
         ensure
           socket&.close
         end
       ensure
-        (@ssl_server || @server).close
+        server.close
       end
     end
 
@@ -44,6 +44,7 @@ module TestNetHTTPUtils
     def shutdown
       @thread&.kill
       @thread&.join
+      server&.close
     end
 
     def mount(path, proc)
@@ -92,6 +93,10 @@ module TestNetHTTPUtils
 
     def port
       @port
+    end
+
+    private def server
+      @ssl_server || @server
     end
 
     class Request
@@ -277,6 +282,8 @@ module TestNetHTTPUtils
         handle_post(path, headers, socket)
       when 'PATCH'
         handle_patch(path, headers, socket)
+      when 'QUERY'
+        handle_query(path, headers, socket)
       else
         socket.print "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n"
       end
@@ -319,6 +326,13 @@ module TestNetHTTPUtils
   end
 
   def handle_patch(path, headers, socket)
+    body = socket.read(headers['Content-Length'].to_i)
+    content_type = headers['Content-Type'] || 'application/octet-stream'
+    response = "HTTP/1.1 200 OK\r\nContent-Type: #{content_type}\r\nContent-Length: #{body.bytesize}\r\n\r\n#{body}"
+    socket.print(response)
+  end
+
+  def handle_query(path, headers, socket)
     body = socket.read(headers['Content-Length'].to_i)
     content_type = headers['Content-Type'] || 'application/octet-stream'
     response = "HTTP/1.1 200 OK\r\nContent-Type: #{content_type}\r\nContent-Length: #{body.bytesize}\r\n\r\n#{body}"

@@ -70,6 +70,7 @@ VALUE rb_float_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
 VALUE rb_float_mul(VALUE x, VALUE y);
 VALUE rb_float_div(VALUE x, VALUE y);
+VALUE rb_flo_to_i(VALUE num);
 VALUE rb_int_idiv(VALUE x, VALUE y);
 VALUE rb_int_modulo(VALUE x, VALUE y);
 VALUE rb_int2str(VALUE num, int base);
@@ -125,6 +126,7 @@ VALUE rb_int_even_p(VALUE num);
 VALUE rb_int_odd_p(VALUE num);
 VALUE rb_int_abs(VALUE num);
 VALUE rb_int_bit_length(VALUE num);
+VALUE rb_int_bit_count(VALUE num);
 VALUE rb_int_uminus(VALUE num);
 VALUE rb_int_comp(VALUE num);
 

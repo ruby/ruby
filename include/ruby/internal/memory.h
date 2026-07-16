@@ -304,7 +304,7 @@ typedef uint128_t DSIZE_T;
 #define RB_ALLOCV(v, n)        \
     ((n) < RUBY_ALLOCV_LIMIT ? \
      ((v) = 0, alloca(n)) :    \
-     rb_alloc_tmp_buffer(&(v), (n)))
+     rb_alloc_tmp_buffer(&(v), (n), true))
 
 /**
  * Allocates a  memory region, possibly  on stack.   If the given  size exceeds
@@ -438,30 +438,7 @@ RBIMPL_ATTR_NONNULL(())
  * @return      Allocated `len` bytes array.
  * @post        `store` holds the corresponding tmp buffer object.
  */
-void *rb_alloc_tmp_buffer(volatile VALUE *store, long len);
-
-RBIMPL_ATTR_RESTRICT()
-RBIMPL_ATTR_RETURNS_NONNULL()
-RBIMPL_ATTR_ALLOC_SIZE((2,3))
-RBIMPL_ATTR_NONNULL(())
-/**
- * @private
- *
- * This is an  implementation detail of #RB_ALLOCV_N().  People  don't use this
- * directly.
- *
- * @param[out]  store  Pointer to a variable.
- * @param[in]   len    Requested number of bytes to allocate.
- * @param[in]   count  Number of elements in an array.
- * @return      Allocated `len` bytes array.
- * @post        `store` holds the corresponding tmp buffer object.
- *
- * @internal
- *
- * Although  the  meaning  of  `count` variable  is  clear,  @shyouhei  doesn't
- * understand its needs.
- */
-void *rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t len,size_t count);
+void *rb_alloc_tmp_buffer(volatile VALUE *store, long len, bool mark);
 
 /**
  * @private
@@ -741,7 +718,7 @@ static inline void *
 rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 {
     const size_t total_size = rbimpl_size_mul_or_raise(RBIMPL_CAST((size_t)count), elsize);
-    return rb_alloc_tmp_buffer(store, (long)total_size);
+    return rb_alloc_tmp_buffer(store, (long)total_size, elsize >= sizeof(VALUE));
 }
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()

@@ -15,7 +15,7 @@ describe "ARGF.to_io" do
         result << @argf.to_io
       end
 
-      result.each { |io| io.should be_kind_of(IO) }
+      result.each { |io| io.should.is_a?(IO) }
       result[0].should == result[1]
       result[2].should == result[3]
     end

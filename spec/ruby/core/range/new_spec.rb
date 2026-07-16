@@ -25,12 +25,12 @@ describe "Range.new" do
   end
 
   it "raises an ArgumentError when the given start and end can't be compared by using #<=>" do
-    -> { Range.new(1, mock('x'))         }.should raise_error(ArgumentError)
-    -> { Range.new(mock('x'), mock('y')) }.should raise_error(ArgumentError)
+    -> { Range.new(1, mock('x'))         }.should.raise(ArgumentError)
+    -> { Range.new(mock('x'), mock('y')) }.should.raise(ArgumentError)
 
     b = mock('x')
     (a = mock('nil')).should_receive(:<=>).with(b).and_return(nil)
-    -> { Range.new(a, b) }.should raise_error(ArgumentError)
+    -> { Range.new(a, b) }.should.raise(ArgumentError)
   end
 
   it "does not rescue exception raised in #<=> when compares the given start and end" do
@@ -38,7 +38,7 @@ describe "Range.new" do
     a = mock('b')
     a.should_receive(:<=>).with(b).and_raise(RangeSpecs::ComparisonError)
 
-    -> { Range.new(a, b) }.should raise_error(RangeSpecs::ComparisonError)
+    -> { Range.new(a, b) }.should.raise(RangeSpecs::ComparisonError)
   end
 
   describe "beginless/endless range" do

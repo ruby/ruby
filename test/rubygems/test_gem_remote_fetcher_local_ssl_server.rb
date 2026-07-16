@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "helper"
-require "socket"
-require "openssl"
+require_relative "local_ssl_server_utilities"
 
 unless Gem::HAVE_OPENSSL
   warn "Skipping Gem::RemoteFetcher tests.  openssl not found."
@@ -13,42 +12,31 @@ require "rubygems/package"
 
 class TestGemRemoteFetcherLocalSSLServer < Gem::TestCase
   include Gem::DefaultUserInteraction
-
-  # Generated via:
-  #   x = OpenSSL::PKey::DH.new(2048) # wait a while...
-  #   x.to_s => pem
-  TEST_KEY_DH2048 = OpenSSL::PKey::DH.new <<-_END_OF_PEM_
------BEGIN DH PARAMETERS-----
-MIIBCAKCAQEA3Ze2EHSfYkZLUn557torAmjBgPsqzbodaRaGZtgK1gEU+9nNJaFV
-G1JKhmGUiEDyIW7idsBpe4sX/Wqjnp48Lr8IeI/SlEzLdoGpf05iRYXC8Cm9o8aM
-cfmVgoSEAo9YLBpzoji2jHkO7Q5IPt4zxbTdlmmGFLc/GO9q7LGHhC+rcMcNTGsM
-49AnILNn49pq4Y72jSwdmvq4psHZwwFBbPwLdw6bLUDDCN90jfqvYt18muwUxDiN
-NP0fuvVAIB158VnQ0liHSwcl6+9vE1mL0Jo/qEXQxl0+UdKDjaGfTsn6HIrwTnmJ
-PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
------END DH PARAMETERS-----
-    _END_OF_PEM_
+  include Gem::LocalSSLServerUtilities
 
   def setup
     super
-    @ssl_server_thread = nil
-    @ssl_server = nil
+    initialize_ssl_server
   end
 
   def teardown
-    if @ssl_server_thread
-      @ssl_server_thread.kill.join
-      @ssl_server_thread = nil
-    end
-    if @ssl_server
-      @ssl_server.close
-      @ssl_server = nil
-    end
+    stop_ssl_server
     super
   end
 
   def test_ssl_connection
     ssl_server = start_ssl_server
-    temp_ca_cert = File.join(__dir__, "ca_cert.pem")
+    temp_ca_cert = File.join(certs_dir, "ca_cert.pem")
+    with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
+      fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
+    end
+  end
+
+  def test_pqc_ssl_connection
+    omit_unless_support_pqc
+
+    ssl_server = start_ssl_server(mode: :pqc)
+    temp_ca_cert = File.join(certs_dir, "mldsa65_ca_cert.pem")
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
       fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
     end
@@ -59,8 +47,27 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       { verify_mode: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
     )
 
-    temp_ca_cert = File.join(__dir__, "ca_cert.pem")
-    temp_client_cert = File.join(__dir__, "client.pem")
+    temp_ca_cert = File.join(certs_dir, "ca_cert.pem")
+    temp_client_cert = File.join(certs_dir, "client.pem")
+
+    with_configured_fetcher(
+      ":ssl_ca_cert: #{temp_ca_cert}\n" \
+      ":ssl_client_cert: #{temp_client_cert}\n"
+    ) do |fetcher|
+      fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
+    end
+  end
+
+  def test_pqc_ssl_client_cert_auth_connection
+    omit_unless_support_pqc
+
+    ssl_server = start_ssl_server(
+      mode: :pqc,
+      verify_mode: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
+    )
+
+    temp_ca_cert = File.join(certs_dir, "mldsa65_ca_cert.pem")
+    temp_client_cert = File.join(certs_dir, "mldsa65_client.pem")
 
     with_configured_fetcher(
       ":ssl_ca_cert: #{temp_ca_cert}\n" \
@@ -75,8 +82,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       { verify_mode: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
     )
 
-    temp_ca_cert = File.join(__dir__, "ca_cert.pem")
-    temp_client_cert = File.join(__dir__, "invalid_client.pem")
+    temp_ca_cert = File.join(certs_dir, "ca_cert.pem")
+    temp_client_cert = File.join(certs_dir, "invalid_client.pem")
 
     with_configured_fetcher(
       ":ssl_ca_cert: #{temp_ca_cert}\n" \
@@ -107,7 +114,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_do_not_follow_insecure_redirect
     @server_uri = "http://example.com"
     ssl_server = start_ssl_server
-    temp_ca_cert = File.join(__dir__, "ca_cert.pem")
+    temp_ca_cert = File.join(certs_dir, "ca_cert.pem")
     expected_error_message =
       "redirecting to non-https resource: #{@server_uri} (https://localhost:#{ssl_server.addr[1]}/insecure_redirect?to=#{@server_uri})"
 
@@ -149,47 +156,9 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     Gem.configuration = nil
   end
 
-  def start_ssl_server(config = {})
-    server = TCPServer.new(0)
-    ctx = OpenSSL::SSL::SSLContext.new
-    ctx.cert = cert("ssl_cert.pem")
-    ctx.key = key("ssl_key.pem")
-    ctx.ca_file = File.join(__dir__, "ca_cert.pem")
-    ctx.tmp_dh_callback = proc { TEST_KEY_DH2048 }
-    ctx.verify_mode = config[:verify_mode] if config[:verify_mode]
-    @ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)
-    @ssl_server_thread = Thread.new do
-      loop do
-        ssl_client = @ssl_server.accept
-        Thread.new(ssl_client) do |client|
-          handle_request(client)
-        ensure
-          client.close
-        end
-      rescue OpenSSL::SSL::SSLError
-        # Ignore SSL errors because we're testing them implicitly
-      end
+  def omit_unless_support_pqc
+    without_pqc_support do |message|
+      omit message
     end
-    @ssl_server
-  end
-
-  def handle_request(client)
-    request = client.gets
-    if request.start_with?("GET /yaml")
-      client.print "HTTP/1.1 200 OK\r\nContent-Type: text/yaml\r\n\r\n--- true\n"
-    elsif request.start_with?("GET /insecure_redirect")
-      location = request.match(/to=([^ ]+)/)[1]
-      client.print "HTTP/1.1 301 Moved Permanently\r\nLocation: #{location}\r\n\r\n"
-    else
-      client.print "HTTP/1.1 404 Not Found\r\n\r\n"
-    end
-  end
-
-  def cert(filename)
-    OpenSSL::X509::Certificate.new(File.read(File.join(__dir__, filename)))
-  end
-
-  def key(filename)
-    OpenSSL::PKey::RSA.new(File.read(File.join(__dir__, filename)))
   end
 end if Gem::HAVE_OPENSSL

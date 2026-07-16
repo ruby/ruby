@@ -256,18 +256,41 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
 #define FIXWV_P(w) FIXWINT_P(WIDEVAL_GET(w))
 #define MUL_OVERFLOW_FIXWV_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, FIXWV_MIN, FIXWV_MAX)
 
-/* #define STRUCT_WIDEVAL */
-#ifdef STRUCT_WIDEVAL
-    /* for type checking */
+/* .value holds the markable VALUE; on 32-bit the wide int's high bits go in .hi */
+#if WIDEVALUE_IS_WIDER && SIZEOF_VALUE < SIZEOF_INT64_T
     typedef struct {
-        WIDEVALUE value;
+        VALUE value;
+        uint32_t hi;
     } wideval_t;
-    static inline wideval_t WIDEVAL_WRAP(WIDEVALUE v) { wideval_t w = { v }; return w; }
-#   define WIDEVAL_GET(w) ((w).value)
+    static inline wideval_t
+    WIDEVAL_WRAP(WIDEVALUE v)
+    {
+        wideval_t w;
+        w.value = (VALUE)(uint32_t)v;
+        w.hi = (uint32_t)(v >> 32);
+        return w;
+    }
+    static inline WIDEVALUE
+    WIDEVAL_GET(wideval_t w)
+    {
+        return ((WIDEVALUE)w.hi << 32) | (uint32_t)w.value;
+    }
 #else
-    typedef WIDEVALUE wideval_t;
-#   define WIDEVAL_WRAP(v) (v)
-#   define WIDEVAL_GET(w) (w)
+    typedef struct {
+        VALUE value;
+    } wideval_t;
+    static inline wideval_t
+    WIDEVAL_WRAP(WIDEVALUE v)
+    {
+        wideval_t w;
+        w.value = (VALUE)v;
+        return w;
+    }
+    static inline WIDEVALUE
+    WIDEVAL_GET(wideval_t w)
+    {
+        return (WIDEVALUE)w.value;
+    }
 #endif
 
 #if WIDEVALUE_IS_WIDER
@@ -1888,28 +1911,23 @@ force_make_tm(VALUE time, struct time_object *tobj)
     time_get_tm(time, tobj);
 }
 
-static void
-time_mark_and_move(void *ptr)
-{
-    struct time_object *tobj = ptr;
-    if (!WIDEVALUE_IS_WIDER || !FIXWV_P(tobj->timew)) {
-        rb_gc_mark_and_move((VALUE *)&WIDEVAL_GET(tobj->timew));
-    }
-    rb_gc_mark_and_move(&tobj->vtm.year);
-    rb_gc_mark_and_move(&tobj->vtm.subsecx);
-    rb_gc_mark_and_move(&tobj->vtm.utc_offset);
-    rb_gc_mark_and_move(&tobj->vtm.zone);
-}
+RUBY_REFERENCES(time_refs) = {
+    RUBY_REF_EDGE(struct time_object, timew.value),
+    RUBY_REF_EDGE(struct time_object, vtm.year),
+    RUBY_REF_EDGE(struct time_object, vtm.subsecx),
+    RUBY_REF_EDGE(struct time_object, vtm.utc_offset),
+    RUBY_REF_EDGE(struct time_object, vtm.zone),
+    RUBY_REF_END
+};
 
 static const rb_data_type_t time_data_type = {
     .wrap_struct_name = "time",
     .function = {
-        .dmark = time_mark_and_move,
+        RUBY_REFS_LIST_PTR(time_refs),
         .dfree = RUBY_TYPED_DEFAULT_FREE,
         .dsize = NULL,
-        .dcompact = time_mark_and_move,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_DECL_MARKING,
 };
 
 static VALUE
@@ -2215,6 +2233,10 @@ invalid_utc_offset(VALUE zone)
 static VALUE
 utc_offset_arg(VALUE arg)
 {
+    if (RB_INTEGER_TYPE_P(arg)) {
+        return arg;
+    }
+
     VALUE tmp;
     if (!NIL_P(tmp = rb_check_string_type(arg))) {
         int n = 0;
@@ -4122,7 +4144,7 @@ static VALUE
 time_zonelocal(VALUE time, VALUE off)
 {
     VALUE zone = off;
-    if (zone_localtime(zone, time)) return time;
+    if (maybe_tzobj_p(zone) && zone_localtime(zone, time)) return time;
 
     if (NIL_P(off = utc_offset_arg(off))) {
         off = zone;
@@ -5786,9 +5808,9 @@ tm_from_time(VALUE klass, VALUE time)
     ttm = RTYPEDDATA_GET_DATA(tm);
     v = &vtm;
 
-    WIDEVALUE timew = tobj->timew;
+    wideval_t timew = tobj->timew;
     GMTIMEW(timew, v);
-    time_set_timew(tm, ttm, wsub(timew, v->subsecx));
+    time_set_timew(tm, ttm, wsub(timew, v2w(v->subsecx)));
     v->subsecx = INT2FIX(0);
     v->zone = Qnil;
     time_set_vtm(tm, ttm, *v);

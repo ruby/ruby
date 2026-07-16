@@ -73,12 +73,14 @@ describe "chilled String" do
           -> {
             -> {
               input << "mutated"
-            }.should raise_error(FrozenError)
+            }.should.raise(FrozenError)
           }.should_not complain(/literal string will be frozen in the future/)
         end
       end
     end
+  end
 
+  guard -> { ruby_version_is "3.4"..."4.1" and !:test.to_s.equal?(:test.to_s) } do
     describe "chilled strings returned by Symbol#to_s" do
 
       describe "#frozen?" do
@@ -142,7 +144,7 @@ describe "chilled String" do
           -> {
             -> {
               input << "mutated"
-            }.should raise_error(FrozenError)
+            }.should.raise(FrozenError)
           }.should_not complain(/string returned by :chilled\.to_s will be frozen in the future/)
         end
       end

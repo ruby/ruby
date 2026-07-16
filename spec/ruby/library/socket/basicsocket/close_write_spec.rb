@@ -12,18 +12,18 @@ describe "Socket::BasicSocket#close_write" do
 
   it "closes the writing end of the socket" do
     @server.close_write
-    -> { @server.write("foo") }.should raise_error(IOError)
+    -> { @server.write("foo") }.should.raise(IOError)
   end
 
   it 'does not raise when called on a socket already closed for writing' do
     @server.close_write
     @server.close_write
-    -> { @server.write("foo") }.should raise_error(IOError)
+    -> { @server.write("foo") }.should.raise(IOError)
   end
 
   it 'does not fully close the socket' do
     @server.close_write
-    @server.closed?.should be_false
+    @server.closed?.should == false
   end
 
   it "does not prevent reading" do
@@ -34,15 +34,15 @@ describe "Socket::BasicSocket#close_write" do
   it "fully closes the socket if it was already closed for reading" do
     @server.close_read
     @server.close_write
-    @server.closed?.should be_true
+    @server.closed?.should == true
   end
 
   it 'raises IOError when called on a fully closed socket' do
     @server.close
-    -> { @server.close_write }.should raise_error(IOError)
+    -> { @server.close_write }.should.raise(IOError)
   end
 
   it "returns nil" do
-    @server.close_write.should be_nil
+    @server.close_write.should == nil
   end
 end

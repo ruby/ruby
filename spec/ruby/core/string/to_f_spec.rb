@@ -46,16 +46,39 @@ describe "String#to_f" do
     "_9".to_f.should == 0
   end
 
-  it "stops if the underscore is not followed or preceded by a number" do
+  it "stops if the underscore is not followed by a number" do
     "1__2".to_f.should == 1.0
-    "1_.2".to_f.should == 1.0
-    "1._2".to_f.should == 1.0
-    "1.2_e2".to_f.should == 1.2
-    "1.2e_2".to_f.should == 1.2
     "1_x2".to_f.should == 1.0
+
+    "1.2__3".to_f.should == 1.2
+    "1.2_x3".to_f.should == 1.2
+
+    "1.2e__3".to_f.should == 1.2
+    "1.2e_x3".to_f.should == 1.2
+  end
+
+  it "stops if the number contains invalid characters" do
     "1x_2".to_f.should == 1.0
+    "1.2x_3".to_f.should == 1.2
+    "1.2ex_3".to_f.should == 1.2
+  end
+
+  it "stops if +/- is not followed by a number" do
     "+_1".to_f.should == 0.0
     "-_1".to_f.should == 0.0
+    "+a1".to_f.should == 0.0
+
+    "1.1e+_1".to_f.should == 1.1
+    "1.1e-_1".to_f.should == 1.1
+    "1.1e-a1".to_f.should == 1.1
+  end
+
+  it "stops if the underscore appears at boundaries" do
+    "1_.2".to_f.should == 1.0
+    "1._2".to_f.should == 1.0
+
+    "1.2_e3".to_f.should == 1.2
+    "1.2e_3".to_f.should == 1.2
   end
 
   it "does not allow prefixes to autodetect the base" do
@@ -123,7 +146,7 @@ describe "String#to_f" do
   it "raises Encoding::CompatibilityError if String is in not ASCII-compatible encoding" do
     -> {
       '1.2'.encode("UTF-16").to_f
-    }.should raise_error(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
+    }.should.raise(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
   end
 
   it "allows String representation without a fractional part" do

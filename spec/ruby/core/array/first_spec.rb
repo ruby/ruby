@@ -30,11 +30,11 @@ describe "Array#first" do
   end
 
   it "raises an ArgumentError when count is negative" do
-    -> { [1, 2].first(-1) }.should raise_error(ArgumentError)
+    -> { [1, 2].first(-1) }.should.raise(ArgumentError)
   end
 
   it "raises a RangeError when count is a Bignum" do
-    -> { [].first(bignum_value) }.should raise_error(RangeError)
+    -> { [].first(bignum_value) }.should.raise(RangeError)
   end
 
   it "returns the entire array when count > length" do
@@ -53,10 +53,10 @@ describe "Array#first" do
 
   it "properly handles recursive arrays" do
     empty = ArraySpecs.empty_recursive_array
-    empty.first.should equal(empty)
+    empty.first.should.equal?(empty)
 
     ary = ArraySpecs.head_recursive_array
-    ary.first.should equal(ary)
+    ary.first.should.equal?(ary)
   end
 
   it "tries to convert the passed argument to an Integer using #to_int" do
@@ -66,19 +66,19 @@ describe "Array#first" do
   end
 
   it "raises a TypeError if the passed argument is not numeric" do
-    -> { [1,2].first(nil) }.should raise_error(TypeError)
-    -> { [1,2].first("a") }.should raise_error(TypeError)
+    -> { [1,2].first(nil) }.should.raise(TypeError)
+    -> { [1,2].first("a") }.should.raise(TypeError)
 
     obj = mock("nonnumeric")
-    -> { [1,2].first(obj) }.should raise_error(TypeError)
+    -> { [1,2].first(obj) }.should.raise(TypeError)
   end
 
   it "does not return subclass instance when passed count on Array subclasses" do
-    ArraySpecs::MyArray[].first(0).should be_an_instance_of(Array)
-    ArraySpecs::MyArray[].first(2).should be_an_instance_of(Array)
-    ArraySpecs::MyArray[1, 2, 3].first(0).should be_an_instance_of(Array)
-    ArraySpecs::MyArray[1, 2, 3].first(1).should be_an_instance_of(Array)
-    ArraySpecs::MyArray[1, 2, 3].first(2).should be_an_instance_of(Array)
+    ArraySpecs::MyArray[].first(0).should.instance_of?(Array)
+    ArraySpecs::MyArray[].first(2).should.instance_of?(Array)
+    ArraySpecs::MyArray[1, 2, 3].first(0).should.instance_of?(Array)
+    ArraySpecs::MyArray[1, 2, 3].first(1).should.instance_of?(Array)
+    ArraySpecs::MyArray[1, 2, 3].first(2).should.instance_of?(Array)
   end
 
   it "is not destructive" do

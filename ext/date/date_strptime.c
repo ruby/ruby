@@ -661,15 +661,15 @@ date__strptime(const char *str, size_t slen,
 
     si = date__strptime_internal(str, slen, fmt, flen, hash);
 
+    if (fail_p())
+	return Qnil;
+
     if (slen > si) {
 	VALUE s;
 
 	s = rb_usascii_str_new(&str[si], slen - si);
 	set_hash("leftover", s);
     }
-
-    if (fail_p())
-	return Qnil;
 
     cent = del_hash("_cent");
     if (!NIL_P(cent)) {

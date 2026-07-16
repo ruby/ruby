@@ -793,7 +793,7 @@ parse_lex_input(const uint8_t *input, size_t input_length, const pm_options_t *o
     parse_lex_data_t parse_lex_data = {
         .source = source,
         .tokens = rb_ary_new(),
-        .encoding = rb_utf8_encoding(),
+        .encoding = rb_enc_find(pm_parser_encoding_name(parser)),
         .freeze = pm_options_freeze(options),
     };
 
@@ -1067,13 +1067,40 @@ parse_stream_eof(void *stream) {
 }
 
 /**
- * An implementation of fgets that is suitable for use with Ruby IO objects.
+ * The largest number of bytes a single character can occupy in any encoding
+ * that Ruby supports (CESU-8). `IO#gets(limit)` treats its argument as a soft
+ * limit: to avoid splitting a multi-byte character it may return up to
+ * `MAX_ENC_LEN - 1` more bytes than requested. Reserving `MAX_ENC_LEN` bytes of
+ * headroom therefore leaves room for both that overshoot and the terminating
+ * NUL byte.
+ *
+ * The value can be re-derived from the Ruby source tree with:
+ *
+ *   grep -Erh "max (enc|byte) length" enc | grep -Eo '[0-9]+' | sort | tail -n1
+ */
+#define MAX_ENC_LEN 6
+
+/**
+ * An implementation of fgets that is suitable for use with Ruby IO objects. As
+ * required by pm_source_stream_fgets_t, this never writes more than `size`
+ * bytes into `string` (including the terminating NUL byte).
  */
 static char *
 parse_stream_fgets(char *string, int size, void *stream) {
-    RUBY_ASSERT(size > 0);
+    RUBY_ASSERT(size > MAX_ENC_LEN);
 
-    VALUE line = rb_funcall((VALUE) stream, rb_intern("gets"), 1, INT2FIX(size - 1));
+    /*
+     * Request fewer bytes than the buffer can hold. `gets` may return more
+     * bytes than requested when the limit falls in the middle of a multi-byte
+     * character, and the reserved headroom guarantees the result still fits.
+     */
+    VALUE line = rb_funcall((VALUE) stream, rb_intern("gets"), 1, INT2FIX(size - MAX_ENC_LEN));
+
+    /*
+     * A well-behaved stream returns a String, or nil at EOF. Coerce anything
+     * else to nil so that we never treat a non-String as a byte buffer.
+     */
+    line = rb_check_string_type(line);
     if (NIL_P(line)) {
         return NULL;
     }
@@ -1081,11 +1108,22 @@ parse_stream_fgets(char *string, int size, void *stream) {
     const char *cstr = RSTRING_PTR(line);
     long length = RSTRING_LEN(line);
 
-    memcpy(string, cstr, length);
+    /*
+     * Defensively clamp the copy. A misbehaving `gets` may ignore the limit
+     * entirely and return an arbitrarily long string; we must never write past
+     * the caller's buffer. One byte is reserved for the NUL terminator.
+     */
+    if (length > (long) (size - 1)) {
+        length = (long) (size - 1);
+    }
+
+    memcpy(string, cstr, (size_t) length);
     string[length] = '\0';
 
     return string;
 }
+
+#undef MAX_ENC_LEN
 
 /**
  * :markup: markdown

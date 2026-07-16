@@ -1,0 +1,5 @@
+a rescue b = c, d
+a rescue b = c, d, e
+a rescue b = *c
+a rescue b = c, *d
+a rescue b = *c, d

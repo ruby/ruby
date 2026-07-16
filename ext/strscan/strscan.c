@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "3.1.7.dev"
+#define STRSCAN_VERSION "3.1.9.dev"
 
 
 #ifdef HAVE_RB_DEPRECATE_CONSTANT
@@ -182,12 +182,35 @@ extract_beg_len(struct strscanner *p, long beg_i, long len)
                                Constructor
    ======================================================================= */
 
+#ifdef RUBY_TYPED_EMBEDDABLE
+#  define HAVE_RUBY_TYPED_EMBEDDABLE 1
+#else
+# ifdef HAVE_CONST_RUBY_TYPED_EMBEDDABLE
+#  define RUBY_TYPED_EMBEDDABLE RUBY_TYPED_EMBEDDABLE
+#  define HAVE_RUBY_TYPED_EMBEDDABLE 1
+# else
+#  define RUBY_TYPED_EMBEDDABLE 0
+# endif
+#endif
+
+#ifdef HAVE_RB_GC_LOCATION
+static void
+strscan_compact(void *ptr)
+{
+    struct strscanner *p = ptr;
+    p->str = rb_gc_location(p->str);
+    p->regex = rb_gc_location(p->regex);
+}
+#else
+#define rb_gc_mark_movable rb_gc_mark
+#endif
+
 static void
 strscan_mark(void *ptr)
 {
     struct strscanner *p = ptr;
-    rb_gc_mark(p->str);
-    rb_gc_mark(p->regex);
+    rb_gc_mark_movable(p->str);
+    rb_gc_mark_movable(p->regex);
 }
 
 static void
@@ -195,24 +218,41 @@ strscan_free(void *ptr)
 {
     struct strscanner *p = ptr;
     onig_region_free(&(p->regs), 0);
+#ifndef HAVE_RUBY_TYPED_EMBEDDABLE
     ruby_xfree(p);
+#endif
 }
 
 static size_t
 strscan_memsize(const void *ptr)
 {
-    const struct strscanner *p = ptr;
-    size_t size = sizeof(*p) - sizeof(p->regs);
+    size_t size = 0;
+#ifndef HAVE_RUBY_TYPED_EMBEDDABLE
+    size += sizeof(struct strscanner);
+#endif
+
 #ifdef HAVE_ONIG_REGION_MEMSIZE
-    size += onig_region_memsize(&p->regs);
+    const struct strscanner *p = ptr;
+    size += onig_region_memsize(&p->regs) - sizeof(p->regs);
 #endif
     return size;
 }
 
+#ifndef RUBY_TYPED_THREAD_SAFE_FREE
+#define RUBY_TYPED_THREAD_SAFE_FREE RUBY_TYPED_FREE_IMMEDIATELY
+#endif
+
 static const rb_data_type_t strscanner_type = {
-    "StringScanner",
-    {strscan_mark, strscan_free, strscan_memsize},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    .wrap_struct_name = "StringScanner",
+    .function = {
+        .dmark = strscan_mark,
+        .dfree = strscan_free,
+        .dsize = strscan_memsize,
+#ifdef HAVE_RB_GC_LOCATION
+        .dcompact = strscan_compact,
+#endif
+    },
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -374,6 +414,9 @@ strscan_reset(VALUE self)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   terminate -> self
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/terminate.md
  */
@@ -503,6 +546,9 @@ strscan_concat(VALUE self, VALUE str)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   pos -> byte_position
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/get_pos.md
  */
@@ -517,6 +563,9 @@ strscan_get_pos(VALUE self)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   charpos -> character_position
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/get_charpos.md
  */
@@ -532,6 +581,10 @@ strscan_get_charpos(VALUE self)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   pos = n -> n
+ *   pointer = n -> n
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/set_pos.md
  */
@@ -756,6 +809,9 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   scan(pattern) -> substring or nil
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/scan.md
  */
@@ -770,7 +826,7 @@ strscan_scan(VALUE self, VALUE re)
  * :include: strscan/link_refs.txt
  *
  * call-seq:
- *   match?(pattern) -> updated_position or nil
+ *   match?(pattern) -> match_size or nil
  *
  * Attempts to [match][17] the given `pattern`
  * at the beginning of the [target substring][3];
@@ -829,6 +885,9 @@ strscan_match_p(VALUE self, VALUE re)
 
 /*
  * :markup: markdown
+ * call-seq:
+ *   skip(pattern) -> match_size or nil
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/skip.md
  */
@@ -901,7 +960,7 @@ strscan_check(VALUE self, VALUE re)
 
 /*
  * call-seq:
- *   scan_full(pattern, advance_pointer_p, return_string_p) -> matched_substring or nil
+ *   scan_full(pattern, advance_pointer_p, return_string_p) -> matched_substring or length or nil
  *
  * Equivalent to one of the following:
  *
@@ -926,6 +985,9 @@ strscan_scan_full(VALUE self, VALUE re, VALUE s, VALUE f)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   scan_until(pattern) -> substring or nil
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/scan_until.md
  */
@@ -1000,6 +1062,9 @@ strscan_exist_p(VALUE self, VALUE re)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   skip_until(pattern) -> matched_substring_size or nil
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/skip_until.md
  */
@@ -1111,6 +1176,9 @@ adjust_registers_to_matched(struct strscanner *p)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   getch -> character or nil
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/getch.md
  */
@@ -1138,7 +1206,7 @@ strscan_getch(VALUE self)
 
 /*
  * call-seq:
- *   scan_byte -> integer_byte
+ *   scan_byte -> integer_byte or nil
  *
  * Scans one byte and returns it as an integer.
  * This method is not multibyte character sensitive.
@@ -1184,6 +1252,9 @@ strscan_peek_byte(VALUE self)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   get_byte -> byte_as_character or nil
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/get_byte.md
  */
@@ -1623,6 +1694,38 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
 }
 
 /*
+ * Resolve capture group index from Integer, Symbol, or String.
+ * Returns the resolved register index, or -1 if unmatched/out of range.
+ * For Symbol/String specifiers, raises IndexError if the named group
+ * does not exist.
+ */
+static long
+resolve_capture_index(struct strscanner *p, VALUE specifier)
+{
+    const char *name;
+    long i;
+    if (! MATCHED_P(p)) return -1;
+    switch (TYPE(specifier)) {
+        case T_SYMBOL:
+            specifier = rb_sym2str(specifier);
+            /* fall through */
+        case T_STRING:
+            RSTRING_GETMEM(specifier, name, i);
+            i = name_to_backref_number(&(p->regs), p->regex, name, name + i,
+                                       rb_enc_get(specifier));
+            break;
+        default:
+            i = NUM2LONG(specifier);
+    }
+    if (i < 0)
+        i += p->regs.num_regs;
+    if (i < 0)                 return -1;
+    if (i >= p->regs.num_regs) return -1;
+    if (p->regs.beg[i] == -1)  return -1;
+    return i;
+}
+
+/*
  *
  * :markup: markdown
  * :include: strscan/link_refs.txt
@@ -1696,34 +1799,91 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
 static VALUE
 strscan_aref(VALUE self, VALUE idx)
 {
-    const char *name;
     struct strscanner *p;
     long i;
 
     GET_SCANNER(self, p);
-    if (! MATCHED_P(p))        return Qnil;
-
-    switch (TYPE(idx)) {
-        case T_SYMBOL:
-            idx = rb_sym2str(idx);
-            /* fall through */
-        case T_STRING:
-            RSTRING_GETMEM(idx, name, i);
-            i = name_to_backref_number(&(p->regs), p->regex, name, name + i, rb_enc_get(idx));
-            break;
-        default:
-            i = NUM2LONG(idx);
-    }
-
-    if (i < 0)
-        i += p->regs.num_regs;
-    if (i < 0)                 return Qnil;
-    if (i >= p->regs.num_regs) return Qnil;
-    if (p->regs.beg[i] == -1)  return Qnil;
+    i = resolve_capture_index(p, idx);
+    if (i < 0) return Qnil;
 
     return extract_range(p,
                          adjust_register_position(p, p->regs.beg[i]),
                          adjust_register_position(p, p->regs.end[i]));
+}
+
+/*
+ * :markup: markdown
+ *
+ * call-seq:
+ *   integer_at(specifier, base=10) -> integer or nil
+ *
+ * Returns the captured substring at the given `specifier` as an Integer,
+ * following the behavior of `String#to_i(base)`.
+ *
+ * `specifier` can be an Integer (positive, negative, or zero), a Symbol,
+ * or a String for named capture groups.
+ *
+ * Returns `nil` if:
+ * - No match has been performed or the last match failed
+ * - The `specifier` is an Integer and is out of range
+ * - The group at `specifier` did not participate in the match
+ *
+ * Raises IndexError if `specifier` is a Symbol or String that does not
+ * correspond to a named capture group, consistent with
+ * `StringScanner#[]`.
+ *
+ * This is semantically equivalent to `self[specifier]&.to_i(base)`
+ * but avoids the allocation of a temporary String when possible.
+ *
+ * ```rb
+ * scanner = StringScanner.new("2024-06-15")
+ * scanner.scan(/(\d{4})-(\d{2})-(\d{2})/)
+ * scanner.integer_at(1)       # => 2024
+ * scanner.integer_at(1, 16)   # => 8228
+ * ```
+ */
+static VALUE
+strscan_integer_at(int argc, VALUE *argv, VALUE self)
+{
+    struct strscanner *p;
+    long i;
+    long beg, end, len;
+    const char *ptr;
+    VALUE rb_specifier;
+    VALUE rb_base;
+    int base = 10;
+
+    GET_SCANNER(self, p);
+    rb_scan_args(argc, argv, "11", &rb_specifier, &rb_base);
+    if (argc > 1)
+        base = NUM2INT(rb_base);
+    i = resolve_capture_index(p, rb_specifier);
+    if (i < 0)
+        return Qnil;
+
+    beg = adjust_register_position(p, p->regs.beg[i]);
+    end = adjust_register_position(p, p->regs.end[i]);
+    len = end - beg;
+    ptr = S_PBEG(p) + beg;
+#ifdef HAVE_RB_INT_PARSE_CSTR
+    {
+      /*
+       * Ruby 2.5 or later export the rb_int_parse_cstr() symbol but
+       * prototype definition isn't provided. Ruby 4.1 or later
+       * provide prototype definition.
+       */
+#  ifndef RB_INT_PARSE_DEFAULT
+        VALUE rb_int_parse_cstr(const char *str, ssize_t len, char **endp,
+                                size_t *ndigits, int base, int flags);
+#    define RB_INT_PARSE_DEFAULT 0x07
+#  endif
+        char *endp;
+        return rb_int_parse_cstr(ptr, len, &endp, NULL, base,
+                                 RB_INT_PARSE_DEFAULT);
+    }
+#else
+    return rb_str_to_inum(rb_str_new(ptr, len), base, 0);
+#endif
 }
 
 /*
@@ -2153,8 +2313,8 @@ named_captures_iter(const OnigUChar *name,
  * call-seq:
  *   named_captures -> hash
  *
- * Returns the array of captured match values at indexes (1..)
- * if the most recent match attempt succeeded, or nil otherwise;
+ * Returns a hash of named captures for the most recent regexp match,
+ * or an empty hash if there are no named captures;
  * see [Captured Match Values][13]:
  *
  * ```rb
@@ -2286,6 +2446,7 @@ Init_strscan(void)
     rb_define_method(StringScanner, "matched",     strscan_matched,     0);
     rb_define_method(StringScanner, "matched_size", strscan_matched_size, 0);
     rb_define_method(StringScanner, "[]",          strscan_aref,        1);
+    rb_define_method(StringScanner, "integer_at",  strscan_integer_at, -1);
     rb_define_method(StringScanner, "pre_match",   strscan_pre_match,   0);
     rb_define_method(StringScanner, "post_match",  strscan_post_match,  0);
     rb_define_method(StringScanner, "size",        strscan_size,        0);
@@ -2300,6 +2461,4 @@ Init_strscan(void)
     rb_define_method(StringScanner, "fixed_anchor?", strscan_fixed_anchor_p, 0);
 
     rb_define_method(StringScanner, "named_captures", strscan_named_captures, 0);
-
-    rb_require("strscan/strscan");
 }

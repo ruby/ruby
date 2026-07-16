@@ -50,6 +50,11 @@ class TestVariable < Test::Unit::TestCase
   end
 
   Zeus = Gods.clone
+  class Zeus
+    def ruler5
+      @@rule
+    end
+  end
 
   def test_cloned_allows_setting_cvar
     Zeus.class_variable_set(:@@rule, "Athena")
@@ -58,8 +63,12 @@ class TestVariable < Test::Unit::TestCase
     zeus = Zeus.new.ruler0
 
     assert_equal "Cronus", god
-    assert_equal "Athena", zeus
-    assert_not_equal god.object_id, zeus.object_id
+    assert_equal "Cronus", zeus
+
+    assert_equal "Athena", Zeus.new.ruler5
+
+    assert_equal "Cronus", Gods.class_variable_get(:@@rule)
+    assert_equal "Athena", Zeus.class_variable_get(:@@rule)
   end
 
   def test_singleton_class_included_class_variable
@@ -118,6 +127,34 @@ class TestVariable < Test::Unit::TestCase
   ensure
     TestVariable.send(:remove_const, :Child) rescue nil
     TestVariable.send(:remove_const, :Parent) rescue nil
+  end
+
+  def test_cvar_cache_invalidated_by_parent_class_variable_set
+    m = Module.new { class_variable_set(:@@x, 1) }
+    a = Class.new
+    b = Class.new(a) do
+      include m
+      class_eval "def self.x; @@x; end"
+    end
+    assert_equal 1, b.x # warm cache
+    a.class_variable_set(:@@x, 2)
+    error = assert_raise(RuntimeError) { b.x }
+    assert_match(/class variable @@x of .+ is overtaken by .+/, error.message)
+  end
+
+  def test_cvar_cache_invalidated_by_module_class_variable_set
+    m = Module.new
+    n = Module.new
+    b = Class.new do
+      include m
+      include n
+      class_eval "def self.x; @@x; end"
+    end
+    m.class_variable_set(:@@x, 1)
+    assert_equal 1, b.x # warm cache
+    n.class_variable_set(:@@x, 2)
+    error = assert_raise(RuntimeError) { b.x }
+    assert_match(/class variable @@x of .+ is overtaken by .+/, error.message)
   end
 
   def test_cvar_overtaken_by_module

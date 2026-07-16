@@ -108,7 +108,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 
 * `api_request_size` (`BUNDLE_API_REQUEST_SIZE`):
    Configure how many dependencies to fetch when resolving the specifications.
-   This configuration is only used when fetchig specifications from RubyGems
+   This configuration is only used when fetching specifications from RubyGems
    servers that didn't implement the Compact Index API.
    Defaults to 100.
 * `auto_install` (`BUNDLE_AUTO_INSTALL`):
@@ -137,6 +137,36 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    explicitly configured.
 * `console` (`BUNDLE_CONSOLE`):
    The console that `bundle console` starts. Defaults to `irb`.
+* `cooldown` (`BUNDLE_COOLDOWN`):
+   Number of days a published gem version must age before bundler will
+   resolve to it. Defaults to unset (no cooldown). Pass `0` to disable
+   cooldown for an individual run.
+
+   The effective cooldown for any given gem is resolved from three
+   layers, highest precedence first:
+
+     1. CLI flag `--cooldown N` on `install`, `update`, `add`, and
+        `outdated`.
+     2. This setting (`bundle config set cooldown N` or
+        `BUNDLE_COOLDOWN=N`).
+     3. The per-source `cooldown:` keyword in the Gemfile, such as
+        `source "https://rubygems.org", cooldown: 7`.
+
+   The CLI flag and this setting apply uniformly to every source,
+   including ones declared with their own `cooldown:` value. To keep a
+   private registry permanently exempt while still cooling down public
+   gems, declare `source "https://internal", cooldown: 0` in the
+   Gemfile; remember that `--cooldown N` on the command line will
+   still override it for that single run.
+
+   Cooldown filtering depends on the gem server providing a per-version
+   `created_at` timestamp in the v2 compact-index format. Versions
+   without that metadata - older gem servers, historical entries that
+   predate the v2 cutover on `rubygems.org`, or private registries that
+   still emit the v1 format - are treated as outside the cooldown
+   window and remain resolvable. If you rely on cooldown for
+   supply-chain protection, confirm that the gem server emits
+   `created_at` in its `/info/<gem>` responses.
 * `default_cli_command` (`BUNDLE_DEFAULT_CLI_COMMAND`):
    The command that running `bundle` without arguments should run. Defaults to
    `cli_help` since Bundler 4, but can also be `install` which was the previous
@@ -200,8 +230,16 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Gemfile to disable lockfile creation entirely (see gemfile(5)).
 * `lockfile_checksums` (`BUNDLE_LOCKFILE_CHECKSUMS`):
    Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources. Defaults to true.
+* `no_build_extension` (`BUNDLE_NO_BUILD_EXTENSION`):
+   Whether Bundler should skip building native extensions during installation.
+   When set, gems are installed without compiling their C extensions.
+   To build extensions later, unset this setting and run `bundle pristine <gem>`.
 * `no_install` (`BUNDLE_NO_INSTALL`):
    Whether `bundle package` should skip installing gems.
+* `no_install_plugin` (`BUNDLE_NO_INSTALL_PLUGIN`):
+   Whether Bundler should skip installing RubyGems plugins during installation.
+   When set, plugin files are not written to the plugins directory.
+   To install plugins later, unset this setting and run `bundle pristine <gem>`.
 * `no_prune` (`BUNDLE_NO_PRUNE`):
    Whether Bundler should leave outdated gems unpruned when caching.
 * `only` (`BUNDLE_ONLY`):
@@ -223,7 +261,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Whether Bundler will install gems into the default system path (`Gem.dir`).
 * `plugins` (`BUNDLE_PLUGINS`):
    Enable Bundler's experimental plugin system.
-* `prefer_patch` (BUNDLE_PREFER_PATCH):
+* `prefer_patch` (`BUNDLE_PREFER_PATCH`):
    Prefer updating only to next patch version during updates. Makes `bundle update` calls equivalent to `bundler update --patch`.
 * `redirect` (`BUNDLE_REDIRECT`):
    The number of redirects allowed for network requests. Defaults to `5`.

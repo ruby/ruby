@@ -3,13 +3,6 @@
 require "rubygems"
 
 begin
-  gem "test-unit", "~> 3.0"
-rescue Gem::LoadError
-end
-
-require "test/unit"
-
-begin
   raise LoadError if ENV["GEM_COMMAND"]
 
   gem "simplecov_json_formatter"
@@ -35,15 +28,42 @@ rescue LoadError
   # SimpleCov is not installed
 end
 
+begin
+  gem "test-unit", "~> 3.0"
+rescue Gem::LoadError
+end
+
+require "test/unit"
+
+require "digest"
 require "fileutils"
 require "pathname"
 require "pp"
+require "rubygems/installer"
 require "rubygems/package"
 require "shellwords"
 require "tmpdir"
 require "rubygems/vendor/uri/lib/uri"
 require "zlib"
 require_relative "mock_gem_ui"
+
+# JRuby on Windows raises TypeError inside File.symlink (the wincode helper
+# trips on a nil path), so any test that exercises Gem::Installer's symlink
+# branch fails to even install the gem. Real users hit the wrapper branch via
+# `gem install` (DependencyInstaller passes wrappers: true), so mirror that
+# default for direct Gem::Installer.at callers in the test suite.
+if Gem.win_platform? && Gem.java_platform?
+  module Gem::InstallerDefaultWrappersOnJRubyWindows
+    def at(path, options = {})
+      super(path, { wrappers: true }.merge(options))
+    end
+
+    def for_spec(spec, options = {})
+      super(spec, { wrappers: true }.merge(options))
+    end
+  end
+  Gem::Installer.singleton_class.prepend(Gem::InstallerDefaultWrappersOnJRubyWindows)
+end
 
 module Gem
   ##
@@ -1154,6 +1174,81 @@ Also, a list:
     nil # force errors
   end
 
+  ##
+  # Sets up the compact index API endpoints (versions, names and
+  # info/NAME) for +specs+ on +@fetcher+.  +created_at+ maps spec
+  # original names to ISO8601 timestamps emitted as compact index v2
+  # metadata.
+
+  def util_setup_compact_index(*specs, created_at: {})
+    by_name = Hash.new {|hash, name| hash[name] = [] }
+    specs.each {|spec| by_name[spec.name] << spec }
+
+    names_body = +"---\n"
+    versions_body = +"created_at: 2026-01-01T00:00:00Z\n---\n"
+
+    by_name.keys.sort.each do |name|
+      info_body = +"---\n"
+      by_name[name].each do |spec|
+        info_body << util_compact_index_info_line(spec, created_at[spec.original_name]) << "\n"
+      end
+
+      versions_list = by_name[name].map {|spec| spec.original_name.delete_prefix("#{spec.name}-") }.join(",")
+      versions_body << "#{name} #{versions_list} #{Digest::MD5.hexdigest(info_body)}\n"
+      names_body << "#{name}\n"
+
+      @fetcher.data["#{@gem_repo}info/#{name}"] = util_compact_index_response(info_body)
+    end
+
+    versions_response = util_compact_index_response(versions_body)
+    # Gem::Source#dependency_resolver_set probes this URL via fetch_path and
+    # builds the info URL from the response uri
+    versions_response.uri = Gem::URI("#{@gem_repo}versions")
+
+    @fetcher.data["#{@gem_repo}versions"] = versions_response
+    @fetcher.data["#{@gem_repo}names"] = util_compact_index_response(names_body)
+
+    nil
+  end
+
+  ##
+  # A compact index info file line for +spec+, including v2 metadata.
+
+  def util_compact_index_info_line(spec, created_at = nil)
+    version = spec.original_name.delete_prefix("#{spec.name}-")
+
+    dependencies = spec.runtime_dependencies.map do |dependency|
+      "#{dependency.name}:#{util_compact_index_requirement(dependency.requirement)}"
+    end.join(",")
+
+    metadata = +"checksum:#{Digest::SHA256.hexdigest(spec.original_name)}"
+    unless spec.required_ruby_version.nil? || spec.required_ruby_version.none?
+      metadata << ",ruby:#{util_compact_index_requirement(spec.required_ruby_version)}"
+    end
+    unless spec.required_rubygems_version.nil? || spec.required_rubygems_version.none?
+      metadata << ",rubygems:#{util_compact_index_requirement(spec.required_rubygems_version)}"
+    end
+    metadata << ",created_at:#{created_at}" if created_at
+
+    "#{version} #{dependencies}|#{metadata}"
+  end
+
+  def util_compact_index_requirement(requirement)
+    requirement.as_list.join("&")
+  end
+
+  def util_compact_index_response(body)
+    Gem::HTTPResponseFactory.create(
+      body: body,
+      code: 200,
+      msg: "OK",
+      headers: {
+        "ETag" => %("#{Digest::MD5.hexdigest(body)}"),
+        "Repr-Digest" => "sha-256=:#{Digest::SHA256.base64digest(body)}:",
+      }
+    )
+  end
+
   def write_marshalled_gemspecs(*all_specs)
     v = Gem.marshal_version
 
@@ -1258,6 +1353,26 @@ Also, a list:
 
   def nmake_found?
     system("nmake /? 1>NUL 2>&1")
+  end
+
+  @@symlink_supported = nil
+
+  # This is needed for Windows environment without symlink support enabled (the default
+  # for non admin) to be able to skip test for features using symlinks.
+  def symlink_supported?
+    if @@symlink_supported.nil?
+      begin
+        File.symlink(File.join(@tempdir, "a"), File.join(@tempdir, "b"))
+        File.readlink(File.join(@tempdir, "b"))
+      rescue NotImplementedError, SystemCallError
+        @@symlink_supported = false
+      else
+        @@symlink_supported = true
+      ensure
+        File.unlink(File.join(@tempdir, "b")) if File.symlink?(File.join(@tempdir, "b"))
+      end
+    end
+    @@symlink_supported
   end
 
   # In case we're building docs in a background process, this method waits for

@@ -135,6 +135,7 @@ Logging::message "=== Checking for OpenSSL features... ===\n"
 evp_h = "openssl/evp.h".freeze
 ts_h = "openssl/ts.h".freeze
 ssl_h = "openssl/ssl.h".freeze
+stack_h = "openssl/stack.h".freeze
 
 # compile options
 have_func("RAND_egd()", "openssl/rand.h")
@@ -144,11 +145,21 @@ have_func("SSL_CTX_set1_sigalgs_list(NULL, NULL)", ssl_h)
 # added in OpenSSL 1.0.2, not in LibreSSL or AWS-LC yet
 have_func("SSL_CTX_set1_client_sigalgs_list(NULL, NULL)", ssl_h)
 
+# SSL options can be uint64_t (OpenSSL >= 3), unsigned long (OpenSSL >= 1.1),
+# long (LibreSSL), or uint32_t (AWS-LC)
+if checking_for("whether SSL_CTX_get_options() returns a 64-bit value") {
+    try_static_assert("sizeof(SSL_CTX_get_options(NULL)) == 8", ssl_h) }
+  $defs.push("-DOSSL_SIZEOF_SSL_OPTIONS_IS_8")
+end
+
 # added in 1.1.0, currently not in LibreSSL
 have_func("EVP_PBE_scrypt(\"\", 0, (unsigned char *)\"\", 0, 0, 0, 0, 0, NULL, 0)", evp_h)
 
 # added in OpenSSL 1.1.1 and LibreSSL 3.5.0, then removed in LibreSSL 4.0.0
 have_func("EVP_PKEY_check(NULL)", evp_h)
+
+# added in OpenSSL 1.1.1, currently not in LibreSSL
+have_func("OPENSSL_sk_new_reserve(NULL, 0)", stack_h)
 
 # added in 3.0.0
 have_func("SSL_CTX_set0_tmp_dh_pkey(NULL, NULL)", ssl_h)
@@ -157,17 +168,23 @@ have_func("SSL_CTX_load_verify_file(NULL, \"\")", ssl_h)
 have_func("BN_check_prime(NULL, NULL, NULL)", "openssl/bn.h")
 have_func("EVP_MD_CTX_get0_md(NULL)", evp_h)
 have_func("EVP_MD_CTX_get_pkey_ctx(NULL)", evp_h)
+have_func("EVP_PKEY_get_params(NULL, NULL)", evp_h)
 have_func("EVP_PKEY_eq(NULL, NULL)", evp_h)
 have_func("EVP_PKEY_dup(NULL)", evp_h)
+have_func("EVP_PKEY_encapsulate_init(NULL, NULL)", evp_h)
 
 # added in 3.2.0
 have_func("SSL_get0_group_name(NULL)", ssl_h)
+have_func("OSSL_HPKE_CTX_new(0, (OSSL_HPKE_SUITE){0}, 0, NULL, NULL)", "openssl/hpke.h")
 
 # added in 3.4.0
 have_func("TS_VERIFY_CTX_set0_certs(NULL, NULL)", ts_h)
 
 # added in 3.5.0
 have_func("SSL_get0_peer_signature_name(NULL, NULL)", ssl_h)
+
+# added in 4.0.0
+have_func("ASN1_BIT_STRING_set1(NULL, NULL, 0, 0)", "openssl/asn1.h")
 
 Logging::message "=== Checking done. ===\n"
 

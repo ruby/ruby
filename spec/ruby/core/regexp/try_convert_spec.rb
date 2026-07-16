@@ -9,7 +9,7 @@ describe "Regexp.try_convert" do
 
   it "returns nil if given an argument that can't be converted to a Regexp" do
     ['', 'glark', [], Object.new, :pat].each do |arg|
-      Regexp.try_convert(arg).should be_nil
+      Regexp.try_convert(arg).should == nil
     end
   end
 

@@ -55,13 +55,13 @@ enum expand_type {
    string objects in $LOAD_PATH are frozen.
  */
 static void
-rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_relative, int *has_non_cache)
+rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_relative, int *has_non_cache, long *maxlen_out)
 {
     VALUE load_path = box->load_path;
     VALUE expanded_load_path = box->expanded_load_path;
     VALUE snapshot;
     VALUE ary;
-    long i;
+    long i, maxlen = 0;
 
     ary = rb_ary_hidden_new(RARRAY_LEN(load_path));
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
@@ -81,7 +81,10 @@ rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_r
                     (!as_cstr[0] || as_cstr[0] != '~')) ||
                 (type == EXPAND_NON_CACHE)) {
                     /* Use cached expanded path. */
-                    rb_ary_push(ary, RARRAY_AREF(expanded_load_path, i));
+                    expanded_path = RARRAY_AREF(expanded_load_path, i);
+                    long len = RSTRING_LEN(expanded_path);
+                    if (len > maxlen) maxlen = len;
+                    rb_ary_push(ary, expanded_path);
                     continue;
             }
         }
@@ -95,12 +98,15 @@ rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_r
         as_str = rb_get_path_check_convert(as_str);
         expanded_path = rb_check_realpath(Qnil, as_str, NULL);
         if (NIL_P(expanded_path)) expanded_path = as_str;
+        long len = RSTRING_LEN(expanded_path);
+        if (len > maxlen) maxlen = len;
         rb_ary_push(ary, rb_fstring(expanded_path));
     }
     rb_ary_freeze(ary);
     box->expanded_load_path = ary;
     snapshot = box->load_path_snapshot;
     load_path = box->load_path;
+    *maxlen_out = maxlen;
     rb_ary_replace(snapshot, load_path);
 }
 
@@ -111,11 +117,12 @@ get_expanded_load_path(rb_box_t *box)
     const VALUE non_cache = Qtrue;
     const VALUE load_path_snapshot = box->load_path_snapshot;
     const VALUE load_path = box->load_path;
+    long maxlen = 0;
 
     if (!rb_ary_shared_with_p(load_path_snapshot, load_path)) {
         /* The load path was modified. Rebuild the expanded load path. */
         int has_relative = 0, has_non_cache = 0;
-        rb_construct_expanded_load_path(box, EXPAND_ALL, &has_relative, &has_non_cache);
+        rb_construct_expanded_load_path(box, EXPAND_ALL, &has_relative, &has_non_cache, &maxlen);
         if (has_relative) {
             box->load_path_check_cache = rb_dir_getwd_ospath();
         }
@@ -131,7 +138,7 @@ get_expanded_load_path(rb_box_t *box)
         int has_relative = 1, has_non_cache = 1;
         /* Expand only non-cacheable objects. */
         rb_construct_expanded_load_path(box, EXPAND_NON_CACHE,
-                                        &has_relative, &has_non_cache);
+                                        &has_relative, &has_non_cache, &maxlen);
     }
     else if (check_cache) {
         int has_relative = 1, has_non_cache = 1;
@@ -141,21 +148,29 @@ get_expanded_load_path(rb_box_t *box)
                Expand relative load path and non-cacheable objects again. */
             box->load_path_check_cache = cwd;
             rb_construct_expanded_load_path(box, EXPAND_RELATIVE,
-                                            &has_relative, &has_non_cache);
+                                            &has_relative, &has_non_cache, &maxlen);
         }
         else {
             /* Expand only tilde (User HOME) and non-cacheable objects. */
             rb_construct_expanded_load_path(box, EXPAND_HOME,
-                                            &has_relative, &has_non_cache);
+                                            &has_relative, &has_non_cache, &maxlen);
         }
+    }
+    if (maxlen) {
+        box->expanded_load_path_maxlen = maxlen;
     }
     return box->expanded_load_path;
 }
 
 VALUE
-rb_get_expanded_load_path(void)
+rb_get_expanded_load_path(long *maxlen)
 {
-    return get_expanded_load_path((rb_box_t *)rb_loading_box());
+    rb_box_t *box = (rb_box_t *)rb_loading_box();
+    VALUE load_path = get_expanded_load_path((rb_box_t *)box);
+    if (maxlen) {
+        *maxlen = box->expanded_load_path_maxlen;
+    }
+    return load_path;
 }
 
 static VALUE
@@ -875,8 +890,8 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
     if (state != TAG_NONE) *pstate = state;
 }
 
-static VALUE
-load_entrypoint_internal(VALUE fname, VALUE wrap)
+VALUE
+rb_load_entrypoint(VALUE fname, VALUE wrap)
 {
     VALUE path, orig_fname;
 
@@ -895,18 +910,6 @@ load_entrypoint_internal(VALUE fname, VALUE wrap)
     RUBY_DTRACE_HOOK(LOAD_RETURN, RSTRING_PTR(orig_fname));
 
     return Qtrue;
-}
-
-VALUE
-rb_load_entrypoint(VALUE args)
-{
-    VALUE fname, wrap;
-    if (RARRAY_LEN(args) != 2) {
-        rb_bug("invalid arguments: %ld", RARRAY_LEN(args));
-    }
-    fname = rb_ary_entry(args, 0);
-    wrap = rb_ary_entry(args, 1);
-    return load_entrypoint_internal(fname, wrap);
 }
 
 /*
@@ -944,7 +947,7 @@ rb_f_load(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, wrap;
     rb_scan_args(argc, argv, "11", &fname, &wrap);
-    return load_entrypoint_internal(fname, wrap);
+    return rb_load_entrypoint(fname, wrap);
 }
 
 static char *
@@ -1074,6 +1077,26 @@ rb_f_require_relative(VALUE obj, VALUE fname)
     return rb_require_relative_entrypoint(fname);
 }
 
+static char *
+find_ext(VALUE str, char **ptr, const char **end)
+{
+    long len = RSTRING_LEN(str);
+    *ptr = RSTRING_PTR(str);
+    *end = *ptr + len;
+    return memrchr(*ptr, '.', len);
+}
+
+static bool
+ext_equal(const char *ext, const char *end, const char *suffix, size_t len)
+{
+    return (size_t)(end - ext) == len && memcmp(ext, suffix, len) == 0;
+}
+
+#define EXT_RB_P(ext, end) ext_equal(ext, end, ".rb", rb_strlen_lit(".rb"))
+#define EXT_SO_P(ext, end) (ext_equal(ext, end, ".so", rb_strlen_lit(".so")) || \
+                            ext_equal(ext, end, ".o", rb_strlen_lit(".o")))
+#define EXT_DLEXT_P(ext, end) ext_equal(ext, end, DLEXT, rb_strlen_lit(DLEXT))
+
 typedef int (*feature_func)(const rb_box_t *box, const char *feature, const char *ext, int rb, int expanded, const char **fn);
 
 static int
@@ -1082,25 +1105,25 @@ search_required(const rb_box_t *box, VALUE fname, volatile VALUE *path, feature_
     VALUE tmp;
     char *ext, *ftptr;
     int ft = 0;
-    const char *loading;
+    const char *ftend, *loading;
 
     *path = 0;
-    ext = strrchr(ftptr = RSTRING_PTR(fname), '.');
-    if (ext && !strchr(ext, '/')) {
-        if (IS_RBEXT(ext)) {
+    ext = find_ext(fname, &ftptr, &ftend);
+    if (ext && !memchr(ext, '/', ftend - ext)) {
+        if (EXT_RB_P(ext, ftend)) {
             if (rb_feature_p(box, ftptr, ext, TRUE, FALSE, &loading)) {
                 if (loading) *path = rb_filesystem_str_new_cstr(loading);
                 return 'r';
             }
             if ((tmp = rb_find_file(fname)) != 0) {
-                ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
+                ext = find_ext(tmp, &ftptr, &ftend);
                 if (!rb_feature_p(box, ftptr, ext, TRUE, TRUE, &loading) || loading)
                     *path = tmp;
                 return 'r';
             }
             return 0;
         }
-        else if (IS_SOEXT(ext)) {
+        else if (EXT_SO_P(ext, ftend)) {
             if (rb_feature_p(box, ftptr, ext, FALSE, FALSE, &loading)) {
                 if (loading) *path = rb_filesystem_str_new_cstr(loading);
                 return 's';
@@ -1109,19 +1132,19 @@ search_required(const rb_box_t *box, VALUE fname, volatile VALUE *path, feature_
             rb_str_cat2(tmp, DLEXT);
             OBJ_FREEZE(tmp);
             if ((tmp = rb_find_file(tmp)) != 0) {
-                ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
+                ext = find_ext(tmp, &ftptr, &ftend);
                 if (!rb_feature_p(box, ftptr, ext, FALSE, TRUE, &loading) || loading)
                     *path = tmp;
                 return 's';
             }
         }
-        else if (IS_DLEXT(ext)) {
+        else if (EXT_DLEXT_P(ext, ftend)) {
             if (rb_feature_p(box, ftptr, ext, FALSE, FALSE, &loading)) {
                 if (loading) *path = rb_filesystem_str_new_cstr(loading);
                 return 's';
             }
             if ((tmp = rb_find_file(fname)) != 0) {
-                ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
+                ext = find_ext(tmp, &ftptr, &ftend);
                 if (!rb_feature_p(box, ftptr, ext, FALSE, TRUE, &loading) || loading)
                     *path = tmp;
                 return 's';
@@ -1170,7 +1193,7 @@ search_required(const rb_box_t *box, VALUE fname, volatile VALUE *path, feature_
         }
         /* fall through */
       case loadable_ext_rb:
-        ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
+        ext = find_ext(tmp, &ftptr, &ftend);
         if (rb_feature_p(box, ftptr, ext, type == loadable_ext_rb, TRUE, &loading) && !loading)
             break;
         *path = tmp;
@@ -1712,7 +1735,7 @@ rb_ext_resolve_symbol(const char* fname, const char* symbol)
     VALUE handle;
     VALUE resolved;
     VALUE path;
-    char *ext;
+    const char *ext;
     VALUE fname_str = rb_str_new_cstr(fname);
     const rb_box_t *box = rb_loading_box();
 

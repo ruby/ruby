@@ -320,7 +320,7 @@ LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
 MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
-MISSING = $(MISSING) explicit_bzero.obj
+MISSING = $(MISSING) explicit_bzero.obj memrchr.obj
 !endif
 DLNOBJ = dln.obj
 
@@ -362,6 +362,7 @@ LIBRUBY_LDSHARED = $(LDSHARED)
 LIBRUBY_DLDFLAGS = $(EXTLDFLAGS) -implib:dummy.lib -def:$(RUBYDEF)
 
 EXEEXT = .exe
+BUILD_EXEEXT = $(EXEEXT)
 EXECUTABLE_EXTS = ".exe",".com",".cmd",".bat"
 !if !defined(PROGRAM)
 PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
@@ -561,7 +562,7 @@ ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 !if defined(DUMP_AST)
 DUMP_AST_TARGET = $(empty)
 !else
-DUMP_AST = dump_ast$(EXEEXT)
+DUMP_AST = dump_ast$(BUILD_EXEEXT)
 DUMP_AST_TARGET = $(DUMP_AST)
 !endif
 
@@ -612,6 +613,20 @@ prepare-vcpkg::
 	for %%I in ($(srcdir:/=\)\vcpkg_installed\$(VCPKG_DEFAULT_TRIPLET)\bin\*.dll) do @( \
 		if not %%~nI == readline mklink %%~nxI %%I \
 	)
+
+!ifndef VCPKG_INSTALLED
+VCPKG_INSTALLED = $(srcdir)/vcpkg_installed/$(VCPKG_DEFAULT_TRIPLET)
+!endif
+BINARY_PACKAGE_NAME = $(RUBY_BASE_NAME)-$(RUBY_PROGRAM_VERSION)-$(arch)
+BINARY_PACKAGE_STAGE = binary-package-stage
+
+binary-package:
+	@if exist $(BINARY_PACKAGE_STAGE)\. rd /s /q $(BINARY_PACKAGE_STAGE)
+	@$(MAKE) DESTDIR="$(MAKEDIR)\$(BINARY_PACKAGE_STAGE)" install-nodoc
+	$(RUNRUBY) "$(tooldir)/binary-package.rb" --stage=$(BINARY_PACKAGE_STAGE) \
+		--name=$(BINARY_PACKAGE_NAME) --srcdir="$(srcdir)" \
+		--vcpkg-dir="$(VCPKG_INSTALLED)" \
+		--output=$(BINARY_PACKAGE_NAME).zip
 
 .PHONY: reconfig
 reconfig $(MKFILES): $(srcdir)/common.mk $(srcdir)/version.h \
@@ -1136,16 +1151,14 @@ $(STUBPROGRAM):	rubystub.$(OBJEXT) $(LIBRUBY) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME)
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
 !endif
 
-!if "$(LIBRUBY_SO_UPDATE)" == ""
+!if "$(EXTSTATIC)" != "" && "$(LIBRUBY_SO_UPDATE)" == ""
 PRE_LIBRUBY_UPDATE = $(RM) $(LIBRUBY_EXTS)
 !else
 PRE_LIBRUBY_UPDATE =
 !endif
 
 $(LIBRUBY_A):	$(OBJS) $(INITOBJS)
-!if "$(EXTSTATIC)" != ""
 		@-$(PRE_LIBRUBY_UPDATE)
-!endif
 		$(ECHO) linking static-library $(@:\=/)
 		$(Q) $(AR) $(ARFLAGS)$@ $(OBJS) $(INITOBJS)
 
@@ -1155,9 +1168,7 @@ $(LIBRUBY):	$(RUBYDEF)
 
 $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		@echo $(DLDOBJS)
-!if "$(EXTSTATIC)" == ""
 		@-$(PRE_LIBRUBY_UPDATE)
-!endif
 		$(ECHO) linking shared-library $(@:\=/)
 		$(Q) $(LDSHARED) $(DLDOBJS) $(LIBRUBY_A) \
 			$(RUBY_SO_NAME).res $(SOLIBS) $(EXTSOLIBS) $(LIBS) \
@@ -1414,7 +1425,7 @@ loadpath: verconf.h
 	@for %J in (\
 "%~nI.rbinc: %I $$(tooldir)/mk_builtin_loader.rb $$(DUMP_AST_TARGET)" \
 "	$$(ECHO) making $$@" \
-"	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(DUMP_AST) %I" \
+"	$$(Q) $$(BASERUBY) $$(tooldir)/mk_builtin_loader.rb $$(DUMP_AST) %I" \
 "" \
 ) do @echo.%~J>>rbincs.mk]
 !else

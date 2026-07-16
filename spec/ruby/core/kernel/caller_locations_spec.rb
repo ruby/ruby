@@ -3,7 +3,7 @@ require_relative 'fixtures/caller_locations'
 
 describe 'Kernel#caller_locations' do
   it 'is a private method' do
-    Kernel.should have_private_instance_method(:caller_locations)
+    Kernel.private_instance_methods(false).should.include?(:caller_locations)
   end
 
   it 'returns an Array of caller locations' do
@@ -20,6 +20,18 @@ describe 'Kernel#caller_locations' do
     locations = KernelSpecs::CallerLocationsTest.locations(1, 1)
 
     locations.length.should == 1
+  end
+
+  it "raises for negative start" do
+    -> { caller_locations(-1) }.should.raise(ArgumentError, "negative level (-1)")
+  end
+
+  it "raises for negative length" do
+    -> { caller_locations(0, -1) }.should.raise(ArgumentError, "negative size (-1)")
+  end
+
+  it "can be called with `nil` length" do
+    caller_locations(0, nil).map(&:to_s).should == caller_locations(0).map(&:to_s)
   end
 
   it "can be called with a range" do
@@ -70,6 +82,11 @@ describe 'Kernel#caller_locations' do
     caller_locations.map(&:to_s).should == caller_locations(1..-1).map(&:to_s)
   end
 
+  it "coerces the arguments to integers" do
+    caller_locations(1.1, 1.1).map(&:to_s).should == caller(1, 1).map(&:to_s)
+    caller_locations(1.1..1.1).map(&:to_s).should == caller(1..1).map(&:to_s)
+  end
+
   guard -> { Kernel.instance_method(:tap).source_location } do
     ruby_version_is ""..."3.4" do
       it "includes core library methods defined in Ruby" do
@@ -103,8 +120,17 @@ describe 'Kernel#caller_locations' do
         loc = nil
         tap { loc = caller_locations(1, 1)[0] }
         loc.label.should == "Kernel#tap"
-        loc.path.should == __FILE__
+        # CRuby hides the file which defines the method: https://bugs.ruby-lang.org/issues/20968
+        unless loc.path == __FILE__
+          loc.path.should.start_with? "<internal:"
+        end
       end
     end
+  end
+end
+
+describe "Kernel.caller_locations" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:caller_locations)
   end
 end

@@ -9,14 +9,6 @@
  */
 #include "ossl.h"
 
-#define NewX509(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_x509_type, 0)
-#define SetX509(obj, x509) do { \
-    if (!(x509)) { \
-        ossl_raise(rb_eRuntimeError, "CERT wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (x509); \
-} while (0)
 #define GetX509(obj, x509) do { \
     TypedData_Get_Struct((obj), X509, &ossl_x509_type, (x509)); \
     if (!(x509)) { \
@@ -44,20 +36,27 @@ static const rb_data_type_t ossl_x509_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
+static VALUE
+ossl_x509_alloc(VALUE klass)
+{
+    return TypedData_Wrap_Struct(klass, &ossl_x509_type, NULL);
+}
+
 /*
  * Public
  */
 VALUE
-ossl_x509_new(X509 *x509)
+ossl_x509_new(const X509 *x509)
 {
     X509 *new;
     VALUE obj;
 
-    obj = NewX509(cX509Cert);
-    new = X509_dup(x509);
+    obj = ossl_x509_alloc(cX509Cert);
+    /* OpenSSL 1.1.1 takes a non-const pointer */
+    new = X509_dup((X509 *)x509);
     if (!new)
         ossl_raise(eX509CertError, "X509_dup");
-    SetX509(obj, new);
+    RTYPEDDATA_DATA(obj) = new;
 
     return obj;
 }
@@ -85,23 +84,6 @@ DupX509CertPtr(VALUE obj)
 }
 
 /*
- * Private
- */
-static VALUE
-ossl_x509_alloc(VALUE klass)
-{
-    X509 *x509;
-    VALUE obj;
-
-    obj = NewX509(klass);
-    x509 = X509_new();
-    if (!x509) ossl_raise(eX509CertError, NULL);
-    SetX509(obj, x509);
-
-    return obj;
-}
-
-/*
  * call-seq:
  *    Certificate.new => cert
  *    Certificate.new(string) => cert
@@ -110,12 +92,16 @@ static VALUE
 ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
-    X509 *x509, *x509_orig = RTYPEDDATA_DATA(self);
+    X509 *x509;
     VALUE arg;
 
-    rb_check_frozen(self);
-    if (rb_scan_args(argc, argv, "01", &arg) == 0) {
-        /* create just empty X509Cert */
+    rb_scan_args(argc, argv, "01", &arg);
+    ossl_want_uninitialized(self, &ossl_x509_type);
+    if (argc == 0) {
+        x509 = X509_new();
+        if (!x509)
+            ossl_raise(eX509CertError, "X509_new");
+        RTYPEDDATA_DATA(self) = x509;
         return self;
     }
     arg = ossl_to_der_if_possible(arg);
@@ -130,7 +116,6 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
         ossl_raise(eX509CertError, "PEM_read_bio_X509");
 
     RTYPEDDATA_DATA(self) = x509;
-    X509_free(x509_orig);
 
     return self;
 }
@@ -139,19 +124,15 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_x509_copy(VALUE self, VALUE other)
 {
-    X509 *a, *b, *x509;
+    X509 *b, *x509;
 
-    rb_check_frozen(self);
-    if (self == other) return self;
-
-    GetX509(self, a);
+    ossl_want_uninitialized(self, &ossl_x509_type);
     GetX509(other, b);
 
     x509 = X509_dup(b);
-    if (!x509) ossl_raise(eX509CertError, NULL);
-
-    DATA_PTR(self) = x509;
-    X509_free(a);
+    if (!x509)
+        ossl_raise(eX509CertError, "X509_dup");
+    RTYPEDDATA_DATA(self) = x509;
 
     return self;
 }
@@ -310,7 +291,9 @@ ossl_x509_set_serial(VALUE self, VALUE num)
     X509 *x509;
 
     GetX509(self, x509);
-    X509_set_serialNumber(x509, num_to_asn1integer(num, X509_get_serialNumber(x509)));
+    if (!X509_set_serialNumber(x509, num_to_asn1integer(num, X509_get_serialNumber(x509)))) {
+        ossl_raise(eX509CertError, NULL);
+    }
 
     return num;
 }
@@ -345,7 +328,7 @@ static VALUE
 ossl_x509_get_subject(VALUE self)
 {
     X509 *x509;
-    X509_NAME *name;
+    const X509_NAME *name;
 
     GetX509(self, x509);
     if (!(name = X509_get_subject_name(x509))) { /* NO DUP - don't free! */
@@ -380,7 +363,7 @@ static VALUE
 ossl_x509_get_issuer(VALUE self)
 {
     X509 *x509;
-    X509_NAME *name;
+    const X509_NAME *name;
 
     GetX509(self, x509);
     if(!(name = X509_get_issuer_name(x509))) { /* NO DUP - don't free! */
@@ -603,14 +586,13 @@ ossl_x509_get_extensions(VALUE self)
 {
     X509 *x509;
     int count, i;
-    X509_EXTENSION *ext;
     VALUE ary;
 
     GetX509(self, x509);
     count = X509_get_ext_count(x509);
     ary = rb_ary_new_capa(count);
     for (i=0; i<count; i++) {
-        ext = X509_get_ext(x509, i); /* NO DUP - don't free! */
+        const X509_EXTENSION *ext = X509_get_ext(x509, i);
         rb_ary_push(ary, ossl_x509ext_new(ext));
     }
 

@@ -89,14 +89,6 @@
     (FL_USHIFT+3) /* bit offset of BIGNUM_EMBED_LEN_MASK */
 #define BIGNUM_EMBED_LEN_MAX (BIGNUM_EMBED_LEN_MASK >> BIGNUM_EMBED_LEN_SHIFT)
 
-enum rb_int_parse_flags {
-    RB_INT_PARSE_SIGN       = 0x01,
-    RB_INT_PARSE_UNDERSCORE = 0x02,
-    RB_INT_PARSE_PREFIX     = 0x04,
-    RB_INT_PARSE_ALL        = 0x07,
-    RB_INT_PARSE_DEFAULT    = 0x07,
-};
-
 struct RBignum {
     struct RBasic basic;
     union {
@@ -115,6 +107,7 @@ struct RBignum {
 
 /* bignum.c */
 extern const char ruby_digitmap[];
+extern const char ruby_decimal_digit_pairs[];
 double rb_big_fdiv_double(VALUE x, VALUE y);
 VALUE rb_big_uminus(VALUE x);
 VALUE rb_big_hash(VALUE);
@@ -130,6 +123,7 @@ VALUE rb_big_aref2(VALUE num, VALUE beg, VALUE len);
 VALUE rb_big_abs(VALUE x);
 VALUE rb_big_size_m(VALUE big);
 VALUE rb_big_bit_length(VALUE big);
+VALUE rb_big_bit_count(VALUE big);
 VALUE rb_big_remainder(VALUE x, VALUE y);
 VALUE rb_big_gt(VALUE x, VALUE y);
 VALUE rb_big_ge(VALUE x, VALUE y);
@@ -166,7 +160,6 @@ VALUE rb_big_divrem_gmp(VALUE x, VALUE y);
 VALUE rb_big2str_gmp(VALUE x, int base);
 VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 #endif
-VALUE rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits, int base, int flags);
 RUBY_SYMBOL_EXPORT_END
 
 #if HAVE_LONG_LONG

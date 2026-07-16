@@ -93,6 +93,34 @@ Gems to install:
     end
   end
 
+  def test_install_from_gemdeps_explain_verbose
+    spec_fetcher do |fetcher|
+      fetcher.gem "a", 2
+    end
+
+    rs = Gem::RequestSet.new
+
+    verbose = Gem.configuration.verbose
+    Gem.configuration.verbose = :really
+
+    File.open "gem.deps.rb", "w" do |io|
+      io.puts 'gem "a"'
+      io.flush
+
+      expected = <<-EXPECTED
+Gems to install:
+  a-2
+      EXPECTED
+
+      actual, _ = capture_output do
+        rs.install_from_gemdeps gemdeps: io.path, explain: true
+      end
+      assert_equal(expected, actual)
+    end
+  ensure
+    Gem.configuration.verbose = verbose
+  end
+
   def test_install_from_gemdeps_install_dir
     spec_fetcher do |fetcher|
       fetcher.gem "a", 2
@@ -309,6 +337,110 @@ ruby "0"
     tf.close!
 
     assert_empty rs.dependencies
+  end
+
+  def test_load_gemdeps_with_lockfile_gem_section
+    rs = Gem::RequestSet.new
+
+    File.open "gem.deps.rb", "w" do |io|
+      io.puts 'gem "b"'
+    end
+
+    File.open "gem.deps.rb.lock", "w" do |io|
+      io.puts <<~LOCKFILE
+        GEM
+          remote: #{@gem_repo}
+          specs:
+            a (1)
+            b (1)
+              a (~> 1.0)
+
+        PLATFORMS
+          #{Gem::Platform::RUBY}
+
+        DEPENDENCIES
+          b
+      LOCKFILE
+    end
+
+    rs.load_gemdeps "gem.deps.rb"
+
+    lock_set = rs.sets.find {|set| Gem::Resolver::LockSet === set }
+    refute_nil lock_set, "LockSet should be created from GEM section"
+    assert_equal %w[a-1 b-1], lock_set.specs.map(&:full_name).sort
+  end
+
+  def test_load_gemdeps_with_lockfile_git_section
+    rs = Gem::RequestSet.new
+
+    File.open "gem.deps.rb", "w" do |io|
+      io.puts 'gem "a", :git => "git://example/a.git"'
+    end
+
+    File.open "gem.deps.rb.lock", "w" do |io|
+      io.puts <<~LOCKFILE
+        GIT
+          remote: git://example/a.git
+          revision: deadbeef
+          specs:
+            a (1)
+
+        PLATFORMS
+          #{Gem::Platform::RUBY}
+
+        DEPENDENCIES
+          a!
+      LOCKFILE
+    end
+
+    rs.load_gemdeps "gem.deps.rb"
+
+    git_set = rs.sets.find {|set| Gem::Resolver::GitSet === set }
+    refute_nil git_set, "GitSet should be created from GIT section"
+    assert_includes git_set.specs.keys, "a"
+  end
+
+  def test_load_gemdeps_with_lockfile_path_section
+    _, _, directory = vendor_gem
+
+    rs = Gem::RequestSet.new
+
+    File.open "gem.deps.rb", "w" do |io|
+      io.puts "gem \"a\", :path => #{directory.inspect}"
+    end
+
+    File.open "gem.deps.rb.lock", "w" do |io|
+      io.puts <<~LOCKFILE
+        PATH
+          remote: #{directory}
+          specs:
+            a (1)
+
+        PLATFORMS
+          #{Gem::Platform::RUBY}
+
+        DEPENDENCIES
+          a!
+      LOCKFILE
+    end
+
+    rs.load_gemdeps "gem.deps.rb"
+
+    vendor_set = rs.sets.find {|set| Gem::Resolver::VendorSet === set }
+    refute_nil vendor_set, "VendorSet should be created from PATH section"
+    assert_equal %w[a-1], vendor_set.specs.values.map(&:full_name)
+  end
+
+  def test_load_gemdeps_with_missing_lockfile
+    rs = Gem::RequestSet.new
+
+    File.open "gem.deps.rb", "w" do |io|
+      io.puts 'gem "a"'
+    end
+
+    rs.load_gemdeps "gem.deps.rb"
+
+    assert_equal [dep("a")], rs.dependencies
   end
 
   def test_resolve

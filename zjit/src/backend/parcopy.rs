@@ -117,7 +117,7 @@ pub fn sequentialize_register<T: PartialEq + Eq + Hash + Ord + std::fmt::Debug +
 
 #[cfg(test)]
 mod tests {
-    use rand::Rng;
+    use rand::RngExt;
     use std::collections::HashMap;
 
     use super::*;

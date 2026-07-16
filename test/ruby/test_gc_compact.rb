@@ -207,7 +207,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_updating_references_for_embed_shared_arrays
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -256,7 +256,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_updating_references_for_embed_frozen_shared_arrays
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -284,7 +284,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_arrays_down_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -306,7 +306,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_arrays_up_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -315,7 +315,7 @@ class TestGCCompact < Test::Unit::TestCase
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       Fiber.new {
-        ary = "hello".chars
+        ary = "hello world".chars # > 6 elements to exceed pool 0 embed capacity
         $arys = ARY_COUNT.times.map do
           x = []
           ary.each { |e| x << e }
@@ -330,7 +330,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_objects_between_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 60)
     begin;
@@ -362,7 +362,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_compact_objects_of_varying_sizes
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_ruby_status([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -378,7 +378,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_strings_up_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
     begin;
@@ -399,7 +399,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_strings_down_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
     begin;
@@ -419,7 +419,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_hashes_down_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
     # AR and ST hashes are in the same size pool on 32 bit
     omit unless RbConfig::SIZEOF["uint64_t"] <= RbConfig::SIZEOF["void*"]
 
@@ -469,7 +469,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_too_complex_generic_ivar
+  def test_moving_complex_generic_ivar
     omit "not compiled with SHAPE_DEBUG" unless defined?(RubyVM::Shape)
 
     assert_separately([], <<~RUBY)
@@ -483,6 +483,26 @@ class TestGCCompact < Test::Unit::TestCase
 
       assert_equal(123, obj.instance_variable_get(:@fixnum))
       assert_equal("hello", obj.instance_variable_get(:@str))
+    RUBY
+  end
+
+  def test_object_reembedding
+    assert_separately([], <<~'RUBY')
+      GC.auto_compact = true
+
+      objs = []
+      30.times.map { Class.new }.map do |k|
+        50.times.each do
+          obj = k.new
+          rand(0..30).times do |i|
+            obj.instance_variable_set(:"@v#{i}", i)
+          end
+          objs << obj
+        end
+      end
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      assert :ok
     RUBY
   end
 end

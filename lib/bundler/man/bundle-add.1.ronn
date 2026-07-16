@@ -5,7 +5,7 @@ bundle-add(1) -- Add gem to the Gemfile and run bundle install
 
 `bundle add` <GEM_NAME> [--group=GROUP] [--version=VERSION] [--source=SOURCE]
            [--path=PATH] [--git=GIT|--github=GITHUB] [--branch=BRANCH] [--ref=REF]
-           [--quiet] [--skip-install] [--strict|--optimistic]
+           [--cooldown=NUMBER] [--quiet] [--skip-install] [--strict|--optimistic]
 
 ## DESCRIPTION
 
@@ -51,10 +51,18 @@ Adds the named gem to the [`Gemfile(5)`][Gemfile(5)] and run `bundle install`.
   Adds the gem to the Gemfile but does not install it.
 
 * `--optimistic`:
-  Adds optimistic declaration of version.
+  Ignored (now default behavior)
+
+* `--pessimistic`:
+  Adds pessimistic declaration of version.
 
 * `--strict`:
   Adds strict declaration of version.
+
+* `--cooldown=<number>`:
+  Only consider gem versions published at least <number> days ago when
+  resolving. Pass `0` to disable cooldown for this run. See `cooldown`
+  in bundle-config(1) for precedence rules.
 
 ## EXAMPLES
 
@@ -70,7 +78,7 @@ Adds the named gem to the [`Gemfile(5)`][Gemfile(5)] and run `bundle install`.
 3. You can use the `https://gems.example.com` custom source and assign the gem
    to a group.
 
-   `bundle add rails --version "~> 5.0.0" --source "https://gems.example.com" --group "development"`
+   `bundle add rails --version ">= 5.0.0" --source "https://gems.example.com" --group "development"`
 
 4. The following adds the `gem` entry to the Gemfile without installing the
    gem. You can install gems later via `bundle install`.

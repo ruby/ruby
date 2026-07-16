@@ -52,7 +52,7 @@ describe "IO#sysread on a file" do
 
   it "raises an error when called after buffered reads" do
     @file.readline
-    -> { @file.sysread(5) }.should raise_error(IOError)
+    -> { @file.sysread(5) }.should.raise(IOError)
   end
 
   it "reads normally even when called immediately after a buffered IO#read" do
@@ -63,13 +63,13 @@ describe "IO#sysread on a file" do
   it "does not raise error if called after IO#read followed by IO#write" do
     @file.read(5)
     @file.write("abcde")
-    -> { @file.sysread(5) }.should_not raise_error(IOError)
+    -> { @file.sysread(5) }.should_not.raise(IOError)
   end
 
   it "does not raise error if called after IO#read followed by IO#syswrite" do
     @file.read(5)
     @file.syswrite("abcde")
-    -> { @file.sysread(5) }.should_not raise_error(IOError)
+    -> { @file.sysread(5) }.should_not.raise(IOError)
   end
 
   it "reads updated content after the flushed buffered IO#write" do
@@ -82,7 +82,7 @@ describe "IO#sysread on a file" do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.sysread(5) }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.sysread(5) }.should.raise(IOError)
   end
 
   it "immediately returns an empty string if the length argument is 0" do
@@ -103,9 +103,9 @@ describe "IO#sysread on a file" do
 
   it "discards the existing buffer content upon error" do
     buffer = +"existing content"
-    @file.seek(0, :END)
-    -> { @file.sysread(1, buffer) }.should raise_error(EOFError)
-    buffer.should be_empty
+    @file.seek(0, IO::SEEK_END)
+    -> { @file.sysread(1, buffer) }.should.raise(EOFError)
+    buffer.should.empty?
   end
 
   it "preserves the encoding of the given buffer" do
@@ -132,6 +132,6 @@ describe "IO#sysread" do
   end
 
   it "raises ArgumentError when length is less than 0" do
-    -> { @read.sysread(-1) }.should raise_error(ArgumentError)
+    -> { @read.sysread(-1) }.should.raise(ArgumentError)
   end
 end

@@ -294,11 +294,23 @@ module Prism # :nodoc:
     # Mirror the Prism.parse_stream API by using the serialization API.
     def parse_stream(stream, **options)
       LibRubyParser::PrismBuffer.with do |buffer|
+        # The largest number of bytes a single character can occupy in any
+        # encoding Ruby supports. IO#gets(limit) may return up to
+        # (max_enc_len - 1) bytes more than requested to avoid splitting a
+        # multi-byte character, so we reserve that much headroom (plus the NUL
+        # terminator) to guarantee the result fits in the caller's buffer. This
+        # mirrors MAX_ENC_LEN in ext/prism/extension.c.
+        max_enc_len = 6
+
         source = +""
         callback = -> (string, size, _) {
-          raise "Expected size to be >= 0, got: #{size}" if size <= 0
+          raise "Expected size to be > #{max_enc_len}, got: #{size}" if size <= max_enc_len
 
-          if !(line = stream.gets(size - 1)).nil?
+          line = String.try_convert(stream.gets(size - max_enc_len))
+          if !line.nil?
+            # A misbehaving `gets` may ignore the limit; never write past the
+            # buffer (one byte is reserved for the NUL terminator).
+            line = line.byteslice(0, size - 1) if line.bytesize > size - 1
             source << line
             string.write_string("#{line}\x00", line.bytesize + 1)
           end

@@ -21,17 +21,17 @@ platform_is_not :windows do
         end
 
         it "raises an Errno::EPERM exception if the directory exists" do
-          -> { Dir.chroot('.') }.should raise_error(Errno::EPERM)
+          -> { Dir.chroot('.') }.should.raise(Errno::EPERM)
         end
 
         it "raises a SystemCallError if the directory doesn't exist" do
-          -> { Dir.chroot('xgwhwhsjai2222jg') }.should raise_error(SystemCallError)
+          -> { Dir.chroot('xgwhwhsjai2222jg') }.should.raise(SystemCallError)
         end
 
         it "calls #to_path on non-String argument" do
           p = mock('path')
           p.should_receive(:to_path).and_return('.')
-          -> { Dir.chroot(p) }.should raise_error(Errno::EPERM)
+          -> { Dir.chroot(p) }.should.raise(Errno::EPERM)
         end
       end
     end

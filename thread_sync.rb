@@ -11,23 +11,23 @@ class Thread
   #
   #  Example:
   #
-  #    	queue = Thread::Queue.new
+  #     queue = Thread::Queue.new
   #
-  #	    producer = Thread.new do
-  #	      5.times do |i|
-  #	        sleep rand(i) # simulate expense
-  #	        queue << i
-  #	        puts "#{i} produced"
-  #	      end
-  #	    end
+  #     producer = Thread.new do
+  #       5.times do |i|
+  #         sleep rand(i) # simulate expense
+  #         queue << i
+  #         puts "#{i} produced"
+  #       end
+  #     end
   #
-  #	    consumer = Thread.new do
-  #	      5.times do |i|
-  #	        value = queue.pop
-  #	        sleep rand(i/2) # simulate expense
-  #	        puts "consumed #{value}"
-  #	      end
-  #	    end
+  #     consumer = Thread.new do
+  #       5.times do |i|
+  #         value = queue.pop
+  #         sleep rand(i/2) # simulate expense
+  #         puts "consumed #{value}"
+  #       end
+  #     end
   #
   #     consumer.join
   class Queue
@@ -42,13 +42,13 @@ class Thread
     #
     # Example:
     #
-    #    	q = Thread::Queue.new
+    #     q = Thread::Queue.new
     #     #=> #<Thread::Queue:0x00007ff7501110d0>
     #     q.empty?
     #     #=> true
     #
-    #    	q = Thread::Queue.new([1, 2, 3])
-    #    	#=> #<Thread::Queue:0x00007ff7500ec500>
+    #     q = Thread::Queue.new([1, 2, 3])
+    #     #=> #<Thread::Queue:0x00007ff7500ec500>
     #     q.empty?
     #     #=> false
     #     q.pop
@@ -113,7 +113,7 @@ class Thread
     #
     # Example:
     #
-    #    	q = Thread::Queue.new
+    #      q = Thread::Queue.new
     #      Thread.new{
     #        while e = q.deq # wait for nil to break loop
     #          # ...
@@ -371,10 +371,10 @@ class Thread
     end
 
     # call-seq:
-    #    mutex.lock  -> self
+    #    mutex.unlock  -> self
     #
-    # Attempts to grab the lock and waits if it isn't available.
-    # Raises +ThreadError+ if +mutex+ was locked by the current thread.
+    # Releases the lock.
+    # Raises +ThreadError+ if +mutex+ wasn't locked by the current thread.
     def unlock
       Primitive.rb_mut_unlock
     end

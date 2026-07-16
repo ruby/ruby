@@ -140,7 +140,7 @@ describe "The alias keyword" do
     end
 
     @obj.__value.should == 5
-    -> { AliasObject.new.__value }.should raise_error(NoMethodError)
+    -> { AliasObject.new.__value }.should.raise(NoMethodError)
   end
 
   it "operates on the class/module metaclass when used in instance_eval" do
@@ -149,7 +149,7 @@ describe "The alias keyword" do
     end
 
     AliasObject.__klass_method.should == 7
-    -> { Object.__klass_method }.should raise_error(NoMethodError)
+    -> { Object.__klass_method }.should.raise(NoMethodError)
   end
 
   it "operates on the class/module metaclass when used in instance_exec" do
@@ -158,7 +158,7 @@ describe "The alias keyword" do
     end
 
     AliasObject.__klass_method2.should == 7
-    -> { Object.__klass_method2 }.should raise_error(NoMethodError)
+    -> { Object.__klass_method2 }.should.raise(NoMethodError)
   end
 
   it "operates on methods defined via attr, attr_reader, and attr_accessor" do
@@ -241,13 +241,13 @@ describe "The alias keyword" do
       1.instance_eval do
         alias :foo :to_s
       end
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
 
     -> do
       :blah.instance_eval do
         alias :foo :to_s
       end
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "on top level defines the alias on Object" do
@@ -256,7 +256,7 @@ describe "The alias keyword" do
   end
 
   it "raises a NameError when passed a missing name" do
-    -> { @meta.class_eval { alias undef_method not_exist } }.should raise_error(NameError) { |e|
+    -> { @meta.class_eval { alias undef_method not_exist } }.should.raise(NameError) { |e|
       # a NameError and not a NoMethodError
       e.class.should == NameError
     }
@@ -272,7 +272,7 @@ describe "The alias keyword" do
     end
 
     child.instance_method(:parent_method_alias).owner.should == child
-    child.instance_methods(false).should include(:parent_method_alias)
+    child.instance_methods(false).should.include?(:parent_method_alias)
   end
 end
 

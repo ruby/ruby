@@ -6,6 +6,18 @@ use crate::cruby::*;
 use crate::stats::Counter;
 use std::collections::HashSet;
 
+/// Type of symbols to dump into /tmp/perf-{pid}.map
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum PerfMap {
+    /// Dump one symbol per ISEQ
+    ISEQ,
+    /// Dump one symbol per HIR instruction
+    HIR,
+}
+
+/// Default maximum number of compiled versions per ISEQ.
+pub const DEFAULT_MAX_VERSIONS: usize = 4;
+
 /// Default --zjit-num-profiles
 const DEFAULT_NUM_PROFILES: NumProfiles = 5;
 pub type NumProfiles = u16;
@@ -14,6 +26,29 @@ pub type NumProfiles = u16;
 /// warmup code, but small enough to perform well on micro-benchmarks.
 pub const DEFAULT_CALL_THRESHOLD: CallThreshold = 30;
 pub type CallThreshold = u64;
+
+/// Default --zjit-inline-threshold
+/// TODO (nirvdrum 2026-06-25): 30 has proven to work well with ruby-bench, but we should finely
+/// tune across more workloads.
+pub const DEFAULT_INLINE_THRESHOLD: InlineThreshold = 30;
+pub type InlineThreshold = usize;
+
+/// Default --zjit-inline-budget
+/// TODO (nirvdrum 2026-06-25): 200 has proven to strike a good balance between memory usage and
+/// run time performance on ruby-bench, but we should finely tune across more workloads.
+pub const DEFAULT_INLINE_BUDGET: InlineBudget = 200;
+pub const INLINE_BUDGET_UNLIMITED: InlineBudget = 0;
+pub type InlineBudget = usize;
+
+/// Default --zjit-inline-max-iterations
+pub const DEFAULT_INLINE_MAX_ITERATIONS: InlineDepth = 10;
+/// Inlining nesting depth. Shared by `FrameState::depth` and the
+/// `inline_max_iterations` cap: the inliner adds at most one level per
+/// fixed-point iteration, so the maximum reachable depth equals
+/// `inline_max_iterations` and the two share this exact domain. A `usize`
+/// because depth is consumed as a JITFrame stack-slot index and as a term in
+/// native stack size computations, where every consumer is already `usize`.
+pub type InlineDepth = usize;
 
 /// Number of calls to start profiling YARV instructions.
 /// They are profiled `rb_zjit_call_threshold - rb_zjit_profile_threshold` times,
@@ -88,14 +123,64 @@ pub struct Options {
     /// Frequency of tracing side exits.
     pub trace_side_exits_sample_interval: usize,
 
+    /// Trace compilation phases as Perfetto duration events.
+    pub trace_compiles: bool,
+
+    /// Trace invalidation events as Perfetto duration events.
+    pub trace_invalidation: bool,
+
     /// Dump code map to /tmp for performance profilers.
-    pub perf: bool,
+    pub perf: Option<PerfMap>,
 
     /// List of ISEQs that can be compiled, identified by their iseq_get_location()
     pub allowed_iseqs: Option<HashSet<String>>,
 
     /// Path to a file where compiled ISEQs will be saved.
     pub log_compiled_iseqs: Option<std::path::PathBuf>,
+
+    /// Maximum number of versions per ISEQ
+    pub max_versions: usize,
+
+    /// Per-callee size threshold for inlining, measured as the callee's YARV bytecode size
+    /// (see `get_iseq_encoded_size`). Callees larger than this are rejected by `should_inline`.
+    /// 0 disables inlining entirely.
+    ///
+    /// Note: this is a different unit than `inline_budget`; see that field's doc comment.
+    pub inline_threshold: InlineThreshold,
+
+    /// Per-caller cumulative size budget for inlining, measured as the caller
+    /// `Function::num_instructions` at the moment `should_inline` is consulted (during
+    /// `inline_methods` inside the `optimize()` fixed-point loop). Once a caller has
+    /// grown past this many HIR instructions, `should_inline` rejects further callees,
+    /// bounding runaway code-size growth from depth-N inlining (and providing the
+    /// optimization fixed-point loop's effective terminating condition).
+    /// `INLINE_BUDGET_UNLIMITED` disables the budget.
+    ///
+    /// Note: this is a different unit than `inline_threshold` — that field is callee
+    /// YARV bytecode words; this one is caller HIR instructions. They aren't directly comparable;
+    /// YARV → HIR typically expands roughly 1-3x.
+    pub inline_budget: InlineBudget,
+
+    /// Set of qualified method names (e.g. `Class#method`, `Module::Class.method`) that
+    /// `should_inline` will refuse to inline. Populated from `--zjit-inline-deny=…` as a
+    /// comma-separated list. Used as a debugging/experimentation knob: callees on this
+    /// list are rejected before any of the other `should_inline` checks run, so we can
+    /// isolate the contribution of specific methods to the inliner's overall effect.
+    /// Empty by default; matching uses the same string format produced by
+    /// `qualified_method_name`. Only named methods are matched today; anonymous code
+    /// (blocks, procs without a stable method binding) cannot be denied this way.
+    pub inline_deny: HashSet<String>,
+
+    /// Upper bound on how many times the `optimize` fixed-point loop will iterate
+    /// before giving up. Each iteration runs `type_specialize` → `inline` →
+    /// `inline_methods` → the rest of the HIR pipeline; in steady state the loop
+    /// terminates as soon as an iteration fails to inline anything new. If the
+    /// cap is hit while inlining is still ongoing, the optimizer runs one final
+    /// specialization/cleanup round without `inline_methods`, so the callee HIR
+    /// inserted by the last iteration does not keep unspecialized `Send`s. The
+    /// cap exists to bound compile time when something pathological prevents the
+    /// loop from reaching a fixed point.
+    pub inline_max_iterations: InlineDepth,
 }
 
 impl Default for Options {
@@ -118,9 +203,16 @@ impl Default for Options {
             dump_disasm: None,
             trace_side_exits: None,
             trace_side_exits_sample_interval: 0,
-            perf: false,
+            trace_compiles: false,
+            trace_invalidation: false,
+            perf: None,
             allowed_iseqs: None,
             log_compiled_iseqs: None,
+            max_versions: DEFAULT_MAX_VERSIONS,
+            inline_threshold: DEFAULT_INLINE_THRESHOLD,
+            inline_budget: DEFAULT_INLINE_BUDGET as InlineBudget,
+            inline_deny: HashSet::new(),
+            inline_max_iterations: DEFAULT_INLINE_MAX_ITERATIONS,
         }
     }
 }
@@ -141,13 +233,18 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
                      "Collect ZJIT stats (=file to write to a file)."),
     ("--zjit-disable",
                      "Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable."),
-    ("--zjit-perf",  "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
+    ("--zjit-perf[=iseq|hir]",
+                     "Dump symbols for Linux perf /tmp/perf-{}.map (default: iseq)."),
     ("--zjit-log-compiled-iseqs=path",
                      "Log compiled ISEQs to the file. The file will be truncated."),
     ("--zjit-trace-exits[=counter]",
                      "Record source on side-exit. `Counter` picks specific counter."),
     ("--zjit-trace-exits-sample-rate=num",
-                     "Frequency at which to record side exits. Must be `usize`.")
+                     "Frequency at which to record side exits. Must be `usize`."),
+    ("--zjit-trace-compiles",
+                     "Record compilation phases as Perfetto trace events."),
+    ("--zjit-trace-invalidation",
+                     "Record invalidation events as Perfetto trace events."),
 ];
 
 #[derive(Copy, Clone, Debug)]
@@ -227,6 +324,9 @@ macro_rules! get_option {
     // once before any Ruby code executes
     ($option_name:ident) => {
         unsafe { crate::options::OPTIONS.as_ref() }.unwrap().$option_name
+    };
+    ($option_name:ident, $default:expr) => {
+        unsafe { crate::options::OPTIONS.as_ref() }.map(|opts| opts.$option_name).unwrap_or($default)
     };
 }
 pub(crate) use get_option;
@@ -330,6 +430,39 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             Err(_) => return None,
         },
 
+        ("max-versions", _) => match opt_val.parse() {
+            Ok(n) => options.max_versions = n,
+            Err(_) => return None,
+        },
+
+        ("inline-threshold", _) => match opt_val.parse() {
+            Ok(n) => { options.inline_threshold = n; },
+            Err(_) => return None,
+        },
+
+        ("inline-budget", _) => match opt_val.parse() {
+            Ok(n) => { options.inline_budget = n; },
+            Err(_) => return None,
+        },
+
+        ("inline-max-iterations", _) => match opt_val.parse() {
+            Ok(n) => { options.inline_max_iterations = n; },
+            Err(_) => return None,
+        },
+
+        ("inline-deny", csv) => {
+            // Comma-separated list of qualified method names to refuse to inline,
+            // matching the format produced by `qualified_method_name`. Whitespace
+            // around entries is trimmed; empty entries are skipped so trailing or
+            // duplicated commas don't introduce a "" sentinel into the set.
+            for entry in csv.split(',') {
+                let trimmed = entry.trim();
+                if !trimmed.is_empty() {
+                    options.inline_deny.insert(trimmed.to_string());
+                }
+            }
+        }
+
 
         ("stats-quiet", _) => {
             options.stats = true;
@@ -369,6 +502,10 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             // `sample_interval ` must provide a string that can be validly parsed to a `usize`.
             options.trace_side_exits_sample_interval = sample_interval.parse::<usize>().ok()?;
         }
+
+        ("trace-compiles", "") => options.trace_compiles = true,
+
+        ("trace-invalidation", "") => options.trace_invalidation = true,
 
         ("debug", "") => options.debug = true,
 
@@ -452,7 +589,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             }
         }
 
-        ("perf", "") => options.perf = true,
+        ("perf", "" | "iseq") => options.perf = Some(PerfMap::ISEQ),
+        ("perf", "hir") => options.perf = Some(PerfMap::HIR),
 
         ("allowed-iseqs", _) if !opt_val.is_empty() => options.allowed_iseqs = Some(parse_jit_list(opt_val)),
         ("log-compiled-iseqs", _) if !opt_val.is_empty() => {
@@ -495,6 +633,20 @@ pub fn set_call_threshold(call_threshold: CallThreshold) {
     update_profile_threshold();
 }
 
+/// Update --zjit-max-versions for testing
+#[cfg(test)]
+pub fn set_max_versions(max_versions: usize) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().max_versions = max_versions; }
+}
+
+/// Update --zjit-inline-threshold for testing
+#[cfg(test)]
+pub fn set_inline_threshold(inline_threshold: InlineThreshold) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().inline_threshold = inline_threshold; }
+}
+
 /// Enable --zjit-stats for testing
 #[cfg(test)]
 pub fn enable_zjit_stats() {
@@ -502,7 +654,7 @@ pub fn enable_zjit_stats() {
     unsafe { OPTIONS.as_mut() }.unwrap().stats = true;
 }
 
-/// Print YJIT options for `ruby --help`. `width` is width of option parts, and
+/// Print ZJIT options for `ruby --help`. `width` is width of option parts, and
 /// `columns` is indent width of descriptions.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_show_usage(help: c_int, highlight: c_int, width: c_uint, columns: c_int) {

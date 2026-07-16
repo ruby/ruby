@@ -9,24 +9,77 @@
 #
 # For documentation, see class Pathname.
 #
+class Pathname
 
-class Pathname    # * Find *
+  # :markup: markdown
   #
-  # Iterates over the directory tree in a depth first manner, yielding a
-  # Pathname for each file under "this" directory.
+  # call-seq:
+  #   Pathname.find(ignore_error: true) -> nil
   #
-  # Note that you need to require 'pathname' to use this method.
+  # With a block given, performs a depth-first traversal of the path in `self`;
+  # calls the block with each found path:
   #
-  # Returns an Enumerator if no block is given.
+  # ```ruby
+  # paths = []
+  # Pathname('lib').find {|path| paths << path }
+  # paths.size  # => 909
+  # paths.take(3)
+  # # =>
+  # # [#<Pathname:lib>,
+  # #  #<Pathname:lib/English.gemspec>,
+  # #  #<Pathname:lib/English.rb>]
+  # ```
   #
-  # Since it is implemented by the standard library module Find, Find.prune can
-  # be used to control the traversal.
+  # When `self` contains `'.'`, the found paths omit the leading `'./'`:
   #
-  # If +self+ is +.+, yielded pathnames begin with a filename in the
-  # current directory, not +./+.
+  # ```ruby
+  # paths = []
+  # Dir.chdir('lib') do
+  #   Pathname('.').find {|path| paths << path }
+  # end
+  # paths.take(3)
+  # # # =>
+  # # [#<Pathname:.>,
+  # #  #<Pathname:English.gemspec>,
+  # #  #<Pathname:English.rb>]
+  # ```
   #
-  # See Find.find
+  # This method calls method Find.find;
+  # therefore method Find.prune may be used in the block:
   #
+  # ```ruby
+  # files = []
+  # Pathname('.').find do |path|
+  #   Find.prune if File.basename(path) == 'test'
+  #   next unless File.file?(path) && File.extname(path) == '.rb'
+  #   files << path
+  # end
+  # files.size # => 6690
+  # files.take(3)
+  # # # =>
+  # # [#<Pathname:KNOWNBUGS.rb>,
+  # #  #<Pathname:array.rb>,
+  # #  #<Pathname:ast.rb>]
+  # ```
+  #
+  # Raises an exception if the path in `self` cannot be read.
+  #
+  # When keyword argument `ignore_error` is given as `true` (the default),
+  # certain exceptions during traversal are ignored (i.e., silently rescued):
+  # Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG, Errno::EINVAL;
+  # when given as `false`, no exceptions are rescued.
+  #
+  # Note that these exceptions may be ignored only in `Pathname#find` traversal code;
+  # an exception raised before traversal begins,
+  # or raised while in the block is not ignored.
+  # Each of the calls below raises an Errno::ENOENT exception that is not ignored:
+  #
+  # ```ruby
+  # Pathname('nosuch').find { }
+  # Pathname('lib').find {|entry| raise Errno::ENOENT }
+  # ```
+  #
+  # With no block given, returns a new Enumerator.
   def find(ignore_error: true) # :yield: pathname
     return to_enum(__method__, ignore_error: ignore_error) unless block_given?
     require 'find'
@@ -40,11 +93,25 @@ end
 
 
 class Pathname    # * FileUtils *
-  # Recursively deletes a directory, including all directories beneath it.
+
+  # :markup: markdown
   #
-  # Note that you need to require 'pathname' to use this method.
+  # call-seq:
+  #   rmtree -> 0
   #
-  # See FileUtils.rm_rf
+  # Deletes the entire filetree at the path in `self`; returns `0`:
+  #
+  # ```ruby
+  # dir_pn = Pathname('foo/bar/baz') # => #<Pathname:foo/bar/baz>
+  # dir_pn.mkpath                    # Create 'baz' and intermediate directories.
+  # file_pn = dir_pn.join('t.tmp')   # => #<Pathname:foo/bar/baz/t.tmp>
+  # file_pn.write('foo')             # Create file at nested directory 'baz'.
+  # Pathname('foo').rmtree           # Delete the entire tree at directory 'foo'.
+  # Pathname('foo').exist?           # => false
+  # ```
+  #
+  # Use method #rmdir to delete a single (empty) directory.
+  #
   def rmtree(noop: nil, verbose: nil, secure: nil)
     # The name "rmtree" is borrowed from File::Path of Perl.
     # File::Path provides "mkpath" and "rmtree".

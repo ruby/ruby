@@ -13,7 +13,7 @@ describe 'Socket#initialize' do
     it 'returns a Socket' do
       @socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM)
 
-      @socket.should be_an_instance_of(Socket)
+      @socket.should.instance_of?(Socket)
     end
   end
 
@@ -21,7 +21,7 @@ describe 'Socket#initialize' do
     it 'returns a Socket' do
       @socket = Socket.new(:INET, :STREAM)
 
-      @socket.should be_an_instance_of(Socket)
+      @socket.should.instance_of?(Socket)
     end
   end
 
@@ -29,7 +29,7 @@ describe 'Socket#initialize' do
     it 'returns a Socket' do
       @socket = Socket.new('INET', 'STREAM')
 
-      @socket.should be_an_instance_of(Socket)
+      @socket.should.instance_of?(Socket)
     end
   end
 
@@ -43,7 +43,7 @@ describe 'Socket#initialize' do
 
       @socket = Socket.new(family, type)
 
-      @socket.should be_an_instance_of(Socket)
+      @socket.should.instance_of?(Socket)
     end
 
     it 'raises TypeError when the #to_str method does not return a String' do
@@ -53,7 +53,7 @@ describe 'Socket#initialize' do
       family.stub!(:to_str).and_return(Socket::AF_INET)
       type.stub!(:to_str).and_return(Socket::SOCK_STREAM)
 
-      -> { Socket.new(family, type) }.should raise_error(TypeError)
+      -> { Socket.new(family, type) }.should.raise(TypeError)
     end
   end
 
@@ -61,11 +61,11 @@ describe 'Socket#initialize' do
     it 'returns a Socket when using an Integer' do
       @socket = Socket.new(:INET, :STREAM, Socket::IPPROTO_TCP)
 
-      @socket.should be_an_instance_of(Socket)
+      @socket.should.instance_of?(Socket)
     end
 
     it 'raises TypeError when using a Symbol' do
-      -> { Socket.new(:INET, :STREAM, :TCP) }.should raise_error(TypeError)
+      -> { Socket.new(:INET, :STREAM, :TCP) }.should.raise(TypeError)
     end
   end
 
@@ -82,6 +82,6 @@ describe 'Socket#initialize' do
 
   it "sets the socket to binary mode" do
     @socket = Socket.new(:INET, :STREAM)
-    @socket.binmode?.should be_true
+    @socket.binmode?.should == true
   end
 end

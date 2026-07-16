@@ -1,7 +1,10 @@
 require_relative '../../../spec_helper'
 require_relative 'shared/constants'
-require_relative 'shared/update'
 
 describe "Digest::SHA256#<<" do
-  it_behaves_like :sha256_update, :<<
+  it "can update" do
+    cur_digest = Digest::SHA256.new
+    cur_digest << SHA256Constants::Contents
+    cur_digest.digest.should == SHA256Constants::Digest
+  end
 end

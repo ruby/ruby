@@ -26,29 +26,38 @@ jobs:
       matrix:
         include:
           - test_task: check
-            os: macos-14
-          - test_task: check
-            os: macos-14
-            configure_args: '--with-gcc=gcc-14'
-          - test_task: check
-            os: macos-14
-            configure_args: '--with-jemalloc --with-opt-dir=$(brew --prefix jemalloc)'
-          - test_task: check
-            os: macos-14
-            configure_args: '--with-gmp'
-          - test_task: test-all
-            test_opts: --repeat-count=2
-            os: macos-14
-          - test_task: test-bundler-parallel
-            os: macos-14
-          - test_task: test-bundled-gems
-            os: macos-14
+            os: macos-26
           - test_task: check
             os: macos-15
+            configure_args: '--with-gcc=gcc-14'
+          # No dedicated --with-gmp job: gmp is enabled by default and
+          # setup/macos passes --with-gmp-dir to every job, so each check
+          # here already builds and tests with -lgmp.
+          - test_task: check
+            os: macos-26
+            configure_args: '--with-jemalloc --with-opt-dir=$(brew --prefix jemalloc)'
+          - test_task: test-all
+            test_opts: --repeat-count=2
+            os: macos-26
+          - test_task: test-bundler-parallel
+            os: macos-26
+          - test_task: test-bundled-gems
+            os: macos-26
+          - test_task: check
+            os: macos-15
+          - test_task: check
+            os: macos-15-intel
+          - test_task: check
+            os: macos-14
       fail-fast: false
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+      # The macos-15-intel runner image ships a pre-installed Ruby under
+      # /usr/local whose default-gem dir collides with the build's on the
+      # 3.3.0 ABI path. Build under an isolated prefix so Gem.default_dir does
+      # not scan that stale bundler default-gem stub during rake autoload.
+      PREFIX: ${{ matrix.os == 'macos-15-intel' && '/tmp/ruby-prefix' || '' }}
 
     runs-on: ${{ matrix.os }}
 
@@ -57,11 +66,11 @@ jobs:
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -77,6 +86,7 @@ jobs:
           makeup: true
           clean: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          bundled-gems-src-cache: ${{ matrix.test_task == 'test-bundled-gems' }}
           # Set fetch-depth: 0 so that Launchable can receive commits information.
           fetch-depth: 10
 
@@ -85,6 +95,17 @@ jobs:
           sysctl -n kern.coredump
           sudo sysctl -w kern.coredump=1
           sudo chmod -R +rwx /cores/
+
+      - name: Disable ReportCrash
+        # We don't want this service running on every crash signal. When it's running, processes must wait for
+        # the service to gather process info before they can finish. We have tests that test our crash signal
+        # handling and this service can take a while to run which can time our tests out.
+        run: |
+          launchctl bootout gui/"$(id -u)"/com.apple.ReportCrash 2>/dev/null || true
+          launchctl disable gui/"$(id -u)"/com.apple.ReportCrash 2>/dev/null || true
+          sudo launchctl bootout system/com.apple.ReportCrash.Root 2>/dev/null || true
+          sudo launchctl disable system/com.apple.ReportCrash.Root 2>/dev/null || true
+        continue-on-error: true
 
       - name: Delete unused SDKs
         # To free up disk space to not run out during the run
@@ -95,7 +116,7 @@ jobs:
         continue-on-error: true
 
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc ${ruby_configure_args} ${{ matrix.configure_args }}
+        run: ../src/configure -C --disable-install-doc ${PREFIX:+--prefix="$PREFIX"} ${ruby_configure_args} ${{ matrix.configure_args }}
 
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
@@ -133,6 +154,10 @@ jobs:
           echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV # With --repeat-count=2, flaky test by timeout occurs frequently for some reason
         if: matrix.test_opts
 
+      - name: Set timeout scale
+        run: echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV # subprocess assertion timeouts flake on slower/contended macOS runners
+        if: ${{ matrix.test_task == 'check' }}
+
       - name: make ${{ matrix.test_task }}
         run: |
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
@@ -144,6 +169,7 @@ jobs:
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          RUBY_DEBUG_TEST_NO_REMOTE: "1"
           PRECHECK_BUNDLED_GEMS: 'no'
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
           LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
@@ -172,26 +198,10 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
-      - name: Resolve job ID
-        id: job_id
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        env:
-          matrix: ${{ toJson(matrix) }}
-        with:
-          script: |
-            const { data: workflow_run } = await github.rest.actions.listJobsForWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId
-            });
-            const matrix = JSON.parse(process.env.matrix);
-            const job_name = `${context.job}${matrix ? ` (${Object.values(matrix).join(", ")})` : ""}`;
-            return workflow_run.jobs.find((job) => job.name === job_name).id;
-
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     needs: [make]
     steps:
       - run: exit 1

@@ -48,17 +48,32 @@ if "%sub:\=%" == "%sub%" goto :remove_plain
 goto :remove_end
 :remove_plain
     set p=%2%1
-    if not exist "%1" goto :remove_end
+    if not exist "%p%" goto :remove_end
     if not "%dryrun%" == "" (
         echo Removing %p:\=/%
         goto :remove_end
     )
     ::- Try `rd` first for symlink to a directory; `del` attemps to remove all
     ::- files under the target directory, instead of the symlink itself.
-    (rd /q "%p%" || del /q "%p%") 2> nul && goto :remove_end
+    rd /q "%p%" 2> nul && goto :remove_end
 
-    if "%recursive%" == "-r" for /D %%I in (%p%) do (
-        rd /s /q %%I || call set error=%%ERRORLEVEL%%
+    ::- If matching files and directory exist, remove the files only first.
+    del /q "%p%" 2> nul
+
+    ::- `del` exits with 0 even when nothing matched, so its result cannot
+    ::- tell whether directories remain; check if matching entries still
+    ::- exist instead.
+    if not exist "%p%" goto :remove_end
+
+    ::- Unless `-r` option is given, do not remove directories; just fail.
+    if not "%recursive%" == "-r" (
+        call set error=1
+        goto :remove_end
+    )
+
+    ::- Remove remained directories recursively.
+    for /D %%I in (%p%) do (
+        rd /s /q %%I 2> nul || call set error=%%ERRORLEVEL%%
     )
 :remove_end
 endlocal & set "error=%error%" & goto :EOF

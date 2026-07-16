@@ -95,7 +95,7 @@ RSpec.describe "compact index api" do
     G
     bundle :install, artifice: "compact_index"
 
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     bundle :install, artifice: "compact_index"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "myrack 1.0.0"
@@ -132,7 +132,7 @@ RSpec.describe "compact index api" do
 
     bundle :install, artifice: "compact_index"
 
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     bundle :install, artifice: "compact_index"
 
     expect(the_bundle).to include_gems("rails 2.3.2")
@@ -146,7 +146,7 @@ RSpec.describe "compact index api" do
     G
 
     bundle "install", artifice: "compact_index"
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     bundle :install, artifice: "compact_index"
 
     expect(the_bundle).to include_gems("foo 1.0")
@@ -302,7 +302,7 @@ RSpec.describe "compact index api" do
     end
 
     system_gems %w[myrack-1.0.0 thin-1.0 net_a-1.0], gem_repo: gem_repo2
-    bundle "config set --local path.system true"
+    bundle_config "path.system true"
     ENV["BUNDLER_SPEC_ALL_REQUESTS"] = <<~EOS.strip
       #{source_uri}/versions
       #{source_uri}/info/myrack
@@ -471,7 +471,7 @@ RSpec.describe "compact index api" do
     G
 
     bundle :install, artifice: "compact_index_extra"
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     bundle :install, artifice: "compact_index_extra"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
@@ -956,7 +956,7 @@ RSpec.describe "compact index api" do
     end
 
     it "does not raise when disable_checksum_validation is set" do
-      bundle "config set disable_checksum_validation true"
+      bundle_config "disable_checksum_validation true"
       install_gemfile <<-G, artifice: "compact_index_wrong_gem_checksum"
         source "#{source_uri}"
         gem "myrack"

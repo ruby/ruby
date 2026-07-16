@@ -677,8 +677,8 @@ RSpec.describe "bundle lock" do
       gem "thin"
       gem "myrack_middleware", :group => "test"
     G
-    bundle "config set without test"
-    bundle "config set path vendor/bundle"
+    bundle_config "without test"
+    bundle_config "path vendor/bundle"
     bundle "lock", verbose: true
     expect(bundled_app("vendor/bundle")).not_to exist
   end
@@ -704,8 +704,9 @@ RSpec.describe "bundle lock" do
         build_gem "qux", %w[1.0.0 1.0.1 1.1.0 2.0.0]
       end
 
-      # establish a lockfile set to 1.4.3
-      install_gemfile <<-G
+      # establish a lockfile set to 1.4.3 (these examples only assert on the
+      # generated lockfile, so resolve-and-lock without the install)
+      lock_gemfile <<-G
         source "https://gem.repo4"
         gem 'foo', '1.4.3'
         gem 'bar', '2.0.3'
@@ -937,7 +938,7 @@ RSpec.describe "bundle lock" do
         platform_specific
     L
 
-    bundle "config set force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
     bundle "lock --add-platform java x86-mingw32"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
@@ -988,7 +989,7 @@ RSpec.describe "bundle lock" do
     end
 
     simulate_platform "x86_64-darwin-22" do
-      install_gemfile <<~G
+      lock_gemfile <<~G
         source "https://gem.repo4"
 
         gem "nokogiri"
@@ -1083,8 +1084,10 @@ RSpec.describe "bundle lock" do
     simulate_platform("x86-mingw32") { bundle :lock }
 
     checksums = checksums_section_when_enabled do |c|
+      c.checksum gem_repo4, "ffi", "1.9.14"
       c.checksum gem_repo4, "ffi", "1.9.14", "x86-mingw32"
       c.checksum gem_repo4, "gssapi", "1.2.0"
+      c.checksum gem_repo4, "mixlib-shellout", "2.2.6"
       c.checksum gem_repo4, "mixlib-shellout", "2.2.6", "universal-mingw32"
       c.checksum gem_repo4, "win32-process", "0.8.3"
     end
@@ -1093,9 +1096,11 @@ RSpec.describe "bundle lock" do
       GEM
         remote: https://gem.repo4/
         specs:
+          ffi (1.9.14)
           ffi (1.9.14-x86-mingw32)
           gssapi (1.2.0)
             ffi (>= 1.0.1)
+          mixlib-shellout (2.2.6)
           mixlib-shellout (2.2.6-universal-mingw32)
             win32-process (~> 0.8.2)
           win32-process (0.8.3)
@@ -1112,7 +1117,7 @@ RSpec.describe "bundle lock" do
         #{Bundler::VERSION}
     G
 
-    bundle "config set --local force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
     bundle :lock
 
     checksums.checksum gem_repo4, "ffi", "1.9.14"
@@ -1295,6 +1300,11 @@ RSpec.describe "bundle lock" do
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw-ucrt"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
+      end
+
+      build_gem "raygun-apm", "1.0.78" do |s|
+        s.platform = "x64-mswin64"
         s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
     end
@@ -2195,7 +2205,7 @@ RSpec.describe "bundle lock" do
       end
     end
 
-    bundle "config lockfile_checksums false"
+    bundle_config "lockfile_checksums false"
 
     simulate_platform "x86_64-linux" do
       install_gemfile <<-G
@@ -2229,7 +2239,7 @@ RSpec.describe "bundle lock" do
       build_gem "warning", "18.0.0"
     end
 
-    bundle "config lockfile_checksums false"
+    bundle_config "lockfile_checksums false"
 
     simulate_platform "x86_64-linux" do
       install_gemfile(<<-G, artifice: "endpoint")
@@ -2295,6 +2305,10 @@ RSpec.describe "bundle lock" do
 
     bundle("lock --add-checksums", artifice: "endpoint")
 
+    checksums = checksums_section_when_enabled do |c|
+      c.no_checksum "warning", "18.0.0"
+    end
+
     expect(lockfile).to eq <<~L
       GEM
         remote: https://gem.repo4/
@@ -2306,10 +2320,7 @@ RSpec.describe "bundle lock" do
 
       DEPENDENCIES
         warning
-
-      CHECKSUMS
-        warning (18.0.0)
-
+      #{checksums}
       BUNDLED WITH
         #{Bundler::VERSION}
     L

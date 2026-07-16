@@ -3,8 +3,6 @@ require_relative "../spec_helper"
 module SyntaxSuggest
   RSpec.describe "Core extension" do
     it "SyntaxError monkepatch ensures there is a newline to the end of the file" do
-      skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
-
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         file = tmpdir.join("file.rb")

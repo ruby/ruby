@@ -5,7 +5,7 @@ module ErrorHighlight
     private def generate_snippet
       if ArgumentError === self && message =~ /\A(?:wrong number of arguments|missing keyword[s]?|unknown keyword[s]?|no keywords accepted)\b/
         locs = self.backtrace_locations
-        return "" if locs.size < 2
+        return "" if locs.nil? || locs.size < 2
         callee_loc, caller_loc = locs
         callee_spot = ErrorHighlight.spot(self, backtrace_location: callee_loc, point_type: :name)
         caller_spot = ErrorHighlight.spot(self, backtrace_location: caller_loc, point_type: :name)

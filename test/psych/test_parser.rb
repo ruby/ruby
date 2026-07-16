@@ -84,6 +84,7 @@ module Psych
     end
 
     def test_line_numbers
+      omit 'libfyaml reports event marks differently from libyaml' if libfyaml?
       assert_equal 0, @parser.mark.line
       pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
 
@@ -111,6 +112,7 @@ module Psych
     end
 
     def test_column_numbers
+      omit 'libfyaml reports event marks differently from libyaml' if libfyaml?
       assert_equal 0, @parser.mark.column
       pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
 
@@ -138,6 +140,7 @@ module Psych
     end
 
     def test_index_numbers
+      omit 'libfyaml reports event marks differently from libyaml' if libfyaml?
       assert_equal 0, @parser.mark.index
       pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
 
@@ -173,6 +176,45 @@ module Psych
       assert_equal tadpole, @parser.handler.calls.find { |method, args| method == :scalar }[1].first
     end
 
+    # BOM + multi-line mapping used to lose every line after the first one
+    # https://github.com/ruby/psych/issues/331
+    def test_bom_multiline_utf8
+      @parser.parse "\uFEFFa: b\nc: d\n"
+      assert_equal %w[a b c d], scalars(@parser.handler)
+    end
+
+    def test_bom_multiline_utf16
+      %w[UTF-16LE UTF-16BE].each do |enc|
+        handler = EventCatcher.new
+        Psych::Parser.new(handler).parse "\uFEFFa: b\nc: d\n".encode(enc)
+        assert_equal %w[a b c d], scalars(handler), enc
+      end
+    end
+
+    def test_bom_multiline_utf32
+      %w[UTF-32LE UTF-32BE].each do |enc|
+        handler = EventCatcher.new
+        Psych::Parser.new(handler).parse "\uFEFFa: b\nc: d\n".encode(enc)
+        assert_equal %w[a b c d], scalars(handler), enc
+      end
+    end
+
+    def test_bom_multiline_io
+      @parser.parse StringIO.new("\uFEFFa: b\nc: d\n")
+      assert_equal %w[a b c d], scalars(@parser.handler)
+    end
+
+    def test_bom_only
+      @parser.parse "\uFEFF"
+      assert_equal [], scalars(@parser.handler)
+    end
+
+    def test_io_without_bom_is_not_modified
+      io = StringIO.new "a: b\nc: d\n".freeze
+      @parser.parse io
+      assert_equal %w[a b c d], scalars(@parser.handler)
+    end
+
     def test_external_encoding
       tadpole = 'おたまじゃくし'
 
@@ -196,6 +238,48 @@ module Psych
       assert_called :start_stream
       assert_called :scalar
       assert_called :end_stream
+    end
+
+    def test_parse_io_returns_more_bytes_than_requested
+      # An IO-like source whose #read returns more bytes than the size it was
+      # asked for must not overflow libyaml's read buffer.
+      io = Object.new
+      def io.external_encoding; Encoding::UTF_8 end
+      def io.read len
+        return nil if @done
+        @done = true
+        "--- a\n" + ("#" * (len + (1 << 20)))
+      end
+
+      # CRuby clamps the over-read and parses; JRuby's parser rejects the
+      # over-reading IO with an IOError. Either way there is no overflow.
+      begin
+        @parser.parse io
+      rescue IOError
+        return
+      end
+      assert_called :start_stream
+      assert_called :scalar
+      assert_called :end_stream
+    end
+
+    def test_parse_io_returns_more_bytes_than_requested_multibyte
+      # The over-read is rounded down to a character boundary so a multibyte
+      # character is never split when the copy is clamped.
+      io = Object.new
+      def io.external_encoding; Encoding::UTF_8 end
+      def io.read len
+        return nil if @done
+        @done = true
+        "--- a\n#" + ("あ" * (len + (1 << 20)))
+      end
+
+      begin
+        @parser.parse io
+      rescue IOError
+        return
+      end
+      assert_called :scalar
     end
 
     def test_syntax_error
@@ -401,6 +485,10 @@ module Psych
           end
         end
       end
+    end
+
+    def scalars handler
+      handler.calls.select { |method, _| method == :scalar }.map { |_, args| args.first }
     end
 
     def assert_called call, with = nil, parser = @parser

@@ -12,7 +12,7 @@ module Bundler
 
     attr_reader :name, :version, :platform
     attr_writer :dependencies
-    attr_accessor :source, :remote, :locked_platform
+    attr_accessor :source, :remote, :locked_platform, :created_at
 
     def initialize(name, version, platform, spec_fetcher)
       @name         = name

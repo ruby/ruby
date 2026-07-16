@@ -51,7 +51,7 @@ update-zjit-bench:
 .PHONY: zjit-check
 zjit-check:
 	$(MAKE) zjit-test
-	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_zjit.rb'
+	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_zjit_cli.rb'
 
 ZJIT_BINDGEN_DIFF_OPTS =
 
@@ -133,7 +133,7 @@ zjit-test-rr: libminiruby.a
 libminiruby.a: miniruby$(EXEEXT)
 	$(ECHO) linking static-library $@
 	$(Q) $(RM) $@
-	$(Q) $(AR) $(ARFLAGS) $@ $(MINIOBJS) $(COMMONOBJS)
+	$(Q) $(AR) $(ARFLAGS) $@ $(MINIOBJS) $(COMMONOBJS:$(RUST_LIBOBJ)=)
 
 libminiruby: libminiruby.a
 

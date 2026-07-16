@@ -42,7 +42,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
         expect(bundled_app("vendor/cache/myrack-obama-1.0.gem")).to exist
 
-        bundle "config set --local deployment true"
+        bundle_config "deployment true"
         bundle :install, artifice: "compact_index"
 
         expect(the_bundle).to include_gems("myrack-obama 1.0.0", "myrack 1.0.0")
@@ -566,7 +566,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         gem 'bar', '~> 0.1', :source => 'https://gem.repo4'
       G
 
-      bundle "config set --local path ../gems/system"
+      bundle_config "path ../gems/system"
       bundle :install, artifice: "compact_index"
 
       # And then we add some new versions...

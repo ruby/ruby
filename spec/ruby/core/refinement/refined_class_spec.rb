@@ -1,5 +1,4 @@
 require_relative "../../spec_helper"
-require_relative 'shared/target'
 
 describe "Refinement#refined_class" do
   ruby_version_is ""..."3.4" do

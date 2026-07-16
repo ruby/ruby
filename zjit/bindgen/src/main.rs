@@ -53,6 +53,10 @@ fn main() {
         .header(src_root.join(c_file).to_str().unwrap())
         .header(src_root.join("jit.c").to_str().unwrap())
 
+        .header(src_root.join("gc/gc_impl.h").to_str().unwrap())
+        .header(src_root.join("gc/default/zjit_fastpath.h").to_str().unwrap())
+        .header(src_root.join("gc/mmtk/zjit_fastpath.h").to_str().unwrap())
+
         // Don't want to copy over C comment
         .generate_comments(false)
 
@@ -69,6 +73,9 @@ fn main() {
         // Import YARV bytecode instruction constants
         .allowlist_type("ruby_vminsn_type")
 
+        // JITFrame struct defined in zjit.h, imported into Rust via bindgen
+        .allowlist_type("zjit_jit_frame")
+
         .allowlist_type("ruby_special_consts")
         .allowlist_function("rb_utf8_str_new")
         .allowlist_function("rb_str_buf_append")
@@ -77,11 +84,21 @@ fn main() {
         .allowlist_type("ruby_preserved_encindex")
         .allowlist_function("rb_class2name")
 
+        // Coderange constants (ENC_CODERANGE_*) for inlining String predicates
+        .allowlist_type("ruby_coderange_type")
+
         // This struct is public to Ruby C extensions
         .allowlist_type("RBasic")
 
+        .allowlist_type("RArray")
+        .allowlist_type("rb_gc_zjit_fastpath_kind")
+        .allowlist_type("rb_gc_zjit_fastpath")
+        .allowlist_type("rb_gc_zjit_fastpath_data")
+        .allowlist_type("rb_gc_zjit_default_new_obj_fastpath")
+        .allowlist_type("rb_gc_zjit_mmtk_new_obj_fastpath")
+        .allowlist_var("RB_GC_ZJIT_FASTPATH_.*")
+
         .allowlist_type("ruby_rstring_flags")
-        .allowlist_type("rbimpl_typeddata_flags")
 
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_raw_obj_info")
@@ -93,6 +110,10 @@ fn main() {
         .allowlist_function("rb_funcallv")
         .allowlist_function("rb_protect")
         .allowlist_function("rb_zjit_profile_disable")
+        .allowlist_function("rb_zjit_insn_to_bare_insn")
+        .allowlist_function("rb_zjit_hash_new_size")
+        .allowlist_function("rb_zjit_class_allocate_instance_fastpath")
+        .allowlist_function("rb_zjit_str_resurrect_fastpath")
 
         // For crashing
         .allowlist_function("rb_bug")
@@ -120,6 +141,7 @@ fn main() {
         .allowlist_function("rb_hash_aset")
         .allowlist_function("rb_hash_aref")
         .allowlist_function("rb_hash_bulk_insert")
+        .allowlist_function("rb_hash_new_with_bulk_insert")
         .allowlist_function("rb_hash_stlike_lookup")
         .allowlist_function("rb_ary_new_capa")
         .allowlist_function("rb_ary_store")
@@ -198,10 +220,11 @@ fn main() {
         .allowlist_function("rb_float_minus")
         .allowlist_function("rb_float_mul")
         .allowlist_function("rb_float_div")
+        .allowlist_function("rb_flo_to_i")
         .allowlist_type("ruby_rstring_private_flags")
         .allowlist_function("rb_ec_str_resurrect")
         .allowlist_function("rb_str_concat_literals")
-        .allowlist_function("rb_obj_as_string_result")
+        .allowlist_function("rb_any_to_s")
         .allowlist_function("rb_str_byte_substr")
         .allowlist_function("rb_str_substr_two_fixnums")
         .allowlist_function("rb_backref_get")
@@ -210,7 +233,7 @@ fn main() {
         .allowlist_function("rb_reg_match_post")
         .allowlist_function("rb_reg_match_last")
         .allowlist_function("rb_reg_nth_match")
-        .allowlist_function("rb_reg_new_ary")
+        .allowlist_function("rb_reg_new_from_values")
         .allowlist_var("ARG_ENCODING_FIXED")
         .allowlist_var("ARG_ENCODING_NONE")
         .allowlist_var("ONIG_OPTION_IGNORECASE")
@@ -256,8 +279,7 @@ fn main() {
         .allowlist_type("iseq_inline_cvar_cache_entry")
         .blocklist_type("rb_execution_context_.*") // Large struct with various-type fields and an ifdef, so we don't import
         .opaque_type("rb_execution_context_.*")
-        .blocklist_type("rb_control_frame_struct")
-        .opaque_type("rb_control_frame_struct")
+        .allowlist_type("rb_control_frame_struct")
         .allowlist_function("rb_vm_bh_to_procval")
         .allowlist_function("rb_vm_env_write")
         .allowlist_function("rb_vm_ep_local_ep")
@@ -277,6 +299,7 @@ fn main() {
         .allowlist_function("rb_iseq_(get|set)_zjit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")
+        .allowlist_function("rb_iseq_bare_opcode_at_pc")
         .allowlist_function("rb_jit_reserve_addr_space")
         .allowlist_function("rb_jit_mark_writable")
         .allowlist_function("rb_jit_mark_executable")
@@ -289,6 +312,7 @@ fn main() {
         .allowlist_function("rb_zjit_iseq_inspect")
         .allowlist_function("rb_zjit_iseq_insn_set")
         .allowlist_function("rb_zjit_local_id")
+        .allowlist_function("rb_id_table_lookup")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_c_method_tracing_currently_enabled")
         .allowlist_function("rb_zjit_method_tracing_currently_enabled")
@@ -299,7 +323,9 @@ fn main() {
         .allowlist_function("rb_RSTRING_PTR")
         .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")
-        .allowlist_function("rb_zjit_exit_locations_dict")
+        .allowlist_function("rb_profile_frame_full_label")
+        .allowlist_function("rb_profile_frame_absolute_path")
+        .allowlist_function("rb_profile_frame_path")
         .allowlist_function("rb_optimized_call")
         .allowlist_function("rb_jit_icache_invalidate")
         .allowlist_function("rb_zjit_print_exception")
@@ -308,12 +334,13 @@ fn main() {
         .allowlist_function("rb_zjit_insn_leaf")
         .allowlist_type("jit_bindgen_constants")
         .allowlist_type("zjit_struct_offsets")
+        .allowlist_var("ZJIT_STACK_MAP_SHIFT")
+        .allowlist_var("ZJIT_STACK_MAP_VREG_TAG")
+        .allowlist_var("ZJIT_STACK_MAP_SKIP_TAG")
+        .allowlist_var("ZJIT_JIT_RETURN_C_FRAME")
         .allowlist_function("rb_assert_holding_vm_lock")
-        .allowlist_function("rb_jit_shape_too_complex_p")
+        .allowlist_function("rb_jit_shape_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
-        .allowlist_function("rb_jit_class_fields_embedded_p")
-        .allowlist_function("rb_jit_typed_data_p")
-        .allowlist_function("rb_jit_typed_data_fields_embedded_p")
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")
@@ -411,7 +438,6 @@ fn main() {
         .allowlist_function("rb_get_iseq_body_param_opt_table")
         .allowlist_function("rb_get_cikw_keyword_len")
         .allowlist_function("rb_get_cikw_keywords_idx")
-        .allowlist_function("rb_get_call_data_ci")
         .allowlist_function("rb_yarv_str_eql_internal")
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
@@ -440,6 +466,9 @@ fn main() {
         .blocklist_type("ID")
         .blocklist_type("rb_iseq_constant_body")
 
+        // We only need id_table as an opaque pointer to pass to its APIs
+        .opaque_type("rb_id_table")
+
         // Avoid binding to stuff we don't use
         .blocklist_item("rb_thread_struct.*")
         .opaque_type("rb_thread_struct.*")
@@ -452,12 +481,25 @@ fn main() {
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
+    // Write to a Vec for post-processing
+    let mut bindings_string = Vec::new();
+    bindings.write(Box::new(&mut bindings_string)).expect("Couldn't write bindings!");
+
+    // Use i32 for this type since that's what the assembler APIs expect
+    const JIT_CONSTANTS_NEEDLE: &[u8]      = b"pub type jit_bindgen_constants = u32;";
+    const JIT_CONSTANTS_REPLACEMENT: &[u8] = b"pub type jit_bindgen_constants = i32;";
+    // Yes, this search-and-replace could be faster, but it's a small file.
+    for line in bindings_string.as_mut_slice().split_mut(|&byte| byte == b'\n') {
+        if line == JIT_CONSTANTS_NEEDLE {
+            line.copy_from_slice(JIT_CONSTANTS_REPLACEMENT);
+            break;
+        }
+    }
+
+    // Write out to file
     let mut out_path: PathBuf = src_root;
     out_path.push(jit_name);
     out_path.push("src");
     out_path.push("cruby_bindings.inc.rs");
-
-    bindings
-        .write_to_file(out_path)
-        .expect("Couldn't write bindings!");
+    std::fs::write(out_path, bindings_string).expect("file output failed");
 }

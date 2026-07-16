@@ -26,6 +26,11 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Work around transient crates.io download failures (curl HTTP/2 framing / partial transfer)
+  CARGO_NET_RETRY: 10
+  CARGO_HTTP_MULTIPLEXING: false
+
 jobs:
   lint:
     name: cargo clippy
@@ -37,11 +42,11 @@ jobs:
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/cargo'))
       )}}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
@@ -54,13 +59,14 @@ jobs:
       matrix:
         include:
           - test_task: 'check'
-            run_opts: '--zjit-call-threshold=1'
-            specopts: '-T --zjit-call-threshold=1'
-            configure: '--enable-zjit=dev'
-
-          - test_task: 'check'
             run_opts: '--zjit-disable-hir-opt --zjit-call-threshold=1'
             specopts: '-T --zjit-disable-hir-opt -T --zjit-call-threshold=1'
+            configure: '--enable-zjit=dev'
+
+          ## Run with default options (inliner enabled) ##
+          - test_task: 'check'
+            run_opts: '--zjit-call-threshold=1'
+            specopts: '-T --zjit-call-threshold=1'
             configure: '--enable-zjit=dev'
 
             # The optimizer benefits from at least 1 iteration of profiling. Also, many
@@ -69,7 +75,27 @@ jobs:
             run_opts: '--zjit-call-threshold=2'
             configure: '--enable-zjit=dev'
 
-          - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit.rb
+          - test_task: 'test-bundled-gems'
+            configure: '--enable-zjit=dev'
+            run_opts: '--zjit-call-threshold=1'
+
+          ## Run with inliner disabled ##
+          - test_task: 'check'
+            run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=1'
+            specopts: '-T --zjit-inline-threshold=0 -T --zjit-call-threshold=1'
+            configure: '--enable-zjit=dev'
+
+            # The optimizer benefits from at least 1 iteration of profiling. Also, many
+            # regression tests in bootstraptest/test_yjit.rb assume call-threshold=2.
+          - test_task: 'btest'
+            run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=2'
+            configure: '--enable-zjit=dev'
+
+          - test_task: 'test-bundled-gems'
+            configure: '--enable-zjit=dev'
+            run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=1'
+
+          - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit_cli.rb
             configure: '--enable-yjit --enable-zjit=dev'
             rust_version: '1.85.0'
 
@@ -80,15 +106,11 @@ jobs:
             clang_path: '/usr/bin/clang-16'
             runs-on: 'ubuntu-24.04' # for clang-16
 
-          - test_task: 'test-bundled-gems'
-            configure: '--enable-zjit=dev'
-            run_opts: '--zjit-call-threshold=1'
-
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.run_opts }}
       YJIT_BENCH_OPTS: ${{ matrix.yjit_bench_opts }}
-      SPECOPTS: ${{ matrix.specopts }}
+      SPECOPTS: ${{ matrix.specopts }} -B../src/spec/zjit.mspec
       TESTOPTS: ${{ matrix.testopts }}
       RUBY_DEBUG: ci
       BUNDLE_JOBS: 8 # for yjit-bench
@@ -102,11 +124,11 @@ jobs:
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/cargo'))
       )}}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -114,12 +136,12 @@ jobs:
 
       - uses: ./.github/actions/setup/ubuntu
 
-      - uses: ruby/setup-ruby@319994f95fa847cf3fb3cd3dbe89f6dcde9f178f # v1.295.0
+      - uses: ruby/setup-ruby@8e41b362d2589a22a44c1cfa214b3c83052c195b # v1.318.0
         with:
           ruby-version: '3.1'
           bundler: none
 
-      - uses: taiki-e/install-action@06203676c62f0d3c765be3f2fcfbebbcb02d09f5 # v2.69.6
+      - uses: taiki-e/install-action@43aecc8d72668fbcfe75c31400bc4f890f1c5853 # v2.83.2
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
@@ -130,6 +152,7 @@ jobs:
           builddir: build
           makeup: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          bundled-gems-src-cache: ${{ matrix.test_task == 'test-bundled-gems' }}
           # Set fetch-depth: 10 so that Launchable can receive commits information.
           fetch-depth: 10
 
@@ -234,11 +257,14 @@ jobs:
     strategy:
       matrix:
         include:
-          # Test --call-threshold=2 with 2 iterations in total
+          # Test --call-threshold=2 with 2 iterations in total (inlining enabled)
           - ruby_opts: '--zjit-call-threshold=2'
             bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
             configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
-
+          # Test --call-threshold=2 with 2 iterations in total (inlining disabled)
+          - ruby_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=2'
+            bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
+            configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
     runs-on: ubuntu-24.04
 
     if: >-
@@ -246,11 +272,11 @@ jobs:
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/cargo'))
       )}}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
@@ -268,7 +294,7 @@ jobs:
       - run: make install
 
       - name: Checkout ruby-bench
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: ruby/ruby-bench
           persist-credentials: false
@@ -279,6 +305,8 @@ jobs:
       - name: Run ruby-bench
         run: ruby run_benchmarks.rb -e "zjit::../build/install/bin/ruby ${{ matrix.ruby_opts }}" ${{ matrix.bench_opts }}
         working-directory: ruby-bench
+        env:
+          BUNDLER_VERSION: 0
 
       - uses: ./.github/actions/slack
         with:
