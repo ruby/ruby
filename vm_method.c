@@ -1153,12 +1153,18 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
             return;
           case VM_METHOD_TYPE_REFINED:
             {
-                RB_OBJ_WRITE(me, &def->body.refined.orig_me, (rb_method_entry_t *)opts);
+                const rb_method_entry_t *orig_me = (const rb_method_entry_t *)opts;
+                RB_OBJ_WRITE(me, &def->body.refined.orig_me, orig_me);
+                RB_OBJ_WRITE(me, &def->original_module, orig_me->def->original_module);
                 return;
             }
           case VM_METHOD_TYPE_ALIAS:
-            RB_OBJ_WRITE(me, &def->body.alias.original_me, (rb_method_entry_t *)opts);
-            return;
+            {
+                const rb_method_entry_t *orig_me = (const rb_method_entry_t *)opts;
+                RB_OBJ_WRITE(me, &def->body.alias.original_me, orig_me);
+                RB_OBJ_WRITE(me, &def->original_module, orig_me->def->original_module);
+                return;
+            }
           case VM_METHOD_TYPE_ZSUPER:
           case VM_METHOD_TYPE_UNDEF:
           case VM_METHOD_TYPE_MISSING:
@@ -1171,6 +1177,8 @@ static void
 method_definition_reset(const rb_method_entry_t *me)
 {
     rb_method_definition_t *def = me->def;
+
+    RB_OBJ_WRITTEN(me, Qundef, def->original_module);
 
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
@@ -1536,6 +1544,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
           def->body.cfunc.invoker = ractor_safe_call_cfunc_m1;
           def->body.cfunc.argc = -1;
         }
+        RB_OBJ_WRITE(me, &def->original_module, me->owner);
     }
     rb_method_definition_set(me, def, opts);
 
@@ -1663,6 +1672,7 @@ get_overloaded_cme(const rb_callable_method_entry_t *cme)
 
         RB_OBJ_WRITE(me, &def->body.iseq.cref, cme->def->body.iseq.cref);
         RB_OBJ_WRITE(me, &def->body.iseq.iseqptr, ISEQ_BODY(cme->def->body.iseq.iseqptr)->mandatory_only_iseq);
+        RB_OBJ_WRITE(me, &def->original_module, cme->def->original_module);
 
         ASSERT_vm_locking();
         st_insert(overloaded_cme_table(), (st_data_t)cme, (st_data_t)me);

@@ -203,6 +203,7 @@ struct rb_method_definition_struct {
     } body;
 
     ID original_id;
+    VALUE original_module; /* module in which the method definition is; see location_original_module() */
     uintptr_t method_serial;
     const rb_box_t *box;
 };
