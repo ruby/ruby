@@ -345,8 +345,6 @@ mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
             rb_gc_mark_and_move(&def->body.attr.location);
             break;
           case VM_METHOD_TYPE_BMETHOD:
-            /* unshareable な bmethod proc は定義 Ractor からのみ呼べる。
-             * shref 記録が所有 Ractor の GC を跨いで生存を保つ。 */
             rb_gc_mark_and_move(&def->body.bmethod.proc);
             break;
           case VM_METHOD_TYPE_ALIAS:
@@ -421,7 +419,6 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
       case imemo_constcache: {
         struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)obj;
 
-        /* unshareable なキャッシュ済み定数値は shref 記録を伴う。 */
         rb_gc_mark_and_move(&ice->value);
 
         break;
