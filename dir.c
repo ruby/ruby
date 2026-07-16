@@ -3731,10 +3731,12 @@ dir_collect_children(VALUE dir)
 
 /*
  * call-seq:
- *   children -> array
+ *   scan {|entry_name, entry_type| ... } -> nil
+ *   scan -> [[entry_name, entry_type], ...]
  *
- * Returns an array of the entry names in +self+ along with their type
- * except for <tt>'.'</tt> and <tt>'..'</tt>:
+ * With a block, yields each entry name and its type; otherwise, returns an
+ * array of entry-name and entry-type pairs. Entries <tt>'.'</tt> and
+ * <tt>'..'</tt> are excluded:
  *
  *   dir = Dir.new('/example')
  *   dir.scan # => [["config.h", :file], ["lib", :directory], ["main.rb", :file]]
@@ -3789,20 +3791,18 @@ dir_s_children(int argc, VALUE *argv, VALUE io)
  *   Dir.scan(dirpath) -> [[entry_name, entry_type], ...]
  *   Dir.scan(dirpath, encoding: 'UTF-8') -> [[entry_name, entry_type], ...]
  *
- * Yields or returns an array of the entry names in the directory at +dirpath+
- * associated with their type, except for <tt>'.'</tt> and <tt>'..'</tt>;
- * sets the given encoding onto each returned entry name.
+ * With a block, yields each entry name and its type; otherwise, returns an
+ * array of entry-name and entry-type pairs from the directory at +dirpath+.
+ * Entries <tt>'.'</tt> and <tt>'..'</tt> are excluded. The given +encoding+ is
+ * used as the external encoding for each entry name.
  *
- *  The type symbol is one of:
- *  ``<code>:file</code>'', ``<code>:directory</code>'',
- *  ``<code>:characterSpecial</code>'', ``<code>:blockSpecial</code>'',
- *  ``<code>:fifo</code>'', ``<code>:link</code>'',
- *  or ``<code>:socket</code>'':
+ * The type symbol is one of +:file+, +:directory+, +:characterSpecial+,
+ * +:blockSpecial+, +:fifo+, +:link+, +:socket+, or +:unknown+:
  *
- *   Dir.children('/example') # => [["config.h", :file], ["lib", :directory], ["main.rb", :file]]
- *   Dir.children('/example').first.first.encoding
+ *   Dir.scan('/example') # => [["config.h", :file], ["lib", :directory], ["main.rb", :file]]
+ *   Dir.scan('/example').first.first.encoding
  *   # => #<Encoding:UTF-8>
- *   Dir.children('/example', encoding: 'US-ASCII').first.encoding
+ *   Dir.scan('/example', encoding: 'US-ASCII').first.first.encoding
  *   # => #<Encoding:US-ASCII>
  *
  * See {String Encoding}[rdoc-ref:encodings.rdoc@String+Encoding].
