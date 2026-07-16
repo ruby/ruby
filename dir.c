@@ -3734,9 +3734,9 @@ dir_collect_children(VALUE dir)
  *   scan {|entry_name, entry_type| ... } -> nil
  *   scan -> [[entry_name, entry_type], ...]
  *
- * With a block, yields each entry name and its type; otherwise, returns an
- * array of entry-name and entry-type pairs. Entries <tt>'.'</tt> and
- * <tt>'..'</tt> are excluded:
+ * With no block, returns an array of entry-name and entry-type pairs.
+ * With a block, yields each entry name and its type, and returns +nil+.
+ * Entries <tt>'.'</tt> and <tt>'..'</tt> are excluded:
  *
  *   dir = Dir.new('/example')
  *   dir.scan # => [["config.h", :file], ["lib", :directory], ["main.rb", :file]]
@@ -3791,10 +3791,10 @@ dir_s_children(int argc, VALUE *argv, VALUE io)
  *   Dir.scan(dirpath) -> [[entry_name, entry_type], ...]
  *   Dir.scan(dirpath, encoding: 'UTF-8') -> [[entry_name, entry_type], ...]
  *
- * With a block, yields each entry name and its type; otherwise, returns an
- * array of entry-name and entry-type pairs from the directory at +dirpath+.
- * Entries <tt>'.'</tt> and <tt>'..'</tt> are excluded. The given +encoding+ is
- * used as the external encoding for each entry name.
+ * With no block, returns an array of entry-name and entry-type pairs from the
+ * directory at +dirpath+. With a block, yields each entry name and its type,
+ * and returns +nil+. Entries <tt>'.'</tt> and <tt>'..'</tt> are excluded. The
+ * given +encoding+ is used as the external encoding for each entry name.
  *
  * The type symbol is one of +:file+, +:directory+, +:characterSpecial+,
  * +:blockSpecial+, +:fifo+, +:link+, +:socket+, or +:unknown+:
