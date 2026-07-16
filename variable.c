@@ -2347,6 +2347,19 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
 /* すべての generic_fields 表（shareable 用の global 表 + 全 Ractor の per-Ractor 表 +
  * 未 merge の zombie owner の表）について cb(tbl, arg) を呼ぶ。global GC の weak pass と
  * compaction の参照更新から使う。いずれも barrier 下なので走査にロックは要らない。 */
+/* compaction の参照更新用: 共有(shareable 用) generic_fields 表だけを lock 下で舐める。
+ * ローカル GC の update から呼ぶ。自 objspace の shareable host が動くと表のキー/値が
+ * stale になるので更新が要る。掃除ではなく更新専用（生死判定はしない）。 */
+void
+rb_generic_fields_shared_table_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg)
+{
+    rb_native_mutex_lock(&generic_fields_lock);
+    if (generic_fields_tbl_ != NULL) {
+        cb(generic_fields_tbl_, arg);
+    }
+    rb_native_mutex_unlock(&generic_fields_lock);
+}
+
 void
 rb_generic_fields_tables_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg)
 {
@@ -4868,3 +4881,4 @@ rb_const_lookup(VALUE klass, ID id)
 {
     return const_lookup(RCLASS_CONST_TBL(klass), id);
 }
+

@@ -68,6 +68,7 @@ void rb_gc_vm_generic_fields_drain_dead(bool (*is_dead)(VALUE key));
 /* 全 generic_fields 表（global + 全 Ractor per-Ractor）について cb(tbl,arg) を呼ぶ。
  * compaction の参照更新（gc.c）から使う。 */
 void rb_generic_fields_tables_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg);
+void rb_generic_fields_shared_table_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg);
 /* obj の generic_fields entry を owner の per-Ractor 表から shared global 表へ移送。 */
 void rb_mv_generic_ivar_to_shared(VALUE obj);
 

@@ -4606,8 +4606,7 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
       }
       case RB_GC_VM_GENERIC_FIELDS_TABLE: {
         /* global GC は STW なので shared 表 + 全 Ractor 表を安全に舐められる。ローカル GC は
-         * 自分の Ractor の表だけを掃除する。他 Ractor や shared 表は並行アクセス中で触れず、
-         * それらの掃除は global GC が担う。各 entry の再挿入先が正しい表になるよう表ポインタを渡す。 */
+         * 自分の Ractor の表だけを見る。他 Ractor 表は foreign な住人しか持たず並行変更中なので触れない。 */
         if (rb_gc_during_global_gc_p()) {
             rb_generic_fields_tables_foreach(vm_weak_table_gen_fields_tbl_cb, (void *)&foreach_data);
         }
@@ -4615,6 +4614,12 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
             rb_ractor_t *cr = rb_current_ractor_raw(false);
             if (cr && cr->generic_fields_tbl != NULL) {
                 vm_weak_table_gen_fields_tbl_cb(cr->generic_fields_tbl, (void *)&foreach_data);
+            }
+            /* compaction の参照更新では自 objspace の shareable host が動くと共有表の
+             * キー/値が stale になるので共有表も更新する（lock 下）。掃除(weak_only)は
+             * shareable の生死を local GC が判定できないので触らない。 */
+            if (!weak_only) {
+                rb_generic_fields_shared_table_foreach(vm_weak_table_gen_fields_tbl_cb, (void *)&foreach_data);
             }
         }
         break;
