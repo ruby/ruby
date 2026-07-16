@@ -19,10 +19,10 @@ static VALUE ractor_try_send(rb_execution_context_t *ec, const struct ractor_por
 static void ractor_add_port(rb_ractor_t *r, st_data_t id);
 
 // off-heap な move 用 courier。実体は ractor.c にある。
-struct rb_ractor_move_courier *ractor_move_courier_build(VALUE obj);
-VALUE ractor_move_courier_materialize(struct rb_ractor_move_courier *c);
-void ractor_move_courier_free(struct rb_ractor_move_courier *c);
-void ractor_move_courier_mark(struct rb_ractor_move_courier *c);
+struct rb_ractor_move_courier *rb_ractor_move_courier_build(VALUE obj);
+VALUE rb_ractor_move_courier_materialize(struct rb_ractor_move_courier *c);
+void rb_ractor_move_courier_free(struct rb_ractor_move_courier *c);
+void rb_ractor_move_courier_mark(struct rb_ractor_move_courier *c);
 
 static void
 ractor_port_mark(void *ptr)
@@ -246,7 +246,7 @@ ractor_basket_mark(const struct ractor_basket *b)
 {
     if (b->type == basket_type_move) {
         /* courier は off-heap。運んでいる shareable な VALUE だけを mark する。 */
-        ractor_move_courier_mark(b->p.move_courier);
+        rb_ractor_move_courier_mark(b->p.move_courier);
     }
     else {
         rb_gc_mark(b->p.v);
@@ -258,7 +258,7 @@ ractor_basket_free(struct ractor_basket *b)
 {
     if (b->type == basket_type_move && b->p.move_courier) {
         /* 未消費の move courier（例: queue の破棄途中）。 */
-        ractor_move_courier_free(b->p.move_courier);
+        rb_ractor_move_courier_free(b->p.move_courier);
         b->p.move_courier = NULL;
     }
     else if (b->type != basket_type_move && b->p.gen_fields) {
@@ -712,7 +712,7 @@ ractor_sync_mark(rb_ractor_t *r)
             rb_gc_mark(f->snapshot);
             /* courier は off-heap。運ぶ shareable な VALUE を mark し、並行 global GC
              * に維持させる。 */
-            ractor_move_courier_mark(f->courier);
+            rb_ractor_move_courier_mark(f->courier);
         }
 
         /* 戻り値（exit 時に設定、Ractor#value が読む）は今や終了済み Ractor の
@@ -1057,7 +1057,7 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
          * することはない。 */
         b->type = basket_type_move;
         b->p.v = Qfalse;
-        b->p.move_courier = ractor_move_courier_build(obj);
+        b->p.move_courier = rb_ractor_move_courier_build(obj);
     }
     else {
         bool marshaled = false;
@@ -1179,19 +1179,19 @@ ractor_basket_value(struct ractor_basket *b)
         cr->sync.materialize_frames = &frame;
         /* materialize したグラフを、以降の一連の処理の間ずっとマシンスタック（result）に
          * 保持する。フレームを pop した後は、それが呼び出し側スタックへ届くまで唯一の
-         * root。ここで ractor_move_courier_free が長い解放ループを回るので、グラフが
+         * root。ここで rb_ractor_move_courier_free が長い解放ループを回るので、グラフが
          * malloc された basket の p.v にしか無ければ、並行 global GC に回収されうる窓が
          * 広く開く。 */
         VALUE result = Qundef;
         enum ruby_tag_type state;
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-            result = ractor_move_courier_materialize(courier);
+            result = rb_ractor_move_courier_materialize(courier);
         }
         EC_POP_TAG();
         cr->sync.materialize_frames = frame.prev;
         if (state != TAG_NONE) EC_JUMP_TAG(ec, state);
-        ractor_move_courier_free(courier);
+        rb_ractor_move_courier_free(courier);
         b->p.move_courier = NULL;
         ractor_reset_belonging(result);
         b->p.v = result;

@@ -2677,7 +2677,7 @@ move_preflight(VALUE obj, st_table *seen)
 /* obj から move courier を作り、capture した元 object を全て RactorMovedObject 化する
  * （move セマンティクス）。xmalloc した courier を返す。 */
 struct rb_ractor_move_courier *
-ractor_move_courier_build(VALUE obj)
+rb_ractor_move_courier_build(VALUE obj)
 {
     /* 2 相（preflight → commit）。move 可否のエラーは graph が無傷のうちに
      * read-only walk から raise する。 */
@@ -2718,7 +2718,7 @@ move_apply_moved_klass(VALUE shell, VALUE klass)
 /* courier の graph を現在の Ractor の objspace に再構築し root を返す。
  * 2 パス（shell 確保 → fill）で参照循環を解く。 */
 VALUE
-ractor_move_courier_materialize(struct rb_ractor_move_courier *c)
+rb_ractor_move_courier_materialize(struct rb_ractor_move_courier *c)
 {
     /* 隠し Array が全 shell を root する。後続の allocation（この Ractor の
      * GC を起こしうる）が graph の残りを作る間、生かしておくため。 */
@@ -2765,7 +2765,7 @@ ractor_move_courier_materialize(struct rb_ractor_move_courier *c)
             n->u.io.fptr = NULL; /* 消費済み: 新 IO が所有 */
             break;
           default:
-            rb_bug("ractor_move_courier_materialize: bad node kind");
+            rb_bug("rb_ractor_move_courier_materialize: bad node kind");
         }
         rb_ary_push(shells, shell);
     }
@@ -2838,7 +2838,7 @@ ractor_move_courier_materialize(struct rb_ractor_move_courier *c)
 }
 
 void
-ractor_move_courier_free(struct rb_ractor_move_courier *c)
+rb_ractor_move_courier_free(struct rb_ractor_move_courier *c)
 {
     for (uint32_t i = 0; i < c->count; i++) {
         struct move_node *n = &c->nodes[i];
@@ -2876,7 +2876,7 @@ ractor_move_courier_free(struct rb_ractor_move_courier *c)
  * object の class。どれも shareable なので mark は race せず、global GC が
  * courier 経由で到達可能に保つ。 */
 void
-ractor_move_courier_mark(struct rb_ractor_move_courier *c)
+rb_ractor_move_courier_mark(struct rb_ractor_move_courier *c)
 {
     if (!c) return;
     for (uint32_t i = 0; i < c->count; i++) {
