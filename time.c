@@ -4168,7 +4168,7 @@ time_zonelocal(VALUE time, VALUE off)
  *
  *  With no argument given:
  *
- *  - Returns +self+ unchanged if +self+ is already a local time.
+ *  - Returns +self+ if +self+ is already a local time.
  *  - Otherwise returns +self+, converted to the user's local timezone:
  *
  *      t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
