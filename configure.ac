@@ -3149,7 +3149,6 @@ STATIC=
   ], [
     AS_CASE(["$target_os"],
 	[solaris*|irix*], [CCDLFLAGS="$CCDLFLAGS -KPIC"],
-	[sunos*],         [CCDLFLAGS="$CCDLFLAGS -PIC"],
 	[esix*|uxpds*],   [CCDLFLAGS="$CCDLFLAGS -KPIC"],
 	                  [: ${CCDLFLAGS=""}])
   ])
@@ -3189,8 +3188,6 @@ AC_SUBST(EXTOBJS)
 			    : ${LIBPATHENV=LD_LIBRARY_PATH_32}
 			    : ${PRELOADENV=LD_PRELOAD_32}
 			])
-			rb_cv_dlopen=yes],
-	[sunos*], [	: ${LDSHARED='$(LD) -assert nodefinitions'}
 			rb_cv_dlopen=yes],
 	[irix*], [	: ${LDSHARED='$(LD) -shared'}
 			rb_cv_dlopen=yes],
@@ -3662,9 +3659,6 @@ AS_CASE("$enable_shared", [yes], [
 
   relative_libprefix="/../${multiarch+../}${libdir_basename}"
   AS_CASE(["$target_os"],
-    [sunos4*], [
-	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
-	],
     [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*], [
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
 	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
