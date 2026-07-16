@@ -97,7 +97,7 @@ jobs:
 
       - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          path: snapshot-*/.downloaded-cache
+          path: ${{ inputs.archname }}/.downloaded-cache
           key: downloaded-cache
 
       - name: setup env
