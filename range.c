@@ -422,7 +422,7 @@ range_step_size(VALUE range, VALUE args, VALUE eobj)
  *  Iterates over the elements of range in steps of +s+. The iteration is performed
  *  by <tt>+</tt> operator:
  *
- *    (0..6).step(2) { puts _1 } #=> 1..5
+ *    (0..6).step(2) { puts _1 } #=> 0..6
  *    # Prints: 0, 2, 4, 6
  *
  *    # Iterate between two dates in step of 1 day (24 hours)
