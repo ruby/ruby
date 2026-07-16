@@ -778,7 +778,7 @@ require 'erb/util'
 # [template processor]: https://en.wikipedia.org/wiki/Template_processor
 #
 class ERB
-  IDENTITY_METHOD = BasicObject.instance_method(:equal?)
+  IDENTITY_METHOD = BasicObject.instance_method(:equal?) # :nodoc:
   private_constant :IDENTITY_METHOD
 
   # :markup: markdown
@@ -1064,7 +1064,7 @@ class ERB
   end
   private :new_toplevel
 
-  def initialized_by_new?
+  def initialized_by_new? # :nodoc:
     IDENTITY_METHOD.bind_call(@_init, self.class.singleton_class)
   end
   private :initialized_by_new?
