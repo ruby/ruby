@@ -1185,6 +1185,7 @@ fn gen_ccall_variadic(
 
 /// Emit an uncached instance variable lookup
 fn gen_getivar(asm: &mut Assembler, recv: Opnd, id: ID, ic: *const iseq_inline_iv_cache_entry, state: &FrameState) -> Opnd {
+    gen_trace_fallback(asm, "getivar");
     if ic.is_null() {
         asm_ccall!(asm, rb_ivar_get, recv, id.0.into())
     } else {
@@ -1195,6 +1196,7 @@ fn gen_getivar(asm: &mut Assembler, recv: Opnd, id: ID, ic: *const iseq_inline_i
 
 /// Emit an uncached instance variable store
 fn gen_setivar(jit: &mut JITState, asm: &mut Assembler, function: &Function, recv: Opnd, id: ID, ic: *const iseq_inline_iv_cache_entry, val: Opnd, state: &FrameState) {
+    gen_trace_fallback(asm, "setivar");
     // Setting an ivar can raise FrozenError, so we need proper frame state for exception handling.
     gen_prepare_non_leaf_call(jit, asm, function, state);
     if ic.is_null() {
@@ -1467,6 +1469,24 @@ fn gen_param(asm: &mut Assembler, _idx: usize) -> lir::Opnd {
     vreg
 }
 
+fn gen_trace_fallback(asm: &mut Assembler, reason: &str) {
+    if !get_option!(trace_fallbacks) {
+        return;
+    }
+    let reason_cstr = std::ffi::CString::new(reason.to_string())
+        .unwrap_or_else(|_| std::ffi::CString::new("unknown").unwrap());
+    let reason_ptr = reason_cstr.into_raw() as *const u8;
+    use crate::state::rb_zjit_record_fallback_stack;
+    asm_ccall!(asm, rb_zjit_record_fallback_stack, Opnd::const_ptr(reason_ptr));
+}
+
+fn gen_trace_send_fallback(asm: &mut Assembler, reason: &SendFallbackReason) {
+    if !get_option!(trace_fallbacks) {
+        return;
+    }
+    gen_trace_fallback(asm, &format!("{reason}"));
+}
+
 /// Compile a dynamic dispatch with block
 fn gen_send(
     jit: &mut JITState,
@@ -1478,6 +1498,7 @@ fn gen_send(
     reason: SendFallbackReason,
 ) -> lir::Opnd {
     gen_incr_send_fallback_counter(asm, reason);
+    gen_trace_send_fallback(asm, &reason);
 
     gen_prepare_fallback_call(jit, asm, function, state);
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
@@ -1502,6 +1523,7 @@ fn gen_send_forward(
     reason: SendFallbackReason,
 ) -> lir::Opnd {
     gen_incr_send_fallback_counter(asm, reason);
+    gen_trace_send_fallback(asm, &reason);
 
     gen_prepare_fallback_call(jit, asm, function, state);
 
@@ -1526,6 +1548,7 @@ fn gen_send_without_block(
     reason: SendFallbackReason,
 ) -> lir::Opnd {
     gen_incr_send_fallback_counter(asm, reason);
+    gen_trace_send_fallback(asm, &reason);
 
     gen_prepare_fallback_call(jit, asm, function, state);
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
@@ -1820,6 +1843,7 @@ fn gen_invokeblock(
     reason: SendFallbackReason,
 ) -> lir::Opnd {
     gen_incr_send_fallback_counter(asm, reason);
+    gen_trace_send_fallback(asm, &reason);
 
     gen_prepare_fallback_call(jit, asm, function, state);
 
@@ -1987,6 +2011,7 @@ fn gen_invokesuper(
     reason: SendFallbackReason,
 ) -> lir::Opnd {
     gen_incr_send_fallback_counter(asm, reason);
+    gen_trace_send_fallback(asm, &reason);
 
     gen_prepare_fallback_call(jit, asm, function, state);
     asm_comment!(asm, "call super with dynamic dispatch");
@@ -2011,6 +2036,7 @@ fn gen_invokesuperforward(
     reason: SendFallbackReason,
 ) -> lir::Opnd {
     gen_incr_send_fallback_counter(asm, reason);
+    gen_trace_send_fallback(asm, &reason);
 
     gen_prepare_fallback_call(jit, asm, function, state);
     asm_comment!(asm, "call super with dynamic dispatch (forwarding)");
