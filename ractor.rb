@@ -696,9 +696,10 @@ class Ractor
 
   #
   # call-seq:
-  #   Ractor.shareable_lambda(self: nil) { ... } -> lambda
+  #   Ractor.shareable_lambda(self: nil) { ... } -> proc
   #
-  # Same as Ractor.shareable_proc, but returns a lambda Proc.
+  # Same as Ractor.shareable_proc, but a literal block produces a lambda Proc.
+  # When an existing Proc supplies the block, its lambda semantics are preserved.
   #
   def self.shareable_lambda self: nil
     Primitive.attr! :use_block
