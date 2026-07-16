@@ -513,7 +513,7 @@ See [syntax/comments.rdoc](../syntax/comments.rdoc) for more details.
 
 ### Shareable procs
 
-Procs and lambdas are normally unshareable objects, even when they are frozen. `Ractor.shareable_proc { expr }` creates a shareable Proc, and `Ractor.shareable_lambda { expr }` creates a shareable lambda. Each method returns a shareable copy of its block. `Ractor.make_shareable` can instead make an existing Proc shareable in place, provided its `self` is already shareable.
+Procs and lambdas are normally unshareable objects, even when they are frozen. `Ractor.shareable_proc { expr }` creates a shareable Proc, and `Ractor.shareable_lambda { expr }` creates a shareable lambda. Each method returns a shareable copy of its block. `Ractor.make_shareable` can instead make a supported existing Proc shareable in place, provided its `self` is already shareable.
 
 Whether copied or converted in place, the Proc may read outer variables whose values are shareable, provided Ruby's static analysis does not find that those variables may be reassigned in the surrounding scope or within the block. Their values are captured in an environment isolated from the original. Capturing an unshareable value or a variable that may be reassigned raises `Ractor::IsolationError`. For a Proc created by `Ractor.shareable_proc` or `Ractor.shareable_lambda`, `self` is changed to `nil` by default, although a shareable value can be provided with the `self:` keyword.
 

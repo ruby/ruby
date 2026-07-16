@@ -683,8 +683,8 @@ class Ractor
   #     Ractor.shareable_proc(self: self){}
   #     #=> self should be shareable: main (Ractor::IsolationError)
   #
-  # To make an existing Proc shareable in place, use Ractor.make_shareable;
-  # that Proc's +self+ must already be shareable.
+  # To make a supported existing Proc shareable in place, use
+  # Ractor.make_shareable; that Proc's +self+ must already be shareable.
   #
   def self.shareable_proc self: nil
     Primitive.attr! :use_block
