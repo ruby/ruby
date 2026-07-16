@@ -11645,16 +11645,35 @@ pm_parse_stdin_eof(void *stream)
 VALUE rb_io_gets_limit_internal(VALUE io, long limit);
 
 /**
+ * The largest number of bytes a single character can occupy in any encoding
+ * that Ruby supports (CESU-8). `IO#gets(limit)` treats its argument as a soft
+ * limit: to avoid splitting a multi-byte character it may return up to
+ * `MAX_ENC_LEN - 1` more bytes than requested. Reserving `MAX_ENC_LEN` bytes of
+ * headroom therefore leaves room for both that overshoot and the terminating
+ * NUL byte.
+ *
+ * The value can be re-derived from the Ruby source tree with:
+ *
+ *   grep -Erh "max (enc|byte) length" enc | grep -Eo '[0-9]+' | sort | tail -n1
+ */
+#define MAX_ENC_LEN 6
+
+/**
  * An implementation of fgets that is suitable for use with Ruby IO objects.
  */
 static char *
 pm_parse_stdin_fgets(char *string, int size, void *stream)
 {
-    RUBY_ASSERT(size > 0);
+    RUBY_ASSERT(size > MAX_ENC_LEN);
 
     struct rb_stdin_wrapper * wrapped_stdin = (struct rb_stdin_wrapper *)stream;
 
-    VALUE line = rb_io_gets_limit_internal(wrapped_stdin->rb_stdin, size - 1);
+    /*
+     * Request fewer bytes than the buffer can hold. `gets` may return more
+     * bytes than requested when the limit falls in the middle of a multi-byte
+     * character, and the reserved headroom guarantees the result still fits.
+     */
+    VALUE line = rb_io_gets_limit_internal(wrapped_stdin->rb_stdin, size - MAX_ENC_LEN - 1);
     if (NIL_P(line)) {
         return NULL;
     }
@@ -11662,13 +11681,22 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
     const char *cstr = RSTRING_PTR(line);
     long length = RSTRING_LEN(line);
 
+    /*
+     * Defensively clamp the copy. A misbehaving `gets` may ignore the limit
+     * entirely and return an arbitrarily long string; we must never write past
+     * the caller's buffer. One byte is reserved for the NUL terminator.
+     */
+    if (length > (long) (size - 1)) {
+        length = (long) (size - 1);
+    }
+
     memcpy(string, cstr, length);
     string[length] = '\0';
 
     // We're reading strings from stdin via gets.  We'll assume that if the
     // string is smaller than the requested length, and doesn't end with a
     // newline, that we hit EOF.
-    if (length < (size - 1) && string[length - 1] != '\n') {
+    if (length < (size - MAX_ENC_LEN - 1) && string[length - 1] != '\n') {
         wrapped_stdin->eof_seen = 1;
     }
 

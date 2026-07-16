@@ -2729,6 +2729,28 @@ end
       end
     end
 
+    def test_parse_stdin_internal_line_buffer_border
+      # U+3042: HIRAGANA LETTER A (0xE3, 0x81, 0x82 in UTF-8)
+      data = ("x" * 4087) + "\u3042"
+      # %[puts "xxx...\xE3] must be 4094 or 4095 bytes data. Prism
+      # uses 4096 bytes internal line
+      # buffer. pm_parse_stdin_fgets(4096) must read 4095 or less data
+      # and append '\0' at the end. $stdin.gets(4095) reads 4095 or
+      # more data when the last character (U+3042 in this case) is a
+      # multi-byte character. If the 4094th or 4095th byte is middle
+      # of U+3042, $stdin.gets(4095) read 4097 or 4098 byte
+      # data. pm_parse_stdin_fgets() must not do it. This test checks
+      # the case.
+
+      # Use UTF-8 for the default external encoding to recognize the
+      # "\xE3\x81\x82" as a multi-byte character in $stdin.gets().
+      assert_in_out_err(["-Eutf-8"],
+                        # Ensure using UTF-8 as the script encoding.
+                        "# encoding: utf-8\n" +
+                        "puts \"#{data}\"",
+                        [data])
+    end
+
     private
 
     def compare_eval(source, raw:, location:)
