@@ -513,7 +513,7 @@ See [syntax/comments.rdoc](../syntax/comments.rdoc) for more details.
 
 ### Shareable procs
 
-Procs and lambdas are unshareable objects, even when they are frozen. To create an unshareable Proc, you must use `Ractor.shareable_proc { expr }`. Much like during Ractor creation, the proc's block is isolated from its outer environment, so it cannot access variables from the outside scope. `self` is also changed within the Proc to be `nil` by default, although a `self:` keyword can be provided if you want to customize the value to a different shareable object.
+Procs and lambdas are unshareable objects, even when they are frozen. To create a shareable Proc, you must use `Ractor.shareable_proc { expr }`. Much like during Ractor creation, the proc's block is isolated from its outer environment, so it cannot access variables from the outside scope. `self` is also changed within the Proc to be `nil` by default, although a `self:` keyword can be provided if you want to customize the value to a different shareable object.
 
 ```ruby
 p = Ractor.shareable_proc { p self }
@@ -533,9 +533,9 @@ In order to dynamically define a method with `Module#define_method` that can be 
 
 ```ruby
 class A
-  define_method :testing, &Ractor.shareable_proc do
+  define_method(:testing, Ractor.shareable_proc do
     p self
-  end
+  end)
 end
 Ractor.new do
   a = A.new
