@@ -1003,10 +1003,10 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 VALUE *
 rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 {
-    VALUE *original_code;
+    VALUE *original_code = RUBY_ATOMIC_PTR_LOAD(ISEQ_BODY(iseq)->variable.original_iseq);
 
-    if (ISEQ_ORIGINAL_ISEQ(iseq)) return ISEQ_ORIGINAL_ISEQ(iseq);
-    original_code = ISEQ_ORIGINAL_ISEQ_ALLOC(iseq, ISEQ_BODY(iseq)->iseq_size);
+    if (original_code) return original_code;
+    original_code = ALLOC_N(VALUE, ISEQ_BODY(iseq)->iseq_size);
     MEMCPY(original_code, ISEQ_BODY(iseq)->iseq_encoded, VALUE, ISEQ_BODY(iseq)->iseq_size);
 
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
@@ -1022,6 +1022,15 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
         }
     }
 #endif
+
+    /* Concurrent callers can each build a copy; publish only fully
+     * translated code and keep the first one. */
+    VALUE *prev = ATOMIC_PTR_CAS(ISEQ_BODY(iseq)->variable.original_iseq,
+                                 NULL, original_code);
+    if (prev) {
+        SIZED_FREE_N(original_code, ISEQ_BODY(iseq)->iseq_size);
+        return prev;
+    }
     return original_code;
 }
 
