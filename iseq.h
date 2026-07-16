@@ -75,13 +75,6 @@ ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
     }
 }
 
-static inline VALUE *
-ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
-{
-    return ISEQ_BODY(iseq)->variable.original_iseq =
-        ALLOC_N(VALUE, size);
-}
-
 #define ISEQ_TRACE_EVENTS (RUBY_EVENT_LINE  | \
                            RUBY_EVENT_CLASS | \
                            RUBY_EVENT_END   | \
