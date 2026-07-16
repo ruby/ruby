@@ -106,11 +106,14 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
   EC_SAVE_TAG_CFP(_tag, _ec); \
   rb_vm_tag_jmpbuf_init(&_tag.buf); \
 
-// Remember the CFP as of EC_PUSH_TAG so that ZJIT can materialize frames
-// only up to longjmp's target CFP. When a C method does longjmp inside it,
-// the target CFP may not be equal to the VM_FRAME_FLAG_FINISH frame.
+// Remember the CFP and its JITFrame link as of EC_PUSH_TAG so that ZJIT can
+// materialize frames only up to longjmp's target CFP and restore the target's
+// link if it survives the jump. When a C method does longjmp inside it, the
+// target CFP may not be equal to the VM_FRAME_FLAG_FINISH frame.
 #if USE_ZJIT
-# define EC_SAVE_TAG_CFP(_tag, _ec) _tag.cfp = _ec->cfp
+# define EC_SAVE_TAG_CFP(_tag, _ec) \
+    _tag.cfp = _ec->cfp; \
+    _tag.jit_return = _ec->cfp->jit_return
 #else
 # define EC_SAVE_TAG_CFP(_tag, _ec)
 #endif
@@ -153,6 +156,12 @@ rb_ec_tag_state(const rb_execution_context_t *ec)
 {
     struct rb_vm_tag *tag = ec->tag;
     enum ruby_tag_type state = tag->state;
+#if USE_ZJIT
+    // rb_ec_tag_jump materializes through the target CFP, clearing its
+    // jit_return. The target's native stack is still live after longjmp, so
+    // reconnect it while leaving unwound frames materialized.
+    if (rb_zjit_enabled_p) tag->cfp->jit_return = tag->jit_return;
+#endif
     tag->state = TAG_NONE;
     rb_ec_vm_lock_rec_check(ec, tag->lock_rec);
     RBIMPL_ASSUME(state > TAG_NONE);

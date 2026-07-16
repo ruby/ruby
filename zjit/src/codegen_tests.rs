@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold};
+use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -7196,6 +7196,61 @@ fn test_regression_gc_stress_with_lazy_block_code() {
           GC.stress = false
         end
     "#), @":ok");
+}
+
+// Hash recursion uses catch/throw internally. The throw materializes a frame
+// that resumes in JIT code, so the catching tag must restore cfp->jit_return
+// before a callee side exit tries to use the frame's updated PC and stack map.
+#[test]
+fn test_restore_jit_frame_after_caught_jump() {
+    rb_zjit_prepare_options();
+    let old_call_threshold = unsafe { crate::options::rb_zjit_call_threshold };
+    let old_inline_threshold = get_option!(inline_threshold);
+    let old_max_versions = get_option!(max_versions);
+    set_call_threshold(1);
+    set_inline_threshold(0);
+    set_max_versions(2);
+    let result = inspect(r#"
+        module RestoreJITFrameAssertions
+          def assert_receiver(*)
+            raise unless is_a?(RestoreJITFrameBase)
+          end
+        end
+
+        class RestoreJITFrameBase
+          include RestoreJITFrameAssertions
+
+          def hash_class = Hash
+
+          def test
+            hash = hash_class[]
+            recursive = [hash]
+            hash[:x] = recursive
+            object = Object.new
+            lookup = { hash => object }
+
+            [recursive, [hash]].each do |key|
+              key = { x: key }
+              assert_receiver(object, lookup[key], -> { key.inspect })
+            end
+          end
+        end
+
+        class RestoreJITFrameHash < Hash
+        end
+
+        class RestoreJITFrameSubclass < RestoreJITFrameBase
+          def hash_class = RestoreJITFrameHash
+        end
+
+        RestoreJITFrameBase.new.test
+        RestoreJITFrameSubclass.new.test
+        :ok
+    "#);
+    set_max_versions(old_max_versions);
+    set_inline_threshold(old_inline_threshold);
+    set_call_threshold(old_call_threshold);
+    assert_snapshot!(result, @":ok");
 }
 
 #[test]

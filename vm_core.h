@@ -1029,6 +1029,8 @@ struct rb_vm_tag {
 #if USE_ZJIT
     // ec->cfp as of EC_PUSH_TAG, which is saved for materializing JITFrame.
     rb_control_frame_t *cfp;
+    // cfp->jit_return as of EC_PUSH_TAG, restored when this tag catches a jump.
+    void *jit_return;
 #endif
 };
 
