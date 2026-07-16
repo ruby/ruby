@@ -1739,6 +1739,7 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
                     *ptr = 0;
                     done = 1;
                 }
+                slashes = 0;
                 break;
 
               case L'*':

@@ -1236,6 +1236,20 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_argv_backslash_before_space
+    return unless windows?
+    [
+      ["AA\\ ", "BB"],
+      ["AA\\  ", "BB"],
+      ["AA\\\\ ", "BB"],
+      ["AA ", "BB"],           # control: no backslash
+      ["AA\\", "BB"],          # control: no space after the backslash
+    ].each do |args|
+      out = IO.popen([EnvUtil.rubybin, "-e", "STDOUT.binmode; print Marshal.dump(ARGV)", *args], "rb", &:read)
+      assert_equal(args, Marshal.load(out), "[Bug #22201] argv did not round-trip: #{args.inspect}")
+    end
+  end
+
   def test_exec_wordsplit
     with_tmpchdir {|d|
       File.write("script", <<-'End')
