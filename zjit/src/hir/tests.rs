@@ -94,12 +94,12 @@ mod snapshot_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v14:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [a=v12, b=v13] }
-          v15:Any = Snapshot FrameState { pc: 0x1010, stack: [], locals: [a=v12, b=v13] }
+          v15:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [a=v12, b=v13] }
           PatchPoint NoTracePoint
-          v17:Any = Snapshot FrameState { pc: 0x1018, stack: [v12], locals: [a=v12, b=v13] }
-          v18:Any = Snapshot FrameState { pc: 0x1020, stack: [v12, v13], locals: [a=v12, b=v13] }
+          v17:Any = Snapshot FrameState { pc: 0x1010, stack: [v12], locals: [a=v12, b=v13] }
+          v18:Any = Snapshot FrameState { pc: 0x1018, stack: [v12, v13], locals: [a=v12, b=v13] }
           v19:ArrayExact = NewArray v12, v13
-          v20:Any = Snapshot FrameState { pc: 0x1028, stack: [v19], locals: [a=v12, b=v13] }
+          v20:Any = Snapshot FrameState { pc: 0x1020, stack: [v19], locals: [a=v12, b=v13] }
           PatchPoint NoTracePoint
           CheckInterrupts
           Return v19
@@ -1876,19 +1876,19 @@ pub(crate) mod hir_build_tests {
         bb5(v25:BasicObject, v26:BasicObject, v27:BasicObject):
           v31:Fixnum[0] = Const Value(0)
           v34:BasicObject = Send v27, :>, v31 # SendFallbackReason: Uncategorized(opt_gt)
+          v36:CBool = Test v34
+          v37:Truthy = RefineType v34, Truthy
+          CondBranch v36, bb4(v25, v26, v27), bb6()
+        bb4(v49:BasicObject, v50:BasicObject, v51:BasicObject):
           CheckInterrupts
-          v37:CBool = Test v34
-          v38:Truthy = RefineType v34, Truthy
-          CondBranch v37, bb4(v25, v26, v27), bb6()
-        bb4(v50:BasicObject, v51:BasicObject, v52:BasicObject):
           v57:Fixnum[1] = Const Value(1)
-          v60:BasicObject = Send v51, :+, v57 # SendFallbackReason: Uncategorized(opt_plus)
+          v60:BasicObject = Send v50, :+, v57 # SendFallbackReason: Uncategorized(opt_plus)
           v65:Fixnum[1] = Const Value(1)
-          v68:BasicObject = Send v52, :-, v65 # SendFallbackReason: Uncategorized(opt_minus)
-          Jump bb5(v50, v60, v68)
+          v68:BasicObject = Send v51, :-, v65 # SendFallbackReason: Uncategorized(opt_minus)
+          Jump bb5(v49, v60, v68)
         bb6():
-          v40:Falsy = RefineType v34, Falsy
-          v42:NilClass = Const Value(nil)
+          v39:Falsy = RefineType v34, Falsy
+          v41:NilClass = Const Value(nil)
           CheckInterrupts
           Return v26
         ");

@@ -17924,17 +17924,17 @@ mod hir_opt_tests {
           v23:Fixnum[10] = Const Value(10)
           PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
           v94:BoolExact = FixnumLt v19, v23
+          v28:CBool = Test v94
+          CondBranch v28, bb4(v18, v19), bb7()
+        bb4(v38:HeapBasicObject, v39:Fixnum):
           CheckInterrupts
-          v29:CBool = Test v94
-          CondBranch v29, bb4(v18, v19), bb7()
-        bb4(v39:HeapBasicObject, v40:Fixnum):
           PatchPoint SingleRactorMode
-          v46:CShape = LoadField v39, :shape_id@0x1038
+          v46:CShape = LoadField v38, :shape_id@0x1038
           v48:CShape[0x1039] = Const CShape(0x1039)
           v49:CBool = IsBitEqual v46, v48
           CondBranch v49, bb9(), bb10()
         bb9():
-          v51:BasicObject = LoadField v39, :@levar@0x103a
+          v51:BasicObject = LoadField v38, :@levar@0x103a
           Jump bb8(v51)
         bb10():
           v53:CShape[0x103b] = GuardBitEquals v46, CShape(0x103b) recompile
@@ -17942,17 +17942,17 @@ mod hir_opt_tests {
           Jump bb8(v55)
         bb8(v47:BasicObject):
           v58:CBool = Test v47
-          CondBranch v58, bb5(v39, v40), bb12()
+          CondBranch v58, bb5(v38, v39), bb12()
         bb12():
           PatchPoint NoEPEscape(set_value_loop)
           PatchPoint SingleRactorMode
-          v68:CShape = LoadField v39, :shape_id@0x1038
+          v68:CShape = LoadField v38, :shape_id@0x1038
           v69:CShape[0x103b] = GuardBitEquals v68, CShape(0x103b) recompile
-          StoreField v39, :@levar@0x103a, v40
-          WriteBarrier v39, v40
+          StoreField v38, :@levar@0x103a, v39
+          WriteBarrier v38, v39
           v72:CShape[0x1039] = Const CShape(0x1039)
-          StoreField v39, :shape_id@0x1038, v72
-          Jump bb5(v39, v40)
+          StoreField v38, :shape_id@0x1038, v72
+          Jump bb5(v38, v39)
         bb5(v76:HeapBasicObject, v77:Fixnum):
           PatchPoint NoEPEscape(set_value_loop)
           v84:Fixnum[1] = Const Value(1)
@@ -17960,9 +17960,9 @@ mod hir_opt_tests {
           v98:Fixnum = FixnumAdd v77, v84
           Jump bb6(v76, v98)
         bb7():
-          v34:NilClass = Const Value(nil)
+          v33:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v34
+          Return v33
         ");
     }
 

@@ -7497,12 +7497,14 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
 
 struct BytecodeInfo {
     jump_targets: Vec<u32>,
+    loop_targets_requiring_check_interrupts: HashSet<u32>,
 }
 
 fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeInfo {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
     let mut jump_targets: HashSet<u32> = opt_table.iter().copied().collect();
+    let mut loop_targets_requiring_check_interrupts: HashSet<u32> = HashSet::new();
     while insn_idx < iseq_size {
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
@@ -7523,7 +7525,13 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeI
             YARVINSN_branchunless | YARVINSN_jump | YARVINSN_branchif | YARVINSN_branchnil
             | YARVINSN_branchunless_without_ints | YARVINSN_jump_without_ints | YARVINSN_branchif_without_ints | YARVINSN_branchnil_without_ints => {
                 let offset = get_arg(pc, 0).as_i64();
-                jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
+                let target = insn_idx_at_offset(insn_idx, offset);
+                jump_targets.insert(target);
+                // We only care about backward branches for CheckInterrupts, and only from opcode
+                // variants that actually check for interrupts.
+                if offset < 0 && matches!(opcode, YARVINSN_branchunless | YARVINSN_jump | YARVINSN_branchif | YARVINSN_branchnil) {
+                    loop_targets_requiring_check_interrupts.insert(target);
+                }
             }
             YARVINSN_opt_new => {
                 let offset = get_arg(pc, 1).as_i64();
@@ -7539,7 +7547,7 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeI
     }
     let mut result = jump_targets.into_iter().collect::<Vec<_>>();
     result.sort();
-    BytecodeInfo { jump_targets: result }
+    BytecodeInfo { jump_targets: result, loop_targets_requiring_check_interrupts }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -7801,7 +7809,7 @@ fn add_iseq_to_hir(
         .get(jit_entry_start..)
         .expect("JIT entry index must be within the callee opt table")
         .iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
-    let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
+    let BytecodeInfo { jump_targets, loop_targets_requiring_check_interrupts } = compute_bytecode_info(iseq, &jit_entry_insns);
 
     let compile_jit_entries = matches!(mode, AddIseqMode::Standalone) && iseq_supports_jit_entry(iseq);
 
@@ -7895,7 +7903,13 @@ fn add_iseq_to_hir(
         // Start the block off with a Snapshot so that if we need to insert a new Guard later on
         // and we don't have a Snapshot handy, we can just iterate backward (at the earliest, to
         // the beginning of the block).
-        fun.push_insn(block, Insn::Snapshot { state: Box::new(state.clone()) });
+        state.insn_idx = insn_idx as usize;
+        // Get the current pc and opcode
+        state.pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+        let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(state.clone()) });
+        if loop_targets_requiring_check_interrupts.contains(&insn_idx) {
+            fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
+        }
         while insn_idx < iseq_size {
             state.insn_idx = insn_idx as usize;
             // Get the current pc and opcode
@@ -8407,9 +8421,6 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_branchunless | YARVINSN_branchunless_without_ints => {
                     let offset = get_arg(pc, 0).as_i64();
-                    if opcode == YARVINSN_branchunless && offset < 0 {
-                        fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
-                    }
                     let val = state.stack_pop()?;
                     let test_id = fun.push_insn(block, Insn::Test { val });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
@@ -8435,9 +8446,6 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_branchif | YARVINSN_branchif_without_ints => {
                     let offset = get_arg(pc, 0).as_i64();
-                    if opcode == YARVINSN_branchif && offset < 0 {
-                        fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
-                    }
                     let val = state.stack_pop()?;
                     let test_id = fun.push_insn(block, Insn::Test { val });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
@@ -8464,9 +8472,6 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_branchnil | YARVINSN_branchnil_without_ints => {
                     let offset = get_arg(pc, 0).as_i64();
-                    if opcode == YARVINSN_branchnil && offset < 0 {
-                        fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
-                    }
                     let val = state.stack_pop()?;
                     let test_id = fun.push_insn(block, Insn::HasType { val, expected: types::NilClass });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
@@ -8528,9 +8533,6 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_jump | YARVINSN_jump_without_ints => {
                     let offset = get_arg(pc, 0).as_i64();
-                    if opcode == YARVINSN_jump && offset < 0 {
-                        fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
-                    }
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
                     let _branch_id = fun.push_insn(block, Insn::Jump(
