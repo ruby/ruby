@@ -622,7 +622,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         }
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, function, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
-        Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
+        Insn::ArrayDup { val, state } => gen_array_dup(jit, asm, function, *val, opnd!(val), &function.frame_state(*state)),
         Insn::AdjustBounds { index, length } => gen_adjust_bounds(asm, opnd!(index), opnd!(length)),
         Insn::ArrayAref { array, index, .. } => gen_array_aref(asm, opnd!(array), opnd!(index)),
         Insn::ArrayAset { array, index, val } => {
@@ -2127,12 +2127,38 @@ fn gen_string_equal(asm: &mut Assembler, left: Opnd, right: Opnd) -> lir::Opnd {
 
 /// Compile an array duplication instruction
 fn gen_array_dup(
+    jit: &mut JITState,
     asm: &mut Assembler,
+    function: &Function,
+    val_id: InsnId,
     val: lir::Opnd,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_leaf_call_with_gc(asm, state);
+    // duparray resurrects a frozen literal array baked into the ISEQ, so its elements are known
+    // here. When the resurrected copy would be embedded, bump-allocate it inline and store the
+    // elements directly; the fresh object is young and white, so those writes need no write
+    // barrier (elements may be heap objects).
+    if let Some(src) = function.type_of(val_id).ruby_object() {
+        let mut alloc_size: usize = 0;
+        let mut flags = VALUE(0);
+        let mut len: std::os::raw::c_long = 0;
+        if unsafe { rb_zjit_array_dup_can_fastpath(src, &mut alloc_size, &mut flags, &mut len) } {
+            let klass = unsafe { rb_cArray };
+            return gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass, &|asm, obj| {
+                for i in 0..len {
+                    let elem = unsafe { rb_ary_entry(src, i) };
+                    let offset = RUBY_OFFSET_RARRAY_AS_ARY + (i as i32) * SIZEOF_VALUE_I32;
+                    asm.store(Opnd::mem(VALUE_BITS, obj, offset), Opnd::Value(elem));
+                }
+            },
+            |asm| {
+                gen_prepare_leaf_call_with_gc(asm, state);
+                asm_ccall!(asm, rb_ary_resurrect, val)
+            });
+        }
+    }
 
+    gen_prepare_leaf_call_with_gc(asm, state);
     asm_ccall!(asm, rb_ary_resurrect, val)
 }
 

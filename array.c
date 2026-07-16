@@ -34,6 +34,7 @@
 #include "shape.h"
 #include "vm_core.h"
 #include "builtin.h"
+#include "zjit.h"
 
 #if !ARRAY_DEBUG
 # undef NDEBUG
@@ -2924,6 +2925,25 @@ rb_ary_resurrect(VALUE ary)
 {
     return ary_make_partial(ary, rb_cArray, 0, RARRAY_LEN(ary));
 }
+
+#if USE_ZJIT
+bool
+rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_out, long *len_out)
+{
+    long len = RARRAY_LEN(ary);
+    long embed_capa = (sizeof(struct RArray) - offsetof(struct RArray, as.ary)) / sizeof(VALUE);
+
+    if (len > embed_capa) return false;
+
+    size_t size = sizeof(struct RArray);
+    shape_id_t shape_id = rb_shape_transition_slot_size(ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER,
+                                                        rb_gc_size_slot_size(size));
+    *alloc_size_out = size;
+    *flags_out = T_ARRAY | RARRAY_EMBED_FLAG | ((VALUE)len << RARRAY_EMBED_LEN_SHIFT) | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
+    *len_out = len;
+    return true;
+}
+#endif
 
 extern VALUE rb_output_fs;
 

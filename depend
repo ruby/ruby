@@ -279,6 +279,7 @@ array.$(OBJEXT): {$(VPATH)}thread_native.h
 array.$(OBJEXT): {$(VPATH)}util.h
 array.$(OBJEXT): {$(VPATH)}vm_core.h
 array.$(OBJEXT): {$(VPATH)}vm_opts.h
+array.$(OBJEXT): {$(VPATH)}zjit.h
 ast.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 ast.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 ast.$(OBJEXT): $(CCAN_DIR)/list/list.h
