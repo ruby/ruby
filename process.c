@@ -4688,9 +4688,6 @@ rb_spawn(int argc, const VALUE *argv)
  *
  *  See {Execution Shell}[rdoc-ref:Process@Execution+Shell] for details about the shell.
  *
- *  Raises an exception if keyword argument +exception+ is +true+
- *  and the new process could not execute.
- *
  *  <b>Argument +exe_path+</b>
  *
  *  Argument +exe_path+ is one of the following:
@@ -4732,8 +4729,6 @@ rb_spawn(int argc, const VALUE *argv)
  *    C*
  *    hello world
  *
- *  Raises an exception if keyword argument +exception+ is +true+
- *  and the new process could not execute.
  */
 
 static VALUE
