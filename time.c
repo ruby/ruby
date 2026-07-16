@@ -4163,20 +4163,17 @@ time_zonelocal(VALUE time, VALUE off)
 
 /*
  *  call-seq:
- *    localtime -> self or new_time
- *    localtime(zone) -> new_time
+ *    localtime -> self
+ *    localtime(zone) -> self
  *
- *  With no argument given:
- *
- *  - Returns +self+ if +self+ is a local time.
- *  - Otherwise returns a new +Time+ in the user's local timezone:
+ *  With no argument given,
+ *  returns +self+, converted to the user's local timezone:
  *
  *      t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
  *      t.localtime                         # => 2000-01-01 14:15:01 -0600
  *
  *  With argument +zone+ given,
- *  returns the new +Time+ object created by converting
- *  +self+ to the given time zone:
+ *  returns +self+, converted to the given time zone:
  *
  *    t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
  *    t.localtime("-09:00")               # => 2000-01-01 11:15:01 -0900
