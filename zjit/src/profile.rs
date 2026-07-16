@@ -122,36 +122,21 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
     }
 }
 
-/// Profile the instruction at the current CFP for a recompile side exit.
+/// Return whether the interpreter finished profiling the current instruction.
 pub fn profile_recompile_insn(ec: EcPtr) -> bool {
-    let profiler = &mut Profiler::new(ec);
-    let pc = unsafe { get_cfp_pc(profiler.cfp) };
-    let bare_opcode = unsafe {
-        rb_zjit_insn_to_bare_insn(rb_iseq_opcode_at_pc(profiler.iseq, pc))
-    } as ruby_vminsn_type;
-    let profile = &mut get_or_create_iseq_payload(profiler.iseq).profile;
+    let profiler = &Profiler::new(ec);
+    get_or_create_iseq_payload(profiler.iseq).profile.done_profiling_at(profiler.insn_idx)
+}
 
-    let is_send = matches!(bare_opcode, YARVINSN_send | YARVINSN_opt_send_without_block);
-    // For now, send recompile exits only fill in missing profiles. Once the send site
-    // has finished profiling, don't recompile it on later exits.
-    if is_send && profile.done_profiling_at(profiler.insn_idx) {
-        return false;
+/// Reset existing profile counters and install profiling instructions throughout an ISEQ.
+/// Newly reached instructions initialize their counters from the same option.
+pub(crate) fn reset_profiles_remaining(iseq: IseqPtr) {
+    let profile = &mut get_or_create_iseq_payload(iseq).profile;
+    let num_profiles = get_option!(num_profiles);
+    for entry in &mut profile.entries {
+        entry.profiles_remaining = num_profiles;
     }
-    // For now, non-send recompile exits reset the profiling counter before requesting recompilation
-    // so that we can collect enough samples.
-    if !is_send && profile.done_profiling_at(profiler.insn_idx) {
-        profile.entry_mut(profiler.insn_idx)
-            .set_profiles_remaining(get_option!(num_profiles));
-    }
-
-    // If this opcode can't be sampled here, this exit has no profile data to collect.
-    if !profile_insn_sample(bare_opcode, profiler, profile) {
-        return false;
-    }
-
-    let entry = profile.entry_mut(profiler.insn_idx);
-    entry.profiles_remaining = entry.profiles_remaining.saturating_sub(1);
-    entry.profiles_remaining == 0
+    unsafe { rb_zjit_profile_enable(iseq) };
 }
 
 /// Return the argc as stated in the calldata plus:

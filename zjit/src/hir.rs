@@ -6,9 +6,7 @@
 #![allow(clippy::if_same_then_else)]
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
-    backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::{max_iseq_versions}, cruby::*, invariants::{self, iseq_seen_ep_escape}, payload::get_or_create_iseq_payload, options::{debug, get_option, DumpHIR, InlineDepth}, state::ZJITState, json::Json,
-    state,
+    backend::lir::C_ARG_OPNDS, cast::IntoUsize, codegen::max_iseq_versions, cruby::*, invariants::{self, iseq_seen_ep_escape}, json::Json, options::{DumpHIR, InlineDepth, debug, get_option}, payload::get_or_create_iseq_payload, profile::reset_profiles_remaining, state::{self, ZJITState},
 };
 use std::{
     cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter,
@@ -9750,6 +9748,10 @@ fn add_iseq_to_hir(
             Some(DumpHIR::Debug) => println!("Initial HIR:\n{:#?}", fun),
             None => {},
         }
+    }
+    if matches!(mode, AddIseqMode::Inlined { .. }) {
+        // Materialized inlined frames also need fresh interpreter profiles.
+        reset_profiles_remaining(iseq);
     }
 
     Ok(AddIseqResult { body_entry_block, profiles })

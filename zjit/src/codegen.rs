@@ -17,6 +17,7 @@ use crate::invariants::{
 };
 use crate::gc::append_gc_offsets;
 use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
+use crate::profile::reset_profiles_remaining;
 use crate::state::ZJITState;
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
@@ -3421,6 +3422,10 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
         trace_compile_phase("optimize", || function.optimize());
     }
     function.dump_hir();
+    let non_final_version = get_or_create_iseq_payload(iseq).versions.len() + 1 < max_iseq_versions();
+    if non_final_version {
+        reset_profiles_remaining(iseq);
+    }
     Ok(function)
 }
 
