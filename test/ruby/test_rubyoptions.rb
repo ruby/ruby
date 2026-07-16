@@ -814,7 +814,7 @@ class TestRubyOptions < Test::Unit::TestCase
         (?:
         --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
         (?:-e:1:in\s\'(?:block\sin\s)?<main>\'\n)*
-        -e:1:in\s\'kill\'\n
+        -e:1:in\s\'segv\'\n
         \n
         )?
       )x,
@@ -838,7 +838,10 @@ class TestRubyOptions < Test::Unit::TestCase
       )x,
     ]
 
-    KILL_SELF = "Process.kill :SEGV, $$"
+    # Crash the current thread with a thread-directed raise(SIGSEGV) so the
+    # signal is delivered synchronously on the calling thread. Requires
+    # -test-/fatal to be loaded.
+    KILL_SELF = "Bug.segv"
   end
 
   def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt, &block)
@@ -847,6 +850,7 @@ class TestRubyOptions < Test::Unit::TestCase
     env = Hash === args.first ? args.shift : {}
     args.unshift("--yjit") if JITSupport.yjit_enabled?
     args.unshift("--zjit") if JITSupport.zjit_enabled?
+    args.unshift("-r-test-/fatal")
     env.update({'RUBY_ON_BUG' => nil})
     env['RUBY_CRASH_REPORT'] ||= nil # default to not passing down parent setting
     # ASAN registers a segv handler which prints out "AddressSanitizer: DEADLYSIGNAL" when
