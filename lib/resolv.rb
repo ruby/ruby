@@ -2019,8 +2019,12 @@ class Resolv
           key_name = :"key#{key_number}"
           c.const_set(:KeyName, key_name)
           c.const_set(:KeyNumber, key_number)
-          self.const_set(:"Key#{key_number}", c)
-          ClassHash[key_name] = ClassHash[key_number] = c
+          # Do not register the generated class in a constant or ClassHash:
+          # ClassHash's default block calls create for every unknown SvcParamKey
+          # in a decoded message, so permanently registering each one would let a
+          # malicious or spoofed response leak classes, constants, and symbols
+          # without bound (memory-exhaustion DoS). Returning a fresh, GC-able
+          # class each time keeps decoding of unknown keys stateless.
           return c
         end
       end
@@ -2331,8 +2335,12 @@ class Resolv
           c = Class.new(Generic)
           c.const_set(:TypeValue, type_value)
           c.const_set(:ClassValue, class_value)
-          Generic.const_set("Type#{type_value}_Class#{class_value}", c)
-          ClassHash[[type_value, class_value]] = c
+          # Do not register the generated class in a constant or ClassHash:
+          # get_class is called for every unknown (type, class) pair in a
+          # decoded message, so permanently registering each one would let a
+          # malicious or spoofed response leak classes, constants, and symbols
+          # without bound (memory-exhaustion DoS). Returning a fresh, GC-able
+          # class each time keeps decoding of unknown RRs stateless.
           return c
         end
       end
