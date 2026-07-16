@@ -3705,6 +3705,45 @@ fn test_new_array_order() {
 }
 
 #[test]
+fn test_new_array_embedded_gc_stress() {
+    eval(r#"
+        def make(a) = [a, a, a]
+    "#);
+    assert_contains_opcode("make", YARVINSN_newarray);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          s = "x"
+          make(s)
+          a = make(s)
+          a << :extra
+          [a.frozen?, a.class, a]
+        ensure
+          GC.stress = false
+        end
+    "#), @r#"[false, Array, ["x", "x", "x", :extra]]"#);
+}
+
+#[test]
+fn test_new_array_embedded_memcpy_gc_stress() {
+    eval(r#"
+        def make(a) = [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a] # size: 17
+    "#);
+    assert_contains_opcode("make", YARVINSN_newarray);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          s = "y"
+          make(s)
+          m = make(s)
+          [m.frozen?, m.length, m.class]
+        ensure
+          GC.stress = false
+        end
+    "#), @r#"[false, 17, Array]"#);
+}
+
+#[test]
 fn test_array_dup() {
     assert_snapshot!(inspect("
         def test = [1,2,3]

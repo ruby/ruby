@@ -2925,6 +2925,23 @@ rb_ary_resurrect(VALUE ary)
     return ary_make_partial(ary, rb_cArray, 0, RARRAY_LEN(ary));
 }
 
+#if USE_ZJIT
+bool
+rb_zjit_array_new_can_fastpath(long len, size_t *alloc_size_out, VALUE *flags_out)
+{
+    if (!ary_embeddable_p(len)) {
+        return false;
+    }
+    long embed_size = ary_embed_size(len);
+    shape_id_t shape_id = rb_shape_transition_slot_size(ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER,
+                                                        rb_gc_size_slot_size(embed_size));
+
+    *alloc_size_out = embed_size;
+    *flags_out = T_ARRAY | RARRAY_EMBED_FLAG | ((VALUE)len << RARRAY_EMBED_LEN_SHIFT) | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
+    return true;
+}
+#endif
+
 extern VALUE rb_output_fs;
 
 static void ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first);
