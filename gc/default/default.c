@@ -1738,7 +1738,9 @@ check_rvalue_consistency_force(rb_objspace_t *objspace, const VALUE obj, int ter
                 err++;
             }
 
-            if (BUILTIN_TYPE(obj) != T_DATA) {
+            /* 既に不整合（T_NONE 等）を検出していたら memsize probe は踏まない。probe 側の
+             * rb_bug で本来の診断出力が失われるため。 */
+            if (err == 0 && BUILTIN_TYPE(obj) != T_DATA) {
                 rb_obj_memsize_of((VALUE)obj);
             }
 
