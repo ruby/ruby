@@ -137,16 +137,18 @@ module UnicodeNormalize # :nodoc:
     encoding = string.encoding
     case encoding
     when Encoding::UTF_8
-      return string if string.ascii_only?
-
       case form
       when :nfc
+        return string.dup if string.ascii_only?
         string.gsub REGEXP_C, NF_HASH_C
       when :nfd
+        return string.dup if string.ascii_only?
         string.gsub REGEXP_D, NF_HASH_D
       when :nfkc
+        return string.dup if string.ascii_only?
         string.gsub(REGEXP_K, KOMPATIBLE_TABLE).tap { |s| s.gsub!(REGEXP_C, NF_HASH_C) }
       when :nfkd
+        return string.dup if string.ascii_only?
         string.gsub(REGEXP_K, KOMPATIBLE_TABLE).tap { |s| s.gsub!(REGEXP_D, NF_HASH_D) }
       else
         raise ArgumentError, "Invalid normalization form #{form}."
@@ -154,7 +156,7 @@ module UnicodeNormalize # :nodoc:
     when Encoding::US_ASCII
       string
     when *UNICODE_ENCODINGS
-      return string if string.ascii_only?
+      return string.dup if string.ascii_only?
 
       normalize(string.encode(Encoding::UTF_8), form).encode(encoding)
     else
@@ -166,22 +168,24 @@ module UnicodeNormalize # :nodoc:
     encoding = string.encoding
     case encoding
     when Encoding::UTF_8
-      return true if string.ascii_only?
-
       case form
       when :nfc
+        return true if string.ascii_only?
         string.scan REGEXP_C do |match|
           return false if NF_HASH_C[match] != match
         end
         true
       when :nfd
+        return true if string.ascii_only?
         string.scan REGEXP_D do |match|
           return false if NF_HASH_D[match] != match
         end
         true
       when :nfkc
+        return true if string.ascii_only?
         normalized?(string, :nfc) && string !~ REGEXP_K
       when :nfkd
+        return true if string.ascii_only?
         normalized?(string, :nfd) && string !~ REGEXP_K
       else
         raise ArgumentError, "Invalid normalization form #{form}."
