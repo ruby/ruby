@@ -1219,19 +1219,24 @@ rb_shape_expected_layout(VALUE obj)
       case T_OBJECT: {
           return SHAPE_ID_LAYOUT_ROBJECT;
       }
+
       case T_CLASS:
       case T_MODULE:
         if (FL_TEST_RAW(obj, RCLASS_BOXABLE)) {
             return SHAPE_ID_LAYOUT_OTHER;
         }
         return SHAPE_ID_LAYOUT_RCLASS;
+
+      case T_STRUCT:
       case T_DATA:
         return SHAPE_ID_LAYOUT_EXTENDED;
+
       case T_IMEMO:
         if (IMEMO_TYPE_P(obj, imemo_fields)) {
             return SHAPE_ID_LAYOUT_ROBJECT;
         }
         return SHAPE_ID_LAYOUT_OTHER;
+
       default:
         return SHAPE_ID_LAYOUT_OTHER;
     }

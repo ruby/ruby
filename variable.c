@@ -1281,10 +1281,9 @@ obj_use_generic_fields_tbl_p(VALUE obj)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+      case T_STRUCT:
       case T_DATA:
         return false;
-      case T_STRUCT:
-        return !FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS);
       default:
         return true;
     }
@@ -1311,12 +1310,9 @@ rb_obj_fields(VALUE obj, ID field_name)
         return RTYPEDDATA(obj)->fields_obj;
 
       case T_STRUCT:
-        if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
-            return RSTRUCT_FIELDS_OBJ(obj);
-        }
-        goto generic_fields;
+        return RSTRUCT_FIELDS_OBJ(obj);
+
       default:
-      generic_fields:
         {
             VALUE fields_obj = 0;
 
@@ -1348,13 +1344,10 @@ rb_free_generic_ivar(VALUE obj)
             RB_OBJ_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, 0);
             break;
           case T_STRUCT:
-            if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
-                RSTRUCT_SET_FIELDS_OBJ(obj, 0);
-                break;
-            }
-            goto generic_fields;
+            RSTRUCT_SET_FIELDS_OBJ(obj, 0);
+            break;
+
           default:
-          generic_fields:
             {
                 // Other EC may have stale caches, so fields_obj should be
                 // invalidated and the GC will replace with Qundef
@@ -1400,13 +1393,10 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
             RB_OBJ_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, fields_obj);
             break;
           case T_STRUCT:
-            if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
-                RSTRUCT_SET_FIELDS_OBJ(obj, fields_obj);
-                break;
-            }
-            goto generic_fields;
+            RSTRUCT_SET_FIELDS_OBJ(obj, fields_obj);
+            break;
+
           default:
-          generic_fields:
             {
                 RB_VM_LOCKING() {
                     st_insert(generic_fields_tbl_, (st_data_t)obj, (st_data_t)fields_obj);

@@ -40,9 +40,8 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 
 #define RANGE_SET_BEG(r, v) (RSTRUCT_SET(r, 0, v))
 #define RANGE_SET_END(r, v) (RSTRUCT_SET(r, 1, v))
-#define RANGE_SET_EXCL(r, v) (RSTRUCT_SET(r, 2, v))
 
-#define EXCL(r) RTEST(RANGE_EXCL(r))
+#define EXCL(r) RTEST(FL_TEST(r, RANGE_FL_EXCL))
 
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
@@ -56,7 +55,12 @@ range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
             rb_raise(rb_eArgError, "bad value for range");
     }
 
-    RANGE_SET_EXCL(range, exclude_end);
+    if (RTEST(exclude_end)) {
+        FL_SET_RAW(range, RANGE_FL_EXCL);
+    }
+
+    FL_SET_RAW(range, RANGE_FL_INIT);
+
     RANGE_SET_BEG(range, beg);
     RANGE_SET_END(range, end);
 
@@ -79,7 +83,7 @@ range_modify(VALUE range)
 {
     rb_check_frozen(range);
     /* Ranges are immutable, so that they should be initialized only once. */
-    if (RANGE_EXCL(range) != Qnil) {
+    if (FL_TEST(range, RANGE_FL_INIT)) {
         rb_name_err_raise("'initialize' called twice", range, ID2SYM(idInitialize));
     }
 }
@@ -115,6 +119,7 @@ static VALUE
 range_initialize_copy(VALUE range, VALUE orig)
 {
     range_modify(range);
+    FL_SET_RAW(range, FL_TEST_RAW(orig, RANGE_FL_EXCL|RANGE_FL_INIT));
     rb_struct_init_copy(range, orig);
     return range;
 }
@@ -2960,7 +2965,7 @@ Init_Range(void)
 
     rb_cRange = rb_struct_define_without_accessor(
         "Range", rb_cObject, range_alloc,
-        "begin", "end", "excl", NULL);
+        "begin", "end", NULL);
 
     rb_include_module(rb_cRange, rb_mEnumerable);
     rb_marshal_define_compat(rb_cRange, rb_cObject, range_dumper, range_loader);
