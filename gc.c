@@ -1457,6 +1457,14 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
         return rb_gc_imemo_needs_cleanup_p(obj);
     }
 
+    /* generic fields を持つ host は解放時に表の entry を消す必要がある。表は per-Ractor と
+     * 共有の複数構成で、sweep 冒頭の一括掃除では自分の表しか安全に拭けないため、
+     * per-object の掃除が正しさの本体になる。 */
+    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+    if (rb_shape_has_fields(shape_id) && rb_shape_layout(shape_id) == SHAPE_ID_LAYOUT_OTHER) {
+        return true;
+    }
+
     switch (flags & RUBY_T_MASK) {
       case T_FLOAT:
       case T_RATIONAL:
@@ -2263,6 +2271,13 @@ void
 rb_gc_obj_free_vm_weak_references(VALUE obj)
 {
     ASSUME(!RB_SPECIAL_CONST_P(obj));
+
+    /* generic fields の entry は host の slot 解放と同時に消す。表が複数ある構成では
+     * 一括掃除に頼ると、掃除されない表に死んだ key/fields_obj を指す stale entry が残り、
+     * global GC の weak pass や slot 再利用後の読み手が解放済みページを辿る。 */
+    if (rb_obj_gen_fields_p(obj)) {
+        rb_free_generic_ivar(obj);
+    }
 
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
@@ -4527,9 +4542,10 @@ void rb_fstring_foreach_with_replace(int (*callback)(VALUE *str, void *data), vo
 bool
 rb_gc_vm_weak_table_essential_p(enum rb_gc_vm_weak_tables table)
 {
+    /* generic fields 表は per-object の掃除（rb_gc_obj_free_vm_weak_references）に戻して
+     * いるので一括掃除は要らない。表が複数ある構成では local GC が全表を拭けず、
+     * 一括方式だと拭けない表に stale entry が残る。 */
     switch (table) {
-      case RB_GC_VM_GENERIC_FIELDS_TABLE:
-        return true;
       default:
         return false;
     }
