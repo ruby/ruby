@@ -110,7 +110,7 @@ void rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
 void rb_threadptr_interrupt_exec_task_mark(struct rb_thread_struct *th);
 
 /* スレッドが所有する heap オブジェクトの root を mark する（ec と fiber を除く）。
- * thread_mark と、confined GC でスレッドの wrapper が別 objspace にある場合の
+ * thread_mark と、local GC でスレッドの wrapper が別 objspace にある場合の
  * Ractor の local-root marking から使う。 */
 void rb_thread_mark_owned_roots(struct rb_thread_struct *th);
 

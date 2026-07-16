@@ -155,7 +155,7 @@ struct rb_ractor_struct {
 
     /* この Ractor 所有の unshareable オブジェクトの generic fields 表（owner 専有＝無ロック、
      * shareable 分は variable.c の global 表）。weak-key で host obj が死ねば entry も消える。
-     * confined GC は rb_mark_generic_ivar で引き、global GC は mark 後に全表を drain する。
+     * local GC は rb_mark_generic_ivar で引き、global GC は mark 後に全表を drain する。
      * lazy に生成（NULL = まだ空）。 */
     struct st_table *generic_fields_tbl;
     /* Ractor#send の native copy 中の generic-ivar 対応表。capturing=送信側 snapshot 作成中

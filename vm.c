@@ -3871,7 +3871,7 @@ thread_compact(void *ptr)
 }
 
 /* スレッドが所有するヒープオブジェクトの root を mark する(ec と fiber は
- * 呼び出し側が担当)。confined GC が Ractor の local roots から直接これらを
+ * 呼び出し側が担当)。local GC が Ractor の local roots から直接これらを
  * root にできるよう thread_mark から分離(rb_ractor_mark_local_roots)。 */
 void
 rb_thread_mark_owned_roots(rb_thread_t *th)

@@ -3147,7 +3147,7 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
 
     bool global_gc = rb_gc_impl_during_global_gc_p(objspace);
 
-    /* 現在の Ractor 自身の root は C 構造体から mark する。confined GC は他 objspace に
+    /* 現在の Ractor 自身の root は C 構造体から mark する。local GC は他 objspace に
      * あり得るヒープ上の Ractor/Thread ラッパに頼れないため。global GC は同じ root 一覧を
      * 全 Ractor 分処理し、clear パスで shref を落とした in-flight ペイロードを pin し直す。 */
     MARK_CHECKPOINT("ractor");
@@ -3189,7 +3189,7 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
 
     /* VM グローバルな root は main Ractor の objspace に属する（起動時オブジェクトが
-     * そこにあるため）。非main Ractor の confined GC はそれらを走査しない。
+     * そこにあるため）。非main Ractor の local GC はそれらを走査しない。
      * global GC は全部を走査する。 */
     if (global_gc || objspace == vm->ractor.main_ractor->objspace) {
         /* at_exit/END proc は main Ractor しか登録できない（非main は IsolationError）。
@@ -3597,7 +3597,7 @@ rb_gc_obj_became_shareable(VALUE obj)
 }
 
 /* 転送中メッセージのペイロードを所有者（送信側）の objspace に pin する。送信側が
- * 走査しないキューに載っている間、confined GC がそれを生かし続けるようにする。 */
+ * 走査しないキューに載っている間、local GC がそれを生かし続けるようにする。 */
 void
 rb_gc_pin_in_flight_message(VALUE obj)
 {
@@ -6067,7 +6067,7 @@ check_shareable_i(const VALUE child, void *ptr)
 
     if (!rb_gc_obj_shareable_p(child)) {
         /* shareable が unshareable を参照できるのは write barrier がその辺を対象の shref
-         * ビットに記録したときだけで、その記録が所有者の confined GC を越えて対象を生かす。
+         * ビットに記録したときだけで、その記録が所有者の local GC を越えて対象を生かす。
          * root 扱いの例外（Ractor private fields、cref、JIT）は checking_shareable の間隠す。 */
         if (rb_gc_impl_shref_marked_p(rb_gc_get_objspace(), child)) {
             return;

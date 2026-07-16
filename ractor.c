@@ -271,7 +271,7 @@ ractor_mark_unshareable_parts(rb_ractor_t *r)
         ccan_list_for_each(&r->threads.set, th, lt_node) {
             VM_ASSERT(th != NULL);
             rb_gc_mark(th->self);
-            /* EC も直接 mark する。confined GC では Thread wrapper が別 objspace に
+            /* EC も直接 mark する。local GC では Thread wrapper が別 objspace に
              * ある場合があり（re-home まで）その mark 関数がここで走らないが、
              * stack は生かす必要がある。 */
             if (th->ec) rb_execution_context_mark(th->ec);
@@ -313,7 +313,7 @@ ractor_mark(void *ptr)
     }
 }
 
-/* Ractor r の C 構造体から到達可能な GC root を mark する。confined GC は heap 上の
+/* Ractor r の C 構造体から到達可能な GC root を mark する。local GC は heap 上の
  * Ractor/Thread wrapper object に頼れない（別 objspace にある場合がある）ため、
  * この Ractor の所有物はここから直接 root にする。 */
 void

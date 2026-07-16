@@ -1282,7 +1282,7 @@ generic_fields_tbl_for(VALUE obj, bool create)
     return cr->generic_fields_tbl;
 }
 
-/* owner の write（mutator insert / confined sweep delete）用のロック。per-Ractor 表は
+/* owner の write（mutator insert / local GC の sweep delete）用のロック。per-Ractor 表は
  * owner 専有なのでロック不要。shared（shareable 用）global 表だけ narrow mutex を取る。 */
 static inline void
 generic_fields_write_lock(struct st_table *tbl)
@@ -1310,7 +1310,7 @@ rb_mark_generic_ivar(VALUE obj)
         return;
     }
 
-    /* confined GC / compaction（single-objspace）の per-object mark。owner の read で
+    /* local GC / compaction（single-objspace）の per-object mark。owner の read で
      * per-Ractor 表は owner 専有なので無ロック。shareable は共有 global 表なので lock を取る。 */
     VALUE data = 0;
     if (generic_fields_shared_p(obj)) {
@@ -1452,7 +1452,7 @@ rb_free_generic_ivar(VALUE obj)
                     ec->gen_fields_cache.obj = Qundef;
                     ec->gen_fields_cache.fields_obj = Qundef;
                 }
-                /* mutator / confined local sweep（host の obj_free）から走る write。owner
+                /* mutator / local GC の sweep（host の obj_free）から走る write。owner
                  * 専有なので per-Ractor 表は無ロック（shareable のみ global mutex）。global GC
                  * の sweep からは来ない（下の during_global_gc ガードで弾く）。 */
                 if (rb_gc_during_global_gc_p()) {
@@ -2439,7 +2439,7 @@ rb_mv_generic_ivar_to_shared(VALUE obj)
     struct st_table *src = cr->generic_fields_tbl;
 
     st_data_t key = (st_data_t)obj, val = 0;
-    /* st_insert は alloc（resize）しうる。自 Ractor の confined GC を止める: その
+    /* st_insert は alloc（resize）しうる。自 Ractor の local GC を止める: その
      * mark/sweep は generic_fields_lock を取る（自己 deadlock）し、移送途中の entry を
      * 観測しうる。 */
     bool gc_disabled = RTEST(rb_gc_local_disable_no_rest());

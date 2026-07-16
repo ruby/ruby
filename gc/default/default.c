@@ -813,7 +813,7 @@ static bool rlgc_during_absorb = false;
 
 /* world 停止中の verify（VM lock+barrier を取る GC.verify、または barrier を持つ
  * global GC）でのみ true。cross-objspace 検査は全 objspace のページを走査するため
- * world 停止時のみ健全で、confined な mid-collection verify では他 Ractor の
+ * world 停止時のみ健全で、mid-local-GC の verify では他 Ractor の
  * lock-free 割り当てと競合する（SEGV）。false 時は当該検査をスキップする。 */
 static bool rlgc_verify_world_stopped = false;
 
@@ -1027,10 +1027,10 @@ struct heap_page {
 
     bits_t remembered_bits[HEAP_PAGE_BITMAP_LIMIT];
 
-    /* オブジェクトごとの追加 2 bit。shareable_bits は confined sweep が決して free して
+    /* オブジェクトごとの追加 2 bit。shareable_bits は local GC の sweep が決して free して
      * はならないもの（shareable の死は global GC だけが判定できる）を示す。生成時と
      * rb_gc_impl_obj_became_shareable で立てる。shref_bits は shref（shareable から参照
-     * される unshareable）を示し、confined GC は root 扱いする。write barrier が維持する。 */
+     * される unshareable）を示し、local GC は root 扱いする。write barrier が維持する。 */
     bits_t shareable_bits[HEAP_PAGE_BITMAP_LIMIT];
     bits_t shref_bits[HEAP_PAGE_BITMAP_LIMIT];
 
@@ -1672,7 +1672,7 @@ check_rvalue_consistency_force(rb_objspace_t *objspace, const VALUE obj, int ter
      * VM lock なしで安全。zombie objspace（所有者なし）の sweep では GET_RACTOR() が
      * NULL になり、ここで lock を取ると NULL 参照になる。 */
     const bool world_stopped = objspace->during_global_gc;
-    /* 下の VM lock は、write barrier から呼ばれた confined verify（他 Ractor が走行し
+    /* 下の VM lock は、write barrier から呼ばれた local GC 中の verify（他 Ractor が走行し
      * heap を realloc する）での cross-objspace 走査を守る。ただしこの objspace で GC 進行中は
      * 取ってはいけない。ページは安定で cross-objspace 走査も world 停止時のみ行い、かつ
      * Ractor が自分の ractor lock を保持済みのことがあり、ractor→VM の逆順ロックになるため。
@@ -1690,10 +1690,10 @@ check_rvalue_consistency_force(rb_objspace_t *objspace, const VALUE obj, int ter
              * shref payload）かもしれない。is_pointer_to_heap は渡した objspace しか探さない。
              * どの objspace の heap にも無いときだけ本当に Ruby オブジェクトでない。foreign な
              * オブジェクトの mark/age/remembered bit は所有者のもので、ここで読むと所有者の
-             * confined GC と競合するため、per-object 検査には入らない。 */
+             * local GC と競合するため、per-object 検査には入らない。 */
             if (!world_stopped) {
-                /* confined verify は no-barrier VM lock しか持たず barrier は持たない。
-                 * 他 Ractor が confined 割り当てで heap_pages.sorted を realloc しており、
+                /* local GC 中の verify は no-barrier VM lock しか持たず barrier は持たない。
+                 * 他 Ractor が 自 objspace への割り当てで heap_pages.sorted を realloc しており、
                  * verify_pointer_in_any_heap_p の全 objspace bsearch はそれと競合して SEGV する。
                  * barrier 無しでは foreign ポインタを確認できないのでここでは許容し、
                  * global GC の verify（world 停止）が完全な存在検査を行う。 */
@@ -2695,7 +2695,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
         /* born-shareable は WB protected でなければならない
          * (shareable の shref/remset 規律は WB 前提)。 */
         GC_ASSERT(wb_protected);
-        /* born-shareable をページの bitmap にも反映する。confined GC は
+        /* born-shareable をページの bitmap にも反映する。local GC は
          * ここから shareable を root にする（rlgc_pinned_roots_mark）。 */
         struct heap_page *page = GET_HEAP_PAGE(obj);
         _MARK_IN_BITMAP(page->shareable_bits, page, obj);
@@ -4256,7 +4256,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 
               default:
 #if RGENGC_CHECK_MODE
-                /* confined GC は pin された slot を決して free してはならない（global GC は
+                /* local GC は pin された slot を決して free してはならない（global GC は
                  * 可: unified mark は正確で、死んだ shareable こそ回収対象）。CHECK 限定で
                  * shareable/shref bit を読む。bulk clear が free ループ後なのでここではまだ
                  * 有効。release ビルドでは不変条件を信頼する。 */
@@ -4365,7 +4365,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
      * free（rb_gc_obj_free_vm_weak_references: ci_table / fstring / symbol / cme）はその表を
      * 変更するので、ページの free ループを no-barrier VM lock で囲む。global GC 中は barrier が
      * その表を守るので不要。compacting な local GC は GC 全体の lock を持つので無害に nest する。
-     * 非 main Ractor の confined GC はそれらの shareable を free しないので取らない。 */
+     * 非 main Ractor の local GC はそれらの shareable を free しないので取らない。 */
     const bool sweep_needs_vm_lock =
         objspace == rlgc_main_objspace && rb_multi_ractor_p() && !objspace->during_global_gc;
     unsigned int sweep_lock_lev = 0;
@@ -6011,9 +6011,9 @@ check_children_i(const VALUE child, void *ptr)
     }
 
     /* 残りの cross-objspace 検査は全 objspace のページを走査する
-     * （verify_pointer_in_any_heap_p）。これは world 停止時のみ健全で、confined な
-     * mid-collection verify では他 Ractor が lock-free に割り当て・ページ構造を変更し競合
-     * する（SEGV）。その場合はスキップし、次の world 停止 verify が再検査する。 */
+     * （verify_pointer_in_any_heap_p）。これは world 停止時のみ健全で、mid-local-GC の
+     * verify では他 Ractor が lock-free に割り当て・ページ構造を変更し競合する（SEGV）。
+     * その場合はスキップし、次の world 停止 verify が再検査する。 */
     if (!rlgc_verify_world_stopped) return;
 
     /* 非 heap の child がこの callback に来るのは、stale なフィールドを素の rb_gc_mark で
@@ -6056,9 +6056,9 @@ check_children_i(const VALUE child, void *ptr)
 
     if (GET_HEAP_OBJSPACE(child) != data->objspace) {
         /* 合法な cross-objspace エッジは shareable から始まるか、child の shref bit に
-         * 記録されたもの（所有者の confined GC をまたいで生かされる in-flight の send/move
+         * 記録されたもの（所有者の local GC をまたいで生かされる in-flight の send/move
          * payload。root_scope_check_i も同じ記録を尊重する）だけ。unshareable な parent が
-         * 未記録の foreign unshareable child を持つと双方の confined GC から不可視になる。
+         * 未記録の foreign unshareable child を持つと双方の local GC から不可視になる。
          * 例外は box の top_self（全スレッドの th->top_self が指し、プロセス存続中 VM 恒久）。
          * global GC 中はスキップ。全 shref bit を消し in-flight payload は再 pin で生かすので
          * shref 免除は発火せず、unified な正確 STW mark でこの不変条件自体が無意味になる。 */
@@ -6132,7 +6132,7 @@ root_scope_check_i(const char *category, VALUE obj, void *ptr)
 
     if (RB_SPECIAL_CONST_P(obj)) return;
     /* この検査は全 objspace を走査する（verify_pointer_in_any_heap_p）ので world 停止時のみ
-     * 健全。confined な mid-collection verify は他 Ractor の lock-free 割り当てと競合する。 */
+     * 健全。mid-local-GC の verify は他 Ractor の lock-free 割り当てと競合する。 */
     if (!rlgc_verify_world_stopped) return;
     /* 併合途中は VM グローバル root 表が未併合の src を指す（一時的な非 heap/foreign root）。
      * 併合後に再検査する。 */
@@ -6384,7 +6384,7 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
     /* 呼び出し元 Ractor の root scoping を検査する（walk は現在の objspace を root にするので、
      * それが検査対象のときだけ）。global GC 中はスキップ。rb_gc_mark_roots が global_gc=true で
      * 全 Ractor の root と main 限定の VM グローバル容器を意図的にまたぎ、unified な正確 mark が
-     * 正当に foreign オブジェクトへ届くので、この検査の confined-scope 不変条件は適用されない。 */
+     * 正当に foreign オブジェクトへ届くので、この検査の objspace 封じ込め不変条件は適用されない。 */
     if (!rb_gc_single_objspace_p() && objspace == rb_gc_get_objspace() &&
         !rb_gc_impl_during_global_gc_p(objspace)) {
         rb_objspace_reachable_objects_from_root(root_scope_check_i, &data);
@@ -6616,7 +6616,7 @@ rb_gc_impl_handle_weak_references_alive_p(void *objspace_ptr, VALUE obj)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    /* confined GC は foreign なオブジェクトの生死を判定できないので生存扱いにする（所有者
+    /* local GC は foreign なオブジェクトの生死を判定できないので生存扱いにする（所有者
      * または global GC が判定する。global GC の unified mark は正確で全てを判定できる）。 */
     if (RB_UNLIKELY(GET_HEAP_OBJSPACE(obj) != objspace) && !objspace->during_global_gc) return true;
 
@@ -6679,7 +6679,7 @@ gc_marks_finish(rb_objspace_t *objspace)
         }
     }
 
-    /* 通常 mark が届かなかった shareable と shref を pin する。confined GC は shareable
+    /* 通常 mark が届かなかった shareable と shref を pin する。local GC は shareable
      * （他 objspace が持ちうる）も shref（foreign な shareable が指す）も決して free しては
      * ならない。全走査後に走るので pin 数は retention 指標（global GC だけが回収できる
      * garbage の上限）になる。global GC は pin しない（unified mark が正確な到達可能性）。
@@ -7022,7 +7022,7 @@ gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 }
 
 /* この objspace の root として次を mark する。
- * - 全 shareable: 唯一の参照を他 objspace が持つことがあり confined GC からは見えない。
+ * - 全 shareable: 唯一の参照を他 objspace が持つことがあり local GC からは見えない。
  *   sweep で飛ばすのではなく mark することで世代不変条件を保つ（pin されたオブジェクトも
  *   通常の生存オブジェクトと同様に age/promote する）。shareable の死は global GC だけが判定。
  * - 全 shref（shareable から参照される unshareable）: 参照元の shareable は他 objspace や
@@ -7435,7 +7435,7 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     GC_ASSERT(RB_BUILTIN_TYPE(b) != T_MOVED);
     GC_ASSERT(RB_BUILTIN_TYPE(b) != T_ZOMBIE);
 
-    /* shareable が unshareable を参照した。b を shref として記録し、所有者の confined GC が
+    /* shareable が unshareable を参照した。b を shref として記録し、所有者の local GC が
      * root 扱いするようにする（parent は他 objspace にありうるしそこで traverse されない）。
      * この store は b の所有者しか行えないので b のページは現在の Ractor のもの。素の store。 */
     if (RB_UNLIKELY(RB_FL_TEST_RAW(a, RUBY_FL_SHAREABLE)) &&
@@ -8452,7 +8452,7 @@ rlgc_clear_shref_bits(rb_objspace_t *objspace)
  * する。shareable を free でき、cross-objspace な到達可能性を正確に判定できる唯一の collector。 */
 /* global GC の generic_fields weak pass。
  * per-Ractor 表（unshareable）と global 表（shareable）に分かれた generic_fields を、
- * unified な mark fixpoint の後・sweep の前に処理する。confined GC は per-object の
+ * unified な mark fixpoint の後・sweep の前に処理する。local GC は per-object の
  * rb_mark_generic_ivar で表を引くが、global GC の driver は GET_RACTOR()≠owner なので
  * per-object 引きが壊れる。そこで global GC では per-object mark を止め
  * （rb_mark_generic_ivar は during_global_gc で即 return する）、ここで全表を舐める。
@@ -9122,7 +9122,7 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, struct heap_page *src_pa
     uncollectible = RVALUE_UNCOLLECTIBLE(objspace, src);
     bool remembered = RVALUE_REMEMBERED(objspace, src);
     /* pin bit はオブジェクトと共に移動する。単一 objspace の compaction でこれを失うと、
-     * multi-objspace 化した際に pin が黙って解除され、confined GC が cross-Ractor 参照される
+     * multi-objspace 化した際に pin が黙って解除され、local GC が cross-Ractor 参照される
      * method entry や shref 対象を free しうる。 */
     bool shareable = MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(src), src) != 0;
     bool shref = MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(src), src) != 0;
