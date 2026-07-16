@@ -778,6 +778,9 @@ require 'erb/util'
 # [template processor]: https://en.wikipedia.org/wiki/Template_processor
 #
 class ERB
+  IDENTITY_METHOD = BasicObject.instance_method(:equal?)
+  private_constant :IDENTITY_METHOD
+
   # :markup: markdown
   #
   # :call-seq:
@@ -1007,7 +1010,7 @@ class ERB
   # [local binding]: rdoc-ref:ERB@Local+Binding
   #
   def result(b=new_toplevel)
-    unless @_init.equal?(self.class.singleton_class)
+    unless initialized_by_new?
       raise ArgumentError, "not initialized"
     end
     eval(@src, b, (@filename || '(erb)'), @lineno)
@@ -1061,6 +1064,11 @@ class ERB
   end
   private :new_toplevel
 
+  def initialized_by_new?
+    IDENTITY_METHOD.bind_call(@_init, self.class.singleton_class)
+  end
+  private :initialized_by_new?
+
   # :markup: markdown
   #
   # :call-seq:
@@ -1087,7 +1095,7 @@ class ERB
   # ```
   #
   def def_method(mod, methodname, fname='(ERB)')
-    unless @_init.equal?(self.class.singleton_class)
+    unless initialized_by_new?
       raise ArgumentError, "not initialized"
     end
     src = self.src.sub(/^(?!#|$)/) {"def #{methodname}\n"} << "\nend\n"

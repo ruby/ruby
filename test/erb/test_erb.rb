@@ -85,8 +85,22 @@ class TestERB < Test::Unit::TestCase
 end
 
 class TestERBCore < Test::Unit::TestCase
+  class AlwaysEqual
+    def equal?(_other)
+      true
+    end
+  end
+
   def setup
     @erb = ERB
+  end
+
+  def marshal_loaded_erb(init, src: "")
+    erb = ERB.allocate
+    erb.instance_variable_set(:@src, src)
+    erb.instance_variable_set(:@lineno, 1)
+    erb.instance_variable_set(:@_init, init)
+    Marshal.load(Marshal.dump(erb))
   end
 
   def test_version
@@ -664,12 +678,22 @@ EOS
     assert_raise(ArgumentError) {erb.result}
   end
 
+  def test_prohibited_marshal_load_result_with_overridden_equal
+    erb = marshal_loaded_erb(AlwaysEqual.new, src: "raise 'unreachable'")
+    assert_raise(ArgumentError) {erb.result}
+  end
+
   def test_prohibited_marshal_load_def_method
     erb = ERB.allocate
     erb.instance_variable_set(:@src, "")
     erb.instance_variable_set(:@lineno, 1)
     erb.instance_variable_set(:@_init, true)
     erb = Marshal.load(Marshal.dump(erb))
+    assert_raise(ArgumentError) {erb.def_method(Class.new, 'render')}
+  end
+
+  def test_prohibited_marshal_load_def_method_with_overridden_equal
+    erb = marshal_loaded_erb(AlwaysEqual.new)
     assert_raise(ArgumentError) {erb.def_method(Class.new, 'render')}
   end
 
