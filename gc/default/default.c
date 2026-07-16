@@ -6007,6 +6007,21 @@ check_children_i(const VALUE child, void *ptr)
         if (check_rvalue_consistency_force(data->objspace, child, FALSE) != 0) {
             fprintf(stderr, "check_children_i: %s has error (referenced from %s)",
                     rb_obj_info(child), rb_obj_info(data->parent));
+            /* 追加診断: parent の shareable/pin と、edge が String の shared root か。 */
+            {
+                VALUE p = data->parent;
+                fprintf(stderr, " [diag parent=%p sh=%d pinned=%d child_os=%p verify_os=%p",
+                        (void *)p, (int)!!RB_FL_TEST_RAW(p, RUBY_FL_SHAREABLE),
+                        (int)RVALUE_PINNED(data->objspace, p),
+                        (void *)GET_HEAP_OBJSPACE(child), (void *)data->objspace);
+                if (RB_TYPE_P(p, T_STRING)) {
+                    fprintf(stderr, " str_shared=%d str_fstr=%d aux_shared_is_child=%d",
+                            (int)!!FL_TEST_RAW(p, STR_SHARED),
+                            (int)!!FL_TEST_RAW(p, RSTRING_FSTR),
+                            (int)(FL_TEST_RAW(p, STR_NOEMBED) && RSTRING(p)->as.heap.aux.shared == child));
+                }
+                fprintf(stderr, "]\n");
+            }
             data->err_count++;
         }
         return;
