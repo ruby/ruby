@@ -1655,7 +1655,7 @@ has_redirection(const char *cmd, UINT cp)
           case '%':
             if (*++ptr != '_' && !ISALPHA(*ptr)) break;
             while (*++ptr == '_' || ISALNUM(*ptr));
-            if (*ptr++ == '%') return TRUE;
+            if (*ptr && *ptr++ == '%') return TRUE;
             break;
 
           case '\\':
