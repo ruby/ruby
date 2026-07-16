@@ -2646,6 +2646,9 @@ rb_fiber_start(rb_fiber_t *fiber)
         th->blocking += 1;
     }
 
+    /* resolved before EC_PUSH_TAG to keep the setjmp region minimal */
+    const rb_cref_t *cref = rb_proc_refinements_cref(fiber->first_proc);
+
     EC_PUSH_TAG(th->ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         rb_context_t *cont = &VAR_FROM_MEMORY(fiber)->cont;
@@ -2659,8 +2662,7 @@ rb_fiber_start(rb_fiber_t *fiber)
         th->ec->root_svar = Qfalse;
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
-        cont->value = rb_vm_invoke_proc(th->ec, proc, argc, argv, cont->kw_splat, VM_BLOCK_HANDLER_NONE,
-                                        rb_proc_refinements_cref(fiber->first_proc));
+        cont->value = rb_vm_invoke_proc(th->ec, proc, argc, argv, cont->kw_splat, VM_BLOCK_HANDLER_NONE, cref);
     }
     EC_POP_TAG();
 
