@@ -123,6 +123,28 @@ fn test_putobject() {
 }
 
 #[test]
+fn test_recompile_exit_waits_for_interpreter_profiles() {
+    set_call_threshold(2);
+    eval("
+        def recompile_profile_window(a, b) = a + b
+        recompile_profile_window(1, 2)
+        recompile_profile_window(1, 2)
+    ");
+
+    let iseq = get_method_iseq("self", "recompile_profile_window");
+    let num_profiles = get_option!(num_profiles);
+    for _ in 0..num_profiles {
+        eval("recompile_profile_window(1.5, 2.5)");
+    }
+    let payload = get_or_create_iseq_payload(iseq);
+    assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+
+    eval("recompile_profile_window(1.5, 2.5)");
+    let payload = get_or_create_iseq_payload(iseq);
+    assert!(unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+}
+
+#[test]
 fn test_dupstring() {
     eval(r##"
         def test = "#{""}"
