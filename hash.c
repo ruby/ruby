@@ -5955,7 +5955,7 @@ env_each_pair(VALUE ehash)
  *
  * Similar to ENV.delete_if, but returns +nil+ if no changes were made.
  *
- * Yields each environment variable name and its value as a 2-element Array,
+ * Calls the block with each environment variable name and value,
  * deleting each environment variable for which the block returns a truthy value,
  * and returning ENV (if any deletions) or +nil+ (if not):
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
@@ -6690,7 +6690,7 @@ env_except(int argc, VALUE *argv, VALUE _)
  *    ENV.reject {|name, value| ... } -> hash
  *    ENV.reject                      -> new_enumerator
  *
- *  Yields each environment variable name and its value as a 2-element Array.
+ *  Calls the block with each environment variable name and value.
  *  Returns a Hash whose items are determined by the block.
  *  When the block returns a truthy value, the name/value pair is ignored;
  *  otherwise the pair is added to the return Hash:
