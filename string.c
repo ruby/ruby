@@ -5142,7 +5142,7 @@ static VALUE get_pat(VALUE);
  *  - Computes +matchdata+, which will be either a MatchData object or +nil+
  *    (see Regexp#match):
  *
- *      matchdata = regexp.match(self[offset..])
+ *      matchdata = regexp.match(self, offset)
  *
  *  With no block given, returns the computed +matchdata+ or +nil+:
  *
@@ -5190,8 +5190,7 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *
  *    regexp = Regexp.new(pattern)
  *
- *  Returns +true+ if <tt>self[offset..].match(regexp)</tt> returns a MatchData object,
- *  +false+ otherwise:
+ *  Returns the result of <tt>regexp.match?(self, offset)</tt>:
  *
  *    'foo'.match?(/o/) # => true
  *    'foo'.match?('o') # => true
