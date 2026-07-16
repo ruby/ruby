@@ -2632,8 +2632,9 @@ rb_fiber_set_scheduler(VALUE klass, VALUE scheduler)
 NORETURN(static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt, VALUE err));
 
 void
-rb_fiber_start(rb_fiber_t *fiber)
+rb_fiber_start(rb_fiber_t *fiber_arg)
 {
+    rb_fiber_t * volatile fiber = fiber_arg;
     rb_thread_t * volatile th = fiber->cont.saved_ec.thread_ptr;
 
     rb_proc_t *proc;
@@ -2651,7 +2652,7 @@ rb_fiber_start(rb_fiber_t *fiber)
 
     EC_PUSH_TAG(th->ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        rb_context_t *cont = &VAR_FROM_MEMORY(fiber)->cont;
+        rb_context_t *cont = &fiber->cont;
         int argc;
         const VALUE *argv, args = cont->value;
         GetProcPtr(fiber->first_proc, proc);
