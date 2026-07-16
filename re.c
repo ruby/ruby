@@ -4568,7 +4568,8 @@ rb_reg_s_union(VALUE self, VALUE args0)
  *    r.match('dog')      # => #<MatchData "dog">
  *    r.match('cog')      # => nil
  *
- *  For each pattern that is a string, <tt>Regexp.new(pattern)</tt> is used:
+ *  For each pattern that is a string, <tt>::escape</tt> is applied so that the
+ *  string is matched literally:
  *
  *    Regexp.union('penzance')             # => /penzance/
  *    Regexp.union('a+b*c')                # => /a\+b\*c/
