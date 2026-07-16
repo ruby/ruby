@@ -2286,6 +2286,11 @@ unsafe extern "C" {
         len_out: *mut ::std::os::raw::c_long,
         byte_size_out: *mut usize,
     ) -> bool;
+    pub fn rb_zjit_array_new_can_fastpath(
+        len: ::std::os::raw::c_long,
+        alloc_size_out: *mut usize,
+        flags_out: *mut VALUE,
+    ) -> bool;
     pub fn rb_profile_frames(
         start: ::std::os::raw::c_int,
         limit: ::std::os::raw::c_int,
