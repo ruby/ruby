@@ -26421,4 +26421,521 @@ mod hir_opt_tests {
           Return v90
         ");
     }
+
+    #[test]
+    fn test_deduplicate_unbox_fixnum() {
+        eval(r#"
+            def test(arr, idx)
+              arr[idx] + arr[idx] + arr[idx]
+            end
+            test([1, 2, 3], 1)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          v4:BasicObject = LoadField v2, :idx@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :arr@1
+          v9:BasicObject = LoadArg :idx@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
+          v49:ArrayExact = GuardType v12, ArrayExact recompile
+          v50:Fixnum = GuardType v13, Fixnum
+          v51:CInt64 = UnboxFixnum v50
+          v52:CInt64 = ArrayLength v49
+          v53:CInt64 = GuardLess v51, v52
+          v54:CInt64 = AdjustBounds v53, v52
+          v55:CInt64[0] = Const CInt64(0)
+          v56:CInt64 = GuardGreaterEq v54, v55
+          v57:BasicObject = ArrayAref v49, v56
+          PatchPoint NoEPEscape(test)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
+          v64:CInt64 = ArrayLength v49
+          v65:CInt64 = GuardLess v53, v64
+          v66:CInt64 = AdjustBounds v65, v64
+          v68:CInt64 = GuardGreaterEq v66, v55
+          v69:BasicObject = ArrayAref v49, v68
+          PatchPoint MethodRedefined(Integer@0x1040, +@0x1048, cme:0x1050)
+          v72:Fixnum = GuardType v57, Fixnum recompile
+          v73:Fixnum = GuardType v69, Fixnum
+          v74:Fixnum = FixnumAdd v72, v73
+          PatchPoint NoEPEscape(test)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
+          v81:CInt64 = ArrayLength v49
+          v82:CInt64 = GuardLess v53, v81
+          v83:CInt64 = AdjustBounds v82, v81
+          v85:CInt64 = GuardGreaterEq v83, v55
+          v86:BasicObject = ArrayAref v49, v85
+          PatchPoint MethodRedefined(Integer@0x1040, +@0x1048, cme:0x1050)
+          v90:Fixnum = GuardType v86, Fixnum
+          v91:Fixnum = FixnumAdd v74, v90
+          CheckInterrupts
+          Return v91
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_add() {
+        eval(r#"
+            def test(a, b) = [(a + b), (a + b), (a + b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v40:Fixnum = GuardType v12, Fixnum recompile
+          v41:Fixnum = GuardType v13, Fixnum
+          v42:Fixnum = FixnumAdd v40, v41
+          v32:ArrayExact = NewArray v42, v42, v42
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_sub() {
+        eval(r#"
+            def test(a, b) = [(a - b), (a - b), (a - b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, -@0x1010, cme:0x1018)
+          v40:Fixnum = GuardType v12, Fixnum recompile
+          v41:Fixnum = GuardType v13, Fixnum
+          v42:Fixnum = FixnumSub v40, v41
+          v32:ArrayExact = NewArray v42, v42, v42
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_mult() {
+        eval(r#"
+            def test(a, b) = [(a * b), (a * b), (a * b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, *@0x1010, cme:0x1018)
+          v40:Fixnum = GuardType v12, Fixnum recompile
+          v41:Fixnum = GuardType v13, Fixnum
+          v42:Fixnum = FixnumMult v40, v41
+          v32:ArrayExact = NewArray v42, v42, v42
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_div() {
+        eval(r#"
+            def test(a, b) = [(a / b), (a / b), (a / b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, /@0x1010, cme:0x1018)
+          v44:Fixnum = GuardType v12, Fixnum recompile
+          v45:Fixnum = GuardType v13, Fixnum
+          v46:Integer = FixnumDiv v44, v45
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(Integer@0x1008, /@0x1010, cme:0x1018)
+          v36:ArrayExact = NewArray v46, v46, v46
+          CheckInterrupts
+          Return v36
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_mod() {
+        eval(r#"
+            def test(a, b) = [(a % b), (a % b), (a % b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, %@0x1010, cme:0x1018)
+          v44:Fixnum = GuardType v12, Fixnum recompile
+          v45:Fixnum = GuardType v13, Fixnum
+          v46:Fixnum = FixnumMod v44, v45
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(Integer@0x1008, %@0x1010, cme:0x1018)
+          v36:ArrayExact = NewArray v46, v46, v46
+          CheckInterrupts
+          Return v36
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_eq() {
+        eval(r#"
+            def test(a, b) = [(a == b), (a == b), (a == b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, ==@0x1010, cme:0x1018)
+          v40:Fixnum = GuardType v12, Fixnum recompile
+          v41:Fixnum = GuardType v13, Fixnum
+          v42:BoolExact = FixnumEq v40, v41
+          v32:ArrayExact = NewArray v42, v42, v42
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_neq() {
+        eval(r#"
+            def test(a, b) = [(a != b), (a != b), (a != b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, !=@0x1010, cme:0x1018)
+          v40:Fixnum = GuardType v12, Fixnum recompile
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          v42:Fixnum = GuardType v13, Fixnum
+          v43:BoolExact = FixnumNeq v40, v42
+          v32:ArrayExact = NewArray v43, v43, v43
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_lt() {
+        eval(r#"
+            def test(a, b) = [(a < b), (a < b), (a < b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          v40:Fixnum = GuardType v12, Fixnum recompile
+          v41:Fixnum = GuardType v13, Fixnum
+          v42:BoolExact = FixnumLt v40, v41
+          v32:ArrayExact = NewArray v42, v42, v42
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_le() {
+        eval(r#"
+            def test(a, b) = [(a <= b), (a <= b), (a <= b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, <=@0x1010, cme:0x1018)
+          v40:Fixnum = GuardType v12, Fixnum recompile
+          v41:Fixnum = GuardType v13, Fixnum
+          v42:BoolExact = FixnumLe v40, v41
+          v32:ArrayExact = NewArray v42, v42, v42
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_gt() {
+        eval(r#"
+            def test(a, b) = [(a > b), (a > b), (a > b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, >@0x1010, cme:0x1018)
+          v40:Fixnum = GuardType v12, Fixnum recompile
+          v41:Fixnum = GuardType v13, Fixnum
+          v42:BoolExact = FixnumGt v40, v41
+          v32:ArrayExact = NewArray v42, v42, v42
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_ge() {
+        eval(r#"
+            def test(a, b) = [(a >= b), (a >= b), (a >= b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, >=@0x1010, cme:0x1018)
+          v40:Fixnum = GuardType v12, Fixnum recompile
+          v41:Fixnum = GuardType v13, Fixnum
+          v42:BoolExact = FixnumGe v40, v41
+          v32:ArrayExact = NewArray v42, v42, v42
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_and() {
+        eval(r#"
+            def test(a, b) = [(a & b), (a & b), (a & b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, &@0x1010, cme:0x1018)
+          v40:Fixnum = GuardType v12, Fixnum recompile
+          v41:Fixnum = GuardType v13, Fixnum
+          v42:Fixnum = FixnumAnd v40, v41
+          v32:ArrayExact = NewArray v42, v42, v42
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_or() {
+        eval(r#"
+            def test(a, b) = [(a | b), (a | b), (a | b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, |@0x1010, cme:0x1018)
+          v40:Fixnum = GuardType v12, Fixnum recompile
+          v41:Fixnum = GuardType v13, Fixnum
+          v42:Fixnum = FixnumOr v40, v41
+          v32:ArrayExact = NewArray v42, v42, v42
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_deduplicate_fixnum_xor() {
+        eval(r#"
+            def test(a, b) = [(a ^ b), (a ^ b), (a ^ b)]
+            test(3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, ^@0x1010, cme:0x1018)
+          v41:Fixnum = GuardType v12, Fixnum recompile
+          v42:Fixnum = GuardType v13, Fixnum
+          v43:Fixnum = FixnumXor v41, v42
+          PatchPoint NoEPEscape(test)
+          v33:ArrayExact = NewArray v43, v43, v43
+          CheckInterrupts
+          Return v33
+        ");
+    }
 }
