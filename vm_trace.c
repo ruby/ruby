@@ -497,10 +497,12 @@ exec_hooks_unprotected(const rb_execution_context_t *ec, rb_hook_list_t *list, c
 }
 
 static int
-exec_hooks_protected(rb_execution_context_t *ec, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
+exec_hooks_protected(rb_execution_context_t *ec_arg, rb_hook_list_t *list_arg, const rb_trace_arg_t *trace_arg)
 {
     enum ruby_tag_type state;
     volatile int raised;
+    rb_execution_context_t * volatile ec = ec_arg;
+    rb_hook_list_t * volatile list = list_arg;
 
     if (exec_hooks_precheck(ec, list, trace_arg) == 0) return 0;
 

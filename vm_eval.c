@@ -1479,11 +1479,12 @@ vm_frametype_name(const rb_control_frame_t *cfp);
 static VALUE
 rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
             const struct vm_ifunc *const ifunc,
-            rb_execution_context_t *ec)
+            rb_execution_context_t *ec_arg)
 {
     enum ruby_tag_type state;
     volatile VALUE retval = Qnil;
-    rb_control_frame_t *const cfp = ec->cfp;
+    rb_execution_context_t * volatile ec = ec_arg;
+    rb_control_frame_t *volatile const cfp = ec->cfp;
 
     EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
@@ -2704,11 +2705,12 @@ rb_catch(const char *tag, rb_block_call_func_t func, VALUE data)
 
 static VALUE
 vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
-                 enum ruby_tag_type *stateptr, rb_execution_context_t *volatile ec)
+                 enum ruby_tag_type *stateptr_arg, rb_execution_context_t *volatile ec)
 {
     enum ruby_tag_type state;
     VALUE val = Qnil;		/* OK */
     rb_control_frame_t *volatile saved_cfp = ec->cfp;
+    enum ruby_tag_type * volatile stateptr = stateptr_arg;
 
     EC_PUSH_TAG(ec);
 
