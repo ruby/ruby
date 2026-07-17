@@ -3810,6 +3810,13 @@ AS_CASE(["${enable_dtrace}"],
 ], [
     rb_cv_dtrace_available=no
 ])
+AS_CASE(["$target_cpu-$target_os"], [aarch64-freebsd* | arm64-freebsd*], [dnl
+    # FreeBSD's libdtrace mishandles is-enabled probes on aarch64: dt_modtext()
+    # rewrites the call site to a bare nop without clearing the return register,
+    # so RUBY_DTRACE_*_ENABLED() returns a garbage value and fires probes even
+    # when no consumer is attached. See dt_link.c dt_modtext() for __aarch64__.
+    rb_cv_dtrace_available=no
+])
 AS_IF([test "${enable_dtrace}" = yes], [dnl
     AS_IF([test -z "$DTRACE"], [dnl
 	AC_MSG_ERROR([dtrace(1) is missing])
