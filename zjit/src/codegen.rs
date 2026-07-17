@@ -2143,23 +2143,41 @@ fn gen_new_array(
     elements: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_leaf_call_with_gc(asm, state);
-
     let num: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
-    if !elements.is_empty() {
-        let argv = gen_push_opnds(jit, asm, &elements);
-        return asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv);
+    // When the new array would be embedded, bump-allocate it inline and initialize the elements
+    // directly. The fresh object is young and white, so those writes need no write barriers.
+    let mut alloc_size: usize = 0;
+    let mut flags = VALUE(0);
+    // Reserve the argv buffer once. Only the fallback path and the non-embeddable path write into
+    // it, and at most one of those is emitted per compile, so the reservation is never doubled.
+    let mut argv = Opnd::UImm(0);
+    if elements.len() > 0 {
+        argv = asm.alloc_stack(jit, elements.len());
+    }
+    if unsafe { rb_zjit_array_new_can_fastpath(num, &mut alloc_size, &mut flags) } {
+        let klass = unsafe { rb_cArray };
+        return gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass,
+            &|asm, ary| {
+                for (i, &elem) in elements.iter().enumerate() {
+                    let offset = RUBY_OFFSET_RARRAY_AS_ARY + (i as i32) * SIZEOF_VALUE_I32;
+                    asm.store(Opnd::mem(VALUE_BITS, ary, offset), elem);
+                }
+            },
+            |asm| {
+                gen_prepare_leaf_call_with_gc(asm, state);
+                if elements.len() > 0 {
+                    gen_write_operands_to_native_stack(asm, &elements, argv);
+                }
+                asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv)
+            });
     }
 
-    let alloc_size = std::mem::size_of::<RArray>();
-
-    let flags = (RUBY_T_ARRAY as u64) | (RARRAY_EMBED_FLAG as u64);
-    let klass = unsafe { rb_cArray };
-
-    gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass, &|_asm, _obj| {}, |asm| {
-        asm_ccall!(asm, rb_ec_ary_new_from_values, EC, 0i64.into(), Opnd::UImm(0))
-    })
+    gen_prepare_leaf_call_with_gc(asm, state);
+    if elements.len() > 0 {
+        gen_write_operands_to_native_stack(asm, &elements, argv);
+    }
+    asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv)
 }
 
 /// Adjust potentially-negative index by the given length, returning the adjusted index. If still negative,
@@ -3916,12 +3934,16 @@ fn gen_push_opnds(jit: &JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::O
         Opnd::UImm(0)
     };
 
-    // Write operands into stack slots allocated by asm.alloc_stack()
-    for (idx, &opnd) in opnds.iter().enumerate() {
-        asm.mov(Opnd::mem(VALUE_BITS, argv, idx as i32 * SIZEOF_VALUE_I32), opnd);
-    }
+    gen_write_operands_to_native_stack(asm, opnds, argv);
 
     argv
+}
+
+/// Write operands into stack slots previously reserved by asm.alloc_stack().
+fn gen_write_operands_to_native_stack(asm: &mut Assembler, opnds: &[Opnd], stack: lir::Opnd) {
+    for (idx, &opnd) in opnds.iter().enumerate() {
+        asm.mov(Opnd::mem(VALUE_BITS, stack, idx as i32 * SIZEOF_VALUE_I32), opnd);
+    }
 }
 
 fn gen_toregexp(jit: &mut JITState, asm: &mut Assembler, function: &Function, opt: usize, values: Vec<Opnd>, state: &FrameState) -> Opnd {
