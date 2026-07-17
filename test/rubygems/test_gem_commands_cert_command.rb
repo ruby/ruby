@@ -468,7 +468,7 @@ Removed '/CN=alternate/DC=example'
 
   def test_execute_sign
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0o600
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -497,7 +497,7 @@ Removed '/CN=alternate/DC=example'
 
   def test_execute_sign_encrypted_key
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0o600
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -528,13 +528,13 @@ Removed '/CN=alternate/DC=example'
     FileUtils.mkdir_p File.join Gem.user_home, ".gem"
 
     private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
-    Gem::Security.write PRIVATE_KEY, private_key_path
+    Gem::Security.write_private_key PRIVATE_KEY, private_key_path
 
     public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
-    Gem::Security.write PUBLIC_CERT, public_cert_path
+    Gem::Security.write_certificate PUBLIC_CERT, public_cert_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0o600
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -560,13 +560,13 @@ Removed '/CN=alternate/DC=example'
     FileUtils.mkdir_p File.join(Gem.user_home, ".gem")
 
     private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
-    Gem::Security.write ENCRYPTED_PRIVATE_KEY, private_key_path, 0o600, PRIVATE_KEY_PASSPHRASE
+    Gem::Security.write_private_key ENCRYPTED_PRIVATE_KEY, private_key_path, 0o600, PRIVATE_KEY_PASSPHRASE
 
     public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
-    Gem::Security.write PUBLIC_CERT, public_cert_path
+    Gem::Security.write_certificate PUBLIC_CERT, public_cert_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0o600
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -592,10 +592,10 @@ Removed '/CN=alternate/DC=example'
     FileUtils.mkdir_p File.join Gem.user_home, ".gem"
 
     private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
-    Gem::Security.write PRIVATE_KEY, private_key_path
+    Gem::Security.write_private_key PRIVATE_KEY, private_key_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0o600
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -620,10 +620,10 @@ ERROR:  --certificate not specified and ~/.gem/gem-public_cert.pem does not exis
     FileUtils.mkdir_p File.join Gem.user_home, ".gem"
 
     public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
-    Gem::Security.write PUBLIC_CERT, public_cert_path
+    Gem::Security.write_certificate PUBLIC_CERT, public_cert_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0o600
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -649,7 +649,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     Dir.mkdir gem_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write EXPIRED_PUBLIC_CERT, path, 0o600
+    Gem::Security.write_certificate EXPIRED_PUBLIC_CERT, path, 0o600
 
     assert_equal "/CN=nobody/DC=example", EXPIRED_PUBLIC_CERT.issuer.to_s
 
@@ -681,7 +681,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     Dir.mkdir gem_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write EXPIRED_PUBLIC_CERT, path, 0o600
+    Gem::Security.write_certificate EXPIRED_PUBLIC_CERT, path, 0o600
 
     assert_equal "/CN=nobody/DC=example", EXPIRED_PUBLIC_CERT.issuer.to_s
 

@@ -281,12 +281,12 @@ class TestGemSecurity < Gem::TestCase
     assert_equal expected, trust_dir.dir
   end
 
-  def test_class_write
+  def test_class_write_private_key
     key = Gem::Security.create_key "rsa"
 
     path = File.join @tempdir, "test-private_key.pem"
 
-    Gem::Security.write key, path
+    Gem::Security.write_private_key key, path
 
     assert_path_exist path
 
@@ -295,14 +295,14 @@ class TestGemSecurity < Gem::TestCase
     assert_equal key.to_pem, key_from_file
   end
 
-  def test_class_write_encrypted
+  def test_class_write_private_key_encrypted
     key = Gem::Security.create_key "rsa"
 
     path = File.join @tempdir, "test-private_encrypted_key.pem"
 
     passphrase = "It should be long."
 
-    Gem::Security.write key, path, 0o600, passphrase
+    Gem::Security.write_private_key key, path, 0o600, passphrase
 
     assert_path_exist path
 
@@ -311,7 +311,7 @@ class TestGemSecurity < Gem::TestCase
     assert_equal key.to_pem, key_from_file.to_pem
   end
 
-  def test_class_write_encrypted_cipher
+  def test_class_write_private_key_encrypted_cipher
     key = Gem::Security.create_key "rsa"
 
     path = File.join @tempdir, "test-private_encrypted__with_non_default_cipher_key.pem"
@@ -320,7 +320,7 @@ class TestGemSecurity < Gem::TestCase
 
     cipher = OpenSSL::Cipher.new "AES-192-CBC"
 
-    Gem::Security.write key, path, 0o600, passphrase, cipher
+    Gem::Security.write_private_key key, path, 0o600, passphrase, cipher
 
     assert_path_exist path
 
@@ -331,5 +331,17 @@ class TestGemSecurity < Gem::TestCase
     key_from_file = OpenSSL::PKey::RSA.new key_file_contents, passphrase
 
     assert_equal key.to_pem, key_from_file.to_pem
+  end
+
+  def test_class_write_certificate
+    path = File.join @tempdir, "test-public_cert.pem"
+
+    Gem::Security.write_certificate PUBLIC_CERT, path
+
+    assert_path_exist path
+
+    cert_from_file = File.read path
+
+    assert_equal PUBLIC_CERT.to_pem, cert_from_file
   end
 end if Gem::HAVE_OPENSSL && !Gem.java_platform?

@@ -161,7 +161,7 @@ class Gem::Commands::CertCommand < Gem::Command
       Gem::Security::ONE_DAY * expiration_length_days
     )
 
-    Gem::Security.write cert, "gem-public_cert.pem"
+    Gem::Security.write_certificate cert, "gem-public_cert.pem"
   end
 
   def build_key # :nodoc:
@@ -178,7 +178,7 @@ class Gem::Commands::CertCommand < Gem::Command
 
     algorithm = options[:key_algorithm] || Gem::Security::DEFAULT_KEY_ALGORITHM
     key = Gem::Security.create_key(algorithm)
-    key_path = Gem::Security.write key, "gem-private_key.pem", 0o600, passphrase
+    key_path = Gem::Security.write_private_key key, "gem-private_key.pem", 0o600, passphrase
 
     [key, key_path]
   end
@@ -298,7 +298,7 @@ For further reading on signing gems see `ri Gem::Security`.
 
     cert = Gem::Security.sign cert, issuer_key, issuer_cert
 
-    Gem::Security.write cert, cert_file, permissions
+    Gem::Security.write_certificate cert, cert_file, permissions
   end
 
   def sign_certificates # :nodoc:

@@ -47,7 +47,7 @@ class Gem::Security::Signer
     expired_cert_file = "#{File.basename(expired_cert_path)}.expired.#{expiry}"
     new_expired_cert_path = File.join(Gem.user_home, ".gem", expired_cert_file)
 
-    Gem::Security.write(expired_cert, new_expired_cert_path)
+    Gem::Security.write_certificate(expired_cert, new_expired_cert_path)
 
     re_signed_cert = Gem::Security.re_sign(
       expired_cert,
@@ -55,7 +55,7 @@ class Gem::Security::Signer
       Gem::Security::ONE_DAY * Gem.configuration.cert_expiration_length_days
     )
 
-    Gem::Security.write(re_signed_cert, expired_cert_path)
+    Gem::Security.write_certificate(re_signed_cert, expired_cert_path)
 
     yield(expired_cert_path, new_expired_cert_path) if block_given?
   end
@@ -196,11 +196,11 @@ class Gem::Security::Signer
       old_cert_path = File.join(Gem.user_home, ".gem", old_cert_file)
 
       unless File.exist?(old_cert_path)
-        Gem::Security.write(old_cert, old_cert_path)
+        Gem::Security.write_certificate(old_cert, old_cert_path)
 
         cert = Gem::Security.re_sign(old_cert, @key, expiration_length)
 
-        Gem::Security.write(cert, disk_cert_path)
+        Gem::Security.write_certificate(cert, disk_cert_path)
 
         alert("Your cert: #{disk_cert_path} has been auto re-signed with the key: #{disk_key_path}")
         alert("Your expired cert will be located at: #{old_cert_path}")
