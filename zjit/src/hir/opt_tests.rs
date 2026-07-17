@@ -5543,7 +5543,7 @@ mod hir_opt_tests {
           Jump bb6(v22, v22)
         bb5():
           v24:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v25:BasicObject = CCall v24, :rb_obj_is_proc@0x1008
+          v25:BasicObject = CCall v24, :rb_obj_is_proc@0x1004
           v26:TrueClass = GuardBitEquals v25, Value(true) recompile
           Jump bb6(v24, v10)
         bb6(v16:BasicObject, v17:BasicObject):
@@ -5817,7 +5817,7 @@ mod hir_opt_tests {
         bb5():
           v24:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
           v26:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v27:BasicObject = CCall v26, :rb_obj_is_proc@0x1008
+          v27:BasicObject = CCall v26, :rb_obj_is_proc@0x1004
           v28:TrueClass = Const Value(true)
           v29:CBool = IsBitEqual v27, v28
           CondBranch v29, bb7(), bb11()
@@ -5836,7 +5836,7 @@ mod hir_opt_tests {
           v39:CBool = IsBitEqual v38, v37
           CondBranch v39, bb9(), bb13()
         bb9():
-          v41:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1010))
+          v41:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v41, v10)
         bb6(v16:BasicObject, v17:BasicObject):
           v45:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Send: block argument is not nil
@@ -9353,7 +9353,7 @@ mod hir_opt_tests {
           v12:CShape = LoadField v11, :shape_id@0x1000
           v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001) recompile
           v14:CAttrIndex[0] = Const CAttrIndex(0)
-          v15:BasicObject = CCall v11, :rb_ivar_get_at_no_ractor_check@0x1008, v14
+          v15:BasicObject = CCall v11, :rb_ivar_get_at_no_ractor_check@0x1002, v14
           CheckInterrupts
           Return v15
         ");
@@ -11648,7 +11648,7 @@ mod hir_opt_tests {
           v25:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v24, Value(VALUE(0x1048))
           v26:RubyValue = LoadField v23, :VM_ENV_DATA_INDEX_SPECVAL@0x1050
           v27:FalseClass = GuardBitEquals v26, Value(false)
-          v28:BasicObject = CCallVariadic v9, :Array#[]@0x1058, v10
+          v28:BasicObject = CCallVariadic v9, :Array#[]@0x1051, v10
           CheckInterrupts
           Return v28
         ");
@@ -16250,7 +16250,7 @@ mod hir_opt_tests {
           v20:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v19, Value(VALUE(0x1040))
           v21:RubyValue = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1048
           v22:FalseClass = GuardBitEquals v21, Value(false)
-          v23:Fixnum = CCall v6, :Hash#size@0x1050
+          v23:Fixnum = CCall v6, :Hash#size@0x1049
           CheckInterrupts
           Return v23
         ");
@@ -16288,7 +16288,7 @@ mod hir_opt_tests {
           v20:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v19, Value(VALUE(0x1040))
           v21:RubyValue = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1048
           v22:FalseClass = GuardBitEquals v21, Value(false)
-          v23:ArrayExact = CCallWithFrame v6, :Array#reverse@0x1050
+          v23:ArrayExact = CCallWithFrame v6, :Array#reverse@0x1049
           CheckInterrupts
           Return v23
         ");
@@ -16341,7 +16341,7 @@ mod hir_opt_tests {
           v40:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v39, Value(VALUE(0x1048))
           v41:RubyValue = LoadField v38, :VM_ENV_DATA_INDEX_SPECVAL@0x1050
           v42:FalseClass = GuardBitEquals v41, Value(false)
-          v43:StringExact = CCallVariadic v24, :Array#join@0x1058, v25
+          v43:StringExact = CCallVariadic v24, :Array#join@0x1051, v25
           CheckInterrupts
           Return v43
         ");
@@ -16471,7 +16471,7 @@ mod hir_opt_tests {
           v46:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v45, Value(VALUE(0x1048))
           v47:RubyValue = LoadField v44, :VM_ENV_DATA_INDEX_SPECVAL@0x1050
           v48:FalseClass = GuardBitEquals v47, Value(false)
-          v49:BasicObject = CCallVariadic v28, :String#byteindex@0x1058, v29, v30
+          v49:BasicObject = CCallVariadic v28, :String#byteindex@0x1051, v29, v30
           CheckInterrupts
           Return v49
         ");

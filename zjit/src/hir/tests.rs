@@ -17,6 +17,74 @@ mod size_tests {
 }
 
 #[cfg(test)]
+mod printer_tests {
+    use super::*;
+
+    fn print_same_cfunc_twice(make_insn: impl Fn() -> Insn) -> (String, String) {
+        let mut ptr_map = PtrPrintMap::identity();
+        ptr_map.map_ptrs = true;
+
+        // Keep both printers alive so their cloned instructions cannot reuse storage.
+        let first = make_insn().print(&ptr_map, None);
+        let second = make_insn().print(&ptr_map, None);
+        (format!("{first}"), format!("{second}"))
+    }
+
+    #[test]
+    fn cfunc_pointer_printing_uses_the_pointer_value() {
+        let printed = crate::cruby::with_rubyvm(|| {
+            let cfunc = std::ptr::without_provenance::<u8>(0x1234);
+            let name = ID!(to_s);
+            let cme = unsafe { rb_callable_method_entry(rb_cInteger, name) };
+            assert!(!cme.is_null());
+
+            let ccall = print_same_cfunc_twice(|| Insn::CCall {
+                cfunc,
+                recv: InsnId(0),
+                args: vec![],
+                name,
+                owner: Qnil,
+                return_type: types::Any,
+                elidable: false,
+            });
+            let ccall_with_frame = print_same_cfunc_twice(|| {
+                Insn::CCallWithFrame(Box::new(CCallWithFrameData {
+                    cd: std::ptr::null(),
+                    cfunc,
+                    recv: InsnId(0),
+                    args: vec![],
+                    cme,
+                    name,
+                    state: InsnId(0),
+                    return_type: types::Any,
+                    elidable: false,
+                    block: None,
+                }))
+            });
+            let ccall_variadic = print_same_cfunc_twice(|| {
+                Insn::CCallVariadic(Box::new(CCallVariadicData {
+                    cfunc,
+                    recv: InsnId(0),
+                    args: vec![],
+                    cme,
+                    name,
+                    state: InsnId(0),
+                    return_type: types::Any,
+                    elidable: false,
+                    block: None,
+                }))
+            });
+
+            [ccall, ccall_with_frame, ccall_variadic]
+        });
+
+        for (first, second) in printed {
+            assert_eq!(first, second);
+        }
+    }
+}
+
+#[cfg(test)]
 mod snapshot_tests {
     use super::*;
     use insta::assert_snapshot;
@@ -3790,7 +3858,7 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v22, v22)
         bb5():
           v24:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v25:BasicObject = CCall v24, :rb_obj_is_proc@0x1008
+          v25:BasicObject = CCall v24, :rb_obj_is_proc@0x1004
           v26:TrueClass = GuardBitEquals v25, Value(true) recompile
           Jump bb6(v24, v10)
         bb6(v16:BasicObject, v17:BasicObject):
@@ -4007,7 +4075,7 @@ pub(crate) mod hir_build_tests {
           Jump bb10()
         bb10():
           v26:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v27:BasicObject = CCall v26, :rb_obj_is_proc@0x1008
+          v27:BasicObject = CCall v26, :rb_obj_is_proc@0x1004
           v28:TrueClass = Const Value(true)
           v29:CBool = IsBitEqual v27, v28
           CondBranch v29, bb7(), bb11()
@@ -4026,7 +4094,7 @@ pub(crate) mod hir_build_tests {
           v39:CBool = IsBitEqual v38, v37
           CondBranch v39, bb9(), bb13()
         bb9():
-          v41:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1010))
+          v41:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v41, v10)
         bb6(v16:BasicObject, v17:BasicObject):
           v45:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
@@ -4264,7 +4332,7 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v25, v25)
         bb5():
           v27:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:BasicObject = CCall v27, :rb_obj_is_proc@0x1008
+          v28:BasicObject = CCall v27, :rb_obj_is_proc@0x1005
           v29:TrueClass = GuardBitEquals v28, Value(true) recompile
           Jump bb6(v27, v13)
         bb6(v19:BasicObject, v20:BasicObject):
@@ -4308,7 +4376,7 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v25, v25)
         bb5():
           v27:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:BasicObject = CCall v27, :rb_obj_is_proc@0x1008
+          v28:BasicObject = CCall v27, :rb_obj_is_proc@0x1005
           v29:TrueClass = GuardBitEquals v28, Value(true) recompile
           Jump bb6(v27, v13)
         bb6(v19:BasicObject, v20:BasicObject):
