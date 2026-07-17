@@ -186,34 +186,37 @@ RSpec.describe Bundler::ParallelInstaller do
     let(:gem_two) { definition.specs.find {|spec| spec.name == "two" } }
 
     it "takes all available slots" do
-      redefine_build_jobs do
+      acquired = track_build_jobs(rendezvous: true) do
         Bundler::ParallelInstaller.call(installer, definition.specs, 5, false, true)
       end
 
-      # Take 3 slots out of the 5 available.
-      expect(File.read(File.join(gem_one.extension_dir, "gem_make.out"))).to include("make -j3")
+      # Take 3 slots (capped per gem) out of the 5 available.
+      expect(acquired["one"]).to eq(3)
       # Take the remaining 2 slots.
-      expect(File.read(File.join(gem_two.extension_dir, "gem_make.out"))).to include("make -j2")
+      expect(acquired["two"]).to eq(2)
     end
 
     it "fallback to non parallel when no slots are available" do
-      redefine_build_jobs do
+      acquired = track_build_jobs(rendezvous: true) do
         Bundler::ParallelInstaller.call(installer, definition.specs, 3, false, true)
       end
 
       # Take 3 slots out of the 3 available.
-      expect(File.read(File.join(gem_one.extension_dir, "gem_make.out"))).to include("make -j3")
+      expect(acquired["one"]).to eq(3)
       # Fallback to one slot (non parallel).
-      expect(File.read(File.join(gem_two.extension_dir, "gem_make.out"))).to_not include("make -j")
+      expect(acquired["two"]).to eq(1)
     end
 
     it "uses one jobs when installing serially" do
+      acquired = nil
       Bundler.settings.temporary(jobs: 1) do
-        Bundler::ParallelInstaller.call(installer, definition.specs, 1, false, true)
+        acquired = track_build_jobs do
+          Bundler::ParallelInstaller.call(installer, definition.specs, 1, false, true)
+        end
       end
 
-      expect(File.read(File.join(gem_one.extension_dir, "gem_make.out"))).to_not include("make -j")
-      expect(File.read(File.join(gem_two.extension_dir, "gem_make.out"))).to_not include("make -j")
+      expect(acquired["one"]).to eq(1)
+      expect(acquired["two"]).to eq(1)
     end
 
     it "release the job slots" do
@@ -225,39 +228,52 @@ RSpec.describe Bundler::ParallelInstaller do
         end
       end
 
-      Bundler::ParallelInstaller.call(installer, definition.specs, 3, false, true)
+      acquired = track_build_jobs do
+        Bundler::ParallelInstaller.call(installer, definition.specs, 3, false, true)
+      end
 
       # Take 3 slots out of the 3 available.
-      expect(File.read(File.join(gem_one.extension_dir, "gem_make.out"))).to include("make -j3")
-      # Take 3 slots that were released.
-      expect(File.read(File.join(gem_two.extension_dir, "gem_make.out"))).to include("make -j3")
+      expect(acquired["one"]).to eq(3)
+      # Take 3 slots that were released by `one`.
+      expect(acquired["two"]).to eq(3)
     end
 
-    def redefine_build_jobs
+    # Records how many jobserver slots each gem's build acquired. RubyGems turns
+    # that count directly into `make -jN`, so asserting on it verifies slot
+    # allocation and release without reading a build log, which a successful
+    # build no longer writes. With +rendezvous+, "one" grabs its slots first and
+    # holds them until "two" has grabbed the rest, making the split deterministic.
+    def track_build_jobs(rendezvous: false)
+      acquired = {}
       old_method = Bundler::RubyGemsGemInstaller.instance_method(:build_jobs)
       Bundler::RubyGemsGemInstaller.remove_method(:build_jobs)
 
-      # Rendezvous so that "one" grabs its slots first and keeps holding them
-      # until "two" has grabbed the rest. Blocking on a queue avoids the
-      # busy-wait and makes the ordering deterministic.
       one_acquired = Thread::Queue.new
       two_acquired = Thread::Queue.new
 
       Bundler::RubyGemsGemInstaller.define_method(:build_jobs) do
-        if spec.name == "one"
-          value = old_method.bind(self).call
-          one_acquired << true
-          two_acquired.pop
-        elsif spec.name == "two"
-          one_acquired.pop
-          value = old_method.bind(self).call
-          two_acquired << true
-        end
+        value =
+          if rendezvous && spec.name == "one"
+            v = old_method.bind(self).call
+            one_acquired << true
+            two_acquired.pop
+            v
+          elsif rendezvous && spec.name == "two"
+            one_acquired.pop
+            v = old_method.bind(self).call
+            two_acquired << true
+            v
+          else
+            old_method.bind(self).call
+          end
 
+        acquired[spec.name] = value
         value
       end
 
       yield
+
+      acquired
     ensure
       Bundler::RubyGemsGemInstaller.remove_method(:build_jobs)
       Bundler::RubyGemsGemInstaller.define_method(:build_jobs, old_method)
