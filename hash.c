@@ -5999,7 +5999,7 @@ env_reject_bang(VALUE ehash)
  *   ENV.delete_if { |name, value| block } -> ENV
  *   ENV.delete_if                         -> an_enumerator
  *
- * Yields each environment variable name and its value as a 2-element Array,
+ * Calls the block with each environment variable name and value,
  * deleting each environment variable for which the block returns a truthy value,
  * and returning ENV (regardless of whether any deletions):
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
@@ -6059,7 +6059,7 @@ env_values_at(int argc, VALUE *argv, VALUE _)
  *   ENV.filter { |name, value| block } -> hash of name/value pairs
  *   ENV.filter                         -> an_enumerator
  *
- * Yields each environment variable name and its value as a 2-element Array,
+ * Calls the block with each environment variable name and value,
  * returning a Hash of the names and values for which the block returns a truthy value:
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
  *   ENV.select { |name, value| name.start_with?('b') } # => {"bar"=>"1", "baz"=>"2"}
@@ -6102,7 +6102,7 @@ env_select(VALUE ehash)
  *   ENV.filter! { |name, value| block } -> ENV or nil
  *   ENV.filter!                         -> an_enumerator
  *
- * Yields each environment variable name and its value as a 2-element Array,
+ * Calls the block with each environment variable name and value,
  * deleting each entry for which the block returns +false+ or +nil+,
  * and returning ENV if any deletions made, or +nil+ otherwise:
  *
@@ -6159,7 +6159,7 @@ env_select_bang(VALUE ehash)
  *   ENV.keep_if { |name, value| block } -> ENV
  *   ENV.keep_if                         -> an_enumerator
  *
- * Yields each environment variable name and its value as a 2-element Array,
+ * Calls the block with each environment variable name and value,
  * deleting each environment variable for which the block returns +false+ or +nil+,
  * and returning ENV:
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
