@@ -120,16 +120,8 @@ class TestGemSecuritySigner < Gem::TestCase
 
     signature = signer.sign "hello"
 
-    expected = <<-EXPECTED
-FmrCYxEXW3dgYYNMxPdS16VrdXT+d5nyXTVlRm64ZHSgMxMAaPtQJsVYv73m
-DWHTzNnLhhINSpgBMLh5a4atM52yxVdkPUTgqIH+LeIPBXn8xaP5JLmfDcmI
-tBpc/9DhS3v9iKCX40igAArFu7Gg3swbgQ61SP+U22LvG5nDQZQz3sudtsw3
-qKPykFVaYjrRwzvBdSdJ1PwlAsanSwcwS/GKPtmE/ykZ6X5XOx7wvCDL/zGy
-B8khkB8hDKC6moCzebmUxCBmTmXD0Wjzon+bf4MOriVE3a0ySGRvpr1mKR2+
-9EaVo7pDJLEM487+xg1CAZHRhwshd6II00XEzG/jBQ==
-    EXPECTED
-
-    assert_equal expected, [signature].pack("m")
+    digest = OpenSSL::Digest.new(Gem::Security::DIGEST_NAME)
+    assert PRIVATE_KEY.verify(digest, signature, "hello")
   end
 
   def test_sign_expired

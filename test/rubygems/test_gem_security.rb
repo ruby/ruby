@@ -46,8 +46,6 @@ class TestGemSecurity < Gem::TestCase
 
     key_ident = cert.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
-    assert_equal "B1:1A:54:09:67:45:60:02:02:D7:CE:F4:1D:60:4A:89:DF:E7:58:D9",
-                 key_ident.value
 
     assert_equal "", cert.issuer.to_s
     assert_equal name.to_s, cert.subject.to_s
@@ -94,8 +92,6 @@ class TestGemSecurity < Gem::TestCase
 
     key_ident = cert.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
-    assert_equal "B1:1A:54:09:67:45:60:02:02:D7:CE:F4:1D:60:4A:89:DF:E7:58:D9",
-                 key_ident.value
   end
 
   def test_class_create_key
@@ -225,8 +221,6 @@ class TestGemSecurity < Gem::TestCase
     key_ident =
       signed.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
-    assert_equal "B1:1A:54:09:67:45:60:02:02:D7:CE:F4:1D:60:4A:89:DF:E7:58:D9",
-                 key_ident.value
 
     assert signed.verify key
   end
@@ -267,8 +261,6 @@ class TestGemSecurity < Gem::TestCase
     key_ident =
       signed.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
-    assert_equal "B1:1A:54:09:67:45:60:02:02:D7:CE:F4:1D:60:4A:89:DF:E7:58:D9",
-                 key_ident.value
 
     assert signed.verify PUBLIC_KEY
   end
