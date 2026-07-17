@@ -65,7 +65,7 @@ class TestGemSecuritySigner < Gem::TestCase
 
     signer = Gem::Security::Signer.new nil, nil
 
-    assert_equal PRIVATE_KEY.to_pem, signer.key.to_pem
+    assert_equal PRIVATE_KEY.private_to_pem, signer.key.private_to_pem
     assert_equal [PUBLIC_CERT.to_pem], signer.cert_chain.map(&:to_pem)
   end
 

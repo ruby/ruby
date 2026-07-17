@@ -190,7 +190,7 @@ class Gem::Security::Signer
 
     return unless disk_key
 
-    if disk_key.to_pem == @key.to_pem && disk_cert == old_cert.to_pem
+    if disk_key.private_to_pem == @key.private_to_pem && disk_cert == old_cert.to_pem
       expiry = old_cert.not_after.strftime("%Y%m%d%H%M%S")
       old_cert_file = "gem-public_cert.pem.expired.#{expiry}"
       old_cert_path = File.join(Gem.user_home, ".gem", old_cert_file)

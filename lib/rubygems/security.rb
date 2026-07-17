@@ -593,9 +593,9 @@ module Gem::Security
 
     File.open path, "wb", permissions do |io|
       if passphrase && cipher
-        io.write key.to_pem cipher, passphrase
+        io.write key.private_to_pem cipher, passphrase
       else
-        io.write key.to_pem
+        io.write key.private_to_pem
       end
     end
 

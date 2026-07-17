@@ -377,7 +377,7 @@ Added '/CN=alternate/DC=example'
     assert_equal "", @ui.output
     assert_equal "", @ui.error
 
-    assert_equal PRIVATE_KEY.to_pem, @cmd.options[:key].to_pem
+    assert_equal PRIVATE_KEY.private_to_pem, @cmd.options[:key].private_to_pem
   end
 
   def test_execute_encrypted_private_key
@@ -388,7 +388,7 @@ Added '/CN=alternate/DC=example'
     assert_equal "", @ui.output
     assert_equal "", @ui.error
 
-    assert_equal ENCRYPTED_PRIVATE_KEY.to_pem, @cmd.options[:key].to_pem
+    assert_equal ENCRYPTED_PRIVATE_KEY.private_to_pem, @cmd.options[:key].private_to_pem
   end
 
   def test_execute_remove
@@ -815,7 +815,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
       --sign #{CHILD_CERT_FILE}
     ]
 
-    assert_equal PRIVATE_KEY.to_pem, @cmd.options[:key].to_pem
+    assert_equal PRIVATE_KEY.private_to_pem, @cmd.options[:key].private_to_pem
     assert_equal PUBLIC_CERT.to_pem, @cmd.options[:issuer_cert].to_pem
 
     assert_equal [ALTERNATE_CERT_FILE, CHILD_CERT_FILE], @cmd.options[:sign]
@@ -833,7 +833,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
       --sign #{CHILD_CERT_FILE}
     ]
 
-    assert_equal ENCRYPTED_PRIVATE_KEY.to_pem, @cmd.options[:key].to_pem
+    assert_equal ENCRYPTED_PRIVATE_KEY.private_to_pem, @cmd.options[:key].private_to_pem
     assert_equal PUBLIC_CERT.to_pem, @cmd.options[:issuer_cert].to_pem
 
     assert_equal [ALTERNATE_CERT_FILE, CHILD_CERT_FILE], @cmd.options[:sign]
