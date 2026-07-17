@@ -6009,7 +6009,7 @@ env_reject_bang(VALUE ehash)
  *
  * Returns an Enumerator if no block given:
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
- *   e = ENV.delete_if # => #<Enumerator: {"bar"=>"1", "baz"=>"2", "foo"=>"0"}:delete_if!>
+ *   e = ENV.delete_if # => #<Enumerator: {"bar"=>"1", "baz"=>"2", "foo"=>"0"}:delete_if>
  *   e.each { |name, value| name.start_with?('b') } # => ENV
  *   ENV # => {"foo"=>"0"}
  *   e.each { |name, value| name.start_with?('b') } # => ENV
@@ -6119,13 +6119,13 @@ env_select(VALUE ehash)
  * Returns an Enumerator if no block given:
  *
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
- *   e = ENV.select! # => #<Enumerator: {"bar"=>"1", "baz"=>"2"}:select!>
+ *   e = ENV.select! # => #<Enumerator: {"bar"=>"1", "baz"=>"2", "foo"=>"0"}:select!>
  *   e.each { |name, value| name.start_with?('b') } # => ENV
  *   ENV # => {"bar"=>"1", "baz"=>"2"}
  *   e.each { |name, value| true } # => nil
  *
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
- *   e = ENV.filter! # => #<Enumerator: {"bar"=>"1", "baz"=>"2"}:filter!>
+ *   e = ENV.filter! # => #<Enumerator: {"bar"=>"1", "baz"=>"2", "foo"=>"0"}:filter!>
  *   e.each { |name, value| name.start_with?('b') } # => ENV
  *   ENV # => {"bar"=>"1", "baz"=>"2"}
  *   e.each { |name, value| true } # => nil
@@ -7654,7 +7654,7 @@ Init_Hash(void)
      * - ::delete_if: Deletes entries selected by the block.
      * - ::keep_if: Deletes entries not selected by the block.
      * - ::reject!: Similar to #delete_if, but returns +nil+ if no change was made.
-     * - ::select!, ::filter!: Deletes entries selected by the block.
+     * - ::select!, ::filter!: Deletes entries not selected by the block.
      * - ::shift: Removes and returns the first entry.
      *
      * ==== Methods for Iterating
