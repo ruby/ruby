@@ -329,6 +329,21 @@ Added '/CN=alternate/DC=example'
     assert_path_not_exist File.join(@tempdir, "gem-private_key.pem")
   end
 
+  def test_execute_build_bad_key
+    @cmd.handle_options %W[
+      --build nobody@example.com
+      --private-key #{PUBLIC_KEY_FILE}
+    ]
+
+    e = assert_raise Gem::Security::Exception do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal "incorrect signing key for signing", e.message
+  end
+
   def test_execute_certificate
     use_ui @ui do
       @cmd.handle_options %W[--certificate #{PUBLIC_CERT_FILE}]
@@ -644,6 +659,26 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     assert_equal expected, @ui.error
   end
 
+  def test_execute_sign_bad_key
+    path = File.join @tempdir, "cert.pem"
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
+
+    @cmd.handle_options %W[
+      --private-key #{PUBLIC_KEY_FILE}
+      --certificate #{PUBLIC_CERT_FILE}
+
+      --sign #{path}
+    ]
+
+    e = assert_raise Gem::Security::Exception do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal "incorrect signing key for signing", e.message
+  end
+
   def test_execute_re_sign
     gem_path = File.join Gem.user_home, ".gem"
     Dir.mkdir gem_path
@@ -792,14 +827,6 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     end
 
     assert_equal "invalid argument: --private-key #{bad}: invalid RSA, DSA, or EC key",
-                 e.message
-
-    e = assert_raise Gem::OptionParser::InvalidArgument do
-      @cmd.handle_options %W[--private-key #{PUBLIC_KEY_FILE}]
-    end
-
-    assert_equal "invalid argument: " \
-                 "--private-key #{PUBLIC_KEY_FILE}: private key not found",
                  e.message
   end
 

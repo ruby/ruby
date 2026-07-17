@@ -562,7 +562,12 @@ module Gem::Security
     signed = create_cert signee_subject, signee_key, age, extensions, serial
     signed.issuer = signing_cert.subject
 
-    signed.sign signing_key, Gem::Security::DIGEST_NAME
+    begin
+      signed.sign signing_key, Gem::Security::DIGEST_NAME
+    rescue OpenSSL::PKey::PKeyError, ArgumentError
+      raise Gem::Security::Exception,
+        "incorrect signing key for signing"
+    end
   end
 
   ##
