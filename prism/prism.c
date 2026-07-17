@@ -12711,14 +12711,6 @@ match6(const pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, 
 }
 
 /**
- * Returns true if the current token is any of the seven given types.
- */
-static PRISM_INLINE bool
-match7(const pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, pm_token_type_t type3, pm_token_type_t type4, pm_token_type_t type5, pm_token_type_t type6, pm_token_type_t type7) {
-    return match1(parser, type1) || match1(parser, type2) || match1(parser, type3) || match1(parser, type4) || match1(parser, type5) || match1(parser, type6) || match1(parser, type7);
-}
-
-/**
  * Returns true if the current token is any of the eight given types.
  */
 static PRISM_INLINE bool
@@ -12928,6 +12920,31 @@ token_begins_expression_p(pm_token_type_t type) {
         default:
             return pm_binding_powers[type].left == PM_BINDING_POWER_UNSET;
     }
+}
+
+/**
+ * Returns true if the given token can begin a pattern element. This is the
+ * set of tokens that can begin an expression plus the tokens that begin
+ * pattern-only constructs — `*` (rest patterns), `**` (keyword rest
+ * patterns), and `^` (pin patterns) — which are binary operator tokens in
+ * expression contexts and therefore excluded from token_begins_expression_p.
+ *
+ * When a token fails this predicate at a decision point, the pattern ends
+ * there and the token is left for the enclosing context to accept or reject.
+ * This mirrors the grammar, whose pattern reductions (`p_top_expr_body:
+ * p_expr ','`, `p_kw: p_kw_label`, `p_kwargs: p_kwarg ','`) fire by default
+ * on any token that cannot start a pattern. Tokens that pass this predicate
+ * but are invalid in the specific context (e.g. `**` in an array pattern)
+ * are rejected by the pattern parser itself with a more targeted diagnostic.
+ */
+static PRISM_INLINE bool
+token_begins_pattern_p(pm_token_type_t type) {
+    return (
+        token_begins_expression_p(type) ||
+        type == PM_TOKEN_USTAR ||
+        type == PM_TOKEN_USTAR_STAR ||
+        type == PM_TOKEN_CARET
+    );
 }
 
 /**
@@ -17097,7 +17114,12 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
 
                 pm_node_t *value;
 
-                if (match8(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_EOF)) {
+                /*
+                 * The label has an implicit value when the next token cannot
+                 * begin a pattern, mirroring the grammar's `p_kw: p_kw_label`
+                 * reduction.
+                 */
+                if (!token_begins_pattern_p(parser->current.type)) {
                     if (PM_NODE_TYPE_P(first_node, PM_SYMBOL_NODE)) {
                         value = parse_pattern_hash_implicit_value(parser, captures, (pm_symbol_node_t *) first_node);
                     } else {
@@ -17132,8 +17154,12 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
 
     // If there are any other assocs, then we'll parse them now.
     while (accept1(parser, PM_TOKEN_COMMA)) {
-        // Here we need to break to support trailing commas.
-        if (match7(parser, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_EOF)) {
+        /*
+         * A trailing comma ends the pattern when the next token cannot begin
+         * another element, mirroring the grammar's `p_kwargs: p_kwarg ','`
+         * reduction.
+         */
+        if (!token_begins_pattern_p(parser->current.type)) {
             // Trailing commas are not allowed to follow a rest pattern.
             if (rest != NULL) {
                 pm_parser_err_token(parser, &parser->current, PM_ERR_PATTERN_EXPRESSION_AFTER_REST);
@@ -17174,7 +17200,12 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
             parse_pattern_hash_key(parser, &keys, key);
             pm_node_t *value = NULL;
 
-            if (match8(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_EOF)) {
+            /*
+             * The label has an implicit value when the next token cannot
+             * begin a pattern, mirroring the grammar's `p_kw: p_kw_label`
+             * reduction.
+             */
+            if (!token_begins_pattern_p(parser->current.type)) {
                 if (PM_NODE_TYPE_P(key, PM_SYMBOL_NODE)) {
                     value = parse_pattern_hash_implicit_value(parser, captures, (pm_symbol_node_t *) key);
                 } else {
@@ -17674,15 +17705,12 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
 
         // Gather up all of the patterns into the list.
         while (accept1(parser, PM_TOKEN_COMMA)) {
-            // Break early here in case we have a trailing comma. The newline and
-            // EOF terminators cover a one-line match (`x => a,`) or a `case`/`in`
-            // clause (`in a,\n ...`); a newline is only lexed as a token here
-            // when `pattern_matching_newlines` is set, so this does not affect
-            // patterns nested in brackets or parentheses.
-            if (
-                match7(parser, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_SEMICOLON, PM_TOKEN_KEYWORD_AND, PM_TOKEN_KEYWORD_OR) ||
-                match2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_EOF)
-            ) {
+            /*
+             * A trailing comma ends the pattern when the next token cannot
+             * begin another pattern element, leaving the token for the
+             * enclosing context to accept or reject.
+             */
+            if (!token_begins_pattern_p(parser->current.type)) {
                 // A trailing comma forms an implicit rest pattern (`[a,]` is
                 // `[a, *]`). If a rest pattern has already been parsed, then
                 // this is a second rest, which is not allowed (e.g. `[a, *b,]`
