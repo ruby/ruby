@@ -70,7 +70,44 @@ Patterns can be:
 Any pattern can be nested inside array/find/hash patterns where <code><subpattern></code> is specified.
 
 Array patterns and find patterns match arrays, or objects that respond to +deconstruct+ (see below about the latter).
-Hash patterns match hashes, or objects that respond to +deconstruct_keys+ (see below about the latter). Note that only symbol keys are supported for hash patterns.
+Hash patterns match hashes, or objects that respond to +deconstruct_keys+ (see below about the latter). Keys can be symbols, strings, or arbitrary expressions that respond to +===+.
+
+  case {"a" => 1, "b" => 2}
+  in {"a" : Integer, "b" : String}
+    "matched"
+  end
+  #=> "matched"
+
+  case {1 => "ok"}
+  in {Integer : String}
+    "matched"
+  end
+  #=> "matched"
+
+Expression keys can also be captured:
+
+  case {1 => "ok"}
+  in {Integer => k : String}
+    k #=> 1
+  end
+
+  case {1 => "ok"}
+  in {Integer => k : String => v}
+    [k, v] #=> [1, "ok"]
+  end
+
+Mixed symbol and expression keys:
+
+  case {a: 1, 200 => "ok"}
+  in {a: Integer, Integer : String}
+    "matched"
+  end
+  #=> "matched"
+
+  case {a: 1, 200 => "ok"}
+  in {a: Integer, Integer => k : String}
+    k #=> 200
+  end
 
 An important difference between array and hash pattern behavior is that arrays match only a _whole_ array:
 
@@ -139,6 +176,13 @@ Both array and hash patterns support "rest" specification:
     "not matched"
   end
   #=> "matched"
+
+Rest pattern with expression keys:
+
+  case {200 => "ok", 300 => "fail"}
+  in {Integer : String => v, **rest}
+    [v, rest] #=> ["ok", {300 => "fail"}]
+  end
 
 Parentheses around both kinds of patterns could be omitted:
 
@@ -490,9 +534,11 @@ Approximate syntax is:
               | Constant(*variable, pattern, ..., *variable)
               | Constant[*variable, pattern, ..., *variable]
 
-  hash_pattern: {key: pattern, key:, ..., **variable}
-              | Constant(key: pattern, key:, ..., **variable)
-              | Constant[key: pattern, key:, ..., **variable]
+hash_pattern: {key: pattern, key:, ..., **variable}
+               | {expression: pattern, key:, ..., **variable}
+               | {expression => variable: pattern, ..., **variable}
+               | Constant(key: pattern, key:, ..., **variable)
+               | Constant[key: pattern, key:, ..., **variable]
 
 == Appendix B. Some undefined behavior examples
 

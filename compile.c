@@ -7765,10 +7765,26 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
 
         if (RNODE_HSHPTN(node)->nd_pkwargs && !RNODE_HSHPTN(node)->nd_pkwrestarg) {
             const NODE *kw_args = RNODE_HASH(RNODE_HSHPTN(node)->nd_pkwargs)->nd_head;
-            keys = rb_ary_new_capa(kw_args ? RNODE_LIST(kw_args)->as.nd_alen/2 : 0);
-            while (kw_args) {
-                rb_ary_push(keys, get_symbol_value(iseq, RNODE_LIST(kw_args)->nd_head));
-                kw_args = RNODE_LIST(RNODE_LIST(kw_args)->nd_next)->nd_next;
+            bool all_symbol_keys = true;
+            const NODE *check_args = kw_args;
+            while (check_args) {
+                if (!nd_type_p(RNODE_LIST(check_args)->nd_head, NODE_SYM)) {
+                    all_symbol_keys = false;
+                    break;
+                }
+                check_args = RNODE_LIST(RNODE_LIST(check_args)->nd_next)->nd_next;
+            }
+            if (all_symbol_keys) {
+                if (kw_args) {
+                    keys = rb_ary_new_capa(RNODE_LIST(kw_args)->as.nd_alen/2);
+                    while (kw_args) {
+                        rb_ary_push(keys, rb_node_sym_string_val(RNODE_LIST(kw_args)->nd_head));
+                        kw_args = RNODE_LIST(RNODE_LIST(kw_args)->nd_next)->nd_next;
+                    }
+                }
+                else {
+                    keys = rb_ary_new_capa(0);
+                }
             }
         }
 
@@ -7812,38 +7828,135 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
                 for (i = 0; i < keys_num; i++) {
                     NODE *key_node = RNODE_LIST(args)->nd_head;
                     NODE *value_node = RNODE_LIST(RNODE_LIST(args)->nd_next)->nd_head;
-                    VALUE key = get_symbol_value(iseq, key_node);
-
-                    ADD_INSN(ret, line_node, dup);
-                    ADD_INSN1(ret, line_node, putobject, key);
-                    ADD_SEND(ret, line_node, rb_intern("key?"), INT2FIX(1)); // (3)
-                    if (in_single_pattern) {
-                        LABEL *match_succeeded;
-                        match_succeeded = NEW_LABEL(line);
+                    if (nd_type_p(key_node, NODE_SYM)) {
+                        VALUE key = get_symbol_value(iseq, key_node);
 
                         ADD_INSN(ret, line_node, dup);
-                        ADD_INSNL(ret, line_node, branchif, match_succeeded);
+                        ADD_INSN1(ret, line_node, putobject, key);
+                        ADD_SEND(ret, line_node, rb_intern("key?"), INT2FIX(1)); // (3)
+                        if (in_single_pattern) {
+                            LABEL *match_succeeded;
+                            match_succeeded = NEW_LABEL(line);
 
-                        VALUE str = rb_str_freeze(rb_sprintf("key not found: %+"PRIsVALUE, key));
-                        ADD_INSN1(ret, line_node, putobject, RB_OBJ_SET_SHAREABLE(str)); // (4)
-                        ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_ERROR_STRING + 2 /* (3), (4) */));
-                        ADD_INSN1(ret, line_node, putobject, Qtrue); // (5)
-                        ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_P + 3 /* (3), (4), (5) */));
-                        ADD_INSN1(ret, line_node, topn, INT2FIX(3)); // (6)
-                        ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_MATCHEE + 4 /* (3), (4), (5), (6) */));
-                        ADD_INSN1(ret, line_node, putobject, key); // (7)
-                        ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_KEY + 5 /* (3), (4), (5), (6), (7) */));
+                            ADD_INSN(ret, line_node, dup);
+                            ADD_INSNL(ret, line_node, branchif, match_succeeded);
 
-                        ADD_INSN1(ret, line_node, adjuststack, INT2FIX(4));
+                            VALUE str = rb_str_freeze(rb_sprintf("key not found: %+"PRIsVALUE, key));
+                            ADD_INSN1(ret, line_node, putobject, RB_OBJ_SET_SHAREABLE(str)); // (4)
+                            ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_ERROR_STRING + 2 /* (3), (4) */));
+                            ADD_INSN1(ret, line_node, putobject, Qtrue); // (5)
+                            ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_P + 3 /* (3), (4), (5) */));
+                            ADD_INSN1(ret, line_node, topn, INT2FIX(3)); // (6)
+                            ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_MATCHEE + 4 /* (3), (4), (5), (6) */));
+                            ADD_INSN1(ret, line_node, putobject, key); // (7)
+                            ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_KEY + 5 /* (3), (4), (5), (6), (7) */));
 
-                        ADD_LABEL(ret, match_succeeded);
+                            ADD_INSN1(ret, line_node, adjuststack, INT2FIX(4));
+
+                            ADD_LABEL(ret, match_succeeded);
+                        }
+                        ADD_INSNL(ret, line_node, branchunless, match_failed);
+
+                        ADD_INSN(match_values, line_node, dup);
+                        ADD_INSN1(match_values, line_node, putobject, key);
+                        ADD_SEND(match_values, line_node, RNODE_HSHPTN(node)->nd_pkwrestarg ? rb_intern("delete") : idAREF, INT2FIX(1)); // (8)
+                        CHECK(iseq_compile_pattern_match(iseq, match_values, value_node, match_failed, in_single_pattern, in_alt_pattern, base_index + 1, false));
                     }
-                    ADD_INSNL(ret, line_node, branchunless, match_failed);
+                    else {
+                        NODE *capture_target = NULL;
+                        NODE *grep_pattern = key_node;
+                        if (nd_type_p(key_node, NODE_HASH)) {
+                            const NODE *list = RNODE_HASH(key_node)->nd_head;
+                            if (list && nd_type_p(list, NODE_LIST) && RNODE_LIST(list)->as.nd_alen == 2 &&
+                                    (nd_type_p(RNODE_LIST(RNODE_LIST(list)->nd_next)->nd_head, NODE_LASGN) ||
+                                     nd_type_p(RNODE_LIST(RNODE_LIST(list)->nd_next)->nd_head, NODE_DASGN))) {
+                                grep_pattern = RNODE_LIST(list)->nd_head;
+                                capture_target = RNODE_LIST(RNODE_LIST(list)->nd_next)->nd_head;
+                            }
+                        }
+                        ADD_INSN(ret, line_node, dup);
+                        ADD_SEND(ret, line_node, rb_intern("keys"), INT2FIX(0));
+                        if (nd_type_p(grep_pattern, NODE_ARYPTN)) {
+                            const NODE *args = RNODE_ARYPTN(grep_pattern)->pre_args;
+                            int len = 0;
+                            DECL_ANCHOR(ary);
+                            INIT_ANCHOR(ary);
+                            while (args) {
+                                CHECK(COMPILE_(ary, "key", RNODE_LIST(args)->nd_head, FALSE));
+                                len++;
+                                args = RNODE_LIST(args)->nd_next;
+                            }
+                            ADD_INSN1(ary, line_node, newarray, INT2FIX(len));
+                            ADD_SEQ(ret, ary);
+                        }
+                        else {
+                            CHECK(COMPILE_(ret, "key", grep_pattern, FALSE));
+                        }
+                        ADD_SEND(ret, line_node, rb_intern("grep"), INT2FIX(1));
 
-                    ADD_INSN(match_values, line_node, dup);
-                    ADD_INSN1(match_values, line_node, putobject, key);
-                    ADD_SEND(match_values, line_node, RNODE_HSHPTN(node)->nd_pkwrestarg ? rb_intern("delete") : idAREF, INT2FIX(1)); // (8)
-                    CHECK(iseq_compile_pattern_match(iseq, match_values, value_node, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (8) */, false));
+                        LABEL *loop_start_label = NEW_LABEL(line);
+                        LABEL *keys_exhausted_label = NEW_LABEL(line);
+                        LABEL *value_matched_label = NEW_LABEL(line);
+
+                        ADD_LABEL(ret, loop_start_label);
+
+                        ADD_INSN(ret, line_node, dup);
+                        ADD_SEND(ret, line_node, rb_intern("shift"), INT2FIX(0));
+
+                        ADD_INSN(ret, line_node, dup);
+                        ADD_SEND(ret, line_node, rb_intern("nil?"), INT2FIX(0));
+                        ADD_INSNL(ret, line_node, branchif, keys_exhausted_label);
+
+                        if (capture_target) {
+                            ADD_INSN(ret, line_node, dup);
+                            if (nd_type_p(capture_target, NODE_DASGN)) {
+                                int idx, lv, ls;
+                                ID id = RNODE_DASGN(capture_target)->nd_vid;
+                                idx = get_dyna_var_idx(iseq, id, &lv, &ls);
+                                ADD_SETLOCAL(ret, line_node, ls - idx, lv);
+                            }
+                            else {
+                                ID id = RNODE_LASGN(capture_target)->nd_vid;
+                                struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+                                int idx = ISEQ_BODY(body->local_iseq)->local_table_size - get_local_var_idx(iseq, id);
+                                ADD_SETLOCAL(ret, line_node, idx, get_lvar_level(iseq));
+                            }
+                        }
+
+                        ADD_INSN(ret, line_node, dup);
+                        ADD_INSN1(ret, line_node, topn, INT2FIX(3));
+                        ADD_INSN(ret, line_node, swap);
+                        ADD_SEND(ret, line_node, idAREF, INT2FIX(1));
+
+                        LABEL *value_failed_label = NEW_LABEL(line);
+                        CHECK(iseq_compile_pattern_match(iseq, ret, value_node, value_failed_label, false, in_alt_pattern, base_index + 2, false));
+                        if (RNODE_HSHPTN(node)->nd_pkwrestarg) {
+                            ADD_INSN1(ret, line_node, topn, INT2FIX(2));
+                            ADD_INSN(ret, line_node, swap);
+                            ADD_SEND(ret, line_node, rb_intern("delete"), INT2FIX(1));
+                            ADD_INSN(ret, line_node, pop);
+                            ADD_INSN(ret, line_node, pop);
+                        }
+                        else {
+                            ADD_INSN(ret, line_node, pop);
+                            ADD_INSN(ret, line_node, pop);
+                        }
+                        ADD_INSNL(ret, line_node, jump, value_matched_label);
+
+                        ADD_LABEL(ret, value_failed_label);
+                        ADD_INSN(ret, line_node, pop);
+                        ADD_INSN(ret, line_node, pop);
+                        ADD_INSNL(ret, line_node, jump, loop_start_label);
+
+                        ADD_LABEL(ret, keys_exhausted_label);
+                        ADD_INSN(ret, line_node, pop);
+                        ADD_INSN(ret, line_node, pop);
+                        ADD_INSN1(ret, line_node, putobject, Qfalse);
+                        ADD_INSN(ret, line_node, pop);
+                        ADD_INSNL(ret, line_node, jump, match_failed);
+
+                        ADD_LABEL(ret, value_matched_label);
+                    }
                     args = RNODE_LIST(RNODE_LIST(args)->nd_next)->nd_next;
                 }
                 ADD_SEQ(ret, match_values);

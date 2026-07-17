@@ -2950,7 +2950,21 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         LABEL *type_error_label = NEW_LABEL(location.line);
         VALUE keys = Qnil;
 
+        bool all_symbol_keys = true;
         if (has_keys && !has_rest) {
+            for (size_t index = 0; index < cast->elements.size; index++) {
+                const pm_node_t *element = cast->elements.nodes[index];
+                RUBY_ASSERT(PM_NODE_TYPE_P(element, PM_ASSOC_NODE));
+
+                const pm_node_t *key = ((const pm_assoc_node_t *) element)->key;
+                if (!PM_NODE_TYPE_P(key, PM_SYMBOL_NODE)) {
+                    all_symbol_keys = false;
+                    break;
+                }
+            }
+        }
+
+        if (has_keys && !has_rest && all_symbol_keys) {
             keys = rb_ary_new_capa(cast->elements.size);
 
             for (size_t index = 0; index < cast->elements.size; index++) {
@@ -3010,48 +3024,120 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
 
                 const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
                 const pm_node_t *key = assoc->key;
-                RUBY_ASSERT(PM_NODE_TYPE_P(key, PM_SYMBOL_NODE));
 
-                VALUE symbol = ID2SYM(parse_string_symbol(scope_node, (const pm_symbol_node_t *) key));
-                PUSH_INSN(ret, location, dup);
-                PUSH_INSN1(ret, location, putobject, symbol);
-                PUSH_SEND(ret, location, rb_intern("key?"), INT2FIX(1));
+                bool is_implicit = PM_NODE_TYPE_P(assoc->value, PM_IMPLICIT_NODE);
+                const pm_node_t *value = is_implicit ? ((const pm_implicit_node_t *) assoc->value)->value : assoc->value;
 
-                if (in_single_pattern) {
-                    LABEL *match_succeeded_label = NEW_LABEL(location.line);
-
+                if (PM_NODE_TYPE_P(key, PM_SYMBOL_NODE)) {
+                    VALUE symbol = ID2SYM(parse_string_symbol(scope_node, (const pm_symbol_node_t *) key));
                     PUSH_INSN(ret, location, dup);
-                    PUSH_INSNL(ret, location, branchif, match_succeeded_label);
+                    PUSH_INSN1(ret, location, putobject, symbol);
+                    PUSH_SEND(ret, location, rb_intern("key?"), INT2FIX(1));
 
-                    {
-                        VALUE operand = rb_str_freeze(rb_sprintf("key not found: %+"PRIsVALUE, symbol));
-                        RB_OBJ_SET_SHAREABLE(operand);
-                        PUSH_INSN1(ret, location, putobject, operand);
+                    if (in_single_pattern && is_implicit) {
+                        LABEL *match_succeeded_label = NEW_LABEL(location.line);
+
+                        PUSH_INSN(ret, location, dup);
+                        PUSH_INSNL(ret, location, branchif, match_succeeded_label);
+
+                        {
+                            VALUE operand = rb_str_freeze(rb_sprintf("key not found: %+"PRIsVALUE, symbol));
+                            RB_OBJ_SET_SHAREABLE(operand);
+                            PUSH_INSN1(ret, location, putobject, operand);
+                        }
+
+                        PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_ERROR_STRING + 2));
+                        PUSH_INSN1(ret, location, putobject, Qtrue);
+                        PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_P + 3));
+                        PUSH_INSN1(ret, location, topn, INT2FIX(3));
+                        PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_MATCHEE + 4));
+                        PUSH_INSN1(ret, location, putobject, symbol);
+                        PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_KEY + 5));
+
+                        PUSH_INSN1(ret, location, adjuststack, INT2FIX(4));
+                        PUSH_LABEL(ret, match_succeeded_label);
+                    }
+                    else if (in_single_pattern) {
+                        CHECK(pm_compile_pattern_generic_error(iseq, scope_node, node, ret, rb_fstring_lit("key not found"), base_index + 2));
                     }
 
-                    PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_ERROR_STRING + 2));
-                    PUSH_INSN1(ret, location, putobject, Qtrue);
-                    PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_P + 3));
-                    PUSH_INSN1(ret, location, topn, INT2FIX(3));
-                    PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_MATCHEE + 4));
-                    PUSH_INSN1(ret, location, putobject, symbol);
-                    PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_KEY + 5));
+                    PUSH_INSNL(ret, location, branchunless, match_failed_label);
+                    PUSH_INSN(match_values, location, dup);
+                    PUSH_INSN1(match_values, location, putobject, symbol);
+                    PUSH_SEND(match_values, location, has_rest ? rb_intern("delete") : idAREF, INT2FIX(1));
 
-                    PUSH_INSN1(ret, location, adjuststack, INT2FIX(4));
-                    PUSH_LABEL(ret, match_succeeded_label);
+                    CHECK(pm_compile_pattern_match(iseq, scope_node, value, match_values, match_failed_label, in_single_pattern, false, base_index + 1));
                 }
+                else {
+                    const pm_node_t *key_pattern;
+                    const pm_capture_pattern_node_t *key_capture = NULL;
 
-                PUSH_INSNL(ret, location, branchunless, match_failed_label);
-                PUSH_INSN(match_values, location, dup);
-                PUSH_INSN1(match_values, location, putobject, symbol);
-                PUSH_SEND(match_values, location, has_rest ? rb_intern("delete") : idAREF, INT2FIX(1));
+                    if (PM_NODE_TYPE_P(key, PM_CAPTURE_PATTERN_NODE)) {
+                        key_capture = (const pm_capture_pattern_node_t *) key;
+                        key_pattern = key_capture->value;
+                    } else {
+                        key_pattern = key;
+                    }
 
-                const pm_node_t *value = assoc->value;
-                if (PM_NODE_TYPE_P(value, PM_IMPLICIT_NODE)) {
-                    value = ((const pm_implicit_node_t *) value)->value;
+                    PUSH_INSN(ret, location, dup);
+                    PUSH_SEND(ret, location, rb_intern("keys"), INT2FIX(0));
+                    pm_compile_node(iseq, key_pattern, ret, false, scope_node);
+                    PUSH_SEND(ret, location, rb_intern("grep"), INT2FIX(1));
+                    PUSH_SEND(ret, location, rb_intern("first"), INT2FIX(0));
+
+                    PUSH_INSN1(ret, location, topn, INT2FIX(0));
+                    PUSH_SEND(ret, location, rb_intern("nil?"), INT2FIX(0));
+
+                    if (in_single_pattern) {
+                        LABEL *match_succeeded_label = NEW_LABEL(location.line);
+                        PUSH_INSN(ret, location, dup);
+                        PUSH_INSNL(ret, location, branchunless, match_succeeded_label);
+                        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                        {
+                            VALUE operand = rb_fstring_lit("key not found");
+                            PUSH_INSN1(ret, location, putobject, operand);
+                        }
+                        PUSH_INSN1(ret, location, topn, INT2FIX(3));
+                        PUSH_SEND(ret, location, id_core_sprintf, INT2FIX(2));
+                        PUSH_INSN1(ret, location, setn, INT2FIX(base_index + 2 + PM_PATTERN_BASE_INDEX_OFFSET_ERROR_STRING + 1));
+                        PUSH_INSN1(ret, location, putobject, Qfalse);
+                        PUSH_INSN1(ret, location, setn, INT2FIX(base_index + 2 + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_P + 2));
+                        PUSH_INSN(ret, location, pop);
+                        PUSH_INSN(ret, location, pop);
+                        PUSH_LABEL(ret, match_succeeded_label);
+                    }
+
+                    LABEL *nil_key_label = NEW_LABEL(location.line);
+                    PUSH_INSNL(ret, location, branchif, nil_key_label);
+
+                    // Key found. Capture the matched key into the local variable if a capture is present.
+                    // Stack: [hash, first_key]
+                    if (key_capture != NULL) {
+                        pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, key_capture->target->name, key_capture->target->depth);
+                        PUSH_INSN(ret, location, dup);
+                        PUSH_SETLOCAL(ret, location, local_index.index, local_index.level);
+                    }
+
+                    // Get value using the matched key.
+                    // Stack: [hash, first_key]
+                    PUSH_INSN1(ret, location, topn, INT2FIX(1));
+                    PUSH_INSN(ret, location, swap);
+                    PUSH_SEND(ret, location, has_rest ? rb_intern("delete") : idAREF, INT2FIX(1));
+
+                    // Match the value pattern
+                    CHECK(pm_compile_pattern_match(iseq, scope_node, value, ret, match_failed_label, in_single_pattern, false, base_index + 1));
+
+                    // Skip over nil key handling after successful match
+                    LABEL *after_nil_label = NEW_LABEL(location.line);
+                    PUSH_INSNL(ret, location, jump, after_nil_label);
+
+                    // Nil key: pop the nil and jump to match_failed
+                    PUSH_LABEL(ret, nil_key_label);
+                    PUSH_INSN(ret, location, pop);
+                    PUSH_INSNL(ret, location, jump, match_failed_label);
+
+                    PUSH_LABEL(ret, after_nil_label);
                 }
-
-                CHECK(pm_compile_pattern_match(iseq, scope_node, value, match_values, match_failed_label, in_single_pattern, false, base_index + 1));
             }
 
             PUSH_SEQ(ret, match_values);
@@ -10543,6 +10629,26 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_SEND_WITH_FLAG(ret, location, idBackquote, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
         if (popped) PUSH_INSN(ret, location, pop);
 
+        return;
+      }
+      case PM_PINNED_EXPRESSION_NODE: {
+        // ^(expr)
+        const pm_pinned_expression_node_t *cast = (const pm_pinned_expression_node_t *) node;
+        pm_compile_node(iseq, cast->expression, ret, popped, scope_node);
+        return;
+      }
+      case PM_PINNED_VARIABLE_NODE: {
+        // ^var
+        const pm_pinned_variable_node_t *cast = (const pm_pinned_variable_node_t *) node;
+        if (PM_NODE_TYPE_P(cast->variable, PM_LOCAL_VARIABLE_TARGET_NODE)) {
+            const pm_local_variable_target_node_t *target = (const pm_local_variable_target_node_t *) cast->variable;
+            if (!popped) {
+                pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, target->name, target->depth);
+                PUSH_GETLOCAL(ret, location, index.index, index.level);
+            }
+            return;
+        }
+        pm_compile_node(iseq, cast->variable, ret, popped, scope_node);
         return;
       }
       case PM_YIELD_NODE:
