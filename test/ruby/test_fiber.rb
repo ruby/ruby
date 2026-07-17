@@ -497,6 +497,40 @@ class TestFiber < Test::Unit::TestCase
     assert_equal :ok, ret, '[Bug #14642]'
   end
 
+  def test_gc_during_nested_resume_yield
+    assert_normal_exit <<-'RUBY', '[Bug #22196]', timeout: 10
+      parent = child1 = child2 = nil
+
+      parent = Fiber.new do
+        child1 = Fiber.new do
+          parent.resume
+        end
+
+        child2 = Fiber.new do
+          GC.start
+          parent.resume
+        end
+
+        Fiber.yield
+
+        child1 = nil
+
+        Fiber.yield
+      end
+
+      parent.resume
+
+      child = child1
+      child1 = nil
+      child.resume
+      child = nil
+
+      child = child2
+      child2 = nil
+      child.resume
+    RUBY
+  end
+
   def test_machine_stack_gc
     assert_normal_exit <<-RUBY, '[Bug #14561]', timeout: 60
       enum = Enumerator.new { |y| y << 1 }
