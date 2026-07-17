@@ -2659,6 +2659,7 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
     struct rb_gc_zjit_default_new_obj_fastpath default_fastpath = {
         base + offsetof(rb_ractor_newobj_heap_cache_t, cursor),
         base + offsetof(rb_ractor_newobj_heap_cache_t, cursor_end),
+        base + offsetof(rb_ractor_newobj_heap_cache_t, allocated_objects_count),
         slot_size,
         flags,
         klass
