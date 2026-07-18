@@ -4,6 +4,7 @@ require 'tempfile'
 require 'rbconfig/sizeof'
 require 'io/nonblock'
 require '-test-/io_buffer'
+require "-test-/memory_view"
 
 class TestIOBuffer < Test::Unit::TestCase
   experimental = Warning[:experimental]
@@ -1405,6 +1406,95 @@ class TestIOBuffer < Test::Unit::TestCase
     # Width must be at least 1
     assert_raise(ArgumentError) do
       buffer.hexdump(0, 1, 0)
+    end
+  end
+
+  def test_memory_view_null
+    buffer = IO::Buffer.new(0)
+    assert_false(MemoryViewTestUtils.available?(buffer))
+  end
+
+  def test_memory_view_available
+    buffer = IO::Buffer.new(8)
+    assert_true(MemoryViewTestUtils.available?(buffer))
+  end
+
+  def test_memory_view_get
+    data = "data".freeze
+    buffer = IO::Buffer.for(data)
+    info = MemoryViewTestUtils.get_memory_view_info(buffer)
+    assert_equal(data.bytesize, info[:byte_size])
+    assert_equal(1, info[:item_size])
+    assert_equal(1, info[:ndim])
+    assert_true(info[:readonly])
+  end
+
+  def test_memory_view_readonly
+    data = "\x00\x01\x02\x03".freeze
+    buffer = IO::Buffer.for(data)
+    # rb_memory_view_get(RUBY_MEMORY_VIEW_WRITABLE) is failed with
+    # readonly IO::Buffer.
+    assert_nil(MemoryViewTestUtils.set_data(buffer, 1, 0x11))
+    assert_equal(data, MemoryViewTestUtils.get_data(buffer, 0..(data.bytesize)))
+  end
+
+  def test_memory_view_writable
+    IO::Buffer.for(+"\x00\x01\x02\x03") do |buffer|
+      assert_true(MemoryViewTestUtils.set_data(buffer, 1, 0x11))
+      assert_equal(0x11, buffer.get_value(:U8, 1))
+    end
+  end
+
+  def test_memory_view_locked
+    IO::Buffer.for("\x00\x01\x02\x03".freeze) do |buffer|
+      flags = MemoryViewTestUtils::SIMPLE
+      MemoryViewTestUtils.get(buffer, flags) do
+        assert_raise(IO::Buffer::LockedError) do
+          buffer.free
+        end
+      end
+      buffer.free
+    end
+  end
+
+  def test_memory_view_nested_locked
+    IO::Buffer.for("\x00\x01\x02\x03".freeze) do |buffer|
+      flags = MemoryViewTestUtils::SIMPLE
+      MemoryViewTestUtils.get(buffer, flags) do
+        MemoryViewTestUtils.get(buffer, flags) do
+          assert_raise(IO::Buffer::LockedError) do
+            buffer.free
+          end
+        end
+        assert_raise(IO::Buffer::LockedError) do
+          buffer.free
+        end
+      end
+      buffer.free
+    end
+  end
+
+  def test_memory_view_sliced_nested_locked
+    IO::Buffer.for("\x00\x01\x02\x03".freeze) do |buffer|
+      sliced = buffer.slice(1, 2)
+      flags = MemoryViewTestUtils::SIMPLE
+      MemoryViewTestUtils.get(sliced, flags) do
+        MemoryViewTestUtils.get(sliced, flags) do
+          assert_raise(IO::Buffer::LockedError) do
+            sliced.free
+          end
+          assert_raise(IO::Buffer::LockedError) do
+            buffer.free
+          end
+        end
+        assert_raise(IO::Buffer::LockedError) do
+          sliced.free
+        end
+        assert_raise(IO::Buffer::LockedError) do
+          buffer.free
+        end
+      end
+      buffer.free
     end
   end
 end

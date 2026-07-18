@@ -8,6 +8,7 @@
 
 #include "ruby/io/buffer.h"
 #include "ruby/fiber/scheduler.h"
+#include "ruby/memory_view.h"
 
 // For `rb_nogvl`.
 #include "ruby/thread.h"
@@ -4036,6 +4037,52 @@ io_buffer_bit_count(int argc, VALUE *argv, VALUE self)
     return SIZET2NUM(count);
 }
 
+static bool
+io_buffer_memory_view_get(VALUE self, rb_memory_view_t *view, int flags)
+{
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    if (buffer->base == NULL || !io_buffer_validate(buffer)) {
+        return false;
+    }
+
+    bool readonly = io_buffer_readonly_p(buffer);
+    if ((flags & RUBY_MEMORY_VIEW_WRITABLE) && readonly) {
+        return false;
+    }
+    if (flags & (RUBY_MEMORY_VIEW_FORMAT | RUBY_MEMORY_VIEW_MULTI_DIMENSIONAL)) {
+        return false;
+    }
+
+    rb_memory_view_init_as_byte_array(view, self, buffer->base, buffer->size, readonly);
+    io_buffer_lock(buffer);
+    view->private_data = buffer;
+
+    return true;
+}
+
+static bool
+io_buffer_memory_view_release(VALUE self, rb_memory_view_t *view)
+{
+    struct rb_io_buffer *buffer = view->private_data;
+    io_buffer_unlock(buffer);
+    return true;
+}
+
+static bool
+io_buffer_memory_view_available_p(VALUE self)
+{
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    return buffer->base != NULL && io_buffer_validate(buffer);
+}
+
+static const rb_memory_view_entry_t io_buffer_memory_view_entry = {
+    .get_func = io_buffer_memory_view_get,
+    .release_func = io_buffer_memory_view_release,
+    .available_p_func = io_buffer_memory_view_available_p,
+};
+
 /*
  *  Document-class: IO::Buffer
  *
@@ -4059,6 +4106,17 @@ io_buffer_bit_count(int argc, VALUE *argv, VALUE self)
  *  The class is meant to be an utility for implementing more high-level mechanisms
  *  like Fiber::Scheduler#io_read and Fiber::Scheduler#io_write and parsing binary
  *  protocols.
+ *
+ *  == MemoryView Support
+ *
+ *  IO::Buffer supports the C-level MemoryView protocol, so C
+ *  extensions can use +rb_memory_view_get()+ to access the buffer's
+ *  memory directly (zero-copy) as a 1-dimensional contiguous array of
+ *  bytes. The memory view is writable unless the buffer is
+ *  #readonly?.
+ *
+ *  While a MemoryView is exported, you must not free, resize or
+ *  transfer the buffer (and the source buffer of a slice).
  *
  *  == Examples of Usage
  *
@@ -4295,4 +4353,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "pread", io_buffer_pread, -1);
     rb_define_method(rb_cIOBuffer, "write", io_buffer_write, -1);
     rb_define_method(rb_cIOBuffer, "pwrite", io_buffer_pwrite, -1);
+
+    // MemoryView:
+    rb_memory_view_register(rb_cIOBuffer, &io_buffer_memory_view_entry);
 }
