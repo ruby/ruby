@@ -97,6 +97,19 @@ class TestProcSyntaxTree < Test::Unit::TestCase
     assert_equal iseq.source_hash, iseq.to_a[4][:source_hash]
   end
 
+  def test_backtrace_location_syntax_tree
+    with_loaded_file("def proc_ast_test_loc = caller_locations(0, 1).first\n") do
+      node = proc_ast_test_loc.syntax_tree
+      if PRISM
+        assert_equal :call_node, node.type
+        assert_equal "caller_locations(0, 1)", node.slice
+      else
+        assert_equal :FCALL, node.type
+      end
+    ensure
+      Object.remove_method(:proc_ast_test_loc)
+    end
+  end
 
   def test_parse_y_syntax_tree
     assert_separately(%w[--parser=parse.y], "#{<<~"begin;"}\n#{<<~'end;'}")
