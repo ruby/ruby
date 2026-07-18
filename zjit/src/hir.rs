@@ -3843,9 +3843,12 @@ impl Function {
         result
     }
 
-    fn count_complex_call_features(&mut self, block: BlockId, ci_flags: c_uint) {
+    fn count_complex_call_features(&mut self, block: BlockId, ci_flags: c_uint, state: InsnId) {
         use Counter::*;
-        if 0 != ci_flags & VM_CALL_ARGS_SPLAT     { self.count(block, complex_arg_pass_caller_splat);      }
+        if 0 != ci_flags & VM_CALL_ARGS_SPLAT {
+            self.count(block, complex_arg_pass_caller_splat);
+            self.count_caller_splat_profile(block, state);
+        }
         if 0 != ci_flags & VM_CALL_ARGS_BLOCKARG  { self.count(block, complex_arg_pass_caller_blockarg);   }
         if 0 != ci_flags & VM_CALL_KWARG          { self.count(block, complex_arg_pass_caller_kwarg);      }
         if 0 != ci_flags & VM_CALL_KW_SPLAT       { self.count(block, complex_arg_pass_caller_kw_splat);   }
@@ -3853,6 +3856,21 @@ impl Function {
         if 0 != ci_flags & VM_CALL_SUPER          { self.count(block, complex_arg_pass_caller_super);      }
         if 0 != ci_flags & VM_CALL_ZSUPER         { self.count(block, complex_arg_pass_caller_zsuper);     }
         if 0 != ci_flags & VM_CALL_FORWARDING     { self.count(block, complex_arg_pass_caller_forwarding); }
+    }
+
+    fn count_caller_splat_profile(&mut self, block: BlockId, state: InsnId) {
+        let state = self.frame_state(state);
+        let summary = get_or_create_iseq_payload(state.iseq).profile.get_splat_length_summary(state.insn_idx);
+        let counter = match summary {
+            None => Counter::caller_splat_profile_no_profiles,
+            Some(summary) if summary.is_monomorphic() => Counter::caller_splat_profile_monomorphic,
+            Some(summary) if summary.is_polymorphic() => Counter::caller_splat_profile_polymorphic,
+            Some(summary) if summary.is_skewed_polymorphic() => Counter::caller_splat_profile_skewed_polymorphic,
+            Some(summary) if summary.is_megamorphic() => Counter::caller_splat_profile_megamorphic,
+            Some(summary) if summary.is_skewed_megamorphic() => Counter::caller_splat_profile_skewed_megamorphic,
+            Some(_) => unreachable!(),
+        };
+        self.count(block, counter);
     }
 
     fn rewrite_if_frozen(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, klass: u32, bop: u32, state: InsnId) {
@@ -4173,7 +4191,7 @@ impl Function {
                         // Mask out ARGS_BLOCKARG only if we've already handled the nil block arg case above.
                         let flags_for_check = if stripped_nil_block { flags & !VM_CALL_ARGS_BLOCKARG } else { flags };
                         if def_type != VM_METHOD_TYPE_OPTIMIZED && def_type != VM_METHOD_TYPE_CFUNC && unspecializable_call_type(flags_for_check) {
-                            self.count_complex_call_features(block, flags);
+                            self.count_complex_call_features(block, flags, state);
                             self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                             self.push_insn_id(block, insn_id); continue;
                         }
@@ -4315,7 +4333,7 @@ impl Function {
                             match (opt_type, args.as_slice()) {
                                 (OptimizedMethodType::Call, _) => {
                                     if flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG) != 0 {
-                                        self.count_complex_call_features(block, flags);
+                                        self.count_complex_call_features(block, flags, state);
                                         self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                                         self.push_insn_id(block, insn_id); continue;
                                     }
@@ -4334,7 +4352,7 @@ impl Function {
                                 }
                                 (OptimizedMethodType::StructAref, &[]) | (OptimizedMethodType::StructAset, &[_]) => {
                                     if unspecializable_call_type(flags) {
-                                        self.count_complex_call_features(block, flags);
+                                        self.count_complex_call_features(block, flags, state);
                                         self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                                         self.push_insn_id(block, insn_id); continue;
                                     }
@@ -4423,7 +4441,7 @@ impl Function {
                                 if unspecializable_c_call_type(ci_flags) {
                                     // Only count features NOT already counted in type_specialize.
                                     if !unspecializable_call_type(ci_flags) {
-                                        fun.count_complex_call_features(block, ci_flags);
+                                        fun.count_complex_call_features(block, ci_flags, state);
                                     }
                                     fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
                                     return Err(());

@@ -436,6 +436,14 @@ make_counters! {
     // Unsupported argument conversions
     complex_arg_pass_keyword_to_positional_hash,
 
+    // Caller splat length profile shapes
+    caller_splat_profile_no_profiles,
+    caller_splat_profile_monomorphic,
+    caller_splat_profile_polymorphic,
+    caller_splat_profile_skewed_polymorphic,
+    caller_splat_profile_megamorphic,
+    caller_splat_profile_skewed_megamorphic,
+
     // Writes to the VM frame
     vm_write_jit_frame_count,
     vm_write_sp_count,
