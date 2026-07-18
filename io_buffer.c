@@ -8,6 +8,7 @@
 
 #include "ruby/io/buffer.h"
 #include "ruby/fiber/scheduler.h"
+#include "ruby/memory_view.h"
 
 // For `rb_nogvl`.
 #include "ruby/thread.h"
@@ -4101,6 +4102,81 @@ io_buffer_bit_count(int argc, VALUE *argv, VALUE self)
     return SIZET2NUM(count);
 }
 
+static bool
+io_buffer_memory_view_get(VALUE self, rb_memory_view_t *view, int flags)
+{
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    if (buffer->base == NULL || !io_buffer_validate(buffer)) {
+        return false;
+    }
+
+    bool readonly = true;
+    if (flags & RUBY_MEMORY_VIEW_WRITABLE) {
+        if (io_buffer_readonly_p(buffer)) {
+            return false;
+        } else {
+            readonly = false;
+        }
+    }
+    rb_memory_view_init_as_byte_array(view, self, buffer->base, buffer->size, readonly);
+    if (flags & RUBY_MEMORY_VIEW_FORMAT) {
+        view->format = "C";
+    }
+    bool request_multi_dimensional = flags & RUBY_MEMORY_VIEW_MULTI_DIMENSIONAL;
+    bool request_strides =
+        (flags & RUBY_MEMORY_VIEW_STRIDES) == RUBY_MEMORY_VIEW_STRIDES;
+    if (request_multi_dimensional || request_strides) {
+        size_t n_metadata = 0;
+        if (request_multi_dimensional)
+            n_metadata++;
+        if (request_strides)
+            n_metadata++;
+        ssize_t *metadata_buffer = ALLOC_N(ssize_t, n_metadata);
+        size_t i = 0;
+        if (request_multi_dimensional) {
+            ssize_t *shape = &metadata_buffer[i];
+            shape[0] = buffer->size;
+            view->shape = shape;
+            i++;
+        }
+        if (request_strides) {
+            ssize_t *strides = &metadata_buffer[i];
+            strides[0] = 1;
+            view->strides = strides;
+            i++;
+        }
+        view->private_data = metadata_buffer;
+    }
+    io_buffer_lock(buffer);
+
+    return true;
+}
+
+static bool
+io_buffer_memory_view_release(VALUE self, rb_memory_view_t *view)
+{
+    rb_io_buffer_unlock(self);
+    if (view->private_data) {
+        xfree(view->private_data);
+    }
+    return true;
+}
+
+static bool
+io_buffer_memory_view_available_p(VALUE self)
+{
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    return buffer->base != NULL && io_buffer_validate(buffer);
+}
+
+static const rb_memory_view_entry_t io_buffer_memory_view_entry = {
+    .get_func = io_buffer_memory_view_get,
+    .release_func = io_buffer_memory_view_release,
+    .available_p_func = io_buffer_memory_view_available_p,
+};
+
 /*
  *  Document-class: IO::Buffer
  *
@@ -4124,6 +4200,16 @@ io_buffer_bit_count(int argc, VALUE *argv, VALUE self)
  *  The class is meant to be an utility for implementing more high-level mechanisms
  *  like Fiber::Scheduler#io_read and Fiber::Scheduler#io_write and parsing binary
  *  protocols.
+ *
+ *  == MemoryView Support
+ *
+ *  IO::Buffer supports the C-level MemoryView protocol, so C
+ *  extensions can use +rb_memory_view_get()+ to access the buffer's
+ *  memory directly (zero-copy) as a 1-dimensional contiguous array of
+ *  bytes. The memory view is writable if the buffer is not
+ *  #readonly? and +RUBY_MEMORY_VIEW_WRITABLE+ is specified.
+ *
+ *  While a MemoryView is exported, the buffer is locked.
  *
  *  == Examples of Usage
  *
@@ -4360,4 +4446,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "pread", io_buffer_pread, -1);
     rb_define_method(rb_cIOBuffer, "write", io_buffer_write, -1);
     rb_define_method(rb_cIOBuffer, "pwrite", io_buffer_pwrite, -1);
+
+    // MemoryView:
+    rb_memory_view_register(rb_cIOBuffer, &io_buffer_memory_view_entry);
 }
