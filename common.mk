@@ -226,7 +226,7 @@ $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/util/.time:
 	$(Q) $(MAKEDIRS) $(@D)
 	@$(NULLCMD) > $@
 
-EXPORTOBJS    = $(DLNOBJ) \
+EXPORTOBJS    = $(DLNOBJS) \
 		localeinit.$(OBJEXT) \
 		loadpath.$(OBJEXT) \
 		$(COMMONOBJS)

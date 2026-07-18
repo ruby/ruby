@@ -4127,7 +4127,7 @@ AS_IF([test -n "$RUST_LIB"], [
     ])
 
     # absolute path to stop the "target" dir in src dir from interfering through VPATH
-    RUST_LIB="$(pwd)/${RUST_LIB}"
+    RUST_LIB='$(TOP_BUILD_DIR)'/"${RUST_LIB}"
 ])
 
 dnl These variables end up in ::RbConfig::CONFIG
@@ -4137,14 +4137,14 @@ AC_SUBST(RUSTC_FLAGS)dnl user-configurable rustc compiler flags
 AC_SUBST(CARGO)dnl Cargo command for Rust builds
 AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
 AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
-AC_SUBST(YJIT_LIBS)dnl the .a library of YJIT
-AC_SUBST(YJIT_OBJ)dnl for optionally building the C parts of YJIT
+AC_SUBST(X_YJIT_LIBS, [$YJIT_LIBS])dnl the .a library of YJIT
+AC_SUBST(X_YJIT_OBJ, [$YJIT_OBJ])dnl for optionally building the C parts of YJIT
 AC_SUBST(ZJIT_SUPPORT)dnl what flavor of ZJIT the Ruby build includes
-AC_SUBST(ZJIT_LIBS)dnl path to the .a library of ZJIT
-AC_SUBST(ZJIT_OBJ)dnl for optionally building the C parts of ZJIT
-AC_SUBST(JIT_OBJ)dnl for optionally building C glue code for Rust FFI
-AC_SUBST(RUST_LIB)dnl path to the rust .a library that contains either or both JITs
-AC_SUBST(RLIB_DIR)dnl subpath of build directory for .rlib files
+AC_SUBST(X_ZJIT_LIBS, [$ZJIT_LIBS])dnl path to the .a library of ZJIT
+AC_SUBST(X_ZJIT_OBJ, [$ZJIT_OBJ])dnl for optionally building the C parts of ZJIT
+AC_SUBST(X_JIT_OBJ, [$JIT_OBJ])dnl for optionally building C glue code for Rust FFI
+AC_SUBST(X_RUST_LIB, [$RUST_LIB])dnl path to the rust .a library that contains either or both JITs
+AC_SUBST(X_RLIB_DIR, [$RLIB_DIR])dnl subpath of build directory for .rlib files
 AC_SUBST(JIT_CARGO_SUPPORT)dnl "no" or the cargo profile of the rust code
 }
 
@@ -4178,11 +4178,11 @@ AS_IF([test x"$SOEXT" = xdll], [
 ])
 AC_SUBST(XSYMBOLS_IN_EMPTYLIB, "${rb_cv_symbols_in_emptylib}")
 
-DLNOBJ=dln.o
+DLNOBJS=dln.o
 AC_ARG_ENABLE(dln,
 	      AS_HELP_STRING([--disable-dln], [disable dynamic link feature]),
-	      [test "$enableval" = yes || DLNOBJ=dmydln.o])
-AC_SUBST(DLNOBJ)
+	      [test "$enableval" = yes || DLNOBJS=dmydln.o])
+AC_SUBST(DLNOBJS)
 MINIDLNOBJ=dmydln.o
 
 AS_CASE(["$target_os"],
