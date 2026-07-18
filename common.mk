@@ -1469,8 +1469,9 @@ run.gdb:
 	echo '# handle SIGINT nostop'         >> run.gdb
 	echo '# handle SIGPIPE nostop'        >> run.gdb
 	echo '# b rb_longjmp'                 >> run.gdb
-	echo source $(srcdir)/breakpoints.gdb >> run.gdb
-	echo source $(srcdir)/.gdbinit        >> run.gdb
+	echo directory $(srcdir)              >> run.gdb
+	echo source -s breakpoints.gdb        >> run.gdb
+	echo source -s .gdbinit               >> run.gdb
 	echo 'set $$_exitcode = -999'         >> run.gdb
 	echo run                              >> run.gdb
 	echo 'if $$_exitcode != -999'         >> run.gdb
