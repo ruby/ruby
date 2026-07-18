@@ -468,3 +468,39 @@ class UnboundMethod
     RubyVM::InstructionSequence.of(self)&.syntax_tree
   end
 end
+
+class Thread::Backtrace::Location
+  #  call-seq:
+  #     location.syntax_tree -> Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #
+  #  Returns the AST node at this location, by re-parsing the source file. See
+  #  RubyVM::InstructionSequence#syntax_tree for when +nil+ is returned.
+  #
+  #  This method is experimental and might change without notice.
+  def syntax_tree
+    iseq = Primitive.iseq_of_backtrace_location(self)
+    return nil unless iseq
+
+    node_id = Primitive.node_id_for_backtrace_location(self)
+    return nil unless node_id
+
+    scope = iseq.syntax_tree
+    return nil unless scope
+
+    if scope.is_a?(RubyVM::AbstractSyntaxTree::Node)
+      return Primitive.ast_node_find(scope, node_id)
+    end
+
+    return scope if scope.node_id == node_id
+
+    queue = [scope]
+    while (node = queue.shift)
+      node.compact_child_nodes.each do |child|
+        return child if child.node_id == node_id
+        queue << child
+      end
+    end
+
+    nil
+  end
+end

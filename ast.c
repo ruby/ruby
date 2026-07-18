@@ -257,6 +257,18 @@ node_id_for_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE l
 }
 
 static VALUE
+iseq_of_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE location)
+{
+    if (!rb_frame_info_p(location)) {
+        rb_raise(rb_eTypeError, "Thread::Backtrace::Location object expected");
+    }
+
+    const rb_iseq_t *iseq = rb_get_iseq_from_frame_info(location);
+    if (!iseq) return Qnil;
+    return rb_iseqw_new(iseq);
+}
+
+static VALUE
 ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
     VALUE node, lines = Qnil;
