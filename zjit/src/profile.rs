@@ -100,6 +100,7 @@ fn profile_insn_sample(
             let argc = num_arguments_on_stack(cd);
             // Profile all the arguments and self (+1).
             profile_operands(profiler, profile, argc + 1);
+            profile_splat_length(profiler, profile, unsafe { (*cd).ci });
         }
         YARVINSN_splatkw => profile_operands(profiler, profile, 2),
         _ => return false,
@@ -154,6 +155,10 @@ pub type TypeDistribution = Distribution<ProfiledType, DISTRIBUTION_SIZE>;
 
 pub type TypeDistributionSummary = DistributionSummary<ProfiledType, DISTRIBUTION_SIZE>;
 
+pub type SplatLengthDistribution = Distribution<usize, DISTRIBUTION_SIZE>;
+
+pub type SplatLengthDistributionSummary = DistributionSummary<usize, DISTRIBUTION_SIZE>;
+
 /// Profile the Type of top-`n` stack operands
 fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize) {
     let entry = profile.entry_mut(profiler.insn_idx);
@@ -169,6 +174,28 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
         VALUE::from(profiler.iseq).write_barrier(ty.class());
         profile_type.observe(ty);
     }
+}
+
+fn profile_splat_length(profiler: &mut Profiler, profile: &mut IseqProfile, ci: *const rb_callinfo) {
+    let flags = unsafe { rb_vm_ci_flag(ci) };
+    if flags & VM_CALL_ARGS_SPLAT == 0 {
+        return;
+    }
+
+    let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
+    let caller_kw_count = if kwarg.is_null() { 0 } else { (unsafe { get_cikw_keyword_len(kwarg) }) as usize };
+    let splat_pos = usize::from(flags & VM_CALL_ARGS_BLOCKARG != 0)
+        + usize::from(flags & VM_CALL_KW_SPLAT != 0)
+        + caller_kw_count;
+    let splat_array = profiler.peek_at_stack(splat_pos as isize);
+    if !unsafe { RB_TYPE_P(splat_array, RUBY_T_ARRAY) } {
+        return;
+    }
+
+    let Ok(length) = usize::try_from(unsafe { rb_jit_array_len(splat_array) }) else {
+        return;
+    };
+    profile.entry_mut(profiler.insn_idx).splat_lengths.observe(length);
 }
 
 fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
@@ -225,6 +252,7 @@ fn profile_invokesuper(profiler: &mut Profiler, profile: &mut IseqProfile) {
 
     // Profile all the arguments and self (+1).
     profile_operands(profiler, profile, (argc + 1) as usize);
+    profile_splat_length(profiler, profile, unsafe { (*cd).ci });
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -398,6 +426,8 @@ pub struct ProfileEntry {
     insn_idx: u32,
     /// Type information of YARV instruction operands
     opnd_types: Vec<TypeDistribution>,
+    /// Observed lengths of the caller splat array.
+    splat_lengths: SplatLengthDistribution,
     /// Number of profiles remaining before recompilation. Counts down from --zjit-num-profiles.
     profiles_remaining: NumProfiles,
 }
@@ -435,6 +465,7 @@ impl IseqProfile {
                 self.entries.insert(i, ProfileEntry {
                     insn_idx: idx,
                     opnd_types: Vec::new(),
+                    splat_lengths: SplatLengthDistribution::new(),
                     profiles_remaining: get_option!(num_profiles),
                 });
                 &mut self.entries[i]
@@ -457,6 +488,11 @@ impl IseqProfile {
     /// Get profiled operand types for a given instruction index
     pub fn get_operand_types(&self, insn_idx: YarvInsnIdx) -> Option<&[TypeDistribution]> {
         self.entry(insn_idx).map(|e| e.opnd_types.as_slice()).filter(|s| !s.is_empty())
+    }
+
+    pub fn get_splat_length_summary(&self, insn_idx: YarvInsnIdx) -> Option<SplatLengthDistributionSummary> {
+        self.entry(insn_idx)
+            .map(|entry| SplatLengthDistributionSummary::new(&entry.splat_lengths))
     }
 
     pub fn get_super_method_entry(&self, insn_idx: YarvInsnIdx) -> Option<*const rb_callable_method_entry_t> {
