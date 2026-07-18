@@ -3002,6 +3002,10 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
         n += rb_iseq_disasm_insn(str, code, n, iseq, child);
     }
 
+    if (body->mandatory_only_iseq) {
+        rb_ary_push(child, (VALUE)body->mandatory_only_iseq);
+    }
+
     for (l = 0; l < RARRAY_LEN(child); l++) {
         VALUE isv = rb_ary_entry(child, l);
         if (done_iseq && st_is_member(done_iseq, (st_data_t)isv)) continue;

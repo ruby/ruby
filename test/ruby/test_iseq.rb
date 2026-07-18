@@ -524,6 +524,12 @@ class TestISeq < Test::Unit::TestCase
     assert_equal [:&], param_names
   end
 
+  def test_disasm_mandatory_only_overloaded
+    disasm = RubyVM::InstructionSequence.disasm(Time.method(:at))
+    assert_include disasm, "<builtin!time_s_at1/1>"
+    assert_include disasm, "<builtin!time_s_at/4>"
+  end
+
   def strip_lineno(source)
     source.gsub(/^.*?: /, "")
   end
