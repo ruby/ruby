@@ -579,6 +579,9 @@ struct parser_params {
     unsigned int error_p: 1;
     unsigned int cr_seen: 1;
 
+    /* Streaming hash state of the source bytes read so far. */
+    rb_source_hash_state_t source_hash;
+
 #ifndef RIPPER
     /* Ruby core only */
 
@@ -7456,6 +7459,8 @@ yycompile(struct parser_params *p, VALUE fname, int line)
 
     p->ast = ast = rb_ast_new();
     compile_callback(yycompile0, (VALUE)p);
+    ast->body.source_hash = rb_source_hash_finalize(&p->source_hash);
+    ast->body.has_source_hash = 1;
     p->ast = 0;
 
     while (p->lvtbl) {
@@ -7482,6 +7487,7 @@ lex_getline(struct parser_params *p)
     rb_parser_string_t *line = (*p->lex.gets)(p, p->lex.input, p->line_count);
     if (!line) return 0;
     p->line_count++;
+    rb_source_hash_update(&p->source_hash, (const uint8_t *)line->ptr, (size_t)line->len);
     string_buffer_append(p, line);
     must_be_ascii_compatible(p, line);
     return line;
@@ -15521,6 +15527,7 @@ parser_initialize(struct parser_params *p)
     p->node_id = 0;
     p->delayed.token = NULL;
     p->frozen_string_literal = -1; /* not specified */
+    rb_source_hash_init(&p->source_hash);
 #ifndef RIPPER
     p->error_buffer = Qfalse;
     p->end_expect_token_locations = NULL;

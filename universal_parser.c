@@ -209,3 +209,7 @@
 
 #define rb_ast_new() \
     rb_ast_new(p->config)
+
+#define rb_source_hash_init      p->config->source_hash_init
+#define rb_source_hash_update    p->config->source_hash_update
+#define rb_source_hash_finalize  p->config->source_hash_finalize
