@@ -203,7 +203,41 @@ node_find(VALUE self, const int node_id)
     return Qnil;
 }
 
+static VALUE
+ast_node_find(rb_execution_context_t *ec, VALUE self, VALUE root, VALUE node_id)
+{
+    return node_find(root, NUM2INT(node_id));
+}
+
+static VALUE
+ast_node_source_hash(rb_execution_context_t *ec, VALUE self, VALUE node)
+{
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(node, struct ASTNodeData, &rb_node_type, data);
+
+    rb_ast_t *ast = rb_ruby_ast_data_get(data->ast_value);
+    if (!ast->body.has_source_hash) return Qnil;
+    return ULL2NUM(ast->body.source_hash);
+}
+
 extern VALUE rb_e_script;
+
+static VALUE
+iseq_compiled_by_prism_p(rb_execution_context_t *ec, VALUE self)
+{
+    return RBOOL(ISEQ_BODY(rb_iseqw_to_iseq(self))->prism);
+}
+
+static VALUE
+source_hash_of(rb_execution_context_t *ec, VALUE self, VALUE str)
+{
+    StringValue(str);
+
+    rb_source_hash_state_t state;
+    rb_source_hash_init(&state);
+    rb_source_hash_update(&state, (const uint8_t *)RSTRING_PTR(str), (size_t)RSTRING_LEN(str));
+    return ULL2NUM(rb_source_hash_finalize(&state));
+}
 
 static VALUE
 node_id_for_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE location)
