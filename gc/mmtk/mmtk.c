@@ -670,8 +670,6 @@ void rb_gc_impl_set_params(void *objspace_ptr) { }
 
 static VALUE gc_verify_internal_consistency(VALUE self) { return Qnil; }
 
-#define MMTK_MAX_OBJ_SIZE 1024
-
 static inline size_t
 rb_mmtk_align_obj_size(size_t object_size)
 {
@@ -684,8 +682,6 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
 {
 #if USE_ZJIT && RB_GC_OBJ_SUFFIX_SIZE == 0
     struct objspace *objspace = objspace_ptr;
-
-    if (alloc_size > MMTK_MAX_OBJ_SIZE) return false;
 
     size_t total_size = rb_mmtk_align_obj_size(alloc_size + sizeof(VALUE) + RB_GC_OBJ_SUFFIX_SIZE);
     size_t object_size = total_size - sizeof(VALUE) - RB_GC_OBJ_SUFFIX_SIZE;
@@ -730,7 +726,6 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX])));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(MMTK_MAX_OBJ_SIZE));
     // TODO: correctly set RVALUE_OLD_AGE when we have generational GC support
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), INT2FIX(0));
     OBJ_FREEZE(gc_constants);
@@ -960,8 +955,8 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     struct objspace *objspace = objspace_ptr;
     struct MMTk_ractor_cache *ractor_cache = cache_ptr;
 
-    if (alloc_size == 0 || alloc_size > MMTK_MAX_OBJ_SIZE) {
-        rb_bug("rb_gc_impl_new_obj: allocation size too large (size=%"PRIuSIZE")", alloc_size);
+    if (alloc_size == 0) {
+        rb_bug("rb_gc_impl_new_obj: allocation size is zero");
     }
 
     // Layout: [hidden size header (sizeof(VALUE))][payload (alloc_size)][suffix (RB_GC_OBJ_SUFFIX_SIZE)]
@@ -1013,7 +1008,7 @@ rb_gc_impl_obj_slot_size(VALUE obj)
 size_t
 rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
 {
-    if (size == 0 || size > MMTK_MAX_OBJ_SIZE) {
+    if (size == 0) {
         rb_bug("rb_gc_impl_size_slot_size: size too large (size=%"PRIuSIZE")", size);
     }
 
@@ -1023,13 +1018,13 @@ rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
 bool
 rb_gc_impl_size_allocatable_p(size_t size)
 {
-    return size <= MMTK_MAX_OBJ_SIZE;
+    return true;
 }
 
 size_t
 rb_gc_impl_max_allocation_size(void)
 {
-    return MMTK_MAX_OBJ_SIZE;
+    return SIZE_T_MAX;
 }
 
 // Malloc
