@@ -574,6 +574,11 @@ struct rb_iseq_constant_body {
     // ZJIT stores some data on each iseq.
     void *zjit_payload;
 #endif
+
+    // Hash of the source this iseq was compiled from. Meaningful only when
+    // has_source_hash is set.
+    uint64_t source_hash;
+    bool has_source_hash;
 };
 
 /* T_IMEMO/iseq */
