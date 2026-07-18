@@ -8,6 +8,7 @@
 
 #include "ruby/io/buffer.h"
 #include "ruby/fiber/scheduler.h"
+#include "ruby/memory_view.h"
 
 // For `rb_nogvl`.
 #include "ruby/thread.h"
@@ -624,14 +625,15 @@ rb_io_buffer_for_reading(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE)
     }
 }
 
-/* Forward declaration: rb_io_buffer_readonly_p is defined later in this file. */
-int rb_io_buffer_readonly_p(VALUE self);
+/* Forward declaration: io_buffer_readonly_p is defined later in this file. */
+static int io_buffer_readonly_p(struct rb_io_buffer *buffer);
 
 VALUE
 rb_io_buffer_for_writing(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE), VALUE argument)
 {
     if (rb_obj_is_kind_of(string_or_buffer, rb_cIOBuffer)) {
-        if (rb_io_buffer_readonly_p(string_or_buffer)) {
+        struct rb_io_buffer *buffer = get_io_buffer(string_or_buffer);
+        if (io_buffer_readonly_p(buffer)) {
             rb_raise(rb_eArgError, "buffer is read-only");
         }
         return callback(string_or_buffer, argument);
@@ -1476,11 +1478,9 @@ rb_io_buffer_private_p(VALUE self)
     return RBOOL(buffer->flags & RB_IO_BUFFER_PRIVATE);
 }
 
-int
-rb_io_buffer_readonly_p(VALUE self)
+static int
+io_buffer_readonly_p(struct rb_io_buffer *buffer)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
-
     return buffer->flags & RB_IO_BUFFER_READONLY;
 }
 
@@ -1493,9 +1493,11 @@ rb_io_buffer_readonly_p(VALUE self)
  *  Frozen strings and read-only files create read-only buffers.
  */
 static VALUE
-io_buffer_readonly_p(VALUE self)
+rb_io_buffer_readonly_p(VALUE self)
 {
-    return RBOOL(rb_io_buffer_readonly_p(self));
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    return RBOOL(io_buffer_readonly_p(buffer));
 }
 
 static int
@@ -3945,6 +3947,45 @@ io_buffer_bit_count(int argc, VALUE *argv, VALUE self)
     return SIZET2NUM(count);
 }
 
+static bool
+io_buffer_memory_view_get(VALUE self, rb_memory_view_t *view, int flags)
+{
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    if (buffer->base == NULL || !io_buffer_validate(buffer)) {
+        return false;
+    }
+
+    bool readonly = io_buffer_readonly_p(buffer);
+    if ((flags & RUBY_MEMORY_VIEW_WRITABLE) && readonly) {
+        return false;
+    }
+
+    rb_memory_view_init_as_byte_array(view, self, buffer->base, buffer->size, readonly);
+
+    return true;
+}
+
+static bool
+io_buffer_memory_view_release(VALUE self, rb_memory_view_t *view)
+{
+    return true;
+}
+
+static bool
+io_buffer_memory_view_available_p(VALUE self)
+{
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    return buffer->base != NULL && io_buffer_validate(buffer);
+}
+
+static const rb_memory_view_entry_t io_buffer_memory_view_entry = {
+    .get_func = io_buffer_memory_view_get,
+    .release_func = io_buffer_memory_view_release,
+    .available_p_func = io_buffer_memory_view_available_p,
+};
+
 /*
  *  Document-class: IO::Buffer
  *
@@ -3968,6 +4009,17 @@ io_buffer_bit_count(int argc, VALUE *argv, VALUE self)
  *  The class is meant to be an utility for implementing more high-level mechanisms
  *  like Fiber::Scheduler#io_read and Fiber::Scheduler#io_write and parsing binary
  *  protocols.
+ *
+ *  == MemoryView Support
+ *
+ *  IO::Buffer supports the C-level MemoryView protocol, so C
+ *  extensions can use +rb_memory_view_get()+ to access the buffer's
+ *  memory directly (zero-copy) as a 1-dimensional contiguous array of
+ *  bytes. The memory view is writable unless the buffer is
+ *  #readonly?.
+ *
+ *  While a MemoryView is exported, you must not free, resize or
+ *  transfer the buffer (and the source buffer of a slice).
  *
  *  == Examples of Usage
  *
@@ -4127,7 +4179,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "shared?", rb_io_buffer_shared_p, 0);
     rb_define_method(rb_cIOBuffer, "locked?", rb_io_buffer_locked_p, 0);
     rb_define_method(rb_cIOBuffer, "private?", rb_io_buffer_private_p, 0);
-    rb_define_method(rb_cIOBuffer, "readonly?", io_buffer_readonly_p, 0);
+    rb_define_method(rb_cIOBuffer, "readonly?", rb_io_buffer_readonly_p, 0);
 
     // Locking to prevent changes while using pointer:
     // rb_define_method(rb_cIOBuffer, "lock", rb_io_buffer_lock, 0);
@@ -4207,4 +4259,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "pread", io_buffer_pread, -1);
     rb_define_method(rb_cIOBuffer, "write", io_buffer_write, -1);
     rb_define_method(rb_cIOBuffer, "pwrite", io_buffer_pwrite, -1);
+
+    // MemoryView:
+    rb_memory_view_register(rb_cIOBuffer, &io_buffer_memory_view_entry);
 }
