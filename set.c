@@ -9,6 +9,7 @@
 #include "internal/bits.h"
 #include "internal/error.h"
 #include "internal/hash.h"
+#include "internal/imemo.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
 #include "internal/set_table.h"
@@ -1120,25 +1121,25 @@ set_i_clear(VALUE set)
 }
 
 struct set_intersection_data {
-    VALUE set;
-    set_table *into;
-    set_table *other;
+    VALUE into;
+    VALUE other;
 };
 
 static int
 set_intersection_i(st_data_t key, st_data_t tmp)
 {
     struct set_intersection_data *data = (struct set_intersection_data *)tmp;
-    if (set_table_lookup(data->other, key)) {
-        set_table_insert_wb(data->into, data->set, key);
+    if (set_table_lookup(RSET_TABLE(data->other), key)) {
+        set_table_insert_wb(RSET_TABLE(data->into), data->into, key);
     }
 
     return ST_CONTINUE;
 }
 
 static VALUE
-set_intersection_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, data))
+set_intersection_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
 {
+    struct set_intersection_data *data = MEMO_FOR(struct set_intersection_data, memo);
     set_intersection_i((st_data_t)i, (st_data_t)data);
     return i;
 }
@@ -1162,31 +1163,27 @@ static VALUE
 set_i_intersection(VALUE set, VALUE other)
 {
     VALUE new_set = set_s_alloc(rb_obj_class(set));
-    set_table *stable = RSET_TABLE(set);
-    set_table *ntable = RSET_TABLE(new_set);
 
     if (rb_obj_is_kind_of(other, rb_cSet)) {
-        set_table *otable = RSET_TABLE(other);
-        if (set_table_size(stable) >= set_table_size(otable)) {
+        if (set_table_size(RSET_TABLE(set)) >= set_table_size(RSET_TABLE(other))) {
             /* Swap so we iterate over the smaller set */
-            otable = stable;
+            VALUE tmp = set;
             set = other;
+            other = tmp;
         }
 
         struct set_intersection_data data = {
-            .set = new_set,
-            .into = ntable,
-            .other = otable
+            .into = new_set,
+            .other = other,
         };
         set_iter(set, set_intersection_i, (st_data_t)&data);
     }
     else {
-        struct set_intersection_data data = {
-            .set = new_set,
-            .into = ntable,
-            .other = stable
-        };
-        rb_block_call(other, enum_method_id(other), 0, 0, set_intersection_block, (VALUE)&data);
+        VALUE memo;
+        struct set_intersection_data *data = NEW_MEMO_FOR(struct set_intersection_data, memo);
+        data->into = new_set;
+        data->other = set;
+        rb_block_call(other, enum_method_id(other), 0, 0, set_intersection_block, memo);
     }
 
     return new_set;

@@ -2095,17 +2095,12 @@ lazy_map(VALUE obj)
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_map_funcs);
 }
 
-struct flat_map_i_arg {
-    struct MEMO *result;
-    long index;
-};
-
 static VALUE
 lazy_flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, y))
 {
-    struct flat_map_i_arg *arg = (struct flat_map_i_arg *)y;
+    struct MEMO *arg = MEMO_CAST(y);
 
-    return lazy_yielder_yield(arg->result, arg->index, argc, argv);
+    return lazy_yielder_yield((struct MEMO *)arg->v1, arg->u3.cnt, argc, argv);
 }
 
 static struct MEMO *
@@ -2120,9 +2115,9 @@ lazy_flat_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo
         ary = value;
     }
     else if (rb_respond_to(value, id_force) && rb_respond_to(value, id_each)) {
-        struct flat_map_i_arg arg = {.result = result, .index = proc_index};
+        struct MEMO *arg = rb_imemo_memo_new((VALUE)result, Qfalse, proc_index);
         LAZY_MEMO_RESET_BREAK(result);
-        rb_block_call(value, id_each, 0, 0, lazy_flat_map_i, (VALUE)&arg);
+        rb_block_call(value, id_each, 0, 0, lazy_flat_map_i, (VALUE)arg);
         if (break_p) LAZY_MEMO_SET_BREAK(result);
         return 0;
     }
@@ -3656,32 +3651,33 @@ struct product_state {
     VALUE  block;
     int    index;
     int    argc;
-    VALUE *argv;
+    VALUE  argv[];
 };
 
-static VALUE product_each(VALUE, struct product_state *);
+static VALUE product_each(VALUE, VALUE);
 
 static VALUE
 product_each_i(RB_BLOCK_CALL_FUNC_ARGLIST(value, state))
 {
-    struct product_state *pstate = (struct product_state *)state;
+    struct product_state *pstate = RB_IMEMO_TMPBUF_PTR(state);
     pstate->argv[pstate->index++] = value;
 
-    VALUE val = product_each(pstate->obj, pstate);
+    VALUE val = product_each(pstate->obj, state);
     pstate->index--;
     return val;
 }
 
 static VALUE
-product_each(VALUE obj, struct product_state *pstate)
+product_each(VALUE obj, VALUE state)
 {
+    struct product_state *pstate = RB_IMEMO_TMPBUF_PTR(state);
     struct enum_product *ptr = enum_product_ptr(obj);
     VALUE enums = ptr->enums;
 
     if (pstate->index < pstate->argc) {
         VALUE eobj = RARRAY_AREF(enums, pstate->index);
 
-        rb_block_call(eobj, id_each_entry, 0, NULL, product_each_i, (VALUE)pstate);
+        rb_block_call(eobj, id_each_entry, 0, NULL, product_each_i, state);
     }
     else {
         rb_funcall(pstate->block, id_call, 1, rb_ary_new_from_values(pstate->argc, pstate->argv));
@@ -3700,18 +3696,15 @@ enum_product_run(VALUE obj, VALUE block)
         return obj;
     }
 
-    VALUE argsbuf = 0;
-    struct product_state state = {
-        .obj = obj,
-        .block = block,
-        .index = 0,
-        .argc = argc,
-        .argv = ALLOCV_N(VALUE, argsbuf, argc),
-    };
+    VALUE memo = 0;
+    struct product_state *state = rb_alloc_tmp_buffer(&memo,
+            sizeof(struct product_state) + sizeof(VALUE) * argc);
+    state->obj = obj;
+    state->block = block;
+    state->index = 0;
+    state->argc = argc;
 
-    VALUE ret = product_each(obj, &state);
-    ALLOCV_END(argsbuf);
-    return ret;
+    return product_each(obj, memo);
 }
 
 /*
