@@ -174,11 +174,9 @@ rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view)
     const ssize_t ndim = view->ndim;
     const ssize_t *shape = view->shape;
     const ssize_t *strides = view->strides;
-    ssize_t n;
-    bool trivial;
     ssize_t i;
     if (strides) {
-        n = view->item_size;
+        ssize_t n = view->item_size;
         if (ndim == 1) {
             return strides[0] == n;
         }
@@ -196,7 +194,7 @@ rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view)
             return false;
         }
 
-        trivial = true;
+        bool trivial = true;
         for (i = 0; i < ndim; ++i) {
             if (shape[i] > 1) {
                 if (!trivial) {
