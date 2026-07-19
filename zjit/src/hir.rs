@@ -9309,7 +9309,7 @@ fn add_iseq_to_hir(
                         Some(summary.bucket(0).class())
                     });
 
-                    let is_ifunc = (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT)) == 0
+                    let is_ifunc = (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG)) == 0
                         && block_handler_class.is_some_and(|obj| unsafe { rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1 });
 
                     // If the block handler is a known simple ISEQ block with exact arity and no
