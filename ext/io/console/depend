@@ -182,10 +182,7 @@ win32_vk.inc: win32_vk.list
 
 .list.inc:
 	( \
-	$(RUBY) -anF, \
-	-e 'BEGIN {puts "#define UNDEFINED_VK (unsigned short)-1"}' \
-	-e 'n=$$F[1] and (n.strip!; /\AVK_/=~n) and' \
-	-e   'puts(%[#ifndef #{n}\n# define #{n} UNDEFINED_VK\n#endif])' \
+	$(RUBY) -e "ARGF.read.scan(/^\w+,\s*\KVK_\w+/){|n|puts(%Q[#ifndef #{n}\n# define #{n} UNDEFINED_VK\n#endif])}" \
 	$< && \
 	gperf --ignore-case -L ANSI-C -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k* $< \
 	| sed -f $(top_srcdir)/tool/gperf.sed \
