@@ -1,4 +1,5 @@
 %{
+#define UNDEFINED_VK (unsigned short)-1
 struct vktable {short ofs; unsigned short vk;};
 static const struct vktable *console_win32_vk(const char *, size_t);
 %}
@@ -164,3 +165,9 @@ ZOOM, VK_ZOOM
 NONAME, VK_NONAME
 PA1, VK_PA1
 OEM_CLEAR, VK_OEM_CLEAR
+%%
+/*
+ * Local Variables:
+ * mode: C
+ * End:
+ */
