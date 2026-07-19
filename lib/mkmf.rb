@@ -2091,7 +2091,7 @@ V0 = $(V:0=)
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
 ECHO1 = $(V:1=@ #{CONFIG['NULLCMD']})
-ECHO = $(ECHO1:0=@ echo)
+ECHO = $(ECHO1:0=@ #{$nmake ? "echo" : "/bin/echo"})
 NULLCMD = #{CONFIG['NULLCMD']}
 
 #### Start of system configuration section. ####
