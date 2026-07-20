@@ -1,5 +1,3 @@
-# mkdepend: generated constdefs.h
-
 constdefs.h : $(srcdir)/mkconstants.rb
 	@echo "generating constant definitions"
 	@$(RUBY) $(srcdir)/mkconstants.rb -o constdefs.h

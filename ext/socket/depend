@@ -1,6 +1,3 @@
-# mkdepend: generated constdefs.c
-# mkdepend: generated constdefs.h
-
 srcs: constdefs.h constdefs.c
 
 getnameinfo.o: getnameinfo.c $(arch_hdrdir)/ruby/config.h addrinfo.h sockport.h rubysocket.h

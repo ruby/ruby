@@ -49,7 +49,7 @@ class TestMkdepend < Test::Unit::TestCase
         root: dir,
         include_dirs: [dir],
         macros: {'GENERATED_HEADER' => 'generated.h'},
-        generated: %w[parse.h],
+        targets: %w[parse.h],
         aliases: {'aliased.h' => 'aliased.h.erb'},
         dependencies: {'generated.h' => %w[virtual.h]},
         defined: %w[ENABLED],
@@ -141,6 +141,14 @@ class TestMkdepend < Test::Unit::TestCase
     )
     console = mkdepend.dependency_declarations('ext/io/console/depend')
     assert_equal(%w[$(VK_HEADER)], console.dependencies['win32_vk.inc'])
+    assert_include(
+      mkdepend.dependency_targets('ext/socket/depend'),
+      'constdefs.h',
+    )
+    assert_include(
+      mkdepend.dependency_targets('ext/ripper/depend'),
+      'eventids1.h',
+    )
     assert_path_not_exist(File.expand_path('../mkdepend', __dir__))
   end
 
@@ -201,10 +209,9 @@ class TestMkdepend < Test::Unit::TestCase
       input = File.join(dir, 'ext/example/depend')
       File.write(input, <<~DEPEND)
         # mkdepend: scan generated.c => template.c
-        # mkdepend: generated generated.h
-        # mkdepend: generated vpath.inc
         # mkdepend: depends vpath.inc => {$(VPATH)}vpath.inc
         # mkdepend: depends selected.inc => $(SELECTED_HEADER)
+        generated.h: template.c
         #{MARK_START}
         generated.o: generated.c
         #{MARK_END}
@@ -229,6 +236,7 @@ class TestMkdepend < Test::Unit::TestCase
       path = File.join(dir, 'depend')
       [
         '# mkdepend: depends ignored.h =>',
+        '# mkdepend: generated generated.h',
         '# mkdepend: generated generated.h => $(GENERATED_HEADER)',
         '# mkdepend: unknown header.h',
         '# mkdepend: scan generated/*.c => template.c.erb',
@@ -263,12 +271,50 @@ class TestMkdepend < Test::Unit::TestCase
     end
   end
 
+  def test_dependency_metadata_uses_passed_content
+    Dir.mktmpdir('mkdepend-declarations') do |dir|
+      path = File.join(dir, 'missing-depend')
+      content = <<~DEPEND
+        # mkdepend: depends generated.h => $(GENERATED_HEADER)
+        generated.h: template.h
+        #{MARK_START}
+        generated.o: generated.c
+        #{MARK_END}
+      DEPEND
+      declarations = Mkdepend.new(root: dir).
+        parse_dependency_declarations(path, content)
+      assert_equal(%w[$(GENERATED_HEADER)], declarations.dependencies['generated.h'])
+      assert_equal(
+        %w[generated.h],
+        Mkdepend.new(root: dir).dependency_targets(path, content),
+      )
+    end
+  end
+
   def test_dependency_files
     files = mkdepend.dependency_files
     assert_include(files, 'depend')
     assert_include(files, 'enc/depend')
     assert_include(files, 'ext/date/depend')
     assert(files.all? {|file| File.read(File.join(TOP_SRCDIR, file)).include?(MARK_START)})
+  end
+
+  def test_dependency_files_caches_contents
+    Dir.mktmpdir('mkdepend-files') do |dir|
+      path = File.join(dir, 'depend')
+      ignored = File.join(dir, 'ext/example/depend')
+      FileUtils.mkdir_p(File.dirname(ignored))
+      content = "#{MARK_START}\n#{MARK_END}\n"
+      File.write(path, content)
+      File.write(ignored, "manual: rule\n")
+      mkdepend = Mkdepend.new(root: dir)
+
+      assert_equal(%w[depend], mkdepend.dependency_files)
+      File.unlink(path)
+      File.unlink(ignored)
+      assert_equal(content, mkdepend.dependency_file_content(path))
+      assert_nil(mkdepend.dependency_file_content(ignored))
+    end
   end
 
   def test_unicode_header

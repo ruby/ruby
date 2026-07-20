@@ -8,9 +8,6 @@ LRAMA = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
 # mkdepend: define ripper.y => RIPPER
 # mkdepend: scan ripper.y => parse.y
 # mkdepend: scan ripper_init.c => ext/ripper/ripper_init.c.tmpl
-# mkdepend: generated eventids1.h
-# mkdepend: generated eventids2.h
-# mkdepend: generated ripper_init.h
 # mkdepend: depends eventids2table.c => {$(VPATH)}eventids2table.c
 # mkdepend: depends ripper.c => {$(VPATH)}ripper.c
 # mkdepend: depends ripper_init.c => {$(VPATH)}ripper_init.c

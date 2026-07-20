@@ -15,9 +15,6 @@
 #     `*` and `**` patterns are expanded from matching SOURCE files and
 #     substituted into NAME.  Both sides must have the same pattern count.
 #
-#   # mkdepend: generated NAME
-#     Treat NAME as generated without reading it.
-#
 #   # mkdepend: depends NAME => DEPENDENCY...
 #     Associate NAME with dependencies.  They replace NAME when it is
 #     included and are added when NAME is a source being scanned.  Make
@@ -40,7 +37,7 @@ TOP_SRCDIR = File.expand_path("..", __dir__)
 
 class Mkdepend
   Declarations = Struct.new(
-    :scan, :generated, :dependencies, :defines, :undefines,
+    :scan, :dependencies, :defines, :undefines,
   )
 end
 
@@ -48,13 +45,13 @@ class Mkdepend::Scanner
   attr_reader :unresolved
 
   def initialize(root:, include_dirs:, quote_dirs: [], macros: {},
-                 generated: [], aliases: {}, dependencies: {}, defined: [],
+                 targets: [], aliases: {}, dependencies: {}, defined: [],
                  undefined: [])
     @root = File.expand_path(root)
     @include_dirs = include_dirs.map {|dir| File.expand_path(dir, @root)}
     @quote_dirs = quote_dirs.map {|dir| File.expand_path(dir, @root)}
     @macros = macros
-    @generated = generated.to_set
+    @targets = targets.to_set
     @aliases = aliases
     @dependencies = dependencies
     @defined = defined.to_set
@@ -148,7 +145,7 @@ class Mkdepend::Scanner
     when /\A([A-Za-z_]\w*)/
       name = $1
       unless @aliases.key?(name) || @dependencies.key?(name) ||
-          @generated.include?(name)
+          @targets.include?(name)
         name = @macros[name]
       end
       quoted = true
@@ -171,7 +168,7 @@ class Mkdepend::Scanner
       dependencies.add(name)
     elsif path = resolve(name, current, quoted)
       visit(path, dependencies, visited)
-    elsif @generated.include?(name)
+    elsif @targets.include?(name)
       dependencies.add(name)
     else
       @unresolved.add(name)
@@ -202,6 +199,8 @@ class Mkdepend
   def initialize(root: TOP_SRCDIR)
     @root = File.expand_path(root)
     @dependency_declarations = {}
+    @dependency_targets = {}
+    @dependency_contents = {}
   end
 
   def expand_scan_declaration(name, source)
@@ -227,12 +226,13 @@ class Mkdepend
     end
   end
 
-  def parse_dependency_declarations(path)
-    declarations = Declarations.new({}, {}, {}, {}, {})
-    return declarations unless File.file?(path)
+  def parse_dependency_declarations(path, content = nil)
+    declarations = Declarations.new({}, {}, {}, {})
+    content ||= File.read(path) if File.file?(path)
+    return declarations unless content
 
     lineno = 0
-    File.foreach(path) do |line|
+    content.each_line do |line|
       lineno += 1
       case line[/\A#\s*mkdepend:\s*\K.*/]
       when nil
@@ -243,8 +243,6 @@ class Mkdepend
           raise "#{path}:#{lineno}: invalid mkdepend declaration: #{line.strip}"
         end
         declarations.scan.update(scan)
-      when /\Agenerated\s+(\S+)\s*\z/
-        declarations.generated[$1] = nil
       when /\Adepends\s+(\S+)\s*=>\s*(.+?)\s*\z/
         name, dependencies = $1, $2.split
         if declarations.dependencies.key?(name)
@@ -262,18 +260,32 @@ class Mkdepend
     declarations
   end
 
-  def dependency_declarations(input = nil, source: nil)
+  def dependency_file_content(path, content = nil)
+    path = File.expand_path(path, @root)
+    if content
+      @dependency_contents[path] = content
+    elsif @dependency_contents.key?(path)
+      @dependency_contents[path]
+    elsif File.file?(path)
+      @dependency_contents[path] = File.read(path)
+    end
+  end
+
+  def dependency_declarations(input = nil, source: nil, content: nil)
     input ||= dependency_input(source)
     input = relative_source(input || "depend")
     @dependency_declarations[input] ||= begin
-      global = parse_dependency_declarations(File.join(@root, "depend"))
       if input == "depend"
-        global
+        path = File.join(@root, input)
+        parse_dependency_declarations(path, dependency_file_content(path, content))
       else
-        local = parse_dependency_declarations(File.join(@root, input))
+        global = dependency_declarations("depend")
+        path = File.absolute_path?(input) ? input : File.join(@root, input)
+        local = parse_dependency_declarations(
+          path, dependency_file_content(path, content),
+        )
         Declarations.new(
           global.scan.merge(local.scan),
-          global.generated.merge(local.generated),
           global.dependencies.merge(local.dependencies),
           global.defines.merge(local.defines),
           global.undefines.merge(local.undefines),
@@ -305,6 +317,34 @@ class Mkdepend
     end
     key = candidates.uniq.find {|candidate| map.key?(candidate)}
     [key, map[key]] if key
+  end
+
+  def dependency_targets(input, content = nil)
+    input = relative_source(input)
+    @dependency_targets[input] ||= begin
+      targets = []
+      path = File.absolute_path?(input) ? input : File.join(@root, input)
+      content = dependency_file_content(path, content)
+      if content
+        content.each_line do |line|
+          if line.start_with?(MARK_START)..line.start_with?(MARK_END)
+            next
+          elsif target = line[/\A[^\s#][^:=]*?(?=\s*:(?!=))/]
+            targets.concat(target.split)
+          end
+        end
+      end
+      targets.uniq
+    end
+  end
+
+  def dependency_target(name, input)
+    input = relative_source(input)
+    targets = dependency_targets(input)
+    candidates = [name]
+    dir = File.dirname(input)
+    candidates << name.delete_prefix(dir + "/") unless dir == "."
+    candidates.uniq.find {|candidate| targets.include?(candidate)}
   end
 
   def relative_source(path)
@@ -356,9 +396,8 @@ class Mkdepend
       file = relative_source(file)
       dep = if file.start_with?('$(', '{$(')
         file
-      elsif generated = declaration(declarations.generated, file,
-                                     declaration_input)
-        generated[0]
+      elsif target = dependency_target(file, declaration_input)
+        target
       elsif extension_dir
         extension_dependency(file, extension_dir)
       else
@@ -403,11 +442,11 @@ class Mkdepend
     "{$(VPATH)}"
   end
 
-  def generated_source?(source, input = nil)
+  def dependency_source?(source, input = nil)
     declarations = dependency_declarations(input, source: source)
     declaration(declarations.scan, source, input) ||
-      declaration(declarations.generated, source, input) ||
-      declaration(declarations.dependencies, source, input)
+      declaration(declarations.dependencies, source, input) ||
+      dependency_target(source, input || dependency_input(source))
   end
 
   def dependency_scanner(src, declarations, input)
@@ -428,7 +467,7 @@ class Mkdepend
       ],
       quote_dirs: [File.join(@root, "include/ruby")],
       macros: macros,
-      generated: declarations.generated.keys,
+      targets: dependency_targets(input),
       aliases: declarations.scan,
       dependencies: declarations.dependencies,
       defined: defined,
@@ -508,7 +547,11 @@ class Mkdepend
   def dependency_files
     Dir.chdir(@root) do
       %w[depend enc/depend].concat(Dir.glob("ext/**/depend")).select do |file|
-        File.file?(file) && File.read(file).include?(MARK_START)
+        next false unless File.file?(file)
+        content = File.read(file)
+        next false unless content.include?(MARK_START)
+        dependency_file_content(file, content)
+        true
       end
     end
   end
@@ -548,7 +591,7 @@ class Mkdepend
 
     missing = "missing/#{src}"
     return missing if File.file?(File.join(@root, missing))
-    return src if generated_source?(src, input)
+    return src if dependency_source?(src, input)
 
     raise "source file not found: #{src} in #{input}"
   end
@@ -620,7 +663,9 @@ class Mkdepend
       if input.end_with?(".c", ".y")
         out.puts makedepend(input)
       else
-        deps = File.read(input)
+        deps = dependency_file_content(input) || File.read(input)
+        dependency_declarations(input, content: deps)
+        dependency_targets(input, deps)
         match = MARK_SECTION.match(deps)
         next unless match
         raise "missing #{MARK_END} in #{input}" unless match.begin(1)

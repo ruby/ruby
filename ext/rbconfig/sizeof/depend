@@ -2,9 +2,6 @@
 
 # mkdepend: scan limits.c => template/limits.c.tmpl
 # mkdepend: scan sizes.c => template/sizes.c.tmpl
-# mkdepend: generated limits.c
-# mkdepend: generated sizes.c
-
 limits.c: $(top_srcdir)/tool/generic_erb.rb $(top_srcdir)/template/limits.c.tmpl
 	$(Q) $(RUBY) $(top_srcdir)/tool/generic_erb.rb --output=$@ \
 		$(top_srcdir)/template/limits.c.tmpl \
