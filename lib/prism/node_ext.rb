@@ -386,6 +386,7 @@ module Prism
     end
   end
 
+  # :stopdoc:
   class InNode < Node
     #: () -> String
     def in # :nodoc
@@ -487,4 +488,5 @@ module Prism
       end_keyword_loc
     end
   end
+  # :startdoc:
 end
