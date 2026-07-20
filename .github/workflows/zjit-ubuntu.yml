@@ -84,7 +84,7 @@ jobs:
             run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=1'
             specopts: '-T --zjit-inline-threshold=0 -T --zjit-call-threshold=1'
             configure: '--enable-zjit=dev'
-            ruby_testopts: '--exclude=ruby/test_hash.rb'
+            tests: '--exclude=ruby/test_hash.rb'
 
             # The optimizer benefits from at least 1 iteration of profiling. Also, many
             # regression tests in bootstraptest/test_yjit.rb assume call-threshold=2.
@@ -218,7 +218,8 @@ jobs:
             ZJIT_BINDGEN_DIFF_OPTS="$ZJIT_BINDGEN_DIFF_OPTS"
         timeout-minutes: 90
         env:
-          RUBY_TESTOPTS: '-q --tty=no ${{ matrix.ruby_testopts }}'
+          RUBY_TESTOPTS: '-q --tty=no'
+          TESTS: ${{ matrix.tests }}
           EXCLUDES: '../src/test/.excludes-zjit'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
