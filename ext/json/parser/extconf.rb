@@ -30,6 +30,12 @@ end
 
 append_cflags("-std=c99")
 
+# Disable function outlining on clang to prevent some of the repeated instructions
+# in json_eat_whitespace being outlined into function calls.
+# Note: This verifies '-mno-outline' is accepted as a valid compiler flag
+# and will not pass it if unsupported.
+append_cflags("-mno-outline")
+
 if enable_config('parser-use-simd', default=!ENV["JSON_DISABLE_SIMD"])
   load __dir__ + "/../simd/conf.rb"
 end
