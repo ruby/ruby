@@ -45,6 +45,7 @@
 #include "internal.h"
 #include "internal/cmdlineopt.h"
 #include "internal/cont.h"
+#include "internal/coverage.h"
 #include "internal/error.h"
 #include "internal/file.h"
 #include "internal/inits.h"

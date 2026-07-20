@@ -10,6 +10,7 @@
   Copyright (C) 2004-2008 Koichi Sasada
 
 **********************************************************************/
+#include "internal/coverage.h"
 #include "internal/gc.h"
 #include "shape.h"
 #include "vm_core.h"

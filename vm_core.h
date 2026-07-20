@@ -2437,13 +2437,6 @@ int rb_thread_check_trap_pending(void);
 #define RUBY_EVENT_COVERAGE_LINE                0x010000
 #define RUBY_EVENT_COVERAGE_BRANCH              0x020000
 
-extern VALUE rb_get_coverages(void);
-extern void rb_set_coverages(VALUE, int, VALUE, VALUE);
-extern void rb_clear_coverages(void);
-extern void rb_reset_coverages(void);
-extern void rb_resume_coverages(void);
-extern void rb_suspend_coverages(void);
-
 void rb_postponed_job_flush(rb_vm_t *vm);
 void rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor);
 

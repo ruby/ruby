@@ -21,6 +21,7 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/compile.h"
+#include "internal/coverage.h"
 #include "internal/complex.h"
 #include "internal/encoding.h"
 #include "internal/error.h"

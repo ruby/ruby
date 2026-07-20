@@ -8,12 +8,9 @@
 
 ************************************************/
 
-#include "internal/gc.h"
+#include "internal/coverage.h"
 #include "internal/hash.h"
-#include "internal/thread.h"
-#include "internal/sanitizers.h"
 #include "ruby.h"
-#include "vm_core.h"
 
 static enum {
     IDLE,
@@ -42,13 +39,13 @@ rb_coverage_supported(VALUE self, VALUE _mode)
 {
     ID mode = RB_SYM2ID(_mode);
 
-    return RBOOL(
+    return (
         mode == rb_intern("lines") ||
         mode == rb_intern("oneshot_lines") ||
         mode == rb_intern("branches") ||
         mode == rb_intern("methods") ||
         mode == rb_intern("eval")
-    );
+    ) ? Qtrue : Qfalse;
 }
 
 /*
@@ -242,60 +239,30 @@ branch_coverage(VALUE branches)
     return b.result;
 }
 
-/*
- * Fold a single method entry's contribution into the method coverage result.
- * `add` is the number of calls to attribute to it (0 is used to make sure a
- * defined-but-uncalled method shows up). Entries that resolve elsewhere (e.g.
- * aliases) are skipped: their calls are attributed to the original definition
- * via the [owner, mid, location] key, exactly like the old heap-walk did.
- */
 static void
-method_coverage_add(const rb_method_entry_t *me, long add, VALUE ncoverages)
+method_coverage_i(const struct rb_coverage_method_data *method, void *data)
 {
-    VALUE data[5];
-    const rb_method_entry_t *me2 = rb_resolve_me_location(me, data);
-    if (me != me2) return;
+    VALUE ncoverages = *(VALUE *)data;
+    VALUE ncoverage = rb_hash_aref(ncoverages, method->path);
 
-    VALUE klass = me->owner;
-    if (RB_TYPE_P(klass, T_ICLASS)) return;
+    if (!NIL_P(ncoverage)) {
+        VALUE methods = rb_hash_aref(ncoverage, ID2SYM(rb_intern("methods")));
+        VALUE key = rb_ary_new_from_args(6, method->owner, method->method_id,
+                                         method->first_lineno, method->first_column,
+                                         method->last_lineno, method->last_column);
+        VALUE rcount = method->count;
+        VALUE previous = rb_hash_aref(methods, key);
 
-    VALUE first_lineno = data[1];
-    if (FIX2LONG(first_lineno) <= 0) return;
-
-    VALUE path = data[0];
-    VALUE ncoverage = rb_hash_aref(ncoverages, path);
-    if (NIL_P(ncoverage)) return;
-
-    VALUE methods = rb_hash_aref(ncoverage, ID2SYM(rb_intern("methods")));
-    VALUE method_id = ID2SYM(me->def->original_id);
-    VALUE key = rb_ary_new_from_args(6, klass, method_id, data[1], data[2], data[3], data[4]);
-
-    VALUE rcount = rb_hash_aref(methods, key);
-    long count = NIL_P(rcount) ? 0 : FIX2LONG(rcount);
-    if (!POSFIXABLE(count + add)) {
-        count = FIXNUM_MAX;
+        if (NIL_P(rcount)) rcount = LONG2FIX(0);
+        if (NIL_P(previous)) previous = LONG2FIX(0);
+        if (!POSFIXABLE(FIX2LONG(rcount) + FIX2LONG(previous))) {
+            rcount = LONG2FIX(FIXNUM_MAX);
+        }
+        else {
+            rcount = LONG2FIX(FIX2LONG(rcount) + FIX2LONG(previous));
+        }
+        rb_hash_aset(methods, key, rcount);
     }
-    else {
-        count += add;
-    }
-    rb_hash_aset(methods, key, LONG2FIX(count));
-}
-
-/* me_set entries: every defined method, so uncalled ones appear with count 0. */
-static int
-method_coverage_me_i(VALUE key, VALUE value, VALUE ncoverages)
-{
-    method_coverage_add((const rb_method_entry_t *)key, 0, ncoverages);
-    return ST_CONTINUE;
-}
-
-/* cme2counter entries: call counts, attributed to the definition's key. */
-static int
-method_coverage_count_i(VALUE key, VALUE value, VALUE ncoverages)
-{
-    long add = FIXNUM_P(value) ? FIX2LONG(value) : 0;
-    method_coverage_add((const rb_method_entry_t *)key, add, ncoverages);
-    return ST_CONTINUE;
 }
 
 static int
@@ -361,8 +328,7 @@ rb_coverage_peek_result(VALUE klass)
     rb_hash_foreach(coverages, coverage_peek_result_i, ncoverages);
 
     if (current_mode & COVERAGE_TARGET_METHODS) {
-        if (RTEST(me_set)) rb_hash_foreach(me_set, method_coverage_me_i, ncoverages);
-        if (RTEST(cme2counter)) rb_hash_foreach(cme2counter, method_coverage_count_i, ncoverages);
+        rb_coverage_each_method(method_coverage_i, &ncoverages);
     }
 
     rb_hash_freeze(ncoverages);
