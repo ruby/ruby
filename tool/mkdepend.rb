@@ -23,6 +23,10 @@
 #     Associate NAME with logical dependencies.  They replace NAME when it
 #     is included and are added when NAME is a source being scanned.
 #
+#   # mkdepend: define SOURCE => MACRO...
+#   # mkdepend: undef SOURCE => MACRO...
+#     Treat preprocessor MACROs as defined or undefined while scanning SOURCE.
+#
 # Declarations in the top-level depend file apply to all dependency files.
 # A declaration in a more specific dependency file overrides one with the
 # same name and kind.  An invalid `# mkdepend:` declaration is an error.
@@ -34,7 +38,9 @@ require 'fileutils'
 TOP_SRCDIR = File.expand_path("..", __dir__)
 
 class Mkdepend
-  Declarations = Struct.new(:scan, :generated, :dependencies)
+  Declarations = Struct.new(
+    :scan, :generated, :dependencies, :defines, :undefines,
+  )
 end
 
 class Mkdepend::Scanner
@@ -139,7 +145,11 @@ class Mkdepend::Scanner
       quoted = $1 == '"'
       name = $2
     when /\A([A-Za-z_]\w*)/
-      name = @macros[$1]
+      name = $1
+      unless @aliases.key?(name) || @dependencies.key?(name) ||
+          @generated.include?(name)
+        name = @macros[name]
+      end
       quoted = true
     end
     return unless name
@@ -150,7 +160,11 @@ class Mkdepend::Scanner
     end
 
     if alias_path = @aliases[name]
-      dependencies.add(name)
+      if virtual = @dependencies[name]
+        dependencies.merge(virtual)
+      else
+        dependencies.add(name)
+      end
       visit(File.expand_path(alias_path, @root), dependencies, visited, record: false)
       return
     end
@@ -216,7 +230,7 @@ class Mkdepend
   end
 
   def parse_dependency_declarations(path)
-    declarations = Declarations.new({}, {}, {})
+    declarations = Declarations.new({}, {}, {}, {}, {})
     return declarations unless File.file?(path)
 
     lineno = 0
@@ -235,6 +249,10 @@ class Mkdepend
         declarations.generated[$1] = $2
       when /\Adepends\s+(\S+)\s*=>\s*(.+?)\s*\z/
         declarations.dependencies[$1] = $2.split
+      when /\A#\s*mkdepend:\s*define\s+(\S+)\s*=>\s*(.+?)\s*\z/
+        declarations.defines[$1] = $2.split
+      when /\A#\s*mkdepend:\s*undef\s+(\S+)\s*=>\s*(.+?)\s*\z/
+        declarations.undefines[$1] = $2.split
       else
         raise "#{path}:#{lineno}: invalid mkdepend declaration: #{line.strip}"
       end
@@ -255,6 +273,8 @@ class Mkdepend
           global.scan.merge(local.scan),
           global.generated.merge(local.generated),
           global.dependencies.merge(local.dependencies),
+          global.defines.merge(local.defines),
+          global.undefines.merge(local.undefines),
         )
       end
     end
@@ -377,19 +397,13 @@ class Mkdepend
       declaration(declarations.generated, source, input)
   end
 
-  def dependency_scanner(src, declarations)
-    macros = {
-      "COROUTINE_H" => "coroutine.h",
-      "THREAD_IMPL_H" => "thread_pthread.h",
-      "THREAD_IMPL_SRC" => "thread_pthread.c",
-    }
+  def dependency_scanner(src, declarations, input)
+    macros = {}
     macros["RUBY_EXTCONF_H"] = "extconf.h" if src.start_with?("ext/")
-    defined = []
+    defined = declaration(declarations.defines, src, input)&.last || []
     undefined = %w[__cplusplus]
-    if src == "ext/ripper/ripper.y"
-      defined << "RIPPER"
-    else
-      undefined << "RIPPER"
+    if undefined_macros = declaration(declarations.undefines, src, input)
+      undefined.concat(undefined_macros[1])
     end
     Scanner.new(
       root: @root,
@@ -414,7 +428,7 @@ class Mkdepend
     declaration_input = input || dependency_input(src)
     declarations = dependency_declarations(declaration_input, source: src)
     vpath = dependency_vpath(input, src)
-    scanner = dependency_scanner(src, declarations)
+    scanner = dependency_scanner(src, declarations, declaration_input)
     scan_source = if mapping = declaration(declarations.scan, src,
                                            declaration_input)
       mapping[1]

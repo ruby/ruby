@@ -118,6 +118,15 @@ class TestMkdepend < Test::Unit::TestCase
       'prism/templates/include/prism/ast.h.erb',
       declarations.scan['prism/ast.h'],
     )
+    assert_equal('thread_pthread.h', declarations.scan['THREAD_IMPL_H'])
+    assert_equal('thread_pthread.c', declarations.scan['THREAD_IMPL_SRC'])
+    assert_equal(
+      '{$(VPATH)}$(COROUTINE_H)',
+      declarations.generated['COROUTINE_H'],
+    )
+    assert_equal(%w[RIPPER], declarations.undefines['parse.y'])
+    ripper = mkdepend.dependency_declarations('ext/ripper/depend')
+    assert_equal(%w[RIPPER], ripper.defines['ripper.y'])
     assert_path_not_exist(File.expand_path('../mkdepend', __dir__))
   end
 

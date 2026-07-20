@@ -5,6 +5,7 @@ LRAMA = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
 
 # mkdepend: scan eventids1.c => include/ruby/ruby.h
 # mkdepend: depends eventids1.c => eventids1.h
+# mkdepend: define ripper.y => RIPPER
 # mkdepend: scan ripper.y => parse.y
 # mkdepend: scan ripper_init.c => ext/ripper/ripper_init.c.tmpl
 # mkdepend: generated eventids1.h
