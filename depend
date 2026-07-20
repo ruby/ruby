@@ -2,8 +2,8 @@
 # mkdepend: scan prism/*.c => prism/templates/ext/prism/*.c.erb
 # mkdepend: scan **/*.h => prism/templates/include/**/*.h.erb
 # mkdepend: scan enc/trans/*.c => enc/trans/*.trans
-# mkdepend: scan THREAD_IMPL_H => thread_pthread.h
-# mkdepend: scan THREAD_IMPL_SRC => thread_pthread.c
+# mkdepend: scan THREAD_IMPL_H => thread_$(THREAD_MODEL).h
+# mkdepend: scan THREAD_IMPL_SRC => thread_$(THREAD_MODEL).c
 # mkdepend: depends config.h => include/ruby.h include/ruby/version.h config.h
 # mkdepend: depends ruby/config.h => include/ruby.h include/ruby/version.h config.h
 # mkdepend: depends probes.h => probes.h probes.dmyh

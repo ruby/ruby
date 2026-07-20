@@ -99,6 +99,38 @@ class TestMkdepend < Test::Unit::TestCase
     end
   end
 
+  def test_project_internal_headers_precede_public_headers
+    Dir.mktmpdir('mkdepend-scanner') do |root|
+      %w[ext/example internal include/ruby/internal].each do |dir|
+        FileUtils.mkdir_p(File.join(root, dir))
+      end
+      File.write(
+        File.join(root, 'ext/example/example.c'),
+        "#include \"internal/gc.h\"\n",
+      )
+      File.write(
+        File.join(root, 'internal/gc.h'),
+        "#include \"project.h\"\n",
+      )
+      File.write(File.join(root, 'internal/project.h'), '')
+      File.write(
+        File.join(root, 'include/ruby/internal/gc.h'),
+        "#include \"public.h\"\n",
+      )
+      File.write(File.join(root, 'include/ruby/internal/public.h'), '')
+      File.write(File.join(root, 'depend'), "#{MARK_START}\n#{MARK_END}\n")
+      File.write(
+        File.join(root, 'ext/example/depend'),
+        "#{MARK_START}\nexample.o: example.c\n#{MARK_END}\n",
+      )
+
+      rules = Mkdepend.new(root: root).makedepend('ext/example/example.c').join
+      assert_include(rules, 'example.o: $(top_srcdir)/internal/gc.h')
+      assert_include(rules, 'example.o: $(top_srcdir)/internal/project.h')
+      assert_not_include(rules, 'public.h')
+    end
+  end
+
   def test_virtual_dependencies_are_declared
     declarations = mkdepend.dependency_declarations('depend')
     assert_equal(
@@ -219,7 +251,7 @@ class TestMkdepend < Test::Unit::TestCase
 
       output = File.join(dir, '.deps')
       mkdepend = Mkdepend.new(root: dir)
-      assert_true(mkdepend.run_mkdepend([input], output: output, nmake: true))
+      assert_true(mkdepend.run([input], output: output, nmake: true))
       generated = File.read(File.join(output, 'ext/example/depend'))
       assert_include(generated, 'generated.o: generated.c')
       assert_include(generated, 'generated.o: generated.h')
@@ -317,6 +349,80 @@ class TestMkdepend < Test::Unit::TestCase
     end
   end
 
+  def test_dependency_files_can_select_core_files
+    Dir.mktmpdir('mkdepend-files') do |dir|
+      %w[depend enc/depend ext/example/depend].each do |file|
+        path = File.join(dir, file)
+        FileUtils.mkdir_p(File.dirname(path))
+        File.write(path, "#{MARK_START}\n#{MARK_END}\n")
+      end
+
+      mkdepend = Mkdepend.new(root: dir)
+      assert_equal(%w[depend enc/depend], mkdepend.dependency_files(:core))
+      assert_equal(
+        %w[depend enc/depend ext/example/depend],
+        mkdepend.dependency_files(:all),
+      )
+      assert_equal(
+        %w[ext/example/depend],
+        mkdepend.dependency_files(:extensions),
+      )
+    end
+  end
+
+  def test_run_selects_extension_files_from_command_line
+    Dir.mktmpdir('mkdepend-files') do |root|
+      %w[depend ext/example/depend].each do |file|
+        path = File.join(root, file)
+        FileUtils.mkdir_p(File.dirname(path))
+        File.write(path, "#{MARK_START}\n#{MARK_END}\n")
+      end
+
+      Dir.mktmpdir('mkdepend-output') do |output|
+        extensions, $extensions = $extensions, true
+        Mkdepend.new(root: root).run([], output: output)
+        assert_false(File.exist?(File.join(output, 'depend')))
+        assert_true(File.exist?(File.join(output, 'ext/example/depend')))
+      ensure
+        $extensions = extensions
+      end
+    end
+  end
+
+  def test_thread_model_is_resolved_for_extension_dependencies
+    Dir.mktmpdir('mkdepend-thread-model') do |root|
+      FileUtils.mkdir_p(File.join(root, 'ext/example'))
+      File.write(File.join(root, 'depend'), <<~DEPEND)
+        # mkdepend: scan THREAD_IMPL_H => thread_$(THREAD_MODEL).h
+        # mkdepend: depends THREAD_IMPL_H => thread_$(THREAD_MODEL).h
+        #{MARK_START}
+        #{MARK_END}
+      DEPEND
+      File.write(File.join(root, 'thread_pthread.h'), '')
+      File.write(
+        File.join(root, 'thread_win32.h'),
+        "#include \"win32_only.h\"\n",
+      )
+      File.write(File.join(root, 'win32_only.h'), '')
+      File.write(
+        File.join(root, 'ext/example/example.c'),
+        "#include THREAD_IMPL_H\n",
+      )
+      File.write(File.join(root, 'ext/example/depend'), <<~DEPEND)
+        #{MARK_START}
+        example.o: example.c
+        #{MARK_END}
+      DEPEND
+
+      rules = Mkdepend.new(root: root, thread_model: 'win32').
+        makedepend('ext/example/example.c').join
+      assert_include(rules, 'example.o: $(top_srcdir)/thread_win32.h')
+      assert_include(rules, 'example.o: $(top_srcdir)/win32_only.h')
+      assert_not_include(rules, 'THREAD_MODEL')
+      assert_not_include(rules, 'thread_pthread.h')
+    end
+  end
+
   def test_unicode_header
     assert_equal(
       ['$(UNICODE_HDR_DIR)/name2ctype.h'],
@@ -331,8 +437,8 @@ class TestMkdepend < Test::Unit::TestCase
     assert_equal(['{$(VPATH)}enc/ascii.c'], mkdepend.depends(['enc/ascii.c'], '{$(VPATH)}'))
     assert_equal(['enc/ascii.c'], mkdepend.depends(['enc/ascii.c'], nil))
     assert_equal(
-      ['{$(VPATH)}thread_$(THREAD_MODEL).h'],
-      mkdepend.depends(['{$(VPATH)}thread_$(THREAD_MODEL).h'], '{$(VPATH)}'),
+      ['{$(VPATH)}thread_pthread.h'],
+      mkdepend.depends(['thread_pthread.h'], '{$(VPATH)}'),
     )
   end
 
@@ -624,18 +730,32 @@ class TestMkdepend < Test::Unit::TestCase
     gnumakefile = File.read(File.join(TOP_SRCDIR, 'template/GNUmakefile.in'))
     prereq = File.read(File.join(TOP_SRCDIR, 'tool/prereq.status'))
     win32 = File.read(File.join(TOP_SRCDIR, 'win32/Makefile.sub'))
+    setup = File.read(File.join(TOP_SRCDIR, 'win32/setup.mak'))
+    mkmf = File.read(File.join(TOP_SRCDIR, 'lib/mkmf.rb'))
+    configure_ext = File.read(
+      File.join(TOP_SRCDIR, 'template/configure-ext.mk.tmpl'),
+    )
 
     assert_include(common, '!include $(DEPENDENCIES_DIR)/depend')
     assert_include(configure, 'AC_SUBST(X_DEPENDENCIES_DIR)')
     assert_include(configure, "X_DEPENDENCIES_DIR='\$X_DEPENDENCIES_DIR'")
     assert_not_include(configure, 'AC_SUBST(DEPENDENCIES_DIR)')
     assert_include(configure, '-root="$srcdir"')
+    assert_include(configure, '-core')
     assert_include(makefile, 'DEPENDENCIES_DIR = @X_DEPENDENCIES_DIR@')
     assert_include(prereq, 's,@X_DEPENDENCIES_DIR@,$(srcdir),g')
     assert_include(gnumakefile, 'include $(DEPENDENCIES_DIR)/depend')
     assert_match(/filter-out .*DEPENDENCIES_DIR.*common_mk_includes/, gnumakefile)
     assert_include(win32, 'DEPENDENCIES_DIR = .deps')
     assert_include(win32, 'DEPENDENCIES_DIR = $(srcdir)')
+    assert_include(setup, '-core')
+    assert_not_include(mkmf, 'Mkdepend.new')
+    assert_include(configure_ext, '-extensions')
+    assert_include(configure_ext, '-thread_model=$(THREAD_MODEL)')
+    assert_match(
+      %r{tool/mkdepend\.rb.*\n.*-output=\.deps},
+      configure_ext,
+    )
   end
 
   def test_common_dependency_maintenance_targets
@@ -652,9 +772,10 @@ class TestMkdepend < Test::Unit::TestCase
     assert_match(/rm\.bat -f -r \.deps/, setup)
     assert_include(setup, '-root=$(srcdir)')
     assert_match(
-      %r{tool[\\/]mkdepend\.rb -root=\$\(srcdir\) -all -nmake -output=\.deps},
+      %r{tool[\\/]mkdepend\.rb -root=\$\(srcdir\) -core -nmake -output=\.deps},
       setup,
     )
+    assert_include(snapshot, 'args["MKDEPEND_FILES"] = "-core"')
     assert_include(snapshot, 'args["MKDEPEND_OPTIONS"] = ""')
     assert_include(snapshot, 'make.run("fix-depends")')
   end

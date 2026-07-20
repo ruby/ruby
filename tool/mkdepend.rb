@@ -20,6 +20,9 @@
 #     included and are added when NAME is a source being scanned.  Make
 #     A DEPENDENCY beginning with a Make variable reference is emitted
 #     without path conversion.
+#     `$(THREAD_MODEL)` in SOURCE is resolved as `pthread` by default.
+#     When a thread model is supplied, it is resolved in SOURCE and
+#     DEPENDENCY.
 #
 #   # mkdepend: define SOURCE => MACRO...
 #   # mkdepend: undef SOURCE => MACRO...
@@ -196,8 +199,9 @@ end
 class Mkdepend
   attr_reader :root
 
-  def initialize(root: TOP_SRCDIR)
+  def initialize(root: TOP_SRCDIR, thread_model: nil)
     @root = File.expand_path(root)
+    @thread_model = thread_model
     @dependency_declarations = {}
     @dependency_targets = {}
     @dependency_contents = {}
@@ -255,6 +259,16 @@ class Mkdepend
         declarations.undefines[$1] = $2.split
       else
         raise "#{path}:#{lineno}: invalid mkdepend declaration: #{line.strip}"
+      end
+    end
+    declarations.scan.transform_values! do |source|
+      source.gsub('$(THREAD_MODEL)', @thread_model || 'pthread')
+    end
+    if @thread_model
+      declarations.dependencies.transform_values! do |dependencies|
+        dependencies.map do |dependency|
+          dependency.gsub('$(THREAD_MODEL)', @thread_model)
+        end
       end
     end
     declarations
@@ -465,7 +479,6 @@ class Mkdepend
         File.join(@root, "prism"),
         File.dirname(src),
       ],
-      quote_dirs: [File.join(@root, "include/ruby")],
       macros: macros,
       targets: dependency_targets(input),
       aliases: declarations.scan,
@@ -544,9 +557,19 @@ class Mkdepend
   MARK_SECTION =
     /^#{Regexp.escape(MARK_START)}[^\S\n]*(?:\z|\n\K(?m:.*?)(?=(^#{Regexp.escape(MARK_END)}(?:\n|\z))|\z))/
 
-  def dependency_files
+  def dependency_files(scope = :all)
     Dir.chdir(@root) do
-      %w[depend enc/depend].concat(Dir.glob("ext/**/depend")).select do |file|
+      files = case scope
+      when :all
+        %w[depend enc/depend].concat(Dir.glob("ext/**/depend"))
+      when :core
+        %w[depend enc/depend]
+      when :extensions
+        Dir.glob("ext/**/depend")
+      else
+        raise ArgumentError, "unknown dependency scope: #{scope}"
+      end
+      files.select do |file|
         next false unless File.file?(file)
         content = File.read(file)
         next false unless content.include?(MARK_START)
@@ -655,8 +678,13 @@ class Mkdepend
 
   def run(inputs = ARGV, out: $stdout, err: $stderr, output: $output,
           nmake: $nmake, sources: $sources, inplace: $inplace,
-          check: $check)
-    inputs = dependency_files.map {|file| File.join(@root, file)} if $all
+          check: $check,
+          scope: ($core ? :core :
+                  $extensions ? :extensions :
+                  $all ? :all : nil))
+    if scope
+      inputs = dependency_files(scope).map {|file| File.join(@root, file)}
+    end
     output = File.expand_path(output) if output
     changed = false
     inputs.each do |input|
@@ -704,6 +732,9 @@ class Mkdepend
 end
 
 if __FILE__ == $0
-  success = Mkdepend.new(root: $root || TOP_SRCDIR).run
+  success = Mkdepend.new(
+    root: $root || TOP_SRCDIR,
+    thread_model: $thread_model,
+  ).run
   exit(false) if $check && !success
 end

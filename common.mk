@@ -354,6 +354,7 @@ ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY) \
 	$(Q)$(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ -c \
 	    $(srcdir)/template/$(@F).tmpl --srcdir="$(srcdir)" \
 	    --miniruby="$(MINIRUBY)" --script-args='$(SCRIPT_ARGS)' \
+	    --thread-model="$(THREAD_MODEL)" --gnumake=$(gnumake) \
 	    $(yes_cross_compiling:yes=--without-ext=-test-)
 
 configure-ext: $(EXTS_MK)
@@ -2005,10 +2006,11 @@ rewindable:
 
 HELP_EXTRA_TASKS = ""
 
+MKDEPEND_FILES = -all
 MKDEPEND_OPTIONS = -sources
 
 fix-depends: PHONY
-	$(BASERUBY) -C $(srcdir) tool/mkdepend.rb -all $(MKDEPEND_OPTIONS) -inplace
+	$(BASERUBY) -C $(srcdir) tool/mkdepend.rb $(MKDEPEND_FILES) $(MKDEPEND_OPTIONS) -inplace
 
 check-depends: PHONY
 	$(BASERUBY) -C $(srcdir) tool/mkdepend.rb -all -sources -check
