@@ -23,15 +23,6 @@ struct rb_io;
         SET_MACHINE_STACK_END(&(th)->ec->machine.stack_end);	\
     } while (0)
 
-/* thread.c */
-#define COVERAGE_INDEX_LINES    0
-#define COVERAGE_INDEX_BRANCHES 1
-#define COVERAGE_TARGET_LINES    1
-#define COVERAGE_TARGET_BRANCHES 2
-#define COVERAGE_TARGET_METHODS  4
-#define COVERAGE_TARGET_ONESHOT_LINES 8
-#define COVERAGE_TARGET_EVAL 16
-
 #define RUBY_FATAL_THREAD_KILLED INT2FIX(0)
 #define RUBY_FATAL_THREAD_TERMINATED INT2FIX(1)
 #define RUBY_FATAL_FIBER_KILLED RB_INT2FIX(2)
@@ -39,9 +30,6 @@ struct rb_io;
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
 void rb_thread_execute_interrupts(VALUE th);
-VALUE rb_get_coverages(void);
-int rb_get_coverage_mode(void);
-VALUE rb_default_coverage(int);
 VALUE rb_thread_shield_new(void);
 bool rb_thread_shield_owned(VALUE self);
 VALUE rb_thread_shield_wait(VALUE self);

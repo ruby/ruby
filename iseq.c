@@ -25,6 +25,7 @@
 #include "internal/bits.h"
 #include "internal/class.h"
 #include "internal/compile.h"
+#include "internal/coverage.h"
 #include "internal/error.h"
 #include "internal/file.h"
 #include "internal/gc.h"

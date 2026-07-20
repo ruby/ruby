@@ -77,6 +77,7 @@
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/cont.h"
+#include "internal/coverage.h"
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/gc.h"
@@ -6097,6 +6098,66 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
         resolved_location[4] = end_pos_column;
     }
     return me;
+}
+
+struct method_coverage_arg {
+    rb_coverage_method_callback *callback;
+    void *data;
+};
+
+static void
+method_coverage_call(const rb_method_entry_t *me, VALUE count,
+                     struct method_coverage_arg *arg)
+{
+    VALUE location[5];
+    const rb_method_entry_t *resolved_me = rb_resolve_me_location(me, location);
+
+    if (me != resolved_me || RB_TYPE_P(me->owner, T_ICLASS) ||
+        FIX2LONG(location[1]) <= 0) return;
+
+    struct rb_coverage_method_data method = {
+        .owner = me->owner,
+        .method_id = ID2SYM(me->def->original_id),
+        .path = location[0],
+        .first_lineno = location[1],
+        .first_column = location[2],
+        .last_lineno = location[3],
+        .last_column = location[4],
+        .count = count,
+    };
+    arg->callback(&method, arg->data);
+}
+
+static int
+method_coverage_me_i(VALUE me, VALUE value, VALUE data)
+{
+    method_coverage_call((const rb_method_entry_t *)me, INT2FIX(0),
+                         (struct method_coverage_arg *)data);
+    return ST_CONTINUE;
+}
+
+static int
+method_coverage_count_i(VALUE me, VALUE count, VALUE data)
+{
+    if (!FIXNUM_P(count)) count = INT2FIX(0);
+    method_coverage_call((const rb_method_entry_t *)me, count,
+                         (struct method_coverage_arg *)data);
+    return ST_CONTINUE;
+}
+
+void
+rb_coverage_each_method(rb_coverage_method_callback callback, void *data)
+{
+    struct method_coverage_arg arg = {callback, data};
+    VALUE me_set = GET_VM()->me_set;
+    VALUE cme2counter = GET_VM()->cme2counter;
+
+    if (RTEST(me_set)) {
+        rb_hash_foreach(me_set, method_coverage_me_i, (VALUE)&arg);
+    }
+    if (RTEST(cme2counter)) {
+        rb_hash_foreach(cme2counter, method_coverage_count_i, (VALUE)&arg);
+    }
 }
 
 static void
