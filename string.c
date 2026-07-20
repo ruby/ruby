@@ -48,6 +48,7 @@
 #include "ruby/ractor.h"
 #include "ruby_assert.h"
 #include "shape.h"
+#include "vm_core.h"
 #include "vm_sync.h"
 #include "zjit.h"
 #include "ruby/internal/attr/nonstring.h"
