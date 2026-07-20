@@ -668,7 +668,7 @@ class Time
     private
 
     if RUBY_VERSION >= "3.2"
-      def _xmlschema(pattern, time)
+      def _xmlschema(pattern, time) # :nodoc:
         if pattern.match?(time)
           new(time)
         else
@@ -676,7 +676,7 @@ class Time
         end
       end
     else
-      def _xmlschema(pattern, time)
+      def _xmlschema(pattern, time) # :nodoc:
         if pattern =~ time
           year = $1.to_i
           mon = $2.to_i
