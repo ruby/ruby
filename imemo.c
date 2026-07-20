@@ -11,6 +11,27 @@ size_t rb_iseq_memsize(const rb_iseq_t *iseq);
 void rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating);
 void rb_iseq_free(const rb_iseq_t *iseq);
 
+ID
+rb_imemo_callinfo_mid(VALUE obj)
+{
+    RUBY_ASSERT(imemo_type(obj) == imemo_callinfo);
+    return vm_ci_mid((const struct rb_callinfo *)obj);
+}
+
+bool
+rb_imemo_callcache_get_data(VALUE obj, struct rb_imemo_callcache_data *data)
+{
+    const struct rb_callcache *cc = (const struct rb_callcache *)obj;
+
+    RUBY_ASSERT(imemo_type(obj) == imemo_callcache);
+
+    if (cc->klass == Qundef) return false;
+
+    data->klass = cc->klass;
+    data->called_id = vm_cc_cme(cc)->called_id;
+    return true;
+}
+
 const char *
 rb_imemo_name(enum imemo_type type)
 {
