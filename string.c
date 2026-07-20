@@ -3130,6 +3130,10 @@ rb_str_sublen(VALUE str, long pos)
     }
 }
 
+/* Copy sharable substrings up to this size into an embedded string; share
+ * larger ones to bound memory use and GC overhead. See [Feature #22186]. */
+#define STR_SUBSEQ_EMBED_MAX_SIZE 256
+
 static VALUE
 str_subseq(VALUE str, long beg, long len)
 {
@@ -3149,7 +3153,7 @@ str_subseq(VALUE str, long beg, long len)
         return str2;
     }
 
-    if (STR_EMBEDDABLE_P(len, termlen)) {
+    if (len <= STR_SUBSEQ_EMBED_MAX_SIZE && STR_EMBEDDABLE_P(len, termlen)) {
         str2 = str_alloc_embed(rb_cString, len + termlen);
         char *ptr2 = RSTRING(str2)->as.embed.ary;
         memcpy(ptr2, RSTRING_PTR(str) + beg, len);

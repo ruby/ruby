@@ -3506,35 +3506,37 @@ CODE
   end
 
   def test_shared_middle_string_terminator
-    ten = "0123456789"
-    thousand = ten * 100
-    str = "#{thousand}\0#{thousand}".freeze
+    # One byte over the copy/share cutoff (STR_SUBSEQ_EMBED_MAX_SIZE, 256),
+    # so the substring shares the source buffer. [Feature #22186]
+    half = "a" * 257
+    str = "#{half}\0#{half}".freeze
 
     require 'objspace'
 
-    substr = str.byteslice(0, thousand.bytesize)
-    assert_equal thousand, substr
+    substr = str.byteslice(0, half.bytesize)
+    assert_equal half, substr
     assert_includes ObjectSpace.dump(substr), ' "shared":true,'
 
     # Larger terminator
     substr.force_encoding(Encoding::UTF_16BE)
-    assert_equal thousand.dup.force_encoding(Encoding::UTF_16BE), substr
+    assert_equal half.dup.force_encoding(Encoding::UTF_16BE), substr
     refute_includes ObjectSpace.dump(substr), ' "shared":true,'
 
-    substr = str.byteslice(0, thousand.bytesize + 1)
-    assert_equal thousand + "\0", substr
+    substr = str.byteslice(0, half.bytesize + 1)
+    assert_equal half + "\0", substr
     refute_includes ObjectSpace.dump(substr), ' "shared":true,'
   end
 
   def test_embedded_middle_string_terminator
-    ten = "0123456789"
-    hundred = ten * 10
-    str = "#{hundred}\0#{hundred}".freeze
+    # At the cutoff (STR_SUBSEQ_EMBED_MAX_SIZE, 256), the substring is copied
+    # into an embedded string rather than shared. [Feature #22186]
+    half = "a" * 256
+    str = "#{half}\0#{half}".freeze
 
     require 'objspace'
 
-    substr = str.byteslice(0, hundred.bytesize)
-    assert_equal hundred, substr
+    substr = str.byteslice(0, half.bytesize)
+    assert_equal half, substr
     assert_includes ObjectSpace.dump(substr), ' "embedded":true,'
   end
 
