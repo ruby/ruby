@@ -245,6 +245,16 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal("-10000-01-01T00:00:00Z", Time.utc(-10000).__send__(method))
   end
 
+  def subtest_xmlschema_whitespaces(method)
+    t = Time.utc(1985, 4, 12, 23, 20, 50, 520000)
+    s = "  \t  1985-04-12T23:20:50.52Z"
+    assert_equal(t, Time.__send__(method, s))
+
+    t = Time.utc(1985, 4, 12, 23, 20, 50, 520000)
+    s = "1985-04-12T23:20:50.52Z  \t "
+    assert_equal(t, Time.__send__(method, s))
+  end
+
   def test_completion
     now = Time.local(2001,11,29,21,26,35)
     assert_equal(Time.local( 2001,11,29,21,12),
