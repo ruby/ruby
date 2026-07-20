@@ -121,12 +121,26 @@ class TestMkdepend < Test::Unit::TestCase
     assert_equal('thread_pthread.h', declarations.scan['THREAD_IMPL_H'])
     assert_equal('thread_pthread.c', declarations.scan['THREAD_IMPL_SRC'])
     assert_equal(
-      '{$(VPATH)}$(COROUTINE_H)',
-      declarations.generated['COROUTINE_H'],
+      %w[thread_$(THREAD_MODEL).h],
+      declarations.dependencies['THREAD_IMPL_H'],
+    )
+    assert_equal(
+      %w[thread_$(THREAD_MODEL).c],
+      declarations.dependencies['THREAD_IMPL_SRC'],
+    )
+    assert_equal(
+      %w[{$(VPATH)}$(COROUTINE_H)],
+      declarations.dependencies['COROUTINE_H'],
     )
     assert_equal(%w[RIPPER], declarations.undefines['parse.y'])
     ripper = mkdepend.dependency_declarations('ext/ripper/depend')
     assert_equal(%w[RIPPER], ripper.defines['ripper.y'])
+    assert_equal(
+      %w[eventids1.h {$(VPATH)}eventids1.c],
+      ripper.dependencies['eventids1.c'],
+    )
+    console = mkdepend.dependency_declarations('ext/io/console/depend')
+    assert_equal(%w[$(VK_HEADER)], console.dependencies['win32_vk.inc'])
     assert_path_not_exist(File.expand_path('../mkdepend', __dir__))
   end
 
@@ -188,8 +202,9 @@ class TestMkdepend < Test::Unit::TestCase
       File.write(input, <<~DEPEND)
         # mkdepend: scan generated.c => template.c
         # mkdepend: generated generated.h
-        # mkdepend: generated vpath.inc => {$(VPATH)}vpath.inc
-        # mkdepend: generated selected.inc => $(SELECTED_HEADER)
+        # mkdepend: generated vpath.inc
+        # mkdepend: depends vpath.inc => {$(VPATH)}vpath.inc
+        # mkdepend: depends selected.inc => $(SELECTED_HEADER)
         #{MARK_START}
         generated.o: generated.c
         #{MARK_END}
@@ -214,6 +229,7 @@ class TestMkdepend < Test::Unit::TestCase
       path = File.join(dir, 'depend')
       [
         '# mkdepend: depends ignored.h =>',
+        '# mkdepend: generated generated.h => $(GENERATED_HEADER)',
         '# mkdepend: unknown header.h',
         '# mkdepend: scan generated/*.c => template.c.erb',
         '# mkdepend: scan generated/*.c => missing/*.c.erb',
@@ -227,6 +243,23 @@ class TestMkdepend < Test::Unit::TestCase
           error.message,
         )
       end
+    end
+  end
+
+  def test_duplicate_dependency_declaration
+    Dir.mktmpdir('mkdepend-declarations') do |dir|
+      path = File.join(dir, 'depend')
+      File.write(path, <<~DEPEND)
+        # mkdepend: depends generated.c => generated.h
+        # mkdepend: depends generated.c => generated.inc
+      DEPEND
+      error = assert_raise(RuntimeError) do
+        Mkdepend.new(root: dir).parse_dependency_declarations(path)
+      end
+      assert_equal(
+        "#{path}:2: duplicate mkdepend declaration: generated.c",
+        error.message,
+      )
     end
   end
 
@@ -251,6 +284,10 @@ class TestMkdepend < Test::Unit::TestCase
     assert_equal('{$(VPATH)}', mkdepend.dependency_vpath('depend', 'array.c'))
     assert_equal(['{$(VPATH)}enc/ascii.c'], mkdepend.depends(['enc/ascii.c'], '{$(VPATH)}'))
     assert_equal(['enc/ascii.c'], mkdepend.depends(['enc/ascii.c'], nil))
+    assert_equal(
+      ['{$(VPATH)}thread_$(THREAD_MODEL).h'],
+      mkdepend.depends(['{$(VPATH)}thread_$(THREAD_MODEL).h'], '{$(VPATH)}'),
+    )
   end
 
   def test_ruby_sources_are_not_headers
@@ -320,11 +357,14 @@ class TestMkdepend < Test::Unit::TestCase
       [
         '$(RUBY_EXTCONF_H)',
         '$(arch_hdrdir)/ruby/config.h',
+        '$(hdrdir)/ruby.h',
         '$(hdrdir)/ruby/internal/intern/parse.h',
         '$(hdrdir)/ruby/internal/value.h',
+        '$(hdrdir)/ruby/version.h',
         '$(top_srcdir)/internal.h',
         '$(top_srcdir)/internal/parse.h',
         'date_tmx.h',
+        '{$(VPATH)}probes.dmyh',
       ],
       mkdepend.depends(
         %w[
@@ -348,6 +388,10 @@ class TestMkdepend < Test::Unit::TestCase
     assert_equal(
       ['{$(VPATH)}ripper.c'],
       mkdepend.depends(['ext/ripper/ripper.c'], nil, source: 'ext/ripper/ripper.y'),
+    )
+    assert_equal(
+      ['$(top_srcdir)/thread_$(THREAD_MODEL).h'],
+      mkdepend.depends(['THREAD_IMPL_H'], nil, source: 'ext/coverage/coverage.c'),
     )
     assert_equal(
       ['{$(VPATH)}probes.dmyh'],

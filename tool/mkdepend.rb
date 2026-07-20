@@ -15,13 +15,14 @@
 #     `*` and `**` patterns are expanded from matching SOURCE files and
 #     substituted into NAME.  Both sides must have the same pattern count.
 #
-#   # mkdepend: generated NAME [=> MAKE_DEPENDENCY]
-#     Treat NAME as generated without reading it.  Emit MAKE_DEPENDENCY as
-#     its prerequisite, or NAME itself when the right-hand side is omitted.
+#   # mkdepend: generated NAME
+#     Treat NAME as generated without reading it.
 #
 #   # mkdepend: depends NAME => DEPENDENCY...
-#     Associate NAME with logical dependencies.  They replace NAME when it
-#     is included and are added when NAME is a source being scanned.
+#     Associate NAME with dependencies.  They replace NAME when it is
+#     included and are added when NAME is a source being scanned.  Make
+#     A DEPENDENCY beginning with a Make variable reference is emitted
+#     without path conversion.
 #
 #   # mkdepend: define SOURCE => MACRO...
 #   # mkdepend: undef SOURCE => MACRO...
@@ -154,11 +155,6 @@ class Mkdepend::Scanner
     end
     return unless name
 
-    if name.end_with?(".inc", ".rbinc", ".rbbin")
-      dependencies.add(name)
-      return
-    end
-
     if alias_path = @aliases[name]
       if virtual = @dependencies[name]
         dependencies.merge(virtual)
@@ -171,6 +167,8 @@ class Mkdepend::Scanner
 
     if virtual = @dependencies[name]
       dependencies.merge(virtual)
+    elsif name.end_with?(".inc", ".rbinc", ".rbbin")
+      dependencies.add(name)
     elsif path = resolve(name, current, quoted)
       visit(path, dependencies, visited)
     elsif @generated.include?(name)
@@ -245,13 +243,17 @@ class Mkdepend
           raise "#{path}:#{lineno}: invalid mkdepend declaration: #{line.strip}"
         end
         declarations.scan.update(scan)
-      when /\Agenerated\s+(\S+?)(?:\s*=>\s*(.+?))?\s*\z/
-        declarations.generated[$1] = $2
+      when /\Agenerated\s+(\S+)\s*\z/
+        declarations.generated[$1] = nil
       when /\Adepends\s+(\S+)\s*=>\s*(.+?)\s*\z/
-        declarations.dependencies[$1] = $2.split
-      when /\A#\s*mkdepend:\s*define\s+(\S+)\s*=>\s*(.+?)\s*\z/
+        name, dependencies = $1, $2.split
+        if declarations.dependencies.key?(name)
+          raise "#{path}:#{lineno}: duplicate mkdepend declaration: #{name}"
+        end
+        declarations.dependencies[name] = dependencies
+      when /\Adefine\s+(\S+)\s*=>\s*(.+?)\s*\z/
         declarations.defines[$1] = $2.split
-      when /\A#\s*mkdepend:\s*undef\s+(\S+)\s*=>\s*(.+?)\s*\z/
+      when /\Aundef\s+(\S+)\s*=>\s*(.+?)\s*\z/
         declarations.undefines[$1] = $2.split
       else
         raise "#{path}:#{lineno}: invalid mkdepend declaration: #{line.strip}"
@@ -340,11 +342,23 @@ class Mkdepend
     declaration_input = input || dependency_input(source)
     declarations ||= dependency_declarations(declaration_input, source: source)
     extension_dir = File.dirname(source) if source&.start_with?("ext/")
+    expand = lambda do |file, expanded|
+      if !expanded.include?(file) &&
+          (dependencies = declaration(declarations.dependencies, file,
+                                      declaration_input))
+        dependencies[1].flat_map {|dep| expand.call(dep, expanded | [file])}
+      else
+        file
+      end
+    end
+    files = files.flat_map {|file| expand.call(file, [])}
     files.each_with_object([]) do |file, deps|
       file = relative_source(file)
-      dep = if generated = declaration(declarations.generated, file,
-                                       declaration_input)
-        generated[1] || generated[0]
+      dep = if file.start_with?('$(', '{$(')
+        file
+      elsif generated = declaration(declarations.generated, file,
+                                     declaration_input)
+        generated[0]
       elsif extension_dir
         extension_dependency(file, extension_dir)
       else
@@ -353,8 +367,6 @@ class Mkdepend
           "$(UNICODE_HDR_DIR)/#$'"
         when 'encindex.h', 'transcode_data.h', /\Areg(?!ex\b)\w+\.h\z/
           "#{vpath || '$(top_srcdir)/'}#{file}"
-        when /\Athread_pthread.\K[ch]\z/
-          "#{vpath}thread_$(THREAD_MODEL).#$&"
         when /\.e?rb\z/
         when %r[\Atool/]
           "$(top_srcdir)/#{file}"
@@ -394,7 +406,8 @@ class Mkdepend
   def generated_source?(source, input = nil)
     declarations = dependency_declarations(input, source: source)
     declaration(declarations.scan, source, input) ||
-      declaration(declarations.generated, source, input)
+      declaration(declarations.generated, source, input) ||
+      declaration(declarations.dependencies, source, input)
   end
 
   def dependency_scanner(src, declarations, input)
