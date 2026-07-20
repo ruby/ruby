@@ -2,6 +2,7 @@
 #define RUBY_SHAPE_H
 
 #include "internal/gc.h"
+#include "internal/imemo.h"
 
 typedef uint8_t attr_index_t;
 typedef uint32_t shape_id_t;

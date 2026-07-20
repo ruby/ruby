@@ -14,7 +14,7 @@
 
 #include "internal/compilers.h" /* for __has_attribute */
 #include "ruby/ruby.h"          /* for rb_event_flag_t */
-#include "vm_core.h"            /* for GET_EC() */
+#include "ruby_atomic.h"        /* for RUBY_ATOMIC_VALUE_SET */
 
 struct rb_gc_zjit_fastpath;
 
@@ -121,6 +121,7 @@ const char *rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
+struct rb_ractor_struct; /* in vm_core.h */
 
 #define EC_NEWOBJ_OF(var, T, c, f, s, ec)  \
     T *(var) = (T *)rb_ec_newobj_of((ec), (c), (f), s)
@@ -200,9 +201,10 @@ void *rb_xrealloc_mul_add(const void *, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 void rb_gc_register_pinning_obj(VALUE obj);
-rb_execution_context_t *rb_gc_get_ec(void);
+struct rb_execution_context_struct *rb_gc_get_ec(void);
+VALUE rb_newobj_of_unprotected(VALUE klass, VALUE flags, size_t size);
 
-void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
+void *rb_gc_ractor_cache_alloc(struct rb_ractor_struct *ractor);
 void rb_gc_ractor_cache_free(void *cache);
 bool rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
 

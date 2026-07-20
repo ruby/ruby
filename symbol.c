@@ -24,6 +24,7 @@
 #include "ruby/ractor.h"
 #include "ruby/st.h"
 #include "symbol.h"
+#include "vm_core.h"
 #include "vm_sync.h"
 #include "builtin.h"
 #include "ruby/internal/attr/nonstring.h"

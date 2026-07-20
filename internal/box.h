@@ -94,4 +94,8 @@ void rb_box_cleanup_local_extension(VALUE cleanup);
 void rb_initialize_mandatory_boxes(void);
 void rb_box_init_done(void);
 void rb_box_set_gem_flags(rb_box_gem_flags_t *);
+
+/* variable.c */
+void rb_autoload_copy_table_for_box(st_table *, const rb_box_t *);
+
 #endif /* INTERNAL_BOX_H */

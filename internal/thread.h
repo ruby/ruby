@@ -12,6 +12,7 @@
 #include "ruby/intern.h"        /* for rb_blocking_function_t */
 #include "ccan/list/list.h"     /* for list in rb_io_close_wait_list */
 
+struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_thread_struct;        /* in vm_core.h */
 struct rb_io;
 

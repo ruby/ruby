@@ -45,6 +45,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
+#include "vm_core.h"            /* for GET_EC() */
 
 #if USE_GMP
 RBIMPL_WARNING_PUSH()

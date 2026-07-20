@@ -39,6 +39,7 @@
 #include "internal/string.h"
 #include "internal/util.h"
 #include "internal/variable.h"
+#include "vm_core.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
 #include "builtin.h"
