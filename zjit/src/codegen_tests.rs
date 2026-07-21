@@ -6694,6 +6694,19 @@ fn test_inlined_method_returns_correct_value() {
 }
 
 #[test]
+fn test_inlined_method_with_rest_parameter() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def add_rest(*rest) = rest[0] + rest[1]
+            def test = add_rest(1, 2)
+
+            test
+            test
+        "), @"3");
+    });
+}
+
+#[test]
 fn test_inlined_method_deoptimizes_on_redefinition() {
     with_inlining(|| {
         assert_snapshot!(assert_inlines("

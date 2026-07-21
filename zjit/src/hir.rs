@@ -4951,11 +4951,11 @@ impl Function {
     fn can_inline(callee_iseq: IseqPtr) -> bool {
         // Inline callees with required, optional, post-required positional, keyword, and
         // block parameters, including callees that dispatch to a passed block with `yield`.
-        // Rest params, double-splat (kwrest), and forwardable params stay out of the
-        // general inliner for now; rest-aware direct sends are still handled by codegen.
+        // Double-splat (kwrest) and forwardable params stay out of the general
+        // inliner for now. Rest params are already normalized to a packed Array by
+        // prepare_direct_send_args, so the inliner can map that Array to the rest local.
         let params = unsafe { callee_iseq.params() };
-        if params.flags.has_rest() != 0
-            || params.flags.forwardable() != 0
+        if params.flags.forwardable() != 0
             || params.flags.has_kwrest() != 0
         {
             incr_counter!(inline_reject_complex_params);
