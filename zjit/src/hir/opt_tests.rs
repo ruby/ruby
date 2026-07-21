@@ -4025,9 +4025,14 @@ mod hir_opt_tests {
           v23:ArrayExact = NewArray v11, v13, v15
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v26:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          v27:BasicObject = SendDirect v26, 0x1038, :foo (0x1048), v23
+          PushInlineFrame v26 (0x1038), v23
+          PatchPoint NoSingletonClass(Array@0x1040)
+          PatchPoint MethodRedefined(Array@0x1040, length@0x1048, cme:0x1050)
+          v49:CInt64 = ArrayLength v23
+          v50:Fixnum = BoxFixnum v49
           CheckInterrupts
-          Return v27
+          PopInlineFrame
+          Return v50
         ");
     }
 
@@ -4060,9 +4065,14 @@ mod hir_opt_tests {
           v31:ArrayExact = NewArray v11, v13, v15, v17, v19, v21, v23
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v34:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          v35:BasicObject = SendDirect v34, 0x1038, :foo (0x1048), v31
+          PushInlineFrame v34 (0x1038), v31
+          PatchPoint NoSingletonClass(Array@0x1040)
+          PatchPoint MethodRedefined(Array@0x1040, length@0x1048, cme:0x1050)
+          v57:CInt64 = ArrayLength v31
+          v58:Fixnum = BoxFixnum v57
           CheckInterrupts
-          Return v35
+          PopInlineFrame
+          Return v58
         ");
     }
 
@@ -4091,9 +4101,19 @@ mod hir_opt_tests {
           v23:ArrayExact = NewArray v11, v13, v15
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v26:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          v27:BasicObject = SendDirect v26, 0x1038, :foo (0x1048), v23
+          PushInlineFrame v26 (0x1038), v23
+          PatchPoint NoSingletonClass(Array@0x1040)
+          PatchPoint MethodRedefined(Array@0x1040, length@0x1048, cme:0x1050)
+          v55:CInt64 = ArrayLength v23
+          v56:Fixnum = BoxFixnum v55
+          v38:CPtr = GetEP 0
+          v39:CInt64 = LoadField v38, :VM_ENV_DATA_INDEX_SPECVAL@0x1078
+          v40:CInt64[-4] = Const CInt64(-4)
+          v41:CInt64 = IntAnd v39, v40
+          v42:BasicObject = InvokeBlockIseqDirect (0x1080), v41, v56
           CheckInterrupts
-          Return v27
+          PopInlineFrame
+          Return v42
         ");
     }
 
@@ -4122,9 +4142,29 @@ mod hir_opt_tests {
           v23:ArrayExact = NewArray v11, v13, v15
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v26:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          v27:BasicObject = SendDirect v26, 0x1038, :foo (0x1048), v23
+          v57:NilClass = Const Value(nil)
+          PushInlineFrame v26 (0x1038), v23
+          v37:CPtr = GetEP 0
+          v38:CUInt64 = LoadField v37, :VM_ENV_DATA_INDEX_FLAGS@0x1040
+          v39:CBool = IsBlockParamModified v38
+          CondBranch v39, bb6(), bb7()
+        bb6():
+          v41:BasicObject = LoadField v37, :block@0x1041
+          Jump bb8(v41, v41)
+        bb7():
+          v43:CInt64 = LoadField v37, :VM_ENV_DATA_INDEX_SPECVAL@0x1042
+          v44:CInt64 = GuardAnyBitSet v43, CUInt64(1) recompile
+          v45:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1048))
+          Jump bb8(v45, v57)
+        bb8(v35:BasicObject, v36:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1050)
+          PatchPoint MethodRedefined(Array@0x1050, length@0x1058, cme:0x1060)
+          v66:CInt64 = ArrayLength v23
+          v67:Fixnum = BoxFixnum v66
+          v52:BasicObject = Send v35, :call, v67 # SendFallbackReason: Send: unsupported optimized method type BlockCall
           CheckInterrupts
-          Return v27
+          PopInlineFrame
+          Return v52
         ");
     }
 
@@ -4154,9 +4194,17 @@ mod hir_opt_tests {
           v25:ArrayExact = NewArray v13, v15
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v28:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          v29:BasicObject = SendDirect v28, 0x1038, :foo (0x1048), v11, v25, v17
+          PushInlineFrame v28 (0x1038), v11, v25, v17
+          PatchPoint NoSingletonClass(Array@0x1040)
+          PatchPoint MethodRedefined(Array@0x1040, length@0x1048, cme:0x1050)
+          v61:CInt64 = ArrayLength v25
+          v62:Fixnum = BoxFixnum v61
+          PatchPoint MethodRedefined(Integer@0x1078, +@0x1080, cme:0x1088)
+          v66:Fixnum = FixnumAdd v62, v11
+          v70:Fixnum = FixnumAdd v66, v17
           CheckInterrupts
-          Return v29
+          PopInlineFrame
+          Return v70
         ");
     }
 
@@ -4185,9 +4233,17 @@ mod hir_opt_tests {
           v23:ArrayExact = NewArray v11, v13
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v26:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          v27:BasicObject = SendDirect v26, 0x1038, :foo (0x1048), v23, v15
+          v47:Fixnum[0] = Const Value(0)
+          PushInlineFrame v26 (0x1038), v23, v15
+          PatchPoint NoSingletonClass(Array@0x1040)
+          PatchPoint MethodRedefined(Array@0x1040, length@0x1048, cme:0x1050)
+          v56:CInt64 = ArrayLength v23
+          v57:Fixnum = BoxFixnum v56
+          PatchPoint MethodRedefined(Integer@0x1078, +@0x1080, cme:0x1088)
+          v61:Fixnum = FixnumAdd v57, v15
           CheckInterrupts
-          Return v27
+          PopInlineFrame
+          Return v61
         ");
     }
 
@@ -4216,9 +4272,17 @@ mod hir_opt_tests {
           v22:ArrayExact = NewArray v11, v13
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v25:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          v26:BasicObject = SendDirect v25, 0x1038, :foo (0x1048), v22, v21
+          v46:Fixnum[0] = Const Value(0)
+          PushInlineFrame v25 (0x1038), v22, v21
+          PatchPoint NoSingletonClass(Array@0x1040)
+          PatchPoint MethodRedefined(Array@0x1040, length@0x1048, cme:0x1050)
+          v55:CInt64 = ArrayLength v22
+          v56:Fixnum = BoxFixnum v55
+          PatchPoint MethodRedefined(Integer@0x1078, +@0x1080, cme:0x1088)
+          v60:Fixnum = FixnumAdd v56, v21
           CheckInterrupts
-          Return v26
+          PopInlineFrame
+          Return v60
         ");
     }
 
@@ -4248,9 +4312,11 @@ mod hir_opt_tests {
           v25:ArrayExact = NewArray v15, v17
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v28:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          v29:BasicObject = SendDirect v28, 0x1038, :foo (0x1048), jit_entry_idx=1, v11, v13, v25
+          PushInlineFrame v28 (0x1038), v11, v13, v25
+          v41:ArrayExact = NewArray v11, v13, v25
           CheckInterrupts
-          Return v29
+          PopInlineFrame
+          Return v41
         ");
     }
 
