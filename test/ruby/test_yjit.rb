@@ -644,16 +644,15 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
-  STRUCT_MAX_EMBEDDED_MEMBERS = (
-    GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
-    GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
-    GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]
-  ) / RbConfig::SIZEOF["void*"]
-
   def test_spilled_struct_aref
     omit("FIXME: https://github.com/Shopify/ruby/issues/977")
+    struct_max_embedded_members = (
+        GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
+        GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
+        GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]
+      ) / RbConfig::SIZEOF["void*"]
     assert_compiles(<<~RUBY)
-      LargeStruct = Struct.new(:foo, :bar, *(#{STRUCT_MAX_EMBEDDED_MEMBERS} - 2).times.map { :"m_\#{it}" })
+      LargeStruct = Struct.new(:foo, :bar, *(#{struct_max_embedded_members} - 2).times.map { :"m_\#{it}" })
 
       def foo(obj)
         foo = obj.foo
