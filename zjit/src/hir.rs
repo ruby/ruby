@@ -5766,7 +5766,7 @@ impl Function {
     /// guards) and ordinary in-block uses.
     ///
     /// `Guard*` substitutions are unconditional for dominated uses: a guard's side-exit semantics
-    /// guarantee the substituted value type holds for every downstream use in the same block.
+    /// guarantee the substituted value type holds for every dominated use.
     ///
     /// `RefineType` is intentionally skipped: as constructed in HIR build right now, its narrowing
     /// is only valid on one branch arm, which would require dropping refine-derived rewrites at
