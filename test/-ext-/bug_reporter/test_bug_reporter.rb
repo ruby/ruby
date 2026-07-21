@@ -6,6 +6,7 @@ require_relative '../../lib/parser_support'
 
 class TestBugReporter < Test::Unit::TestCase
   def test_bug_reporter_add
+    omit if macos? && ENV["CI"] # we're getting timeouts even after 100s in CI
     description = RUBY_DESCRIPTION
     description = description.sub(/\+PRISM /, '') unless ParserSupport.prism_enabled_in_subprocess?
     expected_stderr = [
