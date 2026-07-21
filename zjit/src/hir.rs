@@ -1319,6 +1319,10 @@ pub enum Insn {
         num_args: u16,
         blockiseq: Option<IseqPtr>,
         state: InsnId,
+        /// Bit k set: local k's frame slot provably already holds the value
+        /// being spilled, so codegen skips that store. Computed by
+        /// elide_redundant_spills; 0 means spill everything.
+        elide_spills: u64,
     },
 
     /// Pop a lighter weight frame used for inlined methods.
@@ -2372,10 +2376,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
-            Insn::PushInlineFrame { recv, iseq, cme, num_args, .. } => {
+            Insn::PushInlineFrame { recv, iseq, cme, num_args, elide_spills, .. } => {
                 let method_name = unsafe { (**cme).called_id };
                 write!(f, "PushInlineFrame :{method_name}, {recv} ({:?})", self.ptr_map.map_ptr(*iseq))?;
                 write!(f, ", num_args={num_args}")?;
+                if *elide_spills != 0 {
+                    write!(f, " elide_spills={elide_spills:#b}")?;
+                }
                 Ok(())
             }
             Insn::PopInlineFrame { .. } => {
@@ -6261,7 +6268,7 @@ impl Function {
 
                 // Insert PushLightweightFrame and jump to callee body entry.
                 self.push_insn(block, Insn::PushInlineFrame {
-                    iseq, cme, recv, num_args: args.len().try_into().unwrap(), blockiseq, state,
+                    iseq, cme, recv, num_args: args.len().try_into().unwrap(), blockiseq, state, elide_spills: 0,
                 });
                 self.count(block, Counter::inline_iseq_optimized_send_count);
                 self.push_insn(block, Insn::Jump(BranchEdge {
@@ -8037,6 +8044,284 @@ impl Function {
         id
     }
 
+    /// Elide local spills at PushInlineFrame sites whose frame slot provably
+    /// already holds the value being spilled.
+    ///
+    /// Calling an inlined method in a loop re-spills every live local on each
+    /// iteration (gen_spill_locals), but a local that was reloaded from its own
+    /// slot after the previous call and not modified since is already in memory;
+    /// storing it again only lengthens the store-bound frame-push burst that
+    /// dominates block-yield loops.
+    ///
+    /// Forward must-analysis. Facts map a local index to the InsnId whose value
+    /// its slot currently holds. A LoadField of an own-frame slot (LoadSP base,
+    /// inline depth 0) establishes a fact; an own-frame SetLocal replaces one;
+    /// any other instruction whose write effects overlap abstract_heaps::Locals
+    /// clears all facts. PushInlineFrame consumes the facts (as its elision
+    /// mask) and then clears: past it, execution runs in the callee frame, and
+    /// by PopInlineFrame the callee may have written our locals through its
+    /// captured EP. Facts flow across edges; one whose value feeds a target
+    /// block parameter transfers to that parameter, and joins intersect, so a
+    /// fact about a loop-carried local holds at the header only when every
+    /// incoming edge proves it.
+    ///
+    /// A loop's entry edge usually can't prove it (the slot is stale before the
+    /// first spill), so where every back edge matches a parameter and a forward
+    /// Jump edge doesn't, we insert a SetLocal of that edge's value on the
+    /// forward edge: one preheader store buys the elision on every iteration.
+    /// Only boxed VALUEs are eligible (an unboxed CDouble must never reach a
+    /// GC-visible slot), and only when a spill site's FrameState names the
+    /// parameter as that local, which makes the inserted store just an early
+    /// spill of the local's real value.
+    fn elide_redundant_spills(&mut self) {
+        let iseq = self.iseq;
+        let num_locals = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
+        if num_locals == 0 || num_locals > 64 { return; }
+
+        // gen_spill_locals stores local k at byte offset
+        // (-local_idx_to_ep_offset(iseq, k) - 1) * SIZEOF_VALUE from SP; a
+        // LoadField with the same offset off a LoadSP base reads that slot.
+        let mut idx_of_off: HashMap<i32, usize> = HashMap::new();
+        let mut idx_of_ep_off: HashMap<u32, usize> = HashMap::new();
+        for idx in 0..num_locals {
+            let ep_off = local_idx_to_ep_offset(iseq, idx);
+            idx_of_off.insert((-ep_off - 1) * SIZEOF_VALUE_I32, idx);
+            if ep_off >= 0 { idx_of_ep_off.insert(ep_off as u32, idx); }
+        }
+
+        type Facts = HashMap<usize, InsnId>;
+        // Per-block dataflow state: inline depth + slot facts (facts only exist
+        // at depth 0; inside an inlined body LoadSP is the callee frame).
+        type State = (u32, Facts);
+
+        fn resolve(fun: &Function, id: InsnId) -> InsnId {
+            fun.union_find.borrow().find_const(id)
+        }
+
+        // Walk `block` from `state`, returning the out-state. When `masks` is
+        // given, record each depth-0 PushInlineFrame's elision mask.
+        fn transfer(
+            fun: &Function,
+            idx_of_off: &HashMap<i32, usize>,
+            idx_of_ep_off: &HashMap<u32, usize>,
+            block: BlockId,
+            state: State,
+            mut masks: Option<&mut HashMap<InsnId, u64>>,
+        ) -> State {
+            let (mut depth, mut facts) = state;
+            for &insn_id in &fun.blocks[block].insns {
+                match fun.find(insn_id) {
+                    Insn::LoadField { recv, offset, .. } => {
+                        let own_slot = depth == 0 && matches!(fun.find(recv), Insn::LoadSP { .. });
+                        if let Some(&idx) = idx_of_off.get(&offset).filter(|_| own_slot) {
+                            facts.insert(idx, resolve(fun, insn_id));
+                        }
+                    }
+                    Insn::SetLocal { level: 0, ep_offset, val, .. } => {
+                        // Writes exactly one own-frame slot.
+                        if let Some(&idx) = idx_of_ep_off.get(&ep_offset).filter(|_| depth == 0) {
+                            facts.insert(idx, resolve(fun, val));
+                        } else {
+                            facts.clear();
+                        }
+                    }
+                    Insn::PushInlineFrame { state: fs_id, .. } => {
+                        if depth == 0 {
+                            if let Some(masks) = masks.as_deref_mut() {
+                                let fs = fun.frame_state(fs_id);
+                                let mut mask = 0u64;
+                                for (idx, &lid) in fs.locals().enumerate() {
+                                    if idx >= 64 { break; }
+                                    if facts.get(&idx) == Some(&resolve(fun, lid)) {
+                                        mask |= 1 << idx;
+                                    }
+                                }
+                                masks.insert(resolve(fun, insn_id), mask);
+                            }
+                        }
+                        depth += 1;
+                        facts.clear();
+                    }
+                    Insn::PopInlineFrame { .. } => {
+                        depth = depth.saturating_sub(1);
+                        // The callee may have written our locals via its
+                        // captured EP; trust nothing.
+                        facts.clear();
+                    }
+                    // Control transfers carry conservative effects::Any for
+                    // other passes' benefit but write no locals themselves.
+                    Insn::Jump(_) | Insn::CondBranch { .. } | Insn::CondBranchFixnumCmp { .. }
+                    | Insn::CondBranchHasType(_) | Insn::Return { .. } | Insn::Throw { .. } => {}
+                    insn => {
+                        if insn.effects_of().write_bits().overlaps(abstract_heaps::Locals) {
+                            facts.clear();
+                        }
+                    }
+                }
+            }
+            (depth, facts)
+        }
+
+        // Propagate an out-state across an edge: facts matching a branch arg
+        // become facts about the corresponding target parameter.
+        fn edge_state(fun: &Function, out: &State, target: BlockId, args: &[InsnId]) -> State {
+            let (depth, facts) = out;
+            let params = &fun.blocks[target].params;
+            let mut new_facts = facts.clone();
+            for (i, &arg) in args.iter().enumerate() {
+                if let Some(&param) = params.get(i) {
+                    let arg_r = resolve(fun, arg);
+                    let param_r = resolve(fun, param);
+                    for v in new_facts.values_mut() {
+                        if *v == arg_r { *v = param_r; }
+                    }
+                }
+            }
+            (*depth, new_facts)
+        }
+
+        fn intersect(a: &State, b: &State) -> State {
+            if a.0 != b.0 { return (a.0.max(b.0), Facts::new()); }
+            let mut m = Facts::new();
+            for (k, v) in &a.1 {
+                if b.1.get(k) == Some(v) { m.insert(*k, *v); }
+            }
+            (a.0, m)
+        }
+
+        let rpo = self.reverse_post_order();
+        let mut rpo_pos: HashMap<BlockId, usize> = HashMap::new();
+        for (i, &b) in rpo.iter().enumerate() { rpo_pos.insert(b, i); }
+
+        let run_fixpoint = |fun: &Function| -> Vec<Option<State>> {
+            let mut in_states: Vec<Option<State>> = vec![None; fun.blocks.len()];
+            for b in fun.entry_blocks() {
+                in_states[b] = Some((0, Facts::new()));
+            }
+            let mut changed = true;
+            while changed {
+                changed = false;
+                for &b in &rpo {
+                    let Some(in_state) = in_states[b].clone() else { continue };
+                    let out = transfer(fun, &idx_of_off, &idx_of_ep_off, b, in_state, None);
+                    for (target, args) in fun.out_edges_of(b) {
+                        let es = edge_state(fun, &out, target, &args);
+                        let new_in = match &in_states[target] {
+                            None => es,
+                            Some(cur) => intersect(cur, &es),
+                        };
+                        if in_states[target].as_ref() != Some(&new_in) {
+                            in_states[target] = Some(new_in);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+            in_states
+        };
+
+        let in_states = run_fixpoint(self);
+
+        // Find loop-carried locals whose back edges prove the fact but a
+        // forward entry edge doesn't, and spill them on that entry edge.
+        let mut out_states: Vec<Option<State>> = vec![None; self.blocks.len()];
+        for &b in &rpo {
+            if let Some(s) = in_states[b].clone() {
+                out_states[b] = Some(transfer(self, &idx_of_off, &idx_of_ep_off, b, s, None));
+            }
+        }
+        let mut all_edges: Vec<(BlockId, BlockId, Vec<InsnId>)> = vec![];
+        for &b in &rpo {
+            for (t, args) in self.out_edges_of(b) { all_edges.push((b, t, args)); }
+        }
+        // Candidate (header, param position, local idx) triples come from the
+        // spill sites themselves: a FrameState local that resolves to a block
+        // parameter names the (param, slot) pairing.
+        let mut inserts: Vec<(BlockId, usize, InsnId)> = vec![]; // (pred, local idx, val)
+        for &b in &rpo {
+            for &insn_id in &self.blocks[b].insns {
+                let Insn::PushInlineFrame { state: fs_id, .. } = self.find(insn_id) else { continue };
+                let fs = self.frame_state(fs_id);
+                for (idx, &lid) in fs.locals().enumerate().take(64) {
+                    let lid_r = resolve(self, lid);
+                    // Which block owns lid as a parameter? Chase through
+                    // single-predecessor param chains (e.g. the conditional
+                    // branch target between a loop header and the call) up to
+                    // the join block that actually merges multiple paths.
+                    let mut cur = lid_r;
+                    let mut chased = None;
+                    for _ in 0..8 {
+                        let Some((&h, i)) = rpo.iter()
+                            .find_map(|h| self.blocks[*h].params.iter().position(|&p| resolve(self, p) == cur).map(|i| (h, i)))
+                            else { break };
+                        let preds: Vec<&(BlockId, BlockId, Vec<InsnId>)> =
+                            all_edges.iter().filter(|(_, t, _)| *t == h).collect();
+                        if preds.len() == 1 {
+                            let Some(&arg) = preds[0].2.get(i) else { break };
+                            cur = resolve(self, arg);
+                            continue;
+                        }
+                        chased = Some((h, i));
+                        break;
+                    }
+                    let Some((header, param_pos)) = chased else { continue };
+                    let preds: Vec<&(BlockId, BlockId, Vec<InsnId>)> =
+                        all_edges.iter().filter(|(_, t, _)| *t == header).collect();
+                    let has_back = preds.iter().any(|(p, _, _)| rpo_pos[p] >= rpo_pos[&header]);
+                    if !has_back { continue; }
+                    let mut back_ok = true;
+                    let mut fwd_missing: Vec<(BlockId, InsnId)> = vec![];
+                    for (p, _, args) in &preds {
+                        let Some(arg) = args.get(param_pos).map(|&a| resolve(self, a)) else { back_ok = false; break };
+                        let matches = matches!(&out_states[*p], Some((0, facts)) if facts.get(&idx) == Some(&arg));
+                        if rpo_pos[p] >= rpo_pos[&header] {
+                            if !matches { back_ok = false; break; }
+                        } else if !matches {
+                            fwd_missing.push((*p, arg));
+                        }
+                    }
+                    if !back_ok || fwd_missing.is_empty() { continue; }
+                    for (p, val) in fwd_missing {
+                        // Only an unconditional Jump edge (the store must not
+                        // execute on some other path), a boxed VALUE, and a
+                        // snapshot to attach.
+                        let term = *self.blocks[p].insns.last().unwrap();
+                        if !matches!(&self.insns[term], Insn::Jump(e) if e.target == header) { continue; }
+                        if !self.type_of(val).is_subtype(types::BasicObject) { continue; }
+                        inserts.push((p, idx, val));
+                    }
+                }
+            }
+        }
+        inserts.sort();
+        inserts.dedup();
+        let mut inserted = false;
+        for (pred, idx, val) in inserts {
+            let Some(state) = self.snapshot_state_in(pred, self.blocks[pred].insns.len()) else { continue };
+            let ep_offset = local_idx_to_ep_offset(iseq, idx);
+            if ep_offset < 0 { continue; }
+            self.insert_before_terminator(pred, Insn::SetLocal {
+                level: 0, ep_offset: ep_offset as u32, val, state,
+            });
+            inserted = true;
+        }
+
+        // Re-run (facts only grow after the inserted spills) and set the masks.
+        let in_states = if inserted { run_fixpoint(self) } else { in_states };
+        let mut masks: HashMap<InsnId, u64> = HashMap::new();
+        for &b in &rpo {
+            if let Some(s) = in_states[b].clone() {
+                transfer(self, &idx_of_off, &idx_of_ep_off, b, s, Some(&mut masks));
+            }
+        }
+        for (insn_id, mask) in masks {
+            if mask == 0 { continue; }
+            if let Insn::PushInlineFrame { ref mut elide_spills, .. } = self.insns[insn_id] {
+                *elide_spills = mask;
+            }
+        }
+    }
+
     /// The `state` (Snapshot) of the last state-bearing instruction in `block`
     /// before `before`, to attach to an inserted BoxFlonum.
     fn snapshot_state_in(&self, block: BlockId, before: usize) -> Option<InsnId> {
@@ -8301,6 +8586,11 @@ impl Function {
         // into representability guards so the flonum encoding moves to the cold
         // side-exit path.
         crate::stats::trace_compile_phase("sink_flonum_boxes_to_deopt", || self.sink_flonum_boxes_to_deopt());
+        #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
+
+        // Skip re-spilling locals whose frame slot already holds the value at
+        // inlined-call sites (runs on final SSA; may insert preheader spills).
+        crate::stats::trace_compile_phase("elide_redundant_spills", || self.elide_redundant_spills());
         #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
 
         if should_dump {

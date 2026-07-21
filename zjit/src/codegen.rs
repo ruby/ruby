@@ -779,8 +779,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
                 *kw_bits, *jit_entry_idx, &function.frame_state(*state), block,
             )
         }
-        Insn::PushInlineFrame { cme, iseq, recv, num_args, blockiseq, state, .. } => {
-            no_output!(gen_push_inline_frame(jit, asm, function, *cme, *iseq, opnd!(recv), *num_args, &function.frame_state(*state), *blockiseq))
+        Insn::PushInlineFrame { cme, iseq, recv, num_args, blockiseq, state, elide_spills, .. } => {
+            no_output!(gen_push_inline_frame(jit, asm, function, *cme, *iseq, opnd!(recv), *num_args, &function.frame_state(*state), *blockiseq, *elide_spills))
         },
         Insn::PopInlineFrame { iseq, argc, state } => {
             no_output!(gen_pop_inline_frame(asm, *iseq, *argc, &function.frame_state(*state)))
@@ -2082,6 +2082,7 @@ fn gen_push_inline_frame(
     num_args: u16,
     state: &FrameState,
     blockiseq: Option<IseqPtr>,
+    elide_spills: u64,
 ) {
     let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
     let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
@@ -2093,7 +2094,7 @@ fn gen_push_inline_frame(
     gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, stack_size);
 
-    gen_spill_locals(jit, asm, state);
+    gen_spill_locals_masked(jit, asm, state, elide_spills);
 
     // This mirrors vm_caller_setup_arg_block() for the `blockiseq != NULL` case.
     // The HIR specialization guards ensure we will only reach here for literal blocks,
@@ -4051,13 +4052,7 @@ fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
 
 /// Spill locals onto the stack.
 fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
-    // TODO: Avoid spilling locals that have been spilled before and not changed.
-    gen_incr_counter(asm, Counter::vm_write_locals_count);
-    asm_comment!(asm, "spill locals");
-    for (idx, &insn_id) in state.locals().enumerate() {
-        let val = spill_encode_local(asm, jit.get_opnd(insn_id), jit.type_of(insn_id));
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), val);
-    }
+    gen_spill_locals_masked(jit, asm, state, 0);
 }
 
 /// Re-encode a local operand into a `VALUE` before a live spill writes it to a
@@ -4094,6 +4089,20 @@ fn spill_encode_local(asm: &mut Assembler, opnd: Opnd, ty: Type) -> Opnd {
         asm.csel_e(fal, tru)
     } else {
         opnd
+    }
+}
+
+/// Spill locals, skipping any whose bit is set in `elide_spills`: the HIR
+/// elide_redundant_spills pass proved those slots already hold the value.
+fn gen_spill_locals_masked(jit: &JITState, asm: &mut Assembler, state: &FrameState, elide_spills: u64) {
+    gen_incr_counter(asm, Counter::vm_write_locals_count);
+    asm_comment!(asm, "spill locals");
+    for (idx, &insn_id) in state.locals().enumerate() {
+        if idx < 64 && (elide_spills >> idx) & 1 == 1 {
+            continue;
+        }
+        let val = spill_encode_local(asm, jit.get_opnd(insn_id), jit.type_of(insn_id));
+        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), val);
     }
 }
 
