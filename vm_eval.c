@@ -1479,11 +1479,12 @@ vm_frametype_name(const rb_control_frame_t *cfp);
 static VALUE
 rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
             const struct vm_ifunc *const ifunc,
-            rb_execution_context_t *ec)
+            rb_execution_context_t *ec_arg)
 {
     enum ruby_tag_type state;
     volatile VALUE retval = Qnil;
-    rb_control_frame_t *const cfp = ec->cfp;
+    rb_execution_context_t * volatile ec = ec_arg;
+    rb_control_frame_t *volatile const cfp = ec->cfp;
 
     EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
