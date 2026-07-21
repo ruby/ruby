@@ -315,6 +315,14 @@ pub extern "C" fn mmtk_gc_enabled_p() -> bool {
 // =============== Object allocation ===============
 
 #[no_mangle]
+pub extern "C" fn mmtk_max_non_los_default_alloc_bytes() -> usize {
+    mmtk()
+        .get_plan()
+        .constraints()
+        .max_non_los_default_alloc_bytes
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn mmtk_alloc(
     mutator: *mut RubyMutator,
     size: usize,

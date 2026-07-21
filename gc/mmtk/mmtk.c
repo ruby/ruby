@@ -57,6 +57,7 @@ struct objspace {
 
     uintptr_t vo_bit_log_region_size;
     uintptr_t vo_bit_base_addr;
+    size_t max_non_los_default_alloc_bytes;
 };
 
 #define OBJ_FREE_BUF_CAPACITY 128
@@ -110,6 +111,7 @@ RB_THREAD_LOCAL_SPECIFIER VALUE marking_parent_object;
 #include <pthread.h>
 
 #define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
+#define MMTK_ALLOCATION_SEMANTICS_LOS 2
 
 static inline VALUE rb_mmtk_call_object_closure(VALUE obj, bool pin);
 
@@ -604,6 +606,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 
     objspace->vo_bit_log_region_size = mmtk_get_vo_bit_log_region_size();
     objspace->vo_bit_base_addr = mmtk_get_vo_bit_base_addr();
+    objspace->max_non_los_default_alloc_bytes = mmtk_max_non_los_default_alloc_bytes();
 }
 
 void
@@ -686,6 +689,8 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
     size_t total_size = rb_mmtk_align_obj_size(alloc_size + sizeof(VALUE) + RB_GC_OBJ_SUFFIX_SIZE);
     size_t object_size = total_size - sizeof(VALUE) - RB_GC_OBJ_SUFFIX_SIZE;
     size_t value_size_shift = sizeof(VALUE) == 8 ? 3 : 2;
+
+    if (total_size > objspace->max_non_los_default_alloc_bytes) return false;
 
     struct rb_gc_zjit_mmtk_new_obj_fastpath mmtk_fastpath = {
         objspace,
@@ -956,21 +961,26 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     struct MMTk_ractor_cache *ractor_cache = cache_ptr;
 
     if (alloc_size == 0) {
-        rb_bug("rb_gc_impl_new_obj: allocation size is zero");
+        rb_bug("rb_gc_impl_new_obj: allocation size out of range (size=%"PRIuSIZE")", alloc_size);
     }
 
     // Layout: [hidden size header (sizeof(VALUE))][payload (alloc_size)][suffix (RB_GC_OBJ_SUFFIX_SIZE)]
     size_t total_size = rb_mmtk_align_obj_size(alloc_size + sizeof(VALUE) + RB_GC_OBJ_SUFFIX_SIZE);
     size_t object_size = total_size - sizeof(VALUE) - RB_GC_OBJ_SUFFIX_SIZE;
+    MMTk_AllocationSemantics semantics = total_size > objspace->max_non_los_default_alloc_bytes
+        ? MMTK_ALLOCATION_SEMANTICS_LOS
+        : MMTK_ALLOCATION_SEMANTICS_DEFAULT;
     *actual_alloc_size = object_size;
 
     if (objspace->gc_stress) {
         mmtk_handle_user_collection_request(ractor_cache, false, false);
     }
 
-    VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, total_size, MMTk_MIN_OBJ_ALIGN);
+    VALUE *alloc_obj = semantics == MMTK_ALLOCATION_SEMANTICS_DEFAULT
+        ? (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, total_size, MMTk_MIN_OBJ_ALIGN)
+        : NULL;
     if (!alloc_obj) {
-        alloc_obj = mmtk_alloc(ractor_cache->mutator, total_size, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+        alloc_obj = mmtk_alloc(ractor_cache->mutator, total_size, MMTk_MIN_OBJ_ALIGN, 0, semantics);
 
         // On heap exhaustion raise NoMemoryError.
         if (RB_UNLIKELY(alloc_obj == NULL)) {
@@ -983,8 +993,8 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     alloc_obj[0] = flags;
     alloc_obj[1] = klass;
 
-    if (ractor_cache->bump_pointer == NULL) {
-        mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, object_size, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    if (semantics == MMTK_ALLOCATION_SEMANTICS_LOS || ractor_cache->bump_pointer == NULL) {
+        mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, total_size, semantics);
     }
     else {
         // We can use the post alloc fast path if we're using Immix bump pointer allocator
@@ -1024,7 +1034,7 @@ rb_gc_impl_size_allocatable_p(size_t size)
 size_t
 rb_gc_impl_max_allocation_size(void)
 {
-    return SIZE_T_MAX;
+    return SIZE_MAX;
 }
 
 // Malloc
