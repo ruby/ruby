@@ -2292,6 +2292,11 @@ unsafe extern "C" {
         flags_out: *mut VALUE,
         len_out: *mut ::std::os::raw::c_long,
     ) -> bool;
+    pub fn rb_zjit_range_new_fastpath(
+        exclude_end: bool,
+        alloc_size_out: *mut usize,
+        flags_out: *mut VALUE,
+    );
     pub fn rb_profile_frames(
         start: ::std::os::raw::c_int,
         limit: ::std::os::raw::c_int,
