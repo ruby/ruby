@@ -410,9 +410,6 @@ module Bundler
         options["revision"]
       end
 
-      def cached?
-        cache_path.exist?
-      end
 
       def git_proxy
         @git_proxy ||= GitProxy.new(cache_path, uri, options, locked_revision, self)
