@@ -557,12 +557,9 @@ assert_equal %Q{ENSURE\n}, %q{
   end
   e = Bug6460.new
 }]].each do |bug, src|
-  # TODO: Remove this clang 17 CI workaround once #17953's regression is fixed.
-  unless ENV["GITHUB_ACTIONS"] == "true" && ENV["INPUT_WITH_GCC"] == "clang-17"
-    assert_equal "foo", src + %q{e.detect {true}}, bug
-    assert_equal "true", src + %q{e.any? {true}}, bug
-    assert_equal "false", src + %q{e.all? {false}}, bug
-  end
+  assert_equal "foo", src + %q{e.detect {true}}, bug
+  assert_equal "true", src + %q{e.any? {true}}, bug
+  assert_equal "false", src + %q{e.all? {false}}, bug
   assert_equal "true", src + %q{e.include?(:foo)}, bug
 end
 
