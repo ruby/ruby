@@ -445,9 +445,6 @@ module Psych
         end
       end
 
-      def merge_key hash, key, val
-      end
-
       def revive klass, node
         s = register(node, klass.allocate)
         init_with(s, revive_hash({}, node, true), node)
