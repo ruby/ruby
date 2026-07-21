@@ -279,6 +279,7 @@ array.$(OBJEXT): {$(VPATH)}thread_native.h
 array.$(OBJEXT): {$(VPATH)}util.h
 array.$(OBJEXT): {$(VPATH)}vm_core.h
 array.$(OBJEXT): {$(VPATH)}vm_opts.h
+array.$(OBJEXT): {$(VPATH)}zjit.h
 ast.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 ast.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 ast.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -1028,6 +1029,7 @@ builtin.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/serial.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+builtin.$(OBJEXT): $(top_srcdir)/internal/string.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/struct.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/variable.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -1084,6 +1086,7 @@ builtin.$(OBJEXT): {$(VPATH)}builtin_binary.rbbin
 builtin.$(OBJEXT): {$(VPATH)}config.h
 builtin.$(OBJEXT): {$(VPATH)}constant.h
 builtin.$(OBJEXT): {$(VPATH)}defines.h
+builtin.$(OBJEXT): {$(VPATH)}encindex.h
 builtin.$(OBJEXT): {$(VPATH)}encoding.h
 builtin.$(OBJEXT): {$(VPATH)}id.h
 builtin.$(OBJEXT): {$(VPATH)}id_table.h

@@ -245,6 +245,16 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal("-10000-01-01T00:00:00Z", Time.utc(-10000).__send__(method))
   end
 
+  def subtest_xmlschema_whitespaces(method)
+    t = Time.utc(1985, 4, 12, 23, 20, 50, 520000)
+    s = "  \t  1985-04-12T23:20:50.52Z"
+    assert_equal(t, Time.__send__(method, s))
+
+    t = Time.utc(1985, 4, 12, 23, 20, 50, 520000)
+    s = "1985-04-12T23:20:50.52Z  \t "
+    assert_equal(t, Time.__send__(method, s))
+  end
+
   def test_completion
     now = Time.local(2001,11,29,21,26,35)
     assert_equal(Time.local( 2001,11,29,21,12),
@@ -368,6 +378,15 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(t, Time.parse("1200-02-15 BC 14:13:20-00"))
     assert_equal(t, Time.parse("1200-02-15 BC 14:13:20-00:00"))
     assert_equal(t, Time.parse("1200-02-15 BC 14:13:20-00:00:00"))
+  end
+
+  def test_parse_custom_offset
+    t = Time.at(-100000000000).utc
+    assert_equal(t, Time.parse("1200-02-15 BC 14:13:20", zone: "UTC"))
+    assert_equal(t, Time.parse("1200-02-15 BC 15:13:20", zone: "+01:00").utc)
+
+    assert_equal(t, Time.parse("1200-02-15 BC 15:13:20+01:00", zone: "UTC").utc)
+    assert_equal(t, Time.parse("1200-02-15 BC 15:13:20+01:00", zone: "+02:00").utc)
   end
 
   def test_parse_leap_second
@@ -574,6 +593,7 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     test = $1
     define_method(test) {__send__(sub, :xmlschema)}
     define_method(test.sub(/xmlschema/, 'iso8601')) {__send__(sub, :iso8601)}
+    define_method(test.sub(/xmlschema/, 'rfc3339')) {__send__(sub, :rfc3339)}
   end
 
   def test_parse_with_various_object

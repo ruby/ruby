@@ -1972,7 +1972,7 @@ rb_postponed_job_flush(rb_vm_t *vm)
     ccan_list_append_list(&tmp, &vm->workqueue);
     rb_nativethread_lock_unlock(&vm->workqueue_lock);
 
-    rb_atomic_t triggered_bits = RUBY_ATOMIC_EXCHANGE(pjq->triggered_bitset, 0);
+    volatile rb_atomic_t triggered_bits = RUBY_ATOMIC_EXCHANGE(pjq->triggered_bitset, 0);
 
     /* jobs targeted at this Ractor (rb_postponed_job_trigger_for_ractor) */
     triggered_bits |= RUBY_ATOMIC_EXCHANGE(rb_ec_ractor_ptr(ec)->postponed_job_triggered_bits, 0);

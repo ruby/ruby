@@ -3714,6 +3714,43 @@ fn test_array_dup() {
 }
 
 #[test]
+fn test_array_dup_embedded_gc_stress() {
+    eval(r#"
+        def make = [1, 100000000000000000000, :sym]
+    "#);
+    assert_contains_opcode("make", YARVINSN_duparray);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make
+          a = make
+          a << :extra
+          [a.frozen?, a.class, a]
+        ensure
+          GC.stress = false
+        end
+    "#), @r#"[false, Array, [1, 100000000000000000000, :sym, :extra]]"#);
+}
+
+#[test]
+fn test_array_dup_non_embedded_gc_stress() {
+    eval("
+        def make = [10, 20, 30, 40, 50]
+    ");
+    assert_contains_opcode("make", YARVINSN_duparray);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          make
+          m = make
+          [m.frozen?, m]
+        ensure
+          GC.stress = false
+        end
+    "#), @"[false, [10, 20, 30, 40, 50]]");
+}
+
+#[test]
 fn test_array_fixnum_aref() {
     eval("
         def test(x) = [1,2,3][x]

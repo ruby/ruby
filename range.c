@@ -40,9 +40,8 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 
 #define RANGE_SET_BEG(r, v) (RSTRUCT_SET(r, 0, v))
 #define RANGE_SET_END(r, v) (RSTRUCT_SET(r, 1, v))
-#define RANGE_SET_EXCL(r, v) (RSTRUCT_SET(r, 2, v))
 
-#define EXCL(r) RTEST(RANGE_EXCL(r))
+#define EXCL(r) RTEST(FL_TEST(r, RANGE_FL_EXCL))
 
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
@@ -56,7 +55,12 @@ range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
             rb_raise(rb_eArgError, "bad value for range");
     }
 
-    RANGE_SET_EXCL(range, exclude_end);
+    if (RTEST(exclude_end)) {
+        FL_SET_RAW(range, RANGE_FL_EXCL);
+    }
+
+    FL_SET_RAW(range, RANGE_FL_INIT);
+
     RANGE_SET_BEG(range, beg);
     RANGE_SET_END(range, end);
 
@@ -79,7 +83,7 @@ range_modify(VALUE range)
 {
     rb_check_frozen(range);
     /* Ranges are immutable, so that they should be initialized only once. */
-    if (RANGE_EXCL(range) != Qnil) {
+    if (FL_TEST(range, RANGE_FL_INIT)) {
         rb_name_err_raise("'initialize' called twice", range, ID2SYM(idInitialize));
     }
 }
@@ -115,6 +119,7 @@ static VALUE
 range_initialize_copy(VALUE range, VALUE orig)
 {
     range_modify(range);
+    FL_SET_RAW(range, FL_TEST_RAW(orig, RANGE_FL_EXCL|RANGE_FL_INIT));
     rb_struct_init_copy(range, orig);
     return range;
 }
@@ -1357,13 +1362,6 @@ range_reverse_each(VALUE range)
  *  Related: Range#first, Range#end.
  */
 
-static VALUE
-range_begin(VALUE range)
-{
-    return RANGE_BEG(range);
-}
-
-
 /*
  *  call-seq:
  *    self.end -> object
@@ -1376,14 +1374,6 @@ range_begin(VALUE range)
  *
  *  Related: Range#begin, Range#last.
  */
-
-
-static VALUE
-range_end(VALUE range)
-{
-    return RANGE_END(range);
-}
-
 
 static VALUE
 first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, cbarg))
@@ -2960,7 +2950,7 @@ Init_Range(void)
 
     rb_cRange = rb_struct_define_without_accessor(
         "Range", rb_cObject, range_alloc,
-        "begin", "end", "excl", NULL);
+        "begin", "end", NULL);
 
     rb_include_module(rb_cRange, rb_mEnumerable);
     rb_marshal_define_compat(rb_cRange, rb_cObject, range_dumper, range_loader);
@@ -2975,8 +2965,8 @@ Init_Range(void)
     rb_define_method(rb_cRange, "%", range_percent_step, 1);
     rb_define_method(rb_cRange, "reverse_each", range_reverse_each, 0);
     rb_define_method(rb_cRange, "bsearch", range_bsearch, 0);
-    rb_define_method(rb_cRange, "begin", range_begin, 0);
-    rb_define_method(rb_cRange, "end", range_end, 0);
+    rb_struct_define_aref_method(rb_cRange, id_beg, 0);
+    rb_struct_define_aref_method(rb_cRange, id_end, 1);
     rb_define_method(rb_cRange, "first", range_first, -1);
     rb_define_method(rb_cRange, "last", range_last, -1);
     rb_define_method(rb_cRange, "min", range_min, -1);

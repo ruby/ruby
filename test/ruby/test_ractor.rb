@@ -401,6 +401,24 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_detailed_message_in_ractor
+    # The error decoration gems (error_highlight, did_you_mean, and
+    # syntax_suggest) are loaded lazily on the first error display. In a
+    # non-main Ractor the require is delegated to the main Ractor, so the
+    # decorations must appear there too. [Feature #21951]
+    assert_ractor(<<~'RUBY', args: ["--enable=gems"], ignore_stderr: true)
+      message = Ractor.new do
+        begin
+          1.timess
+        rescue NoMethodError => e
+          e.detailed_message(highlight: false)
+        end
+      end.value
+      assert_include(message, "timess")
+      assert_include(message, "Did you mean?")
+    RUBY
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)

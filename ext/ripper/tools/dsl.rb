@@ -37,7 +37,8 @@ class DSL
         if empty?
           "rb_ary_new()"
         else
-          "rb_ary_new_from_args(#{size}, #{map(&:to_s).join(', ')})"
+          values = map {|value| "(VALUE)0|(#{value})"}
+          "rb_ary_new_from_args(#{size}, #{values.join(', ')})"
         end
       end
     end

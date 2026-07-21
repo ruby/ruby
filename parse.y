@@ -7728,7 +7728,7 @@ tokspace(struct parser_params *p, int n)
     p->tokidx += n;
 
     if (p->tokidx >= p->toksiz) {
-        do {p->toksiz *= 2;} while (p->toksiz < p->tokidx);
+        do {p->toksiz *= 2;} while (p->toksiz <= p->tokidx);
         REALLOC_N(p->tokenbuf, char, p->toksiz);
     }
     return &p->tokenbuf[p->tokidx-n];

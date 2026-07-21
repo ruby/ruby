@@ -107,7 +107,7 @@ typedef uint32_t redblack_id_t;
 enum shape_type {
     SHAPE_ROOT,
     SHAPE_IVAR,
-    SHAPE_OBJ_ID,
+    SHAPE_OBJ_ID
 };
 
 struct rb_shape {
@@ -338,14 +338,26 @@ static inline size_t
 rb_obj_shape_slot_size(VALUE obj)
 {
     RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
-    return rb_shape_slot_size(RBASIC_SHAPE_ID(obj));
+
+    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+    size_t slot_size = rb_shape_slot_size(shape_id);
+
+    if (rb_shape_embedded_capacity(shape_id) == SHAPE_ID_CAPACITY_MAX) {
+        size_t gc_slot_size = rb_gc_obj_slot_size(obj);
+        RUBY_ASSERT(gc_slot_size >= slot_size);
+        return gc_slot_size;
+    }
+
+    return slot_size;
 }
 
 static inline attr_index_t
 rb_shape_capacity_for_slot_size(size_t slot_size)
 {
     size_t capacity = (slot_size - sizeof(struct RBasic)) / sizeof(VALUE);
-    RUBY_ASSERT(capacity <= SHAPE_ID_CAPACITY_MAX);
+    if (capacity > SHAPE_ID_CAPACITY_MAX) {
+        capacity = SHAPE_ID_CAPACITY_MAX;
+    }
     return (attr_index_t)capacity;
 }
 

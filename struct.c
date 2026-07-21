@@ -285,6 +285,12 @@ define_aref_method(VALUE nstr, VALUE name, VALUE off)
     rb_add_method_optimized(nstr, SYM2ID(name), OPTIMIZED_METHOD_TYPE_STRUCT_AREF, FIX2UINT(off), METHOD_VISI_PUBLIC);
 }
 
+void
+rb_struct_define_aref_method(VALUE nstr, ID name, unsigned int off)
+{
+    rb_add_method_optimized(nstr, name, OPTIMIZED_METHOD_TYPE_STRUCT_AREF, off, METHOD_VISI_PUBLIC);
+}
+
 static void
 define_aset_method(VALUE nstr, VALUE name, VALUE off)
 {
@@ -818,6 +824,8 @@ struct_heap_alloc(VALUE st, size_t len)
     return ALLOC_N(VALUE, len);
 }
 
+STATIC_ASSERT(robject_rstruct_fields_offset, offsetof(struct RObject, as.extended) == offsetof(struct RStruct, fields_obj));
+
 static VALUE
 struct_alloc(VALUE klass)
 {
@@ -833,40 +841,26 @@ struct_alloc(VALUE klass)
 
     if (n > 0 && n <= embed_len_max && rb_gc_size_allocatable_p(embedded_size)) {
         flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
-        if (RCLASS_MAX_IV_COUNT(klass) == 0) {
-            // We set the flag before calling `NEWOBJ_OF` in case a NEWOBJ tracepoint does
-            // attempt to write fields. We'll remove it later if no fields was written to.
-            flags |= RSTRUCT_GEN_FIELDS;
-        }
 
-        NEWOBJ_OF(st, struct RStruct, klass, flags, embedded_size);
-        if (RCLASS_MAX_IV_COUNT(klass) == 0) {
-            if (!rb_obj_shape_has_fields((VALUE)st)
-                    && embedded_size < rb_obj_shape_slot_size((VALUE)st)) {
-                FL_UNSET_RAW((VALUE)st, RSTRUCT_GEN_FIELDS);
-                RSTRUCT_SET_FIELDS_OBJ((VALUE)st, 0);
-            }
-        }
-        else {
-            RSTRUCT_SET_FIELDS_OBJ((VALUE)st, 0);
-        }
+        VALUE st = rb_newobj(GET_EC(), klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_EXTENDED, true, embedded_size);
+        RSTRUCT_SET_FIELDS_OBJ(st, 0);
+        rb_mem_clear((VALUE *)RSTRUCT(st)->as.ary, n);
 
-        rb_mem_clear((VALUE *)st->as.ary, n);
-
-        return (VALUE)st;
+        return st;
     }
     else {
-        NEWOBJ_OF(st, struct RStruct, klass, flags, sizeof(struct RStruct));
+        VALUE obj = rb_newobj(GET_EC(), klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_EXTENDED, true, sizeof(struct RStruct));
+        struct RStruct *st = RSTRUCT(obj);
 
+        st->fields_obj = 0;
         st->as.heap.ptr = NULL;
-        st->as.heap.fields_obj = 0;
         st->as.heap.len = 0;
 
         st->as.heap.ptr = struct_heap_alloc((VALUE)st, n);
         rb_mem_clear((VALUE *)st->as.heap.ptr, n);
         st->as.heap.len = n;
 
-        return (VALUE)st;
+        return obj;
     }
 }
 

@@ -36,7 +36,7 @@ class Checksum
   end
 
   def update!
-    File.binwrite(@checksum, "src=\"#{@source}\", len=#{@len}, checksum=#{@sum}")
+    File.binwrite(@checksum, "src=\"#{@source}\", len=#{@len}, checksum=#{@sum}\n")
   end
 
   def update

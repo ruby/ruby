@@ -2869,6 +2869,13 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
 
     VM_ASSERT(FIBER_RUNNABLE_P(fiber));
 
+    /*
+     * Keep the target fiber object alive across fiber_store.  The raw
+     * rb_fiber_t pointer is used after the coroutine switch, and GC may run
+     * while this C frame is suspended.
+     */
+    VALUE fiber_value = fiber->cont.self;
+
     rb_fiber_t *current_fiber = fiber_current();
 
     VM_ASSERT(!current_fiber->resuming_fiber);
@@ -2902,6 +2909,7 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
         }
     }
 #endif
+    RB_GC_GUARD(fiber_value);
 
     if (fiber_current()->blocking) {
         th->blocking += 1;

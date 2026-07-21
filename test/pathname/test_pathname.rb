@@ -649,14 +649,15 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_kernel_open
-    count = 0
-    result = Kernel.open(Pathname.new(__FILE__)) {|f|
-      assert_file.identical?(__FILE__, f)
-      count += 1
-      2
-    }
-    assert_equal(1, count)
-    assert_equal(2, result)
+    token = sprintf("%s\#%s|%d|%.8x", self.class.name, __method__, $$, rand(0x1_0000_0000))
+    Dir.mktmpdir("rubytest-pathname") do |dir|
+      path = Pathname.new(dir) + "file"
+      File.write(path, token)
+      assert_equal(token, File.read(path))
+      assert_equal(token, Kernel.open(path, &:read))
+    ensure
+      File.unlink(path)
+    end
   end
 
   def test_each_filename

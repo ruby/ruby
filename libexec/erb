@@ -89,7 +89,7 @@ class ERB
             set_encoding(Encoding::UTF_8, Encoding::UTF_8)
           when '-P'
             disable_percent = true
-          when '--help'
+          when '-h', '--help'
             raise ''
           when /\A-/
             raise "Unknown switch: #{switch.dump}"

@@ -47,6 +47,21 @@ ruby_version_is "4.1" do
       pr.should_not.lambda?
     end
 
+    it "preserves the class of a Proc subclass instance" do
+      subclass = Class.new(Proc)
+      refined = subclass.new { |s| s.shout }.refined(ProcRefinedSpecs::StringShout)
+      refined.should.instance_of?(subclass)
+      refined.call("hi").should == "HI!"
+    end
+
+    it "does not copy singleton methods of the receiver" do
+      pr = -> s { s.shout }
+      def pr.tag; :orig; end
+      refined = pr.refined(ProcRefinedSpecs::StringShout)
+      refined.should_not.respond_to?(:tag)
+      refined.call("hi").should == "HI!"
+    end
+
     it "keeps the refinements active in blocks nested inside the body" do
       pr = -> a { a.map { |s| s.shout } }
       pr.refined(ProcRefinedSpecs::StringShout).call(%w[a b]).should == ["A!", "B!"]
@@ -61,6 +76,45 @@ ruby_version_is "4.1" do
         obj.shout_hi
       }
       pr.refined(ProcRefinedSpecs::StringShout).call.should == "HI!"
+    end
+
+    it "keeps the refinements active in instance methods defined inside the body" do
+      pr = -> {
+        Class.new {
+          def shout_hi
+            "hi".shout
+          end
+        }.new.shout_hi
+      }
+      pr.refined(ProcRefinedSpecs::StringShout).call.should == "HI!"
+    end
+
+    it "keeps the refinements active in a class body opened with the class keyword inside the body" do
+      pr = -> {
+        class ProcRefinedSpecs::ClassBody
+          def shout_hi
+            "hi".shout
+          end
+        end
+        ProcRefinedSpecs::ClassBody.new.shout_hi
+      }
+      pr.refined(ProcRefinedSpecs::StringShout).call.should == "HI!"
+    ensure
+      ProcRefinedSpecs.send(:remove_const, :ClassBody) if ProcRefinedSpecs.const_defined?(:ClassBody)
+    end
+
+    it "applies the refinements to Symbol#to_proc blocks created inside the body" do
+      pr = -> a { a.map(&:shout) }
+      pr.refined(ProcRefinedSpecs::StringShout).call(%w[a b]).should == ["A!", "B!"]
+      -> { pr.call(%w[a b]) }.should.raise(NoMethodError)
+    end
+
+    it "applies the refinements to operators and element access" do
+      refined = -> a, b { [a + b, a < b] }.refined(ProcRefinedSpecs::Operators)
+      refined.call(1, 2).should == ["plus(1,2)", "lt"]
+      -> a { a[0] }.refined(ProcRefinedSpecs::Operators).call([9]).should == "at0"
+      -> h { h["x"] }.refined(ProcRefinedSpecs::Operators).call({ "x" => 1 }).should == "aref(x)"
+      -> a, b { a + b }.call(1, 2).should == 3
     end
 
     it "keeps the refinements active when called via instance_eval, instance_exec and class_eval" do
@@ -110,6 +164,14 @@ ruby_version_is "4.1" do
       pr = proc { using mod }
       refined = pr.refined(ProcRefinedSpecs::StringShout)
       -> { Module.new.module_eval(&refined) }.should.raise(RuntimeError)
+    end
+
+    it "allows calling refine inside the body" do
+      pr = -> s {
+        Module.new { refine(String) { def whisper; downcase; end } }
+        s.shout
+      }
+      pr.refined(ProcRefinedSpecs::StringShout).call("hi").should == "HI!"
     end
   end
 end

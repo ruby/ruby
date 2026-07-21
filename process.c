@@ -8713,11 +8713,18 @@ static VALUE rb_mProcID_Syscall;
  *  * Frees all empty heap pages and increments the allocatable pages counter
  *    by the number of pages freed.
  *  * Invoke +malloc_trim+ if available to free empty malloc pages.
+ *  * Eagerly loads the +error_highlight+, +did_you_mean+, and +syntax_suggest+
+ *    gems, which are otherwise loaded lazily on the first error display.
  */
 
 static VALUE
 proc_warmup(VALUE _)
 {
+    // Load the error decoration gems now so that their detailed_message
+    // decorators land in shared memory before a pre-forking server forks,
+    // instead of being loaded lazily on the first error at runtime.
+    rb_eager_load_detailed_message_extension();
+
     RB_VM_LOCKING() {
         rb_gc_prepare_heap();
     }

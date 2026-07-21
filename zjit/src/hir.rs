@@ -2238,13 +2238,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumBitCheck {val, index} => { write!(f, "FixnumBitCheck {val}, {index}") },
             Insn::CCall { cfunc, recv, args, name, owner, return_type: _, elidable: _ } => {
                 let display_name = if *owner == Qnil { name.contents_lossy().to_string() } else { qualified_method_name(*owner, *name) };
-                write!(f, "CCall {recv}, :{}@{:p}", display_name, self.ptr_map.map_ptr(cfunc))?;
+                write!(f, "CCall {recv}, :{}@{:p}", display_name, self.ptr_map.map_ptr(*cfunc))?;
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             },
             Insn::CCallWithFrame(insn) => {
                 let CCallWithFrameData { cfunc, recv, args, name, cme, block, .. } = &**insn;
-                write!(f, "CCallWithFrame {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(cfunc))?;
+                write!(f, "CCallWithFrame {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(*cfunc))?;
                 write_separated!(f, ", ", ", ", args);
                 match block {
                     Some(BlockHandler::BlockIseq(blockiseq)) =>
@@ -2257,7 +2257,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             },
             Insn::CCallVariadic(insn) => {
                 let CCallVariadicData { cfunc, recv, args, name, cme, .. } = &**insn;
-                write!(f, "CCallVariadic {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(cfunc))?;
+                write!(f, "CCallVariadic {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(*cfunc))?;
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             },

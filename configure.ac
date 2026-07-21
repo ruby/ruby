@@ -3143,7 +3143,7 @@ STATIC=
       # mkmf.rb's have_header() to fail if the desired resource happens to be
       # installed in the /usr/local tree.
       RUBY_APPEND_OPTION(CCDLFLAGS, -fno-common)],
-    [cygwin*|msys*|mingw*|aix*|interix*], [ ],
+    [cygwin*|msys*|mingw*|aix*], [ ],
     [
       RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC)])
   ], [
@@ -3204,9 +3204,6 @@ AC_SUBST(EXTOBJS)
 			AS_IF([test "$rb_cv_binary_elf" = yes], [
 			    LDFLAGS="$LDFLAGS -Wl,-export-dynamic"
 			])
-			rb_cv_dlopen=yes],
-	[interix*], [	: ${LDSHARED='$(CC) -shared'}
-			XLDFLAGS="$XLDFLAGS -Wl,-E"
 			rb_cv_dlopen=yes],
 	[freebsd*|dragonfly*], [
 			: ${LDSHARED='$(CC) -shared'}
@@ -3730,9 +3727,6 @@ AS_CASE("$enable_shared", [yes], [
 	])
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "' $(XLDFLAGS)'
 	],
-    [interix*], [
-	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
-	],
     [cygwin*|msys*|mingw*|mswin*], [
 	LIBRUBY_RELATIVE=yes
 	])
@@ -3808,6 +3802,13 @@ AS_CASE(["${enable_dtrace}"],
 [yes|auto], [
     RUBY_DTRACE_AVAILABLE()
 ], [
+    rb_cv_dtrace_available=no
+])
+AS_CASE(["$target_cpu-$target_os"], [aarch64-freebsd* | arm64-freebsd*], [dnl
+    # FreeBSD's libdtrace mishandles is-enabled probes on aarch64: dt_modtext()
+    # rewrites the call site to a bare nop without clearing the return register,
+    # so RUBY_DTRACE_*_ENABLED() returns a garbage value and fires probes even
+    # when no consumer is attached. See dt_link.c dt_modtext() for __aarch64__.
     rb_cv_dtrace_available=no
 ])
 AS_IF([test "${enable_dtrace}" = yes], [dnl
@@ -4126,7 +4127,7 @@ AS_IF([test -n "$RUST_LIB"], [
     ])
 
     # absolute path to stop the "target" dir in src dir from interfering through VPATH
-    RUST_LIB="$(pwd)/${RUST_LIB}"
+    RUST_LIB='$(TOP_BUILD_DIR)'/"${RUST_LIB}"
 ])
 
 dnl These variables end up in ::RbConfig::CONFIG
@@ -4136,14 +4137,14 @@ AC_SUBST(RUSTC_FLAGS)dnl user-configurable rustc compiler flags
 AC_SUBST(CARGO)dnl Cargo command for Rust builds
 AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
 AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
-AC_SUBST(YJIT_LIBS)dnl the .a library of YJIT
-AC_SUBST(YJIT_OBJ)dnl for optionally building the C parts of YJIT
+AC_SUBST(X_YJIT_LIBS, [$YJIT_LIBS])dnl the .a library of YJIT
+AC_SUBST(X_YJIT_OBJ, [$YJIT_OBJ])dnl for optionally building the C parts of YJIT
 AC_SUBST(ZJIT_SUPPORT)dnl what flavor of ZJIT the Ruby build includes
-AC_SUBST(ZJIT_LIBS)dnl path to the .a library of ZJIT
-AC_SUBST(ZJIT_OBJ)dnl for optionally building the C parts of ZJIT
-AC_SUBST(JIT_OBJ)dnl for optionally building C glue code for Rust FFI
-AC_SUBST(RUST_LIB)dnl path to the rust .a library that contains either or both JITs
-AC_SUBST(RLIB_DIR)dnl subpath of build directory for .rlib files
+AC_SUBST(X_ZJIT_LIBS, [$ZJIT_LIBS])dnl path to the .a library of ZJIT
+AC_SUBST(X_ZJIT_OBJ, [$ZJIT_OBJ])dnl for optionally building the C parts of ZJIT
+AC_SUBST(X_JIT_OBJ, [$JIT_OBJ])dnl for optionally building C glue code for Rust FFI
+AC_SUBST(X_RUST_LIB, [$RUST_LIB])dnl path to the rust .a library that contains either or both JITs
+AC_SUBST(X_RLIB_DIR, [$RLIB_DIR])dnl subpath of build directory for .rlib files
 AC_SUBST(JIT_CARGO_SUPPORT)dnl "no" or the cargo profile of the rust code
 }
 
@@ -4177,11 +4178,11 @@ AS_IF([test x"$SOEXT" = xdll], [
 ])
 AC_SUBST(XSYMBOLS_IN_EMPTYLIB, "${rb_cv_symbols_in_emptylib}")
 
-DLNOBJ=dln.o
+DLNOBJS=dln.o
 AC_ARG_ENABLE(dln,
 	      AS_HELP_STRING([--disable-dln], [disable dynamic link feature]),
-	      [test "$enableval" = yes || DLNOBJ=dmydln.o])
-AC_SUBST(DLNOBJ)
+	      [test "$enableval" = yes || DLNOBJS=dmydln.o])
+AC_SUBST(DLNOBJS)
 MINIDLNOBJ=dmydln.o
 
 AS_CASE(["$target_os"],

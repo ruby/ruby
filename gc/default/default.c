@@ -74,8 +74,11 @@ rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
 
 #include "probes.h"
 
+/* cl.exe's traditional preprocessor passes __VA_ARGS__ to a nested macro as
+ * a single argument; the extra expansion re-scans it into separate ones. */
+#define RUBY_DTRACE_GC_HOOK_EXPAND(expr) expr
 #define RUBY_DTRACE_GC_HOOK(name, ...) \
-    do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name(__VA_ARGS__);} while (0)
+    do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_HOOK_EXPAND(RUBY_DTRACE_GC_##name(__VA_ARGS__));} while (0)
 
 #if USE_ZJIT
 # include "gc/default/zjit_fastpath.h"
