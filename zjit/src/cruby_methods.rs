@@ -235,6 +235,11 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "byteslice", inline_string_byteslice);
     annotate!(rb_cString, "setbyte", inline_string_setbyte);
     annotate!(rb_cString, "empty?", inline_string_empty_p, types::BoolExact, no_gc, leaf, elidable);
+    // String#+@ returns self or (when frozen) a mutable dup, both exactly String
+    // under this annotation's exact-receiver guard. Typing it keeps a `+""`
+    // mutable-string accumulator StringExact across loop back-edges, so the
+    // String#<< fast path below needs no per-iteration receiver re-guard.
+    annotate!(rb_cString, "+@", types::StringExact);
     annotate!(rb_cString, "<<", inline_string_append);
     annotate!(rb_cString, "==", inline_string_eq);
     // Not elidable; has a side effect of setting the encoding if ENC_CODERANGE_UNKNOWN.
