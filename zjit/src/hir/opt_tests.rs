@@ -17856,29 +17856,27 @@ mod hir_opt_tests {
           v11:NilClass = Const Value(nil)
           Jump bb3(v8, v9, v10, v11)
         bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:NilClass):
-          CheckInterrupts
-          v22:CBool = Test v15
-          v23:Falsy = RefineType v15, Falsy
-          CondBranch v22, bb6(), bb4(v13, v14, v23, v16)
+          v21:CBool = Test v15
+          v22:Falsy = RefineType v15, Falsy
+          CondBranch v21, bb6(), bb4(v13, v14, v22, v16)
         bb6():
-          v25:Truthy = RefineType v15, Truthy
-          v29:Fixnum[1] = Const Value(1)
+          v24:Truthy = RefineType v15, Truthy
+          v28:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v69:Fixnum = GuardType v14, Fixnum recompile
-          v70:Fixnum = FixnumAdd v69, v29
+          v67:Fixnum = GuardType v14, Fixnum recompile
+          v68:Fixnum = FixnumAdd v67, v28
+          Jump bb5(v13, v67, v24, v68)
+        bb4(v35:BasicObject, v36:BasicObject, v37:Falsy, v38:NilClass):
+          v43:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v71:Fixnum = GuardType v36, Fixnum recompile
+          v72:Fixnum = FixnumAdd v71, v43
+          Jump bb5(v35, v71, v37, v72)
+        bb5(v49:BasicObject, v50:Fixnum, v51:BasicObject, v52:Fixnum):
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v77:Fixnum = FixnumAdd v50, v52
           CheckInterrupts
-          Jump bb5(v13, v69, v25, v70)
-        bb4(v37:BasicObject, v38:BasicObject, v39:Falsy, v40:NilClass):
-          v45:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v73:Fixnum = GuardType v38, Fixnum recompile
-          v74:Fixnum = FixnumAdd v73, v45
-          Jump bb5(v37, v73, v39, v74)
-        bb5(v51:BasicObject, v52:Fixnum, v53:BasicObject, v54:Fixnum):
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v79:Fixnum = FixnumAdd v52, v54
-          CheckInterrupts
-          Return v79
+          Return v77
         ");
         let guard_count = hir.matches("GuardType").count();
         assert_eq!(
@@ -17922,38 +17920,36 @@ mod hir_opt_tests {
           v11:BasicObject = LoadArg :b@3
           Jump bb3(v8, v9, v10, v11)
         bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
-          CheckInterrupts
-          v22:CBool = Test v15
-          v23:Falsy = RefineType v15, Falsy
-          CondBranch v22, bb6(), bb5(v13, v14, v23, v16)
+          v21:CBool = Test v15
+          v22:Falsy = RefineType v15, Falsy
+          CondBranch v21, bb6(), bb5(v13, v14, v22, v16)
         bb6():
-          v25:Truthy = RefineType v15, Truthy
-          CheckInterrupts
-          v30:CBool = Test v16
-          v31:Falsy = RefineType v16, Falsy
-          CondBranch v30, bb7(), bb4(v13, v14, v25, v31)
+          v24:Truthy = RefineType v15, Truthy
+          v28:CBool = Test v16
+          v29:Falsy = RefineType v16, Falsy
+          CondBranch v28, bb7(), bb4(v13, v14, v24, v29)
         bb7():
-          v33:Truthy = RefineType v16, Truthy
-          v37:Fixnum[1] = Const Value(1)
+          v31:Truthy = RefineType v16, Truthy
+          v35:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v80:Fixnum = GuardType v14, Fixnum recompile
-          v81:Fixnum = FixnumAdd v80, v37
+          v78:Fixnum = GuardType v14, Fixnum recompile
+          v79:Fixnum = FixnumAdd v78, v35
           CheckInterrupts
-          Return v81
-        bb4(v61:BasicObject, v62:BasicObject, v63:Truthy, v64:Falsy):
-          v69:Fixnum[2] = Const Value(2)
+          Return v79
+        bb4(v59:BasicObject, v60:BasicObject, v61:Truthy, v62:Falsy):
+          v67:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v84:Fixnum = GuardType v62, Fixnum recompile
-          v85:Fixnum = FixnumAdd v84, v69
+          v82:Fixnum = GuardType v60, Fixnum recompile
+          v83:Fixnum = FixnumAdd v82, v67
           CheckInterrupts
-          Return v85
-        bb5(v45:BasicObject, v46:BasicObject, v47:Falsy, v48:BasicObject):
-          v53:Fixnum[3] = Const Value(3)
+          Return v83
+        bb5(v43:BasicObject, v44:BasicObject, v45:Falsy, v46:BasicObject):
+          v51:Fixnum[3] = Const Value(3)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v88:Fixnum = GuardType v46, Fixnum recompile
-          v89:Fixnum = FixnumAdd v88, v53
+          v86:Fixnum = GuardType v44, Fixnum recompile
+          v87:Fixnum = FixnumAdd v86, v51
           CheckInterrupts
-          Return v89
+          Return v87
         ");
         let guard_count = hir.matches("GuardType").count();
         assert!(
@@ -17990,24 +17986,22 @@ mod hir_opt_tests {
           v11:NilClass = Const Value(nil)
           Jump bb3(v8, v9, v10, v11)
         bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:NilClass):
-          CheckInterrupts
-          v22:CBool = Test v15
-          v23:Falsy = RefineType v15, Falsy
-          CondBranch v22, bb6(), bb4(v13, v14, v23, v16)
+          v21:CBool = Test v15
+          v22:Falsy = RefineType v15, Falsy
+          CondBranch v21, bb6(), bb4(v13, v14, v22, v16)
         bb6():
-          v25:Truthy = RefineType v15, Truthy
-          v27:Fixnum[1] = Const Value(1)
-          CheckInterrupts
-          Jump bb5(v13, v14, v25, v16, v27)
-        bb4(v31:BasicObject, v32:BasicObject, v33:Falsy, v34:NilClass):
-          v37:Fixnum[2] = Const Value(2)
-          Jump bb5(v31, v32, v33, v34, v37)
-        bb5(v39:BasicObject, v40:BasicObject, v41:BasicObject, v42:NilClass, v43:Fixnum):
+          v24:Truthy = RefineType v15, Truthy
+          v26:Fixnum[1] = Const Value(1)
+          Jump bb5(v13, v14, v24, v16, v26)
+        bb4(v29:BasicObject, v30:BasicObject, v31:Falsy, v32:NilClass):
+          v35:Fixnum[2] = Const Value(2)
+          Jump bb5(v29, v30, v31, v32, v35)
+        bb5(v37:BasicObject, v38:BasicObject, v39:BasicObject, v40:NilClass, v41:Fixnum):
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v59:Fixnum = GuardType v40, Fixnum recompile
-          v60:Fixnum = FixnumAdd v59, v43
+          v57:Fixnum = GuardType v38, Fixnum recompile
+          v58:Fixnum = FixnumAdd v57, v41
           CheckInterrupts
-          Return v60
+          Return v58
         ");
         let guard_count = hir.matches("GuardType").count();
         assert_eq!(
@@ -18043,32 +18037,30 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v15:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
-          v70:Fixnum = GuardType v10, Fixnum recompile
-          v71:BoolExact = FixnumLt v70, v15
-          CheckInterrupts
-          v21:CBool = Test v71
-          CondBranch v21, bb6(), bb4(v9, v70)
+          v68:Fixnum = GuardType v10, Fixnum recompile
+          v69:BoolExact = FixnumLt v68, v15
+          v20:CBool = Test v69
+          CondBranch v20, bb6(), bb4(v9, v68)
         bb6():
-          v26:Fixnum[-1] = Const Value(-1)
+          v25:Fixnum[-1] = Const Value(-1)
           CheckInterrupts
-          Return v26
-        bb4(v31:BasicObject, v32:Fixnum):
-          v37:Fixnum[0] = Const Value(0)
+          Return v25
+        bb4(v30:BasicObject, v31:Fixnum):
+          v36:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1008, ==@0x1040, cme:0x1048)
-          v75:BoolExact = FixnumEq v32, v37
-          CheckInterrupts
-          v43:CBool = Test v75
-          CondBranch v43, bb7(), bb5(v31, v32)
+          v73:BoolExact = FixnumEq v31, v36
+          v41:CBool = Test v73
+          CondBranch v41, bb7(), bb5(v30, v31)
         bb7():
-          v48:Fixnum[0] = Const Value(0)
+          v46:Fixnum[0] = Const Value(0)
           CheckInterrupts
-          Return v48
-        bb5(v53:BasicObject, v54:Fixnum):
-          v59:Fixnum[2] = Const Value(2)
+          Return v46
+        bb5(v51:BasicObject, v52:Fixnum):
+          v57:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1008, *@0x1070, cme:0x1078)
-          v79:Fixnum = FixnumMult v54, v59
+          v77:Fixnum = FixnumMult v52, v57
           CheckInterrupts
-          Return v79
+          Return v77
         ");
         assert_eq!(hir.matches("GuardType").count(), 1, "{hir}");
     }
@@ -18105,33 +18097,31 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v18:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
-          v75:Fixnum = GuardType v12, Fixnum recompile
-          v76:BoolExact = FixnumLt v75, v18
-          CheckInterrupts
-          v24:CBool = Test v76
-          CondBranch v24, bb6(), bb4(v11, v75, v13)
+          v73:Fixnum = GuardType v12, Fixnum recompile
+          v74:BoolExact = FixnumLt v73, v18
+          v23:CBool = Test v74
+          CondBranch v23, bb6(), bb4(v11, v73, v13)
         bb6():
-          v29:Fixnum[-1] = Const Value(-1)
+          v28:Fixnum[-1] = Const Value(-1)
           CheckInterrupts
-          Return v29
-        bb4(v34:BasicObject, v35:Fixnum, v36:BasicObject):
-          CheckInterrupts
-          v42:CBool = Test v36
-          v43:Falsy = RefineType v36, Falsy
-          CondBranch v42, bb7(), bb5(v34, v35, v43)
+          Return v28
+        bb4(v33:BasicObject, v34:Fixnum, v35:BasicObject):
+          v40:CBool = Test v35
+          v41:Falsy = RefineType v35, Falsy
+          CondBranch v40, bb7(), bb5(v33, v34, v41)
         bb7():
-          v45:Truthy = RefineType v36, Truthy
-          v49:Fixnum[1] = Const Value(1)
+          v43:Truthy = RefineType v35, Truthy
+          v47:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
-          v80:Fixnum = FixnumAdd v35, v49
+          v78:Fixnum = FixnumAdd v34, v47
           CheckInterrupts
-          Return v80
-        bb5(v57:BasicObject, v58:Fixnum, v59:Falsy):
-          v64:Fixnum[2] = Const Value(2)
+          Return v78
+        bb5(v55:BasicObject, v56:Fixnum, v57:Falsy):
+          v62:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
-          v84:Fixnum = FixnumAdd v58, v64
+          v82:Fixnum = FixnumAdd v56, v62
           CheckInterrupts
-          Return v84
+          Return v82
         ");
         assert_eq!(hir.matches("GuardType").count(), 1, "{hir}");
     }
@@ -18165,25 +18155,24 @@ mod hir_opt_tests {
           v9:BasicObject = LoadArg :a@2
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          CheckInterrupts
-          v19:CBool = Test v12
-          v20:Falsy = RefineType v12, Falsy
-          CondBranch v19, bb5(), bb4(v11, v20, v13)
+          v18:CBool = Test v12
+          v19:Falsy = RefineType v12, Falsy
+          CondBranch v18, bb5(), bb4(v11, v19, v13)
         bb5():
-          v22:Truthy = RefineType v12, Truthy
-          v26:Fixnum[1] = Const Value(1)
+          v21:Truthy = RefineType v12, Truthy
+          v25:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v52:Fixnum = GuardType v13, Fixnum recompile
-          v53:Fixnum = FixnumAdd v52, v26
+          v51:Fixnum = GuardType v13, Fixnum recompile
+          v52:Fixnum = FixnumAdd v51, v25
           CheckInterrupts
-          Return v53
-        bb4(v34:BasicObject, v35:Falsy, v36:BasicObject):
-          v41:Fixnum[2] = Const Value(2)
+          Return v52
+        bb4(v33:BasicObject, v34:Falsy, v35:BasicObject):
+          v40:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v56:Fixnum = GuardType v36, Fixnum recompile
-          v57:Fixnum = FixnumAdd v56, v41
+          v55:Fixnum = GuardType v35, Fixnum recompile
+          v56:Fixnum = FixnumAdd v55, v40
           CheckInterrupts
-          Return v57
+          Return v56
         ");
         assert_eq!(hir.matches("GuardType").count(), 2, "{hir}");
     }
@@ -18224,26 +18213,25 @@ mod hir_opt_tests {
         bb3(v13:BasicObject, v14:BasicObject, v15:NilClass, v16:NilClass):
           v21:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v80:Fixnum = GuardType v14, Fixnum recompile
+          v79:Fixnum = GuardType v14, Fixnum recompile
           v28:Fixnum[0] = Const Value(0)
-          CheckInterrupts
-          Jump bb5(v13, v80, v80, v28)
-        bb5(v34:BasicObject, v35:Fixnum, v36:Fixnum, v37:Fixnum):
-          v41:Fixnum[3] = Const Value(3)
+          Jump bb5(v13, v79, v79, v28)
+        bb5(v33:BasicObject, v34:Fixnum, v35:Fixnum, v36:Fixnum):
+          v40:Fixnum[3] = Const Value(3)
           PatchPoint MethodRedefined(Integer@0x1008, <@0x1040, cme:0x1048)
-          v85:BoolExact = FixnumLt v37, v41
+          v84:BoolExact = FixnumLt v36, v40
           CheckInterrupts
-          v47:CBool = Test v85
-          CondBranch v47, bb4(v34, v35, v36, v37), bb6()
-        bb4(v64:BasicObject, v65:Fixnum, v66:Fixnum, v67:Fixnum):
+          v46:CBool = Test v84
+          CondBranch v46, bb4(v33, v34, v35, v36), bb6()
+        bb4(v63:BasicObject, v64:Fixnum, v65:Fixnum, v66:Fixnum):
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v90:Fixnum = FixnumAdd v67, v65
-          Jump bb5(v64, v65, v66, v90)
+          v89:Fixnum = FixnumAdd v66, v64
+          Jump bb5(v63, v64, v65, v89)
         bb6():
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v95:Fixnum = FixnumAdd v36, v37
+          v94:Fixnum = FixnumAdd v35, v36
           CheckInterrupts
-          Return v95
+          Return v94
         ");
         assert_eq!(hir.matches("GuardType").count(), 1, "{hir}");
     }
@@ -18276,32 +18264,30 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v15:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
-          v70:Fixnum = GuardType v10, Fixnum recompile
-          v71:BoolExact = FixnumLt v70, v15
-          CheckInterrupts
-          v21:CBool = Test v71
-          CondBranch v21, bb6(), bb4(v9, v70)
+          v68:Fixnum = GuardType v10, Fixnum recompile
+          v69:BoolExact = FixnumLt v68, v15
+          v20:CBool = Test v69
+          CondBranch v20, bb6(), bb4(v9, v68)
         bb6():
-          v26:Fixnum[-1] = Const Value(-1)
+          v25:Fixnum[-1] = Const Value(-1)
           CheckInterrupts
-          Return v26
-        bb4(v31:BasicObject, v32:Fixnum):
-          v37:Fixnum[0] = Const Value(0)
+          Return v25
+        bb4(v30:BasicObject, v31:Fixnum):
+          v36:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1008, ==@0x1040, cme:0x1048)
-          v75:BoolExact = FixnumEq v32, v37
-          CheckInterrupts
-          v43:CBool = Test v75
-          CondBranch v43, bb7(), bb5(v31, v32)
+          v73:BoolExact = FixnumEq v31, v36
+          v41:CBool = Test v73
+          CondBranch v41, bb7(), bb5(v30, v31)
         bb7():
-          v48:Fixnum[0] = Const Value(0)
+          v46:Fixnum[0] = Const Value(0)
           CheckInterrupts
-          Return v48
-        bb5(v53:BasicObject, v54:Fixnum):
-          v59:Fixnum[2] = Const Value(2)
+          Return v46
+        bb5(v51:BasicObject, v52:Fixnum):
+          v57:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1008, *@0x1070, cme:0x1078)
-          v79:Fixnum = FixnumMult v54, v59
+          v77:Fixnum = FixnumMult v52, v57
           CheckInterrupts
-          Return v79
+          Return v77
         ");
     }
 
@@ -19412,37 +19398,35 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v15:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
-          v81:Fixnum = GuardType v10, Fixnum recompile
-          v82:BoolExact = FixnumLt v81, v15
-          CheckInterrupts
-          v21:CBool = Test v82
-          CondBranch v21, bb6(), bb5(v9, v81)
+          v79:Fixnum = GuardType v10, Fixnum recompile
+          v80:BoolExact = FixnumLt v79, v15
+          v20:CBool = Test v80
+          CondBranch v20, bb6(), bb5(v9, v79)
         bb6():
-          v28:Fixnum[1] = Const Value(1)
+          v27:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
-          v86:Fixnum = FixnumAdd v81, v28
-          v33:Fixnum[0] = Const Value(0)
+          v84:Fixnum = FixnumAdd v79, v27
+          v32:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
-          v90:BoolExact = FixnumLt v86, v33
-          CheckInterrupts
-          v39:CBool = Test v90
-          CondBranch v39, bb7(), bb4(v9, v81)
+          v88:BoolExact = FixnumLt v84, v32
+          v37:CBool = Test v88
+          CondBranch v37, bb7(), bb4(v9, v79)
         bb7():
-          v45:Fixnum[0] = Const Value(0)
+          v43:Fixnum[0] = Const Value(0)
           CheckInterrupts
-          Return v45
-        bb4(v64:BasicObject, v65:Fixnum):
-          v70:Fixnum[1] = Const Value(1)
+          Return v43
+        bb4(v62:BasicObject, v63:Fixnum):
+          v68:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
-          v94:Fixnum = FixnumAdd v65, v70
+          v92:Fixnum = FixnumAdd v63, v68
           CheckInterrupts
-          Return v94
-        bb5(v50:BasicObject, v51:Fixnum):
-          v56:Fixnum[2] = Const Value(2)
+          Return v92
+        bb5(v48:BasicObject, v49:Fixnum):
+          v54:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
-          v98:Fixnum = FixnumAdd v51, v56
+          v96:Fixnum = FixnumAdd v49, v54
           CheckInterrupts
-          Return v98
+          Return v96
         ");
     }
 
