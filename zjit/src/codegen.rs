@@ -263,6 +263,30 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
     })
 }
 
+/// Compile a per-ISEQ C entry stub: the entry prologue, a direct call into the
+/// compiled body, and the matching teardown. Installed as iseq->body->jit_entry,
+/// it lets jit_exec call compiled code with the plain (EC, CFP) signature. The
+/// shared entry trampoline this replaces funneled every C->JIT entry in the
+/// process through one register-indirect call site, which went megamorphic (and
+/// mispredicted) as soon as different ISEQs alternated through it -- e.g.
+/// Enumerator internals yielding to a block.
+fn gen_iseq_entry_stub(cb: &mut CodeBlock, iseq: IseqPtr, body: CodePtr) -> Result<CodePtr, CompileError> {
+    let mut asm = Assembler::new();
+    asm.new_block_without_id("iseq_entry_stub");
+    gen_entry_prologue(&mut asm);
+
+    let out = asm.ccall(body.raw_ptr(cb), vec![]);
+
+    asm_comment!(asm, "return to the interpreter");
+    asm.frame_teardown(lir::JIT_PRESERVED_REGS);
+    asm.cret(out);
+
+    let (code_ptr, gc_offsets) = asm.compile(cb)?;
+    assert!(gc_offsets.is_empty());
+    perf::register_current_code_range(cb, &format!("entry stub: {}", iseq_get_location(iseq, 0)), code_ptr);
+    Ok(code_ptr)
+}
+
 /// Compile an entry point for a given ISEQ
 fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) -> Result<CodePtr, CompileError> {
     // We don't support exception handlers yet
@@ -282,7 +306,8 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
             debug!("{err:?}: gen_iseq failed: {}", iseq_get_location(iseq, 0));
         })?;
 
-        Ok(start_ptr)
+        // Wrap the body in a per-ISEQ entry stub so jit_exec can call it directly.
+        gen_iseq_entry_stub(cb, iseq, start_ptr)
     })
 }
 
@@ -4621,7 +4646,10 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
     })?;
 
     // The compile above generated the interpreter entry along with the JIT-to-JIT entries, so install it now.
-    unsafe { rb_zjit_iseq_set_jit_entry(iseq_call.iseq.get(), start_ptr.raw_ptr(cb) as *mut c_void); }
+    // jit_exec calls jit_entry directly with the (EC, CFP) signature, so it must be the
+    // per-ISEQ entry stub, never the bare body (which has no entry prologue).
+    let entry_stub = gen_iseq_entry_stub(cb, iseq_call.iseq.get(), start_ptr)?;
+    unsafe { rb_zjit_iseq_set_jit_entry(iseq_call.iseq.get(), entry_stub.raw_ptr(cb) as *mut c_void); }
 
     // Update the stub to call the code pointer
     let jit_entry_ptr = jit_entry_ptrs[iseq_call.jit_entry_idx.to_usize()];

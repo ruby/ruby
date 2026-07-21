@@ -615,12 +615,13 @@ jit_exec(rb_execution_context_t *ec)
 #endif
 
 #if USE_ZJIT
-    void *zjit_entry = rb_zjit_entry;
-    if (zjit_entry) {
+    if (rb_zjit_enabled_p) {
         rb_jit_func_t func = zjit_compile(ec);
         if (func) {
-            VALUE result = ((rb_zjit_func_t)zjit_entry)(ec, ec->cfp, func);
-            return result;
+            // jit_entry is a self-contained per-ISEQ entry stub (or the
+            // compile-error counter), so call it directly like YJIT does;
+            // no shared trampoline indirection.
+            return func(ec, ec->cfp);
         }
     }
 #endif
