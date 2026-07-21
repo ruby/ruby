@@ -916,6 +916,7 @@ pub enum FieldName {
     VM_ENV_DATA_INDEX_FLAGS,
     RBASIC_FLAGS,
     code_iseq,
+    cfp_ep,
     shape_id,
     as_heap,
     fields_obj,
@@ -1179,6 +1180,8 @@ pub enum Insn {
     LoadEC,
     /// Load SP
     LoadSP,
+    /// Get the CFP at the given dynamic inline-frame level.
+    GetCFP { level: u32 },
     /// Load cfp->self
     LoadSelf,
     LoadField { recv: InsnId, id: FieldName, offset: i32, return_type: Type, num_bits: u8 },
@@ -1310,6 +1313,19 @@ pub enum Insn {
 
     /// Optimized ISEQ call
     SendDirect(Box<SendDirectData>),
+
+    /// Push a block frame for an inlined block body. Unlike
+    /// InvokeBlockIseqDirect, the block's self and EP are compile-time SSA
+    /// values (the defining frame is the compiling frame), so there is no
+    /// runtime block-handler decode and no call: the block body is inlined
+    /// right after this instruction, ending at a matching PopInlineFrame.
+    PushInlineBlockFrame {
+        iseq: IseqPtr,
+        self_val: InsnId,
+        definer_ep: InsnId,
+        args: Vec<InsnId>,
+        state: InsnId,
+    },
 
     /// Push a lighter weight frame used for inlined methods.
     PushInlineFrame {
@@ -1446,6 +1462,7 @@ macro_rules! for_each_operand_impl {
             | Insn::LoadPC
             | Insn::LoadSP
             | Insn::LoadEC
+            | Insn::GetCFP { .. }
             | Insn::GetEP { .. }
             | Insn::LoadSelf
             | Insn::BreakPoint | Insn::Unreachable
@@ -1736,6 +1753,12 @@ macro_rules! for_each_operand_impl {
                 $visit_many!(args);
                 $visit_one!(*state);
             }
+            Insn::PushInlineBlockFrame { self_val, definer_ep, args, state, .. } => {
+                $visit_one!(*self_val);
+                $visit_one!(*definer_ep);
+                $visit_many!(args);
+                $visit_one!(*state);
+            }
             Insn::CCall { recv, args, .. } => {
                 $visit_one!(*recv);
                 $visit_many!(args);
@@ -1818,7 +1841,8 @@ impl Insn {
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
             | Insn::ArrayAset { .. }
-            | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. } => false,
+            | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. }
+            | Insn::PushInlineBlockFrame { .. } => false,
             _ => true,
         }
     }
@@ -1956,6 +1980,7 @@ impl Insn {
             Insn::LoadPC { .. } => Effect::read_write(abstract_heaps::PC, abstract_heaps::Empty),
             Insn::LoadEC { .. } => effects::Empty,
             Insn::LoadSP { .. } => effects::Empty,
+            Insn::GetCFP { .. } => Effect::read_write(abstract_heaps::Frame, abstract_heaps::Empty),
             // GetEP reads from the current frame pointer (abstract_heaps::Frame) and also traverses previous frames too.
             Insn::GetEP { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::LoadSelf { .. } => Effect::read_write(abstract_heaps::Frame, abstract_heaps::Empty),
@@ -2018,7 +2043,7 @@ impl Insn {
             // new CFP. It may side-exit on stack overflow. It does not allocate,
             // invalidate PatchPoint invariants, or set the interrupt flag, so
             // optimizations tracking those heaps can flow across an inlined call.
-            Insn::PushInlineFrame { .. } => Effect::read_write(
+            Insn::PushInlineFrame { .. } | Insn::PushInlineBlockFrame { .. } => Effect::read_write(
                 abstract_heaps::Memory,
                 abstract_heaps::Frame
                     .union(abstract_heaps::Other)
@@ -2435,6 +2460,11 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
+            Insn::PushInlineBlockFrame { iseq, self_val, definer_ep, args, .. } => {
+                write!(f, "PushInlineBlockFrame self={self_val} ep={definer_ep} ({:?})", self.ptr_map.map_ptr(*iseq))?;
+                write_separated!(f, ", ", ", ", args);
+                Ok(())
+            }
             Insn::InvokeProc { recv, args, kw_splat, .. } => {
                 write!(f, "InvokeProc {recv}")?;
                 write_separated!(f, ", ", ", ", args);
@@ -2604,6 +2634,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::LoadPC => write!(f, "LoadPC"),
             Insn::LoadEC => write!(f, "LoadEC"),
             Insn::LoadSP => write!(f, "LoadSP"),
+            &Insn::GetCFP { level } => write!(f, "GetCFP {level}"),
             &Insn::GetEP { level } => write!(f, "GetEP {level}"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
             &Insn::LoadField { recv, id, offset, return_type: _, num_bits: _ } => {
@@ -3071,6 +3102,9 @@ pub struct Function {
     /// fulfilling `(0..=opt_num)` optional parameters.
     jit_entry_blocks: Vec<BlockId>,
     profiles: Option<ProfileOracle>,
+    /// Number of block bodies inlined at yield sites, as last counted by `infer_types`. Each
+    /// brings along the inlining budget its own compilation unit would have had.
+    num_inline_block_bodies: usize,
     /// Rough estimate for the number of (actually executable) instructions in the function. Does
     /// not count Snapshot, PatchPoint, etc.
     /// Currently updated by `infer_types` as a heuristic but that is not a guarantee.
@@ -3334,6 +3368,7 @@ impl Function {
             jit_entry_blocks: vec![],
             param_types: vec![],
             profiles: None,
+            num_inline_block_bodies: 0,
             num_instructions: 0,
         }
     }
@@ -3387,6 +3422,10 @@ impl Function {
 
     pub fn load_sp(&mut self, block: BlockId) -> InsnId {
         self.push_insn(block, Insn::LoadSP)
+    }
+
+    pub fn get_cfp(&mut self, block: BlockId, level: u32) -> InsnId {
+        self.push_insn(block, Insn::GetCFP { level })
     }
 
     pub fn load_self(&mut self, block: BlockId) -> InsnId {
@@ -3839,7 +3878,8 @@ impl Function {
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. }
-            | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. } =>
+            | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. }
+            | Insn::PushInlineBlockFrame { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -3979,6 +4019,7 @@ impl Function {
             Insn::LoadPC => types::CPtr,
             Insn::LoadSP => types::CPtr,
             Insn::LoadEC => types::CPtr,
+            Insn::GetCFP { .. } => types::CPtr,
             Insn::GetEP { .. } => types::CPtr,
             Insn::LoadSelf => if self.self_is_heap_object { types::HeapBasicObject } else { types::BasicObject },
             &Insn::LoadField { return_type, .. } => return_type,
@@ -4087,12 +4128,16 @@ impl Function {
             let mut changed = false;
             let mut traversed_back_edge = false;
             let mut num_instructions = 0;
+            let mut num_inline_block_bodies = 0;
             for (rpo_index, &block) in rpo.iter().enumerate() {
                 if !reachable.get(block) { continue; }
                 for i in 0..self.blocks[block].insns.len() {
                     let insn_id = self.blocks[block].insns[i];
                     if self.insns[insn_id].counts_against_inlining_budget() {
                         num_instructions += 1;
+                    }
+                    if matches!(self.insns[insn_id], Insn::PushInlineBlockFrame { .. }) {
+                        num_inline_block_bodies += 1;
                     }
                     // Instructions without output, including branch instructions, can't be targets
                     // of make_equal_to, so we don't need find() here.
@@ -4201,6 +4246,7 @@ impl Function {
             }
             if !changed || !traversed_back_edge {
                 self.num_instructions = num_instructions;
+                self.num_inline_block_bodies = num_inline_block_bodies;
                 break;
             }
         }
@@ -5935,6 +5981,13 @@ impl Function {
         true
     }
 
+    /// The inlining budget for this function. A block body inlined at a yield site
+    /// would otherwise have been compiled on its own with a full budget, so each one
+    /// adds that much: inlining the block must not starve the calls inside it.
+    fn inline_budget(&self) -> crate::options::InlineBudget {
+        get_option!(inline_budget).saturating_mul(1 + self.num_inline_block_bodies)
+    }
+
     /// Decide whether an inlinable callee ISEQ is worth inlining into this
     /// function based on heuristics.
     fn should_inline(&self, callee_iseq: IseqPtr, cme: *const rb_callable_method_entry_t, blockiseq: Option<IseqPtr>) -> bool {
@@ -5946,7 +5999,7 @@ impl Function {
         // Per-caller cumulative budget. Once that count crosses the budget, every further callee
         // is rejected and the optimization fixed-point loop reaches its terminal iteration. See
         // `Options::inline_budget` for the full unit/semantics caveat.
-        let budget = get_option!(inline_budget);
+        let budget = self.inline_budget();
         if budget != INLINE_BUDGET_UNLIMITED && self.num_instructions > budget {
             incr_counter!(inline_reject_budget_exceeded);
             return false;
@@ -6002,7 +6055,7 @@ impl Function {
 
         // Fail fast if inlining is enabled but we've exhausted our inlining budget.
         // Otherwise, `can_inline` and `should_inline` will make local inlining decisions.
-        let budget = get_option!(inline_budget);
+        let budget = self.inline_budget();
         if budget != INLINE_BUDGET_UNLIMITED && self.insns.len() > budget {
             incr_counter!(inline_reject_budget_exceeded);
             return false;
@@ -6123,12 +6176,29 @@ impl Function {
                 // The callee's perspective of the stack is with the receiver and arguments popped off.
                 let caller_stack_size = call_state.stack_size() - args_len - 1; // -1 for receiver
                 let post_send_caller = self.new_insn(Insn::Snapshot { state: Box::new(call_state.with_stack_size(caller_stack_size)) });
+
+                // For a depth-0 call site passing a literal block, capture the
+                // defining frame's self as SSA now. Its CFP can be addressed
+                // relative to the inlined yielding frame at each yield, while
+                // cfp->ep may move from the VM stack to the heap when the block
+                // creates a Proc. The insn is created detached and attached to
+                // `block` after the split below, so it executes at unit level
+                // before the callee's inline frame is pushed. On rollback the
+                // pre-state truncation discards it.
+                let inline_block_ctx = if blockiseq.is_some() && caller_depth == 0 {
+                    let definer_self = self.new_insn(Insn::LoadSelf);
+                    Some(definer_self)
+                } else {
+                    None
+                };
+
                 let mode = AddIseqMode::Inlined {
                     return_block: continuation,
                     caller: post_send_caller,
                     depth: caller_depth + 1,
                     jit_entry_idx: passed_opt_num,
                     blockiseq,
+                    inline_block_ctx,
                 };
                 let add_result = match add_iseq_to_hir(self, iseq, mode) {
                     Ok(r) => r,
@@ -6265,6 +6335,13 @@ impl Function {
                 // Keep the caller FrameState that inlined callee Snapshots point at
                 // as a distinct Snapshot instead of rewriting the consumed SendDirect.
                 self.push_insn_id(block, post_send_caller);
+
+                // Attach the detached definer self capture (created above,
+                // before add_iseq ran) now that the block holds only pre-send
+                // instructions, so it precedes the inline frame push.
+                if let Some(definer_self) = inline_block_ctx {
+                    self.push_insn_id(block, definer_self);
+                }
 
                 // Insert PushLightweightFrame and jump to callee body entry.
                 self.push_insn(block, Insn::PushInlineFrame {
@@ -7641,6 +7718,16 @@ impl Function {
                     Insn::PushInlineFrame { .. } => {
                         pending_pushes.push(PendingPush { push_id: insn_id, frame_observed: false });
                     }
+                    // An inlined block body's frame is popped by a PopInlineFrame too, so
+                    // track it as a push to keep pushes and pops paired. Block frames are
+                    // never elided here (elide_inline_block_frames decides that), and the
+                    // push observes the enclosing frame.
+                    Insn::PushInlineBlockFrame { .. } => {
+                        if let Some(outer) = pending_pushes.last_mut() {
+                            outer.frame_observed = true;
+                        }
+                        pending_pushes.push(PendingPush { push_id: insn_id, frame_observed: true });
+                    }
                     Insn::PopInlineFrame { .. } => {
                         match pending_pushes.pop() {
                             Some(PendingPush { push_id, frame_observed: false }) => {
@@ -8139,6 +8226,12 @@ impl Function {
                                 masks.insert(resolve(fun, insn_id), mask);
                             }
                         }
+                        depth += 1;
+                        facts.clear();
+                    }
+                    // An inlined block's frame push also changes what LoadSP
+                    // refers to; no elision mask is computed for it.
+                    Insn::PushInlineBlockFrame { .. } => {
                         depth += 1;
                         facts.clear();
                     }
@@ -8846,6 +8939,7 @@ impl Function {
             | Insn::LoadPC
             | Insn::LoadSP
             | Insn::LoadEC
+            | Insn::GetCFP { .. }
             | Insn::GetEP { .. }
             | Insn::BreakPoint | Insn::Unreachable
             | Insn::LoadSelf
@@ -8958,6 +9052,14 @@ impl Function {
             | Insn::ArrayHash { elements: ref args, .. }
             | Insn::ArrayMin { elements: ref args, .. }
             | Insn::ArrayMax { elements: ref args, .. } => {
+                for &arg in args {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
+            Insn::PushInlineBlockFrame { self_val, definer_ep, ref args, .. } => {
+                self.assert_subtype(insn_id, self_val, types::BasicObject)?;
+                self.assert_subtype(insn_id, definer_ep, types::CPtr)?;
                 for &arg in args {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
@@ -9611,9 +9713,14 @@ impl FrameState {
         args
     }
 
-    /// Get the opcode for the current instruction
+    /// Get the opcode for the current instruction, normalized to the bare
+    /// variant. Profiling rewrites instructions in place to their zjit_*
+    /// counterparts (same operands, same length), so a state snapshotted
+    /// before re-profiling can be consulted after the rewrite: anything
+    /// keying on the opcode (e.g. inline_frame_stack_gap's invokeblock
+    /// receiver-slot test) must not see the instrumented variant.
     pub fn get_opcode(&self) -> i32 {
-        unsafe { rb_iseq_opcode_at_pc(self.iseq, self.pc) }
+        unsafe { rb_zjit_insn_to_bare_insn(rb_iseq_opcode_at_pc(self.iseq, self.pc)) }
     }
 
     pub fn print<'a>(&'a self, ptr_map: &'a PtrPrintMap) -> FrameStatePrinter<'a> {
@@ -9882,6 +9989,13 @@ enum AddIseqMode {
         jit_entry_idx: usize,
         /// The literal block the caller passed to this frame, if any.
         blockiseq: Option<IseqPtr>,
+        /// The defining frame's self captured as SSA at the call site,
+        /// present only when the call site sits directly in the compiling
+        /// frame (depth 0). Lets a `yield` inside the callee inline the block
+        /// *body*. Its CFP is one dynamic inline frame above the yielding
+        /// method, allowing cfp->ep to be reloaded after environment escape
+        /// without decoding the block handler.
+        inline_block_ctx: Option<InsnId>,
     },
 }
 
@@ -11368,6 +11482,14 @@ fn add_iseq_to_hir(
                     }
                     let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
 
+                    // The defining frame's self captured as SSA by the inliner for
+                    // depth-1 call sites; lets the inlined-known-block case below inline
+                    // the block *body* without decoding the block handler.
+                    let block_inline_ctx = match mode {
+                        AddIseqMode::Inlined { inline_block_ctx, .. } => inline_block_ctx,
+                        _ => None,
+                    };
+
                     // The profiled block handler distribution. All the specializations below
                     // (IFUNC, inline-ISEQ, and polymorphic ISEQ dispatch) key off this summary.
                     let block_handler_summary = payload.profile.get_operand_types(exit_state.insn_idx).and_then(|types| {
@@ -11416,10 +11538,8 @@ fn add_iseq_to_hir(
                         if can_direct_invoke_block(flags)
                             // Only methods are inlined today, so exit_state.iseq is always a method iseq and this is
                             // always 0. That matters because the emit below is guard-free and bakes in both level 0
-                            // and *this* frame's block (bi) — sound only when the yield resolves to this exact frame.
-                            // TODO: if block iseqs become inlinable, a yield here could resolve to an ancestor frame
-                            // (level > 0). To stay guard-free we'd bake in get_lvar_level(...) as the level and fetch
-                            // that ancestor's blockiseq from the inline caller chain instead of bi.
+                            // and *this* frame's block (bi) -- sound only when the yield resolves to this exact frame.
+                            // The body-inlining path below relies on the same fact via inline_block_ctx.
                             && get_lvar_level(exit_state.iseq) == 0 {
                             match can_direct_invoke_block_iseq(bi, args.len()) {
                                 Ok(()) => Some(bi),
@@ -11432,7 +11552,110 @@ fn add_iseq_to_hir(
                     } else { None };
 
                     let result = if let Some(block_iseq) = inlined_known_block {
-                        fun.push_invoke_block_iseq_direct(block, block_iseq, 0, args, exit_id)
+                        // When the inliner captured the defining frame's self as SSA,
+                        // inline the block *body* here instead of the guard-free call:
+                        // address the defining CFP relative to the inlined yielding
+                        // frame, reload its current EP, push a block frame without
+                        // decoding the handler, translate the body into this function,
+                        // and pop the frame at the continuation. Falls back to the
+                        // JIT-to-JIT call if translation fails.
+                        let mut inlined_result = None;
+                        if let Some(definer_self) = block_inline_ctx {
+                            let pre_insns_len = fun.insns.len();
+                            let pre_insn_types_len = fun.insn_types.len();
+                            let pre_blocks_len = fun.blocks.len();
+                            let continuation = fun.new_block(insn_idx);
+                            // Environment escape rewrites cfp->ep in place. Read it
+                            // at the yield rather than reusing the stack EP captured
+                            // before entering the inlined yielding method.
+                            let definer_cfp = fun.get_cfp(block, 1);
+                            let definer_ep = fun.load_field(
+                                block,
+                                definer_cfp,
+                                FieldName::cfp_ep,
+                                RUBY_OFFSET_CFP_EP,
+                                types::CPtr,
+                            );
+                            // The caller FrameState chained under the inlined block must
+                            // have the yield arguments popped: physically they become the
+                            // block frame's leading locals, so a caller state that still
+                            // lists them makes build_stack_map emit them twice and shifts
+                            // every deeper chain write argc slots below its true slot,
+                            // overwriting this frame's env metadata (mirrors the method
+                            // inliner's post_send_caller, minus the receiver slot).
+                            let caller_stack_size = exit_state.stack_size() - args.len();
+                            let post_yield_caller = fun.new_insn(Insn::Snapshot {
+                                state: Box::new(exit_state.with_stack_size(caller_stack_size)),
+                            });
+                            let block_mode = AddIseqMode::Inlined {
+                                return_block: continuation,
+                                caller: post_yield_caller,
+                                depth: fun.frame_depth(exit_id) + 1,
+                                jit_entry_idx: 0,
+                                blockiseq: None,
+                                inline_block_ctx: None,
+                            };
+                            match add_iseq_to_hir(fun, block_iseq, block_mode) {
+                                Ok(add_result) => {
+                                    let body_entry = add_result.body_entry_block
+                                        .expect("inlined compilation always produces a body entry block");
+                                    profiles.append(&add_result.profiles);
+
+                                    // Alias the body entry params [self, lead params..,
+                                    // other locals..] to caller SSA. The gate guarantees
+                                    // lead-only params with an exact argc match, so args
+                                    // map 1:1 and the rest are nil-initialized.
+                                    let body_params: Vec<InsnId> = fun.blocks[body_entry].params.clone();
+                                    if !body_params.is_empty() {
+                                        fun.make_equal_to(body_params[0], definer_self);
+                                    }
+                                    for (i, &param_id) in body_params[1..].iter().enumerate() {
+                                        if i < args.len() {
+                                            fun.make_equal_to(param_id, args[i]);
+                                        } else {
+                                            let nil = fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+                                            fun.make_equal_to(param_id, nil);
+                                        }
+                                    }
+                                    fun.blocks[body_entry].params.clear();
+
+                                    // Attach the detached post-yield caller snapshot so it
+                                    // executes at unit level before the block frame push.
+                                    fun.push_insn_id(block, post_yield_caller);
+
+                                    fun.push_insn(block, Insn::PushInlineBlockFrame {
+                                        iseq: block_iseq,
+                                        self_val: definer_self,
+                                        definer_ep,
+                                        args: args.clone(),
+                                        state: exit_id,
+                                    });
+                                    fun.push_insn(block, Insn::Jump(BranchEdge { target: body_entry, args: vec![] }));
+
+                                    // Continuation: merge the block's return value,
+                                    // pop the block frame, and continue compiling the
+                                    // yielding method's body there.
+                                    let ret_param = fun.push_insn(continuation, Insn::Param);
+                                    fun.push_insn(continuation, Insn::PopInlineFrame {
+                                        iseq: block_iseq,
+                                        argc: args.len(),
+                                        state: exit_id,
+                                    });
+                                    block = continuation;
+                                    inlined_result = Some(ret_param);
+                                }
+                                Err(_) => {
+                                    fun.insns.truncate(pre_insns_len);
+                                    fun.insn_types.truncate(pre_insn_types_len);
+                                    fun.blocks.truncate(pre_blocks_len);
+                                }
+                            }
+                        }
+                        if let Some(result) = inlined_result {
+                            result
+                        } else {
+                            fun.push_invoke_block_iseq_direct(block, block_iseq, 0, args.clone(), exit_id)
+                        }
                     } else if !direct_iseqs.is_empty() {
                         let level = get_lvar_level(exit_state.iseq);
                         let (continue_block, result) = fun.dispatch_invoke_block_iseqs(&direct_iseqs, block, insn_idx, level, cd, args, exit_id);
