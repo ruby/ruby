@@ -1030,6 +1030,10 @@ struct rb_vm_tag {
     // ec->cfp as of EC_PUSH_TAG, which is saved for materializing JITFrame.
     rb_control_frame_t *cfp;
     // Whether cfp had a ZJIT frame before this tag's setjmp was established.
+    // It's used for checking if zjit_materialize_frames should materialize
+    // the frame or not when the tag is popped. If zjit_frame_active is true,
+    // we don't want to materialize cfp->jit_return, which will still be used
+    // by JIT code.
     bool zjit_frame_active;
 #endif
 };
