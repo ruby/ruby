@@ -2731,7 +2731,7 @@ rb_jit_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
 }
 
 // Push a value onto an array and return the value.
-VALUE
+static VALUE
 rb_jit_ary_push(rb_execution_context_t *ec, VALUE self, VALUE ary, VALUE val)
 {
     rb_ary_push(ary, val);
