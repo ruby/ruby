@@ -300,6 +300,19 @@ rb_zjit_new_obj_shape(VALUE flags, size_t alloc_size)
     return (flags & SHAPE_FLAG_MASK) | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
 }
 
+// Pre-sized result array for ZJIT's fused `<fixnum>.times.map` loop. The
+// length is known up front, so reserving capacity removes rb_ary_push's
+// per-element growth reallocs. Capacity is clamped defensively; pushes beyond
+// it just grow the array as usual.
+VALUE
+rb_zjit_ary_new_capa_fix(VALUE n)
+{
+    long capa = FIX2LONG(n);
+    if (capa < 0) capa = 0;
+    if (capa > 0x100000) capa = 0x100000;
+    return rb_ary_new_capa(capa);
+}
+
 VALUE
 rb_zjit_defined_ivar(VALUE obj, ID id, VALUE pushval)
 {

@@ -8131,6 +8131,444 @@ impl Function {
         id
     }
 
+    /// Fuse `<fixnum>.times.map { pure block }` into a synthesized loop.
+    ///
+    /// Blockless Integer#times allocates an Enumerator that Enumerable#map then
+    /// drives through C-level block forwarding -- ~75% of the chain's cycles.
+    /// When the intermediate Enumerator's only consumer is a map/collect send
+    /// with a literal one-parameter block, rewrite the pair into
+    ///
+    ///   ary = rb_zjit_ary_new_capa_fix(n)
+    ///   i = 0; while i < n; ary.push(<inlined block body>(i)); i += 1; end
+    ///
+    /// guarded by MethodRedefined patchpoints on every method the equivalence
+    /// assumes stock (Integer#times, Integer#to_enum, Enumerator#map,
+    /// Enumerator#each).
+    ///
+    /// Deopt strategy: the interpreter cannot resume inside Enumerable#map's C
+    /// frame, so a mid-loop state has no bytecode-consistent representation.
+    /// Instead, every side exit inside the synthesized loop (block guards,
+    /// arithmetic overflow, interrupts, the array push) is retargeted to the
+    /// *pre-times* FrameState: on exit the interpreter re-executes the whole
+    /// chain from scratch and the partial array is discarded. That restart is
+    /// only sound when re-running the block cannot double-apply an effect, so
+    /// the translated block body must pass a purity whitelist (fixnum/flonum
+    /// arithmetic, comparisons, guards, constants, control flow); anything
+    /// else -- sends, ivar or local writes, allocations -- declines fusion and
+    /// rolls back to the original send pair.
+    fn fuse_enumerator_chains(&mut self) {
+        unsafe extern "C" {
+            static rb_cEnumerator: VALUE;
+            fn rb_zjit_ary_new_capa_fix(n: VALUE) -> VALUE;
+        }
+        // Resolve the stock methods once. Bail if anything looks unusual.
+        let times_id = unsafe { rb_intern(c"times".as_ptr()) };
+        let to_enum_id = unsafe { rb_intern(c"to_enum".as_ptr()) };
+        let map_id = unsafe { rb_intern(c"map".as_ptr()) };
+        let collect_id = unsafe { rb_intern(c"collect".as_ptr()) };
+        let each_id = unsafe { rb_intern(c"each".as_ptr()) };
+        let times_cme = unsafe { rb_callable_method_entry(rb_cInteger, times_id) };
+        let to_enum_cme = unsafe { rb_callable_method_entry(rb_cInteger, to_enum_id) };
+        let enumerator = unsafe { rb_cEnumerator };
+        let map_cme = unsafe { rb_callable_method_entry(enumerator, map_id) };
+        let each_cme = unsafe { rb_callable_method_entry(enumerator, each_id) };
+        if times_cme.is_null() || to_enum_cme.is_null() || map_cme.is_null() || each_cme.is_null() {
+            return;
+        }
+        if unsafe { get_cme_def_type(times_cme) } != VM_METHOD_TYPE_ISEQ {
+            return;
+        }
+        let times_iseq = unsafe { get_def_iseq_ptr((*times_cme).def) };
+        // The rewrite is only equivalent to the *stock* implementations. The
+        // patchpoints below catch later redefinitions, but compile-time
+        // resolution must also be the originals: times must be the internal
+        // numeric.rb ISEQ (user redefinitions live in user files), and
+        // to_enum/map/each must still be C functions (a Ruby override changes
+        // the definition type). Without this, a recompile after invalidation
+        // would happily re-fuse against the redefined methods.
+        if !iseq_get_location(times_iseq, 0).starts_with("times@<internal:numeric>") { return; }
+        if unsafe { get_cme_def_type(to_enum_cme) } != VM_METHOD_TYPE_CFUNC { return; }
+        if unsafe { get_cme_def_type(map_cme) } != VM_METHOD_TYPE_CFUNC { return; }
+        if unsafe { get_cme_def_type(each_cme) } != VM_METHOD_TYPE_CFUNC { return; }
+
+        // Find candidate (block, A=times send, B=map send) triples.
+        struct Candidate {
+            block: BlockId,
+            a_id: InsnId,
+            a_pos: usize,
+            b_id: InsnId,
+            b_pos: usize,
+            guard_pos: Option<usize>,
+            retargets: Vec<InsnId>,
+            recv: InsnId,
+            a_state: InsnId,
+            b_cd: *const rb_call_data,
+            blockiseq: IseqPtr,
+        }
+        let mut candidates: Vec<Candidate> = vec![];
+        for block in self.reverse_post_order() {
+            let insns = self.blocks[block].insns.clone();
+            for (a_pos, &a_id) in insns.iter().enumerate() {
+                let Insn::SendDirect(data) = self.find(a_id) else { continue };
+                if data.iseq != times_iseq || data.block.is_some() || !data.args.is_empty() {
+                    continue;
+                }
+                if !self.type_of(data.recv).is_subtype(types::Fixnum) {
+                    continue;
+                }
+                // The enumerator's only non-snapshot use must be a map/collect
+                // send with a literal block, in the same block -- possibly
+                // through a GuardType that type_specialize inserted on the
+                // profiled Enumerator, which we then consume along with A and B.
+                let single_consumer = |fun: &Self, of: InsnId| -> Option<(usize, InsnId)> {
+                    let of_res = fun.union_find.borrow().find_const(of);
+                    let mut consumer: Option<(usize, InsnId)> = None;
+                    for other_block in fun.reverse_post_order() {
+                        for (pos, &uid) in fun.blocks[other_block].insns.iter().enumerate() {
+                            if uid == of { continue; }
+                            let mut uses = false;
+                            let insn = fun.find(uid);
+                            insn.for_each_operand(|op| { if fun.union_find.borrow().find_const(op) == of_res { uses = true; } });
+                            if !uses || matches!(insn, Insn::Snapshot { .. }) { continue; }
+                            if consumer.is_some() || other_block != block {
+                                return None; // escapes
+                            }
+                            consumer = Some((pos, uid));
+                        }
+                    }
+                    consumer
+                };
+                let sc = single_consumer(self, a_id);
+                let Some(mut next) = sc else { continue };
+                let mut guard_pos: Option<usize> = None;
+                if let Insn::GuardType { .. } = self.find(next.1) {
+                    guard_pos = Some(next.0);
+                    let Some(after_guard) = single_consumer(self, next.1) else { continue };
+                    next = after_guard;
+                }
+                let (b_pos, b_id) = next;
+                // type_specialize may already have turned the map send into a
+                // CCallWithFrame carrying the literal block; match both shapes.
+                let (b_recv, cd, bi, b_args) = match self.find(b_id) {
+                    Insn::Send { recv, cd, block: Some(BlockHandler::BlockIseq(bi)), args, .. } => (recv, cd, bi, args),
+                    Insn::CCallWithFrame(data) => {
+                        let CCallWithFrameData { recv, cd, block: Some(BlockHandler::BlockIseq(bi)), args, .. } = *data else { continue };
+                        (recv, cd, bi, args)
+                    }
+                    _ => continue,
+                };
+                let a_res = self.union_find.borrow().find_const(a_id);
+                let recv_res = self.union_find.borrow().find_const(b_recv);
+                let guard_ok = guard_pos.map_or(recv_res == a_res, |gp| {
+                    recv_res == self.union_find.borrow().find_const(self.blocks[block].insns[gp])
+                });
+                if !guard_ok || !b_args.is_empty() {
+                    continue;
+                }
+                let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
+                if mid != map_id && mid != collect_id { continue; }
+                // The block must be a plain one-required-parameter literal with
+                // none of the unsafe constructs. Unlike direct block invocation
+                // it need not be defined in the compiling frame: the body is
+                // inlined framelessly and the purity whitelist below already
+                // rejects anything that could observe self or the environment.
+                let bparams = unsafe { bi.params() };
+                if bparams.lead_num != 1 || bparams.opt_num != 0 || bparams.post_num != 0
+                    || !bparams.keyword.is_null() || bparams.flags.has_rest() != 0
+                    || bparams.flags.has_kwrest() != 0 || bparams.flags.has_block() != 0
+                    || bparams.flags.forwardable() != 0
+                    || crate::codegen::block_iseq_may_throw(bi) {
+                    continue;
+                }
+                // Deopt snapshots taken between A and B embed the enumerator
+                // (it sits on the abstract stack there). Any live instruction
+                // using such a snapshot would materialize a value we no longer
+                // compute, so it must be retargetable to the pre-times restart
+                // state: only PatchPoint and CheckInterrupts qualify (pure and
+                // position-independent under restart semantics). Anything else
+                // referencing a ghostly snapshot declines fusion.
+                let mut ghosts: Vec<InsnId> = vec![self.union_find.borrow().find_const(a_id)];
+                if let Some(gp) = guard_pos {
+                    ghosts.push(self.union_find.borrow().find_const(self.blocks[block].insns[gp]));
+                }
+                let mut ghostly_snaps: Vec<InsnId> = vec![];
+                for blk2 in self.reverse_post_order() {
+                    for &uid in &self.blocks[blk2].insns {
+                        if !matches!(self.find(uid), Insn::Snapshot { .. }) { continue; }
+                        let mut ghostly = false;
+                        self.find(uid).for_each_operand(|op| {
+                            if ghosts.contains(&self.union_find.borrow().find_const(op)) { ghostly = true; }
+                        });
+                        if ghostly { ghostly_snaps.push(self.union_find.borrow().find_const(uid)); }
+                    }
+                }
+                let consumed = |_uid: InsnId, pos: usize, blk: BlockId| -> bool {
+                    blk == block && (pos == a_pos || pos == b_pos || Some(pos) == guard_pos)
+                };
+                let mut retargets: Vec<InsnId> = vec![];
+                let mut ghost_escape = false;
+                'ghostscan: for blk2 in self.reverse_post_order() {
+                    for (pos, &uid) in self.blocks[blk2].insns.iter().enumerate() {
+                        if consumed(uid, pos, blk2) { continue; }
+                        let insn = self.find(uid);
+                        if matches!(insn, Insn::Snapshot { .. }) { continue; }
+                        let mut refs_ghostly = false;
+                        insn.for_each_operand(|op| {
+                            if ghostly_snaps.contains(&self.union_find.borrow().find_const(op)) { refs_ghostly = true; }
+                        });
+                        if !refs_ghostly { continue; }
+                        match insn {
+                            Insn::PatchPoint { .. } | Insn::CheckInterrupts { .. } => retargets.push(uid),
+                            _ => { ghost_escape = true; break 'ghostscan; }
+                        }
+                    }
+                }
+                if ghost_escape { continue; }
+                candidates.push(Candidate {
+                    block, a_id, a_pos, b_id, b_pos, guard_pos, retargets,
+                    recv: data.recv, a_state: data.state, b_cd: cd, blockiseq: bi,
+                });
+                break; // one candidate per block is plenty
+            }
+        }
+
+        'candidates: for c in candidates {
+            let pre_insns_len = self.insns.len();
+            let pre_insn_types_len = self.insn_types.len();
+            let pre_blocks_len = self.blocks.len();
+
+            // Translate the block body first so we can inspect it for purity
+            // before committing to anything.
+            let insn_idx = self.blocks[c.block].insn_idx;
+            let body_cont = self.new_block(insn_idx);
+            let block_mode = AddIseqMode::Inlined {
+                return_block: body_cont,
+                caller: c.a_state,
+                depth: 1,
+                jit_entry_idx: 0,
+                blockiseq: None,
+                inline_block_ctx: None,
+            };
+            let add_result = match add_iseq_to_hir(self, c.blockiseq, block_mode) {
+                Ok(r) => r,
+                Err(_) => {
+                    self.insns.truncate(pre_insns_len);
+                    self.insn_types.truncate(pre_insn_types_len);
+                    self.blocks.truncate(pre_blocks_len);
+                    continue;
+                }
+            };
+
+            // Purity whitelist: every translated instruction must be safe to
+            // re-execute from scratch after a restart exit. The fresh
+            // translation has no profiling, so fixnum arithmetic appears as
+            // generic Sends; a local inference seeded by the block parameter
+            // (which the loop binds to a Fixnum phi) proves the common ops,
+            // which are then strength-reduced in place with Integer
+            // redefinition patchpoints. Anything else declines fusion.
+            let body_entry_probe = add_result.body_entry_block
+                .expect("inlined compilation always produces a body entry block");
+            let mut fixnum_vals: std::collections::HashSet<InsnId> = std::collections::HashSet::new();
+            if let Some(&p1) = self.blocks[body_entry_probe].params.get(1) {
+                fixnum_vals.insert(self.union_find.borrow().find_const(p1));
+            }
+            enum Reduce { Add, Sub, Mult, Lt, Le, Gt, Ge, Eq }
+            let mut to_reduce: Vec<(InsnId, Reduce, InsnId, InsnId, ID)> = vec![];
+            let mut reject = false;
+            'purity: for bidx in pre_blocks_len..self.blocks.len() {
+                if BlockId::from(bidx) == body_cont { continue; }
+                for &iid in &self.blocks[bidx].insns {
+                    match self.find(iid) {
+                        Insn::Const { val: Const::Value(v), .. } => {
+                            if v.fixnum_p() { fixnum_vals.insert(self.union_find.borrow().find_const(iid)); }
+                        }
+                        Insn::Const { .. } | Insn::Param | Insn::Snapshot { .. }
+                        | Insn::PatchPoint { .. } | Insn::CheckInterrupts { .. }
+                        | Insn::Jump(_) | Insn::CondBranch { .. } | Insn::CondBranchFixnumCmp { .. }
+                        | Insn::CondBranchHasType(_)
+                        | Insn::GuardType { .. } | Insn::RefineType { .. } | Insn::Test { .. }
+                        | Insn::FixnumLt { .. } | Insn::FixnumLe { .. } | Insn::FixnumGt { .. }
+                        | Insn::FixnumGe { .. } | Insn::FixnumEq { .. } | Insn::BoolNegate { .. }
+                        | Insn::FixnumAnd { .. } | Insn::FixnumOr { .. } => {}
+                        Insn::FixnumAdd { .. } | Insn::FixnumSub { .. } | Insn::FixnumMult { .. } => {
+                            fixnum_vals.insert(self.union_find.borrow().find_const(iid));
+                        }
+                        Insn::Send { recv, args, cd, .. } if args.len() == 1 => {
+                            let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
+                            let kind = match mid.contents_lossy().as_ref() {
+                                "+" => Some(Reduce::Add), "-" => Some(Reduce::Sub),
+                                "*" => Some(Reduce::Mult), "<" => Some(Reduce::Lt),
+                                "<=" => Some(Reduce::Le), ">" => Some(Reduce::Gt),
+                                ">=" => Some(Reduce::Ge), "==" => Some(Reduce::Eq),
+                                _ => None,
+                            };
+                            let recv_r = self.union_find.borrow().find_const(recv);
+                            let arg_r = self.union_find.borrow().find_const(args[0]);
+                            match kind {
+                                Some(k) if fixnum_vals.contains(&recv_r) && fixnum_vals.contains(&arg_r) => {
+                                    if matches!(k, Reduce::Add | Reduce::Sub | Reduce::Mult) {
+                                        fixnum_vals.insert(self.union_find.borrow().find_const(iid));
+                                    }
+                                    to_reduce.push((iid, k, recv_r, arg_r, mid));
+                                }
+                                _ => {
+                                    reject = true;
+                                    break 'purity;
+                                }
+                            }
+                        }
+                        _ => {
+                            reject = true;
+                            break 'purity;
+                        }
+                    }
+                }
+            }
+            if reject {
+                self.insns.truncate(pre_insns_len);
+                self.insn_types.truncate(pre_insn_types_len);
+                self.blocks.truncate(pre_blocks_len);
+                continue 'candidates;
+            }
+            // Strength-reduce the proven fixnum sends in place, remembering
+            // which Integer methods the loop now assumes unredefined.
+            let mut bop_mids: Vec<ID> = vec![];
+            for (iid, k, l, r, mid) in to_reduce {
+                self.insns[iid] = match k {
+                    Reduce::Add => Insn::FixnumAdd { left: l, right: r, state: c.a_state },
+                    Reduce::Sub => Insn::FixnumSub { left: l, right: r, state: c.a_state },
+                    Reduce::Mult => Insn::FixnumMult { left: l, right: r, state: c.a_state },
+                    Reduce::Lt => Insn::FixnumLt { left: l, right: r },
+                    Reduce::Le => Insn::FixnumLe { left: l, right: r },
+                    Reduce::Gt => Insn::FixnumGt { left: l, right: r },
+                    Reduce::Ge => Insn::FixnumGe { left: l, right: r },
+                    Reduce::Eq => Insn::FixnumEq { left: l, right: r },
+                };
+                if !bop_mids.contains(&mid) { bop_mids.push(mid); }
+            }
+            let body_entry = add_result.body_entry_block
+                .expect("inlined compilation always produces a body entry block");
+
+            // Commit. Retarget every state-bearing translated insn to the
+            // pre-times snapshot: exits restart the whole chain.
+            for bidx in pre_blocks_len..self.blocks.len() {
+                let ids = self.blocks[bidx].insns.clone();
+                for iid in ids {
+                    match &mut self.insns[iid] {
+                        Insn::PatchPoint { state, .. } | Insn::CheckInterrupts { state }
+                        | Insn::GuardType { state, .. } | Insn::FixnumAdd { state, .. }
+                        | Insn::FixnumSub { state, .. } | Insn::FixnumMult { state, .. } => {
+                            *state = c.a_state;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
+            // Split the original block: head keeps everything before A plus the
+            // A..B interior (snapshots/guards, minus A itself); B and A are
+            // consumed; the tail after B moves to the loop's continuation.
+            let all = std::mem::take(&mut self.blocks[c.block].insns);
+            let mut head: Vec<InsnId> = Vec::with_capacity(all.len());
+            let mut tail: Vec<InsnId> = vec![];
+            for (pos, id) in all.into_iter().enumerate() {
+                if pos == c.a_pos || pos == c.b_pos || Some(pos) == c.guard_pos { continue; }
+                if pos < c.b_pos { head.push(id); } else { tail.push(id); }
+            }
+            self.blocks[c.block].insns = head;
+
+            // Retarget insns whose snapshots embedded the enumerator to the
+            // restart state.
+            for uid in &c.retargets {
+                match &mut self.insns[*uid] {
+                    Insn::PatchPoint { state, .. } | Insn::CheckInterrupts { state } => { *state = c.a_state; }
+                    _ => {}
+                }
+            }
+
+            // Prologue: patchpoints for the equivalence, the pre-sized array,
+            // self for the block's entry param, and the loop seed.
+            let bb = c.block;
+            let mut invariants: Vec<(VALUE, ID, *const rb_callable_method_entry_t)> = vec![
+                (unsafe { rb_cInteger }, times_id, times_cme),
+                (unsafe { rb_cInteger }, to_enum_id, to_enum_cme),
+                (enumerator, map_id, map_cme),
+                (enumerator, each_id, each_cme),
+            ];
+            for mid in bop_mids {
+                let cme = unsafe { rb_callable_method_entry(rb_cInteger, mid) };
+                if !cme.is_null() { invariants.push((unsafe { rb_cInteger }, mid, cme)); }
+            }
+            for (klass, mid, cme) in invariants {
+                self.push_insn(bb, Insn::PatchPoint {
+                    invariant: Invariant::MethodRedefined { klass, method: mid, cme },
+                    state: c.a_state,
+                });
+            }
+            let ary = self.push_insn(bb, Insn::CCallWithFrame(Box::new(CCallWithFrameData {
+                cd: c.b_cd,
+                cfunc: rb_zjit_ary_new_capa_fix as *const u8,
+                recv: c.recv,
+                args: vec![],
+                cme: map_cme,
+                name: map_id,
+                state: c.a_state,
+                return_type: types::ArrayExact,
+                elidable: false,
+                block: None,
+            })));
+            let self_val = self.push_insn(bb, Insn::LoadSelf);
+            let zero = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) });
+            let one = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) });
+
+            // Loop header: i comes in as a param; exit when i >= n.
+            let header = self.new_block(insn_idx);
+            let cont = self.new_block(insn_idx);
+            self.count(bb, Counter::inline_iseq_optimized_send_count);
+            self.push_insn(bb, Insn::Jump(BranchEdge { target: header, args: vec![zero] }));
+            let i_phi = self.push_insn(header, Insn::Param);
+            // CondBranch takes a CBool operand; use the fused fixnum
+            // compare-and-branch terminator, which also keeps both successors
+            // reachable for type inference (the comparison is runtime-only).
+            self.push_insn(header, Insn::CondBranchFixnumCmp(Box::new(CondBranchFixnumCmpData {
+                op: FixnumCmpOp::Lt,
+                left: i_phi,
+                right: c.recv,
+                if_true: BranchEdge { target: body_entry, args: vec![] },
+                if_false: BranchEdge { target: cont, args: vec![] },
+            })));
+
+            // Wire the block body: params are [self, i]; alias and clear.
+            let body_params: Vec<InsnId> = self.blocks[body_entry].params.clone();
+            if !body_params.is_empty() {
+                self.make_equal_to(body_params[0], self_val);
+            }
+            for (i, &param_id) in body_params[1..].iter().enumerate() {
+                if i == 0 {
+                    self.make_equal_to(param_id, i_phi);
+                } else {
+                    let nil = self.push_insn(bb, Insn::Const { val: Const::Value(Qnil) });
+                    self.make_equal_to(param_id, nil);
+                }
+            }
+            self.blocks[body_entry].params.clear();
+
+            // Continuation of the block body: collect and advance.
+            let block_val = self.push_insn(body_cont, Insn::Param);
+            self.push_insn(body_cont, Insn::ArrayPush { array: ary, val: block_val, state: c.a_state });
+            let i_next = self.push_insn(body_cont, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+            self.push_insn(body_cont, Insn::CheckInterrupts { state: c.a_state });
+            self.push_insn(body_cont, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
+
+            // After the loop, the array is the map's result; graft the tail on.
+            for &id in &tail {
+                self.push_insn_id(cont, id);
+            }
+            self.make_equal_to(c.b_id, ary);
+
+        }
+    }
+
     /// Elide local spills at PushInlineFrame sites whose frame slot provably
     /// already holds the value being spilled.
     ///
@@ -8594,6 +9032,7 @@ impl Function {
         macro_rules! counter_for {
             // Bucket all strength reduction together
             (type_specialize) => { Counter::compile_hir_strength_reduce_time_ns };
+            (fuse_enumerator_chains) => { Counter::compile_hir_strength_reduce_time_ns };
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
             (inline_methods) => { Counter::compile_hir_inline_methods_time_ns };
@@ -8641,6 +9080,9 @@ impl Function {
         for iteration in 0..=inline_max_iterations {
             // Function is assumed to have types inferred already
             run_pass!(type_specialize);
+            // Fuse `<fixnum>.times.map { pure block }` before inlining can
+            // dissolve the blockless times send the pattern matches on.
+            run_pass!(fuse_enumerator_chains);
             // Cap inlining at inline_max_iterations passes; the trailing iteration (see above)
             // runs the rest of the pipeline with inlining off.
             let did_inline = if iteration < inline_max_iterations {
