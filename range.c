@@ -21,12 +21,15 @@
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/class.h"
 #include "internal/compar.h"
 #include "internal/enum.h"
 #include "internal/enumerator.h"
 #include "internal/error.h"
 #include "internal/numeric.h"
 #include "internal/range.h"
+#include "shape.h"
+#include "zjit.h"
 
 VALUE rb_cRange;
 static ID id_beg, id_end, id_excl;
@@ -77,6 +80,28 @@ rb_range_new(VALUE beg, VALUE end, int exclude_end)
     range_init(range, beg, end, RBOOL(exclude_end));
     return range;
 }
+
+#if USE_ZJIT
+void
+rb_zjit_range_new_fastpath(bool exclude_end, size_t *alloc_size_out, VALUE *flags_out)
+{
+    const long len = 2;
+    size_t size = offsetof(struct RStruct, as.ary) + (sizeof(VALUE) * len);
+    if (RCLASS_MAX_IV_COUNT(rb_cRange) > 0) {
+        size += sizeof(VALUE);
+    }
+
+    VALUE flags = T_STRUCT | (len << RSTRUCT_EMBED_LEN_SHIFT) | RANGE_FL_INIT | FL_FREEZE;
+    if (exclude_end) flags |= RANGE_FL_EXCL;
+
+    shape_id_t shape_id = rb_shape_transition_slot_size(ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_EXTENDED,
+                                                         rb_gc_size_slot_size(size));
+    shape_id = rb_shape_transition_frozen(shape_id);
+
+    *alloc_size_out = size;
+    *flags_out = flags | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
+}
+#endif
 
 static void
 range_modify(VALUE range)
