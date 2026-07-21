@@ -269,21 +269,12 @@ EOF
     LinkFlagConverter.convert(arg)
   end
 
-  def msvc_target?
-    makefile_config("target_os").include?("msvc")
-  end
-
   def darwin_target?
     makefile_config("target_os").include?("darwin")
   end
 
   def mingw_target?
     makefile_config("target_os").include?("mingw")
-  end
-
-  def win_target?
-    target_platform = RbConfig::CONFIG["target_os"]
-    !!Gem::WIN_PATTERNS.find {|r| target_platform =~ r }
   end
 
   # Interpolate substitution vars in the arg (i.e. $(DEFFILE))
