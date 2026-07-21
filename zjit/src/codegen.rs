@@ -3747,28 +3747,49 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
         // All immediate types' guard should have been handled above
         panic!("unexpected immediate guard type: {guard_type}");
     } else if let Some(expected_class) = guard_type.runtime_exact_ruby_class() {
-        asm_comment!(asm, "guard exact class for non-immediate types");
-
-        // If val isn't in a register, load it to use it as the base of Opnd::mem later.
-        // TODO: Max thinks codegen should not care about the shapes of the operands except to create them. (Shopify/ruby#685)
-        let val = asm.load_mem(val);
-
         let side_exit = side_exit_with_recompile(jit, function, state, GuardType(guard_type), recompile);
-        if !is_known_heap_basic_object {
-            // Check if it's a special constant
-            asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
-            asm.jnz(jit, side_exit.clone());
 
-            // Check if it's false
-            asm.cmp(val, Qfalse.into());
-            asm.je(jit, side_exit.clone());
+        // A materialized singleton class has exactly one instance -- its attached
+        // object -- so class(val) == expected reduces to val == attached: one
+        // immediate compare, with no special-const tests and no klass load. IO is
+        // the exception: IO#reopen can retarget an IO's class, so identity stops
+        // implying the class match. A value that has the singleton as its class
+        // without being the attached object (an unmaterialized metaclass holder)
+        // takes a spurious side exit here, which is safe.
+        let attached_object = if expected_class.is_singleton_class() {
+            let attached = unsafe { rb_class_attached_object(expected_class) };
+            if unsafe { rb_obj_is_kind_of(attached, rb_cIO) }.test() { None } else { Some(attached) }
+        } else {
+            None
+        };
+
+        if let Some(attached) = attached_object {
+            asm_comment!(asm, "guard exact singleton class via attached-object identity");
+            asm.cmp(val, Opnd::Value(attached));
+            asm.jne(jit, side_exit);
+        } else {
+            asm_comment!(asm, "guard exact class for non-immediate types");
+
+            // If val isn't in a register, load it to use it as the base of Opnd::mem later.
+            // TODO: Max thinks codegen should not care about the shapes of the operands except to create them. (Shopify/ruby#685)
+            let val = asm.load_mem(val);
+
+            if !is_known_heap_basic_object {
+                // Check if it's a special constant
+                asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
+                asm.jnz(jit, side_exit.clone());
+
+                // Check if it's false
+                asm.cmp(val, Qfalse.into());
+                asm.je(jit, side_exit.clone());
+            }
+
+            // Load the class from the object's klass field
+            let klass = asm.load(Opnd::mem(64, val, RUBY_OFFSET_RBASIC_KLASS));
+
+            asm.cmp(klass, Opnd::Value(expected_class));
+            asm.jne(jit, side_exit);
         }
-
-        // Load the class from the object's klass field
-        let klass = asm.load(Opnd::mem(64, val, RUBY_OFFSET_RBASIC_KLASS));
-
-        asm.cmp(klass, Opnd::Value(expected_class));
-        asm.jne(jit, side_exit);
     } else if let Some(builtin_type) = guard_type.builtin_type_equivalent() {
         let side = side_exit_with_recompile(jit, function, state, GuardType(guard_type), recompile);
 
