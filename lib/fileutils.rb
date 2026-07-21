@@ -2066,10 +2066,6 @@ module FileUtils
       def fu_windows?; false end #:nodoc:
     end
 
-    def fu_copy_stream0(src, dest, blksize = nil)   #:nodoc:
-      IO.copy_stream(src, dest)
-    end
-
     def fu_stream_blksize(*streams) #:nodoc:
       streams.each do |s|
         next unless s.respond_to?(:stat)
