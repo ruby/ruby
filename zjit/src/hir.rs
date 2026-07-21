@@ -2991,6 +2991,17 @@ impl Function {
         matches!(&self.insns[insn_id.0], Insn::SendDirect(..))
     }
 
+    /// Record on the `Snapshot` at `insn_id` the locals that must stay in EP
+    /// across a block-passing call (block-modifiable locals), so codegen keeps
+    /// them out of the register-based stack map. See [`FrameState::spilled_locals`].
+    fn set_snapshot_spilled_locals(&mut self, insn_id: InsnId, spilled: Vec<u32>) {
+        let insn_id = self.union_find.borrow().find_const(insn_id);
+        match &mut self.insns[insn_id.0] {
+            Insn::Snapshot { state } => state.set_spilled_locals(spilled),
+            insn => panic!("Unexpected non-Snapshot {insn} when setting spilled locals"),
+        }
+    }
+
     fn new_block(&mut self, insn_idx: u32) -> BlockId {
         let id = BlockId(self.blocks.len());
         let block = Block {
@@ -5564,31 +5575,7 @@ impl Function {
         state: &mut FrameState,
         ep_escaped: bool,
     ) {
-        let to_reload: &mut dyn Iterator<Item = usize> = if ep_escaped {
-            // Reload everything when working with an escaped environment
-            &mut (0..state.locals.len())
-        } else {
-            // When not escaped, only reload syntactically visible local modifications
-            let params = unsafe { iseq.params() };
-            let block_param_local_idx: Option<usize> = if params.flags.has_block() != 0 {
-                params.block_start.try_into().ok()
-            } else {
-                None
-            };
-            let outer_variables = unsafe { blockiseq.outer_variables() };
-            &mut (0..state.locals.len()).filter(move |&local_idx| {
-                let id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
-                let access = outer_variables.local_access(id);
-                if block_param_local_idx == Some(local_idx) {
-                    // The block param slot is special: `getblockparam` come from a syntactic read,
-                    // but operationally can write to the local slot. So, reload it whenever the
-                    // block references it at all (read or write), not just on a setlocal.
-                    access.is_some()
-                } else {
-                    access == Some(OuterLocalAccess::ReadWrite)
-                }
-            })
-        };
+        let to_reload = block_modified_local_indices(iseq, blockiseq, state.locals.len(), ep_escaped);
 
         let mut base: Option<InsnId> = None;
         for local_idx in to_reload {
@@ -7281,6 +7268,34 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     }
 }
 
+/// Local indices of `iseq` that the block `blockiseq` (passed at a send) can
+/// modify at runtime — the same set the post-send reload reads back from EP.
+/// When the environment has escaped, every local lives in the (heap) env, so
+/// all of them qualify. Otherwise a local qualifies when the block writes it
+/// (`ReadWrite`), or, for the block-parameter slot, whenever the block refers
+/// to it at all (a `getblockparam` can operationally write the slot).
+fn block_modified_local_indices(iseq: IseqPtr, blockiseq: IseqPtr, num_locals: usize, ep_escaped: bool) -> Vec<usize> {
+    if ep_escaped {
+        return (0..num_locals).collect();
+    }
+    let params = unsafe { iseq.params() };
+    let block_param_local_idx: Option<usize> = if params.flags.has_block() != 0 {
+        params.block_start.try_into().ok()
+    } else {
+        None
+    };
+    let outer_variables = unsafe { blockiseq.outer_variables() };
+    (0..num_locals).filter(|&local_idx| {
+        let id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
+        let access = outer_variables.local_access(id);
+        if block_param_local_idx == Some(local_idx) {
+            access.is_some()
+        } else {
+            access == Some(OuterLocalAccess::ReadWrite)
+        }
+    }).collect()
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct FrameState {
     pub iseq: IseqPtr,
@@ -7304,6 +7319,17 @@ pub struct FrameState {
     /// `cfp->jit_return` values do not alias across the shared native stack frame.
     /// This value's upper bound is the `inline_max_iterations` value.
     pub depth: InlineDepth,
+
+    /// Local indices that a synchronous block passed at this frame's pending
+    /// call may modify (the same set the post-send reload reads back). Such a
+    /// local is written by the block through this frame's EP (a level>0
+    /// `setlocal`), so the register we captured for it is stale for the
+    /// duration of the call. Codegen keeps these authoritative in EP with a
+    /// narrow eager spill and has the stack map `Skip` them, so
+    /// exception/backtrace materialization does not clobber the block's write.
+    /// Empty for frames not suspended at a block-passing call (including
+    /// inlined caller frames, whose block writes update registers directly).
+    spilled_locals: Vec<u32>,
 }
 
 impl FrameState {
@@ -7365,7 +7391,7 @@ pub struct FrameStatePrinter<'a> {
 
 impl FrameState {
     fn new(iseq: IseqPtr) -> FrameState {
-        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], caller: None, depth: 0 }
+        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], caller: None, depth: 0, spilled_locals: vec![] }
     }
 
     /// Construct a `FrameState` for an inlined callee. `caller` is the `InsnId`
@@ -7391,6 +7417,18 @@ impl FrameState {
     /// Iterate over all local variables
     pub fn locals(&self) -> Iter<'_, InsnId> {
         self.locals.iter()
+    }
+
+    /// Local indices kept authoritative in EP for this frame's pending
+    /// block-passing call. See the field docs on [`FrameState::spilled_locals`].
+    pub fn spilled_locals(&self) -> &[u32] {
+        &self.spilled_locals
+    }
+
+    /// Record the locals that must stay in EP across this frame's pending
+    /// block-passing call (block-modifiable locals). See [`FrameState::spilled_locals`].
+    fn set_spilled_locals(&mut self, spilled: Vec<u32>) {
+        self.spilled_locals = spilled;
     }
 
     /// Push a stack operand
@@ -9191,6 +9229,11 @@ fn add_iseq_to_hir(
                         if !ep_escaped && !state.locals.is_empty() {
                             fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
                         }
+                        // Keep block-modifiable locals authoritative in EP across the call: the block
+                        // writes them through this frame's EP, so the register snapshot in the send's
+                        // stack map is stale and must not overwrite them during materialization.
+                        let spilled = block_modified_local_indices(iseq, blockiseq, state.locals.len(), ep_escaped);
+                        fun.set_snapshot_spilled_locals(exit_id, spilled.iter().map(|&i| i as u32).collect());
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
                 }
@@ -9222,6 +9265,11 @@ fn add_iseq_to_hir(
                         if !ep_escaped && !state.locals.is_empty() {
                             fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
                         }
+                        // Keep block-modifiable locals authoritative in EP across the call: the block
+                        // writes them through this frame's EP, so the register snapshot in the send's
+                        // stack map is stale and must not overwrite them during materialization.
+                        let spilled = block_modified_local_indices(iseq, blockiseq, state.locals.len(), ep_escaped);
+                        fun.set_snapshot_spilled_locals(exit_id, spilled.iter().map(|&i| i as u32).collect());
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
                 }
@@ -9250,6 +9298,11 @@ fn add_iseq_to_hir(
                         if !ep_escaped && !state.locals.is_empty() {
                             fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
                         }
+                        // Keep block-modifiable locals authoritative in EP across the call: the block
+                        // writes them through this frame's EP, so the register snapshot in the send's
+                        // stack map is stale and must not overwrite them during materialization.
+                        let spilled = block_modified_local_indices(iseq, blockiseq, state.locals.len(), ep_escaped);
+                        fun.set_snapshot_spilled_locals(exit_id, spilled.iter().map(|&i| i as u32).collect());
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
                 }
@@ -9280,6 +9333,11 @@ fn add_iseq_to_hir(
                         if !ep_escaped && !state.locals.is_empty() {
                             fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
                         }
+                        // Keep block-modifiable locals authoritative in EP across the call: the block
+                        // writes them through this frame's EP, so the register snapshot in the send's
+                        // stack map is stale and must not overwrite them during materialization.
+                        let spilled = block_modified_local_indices(iseq, blockiseq, state.locals.len(), ep_escaped);
+                        fun.set_snapshot_spilled_locals(exit_id, spilled.iter().map(|&i| i as u32).collect());
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
                 }

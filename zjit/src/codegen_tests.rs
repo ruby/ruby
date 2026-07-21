@@ -6596,9 +6596,9 @@ fn test_polymorphic_getivar_complex_shape() {
 
 /// When a method with keyword defaults contains a block that creates a lambda,
 /// the lambda causes EP escape, which globally patches NoEPEscape PatchPoints.
-/// On subsequent calls the PatchPoint side exit (which uses without_locals())
-/// must not leave stale keyword default values in the frame. We solve this by
-/// invalidating the ISEQ version on EP escape so the interpreter takes over.
+/// On subsequent calls the PatchPoint side exit must not leave stale keyword
+/// default values in the frame. We solve this by invalidating the ISEQ version
+/// on EP escape so the interpreter takes over.
 #[test]
 fn test_ep_escape_preserves_keyword_default() {
     set_call_threshold(1);
