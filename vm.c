@@ -1141,7 +1141,10 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     if (VM_FRAME_RUBYFRAME_P(cfp) &&
         !rbimpl_atomic_load(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED)) {
         if (rb_yjit_enabled_p) rb_yjit_invalidate_ep_is_bp(iseq);
-        if (rb_zjit_enabled_p) rb_zjit_invalidate_no_ep_escape(iseq);
+        if (rb_zjit_enabled_p) {
+            rb_zjit_invalidate_no_ep_escape(iseq);
+            rb_zjit_spill_frame(cfp);
+        }
     }
 
     /*
@@ -2898,34 +2901,12 @@ vm_exec_loop(rb_execution_context_t *ec, enum ruby_tag_type state,
 }
 
 #if USE_ZJIT
-// Materialize JITFrame-enabled CFP into interpreter-compatible CFP
+// Write a ZJIT frame's off-stack Ruby slots (operands and locals) into VM-stack
+// memory using its stack map, decoding downward from cfp->sp. Does not touch
+// any frame metadata (pc/_iseq/block_code/jit_return).
 static void
-zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp, bool materialize_target)
+zjit_write_frame_stack(rb_control_frame_t *cfp, const zjit_jit_frame_t *jit_frame)
 {
-    if (!rb_zjit_enabled_p) return;
-    const rb_control_frame_t *end_cfp = ec->tag->cfp;
-    VM_ASSERT(cfp <= end_cfp);
-
-    while (true) {
-        // If materialize_target is false, we skip materializing ec->tag->cfp.
-        //
-        // When JIT code calls a C function that does the same number of setjmps and
-        // longjmps, e.g. rb_hash_aref, it calls zjit_materialize_frames but goes
-        // back to the JIT code. In that case, we don't want to materialize the frame
-        // and clear cfp->jit_return, which will still be used by the JIT code.
-        //
-        // When JIT code calls a C function that does more longjmps than setjmps,
-        // it would not go back to the JIT code. So ec->tag->cfp should be materialized
-        // in that case.
-        if (cfp == end_cfp && !materialize_target) break;
-
-        if (CFP_ZJIT_FRAME_P(cfp)) {
-            const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
-            cfp->pc = jit_frame->pc;
-            cfp->_iseq = (rb_iseq_t *)jit_frame->iseq;
-            if (jit_frame->materialize_block_code) {
-                cfp->block_code = NULL;
-            }
 
             // Materialize Ruby stack slots kept off the VM stack. On side exit,
             // the exiting frame is already written by compile_exit_save_state()
@@ -2958,6 +2939,37 @@ zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cf
                     }
                 }
             }
+}
+
+// Materialize JITFrame-enabled CFP into interpreter-compatible CFP
+static void
+zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp, bool materialize_target)
+{
+    if (!rb_zjit_enabled_p) return;
+    const rb_control_frame_t *end_cfp = ec->tag->cfp;
+    VM_ASSERT(cfp <= end_cfp);
+
+    while (true) {
+        // If materialize_target is false, we skip materializing ec->tag->cfp.
+        //
+        // When JIT code calls a C function that does the same number of setjmps and
+        // longjmps, e.g. rb_hash_aref, it calls zjit_materialize_frames but goes
+        // back to the JIT code. In that case, we don't want to materialize the frame
+        // and clear cfp->jit_return, which will still be used by the JIT code.
+        //
+        // When JIT code calls a C function that does more longjmps than setjmps,
+        // it would not go back to the JIT code. So ec->tag->cfp should be materialized
+        // in that case.
+        if (cfp == end_cfp && !materialize_target) break;
+
+        if (CFP_ZJIT_FRAME_P(cfp)) {
+            const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
+            cfp->pc = jit_frame->pc;
+            cfp->_iseq = (rb_iseq_t *)jit_frame->iseq;
+            if (jit_frame->materialize_block_code) {
+                cfp->block_code = NULL;
+            }
+            zjit_write_frame_stack(cfp, jit_frame);
             cfp->jit_return = 0;
         }
         if (end_cfp == cfp) break;
@@ -2977,6 +2989,19 @@ rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb_cont
     // A ZJIT frame active before the tag's setjmp is below it on the native
     // stack and survives longjmp. Materialize only the frames unwound above it.
     zjit_materialize_frames(ec, cfp, !ec->tag->zjit_frame_active);
+}
+
+// Spill a single ZJIT frame's off-stack Ruby slots (operands and locals) into
+// VM-stack memory, leaving the frame lazy (jit_return and pc/_iseq intact).
+// vm_make_env_each() calls this so an escaping env can MEMCPY live locals out
+// of VM memory.
+void
+rb_zjit_spill_frame(rb_control_frame_t *cfp)
+{
+    if (!rb_zjit_enabled_p) return;
+    if (CFP_ZJIT_FRAME_P(cfp)) {
+        zjit_write_frame_stack(cfp, CFP_ZJIT_FRAME(cfp));
+    }
 }
 #endif
 
