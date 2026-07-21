@@ -20,6 +20,7 @@
 #include "internal/array.h"
 #include "internal/bits.h"
 #include "internal/numeric.h"
+#include "internal/object.h"
 #include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
@@ -333,7 +334,7 @@ pack_alignment_size(const char *p, const char *pend, VALUE fmt, size_t *alignmen
 }
 
 static VALUE
-pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
+pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer, VALUE strict_flag)
 {
     const char *p, *pend;
     VALUE res, from, associates = 0;
@@ -357,6 +358,8 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
         rb_str_modify(buffer);
         res = buffer;
     }
+
+    const int strict = rb_bool_expected(strict_flag, "strict", TRUE);
 
     idx = 0;
     align_base = RSTRING_LEN(res);
@@ -650,11 +653,19 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 rb_bug("unexpected integer size for pack: %d", integer_size);
             while (len-- > 0) {
                 char intbuf[MAX_INTEGER_PACK_SIZE];
+                int endian = bigendian_p ? INTEGER_PACK_BIG_ENDIAN : INTEGER_PACK_LITTLE_ENDIAN;
+                int flags = INTEGER_PACK_2COMP | endian;
+                char *msb = &intbuf[bigendian_p ? 0 : integer_size - 1];
 
                 from = NEXTFROM;
-                rb_integer_pack(from, intbuf, integer_size, 1, 0,
-                    INTEGER_PACK_2COMP |
-                    (bigendian_p ? INTEGER_PACK_BIG_ENDIAN : INTEGER_PACK_LITTLE_ENDIAN));
+                int packed = rb_integer_pack(from, intbuf, integer_size, 1, 0, flags);
+                if (strict) {
+                    if (packed >= 2 ||
+                        (ISUPPER(type) ? packed < 0 : packed <= -2) ||
+                        ((signed char)*msb < 0 ? (packed > 0) : (packed < 0))) {
+                        rb_raise(rb_eRangeError, "out of range for %c", type);
+                    }
+                }
                 rb_str_buf_cat(res, intbuf, integer_size);
             }
             break;
@@ -938,7 +949,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 VALUE
 rb_ec_pack_ary(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 {
-    return pack_pack(ec, ary, fmt, buffer);
+    return pack_pack(ec, ary, fmt, buffer, Qfalse);
 }
 
 static const char uu_table[] =
