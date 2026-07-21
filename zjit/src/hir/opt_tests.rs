@@ -17838,46 +17838,6 @@ mod hir_opt_tests {
             test(1, true); test(1, false)
         ");
         let hir = hir_string("test");
-        assert_snapshot!(hir, @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :n@0x1000
-          v4:BasicObject = LoadField v2, :cond@0x1001
-          v5:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5)
-        bb2():
-          EntryPoint JIT(0)
-          v8:BasicObject = LoadArg :self@0
-          v9:BasicObject = LoadArg :n@1
-          v10:BasicObject = LoadArg :cond@2
-          v11:NilClass = Const Value(nil)
-          Jump bb3(v8, v9, v10, v11)
-        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:NilClass):
-          v21:CBool = Test v15
-          v22:Falsy = RefineType v15, Falsy
-          CondBranch v21, bb6(), bb4(v13, v14, v22, v16)
-        bb6():
-          v24:Truthy = RefineType v15, Truthy
-          v28:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v67:Fixnum = GuardType v14, Fixnum recompile
-          v68:Fixnum = FixnumAdd v67, v28
-          Jump bb5(v13, v67, v24, v68)
-        bb4(v35:BasicObject, v36:BasicObject, v37:Falsy, v38:NilClass):
-          v43:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v71:Fixnum = GuardType v36, Fixnum recompile
-          v72:Fixnum = FixnumAdd v71, v43
-          Jump bb5(v35, v71, v37, v72)
-        bb5(v49:BasicObject, v50:Fixnum, v51:BasicObject, v52:Fixnum):
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v77:Fixnum = FixnumAdd v50, v52
-          CheckInterrupts
-          Return v77
-        ");
         let guard_count = hir.matches("GuardType").count();
         assert_eq!(
             guard_count, 2,
@@ -17902,55 +17862,6 @@ mod hir_opt_tests {
             test(1, true, true); test(1, true, false); test(1, false, false)
         ");
         let hir = hir_string("test");
-        assert_snapshot!(hir, @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :n@0x1000
-          v4:BasicObject = LoadField v2, :a@0x1001
-          v5:BasicObject = LoadField v2, :b@0x1002
-          Jump bb3(v1, v3, v4, v5)
-        bb2():
-          EntryPoint JIT(0)
-          v8:BasicObject = LoadArg :self@0
-          v9:BasicObject = LoadArg :n@1
-          v10:BasicObject = LoadArg :a@2
-          v11:BasicObject = LoadArg :b@3
-          Jump bb3(v8, v9, v10, v11)
-        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
-          v21:CBool = Test v15
-          v22:Falsy = RefineType v15, Falsy
-          CondBranch v21, bb6(), bb5(v13, v14, v22, v16)
-        bb6():
-          v24:Truthy = RefineType v15, Truthy
-          v28:CBool = Test v16
-          v29:Falsy = RefineType v16, Falsy
-          CondBranch v28, bb7(), bb4(v13, v14, v24, v29)
-        bb7():
-          v31:Truthy = RefineType v16, Truthy
-          v35:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v78:Fixnum = GuardType v14, Fixnum recompile
-          v79:Fixnum = FixnumAdd v78, v35
-          CheckInterrupts
-          Return v79
-        bb4(v59:BasicObject, v60:BasicObject, v61:Truthy, v62:Falsy):
-          v67:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v82:Fixnum = GuardType v60, Fixnum recompile
-          v83:Fixnum = FixnumAdd v82, v67
-          CheckInterrupts
-          Return v83
-        bb5(v43:BasicObject, v44:BasicObject, v45:Falsy, v46:BasicObject):
-          v51:Fixnum[3] = Const Value(3)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v86:Fixnum = GuardType v44, Fixnum recompile
-          v87:Fixnum = FixnumAdd v86, v51
-          CheckInterrupts
-          Return v87
-        ");
         let guard_count = hir.matches("GuardType").count();
         assert!(
             guard_count <= 3,
@@ -17960,335 +17871,20 @@ mod hir_opt_tests {
 
     #[test]
     fn test_no_forward_when_no_guard_in_branches() {
-        eval("
+        let src = "
             def test(n, cond)
               a = if cond then 1 else 2 end
               n + a
             end
             test(1, true); test(1, false)
-        ");
+        ";
+        eval(src);
         let hir = hir_string("test");
-        assert_snapshot!(hir, @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :n@0x1000
-          v4:BasicObject = LoadField v2, :cond@0x1001
-          v5:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5)
-        bb2():
-          EntryPoint JIT(0)
-          v8:BasicObject = LoadArg :self@0
-          v9:BasicObject = LoadArg :n@1
-          v10:BasicObject = LoadArg :cond@2
-          v11:NilClass = Const Value(nil)
-          Jump bb3(v8, v9, v10, v11)
-        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:NilClass):
-          v21:CBool = Test v15
-          v22:Falsy = RefineType v15, Falsy
-          CondBranch v21, bb6(), bb4(v13, v14, v22, v16)
-        bb6():
-          v24:Truthy = RefineType v15, Truthy
-          v26:Fixnum[1] = Const Value(1)
-          Jump bb5(v13, v14, v24, v16, v26)
-        bb4(v29:BasicObject, v30:BasicObject, v31:Falsy, v32:NilClass):
-          v35:Fixnum[2] = Const Value(2)
-          Jump bb5(v29, v30, v31, v32, v35)
-        bb5(v37:BasicObject, v38:BasicObject, v39:BasicObject, v40:NilClass, v41:Fixnum):
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v57:Fixnum = GuardType v38, Fixnum recompile
-          v58:Fixnum = FixnumAdd v57, v41
-          CheckInterrupts
-          Return v58
-        ");
         let guard_count = hir.matches("GuardType").count();
         assert_eq!(
             guard_count, 1,
             "expected 1 GuardType (merge block only), found {guard_count}\n\nHIR:\n{hir}"
         );
-    }
-
-   #[test]
-    fn test_dedup_guard_type_across_dominator_chain() {
-        eval("
-            def test(n)
-              return -1 if n < 0
-              return  0 if n == 0
-              n * 2
-            end
-            test(1); test(0); test(-1)
-        ");
-        let hir = hir_string("test");
-        assert_snapshot!(hir, @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :n@0x1000
-          Jump bb3(v1, v3)
-        bb2():
-          EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :n@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:Fixnum[0] = Const Value(0)
-          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
-          v68:Fixnum = GuardType v10, Fixnum recompile
-          v69:BoolExact = FixnumLt v68, v15
-          v20:CBool = Test v69
-          CondBranch v20, bb6(), bb4(v9, v68)
-        bb6():
-          v25:Fixnum[-1] = Const Value(-1)
-          CheckInterrupts
-          Return v25
-        bb4(v30:BasicObject, v31:Fixnum):
-          v36:Fixnum[0] = Const Value(0)
-          PatchPoint MethodRedefined(Integer@0x1008, ==@0x1040, cme:0x1048)
-          v73:BoolExact = FixnumEq v31, v36
-          v41:CBool = Test v73
-          CondBranch v41, bb7(), bb5(v30, v31)
-        bb7():
-          v46:Fixnum[0] = Const Value(0)
-          CheckInterrupts
-          Return v46
-        bb5(v51:BasicObject, v52:Fixnum):
-          v57:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1008, *@0x1070, cme:0x1078)
-          v77:Fixnum = FixnumMult v52, v57
-          CheckInterrupts
-          Return v77
-        ");
-        assert_eq!(hir.matches("GuardType").count(), 1, "{hir}");
-    }
-
-    #[test]
-    fn test_dedup_guard_type_through_nested_conditionals() {
-        eval("
-            def test(n, a)
-              return -1 if n < 0
-              if a
-                n + 1
-              else
-                n + 2
-              end
-            end
-            test(1, true); test(1, false); test(-1, true)
-        ");
-        let hir = hir_string("test");
-        assert_snapshot!(hir, @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :n@0x1000
-          v4:BasicObject = LoadField v2, :a@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :n@1
-          v9:BasicObject = LoadArg :a@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v18:Fixnum[0] = Const Value(0)
-          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
-          v73:Fixnum = GuardType v12, Fixnum recompile
-          v74:BoolExact = FixnumLt v73, v18
-          v23:CBool = Test v74
-          CondBranch v23, bb6(), bb4(v11, v73, v13)
-        bb6():
-          v28:Fixnum[-1] = Const Value(-1)
-          CheckInterrupts
-          Return v28
-        bb4(v33:BasicObject, v34:Fixnum, v35:BasicObject):
-          v40:CBool = Test v35
-          v41:Falsy = RefineType v35, Falsy
-          CondBranch v40, bb7(), bb5(v33, v34, v41)
-        bb7():
-          v43:Truthy = RefineType v35, Truthy
-          v47:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
-          v78:Fixnum = FixnumAdd v34, v47
-          CheckInterrupts
-          Return v78
-        bb5(v55:BasicObject, v56:Fixnum, v57:Falsy):
-          v62:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
-          v82:Fixnum = FixnumAdd v56, v62
-          CheckInterrupts
-          Return v82
-        ");
-        assert_eq!(hir.matches("GuardType").count(), 1, "{hir}");
-    }
-
-    #[test]
-    fn test_no_dedup_when_not_dominated() {
-        eval("
-            def test(cond, a)
-              if cond
-                a + 1
-              else
-                a + 2
-              end
-            end
-            test(true, 1); test(false, 1)
-        ");
-        let hir = hir_string("test");
-        assert_snapshot!(hir, @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :cond@0x1000
-          v4:BasicObject = LoadField v2, :a@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :cond@1
-          v9:BasicObject = LoadArg :a@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v18:CBool = Test v12
-          v19:Falsy = RefineType v12, Falsy
-          CondBranch v18, bb5(), bb4(v11, v19, v13)
-        bb5():
-          v21:Truthy = RefineType v12, Truthy
-          v25:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v51:Fixnum = GuardType v13, Fixnum recompile
-          v52:Fixnum = FixnumAdd v51, v25
-          CheckInterrupts
-          Return v52
-        bb4(v33:BasicObject, v34:Falsy, v35:BasicObject):
-          v40:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v55:Fixnum = GuardType v35, Fixnum recompile
-          v56:Fixnum = FixnumAdd v55, v40
-          CheckInterrupts
-          Return v56
-        ");
-        assert_eq!(hir.matches("GuardType").count(), 2, "{hir}");
-    }
-
-    #[test]
-    fn test_dedup_guard_type_in_loop_body() {
-        // `m = n + 0` is a pre-header use of `n` so a `GuardType n` lands
-        // before the loop body, which the body's use of `n` must then reuse.
-        eval("
-            def test(n)
-              m = n + 0
-              i = 0
-              while i < 3
-                i = i + n
-              end
-              m + i
-            end
-            test(1); test(2)
-        ");
-        let hir = hir_string("test");
-        assert_snapshot!(hir, @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :n@0x1000
-          v4:NilClass = Const Value(nil)
-          v5:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5)
-        bb2():
-          EntryPoint JIT(0)
-          v8:BasicObject = LoadArg :self@0
-          v9:BasicObject = LoadArg :n@1
-          v10:NilClass = Const Value(nil)
-          v11:NilClass = Const Value(nil)
-          Jump bb3(v8, v9, v10, v11)
-        bb3(v13:BasicObject, v14:BasicObject, v15:NilClass, v16:NilClass):
-          v21:Fixnum[0] = Const Value(0)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v79:Fixnum = GuardType v14, Fixnum recompile
-          v28:Fixnum[0] = Const Value(0)
-          Jump bb5(v13, v79, v79, v28)
-        bb5(v33:BasicObject, v34:Fixnum, v35:Fixnum, v36:Fixnum):
-          v40:Fixnum[3] = Const Value(3)
-          PatchPoint MethodRedefined(Integer@0x1008, <@0x1040, cme:0x1048)
-          v84:BoolExact = FixnumLt v36, v40
-          CheckInterrupts
-          v46:CBool = Test v84
-          CondBranch v46, bb4(v33, v34, v35, v36), bb6()
-        bb4(v63:BasicObject, v64:Fixnum, v65:Fixnum, v66:Fixnum):
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v89:Fixnum = FixnumAdd v66, v64
-          Jump bb5(v63, v64, v65, v89)
-        bb6():
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v94:Fixnum = FixnumAdd v35, v36
-          CheckInterrupts
-          Return v94
-        ");
-        assert_eq!(hir.matches("GuardType").count(), 1, "{hir}");
-    }
-
-    #[test]
-    fn test_dedup_guard_type_across_dominator_chain_snapshot() {
-        // Snapshot variant: locks in *which* insn the surviving `GuardType`
-        // forwards, since count alone misses wrong-target rewrites.
-        eval("
-            def test(n)
-              return -1 if n < 0
-              return  0 if n == 0
-              n * 2
-            end
-            test(1); test(0); test(-1)
-        ");
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :n@0x1000
-          Jump bb3(v1, v3)
-        bb2():
-          EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :n@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:Fixnum[0] = Const Value(0)
-          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
-          v68:Fixnum = GuardType v10, Fixnum recompile
-          v69:BoolExact = FixnumLt v68, v15
-          v20:CBool = Test v69
-          CondBranch v20, bb6(), bb4(v9, v68)
-        bb6():
-          v25:Fixnum[-1] = Const Value(-1)
-          CheckInterrupts
-          Return v25
-        bb4(v30:BasicObject, v31:Fixnum):
-          v36:Fixnum[0] = Const Value(0)
-          PatchPoint MethodRedefined(Integer@0x1008, ==@0x1040, cme:0x1048)
-          v73:BoolExact = FixnumEq v31, v36
-          v41:CBool = Test v73
-          CondBranch v41, bb7(), bb5(v30, v31)
-        bb7():
-          v46:Fixnum[0] = Const Value(0)
-          CheckInterrupts
-          Return v46
-        bb5(v51:BasicObject, v52:Fixnum):
-          v57:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1008, *@0x1070, cme:0x1078)
-          v77:Fixnum = FixnumMult v52, v57
-          CheckInterrupts
-          Return v77
-        ");
     }
 
     #[test]
@@ -19369,13 +18965,11 @@ mod hir_opt_tests {
         eval("
             def test(n)
               if n < 0
-                if n + 1 < 0
-                  0
-                else
-                  n + 1
+                if n < 0
+                  if n < 0
+                    3
+                  end
                 end
-              else
-                n + 2
               end
             end
             test(-2)
@@ -19398,35 +18992,38 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v15:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
-          v79:Fixnum = GuardType v10, Fixnum recompile
-          v80:BoolExact = FixnumLt v79, v15
-          v20:CBool = Test v80
-          CondBranch v20, bb6(), bb5(v9, v79)
-        bb6():
-          v27:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
-          v84:Fixnum = FixnumAdd v79, v27
-          v32:Fixnum[0] = Const Value(0)
-          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
-          v88:BoolExact = FixnumLt v84, v32
-          v37:CBool = Test v88
-          CondBranch v37, bb7(), bb4(v9, v79)
+          v85:Fixnum = GuardType v10, Fixnum recompile
+          v86:BoolExact = FixnumLt v85, v15
+          v20:CBool = Test v86
+          CondBranch v20, bb7(), bb6(v9, v85)
         bb7():
-          v43:Fixnum[0] = Const Value(0)
+          v27:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          v90:BoolExact = FixnumLt v85, v27
+          v32:CBool = Test v90
+          CondBranch v32, bb8(), bb5(v9, v85)
+        bb8():
+          v39:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          v94:BoolExact = FixnumLt v85, v39
+          v44:CBool = Test v94
+          CondBranch v44, bb9(), bb4(v9, v85)
+        bb9():
+          v50:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v43
-        bb4(v62:BasicObject, v63:Fixnum):
-          v68:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
-          v92:Fixnum = FixnumAdd v63, v68
+          Return v50
+        bb4(v73:BasicObject, v74:Fixnum):
+          v77:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v92
-        bb5(v48:BasicObject, v49:Fixnum):
-          v54:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
-          v96:Fixnum = FixnumAdd v49, v54
+          Return v77
+        bb5(v64:BasicObject, v65:Fixnum):
+          v68:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v96
+          Return v68
+        bb6(v55:BasicObject, v56:Fixnum):
+          v59:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v59
         ");
     }
 
