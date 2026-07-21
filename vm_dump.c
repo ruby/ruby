@@ -1419,15 +1419,19 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
-    const rb_box_t *current_box = rb_current_box_in_crash_report();
     const rb_execution_context_t *ec = rb_current_execution_context(false);
-    VALUE loaded_features;
+    rb_box_t *current_box = NULL;
+    VALUE loaded_features = 0;
+    if (ec) {
+        current_box = (rb_box_t*)rb_current_box_in_crash_report();
+    }
+    else {
+        current_box = (rb_box_t*)rb_main_box();
+        if (!current_box) current_box = (rb_box_t*)rb_root_box();
+    }
 
     if (current_box) {
         loaded_features = current_box->loaded_features;
-    }
-    else {
-        loaded_features = rb_root_box()->loaded_features;
     }
 
     if (vm && ec) {

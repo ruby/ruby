@@ -103,6 +103,7 @@ rb_main_box(void)
     return main_box;
 }
 
+// NOTE: must be called by Ruby thread
 const rb_box_t *
 rb_current_box(void)
 {
@@ -121,6 +122,7 @@ rb_current_box(void)
     return rb_vm_current_box(GET_EC());
 }
 
+// NOTE: must be called by Ruby thread
 const rb_box_t *
 rb_loading_box(void)
 {
@@ -132,6 +134,7 @@ rb_loading_box(void)
     return rb_vm_loading_box(GET_EC());
 }
 
+// NOTE: must be called by Ruby thread
 const rb_box_t *
 rb_current_box_in_crash_report(void)
 {
