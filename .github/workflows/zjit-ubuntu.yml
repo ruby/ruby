@@ -84,7 +84,6 @@ jobs:
             run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=1'
             specopts: '-T --zjit-inline-threshold=0 -T --zjit-call-threshold=1'
             configure: '--enable-zjit=dev'
-            tests: '--exclude=ruby/test_hash.rb'
 
             # The optimizer benefits from at least 1 iteration of profiling. Also, many
             # regression tests in bootstraptest/test_yjit.rb assume call-threshold=2.
