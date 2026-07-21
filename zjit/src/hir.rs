@@ -5776,24 +5776,12 @@ impl Function {
     /// Inspired by Cranelift's aegraph canonicalize step
     /// (<https://cfallin.org/blog/2026/04/09/aegraph/>).
     fn canonicalize(&mut self) {
-        fn lookup_dominating(rewrite_maps: &[HashMap<InsnId, InsnId>], dominators: &Dominators, block: BlockId, insn_id: InsnId) -> Option<InsnId> {
-            let mut current = block;
-            loop {
-                if let Some(&canonical_id) = rewrite_maps[current.0].get(&insn_id) {
-                    return Some(canonical_id);
-                }
-                let idom = dominators.idom(current);
-                if idom == current {
-                    return None;
-                }
-                current = idom;
-            }
-        }
         // TODO(max): Don't make so many maps. Instead, use either undo-redo or dominator numbering
         // information for dominator tree.
         let mut rewrite_maps: Vec<HashMap<InsnId, InsnId>> = vec![HashMap::new(); self.blocks.len()];
         let dominators = Dominators::new(self);
         for block in self.reverse_post_order() {
+            let mut rewrite_map = rewrite_maps[dominators.idom(block).0].clone();
             for i in 0..self.blocks[block.0].insns.len() {
                 let insn_id = self.blocks[block.0].insns[i];
                 let canonical_id = self.union_find.borrow().find_const(insn_id);
@@ -5801,7 +5789,7 @@ impl Function {
                 let union_find = &self.union_find;
                 self.insns[canonical_id.0].for_each_operand_mut(|operand| {
                     let canon = union_find.borrow().find_const(*operand);
-                    *operand = lookup_dominating(&rewrite_maps, &dominators, block, canon).unwrap_or(canon);
+                    *operand = rewrite_map.get(&canon).copied().unwrap_or(canon);
                 });
 
                 // For the binary guards only `left` is registered because their infer_type is
@@ -5813,11 +5801,12 @@ impl Function {
                     | Insn::GuardNoBitsSet { val:  src, .. }
                     | Insn::GuardGreaterEq { left: src, .. }
                     | Insn::GuardLess      { left: src, .. } => {
-                        rewrite_maps[block.0].insert(*src, canonical_id);
+                        rewrite_map.insert(*src, canonical_id);
                     }
                     _ => {}
                 }
             }
+            rewrite_maps[block.0] = rewrite_map;
         }
 
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
