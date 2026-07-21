@@ -96,6 +96,7 @@ size_t rb_zjit_hash_new_size(void);
 bool rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, shape_id_t *shape_id_out);
 bool rb_zjit_str_resurrect_fastpath(VALUE str, bool chilled, size_t *size_out, VALUE *flags_out, long *len_out, size_t *byte_size_out);
 bool rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_out, long *len_out);
+void rb_zjit_spill_frame(rb_control_frame_t *cfp);
 
 // Special value for cfp->jit_return that means "this is a C method frame, use
 // rb_zjit_c_frame as the JITFrame". We don't control the native stack layout
@@ -137,6 +138,7 @@ static inline void rb_zjit_invalidate_no_singleton_class(VALUE klass) {}
 static inline void rb_zjit_invalidate_root_box(void) {}
 static inline void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_frame) {}
 static inline void rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp) {}
+static inline void rb_zjit_spill_frame(rb_control_frame_t *cfp) {}
 static inline const zjit_jit_frame_t *CFP_ZJIT_FRAME(const rb_control_frame_t *cfp) { return NULL; }
 #endif // #if USE_ZJIT
 

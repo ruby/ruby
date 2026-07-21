@@ -959,6 +959,9 @@ fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, function: &Function, s
     } else {
         // Anything can happen inside builtin functions
         gen_prepare_non_leaf_call(jit, asm, function, state);
+        // cexpr!/cstmt! builtins read this frame's locals (its params) directly
+        // from EP, so make them authoritative in memory.
+        gen_spill_locals(jit, asm, state);
     }
 
     let mut cargs = vec![EC];
@@ -1046,7 +1049,12 @@ fn gen_ccall_with_frame(
     gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, caller_stack_size);
     gen_spill_stack(jit, asm, function, state);
-    gen_spill_locals(jit, asm, state);
+    // A passed block can read or write this frame's locals through its EP, so
+    // make them authoritative in memory. Without a block, the stack map is
+    // enough to reconstruct locals lazily on exception/binding.
+    if block.is_some() {
+        gen_spill_locals(jit, asm, state);
+    }
 
     let block_handler_specval = if let Some(BlockHandler::BlockIseq(block_iseq)) = block {
         // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
@@ -1141,7 +1149,10 @@ fn gen_ccall_variadic(
     gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, caller_stack_size);
     gen_spill_stack(jit, asm, function, state);
-    gen_spill_locals(jit, asm, state);
+    // A passed block can read or write this frame's locals through its EP.
+    if block.is_some() {
+        gen_spill_locals(jit, asm, state);
+    }
 
     let block_handler_specval = if let Some(BlockHandler::BlockIseq(blockiseq)) = block {
         gen_block_handler_specval(asm, blockiseq)
@@ -1502,6 +1513,10 @@ fn gen_send(
     gen_trace_send_fallback(asm, &reason);
 
     gen_prepare_fallback_call(jit, asm, function, state);
+    // A literal block passed here can read or write this frame's locals through its EP.
+    if !blockiseq.is_null() {
+        gen_spill_locals(jit, asm, state);
+    }
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
     unsafe extern "C" {
         fn rb_vm_send(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
@@ -1527,6 +1542,10 @@ fn gen_send_forward(
     gen_trace_send_fallback(asm, &reason);
 
     gen_prepare_fallback_call(jit, asm, function, state);
+    // A literal block passed here can read or write this frame's locals through its EP.
+    if !blockiseq.is_null() {
+        gen_spill_locals(jit, asm, state);
+    }
 
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
     unsafe extern "C" {
@@ -1587,7 +1606,10 @@ fn gen_push_inline_frame(
     gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, stack_size);
 
-    gen_spill_locals(jit, asm, state);
+    // A passed block can read or write this frame's locals through its EP.
+    if blockiseq.is_some() {
+        gen_spill_locals(jit, asm, state);
+    }
 
     // This mirrors vm_caller_setup_arg_block() for the `blockiseq != NULL` case.
     // The HIR specialization guards ensure we will only reach here for literal blocks,
@@ -1726,7 +1748,11 @@ fn gen_send_iseq_direct(
     let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
     gen_save_sp(asm, stack_size);
 
-    gen_spill_locals(jit, asm, state);
+    // A passed block can read or write this frame's locals through its EP.
+    // Without a block, the stack map reconstructs locals lazily on demand.
+    if block.is_some() {
+        gen_spill_locals(jit, asm, state);
+    }
     asm.stack_map(stack_map, jit_frame, state.depth);
 
     // This mirrors vm_caller_setup_arg_block() in for the `blockiseq != NULL` case.
@@ -2015,6 +2041,10 @@ fn gen_invokesuper(
     gen_trace_send_fallback(asm, &reason);
 
     gen_prepare_fallback_call(jit, asm, function, state);
+    // A literal block passed here can read or write this frame's locals through its EP.
+    if !blockiseq.is_null() {
+        gen_spill_locals(jit, asm, state);
+    }
     asm_comment!(asm, "call super with dynamic dispatch");
     unsafe extern "C" {
         fn rb_vm_invokesuper(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
@@ -2040,6 +2070,10 @@ fn gen_invokesuperforward(
     gen_trace_send_fallback(asm, &reason);
 
     gen_prepare_fallback_call(jit, asm, function, state);
+    // A literal block passed here can read or write this frame's locals through its EP.
+    if !blockiseq.is_null() {
+        gen_spill_locals(jit, asm, state);
+    }
     asm_comment!(asm, "call super with dynamic dispatch (forwarding)");
     unsafe extern "C" {
         fn rb_vm_invokesuperforward(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
@@ -3308,7 +3342,6 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
 fn gen_prepare_fallback_call(jit: &JITState, asm: &mut Assembler, function: &Function, state: &FrameState) {
     gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, state.stack_size());
-    gen_spill_locals(jit, asm, state);
     gen_spill_stack(jit, asm, function, state);
 }
 
@@ -3319,29 +3352,48 @@ fn build_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> V
     let mut stack = Vec::new();
     let mut current_state = state.clone();
     loop {
-        stack.extend(current_state.stack().rev().copied().map(|insn_id| {
+        let to_entry = |insn_id| {
             let opnd = jit.get_opnd(insn_id);
             assert!(
                 matches!(opnd, Opnd::Value(_) | Opnd::VReg { .. }),
                 "FrameState should only reference Opnd::Value or Opnd::VReg, but got: {opnd:?}",
             );
             StackMapEntry::Opnd(opnd)
-        }));
+        };
+
+        // Operand stack, top-down.
+        stack.extend(current_state.stack().rev().copied().map(to_entry));
+        // Frame environment data (me/cref, specval, flags) already lives in memory.
+        stack.push(StackMapEntry::Skip(VM_ENV_DATA_SIZE.to_usize()));
+        // Locals, top-down (local[L-1] .. local[0]). They land at fixed
+        // EP-relative slots because we write down from cfp->sp.
+        //
+        // Locals that a synchronous block passed at this frame's pending call
+        // can modify (`spilled_locals`) are left in memory instead of
+        // materialized from a register: the block writes them through the
+        // frame's EP (a level>0 `setlocal`), so the register we captured here
+        // is stale. Those locals are kept authoritative in EP by a narrow
+        // eager spill, so we `Skip` them here rather than clobber the block's
+        // write during exception/backtrace materialization.
+        let spilled_locals = current_state.spilled_locals();
+        for (idx, &insn_id) in current_state.locals().enumerate().rev() {
+            if spilled_locals.contains(&(idx as u32)) {
+                stack.push(StackMapEntry::Skip(1));
+            } else {
+                stack.push(to_entry(insn_id));
+            }
+        }
 
         let Some(caller) = current_state.caller() else {
             break;
         };
-        stack.push(StackMapEntry::Skip(inline_frame_stack_gap(current_state.iseq)));
+        // Skip the callee's receiver slot below its local table. We currently
+        // never map out the stack for `invokeblock`, which doesn't put a
+        // receiver on cfp->sp stack.
+        stack.push(StackMapEntry::Skip(1));
         current_state = function.frame_state(caller);
     }
     stack
-}
-
-fn inline_frame_stack_gap(iseq: IseqPtr) -> usize {
-    // The extra slot is for the callee's receiver below its local table.
-    // We currently never map out the stack for `invokeblock`, which doesn't
-    // put a receiver on cfp->sp stack.
-    1 + unsafe { get_iseq_body_local_table_size(iseq) }.to_usize() + VM_ENV_DATA_SIZE.to_usize()
 }
 
 /// Prepare for calling a C function that may call an arbitrary method.
@@ -3356,9 +3408,6 @@ fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, function: &Fun
     // Remember the stack map in case it raises an exception
     // and the interpreter uses the stack for handling the exception
     asm.stack_map(stack_map, jit_frame, state.depth);
-
-    // Spill locals in case the method looks at caller Bindings
-    gen_spill_locals(jit, asm, state);
 }
 
 /// Frame metadata written by gen_push_frame()
