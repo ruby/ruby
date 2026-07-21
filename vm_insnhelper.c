@@ -513,10 +513,23 @@ NOINLINE(static void vm_env_write_slowpath(const VALUE *ep, int index, VALUE v))
 static void
 vm_env_write_slowpath(const VALUE *ep, int index, VALUE v)
 {
-    /* remember env value forcely */
-    rb_gc_writebarrier_remember(VM_ENV_ENVVAL(ep));
-    VM_FORCE_WRITE(&ep[index], v);
-    VM_ENV_FLAGS_UNSET(ep, VM_ENV_FLAG_WB_REQUIRED);
+    const VALUE envval = VM_ENV_ENVVAL(ep);
+
+    if (RB_FL_TEST_RAW(envval, RUBY_FL_SHAREABLE)) {
+        /* SHAREABLE な env(isolated proc)への書き込みは v が unshareable のとき
+         * shareable から unshareable への参照を作る。full barrier だけが v を所有者の
+         * local GC まで生かす shref bit を立てる。WB_REQUIRED は以後の書き込み用に残す。 */
+        if (!SPECIAL_CONST_P(v)) {
+            rb_gc_writebarrier(envval, v);
+        }
+        VM_FORCE_WRITE(&ep[index], v);
+    }
+    else {
+        /* remember env value forcely */
+        rb_gc_writebarrier_remember(envval);
+        VM_FORCE_WRITE(&ep[index], v);
+        VM_ENV_FLAGS_UNSET(ep, VM_ENV_FLAG_WB_REQUIRED);
+    }
     RB_DEBUG_COUNTER_INC(lvar_set_slowpath);
 }
 
@@ -581,12 +594,32 @@ vm_svar_valid_p(VALUE svar)
 }
 #endif
 
+/* このフレームの特殊変数を env の svar スロットに置くべきか。SHAREABLE な
+ * env(isolated proc)は複数 Ractor から同時に呼ばれ、svar が Ractor 間共有
+ * 可変状態になり foreign オブジェクト保持や $~/$_ 漏れを招くので per-EC に置く。 */
+static inline bool
+lep_svar_in_env_p(const rb_execution_context_t *ec, const VALUE *lep)
+{
+    if (!lep) return false;
+    if (ec == NULL) return true;
+    if (ec->root_lep == lep) return false;
+    /* lep は env が既に escape したフレームの stale な on-stack ep かもしれず、
+     * lep[0] は imemo_env を残すため flags が FIXNUM でなく VM_ENV_ESCAPED_P が
+     * assert する。生きた shareable proc の env ではないので in-env に fall back。 */
+    if (FIXNUM_P(lep[VM_ENV_DATA_INDEX_FLAGS]) &&
+            VM_ENV_ESCAPED_P(lep) &&
+            RB_FL_TEST_RAW(VM_ENV_ENVVAL(lep), RUBY_FL_SHAREABLE)) {
+        return false;
+    }
+    return true;
+}
+
 static inline struct vm_svar *
 lep_svar(const rb_execution_context_t *ec, const VALUE *lep)
 {
     VALUE svar;
 
-    if (lep && (ec == NULL || ec->root_lep != lep)) {
+    if (lep_svar_in_env_p(ec, lep)) {
         svar = lep[VM_ENV_DATA_INDEX_ME_CREF];
     }
     else {
@@ -603,7 +636,7 @@ lep_svar_write(const rb_execution_context_t *ec, const VALUE *lep, const struct 
 {
     VM_ASSERT(vm_svar_valid_p((VALUE)svar));
 
-    if (lep && (ec == NULL || ec->root_lep != lep)) {
+    if (lep_svar_in_env_p(ec, lep)) {
         vm_env_write(lep, VM_ENV_DATA_INDEX_ME_CREF, (VALUE)svar);
     }
     else {

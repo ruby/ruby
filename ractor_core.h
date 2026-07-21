@@ -12,6 +12,10 @@
 // experimental flag because it is not sure it is the common pattern
 #define RUBY_TYPED_FROZEN_SHAREABLE_NO_REC RUBY_FL_FINALIZE
 
+/* 転送中の move payload。off-heap にシリアライズされる（ractor.c で定義）。 */
+struct rb_ractor_move_courier;
+struct rlgc_materialize_frame;
+
 struct rb_ractor_sync {
     // ractor lock
     rb_nativethread_lock_t lock;
@@ -42,6 +46,19 @@ struct rb_ractor_sync {
     rb_ractor_t *successor;
     VALUE legacy;
     bool legacy_exc;
+
+    /* 転送中の materialize の chain（新しい順、receive 1 件に 1 frame）。root scan と
+     * global GC の re-pin が再構築中も sender 側 snapshot（copy）や courier の shareable
+     * VALUE（move）を生かす。ネスト receive に備え chain とし、machine stack 上で TAG
+     * 保護下に push/pop するので raise でも復元される。 */
+    struct rlgc_materialize_frame *materialize_frames;
+};
+
+/* 転送中の payload 再構築 1 件（受信側の machine stack 上に置かれる） */
+struct rlgc_materialize_frame {
+    VALUE snapshot;                          /* copy: sender 側 snapshot、move では Qfalse */
+    struct rb_ractor_move_courier *courier;  /* move: off-heap courier、copy では NULL */
+    struct rlgc_materialize_frame *prev;
 };
 
 // created
@@ -69,9 +86,11 @@ struct rb_ractor_struct {
     struct rb_ractor_pub pub;
     struct rb_ractor_sync sync;
 
-    /* objects pinned via rb_gc_register_mark_object; this Ractor owns them and
-     * marks them, and hands them to the main Ractor when it terminates. */
-    VALUE mark_object_ary;
+    /* rb_gc_register_mark_object で pin したオブジェクトは per-Ractor: owner が mark し
+     * （live は rb_ractor_mark_local_roots、未 merge の zombie は zombie-objspace scan）、
+     * merge で survivor へ移る。sweep 中の merge が GC へ再入しないよう raw malloc/realloc/free。 */
+    VALUE *registered_marks;
+    size_t registered_marks_cnt, registered_marks_capa;
 
 #if !USE_MODULAR_GC
     /* traversal-API mark redirect (NULL outside a traversal).  Per Ractor so a
@@ -123,7 +142,46 @@ struct rb_ractor_struct {
     bool malloc_gc_disabled;
     bool main_ractor;
     void *newobj_cache;
+
+    /* この Ractor の objspace。main Ractor は rb_gc_init_objspaces で boot objspace を
+     * 受け取る。非main Ractor は自分の objspace を持つまで（NULL の間）main と共有する。 */
+    void *objspace;
+
+    /* 子 Ractor 作成中、子の objspace は populate 済み（Thread/Fiber wrapper がそこで
+     * 生まれる）だがまだ vm->ractor.set に無く whole-VM walk が取りこぼす。wrapper 確保から
+     * vm_insert_ractor までの窓で子 objspace をここに預け global GC に列挙させる。子が
+     * set に入る時 VM lock 下でクリアする。 */
+    void *creating_child_objspace;
+
+    /* この Ractor 所有の unshareable オブジェクトの generic fields 表（owner 専有＝無ロック、
+     * shareable 分は variable.c の global 表）。weak-key で host obj が死ねば entry も消える。
+     * local GC は rb_mark_generic_ivar で引き、global GC は mark 後に全表を drain する。
+     * lazy に生成（NULL = まだ空）。 */
+    struct st_table *generic_fields_tbl;
+    /* Ractor#send の native copy 中の generic-ivar 対応表。capturing=送信側 snapshot 作成中
+     * だけ true で、host が出たら capture を遅延確保しその fields_obj を記録。materialize=
+     * 受信側で snapshot host の fields_obj を引く。これで受信側が sender の表を跨がない。 */
+    bool gen_fields_capturing;
+    struct st_table *gen_fields_capture;
+    struct st_table *gen_fields_materialize;
 }; // rb_ractor_t is defined in vm_core.h
+
+/* Ractor r の C 構造体から GC root を mark する（gc.c の root scan）。 */
+void rb_ractor_mark_local_roots(rb_ractor_t *r);
+void rb_ractor_repin_in_flight(rb_ractor_t *r);
+void rb_ractor_pin_inherited_parts(rb_ractor_t *r);
+
+/* Ractor-local 化した VM グローバル root（旧 vm->global_object_list /
+ * vm->mark_object_ary）の登録・解除・移管。GC sweep（ractor_free）からも呼ばれるので
+ * raw malloc/realloc/free のみを使う。 */
+
+/* src Ractor の per-Ractor generic_fields 表を dst へ移送して src を空にする
+ * （Ractor#value join / orphan free）。実装は variable.c。st は raw malloc なので
+ * sweep 中の呼び出しも安全。 */
+void rb_ractor_absorb_generic_fields(rb_ractor_t *dst, rb_ractor_t *src);
+void rb_ractor_absorb_registered_marks(rb_ractor_t *dst, rb_ractor_t *src);
+/* この Ractor の per-Ractor generic_fields 表を解放（ractor_free）。 */
+void rb_ractor_free_generic_fields(rb_ractor_t *r);
 
 enum ractor_wakeup_status {
     wakeup_none,
@@ -147,7 +205,6 @@ rb_ractor_self(const rb_ractor_t *r)
 
 rb_ractor_t *rb_ractor_main_alloc(void);
 void rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *main_ractor, rb_thread_t *main_thread);
-void rb_vm_ractor_migrate_mark_objects(rb_ractor_t *dst, rb_ractor_t *src);
 void rb_ractor_atexit(rb_execution_context_t *ec, VALUE result);
 void rb_ractor_atexit_exception(rb_execution_context_t *ec);
 void rb_ractor_teardown(rb_execution_context_t *ec);

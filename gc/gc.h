@@ -13,6 +13,7 @@
 #include "ruby/assert.h"
 
 #include "ruby/thread_native.h"
+#include "ruby/debug.h"
 
 #ifndef VM_CHECK_MODE
 # define VM_CHECK_MODE RUBY_DEBUG
@@ -55,8 +56,6 @@ enum rb_gc_vm_weak_tables {
 
 #define RB_GC_VM_LOCK() rb_gc_vm_lock(__FILE__, __LINE__)
 #define RB_GC_VM_UNLOCK(lev) rb_gc_vm_unlock(lev, __FILE__, __LINE__)
-#define RB_GC_CR_LOCK() rb_gc_cr_lock(__FILE__, __LINE__)
-#define RB_GC_CR_UNLOCK(lev) rb_gc_cr_unlock(lev, __FILE__, __LINE__)
 #define RB_GC_VM_LOCK_NO_BARRIER() rb_gc_vm_lock_no_barrier(__FILE__, __LINE__)
 #define RB_GC_VM_UNLOCK_NO_BARRIER(lev) rb_gc_vm_unlock_no_barrier(lev, __FILE__, __LINE__)
 
@@ -85,28 +84,42 @@ void rb_gc_verify_shareable(VALUE);
 
 MODULAR_GC_FN unsigned int rb_gc_vm_lock(const char *file, int line);
 MODULAR_GC_FN void rb_gc_vm_unlock(unsigned int lev, const char *file, int line);
-MODULAR_GC_FN unsigned int rb_gc_cr_lock(const char *file, int line);
-MODULAR_GC_FN void rb_gc_cr_unlock(unsigned int lev, const char *file, int line);
 MODULAR_GC_FN unsigned int rb_gc_vm_lock_no_barrier(const char *file, int line);
 MODULAR_GC_FN void rb_gc_vm_unlock_no_barrier(unsigned int lev, const char *file, int line);
 MODULAR_GC_FN void rb_gc_vm_barrier(void);
+MODULAR_GC_FN void rb_gc_vm_each_objspace(void (*func)(void *objspace, void *data), void *data);
+MODULAR_GC_FN size_t rb_gc_vm_zombie_total_pages(void);
+MODULAR_GC_FN void rb_gc_vm_refresh_zombie_pages(void);
+/* MODULAR_GC_FN を付けない: VM 側（ractor.c）からも呼ぶので、非モジュラービルドでも
+ * 外部リンケージが要る（internal/gc.h 参照）。 */
+bool rb_gc_single_objspace_p(void);
+MODULAR_GC_FN void rb_gc_vm_forget_zombie(void *objspace);
 MODULAR_GC_FN size_t rb_gc_obj_optimal_size(VALUE obj);
 MODULAR_GC_FN void rb_gc_mark_children(void *objspace, VALUE obj);
 MODULAR_GC_FN bool rb_gc_vm_weak_table_essential_p(enum rb_gc_vm_weak_tables table);
 MODULAR_GC_FN void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback, vm_table_update_callback_func update_callback, void *data, bool weak_only, enum rb_gc_vm_weak_tables table);
+/* generic_fields の global GC 用 weak pass（実体は variable.c、gc-impl から呼ぶ）。
+ * MODULAR_GC_FN を付けないのは非モジュラービルドでも外部リンケージが要るため
+ * （rb_gc_single_objspace_p と同じ）。 */
+void rb_gc_vm_generic_fields_mark_foreach(int (*cb)(VALUE key, VALUE val, void *arg), void *arg);
+void rb_gc_vm_generic_fields_drain_dead(bool (*is_dead)(VALUE key));
 MODULAR_GC_FN void rb_gc_update_object_references(void *objspace, VALUE obj);
 MODULAR_GC_FN void rb_gc_update_vm_references(void *objspace);
 MODULAR_GC_FN void rb_gc_event_hook(VALUE obj, rb_event_flag_t event);
 MODULAR_GC_FN void *rb_gc_get_objspace(void);
 MODULAR_GC_FN void rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void *data), void *data);
 MODULAR_GC_FN void rb_gc_set_pending_interrupt(void);
+MODULAR_GC_FN void rb_gc_trigger_finalize_deferred(void *objspace, rb_postponed_job_handle_t pjob);
 MODULAR_GC_FN void rb_gc_unset_pending_interrupt(void);
 MODULAR_GC_FN void rb_gc_obj_free_vm_weak_references(VALUE obj);
 MODULAR_GC_FN bool rb_gc_obj_free(void *objspace, VALUE obj);
 MODULAR_GC_FN void rb_gc_save_machine_context(void);
 MODULAR_GC_FN void rb_gc_mark_roots(void *objspace, const char **categoryp);
-MODULAR_GC_FN void rb_gc_ractor_newobj_cache_foreach(void (*func)(void *cache, void *data), void *data);
 MODULAR_GC_FN bool rb_gc_multi_ractor_p(void);
+/* プロセス全体の GC 無効フラグ（GC.disable / rb_gc_disable）。impl の各 GC trigger が
+ * これを見るので、無効化すると全 Ractor の自動 GC が止まる。
+ * per-objspace の無効化は objspace->flags.dont_gc。 */
+MODULAR_GC_FN bool rb_gc_gc_disabled_global_p(void);
 MODULAR_GC_FN bool rb_gc_shutdown_call_finalizer_p(VALUE obj);
 MODULAR_GC_FN void rb_gc_obj_changed_slot_size(VALUE obj, size_t slot_size);
 MODULAR_GC_FN void rb_gc_prepare_heap_process_object(VALUE obj);

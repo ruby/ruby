@@ -345,9 +345,7 @@ mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
             rb_gc_mark_and_move(&def->body.attr.location);
             break;
           case VM_METHOD_TYPE_BMETHOD:
-            if (!rb_gc_checking_shareable()) {
-                rb_gc_mark_and_move(&def->body.bmethod.proc);
-            }
+            rb_gc_mark_and_move(&def->body.bmethod.proc);
             break;
           case VM_METHOD_TYPE_ALIAS:
             rb_gc_mark_and_move_ptr(&def->body.alias.original_me);
@@ -421,10 +419,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
       case imemo_constcache: {
         struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)obj;
 
-        if ((ice->flags & IMEMO_CONST_CACHE_SHAREABLE) ||
-            !rb_gc_checking_shareable()) {
-            rb_gc_mark_and_move(&ice->value);
-        }
+        rb_gc_mark_and_move(&ice->value);
 
         break;
       }
@@ -552,25 +547,23 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
       case imemo_fields: {
         rb_gc_mark_and_move((VALUE *)&RBASIC(obj)->klass);
 
-        if (!rb_gc_checking_shareable()) {
-            // imemo_fields can refer unshareable objects
-            // even if the imemo_fields is shareable.
-
-            if (rb_obj_shape_complex_p(obj)) {
-                st_table *tbl = rb_imemo_fields_complex_tbl(obj);
-                if (reference_updating) {
-                    rb_gc_ref_update_table_values_only(tbl);
-                }
-                else {
-                    rb_mark_tbl_no_pin(tbl);
-                }
+        /* shareable な imemo_fields (class/module の fields) も unshareable な値を
+         * 参照しうる。write barrier がそれらを shref として記録するため、
+         * shareable 制約チェックがここを辿る。 */
+        if (rb_obj_shape_complex_p(obj)) {
+            st_table *tbl = rb_imemo_fields_complex_tbl(obj);
+            if (reference_updating) {
+                rb_gc_ref_update_table_values_only(tbl);
             }
             else {
-                VALUE *fields = rb_imemo_fields_ptr(obj);
-                attr_index_t len = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
-                for (attr_index_t i = 0; i < len; i++) {
-                    rb_gc_mark_and_move(&fields[i]);
-                }
+                rb_mark_tbl_no_pin(tbl);
+            }
+        }
+        else {
+            VALUE *fields = rb_imemo_fields_ptr(obj);
+            attr_index_t len = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
+            for (attr_index_t i = 0; i < len; i++) {
+                rb_gc_mark_and_move(&fields[i]);
             }
         }
         break;

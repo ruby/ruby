@@ -506,8 +506,9 @@ assert_equal 'false', %q{
   obj.object_id == r.value
 }
 
-# To copy the object, now Marshal#dump is used
-assert_match /can't clone unshareable instance of Thread/, %q{
+# オブジェクトの複製は native copier か Marshal#dump で行い、
+# ユーザ可視の #clone は呼ばない
+assert_match /can not copy Thread object/, %q{
   obj = Thread.new{}
   begin
     r = Ractor.new obj do |msg|
@@ -1270,12 +1271,15 @@ assert_equal '[1, 4, 3, 2, 1]', %q{
   counts.inspect
 }
 
-# ObjectSpace.each_object can not handle unshareable objects with Ractors
-assert_equal '0', %q{
+# ObjectSpace.each_object は呼び出し元 Ractor 自身のオブジェクト（unshareable
+# も含む）と他 Ractor の shareable を列挙するが、他 Ractor の unshareable は
+# 列挙しない
+assert_equal 'true', %q{
   Ractor.new{
-    n = 0
-    ObjectSpace.each_object{|o| n += 1 unless Ractor.shareable?(o)}
-    n
+    own = Object.new
+    seen = false
+    ObjectSpace.each_object{|o| seen = true if o.equal?(own)}
+    seen
   }.value
 }
 
@@ -2714,4 +2718,93 @@ assert_equal 'ok', %q{
   end
   r.send(nil)
   r.value
+}
+
+# 子 objspace 生成後に失敗した Ractor 作成（IsolationError）は creator 側の
+# 子 objspace カバーを片付ける必要がある。放置すると後続の global GC が死んだ
+# 子の objspace を二重列挙し、解放済みの殻を読む
+assert_equal 'ok', %q{
+  x = 42 # 外側ローカルの捕捉で Ractor.new が IsolationError
+  worker = Ractor.new { loop { break if Ractor.receive == :quit } }
+  begin
+    Ractor.new { x }
+    raise "isolation error did not fire"
+  rescue Ractor::IsolationError
+  end
+  10.times { GC.start; 500.times { Object.new } }
+  worker.send(:quit)
+  worker.value
+  100.times do |i|
+    begin
+      Ractor.new { x }
+      raise "isolation error did not fire"
+    rescue Ractor::IsolationError
+    end
+    if (i % 20).zero?
+      Ractor.new { :ok }.value
+      GC.start
+    end
+  end
+  GC.start
+  :ok
+}
+
+# CoW 共有ルート文字列（unshareable な ivar を持つ frozen ルート）の move は
+# ルートのバッファを奪ってはならない。奪うと残った共有側が解放後のメモリを読む
+assert_equal 'ok', %q{
+  30.times do
+    r = Ractor.new do
+      v = Ractor.receive
+      v.bytesize
+      :done
+    end
+    f = "x" * 4096
+    f.instance_variable_set(:@x, []) # unshareable な ivar なので passthrough でなく move
+    f.freeze
+    g = f.dup            # f のバッファを共有し f が共有ルートになる
+    h = f[10, 3000]      # 長い部分文字列もバッファを共有
+    r.send(f, move: true)
+    r.value
+    GC.start
+    10.times { "z" * 4096 }
+    raise "sharer corrupted" unless g == "x" * 4096 && h == "x" * 3000
+  end
+  :ok
+}
+
+# String/Array/Hash のサブクラスの move（unshareable な ivar で move 経路に入る）
+# はクラスを保持し、基底クラスに退化させてはならない
+assert_equal '["MyStr", "MyAry", "MyHash"]', %q{
+  class MyStr < String; end
+  class MyAry < Array; end
+  class MyHash < Hash; end
+  r = Ractor.new do
+    3.times.map { Ractor.receive.class.name }
+  end
+  [MyStr.new("x"), (MyAry.new << 1), (h=MyHash.new; h[:a]=1; h)].each do |o|
+    o.instance_variable_set(:@x, []) # unshareable な ivar で move 経路へ
+    r.send(o, move: true)
+  end
+  r.value.inspect
+}
+
+# 特異クラスを持つオブジェクトの move は特異メソッドを保ち、特異クラスを再構築後の
+# オブジェクトへ繋ぎ直す必要がある。さもないと送信側の attach が無効化した元を指し
+# 続ける。T_OBJECT/String/Struct を対象とする
+assert_equal '[[:obj, true], [:str, true], [:strct, true]]', %q{
+  o = Object.new
+  def o.m; :obj end
+  s = +"str"
+  def s.m; :str end
+  st = Struct.new(:a).new(1)
+  def st.m; :strct end
+  r = Ractor.new do
+    3.times.map do
+      v = Ractor.receive
+      GC.start
+      [v.m, v.method(:m).owner.attached_object.equal?(v)]
+    end
+  end
+  [o, s, st].each { |x| r.send(x, move: true) }
+  r.value.inspect
 }

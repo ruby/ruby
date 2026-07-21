@@ -1080,6 +1080,70 @@ match_set_regs(VALUE match, int num_regs, const OnigPosition *beg, const OnigPos
     rm->num_regs = num_regs;
 }
 
+/* Ractor#send(move:) で MatchData を別 objspace へ移送する補助。
+ * match のレジスタを onig 非依存の blob へ書き出し、元の malloc 領域を解放して
+ * 移送元を空殻にできるようにし、受信側で blob から match を組み立て直す。 */
+void *
+rb_match_move_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs_out)
+{
+    struct RMatch *rm = RMATCH(match);
+    int n = rm->num_regs;
+    *regexp_out = rm->regexp;
+    *str_out = rm->str;
+    *num_regs_out = n;
+
+    OnigPosition *blob = ALLOC_N(OnigPosition, n ? 2 * n : 1);
+    const OnigPosition *beg = RMATCH_BEG_PTR(match);
+    const OnigPosition *end = RMATCH_END_PTR(match);
+    for (int i = 0; i < n; i++) {
+        blob[2 * i] = beg[i];
+        blob[2 * i + 1] = end[i];
+    }
+
+    if (FL_TEST_RAW(match, RMATCH_ONIG)) {
+        onig_region_free(&rm->as.onig, 0);
+        memset(&rm->as.onig, 0, sizeof(rm->as.onig));
+        FL_UNSET_RAW(match, RMATCH_ONIG);
+    }
+    if (rm->char_offset) {
+        ruby_xfree(rm->char_offset);
+        rm->char_offset = NULL;
+        rm->char_offset_num_allocated = 0;
+    }
+    return blob;
+}
+
+VALUE
+rb_match_move_alloc(VALUE klass, int num_regs)
+{
+    return match_alloc_n(klass, num_regs);
+}
+
+void
+rb_match_move_load(VALUE match, VALUE regexp, VALUE str, int num_regs, const void *blob_)
+{
+    const OnigPosition *blob = blob_;
+    struct RMatch *rm = RMATCH(match);
+    RB_OBJ_WRITE(match, &rm->str, str);
+    RB_OBJ_WRITE(match, &rm->regexp, regexp);
+
+    OnigPosition *beg = ALLOC_N(OnigPosition, num_regs ? num_regs : 1);
+    OnigPosition *end = ALLOC_N(OnigPosition, num_regs ? num_regs : 1);
+    for (int i = 0; i < num_regs; i++) {
+        beg[i] = blob[2 * i];
+        end[i] = blob[2 * i + 1];
+    }
+    match_set_regs(match, num_regs, beg, end);
+    ruby_xfree(beg);
+    ruby_xfree(end);
+}
+
+void
+rb_match_move_free(void *blob)
+{
+    ruby_xfree(blob);
+}
+
 typedef struct {
     long byte_pos;
     long char_pos;
@@ -1176,8 +1240,8 @@ match_check(VALUE match)
 }
 
 /* :nodoc: */
-static VALUE
-match_init_copy(VALUE obj, VALUE orig)
+VALUE
+rb_match_init_copy(VALUE obj, VALUE orig)
 {
     struct RMatch *rm = RMATCH(obj);
 
@@ -5082,7 +5146,7 @@ Init_Regexp(void)
     rb_undef_method(CLASS_OF(rb_cMatch), "new");
     rb_undef_method(CLASS_OF(rb_cMatch), "allocate");
 
-    rb_define_method(rb_cMatch, "initialize_copy", match_init_copy, 1);
+    rb_define_method(rb_cMatch, "initialize_copy", rb_match_init_copy, 1);
     rb_define_method(rb_cMatch, "regexp", match_regexp, 0);
     rb_define_method(rb_cMatch, "names", match_names, 0);
     rb_define_method(rb_cMatch, "size", match_size, 0);

@@ -56,6 +56,21 @@ attr_index_t rb_ivar_set_index(VALUE obj, ID id, VALUE val);
 attr_index_t rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val);
 VALUE rb_ivar_get_at(VALUE obj, attr_index_t index, ID id);
 VALUE rb_ivar_get_at_no_ractor_check(VALUE obj, attr_index_t index);
+void rb_generic_fields_lock_atfork(void);
+void rb_imemo_fields_record_shrefs(VALUE fields_obj);
+
+/* global GC 用の generic_fields weak pass。mark_foreach は全表（shareable 用 global と
+ * 全 Ractor の per-Ractor）の各 (key,val) で cb を呼び live key の val を mark する。
+ * drain_dead は is_dead(key) が真の entry を削除する。key は既に free/poison 済みかも
+ * しれないので key 本体や shape には触らない。 */
+void rb_gc_vm_generic_fields_mark_foreach(int (*cb)(VALUE key, VALUE val, void *arg), void *arg);
+void rb_gc_vm_generic_fields_drain_dead(bool (*is_dead)(VALUE key));
+/* 全 generic_fields 表（global + 全 Ractor per-Ractor）について cb(tbl,arg) を呼ぶ。
+ * compaction の参照更新（gc.c）から使う。 */
+void rb_generic_fields_tables_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg);
+void rb_generic_fields_shared_table_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg);
+/* obj の generic_fields entry を owner の per-Ractor 表から shared global 表へ移送。 */
+void rb_mv_generic_ivar_to_shared(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* variable.c (export) */

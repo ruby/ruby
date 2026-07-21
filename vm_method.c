@@ -30,6 +30,15 @@ mark_cc_entry_i(VALUE ccs_ptr, void *data)
     VM_ASSERT(vm_ccs_p(ccs));
 
     if (METHOD_ENTRY_INVALIDATED(ccs->cme)) {
+        /* local GC では prune できない。別 Ractor が cc table を読んでいる
+         * 可能性があるため。次の global GC (STW) が prune する。 */
+        if (rb_multi_ractor_p() && !rb_gc_during_global_gc_p()) {
+            rb_gc_mark_movable((VALUE)ccs->cme);
+            for (int i = 0; i < ccs->len; i++) {
+                rb_gc_mark_movable((VALUE)ccs->entries[i].cc);
+            }
+            return ID_TABLE_CONTINUE;
+        }
         /* Before detaching the CCs from this class, we need to invalidate the cc
          * since we will no longer be marking the cme on their behalf.
          */

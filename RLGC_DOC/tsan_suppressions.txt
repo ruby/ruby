@@ -1,0 +1,498 @@
+# ThreadSanitizer suppressions for RLGCv2 (classified-benign reports).
+#
+# Usage:
+#   TSAN_OPTIONS="suppressions=RLGC_DOC/tsan_suppressions.txt" ./ruby ...
+#
+# Every entry here was triaged during M1b(4) (see that commit message);
+# anything NOT matched below is a new finding and must be investigated.
+
+# --- upstream, present without RLGC ---------------------------------
+
+# VM lock internals: lock_owner / lock_rec speculative reads.
+race:vm_locked
+race:vm_lock_enter
+race:rb_ec_vm_lock_rec
+
+# rb_vm_barrier acquires the scheduler lock under the VM lock by
+# design; the reverse edge lives in the thread scheduler. Pre-existing
+# lock-order report, not reachable as an actual deadlock through the
+# barrier protocol.
+deadlock:rb_ractor_sched_barrier_start
+
+# UPSTREAM MN-scheduler lock-order-inversion (potential deadlock), not RLGCv2: the
+# per-Ractor sched lock (thread_sched_lock_, thread_pthread.c) is held across a
+# coroutine switch by design and acquired in rb_threadptr_interrupt /
+# rb_threadptr_join_list_wakeup when waking a Thread#join waiter. Because the lock is
+# handed off across the coroutine transfer, TSan attributes it to whatever code runs
+# next (e.g. an rb_ensure body, even the require/raise_loaderror path), so it sees a
+# spurious cycle "sched-lock => other-lock => sched-lock". Same coroutine-handoff
+# blind spot as the mutex:thread_sched_* family above, just reported as a lock-order
+# cycle. git blame = upstream (thread_sched_lock_ = ef2bb61018 Koichi's upstream MN
+# scheduler; interrupt/ensure = baseline d2a0e98c7); 0 RLGC markers; not an actual
+# deadlock through the GVL/handoff protocol. Surfaced via l_coderange_share (TSan
+# exitcode 66) where a failed error_highlight require raised inside the wakeup path.
+deadlock:thread_sched_lock_
+deadlock:rb_threadptr_interrupt
+
+# More of the SAME coroutine-handoff lock-order-inversion family (potential deadlock,
+# not actual -- the probes complete in 1-6s, no hang), among the upstream ractor /
+# MN-scheduler locks that are held across coroutine switches:
+#   * ractor_sched_lock_ (global ractor scheduler lock, thread_pthread.c:497) <=>
+#     ractor_lock (per-Ractor lock, ractor.c:85)         [via ractor_chain]
+#   * ubf_set (unblock-func install, thread_pthread.c:1111) <=> a lock held across a
+#     vm_yield                                           [via m_objspace_each]
+# git blame all = upstream baseline d2a0e98c7; 0 RLGC markers near any. The MN
+# scheduler holds these across coroutine transfers, so TSan's lock-order graph sees
+# spurious cycles; the real acquisition order is consistent (no hang observed).
+deadlock:ractor_sched_lock_
+deadlock:ractor_lock
+deadlock:ubf_set
+
+# Shape tree lock-free readers (upstream lock-free design).
+race:shape_get_next
+
+# rb_intern("literal") lazy static-ID cache (rbimpl_intern_const in
+# include/ruby/internal/symbol.h:301-303): `while(!*ptr) *ptr =
+# rb_intern_const(str)`. Deliberately racy idempotent lazy init -- every
+# racer writes the SAME ID and the loop re-checks, so the report is benign
+# by design. Pre-existing upstream: any cfunc using rb_intern("lit") called
+# from two parallel Ractors hits it. RLGCv2 merely exposes one more instance
+# by making GC.compact concurrent across objspaces (gc_compact_stats).
+race:rbimpl_intern_const
+
+# Open-coded lazy static-ID cache, same benign idempotent pattern as
+# rbimpl_intern_const: extract_raise_options (eval.c) does
+#   static ID keywords[1] = {0}; if (!keywords[0]) CONST_ID(keywords[0],"cause");
+# Two Ractors raising concurrently both init the static to the SAME id. Benign.
+race:extract_raise_options
+
+# objspace->flags.during_gc read on the GC-accounted malloc path
+# (malloc_during_gc_p, inlined into rb_gc_impl_calloc / objspace_malloc_gc_stress)
+# vs the global GC setting during_gc=TRUE on each foreign objspace
+# (rlgc_global_gc step 3). Benign: malloc_during_gc_p is
+#   during_gc && !dont_gc_val() && !rb_gc_multi_ractor_p() && ruby_thread_has_gvl_p()
+# and the racing reader is the GVL-less timer thread (native_thread_alloc) in
+# multi-Ractor mode, so BOTH !rb_gc_multi_ractor_p() and ruby_thread_has_gvl_p()
+# force the result to false regardless of the during_gc bit -- the raced read is
+# never used. (Possible non-race cleanup for upstream: test ruby_thread_has_gvl_p
+# before during_gc so the GVL-less path never reads it.)
+race:malloc_during_gc_p
+race:objspace_malloc_gc_stress
+# Same during_gc-flag-on-malloc-path race, but with malloc_during_gc_p inlined into
+# check_malloc_not_in_gc (default.c:10092, the read), reached via rb_gc_impl_malloc.
+# TSan symbolizes the top frame as the caller, so the lines above didn't match it.
+# Observed via h_io_pipe_gc (~1/6000); git blame = upstream baseline d2a0e98c7;
+# 0 RLGC markers; CHECK+ASAN clean. Same benign reasoning as above.
+race:check_malloc_not_in_gc
+
+# The timer thread peeks ubf_list_head emptiness without ubf_list_lock
+# (ubf_threads_empty <- timer_thread_set_timeout); a stale read only
+# defers the unblock sweep by one timer tick. Upstream pattern in
+# thread_pthread.c, untouched by RLGC (caught during a TSan build's
+# mkmf, which runs system()).
+race:ubf_threads_empty
+
+# --- RLGCv2, benign by design ---------------------------------------
+
+# Inline method cache stores (any executing Ractor) vs the owner's GC
+# marking the iseq's call data: a VALUE-sized slot read returns the old
+# or the new callcache, both valid objects; liveness is guaranteed by
+# the born-shareable pin, not by this read.
+race:vm_search_method_slowpath0
+race:vm_search_method_fastpath
+race:rb_iseq_mark_and_move
+
+# Heuristic counter reads (vm->ractor.cnt, zombie count): main reads
+# them under its no-barrier VM lock; workers can only observe cnt >= 2,
+# so every decision maker sees a consistent value.
+race:rb_gc_single_objspace_p
+race:rlgc_global_wanted_p
+race:vm_remove_ractor
+race:vm_insert_ractor0
+
+# zombie_threads list links are VM-locked on both sides (the dying
+# thread's add and the root-pass walk); the report is the
+# sched.finished bool, written lock-free by the exiting native thread.
+# A stale false only re-marks the wrapper for one more cycle; the
+# delete happens on the next walk.
+race:rb_thread_sched_mark_zombies
+
+# The Ractor-creation objspace swap (cr->objspace, under the VM lock)
+# is read lock-free only by other Ractors' mark_roots main-objspace
+# comparison -- for them the swapped value can never equal their own
+# objspace, so either value compares false. gc_enter itself keys off
+# the stable rlgc_main_objspace instead.
+race:rb_thread_create_ractor
+
+# Ractor status byte: lock-free readers (Ractor#inspect, terminated?
+# polls, blocking-cnt bookkeeping peeks) tolerate any momentary value;
+# every decision made on it is re-validated under the ractor/VM lock.
+race:ractor_status_set
+
+# The global call-cache cache (gccct, vm_eval.c) reads entries
+# speculatively and refills under the VM lock -- upstream's lock-free
+# design. Either the old or the new cc is observed; both stay alive in
+# RLGCv2 via the born-shareable pin.
+race:gccct_method_search
+
+# The owner's GC ages an object by an RMW on its flags word while
+# foreign Ractors read IMMUTABLE bits of the same word lock-free
+# (vm_ic_hit_p reading a shareable constcache's flags). The read sees
+# the old or the new word; the bits it consults are identical in both.
+# No write-write pairing exists: the constcache's own flag writes
+# (`flags |= IMEMO_CONST_CACHE_SHAREABLE`) happen on the freshly
+# allocated, not-yet-published entry, and every refill replaces the
+# entry wholesale.
+race:RVALUE_AGE_SET
+
+# Method call-cache fastpath install (vm_cc_call_set): any executing
+# Ractor stores the same function pointer for the same cme; readers
+# see the uninitialized-slow or the installed-fast value, both valid.
+# Sibling of the inline-cache-store family above; liveness of the cc
+# is the born-shareable pin's job.
+race:vm_cc_call_set
+
+# The owner's GC re-asserts WB_REQUIRED on an escaped (shareable proc)
+# env frame while a foreign Ractor executing that proc walks the env
+# pointers (rb_vm_svar_lep reads VM_ENV_FLAG_LOCAL of the same flags
+# word). The walked bits are immutable after escape; the RMW's bit is
+# not consulted by the walker.
+race:VM_ENV_FLAGS_SET
+
+# --- RLGCv2, classified in the 10h verification campaign (2026-06-15) ---
+# (The campaign also produced real fixes -- garbage_object_p containment,
+# postponed-job atomic read, rb_get_freeze_opt idFreeze -- which removed
+# their race families outright; the entries below are the genuinely benign
+# remainder.)
+
+# Inline constant cache. getconstant_path loads ic->entry and reads the
+# entry's flags/value lock-free, while another Ractor publishes a fresh
+# entry (vm_ic_update's RB_OBJ_WRITE) and the old one is freed+reused later.
+# A reader runs entirely between two safepoints with no GC in between, and
+# the global GC that frees a (born-shareable) entry first waits for every
+# Ractor to reach a safepoint -- so a reader never observes a freed entry;
+# the free and the slot reuse are sequenced after the read by the STW
+# barrier, which TSan cannot model. Even if a stale entry were read, the
+# hit check fails (reused slot lacks IMEMO_CONST_CACHE_SHAREABLE) -> miss ->
+# recompute. Sibling of the vm_search_method / RVALUE_AGE_SET families.
+race:rb_vm_opt_getconstant_path
+race:vm_ic_hit_p
+
+# Call-cache builtin-function fastpath install: vm_cc_bf_set stores cc->bf
+# (the same bf for the same cme) while an executing Ractor reads it. Same
+# benign pattern as vm_cc_call_set; liveness via the born-shareable pin.
+race:vm_cc_bf_set
+
+# Terminated Ractor's heap absorb (rlgc_objspace_absorb) rewrites
+# page->objspace while a concurrent marker on a *third* Ractor reads it for
+# the containment check (gc_mark). The marker is neither the absorbing
+# Ractor (dst, which performs the absorb single-threaded) nor the dead src,
+# so page->objspace compares foreign whichever value is observed -> the
+# object is treated as a live leaf and skipped either way. Benign.
+race:rlgc_objspace_absorb
+
+# --- RLGCv2, surfaced after the coroutine TSan-fiber annotations (2026-06-17) ---
+
+# The M:N thread scheduler hands its lock (sched->lock_) ACROSS a coroutine
+# switch by design: it is pthread_mutex_lock'd before coroutine_transfer and
+# pthread_mutex_unlock'd in the resumed coroutine's co_start (thread_sched_unlock_).
+# This is the same OS thread throughout, so the POSIX unlock is valid. Once the
+# coroutine switches are annotated for TSan (__tsan_switch_to_fiber, required to
+# stop libtsan crashing on the move oracles) TSan models each coroutine as a
+# distinct fiber and reports the handoff as "unlock of an unlocked mutex (or by
+# a wrong thread)". Benign: the lock ownership is handed over intentionally.
+mutex:thread_sched_unlock_
+mutex:thread_sched_lock_
+# Same sched-lock-across-coroutine-handoff, but with thread_sched_unlock_ INLINED
+# into the resumed coroutine entry (co_start = ruby_coroutine_start,
+# thread_pthread_mn.c:456): the unlock frame then symbolizes to co_start, so the
+# thread_sched_unlock_ suppression above misses it. The unlocked mutex lives in the
+# rb_ractor_t (per-Ractor sched lock); the lock is handed over the coroutine transfer
+# by design. Same benign "wrong thread" report. (caught 2026-06-29 via WeakMap probe)
+mutex:co_start
+mutex:ruby_coroutine_start
+
+# The dying_th handoff field (rb_thread_sched.dying_th) is read+cleared under the
+# sched lock in thread_sched_unlock_ and set under it in co_start; all accesses
+# are sched-lock-protected, so they are really mutually excluded. But that lock
+# is handed off across the terminal coroutine transfer, which defeats TSan's
+# happens-before tracking for it (same family as thread_sched_set_running etc.),
+# so concurrent thread_sched_unlock_ runs look like a data race on dying_th.
+# Benign: it carries "which dying thread to mark finished" across the handoff so
+# finished is published only after the lock's final release (fixes the M1b
+# teardown UAF); the field itself is never read outside the lock.
+race:thread_sched_unlock_
+
+# M:N scheduler sched-lock-handoff false positives. The per-Ractor sched lock
+# (rb_thread_sched.lock_) is handed off across coroutine switches (held in
+# co_start, released by the resuming context), which defeats TSan's
+# happens-before tracking for it. All of these touch sched-lock-protected
+# scheduler state and ARE mutually excluded by that lock; TSan only flags them
+# because of the handoff. Confirmed on stock upstream master + TSan (no RLGC):
+# a generic multi-Ractor send/receive workload reproduces them, so they are an
+# upstream M:N-scheduler x TSan interaction, not an RLGCv2 race.
+race:thread_sched_set_running
+race:thread_sched_to_ready_common
+race:thread_sched_wakeup_running_thread
+race:thread_sched_wait_running_turn
+race:rb_ractor_sched_wakeup
+race:rb_ractor_sched_wait
+
+# Thread teardown vs its GC free, after the dying_th fix. The dying thread writes
+# th->nt under the sched lock (native_thread_assign in co_start) and saves SP into
+# th->sched.context during the terminal coroutine transfer; the dying_th handoff
+# (see thread_sched_unlock_) now publishes th->sched.finished only AFTER that
+# transfer's lock is released, so the zombie ledger frees the thread strictly
+# after every teardown write -- there is no concurrent access. TSan still reports
+# it because the lock is handed off across the coroutine switch, so it sees no
+# happens-before edge from the dying native thread to the freeing thread (same
+# coroutine-handoff blind spot as the sched-handoff family above). Benign given
+# the dying_th ordering.
+race:rb_threadptr_sched_free
+
+# Same coroutine-handoff blind spot, anchored on co_start itself: the dying thread's
+# terminal coroutine epilogue (co_start, thread_pthread_mn.c -- native_thread_assign,
+# rb_ractor_set_current_ec(th->ractor, NULL) at :487) reads th / th->nt / th->ractor,
+# while the freeing thread's GC does a sized ruby_xfree of a thread-owned buffer
+# (free <- rb_gc_impl_free <- ruby_xfree_sized). The sched lock that orders these is
+# handed off across the terminal coroutine transfer, so TSan sees no happens-before
+# edge and reports free-vs-co_start-read. Benign: the dying_th ordering frees the
+# thread strictly after the epilogue's last write (M1b). git blame co_start = upstream
+# baseline d2a0e98c7; CHECK 0/16 + ASAN 0/56 on v2_first_child_double_sweep; ~1/1500.
+race:co_start
+race:native_thread_assign
+
+# The Ractor sched lock is ACQUIRED across the handoff too (co_start ->
+# thread_sched_lock_), the mirror of the unlock side above. A single-world local
+# GC freeing a just-terminated (e.g. failed-creation) Ractor races the nt's
+# co_start lock-acquire in TSan's view (ractor_free / free vs thread_sched_lock_),
+# again because the handoff hides the happens-before. ASAN (5 GC-stress runs of
+# failed-creation churn) shows NO use-after-free -- the dying_th ordering keeps
+# the free after the nt's teardown; this is the same benign handoff blind spot.
+race:thread_sched_lock_
+
+# UPSTREAM (not RLGCv2), benign: concurrent Module#include of a SHAREABLE module
+# from multiple Ractors. ensure_includable -> rb_class_set_initialized does
+# FL_SET_RAW(module, RCLASS_IS_INITIALIZED) -- an idempotent re-set of an
+# already-set flag on an already-initialized (frozen, shareable) module -- while
+# another Ractor reads the module's classext flags (RCLASS_PRIME_CLASSEXT_*).
+# Generic class.c machinery (git blame: upstream "Use flag for
+# RCLASS_IS_INITIALIZED"), no RLGC involvement; the GC is not in the picture.
+# Observed via p_module_include; NOT in the continuous arms. Upstream's call.
+race:rb_class_set_initialized
+
+# UPSTREAM MN-scheduler / coroutine layer (not RLGCv2), CHECK+ASAN clean:
+# - rb_ractor_sched_barrier_start reads ractor scheduler state during barrier
+#   ESTABLISHMENT (before STW completes), while other Ractors still run; the
+#   barrier protocol synchronizes the actual stop via safepoints. (Already have
+#   the deadlock: variant; this is the data-race read.)
+# - ec_switch (cont.c) writes th->ec during a fiber context switch. The coroutine
+#   switch is TSan-fiber-annotated (coroutine/*/Context.h, __tsan_switch_to_fiber);
+#   the residual report is the barrier-window read of thread/ec state. The GC's
+#   real mark of th->ec happens under the completed barrier (world stopped).
+# Observed via p_fiber_enum (Enumerator-backed fibers + GC.start); the GC is only
+# the caller of the upstream barrier, not the source. Upstream's call.
+race:rb_ractor_sched_barrier_start
+race:ec_switch
+race:fiber_restore_thread
+
+# UPSTREAM (string.c, not RLGCv2), benign: concurrent String#length on a SHARED
+# frozen string whose coderange is still ENC_CODERANGE_UNKNOWN. str_strlen scans
+# and caches the coderange (a flag write) the first time; multiple Ractors do it
+# concurrently and compute the SAME value -- idempotent lazy cache, same family
+# as rb_intern / rb_class_set_initialized. Generic string code, GC not involved.
+race:str_strlen
+race:single_byte_optimizable
+
+# UPSTREAM class/metaclass/namespace internals (class.c, not RLGCv2), benign:
+# concurrent class creation across Ractors (rb_class_initialize -> rb_make_metaclass
+# -> make_metaclass) races on FLAG bits of shared classes/metaclasses (e.g. the
+# Object metaclass chain): class_associate_super does FL_SET_RAW while another
+# Ractor's make_metaclass does FL_TEST on the same flags word. Independent/
+# idempotent bits; CHECK+ASAN clean. git blame = upstream ("Don't add singleton
+# classes to subclasses list", "namespace on read"); GC not involved. Same family
+# as rb_class_set_initialized. "Concurrent class/module creation across Ractors"
+# is an upstream classext/namespace TSan area, not an RLGC GC surface.
+race:make_metaclass
+race:class_associate_super
+
+# UPSTREAM MN thread-scheduler (thread_pthread*.c, not RLGCv2): the timer thread
+# (timer_thread_deq_wakeup/check_timeout managing sleep timeouts) writes a sched
+# field under one mutex while a sleeping thread (thread_sched_wait_events <-
+# native_sleep) reads it under another. git blame = upstream "Fix thread
+# scheduler issue with thread_sched_wait_events"; no RLGC markers; CHECK+ASAN
+# clean; GC not involved (observed via f_sleep_gc whose sleep engages the timer).
+# Same MN-scheduler family as rb_ractor_sched_barrier_start / ec_switch.
+race:timer_thread_deq_wakeup
+race:timer_thread_check_timeout
+race:thread_sched_wait_events
+
+# UPSTREAM MN native-thread setup (thread_pthread.c, not RLGCv2): ruby_thread_set_native
+# (sets the per-NT current-thread TLS) vs nt_start (a starting native thread) racing
+# during native-thread create/start. Observed via h_io_pipe_gc (IO.pipe spawns
+# threads). git blame = upstream, no RLGC markers, GC not involved, CHECK+ASAN clean.
+# Same MN-scheduler family as rb_ractor_sched_barrier_start / timer_thread_* / ec_switch.
+race:ruby_thread_set_native
+race:nt_start
+
+# UPSTREAM lock-free concurrent set (concurrent_set.c, not RLGCv2): the fstring /
+# symbol / id tables are a lock-free open-addressing set. concurrent_set_try_resize
+# publishes the new table via an atomic RELEASE store (concurrent_set.c:211) under
+# RB_VM_LOCKING(), while rb_concurrent_set_find_or_insert reads the table lock-free
+# (acquire). TSan flags the resize-publish vs lock-free-reader pair. git blame line
+# 211 = upstream 45c016866 "Use explicit memory orders in concurrent_set"; 0 RLGC
+# markers in the file (RLGC's only touch, b7d184d3f, was GC-liveness of the container,
+# not its access protocol). Observed via i_hash_rehash_compact; CHECK+ASAN clean.
+# Same upstream lock-free-by-design family as shape_get_next.
+race:concurrent_set_try_resize_without_locking
+race:concurrent_set_try_resize
+
+# UPSTREAM dynamic-symbol lazy-id pinning (symbol.c, not RLGCv2): a Ractor-shared
+# dynamic symbol gets its ID assigned lazily on first rb_sym2id. The writer pins it
+# under GLOBAL_SYMBOLS_LOCKING (symbol.c:993 `RSYMBOL(sym)->id = id |= num`), while
+# another Ractor reads SYMBOL_PINNED_P / RSYMBOL(name)->id lock-free on the fast path
+# (symbol.c:1177-1178, via rb_check_id). A reader that sees not-yet-pinned falls to the
+# slow path under the same lock, so the result is always correct. git blame both lines
+# = upstream (d2a0e98c7 / Peter Zhu 6c24904a69); 0 RLGC markers in symbol.c; not GC
+# code. Observed via i_genivar_gc (concurrent ivar set across Ractors); CHECK+ASAN clean.
+race:rb_sym2id
+race:rb_check_id
+
+# RLGCv2 benign-by-design: a confined (foreign) GC marks another Ractor's
+# single-VALUE slots -- r_stdin/r_stdout/r_stderr/verbose/debug -- in
+# ractor_mark_unshareable_parts (ractor.c:246), while that Ractor's own main
+# thread initializes the same fields during startup (thread.c:680
+# `r->r_stdin = rb_io_prep_stdin()` under RB_VM_LOCK). These are single aligned
+# 8-byte words: a torn read is impossible, and BOTH possible values are safe to
+# pass to rb_gc_mark -- the calloc'd initial 0 (Qfalse, an immediate, skipped)
+# or a fully-published IO object (foreign to the marking objspace, skipped by
+# containment). The design (design_v2.md, ractor.c:243-245) explicitly accepts
+# this lock-free single-word read. CHECK 0/20 + ASAN 0/20 on f_mega_mix /
+# compact_race / p_absorb_compact_race; only TSan flags the bare read/write pair.
+race:ractor_mark_unshareable_parts
+
+# UPSTREAM lock-free inline call-cache for `...` argument forwarding (vm_args.c /
+# insns.def, not RLGCv2): the same iseq run by two threads shares one call-data.
+# vm_caller_setup_fwd_args reads `cd->cc` lock-free (vm_args.c:1225) to build a
+# forwarding call, while another thread publishes a refreshed cc with a write
+# barrier (insns.def:888 `RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, ...)`). A stale read
+# just re-searches the method -- the cc is a speculative cache. git blame both
+# lines = upstream baseline d2a0e98c7; 0 RLGC markers. Observed via struct_data /
+# compact_send; CHECK 0/5 + ASAN 0/5. Same lock-free-cc family as the IC notes above.
+race:vm_caller_setup_fwd_args
+
+# UPSTREAM benign static-local lazy init (gc/default/default.c, not RLGCv2):
+# gc_verify_compaction_references lazily fills a `static ID keywords[3]` cache
+# (default.c:11111) on first call. RLGC made GC.verify_compaction_references run
+# concurrently across Ractors, so two callers race to init the static -- but both
+# write the SAME interned IDs (idempotent). Debug-only method. git blame = upstream
+# baseline d2a0e98c7; CHECK 0/5 + ASAN 0/5. Same family as the static-id init notes.
+race:gc_verify_compaction_references
+
+# UPSTREAM concurrent Module#include (class.c, not RLGCv2): two Ractors including
+# into shareable modules race in do_include_modules_at (class.c:1742) on the
+# origin/super-chain machinery. git blame = upstream baseline d2a0e98c7; 0 RLGC
+# markers; GC not involved. Observed via p_module_include; CHECK 0/5 + ASAN 0/5.
+# Same upstream class.c family as the rb_class_set_initialized note above.
+race:do_include_modules_at
+
+# UPSTREAM MN-scheduler lock-free handoff hints (thread_pthread.c / ractor_core.h,
+# not RLGCv2): the scheduler tracks two per-Ractor fast-path hints that one native
+# thread publishes under sched->lock_ (M0) while another reads them lock-free during
+# a context switch -- the authoritative state stays under the lock, a stale hint just
+# costs an extra check.
+#   * running_ec: rb_ractor_set_current_ec_ (ractor_core.h:306) writes it; another
+#     thread's rb_ractor_thread_switch (ractor_core.h:272) reads it via
+#     blocking_region_end.
+#   * runnable_hot_th: thread_sched_to_waiting_common (thread_pthread.c:1079) writes
+#     it; thread_sched_to_running (thread_pthread.c:1004) reads it.
+# running_ec git blame = upstream baseline d2a0e98c7; runnable_hot_th = upstream
+# (Jacob Lacouture). 0 RLGC markers near either. Observed via h_io_pipe_gc; CHECK+ASAN
+# clean. Same MN-scheduler family as ec_switch / fiber_restore_thread / thread_sched_*.
+race:rb_ractor_set_current_ec_
+race:rb_ractor_thread_switch
+race:thread_sched_to_running
+race:thread_sched_to_waiting_common
+
+# UPSTREAM malloc-accounting counters with explicit memory orders (gc/default/
+# default.c, not RLGCv2): gc_malloc_counters_increase reads malloc_at_last_gc /
+# free_at_last_gc via gc_counter_load_acquire (rbimpl_atomic_u64_load_acquire) while
+# another GC publishes them via gc_counter_store_release. These are atomic
+# acquire/release stats counters; a stale read only nudges the next-GC heuristic, no
+# corruption. git blame = upstream (Matt Valentine-House, cb3b126eee / ec114e5701).
+# Extremely rare (1 in 200+ runs); CHECK+ASAN clean. The same counters are also read
+# via gc_counter_load_relaxed (gc_malloc_counters_increase, default.c:1230) and
+# published via gc_counter_store_release -- all the same benign stats-counter family.
+race:gc_counter_load_acquire
+race:gc_counter_load_relaxed
+race:gc_counter_store_release
+
+# Same malloc-accounting-heuristic family: objspace_malloc_increase_body
+# (default.c:9957) reads the GC-trigger counter `malloc_increase` of a per-Ractor
+# objspace while the creating thread is still calloc'ing that objspace struct
+# (rb_gc_impl_objspace_alloc -> calloc1(sizeof(rb_objspace_t)), default.c:11362). The
+# objspace is fully zeroed by calloc before it is published to its Ractor, and
+# malloc_increase only drives WHEN a GC fires, so a stale/racy read is benign; TSan
+# just lacks a happens-before edge from the Ractor-creation handshake to the reader.
+# git blame both lines = upstream baseline d2a0e98c7, 0 RLGC markers; CHECK 0/20 +
+# ASAN 0/20 on h_io_pipe_gc; ~1/2000.
+race:objspace_malloc_increase_body
+
+# UPSTREAM YJIT global stats counters (compile.c, not RLGCv2): rb_iseq_translate_
+# threaded_code does a plain `rb_yjit_live_iseq_count++` / `rb_yjit_iseq_alloc_count++`
+# (compile.c:996-997) on process-global counters while finalizing a compiled iseq.
+# Two Ractors compiling iseqs concurrently (e.g. via eval) race on these stats; a
+# lost increment only skews a YJIT bookkeeping count. git blame = upstream baseline
+# d2a0e98c7; 0 RLGC markers; not GC code; CHECK+ASAN clean. Same non-atomic-global-
+# counter family as gc_counter / object_id_counter; broken only because Ractors drop
+# the GVL these counters assumed.
+race:rb_iseq_translate_threaded_code
+
+# UPSTREAM Regexp not Ractor-safe (re.c, not RLGCv2): rb_reg_onig_match bumps the
+# shared Regexp's in-use guard `RREGEXP(re)->usecnt++ / usecnt--` (re.c:1816/1819)
+# non-atomically around the Onigmo match. Two Ractors matching the SAME frozen Regexp
+# literal concurrently race on usecnt. usecnt guards against recompiling the shared
+# regex in place while a match is in flight, so a torn count is benign UNLESS the
+# recompile path is taken (encoding mismatch) -- a genuine UPSTREAM Ractor-safety gap
+# (worth reporting upstream, like the dtoa one), not RLGCv2's doing. git blame =
+# upstream baseline d2a0e98c7; 0 RLGC markers; not GC code; CHECK+ASAN clean (the
+# repro uses one encoding, so no in-place recompile).
+race:rb_reg_onig_match
+
+# UPSTREAM object-id counter (gc.c, not RLGCv2): id2ref_tbl_mark reads
+# LAST_OBJECT_ID() (the monotonic global object_id_counter, gc.c:2153) to decide
+# whether enough ids were generated that keys went T_BIGNUM, while another thread
+# bumps it via RUBY_ATOMIC_SIZE_FETCH_ADD in generate_next_object_id. A stale read
+# of a monotonic counter at the BIGNUM threshold (~2^62 ids) is harmless. git blame
+# = upstream (Jean Boussier b5575a80bc); 0 RLGC markers; CHECK+ASAN clean.
+race:id2ref_tbl_mark
+
+# RLGCv2 benign: rb_gc_impl_handle_weak_references_alive_p (gc/default/default.c:6471)
+# reads obj's mark bit (RVALUE_MARKED -> page->mark_bits) to judge a weak ref's
+# target, while another thread reinitializes a recycled heap page via
+# heap_page_allocate (default.c:2493). The page struct memory is valid (being
+# re-initialized, not freed), so the read yields a valid bool: a dead target on a
+# recycled page reads not-marked -> correctly judged not-alive, and the global GC's
+# unified mark is authoritative anyway (per the containment comment at :6468). git
+# blame = RLGCv2 (Koichi d3df7bcdc0) but CHECK 0/12 + ASAN 0/36 -- no corruption.
+race:rb_gc_impl_handle_weak_references_alive_p
+
+# KNOWN BENIGN UPSTREAM, deliberately NOT suppressed (no narrow token): the lock-free
+# `...` forwarding call-cache has a write-write variant where two threads running the
+# same iseq both publish cd->cc via RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, ...) at
+# insns.def:888 (both stacks symbolize to rb_obj_write + vm_exec_core). Same benign
+# cd->cc speculative cache as race:vm_caller_setup_fwd_args above (last-writer-wins,
+# both values valid; git blame insns.def:888 = upstream d2a0e98c7; CHECK+ASAN clean).
+# A `race:rb_obj_write` or `race:insns.def` suppression would be far too broad (the
+# generational write barrier / the entire bytecode interpreter) and could mask real
+# WB races, so it is left unsuppressed and recognized on sight in triage. The campaign
+# scripts filter this exact signature (insns.def:888) so it does not crowd the logs.
+
+# UPSTREAM YJIT/ZJIT per-insn counter (vm_exec.h rb_vm_insn_count, not RLGCv2):
+# vm_exec_core's INSN_ENTRY does a plain `rb_vm_insn_count++` on a process-global
+# uint64 when built with YJIT/ZJIT. Two Ractors executing bytecode concurrently
+# race on it; a lost increment only skews a JIT stats counter. Same benign
+# non-atomic-global-counter family as rb_iseq_translate_threaded_code. Observed
+# via h_objid_compact / n4_method_churn_hierarchy (TSan exit 66); the write
+# frames symbolize to vm_exec_core (inlined), so suppress by the global's name.
+race:rb_vm_insn_count

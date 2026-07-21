@@ -1,0 +1,34 @@
+# ThreadSanitizer instrumentation ignore list for the RLGCv2 TSan build.
+#
+# Usage (build-time, TSan build only):
+#   cflags=... -fsanitize-ignorelist=<abs path to this file>
+#
+# WHY this exists in addition to tsan_suppressions.txt:
+#   A runtime *suppression* is applied only AFTER TSan has already built the
+#   race report's stack traces. Under heavy multi-Ractor concurrency the
+#   benign lock-free inline method/call-cache races below are reported by many
+#   threads at once, and libtsan's own trace reconstruction
+#   (__tsan::ReportRace -> VarSizeStackTrace::Init -> internal memcpy) crashes
+#   with a NULL destination buffer BEFORE the suppression check runs. The crash
+#   surfaces as the long-standing "move SEGV" (it is not a Ruby heap bug; the
+#   move-courier graph is valid). Excluding these functions from instrumentation
+#   means no shadow access is recorded for them, so no report is ever built and
+#   the libtsan reporter never runs on them -- any *real* race elsewhere is
+#   still detected.
+#
+# Every function listed here corresponds to an entry already classified benign
+# in tsan_suppressions.txt (the inline method/call-cache family): a VALUE-sized
+# slot read returns the old or the new callcache, both valid live objects;
+# liveness is the born-shareable pin's job, not this read.
+
+[thread]
+# inline method / call cache lookup + install (cd->cc, ccs fields)
+fun:vm_search_method_slowpath0
+fun:rb_vm_search_method_slowpath
+fun:vm_search_method_fastpath
+fun:vm_search_method
+fun:vm_lookup_cc
+fun:vm_search_cc
+fun:vm_ccs_push
+fun:vm_cc_call_set
+fun:vm_cc_bf_set
