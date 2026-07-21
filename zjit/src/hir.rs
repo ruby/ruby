@@ -8131,95 +8131,135 @@ impl Function {
         id
     }
 
-    /// Fuse `<fixnum>.times.map { pure block }` into a synthesized loop.
+    /// Fuse single-use Enumerator chains into synthesized loops.
     ///
-    /// Blockless Integer#times allocates an Enumerator that Enumerable#map then
-    /// drives through C-level block forwarding -- ~75% of the chain's cycles.
-    /// When the intermediate Enumerator's only consumer is a map/collect send
-    /// with a literal one-parameter block, rewrite the pair into
+    /// Producers: blockless `<fixnum>.times`, `<array>.map`, and
+    /// `<array>.each_with_index`, each returning an Enumerator whose sole
+    /// consumer drives it through per-element C block forwarding (~75% of the
+    /// chain's cycles). Consumers: `map`/`collect`, `select`/`filter`, `to_a`,
+    /// and `with_index { }`. Supported combinations:
     ///
-    ///   ary = rb_zjit_ary_new_capa_fix(n)
-    ///   i = 0; while i < n; ary.push(<inlined block body>(i)); i += 1; end
+    ///   n.times.map { |i| }              -> pre-sized collect loop
+    ///   n.times.select { |i| }           -> conditional-push loop
+    ///   n.times.to_a                     -> fill loop (no block)
+    ///   ary.map.with_index { |x, i| }    -> indexed collect loop
+    ///   ary.each_with_index.map { |x, i| } -> indexed collect loop
     ///
-    /// guarded by MethodRedefined patchpoints on every method the equivalence
-    /// assumes stock (Integer#times, Integer#to_enum, Enumerator#map,
-    /// Enumerator#each).
+    /// Deopt strategy: the interpreter cannot resume inside the consumer's C
+    /// frame, so every side exit in the synthesized loop retargets to the
+    /// pre-producer FrameState -- the interpreter re-executes the whole chain
+    /// and the partial result is dropped. That restart is only sound when
+    /// re-running the block cannot double-apply an effect, so the translated
+    /// body must pass a purity whitelist (fixnum arithmetic, comparisons,
+    /// guards, constants, control flow). Blocks doing arithmetic on array
+    /// elements get a speculative Fixnum guard on the element (restart on
+    /// mismatch); anything else declines and takes the normal path, as do
+    /// escaping enumerators and non-literal blocks.
     ///
-    /// Deopt strategy: the interpreter cannot resume inside Enumerable#map's C
-    /// frame, so a mid-loop state has no bytecode-consistent representation.
-    /// Instead, every side exit inside the synthesized loop (block guards,
-    /// arithmetic overflow, interrupts, the array push) is retargeted to the
-    /// *pre-times* FrameState: on exit the interpreter re-executes the whole
-    /// chain from scratch and the partial array is discarded. That restart is
-    /// only sound when re-running the block cannot double-apply an effect, so
-    /// the translated block body must pass a purity whitelist (fixnum/flonum
-    /// arithmetic, comparisons, guards, constants, control flow); anything
-    /// else -- sends, ivar or local writes, allocations -- declines fusion and
-    /// rolls back to the original send pair.
+    /// The rewrite is only equivalent to the *stock* implementations:
+    /// MethodRedefined patchpoints invalidate on redefinition, and
+    /// compile-time gates require the Ruby producers to be the internal
+    /// ISEQs and the C methods to still be cfuncs -- otherwise a recompile
+    /// after invalidation would re-fuse against redefined methods.
     fn fuse_enumerator_chains(&mut self) {
         unsafe extern "C" {
             static rb_cEnumerator: VALUE;
             fn rb_zjit_ary_new_capa_fix(n: VALUE) -> VALUE;
         }
-        // Resolve the stock methods once. Bail if anything looks unusual.
+        #[derive(Clone, Copy, PartialEq)]
+        enum Producer { IntTimes, ArrayMapEnum, ArrayEachWithIndex }
+        #[derive(Clone, Copy, PartialEq)]
+        enum Consumer { Map, Select, ToA, WithIndexMap }
+
         let times_id = unsafe { rb_intern(c"times".as_ptr()) };
         let to_enum_id = unsafe { rb_intern(c"to_enum".as_ptr()) };
         let map_id = unsafe { rb_intern(c"map".as_ptr()) };
         let collect_id = unsafe { rb_intern(c"collect".as_ptr()) };
+        let select_id = unsafe { rb_intern(c"select".as_ptr()) };
+        let filter_id = unsafe { rb_intern(c"filter".as_ptr()) };
+        let to_a_id = unsafe { rb_intern(c"to_a".as_ptr()) };
         let each_id = unsafe { rb_intern(c"each".as_ptr()) };
-        let times_cme = unsafe { rb_callable_method_entry(rb_cInteger, times_id) };
-        let to_enum_cme = unsafe { rb_callable_method_entry(rb_cInteger, to_enum_id) };
-        let enumerator = unsafe { rb_cEnumerator };
-        let map_cme = unsafe { rb_callable_method_entry(enumerator, map_id) };
-        let each_cme = unsafe { rb_callable_method_entry(enumerator, each_id) };
-        if times_cme.is_null() || to_enum_cme.is_null() || map_cme.is_null() || each_cme.is_null() {
-            return;
-        }
-        if unsafe { get_cme_def_type(times_cme) } != VM_METHOD_TYPE_ISEQ {
-            return;
-        }
-        let times_iseq = unsafe { get_def_iseq_ptr((*times_cme).def) };
-        // The rewrite is only equivalent to the *stock* implementations. The
-        // patchpoints below catch later redefinitions, but compile-time
-        // resolution must also be the originals: times must be the internal
-        // numeric.rb ISEQ (user redefinitions live in user files), and
-        // to_enum/map/each must still be C functions (a Ruby override changes
-        // the definition type). Without this, a recompile after invalidation
-        // would happily re-fuse against the redefined methods.
-        if !iseq_get_location(times_iseq, 0).starts_with("times@<internal:numeric>") { return; }
-        if unsafe { get_cme_def_type(to_enum_cme) } != VM_METHOD_TYPE_CFUNC { return; }
-        if unsafe { get_cme_def_type(map_cme) } != VM_METHOD_TYPE_CFUNC { return; }
-        if unsafe { get_cme_def_type(each_cme) } != VM_METHOD_TYPE_CFUNC { return; }
+        let each_with_index_id = unsafe { rb_intern(c"each_with_index".as_ptr()) };
+        let with_index_id = unsafe { rb_intern(c"with_index".as_ptr()) };
 
-        // Find candidate (block, A=times send, B=map send) triples.
+        let enumerator = unsafe { rb_cEnumerator };
+        let cme_of = |klass: VALUE, mid: ID| unsafe { rb_callable_method_entry(klass, mid) };
+        let is_cfunc = |cme: *const rb_callable_method_entry_t| {
+            !cme.is_null() && unsafe { get_cme_def_type(cme) } == VM_METHOD_TYPE_CFUNC
+        };
+        let internal_iseq_of = |cme: *const rb_callable_method_entry_t, loc_prefix: &str| -> Option<IseqPtr> {
+            if cme.is_null() || unsafe { get_cme_def_type(cme) } != VM_METHOD_TYPE_ISEQ {
+                return None;
+            }
+            let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+            if iseq_get_location(iseq, 0).starts_with(loc_prefix) { Some(iseq) } else { None }
+        };
+
+        // Producer-side stock checks. The Ruby producers must be the internal
+        // definitions; the C pieces of each chain must still be cfuncs.
+        let times_cme = cme_of(unsafe { rb_cInteger }, times_id);
+        let int_to_enum_cme = cme_of(unsafe { rb_cInteger }, to_enum_id);
+        let enum_each_cme = cme_of(enumerator, each_id);
+        let times_iseq = internal_iseq_of(times_cme, "times@<internal:numeric>")
+            .filter(|_| is_cfunc(int_to_enum_cme) && is_cfunc(enum_each_cme));
+
+        let amap_cme = cme_of(unsafe { rb_cArray }, map_id);
+        let ary_to_enum_cme = cme_of(unsafe { rb_cArray }, to_enum_id);
+        let with_index_cme = cme_of(enumerator, with_index_id);
+        let amap_iseq = internal_iseq_of(amap_cme, "map@<internal:array>")
+            .filter(|_| is_cfunc(ary_to_enum_cme) && is_cfunc(enum_each_cme) && is_cfunc(with_index_cme));
+
+        let ewi_cme = cme_of(unsafe { rb_cArray }, each_with_index_id);
+        let aeach_cme = cme_of(unsafe { rb_cArray }, each_id);
+        let aeach_iseq = internal_iseq_of(aeach_cme, "each@<internal:array>");
+        let ewi_ok = is_cfunc(ewi_cme) && aeach_iseq.is_some() && is_cfunc(enum_each_cme);
+
+        if times_iseq.is_none() && amap_iseq.is_none() && !ewi_ok {
+            return;
+        }
+
         struct Candidate {
+            producer: Producer,
+            consumer: Consumer,
             block: BlockId,
             a_id: InsnId,
             a_pos: usize,
-            b_id: InsnId,
             b_pos: usize,
             guard_pos: Option<usize>,
             retargets: Vec<InsnId>,
             recv: InsnId,
             a_state: InsnId,
-            b_cd: *const rb_call_data,
-            blockiseq: IseqPtr,
+            b_id: InsnId,
+            some_cd: *const rb_call_data,
+            blockiseq: Option<IseqPtr>,
+            consumer_cme: *const rb_callable_method_entry_t,
+            consumer_mid: ID,
         }
         let mut candidates: Vec<Candidate> = vec![];
         for block in self.reverse_post_order() {
             let insns = self.blocks[block].insns.clone();
             for (a_pos, &a_id) in insns.iter().enumerate() {
-                let Insn::SendDirect(data) = self.find(a_id) else { continue };
-                if data.iseq != times_iseq || data.block.is_some() || !data.args.is_empty() {
-                    continue;
-                }
-                if !self.type_of(data.recv).is_subtype(types::Fixnum) {
-                    continue;
-                }
-                // The enumerator's only non-snapshot use must be a map/collect
-                // send with a literal block, in the same block -- possibly
-                // through a GuardType that type_specialize inserted on the
-                // profiled Enumerator, which we then consume along with A and B.
+                // Match a blockless, argless producer returning an Enumerator.
+                let (producer, recv, a_state, prod_cd) = match self.find(a_id) {
+                    Insn::SendDirect(data) => {
+                        if data.block.is_some() || !data.args.is_empty() { continue; }
+                        if Some(data.iseq) == times_iseq && self.type_of(data.recv).is_subtype(types::Fixnum) {
+                            (Producer::IntTimes, data.recv, data.state, data.cd)
+                        } else if Some(data.iseq) == amap_iseq && self.type_of(data.recv).is_subtype(types::ArrayExact) {
+                            (Producer::ArrayMapEnum, data.recv, data.state, data.cd)
+                        } else { continue; }
+                    }
+                    Insn::CCallVariadic(data) => {
+                        if data.block.is_some() || !data.args.is_empty() { continue; }
+                        if ewi_ok && data.cme == ewi_cme && self.type_of(data.recv).is_subtype(types::ArrayExact) {
+                            (Producer::ArrayEachWithIndex, data.recv, data.state, std::ptr::null())
+                        } else { continue; }
+                    }
+                    _ => continue,
+                };
+
+                // The Enumerator's only non-snapshot use must be the consumer,
+                // possibly through type_specialize's Enumerator GuardType.
                 let single_consumer = |fun: &Self, of: InsnId| -> Option<(usize, InsnId)> {
                     let of_res = fun.union_find.borrow().find_const(of);
                     let mut consumer: Option<(usize, InsnId)> = None;
@@ -8238,8 +8278,7 @@ impl Function {
                     }
                     consumer
                 };
-                let sc = single_consumer(self, a_id);
-                let Some(mut next) = sc else { continue };
+                let Some(mut next) = single_consumer(self, a_id) else { continue };
                 let mut guard_pos: Option<usize> = None;
                 if let Insn::GuardType { .. } = self.find(next.1) {
                     guard_pos = Some(next.0);
@@ -8247,47 +8286,64 @@ impl Function {
                     next = after_guard;
                 }
                 let (b_pos, b_id) = next;
-                // type_specialize may already have turned the map send into a
-                // CCallWithFrame carrying the literal block; match both shapes.
-                let (b_recv, cd, bi, b_args) = match self.find(b_id) {
-                    Insn::Send { recv, cd, block: Some(BlockHandler::BlockIseq(bi)), args, .. } => (recv, cd, bi, args),
+
+                // Match the consumer shape: mid + literal block (or none for to_a).
+                let (b_recv, b_mid, b_block, b_args_empty, b_cd) = match self.find(b_id) {
+                    Insn::Send { recv, cd, block, args, .. } => {
+                        (recv, unsafe { rb_vm_ci_mid((*cd).ci) }, block, args.is_empty(), cd)
+                    }
                     Insn::CCallWithFrame(data) => {
-                        let CCallWithFrameData { recv, cd, block: Some(BlockHandler::BlockIseq(bi)), args, .. } = *data else { continue };
-                        (recv, cd, bi, args)
+                        let CCallWithFrameData { recv, cd, block, args, name, .. } = *data;
+                        let _ = name;
+                        (recv, unsafe { rb_vm_ci_mid((*cd).ci) }, block, args.is_empty(), cd)
+                    }
+                    Insn::CCallVariadic(data) => {
+                        let CCallVariadicData { recv, block, args, name, .. } = *data;
+                        (recv, name, block, args.is_empty(), std::ptr::null())
                     }
                     _ => continue,
                 };
+                if !b_args_empty { continue; }
                 let a_res = self.union_find.borrow().find_const(a_id);
                 let recv_res = self.union_find.borrow().find_const(b_recv);
                 let guard_ok = guard_pos.map_or(recv_res == a_res, |gp| {
                     recv_res == self.union_find.borrow().find_const(self.blocks[block].insns[gp])
                 });
-                if !guard_ok || !b_args.is_empty() {
-                    continue;
+                if !guard_ok { continue; }
+
+                let bi = match b_block {
+                    Some(BlockHandler::BlockIseq(bi)) => Some(bi),
+                    None => None,
+                    _ => continue,
+                };
+                let (consumer, want_arity) = match (producer, bi.is_some()) {
+                    (Producer::IntTimes, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 1),
+                    (Producer::IntTimes, true) if b_mid == select_id || b_mid == filter_id => (Consumer::Select, 1),
+                    (Producer::IntTimes, false) if b_mid == to_a_id => (Consumer::ToA, 0),
+                    (Producer::ArrayMapEnum, true) if b_mid == with_index_id => (Consumer::WithIndexMap, 2),
+                    (Producer::ArrayEachWithIndex, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 2),
+                    _ => continue,
+                };
+                let consumer_cme = cme_of(enumerator, b_mid);
+                if consumer_cme.is_null() || !is_cfunc(consumer_cme) { continue; }
+                if let Some(bi) = bi {
+                    let bparams = unsafe { bi.params() };
+                    if bparams.lead_num as usize != want_arity || bparams.opt_num != 0 || bparams.post_num != 0
+                        || !bparams.keyword.is_null() || bparams.flags.has_rest() != 0
+                        || bparams.flags.has_kwrest() != 0 || bparams.flags.has_block() != 0
+                        || bparams.flags.forwardable() != 0
+                        || !unsafe { rb_simple_iseq_p(bi) }
+                        || crate::codegen::block_iseq_may_throw(bi) {
+                        continue;
+                    }
                 }
-                let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
-                if mid != map_id && mid != collect_id { continue; }
-                // The block must be a plain one-required-parameter literal with
-                // none of the unsafe constructs. Unlike direct block invocation
-                // it need not be defined in the compiling frame: the body is
-                // inlined framelessly and the purity whitelist below already
-                // rejects anything that could observe self or the environment.
-                let bparams = unsafe { bi.params() };
-                if bparams.lead_num != 1 || bparams.opt_num != 0 || bparams.post_num != 0
-                    || !bparams.keyword.is_null() || bparams.flags.has_rest() != 0
-                    || bparams.flags.has_kwrest() != 0 || bparams.flags.has_block() != 0
-                    || bparams.flags.forwardable() != 0
-                    || crate::codegen::block_iseq_may_throw(bi) {
-                    continue;
-                }
-                // Deopt snapshots taken between A and B embed the enumerator
-                // (it sits on the abstract stack there). Any live instruction
-                // using such a snapshot would materialize a value we no longer
-                // compute, so it must be retargetable to the pre-times restart
-                // state: only PatchPoint and CheckInterrupts qualify (pure and
-                // position-independent under restart semantics). Anything else
-                // referencing a ghostly snapshot declines fusion.
-                let mut ghosts: Vec<InsnId> = vec![self.union_find.borrow().find_const(a_id)];
+                let some_cd = if !b_cd.is_null() { b_cd } else { prod_cd };
+                if some_cd.is_null() { continue; }
+
+                // Deopt snapshots between producer and consumer embed the
+                // enumerator; live instructions using them must be retargetable
+                // to the restart state (PatchPoint/CheckInterrupts only).
+                let mut ghosts: Vec<InsnId> = vec![a_res];
                 if let Some(gp) = guard_pos {
                     ghosts.push(self.union_find.borrow().find_const(self.blocks[block].insns[gp]));
                 }
@@ -8325,119 +8381,140 @@ impl Function {
                 }
                 if ghost_escape { continue; }
                 candidates.push(Candidate {
-                    block, a_id, a_pos, b_id, b_pos, guard_pos, retargets,
-                    recv: data.recv, a_state: data.state, b_cd: cd, blockiseq: bi,
+                    producer, consumer, block, a_id, a_pos, b_pos, guard_pos, retargets,
+                    recv, a_state, b_id, some_cd, blockiseq: bi,
+                    consumer_cme, consumer_mid: b_mid,
                 });
                 break; // one candidate per block is plenty
             }
         }
 
+        let mut fused_any = false;
         'candidates: for c in candidates {
             let pre_insns_len = self.insns.len();
             let pre_insn_types_len = self.insn_types.len();
             let pre_blocks_len = self.blocks.len();
 
-            // Translate the block body first so we can inspect it for purity
-            // before committing to anything.
+            // Translate the block body first (when there is one) so we can
+            // inspect it for purity before committing to anything.
             let insn_idx = self.blocks[c.block].insn_idx;
             let body_cont = self.new_block(insn_idx);
-            let block_mode = AddIseqMode::Inlined {
-                return_block: body_cont,
-                caller: c.a_state,
-                depth: 1,
-                jit_entry_idx: 0,
-                blockiseq: None,
-                inline_block_ctx: None,
-            };
-            let add_result = match add_iseq_to_hir(self, c.blockiseq, block_mode) {
-                Ok(r) => r,
-                Err(_) => {
-                    self.insns.truncate(pre_insns_len);
-                    self.insn_types.truncate(pre_insn_types_len);
-                    self.blocks.truncate(pre_blocks_len);
-                    continue;
+            let translated = if let Some(bi) = c.blockiseq {
+                let block_mode = AddIseqMode::Inlined {
+                    return_block: body_cont,
+                    caller: c.a_state,
+                    depth: 1,
+                    jit_entry_idx: 0,
+                    blockiseq: None,
+                    inline_block_ctx: None,
+                };
+                match add_iseq_to_hir(self, bi, block_mode) {
+                    Ok(r) => Some(r),
+                    Err(_) => {
+                        self.insns.truncate(pre_insns_len);
+                        self.insn_types.truncate(pre_insn_types_len);
+                        self.blocks.truncate(pre_blocks_len);
+                        continue;
+                    }
                 }
+            } else {
+                None
             };
 
-            // Purity whitelist: every translated instruction must be safe to
-            // re-execute from scratch after a restart exit. The fresh
-            // translation has no profiling, so fixnum arithmetic appears as
-            // generic Sends; a local inference seeded by the block parameter
-            // (which the loop binds to a Fixnum phi) proves the common ops,
-            // which are then strength-reduced in place with Integer
-            // redefinition patchpoints. Anything else declines fusion.
-            let body_entry_probe = add_result.body_entry_block
-                .expect("inlined compilation always produces a body entry block");
-            let mut fixnum_vals: std::collections::HashSet<InsnId> = std::collections::HashSet::new();
-            if let Some(&p1) = self.blocks[body_entry_probe].params.get(1) {
-                fixnum_vals.insert(self.union_find.borrow().find_const(p1));
-            }
-            enum Reduce { Add, Sub, Mult, Lt, Le, Gt, Ge, Eq }
-            let mut to_reduce: Vec<(InsnId, Reduce, InsnId, InsnId, ID)> = vec![];
-            let mut reject = false;
-            'purity: for bidx in pre_blocks_len..self.blocks.len() {
-                if BlockId::from(bidx) == body_cont { continue; }
-                for &iid in &self.blocks[bidx].insns {
-                    match self.find(iid) {
-                        Insn::Const { val: Const::Value(v), .. } => {
-                            if v.fixnum_p() { fixnum_vals.insert(self.union_find.borrow().find_const(iid)); }
-                        }
-                        Insn::Const { .. } | Insn::Param | Insn::Snapshot { .. }
-                        | Insn::PatchPoint { .. } | Insn::CheckInterrupts { .. }
-                        | Insn::Jump(_) | Insn::CondBranch { .. } | Insn::CondBranchFixnumCmp { .. }
-                        | Insn::CondBranchHasType(_)
-                        | Insn::GuardType { .. } | Insn::RefineType { .. } | Insn::Test { .. }
-                        | Insn::FixnumLt { .. } | Insn::FixnumLe { .. } | Insn::FixnumGt { .. }
-                        | Insn::FixnumGe { .. } | Insn::FixnumEq { .. } | Insn::BoolNegate { .. }
-                        | Insn::FixnumAnd { .. } | Insn::FixnumOr { .. } => {}
-                        Insn::FixnumAdd { .. } | Insn::FixnumSub { .. } | Insn::FixnumMult { .. } => {
-                            fixnum_vals.insert(self.union_find.borrow().find_const(iid));
-                        }
-                        Insn::Send { recv, args, cd, .. } if args.len() == 1 => {
-                            let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
-                            let kind = match mid.contents_lossy().as_ref() {
-                                "+" => Some(Reduce::Add), "-" => Some(Reduce::Sub),
-                                "*" => Some(Reduce::Mult), "<" => Some(Reduce::Lt),
-                                "<=" => Some(Reduce::Le), ">" => Some(Reduce::Gt),
-                                ">=" => Some(Reduce::Ge), "==" => Some(Reduce::Eq),
-                                _ => None,
-                            };
-                            let recv_r = self.union_find.borrow().find_const(recv);
-                            let arg_r = self.union_find.borrow().find_const(args[0]);
-                            match kind {
-                                Some(k) if fixnum_vals.contains(&recv_r) && fixnum_vals.contains(&arg_r) => {
-                                    if matches!(k, Reduce::Add | Reduce::Sub | Reduce::Mult) {
-                                        fixnum_vals.insert(self.union_find.borrow().find_const(iid));
+            // Purity + local strength reduction, in up to two attempts: first
+            // with only the index parameter seeded as Fixnum; if that fails
+            // and the consumer has an element parameter, retry with the
+            // element seeded too and add a speculative element guard.
+            enum Reduce { Add, Sub, Mult, Mod, Lt, Le, Gt, Ge, Eq }
+            let body_params: Vec<InsnId> = translated.as_ref()
+                .and_then(|r| r.body_entry_block)
+                .map(|b| self.blocks[b].params.clone())
+                .unwrap_or_default();
+            // Parameter roles per combination: [self, p1, p2?]
+            //   IntTimes+Map/Select: p1 = index
+            //   WithIndexMap / EachWithIndex+Map: p1 = element, p2 = index
+            let (elem_param, index_param) = match (c.producer, c.consumer) {
+                (Producer::IntTimes, _) => (None, body_params.get(1).copied()),
+                _ => (body_params.get(1).copied(), body_params.get(2).copied()),
+            };
+            let mut elem_needs_guard = false;
+            let mut reduction: Option<Vec<(InsnId, Reduce, InsnId, InsnId, ID)>> = None;
+            for attempt in 0..2 {
+                if attempt == 1 {
+                    if elem_param.is_none() { break; }
+                    elem_needs_guard = true;
+                }
+                let mut fixnum_vals: std::collections::HashSet<InsnId> = std::collections::HashSet::new();
+                if let Some(ip) = index_param {
+                    fixnum_vals.insert(self.union_find.borrow().find_const(ip));
+                }
+                if let Some(ep) = elem_param.filter(|_| attempt == 1) {
+                    fixnum_vals.insert(self.union_find.borrow().find_const(ep));
+                }
+                let mut to_reduce: Vec<(InsnId, Reduce, InsnId, InsnId, ID)> = vec![];
+                let mut reject = false;
+                'purity: for bidx in pre_blocks_len..self.blocks.len() {
+                    if BlockId::from(bidx) == body_cont { continue; }
+                    for &iid in &self.blocks[bidx].insns {
+                        match self.find(iid) {
+                            Insn::Const { val: Const::Value(v), .. } => {
+                                if v.fixnum_p() { fixnum_vals.insert(self.union_find.borrow().find_const(iid)); }
+                            }
+                            Insn::Const { .. } | Insn::Param | Insn::Snapshot { .. }
+                            | Insn::PatchPoint { .. } | Insn::CheckInterrupts { .. }
+                            | Insn::Jump(_) | Insn::CondBranch { .. } | Insn::CondBranchFixnumCmp { .. }
+                            | Insn::CondBranchHasType(_)
+                            | Insn::GuardType { .. } | Insn::RefineType { .. } | Insn::Test { .. }
+                            | Insn::FixnumLt { .. } | Insn::FixnumLe { .. } | Insn::FixnumGt { .. }
+                            | Insn::FixnumGe { .. } | Insn::FixnumEq { .. } | Insn::BoolNegate { .. }
+                            | Insn::FixnumAnd { .. } | Insn::FixnumOr { .. } => {}
+                            Insn::FixnumAdd { .. } | Insn::FixnumSub { .. } | Insn::FixnumMult { .. } => {
+                                fixnum_vals.insert(self.union_find.borrow().find_const(iid));
+                            }
+                            Insn::Send { recv, args, cd, .. } if args.len() == 1 => {
+                                let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
+                                let kind = match mid.contents_lossy().as_ref() {
+                                    "+" => Some(Reduce::Add), "-" => Some(Reduce::Sub),
+                                    "*" => Some(Reduce::Mult), "%" => Some(Reduce::Mod),
+                                    "<" => Some(Reduce::Lt),
+                                    "<=" => Some(Reduce::Le), ">" => Some(Reduce::Gt),
+                                    ">=" => Some(Reduce::Ge), "==" => Some(Reduce::Eq),
+                                    _ => None,
+                                };
+                                let recv_r = self.union_find.borrow().find_const(recv);
+                                let arg_r = self.union_find.borrow().find_const(args[0]);
+                                match kind {
+                                    Some(k) if fixnum_vals.contains(&recv_r) && fixnum_vals.contains(&arg_r) => {
+                                        if matches!(k, Reduce::Add | Reduce::Sub | Reduce::Mult | Reduce::Mod) {
+                                            fixnum_vals.insert(self.union_find.borrow().find_const(iid));
+                                        }
+                                        to_reduce.push((iid, k, recv_r, arg_r, mid));
                                     }
-                                    to_reduce.push((iid, k, recv_r, arg_r, mid));
-                                }
-                                _ => {
-                                    reject = true;
-                                    break 'purity;
+                                    _ => { reject = true; break 'purity; }
                                 }
                             }
-                        }
-                        _ => {
-                            reject = true;
-                            break 'purity;
+                            _ => { reject = true; break 'purity; }
                         }
                     }
                 }
+                if !reject {
+                    reduction = Some(to_reduce);
+                    break;
+                }
             }
-            if reject {
+            let Some(to_reduce) = reduction else {
                 self.insns.truncate(pre_insns_len);
                 self.insn_types.truncate(pre_insn_types_len);
                 self.blocks.truncate(pre_blocks_len);
                 continue 'candidates;
-            }
-            // Strength-reduce the proven fixnum sends in place, remembering
-            // which Integer methods the loop now assumes unredefined.
+            };
             let mut bop_mids: Vec<ID> = vec![];
             for (iid, k, l, r, mid) in to_reduce {
                 self.insns[iid] = match k {
                     Reduce::Add => Insn::FixnumAdd { left: l, right: r, state: c.a_state },
                     Reduce::Sub => Insn::FixnumSub { left: l, right: r, state: c.a_state },
                     Reduce::Mult => Insn::FixnumMult { left: l, right: r, state: c.a_state },
+                    Reduce::Mod => Insn::FixnumMod { left: l, right: r, state: c.a_state },
                     Reduce::Lt => Insn::FixnumLt { left: l, right: r },
                     Reduce::Le => Insn::FixnumLe { left: l, right: r },
                     Reduce::Gt => Insn::FixnumGt { left: l, right: r },
@@ -8446,39 +8523,9 @@ impl Function {
                 };
                 if !bop_mids.contains(&mid) { bop_mids.push(mid); }
             }
-            let body_entry = add_result.body_entry_block
-                .expect("inlined compilation always produces a body entry block");
 
-            // Commit. Retarget every state-bearing translated insn to the
-            // pre-times snapshot: exits restart the whole chain.
-            for bidx in pre_blocks_len..self.blocks.len() {
-                let ids = self.blocks[bidx].insns.clone();
-                for iid in ids {
-                    match &mut self.insns[iid] {
-                        Insn::PatchPoint { state, .. } | Insn::CheckInterrupts { state }
-                        | Insn::GuardType { state, .. } | Insn::FixnumAdd { state, .. }
-                        | Insn::FixnumSub { state, .. } | Insn::FixnumMult { state, .. } => {
-                            *state = c.a_state;
-                        }
-                        _ => {}
-                    }
-                }
-            }
-
-            // Split the original block: head keeps everything before A plus the
-            // A..B interior (snapshots/guards, minus A itself); B and A are
-            // consumed; the tail after B moves to the loop's continuation.
-            let all = std::mem::take(&mut self.blocks[c.block].insns);
-            let mut head: Vec<InsnId> = Vec::with_capacity(all.len());
-            let mut tail: Vec<InsnId> = vec![];
-            for (pos, id) in all.into_iter().enumerate() {
-                if pos == c.a_pos || pos == c.b_pos || Some(pos) == c.guard_pos { continue; }
-                if pos < c.b_pos { head.push(id); } else { tail.push(id); }
-            }
-            self.blocks[c.block].insns = head;
-
-            // Retarget insns whose snapshots embedded the enumerator to the
-            // restart state.
+            // Commit. Retarget insns whose snapshots embedded the enumerator.
+            fused_any = true;
             for uid in &c.retargets {
                 match &mut self.insns[*uid] {
                     Insn::PatchPoint { state, .. } | Insn::CheckInterrupts { state } => { *state = c.a_state; }
@@ -8486,17 +8533,92 @@ impl Function {
                 }
             }
 
-            // Prologue: patchpoints for the equivalence, the pre-sized array,
-            // self for the block's entry param, and the loop seed.
+            // The ghost-bearing snapshots themselves stay in the IR. Nothing
+            // deopts through them (their non-snapshot users were just
+            // retargeted to the restart state), but their stack/locals entries
+            // still name the fused-away enumerator/guard, which no surviving
+            // instruction defines once the split below removes the producer.
+            // Overwrite those entries with a nil constant placed where the
+            // producer stood: the enumerator's definition dominated every one
+            // of its uses, so the same slot dominates every rewritten
+            // snapshot, and the IR stays well-formed -- the HIR validator
+            // flags dangling operands, and any future pass or exit touching
+            // these snapshots would otherwise compile garbage. (Every
+            // non-leaf send is followed by a NoEPEscape PatchPoint whose
+            // snapshot holds its result, so the producer send always leaves
+            // such snapshots behind.)
+            let mut ghost_roots: Vec<InsnId> = vec![self.union_find.borrow().find_const(c.a_id)];
+            if let Some(gp) = c.guard_pos {
+                ghost_roots.push(self.union_find.borrow().find_const(self.blocks[c.block].insns[gp]));
+            }
+            let mut ghost_nil: Option<InsnId> = None;
+            let mut ghostly: Vec<InsnId> = vec![];
+            for blk2 in self.reverse_post_order() {
+                for &uid in &self.blocks[blk2].insns {
+                    let Insn::Snapshot { state } = &self.insns[self.union_find.borrow().find_const(uid)] else { continue };
+                    let uf = self.union_find.borrow();
+                    if state.stack.iter().chain(state.locals.iter()).any(|&op| ghost_roots.contains(&uf.find_const(op))) {
+                        ghostly.push(uf.find_const(uid));
+                    }
+                }
+            }
+            if !ghostly.is_empty() {
+                let nil = self.new_insn(Insn::Const { val: Const::Value(Qnil) });
+                for snap_id in ghostly {
+                    let (new_stack, new_locals) = {
+                        let Insn::Snapshot { ref state } = self.insns[snap_id] else { continue };
+                        let uf = self.union_find.borrow();
+                        let sanitize = |v: &[InsnId]| v.iter().map(|&x|
+                            if ghost_roots.contains(&uf.find_const(x)) { nil } else { x }
+                        ).collect::<Vec<InsnId>>();
+                        (sanitize(&state.stack), sanitize(&state.locals))
+                    };
+                    if let Insn::Snapshot { ref mut state } = self.insns[snap_id] {
+                        state.stack = new_stack;
+                        state.locals = new_locals;
+                    }
+                }
+                ghost_nil = Some(nil);
+            }
+
+            // Split the original block around producer/guard/consumer.
+            let all = std::mem::take(&mut self.blocks[c.block].insns);
+            let mut head: Vec<InsnId> = Vec::with_capacity(all.len());
+            let mut tail: Vec<InsnId> = vec![];
+            for (pos, id) in all.into_iter().enumerate() {
+                if pos == c.a_pos {
+                    // The nil that sanitized ghost snapshots takes the
+                    // producer's slot, keeping its dominance frontier.
+                    if let Some(nil) = ghost_nil { head.push(nil); }
+                    continue;
+                }
+                if pos == c.b_pos || Some(pos) == c.guard_pos { continue; }
+                if pos < c.b_pos { head.push(id); } else { tail.push(id); }
+            }
+            self.blocks[c.block].insns = head;
+
+            // Prologue: patchpoints for everything the equivalence assumes.
             let bb = c.block;
             let mut invariants: Vec<(VALUE, ID, *const rb_callable_method_entry_t)> = vec![
-                (unsafe { rb_cInteger }, times_id, times_cme),
-                (unsafe { rb_cInteger }, to_enum_id, to_enum_cme),
-                (enumerator, map_id, map_cme),
-                (enumerator, each_id, each_cme),
+                (enumerator, c.consumer_mid, c.consumer_cme),
+                (enumerator, each_id, enum_each_cme),
             ];
+            match c.producer {
+                Producer::IntTimes => {
+                    invariants.push((unsafe { rb_cInteger }, times_id, times_cme));
+                    invariants.push((unsafe { rb_cInteger }, to_enum_id, int_to_enum_cme));
+                }
+                Producer::ArrayMapEnum => {
+                    invariants.push((unsafe { rb_cArray }, map_id, amap_cme));
+                    invariants.push((unsafe { rb_cArray }, to_enum_id, ary_to_enum_cme));
+                }
+                Producer::ArrayEachWithIndex => {
+                    invariants.push((unsafe { rb_cArray }, each_with_index_id, ewi_cme));
+                    invariants.push((unsafe { rb_cArray }, each_id, aeach_cme));
+                }
+            }
             for mid in bop_mids {
-                let cme = unsafe { rb_callable_method_entry(rb_cInteger, mid) };
+                let cme = cme_of(unsafe { rb_cInteger }, mid);
                 if !cme.is_null() { invariants.push((unsafe { rb_cInteger }, mid, cme)); }
             }
             for (klass, mid, cme) in invariants {
@@ -8505,13 +8627,23 @@ impl Function {
                     state: c.a_state,
                 });
             }
+
+            // The loop bound: n for times, boxed array length otherwise. The
+            // result array is pre-sized with the same value.
+            let bound = match c.producer {
+                Producer::IntTimes => c.recv,
+                _ => {
+                    let len_raw = self.push_insn(bb, Insn::ArrayLength { array: c.recv });
+                    self.push_insn(bb, Insn::BoxFixnum { val: len_raw, state: c.a_state })
+                }
+            };
             let ary = self.push_insn(bb, Insn::CCallWithFrame(Box::new(CCallWithFrameData {
-                cd: c.b_cd,
+                cd: c.some_cd,
                 cfunc: rb_zjit_ary_new_capa_fix as *const u8,
-                recv: c.recv,
+                recv: bound,
                 args: vec![],
-                cme: map_cme,
-                name: map_id,
+                cme: c.consumer_cme,
+                name: c.consumer_mid,
                 state: c.a_state,
                 return_type: types::ArrayExact,
                 elidable: false,
@@ -8521,51 +8653,105 @@ impl Function {
             let zero = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) });
             let one = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) });
 
-            // Loop header: i comes in as a param; exit when i >= n.
             let header = self.new_block(insn_idx);
             let cont = self.new_block(insn_idx);
+            let body_head = self.new_block(insn_idx);
             self.count(bb, Counter::inline_iseq_optimized_send_count);
             self.push_insn(bb, Insn::Jump(BranchEdge { target: header, args: vec![zero] }));
             let i_phi = self.push_insn(header, Insn::Param);
-            // CondBranch takes a CBool operand; use the fused fixnum
-            // compare-and-branch terminator, which also keeps both successors
-            // reachable for type inference (the comparison is runtime-only).
             self.push_insn(header, Insn::CondBranchFixnumCmp(Box::new(CondBranchFixnumCmpData {
                 op: FixnumCmpOp::Lt,
                 left: i_phi,
-                right: c.recv,
-                if_true: BranchEdge { target: body_entry, args: vec![] },
+                right: bound,
+                if_true: BranchEdge { target: body_head, args: vec![] },
                 if_false: BranchEdge { target: cont, args: vec![] },
             })));
 
-            // Wire the block body: params are [self, i]; alias and clear.
-            let body_params: Vec<InsnId> = self.blocks[body_entry].params.clone();
-            if !body_params.is_empty() {
-                self.make_equal_to(body_params[0], self_val);
+            // body_head: load the element (for array producers) and bind the
+            // block parameters, then fall into the translated body (or skip
+            // straight to accumulation for to_a).
+            let elem = match c.producer {
+                Producer::IntTimes => i_phi,
+                _ => {
+                    let idx_raw = self.push_insn(body_head, Insn::UnboxFixnum { val: i_phi });
+                    let e = self.push_insn(body_head, Insn::ArrayAref { array: c.recv, index: idx_raw });
+                    if elem_needs_guard {
+                        self.push_insn(body_head, Insn::GuardType {
+                            val: e, guard_type: types::Fixnum, state: c.a_state, recompile: None,
+                        })
+                    } else {
+                        e
+                    }
+                }
+            };
+            if let Some(r) = &translated {
+                let body_entry = r.body_entry_block.expect("inlined compilation always produces a body entry block");
+                if !body_params.is_empty() {
+                    self.make_equal_to(body_params[0], self_val);
+                }
+                let block_args: Vec<InsnId> = match c.consumer {
+                    Consumer::WithIndexMap => vec![elem, i_phi],
+                    Consumer::Map | Consumer::Select => match c.producer {
+                        Producer::IntTimes => vec![i_phi],
+                        _ => vec![elem, i_phi],
+                    },
+                    Consumer::ToA => vec![],
+                };
+                for (i, &param_id) in body_params[1..].iter().enumerate() {
+                    if let Some(&arg) = block_args.get(i) {
+                        self.make_equal_to(param_id, arg);
+                    } else {
+                        let nil = self.push_insn(body_head, Insn::Const { val: Const::Value(Qnil) });
+                        self.make_equal_to(param_id, nil);
+                    }
+                }
+                if let Some(be) = r.body_entry_block {
+                    self.blocks[be].params.clear();
+                }
+                self.push_insn(body_head, Insn::Jump(BranchEdge { target: body_entry, args: vec![] }));
+            } else {
+                self.push_insn(body_head, Insn::Jump(BranchEdge { target: body_cont, args: vec![elem] }));
             }
-            for (i, &param_id) in body_params[1..].iter().enumerate() {
-                if i == 0 {
-                    self.make_equal_to(param_id, i_phi);
-                } else {
-                    let nil = self.push_insn(bb, Insn::Const { val: Const::Value(Qnil) });
-                    self.make_equal_to(param_id, nil);
+
+            // body_cont: accumulate per the consumer, advance, loop.
+            let block_val = self.push_insn(body_cont, Insn::Param);
+            match c.consumer {
+                Consumer::Map | Consumer::WithIndexMap | Consumer::ToA => {
+                    self.push_insn(body_cont, Insn::ArrayPush { array: ary, val: block_val, state: c.a_state });
+                    let i_next = self.push_insn(body_cont, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                    self.push_insn(body_cont, Insn::CheckInterrupts { state: c.a_state });
+                    self.push_insn(body_cont, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
+                }
+                Consumer::Select => {
+                    // Push the *index* only when the block result is truthy.
+                    let keep = self.push_insn(body_cont, Insn::Test { val: block_val });
+                    let push_block = self.new_block(insn_idx);
+                    let advance = self.new_block(insn_idx);
+                    self.push_insn(body_cont, Insn::CondBranch {
+                        val: keep,
+                        if_true: BranchEdge { target: push_block, args: vec![] },
+                        if_false: BranchEdge { target: advance, args: vec![] },
+                    });
+                    self.push_insn(push_block, Insn::ArrayPush { array: ary, val: elem, state: c.a_state });
+                    self.push_insn(push_block, Insn::Jump(BranchEdge { target: advance, args: vec![] }));
+                    let i_next = self.push_insn(advance, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                    self.push_insn(advance, Insn::CheckInterrupts { state: c.a_state });
+                    self.push_insn(advance, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
                 }
             }
-            self.blocks[body_entry].params.clear();
 
-            // Continuation of the block body: collect and advance.
-            let block_val = self.push_insn(body_cont, Insn::Param);
-            self.push_insn(body_cont, Insn::ArrayPush { array: ary, val: block_val, state: c.a_state });
-            let i_next = self.push_insn(body_cont, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
-            self.push_insn(body_cont, Insn::CheckInterrupts { state: c.a_state });
-            self.push_insn(body_cont, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
-
-            // After the loop, the array is the map's result; graft the tail on.
             for &id in &tail {
                 self.push_insn_id(cont, id);
             }
             self.make_equal_to(c.b_id, ary);
+        }
 
+        // Type the freshly built loops right away: the pass runs early in the
+        // pipeline (the next canonicalize would reinfer anyway), but the
+        // validator checks operand types immediately after each pass, and
+        // fused counters/params must not sit at Any until then.
+        if fused_any {
+            self.infer_types();
         }
     }
 
