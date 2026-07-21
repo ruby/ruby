@@ -3008,21 +3008,31 @@ impl Function {
         self.blocks.pop();
     }
 
-    fn successors(&self, block: BlockId) -> Vec<BlockId> {
-        let insns = &self.blocks[block.0].insns;
-        let last = self.find(*insns.last().unwrap());
-        match last {
-            Insn::CondBranch { if_true, if_false, .. } => vec![if_true.target, if_false.target],
-            Insn::Jump(edge) => vec![edge.target],
-            Insn::Entries { targets } => targets,
-            Insn::Unreachable | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => vec![],
-            // Blocks that don't end with terminators are technically errors,
-            // every block in the CFG should end with a terminator. But we
-            // want to be able to iterate over poorly constructed CFG when
-            // debugging, so we'll return an empty vec.  The validation
-            // routines check for terminators, so we should catch CFG errors there.
-            _ => vec![]
-        }
+    /// Return an iterator over the successor blocks of `block`. NB: the iteration order is
+    /// intentionally undefined and the same BlockId may be yielded multiple times.
+    fn successors(&self, block: BlockId) -> impl Iterator<Item = BlockId> + '_ {
+        // Read the terminator directly rather than through `find`, which clones the whole `Insn`.
+        // `find` also resolves the id through union-find, but a terminator is never unioned: it
+        // produces no value, and `make_equal_to` asserts `has_output()`. So the instruction stored
+        // at this id is always the terminator itself, and reading it by reference matches what
+        // `find` would return.
+        let terminator = &self.insns[self.blocks[block.0].insns.last().unwrap().0];
+
+        let (first, second, rest): (Option<BlockId>, Option<BlockId>, &[BlockId]) = match terminator {
+            Insn::CondBranch { if_true, if_false, .. } => (Some(if_true.target), Some(if_false.target), &[]),
+            Insn::Jump(edge) => (Some(edge.target), None, &[]),
+            Insn::Entries { targets } => (None, None, targets.as_slice()),
+
+            // Terminators such as `Return`, `SideExit`, `Throw`, and
+            // `Unreachable` have no successors. A block that does not end in a
+            // terminator is malformed, but we still want to traverse a poorly
+            // constructed CFG when debugging, so we treat it as having no
+            // successors; the validation routines report the missing
+            // terminator separately.
+            _ => (None, None, &[]),
+        };
+
+        first.into_iter().chain(second).chain(rest.iter().copied())
     }
 
     /// Return a reference to the Block at the given index.
@@ -10064,7 +10074,7 @@ impl<'a> ControlFlowInfo<'a> {
         let mut predecessor_map: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
 
         for block_id in function.reverse_post_order() {
-            let mut successors = function.successors(block_id);
+            let mut successors: Vec<BlockId> = function.successors(block_id).collect();
             successors.dedup();
 
             // Update predecessors for successor blocks.
