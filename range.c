@@ -1362,13 +1362,6 @@ range_reverse_each(VALUE range)
  *  Related: Range#first, Range#end.
  */
 
-static VALUE
-range_begin(VALUE range)
-{
-    return RANGE_BEG(range);
-}
-
-
 /*
  *  call-seq:
  *    self.end -> object
@@ -1381,14 +1374,6 @@ range_begin(VALUE range)
  *
  *  Related: Range#begin, Range#last.
  */
-
-
-static VALUE
-range_end(VALUE range)
-{
-    return RANGE_END(range);
-}
-
 
 static VALUE
 first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, cbarg))
@@ -2980,8 +2965,8 @@ Init_Range(void)
     rb_define_method(rb_cRange, "%", range_percent_step, 1);
     rb_define_method(rb_cRange, "reverse_each", range_reverse_each, 0);
     rb_define_method(rb_cRange, "bsearch", range_bsearch, 0);
-    rb_define_method(rb_cRange, "begin", range_begin, 0);
-    rb_define_method(rb_cRange, "end", range_end, 0);
+    rb_struct_define_aref_method(rb_cRange, id_beg, 0);
+    rb_struct_define_aref_method(rb_cRange, id_end, 1);
     rb_define_method(rb_cRange, "first", range_first, -1);
     rb_define_method(rb_cRange, "last", range_last, -1);
     rb_define_method(rb_cRange, "min", range_min, -1);

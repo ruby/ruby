@@ -285,6 +285,12 @@ define_aref_method(VALUE nstr, VALUE name, VALUE off)
     rb_add_method_optimized(nstr, SYM2ID(name), OPTIMIZED_METHOD_TYPE_STRUCT_AREF, FIX2UINT(off), METHOD_VISI_PUBLIC);
 }
 
+void
+rb_struct_define_aref_method(VALUE nstr, ID name, unsigned int off)
+{
+    rb_add_method_optimized(nstr, name, OPTIMIZED_METHOD_TYPE_STRUCT_AREF, off, METHOD_VISI_PUBLIC);
+}
+
 static void
 define_aset_method(VALUE nstr, VALUE name, VALUE off)
 {
