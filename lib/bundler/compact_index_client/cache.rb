@@ -50,6 +50,7 @@ module Bundler
 
       def info_path(name)
         name = name.to_s
+        validate_name!(name)
         # TODO: converge this into the info_root by hashing all filenames like info_etag_path
         if /[^a-z0-9_-]/.match?(name)
           name += "-#{SharedHelpers.digest(:MD5).hexdigest(name).downcase}"
@@ -61,7 +62,17 @@ module Bundler
 
       def info_etag_path(name)
         name = name.to_s
+        validate_name!(name)
         @info_etag_root.join("#{name}-#{SharedHelpers.digest(:MD5).hexdigest(name).downcase}")
+      end
+
+      # Gem names come from the remote index and are not otherwise
+      # validated, so refuse anything that would escape the cache
+      # directory when used as a path component.
+      def validate_name!(name)
+        return if File.basename(name) == name
+
+        raise SecurityError, "malformed gem name: #{name.inspect}"
       end
 
       def mkdir(name)

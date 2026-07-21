@@ -148,6 +148,7 @@ module Spec
       ],
       shard_d: [
         "spec/bundler/compact_index_client/cache_file_spec.rb",
+        "spec/bundler/compact_index_client/cache_spec.rb",
         "spec/bundler/rubygems_ext_spec.rb",
         "spec/bundler/resolver/cooldown_spec.rb",
         "spec/install/cooldown_spec.rb",

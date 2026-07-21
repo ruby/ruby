@@ -60,6 +60,7 @@ class Gem::CompactIndexClient
 
     def info_path(name)
       name = name.to_s
+      validate_name!(name)
       if /[^a-z0-9_-]/.match?(name)
         name += "-#{Digest::MD5.hexdigest(name).downcase}"
         @special_characters_info_root.join(name)
@@ -70,7 +71,17 @@ class Gem::CompactIndexClient
 
     def info_etag_path(name)
       name = name.to_s
+      validate_name!(name)
       @info_etag_root.join("#{name}-#{Digest::MD5.hexdigest(name).downcase}")
+    end
+
+    # Gem names come from the remote index and are not otherwise
+    # validated, so refuse anything that would escape the cache
+    # directory when used as a path component.
+    def validate_name!(name)
+      return if File.basename(name) == name
+
+      raise Gem::Exception, "malformed gem name: #{name.inspect}"
     end
 
     def checksum_for_file(path)
