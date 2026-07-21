@@ -47,6 +47,8 @@ struct RStruct {
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
 VALUE rb_struct_lookup(VALUE s, VALUE idx);
 VALUE rb_struct_s_keyword_init(VALUE klass);
+void rb_struct_define_aref_method(VALUE nstr, ID name, unsigned int off);
+
 static inline long RSTRUCT_EMBED_LEN(VALUE st);
 static inline long RSTRUCT_LEN_RAW(VALUE st);
 static inline int RSTRUCT_LENINT(VALUE st);
