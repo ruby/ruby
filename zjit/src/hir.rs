@@ -5381,129 +5381,117 @@ impl Function {
         }
     }
 
+
     // TODO: Add a comment about the paper and where this function comes from, as well as how it's used in ZJIT
     // (It's used more individually and differently than the paper)
     // TODO: Update comments to consider block params rather than phi nodes and demarcate differences from the algorithm clearly
     // TODO: Fix input arguments. We need block params, not just the phi
     /// If all possible phi values are the same, replace the phi with the value
 
-    fn remove_trivial_phis(&mut self) {
-        // TODO: Find all of the phis and predecessors
-        let phi = &InsnId(5); // FIX: this shouldn't be just a random dummy value
-        let predecessors = vec![];
-        // TODO: Run the following in a loop once we've gotten all the phis
-        // TODO: Figure out if we want to do this mutably and in one pass with into_iter or take instead.
-        let phis: Vec<(BlockId, InsnId)> = self.reverse_post_order().iter().flat_map(|block_id| {
-            self.blocks[block_id.0].params().map(|&param| (*block_id, param))
-        }).collect();
-        // FIX: The logic if this is wrong. We want to make sure `p` is not a self reference. Equality with phi likely does not do this
-        let external_preds: Vec<&InsnId> = predecessors.iter().filter(|p| *p != phi).collect();
+    /// Sometimes block params can only come from one place and safely removed as block params.
+    /// Trivial block param removal increases the efficacy of CFG-based optimization passes.
+    /// This function implements algorithm 2 from <https://c9x.me/compile/bib/braun13cc.pdf>.
+    /// Light modifications are made to use block params instead of phis.
+    fn remove_trivial_block_params(&mut self) {
 
-        match external_preds.as_slice() {
-            [] => {} // Phi is unreachable
-            [first, rest @ ..] if rest.iter().any(|p| p != first) => {} // Phi is non-trivial
-            [value, ..] => { // Phi is trivial
-
+        // Helper function for remove_trivial_block_params
+        // Remove an argument of the edge at index if the conditional matches target_block
+        fn prune_branch_edge(edge: BranchEdge, target_block: BlockId, index: usize) -> BranchEdge {
+            let mut args = edge.args.clone();
+            if edge.target == target_block {
+                args.remove(index);
             }
-
+            BranchEdge { target: edge.target, args }
         }
-        let new_phi = match external_preds.as_slice() {
-            [] => {
-                // Phi is unreachable
-                // TODO: Figure out how we are supposed to handle an unreachable phi
-                *phi // FIX: We don't want to return phi in this case. What do we want to do with an unreachable value??
-            }
-            [first, rest @ ..] if rest.iter().any(|p| p != first) => {
-                // Phi is non-trivial
-                *phi
-            }
-            [value, ..] => {
-                // Phi is trivial. All elements of the vec are `value`.
-                // TODO: Replace all uses of phi with value with make_equal_to
-                // TODO: Iteratively call try_remove_trivial_phi on uses. Can we get uses with find?
-                **value
+
+        // TODO: This stupid function causes borrowing issues so we just duplicated the code for it all over the place omg. Do we remove this or fix it??
+        // fetch_last_insn is a helper to retrieve the final instruction from a block.
+        // We use standard basic blocks so we know that each jump msut be the final instruction in a block.
+        fn fetch_last_insn(blocks: Vec<Block>, block_id: BlockId) -> InsnId {
+            *blocks[block_id.0].insns.last().unwrap()
+        }
+
+        // Find each block that ends with Insn::Jump or Insn::CondBranch. (Equivalently, this is all blocks that don't end with Insn::Return)
+        let jump_blocks: Vec<BlockId> = self.reverse_post_order().into_iter()
+            .filter(|&block_id| matches!(
+                self.find(*self.blocks[block_id.0].insns.last().unwrap()),
+                Insn::CondBranch {..} | Insn::Jump {..} )
+            ).collect();
+
+        // Note: The outer vec represents all blocks in the CFG. Using a vec instead of HashMap with keys is safe
+        // because blocks are represented by contiguous values between 0 and len() - 1
+        // This invariant holds because new_block adds a new id based on length, and remove_block only allows the highest block value to be removed.
+        // These are the two functions used to modify block sizes.
+        #[derive(Hash, Eq, PartialEq, Clone, Copy)]
+        struct ArgKey {
+            block: BlockId,
+            index: usize
+        }
+        let mut predecessors: HashMap<ArgKey, Vec<InsnId>> = HashMap::new();
+
+        let mut add_preds = |block: BlockId, args: Vec<InsnId>| {
+            for index in 0..args.len() {
+                predecessors.entry(ArgKey{ block, index }).or_default().push(args[index]);
             }
         };
+
+        // Find the predecessors for each conditional HIR instruction in the CFG
+        for insn_id in jump_blocks.iter().map(|block_id| {self.blocks[block_id.0].insns.last().unwrap()}) {
+            match self.find(*insn_id) {
+                Insn::CondBranch { if_true, if_false, .. } => {
+                    add_preds(if_true.target, if_true.args);
+                    add_preds(if_false.target, if_false.args);
+                }
+                Insn::Jump(edge) => {
+                    add_preds(edge.target, edge.args);
+                }
+                _ => {}
+            }
+        }
+
+        // Remove the predecessor self-references
+        let mut external_preds = predecessors.clone();
+        for (key, predecessors) in external_preds.iter_mut() {
+            let pred_from_current_block = self.chase_insn(*self.block(key.block).params().nth(key.index).unwrap());
+            predecessors.retain(|insn_id| self.chase_insn(*insn_id) != pred_from_current_block);
+        }
+
+        // Identify the trivial block params. Trivial means that each external predecessor has the same insn_id.
+        for (ArgKey { block, index }, predecessors) in external_preds.iter() {
+            match predecessors.as_slice() {
+                [] => {} // Unreachable. This should never happen
+                [first, rest @ ..] if rest.iter().any(|insn_id| insn_id != first) => {} // non-trivial
+                [insn_id, ..] => {
+                    // Save the insn_id of the block param to be removed
+                    let trivial_block_param = self.blocks[block.0].params[*index];
+                    // Remove the trivial block param from the block definition
+                    self.blocks[block.0].params.remove(*index);
+                    // Replace the trivial block param with the SSA insn_id that it must always be.
+                    self.make_equal_to(trivial_block_param, *insn_id);
+
+                    // At this point we have fixed params at the block definition, but not to conditionals that branch to the block.
+
+                    // Prune the block params from each Insn::Jump and Insn::CondBranch that targets `block`
+                    for &block_with_jump in &jump_blocks {
+                        let insn_id = self.blocks[block_with_jump.0].insns.last().unwrap();
+                        match self.find(*insn_id) {
+                            Insn::Jump(edge) => {
+                                let new_edge = prune_branch_edge(edge, *block, *index);
+                                self.insns[insn_id.0] = Insn::Jump(new_edge);
+                            }
+                            Insn::CondBranch { val, if_true, if_false } => {
+                                let new_true_edge = prune_branch_edge(if_true, *block, *index);
+                                let new_false_edge = prune_branch_edge(if_false, *block, *index);
+                                self.insns[insn_id.0] = Insn::CondBranch { val, if_true: new_true_edge, if_false: new_false_edge };
+                            }
+                            _ => {} // This is unreachable
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    // TODO: Probably throw this next big comment away
-    // /// Convert maximal SSA (constructed from YARV with `add_iseq_to_hir`) to minimal SSA
-    // /// We implement the SSA construction described by Braun et al.
-    // /// SSA Paper reference: <https://c9x.me/compile/bib/braun13cc.pdf>
-    // fn minify_ssa(&mut self) {
-    //     // This PR is _very_ much an early draft. I've spent some time reading the paper, and isolating some of the concepts.
-    //     // There will be lots of lengthy comments that get removed and reworked. There are concepts in ZJIT that are identical but named different things.
-    //     // We need to map these to each other. It probably makes sense to keep some reference comments performing this mapping for the future too.
-    //     //
-    //     // Important difference: Braun et al construct SSA from scratch. We already have a maximal SSA representation. We may be able to get away with only the pruning parts of the paper
-    //     // Alternatively, we may just need to overhaul our entire SSA construction. I'm not sure what makes sense yet.
-    //     //
-    //     // TODO: Make tests for single blocks and multiple block constructions of minimal SSA
-    //     // It would be great to faithfully recreate examples from the paper but with ZJIT specifics. If there's a way to construct ruby code that maps to this HIR, that would be awesome but jury is still out
-    //     //
-    //     // First Test Idea for LVN (page 3):
-    //     // This first version isn't entirely implementable because `d` and `v?` are intentionally unspecified but it's a good starting point
-    //     // source (make into ruby)    SSA (make into ZJIT)
-    //     // a <- 42                    v1: 42
-    //     // b <- a
-    //     // c <- a + b                 v2: v1 + v1
-    //     //                            v3: 23
-    //     // a <- c + 23                v4: v2 + v3
-    //     // c <- a + d                 v5: v4 + v?
-
-    //     // ------------ SINGLE BLOCK ----------------
-    //     // This section contains all the tech we need for single blocks. For implementation, let's pass tests for this part first before adding in the rest
-    //     // These two functions handle local value numbering. I don't know if this is something that Max landed in a PR, nor what can / should be repurposed vs written from scratch
-    //     fn read_variable() {
-    //         // TODO: Specify and define arguments
-    //         // TODO: Figure out if this already exists in ZJIT. Likely this uses find or chase_insn?
-    //     }
-
-    //     fn write_variable() {
-    //         // TODO: Specify and define arguments
-    //         // TODO: Figure out if this already exists in ZJIT. Likely this uses find or chase_insn?
-    //     }
-    //     //
-    //     // ------------ MULTIPLE BLOCKS ----------------
-    //     // When we get to multiple blocks, we need to deal with phi nodes. It seems that in ZJIT, these are referred to as block arguments or block params
-    //     // It would be really nice to check my knowledge on this, and potentially rename them if so
-    //     fn read_variable_recursive() {
-    //         // TODO: fill out
-    //         // This function is the global value numbering version of the single block variant
-    //     }
-
-    //     fn add_phi_operands() {
-    //         // See comments in try_remove_triival_phi
-    //     }
-
-    //     fn try_remove_trivial_phi() {
-    //         // TODO: fill out
-    //         // This function cleans up the opportunistic phis that get added in Braun's algorithm.
-    //         // If we didn't add such phis, we run into all sorts of recursion issues. This is a key idea in the algorithm we are implementing
-    //     }
-
-    //     // ---------- INCOMPLETE CFGS --------------
-    //     // While technically part of the multiple blocks section, the next functions are even more complicated so they get their own section
-    //     fn seal_block() {
-    //         // We call a block "sealed" when we know there will not be predecessors added to the block.
-    //         // This function adds all necessary phis to incomplete blocks and adds this block to the sealed list
-    //     }
-
-    //     // I don't yet know which optimizations we want to include during construction. Pages 8 and 9 of the paper show why this is non-trivial and important for us to figure out
-    //     // However, the following tools are definitely necessary
-    //     fn remove_redundant_phis() {
-    //         // In the paper, they innovate by considering irreducible control flow from the perspective of the strongly connected component that _must_ exist if there are redundant phis
-    //         // By computing this strongly connected component, we can figure out what to remove (with the following function)
-    //     }
-
-    //     fn process_strongly_connected_component() {
-    //         // Do some fancy logic to iterate across all the phis in the SCC, tracking "inner" and "outer" operations
-    //     }
-
-    //     // TODO: Close reading of page 11 after implementing everything else to see if there are further optimizations to be made
-    //     // Key issue: we construct a lot of phis and then remove a lot of phis. Can we construct fewer in the first place?
-    //
-    // }
 
     fn optimize_load_store(&mut self) {
         for block in self.reverse_post_order() {
@@ -6292,7 +6280,7 @@ impl Function {
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
             (inline_methods) => { Counter::compile_hir_inline_methods_time_ns };
-            (remove_trivial_phis) => { Counter::compile_hir_remove_trivial_phis_time_ns };
+            (remove_trivial_block_params) => { Counter::compile_hir_remove_trivial_block_params_time_ns };
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
             (canonicalize) => { Counter::compile_hir_canonicalize_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
@@ -6346,7 +6334,7 @@ impl Function {
             // TODO: Figure out where the pass should go and remove these comments
             // It's not clear where converting to minimal SSA should occur
             // We need it for a global optimize_load_store, so this is a good starting point
-            run_pass!(remove_trivial_phis);
+            run_pass!(remove_trivial_block_params);
             run_pass!(optimize_load_store);
             run_pass!(canonicalize);
             run_pass!(fold_constants);
