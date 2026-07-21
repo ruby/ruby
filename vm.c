@@ -2892,7 +2892,18 @@ zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cf
     VM_ASSERT(cfp <= end_cfp);
 
     while (true) {
+        // If materialize_target is false, we skip materializing ec->tag->cfp.
+        //
+        // When JIT code calls a C function that does the same number of setjmps and
+        // longjmps, e.g. rb_hash_aref, it calls zjit_materialize_frames but goes
+        // back to the JIT code. In that case, we don't want to materialize the frame
+        // and clear cfp->jit_return, which will still be used by the JIT code.
+        //
+        // When JIT code calls a C function that does more longjmps than setjmps,
+        // it would not go back to the JIT code. So ec->tag->cfp should be materialized
+        // in that case.
         if (cfp == end_cfp && !materialize_target) break;
+
         if (CFP_ZJIT_FRAME_P(cfp)) {
             const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
             cfp->pc = jit_frame->pc;
