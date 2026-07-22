@@ -8200,6 +8200,8 @@ impl Function {
         #[derive(Clone, Copy, PartialEq)]
         enum Producer { IntTimes, ArrayMapEnum, ArrayEachWithIndex, RangeLit, ArrayDirect, ArrayReverse }
         #[derive(Clone, Copy, PartialEq)]
+        enum NeedleClass { Fix, Flo, Sym }
+        #[derive(Clone, Copy, PartialEq)]
         enum Consumer { Map, Select, ToA, WithIndexMap, Sum, Count, Min, Max, Find, AnyP, AllP, NoneP, MinBy, MaxBy, Include, IndexOf }
 
         let times_id = unsafe { rb_intern(c"times".as_ptr()) };
@@ -8311,8 +8313,8 @@ impl Function {
             consumer_mid: ID,
             /// (low, high, exclusive) for the RangeLit producer.
             range_info: Option<(InsnId, InsnId, bool)>,
-            /// (needle, needle-is-flonum) for the identity-scan consumers.
-            needle: Option<(InsnId, bool)>,
+            /// (needle-or-offset, immediate class) for the argument-taking consumers.
+            needle: Option<(InsnId, NeedleClass)>,
         }
         let mut candidates: Vec<Candidate> = vec![];
         for block in self.reverse_post_order() {
@@ -8515,14 +8517,19 @@ impl Function {
                 // send's own operand profile, falling back to the needle's
                 // static type; decline without a monomorphic answer. Baking
                 // the compare also requires the class's == to be stock.
-                let mut needle_float = false;
+                let mut needle_class = NeedleClass::Fix;
                 if is_identity_scan {
                     let needle = b_args[0];
                     let needle_ty = self.type_of(needle);
                     if needle_ty.is_subtype(types::Fixnum) {
-                        needle_float = false;
+                        needle_class = NeedleClass::Fix;
                     } else if needle_ty.is_subtype(types::Flonum) {
-                        needle_float = true;
+                        needle_class = NeedleClass::Flo;
+                    } else if needle_ty.is_subtype(types::StaticSymbol) {
+                        // Symbol#== is object identity for all symbols (dynamic
+                        // symbols are content-interned), and static-symbol
+                        // needles/elements are immediates the guard can test.
+                        needle_class = NeedleClass::Sym;
                     } else if !matches!(producer, Producer::ArrayDirect) {
                         // For chained producers a_state belongs to the producer
                         // send, whose operand profile has no needle: require a
@@ -8537,12 +8544,17 @@ impl Function {
                             .filter(|s| s.is_monomorphic())
                             .map(|s| s.bucket(0).class());
                         match mono_class {
-                            Some(k) if k == unsafe { rb_cInteger } => needle_float = false,
-                            Some(k) if k == unsafe { rb_cFloat } => needle_float = true,
+                            Some(k) if k == unsafe { rb_cInteger } => needle_class = NeedleClass::Fix,
+                            Some(k) if k == unsafe { rb_cFloat } => needle_class = NeedleClass::Flo,
+                            Some(k) if k == unsafe { rb_cSymbol } => needle_class = NeedleClass::Sym,
                             _ => continue,
                         }
                     }
-                    let eq_klass = if needle_float { unsafe { rb_cFloat } } else { unsafe { rb_cInteger } };
+                    let eq_klass = match needle_class {
+                        NeedleClass::Fix => unsafe { rb_cInteger },
+                        NeedleClass::Flo => unsafe { rb_cFloat },
+                        NeedleClass::Sym => unsafe { rb_cSymbol },
+                    };
                     if !stock_cme(cme_of(eq_klass, eq_id)) { continue; }
                 }
                 let consumer_klass = match producer {
@@ -8625,7 +8637,7 @@ impl Function {
                     consumer_cme, consumer_klass, consumer_mid: b_mid,
                     range_info,
                     needle: if is_identity_scan || !b_args.is_empty() {
-                        Some((b_args[0], needle_float))
+                        Some((b_args[0], needle_class))
                     } else {
                         None
                     },
@@ -9169,10 +9181,16 @@ impl Function {
                     }
                 }
             }
-            if let Some((_, nf)) = c.needle {
-                let eq_klass = if nf { unsafe { rb_cFloat } } else { unsafe { rb_cInteger } };
-                let cme = cme_of(eq_klass, eq_id);
-                if !cme.is_null() { invariants.push((eq_klass, eq_id, cme)); }
+            if let Some((_, nc)) = c.needle {
+                if matches!(c.consumer, Consumer::Include | Consumer::IndexOf) {
+                    let eq_klass = match nc {
+                        NeedleClass::Fix => unsafe { rb_cInteger },
+                        NeedleClass::Flo => unsafe { rb_cFloat },
+                        NeedleClass::Sym => unsafe { rb_cSymbol },
+                    };
+                    let cme = cme_of(eq_klass, eq_id);
+                    if !cme.is_null() { invariants.push((eq_klass, eq_id, cme)); }
+                }
             }
             if used_math_sqrt && !math_sqrt_cme.is_null() {
                 invariants.push((math_klass, sqrt_id, math_sqrt_cme));
@@ -9336,8 +9354,12 @@ impl Function {
                 _ => vec![],
             };
 
-            let needle_guarded: Option<InsnId> = c.needle.map(|(needle, nf)| {
-                let class = if nf { types::Flonum } else { types::Fixnum };
+            let needle_guarded: Option<InsnId> = c.needle.map(|(needle, nc)| {
+                let class = match nc {
+                    NeedleClass::Fix => types::Fixnum,
+                    NeedleClass::Flo => types::Flonum,
+                    NeedleClass::Sym => types::StaticSymbol,
+                };
                 if matches!(c.consumer, Consumer::Include | Consumer::IndexOf) {
                     elem_guard = Some(class);
                 }
