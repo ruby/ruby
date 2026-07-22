@@ -13801,7 +13801,9 @@ parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *nod
                 pm_hash_key_static_literals_add(parser, literals, key);
 
                 pm_token_t operator = { 0 };
-                if (!pm_symbol_node_label_p(parser, key)) {
+                if (PM_NODE_TYPE_P(key, PM_PARENTHESES_NODE) && (parser->start + key->location.start + key->location.length) == parser->current.start && accept1(parser, PM_TOKEN_COLON)) {
+                    // Computed hash key (expr): — no => needed
+                } else if (!pm_symbol_node_label_p(parser, key)) {
                     expect1(parser, PM_TOKEN_EQUAL_GREATER, PM_ERR_HASH_ROCKET);
                     operator = parser->previous;
                 }
