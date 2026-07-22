@@ -8190,7 +8190,7 @@ impl Function {
         #[derive(Clone, Copy, PartialEq)]
         enum Producer { IntTimes, ArrayMapEnum, ArrayEachWithIndex }
         #[derive(Clone, Copy, PartialEq)]
-        enum Consumer { Map, Select, ToA, WithIndexMap, Sum }
+        enum Consumer { Map, Select, ToA, WithIndexMap, Sum, Count, Min, Max }
 
         let times_id = unsafe { rb_intern(c"times".as_ptr()) };
         let to_enum_id = unsafe { rb_intern(c"to_enum".as_ptr()) };
@@ -8200,6 +8200,9 @@ impl Function {
         let filter_id = unsafe { rb_intern(c"filter".as_ptr()) };
         let to_a_id = unsafe { rb_intern(c"to_a".as_ptr()) };
         let sum_id = unsafe { rb_intern(c"sum".as_ptr()) };
+        let count_id = unsafe { rb_intern(c"count".as_ptr()) };
+        let min_id = unsafe { rb_intern(c"min".as_ptr()) };
+        let max_id = unsafe { rb_intern(c"max".as_ptr()) };
         let each_id = unsafe { rb_intern(c"each".as_ptr()) };
         let each_with_index_id = unsafe { rb_intern(c"each_with_index".as_ptr()) };
         let with_index_id = unsafe { rb_intern(c"with_index".as_ptr()) };
@@ -8344,6 +8347,10 @@ impl Function {
                     (Producer::IntTimes, false) if b_mid == to_a_id => (Consumer::ToA, 0),
                     (Producer::IntTimes, true) if b_mid == sum_id => (Consumer::Sum, 1),
                     (Producer::IntTimes, false) if b_mid == sum_id => (Consumer::Sum, 0),
+                    (Producer::IntTimes, true) if b_mid == count_id => (Consumer::Count, 1),
+                    (Producer::IntTimes, false) if b_mid == count_id => (Consumer::Count, 0),
+                    (Producer::IntTimes, false) if b_mid == min_id => (Consumer::Min, 0),
+                    (Producer::IntTimes, false) if b_mid == max_id => (Consumer::Max, 0),
                     (Producer::ArrayMapEnum, true) if b_mid == with_index_id => (Consumer::WithIndexMap, 2),
                     (Producer::ArrayEachWithIndex, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 2),
                     _ => continue,
@@ -8742,7 +8749,43 @@ impl Function {
                     self.push_insn(bb, Insn::BoxFixnum { val: len_raw, state: c.a_state })
                 }
             };
-            let needs_array = !matches!(c.consumer, Consumer::Sum);
+            // Blockless min/max over 0..n-1 are endpoint constants; emit the
+            // n-positive check and skip loop synthesis entirely. body_cont was
+            // created before translation and is unused here (no block body was
+            // translated), so truncate it away rather than leave an empty,
+            // terminator-less block behind.
+            if matches!(c.consumer, Consumer::Min | Consumer::Max) {
+                debug_assert!(translated.is_none());
+                self.blocks.truncate(pre_blocks_len);
+                let zero = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) });
+                let pos_blk = self.new_block(insn_idx);
+                let neg_blk = self.new_block(insn_idx);
+                let cont = self.new_block(insn_idx);
+                self.push_insn(bb, Insn::CondBranchFixnumCmp(Box::new(CondBranchFixnumCmpData {
+                    op: FixnumCmpOp::Gt,
+                    left: bound,
+                    right: zero,
+                    if_true: BranchEdge { target: pos_blk, args: vec![] },
+                    if_false: BranchEdge { target: neg_blk, args: vec![] },
+                })));
+                let endpoint = if matches!(c.consumer, Consumer::Min) {
+                    zero
+                } else {
+                    let one = self.push_insn(pos_blk, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) });
+                    self.push_insn(pos_blk, Insn::FixnumSub { left: bound, right: one, state: c.a_state })
+                };
+                self.push_insn(pos_blk, Insn::Jump(BranchEdge { target: cont, args: vec![endpoint] }));
+                let nil = self.push_insn(neg_blk, Insn::Const { val: Const::Value(Qnil) });
+                self.push_insn(neg_blk, Insn::Jump(BranchEdge { target: cont, args: vec![nil] }));
+                let result = self.push_insn(cont, Insn::Param);
+                for &id in &tail {
+                    self.push_insn_id(cont, id);
+                }
+                self.make_equal_to(c.b_id, result);
+                continue 'candidates;
+            }
+
+            let needs_array = !matches!(c.consumer, Consumer::Sum | Consumer::Count);
             let ary = if needs_array { self.push_insn(bb, Insn::CCallWithFrame(Box::new(CCallWithFrameData {
                 cd: c.some_cd,
                 cfunc: rb_zjit_ary_new_capa_fix as *const u8,
@@ -8759,19 +8802,18 @@ impl Function {
             let zero = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) });
             let one = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) });
 
-            // Sum carries extra loop state: one Fixnum accumulator, or the
-            // Kahan (sum, compensation) CDouble pair.
-            let sum_inits: Vec<InsnId> = if matches!(c.consumer, Consumer::Sum) {
-                if summand_float {
-                    vec![
-                        self.push_insn(bb, Insn::Const { val: Const::CDouble(0.0) }),
-                        self.push_insn(bb, Insn::Const { val: Const::CDouble(0.0) }),
-                    ]
-                } else {
-                    vec![zero]
-                }
-            } else {
-                vec![]
+            // Extra loop-carried state: Sum carries one Fixnum accumulator or
+            // the Kahan (sum, compensation) CDouble pair; Count with a
+            // predicate block carries the match counter. Blockless count needs
+            // none: the trip count is the answer.
+            let sum_inits: Vec<InsnId> = match c.consumer {
+                Consumer::Sum if summand_float => vec![
+                    self.push_insn(bb, Insn::Const { val: Const::CDouble(0.0) }),
+                    self.push_insn(bb, Insn::Const { val: Const::CDouble(0.0) }),
+                ],
+                Consumer::Sum => vec![zero],
+                Consumer::Count if c.blockiseq.is_some() => vec![zero],
+                _ => vec![],
             };
 
             let header = self.new_block(insn_idx);
@@ -8820,10 +8862,11 @@ impl Function {
                         _ => vec![elem, i_phi],
                     },
                     Consumer::ToA => vec![],
-                    Consumer::Sum => match c.producer {
+                    Consumer::Sum | Consumer::Count => match c.producer {
                         Producer::IntTimes => vec![i_phi],
                         _ => vec![elem, i_phi],
                     },
+                    Consumer::Min | Consumer::Max => unreachable!("min/max fold before loop synthesis"),
                 };
                 for (i, &param_id) in body_params[1..].iter().enumerate() {
                     if let Some(&arg) = block_args.get(i) {
@@ -8844,6 +8887,7 @@ impl Function {
             // body_cont: accumulate per the consumer, advance, loop.
             let block_val = self.push_insn(body_cont, Insn::Param);
             match c.consumer {
+                Consumer::Min | Consumer::Max => unreachable!("min/max fold before loop synthesis"),
                 Consumer::Map | Consumer::WithIndexMap | Consumer::ToA => {
                     self.push_insn(body_cont, Insn::ArrayPush { array: ary, val: block_val, state: c.a_state });
                     let i_next = self.push_insn(body_cont, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
@@ -8908,6 +8952,33 @@ impl Function {
                         self.push_insn(body_cont, Insn::Jump(BranchEdge { target: header, args: vec![i_next, acc_next] }));
                     }
                 }
+                Consumer::Count => {
+                    if c.blockiseq.is_some() {
+                        // Bump the counter when the predicate is truthy. The
+                        // counter is bounded by the trip count, so the add can
+                        // never overflow a Fixnum.
+                        let cnt = sum_phis[0];
+                        let keep = self.push_insn(body_cont, Insn::Test { val: block_val });
+                        let bump = self.new_block(insn_idx);
+                        let advance = self.new_block(insn_idx);
+                        self.push_insn(body_cont, Insn::CondBranch {
+                            val: keep,
+                            if_true: BranchEdge { target: bump, args: vec![] },
+                            if_false: BranchEdge { target: advance, args: vec![cnt] },
+                        });
+                        let cnt1 = self.push_insn(bump, Insn::FixnumAdd { left: cnt, right: one, state: c.a_state });
+                        self.push_insn(bump, Insn::Jump(BranchEdge { target: advance, args: vec![cnt1] }));
+                        let cnt_next = self.push_insn(advance, Insn::Param);
+                        let i_next = self.push_insn(advance, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                        self.push_insn(advance, Insn::CheckInterrupts { state: c.a_state });
+                        self.push_insn(advance, Insn::Jump(BranchEdge { target: header, args: vec![i_next, cnt_next] }));
+                    } else {
+                        // Blockless: the loop's own trip count is the answer.
+                        let i_next = self.push_insn(body_cont, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                        self.push_insn(body_cont, Insn::CheckInterrupts { state: c.a_state });
+                        self.push_insn(body_cont, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
+                    }
+                }
                 Consumer::Select => {
                     // Push the *index* only when the block result is truthy.
                     let keep = self.push_insn(body_cont, Insn::Test { val: block_val });
@@ -8932,6 +9003,8 @@ impl Function {
                     self.push_insn(cont, Insn::BoxFlonum { val: s_d, state: c.a_state })
                 }
                 Consumer::Sum => sum_phis[0],
+                Consumer::Count if c.blockiseq.is_some() => sum_phis[0],
+                Consumer::Count => i_phi,
                 _ => ary,
             };
             for &id in &tail {
