@@ -1296,6 +1296,7 @@ impl Assembler {
                         FloatArithOp::Sub => fsub(cb, 0, 0, 1),
                         FloatArithOp::Mul => fmul(cb, 0, 0, 1),
                         FloatArithOp::Div => fdiv(cb, 0, 0, 1),
+                        FloatArithOp::Sqrt => fsqrt(cb, 0, 0),
                     }
                     fmov_reg_to_gpr(cb, out.unwrap_reg().reg_no, 0);
                 },

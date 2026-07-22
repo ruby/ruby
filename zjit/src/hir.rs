@@ -1124,6 +1124,11 @@ pub enum Insn {
     /// the unsigned compare and the IEEE754 magnitude compare.
     IsBitGe { left: InsnId, right: InsnId },
 
+    /// Scalar-double square root of a raw-bits CDouble. sqrt of a negative
+    /// input yields NaN, which is not flonum-representable, so the downstream
+    /// BoxFlonum guard restarts and the interpreter raises Math::DomainError.
+    FloatSqrt { val: InsnId },
+
     /// Clear the sign bit of a raw double bit pattern (fabs on a CDouble).
     /// Yields the magnitude as integer bits, compared with IsBitGe.
     FloatAbs { val: InsnId },
@@ -1823,6 +1828,7 @@ macro_rules! for_each_operand_impl {
             Insn::UnboxFixnum { val }
             | Insn::UnboxFlonum { val }
             | Insn::FloatAbs { val }
+            | Insn::FloatSqrt { val }
             | Insn::F64FromFixnum { val } => {
                 $visit_one!(*val);
             }
@@ -1963,6 +1969,7 @@ impl Insn {
             Insn::IsBitEqual { .. } => effects::Empty,
             Insn::IsBitGe { .. } => effects::Empty,
             Insn::FloatAbs { .. } => effects::Empty,
+            Insn::FloatSqrt { .. } => effects::Empty,
             Insn::IsBitNotEqual { .. } => effects::Empty,
             Insn::BoxBool { .. } => effects::Empty,
             Insn::BoolNegate { .. } => effects::Empty,
@@ -2380,6 +2387,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IsBitEqual { left, right } => write!(f, "IsBitEqual {left}, {right}"),
             Insn::IsBitGe { left, right } => write!(f, "IsBitGe {left}, {right}"),
             Insn::FloatAbs { val } => write!(f, "FloatAbs {val}"),
+            Insn::FloatSqrt { val } => write!(f, "FloatSqrt {val}"),
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
             Insn::BoolNegate { val } => write!(f, "BoolNegate {val}"),
@@ -3921,6 +3929,7 @@ impl Function {
             // finite doubles order identically as signed integers, directly
             // comparable with IsBitGe.
             Insn::FloatAbs { .. } => types::CDouble,
+            Insn::FloatSqrt { .. } => types::CDouble,
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
             Insn::BoolNegate { val } if self.type_of(*val).is_known_falsy() => types::TrueClass,
@@ -8185,6 +8194,7 @@ impl Function {
     fn fuse_enumerator_chains(&mut self) {
         unsafe extern "C" {
             static rb_cEnumerator: VALUE;
+            static rb_mMath: VALUE;
             fn rb_zjit_ary_new_capa_fix(n: VALUE) -> VALUE;
         }
         #[derive(Clone, Copy, PartialEq)]
@@ -8211,6 +8221,7 @@ impl Function {
         let min_by_id = unsafe { rb_intern(c"min_by".as_ptr()) };
         let max_by_id = unsafe { rb_intern(c"max_by".as_ptr()) };
         let cmp_id = unsafe { rb_intern(c"<=>".as_ptr()) };
+        let sqrt_id = unsafe { rb_intern(c"sqrt".as_ptr()) };
         let each_id = unsafe { rb_intern(c"each".as_ptr()) };
         let each_with_index_id = unsafe { rb_intern(c"each_with_index".as_ptr()) };
         let with_index_id = unsafe { rb_intern(c"with_index".as_ptr()) };
@@ -8242,6 +8253,10 @@ impl Function {
             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
             if iseq_get_location(iseq, 0).starts_with(loc_prefix) { Some(iseq) } else { None }
         };
+
+        let math_klass = unsafe { rb_mMath }.class_of();
+        let math_sqrt_cme = cme_of(math_klass, sqrt_id);
+        let math_sqrt_ok = stock_cme(math_sqrt_cme);
 
         // Producer-side stock checks. The Ruby producers must be the internal
         // definitions; the C pieces of each chain must still be cfuncs.
@@ -8576,7 +8591,7 @@ impl Function {
                 Add, Sub, Mult, Mod, Div, BAnd, BOr, BXor,
                 Lt, Le, Gt, Ge, Eq,
                 FAdd, FSub, FMul, FDiv, FCmp(FloatCmpOp),
-                REven, ROdd, RZero, RNeg, RToF, RFToI, RFAbs,
+                REven, ROdd, RZero, RNeg, RToF, RFToI, RFAbs, RSqrt,
             }
             let body_params: Vec<InsnId> = translated.as_ref()
                 .and_then(|r| r.body_entry_block)
@@ -8694,6 +8709,16 @@ impl Function {
                                 let arg_fix = fixnum_vals.contains(&arg_r);
                                 let recv_flo = float_vals.contains(&recv_r);
                                 let arg_flo = float_vals.contains(&arg_r);
+                                let recv_is_math = matches!(self.find(recv),
+                                    Insn::Const { val: Const::Value(v) } if v == unsafe { rb_mMath });
+                                if recv_is_math && mid == sqrt_id && math_sqrt_ok && (arg_fix || arg_flo) {
+                                    // Result is a guarded boxed flonum: a NaN from a
+                                    // negative input fails the box guard and restarts,
+                                    // so downstream float uses never see NaN.
+                                    float_vals.insert(self.union_find.borrow().find_const(iid));
+                                    to_reduce.push((iid, bidx, Reduce::RSqrt, recv_r, arg_r, mid, recv_fix, arg_fix));
+                                    continue;
+                                }
                                 let op_klass = if recv_fix { unsafe { rb_cInteger } } else { unsafe { rb_cFloat } };
                                 let op_is_stock = stock_cme(cme_of(op_klass, mid));
                                 match kind {
@@ -8818,8 +8843,10 @@ impl Function {
             // Operator dispatch goes to the receiver's class: a fixnum
             // receiver resolves Integer#op, a flonum receiver Float#op. The
             // redefinition patchpoint must guard the class actually consulted.
+            let mut used_math_sqrt = false;
             let mut bop_ops: Vec<(ID, bool)> = vec![];
             for &(iid, bidx, ref k, l, r, mid, l_fix, r_fix) in &to_reduce {
+                if matches!(k, Reduce::RSqrt) { used_math_sqrt = true; }
                 match k {
                     Reduce::FAdd | Reduce::FSub | Reduce::FMul | Reduce::FDiv => {
                         // Splice unbox/convert + CDouble op before the Send's slot;
@@ -8901,6 +8928,18 @@ impl Function {
                     }
                     Reduce::RFToI => {
                         self.insns[iid] = Insn::FloatToInt { recv: l, state: c.a_state };
+                    }
+                    Reduce::RSqrt => {
+                        let conv = if r_fix {
+                            self.new_insn(Insn::F64FromFixnum { val: r })
+                        } else {
+                            self.new_insn(Insn::UnboxFlonum { val: r })
+                        };
+                        let sq = self.new_insn(Insn::FloatSqrt { val: conv });
+                        self.insns[iid] = Insn::BoxFlonum { val: sq, state: c.a_state };
+                        let pos = self.blocks[bidx].insns.iter().position(|&x| x == iid)
+                            .expect("reduced send must be in its block");
+                        self.blocks[bidx].insns.splice(pos..pos, [conv, sq]);
                     }
                     Reduce::RFAbs => {
                         let u = self.new_insn(Insn::UnboxFlonum { val: l });
@@ -9040,6 +9079,9 @@ impl Function {
                         invariants.push((unsafe { rb_cArray }, each_id, aeach_cme));
                     }
                 }
+            }
+            if used_math_sqrt && !math_sqrt_cme.is_null() {
+                invariants.push((math_klass, sqrt_id, math_sqrt_cme));
             }
             if matches!(c.consumer, Consumer::MinBy | Consumer::MaxBy) {
                 // The fused key comparison bakes the stock <=> for the key class.
@@ -10518,7 +10560,8 @@ impl Function {
                 }
                 Ok(())
             }
-            Insn::FloatAbs { val } => {
+            Insn::FloatAbs { val }
+            | Insn::FloatSqrt { val } => {
                 self.assert_subtype(insn_id, val, types::CDouble)?;
                 Ok(())
             }

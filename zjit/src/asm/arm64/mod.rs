@@ -1284,6 +1284,11 @@ pub fn fdiv(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
     cb.write_bytes(&fp_data_proc2(0x1E60_1800, dd, dn, dm));
 }
 
+/// FSQRT (scalar, double): Dd = sqrt(Dn).
+pub fn fsqrt(cb: &mut CodeBlock, dd: u8, dn: u8) {
+    cb.write_bytes(&(0x1E61_C000u32 | ((dn as u32) << 5) | (dd as u32)).to_le_bytes());
+}
+
 /// SCVTF (scalar, signed 64-bit int -> double): Dd = (double)Xn.
 /// sf=1, type=01 (double), rmode=00, opcode=010.
 pub fn scvtf(cb: &mut CodeBlock, dd: u8, xn: u8) {

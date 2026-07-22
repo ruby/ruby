@@ -835,6 +835,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FloatSub { recv, other, .. } => asm.float_arith(FloatArithOp::Sub, opnd!(recv), opnd!(other)),
         Insn::FloatMul { recv, other, .. } => asm.float_arith(FloatArithOp::Mul, opnd!(recv), opnd!(other)),
         Insn::FloatDiv { recv, other, .. } => asm.float_arith(FloatArithOp::Div, opnd!(recv), opnd!(other)),
+        Insn::FloatSqrt { val } => asm.float_arith(FloatArithOp::Sqrt, opnd!(val), opnd!(val)),
         &Insn::UnboxFlonum { val } => flonum_unbox(asm, opnd!(val)),
         &Insn::BoxFlonum { val, state } => double_bits_to_flonum(jit, asm, function, opnd!(val), &function.frame_state(state)),
         &Insn::GuardFlonumRepresentable { val, state } => gen_guard_flonum_representable(jit, asm, function, opnd!(val), &function.frame_state(state)),

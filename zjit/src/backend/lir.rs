@@ -776,6 +776,8 @@ pub enum FloatArithOp {
     Sub,
     Mul,
     Div,
+    /// Unary scalar-double square root (uses only `left`).
+    Sqrt,
 }
 
 /// ZJIT Low-level IR instruction
