@@ -501,7 +501,7 @@ update-deps:
 	$(eval deps_dir := $(shell mktemp -d)/$(update_deps))
 	$(eval GIT_DIR := $(shell $(GIT_IN_SRC) rev-parse --absolute-git-dir))
 	$(GIT) --git-dir=$(GIT_DIR) worktree add $(deps_dir)
-	$(BASERUBY) -C $(deps_dir) tool/mkdepend.rb -all -sources -inplace
+	$(BASERUBY) -C $(deps_dir) tool/mkdepend.rb --scope=all --sources --inplace
 	$(GIT) -C $(deps_dir) diff --no-ext-diff --ignore-submodules --exit-code || \
 	    $(GIT) -C $(deps_dir) commit --all --message='Update dependencies'
 	$(GIT) --git-dir=$(GIT_DIR) worktree remove $(deps_dir)

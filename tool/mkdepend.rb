@@ -1,11 +1,11 @@
-#!ruby -s
+#!ruby
 
 # Update dependencies without a configured build or a C compiler:
-#   ruby tool/mkdepend.rb -all -sources -inplace
+#   ruby tool/mkdepend.rb --scope=all --sources --inplace
 # Expand source mappings into full dependencies:
-#   ruby tool/mkdepend.rb -all -inplace
+#   ruby tool/mkdepend.rb --scope=all --inplace
 # Check committed source mappings without modifying files:
-#   ruby tool/mkdepend.rb -all -sources -check
+#   ruby tool/mkdepend.rb --scope=all --sources --check
 # The command can be run from either the source or a build directory.
 #
 # Dependency files can declare inputs that do not exist in the source tree:
@@ -35,6 +35,7 @@
 require 'set'
 require 'tempfile'
 require 'fileutils'
+require 'optparse'
 
 TOP_SRCDIR = File.expand_path("..", __dir__)
 
@@ -198,6 +199,72 @@ end
 
 class Mkdepend
   attr_reader :root
+
+  def self.main(argv = ARGV, err: $stderr)
+    options, inputs = parse_options(argv)
+  rescue OptionParser::ParseError => error
+    err.puts "#{File.basename($0)}: #{error.message}"
+    err.puts "Try '#{File.basename($0)} --help' for more information."
+    false
+  else
+    execute(inputs, **options)
+  end
+
+  def self.parse_options(argv)
+    options = {}
+    output = nil
+    select_mode = proc do |mode|
+      options[:mode] = mode
+    end
+    parser = OptionParser.new do |opts|
+      opts.banner = "Usage: #{File.basename($0)} [options] [files]"
+      opts.separator ""
+      opts.separator "Input selection:"
+      opts.on("--root=DIR", "source tree root") {|value| options[:root] = value}
+      opts.on("--thread-model=MODEL", "thread model") do |value|
+        options[:thread_model] = value
+      end
+      opts.on(
+        "--scope=SCOPE", [:all, :core, :extensions],
+        "dependency files to process (all, core, extensions)",
+      ) do |value|
+        options[:scope] = value
+      end
+
+      opts.separator ""
+      opts.separator "Update mode (last one wins; default: stdout):"
+      opts.on("--output=DIR", "write dependencies under DIR") do |value|
+        select_mode[:output]
+        output = value
+      end
+      opts.on("--inplace", "update dependency files in place") do
+        select_mode[:inplace]
+      end
+      opts.on("--check", "check dependency files without updating") do
+        select_mode[:check]
+      end
+
+      opts.separator ""
+      opts.separator "Output options:"
+      opts.on("--nmake", "emit NMake dependency rules") do
+        options[:nmake] = true
+      end
+      opts.on("--sources", "emit source mappings") do
+        options[:sources] = true
+      end
+      opts.on("-v", "--verbose", "show scanned sources") do
+        options[:verbose] = true
+      end
+    end
+    inputs = parser.parse(argv)
+    options[:output] = output if options[:mode] == :output
+    [options, inputs]
+  end
+
+  def self.execute(inputs, root: TOP_SRCDIR, thread_model: nil, **options)
+    new(root: root, thread_model: thread_model).run(inputs, **options)
+  end
+  private_class_method :execute
 
   def initialize(root: TOP_SRCDIR, thread_model: nil)
     @root = File.expand_path(root)
@@ -629,7 +696,7 @@ class Mkdepend
     sources.values.map(&:last).uniq.sort.join
   end
 
-  def update_deps(rules, input, group: true)
+  def update_deps(rules, input, group: true, verbose: false)
     sources = dependency_source_map(rules, input)
     targets = rules.scan(%r[^([-.\w/]+)\.(?:\$\(OBJEXT\)|o):]).flatten.uniq
     unless (missing = targets - sources.keys).empty?
@@ -638,7 +705,7 @@ class Mkdepend
     generated = []
     sources.each do |target, src|
       src = resolve_dependency_source(src, input)
-      warn "dependencies for #{src}:" if $verbose
+      warn "dependencies for #{src}:" if verbose
       makedepend(src, generated, target: target, input: input)
     end
     compact_dependencies(generated.join, group: group)
@@ -676,12 +743,17 @@ class Mkdepend
     expected_lines.each {|line| err.puts "    #{line.chomp}"}
   end
 
-  def run(inputs = ARGV, out: $stdout, err: $stderr, output: $output,
-          nmake: $nmake, sources: $sources, inplace: $inplace,
-          check: $check,
-          scope: ($core ? :core :
-                  $extensions ? :extensions :
-                  $all ? :all : nil))
+  def run(inputs = ARGV, out: $stdout, err: $stderr, mode: :stdout,
+          output: nil, nmake: false, sources: false, scope: nil,
+          verbose: false)
+    case mode
+    when :output
+      raise ArgumentError, "output directory is missing" unless output
+    when :stdout, :inplace, :check
+      raise ArgumentError, "output requires output mode" if output
+    else
+      raise ArgumentError, "unknown update mode: #{mode.inspect}"
+    end
     if scope
       inputs = dependency_files(scope).map {|file| File.join(@root, file)}
     end
@@ -702,18 +774,18 @@ class Mkdepend
         expected = if sources
           minimize_deps(current_rules, input)
         else
-          update_deps(current_rules, input, group: !nmake)
+          update_deps(current_rules, input, group: !nmake, verbose: verbose)
         end
         updated = match.pre_match + expected + match.post_match
-        if output
+        if mode == :output
           updated = normalize_dependency_rules(updated) unless nmake
           replace_file(File.join(output, relative_source(input)), updated)
         elsif same_dependency_rules?(current_rules, expected)
           next
-        elsif inplace
+        elsif mode == :inplace
           replace_file(input, updated)
           changed = true
-        elsif check
+        elsif mode == :check
           report_outdated_dependencies(input, current_rules, expected, err: err)
           changed = true
         else
@@ -722,19 +794,15 @@ class Mkdepend
         end
       end
     end
-    if check && changed
-      options = " -sources" if sources
+    if mode == :check && changed
+      options = " --sources" if sources
       err.puts "\nupdate with:"
-      err.puts "  ruby tool/mkdepend.rb -all#{options} -inplace"
+      err.puts "  ruby tool/mkdepend.rb --scope=all#{options} --inplace"
     end
-    !changed | output
+    mode != :check || !changed
   end
 end
 
 if __FILE__ == $0
-  success = Mkdepend.new(
-    root: $root || TOP_SRCDIR,
-    thread_model: $thread_model,
-  ).run
-  exit(false) if $check && !success
+  exit(Mkdepend.main)
 end

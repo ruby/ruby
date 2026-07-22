@@ -33,7 +33,7 @@ jobs:
           ruby-version: '3.1'
           bundler: none
 
-      - run: ruby tool/mkdepend.rb -all -sources -check
+      - run: ruby tool/mkdepend.rb --scope=all --sources --check
 
       - uses: ./.github/actions/slack
         with:

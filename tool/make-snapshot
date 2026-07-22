@@ -475,7 +475,7 @@ def package(vcs, rev, destdir, tmp = nil)
       vars.delete("UNICODE_FILES") # for stable branches
       vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
       args = vars.dup
-      args["MKDEPEND_FILES"] = "-core"
+      args["MKDEPEND_FILES"] = "--scope=core"
       args["MKDEPEND_OPTIONS"] = ""
       mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
       commonmk.gsub!(/^!(?:include \$\(srcdir\)\/(.*))?/) do

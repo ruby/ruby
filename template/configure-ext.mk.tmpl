@@ -60,8 +60,8 @@ exts: dependencies
 gems:
 
 dependencies:
-	$(Q)$(MINIRUBY) $(srcdir)/tool/mkdepend.rb -root=$(srcdir) \
-		-extensions -thread_model=$(THREAD_MODEL)<%= " -nmake" if nmake %> -output=.deps
+	$(Q)$(MINIRUBY) $(srcdir)/tool/mkdepend.rb --root=$(srcdir) \
+		--scope=extensions --thread-model=$(THREAD_MODEL)<%= " --nmake" if nmake %> --output=.deps
 
 % exts.each do |t, (o, dirs)|
 %   dirs.each do |d|

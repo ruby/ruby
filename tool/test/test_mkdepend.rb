@@ -11,6 +11,80 @@ class TestMkdepend < Test::Unit::TestCase
     @mkdepend ||= Mkdepend.new
   end
 
+  def test_parse_options
+    options, inputs = Mkdepend.parse_options(%w[
+      --root=src --thread-model=win32 --output=.deps
+      --scope=extensions --nmake --sources --verbose depend
+    ])
+
+    assert_equal(
+      {
+        root: "src",
+        thread_model: "win32",
+        output: ".deps",
+        mode: :output,
+        scope: :extensions,
+        nmake: true,
+        sources: true,
+        verbose: true,
+      },
+      options,
+    )
+    assert_equal(["depend"], inputs)
+  end
+
+  def test_parse_options_rejects_unknown_options
+    assert_raise(OptionParser::InvalidOption) do
+      Mkdepend.parse_options(["--unknown"])
+    end
+  end
+
+  def test_parse_options_rejects_unknown_scope
+    assert_raise(OptionParser::InvalidArgument) do
+      Mkdepend.parse_options(["--scope=unknown"])
+    end
+  end
+
+  def test_parse_options_selects_update_mode
+    assert_equal(
+      {mode: :inplace},
+      Mkdepend.parse_options(["--inplace"]).first,
+    )
+    assert_equal(
+      {mode: :check},
+      Mkdepend.parse_options(["--check"]).first,
+    )
+  end
+
+  def test_parse_options_uses_last_update_mode
+    options, = Mkdepend.parse_options(["--output=.deps", "--check"])
+    assert_equal({mode: :check}, options)
+
+    options, = Mkdepend.parse_options(["--inplace", "--output=.deps"])
+    assert_equal({mode: :output, output: ".deps"}, options)
+  end
+
+  def test_help_explains_update_mode_precedence
+    stdout, $stdout = $stdout, StringIO.new
+    exit_status = assert_raise(SystemExit) do
+      Mkdepend.parse_options(["--help"])
+    end
+    assert_true(exit_status.success?)
+    help = $stdout.string
+
+    assert_include(
+      help,
+      "Update mode (last one wins; default: stdout):",
+    )
+    output = help.index("--output=DIR")
+    inplace = help.index("--inplace")
+    check = help.index("--check")
+    assert_operator(output, :<, inplace)
+    assert_operator(inplace, :<, check)
+  ensure
+    $stdout = stdout
+  end
+
   def test_scanner_follows_all_possible_project_headers
     Dir.mktmpdir('mkdepend-scanner') do |dir|
       File.write(File.join(dir, 'main.c'), <<~C)
@@ -251,7 +325,9 @@ class TestMkdepend < Test::Unit::TestCase
 
       output = File.join(dir, '.deps')
       mkdepend = Mkdepend.new(root: dir)
-      assert_true(mkdepend.run([input], output: output, nmake: true))
+      assert_true(
+        mkdepend.run([input], mode: :output, output: output, nmake: true),
+      )
       generated = File.read(File.join(output, 'ext/example/depend'))
       assert_include(generated, 'generated.o: generated.c')
       assert_include(generated, 'generated.o: generated.h')
@@ -370,7 +446,7 @@ class TestMkdepend < Test::Unit::TestCase
     end
   end
 
-  def test_run_selects_extension_files_from_command_line
+  def test_run_selects_extension_files
     Dir.mktmpdir('mkdepend-files') do |root|
       %w[depend ext/example/depend].each do |file|
         path = File.join(root, file)
@@ -379,12 +455,13 @@ class TestMkdepend < Test::Unit::TestCase
       end
 
       Dir.mktmpdir('mkdepend-output') do |output|
-        extensions, $extensions = $extensions, true
-        Mkdepend.new(root: root).run([], output: output)
+        assert_true(
+          Mkdepend.main([
+            "--root=#{root}", "--scope=extensions", "--output=#{output}",
+          ]),
+        )
         assert_false(File.exist?(File.join(output, 'depend')))
         assert_true(File.exist?(File.join(output, 'ext/example/depend')))
-      ensure
-        $extensions = extensions
       end
     end
   end
@@ -630,7 +707,12 @@ class TestMkdepend < Test::Unit::TestCase
       path = File.join(dir, 'depend')
       File.write(path, content)
 
-      assert_false(mkdepend.run([path], sources: true, inplace: true))
+      assert_false(
+        mkdepend.run(
+          [path], sources: true, mode: :check, err: StringIO.new,
+        ),
+      )
+      assert_true(mkdepend.run([path], sources: true, mode: :inplace))
       assert_equal(<<~DEPEND, File.read(path))
         manual: rule
         #{MARK_START}
@@ -660,7 +742,7 @@ class TestMkdepend < Test::Unit::TestCase
       File.chmod(0644, path)
       content = File.read(path)
 
-      assert_false(mkdepend.run([path], inplace: true))
+      assert_true(mkdepend.run([path], mode: :inplace))
 
       assert_include(File.read(path), 'array.$(OBJEXT): $(hdrdir)/ruby/ruby.h')
       assert_equal(0644, File.stat(path).mode & 0777)
@@ -674,7 +756,7 @@ class TestMkdepend < Test::Unit::TestCase
       output = File.join(dir, 'build-deps')
       original = File.read(source)
 
-      assert_true(mkdepend.run([source], output: output))
+      assert_true(mkdepend.run([source], mode: :output, output: output))
       generated = File.read(File.join(output, 'ext/date/depend'))
       assert_include(generated, 'date_core.o: date_core.c')
       assert_match(/date_core\.o.*: \$\(hdrdir\)\/ruby\/ruby\.h/, generated)
@@ -687,7 +769,9 @@ class TestMkdepend < Test::Unit::TestCase
     Dir.mktmpdir('mkdepend-output') do |dir|
       source = File.join(TOP_SRCDIR, 'ext/-test-/thread/id/depend')
 
-      assert_true(mkdepend.run([source], output: dir, nmake: true))
+      assert_true(
+        mkdepend.run([source], mode: :output, output: dir, nmake: true),
+      )
       generated = File.read(File.join(dir, 'ext/-test-/thread/id/depend'))
       assert_include(generated, '{$(VPATH)}id.c')
     end
@@ -697,7 +781,7 @@ class TestMkdepend < Test::Unit::TestCase
     Dir.mktmpdir('mkdepend-output') do |dir|
       source = File.join(TOP_SRCDIR, 'ext/-test-/thread/id/depend')
 
-      assert_true(mkdepend.run([source], output: dir))
+      assert_true(mkdepend.run([source], mode: :output, output: dir))
       generated = File.read(File.join(dir, 'ext/-test-/thread/id/depend'))
       assert_include(generated, 'id.o: id.c')
       assert_not_include(generated, '{$(VPATH)}')
@@ -714,7 +798,7 @@ class TestMkdepend < Test::Unit::TestCase
         File.write(input, "#{MARK_START}\n#{rules}#{MARK_END}\n")
         destination = File.join(output, 'depend')
 
-        assert_true(mkdepend.run([input], output: output))
+        assert_true(mkdepend.run([input], mode: :output, output: output))
         assert_equal(
           mkdepend.normalize_dependency_rules(File.read(input)),
           File.read(destination),
@@ -740,20 +824,20 @@ class TestMkdepend < Test::Unit::TestCase
     assert_include(configure, 'AC_SUBST(X_DEPENDENCIES_DIR)')
     assert_include(configure, "X_DEPENDENCIES_DIR='\$X_DEPENDENCIES_DIR'")
     assert_not_include(configure, 'AC_SUBST(DEPENDENCIES_DIR)')
-    assert_include(configure, '-root="$srcdir"')
-    assert_include(configure, '-core')
+    assert_include(configure, '--root="$srcdir"')
+    assert_include(configure, '--scope=core')
     assert_include(makefile, 'DEPENDENCIES_DIR = @X_DEPENDENCIES_DIR@')
     assert_include(prereq, 's,@X_DEPENDENCIES_DIR@,$(srcdir),g')
     assert_include(gnumakefile, 'include $(DEPENDENCIES_DIR)/depend')
     assert_match(/filter-out .*DEPENDENCIES_DIR.*common_mk_includes/, gnumakefile)
     assert_include(win32, 'DEPENDENCIES_DIR = .deps')
     assert_include(win32, 'DEPENDENCIES_DIR = $(srcdir)')
-    assert_include(setup, '-core')
+    assert_include(setup, '--scope=core')
     assert_not_include(mkmf, 'Mkdepend.new')
-    assert_include(configure_ext, '-extensions')
-    assert_include(configure_ext, '-thread_model=$(THREAD_MODEL)')
+    assert_include(configure_ext, '--scope=extensions')
+    assert_include(configure_ext, '--thread-model=$(THREAD_MODEL)')
     assert_match(
-      %r{tool/mkdepend\.rb.*\n.*-output=\.deps},
+      %r{tool/mkdepend\.rb.*\n.*--output=\.deps},
       configure_ext,
     )
   end
@@ -770,12 +854,12 @@ class TestMkdepend < Test::Unit::TestCase
     assert_not_match(/^fix-depends:/, gmake)
     assert_not_match(/^check-depends:/, gmake)
     assert_match(/rm\.bat -f -r \.deps/, setup)
-    assert_include(setup, '-root=$(srcdir)')
+    assert_include(setup, '--root=$(srcdir)')
     assert_match(
-      %r{tool[\\/]mkdepend\.rb -root=\$\(srcdir\) -core -nmake -output=\.deps},
+      %r{tool[\\/]mkdepend\.rb --root=\$\(srcdir\) --scope=core --nmake --output=\.deps},
       setup,
     )
-    assert_include(snapshot, 'args["MKDEPEND_FILES"] = "-core"')
+    assert_include(snapshot, 'args["MKDEPEND_FILES"] = "--scope=core"')
     assert_include(snapshot, 'args["MKDEPEND_OPTIONS"] = ""')
     assert_include(snapshot, 'make.run("fix-depends")')
   end
@@ -786,7 +870,7 @@ class TestMkdepend < Test::Unit::TestCase
       content = "array.$(OBJEXT): {$(VPATH)}array.c\n"
       File.write(path, content)
 
-      assert_true(mkdepend.run([path], inplace: true))
+      assert_true(mkdepend.run([path], mode: :inplace))
       assert_equal(content, File.read(path))
     end
   end

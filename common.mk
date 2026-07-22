@@ -2006,14 +2006,14 @@ rewindable:
 
 HELP_EXTRA_TASKS = ""
 
-MKDEPEND_FILES = -all
-MKDEPEND_OPTIONS = -sources
+MKDEPEND_FILES = --scope=all
+MKDEPEND_OPTIONS = --sources
 
 fix-depends: PHONY
-	$(BASERUBY) -C $(srcdir) tool/mkdepend.rb $(MKDEPEND_FILES) $(MKDEPEND_OPTIONS) -inplace
+	$(BASERUBY) -C $(srcdir) tool/mkdepend.rb $(MKDEPEND_FILES) $(MKDEPEND_OPTIONS) --inplace
 
 check-depends: PHONY
-	$(BASERUBY) -C $(srcdir) tool/mkdepend.rb -all -sources -check
+	$(BASERUBY) -C $(srcdir) tool/mkdepend.rb --scope=all --sources --check
 
 gc/Makefile:
 	$(MAKEDIRS) $(@D)

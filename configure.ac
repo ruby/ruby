@@ -4756,7 +4756,7 @@ AS_IF([test "x$HAVE_BASERUBY" = xyes], [
     rm -rf "$ac_pwd/.deps"
     AS_MKDIR_P([.deps])
     RUBYOPT=- $BASERUBY "$srcdir/tool/mkdepend.rb" \
-        -root="$srcdir" -core -output="$ac_pwd/.deps" ||
+        --root="$srcdir" --scope=core --output="$ac_pwd/.deps" ||
         AC_MSG_ERROR([failed to generate build dependencies])
 ], [
     X_DEPENDENCIES_DIR='$(srcdir)'
