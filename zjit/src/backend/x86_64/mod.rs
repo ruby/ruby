@@ -670,6 +670,10 @@ impl Assembler {
         asm_local
     }
 
+    pub fn emit_call(cb: &mut CodeBlock, fptr: u64) {
+        call_ptr(cb, RAX, fptr as *const u8);
+    }
+
     /// Emit platform-specific machine code
     pub fn x86_emit(&mut self, cb: &mut CodeBlock) -> Result<Vec<CodePtr>, CompileError> {
         fn emit_csel(

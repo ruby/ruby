@@ -904,6 +904,21 @@ impl Assembler {
         asm_local
     }
 
+    pub fn emit_call(cb: &mut CodeBlock, fptr: u64) {
+        // The offset to the call target in bytes
+        let src_addr = cb.get_write_ptr().raw_ptr(cb) as i64;
+        let dst_addr = fptr as i64;
+
+        // Use BL if the offset is short enough to encode as an immediate.
+        // Otherwise, use BLR with a register.
+        if b_offset_fits_bits((dst_addr - src_addr) / 4) {
+            bl(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
+        } else {
+            emit_load_value(cb, Self::EMIT_OPND, dst_addr as u64);
+            blr(cb, Self::EMIT_OPND);
+        }
+    }
+
     /// Emit platform-specific machine code
     /// Returns a list of GC offsets. Can return failure to signal caller to retry.
     fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Result<Vec<CodePtr>, CompileError> {
@@ -1446,18 +1461,7 @@ impl Assembler {
                     let fptr = &data.fptr;
                     match fptr {
                         Opnd::UImm(fptr) => {
-                            // The offset to the call target in bytes
-                            let src_addr = cb.get_write_ptr().raw_ptr(cb) as i64;
-                            let dst_addr = *fptr as i64;
-
-                            // Use BL if the offset is short enough to encode as an immediate.
-                            // Otherwise, use BLR with a register.
-                            if b_offset_fits_bits((dst_addr - src_addr) / 4) {
-                                bl(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
-                            } else {
-                                emit_load_value(cb, Self::EMIT_OPND, dst_addr as u64);
-                                blr(cb, Self::EMIT_OPND);
-                            }
+                            Self::emit_call(cb, *fptr);
                         }
                         Opnd::Reg(_) => {
                             blr(cb, fptr.into());
