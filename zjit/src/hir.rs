@@ -8190,7 +8190,7 @@ impl Function {
         #[derive(Clone, Copy, PartialEq)]
         enum Producer { IntTimes, ArrayMapEnum, ArrayEachWithIndex }
         #[derive(Clone, Copy, PartialEq)]
-        enum Consumer { Map, Select, ToA, WithIndexMap, Sum, Count, Min, Max }
+        enum Consumer { Map, Select, ToA, WithIndexMap, Sum, Count, Min, Max, Find, AnyP, AllP, NoneP }
 
         let times_id = unsafe { rb_intern(c"times".as_ptr()) };
         let to_enum_id = unsafe { rb_intern(c"to_enum".as_ptr()) };
@@ -8203,6 +8203,11 @@ impl Function {
         let count_id = unsafe { rb_intern(c"count".as_ptr()) };
         let min_id = unsafe { rb_intern(c"min".as_ptr()) };
         let max_id = unsafe { rb_intern(c"max".as_ptr()) };
+        let find_id = unsafe { rb_intern(c"find".as_ptr()) };
+        let detect_id = unsafe { rb_intern(c"detect".as_ptr()) };
+        let any_id = unsafe { rb_intern(c"any?".as_ptr()) };
+        let all_id = unsafe { rb_intern(c"all?".as_ptr()) };
+        let none_id = unsafe { rb_intern(c"none?".as_ptr()) };
         let each_id = unsafe { rb_intern(c"each".as_ptr()) };
         let each_with_index_id = unsafe { rb_intern(c"each_with_index".as_ptr()) };
         let with_index_id = unsafe { rb_intern(c"with_index".as_ptr()) };
@@ -8351,6 +8356,13 @@ impl Function {
                     (Producer::IntTimes, false) if b_mid == count_id => (Consumer::Count, 0),
                     (Producer::IntTimes, false) if b_mid == min_id => (Consumer::Min, 0),
                     (Producer::IntTimes, false) if b_mid == max_id => (Consumer::Max, 0),
+                    (Producer::IntTimes, true) if b_mid == find_id || b_mid == detect_id => (Consumer::Find, 1),
+                    (Producer::IntTimes, true) if b_mid == any_id => (Consumer::AnyP, 1),
+                    (Producer::IntTimes, true) if b_mid == all_id => (Consumer::AllP, 1),
+                    (Producer::IntTimes, true) if b_mid == none_id => (Consumer::NoneP, 1),
+                    (Producer::IntTimes, false) if b_mid == any_id => (Consumer::AnyP, 0),
+                    (Producer::IntTimes, false) if b_mid == all_id => (Consumer::AllP, 0),
+                    (Producer::IntTimes, false) if b_mid == none_id => (Consumer::NoneP, 0),
                     (Producer::ArrayMapEnum, true) if b_mid == with_index_id => (Consumer::WithIndexMap, 2),
                     (Producer::ArrayEachWithIndex, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 2),
                     _ => continue,
@@ -8754,6 +8766,31 @@ impl Function {
             // created before translation and is unused here (no block body was
             // translated), so truncate it away rather than leave an empty,
             // terminator-less block behind.
+            if matches!(c.consumer, Consumer::AnyP | Consumer::AllP | Consumer::NoneP) && c.blockiseq.is_none() {
+                // 0..n-1 elements are integers, all truthy: any? == n > 0,
+                // none? == n <= 0, all? is vacuously or trivially true.
+                debug_assert!(translated.is_none());
+                self.blocks.truncate(pre_blocks_len);
+                let result = match c.consumer {
+                    Consumer::AnyP => {
+                        let zero = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) });
+                        self.push_insn(bb, Insn::FixnumGt { left: bound, right: zero })
+                    }
+                    Consumer::NoneP => {
+                        let zero = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) });
+                        self.push_insn(bb, Insn::FixnumLe { left: bound, right: zero })
+                    }
+                    _ => self.push_insn(bb, Insn::Const { val: Const::Value(Qtrue) }),
+                };
+                let cont = self.new_block(insn_idx);
+                self.push_insn(bb, Insn::Jump(BranchEdge { target: cont, args: vec![] }));
+                for &id in &tail {
+                    self.push_insn_id(cont, id);
+                }
+                self.make_equal_to(c.b_id, result);
+                continue 'candidates;
+            }
+
             if matches!(c.consumer, Consumer::Min | Consumer::Max) {
                 debug_assert!(translated.is_none());
                 self.blocks.truncate(pre_blocks_len);
@@ -8785,7 +8822,9 @@ impl Function {
                 continue 'candidates;
             }
 
-            let needs_array = !matches!(c.consumer, Consumer::Sum | Consumer::Count);
+            let needs_array = !matches!(c.consumer,
+                Consumer::Sum | Consumer::Count
+                | Consumer::Find | Consumer::AnyP | Consumer::AllP | Consumer::NoneP);
             let ary = if needs_array { self.push_insn(bb, Insn::CCallWithFrame(Box::new(CCallWithFrameData {
                 cd: c.some_cd,
                 cfunc: rb_zjit_ary_new_capa_fix as *const u8,
@@ -8816,9 +8855,20 @@ impl Function {
                 _ => vec![],
             };
 
+            // Early-exit consumers thread their result through a cont Param:
+            // the header's exhausted edge carries the default, and the body's
+            // hit edge carries the early answer.
+            let exhausted_default: Option<InsnId> = match c.consumer {
+                Consumer::Find => Some(self.push_insn(bb, Insn::Const { val: Const::Value(Qnil) })),
+                Consumer::AnyP => Some(self.push_insn(bb, Insn::Const { val: Const::Value(Qfalse) })),
+                Consumer::AllP | Consumer::NoneP => Some(self.push_insn(bb, Insn::Const { val: Const::Value(Qtrue) })),
+                _ => None,
+            };
+
             let header = self.new_block(insn_idx);
             let cont = self.new_block(insn_idx);
             let body_head = self.new_block(insn_idx);
+            let cont_param = exhausted_default.map(|_| self.push_insn(cont, Insn::Param));
             self.count(bb, Counter::inline_iseq_optimized_send_count);
             let mut entry_args = vec![zero];
             entry_args.extend(&sum_inits);
@@ -8830,7 +8880,7 @@ impl Function {
                 left: i_phi,
                 right: bound,
                 if_true: BranchEdge { target: body_head, args: vec![] },
-                if_false: BranchEdge { target: cont, args: vec![] },
+                if_false: BranchEdge { target: cont, args: exhausted_default.into_iter().collect() },
             })));
 
             // body_head: load the element (for array producers) and bind the
@@ -8862,7 +8912,8 @@ impl Function {
                         _ => vec![elem, i_phi],
                     },
                     Consumer::ToA => vec![],
-                    Consumer::Sum | Consumer::Count => match c.producer {
+                    Consumer::Sum | Consumer::Count
+                    | Consumer::Find | Consumer::AnyP | Consumer::AllP | Consumer::NoneP => match c.producer {
                         Producer::IntTimes => vec![i_phi],
                         _ => vec![elem, i_phi],
                     },
@@ -8979,6 +9030,41 @@ impl Function {
                         self.push_insn(body_cont, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
                     }
                 }
+                Consumer::Find | Consumer::AnyP | Consumer::AllP | Consumer::NoneP => {
+                    // Branch on the predicate; one arm exits the loop with the
+                    // early answer, the other advances.
+                    let hit = self.push_insn(body_cont, Insn::Test { val: block_val });
+                    let advance = self.new_block(insn_idx);
+                    let qtrue = self.push_insn(body_cont, Insn::Const { val: Const::Value(Qtrue) });
+                    let qfalse = self.push_insn(body_cont, Insn::Const { val: Const::Value(Qfalse) });
+                    let (truthy_edge, falsy_edge) = match c.consumer {
+                        Consumer::Find => (
+                            BranchEdge { target: cont, args: vec![elem] },
+                            BranchEdge { target: advance, args: vec![] },
+                        ),
+                        Consumer::AnyP => (
+                            BranchEdge { target: cont, args: vec![qtrue] },
+                            BranchEdge { target: advance, args: vec![] },
+                        ),
+                        Consumer::AllP => (
+                            BranchEdge { target: advance, args: vec![] },
+                            BranchEdge { target: cont, args: vec![qfalse] },
+                        ),
+                        Consumer::NoneP => (
+                            BranchEdge { target: cont, args: vec![qfalse] },
+                            BranchEdge { target: advance, args: vec![] },
+                        ),
+                        _ => unreachable!(),
+                    };
+                    self.push_insn(body_cont, Insn::CondBranch {
+                        val: hit,
+                        if_true: truthy_edge,
+                        if_false: falsy_edge,
+                    });
+                    let i_next = self.push_insn(advance, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                    self.push_insn(advance, Insn::CheckInterrupts { state: c.a_state });
+                    self.push_insn(advance, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
+                }
                 Consumer::Select => {
                     // Push the *index* only when the block result is truthy.
                     let keep = self.push_insn(body_cont, Insn::Test { val: block_val });
@@ -9005,6 +9091,8 @@ impl Function {
                 Consumer::Sum => sum_phis[0],
                 Consumer::Count if c.blockiseq.is_some() => sum_phis[0],
                 Consumer::Count => i_phi,
+                Consumer::Find | Consumer::AnyP | Consumer::AllP | Consumer::NoneP =>
+                    cont_param.expect("early-exit consumers allocate a cont Param"),
                 _ => ary,
             };
             for &id in &tail {
