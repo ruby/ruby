@@ -201,6 +201,14 @@ fn update_self_is_heap_object(iseq: IseqPtr, cfp: CfpPtr) {
 /// interpreter stack (a GC triggered by an allocation would misread them). The
 /// encoding must stay bit-for-bit identical to `double_bits_to_flonum`'s encode
 /// half.
+/// Re-encode a raw CBool side-exit slot (0 or 1) into Qfalse/Qtrue. Pure and
+/// allocation-free, so it is safe to call from a side exit while other raw
+/// slots are still pending on the interpreter frame.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_bool_encode(b: u64) -> VALUE {
+    if b == 0 { Qfalse } else { Qtrue }
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_flonum_encode(bits: u64) -> VALUE {
     // +0.0 (all-zero bits) is the flonum sentinel; it is not rotate-encodable.
@@ -4680,16 +4688,20 @@ fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> S
     // guard already ran, so rb_zjit_flonum_encode never allocates.
     let mut stack = Vec::new();
     let mut stack_needs_flonum_box = Vec::new();
+    let mut stack_needs_bool_box = Vec::new();
     for &insn_id in state.stack() {
         stack.push(jit.get_opnd(insn_id));
         stack_needs_flonum_box.push(jit.type_of(insn_id).is_subtype(types::CDouble));
+        stack_needs_bool_box.push(jit.type_of(insn_id).is_subtype(types::CBool));
     }
 
     let mut locals = Vec::new();
     let mut locals_needs_flonum_box = Vec::new();
+    let mut locals_needs_bool_box = Vec::new();
     for &insn_id in state.locals() {
         locals.push(jit.get_opnd(insn_id));
         locals_needs_flonum_box.push(jit.type_of(insn_id).is_subtype(types::CDouble));
+        locals_needs_bool_box.push(jit.type_of(insn_id).is_subtype(types::CBool));
     }
 
     let stack_map = build_caller_stack_map(jit, function, state);
@@ -4734,6 +4746,8 @@ fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> S
         locals,
         stack_needs_flonum_box,
         locals_needs_flonum_box,
+        stack_needs_bool_box,
+        locals_needs_bool_box,
         iseq: state.iseq,
         stack_map,
         recompile: None,

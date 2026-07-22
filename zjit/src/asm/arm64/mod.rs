@@ -367,6 +367,23 @@ pub fn csel(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd, cond: u8)
     cb.write_bytes(&bytes);
 }
 
+/// CSINC - rd = cond ? rn : rm + 1 (64-bit). With rn = rm = xzr and the
+/// inverted condition this is `cset rd, cond`.
+pub fn csinc(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd, cond: u8) {
+    match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(rd.num_bits == 64, "csinc destination must be a 64-bit register");
+            let insn: u32 = 0x9A80_0400
+                | ((rm.reg_no as u32) << 16)
+                | ((cond as u32) << 12)
+                | ((rn.reg_no as u32) << 5)
+                | (rd.reg_no as u32);
+            cb.write_bytes(&insn.to_le_bytes());
+        },
+        _ => panic!("Invalid operand combination to csinc instruction."),
+    }
+}
+
 /// EOR - perform a bitwise XOR of rn and rm, put the result in rd, don't update flags
 pub fn eor(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {

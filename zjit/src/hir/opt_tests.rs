@@ -2169,7 +2169,7 @@ mod hir_opt_tests {
         bb10(v85:Fixnum, v87:BasicObject):
           v91:CInt64 = ArrayLength v25
           v92:Fixnum = BoxFixnum v91
-          v93:BoolExact = FixnumGe v85, v92
+          v93:CBool = FixnumCmpBool Ge v85, v92
           PatchPoint NoEPEscape(map)
           CondBranchFixnumCmp Ge v85, v92, bb14(), bb9()
         bb14():
@@ -3975,7 +3975,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1008, ==@0x1060, cme:0x1068)
           v57:Fixnum = GuardType v13, Fixnum
           v58:BoolExact = FixnumEq v31, v57
-          v44:BoolExact = BoolNegate v58
+          v44:CBool = FixnumCmpBool Neq v31, v57
           PatchPoint NoEPEscape(!=)
           PopInlineFrame
           v24:Fixnum[5] = Const Value(5)
@@ -12172,7 +12172,7 @@ mod hir_opt_tests {
         bb10(v81:Fixnum, v83:NilClass|Fixnum):
           v87:CInt64 = ArrayLength v11
           v88:Fixnum = BoxFixnum v87
-          v89:BoolExact = FixnumGe v81, v88
+          v89:CBool = FixnumCmpBool Ge v81, v88
           PatchPoint NoEPEscape(map)
           CondBranchFixnumCmp Ge v81, v88, bb14(), bb9()
         bb14():
@@ -23293,7 +23293,7 @@ mod hir_opt_tests {
           v54:Array = RefineType v8, Array
           v55:CInt64 = ArrayLength v54
           v56:Fixnum = BoxFixnum v55
-          v57:BoolExact = FixnumGe v51, v56
+          v57:CBool = FixnumCmpBool Ge v51, v56
           PatchPoint NoEPEscape(each)
           CondBranchFixnumCmp Ge v51, v56, bb11(), bb7()
         bb11():
@@ -23407,7 +23407,7 @@ mod hir_opt_tests {
         bb10(v67:Fixnum):
           v71:CInt64 = ArrayLength v11
           v72:Fixnum = BoxFixnum v71
-          v73:BoolExact = FixnumGe v67, v72
+          v73:CBool = FixnumCmpBool Ge v67, v72
           PatchPoint NoEPEscape(each)
           CondBranchFixnumCmp Ge v67, v72, bb13(), bb9()
         bb13():
@@ -24045,7 +24045,7 @@ mod hir_opt_tests {
         bb6(v18:HeapBasicObject, v19:Fixnum):
           v23:Fixnum[10] = Const Value(10)
           PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
-          v92:BoolExact = FixnumLt v19, v23
+          v92:CBool = FixnumCmpBool Lt v19, v23
           CheckInterrupts
           CondBranchFixnumCmp Lt v19, v23, bb4(), bb7()
         bb4():
@@ -26746,7 +26746,7 @@ mod hir_opt_tests {
         bb5(v19:Fixnum):
           v23:Fixnum[10] = Const Value(10)
           PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
-          v58:BoolExact = FixnumLt v19, v23
+          v58:CBool = FixnumCmpBool Lt v19, v23
           CheckInterrupts
           CondBranchFixnumCmp Lt v19, v23, bb4(), bb6()
         bb4():
@@ -27128,7 +27128,7 @@ mod hir_opt_tests {
           v17:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, ===@0x1010, cme:0x1018)
           v85:Fixnum = GuardType v10, Fixnum
-          v86:BoolExact = FixnumEq v17, v85
+          v86:CBool = FixnumCmpBool Eq v17, v85
           PatchPoint NoEPEscape(test)
           CondBranchFixnumCmp Eq v17, v85, bb4(), bb6()
         bb4():
@@ -27141,7 +27141,7 @@ mod hir_opt_tests {
         bb6():
           v29:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1008, ===@0x1010, cme:0x1018)
-          v94:BoolExact = FixnumEq v29, v85
+          v94:CBool = FixnumCmpBool Eq v29, v85
           PatchPoint NoEPEscape(test)
           CondBranchFixnumCmp Eq v29, v85, bb5(), bb7()
         bb5():

@@ -8186,6 +8186,111 @@ impl Function {
         }
     }
 
+    /// Sink deopt-only fixnum-compare booleans into the side-exit path.
+    ///
+    /// The compare+branch fusion leaves the original BoolExact-producing
+    /// compare (`FixnumLt` et al.) behind whenever a deopt state between the
+    /// compare and the fused branch -- typically a CheckInterrupts -- lists the
+    /// boolean on its stack. That materializes `Qtrue`/`Qfalse` (a constant
+    /// load + csel) on the hot path for a value only side exits can observe.
+    /// Rewrite such compares in place to their CBool twin, `FixnumCmpBool`
+    /// (one cset, no constant), and let build_side_exit re-encode CBool slots
+    /// to Qtrue/Qfalse in the exit stub, mirroring the flonum-box sink.
+    ///
+    /// Safety: a raw CBool must only ever reach frame memory through
+    /// compile_exit_save_state (which re-encodes it). It must NOT reach the
+    /// eager spill paths -- gen_spill_locals/gen_spill_stack at frame pushes
+    /// and non-leaf calls write state slots verbatim -- nor a caller-position
+    /// state, whose stack is materialized raw from JITFrame stack maps. So a
+    /// compare qualifies only when every state that references it belongs to a
+    /// whitelist of pure deopt consumers (guards, patchpoints, interrupt
+    /// checks, overflow-checking arithmetic) and no state referencing it is
+    /// itself used as another state's caller.
+    fn sink_compare_bools_to_deopt(&mut self) {
+        let rpo = self.reverse_post_order();
+        let mut used_outside_snapshot = vec![false; self.insns.len()];
+        // States that may flow into eager spills or caller-frame stack maps.
+        let mut unsafe_snapshot = vec![false; self.insns.len()];
+        for block_id in &rpo {
+            for &insn_id in &self.blocks[*block_id].insns {
+                let insn = &self.insns[insn_id];
+                if matches!(insn, Insn::Snapshot { .. }) {
+                    // A snapshot referencing another snapshot is a caller
+                    // chain: the inner state's stack can be materialized raw
+                    // from a deeper exit's stack map.
+                    insn.for_each_operand(|operand| {
+                        let operand = self.union_find.borrow().find_const(operand);
+                        if matches!(self.insns[operand], Insn::Snapshot { .. }) {
+                            unsafe_snapshot[operand] = true;
+                        }
+                    });
+                    continue;
+                }
+                let pure_deopt_consumer = matches!(insn,
+                    Insn::GuardType { .. } | Insn::GuardBitEquals { .. }
+                    | Insn::GuardAnyBitSet { .. } | Insn::GuardNoBitsSet { .. }
+                    | Insn::GuardGreaterEq { .. } | Insn::GuardLess { .. }
+                    | Insn::GuardFlonumRepresentable { .. }
+                    | Insn::PatchPoint { .. } | Insn::CheckInterrupts { .. }
+                    | Insn::FixnumAdd { .. } | Insn::FixnumSub { .. }
+                    | Insn::FixnumMult { .. } | Insn::FixnumLShift { .. });
+                self.insns[insn_id].for_each_operand(|operand| {
+                    let operand = self.union_find.borrow().find_const(operand);
+                    if matches!(self.insns[operand], Insn::Snapshot { .. }) {
+                        if !pure_deopt_consumer {
+                            unsafe_snapshot[operand] = true;
+                        }
+                        // A state reference is not a value use of the boolean.
+                        return;
+                    }
+                    used_outside_snapshot[operand] = true;
+                });
+            }
+        }
+        // A compare qualifies unless some unsafe snapshot references it.
+        let mut in_unsafe_snapshot = vec![false; self.insns.len()];
+        for block_id in &rpo {
+            for &insn_id in &self.blocks[*block_id].insns {
+                if !matches!(self.insns[insn_id], Insn::Snapshot { .. }) {
+                    continue;
+                }
+                let resolved = self.union_find.borrow().find_const(insn_id);
+                if !unsafe_snapshot[resolved] && !unsafe_snapshot[insn_id] {
+                    continue;
+                }
+                self.insns[insn_id].for_each_operand(|operand| {
+                    let operand = self.union_find.borrow().find_const(operand);
+                    in_unsafe_snapshot[operand] = true;
+                });
+            }
+        }
+        for block_id in &rpo {
+            for insn_id in self.blocks[*block_id].insns.clone() {
+                let (op, left, right) = match self.insns[insn_id] {
+                    Insn::FixnumLt { left, right } => (FixnumCmpOp::Lt, left, right),
+                    Insn::FixnumLe { left, right } => (FixnumCmpOp::Le, left, right),
+                    Insn::FixnumGt { left, right } => (FixnumCmpOp::Gt, left, right),
+                    Insn::FixnumGe { left, right } => (FixnumCmpOp::Ge, left, right),
+                    Insn::FixnumEq { left, right } => (FixnumCmpOp::Eq, left, right),
+                    // `!=` reaches HIR as BoolNegate(FixnumEq).
+                    Insn::BoolNegate { val } => match self.insns[self.union_find.borrow().find_const(val)] {
+                        Insn::FixnumEq { left, right } => (FixnumCmpOp::Neq, left, right),
+                        _ => continue,
+                    },
+                    _ => continue,
+                };
+                if self.union_find.borrow().find_const(insn_id) != insn_id {
+                    continue;
+                }
+                if used_outside_snapshot[insn_id] || in_unsafe_snapshot[insn_id] {
+                    continue;
+                }
+                self.insns[insn_id] = Insn::FixnumCmpBool { op, left, right };
+                self.insn_types[insn_id] = types::CBool;
+            }
+        }
+    }
+
     /// Return the outgoing edges of `block` as (target, args). Terminators have no
     /// output, so reading `self.insns` directly (no union-find) is fine.
     fn out_edges_of(&self, block: BlockId) -> Vec<(BlockId, Vec<InsnId>)> {
@@ -11120,6 +11225,11 @@ impl Function {
         // into representability guards so the flonum encoding moves to the cold
         // side-exit path.
         crate::stats::trace_compile_phase("sink_flonum_boxes_to_deopt", || self.sink_flonum_boxes_to_deopt());
+        #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
+
+        // Sink deopt-only compare booleans the branch fusion left behind: the
+        // hot path keeps a bare cset instead of materializing Qtrue/Qfalse.
+        crate::stats::trace_compile_phase("sink_compare_bools_to_deopt", || self.sink_compare_bools_to_deopt());
         #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
 
         // Skip re-spilling locals whose frame slot already holds the value at

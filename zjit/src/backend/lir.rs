@@ -637,6 +637,11 @@ pub struct SideExit {
     /// interpreter frame. See `compile_exit_save_state`.
     pub stack_needs_flonum_box: Vec<bool>,
     pub locals_needs_flonum_box: Vec<bool>,
+    /// Parallel to `stack`/`locals`: `true` where the operand is a raw CBool
+    /// (a deopt-only compare sunk by sink_compare_bools_to_deopt) and must be
+    /// re-encoded to Qtrue/Qfalse before the interpreter frame sees it.
+    pub stack_needs_bool_box: Vec<bool>,
+    pub locals_needs_bool_box: Vec<bool>,
     pub iseq: IseqPtr,
     /// Stack map for older inlined frames that are not written directly by this
     /// side exit. The current frame's stack and locals are still handled by
@@ -3223,7 +3228,7 @@ impl Assembler
         /// frame's jit_return and materializes the older frames behind it --
         /// sees exactly the same world as a non-elided exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals, stack_needs_flonum_box, locals_needs_flonum_box, iseq, stack_map, materialize, .. } = exit;
+            let SideExit { pc, stack, locals, stack_needs_flonum_box, locals_needs_flonum_box, stack_needs_bool_box, locals_needs_bool_box, iseq, stack_map, materialize, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
@@ -3328,6 +3333,23 @@ impl Assembler
             for (idx, &needs_box) in locals_needs_flonum_box.iter().enumerate() {
                 if needs_box {
                     encode_flonum_slot(asm, Opnd::mem(64, SP, (sp_bias - local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32));
+                }
+            }
+            // Bool re-encodes follow the same slot-roundtrip discipline as the
+            // flonum ones: the ccall reads the raw 0/1 from the frame slot and
+            // the result is stored back, so register clobbers cannot bite.
+            fn encode_bool_slot(asm: &mut Assembler, slot: Opnd) {
+                let _ = asm.ccall(crate::codegen::rb_zjit_bool_encode as *const u8, vec![slot]);
+                asm.store(slot, C_RET_OPND);
+            }
+            for (idx, &needs_box) in stack_needs_bool_box.iter().enumerate() {
+                if needs_box {
+                    encode_bool_slot(asm, Opnd::mem(64, SP, (idx as i32 + sp_bias) * SIZEOF_VALUE_I32));
+                }
+            }
+            for (idx, &needs_box) in locals_needs_bool_box.iter().enumerate() {
+                if needs_box {
+                    encode_bool_slot(asm, Opnd::mem(64, SP, (sp_bias - local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32));
                 }
             }
             if let Some(m) = materialize {

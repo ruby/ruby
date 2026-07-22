@@ -365,6 +365,12 @@ impl Assembler {
                 }
             }
 
+            // A (1, 0) constant pair needs no materialization at all: the
+            // emit lowers it to a single cset. Keep the 1 as an immediate.
+            if matches!(opnd0, Opnd::UImm(1) | Opnd::Imm(1)) && matches!(opnd1, Opnd::UImm(0) | Opnd::Imm(0)) {
+                return (opnd0, Opnd::Reg(XZR_REG));
+            }
+
             (split_csel_operand(asm, opnd0), split_csel_operand(asm, opnd1))
         }
 
@@ -995,7 +1001,19 @@ impl Assembler {
             }
         }
 
-        /// Emit a conditional jump instruction to a specific target. This is
+        /// Lower a CSel to a single `cset` when it selects between the constants
+    /// 1 and 0 (the shape FixnumCmpBool produces; arm64_split preserves the
+    /// pair as (Imm 1, xzr)); otherwise emit a plain csel.
+    fn emit_csel_helper(cb: &mut CodeBlock, truthy: Opnd, falsy: Opnd, out: Opnd, cond: u8) {
+        if matches!(truthy, Opnd::UImm(1) | Opnd::Imm(1)) && matches!(falsy, Opnd::Reg(XZR_REG)) {
+            // cset out, cond == csinc out, xzr, xzr, !cond
+            csinc(cb, out.into(), A64Opnd::Reg(XZR_REG), A64Opnd::Reg(XZR_REG), Condition::inverse(cond));
+        } else {
+            csel(cb, out.into(), truthy.into(), falsy.into(), cond);
+        }
+    }
+
+    /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
         fn emit_conditional_jump<const CONDITION: u8>(asm: &Assembler, cb: &mut CodeBlock, target: Target) {
             fn generate_branch<const CONDITION: u8>(cb: &mut CodeBlock, src_addr: i64, dst_addr: i64) {
@@ -1744,23 +1762,23 @@ impl Assembler {
                 },
                 Insn::CSelZ { truthy, falsy, out } |
                 Insn::CSelE { truthy, falsy, out } => {
-                    csel(cb, out.into(), truthy.into(), falsy.into(), Condition::EQ);
+                    emit_csel_helper(cb, *truthy, *falsy, *out, Condition::EQ);
                 },
                 Insn::CSelNZ { truthy, falsy, out } |
                 Insn::CSelNE { truthy, falsy, out } => {
-                    csel(cb, out.into(), truthy.into(), falsy.into(), Condition::NE);
+                    emit_csel_helper(cb, *truthy, *falsy, *out, Condition::NE);
                 },
                 Insn::CSelL { truthy, falsy, out } => {
-                    csel(cb, out.into(), truthy.into(), falsy.into(), Condition::LT);
+                    emit_csel_helper(cb, *truthy, *falsy, *out, Condition::LT);
                 },
                 Insn::CSelLE { truthy, falsy, out } => {
-                    csel(cb, out.into(), truthy.into(), falsy.into(), Condition::LE);
+                    emit_csel_helper(cb, *truthy, *falsy, *out, Condition::LE);
                 },
                 Insn::CSelG { truthy, falsy, out } => {
-                    csel(cb, out.into(), truthy.into(), falsy.into(), Condition::GT);
+                    emit_csel_helper(cb, *truthy, *falsy, *out, Condition::GT);
                 },
                 Insn::CSelGE { truthy, falsy, out } => {
-                    csel(cb, out.into(), truthy.into(), falsy.into(), Condition::GE);
+                    emit_csel_helper(cb, *truthy, *falsy, *out, Condition::GE);
                 }
             };
 
@@ -2010,7 +2028,7 @@ mod tests {
 
         let val64 = asm.add(CFP, Opnd::UImm(64));
         asm.store(Opnd::mem(64, SP, 0x10), val64);
-        let side_exit = Target::SideExit(Box::new(SideExitTarget { reason: SideExitReason::Interrupt, exit: SideExit { pc: 0.into(), iseq: std::ptr::null(), stack: vec![], locals: vec![], stack_needs_flonum_box: vec![], locals_needs_flonum_box: vec![], materialize: None, stack_map: None, recompile: None } }));
+        let side_exit = Target::SideExit(Box::new(SideExitTarget { reason: SideExitReason::Interrupt, exit: SideExit { pc: 0.into(), iseq: std::ptr::null(), stack: vec![], locals: vec![], stack_needs_flonum_box: vec![], locals_needs_flonum_box: vec![], stack_needs_bool_box: vec![], locals_needs_bool_box: vec![], materialize: None, stack_map: None, recompile: None } }));
         asm.push_insn(Insn::Joz(val64, side_exit));
         asm.mov(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32));
         asm.mov(C_ARG_OPNDS[1], Opnd::mem(64, SP, -8));
