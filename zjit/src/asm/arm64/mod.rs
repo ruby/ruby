@@ -1284,6 +1284,12 @@ pub fn fdiv(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
     cb.write_bytes(&fp_data_proc2(0x1E60_1800, dd, dn, dm));
 }
 
+/// LDR (register, 64-bit, scaled): Xt = [Xn + Xm << 3].
+/// size=11 V=0 opc=01, option=011 (LSL), S=1.
+pub fn ldr_scaled(cb: &mut CodeBlock, xt: u8, xn: u8, xm: u8) {
+    cb.write_bytes(&(0xF860_7800u32 | ((xm as u32) << 16) | ((xn as u32) << 5) | (xt as u32)).to_le_bytes());
+}
+
 /// FSQRT (scalar, double): Dd = sqrt(Dn).
 pub fn fsqrt(cb: &mut CodeBlock, dd: u8, dn: u8) {
     cb.write_bytes(&(0x1E61_C000u32 | ((dn as u32) << 5) | (dd as u32)).to_le_bytes());

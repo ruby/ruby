@@ -783,6 +783,20 @@ impl Assembler {
                         asm.store(mem_out, SCRATCH0_OPND);
                     }
                 }
+                Insn::LoadScaled { base, index, out } => {
+                    // Same shape as FloatArith: operands must be registers;
+                    // the load writes out directly, no GPR scratch needed.
+                    *base = split_memory_read(asm, *base, SCRATCH0_OPND);
+                    *index = split_memory_read(asm, *index, SCRATCH1_OPND);
+                    let mem_out = split_memory_write(out, SCRATCH0_OPND);
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND);
+                        asm.store(mem_out, SCRATCH0_OPND);
+                    }
+                }
                 Insn::FloatArith { left, right, out, .. } => {
                     // The emit sequence moves the operands into FP scratch
                     // registers (D0/D1) and uses no GPR scratch, so loading
@@ -1279,6 +1293,12 @@ impl Assembler {
                     } else {
                         adds(cb, out, left.into(), right.into());
                     }
+                },
+                Insn::LoadScaled { base, index, out } => {
+                    let base: A64Opnd = base.into();
+                    let index: A64Opnd = index.into();
+                    let out: A64Opnd = out.into();
+                    ldr_scaled(cb, out.unwrap_reg().reg_no, base.unwrap_reg().reg_no, index.unwrap_reg().reg_no);
                 },
                 Insn::FloatArith { op, left, right, out } => {
                     // After arm64_scratch_split, the operands and out are all

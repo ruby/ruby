@@ -1134,6 +1134,7 @@ impl Assembler {
                 }
 
                 Insn::Joz(..) | Insn::Jonz(..) => unreachable!("Joz/Jonz should be unused for now"),
+                Insn::LoadScaled { .. } => unreachable!("LoadScaled is arm64-only; gen_array_aref keeps shift+add on x86"),
 
                 Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PatchPointPad in x86_scratch_split"),
                 Insn::PatchPointPad => {

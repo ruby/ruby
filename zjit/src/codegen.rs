@@ -2869,9 +2869,14 @@ fn gen_array_aref(
     let unboxed_idx = asm.load_mem(index);
     let array = asm.load_mem(array);
     let array_ptr = gen_array_ptr(asm, array);
-    let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
-    let elem_ptr = asm.add(array_ptr, elem_offset);
-    asm.load(Opnd::mem(VALUE_BITS, elem_ptr, 0))
+    if cfg!(target_arch = "aarch64") {
+        // One scaled-register load instead of shift + add + load.
+        asm.load_scaled(array_ptr, unboxed_idx)
+    } else {
+        let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
+        let elem_ptr = asm.add(array_ptr, elem_offset);
+        asm.load(Opnd::mem(VALUE_BITS, elem_ptr, 0))
+    }
 }
 
 /// Compile checked array access (`array[index]`). If index is out-of-bounds, return `nil`.

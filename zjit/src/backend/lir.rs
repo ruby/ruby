@@ -794,6 +794,10 @@ pub enum Insn {
     /// in the caller (see `codegen::gen_flonum_arith`).
     FloatArith { op: FloatArithOp, left: Opnd, right: Opnd, out: Opnd },
 
+    /// Load a VALUE from `base + index * SIZEOF_VALUE` in one scaled-register
+    /// access (arm64 `ldr Xd, [Xn, Xm, LSL #3]`). Only emitted on arm64.
+    LoadScaled { base: Opnd, index: Opnd, out: Opnd },
+
     /// Convert a signed 64-bit integer to a double and return its raw IEEE-754
     /// bit pattern (scvtf/cvtsi2sd + move to a GPR). Used to feed a Fixnum
     /// operand into open-coded flonum arithmetic. `opnd` is the untagged
@@ -1102,6 +1106,7 @@ macro_rules! for_each_operand_impl {
             Insn::Add { left: opnd0, right: opnd1, .. } |
             Insn::And { left: opnd0, right: opnd1, .. } |
             Insn::FloatArith { left: opnd0, right: opnd1, .. } |
+            Insn::LoadScaled { base: opnd0, index: opnd1, .. } |
             Insn::CPopPairInto(opnd0, opnd1) |
             Insn::Cmp { left: opnd0, right: opnd1 } |
             Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
@@ -1220,6 +1225,7 @@ impl Insn {
             Insn::Add { .. } => "Add",
             Insn::And { .. } => "And",
             Insn::FloatArith { .. } => "FloatArith",
+            Insn::LoadScaled { .. } => "LoadScaled",
             Insn::BakeString(_) => "BakeString",
             Insn::BoundaryPad => "BoundaryPad",
             Insn::Breakpoint => "Breakpoint",
@@ -1291,6 +1297,7 @@ impl Insn {
             Insn::Add { out, .. } |
             Insn::And { out, .. } |
             Insn::FloatArith { out, .. } |
+            Insn::LoadScaled { out, .. } |
             Insn::CPop { out, .. } |
             Insn::CSelE { out, .. } |
             Insn::CSelG { out, .. } |
@@ -1325,6 +1332,7 @@ impl Insn {
             Insn::Add { out, .. } |
             Insn::And { out, .. } |
             Insn::FloatArith { out, .. } |
+            Insn::LoadScaled { out, .. } |
             Insn::CPop { out, .. } |
             Insn::CSelE { out, .. } |
             Insn::CSelG { out, .. } |
@@ -3986,6 +3994,14 @@ impl Assembler {
     pub fn float_arith(&mut self, op: FloatArithOp, left: Opnd, right: Opnd) -> Opnd {
         let out = self.new_vreg(64);
         self.push_insn(Insn::FloatArith { op, left, right, out });
+        out
+    }
+
+    /// Scaled element load: `out = *(base + index * SIZEOF_VALUE)`. arm64 only.
+    #[must_use]
+    pub fn load_scaled(&mut self, base: Opnd, index: Opnd) -> Opnd {
+        let out = self.new_vreg(64);
+        self.push_insn(Insn::LoadScaled { base, index, out });
         out
     }
 
