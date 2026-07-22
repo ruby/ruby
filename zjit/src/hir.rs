@@ -8198,7 +8198,7 @@ impl Function {
             fn rb_zjit_ary_new_capa_fix(n: VALUE) -> VALUE;
         }
         #[derive(Clone, Copy, PartialEq)]
-        enum Producer { IntTimes, ArrayMapEnum, ArrayEachWithIndex, RangeLit, ArrayDirect }
+        enum Producer { IntTimes, ArrayMapEnum, ArrayEachWithIndex, RangeLit, ArrayDirect, ArrayReverse }
         #[derive(Clone, Copy, PartialEq)]
         enum Consumer { Map, Select, ToA, WithIndexMap, Sum, Count, Min, Max, Find, AnyP, AllP, NoneP, MinBy, MaxBy, Include, IndexOf }
 
@@ -8226,6 +8226,7 @@ impl Function {
         let index_id = unsafe { rb_intern(c"index".as_ptr()) };
         let find_index_id = unsafe { rb_intern(c"find_index".as_ptr()) };
         let eq_id = unsafe { rb_intern(c"==".as_ptr()) };
+        let reverse_id = unsafe { rb_intern(c"reverse".as_ptr()) };
         let each_id = unsafe { rb_intern(c"each".as_ptr()) };
         let each_with_index_id = unsafe { rb_intern(c"each_with_index".as_ptr()) };
         let with_index_id = unsafe { rb_intern(c"with_index".as_ptr()) };
@@ -8278,6 +8279,9 @@ impl Function {
 
         let range_each_cme = cme_of(unsafe { rb_cRange }, each_id);
         let range_ok = is_cfunc(range_each_cme);
+
+        let ary_reverse_cme = cme_of(unsafe { rb_cArray }, reverse_id);
+        let ary_reverse_ok = is_cfunc(ary_reverse_cme);
 
         let ewi_cme = cme_of(unsafe { rb_cArray }, each_with_index_id);
         let aeach_cme = cme_of(unsafe { rb_cArray }, each_id);
@@ -8340,6 +8344,12 @@ impl Function {
                             && array_direct_mids.contains(&unsafe { rb_vm_ci_mid((*s_cd).ci) })
                             && self.type_of(s_recv).is_subtype(types::ArrayExact) => {
                         (Producer::ArrayDirect, s_recv, s_state, s_cd, None)
+                    }
+                    Insn::CCallWithFrame(data)
+                        if data.args.is_empty() && data.block.is_none()
+                            && ary_reverse_ok && data.name == reverse_id
+                            && self.type_of(data.recv).is_subtype(types::ArrayExact) => {
+                        (Producer::ArrayReverse, data.recv, data.state, data.cd, None)
                     }
                     Insn::CCallWithFrame(data)
                         if data.args.len() <= 1
@@ -8407,6 +8417,11 @@ impl Function {
                     Insn::Send { recv, cd, block, args, .. } => {
                         (recv, unsafe { rb_vm_ci_mid((*cd).ci) }, block, args.clone(), cd)
                     }
+                    // Ruby-defined consumers (Array#map/select are internal
+                    // ISEQs) arrive as direct calls.
+                    Insn::SendDirect(data) => {
+                        (data.recv, unsafe { rb_vm_ci_mid((*data.cd).ci) }, data.block, data.args.clone(), data.cd)
+                    }
                     Insn::CCallWithFrame(data) => {
                         (data.recv, unsafe { rb_vm_ci_mid((*data.cd).ci) }, data.block, data.args.clone(), data.cd)
                     }
@@ -8468,6 +8483,18 @@ impl Function {
                     (Producer::ArrayDirect, true) if b_mid == none_id => (Consumer::NoneP, 1),
                     (Producer::ArrayDirect, true) if b_mid == min_by_id => (Consumer::MinBy, 1),
                     (Producer::ArrayDirect, true) if b_mid == max_by_id => (Consumer::MaxBy, 1),
+                    (Producer::ArrayReverse, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 1),
+                    (Producer::ArrayReverse, true) if b_mid == select_id || b_mid == filter_id => (Consumer::Select, 1),
+                    (Producer::ArrayReverse, true) if b_mid == sum_id => (Consumer::Sum, 1),
+                    (Producer::ArrayReverse, true) if b_mid == count_id => (Consumer::Count, 1),
+                    (Producer::ArrayReverse, true) if b_mid == find_id || b_mid == detect_id => (Consumer::Find, 1),
+                    (Producer::ArrayReverse, true) if b_mid == any_id => (Consumer::AnyP, 1),
+                    (Producer::ArrayReverse, true) if b_mid == all_id => (Consumer::AllP, 1),
+                    (Producer::ArrayReverse, true) if b_mid == none_id => (Consumer::NoneP, 1),
+                    (Producer::ArrayReverse, true) if b_mid == min_by_id => (Consumer::MinBy, 1),
+                    (Producer::ArrayReverse, true) if b_mid == max_by_id => (Consumer::MaxBy, 1),
+                    (Producer::ArrayReverse, false) if b_mid == include_id => (Consumer::Include, 0),
+                    (Producer::ArrayReverse, false) if b_mid == index_id || b_mid == find_index_id => (Consumer::IndexOf, 0),
                     (Producer::ArrayDirect, false) if b_mid == include_id => (Consumer::Include, 0),
                     (Producer::ArrayDirect, false) if b_mid == index_id || b_mid == find_index_id => (Consumer::IndexOf, 0),
                     (Producer::ArrayMapEnum, true) if b_mid == with_index_id => (Consumer::WithIndexMap, 2),
@@ -8491,6 +8518,11 @@ impl Function {
                         needle_float = false;
                     } else if needle_ty.is_subtype(types::Flonum) {
                         needle_float = true;
+                    } else if !matches!(producer, Producer::ArrayDirect) {
+                        // For chained producers a_state belongs to the producer
+                        // send, whose operand profile has no needle: require a
+                        // static needle type instead.
+                        continue;
                     } else {
                         let st = self.frame_state(a_state);
                         let mono_class = get_or_create_iseq_payload(st.iseq)
@@ -8510,11 +8542,13 @@ impl Function {
                 }
                 let consumer_klass = match producer {
                     Producer::RangeLit => unsafe { rb_cRange },
-                    Producer::ArrayDirect => unsafe { rb_cArray },
+                    Producer::ArrayDirect | Producer::ArrayReverse => unsafe { rb_cArray },
                     _ => enumerator,
                 };
+                // Stock is either the C implementation or the internal Ruby
+                // definition (Array#map/select live in <internal:array>).
                 let consumer_cme = cme_of(consumer_klass, b_mid);
-                if consumer_cme.is_null() || !is_cfunc(consumer_cme) { continue; }
+                if !stock_cme(consumer_cme) { continue; }
                 if let Some(bi) = bi {
                     let bparams = unsafe { bi.params() };
                     if bparams.lead_num as usize != want_arity || bparams.opt_num != 0 || bparams.post_num != 0
@@ -9119,6 +9153,12 @@ impl Function {
                         invariants.push((unsafe { rb_cArray }, each_id, aeach_cme));
                     }
                 }
+                Producer::ArrayReverse => {
+                    invariants.push((unsafe { rb_cArray }, reverse_id, ary_reverse_cme));
+                    if matches!(c.consumer, Consumer::Find | Consumer::MinBy | Consumer::MaxBy) {
+                        invariants.push((unsafe { rb_cArray }, each_id, aeach_cme));
+                    }
+                }
             }
             if let Some((_, nf)) = c.needle {
                 let eq_klass = if nf { unsafe { rb_cFloat } } else { unsafe { rb_cInteger } };
@@ -9147,18 +9187,26 @@ impl Function {
             }
 
             // The loop limit: n for times, the high bound for ranges, boxed
-            // array length otherwise. The result array is pre-sized with the
-            // element count (the range span's overflow exit restarts, and the
-            // capa helper clamps negative spans to zero).
+            // array length otherwise; the reverse producer counts down to
+            // zero instead. The result array is pre-sized with the element
+            // count (the range span's overflow exit restarts, and the capa
+            // helper clamps negative spans to zero).
+            let descending = matches!(c.producer, Producer::ArrayReverse);
+            let len_boxed = match c.producer {
+                Producer::IntTimes | Producer::RangeLit => None,
+                _ => {
+                    let len_raw = self.push_insn(bb, Insn::ArrayLength { array: c.recv });
+                    Some(self.push_insn(bb, Insn::BoxFixnum { val: len_raw, state: c.a_state }))
+                }
+            };
             let bound = match c.producer {
                 Producer::IntTimes => c.recv,
                 Producer::RangeLit => c.range_info.expect("range producer carries bounds").1,
-                _ => {
-                    let len_raw = self.push_insn(bb, Insn::ArrayLength { array: c.recv });
-                    self.push_insn(bb, Insn::BoxFixnum { val: len_raw, state: c.a_state })
-                }
+                Producer::ArrayReverse => self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) }),
+                _ => len_boxed.expect("array producers computed their length"),
             };
             let ary_capa = match c.producer {
+                Producer::ArrayReverse => len_boxed.expect("array producers computed their length"),
                 Producer::RangeLit => {
                     let (lo, hi, exclusive) = c.range_info.unwrap();
                     let span = self.push_insn(bb, Insn::FixnumSub { left: hi, right: lo, state: c.a_state });
@@ -9309,10 +9357,16 @@ impl Function {
             self.count(bb, Counter::inline_iseq_optimized_send_count);
             let loop_start = match c.producer {
                 Producer::RangeLit => c.range_info.unwrap().0,
+                Producer::ArrayReverse => self.push_insn(bb, Insn::FixnumSub {
+                    left: len_boxed.expect("array producers computed their length"),
+                    right: one,
+                    state: c.a_state,
+                }),
                 _ => zero,
             };
             let loop_cmp = match c.producer {
                 Producer::RangeLit if !c.range_info.unwrap().2 => FixnumCmpOp::Le,
+                Producer::ArrayReverse => FixnumCmpOp::Ge,
                 _ => FixnumCmpOp::Lt,
             };
             let mut entry_args = vec![loop_start];
@@ -9320,6 +9374,14 @@ impl Function {
             self.push_insn(bb, Insn::Jump(BranchEdge { target: header, args: entry_args }));
             let i_phi = self.push_insn(header, Insn::Param);
             let sum_phis: Vec<InsnId> = sum_inits.iter().map(|_| self.push_insn(header, Insn::Param)).collect();
+            // Advance the loop variable one element in the producer's direction.
+            let step_i = |fun: &mut Self, blk: BlockId| -> InsnId {
+                if descending {
+                    fun.push_insn(blk, Insn::FixnumSub { left: i_phi, right: one, state: c.a_state })
+                } else {
+                    fun.push_insn(blk, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state })
+                }
+            };
             self.push_insn(header, Insn::CondBranchFixnumCmp(Box::new(CondBranchFixnumCmpData {
                 op: loop_cmp,
                 left: i_phi,
@@ -9385,7 +9447,7 @@ impl Function {
                 Consumer::Min | Consumer::Max => unreachable!("min/max fold before loop synthesis"),
                 Consumer::Map | Consumer::WithIndexMap | Consumer::ToA => {
                     self.push_insn(body_cont, Insn::ArrayPush { array: ary, val: block_val, state: c.a_state });
-                    let i_next = self.push_insn(body_cont, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                    let i_next = step_i(self, body_cont);
                     self.push_insn(body_cont, Insn::CheckInterrupts { state: c.a_state });
                     self.push_insn(body_cont, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
                 }
@@ -9434,7 +9496,7 @@ impl Function {
                         self.push_insn(big_x, Insn::Jump(BranchEdge { target: merge, args: vec![e2] }));
                         let dp = self.push_insn(merge, Insn::Param);
                         let c_next = self.push_insn(merge, Insn::FloatAdd { recv: c_phi, other: dp, state: c.a_state });
-                        let i_next = self.push_insn(merge, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                        let i_next = step_i(self, merge);
                         self.push_insn(merge, Insn::CheckInterrupts { state: c.a_state });
                         self.push_insn(merge, Insn::Jump(BranchEdge { target: header, args: vec![i_next, t, c_next] }));
                     } else {
@@ -9442,7 +9504,7 @@ impl Function {
                         // into the interpreter, which produces the Bignum.
                         let acc = sum_phis[0];
                         let acc_next = self.push_insn(body_cont, Insn::FixnumAdd { left: acc, right: block_val, state: c.a_state });
-                        let i_next = self.push_insn(body_cont, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                        let i_next = step_i(self, body_cont);
                         self.push_insn(body_cont, Insn::CheckInterrupts { state: c.a_state });
                         self.push_insn(body_cont, Insn::Jump(BranchEdge { target: header, args: vec![i_next, acc_next] }));
                     }
@@ -9455,13 +9517,21 @@ impl Function {
                     let hit = self.push_insn(body_cont, Insn::IsBitEqual { left: block_val, right: needle_g });
                     let advance = self.new_block(insn_idx);
                     let qtrue = self.push_insn(body_cont, Insn::Const { val: Const::Value(Qtrue) });
-                    let hit_result = if matches!(c.consumer, Consumer::Include) { qtrue } else { i_phi };
+                    let hit_result = if matches!(c.consumer, Consumer::Include) {
+                        qtrue
+                    } else if descending {
+                        // The reversed array's index is measured from the far
+                        // end: loop_start is len - 1, so it is loop_start - i.
+                        self.push_insn(body_cont, Insn::FixnumSub { left: loop_start, right: i_phi, state: c.a_state })
+                    } else {
+                        i_phi
+                    };
                     self.push_insn(body_cont, Insn::CondBranch {
                         val: hit,
                         if_true: BranchEdge { target: cont, args: vec![hit_result] },
                         if_false: BranchEdge { target: advance, args: vec![] },
                     });
-                    let i_next = self.push_insn(advance, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                    let i_next = step_i(self, advance);
                     self.push_insn(advance, Insn::CheckInterrupts { state: c.a_state });
                     self.push_insn(advance, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
                 }
@@ -9512,7 +9582,7 @@ impl Function {
                     self.push_insn(keep, Insn::Jump(BranchEdge { target: advance, args: vec![bk, be] }));
                     let nk = self.push_insn(advance, Insn::Param);
                     let ne = self.push_insn(advance, Insn::Param);
-                    let i_next = self.push_insn(advance, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                    let i_next = step_i(self, advance);
                     self.push_insn(advance, Insn::CheckInterrupts { state: c.a_state });
                     self.push_insn(advance, Insn::Jump(BranchEdge { target: header, args: vec![i_next, nk, ne] }));
                 }
@@ -9533,12 +9603,12 @@ impl Function {
                         let cnt1 = self.push_insn(bump, Insn::FixnumAdd { left: cnt, right: one, state: c.a_state });
                         self.push_insn(bump, Insn::Jump(BranchEdge { target: advance, args: vec![cnt1] }));
                         let cnt_next = self.push_insn(advance, Insn::Param);
-                        let i_next = self.push_insn(advance, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                        let i_next = step_i(self, advance);
                         self.push_insn(advance, Insn::CheckInterrupts { state: c.a_state });
                         self.push_insn(advance, Insn::Jump(BranchEdge { target: header, args: vec![i_next, cnt_next] }));
                     } else {
                         // Blockless: the loop's own trip count is the answer.
-                        let i_next = self.push_insn(body_cont, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                        let i_next = step_i(self, body_cont);
                         self.push_insn(body_cont, Insn::CheckInterrupts { state: c.a_state });
                         self.push_insn(body_cont, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
                     }
@@ -9574,7 +9644,7 @@ impl Function {
                         if_true: truthy_edge,
                         if_false: falsy_edge,
                     });
-                    let i_next = self.push_insn(advance, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                    let i_next = step_i(self, advance);
                     self.push_insn(advance, Insn::CheckInterrupts { state: c.a_state });
                     self.push_insn(advance, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
                 }
@@ -9590,7 +9660,7 @@ impl Function {
                     });
                     self.push_insn(push_block, Insn::ArrayPush { array: ary, val: elem, state: c.a_state });
                     self.push_insn(push_block, Insn::Jump(BranchEdge { target: advance, args: vec![] }));
-                    let i_next = self.push_insn(advance, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                    let i_next = step_i(self, advance);
                     self.push_insn(advance, Insn::CheckInterrupts { state: c.a_state });
                     self.push_insn(advance, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
                 }
