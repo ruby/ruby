@@ -69,6 +69,14 @@ struct JITState {
     /// frame's depth; gen_prepare_non_leaf_call() writes the SP slot.
     jit_frame_size: usize,
 
+    /// Block-local memo for magic-number division: (dividend operand, constant
+    /// divisor) -> (truncated quotient, truncated remainder) from the last
+    /// gen_magic_div_head in this basic block. `x % 10` and `x / 10` on the
+    /// same dividend then share one multiply head, with the second operation
+    /// reduced to its floored fixup. Cleared at every block boundary; within a
+    /// block the cached VRegs dominate all later uses.
+    divmod_cache: Vec<(Opnd, i64, Opnd, Opnd)>,
+
     /// HIR type of each instruction (resolved through the union-find), indexed by
     /// InsnId. Populated once from the optimized `Function` so that side-exit
     /// construction can tell which frame-state slots hold a raw double
@@ -87,6 +95,7 @@ impl JITState {
             iseq_calls: Vec::default(),
             jit_frame_size,
             insn_types: Vec::default(),
+            divmod_cache: Vec::default(),
         }
     }
 
@@ -553,6 +562,9 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     }
                 }
             }
+
+            // Magic-division memos must not cross block boundaries.
+            jit.divmod_cache.clear();
 
             // Compile all instructions
             for (insn_idx, &insn_id) in block.insns().enumerate() {
@@ -3552,10 +3564,16 @@ fn signed_magic(d: i64) -> (i64, u32) {
 }
 
 /// The shared head of magic-number division by a positive constant divisor:
-/// returns the truncated quotient (when requested) and the truncated
-/// remainder. `rt < 0` is exactly the floored-fixup condition since the
-/// divisor is positive.
-fn gen_magic_div_head(asm: &mut Assembler, left: lir::Opnd, d: i64, want_quotient: bool) -> (Option<lir::Opnd>, lir::Opnd) {
+/// returns the truncated quotient and the truncated remainder. `rt < 0` is
+/// exactly the floored-fixup condition since the divisor is positive.
+///
+/// Memoized per (dividend, divisor) within a basic block: `x % 10` and
+/// `x / 10` are usually siblings (digit extraction, divmod patterns), and the
+/// second then costs only its floored fixup instead of a second multiply head.
+fn gen_magic_div_head(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, d: i64) -> (lir::Opnd, lir::Opnd) {
+    if let Some(&(_, _, qt, rt)) = jit.divmod_cache.iter().find(|&&(l, cd, _, _)| l == left && cd == d) {
+        return (qt, rt);
+    }
     let (magic, shift) = signed_magic(d);
     let a = asm.rshift(left, Opnd::UImm(1));
     let m = asm.load(Opnd::Imm(magic));
@@ -3565,11 +3583,12 @@ fn gen_magic_div_head(asm: &mut Assembler, left: lir::Opnd, d: i64, want_quotien
     let q0 = if shift > 0 { asm.rshift(h, Opnd::UImm(shift as u64)) } else { h };
     let sign = asm.urshift(q0, Opnd::UImm(63));
     let qt = asm.add(q0, sign);
-    // Keep a copy when the caller needs the quotient after the remainder
-    // computation: the x86 Mul below destroys its left operand's register.
-    let qt_kept = if want_quotient { Some(asm.load(qt)) } else { None };
+    // Keep a copy across the multiply: the x86 Mul destroys its left
+    // operand's register, and the memo hands the quotient to later siblings.
+    let qt_kept = asm.load(qt);
     let p = asm.mul(qt, Opnd::Imm(d));
     let rt = asm.sub(a, p);
+    jit.divmod_cache.push((left, d, qt_kept, rt));
     (qt_kept, rt)
 }
 
@@ -3589,8 +3608,7 @@ fn gen_fixnum_div(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
         if v.fixnum_p() {
             let d = v.as_fixnum();
             if d >= 2 {
-                let (qt_kept, rt) = gen_magic_div_head(asm, left, d, true);
-                let qt_kept = qt_kept.unwrap();
+                let (qt_kept, rt) = gen_magic_div_head(jit, asm, left, d);
                 let qm = asm.sub(qt_kept, Opnd::UImm(1));
                 asm.cmp(rt, Opnd::UImm(0));
                 let qf = asm.csel_l(qm, qt_kept);
@@ -3850,7 +3868,7 @@ fn gen_fixnum_mod(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
         if v.fixnum_p() {
             let d = v.as_fixnum();
             if d >= 2 {
-                let (_, rt) = gen_magic_div_head(asm, left, d, false);
+                let (_, rt) = gen_magic_div_head(jit, asm, left, d);
                 let rc = asm.add(rt, Opnd::Imm(d));
                 asm.cmp(rt, Opnd::UImm(0));
                 let rf = asm.csel_l(rc, rt);
