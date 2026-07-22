@@ -1118,18 +1118,17 @@ robject_embedded_size(uint32_t fields_count)
 }
 
 VALUE
-rb_class_allocate_instance(VALUE klass)
+rb_class_allocate_instance_capa(VALUE klass, attr_index_t max_iv_count)
 {
-    uint32_t index_tbl_num_entries = RCLASS_MAX_IV_COUNT(klass);
     VALUE obj;
 
     // Directly start as COMPLEX if we know we're over the limit.
     RUBY_ASSERT(rb_shape_max_capacity() > 0);
-    if (RB_UNLIKELY(index_tbl_num_entries > rb_shape_max_capacity())) {
-        obj = class_allocate_complex_instance(klass, index_tbl_num_entries);
+    if (RB_UNLIKELY(max_iv_count > rb_shape_max_capacity())) {
+        obj = class_allocate_complex_instance(klass, max_iv_count);
     }
     else {
-        size_t size = robject_embedded_size(index_tbl_num_entries);
+        size_t size = robject_embedded_size(max_iv_count);
 
         // There might be a NEWOBJ tracepoint callback, and it may set fields.
         // So the shape must be passed to `NEWOBJ_OF`.
@@ -1154,6 +1153,12 @@ rb_class_allocate_instance(VALUE klass)
 #endif
 
     return obj;
+}
+
+VALUE
+rb_class_allocate_instance(VALUE klass)
+{
+    return rb_class_allocate_instance_capa(klass, RCLASS_MAX_IV_COUNT(klass));
 }
 
 #if USE_ZJIT

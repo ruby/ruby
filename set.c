@@ -9,6 +9,7 @@
 #include "internal/bits.h"
 #include "internal/error.h"
 #include "internal/hash.h"
+#include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
 #include "internal/set_table.h"
@@ -2228,7 +2229,7 @@ set_i_to_h(VALUE set)
 static VALUE
 compat_dumper(VALUE set)
 {
-    VALUE dumper = rb_class_new_instance(0, 0, rb_cObject);
+    VALUE dumper = rb_class_allocate_instance_capa(rb_cObject, 1);
     rb_ivar_set(dumper, id_i_hash, set_i_to_h(set));
     return dumper;
 }
