@@ -2759,6 +2759,12 @@ newobj_bump_pointer_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_c
 static VALUE
 newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cache, size_t heap_idx, bool vm_locked)
 {
+    if (RB_UNLIKELY(ruby_gc_stressful)) {
+        if (!garbage_collect(objspace, GPR_FLAG_NEWOBJ)) {
+            rb_memerror();
+        }
+    }
+
     VALUE obj = ractor_cache_allocate_slot(objspace, gc_cache, heap_idx);
 
     if (RB_UNLIKELY(obj == Qfalse)) {

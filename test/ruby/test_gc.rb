@@ -851,6 +851,17 @@ class TestGc < Test::Unit::TestCase
     assert_nil(GC.verify_internal_consistency)
   end
 
+  def test_gc_stress_on_obj_allocation
+    EnvUtil.under_gc_stress do
+      count = GC.count
+      iters = 100
+      iters.times do
+        Object.new
+      end
+      assert_operator(GC.count - count, :>=, iters)
+    end
+  end
+
   def test_gc_stress_on_realloc
     assert_normal_exit(<<-'end;', '[Bug #9859]')
       class C
