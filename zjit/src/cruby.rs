@@ -204,7 +204,6 @@ pub use rb_vm_ci_mid as vm_ci_mid;
 pub use rb_vm_ci_flag as vm_ci_flag;
 pub use rb_METHOD_ENTRY_VISI as METHOD_ENTRY_VISI;
 pub use rb_RCLASS_ORIGIN as RCLASS_ORIGIN;
-pub use rb_jit_fix_mod_fix as rb_fix_mod_fix;
 
 /// A YARV instruction opcode (`ruby_vminsn_type`), stored as a `u16` since there are only
 /// `VM_INSTRUCTION_SIZE` (~259) instructions. Keeps enums that embed an opcode (e.g.

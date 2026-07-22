@@ -1090,6 +1090,20 @@ pub fn not(cb: &mut CodeBlock, opnd: X86Opnd) {
     );
 }
 
+/// idiv - signed divide RDX:RAX by the 64-bit register operand;
+/// quotient lands in RAX, remainder in RDX. Traps on divide-by-zero and
+/// on quotient overflow (INT64_MIN / -1) -- callers guard both.
+pub fn idiv(cb: &mut CodeBlock, opnd: X86Opnd) {
+    match opnd {
+        X86Opnd::Reg(reg) => {
+            assert_eq!(reg.num_bits, 64, "idiv operand must be a 64-bit register");
+            // REX.W + F7 /7
+            write_rm(cb, false, true, X86Opnd::None, opnd, Some(7), &[0xf7]);
+        }
+        _ => panic!("idiv operand must be a register"),
+    }
+}
+
 /// or - Bitwise OR
 pub fn or(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
     write_rm_multi(

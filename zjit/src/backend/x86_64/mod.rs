@@ -185,6 +185,8 @@ impl Assembler {
                 Insn::Add { .. } |
                 Insn::Sub { .. } |
                 Insn::Mul { .. } |
+                Insn::SDiv { .. } |
+                Insn::SRem { .. } |
                 Insn::And { .. } |
                 Insn::Or { .. } |
                 Insn::Xor { .. } => {
@@ -534,6 +536,26 @@ impl Assembler {
                     asm.push_insn(insn);
                     asm_mov(asm, out, left, SCRATCH0_OPND);
                 }
+                Insn::SDiv { left, right, out } |
+                Insn::SRem { left, right, out } => {
+                    assert_out_is_phys_reg_or_stack_mem(*out);
+
+                    // Route the dividend and divisor into the scratch registers:
+                    // idiv's fixed rax/rdx usage in the emit must not alias the
+                    // allocator-chosen operand registers (the pool includes both).
+                    let l = split_stack_membase(asm, *left, SCRATCH0_OPND);
+                    asm_mov(asm, SCRATCH0_OPND, l, SCRATCH0_OPND);
+                    let r = split_stack_membase(asm, *right, SCRATCH1_OPND);
+                    asm_mov(asm, SCRATCH1_OPND, r, SCRATCH1_OPND);
+                    *left = SCRATCH0_OPND;
+                    *right = SCRATCH1_OPND;
+                    *out = lower_stack_membase(asm, *out);
+
+                    let out = *out;
+                    asm.push_insn(insn);
+                    // The emit leaves the quotient in SCRATCH0; forward it on.
+                    asm_mov(asm, out, SCRATCH0_OPND, SCRATCH1_OPND);
+                }
                 Insn::FloatArith { left, right, out, .. } => {
                     // Lower spilled operands' stack membases so movq can address
                     // them. The emit moves the operands through xmm0/xmm1 and
@@ -873,6 +895,30 @@ impl Assembler {
 
                 Insn::Mul { left, right, .. } => {
                     imul(cb, left.into(), right.into());
+                },
+
+                insn @ (Insn::SDiv { .. } | Insn::SRem { .. }) => {
+                    let (left, right) = match insn {
+                        Insn::SDiv { left, right, .. } | Insn::SRem { left, right, .. } => (left, right),
+                        _ => unreachable!(),
+                    };
+                    // Operands live in the scratch registers (routed by
+                    // x86_scratch_split), so the fixed rax/rdx dance below
+                    // cannot alias them. Preserve rax/rdx around the division
+                    // and hand the result -- quotient for SDiv, remainder
+                    // (rdx) for SRem -- back through the left scratch.
+                    push(cb, RAX);
+                    push(cb, RDX);
+                    mov(cb, RAX, left.into());
+                    cqo(cb);
+                    idiv(cb, right.into());
+                    if matches!(insn, Insn::SDiv { .. }) {
+                        mov(cb, left.into(), RAX);
+                    } else {
+                        mov(cb, left.into(), RDX);
+                    }
+                    pop(cb, RDX);
+                    pop(cb, RAX);
                 },
 
                 Insn::FloatArith { op, left, right, out } => {

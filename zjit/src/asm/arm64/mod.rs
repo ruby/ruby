@@ -793,6 +793,39 @@ pub fn mul(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// SDIV - signed divide rn by rm, truncated quotient into rd (64-bit only).
+/// Division by zero yields 0 in hardware, but callers guard it beforehand.
+pub fn sdiv(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+    match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(rd.num_bits == 64 && rn.num_bits == 64 && rm.num_bits == 64, "sdiv operands must be 64-bit registers");
+            let insn: u32 = 0x9AC0_0C00
+                | ((rm.reg_no as u32) << 16)
+                | ((rn.reg_no as u32) << 5)
+                | (rd.reg_no as u32);
+            cb.write_bytes(&insn.to_le_bytes());
+        },
+        _ => panic!("Invalid operand combination to sdiv instruction"),
+    }
+}
+
+/// MSUB - rd = ra - rn * rm (64-bit). With the quotient in rn this is the
+/// standard remainder idiom after sdiv.
+pub fn msub(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd, ra: A64Opnd) {
+    match (rd, rn, rm, ra) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm), A64Opnd::Reg(ra)) => {
+            assert!(rd.num_bits == 64 && rn.num_bits == 64 && rm.num_bits == 64 && ra.num_bits == 64, "msub operands must be 64-bit registers");
+            let insn: u32 = 0x9B00_8000
+                | ((rm.reg_no as u32) << 16)
+                | ((ra.reg_no as u32) << 10)
+                | ((rn.reg_no as u32) << 5)
+                | (rd.reg_no as u32);
+            cb.write_bytes(&insn.to_le_bytes());
+        },
+        _ => panic!("Invalid operand combination to msub instruction"),
+    }
+}
+
 /// SMULH - multiply two 64-bit registers to produce a 128-bit result, put the high 64-bits of the result into rd
 pub fn smulh(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {

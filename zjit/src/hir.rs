@@ -659,6 +659,9 @@ pub enum SideExitReason {
     StackOverflow,
     FixnumModByZero,
     FixnumDivByZero,
+    /// FIXNUM_MIN / -1 is the one fixnum quotient that does not fit a fixnum;
+    /// fall back to the interpreter's Bignum path.
+    FixnumDivOverflow,
     BoxFixnumOverflow,
     SplatKwNotNilOrHash,
     SplatKwPolymorphic,
@@ -2113,6 +2116,10 @@ impl Insn {
             Insn::FixnumAdd { .. } => effects::Empty,
             Insn::FixnumSub { .. } => effects::Empty,
             Insn::FixnumMult { .. } => effects::Empty,
+            // Although the sdiv/idiv lowering is now call- and allocation-free,
+            // these stay effects::Any: is_elidable derives from effects, and an
+            // *unused* division by zero must still raise ZeroDivisionError --
+            // eliminating the insn would eliminate its deopt and the raise.
             Insn::FixnumDiv { .. } => effects::Any,
             Insn::FixnumMod { .. } => effects::Any,
             Insn::FloatAdd { .. } => effects::Empty,
@@ -4057,20 +4064,9 @@ impl Function {
             Insn::FixnumAdd  { .. } => types::Fixnum,
             Insn::FixnumSub  { .. } => types::Fixnum,
             Insn::FixnumMult { .. } => types::Fixnum,
-            Insn::FixnumDiv { left, right, .. } => {
-                let left = self.type_of(*left).fixnum_value();
-                let right = self.type_of(*right).fixnum_value();
-
-                // FIXNUM_MIN / -1 overflows to a Bignum, but no other combination does. If we know
-                // that either operand does not match that case, we can safely assume Fixnum.
-                if left.is_some_and(|left| left != RUBY_FIXNUM_MIN as i64)
-                    || right.is_some_and(|right| right != -1)
-                {
-                    types::Fixnum
-                } else {
-                    types::Integer
-                }
-            }
+            // The open-coded div deopts on the one non-fixnum quotient
+            // (FIXNUM_MIN / -1), so its output is always a Fixnum.
+            Insn::FixnumDiv  { .. } => types::Fixnum,
             Insn::FixnumMod  { .. } => types::Fixnum,
             Insn::FloatAdd   { .. } => types::CDouble,
             Insn::FloatSub   { .. } => types::CDouble,

@@ -629,7 +629,9 @@ impl Assembler {
                     }
                     asm.push_insn(insn);
                 },
-                Insn::Mul { left, right, .. } => {
+                Insn::Mul { left, right, .. } |
+                Insn::SDiv { left, right, .. } |
+                Insn::SRem { left, right, .. } => {
                     *left = split_load_operand(asm, *left);
                     *right = split_load_operand(asm, *right);
                     asm.push_insn(insn);
@@ -832,6 +834,19 @@ impl Assembler {
                         // Produce a register that is all zeros or all ones
                         // Based on the sign bit of the 64-bit mul result
                         asm.push_insn(Insn::RShift { out: SCRATCH0_OPND, opnd: reg_out, shift: Opnd::UImm(63) });
+                    }
+                }
+                Insn::SDiv { left, right, out } |
+                Insn::SRem { left, right, out } => {
+                    *left = split_memory_read(asm, *left, SCRATCH0_OPND);
+                    *right = split_memory_read(asm, *right, SCRATCH1_OPND);
+                    let mem_out = split_memory_write(out, SCRATCH0_OPND);
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND);
+                        asm.store(mem_out, SCRATCH0_OPND);
                     }
                 }
                 Insn::LShift { opnd, out, .. } |
@@ -1380,6 +1395,16 @@ impl Assembler {
                 },
                 Insn::Not { opnd, out } => {
                     mvn(cb, out.into(), opnd.into());
+                },
+                Insn::SDiv { left, right, out } => {
+                    sdiv(cb, out.into(), left.into(), right.into());
+                },
+                Insn::SRem { left, right, out } => {
+                    // Truncated remainder: quotient into the emit scratch,
+                    // then msub reads all sources before writing, so `out`
+                    // aliasing an operand register is fine.
+                    sdiv(cb, Self::EMIT_OPND, left.into(), right.into());
+                    msub(cb, out.into(), Self::EMIT_OPND, right.into(), left.into());
                 },
                 Insn::RShift { opnd, shift, out } => {
                     asr(cb, out.into(), opnd.into(), shift.into());

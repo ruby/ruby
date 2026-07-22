@@ -3507,14 +3507,40 @@ fn gen_fixnum_mult(jit: &mut JITState, asm: &mut Assembler, function: &Function,
     asm.add(out_val, Opnd::UImm(1))
 }
 
-/// Compile Fixnum / Fixnum
+/// Compile Fixnum / Fixnum with Ruby's floored-division semantics, open-coded.
+/// Mirrors rb_fix_div_fix: truncated hardware quotient, then `q - 1` when the
+/// operand signs differ and the division was inexact. FIXNUM_MIN / -1 is the
+/// only fixnum quotient that overflows the fixnum range; its boxing overflow
+/// deopts to the interpreter's Bignum path -- which is also why no GC prep is
+/// needed here anymore. The 63-bit untagged operands cannot trap sdiv/idiv.
 fn gen_fixnum_div(jit: &mut JITState, asm: &mut Assembler, function: &Function, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    gen_prepare_leaf_call_with_gc(asm, state);
-
-    // Side exit if rhs is 0
+    // Side exit if rhs is 0, which raises ZeroDivisionError
     asm.cmp(right, Opnd::from(VALUE::fixnum_from_usize(0)));
     asm.je(jit, side_exit(jit, function, state, FixnumDivByZero));
-    asm_ccall!(asm, rb_jit_fix_div_fix, left, right)
+
+    let a = asm.rshift(left, Opnd::UImm(1));
+    let b = asm.rshift(right, Opnd::UImm(1));
+    let q = asm.sdiv(a, b);
+    // The x86 lowering of Mul is two-address (imul writes into `left`'s
+    // register), so a mul operand must not be read after the mul. Keep a
+    // copy of the quotient for the fixup below and give `q` to the mul as
+    // its final use.
+    let q_kept = asm.load(q);
+
+    // Floored fixup: quotient rounds toward negative infinity, so when the
+    // signs differ and the division was inexact, step down by one.
+    let p = asm.mul(q, b);
+    let t = asm.xor(a, b);
+    let qm = asm.sub(q_kept, Opnd::UImm(1));
+    asm.cmp(p, a);
+    let q1 = asm.csel_ne(qm, q_kept);
+    asm.cmp(t, Opnd::UImm(0));
+    let q2 = asm.csel_l(q1, q_kept);
+
+    // Box, deopting on the one quotient that does not fit a fixnum.
+    let doubled = asm.add(q2, q2);
+    asm.jo(jit, side_exit(jit, function, state, FixnumDivOverflow));
+    asm.or(doubled, Opnd::UImm(1))
 }
 
 /// Decode a guaranteed-flonum VALUE into its raw IEEE-754 double bit pattern,
@@ -3722,11 +3748,37 @@ fn gen_fixnum_rshift(asm: &mut Assembler, left: lir::Opnd, shift_amount: u64) ->
     asm.or(result, 1.into())
 }
 
+/// Compile Fixnum % Fixnum with Ruby's floored-modulo semantics, open-coded.
+/// Mirrors rb_fix_mod_fix: truncated hardware remainder, then `r + b` when r
+/// is nonzero and its sign differs from the divisor's. The result magnitude is
+/// always < |divisor| so boxing can never overflow, and the 63-bit untagged
+/// operands cannot trap sdiv/idiv (FIXNUM_MIN / -1 stays in i64 range).
+/// Open-coding this (rather than calling rb_fix_mod_fix) keeps the enclosing
+/// loop's values in registers: the call clobbered every caller-saved register
+/// once per iteration in loops like trial division.
 fn gen_fixnum_mod(jit: &mut JITState, asm: &mut Assembler, function: &Function, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> lir::Opnd {
     // Check for left % 0, which raises ZeroDivisionError
     asm.cmp(right, Opnd::from(VALUE::fixnum_from_usize(0)));
     asm.je(jit, side_exit(jit, function, state, FixnumModByZero));
-    asm_ccall!(asm, rb_fix_mod_fix, left, right)
+
+    let a = asm.rshift(left, Opnd::UImm(1));
+    let b = asm.rshift(right, Opnd::UImm(1));
+    // Truncated remainder straight from the hardware: x86 idiv computes it
+    // anyway (rdx), and arm64 fuses sdiv+msub -- recomputing it as
+    // a - (a/b)*b would put a serial mul+sub on the critical path.
+    let r = asm.srem(a, b);
+
+    // Floored fixup: a nonzero remainder takes the divisor's sign.
+    let t = asm.xor(r, b);
+    let rc = asm.add(r, b);
+    asm.cmp(t, Opnd::UImm(0));
+    let r1 = asm.csel_l(rc, r);
+    asm.cmp(r, Opnd::UImm(0));
+    let r2 = asm.csel_e(r, r1);
+
+    // Box; always representable.
+    let shifted = asm.lshift(r2, Opnd::UImm(1));
+    asm.or(shifted, Opnd::UImm(1))
 }
 
 fn gen_fixnum_aref(asm: &mut Assembler, recv: lir::Opnd, index: lir::Opnd) -> lir::Opnd {

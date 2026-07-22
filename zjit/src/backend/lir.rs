@@ -1047,6 +1047,17 @@ pub enum Insn {
     // Integer multiplication
     Mul { left: Opnd, right: Opnd, out: Opnd },
 
+    /// Signed 64-bit integer division, truncated quotient (arm64 `sdiv`;
+    /// x86_64 `cqo`+`idiv` behind scratch routing). The divisor must be
+    /// nonzero and the INT64_MIN/-1 case excluded by the caller -- fixnum
+    /// callers satisfy both (untagged fixnums are 63-bit and guard zero).
+    SDiv { left: Opnd, right: Opnd, out: Opnd },
+
+    /// Signed 64-bit integer remainder, truncated (sign follows the
+    /// dividend): arm64 `sdiv`+`msub`, x86_64 takes rdx from the same
+    /// `cqo`+`idiv` sequence as SDiv. Same preconditions as SDiv.
+    SRem { left: Opnd, right: Opnd, out: Opnd },
+
     // Bitwise AND test instruction
     Test { left: Opnd, right: Opnd },
 
@@ -1170,6 +1181,8 @@ macro_rules! for_each_operand_impl {
             Insn::Store { dest: opnd0, src: opnd1 } |
             Insn::Sub { left: opnd0, right: opnd1, .. } |
             Insn::Mul { left: opnd0, right: opnd1, .. } |
+            Insn::SDiv { left: opnd0, right: opnd1, .. } |
+            Insn::SRem { left: opnd0, right: opnd1, .. } |
             Insn::Test { left: opnd0, right: opnd1 } |
             Insn::URShift { opnd: opnd0, shift: opnd1, .. } |
             Insn::Xor { left: opnd0, right: opnd1, .. } => {
@@ -1328,6 +1341,8 @@ impl Insn {
             Insn::Store { .. } => "Store",
             Insn::Sub { .. } => "Sub",
             Insn::Mul { .. } => "Mul",
+            Insn::SDiv { .. } => "SDiv",
+            Insn::SRem { .. } => "SRem",
             Insn::Test { .. } => "Test",
             Insn::URShift { .. } => "URShift",
             Insn::Xor { .. } => "Xor"
@@ -1362,6 +1377,8 @@ impl Insn {
             Insn::RShift { out, .. } |
             Insn::Sub { out, .. } |
             Insn::Mul { out, .. } |
+            Insn::SDiv { out, .. } |
+            Insn::SRem { out, .. } |
             Insn::URShift { out, .. } |
             Insn::Xor { out, .. } => Some(out),
             Insn::CCall { data, .. } => Some(&data.out),
@@ -1397,6 +1414,8 @@ impl Insn {
             Insn::RShift { out, .. } |
             Insn::Sub { out, .. } |
             Insn::Mul { out, .. } |
+            Insn::SDiv { out, .. } |
+            Insn::SRem { out, .. } |
             Insn::URShift { out, .. } |
             Insn::Xor { out, .. } => Some(out),
             Insn::CCall { data, .. } => Some(&mut data.out),
@@ -4500,10 +4519,31 @@ impl Assembler {
         self.push_insn(Insn::Sub { left, right, out: left });
     }
 
+    /// Integer multiplication. CAUTION: the x86_64 lowering is two-address
+    /// (`imul` writes the product into `left`'s register before the split
+    /// forwards it to `out`), so `left` must not be read after this insn --
+    /// pass a dying value or copy it first (see gen_fixnum_div).
     #[must_use]
     pub fn mul(&mut self, left: Opnd, right: Opnd) -> Opnd {
         let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::Mul { left, right, out });
+        out
+    }
+
+    /// Signed truncated 64-bit division. See [`Insn::SDiv`] for the
+    /// preconditions (nonzero divisor, no INT64_MIN/-1).
+    #[must_use]
+    pub fn sdiv(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
+        self.push_insn(Insn::SDiv { left, right, out });
+        out
+    }
+
+    /// Signed truncated 64-bit remainder. See [`Insn::SRem`].
+    #[must_use]
+    pub fn srem(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
+        self.push_insn(Insn::SRem { left, right, out });
         out
     }
 
