@@ -5157,7 +5157,7 @@ mod signal_profiler {
 
             let mut handler: libc::sigaction = unsafe { std::mem::zeroed() };
             assert_eq!(unsafe { libc::sigemptyset(&mut handler.sa_mask) }, 0, "sigemptyset failed");
-            handler.sa_sigaction = sample_profile_frames as libc::sighandler_t;
+            handler.sa_sigaction = sample_profile_frames as *const () as libc::sighandler_t;
             handler.sa_flags = libc::SA_RESTART;
 
             let mut old_sigprof: libc::sigaction = unsafe { std::mem::zeroed() };
