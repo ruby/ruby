@@ -129,10 +129,10 @@ class Array
   def first n = unspecified = true
     if Primitive.mandatory_only?
       Primitive.attr! :leaf
-      Primitive.cexpr! %q{ ary_first(self) }
+      Primitive.rb_builtin_ary_first
     else
       if unspecified
-        Primitive.cexpr! %q{ ary_first(self) }
+        Primitive.rb_builtin_ary_first
       else
         Primitive.cexpr! %q{  ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_FIRST) }
       end
@@ -166,10 +166,10 @@ class Array
   def last n = unspecified = true
     if Primitive.mandatory_only?
       Primitive.attr! :leaf
-      Primitive.cexpr! %q{ ary_last(self) }
+      Primitive.rb_builtin_ary_last
     else
       if unspecified
-        Primitive.cexpr! %q{ ary_last(self) }
+        Primitive.rb_builtin_ary_last
       else
         Primitive.cexpr! %q{ ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_LAST) }
       end

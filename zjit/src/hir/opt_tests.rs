@@ -3688,9 +3688,12 @@ mod hir_opt_tests {
           v18:ArrayExact = ArrayDup v17
           PatchPoint NoSingletonClass(Array@0x1010)
           PatchPoint MethodRedefined(Array@0x1010, first@0x1018, cme:0x1020)
-          v31:BasicObject = InvokeBuiltin leaf <inline_expr>, v18
+          v32:CInt64 = ArrayLength v18
+          v33:CInt64[0] = Const CInt64(0)
+          v34:CInt64[0] = GuardLess v33, v32
+          v35:BasicObject = ArrayAref v18, v34
           CheckInterrupts
-          Return v31
+          Return v35
         ");
     }
 
@@ -11779,6 +11782,72 @@ mod hir_opt_tests {
           v27:Fixnum = BoxFixnum v26
           CheckInterrupts
           Return v27
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_first() {
+        eval("
+            def test(arr) = arr.first
+            test([1])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
+          v23:ArrayExact = GuardType v10, ArrayExact recompile
+          v25:CInt64 = ArrayLength v23
+          v26:CInt64[0] = Const CInt64(0)
+          v27:CInt64[0] = GuardLess v26, v25
+          v28:BasicObject = ArrayAref v23, v27
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_last() {
+        eval("
+            def test(arr) = arr.last
+            test([1])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, last@0x1010, cme:0x1018)
+          v23:ArrayExact = GuardType v10, ArrayExact recompile
+          v25:CInt64 = ArrayLength v23
+          v26:CInt64[-1] = Const CInt64(-1)
+          v27:CInt64 = AdjustBounds v26, v25
+          v28:CInt64[0] = Const CInt64(0)
+          v29:CInt64 = GuardGreaterEq v27, v28
+          v30:BasicObject = ArrayAref v23, v29
+          CheckInterrupts
+          Return v30
         ");
     }
 
