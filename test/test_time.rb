@@ -152,8 +152,6 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
   def subtest_xmlschema(method)
     assert_equal(Time.utc(1999, 5, 31, 13, 20, 0) + 5 * 3600,
                  Time.__send__(method, "1999-05-31T13:20:00-05:00"))
-    assert_equal(Time.local(2000, 1, 20, 12, 0, 0),
-                 Time.__send__(method, "2000-01-20T12:00:00"))
     assert_equal(Time.utc(2000, 1, 20, 12, 0, 0),
                  Time.__send__(method, "2000-01-20T12:00:00Z"))
     assert_equal(Time.utc(2000, 1, 20, 12, 0, 0) - 12 * 3600,
@@ -164,22 +162,10 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
                  Time.__send__(method, "2000-03-04T23:00:00+03:00"))
     assert_equal(Time.utc(2000, 3, 4, 20, 0, 0),
                  Time.__send__(method, "2000-03-04T20:00:00Z"))
-    assert_equal(Time.local(2000, 1, 15, 0, 0, 0),
-                 Time.__send__(method, "2000-01-15T00:00:00"))
-    assert_equal(Time.local(2000, 2, 15, 0, 0, 0),
-                 Time.__send__(method, "2000-02-15T00:00:00"))
-    assert_equal(Time.local(2000, 1, 15, 12, 0, 0),
-                 Time.__send__(method, "2000-01-15T12:00:00"))
     assert_equal(Time.utc(2000, 1, 16, 12, 0, 0),
                  Time.__send__(method, "2000-01-16T12:00:00Z"))
-    assert_equal(Time.local(2000, 1, 1, 12, 0, 0),
-                 Time.__send__(method, "2000-01-01T12:00:00"))
     assert_equal(Time.utc(1999, 12, 31, 23, 0, 0),
                  Time.__send__(method, "1999-12-31T23:00:00Z"))
-    assert_equal(Time.local(2000, 1, 16, 12, 0, 0),
-                 Time.__send__(method, "2000-01-16T12:00:00"))
-    assert_equal(Time.local(2000, 1, 16, 0, 0, 0),
-                 Time.__send__(method, "2000-01-16T00:00:00"))
     assert_equal(Time.utc(2000, 1, 12, 12, 13, 14),
                  Time.__send__(method, "2000-01-12T12:13:14Z"))
     assert_equal(Time.utc(2001, 4, 17, 19, 23, 17, 300000),
@@ -187,6 +173,23 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(Time.utc(2000, 1, 2, 0, 0, 0),
                  Time.__send__(method, "2000-01-01T24:00:00Z"))
     assert_raise(ArgumentError) { Time.__send__(method, "2000-01-01T00:00:00.+00:00") }
+
+    local_times = [
+      [Time.local(2000, 1, 20, 12, 0, 0), "2000-01-20T12:00:00"],
+      [Time.local(2000, 1, 15, 0, 0, 0), "2000-01-15T00:00:00"],
+      [Time.local(2000, 2, 15, 0, 0, 0), "2000-02-15T00:00:00"],
+      [Time.local(2000, 1, 15, 12, 0, 0), "2000-01-15T12:00:00"],
+      [Time.local(2000, 1, 1, 12, 0, 0), "2000-01-01T12:00:00"],
+      [Time.local(2000, 1, 16, 12, 0, 0), "2000-01-16T12:00:00"],
+      [Time.local(2000, 1, 16, 0, 0, 0), "2000-01-16T00:00:00"],
+    ]
+    local_times.each do |expected, time|
+      if method == :rfc3339
+        assert_raise(ArgumentError) { Time.rfc3339(time) }
+      else
+        assert_equal(expected, Time.__send__(method, time))
+      end
+    end
   end
 
   def subtest_xmlschema_encode(method)
