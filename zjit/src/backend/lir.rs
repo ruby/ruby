@@ -778,6 +778,10 @@ pub enum FloatArithOp {
     Div,
     /// Unary scalar-double square root (uses only `left`).
     Sqrt,
+    /// Scalar-double minimum-number (no-NaN operands assumed by callers).
+    Min,
+    /// Scalar-double maximum-number.
+    Max,
 }
 
 /// ZJIT Low-level IR instruction

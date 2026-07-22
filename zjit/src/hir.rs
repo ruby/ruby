@@ -1124,6 +1124,16 @@ pub enum Insn {
     /// the unsigned compare and the IEEE754 magnitude compare.
     IsBitGe { left: InsnId, right: InsnId },
 
+    /// Scalar-double minimum/maximum-number of two raw-bits CDoubles. Callers
+    /// guarantee NaN-free operands (flonum-guarded sources), where minNum
+    /// equals compare-and-select with ties returning an identical value.
+    FloatMin { recv: InsnId, other: InsnId },
+    FloatMax { recv: InsnId, other: InsnId },
+
+    /// C `true` when the VALUE is a flonum immediate (tag bits 0b10). A plain
+    /// test, not a guard: both outcomes stay in compiled code.
+    IsFlonum { val: InsnId },
+
     /// Scalar-double square root of a raw-bits CDouble. sqrt of a negative
     /// input yields NaN, which is not flonum-representable, so the downstream
     /// BoxFlonum guard restarts and the interpreter raises Math::DomainError.
@@ -1651,7 +1661,9 @@ macro_rules! for_each_operand_impl {
             | Insn::FixnumCmpBool { left, right, .. }
             | Insn::IsBitEqual { left, right }
             | Insn::IsBitGe { left, right }
-            | Insn::IsBitNotEqual { left, right } => {
+            | Insn::IsBitNotEqual { left, right }
+            | Insn::FloatMin { recv: left, other: right }
+            | Insn::FloatMax { recv: left, other: right } => {
                 $visit_one!(*left);
                 $visit_one!(*right);
             }
@@ -1829,6 +1841,7 @@ macro_rules! for_each_operand_impl {
             | Insn::UnboxFlonum { val }
             | Insn::FloatAbs { val }
             | Insn::FloatSqrt { val }
+            | Insn::IsFlonum { val }
             | Insn::F64FromFixnum { val } => {
                 $visit_one!(*val);
             }
@@ -1970,6 +1983,9 @@ impl Insn {
             Insn::IsBitGe { .. } => effects::Empty,
             Insn::FloatAbs { .. } => effects::Empty,
             Insn::FloatSqrt { .. } => effects::Empty,
+            Insn::FloatMin { .. } => effects::Empty,
+            Insn::FloatMax { .. } => effects::Empty,
+            Insn::IsFlonum { .. } => effects::Empty,
             Insn::IsBitNotEqual { .. } => effects::Empty,
             Insn::BoxBool { .. } => effects::Empty,
             Insn::BoolNegate { .. } => effects::Empty,
@@ -2388,6 +2404,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IsBitGe { left, right } => write!(f, "IsBitGe {left}, {right}"),
             Insn::FloatAbs { val } => write!(f, "FloatAbs {val}"),
             Insn::FloatSqrt { val } => write!(f, "FloatSqrt {val}"),
+            Insn::FloatMin { recv, other } => write!(f, "FloatMin {recv}, {other}"),
+            Insn::FloatMax { recv, other } => write!(f, "FloatMax {recv}, {other}"),
+            Insn::IsFlonum { val } => write!(f, "IsFlonum {val}"),
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
             Insn::BoolNegate { val } => write!(f, "BoolNegate {val}"),
@@ -3930,6 +3949,9 @@ impl Function {
             // comparable with IsBitGe.
             Insn::FloatAbs { .. } => types::CDouble,
             Insn::FloatSqrt { .. } => types::CDouble,
+            Insn::FloatMin { .. } => types::CDouble,
+            Insn::FloatMax { .. } => types::CDouble,
+            Insn::IsFlonum { .. } => types::CBool,
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
             Insn::BoolNegate { val } if self.type_of(*val).is_known_falsy() => types::TrueClass,
@@ -8236,7 +8258,8 @@ impl Function {
 
         // Array-direct consumers: the send is matched directly on the array.
         let array_direct_mids = [sum_id, count_id, find_id, detect_id, any_id, all_id, none_id,
-                                 min_by_id, max_by_id, include_id, index_id, find_index_id];
+                                 min_by_id, max_by_id, include_id, index_id, find_index_id,
+                                 min_id, max_id];
 
         let enumerator = unsafe { rb_cEnumerator };
         let cme_of = |klass: VALUE, mid: ID| unsafe { rb_callable_method_entry(klass, mid) };
@@ -8532,6 +8555,8 @@ impl Function {
                     (Producer::ArrayReverse, true) if b_mid == max_by_id => (Consumer::MaxBy, 1),
                     (Producer::ArrayReverse, false) if b_mid == include_id => (Consumer::Include, 0),
                     (Producer::ArrayReverse, false) if b_mid == index_id || b_mid == find_index_id => (Consumer::IndexOf, 0),
+                    (Producer::ArrayDirect, false) if b_mid == min_id => (Consumer::Min, 0),
+                    (Producer::ArrayDirect, false) if b_mid == max_id => (Consumer::Max, 0),
                     (Producer::ArrayDirect, false) if b_mid == include_id => (Consumer::Include, 0),
                     (Producer::ArrayDirect, false) if b_mid == index_id || b_mid == find_index_id => (Consumer::IndexOf, 0),
                     (Producer::ArrayMapEnum, true) if b_mid == with_index_id => (Consumer::WithIndexMap, 2),
@@ -9329,6 +9354,98 @@ impl Function {
                 };
                 let cont = self.new_block(insn_idx);
                 self.push_insn(bb, Insn::Jump(BranchEdge { target: cont, args: vec![] }));
+                for &id in &tail {
+                    self.push_insn_id(cont, id);
+                }
+                self.make_equal_to(c.b_id, result);
+                continue 'candidates;
+            }
+
+            if matches!(c.consumer, Consumer::Min | Consumer::Max)
+                && matches!(c.producer, Producer::ArrayDirect) {
+                // Blockless min/max on a float array: probe the first element's
+                // class at runtime. Flonum arrays run the fused FMINNM/FMAXNM
+                // loop seeded with element 0 (ties return an identical value;
+                // NaN and -0.0 are not flonum-representable, so the in-loop
+                // guards exclude the cases where minNum diverges from Ruby's
+                // compare); anything else calls the original C implementation
+                // directly -- fixnum arrays keep rb_ary_min's fast path with
+                // no restart penalty. Empty arrays answer nil before probing.
+                debug_assert!(translated.is_none());
+                self.blocks.truncate(pre_blocks_len);
+                let len_raw = self.push_insn(bb, Insn::ArrayLength { array: c.recv });
+                let len_boxed = self.push_insn(bb, Insn::BoxFixnum { val: len_raw, state: c.a_state });
+                let zero = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) });
+                let one = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) });
+                let nil = self.push_insn(bb, Insn::Const { val: Const::Value(Qnil) });
+                let probe = self.new_block(insn_idx);
+                let empty_blk = self.new_block(insn_idx);
+                let fallback = self.new_block(insn_idx);
+                let loop_pre = self.new_block(insn_idx);
+                let header = self.new_block(insn_idx);
+                let body = self.new_block(insn_idx);
+                let exit_blk = self.new_block(insn_idx);
+                let cont = self.new_block(insn_idx);
+                self.push_insn(bb, Insn::CondBranchFixnumCmp(Box::new(CondBranchFixnumCmpData {
+                    op: FixnumCmpOp::Eq,
+                    left: len_boxed,
+                    right: zero,
+                    if_true: BranchEdge { target: empty_blk, args: vec![] },
+                    if_false: BranchEdge { target: probe, args: vec![] },
+                })));
+                self.push_insn(empty_blk, Insn::Jump(BranchEdge { target: cont, args: vec![nil] }));
+                let idx0 = self.push_insn(probe, Insn::UnboxFixnum { val: zero });
+                let e0 = self.push_insn(probe, Insn::ArrayAref { array: c.recv, index: idx0 });
+                let isf = self.push_insn(probe, Insn::IsFlonum { val: e0 });
+                self.push_insn(probe, Insn::CondBranch {
+                    val: isf,
+                    if_true: BranchEdge { target: loop_pre, args: vec![] },
+                    if_false: BranchEdge { target: fallback, args: vec![] },
+                });
+                let cfunc_ptr: *const u8 = unsafe { get_mct_func(get_cme_def_body_cfunc(c.consumer_cme)) }.cast();
+                let cc = self.push_insn(fallback, Insn::CCallVariadic(Box::new(CCallVariadicData {
+                    cfunc: cfunc_ptr,
+                    recv: c.recv,
+                    args: vec![],
+                    cme: c.consumer_cme,
+                    name: c.consumer_mid,
+                    state: c.a_state,
+                    return_type: types::BasicObject,
+                    elidable: false,
+                    block: None,
+                })));
+                self.push_insn(fallback, Insn::Jump(BranchEdge { target: cont, args: vec![cc] }));
+                let e0g = self.push_insn(loop_pre, Insn::GuardType {
+                    val: e0, guard_type: types::Flonum, state: c.a_state, recompile: None,
+                });
+                let d0 = self.push_insn(loop_pre, Insn::UnboxFlonum { val: e0g });
+                self.push_insn(loop_pre, Insn::Jump(BranchEdge { target: header, args: vec![one, d0] }));
+                let i_phi = self.push_insn(header, Insn::Param);
+                let best = self.push_insn(header, Insn::Param);
+                self.push_insn(header, Insn::CondBranchFixnumCmp(Box::new(CondBranchFixnumCmpData {
+                    op: FixnumCmpOp::Lt,
+                    left: i_phi,
+                    right: len_boxed,
+                    if_true: BranchEdge { target: body, args: vec![] },
+                    if_false: BranchEdge { target: exit_blk, args: vec![] },
+                })));
+                let idx = self.push_insn(body, Insn::UnboxFixnum { val: i_phi });
+                let e = self.push_insn(body, Insn::ArrayAref { array: c.recv, index: idx });
+                let eg = self.push_insn(body, Insn::GuardType {
+                    val: e, guard_type: types::Flonum, state: c.a_state, recompile: None,
+                });
+                let d = self.push_insn(body, Insn::UnboxFlonum { val: eg });
+                let best_next = if matches!(c.consumer, Consumer::Min) {
+                    self.push_insn(body, Insn::FloatMin { recv: best, other: d })
+                } else {
+                    self.push_insn(body, Insn::FloatMax { recv: best, other: d })
+                };
+                let i_next = self.push_insn(body, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                self.push_insn(body, Insn::CheckInterrupts { state: c.a_state });
+                self.push_insn(body, Insn::Jump(BranchEdge { target: header, args: vec![i_next, best_next] }));
+                let boxed = self.push_insn(exit_blk, Insn::BoxFlonum { val: best, state: c.a_state });
+                self.push_insn(exit_blk, Insn::Jump(BranchEdge { target: cont, args: vec![boxed] }));
+                let result = self.push_insn(cont, Insn::Param);
                 for &id in &tail {
                     self.push_insn_id(cont, id);
                 }
@@ -10838,6 +10955,15 @@ impl Function {
             Insn::FloatAbs { val }
             | Insn::FloatSqrt { val } => {
                 self.assert_subtype(insn_id, val, types::CDouble)?;
+                Ok(())
+            }
+            Insn::FloatMin { recv, other }
+            | Insn::FloatMax { recv, other } => {
+                self.assert_subtype(insn_id, recv, types::CDouble)?;
+                self.assert_subtype(insn_id, other, types::CDouble)
+            }
+            Insn::IsFlonum { val } => {
+                self.assert_subtype(insn_id, val, types::RubyValue)?;
                 Ok(())
             }
             Insn::IsBitGe { left, right } => {

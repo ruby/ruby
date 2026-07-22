@@ -1290,6 +1290,16 @@ pub fn ldr_scaled(cb: &mut CodeBlock, xt: u8, xn: u8, xm: u8) {
     cb.write_bytes(&(0xF860_7800u32 | ((xm as u32) << 16) | ((xn as u32) << 5) | (xt as u32)).to_le_bytes());
 }
 
+/// FMINNM (scalar, double): Dd = minNum(Dn, Dm).
+pub fn fminnm(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
+    cb.write_bytes(&fp_data_proc2(0x1E60_7800, dd, dn, dm));
+}
+
+/// FMAXNM (scalar, double): Dd = maxNum(Dn, Dm).
+pub fn fmaxnm(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
+    cb.write_bytes(&fp_data_proc2(0x1E60_6800, dd, dn, dm));
+}
+
 /// FSQRT (scalar, double): Dd = sqrt(Dn).
 pub fn fsqrt(cb: &mut CodeBlock, dd: u8, dn: u8) {
     cb.write_bytes(&(0x1E61_C000u32 | ((dn as u32) << 5) | (dd as u32)).to_le_bytes());

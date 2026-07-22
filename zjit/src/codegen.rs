@@ -836,6 +836,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FloatMul { recv, other, .. } => asm.float_arith(FloatArithOp::Mul, opnd!(recv), opnd!(other)),
         Insn::FloatDiv { recv, other, .. } => asm.float_arith(FloatArithOp::Div, opnd!(recv), opnd!(other)),
         Insn::FloatSqrt { val } => asm.float_arith(FloatArithOp::Sqrt, opnd!(val), opnd!(val)),
+        Insn::FloatMin { recv, other } => asm.float_arith(FloatArithOp::Min, opnd!(recv), opnd!(other)),
+        Insn::FloatMax { recv, other } => asm.float_arith(FloatArithOp::Max, opnd!(recv), opnd!(other)),
+        &Insn::IsFlonum { val } => gen_is_flonum(asm, opnd!(val)),
         &Insn::UnboxFlonum { val } => flonum_unbox(asm, opnd!(val)),
         &Insn::BoxFlonum { val, state } => double_bits_to_flonum(jit, asm, function, opnd!(val), &function.frame_state(state)),
         &Insn::GuardFlonumRepresentable { val, state } => gen_guard_flonum_representable(jit, asm, function, opnd!(val), &function.frame_state(state)),
@@ -3691,6 +3694,13 @@ fn gen_is_method_cfunc(asm: &mut Assembler, val: lir::Opnd, cd: *const rb_call_d
         fn rb_vm_method_cfunc_is(iseq: IseqPtr, cd: *const rb_call_data, recv: VALUE, cfunc: *const u8) -> VALUE;
     }
     asm_ccall!(asm, rb_vm_method_cfunc_is, VALUE::from(state.iseq).into(), Opnd::const_ptr(cd), val, Opnd::const_ptr(cfunc))
+}
+
+/// Non-guarding flonum test: (v & 3) == 2.
+fn gen_is_flonum(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
+    let masked = asm.and(val, Opnd::UImm(0x3));
+    asm.cmp(masked, Opnd::UImm(0x2));
+    asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
 }
 
 fn gen_is_bit_ge(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {

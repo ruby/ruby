@@ -887,6 +887,8 @@ impl Assembler {
                         FloatArithOp::Sub => subsd(cb, 0, 1),
                         FloatArithOp::Mul => mulsd(cb, 0, 1),
                         FloatArithOp::Sqrt => sqrtsd(cb, 0, 0),
+                        FloatArithOp::Min => minsd(cb, 0, 1),
+                        FloatArithOp::Max => maxsd(cb, 0, 1),
                         FloatArithOp::Div => divsd(cb, 0, 1),
                     }
                     movq_reg_from_xmm(cb, out.into(), 0);

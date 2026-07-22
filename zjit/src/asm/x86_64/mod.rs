@@ -1408,6 +1408,10 @@ pub fn mulsd(cb: &mut CodeBlock, dst_xmm: u8, src_xmm: u8) { sse_arith(cb, 0x59,
 pub fn divsd(cb: &mut CodeBlock, dst_xmm: u8, src_xmm: u8) { sse_arith(cb, 0x5E, dst_xmm, src_xmm); }
 /// SQRTSD: dst_xmm = sqrt(src_xmm) (scalar double).
 pub fn sqrtsd(cb: &mut CodeBlock, dst_xmm: u8, src_xmm: u8) { sse_arith(cb, 0x51, dst_xmm, src_xmm); }
+/// MINSD: dst_xmm = min(dst_xmm, src_xmm) (scalar double).
+pub fn minsd(cb: &mut CodeBlock, dst_xmm: u8, src_xmm: u8) { sse_arith(cb, 0x5D, dst_xmm, src_xmm); }
+/// MAXSD: dst_xmm = max(dst_xmm, src_xmm) (scalar double).
+pub fn maxsd(cb: &mut CodeBlock, dst_xmm: u8, src_xmm: u8) { sse_arith(cb, 0x5F, dst_xmm, src_xmm); }
 
 /// CVTSI2SD xmm, r/m64 (`F2 REX.W 0F 2A /r`): dst_xmm = (double)(signed 64-bit
 /// integer in `src`).
