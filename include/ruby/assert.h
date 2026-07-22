@@ -252,8 +252,8 @@ RBIMPL_WARNING_IGNORED(-Wgnu-zero-variadic-macro-arguments)
  */
 #if RUBY_DEBUG
 # if defined(RBIMPL_VA_OPT_ARGS)
-#   define RUBY_ASSERT_MESG_WHEN(cond, /* expr, */...)  \
-    RUBY_ASSERT_MESG(__VA_ARGS__)
+#   define RUBY_ASSERT_MESG_WHEN(cond, expr, ...) \
+    RUBY_ASSERT_MESG((expr), __VA_ARGS__)
 # else
 #   define RUBY_ASSERT_MESG_WHEN(cond, expr, mesg) RUBY_ASSERT_MESG((expr), (mesg))
 # endif

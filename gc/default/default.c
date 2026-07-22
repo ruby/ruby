@@ -8822,8 +8822,16 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
          !malloc_increase_done; \
          malloc_increase_done = objspace_malloc_increase_body(__VA_ARGS__))
 
-struct malloc_obj_info { /* 4 words */
-    size_t size;
+#if defined(_WIN64) && (defined(_M_X64) || defined(__x86_64__))
+/* Windows x64 ABI requires jmp_buf to be 16-byte aligned */
+#define ADDITIONAL_ALIGNMENT 1
+#endif
+
+struct malloc_obj_info {
+    size_t size;  /* 4 words */
+#ifdef ADDITIONAL_ALIGNMENT
+    size_t dummy[ADDITIONAL_ALIGNMENT];
+#endif
 };
 
 static inline size_t
