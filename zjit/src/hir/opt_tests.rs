@@ -2065,6 +2065,67 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn integer_aref_with_constant_index_strength_reduced() {
+        eval("
+            def test(a) = a[12]
+            test(4096)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[12] = Const Value(12)
+          PatchPoint MethodRedefined(Integer@0x1008, []@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum recompile
+          v27:Fixnum[12] = Const Value(12)
+          v28:Fixnum = FixnumRShift v26, v27
+          v29:Fixnum[1] = Const Value(1)
+          v30:Fixnum = FixnumAnd v28, v29
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn integer_aref_with_constant_index_beyond_fixnum_width() {
+        eval("
+            def test(a) = a[100]
+            test(-1)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[100] = Const Value(100)
+          PatchPoint MethodRedefined(Integer@0x1008, []@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum recompile
+          v27:Fixnum = FixnumAref v26, v15
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
     fn elide_fixnum_aref() {
         eval("
             def test
