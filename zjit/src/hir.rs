@@ -8190,7 +8190,7 @@ impl Function {
         #[derive(Clone, Copy, PartialEq)]
         enum Producer { IntTimes, ArrayMapEnum, ArrayEachWithIndex, RangeLit, ArrayDirect }
         #[derive(Clone, Copy, PartialEq)]
-        enum Consumer { Map, Select, ToA, WithIndexMap, Sum, Count, Min, Max, Find, AnyP, AllP, NoneP }
+        enum Consumer { Map, Select, ToA, WithIndexMap, Sum, Count, Min, Max, Find, AnyP, AllP, NoneP, MinBy, MaxBy }
 
         let times_id = unsafe { rb_intern(c"times".as_ptr()) };
         let to_enum_id = unsafe { rb_intern(c"to_enum".as_ptr()) };
@@ -8208,12 +8208,16 @@ impl Function {
         let any_id = unsafe { rb_intern(c"any?".as_ptr()) };
         let all_id = unsafe { rb_intern(c"all?".as_ptr()) };
         let none_id = unsafe { rb_intern(c"none?".as_ptr()) };
+        let min_by_id = unsafe { rb_intern(c"min_by".as_ptr()) };
+        let max_by_id = unsafe { rb_intern(c"max_by".as_ptr()) };
+        let cmp_id = unsafe { rb_intern(c"<=>".as_ptr()) };
         let each_id = unsafe { rb_intern(c"each".as_ptr()) };
         let each_with_index_id = unsafe { rb_intern(c"each_with_index".as_ptr()) };
         let with_index_id = unsafe { rb_intern(c"with_index".as_ptr()) };
 
         // Array-direct consumers: the send is matched directly on the array.
-        let array_direct_mids = [sum_id, count_id, find_id, detect_id, any_id, all_id, none_id];
+        let array_direct_mids = [sum_id, count_id, find_id, detect_id, any_id, all_id, none_id,
+                                 min_by_id, max_by_id];
 
         let enumerator = unsafe { rb_cEnumerator };
         let cme_of = |klass: VALUE, mid: ID| unsafe { rb_callable_method_entry(klass, mid) };
@@ -8421,6 +8425,8 @@ impl Function {
                     (Producer::IntTimes, true) if b_mid == any_id => (Consumer::AnyP, 1),
                     (Producer::IntTimes, true) if b_mid == all_id => (Consumer::AllP, 1),
                     (Producer::IntTimes, true) if b_mid == none_id => (Consumer::NoneP, 1),
+                    (Producer::IntTimes, true) if b_mid == min_by_id => (Consumer::MinBy, 1),
+                    (Producer::IntTimes, true) if b_mid == max_by_id => (Consumer::MaxBy, 1),
                     (Producer::IntTimes, false) if b_mid == any_id => (Consumer::AnyP, 0),
                     (Producer::IntTimes, false) if b_mid == all_id => (Consumer::AllP, 0),
                     (Producer::IntTimes, false) if b_mid == none_id => (Consumer::NoneP, 0),
@@ -8432,6 +8438,8 @@ impl Function {
                     (Producer::RangeLit, true) if b_mid == any_id => (Consumer::AnyP, 1),
                     (Producer::RangeLit, true) if b_mid == all_id => (Consumer::AllP, 1),
                     (Producer::RangeLit, true) if b_mid == none_id => (Consumer::NoneP, 1),
+                    (Producer::RangeLit, true) if b_mid == min_by_id => (Consumer::MinBy, 1),
+                    (Producer::RangeLit, true) if b_mid == max_by_id => (Consumer::MaxBy, 1),
                     // Blockless Array#sum stays unfused: rb_ary_sum's C loop
                     // already beats the guarded fused loop.
                     (Producer::ArrayDirect, true) if b_mid == sum_id => (Consumer::Sum, 1),
@@ -8440,6 +8448,8 @@ impl Function {
                     (Producer::ArrayDirect, true) if b_mid == any_id => (Consumer::AnyP, 1),
                     (Producer::ArrayDirect, true) if b_mid == all_id => (Consumer::AllP, 1),
                     (Producer::ArrayDirect, true) if b_mid == none_id => (Consumer::NoneP, 1),
+                    (Producer::ArrayDirect, true) if b_mid == min_by_id => (Consumer::MinBy, 1),
+                    (Producer::ArrayDirect, true) if b_mid == max_by_id => (Consumer::MaxBy, 1),
                     (Producer::ArrayMapEnum, true) if b_mid == with_index_id => (Consumer::WithIndexMap, 2),
                     (Producer::ArrayEachWithIndex, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 2),
                     _ => continue,
@@ -8762,7 +8772,7 @@ impl Function {
                         }
                     }
                 }
-                if !reject && matches!(c.consumer, Consumer::Sum) && translated.is_some() {
+                if !reject && matches!(c.consumer, Consumer::Sum | Consumer::MinBy | Consumer::MaxBy) && translated.is_some() {
                     // Classify the summand: every value the block returns into
                     // body_cont must be proven Fixnum (exact path) or all proven
                     // Flonum (Kahan path); anything else declines fusion.
@@ -8786,6 +8796,10 @@ impl Function {
                         summand_float = true;
                     } else if !(any && all_fix) {
                         reject = true;
+                    }
+                    if !reject && matches!(c.consumer, Consumer::MinBy | Consumer::MaxBy) {
+                        let key_klass = if summand_float { unsafe { rb_cFloat } } else { unsafe { rb_cInteger } };
+                        if !stock_cme(cme_of(key_klass, cmp_id)) { reject = true; }
                     }
                 }
                 if !reject {
@@ -9010,10 +9024,18 @@ impl Function {
                     invariants.push((unsafe { rb_cRange }, each_id, range_each_cme));
                 }
                 Producer::ArrayDirect => {
-                    if matches!(c.consumer, Consumer::Find) {
+                    // find and min_by/max_by are Enumerable methods that
+                    // iterate arrays through Array#each.
+                    if matches!(c.consumer, Consumer::Find | Consumer::MinBy | Consumer::MaxBy) {
                         invariants.push((unsafe { rb_cArray }, each_id, aeach_cme));
                     }
                 }
+            }
+            if matches!(c.consumer, Consumer::MinBy | Consumer::MaxBy) {
+                // The fused key comparison bakes the stock <=> for the key class.
+                let key_klass = if summand_float { unsafe { rb_cFloat } } else { unsafe { rb_cInteger } };
+                let cme = cme_of(key_klass, cmp_id);
+                if !cme.is_null() { invariants.push((key_klass, cmp_id, cme)); }
             }
             for (mid, recv_fix) in bop_ops {
                 let klass = if recv_fix { unsafe { rb_cInteger } } else { unsafe { rb_cFloat } };
@@ -9115,7 +9137,8 @@ impl Function {
 
             let needs_array = !matches!(c.consumer,
                 Consumer::Sum | Consumer::Count
-                | Consumer::Find | Consumer::AnyP | Consumer::AllP | Consumer::NoneP);
+                | Consumer::Find | Consumer::AnyP | Consumer::AllP | Consumer::NoneP
+                | Consumer::MinBy | Consumer::MaxBy);
             let ary = if needs_array { self.push_insn(bb, Insn::CCallWithFrame(Box::new(CCallWithFrameData {
                 cd: c.some_cd,
                 cfunc: rb_zjit_ary_new_capa_fix as *const u8,
@@ -9143,6 +9166,18 @@ impl Function {
                 ],
                 Consumer::Sum => vec![zero],
                 Consumer::Count if c.blockiseq.is_some() => vec![zero],
+                Consumer::MinBy | Consumer::MaxBy => {
+                    // The key init is never consulted (the first iteration
+                    // always takes), but the phi must stay cleanly typed for
+                    // the comparison, so match it to the key class.
+                    let key_init = if summand_float {
+                        self.push_insn(bb, Insn::Const { val: Const::Value(unsafe { rb_float_new(0.0) }) })
+                    } else {
+                        zero
+                    };
+                    let nil_init = self.push_insn(bb, Insn::Const { val: Const::Value(Qnil) });
+                    vec![key_init, nil_init]
+                }
                 _ => vec![],
             };
 
@@ -9208,7 +9243,8 @@ impl Function {
                     Consumer::WithIndexMap => vec![elem, i_phi],
                     Consumer::Map | Consumer::Select
                     | Consumer::Sum | Consumer::Count
-                    | Consumer::Find | Consumer::AnyP | Consumer::AllP | Consumer::NoneP => match c.producer {
+                    | Consumer::Find | Consumer::AnyP | Consumer::AllP | Consumer::NoneP
+                    | Consumer::MinBy | Consumer::MaxBy => match c.producer {
                         Producer::IntTimes | Producer::RangeLit => vec![i_phi],
                         _ => vec![elem, i_phi],
                     },
@@ -9299,6 +9335,57 @@ impl Function {
                         self.push_insn(body_cont, Insn::Jump(BranchEdge { target: header, args: vec![i_next, acc_next] }));
                     }
                 }
+                Consumer::MinBy | Consumer::MaxBy => {
+                    // Mirrors enum.c min_by_i/max_by_i: the first element
+                    // seeds (key, elem); afterwards a strict compare replaces
+                    // the pair, so the first winner survives ties. Float keys
+                    // can never be NaN here -- a NaN key fails the BoxFlonum
+                    // guard upstream and restarts, and the interpreter then
+                    // raises the comparison error exactly like unfused code.
+                    let bk = sum_phis[0];
+                    let be = sum_phis[1];
+                    let candidate = match c.producer {
+                        Producer::IntTimes | Producer::RangeLit => i_phi,
+                        _ => elem,
+                    };
+                    let take = self.new_block(insn_idx);
+                    let keep = self.new_block(insn_idx);
+                    let cmp_blk = self.new_block(insn_idx);
+                    let advance = self.new_block(insn_idx);
+                    self.push_insn(body_cont, Insn::CondBranchFixnumCmp(Box::new(CondBranchFixnumCmpData {
+                        op: FixnumCmpOp::Eq,
+                        left: i_phi,
+                        right: loop_start,
+                        if_true: BranchEdge { target: take, args: vec![] },
+                        if_false: BranchEdge { target: cmp_blk, args: vec![] },
+                    })));
+                    if summand_float {
+                        let op = if matches!(c.consumer, Consumer::MinBy) { FloatCmpOp::Lt } else { FloatCmpOp::Gt };
+                        let fc = self.push_insn(cmp_blk, Insn::FloatCmp { op, recv: block_val, other: bk, state: c.a_state });
+                        let t = self.push_insn(cmp_blk, Insn::Test { val: fc });
+                        self.push_insn(cmp_blk, Insn::CondBranch {
+                            val: t,
+                            if_true: BranchEdge { target: take, args: vec![] },
+                            if_false: BranchEdge { target: keep, args: vec![] },
+                        });
+                    } else {
+                        let op = if matches!(c.consumer, Consumer::MinBy) { FixnumCmpOp::Lt } else { FixnumCmpOp::Gt };
+                        self.push_insn(cmp_blk, Insn::CondBranchFixnumCmp(Box::new(CondBranchFixnumCmpData {
+                            op,
+                            left: block_val,
+                            right: bk,
+                            if_true: BranchEdge { target: take, args: vec![] },
+                            if_false: BranchEdge { target: keep, args: vec![] },
+                        })));
+                    }
+                    self.push_insn(take, Insn::Jump(BranchEdge { target: advance, args: vec![block_val, candidate] }));
+                    self.push_insn(keep, Insn::Jump(BranchEdge { target: advance, args: vec![bk, be] }));
+                    let nk = self.push_insn(advance, Insn::Param);
+                    let ne = self.push_insn(advance, Insn::Param);
+                    let i_next = self.push_insn(advance, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                    self.push_insn(advance, Insn::CheckInterrupts { state: c.a_state });
+                    self.push_insn(advance, Insn::Jump(BranchEdge { target: header, args: vec![i_next, nk, ne] }));
+                }
                 Consumer::Count => {
                     if c.blockiseq.is_some() {
                         // Bump the counter when the predicate is truthy. The
@@ -9387,6 +9474,7 @@ impl Function {
                 Consumer::Sum => sum_phis[0],
                 Consumer::Count if c.blockiseq.is_some() => sum_phis[0],
                 Consumer::Count => i_phi,
+                Consumer::MinBy | Consumer::MaxBy => sum_phis[1],
                 Consumer::Find | Consumer::AnyP | Consumer::AllP | Consumer::NoneP =>
                     cont_param.expect("early-exit consumers allocate a cont Param"),
                 _ => ary,
