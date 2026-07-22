@@ -3773,6 +3773,7 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
 /// Compile a stub for an ISEQ called by SendDirect
 fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
+    asm.i_solemnly_swear_not_to_use_a_vreg();
     asm.new_block_without_id("gen_function_stub");
     asm_comment!(asm, "Stub: {}", iseq_get_location(iseq_call.iseq.get(), 0));
 

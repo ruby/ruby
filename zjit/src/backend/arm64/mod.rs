@@ -1637,7 +1637,7 @@ impl Assembler {
 
         asm_dump!(asm, split);
 
-        trace_compile_phase("regalloc", || {
+        if asm.must_run_regalloc() { trace_compile_phase("regalloc", || {
             trace_compile_phase("number_instructions", || asm.number_instructions(0));
 
             let live_in = trace_compile_phase("analyze_liveness", || asm.analyze_liveness());
@@ -1695,7 +1695,7 @@ impl Assembler {
             });
 
             Ok(())
-        })?;
+        })?; }
         asm_dump!(asm, alloc_regs);
 
         // We are moved out of SSA after resolve_ssa
