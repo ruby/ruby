@@ -19,6 +19,7 @@
 /* util.c */
 char *ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve);
 char *ruby_hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign, char **rve);
+char *ruby_ryu_dtoa(double d, int mode, int ndigits, int *decpt, int *sign, char **rve);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* util.c (export) */
