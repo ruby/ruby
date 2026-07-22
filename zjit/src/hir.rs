@@ -8198,7 +8198,7 @@ impl Function {
             fn rb_zjit_ary_new_capa_fix(n: VALUE) -> VALUE;
         }
         #[derive(Clone, Copy, PartialEq)]
-        enum Producer { IntTimes, ArrayMapEnum, ArrayEachWithIndex, RangeLit, ArrayDirect, ArrayReverse }
+        enum Producer { IntTimes, ArrayMapEnum, ArrayEachWithIndex, RangeLit, ArrayDirect, ArrayReverse, ArrayEachCons }
         #[derive(Clone, Copy, PartialEq)]
         enum NeedleClass { Fix, Flo, Sym }
         #[derive(Clone, Copy, PartialEq)]
@@ -8229,6 +8229,7 @@ impl Function {
         let find_index_id = unsafe { rb_intern(c"find_index".as_ptr()) };
         let eq_id = unsafe { rb_intern(c"==".as_ptr()) };
         let reverse_id = unsafe { rb_intern(c"reverse".as_ptr()) };
+        let each_cons_id = unsafe { rb_intern(c"each_cons".as_ptr()) };
         let each_id = unsafe { rb_intern(c"each".as_ptr()) };
         let each_with_index_id = unsafe { rb_intern(c"each_with_index".as_ptr()) };
         let with_index_id = unsafe { rb_intern(c"with_index".as_ptr()) };
@@ -8285,6 +8286,9 @@ impl Function {
         let ary_reverse_cme = cme_of(unsafe { rb_cArray }, reverse_id);
         let ary_reverse_ok = is_cfunc(ary_reverse_cme);
 
+        let ary_each_cons_cme = cme_of(unsafe { rb_cArray }, each_cons_id);
+        let ary_each_cons_ok = is_cfunc(ary_each_cons_cme);
+
         let ewi_cme = cme_of(unsafe { rb_cArray }, each_with_index_id);
         let aeach_cme = cme_of(unsafe { rb_cArray }, each_id);
         let aeach_iseq = internal_iseq_of(aeach_cme, "each@<internal:array>");
@@ -8315,49 +8319,74 @@ impl Function {
             range_info: Option<(InsnId, InsnId, bool)>,
             /// (needle-or-offset, immediate class) for the argument-taking consumers.
             needle: Option<(InsnId, NeedleClass)>,
+            /// Window width for the each_cons producer.
+            cons_k: Option<usize>,
         }
         let mut candidates: Vec<Candidate> = vec![];
         for block in self.reverse_post_order() {
             let insns = self.blocks[block].insns.clone();
             for (a_pos, &a_id) in insns.iter().enumerate() {
                 // Match a blockless, argless producer returning an Enumerator.
-                let (producer, recv, a_state, prod_cd, range_info) = match self.find(a_id) {
+                let (producer, recv, a_state, prod_cd, range_info, cons_k) = match self.find(a_id) {
                     Insn::SendDirect(data) => {
                         if data.block.is_some() || !data.args.is_empty() { continue; }
                         if Some(data.iseq) == times_iseq && self.type_of(data.recv).is_subtype(types::Fixnum) {
-                            (Producer::IntTimes, data.recv, data.state, data.cd, None)
+                            (Producer::IntTimes, data.recv, data.state, data.cd, None, None)
                         } else if Some(data.iseq) == amap_iseq && self.type_of(data.recv).is_subtype(types::ArrayExact) {
-                            (Producer::ArrayMapEnum, data.recv, data.state, data.cd, None)
+                            (Producer::ArrayMapEnum, data.recv, data.state, data.cd, None, None)
                         } else { continue; }
                     }
                     Insn::CCallVariadic(data) => {
-                        if data.args.is_empty() && data.block.is_none()
+                        // each_cons(k) with a small constant width: the block's
+                        // arity must equal k so windows destructure into direct
+                        // block arguments with no per-window array.
+                        let cons_width = if data.args.len() == 1 && data.block.is_none()
+                            && ary_each_cons_ok && data.name == each_cons_id
+                            && self.type_of(data.recv).is_subtype(types::ArrayExact) {
+                            match self.find(data.args[0]) {
+                                Insn::Const { val: Const::Value(v) } if v.fixnum_p()
+                                    && (2..=4).contains(&v.as_fixnum()) => Some(v.as_fixnum() as usize),
+                                _ => None,
+                            }
+                        } else { None };
+                        if let Some(k) = cons_width {
+                            (Producer::ArrayEachCons, data.recv, data.state, std::ptr::null(), None, Some(k))
+                        } else if data.args.is_empty() && data.block.is_none()
                             && ewi_ok && data.cme == ewi_cme
                             && self.type_of(data.recv).is_subtype(types::ArrayExact) {
-                            (Producer::ArrayEachWithIndex, data.recv, data.state, std::ptr::null(), None)
+                            (Producer::ArrayEachWithIndex, data.recv, data.state, std::ptr::null(), None, None)
                         } else if data.args.len() <= 1
                             && array_direct_mids.contains(&data.name)
                             && self.type_of(data.recv).is_subtype(types::ArrayExact) {
-                            (Producer::ArrayDirect, data.recv, data.state, std::ptr::null(), None)
+                            (Producer::ArrayDirect, data.recv, data.state, std::ptr::null(), None, None)
                         } else { continue; }
                     }
                     Insn::Send { recv: s_recv, cd: s_cd, args: s_args, state: s_state, .. }
                         if !s_cd.is_null() && s_args.len() <= 1
                             && array_direct_mids.contains(&unsafe { rb_vm_ci_mid((*s_cd).ci) })
                             && self.type_of(s_recv).is_subtype(types::ArrayExact) => {
-                        (Producer::ArrayDirect, s_recv, s_state, s_cd, None)
+                        (Producer::ArrayDirect, s_recv, s_state, s_cd, None, None)
+                    }
+                    Insn::CCallWithFrame(data)
+                        if data.args.len() == 1 && data.block.is_none()
+                            && ary_each_cons_ok && data.name == each_cons_id
+                            && self.type_of(data.recv).is_subtype(types::ArrayExact)
+                            && matches!(self.find(data.args[0]),
+                                Insn::Const { val: Const::Value(v) } if v.fixnum_p() && (2..=4).contains(&v.as_fixnum())) => {
+                        let Insn::Const { val: Const::Value(v) } = self.find(data.args[0]) else { unreachable!() };
+                        (Producer::ArrayEachCons, data.recv, data.state, data.cd, None, Some(v.as_fixnum() as usize))
                     }
                     Insn::CCallWithFrame(data)
                         if data.args.is_empty() && data.block.is_none()
                             && ary_reverse_ok && data.name == reverse_id
                             && self.type_of(data.recv).is_subtype(types::ArrayExact) => {
-                        (Producer::ArrayReverse, data.recv, data.state, data.cd, None)
+                        (Producer::ArrayReverse, data.recv, data.state, data.cd, None, None)
                     }
                     Insn::CCallWithFrame(data)
                         if data.args.len() <= 1
                             && array_direct_mids.contains(&data.name)
                             && self.type_of(data.recv).is_subtype(types::ArrayExact) => {
-                        (Producer::ArrayDirect, data.recv, data.state, data.cd, None)
+                        (Producer::ArrayDirect, data.recv, data.state, data.cd, None, None)
                     }
                     Insn::NewRange { low, high, flag, state }
                     | Insn::NewRangeFixnum { low, high, flag, state } => {
@@ -8365,7 +8394,7 @@ impl Function {
                             && self.type_of(low).is_subtype(types::Fixnum)
                             && self.type_of(high).is_subtype(types::Fixnum) {
                             (Producer::RangeLit, a_id, state, std::ptr::null(),
-                             Some((low, high, matches!(flag, RangeType::Exclusive))))
+                             Some((low, high, matches!(flag, RangeType::Exclusive))), None)
                         } else { continue; }
                     }
                     _ => continue,
@@ -8446,7 +8475,7 @@ impl Function {
                     None => None,
                     _ => continue,
                 };
-                let (consumer, want_arity) = match (producer, bi.is_some()) {
+                let (consumer, base_arity) = match (producer, bi.is_some()) {
                     (Producer::IntTimes, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 1),
                     (Producer::IntTimes, true) if b_mid == select_id || b_mid == filter_id => (Consumer::Select, 1),
                     (Producer::IntTimes, false) if b_mid == to_a_id => (Consumer::ToA, 0),
@@ -8485,6 +8514,12 @@ impl Function {
                     (Producer::ArrayDirect, true) if b_mid == none_id => (Consumer::NoneP, 1),
                     (Producer::ArrayDirect, true) if b_mid == min_by_id => (Consumer::MinBy, 1),
                     (Producer::ArrayDirect, true) if b_mid == max_by_id => (Consumer::MaxBy, 1),
+                    (Producer::ArrayEachCons, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 0),
+                    (Producer::ArrayEachCons, true) if b_mid == sum_id => (Consumer::Sum, 0),
+                    (Producer::ArrayEachCons, true) if b_mid == count_id => (Consumer::Count, 0),
+                    (Producer::ArrayEachCons, true) if b_mid == any_id => (Consumer::AnyP, 0),
+                    (Producer::ArrayEachCons, true) if b_mid == all_id => (Consumer::AllP, 0),
+                    (Producer::ArrayEachCons, true) if b_mid == none_id => (Consumer::NoneP, 0),
                     (Producer::ArrayReverse, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 1),
                     (Producer::ArrayReverse, true) if b_mid == select_id || b_mid == filter_id => (Consumer::Select, 1),
                     (Producer::ArrayReverse, true) if b_mid == sum_id => (Consumer::Sum, 1),
@@ -8503,6 +8538,7 @@ impl Function {
                     (Producer::ArrayEachWithIndex, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 2),
                     _ => continue,
                 };
+                let want_arity = cons_k.unwrap_or(base_arity);
                 let is_identity_scan = matches!(consumer, Consumer::Include | Consumer::IndexOf);
                 let args_ok = match consumer {
                     Consumer::Include | Consumer::IndexOf => b_args.len() == 1,
@@ -8636,6 +8672,7 @@ impl Function {
                     recv, a_state, b_id, some_cd, blockiseq: bi,
                     consumer_cme, consumer_klass, consumer_mid: b_mid,
                     range_info,
+                    cons_k,
                     needle: if is_identity_scan || !b_args.is_empty() {
                         Some((b_args[0], needle_class))
                     } else {
@@ -8697,6 +8734,9 @@ impl Function {
             //   WithIndexMap / EachWithIndex+Map: p1 = element, p2 = index
             let (elem_param, index_param) = match (c.producer, c.consumer) {
                 (Producer::IntTimes | Producer::RangeLit, _) => (None, body_params.get(1).copied()),
+                // every each_cons block parameter is an element; there is no
+                // index parameter to seed as Fixnum.
+                (Producer::ArrayEachCons, _) => (body_params.get(1).copied(), None),
                 _ => (body_params.get(1).copied(), body_params.get(2).copied()),
             };
             let mut elem_guard: Option<Type> = None;
@@ -8763,6 +8803,13 @@ impl Function {
                 }
                 if let Some(ep) = elem_param.filter(|_| attempt == 2) {
                     float_vals.insert(self.union_find.borrow().find_const(ep));
+                }
+                if attempt >= 1 && c.cons_k.is_some() {
+                    // Every window parameter is an element of the same class.
+                    for &p in body_params.iter().skip(2) {
+                        let pr = self.union_find.borrow().find_const(p);
+                        if attempt == 1 { fixnum_vals.insert(pr); } else { float_vals.insert(pr); }
+                    }
                 }
                 let mut to_reduce: Vec<(InsnId, usize, Reduce, InsnId, InsnId, ID, bool, bool)> = vec![];
                 let mut reject = false;
@@ -9174,6 +9221,10 @@ impl Function {
                         invariants.push((unsafe { rb_cArray }, each_id, aeach_cme));
                     }
                 }
+                Producer::ArrayEachCons => {
+                    invariants.push((unsafe { rb_cArray }, each_cons_id, ary_each_cons_cme));
+                    invariants.push((unsafe { rb_cArray }, each_id, aeach_cme));
+                }
                 Producer::ArrayReverse => {
                     invariants.push((unsafe { rb_cArray }, reverse_id, ary_reverse_cme));
                     if matches!(c.consumer, Consumer::Find | Consumer::MinBy | Consumer::MaxBy) {
@@ -9230,6 +9281,15 @@ impl Function {
                 Producer::IntTimes => c.recv,
                 Producer::RangeLit => c.range_info.expect("range producer carries bounds").1,
                 Producer::ArrayReverse => self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) }),
+                Producer::ArrayEachCons => {
+                    // Trip count: len - (k - 1) windows; a short array's
+                    // negative bound never enters the loop.
+                    let km1 = self.push_insn(bb, Insn::Const {
+                        val: Const::Value(VALUE::fixnum_from_usize(c.cons_k.unwrap() - 1)),
+                    });
+                    let len = len_boxed.expect("array producers computed their length");
+                    self.push_insn(bb, Insn::FixnumSub { left: len, right: km1, state: c.a_state })
+                }
                 _ => len_boxed.expect("array producers computed their length"),
             };
             let ary_capa = match c.producer {
@@ -9426,8 +9486,31 @@ impl Function {
             // body_head: load the element (for array producers) and bind the
             // block parameters, then fall into the translated body (or skip
             // straight to accumulation for to_a).
+            // each_cons: load the k window elements at i .. i+k-1, each
+            // through the speculative class guard; folds cancel the boxed
+            // index adds where possible.
+            let cons_elems: Vec<InsnId> = if let Some(k) = c.cons_k {
+                (0..k).map(|j| {
+                    let idx_boxed = if j == 0 {
+                        i_phi
+                    } else {
+                        let cj = self.push_insn(body_head, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(j)) });
+                        self.push_insn(body_head, Insn::FixnumAdd { left: i_phi, right: cj, state: c.a_state })
+                    };
+                    let raw = self.push_insn(body_head, Insn::UnboxFixnum { val: idx_boxed });
+                    let e = self.push_insn(body_head, Insn::ArrayAref { array: c.recv, index: raw });
+                    if let Some(gt) = elem_guard {
+                        self.push_insn(body_head, Insn::GuardType { val: e, guard_type: gt, state: c.a_state, recompile: None })
+                    } else {
+                        e
+                    }
+                }).collect()
+            } else {
+                vec![]
+            };
             let elem = match c.producer {
                 Producer::IntTimes | Producer::RangeLit => i_phi,
+                Producer::ArrayEachCons => cons_elems[0],
                 _ => {
                     let idx_raw = self.push_insn(body_head, Insn::UnboxFixnum { val: i_phi });
                     let e = self.push_insn(body_head, Insn::ArrayAref { array: c.recv, index: idx_raw });
@@ -9445,7 +9528,9 @@ impl Function {
                 if !body_params.is_empty() {
                     self.make_equal_to(body_params[0], self_val);
                 }
-                let block_args: Vec<InsnId> = match c.consumer {
+                let block_args: Vec<InsnId> = if !cons_elems.is_empty() {
+                    cons_elems.clone()
+                } else { match c.consumer {
                     // with_index(offset): the block sees i + offset; the add's
                     // overflow deopt restarts into the C implementation.
                     Consumer::WithIndexMap => {
@@ -9465,7 +9550,7 @@ impl Function {
                     Consumer::ToA => vec![],
                     Consumer::Min | Consumer::Max => unreachable!("min/max fold before loop synthesis"),
                     Consumer::Include | Consumer::IndexOf => unreachable!("identity scans have no block"),
-                };
+                } };
                 for (i, &param_id) in body_params[1..].iter().enumerate() {
                     if let Some(&arg) = block_args.get(i) {
                         self.make_equal_to(param_id, arg);
