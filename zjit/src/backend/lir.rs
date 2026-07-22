@@ -1058,6 +1058,11 @@ pub enum Insn {
     /// `cqo`+`idiv` sequence as SDiv. Same preconditions as SDiv.
     SRem { left: Opnd, right: Opnd, out: Opnd },
 
+    /// High 64 bits of the signed 128-bit product (arm64 `smulh`; x86_64
+    /// one-operand `imul` behind the same scratch routing as SDiv/SRem).
+    /// The workhorse of magic-number division by constants.
+    SMulHi { left: Opnd, right: Opnd, out: Opnd },
+
     // Bitwise AND test instruction
     Test { left: Opnd, right: Opnd },
 
@@ -1183,6 +1188,7 @@ macro_rules! for_each_operand_impl {
             Insn::Mul { left: opnd0, right: opnd1, .. } |
             Insn::SDiv { left: opnd0, right: opnd1, .. } |
             Insn::SRem { left: opnd0, right: opnd1, .. } |
+            Insn::SMulHi { left: opnd0, right: opnd1, .. } |
             Insn::Test { left: opnd0, right: opnd1 } |
             Insn::URShift { opnd: opnd0, shift: opnd1, .. } |
             Insn::Xor { left: opnd0, right: opnd1, .. } => {
@@ -1343,6 +1349,7 @@ impl Insn {
             Insn::Mul { .. } => "Mul",
             Insn::SDiv { .. } => "SDiv",
             Insn::SRem { .. } => "SRem",
+            Insn::SMulHi { .. } => "SMulHi",
             Insn::Test { .. } => "Test",
             Insn::URShift { .. } => "URShift",
             Insn::Xor { .. } => "Xor"
@@ -1379,6 +1386,7 @@ impl Insn {
             Insn::Mul { out, .. } |
             Insn::SDiv { out, .. } |
             Insn::SRem { out, .. } |
+            Insn::SMulHi { out, .. } |
             Insn::URShift { out, .. } |
             Insn::Xor { out, .. } => Some(out),
             Insn::CCall { data, .. } => Some(&data.out),
@@ -1416,6 +1424,7 @@ impl Insn {
             Insn::Mul { out, .. } |
             Insn::SDiv { out, .. } |
             Insn::SRem { out, .. } |
+            Insn::SMulHi { out, .. } |
             Insn::URShift { out, .. } |
             Insn::Xor { out, .. } => Some(out),
             Insn::CCall { data, .. } => Some(&mut data.out),
@@ -4544,6 +4553,14 @@ impl Assembler {
     pub fn srem(&mut self, left: Opnd, right: Opnd) -> Opnd {
         let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::SRem { left, right, out });
+        out
+    }
+
+    /// High 64 bits of the signed 128-bit product. See [`Insn::SMulHi`].
+    #[must_use]
+    pub fn smulhi(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
+        self.push_insn(Insn::SMulHi { left, right, out });
         out
     }
 

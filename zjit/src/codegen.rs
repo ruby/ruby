@@ -3507,6 +3507,64 @@ fn gen_fixnum_mult(jit: &mut JITState, asm: &mut Assembler, function: &Function,
     asm.add(out_val, Opnd::UImm(1))
 }
 
+/// Hacker's Delight-style signed magic number for division by a constant
+/// d >= 2: returns (M, s) such that the truncated quotient of any i64 n is
+/// SRA(mulhi(M, n) [+ n when M < 0], s) + (that as u64 >> 63).
+fn signed_magic(d: i64) -> (i64, u32) {
+    debug_assert!(d >= 2);
+    let two63: u64 = 1 << 63;
+    let ad = d.unsigned_abs();
+    let t = two63 + ((d as u64) >> 63);
+    let anc = t - 1 - t % ad;
+    let mut p = 63u32;
+    let mut q1 = two63 / anc;
+    let mut r1 = two63 - q1 * anc;
+    let mut q2 = two63 / ad;
+    let mut r2 = two63 - q2 * ad;
+    loop {
+        p += 1;
+        q1 = q1.wrapping_mul(2);
+        r1 = r1.wrapping_mul(2);
+        if r1 >= anc {
+            q1 += 1;
+            r1 -= anc;
+        }
+        q2 = q2.wrapping_mul(2);
+        r2 = r2.wrapping_mul(2);
+        if r2 >= ad {
+            q2 += 1;
+            r2 -= ad;
+        }
+        let delta = ad - r2;
+        if !(q1 < delta || (q1 == delta && r1 == 0)) {
+            break;
+        }
+    }
+    ((q2 + 1) as i64, p - 64)
+}
+
+/// The shared head of magic-number division by a positive constant divisor:
+/// returns the truncated quotient (when requested) and the truncated
+/// remainder. `rt < 0` is exactly the floored-fixup condition since the
+/// divisor is positive.
+fn gen_magic_div_head(asm: &mut Assembler, left: lir::Opnd, d: i64, want_quotient: bool) -> (Option<lir::Opnd>, lir::Opnd) {
+    let (magic, shift) = signed_magic(d);
+    let a = asm.rshift(left, Opnd::UImm(1));
+    let m = asm.load(Opnd::Imm(magic));
+    let h = asm.smulhi(m, a);
+    // Negative magic constants need the dividend added back to the high half.
+    let h = if magic < 0 { asm.add(h, a) } else { h };
+    let q0 = if shift > 0 { asm.rshift(h, Opnd::UImm(shift as u64)) } else { h };
+    let sign = asm.urshift(q0, Opnd::UImm(63));
+    let qt = asm.add(q0, sign);
+    // Keep a copy when the caller needs the quotient after the remainder
+    // computation: the x86 Mul below destroys its left operand's register.
+    let qt_kept = if want_quotient { Some(asm.load(qt)) } else { None };
+    let p = asm.mul(qt, Opnd::Imm(d));
+    let rt = asm.sub(a, p);
+    (qt_kept, rt)
+}
+
 /// Compile Fixnum / Fixnum with Ruby's floored-division semantics, open-coded.
 /// Mirrors rb_fix_div_fix: truncated hardware quotient, then `q - 1` when the
 /// operand signs differ and the division was inexact. FIXNUM_MIN / -1 is the
@@ -3514,6 +3572,26 @@ fn gen_fixnum_mult(jit: &mut JITState, asm: &mut Assembler, function: &Function,
 /// deopts to the interpreter's Bignum path -- which is also why no GC prep is
 /// needed here anymore. The 63-bit untagged operands cannot trap sdiv/idiv.
 fn gen_fixnum_div(jit: &mut JITState, asm: &mut Assembler, function: &Function, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> lir::Opnd {
+    // A constant divisor >= 2 needs no divider and no deopts at all: magic
+    // multiply for the truncated quotient (Hacker's Delight), one compare for
+    // the floored fixup. No zero check (constant nonzero) and no boxing
+    // overflow (|q| <= 2^61). Powers of two are normally strength-reduced in
+    // HIR before reaching here; the magic path handles them correctly anyway.
+    if let Opnd::Value(v) = right {
+        if v.fixnum_p() {
+            let d = v.as_fixnum();
+            if d >= 2 {
+                let (qt_kept, rt) = gen_magic_div_head(asm, left, d, true);
+                let qt_kept = qt_kept.unwrap();
+                let qm = asm.sub(qt_kept, Opnd::UImm(1));
+                asm.cmp(rt, Opnd::UImm(0));
+                let qf = asm.csel_l(qm, qt_kept);
+                let shifted = asm.lshift(qf, Opnd::UImm(1));
+                return asm.or(shifted, Opnd::UImm(1));
+            }
+        }
+    }
+
     // Side exit if rhs is 0, which raises ZeroDivisionError
     asm.cmp(right, Opnd::from(VALUE::fixnum_from_usize(0)));
     asm.je(jit, side_exit(jit, function, state, FixnumDivByZero));
@@ -3757,6 +3835,23 @@ fn gen_fixnum_rshift(asm: &mut Assembler, left: lir::Opnd, shift_amount: u64) ->
 /// loop's values in registers: the call clobbered every caller-saved register
 /// once per iteration in loops like trial division.
 fn gen_fixnum_mod(jit: &mut JITState, asm: &mut Assembler, function: &Function, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> lir::Opnd {
+    // Constant divisor >= 2: magic multiply, no divider, no deopts. The
+    // floored remainder is rt (+ d when rt < 0); |r| < d so boxing is safe.
+    // See gen_fixnum_div for the shared reasoning.
+    if let Opnd::Value(v) = right {
+        if v.fixnum_p() {
+            let d = v.as_fixnum();
+            if d >= 2 {
+                let (_, rt) = gen_magic_div_head(asm, left, d, false);
+                let rc = asm.add(rt, Opnd::Imm(d));
+                asm.cmp(rt, Opnd::UImm(0));
+                let rf = asm.csel_l(rc, rt);
+                let shifted = asm.lshift(rf, Opnd::UImm(1));
+                return asm.or(shifted, Opnd::UImm(1));
+            }
+        }
+    }
+
     // Check for left % 0, which raises ZeroDivisionError
     asm.cmp(right, Opnd::from(VALUE::fixnum_from_usize(0)));
     asm.je(jit, side_exit(jit, function, state, FixnumModByZero));

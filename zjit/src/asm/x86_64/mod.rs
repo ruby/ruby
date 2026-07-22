@@ -1090,6 +1090,19 @@ pub fn not(cb: &mut CodeBlock, opnd: X86Opnd) {
     );
 }
 
+/// imul (one-operand form) - RDX:RAX = RAX * the 64-bit register operand,
+/// signed. The high half of the product lands in RDX.
+pub fn imul_one(cb: &mut CodeBlock, opnd: X86Opnd) {
+    match opnd {
+        X86Opnd::Reg(reg) => {
+            assert_eq!(reg.num_bits, 64, "imul_one operand must be a 64-bit register");
+            // REX.W + F7 /5
+            write_rm(cb, false, true, X86Opnd::None, opnd, Some(5), &[0xf7]);
+        }
+        _ => panic!("imul_one operand must be a register"),
+    }
+}
+
 /// idiv - signed divide RDX:RAX by the 64-bit register operand;
 /// quotient lands in RAX, remainder in RDX. Traps on divide-by-zero and
 /// on quotient overflow (INT64_MIN / -1) -- callers guard both.

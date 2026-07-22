@@ -187,6 +187,7 @@ impl Assembler {
                 Insn::Mul { .. } |
                 Insn::SDiv { .. } |
                 Insn::SRem { .. } |
+                Insn::SMulHi { .. } |
                 Insn::And { .. } |
                 Insn::Or { .. } |
                 Insn::Xor { .. } => {
@@ -524,7 +525,16 @@ impl Assembler {
                     *left = split_stack_membase(asm, *left, SCRATCH0_OPND);
                     *left = split_if_both_memory(asm, *left, *right, SCRATCH0_OPND);
                     *right = split_stack_membase(asm, *right, SCRATCH1_OPND);
-                    *right = split_64bit_immediate(asm, *right, SCRATCH1_OPND);
+                    // Two-operand imul has no immediate form at all, so load
+                    // every immediate (split_64bit_immediate would keep 32-bit
+                    // ones inline and panic the encoder).
+                    *right = match *right {
+                        Opnd::Imm(_) | Opnd::UImm(_) | Opnd::Value(_) => {
+                            asm.mov(SCRATCH1_OPND, *right);
+                            SCRATCH1_OPND
+                        }
+                        r => r,
+                    };
                     *out = lower_stack_membase(asm, *out);
 
                     // imul doesn't have (Mem, Reg) encoding. Swap left and right in that case.
@@ -537,7 +547,8 @@ impl Assembler {
                     asm_mov(asm, out, left, SCRATCH0_OPND);
                 }
                 Insn::SDiv { left, right, out } |
-                Insn::SRem { left, right, out } => {
+                Insn::SRem { left, right, out } |
+                Insn::SMulHi { left, right, out } => {
                     assert_out_is_phys_reg_or_stack_mem(*out);
 
                     // Route the dividend and divisor into the scratch registers:
@@ -897,25 +908,32 @@ impl Assembler {
                     imul(cb, left.into(), right.into());
                 },
 
-                insn @ (Insn::SDiv { .. } | Insn::SRem { .. }) => {
+                insn @ (Insn::SDiv { .. } | Insn::SRem { .. } | Insn::SMulHi { .. }) => {
                     let (left, right) = match insn {
-                        Insn::SDiv { left, right, .. } | Insn::SRem { left, right, .. } => (left, right),
+                        Insn::SDiv { left, right, .. } | Insn::SRem { left, right, .. }
+                        | Insn::SMulHi { left, right, .. } => (left, right),
                         _ => unreachable!(),
                     };
                     // Operands live in the scratch registers (routed by
                     // x86_scratch_split), so the fixed rax/rdx dance below
-                    // cannot alias them. Preserve rax/rdx around the division
-                    // and hand the result -- quotient for SDiv, remainder
-                    // (rdx) for SRem -- back through the left scratch.
+                    // cannot alias them. Preserve rax/rdx around the operation
+                    // and hand the result -- quotient for SDiv, remainder (rdx)
+                    // for SRem, product-high (rdx) for SMulHi -- back through
+                    // the left scratch.
                     push(cb, RAX);
                     push(cb, RDX);
                     mov(cb, RAX, left.into());
-                    cqo(cb);
-                    idiv(cb, right.into());
-                    if matches!(insn, Insn::SDiv { .. }) {
-                        mov(cb, left.into(), RAX);
-                    } else {
+                    if matches!(insn, Insn::SMulHi { .. }) {
+                        imul_one(cb, right.into());
                         mov(cb, left.into(), RDX);
+                    } else {
+                        cqo(cb);
+                        idiv(cb, right.into());
+                        if matches!(insn, Insn::SDiv { .. }) {
+                            mov(cb, left.into(), RAX);
+                        } else {
+                            mov(cb, left.into(), RDX);
+                        }
                     }
                     pop(cb, RDX);
                     pop(cb, RAX);

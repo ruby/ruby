@@ -631,7 +631,8 @@ impl Assembler {
                 },
                 Insn::Mul { left, right, .. } |
                 Insn::SDiv { left, right, .. } |
-                Insn::SRem { left, right, .. } => {
+                Insn::SRem { left, right, .. } |
+                Insn::SMulHi { left, right, .. } => {
                     *left = split_load_operand(asm, *left);
                     *right = split_load_operand(asm, *right);
                     asm.push_insn(insn);
@@ -837,7 +838,8 @@ impl Assembler {
                     }
                 }
                 Insn::SDiv { left, right, out } |
-                Insn::SRem { left, right, out } => {
+                Insn::SRem { left, right, out } |
+                Insn::SMulHi { left, right, out } => {
                     *left = split_memory_read(asm, *left, SCRATCH0_OPND);
                     *right = split_memory_read(asm, *right, SCRATCH1_OPND);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
@@ -1405,6 +1407,9 @@ impl Assembler {
                     // aliasing an operand register is fine.
                     sdiv(cb, Self::EMIT_OPND, left.into(), right.into());
                     msub(cb, out.into(), Self::EMIT_OPND, right.into(), left.into());
+                },
+                Insn::SMulHi { left, right, out } => {
+                    smulh(cb, out.into(), left.into(), right.into());
                 },
                 Insn::RShift { opnd, shift, out } => {
                     asr(cb, out.into(), opnd.into(), shift.into());
