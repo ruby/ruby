@@ -1231,7 +1231,101 @@ impl Assembler {
         assert_eq!(self.basic_blocks.len(), 1, "Assembler should be linearized into a single block before arm64_emit");
         let insns = &self.basic_blocks[0].insns;
 
+        /// Does `opnd` read the register `reg_no` (directly or as a memory base)?
+        fn reads_reg(opnd: &Opnd, reg_no: u8) -> bool {
+            match opnd {
+                Opnd::Reg(r) => r.reg_no == reg_no,
+                Opnd::Mem(Mem { base: MemBase::Reg(base), .. }) => *base == reg_no,
+                _ => false,
+            }
+        }
+
+        // Flags-reuse peephole state: the operands of the last emitted cmp
+        // whose NZCV flags are provably still current. A duplicate cmp on the
+        // same operands (the fused compare-branch re-compare after an
+        // interposed CheckInterrupts) is skipped entirely. Invalidated by
+        // join-point labels, by anything that may write flags, by writes to a
+        // register the compare read, and by stores when a compare operand was
+        // memory. A label reached only by the jump directly preceding it is
+        // pure fallthrough (the linearizer splits HIR blocks that way) and
+        // preserves the flags.
+        let mut live_cmp: Option<(Opnd, Opnd)> = None;
+        let mut label_refs: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
+        for insn in insns.iter() {
+            // A Label insn's target is its own definition, not a reference.
+            if matches!(insn, Insn::Label(_)) {
+                continue;
+            }
+            if let Some(Target::Label(l)) = insn.target() {
+                *label_refs.entry(l.0).or_default() += 1;
+            }
+        }
+
         while let Some(insn) = insns.get(insn_idx) {
+            match insn {
+                Insn::Cmp { left, right } if live_cmp == Some((*left, *right)) => {
+                    insn_idx += 1;
+                    continue;
+                }
+                Insn::Cmp { left, right } => { live_cmp = Some((*left, *right)); }
+                // Flag-neutral with a register definition: keep the compare
+                // unless the definition overlaps its operands.
+                Insn::Mov { dest, .. } | Insn::LoadInto { dest, .. } => {
+                    if let (Some((l, r)), Opnd::Reg(reg)) = (&live_cmp, dest) {
+                        if reads_reg(l, reg.reg_no) || reads_reg(r, reg.reg_no) {
+                            live_cmp = None;
+                        }
+                    } else if matches!(dest, Opnd::Mem(_)) {
+                        if matches!(live_cmp, Some((Opnd::Mem(_), _) | (_, Opnd::Mem(_)))) {
+                            live_cmp = None;
+                        }
+                    }
+                }
+                Insn::Load { out, .. } | Insn::Lea { out, .. }
+                | Insn::CSelZ { out, .. } | Insn::CSelNZ { out, .. }
+                | Insn::CSelE { out, .. } | Insn::CSelNE { out, .. }
+                | Insn::CSelL { out, .. } | Insn::CSelLE { out, .. }
+                | Insn::CSelG { out, .. } | Insn::CSelGE { out, .. }
+                | Insn::RShift { out, .. } | Insn::LShift { out, .. } | Insn::URShift { out, .. } => {
+                    if let (Some((l, r)), Opnd::Reg(reg)) = (&live_cmp, out) {
+                        if reads_reg(l, reg.reg_no) || reads_reg(r, reg.reg_no) {
+                            live_cmp = None;
+                        }
+                    }
+                }
+                Insn::Store { .. } => {
+                    if matches!(live_cmp, Some((Opnd::Mem(_), _) | (_, Opnd::Mem(_)))) {
+                        live_cmp = None;
+                    }
+                }
+                // Flag readers and no-ops preserve the compare. An
+                // unconditional jump writes no flags either; whether they
+                // survive at its destination is decided at the label.
+                // PatchPointPad is nops at runtime, and once patched it
+                // diverts control before any flags consumer we skipped.
+                // BoundaryPad is nops (or nothing) and is never patched.
+                Insn::Comment(_) | Insn::PosMarker(..) | Insn::Jmp(_) | Insn::PatchPointPad | Insn::BoundaryPad
+                | Insn::Jl(_) | Insn::Jg(_) | Insn::Jge(_) | Insn::Je(_) | Insn::Jne(_)
+                | Insn::Jz(_) | Insn::Jnz(_) | Insn::Jo(_) | Insn::Jb(_) | Insn::Jbe(_)
+                | Insn::Joz(..) | Insn::Jonz(..) => {}
+                Insn::Label(target) => {
+                    // A label nothing in the stream targets is a pure
+                    // fallthrough marker (the linearizer elides the jump to
+                    // it); one targeted only by the jump directly before it is
+                    // fallthrough too. Anything else is a join point.
+                    let l = target.unwrap_label();
+                    let refs = label_refs.get(&l.0).copied().unwrap_or(0);
+                    let fallthrough_only = refs == 0
+                        || (refs == 1 && insn_idx > 0
+                            && matches!(insns.get(insn_idx - 1), Some(Insn::Jmp(Target::Label(pl))) if *pl == l));
+                    if !fallthrough_only {
+                        live_cmp = None;
+                    }
+                }
+                // Labels, calls, flag-writing arithmetic, patchable regions,
+                // and anything unlisted: assume the flags are gone.
+                _ => { live_cmp = None; }
+            }
             match insn {
                 Insn::Comment(text) => {
                     cb.add_comment(text);
