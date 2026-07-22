@@ -8200,7 +8200,7 @@ impl Function {
         #[derive(Clone, Copy, PartialEq)]
         enum Producer { IntTimes, ArrayMapEnum, ArrayEachWithIndex, RangeLit, ArrayDirect }
         #[derive(Clone, Copy, PartialEq)]
-        enum Consumer { Map, Select, ToA, WithIndexMap, Sum, Count, Min, Max, Find, AnyP, AllP, NoneP, MinBy, MaxBy }
+        enum Consumer { Map, Select, ToA, WithIndexMap, Sum, Count, Min, Max, Find, AnyP, AllP, NoneP, MinBy, MaxBy, Include, IndexOf }
 
         let times_id = unsafe { rb_intern(c"times".as_ptr()) };
         let to_enum_id = unsafe { rb_intern(c"to_enum".as_ptr()) };
@@ -8222,13 +8222,17 @@ impl Function {
         let max_by_id = unsafe { rb_intern(c"max_by".as_ptr()) };
         let cmp_id = unsafe { rb_intern(c"<=>".as_ptr()) };
         let sqrt_id = unsafe { rb_intern(c"sqrt".as_ptr()) };
+        let include_id = unsafe { rb_intern(c"include?".as_ptr()) };
+        let index_id = unsafe { rb_intern(c"index".as_ptr()) };
+        let find_index_id = unsafe { rb_intern(c"find_index".as_ptr()) };
+        let eq_id = unsafe { rb_intern(c"==".as_ptr()) };
         let each_id = unsafe { rb_intern(c"each".as_ptr()) };
         let each_with_index_id = unsafe { rb_intern(c"each_with_index".as_ptr()) };
         let with_index_id = unsafe { rb_intern(c"with_index".as_ptr()) };
 
         // Array-direct consumers: the send is matched directly on the array.
         let array_direct_mids = [sum_id, count_id, find_id, detect_id, any_id, all_id, none_id,
-                                 min_by_id, max_by_id];
+                                 min_by_id, max_by_id, include_id, index_id, find_index_id];
 
         let enumerator = unsafe { rb_cEnumerator };
         let cme_of = |klass: VALUE, mid: ID| unsafe { rb_callable_method_entry(klass, mid) };
@@ -8303,6 +8307,8 @@ impl Function {
             consumer_mid: ID,
             /// (low, high, exclusive) for the RangeLit producer.
             range_info: Option<(InsnId, InsnId, bool)>,
+            /// (needle, needle-is-flonum) for the identity-scan consumers.
+            needle: Option<(InsnId, bool)>,
         }
         let mut candidates: Vec<Candidate> = vec![];
         for block in self.reverse_post_order() {
@@ -8323,20 +8329,20 @@ impl Function {
                             && ewi_ok && data.cme == ewi_cme
                             && self.type_of(data.recv).is_subtype(types::ArrayExact) {
                             (Producer::ArrayEachWithIndex, data.recv, data.state, std::ptr::null(), None)
-                        } else if data.args.is_empty()
+                        } else if data.args.len() <= 1
                             && array_direct_mids.contains(&data.name)
                             && self.type_of(data.recv).is_subtype(types::ArrayExact) {
                             (Producer::ArrayDirect, data.recv, data.state, std::ptr::null(), None)
                         } else { continue; }
                     }
                     Insn::Send { recv: s_recv, cd: s_cd, args: s_args, state: s_state, .. }
-                        if !s_cd.is_null() && s_args.is_empty()
+                        if !s_cd.is_null() && s_args.len() <= 1
                             && array_direct_mids.contains(&unsafe { rb_vm_ci_mid((*s_cd).ci) })
                             && self.type_of(s_recv).is_subtype(types::ArrayExact) => {
                         (Producer::ArrayDirect, s_recv, s_state, s_cd, None)
                     }
                     Insn::CCallWithFrame(data)
-                        if data.args.is_empty()
+                        if data.args.len() <= 1
                             && array_direct_mids.contains(&data.name)
                             && self.type_of(data.recv).is_subtype(types::ArrayExact) => {
                         (Producer::ArrayDirect, data.recv, data.state, data.cd, None)
@@ -8395,23 +8401,20 @@ impl Function {
                     (next.0, next.1, guard_pos)
                 };
 
-                // Match the consumer shape: mid + literal block (or none for to_a).
-                let (b_recv, b_mid, b_block, b_args_empty, b_cd) = match self.find(b_id) {
+                // Match the consumer shape: mid + literal block (or none for
+                // to_a), plus the single needle argument for identity scans.
+                let (b_recv, b_mid, b_block, b_args, b_cd) = match self.find(b_id) {
                     Insn::Send { recv, cd, block, args, .. } => {
-                        (recv, unsafe { rb_vm_ci_mid((*cd).ci) }, block, args.is_empty(), cd)
+                        (recv, unsafe { rb_vm_ci_mid((*cd).ci) }, block, args.clone(), cd)
                     }
                     Insn::CCallWithFrame(data) => {
-                        let CCallWithFrameData { recv, cd, block, args, name, .. } = *data;
-                        let _ = name;
-                        (recv, unsafe { rb_vm_ci_mid((*cd).ci) }, block, args.is_empty(), cd)
+                        (data.recv, unsafe { rb_vm_ci_mid((*data.cd).ci) }, data.block, data.args.clone(), data.cd)
                     }
                     Insn::CCallVariadic(data) => {
-                        let CCallVariadicData { recv, block, args, name, .. } = *data;
-                        (recv, name, block, args.is_empty(), std::ptr::null())
+                        (data.recv, data.name, data.block, data.args.clone(), std::ptr::null())
                     }
                     _ => continue,
                 };
-                if !b_args_empty { continue; }
                 let a_res = self.union_find.borrow().find_const(a_id);
                 if !matches!(producer, Producer::ArrayDirect) {
                     let recv_res = self.union_find.borrow().find_const(b_recv);
@@ -8465,10 +8468,46 @@ impl Function {
                     (Producer::ArrayDirect, true) if b_mid == none_id => (Consumer::NoneP, 1),
                     (Producer::ArrayDirect, true) if b_mid == min_by_id => (Consumer::MinBy, 1),
                     (Producer::ArrayDirect, true) if b_mid == max_by_id => (Consumer::MaxBy, 1),
+                    (Producer::ArrayDirect, false) if b_mid == include_id => (Consumer::Include, 0),
+                    (Producer::ArrayDirect, false) if b_mid == index_id || b_mid == find_index_id => (Consumer::IndexOf, 0),
                     (Producer::ArrayMapEnum, true) if b_mid == with_index_id => (Consumer::WithIndexMap, 2),
                     (Producer::ArrayEachWithIndex, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 2),
                     _ => continue,
                 };
+                let is_identity_scan = matches!(consumer, Consumer::Include | Consumer::IndexOf);
+                if is_identity_scan != (b_args.len() == 1) { continue; }
+                // The identity compare is sound only within one immediate
+                // class (Fixnum or Flonum identity == numeric equality; a
+                // cross-class needle fails its guard and restarts into the
+                // interpreter's rb_equal semantics). Pick the class from the
+                // send's own operand profile, falling back to the needle's
+                // static type; decline without a monomorphic answer. Baking
+                // the compare also requires the class's == to be stock.
+                let mut needle_float = false;
+                if is_identity_scan {
+                    let needle = b_args[0];
+                    let needle_ty = self.type_of(needle);
+                    if needle_ty.is_subtype(types::Fixnum) {
+                        needle_float = false;
+                    } else if needle_ty.is_subtype(types::Flonum) {
+                        needle_float = true;
+                    } else {
+                        let st = self.frame_state(a_state);
+                        let mono_class = get_or_create_iseq_payload(st.iseq)
+                            .profile.get_operand_types(st.insn_idx)
+                            .and_then(|types| types.get(1))
+                            .map(TypeDistributionSummary::new)
+                            .filter(|s| s.is_monomorphic())
+                            .map(|s| s.bucket(0).class());
+                        match mono_class {
+                            Some(k) if k == unsafe { rb_cInteger } => needle_float = false,
+                            Some(k) if k == unsafe { rb_cFloat } => needle_float = true,
+                            _ => continue,
+                        }
+                    }
+                    let eq_klass = if needle_float { unsafe { rb_cFloat } } else { unsafe { rb_cInteger } };
+                    if !stock_cme(cme_of(eq_klass, eq_id)) { continue; }
+                }
                 let consumer_klass = match producer {
                     Producer::RangeLit => unsafe { rb_cRange },
                     Producer::ArrayDirect => unsafe { rb_cArray },
@@ -8546,6 +8585,7 @@ impl Function {
                     recv, a_state, b_id, some_cd, blockiseq: bi,
                     consumer_cme, consumer_klass, consumer_mid: b_mid,
                     range_info,
+                    needle: if is_identity_scan { Some((b_args[0], needle_float)) } else { None },
                 });
                 break; // one candidate per block is plenty
             }
@@ -9080,6 +9120,11 @@ impl Function {
                     }
                 }
             }
+            if let Some((_, nf)) = c.needle {
+                let eq_klass = if nf { unsafe { rb_cFloat } } else { unsafe { rb_cInteger } };
+                let cme = cme_of(eq_klass, eq_id);
+                if !cme.is_null() { invariants.push((eq_klass, eq_id, cme)); }
+            }
             if used_math_sqrt && !math_sqrt_cme.is_null() {
                 invariants.push((math_klass, sqrt_id, math_sqrt_cme));
             }
@@ -9190,7 +9235,8 @@ impl Function {
             let needs_array = !matches!(c.consumer,
                 Consumer::Sum | Consumer::Count
                 | Consumer::Find | Consumer::AnyP | Consumer::AllP | Consumer::NoneP
-                | Consumer::MinBy | Consumer::MaxBy);
+                | Consumer::MinBy | Consumer::MaxBy
+                | Consumer::Include | Consumer::IndexOf);
             let ary = if needs_array { self.push_insn(bb, Insn::CCallWithFrame(Box::new(CCallWithFrameData {
                 cd: c.some_cd,
                 cfunc: rb_zjit_ary_new_capa_fix as *const u8,
@@ -9233,11 +9279,24 @@ impl Function {
                 _ => vec![],
             };
 
+            let needle_guarded: Option<InsnId> = c.needle.map(|(needle, nf)| {
+                let class = if nf { types::Flonum } else { types::Fixnum };
+                elem_guard = Some(class);
+                if self.type_of(needle).is_subtype(class) {
+                    needle
+                } else {
+                    self.push_insn(bb, Insn::GuardType {
+                        val: needle, guard_type: class, state: c.a_state, recompile: None,
+                    })
+                }
+            });
+
             // Early-exit consumers thread their result through a cont Param:
             // the header's exhausted edge carries the default, and the body's
             // hit edge carries the early answer.
             let exhausted_default: Option<InsnId> = match c.consumer {
-                Consumer::Find => Some(self.push_insn(bb, Insn::Const { val: Const::Value(Qnil) })),
+                Consumer::Find | Consumer::IndexOf => Some(self.push_insn(bb, Insn::Const { val: Const::Value(Qnil) })),
+                Consumer::Include => Some(self.push_insn(bb, Insn::Const { val: Const::Value(Qfalse) })),
                 Consumer::AnyP => Some(self.push_insn(bb, Insn::Const { val: Const::Value(Qfalse) })),
                 Consumer::AllP | Consumer::NoneP => Some(self.push_insn(bb, Insn::Const { val: Const::Value(Qtrue) })),
                 _ => None,
@@ -9302,6 +9361,7 @@ impl Function {
                     },
                     Consumer::ToA => vec![],
                     Consumer::Min | Consumer::Max => unreachable!("min/max fold before loop synthesis"),
+                    Consumer::Include | Consumer::IndexOf => unreachable!("identity scans have no block"),
                 };
                 for (i, &param_id) in body_params[1..].iter().enumerate() {
                     if let Some(&arg) = block_args.get(i) {
@@ -9386,6 +9446,24 @@ impl Function {
                         self.push_insn(body_cont, Insn::CheckInterrupts { state: c.a_state });
                         self.push_insn(body_cont, Insn::Jump(BranchEdge { target: header, args: vec![i_next, acc_next] }));
                     }
+                }
+                Consumer::Include | Consumer::IndexOf => {
+                    // Both sides are guarded into one immediate class, where
+                    // numeric equality is VALUE identity, so the scan is a
+                    // raw compare with an early exit -- no rb_equal dispatch.
+                    let needle_g = needle_guarded.expect("identity scans carry a needle");
+                    let hit = self.push_insn(body_cont, Insn::IsBitEqual { left: block_val, right: needle_g });
+                    let advance = self.new_block(insn_idx);
+                    let qtrue = self.push_insn(body_cont, Insn::Const { val: Const::Value(Qtrue) });
+                    let hit_result = if matches!(c.consumer, Consumer::Include) { qtrue } else { i_phi };
+                    self.push_insn(body_cont, Insn::CondBranch {
+                        val: hit,
+                        if_true: BranchEdge { target: cont, args: vec![hit_result] },
+                        if_false: BranchEdge { target: advance, args: vec![] },
+                    });
+                    let i_next = self.push_insn(advance, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                    self.push_insn(advance, Insn::CheckInterrupts { state: c.a_state });
+                    self.push_insn(advance, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
                 }
                 Consumer::MinBy | Consumer::MaxBy => {
                     // Mirrors enum.c min_by_i/max_by_i: the first element
@@ -9527,7 +9605,8 @@ impl Function {
                 Consumer::Count if c.blockiseq.is_some() => sum_phis[0],
                 Consumer::Count => i_phi,
                 Consumer::MinBy | Consumer::MaxBy => sum_phis[1],
-                Consumer::Find | Consumer::AnyP | Consumer::AllP | Consumer::NoneP =>
+                Consumer::Find | Consumer::AnyP | Consumer::AllP | Consumer::NoneP
+                | Consumer::Include | Consumer::IndexOf =>
                     cont_param.expect("early-exit consumers allocate a cont Param"),
                 _ => ary,
             };
