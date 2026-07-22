@@ -9978,6 +9978,355 @@ impl Function {
     /// GC-visible slot), and only when a spill site's FrameState names the
     /// parameter as that local, which makes the inserted store just an early
     /// spill of the local's real value.
+
+    /// Thread a directly-inlined block's definer-local accesses through SSA
+    /// (stage 2 of block-body inlining). Stage 1 canonicalized those accesses
+    /// onto the defining CFP's current EP: reads are `LoadField(definer_ep,
+    /// -idx*8)` and writes are `SetLocalEP` on the same base. This pass proves
+    /// slot-holds-value facts across that form and aliases every proven read to
+    /// the value itself, inserting loop-header Params so facts survive back
+    /// edges -- the accumulator in `arr.each { |x| s += x }` then lives in a
+    /// register across the loop instead of a store-to-load round-trip through
+    /// the frame slot, which profiling showed is the loop-carried critical
+    /// path of yield-style loops.
+    ///
+    /// Stores are kept (write-through), so the frame slot stays current at
+    /// every step: side exits and the interpreter see exactly what they see
+    /// today, and no deopt machinery changes. Soundness of keeping facts
+    /// across ordinary operations rests on the NoEPEscape invariant, the same
+    /// one the translation already relies on to keep the frame's own locals in
+    /// SSA: without an escaped environment no other party holds a reference to
+    /// the frame's env, so only this unit's stores (all visible here) can write
+    /// the slots. Calls that can move cfp->ep clear the facts for the current
+    /// activation; invalidating the entry patchpoint alone only protects later
+    /// activations. Facts seed from PushInlineFrame spills, which store every
+    /// FrameState local to its slot.
+    fn thread_definer_locals(&mut self) {
+        let iseq = self.iseq;
+        if iseq_seen_ep_escape(iseq) { return; }
+        let num_locals = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
+        if num_locals == 0 || num_locals > 64 { return; }
+
+        fn resolve(fun: &Function, id: InsnId) -> InsnId {
+            fun.union_find.borrow().find_const(id)
+        }
+
+        fn is_definer_ep(fun: &Function, id: InsnId) -> bool {
+            let Insn::LoadField { recv, id: FieldName::cfp_ep, offset, .. } = fun.find(id) else {
+                return false;
+            };
+            offset == RUBY_OFFSET_CFP_EP && matches!(fun.find(recv), Insn::GetCFP { .. })
+        }
+
+        fn may_move_ep(insn: &Insn) -> bool {
+            matches!(insn,
+                Insn::CheckMatch { .. }
+                | Insn::GetBlockParam { .. }
+                | Insn::SymToProc { .. }
+                | Insn::CCall { .. }
+                | Insn::CCallWithFrame(_)
+                | Insn::CCallVariadic(_)
+                | Insn::Send { .. }
+                | Insn::SendForward { .. }
+                | Insn::InvokeSuper { .. }
+                | Insn::InvokeSuperForward { .. }
+                | Insn::InvokeBlock { .. }
+                | Insn::InvokeBlockIfunc { .. }
+                | Insn::InvokeProc { .. }
+                | Insn::InvokeBlockIseqDirect { .. }
+                | Insn::SendDirect(_)
+                | Insn::InvokeBuiltin { leaf: false, .. }
+                | Insn::AnyToString { .. }
+            )
+        }
+
+        // Cheap precheck: nothing to do without stage-1 canonical accesses.
+        let mut any = false;
+        'scan: for block in self.reverse_post_order() {
+            for &insn_id in &self.blocks[block].insns {
+                match self.find(insn_id) {
+                    Insn::SetLocalEP { .. } => { any = true; break 'scan; }
+                    Insn::LoadField { recv, .. }
+                        if matches!(self.find(recv), Insn::GetEP { level: 0 }) => { any = true; break 'scan; }
+                    _ => {}
+                }
+            }
+        }
+        if !any { return; }
+
+        let mut idx_of_ep_field_off: HashMap<i32, usize> = HashMap::new();
+        let mut idx_of_ep_off: HashMap<u32, usize> = HashMap::new();
+        for idx in 0..num_locals {
+            let ep_off = local_idx_to_ep_offset(iseq, idx);
+            if ep_off >= 0 {
+                idx_of_ep_field_off.insert(-(SIZEOF_VALUE_I32 * ep_off), idx);
+                idx_of_ep_off.insert(ep_off as u32, idx);
+            }
+        }
+
+        type Facts = HashMap<usize, InsnId>;
+
+        // Transfer facts through a block. `alias` enables the rewrite: proven
+        // loads are unioned with their fact value.
+        fn transfer(
+            fun: &mut Function,
+            idx_of_ep_field_off: &HashMap<i32, usize>,
+            idx_of_ep_off: &HashMap<u32, usize>,
+            block: BlockId,
+            mut facts: Facts,
+            mut alias: Option<&mut Vec<InsnId>>,
+            depth_in: u32,
+        ) -> Facts {
+            let insns = fun.blocks[block].insns.clone();
+            let mut depth: u32 = depth_in;
+            for insn_id in insns {
+                match fun.find(insn_id) {
+                    // Depth gate: inside an inlined callee's frame region a
+                    // GetEP-0-based access reads the PUSHED frame's slot at
+                    // runtime, not the definer's. A block body's own local can
+                    // share its EP offset with a definer local (both frames
+                    // keep their first local at the same displacement), so
+                    // threading it to the definer fact substitutes the wrong
+                    // frame's value entirely.
+                    Insn::LoadField { recv, offset, .. }
+                        if is_definer_ep(fun, recv)
+                            || (depth == 0 && matches!(fun.find(recv), Insn::GetEP { level: 0 })) => {
+                        if let Some(&idx) = idx_of_ep_field_off.get(&offset) {
+                            let resolved = resolve(fun, insn_id);
+                            match facts.get(&idx) {
+                                Some(&val) if val != resolved => {
+                                    if let Some(removed) = alias.as_deref_mut() {
+                                        // Aliased insns must leave the block's
+                                        // insns list: infer_types reads types at
+                                        // the union root but writes at the raw
+                                        // id, so a stale entry never converges.
+                                        fun.make_equal_to(insn_id, val);
+                                        removed.push(insn_id);
+                                    }
+                                }
+                                _ => { facts.insert(idx, resolved); }
+                            }
+                        }
+                    }
+                    Insn::SetLocalEP { ep, ep_offset, val }
+                        if is_definer_ep(fun, ep)
+                            || (depth == 0 && matches!(fun.find(ep), Insn::GetEP { level: 0 })) => {
+                        if let Some(&idx) = idx_of_ep_off.get(&ep_offset) {
+                            facts.insert(idx, resolve(fun, val));
+                        }
+                    }
+                    Insn::SetLocal { level: 0, ep_offset, val, .. } => {
+                        if let Some(&idx) = idx_of_ep_off.get(&ep_offset).filter(|_| depth == 0) {
+                            facts.insert(idx, resolve(fun, val));
+                        }
+                    }
+                    // A non-canonical local write (a nested, non-inlined
+                    // block's SetLocal through the runtime EP chain) may hit
+                    // any definer slot.
+                    Insn::SetLocal { .. } => { facts.clear(); }
+                    // A depth-0 frame push spills every FrameState local to
+                    // its slot; those stores are the facts that seed loops.
+                    Insn::PushInlineFrame { state: fs_id, .. } => {
+                        if depth == 0 {
+                            let fs = fun.frame_state(fs_id);
+                            let locals: Vec<InsnId> = fs.locals().copied().collect();
+                            for (idx, lid) in locals.into_iter().enumerate().take(64) {
+                                facts.insert(idx, resolve(fun, lid));
+                            }
+                        }
+                        depth += 1;
+                    }
+                    Insn::PushInlineBlockFrame { .. } => { depth += 1; }
+                    Insn::PopInlineFrame { .. } => { depth = depth.saturating_sub(1); }
+                    insn if may_move_ep(&insn) => { facts.clear(); }
+                    _ => {}
+                }
+            }
+            facts
+        }
+
+        let rpo = self.reverse_post_order();
+        let mut rpo_pos: HashMap<BlockId, usize> = HashMap::new();
+        for (i, &b) in rpo.iter().enumerate() { rpo_pos.insert(b, i); }
+
+        // Inline-frame depth at each block entry: push/pop nesting is
+        // well-formed across the CFG by construction, so every predecessor
+        // must agree; bail from the whole pass if not.
+        let mut depth_in: Vec<Option<u32>> = vec![None; self.blocks.len()];
+        for b in self.entry_blocks() { depth_in[b] = Some(0); }
+        for &b in &rpo {
+            let Some(din) = depth_in[b] else { continue };
+            let mut d = din;
+            for &insn_id in &self.blocks[b].insns {
+                match self.find(insn_id) {
+                    Insn::PushInlineFrame { .. } | Insn::PushInlineBlockFrame { .. } => d += 1,
+                    Insn::PopInlineFrame { .. } => d = d.saturating_sub(1),
+                    _ => {}
+                }
+            }
+            for (t, _) in self.out_edges_of(b) {
+                match depth_in[t] {
+                    None => depth_in[t] = Some(d),
+                    Some(existing) if existing != d => return,
+                    _ => {}
+                }
+            }
+        }
+        let block_depth = |b: BlockId| depth_in[b].unwrap_or(0);
+
+        // Fixpoint with a merge that records slots defined on every pred with
+        // differing values: those are phi candidates.
+        let mut phi_candidates: std::collections::HashSet<(BlockId, usize)> = std::collections::HashSet::new();
+        let run_fixpoint = |fun: &mut Function, phis: &mut std::collections::HashSet<(BlockId, usize)>| -> Vec<Option<Facts>> {
+            let mut in_states: Vec<Option<Facts>> = vec![None; fun.blocks.len()];
+            for b in fun.entry_blocks() {
+                in_states[b] = Some(Facts::new());
+            }
+            let mut changed = true;
+            while changed {
+                changed = false;
+                for &b in &rpo {
+                    let Some(in_state) = in_states[b].clone() else { continue };
+                    let out = transfer(fun, &idx_of_ep_field_off, &idx_of_ep_off, b, in_state, None, block_depth(b));
+                    for (target, args) in fun.out_edges_of(b) {
+                        // Facts matching a branch arg become facts about the param.
+                        let params = fun.blocks[target].params.clone();
+                        let mut es = out.clone();
+                        for (i, &arg) in args.iter().enumerate() {
+                            if let Some(&param) = params.get(i) {
+                                let arg_r = resolve(fun, arg);
+                                let param_r = resolve(fun, param);
+                                for v in es.values_mut() {
+                                    if *v == arg_r { *v = param_r; }
+                                }
+                            }
+                        }
+                        let new_in = match &in_states[target] {
+                            None => es,
+                            Some(cur) => {
+                                let mut m = Facts::new();
+                                for (k, v) in cur {
+                                    match es.get(k) {
+                                        Some(v2) if v2 == v => { m.insert(*k, *v); }
+                                        Some(_) => { phis.insert((target, *k)); }
+                                        None => {}
+                                    }
+                                }
+                                m
+                            }
+                        };
+                        if in_states[target].as_ref() != Some(&new_in) {
+                            in_states[target] = Some(new_in);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+            in_states
+        };
+
+        run_fixpoint(self, &mut phi_candidates);
+
+        // Insert loop Params for phi candidates whose every predecessor edge
+        // can supply a value, so facts survive back edges.
+        let mut all_edges: Vec<(BlockId, BlockId, Vec<InsnId>)> = vec![];
+        for &b in &rpo {
+            for (t, args) in self.out_edges_of(b) { all_edges.push((b, t, args)); }
+        }
+        let mut out_states: Vec<Option<Facts>> = vec![None; self.blocks.len()];
+        {
+            let ins = run_fixpoint(self, &mut phi_candidates.clone());
+            for &b in &rpo {
+                if let Some(s) = ins[b].clone() {
+                    out_states[b] = Some(transfer(self, &idx_of_ep_field_off, &idx_of_ep_off, b, s, None, block_depth(b)));
+                }
+            }
+        }
+        let mut cands: Vec<(BlockId, usize)> = phi_candidates.into_iter().collect();
+        cands.sort_by_key(|(b, k)| (b.0, *k));
+        for (target, slot) in cands {
+            // Per predecessor block: the fact value and how many edges it has
+            // into the target. Validate everything, then mutate atomically.
+            let mut pred_blocks: Vec<BlockId> = all_edges.iter()
+                .filter(|(_, t, _)| *t == target)
+                .map(|(p, _, _)| *p)
+                .collect();
+            pred_blocks.sort_by_key(|b| b.0);
+            pred_blocks.dedup();
+            let total_edges = all_edges.iter().filter(|(_, t, _)| *t == target).count();
+            if total_edges < 2 { continue; }
+            let mut plan: Vec<(BlockId, InsnId)> = vec![];
+            let mut ok = true;
+            for &p in &pred_blocks {
+                let Some(val) = out_states[p].as_ref().and_then(|f| f.get(&slot).copied()) else { ok = false; break };
+                if !self.type_of(val).is_subtype(types::BasicObject) { ok = false; break; }
+                let term = *self.blocks[p].insns.last().unwrap();
+                let pushable = match &self.insns[term] {
+                    Insn::Jump(e) => e.target == target,
+                    Insn::CondBranch { if_true, if_false, .. } =>
+                        if_true.target == target || if_false.target == target,
+                    Insn::CondBranchFixnumCmp(insn) =>
+                        insn.if_true.target == target || insn.if_false.target == target,
+                    Insn::CondBranchHasType(insn) =>
+                        insn.if_true.target == target || insn.if_false.target == target,
+                    _ => false,
+                };
+                if !pushable { ok = false; break; }
+                plan.push((p, val));
+            }
+            if !ok { continue; }
+            let param = self.new_insn(Insn::Param);
+            self.blocks[target].params.push(param);
+            self.insn_types[param] = types::BasicObject;
+            for (p, val) in plan {
+                let term = *self.blocks[p].insns.last().unwrap();
+                match &mut self.insns[term] {
+                    Insn::Jump(e) => { e.args.push(val); }
+                    Insn::CondBranch { if_true, if_false, .. } => {
+                        if if_true.target == target { if_true.args.push(val); }
+                        if if_false.target == target { if_false.args.push(val); }
+                    }
+                    Insn::CondBranchFixnumCmp(insn) => {
+                        if insn.if_true.target == target { insn.if_true.args.push(val); }
+                        if insn.if_false.target == target { insn.if_false.args.push(val); }
+                    }
+                    Insn::CondBranchHasType(insn) => {
+                        if insn.if_true.target == target { insn.if_true.args.push(val); }
+                        if insn.if_false.target == target { insn.if_false.args.push(val); }
+                    }
+                    _ => unreachable!("validated pushable above"),
+                }
+            }
+        }
+
+        // Final pass: recompute facts (now flowing through the new params)
+        // and alias every proven load.
+        let ins = run_fixpoint(self, &mut std::collections::HashSet::new());
+        let mut rewrote = false;
+        for &b in &rpo {
+            if let Some(s) = ins[b].clone() {
+                let mut removed: Vec<InsnId> = vec![];
+                transfer(self, &idx_of_ep_field_off, &idx_of_ep_off, b, s, Some(&mut removed), block_depth(b));
+                if !removed.is_empty() {
+                    self.blocks[b].insns.retain(|id| !removed.contains(id));
+                    rewrote = true;
+                }
+            }
+        }
+
+        if rewrote {
+            // The aliasing assumes no foreign writer to the environment.
+            let entry = self.entry_blocks()[0];
+            if let Some(state) = self.snapshot_state_in(entry, self.blocks[entry].insns.len()) {
+                self.insert_before_terminator(entry, Insn::PatchPoint {
+                    invariant: Invariant::NoEPEscape(iseq),
+                    state,
+                });
+            }
+            self.infer_types();
+        }
+    }
+
     fn elide_redundant_spills(&mut self) {
         let iseq = self.iseq;
         let num_locals = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
@@ -10505,6 +10854,8 @@ impl Function {
 
         // Skip re-spilling locals whose frame slot already holds the value at
         // inlined-call sites (runs on final SSA; may insert preheader spills).
+        crate::stats::trace_compile_phase("thread_definer_locals", || self.thread_definer_locals());
+        #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
         crate::stats::trace_compile_phase("elide_redundant_spills", || self.elide_redundant_spills());
         #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
 
