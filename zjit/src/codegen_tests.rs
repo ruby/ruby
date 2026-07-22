@@ -478,6 +478,19 @@ fn test_concattoarray() {
 }
 
 #[test]
+fn test_fusion_skips_type_unreachable_array_receiver() {
+    // `!nil` folds to true, so the branch calling `a.max` / `a.sum { }` is unreachable when
+    // fusion runs, and `a` is still typed Empty there. Empty passes is_subtype(ArrayExact),
+    // which once made the fusion matcher emit Array code on a receiver of any type.
+    set_call_threshold(1);
+    eval("
+        def unreachable_max(a) = (!nil) ? 1 : a.max
+        def unreachable_sum(a) = (!nil) ? 1 : a.sum { |x| x }
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("[unreachable_max([1.0, 2.0]), unreachable_sum([1, 2])]"), @"[1, 1]");
+}
+
+#[test]
 fn test_definedivar() {
     eval("
         def test

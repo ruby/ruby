@@ -8188,7 +8188,7 @@ impl Function {
             fn rb_zjit_ary_new_capa_fix(n: VALUE) -> VALUE;
         }
         #[derive(Clone, Copy, PartialEq)]
-        enum Producer { IntTimes, ArrayMapEnum, ArrayEachWithIndex, RangeLit }
+        enum Producer { IntTimes, ArrayMapEnum, ArrayEachWithIndex, RangeLit, ArrayDirect }
         #[derive(Clone, Copy, PartialEq)]
         enum Consumer { Map, Select, ToA, WithIndexMap, Sum, Count, Min, Max, Find, AnyP, AllP, NoneP }
 
@@ -8211,6 +8211,9 @@ impl Function {
         let each_id = unsafe { rb_intern(c"each".as_ptr()) };
         let each_with_index_id = unsafe { rb_intern(c"each_with_index".as_ptr()) };
         let with_index_id = unsafe { rb_intern(c"with_index".as_ptr()) };
+
+        // Array-direct consumers: the send is matched directly on the array.
+        let array_direct_mids = [sum_id, count_id, find_id, detect_id, any_id, all_id, none_id];
 
         let enumerator = unsafe { rb_cEnumerator };
         let cme_of = |klass: VALUE, mid: ID| unsafe { rb_callable_method_entry(klass, mid) };
@@ -8286,10 +8289,27 @@ impl Function {
                         } else { continue; }
                     }
                     Insn::CCallVariadic(data) => {
-                        if data.block.is_some() || !data.args.is_empty() { continue; }
-                        if ewi_ok && data.cme == ewi_cme && self.type_of(data.recv).is_subtype(types::ArrayExact) {
+                        if data.args.is_empty() && data.block.is_none()
+                            && ewi_ok && data.cme == ewi_cme
+                            && self.type_of(data.recv).is_subtype(types::ArrayExact) {
                             (Producer::ArrayEachWithIndex, data.recv, data.state, std::ptr::null(), None)
+                        } else if data.args.is_empty()
+                            && array_direct_mids.contains(&data.name)
+                            && self.type_of(data.recv).is_subtype(types::ArrayExact) {
+                            (Producer::ArrayDirect, data.recv, data.state, std::ptr::null(), None)
                         } else { continue; }
+                    }
+                    Insn::Send { recv: s_recv, cd: s_cd, args: s_args, state: s_state, .. }
+                        if !s_cd.is_null() && s_args.is_empty()
+                            && array_direct_mids.contains(&unsafe { rb_vm_ci_mid((*s_cd).ci) })
+                            && self.type_of(s_recv).is_subtype(types::ArrayExact) => {
+                        (Producer::ArrayDirect, s_recv, s_state, s_cd, None)
+                    }
+                    Insn::CCallWithFrame(data)
+                        if data.args.is_empty()
+                            && array_direct_mids.contains(&data.name)
+                            && self.type_of(data.recv).is_subtype(types::ArrayExact) => {
+                        (Producer::ArrayDirect, data.recv, data.state, data.cd, None)
                     }
                     Insn::NewRange { low, high, flag, state }
                     | Insn::NewRangeFixnum { low, high, flag, state } => {
@@ -8302,6 +8322,15 @@ impl Function {
                     }
                     _ => continue,
                 };
+                // A value typed Empty sits in a block type inference found unreachable
+                // (only reached through a branch on a constant). Empty passes every
+                // is_subtype test above, but it is no evidence of the producer's
+                // receiver class: once the dead branch is pruned or re-inferred, fused
+                // code would operate on a value of the wrong type. Leave it alone.
+                let unreachable = |id: InsnId| self.type_of(id).bit_equal(types::Empty);
+                if unreachable(recv) || range_info.is_some_and(|(low, high, _)| unreachable(low) || unreachable(high)) {
+                    continue;
+                }
 
                 // The Enumerator's only non-snapshot use must be the consumer,
                 // possibly through type_specialize's Enumerator GuardType.
@@ -8323,14 +8352,18 @@ impl Function {
                     }
                     consumer
                 };
-                let Some(mut next) = single_consumer(self, a_id) else { continue };
-                let mut guard_pos: Option<usize> = None;
-                if let Insn::GuardType { .. } = self.find(next.1) {
-                    guard_pos = Some(next.0);
-                    let Some(after_guard) = single_consumer(self, next.1) else { continue };
-                    next = after_guard;
-                }
-                let (b_pos, b_id) = next;
+                let (b_pos, b_id, guard_pos) = if matches!(producer, Producer::ArrayDirect) {
+                    (a_pos, a_id, None)
+                } else {
+                    let Some(mut next) = single_consumer(self, a_id) else { continue };
+                    let mut guard_pos: Option<usize> = None;
+                    if let Insn::GuardType { .. } = self.find(next.1) {
+                        guard_pos = Some(next.0);
+                        let Some(after_guard) = single_consumer(self, next.1) else { continue };
+                        next = after_guard;
+                    }
+                    (next.0, next.1, guard_pos)
+                };
 
                 // Match the consumer shape: mid + literal block (or none for to_a).
                 let (b_recv, b_mid, b_block, b_args_empty, b_cd) = match self.find(b_id) {
@@ -8350,11 +8383,13 @@ impl Function {
                 };
                 if !b_args_empty { continue; }
                 let a_res = self.union_find.borrow().find_const(a_id);
-                let recv_res = self.union_find.borrow().find_const(b_recv);
-                let guard_ok = guard_pos.map_or(recv_res == a_res, |gp| {
-                    recv_res == self.union_find.borrow().find_const(self.blocks[block].insns[gp])
-                });
-                if !guard_ok { continue; }
+                if !matches!(producer, Producer::ArrayDirect) {
+                    let recv_res = self.union_find.borrow().find_const(b_recv);
+                    let guard_ok = guard_pos.map_or(recv_res == a_res, |gp| {
+                        recv_res == self.union_find.borrow().find_const(self.blocks[block].insns[gp])
+                    });
+                    if !guard_ok { continue; }
+                }
 
                 let bi = match b_block {
                     Some(BlockHandler::BlockIseq(bi)) => Some(bi),
@@ -8386,12 +8421,21 @@ impl Function {
                     (Producer::RangeLit, true) if b_mid == any_id => (Consumer::AnyP, 1),
                     (Producer::RangeLit, true) if b_mid == all_id => (Consumer::AllP, 1),
                     (Producer::RangeLit, true) if b_mid == none_id => (Consumer::NoneP, 1),
+                    // Blockless Array#sum stays unfused: rb_ary_sum's C loop
+                    // already beats the guarded fused loop.
+                    (Producer::ArrayDirect, true) if b_mid == sum_id => (Consumer::Sum, 1),
+                    (Producer::ArrayDirect, true) if b_mid == count_id => (Consumer::Count, 1),
+                    (Producer::ArrayDirect, true) if b_mid == find_id || b_mid == detect_id => (Consumer::Find, 1),
+                    (Producer::ArrayDirect, true) if b_mid == any_id => (Consumer::AnyP, 1),
+                    (Producer::ArrayDirect, true) if b_mid == all_id => (Consumer::AllP, 1),
+                    (Producer::ArrayDirect, true) if b_mid == none_id => (Consumer::NoneP, 1),
                     (Producer::ArrayMapEnum, true) if b_mid == with_index_id => (Consumer::WithIndexMap, 2),
                     (Producer::ArrayEachWithIndex, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 2),
                     _ => continue,
                 };
                 let consumer_klass = match producer {
                     Producer::RangeLit => unsafe { rb_cRange },
+                    Producer::ArrayDirect => unsafe { rb_cArray },
                     _ => enumerator,
                 };
                 let consumer_cme = cme_of(consumer_klass, b_mid);
@@ -8418,7 +8462,13 @@ impl Function {
                 // Deopt snapshots between producer and consumer embed the
                 // enumerator; live instructions using them must be retargetable
                 // to the restart state (PatchPoint/CheckInterrupts only).
-                let mut ghosts: Vec<InsnId> = vec![a_res];
+                // Array-direct chains have no intermediate enumerator value, so
+                // there is nothing ghostly to retarget.
+                let mut ghosts: Vec<InsnId> = if matches!(producer, Producer::ArrayDirect) {
+                    vec![]
+                } else {
+                    vec![a_res]
+                };
                 if let Some(gp) = guard_pos {
                     ghosts.push(self.union_find.borrow().find_const(self.blocks[block].insns[gp]));
                 }
@@ -8513,14 +8563,60 @@ impl Function {
                 (Producer::IntTimes | Producer::RangeLit, _) => (None, body_params.get(1).copied()),
                 _ => (body_params.get(1).copied(), body_params.get(2).copied()),
             };
-            let mut elem_needs_guard = false;
+            let mut elem_guard: Option<Type> = None;
             let mut reduction: Option<Vec<(InsnId, usize, Reduce, InsnId, InsnId, ID, bool, bool)>> = None;
             let mut summand_float = false;
-            for attempt in 0..2 {
-                if attempt == 1 {
-                    if elem_param.is_none() { break; }
-                    elem_needs_guard = true;
+            // Order the speculative element-class attempts by the block's own
+            // profile: the block ran interpreted before fusion compiled, so a
+            // send whose receiver is the element parameter recorded the real
+            // element class. Without this, any block that is also valid under
+            // the Fixnum seed (mixed fixnum/float arithmetic is admissible)
+            // bakes a Fixnum element guard for a float array, which fails on
+            // the first element of every call and restarts the whole chain --
+            // fused code that never actually runs.
+            let elem_attempt_order: [usize; 3] = {
+                let mut float_first = false;
+                if let (Some(ep), Some(bi)) = (elem_param, c.blockiseq) {
+                    let ep_r = self.union_find.borrow().find_const(ep);
+                    let bpayload = get_or_create_iseq_payload(bi);
+                    'scan: for bidx in pre_blocks_len..self.blocks.len() {
+                        if BlockId::from(bidx) == body_cont { continue; }
+                        for &iid in &self.blocks[bidx].insns {
+                            if let Insn::Send { recv, args, state, .. } = self.find(iid) {
+                                // The element may be the receiver or the first
+                                // argument (e.g. Math.sqrt(x)); the profile's
+                                // operand order is receiver-first.
+                                let operand_idx = if self.union_find.borrow().find_const(recv) == ep_r {
+                                    Some(0)
+                                } else if args.first().is_some_and(|&a| self.union_find.borrow().find_const(a) == ep_r) {
+                                    Some(1)
+                                } else {
+                                    None
+                                };
+                                if let Some(oi) = operand_idx {
+                                    if let Some(types) = bpayload.profile.get_operand_types(self.frame_state(state).insn_idx) {
+                                        if let Some(dist) = types.get(oi) {
+                                            let summary = TypeDistributionSummary::new(dist);
+                                            if summary.is_monomorphic()
+                                                && summary.bucket(0).class() == unsafe { rb_cFloat } {
+                                                float_first = true;
+                                            }
+                                        }
+                                    }
+                                    break 'scan;
+                                }
+                            }
+                        }
+                    }
                 }
+                if float_first { [0, 2, 1] } else { [0, 1, 2] }
+            };
+            for attempt in elem_attempt_order {
+                if attempt >= 1 {
+                    if elem_param.is_none() { break; }
+                    elem_guard = Some(if attempt == 1 { types::Fixnum } else { types::Flonum });
+                }
+                summand_float = false;
                 let mut fixnum_vals: std::collections::HashSet<InsnId> = std::collections::HashSet::new();
                 let mut float_vals: std::collections::HashSet<InsnId> = std::collections::HashSet::new();
                 if let Some(ip) = index_param {
@@ -8528,6 +8624,9 @@ impl Function {
                 }
                 if let Some(ep) = elem_param.filter(|_| attempt == 1) {
                     fixnum_vals.insert(self.union_find.borrow().find_const(ep));
+                }
+                if let Some(ep) = elem_param.filter(|_| attempt == 2) {
+                    float_vals.insert(self.union_find.borrow().find_const(ep));
                 }
                 let mut to_reduce: Vec<(InsnId, usize, Reduce, InsnId, InsnId, ID, bool, bool)> = vec![];
                 let mut reject = false;
@@ -8703,7 +8802,12 @@ impl Function {
             // non-leaf send is followed by a NoEPEscape PatchPoint whose
             // snapshot holds its result, so the producer send always leaves
             // such snapshots behind.)
-            let mut ghost_roots: Vec<InsnId> = vec![self.union_find.borrow().find_const(c.a_id)];
+            // An ArrayDirect producer is the array itself, which stays live (the
+            // fused loop reads it), so only an enumerator producer is a ghost.
+            let mut ghost_roots: Vec<InsnId> = vec![];
+            if !matches!(c.producer, Producer::ArrayDirect) {
+                ghost_roots.push(self.union_find.borrow().find_const(c.a_id));
+            }
             if let Some(gp) = c.guard_pos {
                 ghost_roots.push(self.union_find.borrow().find_const(self.blocks[c.block].insns[gp]));
             }
@@ -8758,7 +8862,7 @@ impl Function {
             let mut invariants: Vec<(VALUE, ID, *const rb_callable_method_entry_t)> = vec![
                 (c.consumer_klass, c.consumer_mid, c.consumer_cme),
             ];
-            if !matches!(c.producer, Producer::RangeLit) {
+            if !matches!(c.producer, Producer::RangeLit | Producer::ArrayDirect) {
                 invariants.push((enumerator, each_id, enum_each_cme));
             }
             match c.producer {
@@ -8776,6 +8880,11 @@ impl Function {
                 }
                 Producer::RangeLit => {
                     invariants.push((unsafe { rb_cRange }, each_id, range_each_cme));
+                }
+                Producer::ArrayDirect => {
+                    if matches!(c.consumer, Consumer::Find) {
+                        invariants.push((unsafe { rb_cArray }, each_id, aeach_cme));
+                    }
                 }
             }
             for (mid, recv_fix) in bop_ops {
@@ -8953,9 +9062,9 @@ impl Function {
                 _ => {
                     let idx_raw = self.push_insn(body_head, Insn::UnboxFixnum { val: i_phi });
                     let e = self.push_insn(body_head, Insn::ArrayAref { array: c.recv, index: idx_raw });
-                    if elem_needs_guard {
+                    if let Some(gt) = elem_guard {
                         self.push_insn(body_head, Insn::GuardType {
-                            val: e, guard_type: types::Fixnum, state: c.a_state, recompile: None,
+                            val: e, guard_type: gt, state: c.a_state, recompile: None,
                         })
                     } else {
                         e
