@@ -1118,6 +1118,15 @@ pub enum Insn {
     IsMethodCfunc { val: InsnId, cd: *const rb_call_data, cfunc: *const u8, state: InsnId },
     /// Return C `true` if left == right
     IsBitEqual { left: InsnId, right: InsnId },
+
+    /// C `true` if `left >= right` as signed 64-bit integers. Used on
+    /// sign-cleared double bit patterns, where the signed compare equals both
+    /// the unsigned compare and the IEEE754 magnitude compare.
+    IsBitGe { left: InsnId, right: InsnId },
+
+    /// Clear the sign bit of a raw double bit pattern (fabs on a CDouble).
+    /// Yields the magnitude as integer bits, compared with IsBitGe.
+    FloatAbs { val: InsnId },
     /// Return C `true` if left != right
     IsBitNotEqual { left: InsnId, right: InsnId },
     /// Convert a C `bool` to a Ruby `Qtrue`/`Qfalse`. Same as `RBOOL` macro.
@@ -1636,6 +1645,7 @@ macro_rules! for_each_operand_impl {
             | Insn::FixnumRShift { left, right }
             | Insn::FixnumCmpBool { left, right, .. }
             | Insn::IsBitEqual { left, right }
+            | Insn::IsBitGe { left, right }
             | Insn::IsBitNotEqual { left, right } => {
                 $visit_one!(*left);
                 $visit_one!(*right);
@@ -1812,6 +1822,7 @@ macro_rules! for_each_operand_impl {
             }
             Insn::UnboxFixnum { val }
             | Insn::UnboxFlonum { val }
+            | Insn::FloatAbs { val }
             | Insn::F64FromFixnum { val } => {
                 $visit_one!(*val);
             }
@@ -1950,6 +1961,8 @@ impl Insn {
             Insn::Test { .. } => effects::Empty,
             Insn::IsMethodCfunc { .. } => effects::Any,
             Insn::IsBitEqual { .. } => effects::Empty,
+            Insn::IsBitGe { .. } => effects::Empty,
+            Insn::FloatAbs { .. } => effects::Empty,
             Insn::IsBitNotEqual { .. } => effects::Empty,
             Insn::BoxBool { .. } => effects::Empty,
             Insn::BoolNegate { .. } => effects::Empty,
@@ -2365,6 +2378,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::Test { val } => { write!(f, "Test {val}") }
             Insn::IsMethodCfunc { val, cd, .. } => { write!(f, "IsMethodCFunc {val}, :{}", ruby_call_method_name(*cd)) }
             Insn::IsBitEqual { left, right } => write!(f, "IsBitEqual {left}, {right}"),
+            Insn::IsBitGe { left, right } => write!(f, "IsBitGe {left}, {right}"),
+            Insn::FloatAbs { val } => write!(f, "FloatAbs {val}"),
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
             Insn::BoolNegate { val } => write!(f, "BoolNegate {val}"),
@@ -3900,6 +3915,12 @@ impl Function {
             Insn::Test { .. } => types::CBool,
             Insn::IsMethodCfunc { .. } => types::CBool,
             Insn::IsBitEqual { .. } => types::CBool,
+            Insn::IsBitGe { .. } => types::CBool,
+            // The sign-cleared bit pattern IS fabs(val) in the raw-bits
+            // CDouble convention: usable as a double and, because sign-cleared
+            // finite doubles order identically as signed integers, directly
+            // comparable with IsBitGe.
+            Insn::FloatAbs { .. } => types::CDouble,
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
             Insn::BoolNegate { val } if self.type_of(*val).is_known_falsy() => types::TrueClass,
@@ -8169,7 +8190,7 @@ impl Function {
         #[derive(Clone, Copy, PartialEq)]
         enum Producer { IntTimes, ArrayMapEnum, ArrayEachWithIndex }
         #[derive(Clone, Copy, PartialEq)]
-        enum Consumer { Map, Select, ToA, WithIndexMap }
+        enum Consumer { Map, Select, ToA, WithIndexMap, Sum }
 
         let times_id = unsafe { rb_intern(c"times".as_ptr()) };
         let to_enum_id = unsafe { rb_intern(c"to_enum".as_ptr()) };
@@ -8178,6 +8199,7 @@ impl Function {
         let select_id = unsafe { rb_intern(c"select".as_ptr()) };
         let filter_id = unsafe { rb_intern(c"filter".as_ptr()) };
         let to_a_id = unsafe { rb_intern(c"to_a".as_ptr()) };
+        let sum_id = unsafe { rb_intern(c"sum".as_ptr()) };
         let each_id = unsafe { rb_intern(c"each".as_ptr()) };
         let each_with_index_id = unsafe { rb_intern(c"each_with_index".as_ptr()) };
         let with_index_id = unsafe { rb_intern(c"with_index".as_ptr()) };
@@ -8320,6 +8342,8 @@ impl Function {
                     (Producer::IntTimes, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 1),
                     (Producer::IntTimes, true) if b_mid == select_id || b_mid == filter_id => (Consumer::Select, 1),
                     (Producer::IntTimes, false) if b_mid == to_a_id => (Consumer::ToA, 0),
+                    (Producer::IntTimes, true) if b_mid == sum_id => (Consumer::Sum, 1),
+                    (Producer::IntTimes, false) if b_mid == sum_id => (Consumer::Sum, 0),
                     (Producer::ArrayMapEnum, true) if b_mid == with_index_id => (Consumer::WithIndexMap, 2),
                     (Producer::ArrayEachWithIndex, true) if b_mid == map_id || b_mid == collect_id => (Consumer::Map, 2),
                     _ => continue,
@@ -8425,7 +8449,7 @@ impl Function {
             // with only the index parameter seeded as Fixnum; if that fails
             // and the consumer has an element parameter, retry with the
             // element seeded too and add a speculative element guard.
-            enum Reduce { Add, Sub, Mult, Mod, Lt, Le, Gt, Ge, Eq }
+            enum Reduce { Add, Sub, Mult, Mod, Lt, Le, Gt, Ge, Eq, FAdd, FSub, FMul, FDiv }
             let body_params: Vec<InsnId> = translated.as_ref()
                 .and_then(|r| r.body_entry_block)
                 .map(|b| self.blocks[b].params.clone())
@@ -8438,20 +8462,22 @@ impl Function {
                 _ => (body_params.get(1).copied(), body_params.get(2).copied()),
             };
             let mut elem_needs_guard = false;
-            let mut reduction: Option<Vec<(InsnId, Reduce, InsnId, InsnId, ID)>> = None;
+            let mut reduction: Option<Vec<(InsnId, usize, Reduce, InsnId, InsnId, ID, bool, bool)>> = None;
+            let mut summand_float = false;
             for attempt in 0..2 {
                 if attempt == 1 {
                     if elem_param.is_none() { break; }
                     elem_needs_guard = true;
                 }
                 let mut fixnum_vals: std::collections::HashSet<InsnId> = std::collections::HashSet::new();
+                let mut float_vals: std::collections::HashSet<InsnId> = std::collections::HashSet::new();
                 if let Some(ip) = index_param {
                     fixnum_vals.insert(self.union_find.borrow().find_const(ip));
                 }
                 if let Some(ep) = elem_param.filter(|_| attempt == 1) {
                     fixnum_vals.insert(self.union_find.borrow().find_const(ep));
                 }
-                let mut to_reduce: Vec<(InsnId, Reduce, InsnId, InsnId, ID)> = vec![];
+                let mut to_reduce: Vec<(InsnId, usize, Reduce, InsnId, InsnId, ID, bool, bool)> = vec![];
                 let mut reject = false;
                 'purity: for bidx in pre_blocks_len..self.blocks.len() {
                     if BlockId::from(bidx) == body_cont { continue; }
@@ -8459,6 +8485,7 @@ impl Function {
                         match self.find(iid) {
                             Insn::Const { val: Const::Value(v), .. } => {
                                 if v.fixnum_p() { fixnum_vals.insert(self.union_find.borrow().find_const(iid)); }
+                                if v.flonum_p() { float_vals.insert(self.union_find.borrow().find_const(iid)); }
                             }
                             Insn::Const { .. } | Insn::Param | Insn::Snapshot { .. }
                             | Insn::PatchPoint { .. } | Insn::CheckInterrupts { .. }
@@ -8483,18 +8510,62 @@ impl Function {
                                 };
                                 let recv_r = self.union_find.borrow().find_const(recv);
                                 let arg_r = self.union_find.borrow().find_const(args[0]);
+                                let recv_fix = fixnum_vals.contains(&recv_r);
+                                let arg_fix = fixnum_vals.contains(&arg_r);
+                                let recv_flo = float_vals.contains(&recv_r);
+                                let arg_flo = float_vals.contains(&arg_r);
                                 match kind {
-                                    Some(k) if fixnum_vals.contains(&recv_r) && fixnum_vals.contains(&arg_r) => {
+                                    Some(k) if recv_fix && arg_fix => {
                                         if matches!(k, Reduce::Add | Reduce::Sub | Reduce::Mult | Reduce::Mod) {
                                             fixnum_vals.insert(self.union_find.borrow().find_const(iid));
                                         }
-                                        to_reduce.push((iid, k, recv_r, arg_r, mid));
+                                        to_reduce.push((iid, bidx, k, recv_r, arg_r, mid, recv_fix, arg_fix));
                                     }
+                                    // Float or mixed fixnum/float arithmetic reduces to the
+                                    // CDouble FloatArith chain (pure; Inf/NaN results fail the
+                                    // BoxFlonum guard and restart). Comparisons stay declined.
+                                    Some(k @ (Reduce::Add | Reduce::Sub | Reduce::Mult))
+                                        if (recv_flo || recv_fix) && (arg_flo || arg_fix) && (recv_flo || arg_flo) => {
+                                        let fk = match k {
+                                            Reduce::Add => Reduce::FAdd,
+                                            Reduce::Sub => Reduce::FSub,
+                                            _ => Reduce::FMul,
+                                        };
+                                        float_vals.insert(self.union_find.borrow().find_const(iid));
+                                        to_reduce.push((iid, bidx, fk, recv_r, arg_r, mid, recv_fix, arg_fix));
+                                    }
+                                    Some(Reduce::FDiv) => { reject = true; break 'purity; }
                                     _ => { reject = true; break 'purity; }
                                 }
                             }
                             _ => { reject = true; break 'purity; }
                         }
+                    }
+                }
+                if !reject && matches!(c.consumer, Consumer::Sum) && translated.is_some() {
+                    // Classify the summand: every value the block returns into
+                    // body_cont must be proven Fixnum (exact path) or all proven
+                    // Flonum (Kahan path); anything else declines fusion.
+                    let (mut all_fix, mut all_flo, mut any) = (true, true, false);
+                    for bidx in pre_blocks_len..self.blocks.len() {
+                        if BlockId::from(bidx) == body_cont { continue; }
+                        if let Some(&last) = self.blocks[bidx].insns.last() {
+                            if let Insn::Jump(edge) = self.find(last) {
+                                if edge.target == body_cont {
+                                    for &a in &edge.args {
+                                        any = true;
+                                        let ar = self.union_find.borrow().find_const(a);
+                                        if !fixnum_vals.contains(&ar) { all_fix = false; }
+                                        if !float_vals.contains(&ar) { all_flo = false; }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if any && all_flo && !all_fix {
+                        summand_float = true;
+                    } else if !(any && all_fix) {
+                        reject = true;
                     }
                 }
                 if !reject {
@@ -8508,20 +8579,53 @@ impl Function {
                 self.blocks.truncate(pre_blocks_len);
                 continue 'candidates;
             };
-            let mut bop_mids: Vec<ID> = vec![];
-            for (iid, k, l, r, mid) in to_reduce {
-                self.insns[iid] = match k {
-                    Reduce::Add => Insn::FixnumAdd { left: l, right: r, state: c.a_state },
-                    Reduce::Sub => Insn::FixnumSub { left: l, right: r, state: c.a_state },
-                    Reduce::Mult => Insn::FixnumMult { left: l, right: r, state: c.a_state },
-                    Reduce::Mod => Insn::FixnumMod { left: l, right: r, state: c.a_state },
-                    Reduce::Lt => Insn::FixnumLt { left: l, right: r },
-                    Reduce::Le => Insn::FixnumLe { left: l, right: r },
-                    Reduce::Gt => Insn::FixnumGt { left: l, right: r },
-                    Reduce::Ge => Insn::FixnumGe { left: l, right: r },
-                    Reduce::Eq => Insn::FixnumEq { left: l, right: r },
-                };
-                if !bop_mids.contains(&mid) { bop_mids.push(mid); }
+            // Operator dispatch goes to the receiver's class: a fixnum
+            // receiver resolves Integer#op, a flonum receiver Float#op. The
+            // redefinition patchpoint must guard the class actually consulted.
+            let mut bop_ops: Vec<(ID, bool)> = vec![];
+            for &(iid, bidx, ref k, l, r, mid, l_fix, r_fix) in &to_reduce {
+                match k {
+                    Reduce::FAdd | Reduce::FSub | Reduce::FMul | Reduce::FDiv => {
+                        // Splice unbox/convert + CDouble op before the Send's slot;
+                        // the Send itself becomes the re-boxing. fold_constants
+                        // cancels Unbox(Box) pairs across chained reductions.
+                        // The purity walk's classification is authoritative: the
+                        // operands' HIR types predate the param aliasing.
+                        let conv = |fun: &mut Self, v: InsnId, is_fix: bool| -> InsnId {
+                            if is_fix {
+                                fun.new_insn(Insn::F64FromFixnum { val: v })
+                            } else {
+                                fun.new_insn(Insn::UnboxFlonum { val: v })
+                            }
+                        };
+                        let l_d = conv(self, l, l_fix);
+                        let r_d = conv(self, r, r_fix);
+                        let op_d = self.new_insn(match k {
+                            Reduce::FAdd => Insn::FloatAdd { recv: l_d, other: r_d, state: c.a_state },
+                            Reduce::FSub => Insn::FloatSub { recv: l_d, other: r_d, state: c.a_state },
+                            _ => Insn::FloatMul { recv: l_d, other: r_d, state: c.a_state },
+                        });
+                        self.insns[iid] = Insn::BoxFlonum { val: op_d, state: c.a_state };
+                        let pos = self.blocks[bidx].insns.iter().position(|&x| x == iid)
+                            .expect("reduced send must be in its block");
+                        self.blocks[bidx].insns.splice(pos..pos, [l_d, r_d, op_d]);
+                    }
+                    _ => {
+                        self.insns[iid] = match k {
+                            Reduce::Add => Insn::FixnumAdd { left: l, right: r, state: c.a_state },
+                            Reduce::Sub => Insn::FixnumSub { left: l, right: r, state: c.a_state },
+                            Reduce::Mult => Insn::FixnumMult { left: l, right: r, state: c.a_state },
+                            Reduce::Mod => Insn::FixnumMod { left: l, right: r, state: c.a_state },
+                            Reduce::Lt => Insn::FixnumLt { left: l, right: r },
+                            Reduce::Le => Insn::FixnumLe { left: l, right: r },
+                            Reduce::Gt => Insn::FixnumGt { left: l, right: r },
+                            Reduce::Ge => Insn::FixnumGe { left: l, right: r },
+                            Reduce::Eq => Insn::FixnumEq { left: l, right: r },
+                            _ => unreachable!(),
+                        };
+                    }
+                }
+                if !bop_ops.contains(&(mid, l_fix)) { bop_ops.push((mid, l_fix)); }
             }
 
             // Commit. Retarget insns whose snapshots embedded the enumerator.
@@ -8617,9 +8721,10 @@ impl Function {
                     invariants.push((unsafe { rb_cArray }, each_id, aeach_cme));
                 }
             }
-            for mid in bop_mids {
-                let cme = cme_of(unsafe { rb_cInteger }, mid);
-                if !cme.is_null() { invariants.push((unsafe { rb_cInteger }, mid, cme)); }
+            for (mid, recv_fix) in bop_ops {
+                let klass = if recv_fix { unsafe { rb_cInteger } } else { unsafe { rb_cFloat } };
+                let cme = cme_of(klass, mid);
+                if !cme.is_null() { invariants.push((klass, mid, cme)); }
             }
             for (klass, mid, cme) in invariants {
                 self.push_insn(bb, Insn::PatchPoint {
@@ -8637,7 +8742,8 @@ impl Function {
                     self.push_insn(bb, Insn::BoxFixnum { val: len_raw, state: c.a_state })
                 }
             };
-            let ary = self.push_insn(bb, Insn::CCallWithFrame(Box::new(CCallWithFrameData {
+            let needs_array = !matches!(c.consumer, Consumer::Sum);
+            let ary = if needs_array { self.push_insn(bb, Insn::CCallWithFrame(Box::new(CCallWithFrameData {
                 cd: c.some_cd,
                 cfunc: rb_zjit_ary_new_capa_fix as *const u8,
                 recv: bound,
@@ -8648,17 +8754,35 @@ impl Function {
                 return_type: types::ArrayExact,
                 elidable: false,
                 block: None,
-            })));
+            }))) } else { InsnId(u32::MAX) };
             let self_val = self.push_insn(bb, Insn::LoadSelf);
             let zero = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) });
             let one = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) });
+
+            // Sum carries extra loop state: one Fixnum accumulator, or the
+            // Kahan (sum, compensation) CDouble pair.
+            let sum_inits: Vec<InsnId> = if matches!(c.consumer, Consumer::Sum) {
+                if summand_float {
+                    vec![
+                        self.push_insn(bb, Insn::Const { val: Const::CDouble(0.0) }),
+                        self.push_insn(bb, Insn::Const { val: Const::CDouble(0.0) }),
+                    ]
+                } else {
+                    vec![zero]
+                }
+            } else {
+                vec![]
+            };
 
             let header = self.new_block(insn_idx);
             let cont = self.new_block(insn_idx);
             let body_head = self.new_block(insn_idx);
             self.count(bb, Counter::inline_iseq_optimized_send_count);
-            self.push_insn(bb, Insn::Jump(BranchEdge { target: header, args: vec![zero] }));
+            let mut entry_args = vec![zero];
+            entry_args.extend(&sum_inits);
+            self.push_insn(bb, Insn::Jump(BranchEdge { target: header, args: entry_args }));
             let i_phi = self.push_insn(header, Insn::Param);
+            let sum_phis: Vec<InsnId> = sum_inits.iter().map(|_| self.push_insn(header, Insn::Param)).collect();
             self.push_insn(header, Insn::CondBranchFixnumCmp(Box::new(CondBranchFixnumCmpData {
                 op: FixnumCmpOp::Lt,
                 left: i_phi,
@@ -8696,6 +8820,10 @@ impl Function {
                         _ => vec![elem, i_phi],
                     },
                     Consumer::ToA => vec![],
+                    Consumer::Sum => match c.producer {
+                        Producer::IntTimes => vec![i_phi],
+                        _ => vec![elem, i_phi],
+                    },
                 };
                 for (i, &param_id) in body_params[1..].iter().enumerate() {
                     if let Some(&arg) = block_args.get(i) {
@@ -8722,6 +8850,64 @@ impl Function {
                     self.push_insn(body_cont, Insn::CheckInterrupts { state: c.a_state });
                     self.push_insn(body_cont, Insn::Jump(BranchEdge { target: header, args: vec![i_next] }));
                 }
+                Consumer::Sum => {
+                    if summand_float {
+                        // Kahan-Babuska compensation, bit-for-bit enum.c
+                        // sum_iter_Kahan_Babuska for finite streams. Inf/NaN
+                        // elements never reach here (not flonum-representable,
+                        // so the block result guard restarts), and overflow to
+                        // a non-finite running sum restarts the whole chain.
+                        let f_phi = sum_phis[0];
+                        let c_phi = sum_phis[1];
+                        let x = self.push_insn(body_cont, Insn::UnboxFlonum { val: block_val });
+                        let t = self.push_insn(body_cont, Insn::FloatAdd { recv: f_phi, other: x, state: c.a_state });
+                        let abs_t = self.push_insn(body_cont, Insn::FloatAbs { val: t });
+                        let inf_bits = self.push_insn(body_cont, Insn::Const { val: Const::CInt64(0x7FF0000000000000) });
+                        let nonfinite = self.push_insn(body_cont, Insn::IsBitGe { left: abs_t, right: inf_bits });
+                        let restart = self.new_block(insn_idx);
+                        let kahan = self.new_block(insn_idx);
+                        self.push_insn(body_cont, Insn::CondBranch {
+                            val: nonfinite,
+                            if_true: BranchEdge { target: restart, args: vec![] },
+                            if_false: BranchEdge { target: kahan, args: vec![] },
+                        });
+                        self.push_insn(restart, Insn::SideExit {
+                            state: c.a_state,
+                            reason: Box::new(SideExitReason::FlonumArithResultNotFlonum),
+                            recompile: None,
+                        });
+                        let abs_f = self.push_insn(kahan, Insn::FloatAbs { val: f_phi });
+                        let abs_x = self.push_insn(kahan, Insn::FloatAbs { val: x });
+                        let ge = self.push_insn(kahan, Insn::IsBitGe { left: abs_f, right: abs_x });
+                        let big_f = self.new_block(insn_idx);
+                        let big_x = self.new_block(insn_idx);
+                        let merge = self.new_block(insn_idx);
+                        self.push_insn(kahan, Insn::CondBranch {
+                            val: ge,
+                            if_true: BranchEdge { target: big_f, args: vec![] },
+                            if_false: BranchEdge { target: big_x, args: vec![] },
+                        });
+                        let d1 = self.push_insn(big_f, Insn::FloatSub { recv: f_phi, other: t, state: c.a_state });
+                        let d2 = self.push_insn(big_f, Insn::FloatAdd { recv: d1, other: x, state: c.a_state });
+                        self.push_insn(big_f, Insn::Jump(BranchEdge { target: merge, args: vec![d2] }));
+                        let e1 = self.push_insn(big_x, Insn::FloatSub { recv: x, other: t, state: c.a_state });
+                        let e2 = self.push_insn(big_x, Insn::FloatAdd { recv: e1, other: f_phi, state: c.a_state });
+                        self.push_insn(big_x, Insn::Jump(BranchEdge { target: merge, args: vec![e2] }));
+                        let dp = self.push_insn(merge, Insn::Param);
+                        let c_next = self.push_insn(merge, Insn::FloatAdd { recv: c_phi, other: dp, state: c.a_state });
+                        let i_next = self.push_insn(merge, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                        self.push_insn(merge, Insn::CheckInterrupts { state: c.a_state });
+                        self.push_insn(merge, Insn::Jump(BranchEdge { target: header, args: vec![i_next, t, c_next] }));
+                    } else {
+                        // Exact integer sum: FixnumAdd's overflow exit restarts
+                        // into the interpreter, which produces the Bignum.
+                        let acc = sum_phis[0];
+                        let acc_next = self.push_insn(body_cont, Insn::FixnumAdd { left: acc, right: block_val, state: c.a_state });
+                        let i_next = self.push_insn(body_cont, Insn::FixnumAdd { left: i_phi, right: one, state: c.a_state });
+                        self.push_insn(body_cont, Insn::CheckInterrupts { state: c.a_state });
+                        self.push_insn(body_cont, Insn::Jump(BranchEdge { target: header, args: vec![i_next, acc_next] }));
+                    }
+                }
                 Consumer::Select => {
                     // Push the *index* only when the block result is truthy.
                     let keep = self.push_insn(body_cont, Insn::Test { val: block_val });
@@ -8740,10 +8926,18 @@ impl Function {
                 }
             }
 
+            let result_val = match c.consumer {
+                Consumer::Sum if summand_float => {
+                    let s_d = self.push_insn(cont, Insn::FloatAdd { recv: sum_phis[0], other: sum_phis[1], state: c.a_state });
+                    self.push_insn(cont, Insn::BoxFlonum { val: s_d, state: c.a_state })
+                }
+                Consumer::Sum => sum_phis[0],
+                _ => ary,
+            };
             for &id in &tail {
                 self.push_insn_id(cont, id);
             }
-            self.make_equal_to(c.b_id, ary);
+            self.make_equal_to(c.b_id, result_val);
         }
 
         // Type the freshly built loops right away: the pass runs early in the
@@ -9768,6 +9962,21 @@ impl Function {
                     return Err(ValidationError::MiscValidationError(insn_id, "ObjectAllocClass must have leaf allocator".to_string()));
                 }
                 Ok(())
+            }
+            Insn::FloatAbs { val } => {
+                self.assert_subtype(insn_id, val, types::CDouble)?;
+                Ok(())
+            }
+            Insn::IsBitGe { left, right } => {
+                // A raw-bits signed compare: CInt and CDouble operands are both
+                // GPR bit patterns (sign-cleared finite doubles order like
+                // signed integers), so mixes of the two are meaningful.
+                let bits_ok = |v: InsnId| self.is_a(v, types::CInt) || self.is_a(v, types::CDouble);
+                if bits_ok(left) && bits_ok(right) {
+                    Ok(())
+                } else {
+                    Err(ValidationError::MiscValidationError(insn_id, "IsBitGe can only compare CInt/CDouble bit patterns".to_string()))
+                }
             }
             Insn::IsBitEqual { left, right }
             | Insn::IsBitNotEqual { left, right } => {
