@@ -71,6 +71,34 @@ RSpec.describe Bundler::EndpointSpecification do
       end
     end
 
+    context "when the metadata has an empty checksum value" do
+      let(:metadata) { { "checksum" => [] } }
+
+      it "leaves checksum as nil without raising" do
+        expect(subject.checksum).to be_nil
+      end
+    end
+
+    context "when the metadata has a nil checksum value" do
+      let(:metadata) { { "checksum" => nil } }
+
+      it "leaves checksum as nil without raising" do
+        expect(subject.checksum).to be_nil
+      end
+    end
+
+    context "when the metadata has an invalid checksum value" do
+      let(:metadata) { { "checksum" => ["xyz"] } }
+      let(:spec_fetcher) { double(:spec_fetcher, uri: "https://rubygems.org") }
+
+      it "raises an error mentioning the invalid checksum" do
+        expect { subject }.to raise_error(
+          Bundler::GemspecError,
+          a_string_including("Invalid checksum for foo-1.0.0")
+        )
+      end
+    end
+
     context "when the metadata has no created_at" do
       let(:metadata) { { "checksum" => ["abc"] } }
       let(:spec_fetcher) { double(:spec_fetcher, uri: "https://rubygems.org") }
