@@ -8502,7 +8502,12 @@ impl Function {
                     _ => continue,
                 };
                 let is_identity_scan = matches!(consumer, Consumer::Include | Consumer::IndexOf);
-                if is_identity_scan != (b_args.len() == 1) { continue; }
+                let args_ok = match consumer {
+                    Consumer::Include | Consumer::IndexOf => b_args.len() == 1,
+                    Consumer::WithIndexMap => b_args.len() <= 1,
+                    _ => b_args.is_empty(),
+                };
+                if !args_ok { continue; }
                 // The identity compare is sound only within one immediate
                 // class (Fixnum or Flonum identity == numeric equality; a
                 // cross-class needle fails its guard and restarts into the
@@ -8619,7 +8624,11 @@ impl Function {
                     recv, a_state, b_id, some_cd, blockiseq: bi,
                     consumer_cme, consumer_klass, consumer_mid: b_mid,
                     range_info,
-                    needle: if is_identity_scan { Some((b_args[0], needle_float)) } else { None },
+                    needle: if is_identity_scan || !b_args.is_empty() {
+                        Some((b_args[0], needle_float))
+                    } else {
+                        None
+                    },
                 });
                 break; // one candidate per block is plenty
             }
@@ -9329,7 +9338,9 @@ impl Function {
 
             let needle_guarded: Option<InsnId> = c.needle.map(|(needle, nf)| {
                 let class = if nf { types::Flonum } else { types::Fixnum };
-                elem_guard = Some(class);
+                if matches!(c.consumer, Consumer::Include | Consumer::IndexOf) {
+                    elem_guard = Some(class);
+                }
                 if self.type_of(needle).is_subtype(class) {
                     needle
                 } else {
@@ -9413,7 +9424,15 @@ impl Function {
                     self.make_equal_to(body_params[0], self_val);
                 }
                 let block_args: Vec<InsnId> = match c.consumer {
-                    Consumer::WithIndexMap => vec![elem, i_phi],
+                    // with_index(offset): the block sees i + offset; the add's
+                    // overflow deopt restarts into the C implementation.
+                    Consumer::WithIndexMap => {
+                        let idx = match needle_guarded {
+                            Some(off) => self.push_insn(body_head, Insn::FixnumAdd { left: i_phi, right: off, state: c.a_state }),
+                            None => i_phi,
+                        };
+                        vec![elem, idx]
+                    }
                     Consumer::Map | Consumer::Select
                     | Consumer::Sum | Consumer::Count
                     | Consumer::Find | Consumer::AnyP | Consumer::AllP | Consumer::NoneP
