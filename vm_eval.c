@@ -2456,7 +2456,7 @@ rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
  *      Foo.new.greeting
  *
  *  However, constant and class variable lookup differs between
- *  +string+ and block. When +string+ is given, contant and class
+ *  +string+ and block. When +string+ is given, constant and class
  *  variables are looked up in the context of +self+. When a block
  *  is given, the context of the lookup is not changed:
  *

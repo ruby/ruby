@@ -61,7 +61,7 @@ int rb_thread_wait_fd(int fd);
 int rb_thread_fd_writable(int fd);
 
 /**
- * This funciton is now a no-op. It was previously used to interrupt threads
+ * This function is now a no-op. It was previously used to interrupt threads
  * that were using the given file descriptor and wait for them to finish.
  *
  * @deprecated Use IO with RUBY_IO_MODE_EXTERNAL and `rb_io_close` instead.
