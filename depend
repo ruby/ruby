@@ -5015,6 +5015,7 @@ enumerator.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/string.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/struct.h
+enumerator.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/variable.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/vm.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/warnings.h
