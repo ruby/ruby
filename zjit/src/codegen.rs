@@ -810,11 +810,24 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PushInlineFrame { cme, iseq, recv, num_args, blockiseq, state, elide_spills, .. } => {
             no_output!(gen_push_inline_frame(jit, asm, function, *cme, *iseq, opnd!(recv), *num_args, &function.frame_state(*state), *blockiseq, *elide_spills))
         },
-        Insn::PushInlineBlockFrame { iseq, self_val, definer_ep, args, state } => {
-            no_output!(gen_push_inline_block_frame(jit, asm, function, *iseq, opnd!(self_val), opnd!(definer_ep), opnds!(args), &function.frame_state(*state)))
+        Insn::PushInlineBlockFrame { iseq, self_val, definer_ep, args, state, elided } => {
+            if *elided {
+                // elide_inline_block_frames proved the body frame-transparent:
+                // only the stack-overflow check remains on the hot path (side
+                // exits in the body materialize the frame at exit time and
+                // need the same headroom the real push would have claimed).
+                no_output!(gen_elided_block_frame_check(jit, asm, function, *iseq, &function.frame_state(*state)))
+            } else {
+                no_output!(gen_push_inline_block_frame(jit, asm, function, *iseq, opnd!(self_val), opnd!(definer_ep), opnds!(args), &function.frame_state(*state)))
+            }
         },
-        Insn::PopInlineFrame { iseq, argc, state } => {
-            no_output!(gen_pop_inline_frame(asm, *iseq, *argc, &function.frame_state(*state)))
+        Insn::PopInlineFrame { iseq, argc, state, elided } => {
+            if *elided {
+                // No frame was pushed on the hot path; nothing to restore.
+                no_output!(())
+            } else {
+                no_output!(gen_pop_inline_frame(asm, *iseq, *argc, &function.frame_state(*state)))
+            }
         },
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, function, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeSuperForward { cd, blockiseq, state, reason, .. } => gen_invokesuperforward(jit, asm, function, cd, blockiseq, &function.frame_state(state), reason),
@@ -2308,6 +2321,22 @@ fn gen_push_inline_block_frame(
     let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, new_cfp);
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
+}
+
+/// The hot-path remains of an elided PushInlineBlockFrame: just the stack
+/// overflow check, with the same headroom the real push would have claimed.
+/// The frame itself is built on demand by side exits inside the body (see
+/// MaterializeFrame in lir.rs), which need this headroom to exist.
+fn gen_elided_block_frame_check(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    function: &Function,
+    iseq: IseqPtr,
+    state: &FrameState,
+) {
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
+    let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
+    gen_stack_overflow_check(jit, asm, function, state, stack_growth);
 }
 
 /// Pop the interpreter frame for an inlined callee, restoring the caller's SP and CFP.
@@ -4516,6 +4545,42 @@ fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> S
         locals_needs_flonum_box.push(jit.type_of(insn_id).is_subtype(types::CDouble));
     }
 
+    let stack_map = build_caller_stack_map(jit, function, state);
+
+    // An exit inside an elided inlined-block body (the state chains to a
+    // caller Snapshot registered by elide_inline_block_frames) must build the
+    // block frame the hot path skipped. Collect what the exit stub needs: the
+    // caller-side spills the elided push would have done, plus the layout and
+    // operands of the new frame. The layout math mirrors the real push
+    // (gen_push_inline_block_frame/gen_push_frame) at the yield, whose state
+    // still had the args on the caller stack.
+    let materialize = state.caller()
+        .and_then(|caller_id| function.elided_frame_site(caller_id).map(|site| (caller_id, site)))
+        .map(|(caller_id, site)| {
+            let caller_state = function.frame_state(caller_id);
+            debug_assert!(caller_state.caller().is_none_or(|c| function.elided_frame_site(c).is_none()),
+                "at most one elided frame per exit: elided regions cannot nest");
+            let local_size = unsafe { get_iseq_body_local_table_size(site.iseq) }.to_usize();
+            let yield_stack_len = caller_state.stack_size() + site.argc;
+            let ep_offset = (yield_stack_len + local_size - site.argc + VM_ENV_DATA_SIZE.to_usize()) as i32 - 1;
+            let caller_locals = caller_state.locals().enumerate().map(|(idx, &insn_id)| {
+                let disp = -local_idx_to_ep_offset(caller_state.iseq, idx) - 1;
+                (disp, jit.get_opnd(insn_id), jit.type_of(insn_id).is_subtype(types::CDouble))
+            }).collect();
+            // The caller's resume PC: the stack map installs a JITFrame with
+            // it in the same slot; only cover the map-less case here.
+            let caller_jit_frame = stack_map.is_none().then(|| jit_frame_for_state(&caller_state, 0));
+            Box::new(lir::MaterializeFrame {
+                self_val: jit.get_opnd(site.self_val),
+                tagged_ep: jit.get_opnd(site.tagged_ep),
+                caller_locals,
+                caller_stack_size: caller_state.stack_size(),
+                caller_jit_frame,
+                caller_depth: caller_state.depth as usize,
+                ep_offset,
+            })
+        });
+
     SideExit{
         pc: Opnd::const_ptr(state.pc),
         stack,
@@ -4523,8 +4588,9 @@ fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> S
         stack_needs_flonum_box,
         locals_needs_flonum_box,
         iseq: state.iseq,
-        stack_map: build_caller_stack_map(jit, function, state),
+        stack_map,
         recompile: None,
+        materialize,
     }
 }
 

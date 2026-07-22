@@ -1354,6 +1354,11 @@ pub enum Insn {
         definer_ep: InsnId,
         args: Vec<InsnId>,
         state: InsnId,
+        /// True when elide_inline_block_frames proved the inlined body cannot
+        /// observe its frame: codegen emits only the stack-overflow check and
+        /// side exits inside the body materialize the frame themselves (see
+        /// `Function::elided_frame_sites`).
+        elided: bool,
     },
 
     /// Push a lighter weight frame used for inlined methods.
@@ -1375,6 +1380,9 @@ pub enum Insn {
         iseq: IseqPtr,
         argc: usize,
         state: InsnId,
+        /// True when the matching PushInlineBlockFrame was elided; codegen
+        /// emits nothing (no frame was pushed on the hot path).
+        elided: bool,
     },
 
     // Invoke a builtin function
@@ -2459,8 +2467,12 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::PopInlineFrame { .. } => {
-                write!(f, "PopInlineFrame")
+            Insn::PopInlineFrame { elided, .. } => {
+                write!(f, "PopInlineFrame")?;
+                if *elided {
+                    write!(f, " elided")?;
+                }
+                Ok(())
             }
             Insn::Send { recv, cd, args, block, reason, .. } => {
                 // For tests, we want to check HIR snippets textually. Addresses change
@@ -2509,9 +2521,12 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
-            Insn::PushInlineBlockFrame { iseq, self_val, definer_ep, args, .. } => {
+            Insn::PushInlineBlockFrame { iseq, self_val, definer_ep, args, elided, .. } => {
                 write!(f, "PushInlineBlockFrame self={self_val} ep={definer_ep} ({:?})", self.ptr_map.map_ptr(*iseq))?;
                 write_separated!(f, ", ", ", ", args);
+                if *elided {
+                    write!(f, " elided")?;
+                }
                 Ok(())
             }
             Insn::InvokeProc { recv, args, kw_splat, .. } => {
@@ -3159,6 +3174,28 @@ pub struct Function {
     /// not count Snapshot, PatchPoint, etc.
     /// Currently updated by `infer_types` as a heuristic but that is not a guarantee.
     num_instructions: usize,
+    /// Inlined-block sites whose frame push/pop was elided by
+    /// elide_inline_block_frames, keyed by the InsnId of the caller Snapshot
+    /// that every body FrameState chains to. Codegen consults this from
+    /// build_side_exit: an exit whose state's caller is a key here must
+    /// materialize the missing block frame in its exit stub.
+    elided_frame_sites: HashMap<InsnId, ElidedFrameSite>,
+}
+
+/// What a side exit inside an elided inlined-block body needs in order to
+/// physically push the block frame the hot path skipped. See
+/// elide_inline_block_frames for the invariants that make this sound.
+#[derive(Debug, Clone, Copy)]
+pub struct ElidedFrameSite {
+    /// The block's ISEQ (the frame's cfp->iseq; also sizes its local table).
+    pub iseq: IseqPtr,
+    /// The block's `self` (the defining frame's self, captured as SSA).
+    pub self_val: InsnId,
+    /// The defining frame's EP already tagged like VM_GUARDED_PREV_EP()
+    /// (ep | 1), precomputed outside the loop so the exit stub only stores it.
+    pub tagged_ep: InsnId,
+    /// Number of yield arguments (the block frame's leading locals).
+    pub argc: usize,
 }
 
 /// The kind of a value an ISEQ returns
@@ -3420,11 +3457,18 @@ impl Function {
             profiles: None,
             num_inline_block_bodies: 0,
             num_instructions: 0,
+            elided_frame_sites: HashMap::new(),
         }
     }
 
     pub fn iseq(&self) -> *const rb_iseq_t {
         self.iseq
+    }
+
+    /// Look up the elided-frame site whose body states chain to the given
+    /// caller Snapshot, if any. Used by codegen's build_side_exit.
+    pub fn elided_frame_site(&self, caller: InsnId) -> Option<&ElidedFrameSite> {
+        self.elided_frame_sites.get(&caller)
     }
 
     // Add an instruction to the function without adding it to any block
@@ -6384,6 +6428,7 @@ impl Function {
                     iseq,
                     argc: args.len(),
                     state,
+                    elided: false,
                 });
 
                 // Start at 1 to skip over the SendDirect at position 0.
@@ -10582,6 +10627,235 @@ impl Function {
         }
     }
 
+    /// Elide the per-iteration frame ceremony of inlined block bodies that
+    /// provably cannot observe their frame.
+    ///
+    /// An inlined `yield` pushes a real interpreter frame per invocation
+    /// (PushInlineBlockFrame: caller spills, env metadata, control-frame
+    /// record, SP/CFP switches -- ~18 stores) and pops it right after. For a
+    /// body like `{ s += x }` that ceremony dwarfs the real work. When every
+    /// instruction between the push and its matching pop is *frame-transparent*
+    /// -- leaf, non-allocating, and never reading CFP/SP/EC -- nothing on the
+    /// hot path can tell whether the frame exists, so we skip push and pop
+    /// entirely and record an [`ElidedFrameSite`] keyed by the caller Snapshot
+    /// that all body FrameStates chain to. The only way execution can leave the
+    /// body abnormally is through a side exit we compile ourselves, and
+    /// codegen's build_side_exit consults the site table to make each such exit
+    /// materialize the missing frame in its cold stub (caller spills + env +
+    /// control frame + ec->cfp) before the interpreter resumes; see
+    /// compile_exit_save_state in lir.rs for the exact stub layout.
+    ///
+    /// Soundness invariants enforced here:
+    /// - The region is intra-block and straight-line (no terminators crossed,
+    ///   hence no backward edges and no CheckInterrupts): interrupts, GC, and
+    ///   frame walkers cannot run inside it. clean_cfg has already merged the
+    ///   straight-line body into the push's block by the time this runs.
+    /// - Every region instruction is in the frame-transparent whitelist below.
+    ///   In particular no allocation (GC would mark stale caller frame slots
+    ///   that were never spilled), no calls, no nested frame pushes, and no
+    ///   CFP readers (LoadSelf/GetEP/LoadSP read the *caller's* CFP while the
+    ///   body logically runs one frame deeper).
+    /// - Every state-bearing region instruction references a region Snapshot,
+    ///   and all region Snapshots agree on one caller id, the block's ISEQ,
+    ///   and the expected depth -- so every possible exit in the region is
+    ///   covered by the site table lookup.
+    /// - The definer EP the frame's specval needs is pre-tagged (ep|1) by an
+    ///   IntOr inserted right after that yield's cfp->ep load, before entering
+    ///   the elided region, so the exit stub only performs plain stores.
+    ///   Reloading it at every yield also observes a heap EP after an earlier
+    ///   environment escape.
+    ///
+    /// Runs last in the pipeline: type_specialize must already have reduced
+    /// body sends to fixnum/float ops for the whitelist to pass, and no later
+    /// pass may alias or move instructions (the site table stores resolved
+    /// InsnIds).
+    fn elide_inline_block_frames(&mut self) {
+        // Frame-transparent instructions: leaf, non-allocating, and no
+        // CFP/SP/EC access. Default-deny everything else.
+        fn frame_transparent(insn: &Insn) -> bool {
+            matches!(insn,
+                Insn::Comment { .. } | Insn::Const { .. } | Insn::Snapshot { .. }
+                | Insn::PatchPoint { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
+                | Insn::GuardType { .. } | Insn::GuardBitEquals { .. }
+                | Insn::GuardAnyBitSet { .. } | Insn::GuardNoBitsSet { .. }
+                | Insn::GuardGreaterEq { .. } | Insn::GuardLess { .. }
+                | Insn::GuardFlonumRepresentable { .. } | Insn::RefineType { .. }
+                | Insn::Test { .. } | Insn::IsBitEqual { .. } | Insn::IsBitNotEqual { .. }
+                | Insn::IsBitGe { .. } | Insn::IsFlonum { .. }
+                | Insn::BoxBool { .. } | Insn::BoxFixnum { .. } | Insn::UnboxFixnum { .. }
+                | Insn::UnboxFlonum { .. } | Insn::BoxFlonum { .. }
+                | Insn::F64FromFixnum { .. } | Insn::FixnumBitCheck { .. }
+                | Insn::FixnumAdd { .. } | Insn::FixnumSub { .. } | Insn::FixnumMult { .. }
+                | Insn::FixnumEq { .. } | Insn::BoolNegate { .. }
+                | Insn::FixnumLt { .. } | Insn::FixnumLe { .. }
+                | Insn::FixnumGt { .. } | Insn::FixnumGe { .. } | Insn::FixnumCmpBool { .. }
+                | Insn::FixnumAnd { .. } | Insn::FixnumOr { .. } | Insn::FixnumXor { .. }
+                | Insn::FixnumLShift { .. } | Insn::FixnumRShift { .. } | Insn::FixnumAref { .. }
+                | Insn::IntAnd { .. } | Insn::IntOr { .. }
+                | Insn::FloatAdd { .. } | Insn::FloatSub { .. } | Insn::FloatMul { .. }
+                | Insn::FloatDiv { .. } | Insn::FloatCmp { .. } | Insn::FloatMin { .. }
+                | Insn::FloatMax { .. } | Insn::FloatSqrt { .. } | Insn::FloatAbs { .. }
+                | Insn::ArrayLength { .. } | Insn::ArrayAref { .. }
+                | Insn::LoadField { .. } | Insn::SetLocalEP { .. }
+            )
+        }
+
+        struct Site {
+            push_id: InsnId,
+            pop_id: InsnId,
+            caller: InsnId,
+            iseq: IseqPtr,
+            self_val: InsnId,
+            definer_ep: InsnId,
+            argc: usize,
+        }
+
+        // Phase 1: read-only scan for eligible sites.
+        let mut sites: Vec<Site> = Vec::new();
+        let rpo = self.reverse_post_order();
+        for &block_id in &rpo {
+            let insns = &self.blocks[block_id].insns;
+            'push: for (push_pos, &push_raw) in insns.iter().enumerate() {
+                let Insn::PushInlineBlockFrame { iseq, self_val, definer_ep, ref args, state, elided: false } =
+                    self.find(push_raw) else { continue };
+                let argc = args.len();
+                let expected_depth = self.frame_depth(state) + 1;
+
+                // Walk to the matching PopInlineFrame within this block,
+                // whitelisting everything in between. Any nested frame op or
+                // non-whitelisted instruction disqualifies the site, as does
+                // reaching the end of the block (multi-block body).
+                let mut pop_id = None;
+                let mut region_snapshots: HashSet<InsnId> = HashSet::new();
+                let mut region_insns: Vec<InsnId> = Vec::new();
+                for &insn_raw in &insns[push_pos + 1..] {
+                    let insn = self.find(insn_raw);
+                    match insn {
+                        Insn::PopInlineFrame { iseq: pop_iseq, state: pop_state, elided: false, .. } => {
+                            // Frame ops nest properly and nested pushes bail
+                            // below, so the first pop is ours -- but verify.
+                            if pop_iseq != iseq || pop_state != state {
+                                continue 'push;
+                            }
+                            pop_id = Some(insn_raw);
+                            break;
+                        }
+                        ref i if frame_transparent(i) => {
+                            if let Insn::Snapshot { .. } = insn {
+                                region_snapshots.insert(insn_raw);
+                            }
+                            region_insns.push(insn_raw);
+                        }
+                        _ => continue 'push,
+                    }
+                }
+                let Some(pop_id) = pop_id else { continue };
+
+                // All region Snapshots must be body states of this site: one
+                // shared caller id, the block's ISEQ, the expected depth.
+                let mut caller_id = None;
+                let mut states_ok = true;
+                for &snap_id in &region_snapshots {
+                    let Insn::Snapshot { ref state } = self.find(snap_id) else { states_ok = false; break };
+                    if state.iseq != iseq || state.depth != expected_depth {
+                        states_ok = false;
+                        break;
+                    }
+                    match (state.caller(), caller_id) {
+                        (Some(c), None) => caller_id = Some(c),
+                        (Some(c), Some(prev)) if c == prev => {}
+                        _ => { states_ok = false; break; }
+                    }
+                }
+                if !states_ok {
+                    continue;
+                }
+
+                // Every state reference of a region instruction must resolve to
+                // a region Snapshot, so every possible exit in the region goes
+                // through the site table. (Only `state` fields reference
+                // Snapshots from non-Snapshot instructions.)
+                for &insn_raw in &region_insns {
+                    let insn = self.find(insn_raw);
+                    if matches!(insn, Insn::Snapshot { .. }) {
+                        continue;
+                    }
+                    let mut ok = true;
+                    insn.for_each_operand(|op| {
+                        if matches!(self.find(op), Insn::Snapshot { .. }) && !region_snapshots.contains(&op) {
+                            ok = false;
+                        }
+                    });
+                    if !ok {
+                        continue 'push;
+                    }
+                }
+
+                // A region with no snapshots has no exits and needs no table
+                // entry, but there is also nothing to gain by special-casing
+                // it; require a caller id so the site is fully described.
+                let Some(caller_id) = caller_id else { continue };
+
+                sites.push(Site { push_id: push_raw, pop_id, caller: caller_id, iseq, self_val, definer_ep, argc });
+            }
+        }
+        if sites.is_empty() {
+            return;
+        }
+
+        // Phase 2: apply. Pre-tag each site's definer EP (ep|1, the
+        // VM_GUARDED_PREV_EP encoding) right after the EP's definition, before
+        // the elided region, so the exit stub can store it directly.
+        let mut tagged_eps: HashMap<InsnId, InsnId> = HashMap::new();
+        for site in sites {
+            let ep = self.union_find.borrow().find_const(site.definer_ep);
+            let tagged = match tagged_eps.get(&ep) {
+                Some(&t) => t,
+                None => {
+                    // Locate the EP's definition: a block param (insert at the
+                    // start of that block) or a body instruction (insert right
+                    // after it). Bail on this site if not found.
+                    let mut def: Option<(BlockId, usize)> = None;
+                    'search: for &b in &rpo {
+                        if self.blocks[b].params.iter().any(|&p| self.union_find.borrow().find_const(p) == ep) {
+                            def = Some((b, 0));
+                            break 'search;
+                        }
+                        for (pos, &i) in self.blocks[b].insns.iter().enumerate() {
+                            if self.union_find.borrow().find_const(i) == ep {
+                                def = Some((b, pos + 1));
+                                break 'search;
+                            }
+                        }
+                    }
+                    let Some((def_block, def_pos)) = def else { continue };
+                    let one = self.new_insn(Insn::Const { val: Const::CInt64(1) });
+                    let tagged = self.new_insn(Insn::IntOr { left: ep, right: one });
+                    self.blocks[def_block].insns.insert(def_pos, one);
+                    self.blocks[def_block].insns.insert(def_pos + 1, tagged);
+                    tagged_eps.insert(ep, tagged);
+                    tagged
+                }
+            };
+
+            if let Insn::PushInlineBlockFrame { ref mut elided, .. } = self.insns[site.push_id] {
+                *elided = true;
+            }
+            if let Insn::PopInlineFrame { ref mut elided, .. } = self.insns[site.pop_id] {
+                *elided = true;
+            }
+            self.elided_frame_sites.insert(site.caller, ElidedFrameSite {
+                iseq: site.iseq,
+                self_val: self.union_find.borrow().find_const(site.self_val),
+                tagged_ep: tagged,
+                argc: site.argc,
+            });
+        }
+        if !tagged_eps.is_empty() {
+            self.infer_types();
+        }
+    }
+
     /// The `state` (Snapshot) of the last state-bearing instruction in `block`
     /// before `before`, to attach to an inserted BoxFlonum.
     fn snapshot_state_in(&self, block: BlockId, before: usize) -> Option<InsnId> {
@@ -10857,6 +11131,12 @@ impl Function {
         crate::stats::trace_compile_phase("thread_definer_locals", || self.thread_definer_locals());
         #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
         crate::stats::trace_compile_phase("elide_redundant_spills", || self.elide_redundant_spills());
+        #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
+
+        // Elide the per-iteration frame ceremony of frame-transparent inlined
+        // block bodies. Must run last: it depends on the final shapes above and
+        // records resolved InsnIds for codegen (see elide_inline_block_frames).
+        crate::stats::trace_compile_phase("elide_inline_block_frames", || self.elide_inline_block_frames());
         #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
 
         if should_dump {
@@ -11364,6 +11644,10 @@ impl Function {
                     self.assert_subtype(insn_id, right, types::CInt64)
                 } else if left_type.is_subtype(types::CUInt64) {
                     self.assert_subtype(insn_id, right, types::CUInt64)
+                } else if left_type.is_subtype(types::CPtr) {
+                    // Pointer tagging (e.g. VM_GUARDED_PREV_EP's ep|1 in
+                    // elide_inline_block_frames) ORs an int constant into a CPtr.
+                    self.assert_subtype(insn_id, right, types::CInt64.union(types::CUInt64))
                 } else {
                     let all_ints = types::CInt64.union(types::CUInt64);
                     self.assert_subtype(insn_id, left, all_ints)?;
@@ -13887,6 +14171,7 @@ fn add_iseq_to_hir(
                                         definer_ep,
                                         args: args.clone(),
                                         state: exit_id,
+                                        elided: false,
                                     });
                                     fun.push_insn(block, Insn::Jump(BranchEdge { target: body_entry, args: vec![] }));
 
@@ -13898,6 +14183,7 @@ fn add_iseq_to_hir(
                                         iseq: block_iseq,
                                         argc: args.len(),
                                         state: exit_id,
+                                        elided: false,
                                     });
                                     block = continuation;
                                     inlined_result = Some(ret_param);

@@ -6,7 +6,7 @@ use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
 use crate::perf;
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_BLOCK_CODE, RUBY_OFFSET_CFP_EP, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SELF, RUBY_OFFSET_CFP_SP, RUBY_OFFSET_EC_CFP, RUBY_SIZEOF_CONTROL_FRAME, SIZEOF_VALUE_I32, VALUE, VM_FRAME_MAGIC_BLOCK, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
 use crate::asm::LabelName;
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
@@ -644,6 +644,38 @@ pub struct SideExit {
     pub stack_map: Option<StackMap>,
     /// If set, the side exit will invalidate the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
+    /// If set, this exit sits inside an inlined block body whose frame push
+    /// was elided (see hir's elide_inline_block_frames): the exit stub must
+    /// physically create the block frame before the usual state write-back.
+    /// See `compile_exit_save_state`.
+    pub materialize: Option<Box<MaterializeFrame>>,
+}
+
+/// Everything a side exit needs to push the block frame that
+/// elide_inline_block_frames removed from the hot path. All layout numbers are
+/// compile-time constants; the operands are ordinary side-exit operands that
+/// the register allocator keeps live to the exiting instruction.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct MaterializeFrame {
+    /// The block's `self` for the new frame's cfp->self.
+    pub self_val: Opnd,
+    /// The defining frame's EP, pre-tagged like VM_GUARDED_PREV_EP (ep|1),
+    /// for the new frame's specval slot.
+    pub tagged_ep: Opnd,
+    /// Caller locals to spill before the frame push, as (slot displacement
+    /// from the caller stack base in VALUEs, value, needs flonum re-encode).
+    /// These are the spills the elided PushInlineBlockFrame would have done.
+    pub caller_locals: Vec<(i32, Opnd, bool)>,
+    /// The caller's stack size after popping the yield args (its cfp->sp).
+    pub caller_stack_size: usize,
+    /// A plain JITFrame for the caller (resume PC after the yield), installed
+    /// only when no caller stack map would install one itself.
+    pub caller_jit_frame: Option<*const zjit_jit_frame>,
+    /// The caller's inline depth (selects its native JITFrame slot).
+    pub caller_depth: usize,
+    /// The new frame's EP as a slot displacement from the caller stack base.
+    /// The frame's stack base sits one VALUE above it.
+    pub ep_offset: i32,
 }
 
 /// Metadata for the recompile callback on side exit.
@@ -1037,6 +1069,14 @@ macro_rules! target_for_each_operand_impl {
                         if let StackMapEntry::Opnd(opnd) = entry {
                             visit_one!(opnd);
                         }
+                    }
+                }
+                if let Some(materialize) = $reborrow!(data.exit.materialize) {
+                    let MaterializeFrame { self_val, tagged_ep, caller_locals, .. } = $reborrow!(**materialize);
+                    visit_one!(self_val);
+                    visit_one!(tagged_ep);
+                    for (_, opnd, _) in caller_locals {
+                        visit_one!(opnd);
                     }
                 }
             }
@@ -3140,22 +3180,79 @@ impl Assembler
         }
 
         /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
+        ///
+        /// When `exit.materialize` is set, the exiting instruction sits inside
+        /// an inlined block body whose frame push was elided from the hot path
+        /// (hir's elide_inline_block_frames). The stub then first performs the
+        /// caller-side work the elided PushInlineBlockFrame would have done
+        /// (cfp->sp, local spills, JITFrame) and builds the block frame's env
+        /// metadata and control-frame record. The CFP and SP registers still
+        /// point at the *caller* frame throughout, so all block-frame writes
+        /// use compile-time-biased displacements (cfp fields at
+        /// -RUBY_SIZEOF_CONTROL_FRAME, stack/locals shifted by the frame gap),
+        /// and only at the very end does the stub step CFP down one frame so
+        /// the shared materialize_exit trampoline -- which clears the *current*
+        /// frame's jit_return and materializes the older frames behind it --
+        /// sees exactly the same world as a non-elided exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals, stack_needs_flonum_box, locals_needs_flonum_box, iseq, stack_map, .. } = exit;
+            let SideExit { pc, stack, locals, stack_needs_flonum_box, locals_needs_flonum_box, iseq, stack_map, materialize, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
             // so that nobody stomps on us
             asm.boundary_pad();
 
+            // Biases routing the exiting frame's writes one frame below the
+            // caller the CFP/SP registers still point at (see doc above).
+            let (cfp_bias, sp_bias) = match materialize {
+                Some(m) => (-(RUBY_SIZEOF_CONTROL_FRAME as i32), m.ep_offset + 1),
+                None => (0, 0),
+            };
+
+            if let Some(m) = materialize {
+                asm_comment!(asm, "materialize elided block frame: caller side");
+                // The caller-side writes PushInlineBlockFrame would have done:
+                // publish its sp (yield args excluded; they become the block's
+                // leading locals) and spill its locals for the interpreter.
+                asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, m.caller_stack_size as i32 * SIZEOF_VALUE_I32));
+                for &(disp, opnd, _) in &m.caller_locals {
+                    asm.store(Opnd::mem(64, SP, disp * SIZEOF_VALUE_I32), opnd);
+                }
+                // The caller's resume PC, unless the caller stack map installs
+                // a JITFrame for the same slot below anyway.
+                if let Some(jit_frame) = m.caller_jit_frame {
+                    asm.store(
+                        Opnd::mem(64, NATIVE_BASE_PTR, -((m.caller_depth as i32 + 1) * SIZEOF_VALUE_I32)),
+                        Opnd::const_ptr(jit_frame),
+                    );
+                }
+
+                asm_comment!(asm, "materialize elided block frame: env and control frame");
+                // Env metadata (mirrors gen_push_frame for a block frame):
+                // ep[-2] cme/cref, ep[-1] specval (tagged definer EP), ep[0] flags.
+                asm.store(Opnd::mem(64, SP, (m.ep_offset - 2) * SIZEOF_VALUE_I32), 0.into());
+                asm.store(Opnd::mem(64, SP, (m.ep_offset - 1) * SIZEOF_VALUE_I32), m.tagged_ep);
+                asm.store(Opnd::mem(64, SP, m.ep_offset * SIZEOF_VALUE_I32), VM_FRAME_MAGIC_BLOCK.into());
+                // Control-frame record. pc/sp/iseq are written by the biased
+                // stores below; jit_return is cleared by the trampoline after
+                // the final CFP step-down. block_code must be zeroed: the
+                // interpreter resumes this block body and may read it, and the
+                // slot holds stale data from earlier frames at this depth.
+                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF + cfp_bias), m.self_val);
+                asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP + cfp_bias), Opnd::mem(64, SP, m.ep_offset * SIZEOF_VALUE_I32));
+                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE + cfp_bias), 0.into());
+                // Publish the new frame so the interpreter resumes into it.
+                asm.lea_into(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), Opnd::mem(64, CFP, cfp_bias));
+            }
+
             asm_comment!(asm, "save cfp->pc");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
+            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC + cfp_bias), *pc);
 
             asm_comment!(asm, "save cfp->sp");
-            asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
+            asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP + cfp_bias), Opnd::mem(64, SP, (stack.len() as i32 + sp_bias) * SIZEOF_VALUE_I32));
 
             asm_comment!(asm, "save cfp->iseq");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
+            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ + cfp_bias), VALUE::from(*iseq).into());
 
             // cfp->block_code and cfp->jit_return are cleared by the materialize_exit trampoline
 
@@ -3175,29 +3272,49 @@ impl Assembler
             if !stack.is_empty() {
                 asm_comment!(asm, "write stack slots: {}", join_opnds(&stack, ", "));
                 for (idx, &opnd) in stack.iter().enumerate() {
-                    asm.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
-                }
-                for (idx, &needs_box) in stack_needs_flonum_box.iter().enumerate() {
-                    if needs_box {
-                        encode_flonum_slot(asm, Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32));
-                    }
+                    asm.store(Opnd::mem(64, SP, (idx as i32 + sp_bias) * SIZEOF_VALUE_I32), opnd);
                 }
             }
 
             if !locals.is_empty() {
                 asm_comment!(asm, "write locals: {}", join_opnds(&locals, ", "));
                 for (idx, &opnd) in locals.iter().enumerate() {
-                    asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
-                }
-                for (idx, &needs_box) in locals_needs_flonum_box.iter().enumerate() {
-                    if needs_box {
-                        encode_flonum_slot(asm, Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32));
-                    }
+                    asm.store(Opnd::mem(64, SP, (sp_bias - local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                 }
             }
 
             if let Some(stack_map) = stack_map {
                 compile_exit_stack_map(asm, stack_map);
+            }
+
+            // All flonum re-encodes run last: every register-held operand above
+            // (frame writes and stack-map captures) is already stored to
+            // memory, so the encode ccalls clobbering caller-saved registers
+            // cannot lose anything. Each encode reads its slot from the frame
+            // and writes it back, so the encodes are order-independent.
+            for (idx, &needs_box) in stack_needs_flonum_box.iter().enumerate() {
+                if needs_box {
+                    encode_flonum_slot(asm, Opnd::mem(64, SP, (idx as i32 + sp_bias) * SIZEOF_VALUE_I32));
+                }
+            }
+            for (idx, &needs_box) in locals_needs_flonum_box.iter().enumerate() {
+                if needs_box {
+                    encode_flonum_slot(asm, Opnd::mem(64, SP, (sp_bias - local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32));
+                }
+            }
+            if let Some(m) = materialize {
+                for &(disp, _, needs_box) in &m.caller_locals {
+                    if needs_box {
+                        encode_flonum_slot(asm, Opnd::mem(64, SP, disp * SIZEOF_VALUE_I32));
+                    }
+                }
+
+                // Step CFP down to the frame we just built, so the trampoline's
+                // jit_return clear and frame materialization see the same world
+                // as a non-elided exit. Everything after this point (trace and
+                // recompile ccalls in compile_exit) reads a coherent ec->cfp.
+                asm_comment!(asm, "switch CFP to the materialized block frame");
+                asm.sub_into(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
             }
         }
 

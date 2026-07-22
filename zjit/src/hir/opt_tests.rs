@@ -2183,8 +2183,10 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(map)
           v122:CPtr = GetCFP 1
           v123:CPtr = LoadField v122, :cfp_ep@0x1060
-          PushInlineBlockFrame self=v28 ep=v123 (0x1068), v118
-          PopInlineFrame
+          v165:CInt64[1] = Const CInt64(1)
+          v166:CPtr = IntOr v123, v165
+          PushInlineBlockFrame self=v28 ep=v123 (0x1068), v118 elided
+          PopInlineFrame elided
           v142:BasicObject = InvokeBuiltin rb_jit_ary_push, v25, v68, v118
           PatchPoint NoEPEscape(map)
           v148:Fixnum[1] = Const Value(1)
@@ -4744,10 +4746,12 @@ mod hir_opt_tests {
           v32:Fixnum[2] = Const Value(2)
           v34:CPtr = GetCFP 1
           v35:CPtr = LoadField v34, :cfp_ep@0x1058
-          PushInlineBlockFrame self=v23 ep=v35 (0x1060), v30, v32
+          v76:CInt64[1] = Const CInt64(1)
+          v77:CPtr = IntOr v35, v76
+          PushInlineBlockFrame self=v23 ep=v35 (0x1060), v30, v32 elided
           PatchPoint MethodRedefined(Integer@0x1080, +@0x1088, cme:0x1090)
           v74:Fixnum[3] = Const Value(3)
-          PopInlineFrame
+          PopInlineFrame elided
           PatchPoint NoEPEscape(foo)
           v75:Fixnum[13] = Const Value(13)
           PopInlineFrame
@@ -4838,10 +4842,12 @@ mod hir_opt_tests {
           v40:Fixnum[8] = Const Value(8)
           v42:CPtr = GetCFP 1
           v43:CPtr = LoadField v42, :cfp_ep@0x1058
-          PushInlineBlockFrame self=v21 ep=v43 (0x1060), v26, v28, v30, v32, v34, v36, v38, v40
+          v134:CInt64[1] = Const CInt64(1)
+          v135:CPtr = IntOr v43, v134
+          PushInlineBlockFrame self=v21 ep=v43 (0x1060), v26, v28, v30, v32, v34, v36, v38, v40 elided
           PatchPoint MethodRedefined(Integer@0x1080, +@0x1088, cme:0x1090)
           v133:Fixnum[36] = Const Value(36)
-          PopInlineFrame
+          PopInlineFrame elided
           PopInlineFrame
           CheckInterrupts
           Return v133
@@ -5358,11 +5364,13 @@ mod hir_opt_tests {
           v73:Fixnum = BoxFixnum v72
           v39:CPtr = GetCFP 1
           v40:CPtr = LoadField v39, :cfp_ep@0x1090
-          PushInlineBlockFrame self=v29 ep=v40 (0x1098), v73
+          v78:CInt64[1] = Const CInt64(1)
+          v79:CPtr = IntOr v40, v78
+          PushInlineBlockFrame self=v29 ep=v40 (0x1098), v73 elided
           v48:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x10b8, +@0x10c0, cme:0x10c8)
           v77:Fixnum = FixnumAdd v73, v48
-          PopInlineFrame
+          PopInlineFrame elided
           PatchPoint NoEPEscape(foo)
           PopInlineFrame
           CheckInterrupts
@@ -12177,12 +12185,14 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(map)
           v118:CPtr = GetCFP 1
           v119:CPtr = LoadField v118, :cfp_ep@0x1060
-          PushInlineBlockFrame self=v24 ep=v119 (0x1068), v114
+          v170:CInt64[1] = Const CInt64(1)
+          v171:CPtr = IntOr v119, v170
+          PushInlineBlockFrame self=v24 ep=v119 (0x1068), v114 elided
           v127:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1088, *@0x1090, cme:0x1098)
           v168:Fixnum = GuardType v114, Fixnum recompile
           v169:Fixnum = FixnumMult v168, v127
-          PopInlineFrame
+          PopInlineFrame elided
           v143:BasicObject = InvokeBuiltin rb_jit_ary_push, v11, v64, v169
           PatchPoint NoEPEscape(map)
           v149:Fixnum[1] = Const Value(1)
@@ -12478,10 +12488,12 @@ mod hir_opt_tests {
           v26:Fixnum[1] = Const Value(1)
           v28:CPtr = GetCFP 1
           v29:CPtr = LoadField v28, :cfp_ep@0x1058
-          PushInlineBlockFrame self=v21 ep=v29 (0x1060), v26
+          v59:CInt64[1] = Const CInt64(1)
+          v60:CPtr = IntOr v29, v59
+          PushInlineBlockFrame self=v21 ep=v29 (0x1060), v26 elided
           v37:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1080, *@0x1088, cme:0x1090)
-          PopInlineFrame
+          PopInlineFrame elided
           PopInlineFrame
           CheckInterrupts
           Return v37
@@ -17612,11 +17624,13 @@ mod hir_opt_tests {
           v88:Fixnum = BoxFixnum v87
           v54:CPtr = GetCFP 1
           v55:CPtr = LoadField v54, :cfp_ep@0x1098
-          PushInlineBlockFrame self=v44 ep=v55 (0x10a0), v88
+          v93:CInt64[1] = Const CInt64(1)
+          v94:CPtr = IntOr v55, v93
+          PushInlineBlockFrame self=v44 ep=v55 (0x10a0), v88 elided
           v63:Fixnum[4] = Const Value(4)
           PatchPoint MethodRedefined(Integer@0x10c0, +@0x10c8, cme:0x10d0)
           v92:Fixnum = FixnumAdd v88, v63
-          PopInlineFrame
+          PopInlineFrame elided
           PatchPoint NoEPEscape(foo)
           PopInlineFrame
           PatchPoint NoEPEscape(test)
@@ -23406,8 +23420,10 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(each)
           v100:CPtr = GetCFP 1
           v101:CPtr = LoadField v100, :cfp_ep@0x1060
-          PushInlineBlockFrame self=v24 ep=v101 (0x1068), v96
-          PopInlineFrame
+          v135:CInt64[1] = Const CInt64(1)
+          v136:CPtr = IntOr v101, v135
+          PushInlineBlockFrame self=v24 ep=v101 (0x1068), v96 elided
+          PopInlineFrame elided
           v120:Fixnum[1] = Const Value(1)
           v121:Fixnum = FixnumAdd v67, v120
           Jump bb10(v121)
@@ -26231,12 +26247,14 @@ mod hir_opt_tests {
           PushInlineFrame :with_yield, v25 (0x1040), num_args=1
           v35:CPtr = GetCFP 1
           v36:CPtr = LoadField v35, :cfp_ep@0x1060
-          PushInlineBlockFrame self=v28 ep=v36 (0x1068), v10
+          v68:CInt64[1] = Const CInt64(1)
+          v69:CPtr = IntOr v36, v68
+          PushInlineBlockFrame self=v28 ep=v36 (0x1068), v10 elided
           v44:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1088, +@0x1090, cme:0x1098)
           v66:Fixnum = GuardType v10, Fixnum recompile
           v67:Fixnum = FixnumAdd v66, v44
-          PopInlineFrame
+          PopInlineFrame elided
           PatchPoint NoEPEscape(with_yield)
           PopInlineFrame
           PatchPoint NoEPEscape(test)
