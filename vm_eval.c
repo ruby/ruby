@@ -1477,13 +1477,21 @@ vm_frametype_name(const rb_control_frame_t *cfp);
 #endif
 
 static VALUE
+iterator_block_expired(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
+{
+    rb_raise(rb_eRuntimeError, "iterator block was called after iteration ended");
+    UNREACHABLE_RETURN(Qnil);
+}
+
+static VALUE
 rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
-            const struct vm_ifunc *const ifunc,
+            struct vm_ifunc *const ifunc, bool block_noescape,
             rb_execution_context_t *ec)
 {
     enum ruby_tag_type state;
     volatile VALUE retval = Qnil;
-    rb_control_frame_t *const cfp = ec->cfp;
+    rb_control_frame_t *volatile const cfp = ec->cfp;
+    struct vm_ifunc *volatile const invalidate_ifunc = block_noescape ? ifunc : NULL;
 
     EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
@@ -1524,6 +1532,11 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
     }
     EC_POP_TAG();
 
+    if (invalidate_ifunc) {
+        invalidate_ifunc->func = iterator_block_expired;
+        invalidate_ifunc->data = NULL;
+    }
+
     if (state) {
         EC_JUMP_TAG(ec, state);
     }
@@ -1532,11 +1545,11 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 
 static VALUE
 rb_iterate_internal(VALUE (* it_proc)(VALUE), VALUE data1,
-                    rb_block_call_func_t bl_proc, VALUE data2)
+                    rb_block_call_func_t bl_proc, VALUE data2, bool block_noescape)
 {
     return rb_iterate0(it_proc, data1,
                        bl_proc ? rb_vm_ifunc_proc_new(bl_proc, (void *)data2) : 0,
-                       GET_EC());
+                       block_noescape, GET_EC());
 }
 
 struct iter_method_arg {
@@ -1576,7 +1589,29 @@ rb_block_call_kw(VALUE obj, ID mid, int argc, const VALUE * argv,
     arg.argc = argc;
     arg.argv = argv;
     arg.kw_splat = kw_splat;
-    return rb_iterate_internal(iterate_method, (VALUE)&arg, bl_proc, data2);
+    return rb_iterate_internal(iterate_method, (VALUE)&arg, bl_proc, data2, false);
+}
+
+/*
+ * Identical to rb_block_call(), except that the block created for
+ * `bl_proc` must not escape this call: it is invalidated when this
+ * function returns, and calling it afterwards raises RuntimeError.
+ * Use this variant whenever `data2` points to storage that dies with
+ * this call (e.g. a buffer on the caller's stack), so that a block
+ * captured by the called method cannot cause a use-after-return.
+ */
+VALUE
+rb_block_call_noescape(VALUE obj, ID mid, int argc, const VALUE *argv,
+                       rb_block_call_func_t bl_proc, VALUE data2)
+{
+    struct iter_method_arg arg;
+
+    arg.obj = obj;
+    arg.mid = mid;
+    arg.argc = argc;
+    arg.argv = argv;
+    arg.kw_splat = RB_NO_KEYWORDS;
+    return rb_iterate_internal(iterate_method, (VALUE)&arg, bl_proc, data2, true);
 }
 
 /*
@@ -1607,7 +1642,7 @@ rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv,
     if (flags & RB_BLOCK_NO_USE_PACKED_ARGS)
         ifunc->flags |= IFUNC_YIELD_OPTIMIZABLE;
 
-    return rb_iterate0(iterate_method, (VALUE)&arg, ifunc, GET_EC());
+    return rb_iterate0(iterate_method, (VALUE)&arg, ifunc, false, GET_EC());
 }
 
 VALUE
@@ -1625,7 +1660,7 @@ rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
     arg.argv = argv;
     arg.kw_splat = 0;
     block = rb_vm_ifunc_new(bl_proc, (void *)data2, min_argc, max_argc);
-    return rb_iterate0(iterate_method, (VALUE)&arg, block, GET_EC());
+    return rb_iterate0(iterate_method, (VALUE)&arg, block, false, GET_EC());
 }
 
 static VALUE
@@ -1648,7 +1683,22 @@ rb_check_block_call(VALUE obj, ID mid, int argc, const VALUE *argv,
     arg.argc = argc;
     arg.argv = argv;
     arg.kw_splat = 0;
-    return rb_iterate_internal(iterate_check_method, (VALUE)&arg, bl_proc, data2);
+    return rb_iterate_internal(iterate_check_method, (VALUE)&arg, bl_proc, data2, false);
+}
+
+/* The rb_block_call_noescape() counterpart of rb_check_block_call(). */
+VALUE
+rb_check_block_call_noescape(VALUE obj, ID mid, int argc, const VALUE *argv,
+                             rb_block_call_func_t bl_proc, VALUE data2)
+{
+    struct iter_method_arg arg;
+
+    arg.obj = obj;
+    arg.mid = mid;
+    arg.argc = argc;
+    arg.argv = argv;
+    arg.kw_splat = 0;
+    return rb_iterate_internal(iterate_check_method, (VALUE)&arg, bl_proc, data2, true);
 }
 
 VALUE

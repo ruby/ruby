@@ -20,6 +20,7 @@
 #include "internal/proc.h"
 #include "internal/rational.h"
 #include "internal/re.h"
+#include "internal/vm.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
 #include "symbol.h"
@@ -2134,7 +2135,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
         }
     }
     else {
-        rb_block_call(obj, id_each, 0, 0, nmin_i, (VALUE)&data);
+        rb_block_call_noescape(obj, id_each, 0, 0, nmin_i, (VALUE)&data);
     }
     nmin_filter(&data);
     result = data.buf;
@@ -4854,7 +4855,7 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
             rb_method_basic_definition_p(CLASS_OF(obj), id_each))
         hash_sum(obj, &memo);
     else
-        rb_block_call(obj, id_each, 0, 0, enum_sum_i, (VALUE)&memo);
+        rb_block_call_noescape(obj, id_each, 0, 0, enum_sum_i, (VALUE)&memo);
 
     if (memo.float_value) {
         return DBL2NUM(memo.f + memo.c);

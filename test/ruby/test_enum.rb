@@ -1171,6 +1171,44 @@ class TestEnumerable < Test::Unit::TestCase
     assert_typed_equal(e, v, Complex, msg)
   end
 
+  def test_block_called_after_iteration_ended
+    bug22019 = '[Bug #22019]'
+    c = Class.new do
+      include Enumerable
+      attr_reader :block
+      def initialize(*values)
+        @values = values
+      end
+      def each(&b)
+        @block = b
+        @values.each {|v| yield v }
+        self
+      end
+    end
+
+    obj = c.new(1, 2)
+    assert_equal(3, obj.sum, bug22019)
+    assert_raise_with_message(RuntimeError, /after iteration ended/, bug22019) {obj.block.call(1)}
+
+    obj = c.new(3, 1, 2)
+    assert_equal([1], obj.min(1), bug22019)
+    assert_raise_with_message(RuntimeError, /after iteration ended/, bug22019) {obj.block.call(1)}
+
+    obj = c.new(1, 2)
+    assert_equal([[10, 1], [20, 2]], [10, 20].zip(obj), bug22019)
+    assert_raise_with_message(RuntimeError, /after iteration ended/, bug22019) {obj.block.call(1)}
+
+    # calling the block during the iteration is still fine
+    class << (reentrant = Object.new)
+      include Enumerable
+      def each(&b)
+        b.call(1)
+        b.call(2)
+      end
+    end
+    assert_equal(3, reentrant.sum, bug22019)
+  end
+
   def test_sum
     class << (enum = Object.new)
       include Enumerable

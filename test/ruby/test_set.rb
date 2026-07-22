@@ -689,6 +689,23 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set[2,4], ret)
   end
 
+  def test_and_block_called_after_iteration_ended
+    bug22019 = '[Bug #22019]'
+    c = Class.new do
+      include Enumerable
+      attr_reader :block
+      def each(&b)
+        @block = b
+        yield 1
+      end
+    end
+    obj = c.new
+    assert_equal(Set[1], Set[1, 2, 3] & obj, bug22019)
+    assert_raise_with_message(RuntimeError, /after iteration ended/, bug22019) {
+      obj.block.call(1)
+    }
+  end
+
   def test_xor
     ALL_SET_CLASSES.each { |klass|
       set = klass[1,2,3,4]

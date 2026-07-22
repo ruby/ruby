@@ -27,6 +27,7 @@
 #include "internal/error.h"
 #include "internal/numeric.h"
 #include "internal/range.h"
+#include "internal/vm.h"
 
 VALUE rb_cRange;
 static ID id_beg, id_end, id_excl;
@@ -1425,7 +1426,7 @@ range_first(int argc, VALUE *argv, VALUE range)
     rb_scan_args(argc, argv, "1", &n);
     ary[0] = n;
     ary[1] = rb_ary_new2(NUM2LONG(n));
-    rb_block_call(range, idEach, 0, 0, first_i, (VALUE)ary);
+    rb_block_call_noescape(range, idEach, 0, 0, first_i, (VALUE)ary);
 
     return ary[1];
 }
@@ -1770,7 +1771,7 @@ range_max(int argc, VALUE *argv, VALUE range)
         CONST_ID(reverse_each, "reverse_each");
         rb_scan_args(argc, argv, "1", &ary[0]);
         ary[1] = rb_ary_new2(NUM2LONG(ary[0]));
-        rb_block_call(range, reverse_each, 0, 0, first_i, (VALUE)ary);
+        rb_block_call_noescape(range, reverse_each, 0, 0, first_i, (VALUE)ary);
         return ary[1];
 #if 0
         if (integer_end_optimizable(range)) {

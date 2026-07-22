@@ -64,6 +64,8 @@ void rb_lastline_set_up(VALUE val, unsigned int up);
 /* vm_eval.c */
 VALUE rb_current_realfilepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, VALUE);
+VALUE rb_block_call_noescape(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, VALUE data2);
+VALUE rb_check_block_call_noescape(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, VALUE data2);
 typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
                                  rb_check_funcall_hook *hook, VALUE arg, int kw_splat);
