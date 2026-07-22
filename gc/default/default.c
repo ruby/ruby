@@ -8867,7 +8867,8 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size, bool gc_a
             GPR_FLAG_IMMEDIATE_MARK      |                   \
             GPR_FLAG_IMMEDIATE_SWEEP     |                   \
             GPR_FLAG_MALLOC;                                 \
-        objspace_malloc_gc_stress(objspace);                 \
+        /* stress GC must also honor gc_allowed (malloc_gc_disabled) */ \
+        if (gc_allowed) objspace_malloc_gc_stress(objspace);  \
                                                              \
         if (RB_LIKELY((expr))) {                             \
             /* Success on 1st try */                         \
