@@ -210,10 +210,14 @@
 #include <locale.h>
 #endif
 
-#if defined(HAVE_STDCKDINT_H) || !defined(__has_include)
-#elif __has_include(<stdckdint.h>)
+#if !defined(HAVE_STDCKDINT_H)
+#if defined(__has_include)
+#if __has_include(<stdckdint.h>)
 # define HAVE_STDCKDINT_H 1
 #endif
+#endif
+#endif
+
 #ifdef HAVE_STDCKDINT_H
 # include <stdckdint.h>
 #endif
