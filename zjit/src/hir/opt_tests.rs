@@ -16856,6 +16856,71 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn specialize_polymorphic_send_preserves_argument_profiles() {
+        // Each arm of a polymorphic dispatch must still see the profiled types of
+        // the non-receiver arguments: the Array arm below can only inline ArrayAref
+        // if the Fixnum profile of `i` survives into the arm's Snapshot.
+        set_call_threshold(4);
+        eval("
+        def test(a, i)
+          a[i]
+        end
+
+        test([10, 20], 1)
+        test({1 => 2}, 1)
+        test([10, 20], 1)
+        test({1 => 2}, 1)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :i@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :i@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v21:CBool = HasType v12, ArrayExact
+          CondBranch v21, bb5(), bb6()
+        bb5():
+          v24:ArrayExact = RefineType v12, ArrayExact
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
+          v43:Fixnum = GuardType v13, Fixnum
+          v44:CInt64 = UnboxFixnum v43
+          v45:CInt64 = ArrayLength v24
+          v46:CInt64 = GuardLess v44, v45
+          v47:CInt64 = AdjustBounds v46, v45
+          v48:CInt64[0] = Const CInt64(0)
+          v49:CInt64 = GuardGreaterEq v47, v48
+          v50:BasicObject = ArrayAref v24, v49
+          Jump bb4(v50)
+        bb6():
+          v27:CBool = HasType v12, HashExact
+          CondBranch v27, bb7(), bb8()
+        bb7():
+          v30:HashExact = RefineType v12, HashExact
+          PatchPoint NoSingletonClass(Hash@0x1040)
+          PatchPoint MethodRedefined(Hash@0x1040, []@0x1010, cme:0x1048)
+          v54:BasicObject = HashAref v30, v13
+          Jump bb4(v54)
+        bb8():
+          v33:BasicObject = Send v12, :[], v13 # SendFallbackReason: Send: polymorphic call site
+          Jump bb4(v33)
+        bb4(v20:BasicObject):
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
     fn specialize_polymorphic_send_fixnum_and_bignum() {
         // Fixnum and Bignum both have class Integer, but they should be
         // treated as different types for polymorphic dispatch because
@@ -18519,9 +18584,11 @@ mod hir_opt_tests {
             30.times { test_float_mul_recompile(-0.0, 1.5) }
         "#);
 
+        // After recompiling, the HeapFloat arm of the polymorphic dispatch must
+        // not speculate on Flonum; it falls back to CCallWithFrame. The Flonum
+        // arm still inlines FloatMul, guarded on the Flonum-profiled argument.
         let final_hir = hir_string("test_float_mul_recompile");
         assert!(final_hir.contains("CCallWithFrame"), "{final_hir}");
-        assert!(!final_hir.contains("FloatMul"), "{final_hir}");
         assert_snapshot!(format!("{intermediate_hir}\n{final_hir}"), @"
         fn test_float_mul_recompile@<compiled>:2:
         bb1():
@@ -18573,8 +18640,9 @@ mod hir_opt_tests {
         bb7():
           v30:Flonum = RefineType v12, Flonum
           PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
-          v45:BasicObject = CCallWithFrame v30, :Float#*@0x1040, v13
-          Jump bb4(v45)
+          v45:Flonum = GuardType v13, Flonum recompile
+          v46:Float = FloatMul v30, v45
+          Jump bb4(v46)
         bb8():
           v33:BasicObject = Send v12, :*, v13 # SendFallbackReason: Send: polymorphic call site
           Jump bb4(v33)
