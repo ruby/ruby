@@ -8220,6 +8220,17 @@ impl Function {
         let is_cfunc = |cme: *const rb_callable_method_entry_t| {
             !cme.is_null() && unsafe { get_cme_def_type(cme) } == VM_METHOD_TYPE_CFUNC
         };
+        let stock_cme = |cme: *const rb_callable_method_entry_t| -> bool {
+            if cme.is_null() { return false; }
+            match unsafe { get_cme_def_type(cme) } {
+                VM_METHOD_TYPE_CFUNC => true,
+                VM_METHOD_TYPE_ISEQ => {
+                    let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+                    iseq_get_location(iseq, 0).contains("<internal:")
+                }
+                _ => false,
+            }
+        };
         let internal_iseq_of = |cme: *const rb_callable_method_entry_t, loc_prefix: &str| -> Option<IseqPtr> {
             if cme.is_null() || unsafe { get_cme_def_type(cme) } != VM_METHOD_TYPE_ISEQ {
                 return None;
@@ -8551,7 +8562,12 @@ impl Function {
             // with only the index parameter seeded as Fixnum; if that fails
             // and the consumer has an element parameter, retry with the
             // element seeded too and add a speculative element guard.
-            enum Reduce { Add, Sub, Mult, Mod, Lt, Le, Gt, Ge, Eq, FAdd, FSub, FMul, FDiv }
+            enum Reduce {
+                Add, Sub, Mult, Mod, Div, BAnd, BOr, BXor,
+                Lt, Le, Gt, Ge, Eq,
+                FAdd, FSub, FMul, FDiv, FCmp(FloatCmpOp),
+                REven, ROdd, RZero, RNeg, RToF, RFToI,
+            }
             let body_params: Vec<InsnId> = translated.as_ref()
                 .and_then(|r| r.body_entry_block)
                 .map(|b| self.blocks[b].params.clone())
@@ -8654,6 +8670,9 @@ impl Function {
                                 let kind = match mid.contents_lossy().as_ref() {
                                     "+" => Some(Reduce::Add), "-" => Some(Reduce::Sub),
                                     "*" => Some(Reduce::Mult), "%" => Some(Reduce::Mod),
+                                    "/" => Some(Reduce::Div),
+                                    "&" => Some(Reduce::BAnd), "|" => Some(Reduce::BOr),
+                                    "^" => Some(Reduce::BXor),
                                     "<" => Some(Reduce::Lt),
                                     "<=" => Some(Reduce::Le), ">" => Some(Reduce::Gt),
                                     ">=" => Some(Reduce::Ge), "==" => Some(Reduce::Eq),
@@ -8665,29 +8684,79 @@ impl Function {
                                 let arg_fix = fixnum_vals.contains(&arg_r);
                                 let recv_flo = float_vals.contains(&recv_r);
                                 let arg_flo = float_vals.contains(&arg_r);
+                                let op_klass = if recv_fix { unsafe { rb_cInteger } } else { unsafe { rb_cFloat } };
+                                let op_is_stock = stock_cme(cme_of(op_klass, mid));
                                 match kind {
+                                    _ if !op_is_stock => { reject = true; break 'purity; }
                                     Some(k) if recv_fix && arg_fix => {
-                                        if matches!(k, Reduce::Add | Reduce::Sub | Reduce::Mult | Reduce::Mod) {
+                                        // Division may leave Fixnum range (MIN / -1); its
+                                        // spliced result guard keeps the classification
+                                        // sound. The other arithmetic either deopts on
+                                        // overflow (+,-,*) or cannot overflow (%,&,|,^).
+                                        if matches!(k, Reduce::Add | Reduce::Sub | Reduce::Mult | Reduce::Mod
+                                                    | Reduce::Div | Reduce::BAnd | Reduce::BOr | Reduce::BXor) {
                                             fixnum_vals.insert(self.union_find.borrow().find_const(iid));
                                         }
                                         to_reduce.push((iid, bidx, k, recv_r, arg_r, mid, recv_fix, arg_fix));
                                     }
                                     // Float or mixed fixnum/float arithmetic reduces to the
                                     // CDouble FloatArith chain (pure; Inf/NaN results fail the
-                                    // BoxFlonum guard and restart). Comparisons stay declined.
-                                    Some(k @ (Reduce::Add | Reduce::Sub | Reduce::Mult))
+                                    // BoxFlonum guard and restart). The int-to-double
+                                    // conversion matches rb_int_plus & friends exactly.
+                                    Some(k @ (Reduce::Add | Reduce::Sub | Reduce::Mult | Reduce::Div))
                                         if (recv_flo || recv_fix) && (arg_flo || arg_fix) && (recv_flo || arg_flo) => {
                                         let fk = match k {
                                             Reduce::Add => Reduce::FAdd,
                                             Reduce::Sub => Reduce::FSub,
-                                            _ => Reduce::FMul,
+                                            Reduce::Mult => Reduce::FMul,
+                                            _ => Reduce::FDiv,
                                         };
                                         float_vals.insert(self.union_find.borrow().find_const(iid));
                                         to_reduce.push((iid, bidx, fk, recv_r, arg_r, mid, recv_fix, arg_fix));
                                     }
-                                    Some(Reduce::FDiv) => { reject = true; break 'purity; }
+                                    // Float-float comparisons lower to FloatCmp's leaf IEEE
+                                    // helpers, matching Float#< semantics including NaN.
+                                    // Mixed int/float comparisons stay declined: Ruby
+                                    // compares those exactly, a double round-trip does not.
+                                    Some(k @ (Reduce::Lt | Reduce::Le | Reduce::Gt | Reduce::Ge | Reduce::Eq))
+                                        if recv_flo && arg_flo => {
+                                        let op = match k {
+                                            Reduce::Lt => FloatCmpOp::Lt,
+                                            Reduce::Le => FloatCmpOp::Le,
+                                            Reduce::Gt => FloatCmpOp::Gt,
+                                            Reduce::Ge => FloatCmpOp::Ge,
+                                            _ => FloatCmpOp::Eq,
+                                        };
+                                        to_reduce.push((iid, bidx, Reduce::FCmp(op), recv_r, arg_r, mid, recv_fix, arg_fix));
+                                    }
                                     _ => { reject = true; break 'purity; }
                                 }
+                            }
+                            Insn::Send { recv, args, cd, .. } if args.is_empty() => {
+                                let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
+                                let recv_r = self.union_find.borrow().find_const(recv);
+                                let recv_fix = fixnum_vals.contains(&recv_r);
+                                let recv_flo = float_vals.contains(&recv_r);
+                                let zk = if recv_fix { unsafe { rb_cInteger } } else { unsafe { rb_cFloat } };
+                                if !stock_cme(cme_of(zk, mid)) { reject = true; break 'purity; }
+                                let k = match (mid.contents_lossy().as_ref(), recv_fix, recv_flo) {
+                                    ("even?", true, _) => Reduce::REven,
+                                    ("odd?", true, _) => Reduce::ROdd,
+                                    ("zero?", true, _) => Reduce::RZero,
+                                    ("-@", true, _) => Reduce::RNeg,
+                                    ("to_f", true, _) => Reduce::RToF,
+                                    ("to_i" | "to_int", false, true) => Reduce::RFToI,
+                                    _ => { reject = true; break 'purity; }
+                                };
+                                match k {
+                                    // Negation's overflow (-FIXNUM_MIN) deopts in FixnumSub.
+                                    Reduce::RNeg => { fixnum_vals.insert(self.union_find.borrow().find_const(iid)); }
+                                    // Integer#to_f is the same lossy (double) conversion.
+                                    Reduce::RToF => { float_vals.insert(self.union_find.borrow().find_const(iid)); }
+                                    // Float#to_i may exceed Fixnum range: leave unclassified.
+                                    _ => {}
+                                }
+                                to_reduce.push((iid, bidx, k, recv_r, recv_r, mid, recv_fix, false));
                             }
                             _ => { reject = true; break 'purity; }
                         }
@@ -8754,6 +8823,7 @@ impl Function {
                         let op_d = self.new_insn(match k {
                             Reduce::FAdd => Insn::FloatAdd { recv: l_d, other: r_d, state: c.a_state },
                             Reduce::FSub => Insn::FloatSub { recv: l_d, other: r_d, state: c.a_state },
+                            Reduce::FDiv => Insn::FloatDiv { recv: l_d, other: r_d, state: c.a_state },
                             _ => Insn::FloatMul { recv: l_d, other: r_d, state: c.a_state },
                         });
                         self.insns[iid] = Insn::BoxFlonum { val: op_d, state: c.a_state };
@@ -8761,12 +8831,70 @@ impl Function {
                             .expect("reduced send must be in its block");
                         self.blocks[bidx].insns.splice(pos..pos, [l_d, r_d, op_d]);
                     }
+                    Reduce::FCmp(op) => {
+                        self.insns[iid] = Insn::FloatCmp { op: *op, recv: l, other: r, state: c.a_state };
+                    }
+                    Reduce::Div => {
+                        // rb_fix_div_fix can return a Bignum (MIN / -1); the
+                        // result guard keeps the Fixnum classification honest.
+                        let d = self.new_insn(Insn::FixnumDiv { left: l, right: r, state: c.a_state });
+                        self.insns[iid] = Insn::GuardType {
+                            val: d, guard_type: types::Fixnum, state: c.a_state, recompile: None,
+                        };
+                        let pos = self.blocks[bidx].insns.iter().position(|&x| x == iid)
+                            .expect("reduced send must be in its block");
+                        self.blocks[bidx].insns.splice(pos..pos, [d]);
+                    }
+                    Reduce::REven | Reduce::ROdd => {
+                        let c1 = self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) });
+                        let and = self.new_insn(Insn::FixnumAnd { left: l, right: c1 });
+                        let rhs = if matches!(k, Reduce::REven) {
+                            self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) })
+                        } else {
+                            c1
+                        };
+                        self.insns[iid] = Insn::FixnumEq { left: and, right: rhs };
+                        let pos = self.blocks[bidx].insns.iter().position(|&x| x == iid)
+                            .expect("reduced send must be in its block");
+                        if matches!(k, Reduce::REven) {
+                            self.blocks[bidx].insns.splice(pos..pos, [c1, and, rhs]);
+                        } else {
+                            self.blocks[bidx].insns.splice(pos..pos, [c1, and]);
+                        }
+                    }
+                    Reduce::RZero => {
+                        let c0 = self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) });
+                        self.insns[iid] = Insn::FixnumEq { left: l, right: c0 };
+                        let pos = self.blocks[bidx].insns.iter().position(|&x| x == iid)
+                            .expect("reduced send must be in its block");
+                        self.blocks[bidx].insns.splice(pos..pos, [c0]);
+                    }
+                    Reduce::RNeg => {
+                        let c0 = self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) });
+                        self.insns[iid] = Insn::FixnumSub { left: c0, right: l, state: c.a_state };
+                        let pos = self.blocks[bidx].insns.iter().position(|&x| x == iid)
+                            .expect("reduced send must be in its block");
+                        self.blocks[bidx].insns.splice(pos..pos, [c0]);
+                    }
+                    Reduce::RToF => {
+                        let f = self.new_insn(Insn::F64FromFixnum { val: l });
+                        self.insns[iid] = Insn::BoxFlonum { val: f, state: c.a_state };
+                        let pos = self.blocks[bidx].insns.iter().position(|&x| x == iid)
+                            .expect("reduced send must be in its block");
+                        self.blocks[bidx].insns.splice(pos..pos, [f]);
+                    }
+                    Reduce::RFToI => {
+                        self.insns[iid] = Insn::FloatToInt { recv: l, state: c.a_state };
+                    }
                     _ => {
                         self.insns[iid] = match k {
                             Reduce::Add => Insn::FixnumAdd { left: l, right: r, state: c.a_state },
                             Reduce::Sub => Insn::FixnumSub { left: l, right: r, state: c.a_state },
                             Reduce::Mult => Insn::FixnumMult { left: l, right: r, state: c.a_state },
                             Reduce::Mod => Insn::FixnumMod { left: l, right: r, state: c.a_state },
+                            Reduce::BAnd => Insn::FixnumAnd { left: l, right: r },
+                            Reduce::BOr => Insn::FixnumOr { left: l, right: r },
+                            Reduce::BXor => Insn::FixnumXor { left: l, right: r },
                             Reduce::Lt => Insn::FixnumLt { left: l, right: r },
                             Reduce::Le => Insn::FixnumLe { left: l, right: r },
                             Reduce::Gt => Insn::FixnumGt { left: l, right: r },
