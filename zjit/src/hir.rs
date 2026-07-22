@@ -1212,6 +1212,11 @@ pub enum Insn {
     /// Write `val` at an offset of `recv`.
     /// When writing a Ruby object to a Ruby object, one must use GuardNotFrozen (or equivalent) before and WriteBarrier after.
     StoreField { recv: InsnId, id: FieldName, offset: i32, val: InsnId, num_bits: u8 },
+
+    /// Store a local through an SSA environment pointer (a directly-inlined
+    /// block body writing its definer's local). Same write-barrier semantics
+    /// as SetLocal, minus the runtime EP-chain walk.
+    SetLocalEP { ep: InsnId, ep_offset: u32, val: InsnId },
     WriteBarrier { recv: InsnId, val: InsnId },
 
     /// Check whether VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set in the (already loaded) environment flags.
@@ -1825,6 +1830,7 @@ macro_rules! for_each_operand_impl {
             Insn::LoadField { recv, .. } => {
                 $visit_one!(*recv);
             }
+            Insn::SetLocalEP { ep: recv, val, .. } |
             Insn::StoreField { recv, val, .. }
             | Insn::WriteBarrier { recv, val } => {
                 $visit_one!(*recv);
@@ -1867,7 +1873,7 @@ impl Insn {
             | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::CondBranchFixnumCmp { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
-            | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
+            | Insn::SetLocal { .. } | Insn::SetLocalEP { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
             | Insn::ArrayAset { .. }
@@ -2028,6 +2034,7 @@ impl Insn {
             // This is why WriteBarrier writes to the "Memory" effect. We do not yet have a more granular specialization for flags
             Insn::WriteBarrier { .. } => Effect::read_write(abstract_heaps::Allocator, abstract_heaps::Allocator.union(abstract_heaps::Memory)),
             Insn::SetLocal { .. } => effects::Any,
+            Insn::SetLocalEP { .. } => effects::Any,
             Insn::GetSpecialSymbol { .. } => effects::Any,
             Insn::GetSpecialNumber { .. } => effects::Any,
             Insn::GetClassVar { .. } => effects::Any,
@@ -2695,6 +2702,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 let name = get_local_var_name_for_printer(iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
                 write!(f, "SetLocal {name}l{level}, EP@{ep_offset}, {val}")
             },
+            &Insn::SetLocalEP { ep, ep_offset, val } => write!(f, "SetLocalEP {ep}, EP@{ep_offset}, {val}"),
             Insn::GetSpecialSymbol { symbol_type, .. } => write!(f, "GetSpecialSymbol {symbol_type:?}"),
             Insn::GetSpecialNumber { nth, .. } => write!(f, "GetSpecialNumber {nth}"),
             Insn::GetClassVar { id, .. } => write!(f, "GetClassVar :{}", id.contents_lossy()),
@@ -3917,6 +3925,7 @@ impl Function {
             | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::CondBranchFixnumCmp { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
+            | Insn::SetLocalEP { .. }
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. }
@@ -6251,6 +6260,7 @@ impl Function {
                     jit_entry_idx: passed_opt_num,
                     blockiseq,
                     inline_block_ctx,
+                    definer_locals_cfp: None,
                 };
                 let add_result = match add_iseq_to_hir(self, iseq, mode) {
                     Ok(r) => r,
@@ -8726,6 +8736,7 @@ impl Function {
                     jit_entry_idx: 0,
                     blockiseq: None,
                     inline_block_ctx: None,
+                    definer_locals_cfp: None,
                 };
                 match add_iseq_to_hir(self, bi, block_mode) {
                     Ok(r) => Some(r),
@@ -10966,6 +10977,10 @@ impl Function {
                 self.assert_subtype(insn_id, val, types::RubyValue)?;
                 Ok(())
             }
+            Insn::SetLocalEP { ep, val, .. } => {
+                self.assert_subtype(insn_id, ep, types::CPtr)?;
+                self.assert_subtype(insn_id, val, types::RubyValue)
+            }
             Insn::IsBitGe { left, right } => {
                 // A raw-bits signed compare: CInt and CDouble operands are both
                 // GPR bit patterns (sign-cleared finite doubles order like
@@ -11832,7 +11847,36 @@ enum AddIseqMode {
         /// method, allowing cfp->ep to be reloaded after environment escape
         /// without decoding the block handler.
         inline_block_ctx: Option<InsnId>,
+        /// How a directly-inlined block body locates its defining CFP.
+        /// Level-1 local accesses reload cfp->ep from it so environment escape
+        /// cannot leave them using an obsolete stack EP.
+        definer_locals_cfp: Option<DefinerLocalsCFP>,
     },
+}
+
+#[derive(Clone, Copy)]
+enum DefinerLocalsCFP {
+    /// The translated body executes without a physical block frame, so its
+    /// defining frame is the current CFP at each access.
+    Current,
+    /// The defining CFP was computed before pushing the inlined block frame.
+    Captured(InsnId),
+}
+
+impl DefinerLocalsCFP {
+    fn load_ep(self, fun: &mut Function, block: BlockId) -> InsnId {
+        let cfp = match self {
+            Self::Current => fun.get_cfp(block, 0),
+            Self::Captured(cfp) => cfp,
+        };
+        fun.load_field(
+            block,
+            cfp,
+            FieldName::cfp_ep,
+            RUBY_OFFSET_CFP_EP,
+            types::CPtr,
+        )
+    }
 }
 
 /// Result of populating a Function with HIR for an ISEQ.
@@ -11895,6 +11939,10 @@ fn add_iseq_to_hir(
 ) -> Result<AddIseqResult, ParseError> {
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new();
+    let definer_locals_cfp = match mode {
+        AddIseqMode::Inlined { definer_locals_cfp, .. } => definer_locals_cfp,
+        AddIseqMode::Standalone => None,
+    };
 
     // Build the initial FrameState for a block being translated. In inlined
     // mode it carries the caller's post-send Snapshot and this frame's depth;
@@ -12656,8 +12704,18 @@ fn add_iseq_to_hir(
 
                     if level != 0 {
                         // Load local from EP; no change to FrameState as it describes level 0.
-                        let ep = fun.get_ep(block, level);
-                        let val = fun.get_local_from_ep(block, iseq, ep, ep_offset, level, types::BasicObject);
+                        let val = match definer_locals_cfp {
+                            // An inlined block body's level-1 locals live in the frame that
+                            // defined the block, addressed through its captured CFP.
+                            Some(definer_cfp) if level == 1 => {
+                                let dep = definer_cfp.load_ep(fun, block);
+                                fun.get_local_from_ep(block, iseq, dep, ep_offset, 1, types::BasicObject)
+                            }
+                            _ => {
+                                let ep = fun.get_ep(block, level);
+                                fun.get_local_from_ep(block, iseq, ep, ep_offset, level, types::BasicObject)
+                            }
+                        };
                         state.stack_push(val);
                     } else if ep_escaped {
                         assert!(level == 0); // from place in decision tree
@@ -12683,7 +12741,17 @@ fn add_iseq_to_hir(
                     let val = state.stack_pop()?;
 
                     if level != 0 {
-                        fun.push_insn(block, Insn::SetLocal { val, ep_offset, level, state: exit_id });
+                        match definer_locals_cfp {
+                            // See getlocal: write an inlined block body's level-1 local
+                            // through the defining frame's EP.
+                            Some(definer_cfp) if level == 1 => {
+                                let dep = definer_cfp.load_ep(fun, block);
+                                fun.push_insn(block, Insn::SetLocalEP { ep: dep, ep_offset, val });
+                            }
+                            _ => {
+                                fun.push_insn(block, Insn::SetLocal { val, ep_offset, level, state: exit_id });
+                            }
+                        }
                     } else if ep_escaped {
                         assert!(level == 0); // from place in decision tree
                         // Write the local using EP
@@ -13430,6 +13498,9 @@ fn add_iseq_to_hir(
                                 jit_entry_idx: 0,
                                 blockiseq: None,
                                 inline_block_ctx: None,
+                                // Level-1 locals reload the defining frame's
+                                // current EP after any environment escape.
+                                definer_locals_cfp: Some(DefinerLocalsCFP::Captured(definer_cfp)),
                             };
                             match add_iseq_to_hir(fun, block_iseq, block_mode) {
                                 Ok(add_result) => {

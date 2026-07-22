@@ -907,6 +907,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GetBlockParam { ep_offset, level, state } => gen_getblockparam(jit, asm, function, ep_offset, level, &function.frame_state(state), false),
         &Insn::SymToProc { ep_offset, level, state } => gen_getblockparam(jit, asm, function, ep_offset, level, &function.frame_state(state), true),
         &Insn::SetLocal { val, ep_offset, level, .. } => no_output!(gen_setlocal(asm, opnd!(val), function.type_of(val), ep_offset, level)),
+        &Insn::SetLocalEP { ep, ep_offset, val } => no_output!(gen_setlocal_ep(asm, opnd!(ep), opnd!(val), function.type_of(val), ep_offset)),
         Insn::GetConstant { klass, id, allow_nil, state } => gen_getconstant(jit, asm, function, opnd!(klass), *id, opnd!(allow_nil), &function.frame_state(*state)),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, function, *ic, &function.frame_state(*state)),
         Insn::GetClassVar { id, ic, state } => gen_getclassvar(jit, asm, function, *id, *ic, &function.frame_state(*state)),
@@ -1023,6 +1024,20 @@ fn gen_unbox_fixnum(asm: &mut Assembler, val: Opnd) -> Opnd {
 /// Set a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
 /// We generate this instruction with level=0 only when the local variable is on the heap, so we
 /// can't optimize the level=0 case using the SP register.
+/// SetLocal through an SSA environment pointer: same immediate/write-barrier
+/// split as gen_setlocal, minus the runtime EP-chain walk.
+fn gen_setlocal_ep(asm: &mut Assembler, ep: Opnd, val: Opnd, val_type: Type, local_ep_offset: u32) {
+    let local_ep_offset = c_int::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32"));
+    let ep = asm.load(ep);
+    if val_type.is_immediate() {
+        let offset = -(SIZEOF_VALUE_I32 * local_ep_offset);
+        asm.mov(Opnd::mem(64, ep, offset), val);
+    } else {
+        let local_index = -local_ep_offset;
+        asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), val);
+    }
+}
+
 fn gen_setlocal(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset: u32, level: u32) {
     let local_ep_offset = c_int::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32"));
     if level > 0 {
