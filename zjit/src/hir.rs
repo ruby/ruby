@@ -8576,7 +8576,7 @@ impl Function {
                 Add, Sub, Mult, Mod, Div, BAnd, BOr, BXor,
                 Lt, Le, Gt, Ge, Eq,
                 FAdd, FSub, FMul, FDiv, FCmp(FloatCmpOp),
-                REven, ROdd, RZero, RNeg, RToF, RFToI,
+                REven, ROdd, RZero, RNeg, RToF, RFToI, RFAbs,
             }
             let body_params: Vec<InsnId> = translated.as_ref()
                 .and_then(|r| r.body_entry_block)
@@ -8756,6 +8756,7 @@ impl Function {
                                     ("-@", true, _) => Reduce::RNeg,
                                     ("to_f", true, _) => Reduce::RToF,
                                     ("to_i" | "to_int", false, true) => Reduce::RFToI,
+                                    ("abs", false, true) => Reduce::RFAbs,
                                     _ => { reject = true; break 'purity; }
                                 };
                                 match k {
@@ -8763,6 +8764,7 @@ impl Function {
                                     Reduce::RNeg => { fixnum_vals.insert(self.union_find.borrow().find_const(iid)); }
                                     // Integer#to_f is the same lossy (double) conversion.
                                     Reduce::RToF => { float_vals.insert(self.union_find.borrow().find_const(iid)); }
+                                    Reduce::RFAbs => { float_vals.insert(self.union_find.borrow().find_const(iid)); }
                                     // Float#to_i may exceed Fixnum range: leave unclassified.
                                     _ => {}
                                 }
@@ -8899,6 +8901,14 @@ impl Function {
                     }
                     Reduce::RFToI => {
                         self.insns[iid] = Insn::FloatToInt { recv: l, state: c.a_state };
+                    }
+                    Reduce::RFAbs => {
+                        let u = self.new_insn(Insn::UnboxFlonum { val: l });
+                        let a = self.new_insn(Insn::FloatAbs { val: u });
+                        self.insns[iid] = Insn::BoxFlonum { val: a, state: c.a_state };
+                        let pos = self.blocks[bidx].insns.iter().position(|&x| x == iid)
+                            .expect("reduced send must be in its block");
+                        self.blocks[bidx].insns.splice(pos..pos, [u, a]);
                     }
                     _ => {
                         self.insns[iid] = match k {
