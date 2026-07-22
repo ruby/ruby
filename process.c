@@ -648,7 +648,7 @@ rb_process_status_for(rb_pid_t pid, int status, int error)
 static VALUE
 process_status_dump(VALUE status)
 {
-    VALUE dump = rb_class_new_instance(0, 0, rb_cObject);
+    VALUE dump = rb_class_allocate_instance_capa(rb_cObject, 2);
     struct rb_process_status *data;
     TypedData_Get_Struct(status, struct rb_process_status, &rb_process_status_type, data);
     if (data->pid) {

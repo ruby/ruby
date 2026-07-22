@@ -27,6 +27,7 @@
 #include "internal/enumerator.h"
 #include "internal/error.h"
 #include "internal/numeric.h"
+#include "internal/object.h"
 #include "internal/range.h"
 #include "shape.h"
 #include "zjit.h"
@@ -2409,7 +2410,7 @@ r_cover_p(VALUE range, VALUE beg, VALUE end, VALUE val)
 static VALUE
 range_dumper(VALUE range)
 {
-    VALUE v = rb_obj_alloc(rb_cObject);
+    VALUE v = rb_class_allocate_instance_capa(rb_cObject, 3);
 
     rb_ivar_set(v, id_excl, RANGE_EXCL(range));
     rb_ivar_set(v, id_beg, RANGE_BEG(range));
