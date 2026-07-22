@@ -1335,7 +1335,7 @@ void rb_proc_set_refinements_cref(VALUE procval, const rb_cref_t *cref);
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_proc_isolate(VALUE self);
 VALUE rb_proc_isolate_bang(VALUE self, VALUE replace_self);
-VALUE rb_proc_ractor_make_shareable(VALUE proc, VALUE replace_self);
+VALUE rb_proc_ractor_make_shareable(VALUE proc, VALUE replace_self, bool raise_on_error);
 RUBY_SYMBOL_EXPORT_END
 
 typedef struct {
