@@ -3167,6 +3167,10 @@ rb_str_sublen(VALUE str, long pos)
     }
 }
 
+/* Copy sharable substrings up to this size into an embedded string; share
+ * larger ones to bound memory use and GC overhead. See [Feature #22186]. */
+#define STR_SUBSEQ_EMBED_MAX_SIZE 256
+
 static VALUE
 str_subseq(VALUE str, long beg, long len)
 {
@@ -3186,12 +3190,11 @@ str_subseq(VALUE str, long beg, long len)
         return str2;
     }
 
-    str2 = str_alloc_heap(rb_cString);
-    if (str_embed_capa(str2) >= len + termlen) {
+    if (len <= STR_SUBSEQ_EMBED_MAX_SIZE && STR_EMBEDDABLE_P(len, termlen)) {
+        str2 = str_alloc_embed(rb_cString, len + termlen);
         char *ptr2 = RSTRING(str2)->as.embed.ary;
-        STR_SET_EMBED(str2);
         memcpy(ptr2, RSTRING_PTR(str) + beg, len);
-        TERM_FILL(ptr2+len, termlen);
+        TERM_FILL(ptr2 + len, termlen);
 
         STR_SET_LEN(str2, len);
         if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
@@ -3201,6 +3204,7 @@ str_subseq(VALUE str, long beg, long len)
         RB_GC_GUARD(str);
     }
     else {
+        str2 = str_alloc_heap(rb_cString);
         str_replace_shared(str2, str);
         RUBY_ASSERT(!STR_EMBED_P(str2));
         if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
