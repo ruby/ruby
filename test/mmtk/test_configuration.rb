@@ -22,7 +22,7 @@ module MMTk
       end
     end
 
-    %w(fixed dynamic).each do |heap|
+    %w(fixed dynamic ruby cpu).each do |heap|
       define_method(:"test_MMTK_HEAP_MODE_#{heap}") do
         assert_separately([{ "MMTK_HEAP_MODE" => heap }], <<~RUBY)
           assert_equal("#{heap}", GC.config[:mmtk_heap_mode])
