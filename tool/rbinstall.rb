@@ -689,7 +689,7 @@ module RbInstall
         # in its published .gem, so excluding those two by extension is safe.
         def build_artifact?(name)
           case name
-          when "mkmf.log", "gem_make.out", "Makefile"
+          when "mkmf.log", "gem_make.out", "Makefile", "exts.mk"
             true
           else
             /\Aconftest(?:\.|\z)/.match?(name) ||
@@ -1306,10 +1306,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     ins = RbInstall::UnpackedInstaller.new(package, options)
     puts "#{INDENT}#{spec.name} #{spec.version}"
     ins.install
-    # This installs the built extension, so the shared library and other
-    # products must stay. Only the build logs are noise here, unlike collect
-    # which strips the in-tree build leftovers from the gem directory.
-    install_recursive("#{build_dir}/#{gem_name}", "#{extensions_dir}/#{gem_name}", no_install: %w[mkmf.log gem_make.out]) do |src, dest|
+    install_recursive("#{build_dir}/#{gem_name}", "#{extensions_dir}/#{gem_name}") do |src, dest|
       # puts "#{INDENT}    #{dest[extensions_dir.size+gem_name.size+2..-1]}"
       install src, dest, :mode => (File.executable?(src) ? $prog_mode : $data_mode)
     end
