@@ -583,6 +583,45 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_method_coverage_for_redefinition
+    # [Bug #22179] A method shadowed by a redefinition (and never called) must
+    # not disappear from the result even when GC collects its method entry.
+    result = {
+      :methods => {
+        [Object, :foo, 1, 0, 2, 3] => 0,
+        [Object, :foo, 3, 0, 4, 3] => 1,
+      }
+    }
+    assert_coverage(<<~"end;", { methods: true }, result)
+      def foo
+      end
+      def foo
+      end
+      foo
+      GC.start
+      GC.start
+    end;
+  end
+
+  def test_method_coverage_for_removed_method
+    # [Bug #22179] A method removed by remove_method (and never called) must not
+    # disappear from the result even when GC collects its method entry.
+    result = {
+      :methods => {
+        [Object, :foo, 1, 0, 2, 3] => 0,
+      }
+    }
+    assert_coverage(<<~"end;", { methods: true }, result)
+      def foo
+      end
+      class Object
+        remove_method(:foo)
+      end
+      GC.start
+      GC.start
+    end;
+  end
+
   def test_method_coverage_for_define_method
     result = {
       :methods => {
