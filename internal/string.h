@@ -62,6 +62,14 @@ rb_str_enc_get(VALUE str)
     return rb_enc_from_index(ENCODING_GET(str));
 }
 
+static inline char *
+RSTRING_PTR_NO_TERM(VALUE str)
+{
+    return RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
+        RSTRING(str)->as.heap.ptr :
+        RSTRING(str)->as.embed.ary;
+}
+
 /* string.c */
 VALUE rb_str_dup_m(VALUE str);
 VALUE rb_fstring(VALUE);
