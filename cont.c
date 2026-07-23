@@ -2761,27 +2761,42 @@ return_fiber(bool terminate)
     rb_fiber_t *fiber = fiber_current();
     rb_fiber_t *prev = fiber->prev;
 
-    if (prev) {
+    if (!terminate) {
+        // Yield: only a live resume back-pointer is a valid target.
+        // `prev->resuming_fiber == fiber` identifies a genuine resume; a transfer
+        // fallback (set in fiber_switch for termination) is *not* resumable via
+        // yield, so we leave it intact and raise, as if `prev` were not set.
+        if (prev && prev->resuming_fiber == fiber) {
+            fiber->prev = NULL;
+            prev->resuming_fiber = NULL;
+            return prev;
+        }
+
+        rb_raise(rb_eFiberError, "attempt to yield on a not resumed fiber");
+    }
+
+    // Terminate: return to the fiber that resumed or (most recently) transferred
+    // into us, provided it is still alive:
+    if (prev && !FIBER_TERMINATED_P(prev)) {
         fiber->prev = NULL;
         prev->resuming_fiber = NULL;
         return prev;
     }
-    else {
-        if (!terminate) {
-            rb_raise(rb_eFiberError, "attempt to yield on a not resumed fiber");
-        }
 
-        rb_thread_t *th = GET_THREAD();
-        rb_fiber_t *root_fiber = th->root_fiber;
+    // Otherwise (no prev, or a transfer fallback pointing at an already-terminated
+    // fiber), fall back to the root fiber's resuming chain:
+    fiber->prev = NULL;
 
-        VM_ASSERT(root_fiber != NULL);
+    rb_thread_t *th = GET_THREAD();
+    rb_fiber_t *root_fiber = th->root_fiber;
 
-        // search resuming fiber
-        for (fiber = root_fiber; fiber->resuming_fiber; fiber = fiber->resuming_fiber) {
-        }
+    VM_ASSERT(root_fiber != NULL);
 
-        return fiber;
+    // search resuming fiber
+    for (fiber = root_fiber; fiber->resuming_fiber; fiber = fiber->resuming_fiber) {
     }
+
+    return fiber;
 }
 
 VALUE
@@ -2885,6 +2900,24 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
         current_fiber->resuming_fiber = resuming_fiber;
         fiber->prev = fiber_current();
         fiber->yielding = 0;
+    }
+    else if (!yielding && !FIBER_TERMINATED_P(current_fiber) && fiber != th->root_fiber) {
+        // Transfer: record the transferring fiber as a fallback return target,
+        // so that a transferred fiber which terminates without an explicit
+        // transfer returns to whoever transferred into it, rather than the
+        // thread's root fiber. [Bug #20081]
+        //
+        // `prev->resuming_fiber == fiber` identifies a live resume back-pointer,
+        // which `Fiber.yield` relies on and must never be overwritten. Any other
+        // `prev` is a stale transfer fallback and is replaced, so that
+        // termination unwinds to the most-recent transferring fiber.
+        //
+        // The root fiber is never given a fallback: it does not terminate via
+        // return_fiber (so the fallback would leak), and it is already the
+        // terminal target of the resuming-chain search below.
+        if (!fiber->prev || fiber->prev->resuming_fiber != fiber) {
+            fiber->prev = current_fiber;
+        }
     }
 
     VM_ASSERT(!current_fiber->yielding);

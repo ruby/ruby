@@ -12,12 +12,47 @@ describe "Fiber#transfer" do
     fiber2.resume.should == :fiber2
   end
 
-  it "returns to the root Fiber when finished" do
-    f1 = Fiber.new { :fiber_1 }
-    f2 = Fiber.new { f1.transfer; :fiber_2 }
+  ruby_version_is ""..."4.1" do
+    it "returns to the root Fiber when finished" do
+      f1 = Fiber.new { :fiber_1 }
+      f2 = Fiber.new { f1.transfer; :fiber_2 }
 
-    f2.transfer.should == :fiber_1
-    f2.transfer.should == :fiber_2
+      f2.transfer.should == :fiber_1
+      f2.transfer.should == :fiber_2
+    end
+  end
+
+  ruby_version_is "4.1" do
+    it "returns to the transferring Fiber when finished" do
+      states = []
+      f1 = Fiber.new { states << :f1 }
+      f2 = Fiber.new { f1.transfer; states << :f2 }
+
+      f2.transfer
+      states.should == [:f1, :f2]
+    end
+
+    it "unwinds to the most recent transferring Fiber when finished" do
+      states = []
+      a = b = nil
+      a = Fiber.new { states << :a1; b.transfer; states << :a2 }
+      b = Fiber.new { states << :b1; a.transfer; states << :b2 }
+
+      a.transfer
+      states.should == [:a1, :b1, :a2, :b2]
+    end
+
+    it "does not clobber the resume caller when a resumed Fiber transfers and is transferred back" do
+      states = []
+      a = b = nil
+      a = Fiber.new { states << :a_start; b.transfer; states << :a_resumed; Fiber.yield; states << :a_after_yield }
+      b = Fiber.new { states << :b_start; a.transfer; states << :b_never }
+
+      a.resume
+      states << :back_in_caller
+      a.resume
+      states.should == [:a_start, :b_start, :a_resumed, :back_in_caller, :a_after_yield]
+    end
   end
 
   it "can be invoked from the same Fiber it transfers control to" do
