@@ -5996,10 +5996,10 @@ env_reject_bang(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.delete_if { |name, value| block } -> ENV
+ *   ENV.delete_if {|name, value| ... }    -> ENV
  *   ENV.delete_if                         -> an_enumerator
  *
- * Yields each environment variable name and its value as a 2-element Array,
+ * Calls the block with each environment variable name and value,
  * deleting each environment variable for which the block returns a truthy value,
  * and returning ENV (regardless of whether any deletions):
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
@@ -6007,12 +6007,7 @@ env_reject_bang(VALUE ehash)
  *   ENV # => {"foo"=>"0"}
  *   ENV.delete_if { |name, value| name.start_with?('b') } # => ENV
  *
- * Returns an Enumerator if no block given:
- *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
- *   e = ENV.delete_if # => #<Enumerator: {"bar"=>"1", "baz"=>"2", "foo"=>"0"}:delete_if!>
- *   e.each { |name, value| name.start_with?('b') } # => ENV
- *   ENV # => {"foo"=>"0"}
- *   e.each { |name, value| name.start_with?('b') } # => ENV
+ * With no block given, returns a new Enumerator.
  */
 static VALUE
 env_delete_if(VALUE ehash)
@@ -6054,22 +6049,18 @@ env_values_at(int argc, VALUE *argv, VALUE _)
 
 /*
  * call-seq:
- *   ENV.select { |name, value| block } -> hash of name/value pairs
+ *   ENV.select {|name, value| ... }    -> hash of name/value pairs
  *   ENV.select                         -> an_enumerator
- *   ENV.filter { |name, value| block } -> hash of name/value pairs
+ *   ENV.filter {|name, value| ... }    -> hash of name/value pairs
  *   ENV.filter                         -> an_enumerator
  *
- * Yields each environment variable name and its value as a 2-element Array,
+ * Calls the block with each environment variable name and value,
  * returning a Hash of the names and values for which the block returns a truthy value:
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
  *   ENV.select { |name, value| name.start_with?('b') } # => {"bar"=>"1", "baz"=>"2"}
  *   ENV.filter { |name, value| name.start_with?('b') } # => {"bar"=>"1", "baz"=>"2"}
  *
- * Returns an Enumerator if no block given:
- *   e = ENV.select # => #<Enumerator: {"bar"=>"1", "baz"=>"2", "foo"=>"0"}:select>
- *   e.each { |name, value | name.start_with?('b') } # => {"bar"=>"1", "baz"=>"2"}
- *   e = ENV.filter # => #<Enumerator: {"bar"=>"1", "baz"=>"2", "foo"=>"0"}:filter>
- *   e.each { |name, value | name.start_with?('b') } # => {"bar"=>"1", "baz"=>"2"}
+ * With no block given, returns a new Enumerator.
  */
 static VALUE
 env_select(VALUE ehash)
@@ -6097,12 +6088,12 @@ env_select(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.select! { |name, value| block } -> ENV or nil
+ *   ENV.select! {|name, value| ... }    -> ENV or nil
  *   ENV.select!                         -> an_enumerator
- *   ENV.filter! { |name, value| block } -> ENV or nil
+ *   ENV.filter! {|name, value| ... }    -> ENV or nil
  *   ENV.filter!                         -> an_enumerator
  *
- * Yields each environment variable name and its value as a 2-element Array,
+ * Calls the block with each environment variable name and value,
  * deleting each entry for which the block returns +false+ or +nil+,
  * and returning ENV if any deletions made, or +nil+ otherwise:
  *
@@ -6116,19 +6107,7 @@ env_select(VALUE ehash)
  *   ENV # => {"bar"=>"1", "baz"=>"2"}
  *   ENV.filter! { |name, value| true } # => nil
  *
- * Returns an Enumerator if no block given:
- *
- *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
- *   e = ENV.select! # => #<Enumerator: {"bar"=>"1", "baz"=>"2"}:select!>
- *   e.each { |name, value| name.start_with?('b') } # => ENV
- *   ENV # => {"bar"=>"1", "baz"=>"2"}
- *   e.each { |name, value| true } # => nil
- *
- *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
- *   e = ENV.filter! # => #<Enumerator: {"bar"=>"1", "baz"=>"2"}:filter!>
- *   e.each { |name, value| name.start_with?('b') } # => ENV
- *   ENV # => {"bar"=>"1", "baz"=>"2"}
- *   e.each { |name, value| true } # => nil
+ * With no block given, returns a new Enumerator.
  */
 static VALUE
 env_select_bang(VALUE ehash)
@@ -6156,21 +6135,17 @@ env_select_bang(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.keep_if { |name, value| block } -> ENV
+ *   ENV.keep_if {|name, value| ... }    -> ENV
  *   ENV.keep_if                         -> an_enumerator
  *
- * Yields each environment variable name and its value as a 2-element Array,
+ * Calls the block with each environment variable name and value,
  * deleting each environment variable for which the block returns +false+ or +nil+,
  * and returning ENV:
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
  *   ENV.keep_if { |name, value| name.start_with?('b') } # => ENV
  *   ENV # => {"bar"=>"1", "baz"=>"2"}
  *
- * Returns an Enumerator if no block given:
- *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
- *   e = ENV.keep_if # => #<Enumerator: {"bar"=>"1", "baz"=>"2", "foo"=>"0"}:keep_if>
- *   e.each { |name, value| name.start_with?('b') } # => ENV
- *   ENV # => {"bar"=>"1", "baz"=>"2"}
+ * With no block given, returns a new Enumerator.
  */
 static VALUE
 env_keep_if(VALUE ehash)
@@ -7654,7 +7629,7 @@ Init_Hash(void)
      * - ::delete_if: Deletes entries selected by the block.
      * - ::keep_if: Deletes entries not selected by the block.
      * - ::reject!: Similar to #delete_if, but returns +nil+ if no change was made.
-     * - ::select!, ::filter!: Deletes entries selected by the block.
+     * - ::select!, ::filter!: Deletes entries not selected by the block.
      * - ::shift: Removes and returns the first entry.
      *
      * ==== Methods for Iterating
