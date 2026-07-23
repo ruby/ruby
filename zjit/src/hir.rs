@@ -5704,8 +5704,9 @@ impl Function {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
             for insn_id in old_insns {
-                let replacement_insn: InsnId = match self.find(insn_id) {
-                    Insn::StoreField { recv, offset, val, .. } => {
+                self.resolve(insn_id);
+                let replacement_insn: InsnId = match self.insn(insn_id) {
+                    &Insn::StoreField { recv, offset, val, .. } => {
                         let key = (self.chase_insn(recv), offset);
                         let heap_entry = compile_time_heap.get(&key).copied();
                         // TODO(Jacob): Switch from actual to partial equality
@@ -5718,7 +5719,7 @@ impl Function {
                         compile_time_heap.insert(key, val);
                         insn_id
                     },
-                    Insn::LoadField { recv, offset, return_type, .. } => {
+                    &Insn::LoadField { recv, offset, return_type, .. } => {
                         let key = (self.chase_insn(recv), offset);
                         match compile_time_heap.entry(key) {
                             std::collections::hash_map::Entry::Occupied(entry) => {
@@ -5729,7 +5730,8 @@ impl Function {
                                 // type than the cached entry (`CPtr` vs `BasicObject`). While the loaded value would be the same in either case, the
                                 // difference in associated type causes type checking to fail. Consequently, we conservatively retain the duplicate `LoadField`.
                                 // The `optimize_load_store_does_not_alias_loads_with_incompatible_return_types` test checks the problematic case.
-                                let can_forward_cached_insn = match self.find(cached_insn) {
+                                self.resolve(cached_insn);
+                                let can_forward_cached_insn = match self.insn(cached_insn) {
                                     Insn::LoadField { return_type : cached_return_type,.. } => cached_return_type.is_subtype(return_type),
                                     _ => true
                                 };
@@ -5748,7 +5750,7 @@ impl Function {
                         }
                         insn_id
                     }
-                    Insn::WriteBarrier { .. } => {
+                    &Insn::WriteBarrier { .. } => {
                         // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
                         // We don't use LoadField for mark bits so we can ignore them for now.
                         // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
