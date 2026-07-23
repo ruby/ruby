@@ -97,6 +97,10 @@ typedef struct iseq_insn_data {
         int node_id;
         rb_event_flag_t events;
     } insn_info;
+    struct {
+        int line_no;
+        rb_event_flag_t events;
+    } trace_edge;
 } INSN;
 
 typedef struct iseq_adjust_data {
@@ -1399,6 +1403,8 @@ new_insn_core(rb_iseq_t *iseq, int line_no, int node_id, int insn_id, int argc, 
     iobj->insn_info.line_no = line_no;
     iobj->insn_info.node_id = node_id;
     iobj->insn_info.events = 0;
+    iobj->trace_edge.line_no = 0;
+    iobj->trace_edge.events = 0;
     iobj->operands = argv;
     iobj->operand_size = argc;
     iobj->sc_state = 0;
@@ -2616,6 +2622,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     long data = 0;
 
     int insn_num, code_index, insns_info_index, sp = 0;
+    int trace_edge_events_size = 0;
     int stack_max = fix_sp_depth(iseq, anchor);
 
     if (stack_max < 0) return COMPILE_NG;
@@ -2630,6 +2637,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                 /* update sp */
                 sp = calc_sp_depth(sp, iobj);
                 insn_num++;
+                if (iobj->trace_edge.events) {
+                    trace_edge_events_size++;
+                }
                 events = iobj->insn_info.events |= events;
                 if (ISEQ_COVERAGE(iseq)) {
                     if (ISEQ_LINE_COVERAGE(iseq) && (events & RUBY_EVENT_COVERAGE_LINE) &&
@@ -2644,6 +2654,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                             rb_ary_push(ISEQ_PC2BRANCHINDEX(iseq), Qnil);
                         }
                         RARRAY_ASET(ISEQ_PC2BRANCHINDEX(iseq), code_index, INT2FIX(data));
+                    }
+                    if (ISEQ_LINE_COVERAGE(iseq) && (iobj->trace_edge.events & RUBY_EVENT_COVERAGE_LINE) &&
+                        !(rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES)) {
+                        int line = iobj->trace_edge.line_no - 1;
+                        if (line >= 0 && line < RARRAY_LEN(ISEQ_LINE_COVERAGE(iseq))) {
+                            RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line, INT2FIX(0));
+                        }
                     }
                 }
                 code_index += insn_data_length(iobj);
@@ -2713,6 +2730,14 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     }
     ISEQ_COMPILE_DATA(iseq)->ci_index = 0;
 
+    if (trace_edge_events_size) {
+        body->trace_edge_events = ZALLOC_N(struct iseq_trace_edge_event, trace_edge_events_size);
+    }
+    else {
+        body->trace_edge_events = NULL;
+    }
+    body->trace_edge_events_size = trace_edge_events_size;
+
     // Calculate the bitmask buffer size.
     // Round the generated_iseq size up to the nearest multiple
     // of the number of bits in an unsigned long.
@@ -2739,6 +2764,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     list = FIRST_ELEMENT(anchor);
     insns_info_index = code_index = sp = 0;
+    int trace_edge_events_index = 0;
 
     while (list) {
         switch (list->type) {
@@ -2875,6 +2901,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                     }
                 }
                 if (add_insn_info(insns_info, positions, insns_info_index, code_index, iobj)) insns_info_index++;
+                if (iobj->trace_edge.events) {
+                    VM_ASSERT(trace_edge_events_index < trace_edge_events_size);
+                    body->trace_edge_events[trace_edge_events_index].pc = code_index;
+                    body->trace_edge_events[trace_edge_events_index].events = iobj->trace_edge.events;
+                    body->trace_edge_events[trace_edge_events_index].line_no = iobj->trace_edge.line_no;
+                    trace_edge_events_index++;
+                }
                 code_index += len;
                 break;
             }
@@ -3677,31 +3710,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
          */
         INSN *nobj = (INSN *)get_destination_insn(iobj);
 
-        /* This is super nasty hack!!!
-         *
-         * This jump-jump optimization may ignore event flags of the jump
-         * instruction being skipped.  Actually, Line 2 TracePoint event
-         * is never fired in the following code:
-         *
-         *   1: raise if 1 == 2
-         *   2: while true
-         *   3:   break
-         *   4: end
-         *
-         * This is critical for coverage measurement.  [Bug #15980]
-         *
-         * This is a stopgap measure: stop the jump-jump optimization if
-         * coverage measurement is enabled and if the skipped instruction
-         * has any event flag.
-         *
-         * Note that, still, TracePoint Line event does not occur on Line 2.
-         * This should be fixed in future.
-         */
-        int stop_optimization =
-            ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq) &&
-            nobj->link.type == ISEQ_ELEMENT_INSN &&
-            nobj->insn_info.events;
-        if (!stop_optimization) {
+        {
             INSN *pobj = (INSN *)iobj->link.prev;
             int prev_dup = 0;
             if (pobj) {
@@ -3713,7 +3722,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 
             for (;;) {
                 if (IS_INSN(&nobj->link) && IS_INSN_ID(nobj, jump)) {
+                    rb_event_flag_t edge_events = nobj->insn_info.events & (RUBY_EVENT_LINE | RUBY_EVENT_COVERAGE_LINE);
                     if (!replace_destination(iobj, nobj)) break;
+                    if (edge_events) {
+                        /* Preserve line events from the skipped jump as taken-edge trace metadata. */
+                        iobj->trace_edge.events |= edge_events;
+                        iobj->trace_edge.line_no = nobj->insn_info.line_no;
+                    }
                 }
                 else if (prev_dup && IS_INSN(&nobj->link) && IS_INSN_ID(nobj, dup) &&
                          !!(nobj = (INSN *)nobj->link.next) &&

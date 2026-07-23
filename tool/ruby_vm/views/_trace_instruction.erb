@@ -11,6 +11,16 @@
 INSN_ENTRY(<%= insn.name %>)
 {
     vm_trace(ec, GET_CFP());
+%   case insn.name
+%   when 'trace_jump', 'trace_jump_without_ints'
+    vm_trace_branch_edge(ec, GET_CFP(), true);
+%   when 'trace_branchif', 'trace_branchif_without_ints'
+    vm_trace_branch_edge(ec, GET_CFP(), RTEST(TOPN(0)));
+%   when 'trace_branchunless', 'trace_branchunless_without_ints'
+    vm_trace_branch_edge(ec, GET_CFP(), !RTEST(TOPN(0)));
+%   when 'trace_branchnil', 'trace_branchnil_without_ints'
+    vm_trace_branch_edge(ec, GET_CFP(), NIL_P(TOPN(0)));
+%   end
 %   if insn.name =~
 %   /\Atrace_opt_(plus|minus|mult|div|mod|eq|neq|lt|le|gt|ge|ltlt|and|or|aref|aset|length|size|empty_p|nil_p|succ|not|regexpmatch2)\z/
 %     jump_dest = "opt_send_without_block"

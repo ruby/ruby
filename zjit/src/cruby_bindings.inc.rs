@@ -1268,6 +1268,13 @@ pub union rb_iseq_constant_body__bindgen_ty_2 {
     pub single: iseq_bits_t,
 }
 #[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_iseq_constant_body_iseq_trace_edge_event {
+    pub pc: ::std::os::raw::c_uint,
+    pub events: rb_event_flag_t,
+    pub line_no: ::std::os::raw::c_int,
+}
+#[repr(C)]
 pub struct rb_iseq_struct {
     pub flags: VALUE,
     pub wrapper: VALUE,

@@ -205,6 +205,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 #if VM_INSN_INFO_TABLE_IMPL == 2
         ruby_xfree(body->insns_info.succ_index_table);
 #endif
+        SIZED_FREE_N(body->trace_edge_events, body->trace_edge_events_size);
         SIZED_FREE_N(body->is_entries, ISEQ_IS_SIZE(body));
         SIZED_FREE_N(body->call_data, body->ci_size);
         if (body->catch_table) {
@@ -496,6 +497,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         size += sizeof(struct rb_iseq_constant_body);
         size += body->iseq_size * sizeof(VALUE);
         size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
+        size += body->trace_edge_events_size * sizeof(*body->trace_edge_events);
         size += body->local_table_size * sizeof(ID);
         size += ISEQ_MBITS_BUFLEN(body->iseq_size) * ISEQ_MBITS_SIZE;
         if (body->catch_table) {
@@ -2496,6 +2498,29 @@ rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
     }
 }
 
+rb_event_flag_t
+rb_iseq_trace_edge_event_flags(const rb_iseq_t *iseq, size_t pos, int *line_no)
+{
+    const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+
+    for (unsigned int i = 0; i < body->trace_edge_events_size; i++) {
+        const struct iseq_trace_edge_event *event = &body->trace_edge_events[i];
+        if (event->pc == pos) {
+            if (line_no) *line_no = event->line_no;
+            return event->events;
+        }
+    }
+
+    if (line_no) *line_no = 0;
+    return 0;
+}
+
+static rb_event_flag_t
+iseq_trace_events_at_pc(const rb_iseq_t *iseq, size_t pos)
+{
+    return rb_iseq_event_flags(iseq, pos) | rb_iseq_trace_edge_event_flags(iseq, pos, NULL);
+}
+
 static void rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos);
 
 // Clear tracing event flags and turn off tracing for a given instruction as needed.
@@ -2507,11 +2532,25 @@ rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t res
         rb_vm_barrier();
 
         struct iseq_insn_info_entry *entry = (struct iseq_insn_info_entry *)get_insn_info(iseq, pos);
+        rb_event_flag_t events = 0;
+
         if (entry) {
             entry->events &= ~reset;
-            if (!(entry->events & iseq->aux.exec.global_trace_events)) {
-                rb_iseq_trace_flag_cleared(iseq, pos);
+            events |= entry->events;
+        }
+
+        struct rb_iseq_constant_body *body = (struct rb_iseq_constant_body *)ISEQ_BODY(iseq);
+        for (unsigned int i = 0; i < body->trace_edge_events_size; i++) {
+            struct iseq_trace_edge_event *event = &body->trace_edge_events[i];
+            if (event->pc == pos) {
+                event->events &= ~reset;
+                events |= event->events;
+                break;
             }
+        }
+
+        if (!(events & iseq->aux.exec.global_trace_events)) {
+            rb_iseq_trace_flag_cleared(iseq, pos);
         }
     }
 }
@@ -4060,6 +4099,8 @@ iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, 
     for (pc=0; pc<body->iseq_size;) {
         const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pc);
         rb_event_flag_t pc_events = entry->events;
+        int edge_line = 0;
+        rb_event_flag_t edge_events = rb_iseq_trace_edge_event_flags(iseq, pc, &edge_line);
         rb_event_flag_t target_events = turnon_events;
         unsigned int line = (int)entry->line_no;
 
@@ -4070,10 +4111,17 @@ iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, 
             target_events &= ~RUBY_EVENT_LINE;
         }
 
-        if (pc_events & target_events) {
+        rb_event_flag_t local_pc_events = pc_events & target_events;
+        rb_event_flag_t local_edge_events = 0;
+
+        if (local_pc_events) {
             n++;
         }
-        pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (target_events | iseq->aux.exec.global_trace_events), true);
+        if ((edge_events & turnon_events) && (target_line == 0 || target_line == (unsigned int)edge_line)) {
+            local_edge_events = edge_events & turnon_events;
+            n++;
+        }
+        pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], (local_pc_events | local_edge_events) | (iseq_trace_events_at_pc(iseq, pc) & iseq->aux.exec.global_trace_events), true);
     }
 
     if (n > 0) {
@@ -4157,7 +4205,7 @@ iseq_remove_local_tracepoint(const rb_iseq_t *iseq, VALUE tpval, rb_ractor_t *r)
                 iseq_encoded = (VALUE *)body->iseq_encoded;
                 local_events = add_bmethod_events(local_events);
                 for (pc = 0; pc<body->iseq_size;) {
-                    rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
+                    rb_event_flag_t pc_events = iseq_trace_events_at_pc(iseq, pc);
                     pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (local_events | iseq->aux.exec.global_trace_events), false);
                 }
             }
@@ -4219,7 +4267,7 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
         enabled_events = add_bmethod_events(turnon_events | local_events);
 
         for (pc=0; pc<body->iseq_size;) {
-            rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
+            rb_event_flag_t pc_events = iseq_trace_events_at_pc(iseq, pc);
             pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & enabled_events, true);
         }
     }

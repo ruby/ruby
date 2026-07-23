@@ -7177,6 +7177,7 @@ vm_opt_regexpmatch2(VALUE recv, VALUE obj)
 }
 
 rb_event_flag_t rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos);
+rb_event_flag_t rb_iseq_trace_edge_event_flags(const rb_iseq_t *iseq, size_t pos, int *line_no);
 
 NOINLINE(static void vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp));
 
@@ -7209,6 +7210,81 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
             reg_cfp->pc--;
         }
     }
+}
+
+static void
+vm_trace_edge_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_hook_list_t *hooks,
+                   rb_event_flag_t event, unsigned int edge_pos, int line_no)
+{
+    struct rb_trace_arg_struct trace_arg;
+    const VALUE *pc = reg_cfp->pc;
+
+    if ((hooks->events & event) == 0) return;
+
+    trace_arg.event = event;
+    trace_arg.ec = ec;
+    trace_arg.cfp = ec->cfp;
+    trace_arg.self = GET_SELF();
+    trace_arg.id = 0;
+    trace_arg.called_id = 0;
+    trace_arg.klass = 0;
+    trace_arg.data = Qundef;
+    trace_arg.klass_solved = 0;
+    trace_arg.lineno = line_no;
+    trace_arg.path = rb_iseq_path(CFP_ISEQ(reg_cfp));
+
+    /* Coverage one-shot clearing expects CFP_PC - 1 to be the event PC. */
+    reg_cfp->pc = ISEQ_BODY(CFP_ISEQ(reg_cfp))->iseq_encoded + edge_pos + 1;
+    rb_exec_event_hooks(&trace_arg, hooks, 0);
+    reg_cfp->pc = pc;
+}
+
+static inline void
+vm_trace_branch_edge(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, bool taken)
+{
+    if (!taken) return;
+
+    const rb_iseq_t *iseq = CFP_ISEQ(reg_cfp);
+    unsigned int pos = (unsigned int)(reg_cfp->pc - ISEQ_BODY(iseq)->iseq_encoded);
+    unsigned int edge_pos = pos;
+    int line_no = 0;
+    rb_event_flag_t edge_events = rb_iseq_trace_edge_event_flags(iseq, edge_pos, &line_no);
+
+    if (!edge_events && pos > 0) {
+        edge_pos = pos - 1;
+        edge_events = rb_iseq_trace_edge_event_flags(iseq, edge_pos, &line_no);
+    }
+
+    if (!edge_events || ec->trace_arg != NULL) return;
+
+    rb_ractor_t *r = rb_ec_ractor_ptr(ec);
+    rb_event_flag_t enabled_flags = r->pub.hooks.events & edge_events;
+    rb_hook_list_t *local_hooks = NULL;
+
+    if (iseq->aux.exec.local_hooks_cnt > 0) {
+        st_data_t val;
+        if (st_lookup(rb_ractor_targeted_hooks(r), (st_data_t)iseq, &val)) {
+            local_hooks = (rb_hook_list_t *)val;
+            enabled_flags |= local_hooks->events & edge_events;
+        }
+    }
+
+    if (!enabled_flags) return;
+
+    rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(ec);
+
+    if (local_hooks) local_hooks->running++;
+
+    if (edge_events & RUBY_EVENT_LINE) {
+        vm_trace_edge_hook(ec, reg_cfp, global_hooks, RUBY_EVENT_LINE, edge_pos, line_no);
+        if (local_hooks) vm_trace_edge_hook(ec, reg_cfp, local_hooks, RUBY_EVENT_LINE, edge_pos, line_no);
+    }
+    if (edge_events & RUBY_EVENT_COVERAGE_LINE) {
+        vm_trace_edge_hook(ec, reg_cfp, global_hooks, RUBY_EVENT_COVERAGE_LINE, edge_pos, line_no);
+        if (local_hooks) vm_trace_edge_hook(ec, reg_cfp, local_hooks, RUBY_EVENT_COVERAGE_LINE, edge_pos, line_no);
+    }
+
+    if (local_hooks) local_hooks->running--;
 }
 
 #define VM_TRACE_HOOK(target_event, val) do { \
