@@ -95,6 +95,11 @@ Note: We're only listing outstanding class updates.
 
     * `Symbol#to_s` now returns a frozen string. [[Feature #22137]]
 
+* Thread::Backtrace::Location
+
+    * `Thread::Backtrace::Location#source_range` is added. It returns a
+      `Ruby::SourceRange` for the Ruby expression associated with the frame.
+
 ## Stdlib updates
 
 ### The following bundled gems are added.

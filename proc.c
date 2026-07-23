@@ -82,6 +82,23 @@ static const rb_data_type_t source_range_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING
 };
 
+VALUE
+rb_source_range_new(VALUE path, VALUE absolute_path, const rb_code_location_t *location)
+{
+    struct source_range_data *data;
+    VALUE obj = TypedData_Make_Struct(
+        rb_cSourceRange, struct source_range_data, &source_range_data_type, data
+    );
+    RB_OBJ_WRITE(obj, &data->path, path);
+    RB_OBJ_WRITE(obj, &data->absolute_path, absolute_path);
+    data->start_line = location->beg_pos.lineno;
+    data->start_column = location->beg_pos.column;
+    data->end_line = location->end_pos.lineno;
+    data->end_column = location->end_pos.column;
+
+    return obj;
+}
+
 static VALUE
 source_range_new(const rb_iseq_t *iseq)
 {
@@ -96,19 +113,7 @@ source_range_new(const rb_iseq_t *iseq)
         return Qnil;
     }
 
-    int start_line, start_column, end_line, end_column;
-    rb_iseq_code_location(iseq, &start_line, &start_column, &end_line, &end_column);
-
-    struct source_range_data *data;
-    VALUE obj = TypedData_Make_Struct(rb_cSourceRange, struct source_range_data, &source_range_data_type, data);
-    RB_OBJ_WRITE(obj, &data->path, path);
-    RB_OBJ_WRITE(obj, &data->absolute_path, absolute_path);
-    data->start_line = start_line;
-    data->start_column = start_column;
-    data->end_line = end_line;
-    data->end_column = end_column;
-
-    return obj;
+    return rb_source_range_new(path, absolute_path, &ISEQ_BODY(iseq)->location.code_location);
 }
 
 static struct source_range_data *
@@ -4748,11 +4753,12 @@ proc_ruby2_keywords(VALUE procval)
 /*
  *  Document-class: Ruby::SourceRange
  *
- *  An object representing the source-code range for a Ruby callable.
+ *  An object representing a range of Ruby source code.
  *
  *  Source ranges are returned by Proc#source_range, Method#source_range, and
- *  UnboundMethod#source_range. They include the source path, absolute path when
- *  available, start line, start byte column, end line, and end byte column.
+ *  UnboundMethod#source_range, as well as Thread::Backtrace::Location#source_range.
+ *  They include the source path, absolute path when available,
+ *  start line, start byte column, end line, and end byte column.
  *
  *  The primary purpose of this class is to implement `Prism.find` precisely and cleanly on all Ruby implementations,
  *  in a way which does not depend on implementation details like `node_id`.

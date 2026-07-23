@@ -11630,6 +11630,60 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
     return error;
 }
 
+typedef struct {
+    uint32_t node_id;
+    const pm_node_t *node;
+} pm_node_find_context_t;
+
+static bool
+pm_node_find(const pm_node_t *node, void *data)
+{
+    pm_node_find_context_t *context = data;
+
+    if (context->node == NULL && node->node_id == context->node_id) {
+        context->node = node;
+        return false;
+    }
+
+    return context->node == NULL;
+}
+
+bool
+pm_node_source_location(VALUE source, VALUE filepath, int start_line,
+                        int node_id, rb_code_location_t *location)
+{
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
+
+    VALUE error;
+    if (NIL_P(source)) {
+        error = pm_load_parse_file(&result, filepath, NULL);
+    }
+    else {
+        pm_options_line_set(result.options, start_line);
+        error = pm_parse_string(&result, source, filepath, NULL);
+    }
+
+    if (!NIL_P(error)) {
+        pm_parse_result_free(&result);
+        rb_exc_raise(error);
+    }
+
+    pm_node_find_context_t context = {
+        .node_id = (uint32_t) node_id,
+        .node = NULL
+    };
+    pm_visit_node(result.node.ast_node, pm_node_find, &context);
+
+    bool found = context.node != NULL;
+    if (found) {
+        *location = pm_code_location(&result.node, context.node);
+    }
+
+    pm_parse_result_free(&result);
+    return found;
+}
+
 VALUE rb_io_gets_limit_internal(VALUE io, long limit);
 
 /**

@@ -14,6 +14,8 @@
 #include "internal/class.h"
 #include "internal/error.h"
 #include "internal/object.h"
+#include "internal/proc.h"
+#include "internal/ruby_parser.h"
 #include "internal/vm.h"
 #include "iseq.h"
 #include "ruby/debug.h"
@@ -408,6 +410,158 @@ location_node_id(rb_backtrace_location_t *loc)
     return -1;
 }
 #endif
+
+#ifdef USE_ISEQ_NODE_ID
+extern VALUE rb_e_script;
+
+static bool
+location_code_location_equal(const rb_code_location_t *left, const rb_code_location_t *right)
+{
+    return left->beg_pos.lineno == right->beg_pos.lineno &&
+        left->beg_pos.column == right->beg_pos.column &&
+        left->end_pos.lineno == right->end_pos.lineno &&
+        left->end_pos.column == right->end_pos.column;
+}
+
+static bool
+location_e_option_p(const rb_iseq_t *iseq, VALUE path)
+{
+    if (!RB_TYPE_P(path, T_STRING) ||
+        RSTRING_LEN(path) != 2 ||
+        memcmp(RSTRING_PTR(path), "-e", 2) != 0 ||
+        !RTEST(rb_e_script)) {
+        return false;
+    }
+
+    const rb_iseq_t *source_iseq = iseq;
+    for (; source_iseq; source_iseq = ISEQ_BODY(source_iseq)->parent_iseq) {
+        if (ISEQ_BODY(source_iseq)->type == ISEQ_TYPE_EVAL) return false;
+        if (ISEQ_BODY(source_iseq)->type == ISEQ_TYPE_MAIN) return true;
+    }
+
+    int node_id = ISEQ_BODY(iseq)->location.node_id;
+    if (node_id == -1) return false;
+
+    rb_code_location_t source_location;
+    bool found;
+    if (ISEQ_BODY(iseq)->prism) {
+        found = pm_node_source_location(rb_e_script, path, 1, node_id, &source_location);
+    }
+    else {
+        found = rb_ast_node_source_location(
+            rb_e_script,
+            path,
+            1,
+            node_id,
+            ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK,
+            node_id,
+            &source_location
+        );
+    }
+
+    return found && location_code_location_equal(
+        &source_location, &ISEQ_BODY(iseq)->location.code_location
+    );
+}
+
+static int
+location_source_first_lineno(const rb_iseq_t *iseq, VALUE script_lines)
+{
+    const rb_iseq_t *source_iseq = iseq;
+
+    while (ISEQ_BODY(source_iseq)->parent_iseq) {
+        const rb_iseq_t *parent = ISEQ_BODY(source_iseq)->parent_iseq;
+        if (ISEQ_BODY(parent)->variable.script_lines != script_lines) break;
+        source_iseq = parent;
+    }
+
+    return ISEQ_BODY(source_iseq)->location.first_lineno;
+}
+#endif
+
+/*
+ * call-seq:
+ *    location.source_range  -> Ruby::SourceRange or nil
+ *
+ * Returns the source range for the Ruby expression associated with this
+ * backtrace location, or +nil+ when the location has no Ruby instruction
+ * sequence or node ID.
+ *
+ * The source is reparsed with the same parser used to compile the instruction
+ * sequence. Retained source is used when available; otherwise only
+ * #absolute_path is read from disk. Eval source other than +-e+ therefore
+ * requires RubyVM.keep_script_lines to have been enabled when it was compiled.
+ *
+ * Columns are byte offsets. File access and syntax errors encountered while
+ * reparsing are propagated.
+ */
+static VALUE
+location_source_range_m(VALUE self)
+{
+#ifdef USE_ISEQ_NODE_ID
+    rb_backtrace_location_t *backtrace_location = location_ptr(self);
+    const rb_iseq_t *iseq = location_iseq(backtrace_location);
+    if (!iseq) return Qnil;
+
+    rb_iseq_check(iseq);
+    int node_id = location_node_id(backtrace_location);
+    if (node_id == -1) return Qnil;
+
+    VALUE path = rb_iseq_path(iseq);
+    VALUE absolute_path = rb_iseq_realpath(iseq);
+    VALUE script_lines = ISEQ_BODY(iseq)->variable.script_lines;
+    VALUE source = script_lines;
+    VALUE parser_path = path;
+    int first_lineno = 1;
+
+    if (!NIL_P(script_lines)) {
+        first_lineno = location_source_first_lineno(iseq, script_lines);
+    }
+    else if (location_e_option_p(iseq, path)) {
+        source = rb_e_script;
+    }
+    else if (!NIL_P(absolute_path)) {
+        source = Qnil;
+        parser_path = absolute_path;
+    }
+    else {
+        rb_raise(rb_eArgError, "cannot get source range for location in eval");
+    }
+
+    if (NIL_P(parser_path)) {
+        parser_path = rb_str_new_cstr("(eval)");
+    }
+
+    rb_code_location_t code_location;
+    bool found;
+
+    if (ISEQ_BODY(iseq)->prism) {
+        if (RB_TYPE_P(source, T_ARRAY)) {
+            source = rb_ary_join(source, rb_str_new(0, 0));
+        }
+        found = pm_node_source_location(source, parser_path, first_lineno, node_id, &code_location);
+    }
+    else {
+        found = rb_ast_node_source_location(
+            source,
+            parser_path,
+            first_lineno,
+            node_id,
+            ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK,
+            ISEQ_BODY(iseq)->location.node_id,
+            &code_location
+        );
+    }
+
+    if (!found) {
+        rb_raise(rb_eRuntimeError, "cannot find node ID %d in parsed source", node_id);
+    }
+
+    return rb_source_range_new(path, absolute_path, &code_location);
+#else
+    return Qnil;
+#endif
+}
 
 int
 rb_get_node_id_from_frame_info(VALUE obj)
@@ -1530,6 +1684,7 @@ Init_vm_backtrace(void)
     rb_define_method(rb_cBacktraceLocation, "base_label", location_base_label_m, 0);
     rb_define_method(rb_cBacktraceLocation, "path", location_path_m, 0);
     rb_define_method(rb_cBacktraceLocation, "absolute_path", location_absolute_path_m, 0);
+    rb_define_method(rb_cBacktraceLocation, "source_range", location_source_range_m, 0);
     rb_define_method(rb_cBacktraceLocation, "to_s", location_to_str_m, 0);
     rb_define_method(rb_cBacktraceLocation, "inspect", location_inspect_m, 0);
 
