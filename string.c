@@ -7418,6 +7418,19 @@ rb_str_inspect(VALUE str)
 
 #define IS_EVSTR(p,e) ((p) < (e) && (*(p) == '$' || *(p) == '@' || *(p) == '{'))
 
+#define DUMP_HEX4_MAX ((1u << 16) - 1)
+#define DUMP_HEX5_MAX ((1u << 20) - 1)
+#define upper_hexdigits (ruby_hexdigits+16)
+
+static char *
+dump_append_hex(char *q, unsigned int v, int len)
+{
+    for (int shift = (len - 1) * 4; shift >= 0; shift -= 4) {
+        *q++ = upper_hexdigits[(v >> shift) & 0xF];
+    }
+    return q;
+}
+
 /*
  *  call-seq:
  *    dump -> new_string
@@ -7470,9 +7483,9 @@ rb_str_dump(VALUE str)
                     int n = rb_enc_precise_mbclen(p-1, pend, enc);
                     if (MBCLEN_CHARFOUND_P(n)) {
                         unsigned int cc = rb_enc_mbc_to_codepoint(p-1, pend, enc);
-                        if (cc <= 0xFFFF)
+                        if (cc <= DUMP_HEX4_MAX)
                             clen = 6;  /* \uXXXX */
-                        else if (cc <= 0xFFFFF)
+                        else if (cc <= DUMP_HEX5_MAX)
                             clen = 9;  /* \u{XXXXX} */
                         else
                             clen = 10; /* \u{XXXXXX} */
@@ -7547,18 +7560,22 @@ rb_str_dump(VALUE str)
             if (u8) {
                 int n = rb_enc_precise_mbclen(p-1, pend, enc) - 1;
                 if (MBCLEN_CHARFOUND_P(n)) {
-                    int cc = rb_enc_mbc_to_codepoint(p-1, pend, enc);
+                    unsigned int cc = rb_enc_mbc_to_codepoint(p-1, pend, enc);
                     p += n;
-                    if (cc <= 0xFFFF)
-                        snprintf(q, qend-q, "u%04X", cc);    /* \uXXXX */
-                    else
-                        snprintf(q, qend-q, "u{%X}", cc);  /* \u{XXXXX} or \u{XXXXXX} */
-                    q += strlen(q);
+                    *q++ = 'u';
+                    if (cc <= DUMP_HEX4_MAX) {               /* \uXXXX */
+                        q = dump_append_hex(q, cc, 4);
+                    }
+                    else {                                   /* \u{XXXXX} or \u{XXXXXX} */
+                        *q++ = '{';
+                        q = dump_append_hex(q, cc, cc <= DUMP_HEX5_MAX ? 5 : 6);
+                        *q++ = '}';
+                    }
                     continue;
                 }
             }
-            snprintf(q, qend-q, "x%02X", c);
-            q += 3;
+            *q++ = 'x';                                      /* \xNN */
+            q = dump_append_hex(q, c, 2);
         }
     }
     *q++ = '"';
