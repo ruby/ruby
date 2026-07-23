@@ -1287,6 +1287,27 @@ trap_signm(VALUE vsig)
 }
 
 static VALUE
+trap_handler_command(VALUE command, sighandler_t handler)
+{
+    switch (command) {
+      case 0:
+      case Qtrue:
+        if (handler == SIG_IGN) command = rb_str_new2("IGNORE");
+        else if (handler == SIG_DFL) command = rb_str_new2("SYSTEM_DEFAULT");
+        else if (handler == sighandler) command = rb_str_new2("DEFAULT");
+        else command = Qnil;
+        break;
+      case Qnil:
+        break;
+      case Qundef:
+        command = rb_str_new2("EXIT");
+        break;
+    }
+
+    return command;
+}
+
+static VALUE
 trap(int sig, sighandler_t func, VALUE command)
 {
     sighandler_t oldfunc;
@@ -1306,20 +1327,7 @@ trap(int sig, sighandler_t func, VALUE command)
         if (oldfunc == SIG_ERR) rb_sys_fail_str(rb_signo2signm(sig));
     }
     oldcmd = vm->trap_list.cmd[sig];
-    switch (oldcmd) {
-      case 0:
-      case Qtrue:
-        if (oldfunc == SIG_IGN) oldcmd = rb_str_new2("IGNORE");
-        else if (oldfunc == SIG_DFL) oldcmd = rb_str_new2("SYSTEM_DEFAULT");
-        else if (oldfunc == sighandler) oldcmd = rb_str_new2("DEFAULT");
-        else oldcmd = Qnil;
-        break;
-      case Qnil:
-        break;
-      case Qundef:
-        oldcmd = rb_str_new2("EXIT");
-        break;
-    }
+    oldcmd = trap_handler_command(oldcmd, oldfunc);
 
     ACCESS_ONCE(VALUE, vm->trap_list.cmd[sig]) = command;
 
@@ -1354,6 +1362,48 @@ reserved_signal_p(int signo)
 #endif
 
     return 0;
+}
+
+/*
+ * call-seq:
+ *   Signal[signal] -> obj
+ *
+ * Returns the current handler for the given signal without changing it.
+ *
+ * Argument +signal+ is a signal name (a string or symbol such
+ * as +SIGALRM+ or +SIGUSR1+) or an integer signal number. When +signal+
+ * is a string or symbol, the leading characters +SIG+ may be omitted.
+ *
+ * The returned object is represented the same way as the previous handler
+ * returned by Signal.trap.
+ *
+ *     Signal.trap("HUP", "IGNORE")
+ *     Signal["HUP"] # => "IGNORE"
+ */
+static VALUE
+sig_aref(VALUE recv, VALUE signo)
+{
+    int sig = trap_signm(signo);
+    sighandler_t func;
+    VALUE command = GET_VM()->trap_list.cmd[sig];
+
+    if (reserved_signal_p(sig)) {
+        const char *name = signo2signm(sig);
+        if (name)
+            rb_raise(rb_eArgError, "can't get reserved signal: SIG%s", name);
+        else
+            rb_raise(rb_eArgError, "can't get reserved signal: %d", sig);
+    }
+
+    if (sig == 0 || (command != 0 && command != Qtrue)) {
+        return trap_handler_command(command, SIG_ERR);
+    }
+
+    func = ruby_signal(sig, SIG_DFL);
+    if (func == SIG_ERR) rb_sys_fail_str(rb_signo2signm(sig));
+    if (ruby_signal(sig, func) == SIG_ERR) rb_sys_fail_str(rb_signo2signm(sig));
+
+    return trap_handler_command(command, func);
 }
 
 /*
@@ -1535,6 +1585,7 @@ Init_signal(void)
     VALUE mSignal = rb_define_module("Signal");
 
     rb_define_global_function("trap", sig_trap, -1);
+    rb_define_module_function(mSignal, "[]", sig_aref, 1);
     rb_define_module_function(mSignal, "trap", sig_trap, -1);
     rb_define_module_function(mSignal, "list", sig_list, 0);
     rb_define_module_function(mSignal, "signame", sig_signame, 1);
