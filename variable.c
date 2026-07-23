@@ -68,6 +68,7 @@ static st_table *generic_fields_tbl_;
 
 typedef int rb_ivar_foreach_callback_func(ID key, VALUE val, st_data_t arg);
 static void rb_field_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, bool ivar_only);
+static void autoload_data_lock_initialize(void);
 
 void
 Init_var_tables(void)
@@ -83,6 +84,7 @@ Init_var_tables(void)
     autoload_features = rb_ident_hash_new();
     rb_obj_hide(autoload_features);
     rb_vm_register_global_object(autoload_features);
+    autoload_data_lock_initialize();
 }
 
 static inline bool
@@ -2494,6 +2496,55 @@ rb_mod_const_missing(VALUE klass, VALUE name)
     UNREACHABLE_RETURN(Qnil);
 }
 
+// This lock protects autoload_data->constants from being corrupted when concurrently freeing
+// autoload_data and its associated autoload_const
+static rb_nativethread_lock_t autoload_data_lock;
+#ifdef RUBY_THREAD_PTHREAD_H
+static pthread_t autoload_data_lock_owner;
+#endif
+
+static inline void
+ASSERT_autoload_data_lock_locked(void)
+{
+#ifdef RUBY_THREAD_PTHREAD_H
+    VM_ASSERT(pthread_self() == autoload_data_lock_owner);
+#endif
+}
+
+static inline void
+ASSERT_autoload_data_lock_unlocked(void)
+{
+#ifdef RUBY_THREAD_PTHREAD_H
+    VM_ASSERT(pthread_self() != autoload_data_lock_owner);
+#endif
+}
+
+static inline void
+autoload_data_lock_lock(void)
+{
+    ASSERT_autoload_data_lock_unlocked();
+    rb_native_mutex_lock(&autoload_data_lock);
+#ifdef RUBY_THREAD_PTHREAD_H
+    autoload_data_lock_owner = pthread_self();
+#endif
+}
+
+static inline void
+autoload_data_lock_unlock(void)
+{
+    ASSERT_autoload_data_lock_locked();
+#ifdef RUBY_THREAD_PTHREAD_H
+    autoload_data_lock_owner = 0;
+#endif
+    rb_native_mutex_unlock(&autoload_data_lock);
+}
+
+static void
+autoload_data_lock_initialize(void)
+{
+    rb_native_mutex_initialize(&autoload_data_lock);
+}
+
 static void
 autoload_table_mark(void *ptr)
 {
@@ -2616,9 +2667,13 @@ autoload_data_free(void *ptr)
     struct autoload_data *p = ptr;
 
     struct autoload_const *autoload_const, *next;
-    ccan_list_for_each_safe(&p->constants, autoload_const, next, cnode) {
-        ccan_list_del_init(&autoload_const->cnode);
+    autoload_data_lock_lock();
+    {
+        ccan_list_for_each_safe(&p->constants, autoload_const, next, cnode) {
+            ccan_list_del_init(&autoload_const->cnode);
+        }
     }
+    autoload_data_lock_unlock();
 
     SIZED_FREE(p);
 }
@@ -2658,7 +2713,11 @@ autoload_const_free(void *ptr)
 {
     struct autoload_const *autoload_const = ptr;
 
-    ccan_list_del(&autoload_const->cnode);
+    autoload_data_lock_lock();
+    {
+        ccan_list_del(&autoload_const->cnode);
+    }
+    autoload_data_lock_unlock();
     SIZED_FREE(autoload_const);
 }
 
