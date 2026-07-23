@@ -144,6 +144,7 @@ RUBY_EXTERN VALUE rb_eScriptError;               /**< `ScriptError` exception. *
 RUBY_EXTERN VALUE rb_eNameError;                 /**< `NameError` exception. */
 RUBY_EXTERN VALUE rb_eSyntaxError;               /**< `SyntaxError` exception. */
 RUBY_EXTERN VALUE rb_eLoadError;                 /**< `LoadError` exception. */
+RUBY_EXTERN VALUE rb_eAbstractMethodError;       /**< `AbstractMethodError` exception. */
 
 RUBY_EXTERN VALUE rb_eMathDomainError;           /**< `Math::DomainError` exception. */
 
