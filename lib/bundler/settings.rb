@@ -344,7 +344,6 @@ module Bundler
       split_specific_setting_for(name)[0]
     end
 
-
     def split_specific_setting_for(name)
       name.split(".")
     end

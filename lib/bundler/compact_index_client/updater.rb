@@ -63,7 +63,6 @@ module Bundler
         headers
       end
 
-
       def etag_from_response(response)
         return unless response["ETag"]
         etag = response["ETag"].delete_prefix("W/")
