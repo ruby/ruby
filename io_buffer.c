@@ -229,6 +229,10 @@ io_buffer_initialize(VALUE self, struct rb_io_buffer *buffer, void *base, size_t
 #endif
 }
 
+// The buffer's memory was freed and not re-allocated yet. Internal only;
+// bit 16 is unused by the public flags in ruby/io/buffer.h.
+enum { RB_IO_BUFFER_FREED = 16 };
+
 static void
 io_buffer_free(struct rb_io_buffer *buffer)
 {
@@ -259,7 +263,7 @@ io_buffer_free(struct rb_io_buffer *buffer)
         buffer->base = NULL;
 
         buffer->size = 0;
-        buffer->flags = 0;
+        buffer->flags = RB_IO_BUFFER_FREED;
         buffer->source = Qnil;
     }
 
@@ -1045,6 +1049,10 @@ io_buffer_get_bytes_for_writing(struct rb_io_buffer *buffer, void **base, size_t
 {
     io_buffer_validate_for_writing(buffer);
 
+    if (buffer->flags & RB_IO_BUFFER_FREED) {
+        rb_raise(rb_eIOBufferAllocationError, "The buffer is not allocated!");
+    }
+
     if (buffer->base) {
         *base = buffer->base;
         *size = buffer->size;
@@ -1074,6 +1082,10 @@ static void
 io_buffer_get_bytes_for_reading(struct rb_io_buffer *buffer, const void **base, size_t *size)
 {
     io_buffer_validate_for_reading(buffer);
+
+    if (buffer->flags & RB_IO_BUFFER_FREED) {
+        rb_raise(rb_eIOBufferAllocationError, "The buffer is not allocated!");
+    }
 
     if (buffer->base) {
         *base = buffer->base;
@@ -1913,6 +1925,8 @@ rb_io_buffer_resize(VALUE self, size_t size)
     if (buffer->flags & RB_IO_BUFFER_INTERNAL) {
         if (size == 0) {
             io_buffer_free(buffer);
+            // Resizing to zero makes an empty buffer, not a freed one:
+            buffer->flags &= ~RB_IO_BUFFER_FREED;
             return;
         }
 
