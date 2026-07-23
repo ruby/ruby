@@ -887,6 +887,25 @@ assert_equal "can not get unshareable values from instance variables of classes/
   end
 RUBY
 
+# setting an ivar of a class/module from a non-main Ractor reports the ivar and class
+assert_equal "can not set instance variables of classes/modules by non-main Ractors (@iv from C)", <<~'RUBY', frozen_string_literal: false
+  class C
+    @iv = 'str'
+  end
+
+  r = Ractor.new do
+    class C
+      @iv = 'other'
+    end
+  end
+
+  begin
+    r.value
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+RUBY
+
 # ivar in shareable-objects are not allowed to access from non-main Ractor
 assert_equal 'can not access instance variables of shareable objects from non-main Ractors', %q{
   shared = Ractor.new{}
