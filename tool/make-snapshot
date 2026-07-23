@@ -486,7 +486,6 @@ def package(vcs, rev, destdir, tmp = nil)
         end
       end
       mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "").sub(/^revision\.tmp::$/, '\& Makefile')
-      mk << File.read("defs/gmake.mk")
       mk << <<-'APPEND'
 
 update-download:: touch-unicode-files
@@ -503,7 +502,9 @@ touch-unicode-files:
       clean.create(".revision.time")
       ENV["CACHE_SAVE"] = "no"
       make = MAKE.new(args)
-      return unless make.run("fix-depends")
+      if File.file?("tool/mkdepend.rb")
+        return unless make.run("fix-depends")
+      end
       return unless make.run("update-download")
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk", "ext/ripper/y.output", ".revision.time")
       Dir.glob("**/*") do |dest|

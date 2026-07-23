@@ -861,7 +861,11 @@ class TestMkdepend < Test::Unit::TestCase
     )
     assert_include(snapshot, 'args["MKDEPEND_FILES"] = "--scope=core"')
     assert_include(snapshot, 'args["MKDEPEND_OPTIONS"] = ""')
-    assert_include(snapshot, 'make.run("fix-depends")')
+    assert_match(
+      %r{if File\.file\?\("tool/mkdepend\.rb"\).*make\.run\("fix-depends"\)}m,
+      snapshot,
+    )
+    assert_not_include(snapshot, 'File.read("defs/gmake.mk")')
   end
 
   def test_file_without_markers_is_not_updated
