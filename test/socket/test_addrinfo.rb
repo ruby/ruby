@@ -45,6 +45,10 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       Addrinfo.ip("127.0.0.1\000x")
     end
+
+    assert_raise_with_message(Socket::ResolutionError, /^getaddrinfo 'unknown':/) do
+      Addrinfo.ip("unknown")
+    end
   end
 
   def test_addrinfo_tcp

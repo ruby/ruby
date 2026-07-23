@@ -1069,7 +1069,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
         if (hostp && hostp[strlen(hostp)-1] == '\n') {
             rb_raise(rb_eSocket, "newline at the end of hostname");
         }
-        rsock_raise_resolution_error("getaddrinfo", error);
+        rsock_raise_resolution_error_for_host("getaddrinfo", error, host);
     }
 
     return res;
