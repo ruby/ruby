@@ -7031,7 +7031,7 @@ fn gen_send_cfunc(
     if variable_splat {
         let splat_array_idx = i32::from(kw_splat) + i32::from(block_arg);
         let comptime_splat_array = jit.peek_at_stack(&asm.ctx, splat_array_idx as isize);
-        if unsafe { rb_yjit_ruby2_keywords_splat_p(comptime_splat_array) } != 0 {
+        if unsafe { rb_jit_ruby2_keywords_splat_p(comptime_splat_array) } != 0 {
             gen_counter_incr(jit, asm, Counter::send_cfunc_splat_varg_ruby2_keywords);
             return None;
         }
@@ -7932,7 +7932,7 @@ fn gen_send_iseq(
         // All splats need to guard for ruby2_keywords hash. Check with a function call when
         // splatting into a rest param since the index for the last item in the array is dynamic.
         asm_comment!(asm, "guard no ruby2_keywords hash in splat");
-        let bad_splat = asm.ccall(rb_yjit_ruby2_keywords_splat_p as _, vec![asm.stack_opnd(splat_pos)]);
+        let bad_splat = asm.ccall(rb_jit_ruby2_keywords_splat_p as _, vec![asm.stack_opnd(splat_pos)]);
         asm.cmp(bad_splat, 0.into());
         asm.jnz(Target::side_exit(Counter::guard_send_splatarray_last_ruby2_keywords));
     }

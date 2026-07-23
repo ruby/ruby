@@ -444,6 +444,9 @@ make_counters! {
     caller_splat_profile_megamorphic,
     caller_splat_profile_skewed_megamorphic,
 
+    // Caller splat specialization
+    caller_splat_optimized,
+
     // Contexts in which SendDirect argument planning failed. These are kept
     // outside dynamic_send because the detailed fallback reason is also counted.
     send_direct_fallback_context_send,
