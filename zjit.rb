@@ -135,6 +135,7 @@ class << RubyVM::ZJIT
       :inline_method_count,
       :non_variadic_cfunc_optimized_send_count,
       :variadic_cfunc_optimized_send_count,
+      :caller_splat_optimized,
     ], buf:, stats:, right_align: true, base: :send_count)
     print_counters([
       :dynamic_setivar_count,

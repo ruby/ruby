@@ -309,6 +309,7 @@ fn main() {
         .allowlist_function("rb_jit_mark_unused")
         .allowlist_function("rb_jit_get_page_size")
         .allowlist_function("rb_jit_array_len")
+        .allowlist_function("rb_jit_ruby2_keywords_splat_p")
         .allowlist_function("rb_jit_fix_div_fix")
         .allowlist_function("rb_jit_iseq_builtin_attrs")
         .allowlist_function("rb_jit_str_concat_codepoint")

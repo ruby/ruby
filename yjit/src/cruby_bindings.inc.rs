@@ -1197,7 +1197,6 @@ extern "C" {
     pub fn rb_str_neq_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_ary_unshift_m(argc: ::std::os::raw::c_int, argv: *mut VALUE, ary: VALUE) -> VALUE;
     pub fn rb_yjit_rb_ary_subseq_length(ary: VALUE, beg: ::std::os::raw::c_long) -> VALUE;
-    pub fn rb_yjit_ruby2_keywords_splat_p(obj: VALUE) -> usize;
     pub fn rb_yjit_splat_varg_checks(
         sp: *mut VALUE,
         splat_array: VALUE,
@@ -1324,6 +1323,7 @@ extern "C" {
     pub fn rb_assert_cme_handle(handle: VALUE);
     pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_jit_array_len(a: VALUE) -> ::std::os::raw::c_long;
+    pub fn rb_jit_ruby2_keywords_splat_p(obj: VALUE) -> usize;
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
     pub fn rb_jit_shape_complex_p(shape_id: shape_id_t) -> bool;

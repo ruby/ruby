@@ -6344,13 +6344,95 @@ fn test_send_on_heap_object_in_spilled_arg() {
 }
 
 #[test]
-fn test_send_splat() {
-    assert_snapshot!(inspect("
+fn test_send_caller_splat_arguments() {
+    eval("
         def test(a, b) = [a, b]
-        def entry(arr) = test(*arr)
+        def entry(args) = test(*args)
         entry([1, 2])
+    ");
+    assert_snapshot!(assert_compiles("entry([1, 2])"), @"[1, 2]");
+}
+
+#[test]
+fn test_send_empty_caller_splat_arguments() {
+    eval("
+        def test(a = 1) = a
+        def entry(args) = test(*args)
+        entry([])
+    ");
+    assert_snapshot!(assert_compiles("entry([])"), @"1");
+}
+
+#[test]
+fn test_send_caller_splat_arguments_with_positional_prefix() {
+    eval("
+        def test(a, b, c) = [a, b, c]
+        def entry(args) = test(1, *args)
+        entry([2, 3])
+    ");
+    assert_snapshot!(assert_compiles("entry([2, 3])"), @"[1, 2, 3]");
+}
+
+#[test]
+fn test_send_many_caller_splat_arguments_to_rest_parameter() {
+    eval("
+        def test(*args) = args.length
+        def entry(args) = test(*args)
+        entry([1, 2, 3, 4, 5, 6, 7])
+    ");
+    assert_snapshot!(assert_compiles("entry([1, 2, 3, 4, 5, 6, 7])"), @"7");
+}
+
+#[test]
+fn test_send_caller_splat_arguments_to_complex_parameters() {
+    eval("
+        def test(a, b = 2, *rest, z, k: 40) = [a, b, rest, z, k]
+        def entry(args) = test(1, *args)
+        entry([3, 4, 5])
+    ");
+    assert_snapshot!(assert_compiles("entry([3, 4, 5])"), @"[1, 3, [4], 5, 40]");
+}
+
+#[test]
+fn test_send_caller_splat_arguments_with_required_keyword() {
+    eval("
+        def test(*args, k:) = [args, k]
+        def entry(args) = test(*args, k: 40)
         entry([1, 2])
-    "), @"[1, 2]");
+    ");
+    assert_snapshot!(assert_compiles("entry([1, 2])"), @"[[1, 2], 40]");
+}
+
+#[test]
+fn test_send_caller_splat_arguments_with_block_literal() {
+    eval("
+        def test(*args) = yield args.length
+        def entry(args) = test(*args) { |n| n + 4 }
+        entry([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles("entry([1, 2, 3])"), @"7");
+}
+
+#[test]
+fn test_send_caller_splat_length_mismatch_falls_back() {
+    eval("
+        def test(*args) = args
+        def entry(args) = test(*args)
+        entry([1, 2])
+    ");
+    assert_snapshot!(assert_compiles("entry([1, 2, 3])"), @"[1, 2, 3]");
+}
+
+#[test]
+fn test_send_caller_splat_with_ruby2_keywords_hash_falls_back() {
+    eval("
+        def capture(*args) = args
+        ruby2_keywords(:capture)
+        def test(arg = :default, k: nil) = [arg, k]
+        def entry(args) = test(*args)
+        entry(capture(k: 1))
+    ");
+    assert_snapshot!(assert_compiles("entry(capture(k: 1))"), @"[:default, 1]");
 }
 
 #[test]

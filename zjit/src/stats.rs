@@ -442,6 +442,9 @@ make_counters! {
     caller_splat_profile_megamorphic,
     caller_splat_profile_skewed_megamorphic,
 
+    // Caller splat specialization
+    caller_splat_optimized,
+
     // Writes to the VM frame
     vm_write_jit_frame_count,
     vm_write_sp_count,
