@@ -4763,6 +4763,7 @@ Init_BareVM(void)
     vm_init2(vm);
 
     ruby_current_vm_ptr = vm;
+    Init_thread_local_key();
     rb_objspace_alloc();
     rb_id_table_init(&vm->negative_cme_table, 16);
     st_init_existing_numtable_with_size(&vm->overloaded_cme_table, 0);

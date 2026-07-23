@@ -125,10 +125,18 @@ ruby_thread_set_native(rb_thread_t *th)
     return 1; // always succeed
 }
 
+#ifndef RB_THREAD_LOCAL_SPECIFIER
+void
+Init_thread_local_key(void)
+{
+    // no TLS setup
+}
+#endif
+
 void
 Init_native_thread(rb_thread_t *main_th)
 {
-    // no TLS setup and no thread id setup
+    // no thread id setup
     ruby_thread_set_native(main_th);
 }
 
