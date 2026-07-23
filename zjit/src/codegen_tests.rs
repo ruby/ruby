@@ -9463,6 +9463,61 @@ fn test_inline_block_attribute_accepts_throwing_block() {
 }
 
 #[test]
+fn test_enumerator_fusion_materializes_throwing_block_frame() {
+    set_call_threshold(2);
+    eval("
+        $fusion_return_log = []
+
+        def fused_break(n)
+          result = n.times.map do |i|
+            break :stopped if i == 2
+            i
+          end
+          [result, :after]
+        end
+
+        def fused_return(n)
+          begin
+            n.times.map do |i|
+              return :returned if i == 2
+              i
+            end
+            :after
+          ensure
+            $fusion_return_log << :ensured
+          end
+        end
+
+        fused_break(1)
+        fused_break(1)
+        fused_return(1)
+        fused_return(1)
+        $fusion_return_log.clear
+    ");
+
+    for method in ["fused_break", "fused_return"] {
+        let iseq = get_method_iseq("self", method);
+        let mut function = iseq_to_hir(iseq).unwrap();
+        function.optimize();
+        function.optimize();
+        let throw_frames = (0..function.num_insns())
+            .filter_map(|index| match function.find(InsnId::from(index)) {
+                Insn::PushInlineBlockFrame { elided, .. } => Some(elided),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(vec![false], throw_frames, "expected a real throw-only block frame in {method}");
+    }
+
+    assert_snapshot!(
+        assert_compiles_allowing_exits("
+            [fused_break(4), fused_return(4), $fusion_return_log]
+        "),
+        @"[[:stopped, :after], :returned, [:ensured]]"
+    );
+}
+
+#[test]
 fn test_load_immediates_into_registers_before_masking() {
     // See https://github.com/ruby/ruby/pull/16669 -- this is a reduced reproduction from a Ruby
     // spec.

@@ -9134,6 +9134,12 @@ impl Function {
     /// mismatch); anything else declines and takes the normal path, as do
     /// escaping enumerators and non-literal blocks.
     ///
+    /// The synthesized loop normally executes its translated block body
+    /// without a physical block frame. A break or non-local return keeps that
+    /// fast path and materializes the real frame only immediately before
+    /// Throw, using the original consumer call's post-argument state so VM
+    /// catch lookup and ensure unwinding see the expected PC, SP, and EP.
+    ///
     /// The rewrite is only equivalent to the *stock* implementations:
     /// MethodRedefined patchpoints invalidate on redefinition, and
     /// compile-time gates require the Ruby producers to be the internal
@@ -9259,6 +9265,8 @@ impl Function {
             recv: InsnId,
             a_state: InsnId,
             b_id: InsnId,
+            b_state: InsnId,
+            consumer_argc: usize,
             some_cd: *const rb_call_data,
             blockiseq: Option<IseqPtr>,
             consumer_cme: *const rb_callable_method_entry_t,
@@ -9393,20 +9401,20 @@ impl Function {
 
                 // Match the consumer shape: mid + literal block (or none for
                 // to_a), plus the single needle argument for identity scans.
-                let (b_recv, b_mid, b_block, b_args, b_cd) = match self.find(b_id) {
-                    Insn::Send { recv, cd, block, args, .. } => {
-                        (recv, unsafe { rb_vm_ci_mid((*cd).ci) }, block, args.clone(), cd)
+                let (b_recv, b_mid, b_block, b_args, b_cd, b_state) = match self.find(b_id) {
+                    Insn::Send { recv, cd, block, args, state, .. } => {
+                        (recv, unsafe { rb_vm_ci_mid((*cd).ci) }, block, args.clone(), cd, state)
                     }
                     // Ruby-defined consumers (Array#map/select are internal
                     // ISEQs) arrive as direct calls.
                     Insn::SendDirect(data) => {
-                        (data.recv, unsafe { rb_vm_ci_mid((*data.cd).ci) }, data.block, data.args.clone(), data.cd)
+                        (data.recv, unsafe { rb_vm_ci_mid((*data.cd).ci) }, data.block, data.args.clone(), data.cd, data.state)
                     }
                     Insn::CCallWithFrame(data) => {
-                        (data.recv, unsafe { rb_vm_ci_mid((*data.cd).ci) }, data.block, data.args.clone(), data.cd)
+                        (data.recv, unsafe { rb_vm_ci_mid((*data.cd).ci) }, data.block, data.args.clone(), data.cd, data.state)
                     }
                     Insn::CCallVariadic(data) => {
-                        (data.recv, data.name, data.block, data.args.clone(), std::ptr::null())
+                        (data.recv, data.name, data.block, data.args.clone(), std::ptr::null(), data.state)
                     }
                     _ => continue,
                 };
@@ -9559,8 +9567,7 @@ impl Function {
                         || !bparams.keyword.is_null() || bparams.flags.has_rest() != 0
                         || bparams.flags.has_kwrest() != 0 || bparams.flags.has_block() != 0
                         || bparams.flags.forwardable() != 0
-                        || !unsafe { rb_simple_iseq_p(bi) }
-                        || crate::codegen::block_iseq_may_throw(bi) {
+                        || !unsafe { rb_simple_iseq_p(bi) } {
                         continue;
                     }
                 }
@@ -9620,7 +9627,8 @@ impl Function {
                 if ghost_escape { continue; }
                 candidates.push(Candidate {
                     producer, consumer, block, a_id, a_pos, b_pos, guard_pos, retargets,
-                    recv, a_state, b_id, some_cd, blockiseq: bi,
+                    recv, a_state, b_id, b_state, consumer_argc: b_args.len(),
+                    some_cd, blockiseq: bi,
                     consumer_cme, consumer_klass, consumer_mid: b_mid,
                     range_info,
                     cons_k,
@@ -9644,15 +9652,49 @@ impl Function {
             // inspect it for purity before committing to anything.
             let insn_idx = self.blocks[c.block].insn_idx;
             let body_cont = self.new_block(insn_idx);
+            let block_may_throw = c.blockiseq.is_some_and(crate::codegen::block_iseq_may_throw);
+            // Fusion normally runs the translated body without a block frame.
+            // A Throw needs one only on its terminating path so vm_throw can
+            // resolve the literal block's defining EP and the consumer call's
+            // catch entry. Build the caller snapshot and captured self/EP
+            // detached; commit them to the prologue only if purity accepts the
+            // candidate.
+            let throw_ctx = if block_may_throw {
+                let consumer_state = self.frame_state(c.b_state);
+                let Some(caller_stack_size) = consumer_state.stack_size()
+                    .checked_sub(c.consumer_argc + 1)
+                else {
+                    self.insns.truncate(pre_insns_len);
+                    self.insn_types.truncate(pre_insn_types_len);
+                    self.blocks.truncate(pre_blocks_len);
+                    continue;
+                };
+                let caller = self.new_insn(Insn::Snapshot {
+                    state: Box::new(consumer_state.with_stack_size(caller_stack_size)),
+                });
+                let self_val = self.new_insn(Insn::LoadSelf);
+                let definer_ep = self.new_insn(Insn::GetEP { level: 0 });
+                Some((caller, self_val, definer_ep))
+            } else {
+                None
+            };
             let translated = if let Some(bi) = c.blockiseq {
+                let (caller, depth, definer_locals_cfp) = if let Some((caller, _, _)) = throw_ctx {
+                    // Fusion executes the translated block body without a
+                    // physical block frame on its normal path, so the current
+                    // CFP is the defining frame.
+                    (caller, self.frame_depth(c.b_state) + 1, Some(DefinerLocalsCFP::Current))
+                } else {
+                    (c.a_state, 1, None)
+                };
                 let block_mode = AddIseqMode::Inlined {
                     return_block: body_cont,
-                    caller: c.a_state,
-                    depth: 1,
+                    caller,
+                    depth,
                     jit_entry_idx: 0,
                     blockiseq: None,
                     inline_block_ctx: None,
-                    definer_locals_cfp: None,
+                    definer_locals_cfp,
                 };
                 match add_iseq_to_hir(self, bi, block_mode) {
                     Ok(r) => Some(r),
@@ -9666,6 +9708,7 @@ impl Function {
             } else {
                 None
             };
+            let translated_blocks_end = self.blocks.len();
 
             // Purity + local strength reduction, in up to two attempts: first
             // with only the index parameter seeded as Fixnum; if that fails
@@ -9781,6 +9824,8 @@ impl Function {
                             | Insn::FixnumLt { .. } | Insn::FixnumLe { .. } | Insn::FixnumGt { .. }
                             | Insn::FixnumGe { .. } | Insn::FixnumEq { .. } | Insn::BoolNegate { .. }
                             | Insn::FixnumAnd { .. } | Insn::FixnumOr { .. } => {}
+                            Insn::Throw { throw_state, .. }
+                                if matches!(throw_state & VM_THROW_STATE_MASK, RUBY_TAG_BREAK | RUBY_TAG_RETURN) => {}
                             Insn::FixnumAdd { .. } | Insn::FixnumSub { .. } | Insn::FixnumMult { .. } => {
                                 fixnum_vals.insert(self.union_find.borrow().find_const(iid));
                             }
@@ -10062,6 +10107,27 @@ impl Function {
                     }
                 }
                 if !bop_ops.contains(&(mid, l_fix)) { bop_ops.push((mid, l_fix)); }
+            }
+
+            // The fused body normally has no physical block frame, so all
+            // non-throwing exits must restart before the producer in the
+            // caller frame. Throw keeps its translated block FrameState; its
+            // terminating path materializes that frame below.
+            for bidx in pre_blocks_len..translated_blocks_end {
+                let insns = self.blocks[bidx].insns.clone();
+                for iid in insns {
+                    match &mut self.insns[iid] {
+                        Insn::PatchPoint { state, .. }
+                        | Insn::CheckInterrupts { state }
+                        | Insn::GuardType { state, .. }
+                        | Insn::FixnumAdd { state, .. }
+                        | Insn::FixnumSub { state, .. }
+                        | Insn::FixnumMult { state, .. } => {
+                            *state = c.a_state;
+                        }
+                        _ => {}
+                    }
+                }
             }
 
             // Commit. Retarget insns whose snapshots embedded the enumerator.
@@ -10428,7 +10494,14 @@ impl Function {
                 elidable: false,
                 block: None,
             }))) } else { InsnId(u32::MAX) };
-            let self_val = self.push_insn(bb, Insn::LoadSelf);
+            let (self_val, throw_definer_ep) = if let Some((caller, self_val, definer_ep)) = throw_ctx {
+                self.push_insn_id(bb, caller);
+                self.push_insn_id(bb, self_val);
+                self.push_insn_id(bb, definer_ep);
+                (self_val, Some(definer_ep))
+            } else {
+                (self.push_insn(bb, Insn::LoadSelf), None)
+            };
             let zero = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) });
             let one = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) });
 
@@ -10605,6 +10678,39 @@ impl Function {
                 }
                 if let Some(be) = r.body_entry_block {
                     self.blocks[be].params.clear();
+                }
+
+                if let (Some(bi), Some((caller, _, _)), Some(definer_ep)) =
+                    (c.blockiseq, throw_ctx, throw_definer_ep)
+                {
+                    // The body runs frame-free on its normal path. A Throw is
+                    // different: vm_throw needs the literal block frame to
+                    // locate break/return targets and run ensure handlers.
+                    // Materialize it immediately before each terminating
+                    // Throw, using the consumer call's post-argument caller
+                    // state so its catch-table PC and SP match the bytecode.
+                    let mut push_frame_state = self.frame_state(caller).clone();
+                    for &arg in &block_args {
+                        push_frame_state.stack_push(arg);
+                    }
+                    let push_state = self.push_insn(body_head, Insn::Snapshot {
+                        state: Box::new(push_frame_state),
+                    });
+                    for bidx in pre_blocks_len..translated_blocks_end {
+                        let throw_block = BlockId::from(bidx);
+                        if self.blocks[bidx].insns.last().is_some_and(|&iid| {
+                            matches!(self.find(iid), Insn::Throw { .. })
+                        }) {
+                            self.insert_before_terminator(throw_block, Insn::PushInlineBlockFrame {
+                                iseq: bi,
+                                self_val,
+                                definer_ep,
+                                args: block_args.clone(),
+                                state: push_state,
+                                elided: false,
+                            });
+                        }
+                    }
                 }
                 self.push_insn(body_head, Insn::Jump(BranchEdge { target: body_entry, args: vec![] }));
             } else {
