@@ -6624,6 +6624,11 @@ assoc		: arg_value tASSOC arg_value
                         $$ = list_append(p, NEW_LIST($1, &@$), $3);
                     /*% ripper: assoc_new!($:1, $:3) %*/
                     }
+                | arg_value ':' arg_value
+                    {
+                        $$ = list_append(p, NEW_LIST($1, &@$), $3);
+                    /*% ripper: assoc_new!($:1, $:3) %*/
+                    }
                 | tLABEL arg_value
                     {
                         $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@1), &@$), $2);
