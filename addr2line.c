@@ -2270,8 +2270,9 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
                 goto use_symtab;
         }
     }
-    else {
-        /* This file doesn't have dwarf, use symtab or dynsym */
+    /* Always fall back to .symtab/.dynsym for any trace frame that didn't set
+     * sname via DWARF so frames still get name+offset instead of bare address. */
+    {
 use_symtab:
         if (!symtab_shdr) {
             /* This file doesn't have symtab, use dynsym instead */
@@ -2289,7 +2290,8 @@ use_symtab:
                 if (ELF_ST_TYPE(sym->st_info) != STT_FUNC) continue;
                 for (i = offset; i < num_traces; i++) {
                     uintptr_t d = (uintptr_t)traces[i] - saddr;
-                    if (lines[i].line > 0 || d > (uintptr_t)sym->st_size)
+                    /* Only proceed if we didn't already get name or line info. */
+                    if (lines[i].sname || lines[i].line > 0 || d > (uintptr_t)sym->st_size)
                         continue;
                     /* fill symbol name and addr from .symtab */
                     if (!lines[i].sname) lines[i].sname = strtab + sym->st_name;
