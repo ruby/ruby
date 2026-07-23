@@ -2505,6 +2505,57 @@ rb_str_empty(VALUE str)
 
 /*
  *  call-seq:
+ *    blank? -> true or false
+ *
+ *  Returns whether +self+ is empty or contains only whitespace characters.
+ *  Whitespace is determined by +self+'s encoding. For Unicode encodings,
+ *  whitespace is defined by the Unicode +White_Space+ property:
+ *
+ *    ''.blank?       # => true
+ *    '   '.blank?    # => true
+ *    "\t\n\r".blank? # => true
+ *    "\u00a0".blank?  # => true
+ *    'hello'.blank?  # => false
+ *
+ *  Raises ArgumentError if an invalid byte sequence is encountered while
+ *  scanning +self+.
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
+ */
+
+static VALUE
+rb_str_blank_p(VALUE str)
+{
+    rb_encoding *enc = rb_enc_get(str);
+    const char *ptr = RSTRING_PTR(str);
+    const char *end = RSTRING_END(str);
+    const int ascii_compatible = rb_enc_asciicompat(enc);
+
+    while (ptr < end) {
+        unsigned char byte = (unsigned char)*ptr;
+
+        if (ascii_compatible && byte < 0x80) {
+            if (byte != 0x20 && !(0x09 <= byte && byte <= 0x0d)) {
+                return Qfalse;
+            }
+            ptr++;
+        }
+        else {
+            int length;
+            OnigCodePoint codepoint = rb_enc_codepoint_len(ptr, end, &length, enc);
+
+            if (!rb_enc_isspace(codepoint, enc)) {
+                return Qfalse;
+            }
+            ptr += length;
+        }
+    }
+
+    return Qtrue;
+}
+
+/*
+ *  call-seq:
  *    self + other_string -> new_string
  *
  *  Returns a new string containing +other_string+ concatenated to +self+:
@@ -12913,6 +12964,7 @@ Init_String(void)
     rb_define_method(rb_cString, "size", rb_str_length, 0);
     rb_define_method(rb_cString, "bytesize", rb_str_bytesize, 0);
     rb_define_method(rb_cString, "empty?", rb_str_empty, 0);
+    rb_define_method(rb_cString, "blank?", rb_str_blank_p, 0);
     rb_define_method(rb_cString, "=~", rb_str_match, 1);
     rb_define_method(rb_cString, "match", rb_str_match_m, -1);
     rb_define_method(rb_cString, "match?", rb_str_match_m_p, -1);
