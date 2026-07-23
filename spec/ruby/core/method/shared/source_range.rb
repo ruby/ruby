@@ -1,4 +1,4 @@
-require_relative '../../proc/fixtures/source_range_helpers'
+require_relative '../../../fixtures/source_range_helpers'
 
 describe :method_source_range, shared: true do
   it "sets absolute_path to the real path of the source file" do
