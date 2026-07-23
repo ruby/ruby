@@ -2961,7 +2961,7 @@ rb_thread_io_close_interrupt(struct rb_io *io)
     io->closing_ec = ec;
 
     // This is used to ensure the correct execution context is woken up after the blocking operation is interrupted:
-    io->wakeup_mutex = rb_mutex_new();
+    RB_OBJ_WRITE(io->self, &io->wakeup_mutex, rb_mutex_new());
     rb_mutex_allow_trap(io->wakeup_mutex, 1);
 
     // We need to use a mutex here as entering the fiber scheduler may cause a context switch:
