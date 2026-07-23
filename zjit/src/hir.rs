@@ -3195,6 +3195,12 @@ impl Function {
         }
     }
 
+    /// Do a shallow look up of the instruction ID in the union-find. Does inspect or rewrite any
+    /// operands.
+    pub fn find_id(&self, insn_id: InsnId) -> InsnId {
+        self.union_find.borrow().find_const(insn_id)
+    }
+
     /// Return a copy of the instruction where the instruction and its operands have been read from
     /// the union-find table (to find the current most-optimized version of this instruction). See
     /// [`UnionFind`] for more.
