@@ -6186,19 +6186,23 @@ impl Function {
     }
 
     fn absorb_dst_block(&mut self, num_in_edges: &[u32], block: BlockId) -> bool {
-        let Some(terminator_id) = self.blocks[block.0].insns.last()
+        let Some(&terminator_id) = self.blocks[block.0].insns.last()
             else { return false };
-        let Insn::Jump(BranchEdge { target, args }) = self.find(*terminator_id)
+        self.resolve(terminator_id);
+        let &mut Insn::Jump(ref mut edge) = self.insn_mut(terminator_id)
             else { return false };
-        if target == block {
+        if edge.target == block {
             // Can't absorb self
             return false;
         }
-        if num_in_edges[target.0] != 1 {
+        if num_in_edges[edge.target.0] != 1 {
             // Can't absorb block if it's the target of more than one branch
             return false;
         }
         // Link up params with block args
+        let args = std::mem::take(&mut edge.args);
+        let target = edge.target;
+        let _ = edge;
         let params = std::mem::take(&mut self.blocks[target.0].params);
         assert_eq!(args.len(), params.len());
         for (arg, param) in args.iter().zip(params) {
