@@ -1798,6 +1798,107 @@ impl IseqPayload {
         unsafe { blockref.as_ref() }.set_iseq_null();
         self.dead_blocks.push(blockref);
     }
+
+    /// Get all blocks for a particular instruction index.
+    fn get_version_list(&mut self, insn_idx: usize) -> Option<&mut VersionList> {
+        if insn_idx < self.version_map.len() {
+            Some(self.version_map.get_mut(insn_idx).unwrap())
+        } else {
+            None
+        }
+    }
+
+    /// Take all of the blocks for a particular instruction index
+    pub fn take_version_list(&mut self, insn_idx: usize) -> VersionList {
+        if insn_idx < self.version_map.len() {
+            mem::take(&mut self.version_map[insn_idx])
+        } else {
+            VersionList::default()
+        }
+    }
+
+    /// Count the number of block versions at an instruction index matching a Context
+    ///
+    /// FIXME: this counting logic is going to be expensive.
+    /// We should avoid it if possible
+    fn get_num_versions(&self, insn_idx: usize, ctx: &Context) -> usize {
+        self.version_map
+            .get(insn_idx)
+            .map(|versions| {
+                versions.iter().filter(|&&version| {
+                    let version_ctx = Context::decode(unsafe { version.as_ref() }.ctx);
+                    // Inline versions are counted separately towards MAX_INLINE_VERSIONS.
+                    version_ctx.inline() == ctx.inline() &&
+                        // find_block_versions() finds only blocks with compatible reg_mapping,
+                        // so count only versions with compatible reg_mapping.
+                        version_ctx.reg_mapping == ctx.reg_mapping
+                }).count()
+            })
+            .unwrap_or(0)
+    }
+
+    /// Find a block version matching the given context.
+    /// Note that we always prefer the first matching
+    /// version found because of inline-cache chains.
+    fn find_block_version(&mut self, insn_idx: usize, ctx: &Context) -> Option<BlockRef> {
+        let versions = self.get_version_list(insn_idx)?;
+
+        // Best match found
+        let mut best_version: Option<BlockRef> = None;
+        let mut best_diff = usize::MAX;
+
+        // For each version at this index
+        for blockref in versions.iter() {
+            let block = unsafe { blockref.as_ref() };
+            let block_ctx = Context::decode(block.ctx);
+
+            match ctx.diff(&block_ctx) {
+                TypeDiff::Compatible(diff) if diff < best_diff => {
+                    best_version = Some(*blockref);
+                    best_diff = diff;
+                }
+                _ => {}
+            }
+        }
+
+        best_version
+    }
+
+    /// Find the closest RegMapping among ones that have already been compiled.
+    pub fn find_most_compatible_reg_mapping(&mut self, insn_idx: usize, ctx: &Context) -> Option<RegMapping> {
+        let versions = self.get_version_list(insn_idx)?;
+
+        // Best match found
+        let mut best_mapping: Option<RegMapping> = None;
+        let mut best_diff = usize::MAX;
+
+        // For each version at this index
+        for blockref in versions.iter() {
+            let block = unsafe { blockref.as_ref() };
+            let block_ctx = Context::decode(block.ctx);
+
+            // Discover the best block that is compatible if we load/spill registers
+            match ctx.diff_allowing_reg_mismatch(&block_ctx) {
+                TypeDiff::Compatible(diff) if diff < best_diff => {
+                    best_mapping = Some(block_ctx.get_reg_mapping());
+                    best_diff = diff;
+                }
+                _ => {}
+            }
+        }
+
+        best_mapping
+    }
+
+    /// Remove a block version from the version map
+    fn remove_block_version(&mut self, blockref: &BlockRef) {
+        let block = unsafe { blockref.as_ref() };
+        let insn_idx = block.get_blockid().idx.as_usize();
+        if let Some(version_list) = self.get_version_list(insn_idx) {
+            // Retain the versions that are not this one
+            version_list.retain(|other| blockref != other);
+        }
+    }
 }
 
 /// Get the payload for an iseq. For safety it's up to the caller to ensure the returned `&mut`
@@ -2160,53 +2261,12 @@ pub extern "C" fn rb_yjit_mark_all_executable() {
     }
 }
 
-/// Get all blocks for a particular place in an iseq.
-fn get_version_list(blockid: BlockId) -> Option<&'static mut VersionList> {
-    let insn_idx = blockid.idx.as_usize();
-    match get_iseq_payload(blockid.iseq) {
-        Some(payload) if insn_idx < payload.version_map.len() => {
-            Some(payload.version_map.get_mut(insn_idx).unwrap())
-        },
-        _ => None
-    }
-}
-
 /// Take all of the blocks for a particular place in an iseq
 pub fn take_version_list(blockid: BlockId) -> VersionList {
     let insn_idx = blockid.idx.as_usize();
     match get_iseq_payload(blockid.iseq) {
-        Some(payload) if insn_idx < payload.version_map.len() => {
-            mem::take(&mut payload.version_map[insn_idx])
-        },
+        Some(payload) => payload.take_version_list(insn_idx),
         _ => VersionList::default(),
-    }
-}
-
-/// Count the number of block versions that match a given BlockId and part of a Context
-fn get_num_versions(blockid: BlockId, ctx: &Context) -> usize {
-    let insn_idx = blockid.idx.as_usize();
-    match get_iseq_payload(blockid.iseq) {
-
-        // FIXME: this counting logic is going to be expensive.
-        // We should avoid it if possible
-
-        Some(payload) => {
-            payload
-                .version_map
-                .get(insn_idx)
-                .map(|versions| {
-                    versions.iter().filter(|&&version| {
-                        let version_ctx = Context::decode(unsafe { version.as_ref() }.ctx);
-                        // Inline versions are counted separately towards MAX_INLINE_VERSIONS.
-                        version_ctx.inline() == ctx.inline() &&
-                            // find_block_versions() finds only blocks with compatible reg_mapping,
-                            // so count only versions with compatible reg_mapping.
-                            version_ctx.reg_mapping == ctx.reg_mapping
-                    }).count()
-                })
-                .unwrap_or(0)
-        }
-        None => 0,
     }
 }
 
@@ -2234,55 +2294,12 @@ pub fn get_or_create_iseq_block_list(iseq: IseqPtr) -> Vec<BlockRef> {
 /// Retrieve a basic block version for an (iseq, idx) tuple
 /// This will return None if no version is found
 fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
-    let versions = get_version_list(blockid)?;
-
-    // Best match found
-    let mut best_version: Option<BlockRef> = None;
-    let mut best_diff = usize::MAX;
-
-    // For each version matching the blockid
-    for blockref in versions.iter() {
-        let block = unsafe { blockref.as_ref() };
-        let block_ctx = Context::decode(block.ctx);
-
-        // Note that we always prefer the first matching
-        // version found because of inline-cache chains
-        match ctx.diff(&block_ctx) {
-            TypeDiff::Compatible(diff) if diff < best_diff => {
-                best_version = Some(*blockref);
-                best_diff = diff;
-            }
-            _ => {}
-        }
-    }
-
-    return best_version;
+    get_iseq_payload(blockid.iseq)?.find_block_version(blockid.idx.as_usize(), ctx)
 }
 
 /// Find the closest RegMapping among ones that have already been compiled.
 pub fn find_most_compatible_reg_mapping(blockid: BlockId, ctx: &Context) -> Option<RegMapping> {
-    let versions = get_version_list(blockid)?;
-
-    // Best match found
-    let mut best_mapping: Option<RegMapping> = None;
-    let mut best_diff = usize::MAX;
-
-    // For each version matching the blockid
-    for blockref in versions.iter() {
-        let block = unsafe { blockref.as_ref() };
-        let block_ctx = Context::decode(block.ctx);
-
-        // Discover the best block that is compatible if we load/spill registers
-        match ctx.diff_allowing_reg_mismatch(&block_ctx) {
-            TypeDiff::Compatible(diff) if diff < best_diff => {
-                best_mapping = Some(block_ctx.get_reg_mapping());
-                best_diff = diff;
-            }
-            _ => {}
-        }
-    }
-
-    best_mapping
+    get_iseq_payload(blockid.iseq)?.find_most_compatible_reg_mapping(blockid.idx.as_usize(), ctx)
 }
 
 /// Allow inlining a Block up to MAX_INLINE_VERSIONS times.
@@ -2295,7 +2312,10 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         return *ctx;
     }
 
-    let next_versions = get_num_versions(blockid, ctx) + 1;
+    let next_versions = match get_iseq_payload(blockid.iseq) {
+        Some(payload) => payload.get_num_versions(blockid.idx.as_usize(), ctx),
+        None => 0,
+    } + 1;
     let max_versions = if ctx.inline() {
         MAX_INLINE_VERSIONS
     } else {
@@ -2406,13 +2426,9 @@ unsafe fn add_block_version(blockref: BlockRef, cb: &CodeBlock) {
 /// Remove a block version from the version map of its parent ISEQ
 fn remove_block_version(blockref: &BlockRef) {
     let block = unsafe { blockref.as_ref() };
-    let version_list = match get_version_list(block.get_blockid()) {
-        Some(version_list) => version_list,
-        None => return,
-    };
-
-    // Retain the versions that are not this one
-    version_list.retain(|other| blockref != other);
+    if let Some(payload) = get_iseq_payload(block.get_blockid().iseq) {
+        payload.remove_block_version(blockref);
+    }
 }
 
 impl<'a> JITState<'a> {
