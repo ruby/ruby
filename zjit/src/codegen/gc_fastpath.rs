@@ -74,7 +74,7 @@ pub(super) fn gc_fastpath_new_obj(
     alloc_size: usize,
     flags: u64,
     klass: VALUE,
-    init: &dyn Fn(&mut Assembler, Opnd),
+    init: impl Fn(&mut Assembler, Opnd),
     slow_path: impl Fn(&mut Assembler) -> lir::Opnd,
 ) -> lir::Opnd {
     let Some(fastpath) = prepare_new_obj_fastpath(alloc_size, flags, klass) else {
@@ -146,7 +146,7 @@ fn emit_new_obj_fastpath(
     jit: &mut JITState,
     asm: &mut Assembler,
     prepared: &PreparedNewObjFastpath,
-    init: &dyn Fn(&mut Assembler, Opnd),
+    init: impl Fn(&mut Assembler, Opnd),
     miss_block: lir::BlockId,
 ) -> Option<Opnd> {
     let miss = Target::Block(Box::new(lir::BranchEdge {
@@ -172,7 +172,7 @@ fn emit_default_new_obj_fastpath(
     jit: &mut JITState,
     asm: &mut Assembler,
     fastpath: &RbGcZjitDefaultNewObjFastpath,
-    init: &dyn Fn(&mut Assembler, Opnd),
+    init: impl Fn(&mut Assembler, Opnd),
     miss: &Target,
 ) -> Option<Opnd> {
     let cursor_offset: i32 = fastpath.cursor_offset.try_into().ok()?;
@@ -215,7 +215,7 @@ fn emit_mmtk_new_obj_fastpath(
     jit: &mut JITState,
     asm: &mut Assembler,
     fastpath: &RbGcZjitMmtkNewObjFastpath,
-    init: &dyn Fn(&mut Assembler, Opnd),
+    init: impl Fn(&mut Assembler, Opnd),
     miss: &Target,
 ) -> Option<Opnd> {
     let objspace_total_allocated_objects_offset: i32 = fastpath
