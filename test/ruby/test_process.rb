@@ -156,6 +156,25 @@ class TestProcess < Test::Unit::TestCase
 
   TRUECOMMAND = [RUBY, '-e', '']
 
+  def test_spawn_returns_process_id
+    pid = Process.spawn(*TRUECOMMAND)
+    assert_instance_of(Process::ID, pid)
+    assert_instance_of(Integer, pid.to_i)
+    assert_equal(pid.to_i.to_s, pid.to_s)
+    assert_equal("#<Process::ID: pid #{pid}>", pid.inspect)
+    assert_kind_of(Comparable, pid)
+    assert_equal(0, pid <=> pid.to_i)
+    assert_operator(pid, :>=, pid.to_i)
+    assert_predicate(pid.wait, :success?)
+  end
+
+  def test_process_id_detach
+    pid = Process.spawn(*TRUECOMMAND)
+    th = pid.detach
+    assert_equal pid, th.pid
+    assert_predicate th.value, :success?
+  end
+
   def test_execopts_opts
     assert_nothing_raised {
       Process.wait Process.spawn(*TRUECOMMAND, {})
@@ -278,7 +297,7 @@ class TestProcess < Test::Unit::TestCase
       ENV = {}
       pid = spawn({}, *#{TRUECOMMAND.inspect})
       ENV.replace({})
-      assert_kind_of(Integer, pid, BUG)
+      assert_instance_of(Process::ID, pid, BUG)
     end;
   end
 
@@ -2635,6 +2654,7 @@ EOS
       end
     else
       w.close
+      assert_instance_of(Process::ID, pid)
       assert_equal("ok: #{pid}", r.read)
       r.close
       Process.waitpid(pid)
@@ -2655,6 +2675,7 @@ EOS
       end
     else
       w.close
+      assert_instance_of(Process::ID, pid)
       assert_equal("ok: #{pid}", r.read)
       r.close
       Process.waitpid(pid)
@@ -2684,7 +2705,7 @@ EOS
         assert_equal(":before", r.shift)
         assert_equal(":after", r.shift)
         s = r.map {|s| s.chomp }.sort #=> [pid, ":after", "nil"]
-        assert_match(/^\d+$/, s[0]) # pid
+        assert_match(/^#<Process::ID: pid \d+>$/, s[0]) # pid
         assert_equal(":after", s[1])
         assert_equal("nil", s[2])
       end
@@ -2712,6 +2733,58 @@ EOS
           puts io.read + "bar"
         end
       }
+    end;
+  end if Process.respond_to?(:_fork)
+
+  def test__fork_hook_integer_like_object
+    %w(fork Process.fork).each do |method|
+      feature17795 = '[ruby-core:103400] [Feature #17795]'
+      assert_in_out_err([], <<-"end;", %w(MockPID false), [], feature17795, timeout: 60)
+        MockPID = Data.define(:to_int) { alias to_i to_int }
+
+        module ForkHook
+          def _fork
+            ret = super
+            ret == 0 ? ret : MockPID.new(ret.to_i)
+          end
+        end
+
+        Process.singleton_class.prepend(ForkHook)
+
+        pid = #{ method }
+        if pid
+          puts pid.class
+          puts pid.is_a?(Integer)
+          Process.waitpid(pid)
+        end
+      end;
+    end
+  end if Process.respond_to?(:_fork)
+
+  def test__fork_hook_integer_like_object_popen
+    feature17795 = '[ruby-core:103400] [Feature #17795]'
+    assert_in_out_err([], <<-"end;", %w(MockPID false child), [], feature17795, timeout: 60)
+      MockPID = Data.define(:to_int) { alias to_i to_int }
+
+      module ForkHook
+        def _fork
+          ret = super
+          ret == 0 ? ret : MockPID.new(ret.to_i)
+        end
+      end
+
+      Process.singleton_class.prepend(ForkHook)
+
+      IO.popen("-") do |io|
+        if io
+          pid = io.pid
+          puts pid.class
+          puts pid.is_a?(Integer)
+          puts io.read
+        else
+          puts "child"
+        end
+      end
     end;
   end if Process.respond_to?(:_fork)
 

@@ -2956,7 +2956,7 @@ rb_io_mode(VALUE io)
 
 /*
  *  call-seq:
- *    pid -> integer or nil
+ *    pid -> Process::ID or nil
  *
  *  Returns the process ID of a child process associated with the stream,
  *  which will have been set by IO#popen, or +nil+ if the stream was not
@@ -2984,7 +2984,9 @@ rb_io_pid(VALUE io)
     GetOpenFile(io, fptr);
     if (!fptr->pid)
         return Qnil;
-    return PIDT2NUM(fptr->pid);
+    if (!NIL_P(fptr->pid_value))
+        return fptr->pid_value;
+    return fptr->pid_value = rb_process_id_new(fptr->pid);
 }
 
 /*
@@ -5794,6 +5796,7 @@ fptr_waitpid(rb_io_t *fptr, int nohang)
         rb_last_status_clear();
         rb_waitpid(fptr->pid, &status, nohang ? WNOHANG : 0);
         fptr->pid = 0;
+        fptr->pid_value = Qnil;
     }
 }
 
@@ -5981,7 +5984,9 @@ rb_io_close_read(VALUE io)
         rb_io_t *wfptr;
         wfptr = rb_io_get_fptr(rb_io_taint_check(write_io));
         wfptr->pid = fptr->pid;
+        wfptr->pid_value = fptr->pid_value;
         fptr->pid = 0;
+        fptr->pid_value = Qnil;
         RFILE(io)->fptr = wfptr;
         /* bind to write_io temporarily to get rid of memory/fd leak */
         fptr->tied_io_for_writing = 0;
@@ -7602,6 +7607,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
 {
     struct rb_execarg *eargp = NIL_P(execarg_obj) ? NULL : rb_execarg_get(execarg_obj);
     VALUE prog = eargp ? (eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name) : Qfalse ;
+    VALUE pid_value = Qnil;
     rb_pid_t pid = 0;
     rb_io_t *fptr;
     VALUE port;
@@ -7724,7 +7730,8 @@ pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
     }
     else {
 # if defined(HAVE_WORKING_FORK)
-        pid = rb_call_proc__fork();
+        pid_value = rb_call_proc__fork();
+        pid = NUM2PIDT(pid_value);
         if (pid == 0) {		/* child */
             popen_redirect(&arg);
             rb_io_synchronized(RFILE(orig_stdout)->fptr);
@@ -7752,6 +7759,9 @@ pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
             rb_syserr_fail(e, errmsg);
 # endif
         rb_syserr_fail_str(e, prog);
+    }
+    if (NIL_P(pid_value) && pid > 0) {
+        pid_value = rb_process_id_new(pid);
     }
     if ((fmode & FMODE_READABLE) && (fmode & FMODE_WRITABLE)) {
         close(arg.pair[1]);
@@ -7807,6 +7817,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
 #endif
     }
     fptr->pid = pid;
+    fptr->pid_value = pid_value;
 
     if (0 <= write_fd) {
         write_port = io_alloc(rb_cIO);
@@ -7816,6 +7827,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
         fptr->mode &= ~FMODE_WRITABLE;
         fptr->tied_io_for_writing = write_port;
         rb_ivar_set(port, rb_intern("@tied_io_for_writing"), write_port);
+        write_fptr->pid_value = pid_value;
     }
 
 #if defined (__CYGWIN__) || !defined(HAVE_WORKING_FORK)
@@ -8396,6 +8408,7 @@ io_reopen(VALUE io, VALUE nfile)
     fptr->mode = orig->mode | (fptr->mode & FMODE_EXTERNAL);
     fptr->encs = orig->encs;
     fptr->pid = orig->pid;
+    fptr->pid_value = orig->pid_value;
     fptr->lineno = orig->lineno;
     if (RTEST(orig->pathv)) fptr->pathv = orig->pathv;
     else if (!RUBY_IO_EXTERNAL_P(fptr)) fptr->pathv = Qnil;
@@ -8598,6 +8611,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     fptr->mode = orig->mode & ~FMODE_EXTERNAL;
     fptr->encs = orig->encs;
     fptr->pid = orig->pid;
+    fptr->pid_value = orig->pid_value;
     fptr->lineno = orig->lineno;
     fptr->timeout = orig->timeout;
 
@@ -9456,6 +9470,7 @@ rb_io_fptr_new(void)
     fp->stdio_file = NULL;
     fp->mode = 0;
     fp->pid = 0;
+    fp->pid_value = Qnil;
     fp->lineno = 0;
     fp->pathv = Qnil;
     fp->finalize = 0;
