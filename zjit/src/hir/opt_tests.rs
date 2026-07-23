@@ -5114,8 +5114,16 @@ mod hir_opt_tests {
         bb10():
           Jump bb6()
         bb6():
-          v34:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
-          Jump bb4(v34)
+          v34:CInt64[3] = Const CInt64(3)
+          v35:CInt64 = IntAnd v13, v34
+          v36:CBool = IsBitEqual v35, v34
+          CondBranch v36, bb11(), bb12()
+        bb11():
+          v38:BasicObject = InvokeBlockIfunc v13, v10
+          Jump bb4(v38)
+        bb12():
+          v40:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
+          Jump bb4(v40)
         bb4(v16:BasicObject):
           CheckInterrupts
           Return v16

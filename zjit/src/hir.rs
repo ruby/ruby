@@ -3314,6 +3314,22 @@ impl<'a> CallerArguments<'a> {
     }
 }
 
+/// Block handler kinds other than ISEQ blocks that a yield site's profile saw. At
+/// non-monomorphic sites each gets its own direct arm (tested per execution), so a
+/// site mixing kinds keeps a fast path for every kind instead of sending all but the
+/// ISEQ blocks through rb_vm_invokeblock.
+#[derive(Default)]
+struct BlockHandlerArms {
+    /// IFUNC handlers (C blocks, e.g. enumerator yielders) call rb_vm_yield_with_cfunc directly.
+    ifunc: bool,
+}
+
+impl BlockHandlerArms {
+    fn is_empty(&self) -> bool {
+        !self.ifunc
+    }
+}
+
 /// Caller splat expansion selected for one SendDirect path.
 #[derive(Clone, Copy)]
 struct CallerSplat {
@@ -3645,10 +3661,12 @@ impl Function {
         self.push_insn(block, Insn::InvokeBlockIseqDirect { iseq: block_iseq, captured, args, state })
     }
 
-    /// Dispatch `yield` to the profiled ISEQ blocks.
+    /// Dispatch `yield` to the profiled ISEQ blocks, then to the profiled non-ISEQ
+    /// handler kinds in `arms`, before falling back to rb_vm_invokeblock.
     fn dispatch_invoke_block_iseqs(
         &mut self,
         iseqs: &[IseqPtr],
+        arms: &BlockHandlerArms,
         block: BlockId,
         insn_idx: u32,
         level: u32,
@@ -3665,8 +3683,9 @@ impl Function {
         let tag = self.push_insn(block, Insn::IntAnd { left: block_handler, right: tag_mask });
 
         // Monomorphic: guard the tag and the ISEQ, then invoke directly in-place.
-        // No need for new HIR blocks.
-        if iseqs.len() == 1 && !self.policy.no_side_exits {
+        // No need for new HIR blocks. With other handler kinds profiled, a guard
+        // would exit on each of them, so those sites take the branching dispatch.
+        if iseqs.len() == 1 && arms.is_empty() && !self.policy.no_side_exits {
             let block_iseq = iseqs[0];
             self.push_insn(block, Insn::GuardBitEquals { val: tag, expected: Const::CInt64(0x1), reason: Box::new(SideExitReason::InvokeBlockHandlerNotIseq), state, recompile: Some(Recompile) });
             let captured = self.untag_block_handler(block, block_handler);
@@ -3716,12 +3735,45 @@ impl Function {
         }
         self.push_insn(compare_block, Insn::Jump(BranchEdge { target: fallback_block, args: vec![] }));
 
-        let fallback_result = self.push_insn(fallback_block, Insn::InvokeBlock {
-            cd, args, state, reason: InvokeBlockPolymorphicMiss,
-        });
-        self.push_insn(fallback_block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
+        self.emit_block_handler_arms(fallback_block, insn_idx, block_handler, arms, cd, args, state, InvokeBlockPolymorphicMiss, join_block);
 
         (join_block, join_param)
+    }
+
+    /// Emit the direct arms for the non-ISEQ handler kinds in `arms`, then the generic
+    /// rb_vm_invokeblock fallback, into `block`. Every path jumps to `join_block` with
+    /// its result.
+    fn emit_block_handler_arms(
+        &mut self,
+        mut block: BlockId,
+        insn_idx: u32,
+        block_handler: InsnId,
+        arms: &BlockHandlerArms,
+        cd: *const rb_call_data,
+        args: Vec<InsnId>,
+        state: InsnId,
+        reason: SendFallbackReason,
+        join_block: BlockId,
+    ) {
+        if arms.ifunc {
+            // VM_BH_IFUNC_P: (handler & 0x3) == 0x3; the mask is also the tag.
+            let ifunc_tag = self.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
+            let tag_bits = self.push_insn(block, Insn::IntAnd { left: block_handler, right: ifunc_tag });
+            let is_ifunc = self.push_insn(block, Insn::IsBitEqual { left: tag_bits, right: ifunc_tag });
+            let ifunc_block = self.new_block(insn_idx);
+            let next_block = self.new_block(insn_idx);
+            self.push_insn(block, Insn::CondBranch {
+                val: is_ifunc,
+                if_true: BranchEdge { target: ifunc_block, args: vec![] },
+                if_false: BranchEdge { target: next_block, args: vec![] },
+            });
+            let ifunc_result = self.push_insn(ifunc_block, Insn::InvokeBlockIfunc { cd, block_handler, args: args.clone(), state });
+            self.push_insn(ifunc_block, Insn::Jump(BranchEdge { target: join_block, args: vec![ifunc_result] }));
+            block = next_block;
+        }
+
+        let fallback_result = self.push_insn(block, Insn::InvokeBlock { cd, args, state, reason });
+        self.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
     }
 
     // Add an instruction to an SSA block
@@ -14775,6 +14827,17 @@ fn add_iseq_to_hir(
                     let is_ifunc = (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG)) == 0
                         && block_handler_type.is_some_and(|ty| ty.flags().is_ifunc_block_handler());
 
+                    // Non-ISEQ handler kinds seen at a non-monomorphic site (a stdlib yield like
+                    // Integer#times sees direct blocks AND enumerator yielders at one insn) get
+                    // their own direct arms; the monomorphic IFUNC case is handled below.
+                    let handler_arms = BlockHandlerArms {
+                        ifunc: (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG)) == 0
+                            && block_handler_summary.as_ref().is_some_and(|summary| {
+                                !summary.is_monomorphic()
+                                    && summary.buckets().iter().any(|ty| !ty.is_empty() && ty.flags().is_ifunc_block_handler())
+                            }),
+                    };
+
                     // Collect the profiled ISEQ blocks that can be invoked directly with a JIT-to-JIT call.
                     let mut fallback_reason = InvokeBlockNotSpecialized;
                     // The first entry of buckets is the most common type, so it will be inserted to direct_iseqs first too.
@@ -14930,7 +14993,7 @@ fn add_iseq_to_hir(
                         }
                     } else if !direct_iseqs.is_empty() {
                         let level = get_lvar_level(exit_state.iseq);
-                        let (continue_block, result) = fun.dispatch_invoke_block_iseqs(&direct_iseqs, block, insn_idx, level, cd, args, exit_id);
+                        let (continue_block, result) = fun.dispatch_invoke_block_iseqs(&direct_iseqs, &handler_arms, block, insn_idx, level, cd, args, exit_id);
                         // Continue compilation from the block the dispatch ended in
                         block = continue_block;
                         result
@@ -14977,6 +15040,16 @@ fn add_iseq_to_hir(
                         fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
 
                         // Continue compilation from the join block
+                        block = join_block;
+                        join_param
+                    } else if !handler_arms.is_empty() {
+                        // No ISEQ arms, but other handler kinds to dispatch directly.
+                        let level = get_lvar_level(exit_state.iseq);
+                        let lep = fun.get_ep(block, level);
+                        let block_handler = fun.load_field(block, lep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
+                        let join_block = fun.new_block(insn_idx);
+                        let join_param = fun.push_insn(join_block, Insn::Param);
+                        fun.emit_block_handler_arms(block, insn_idx, block_handler, &handler_arms, cd, args, exit_id, fallback_reason, join_block);
                         block = join_block;
                         join_param
                     } else {
