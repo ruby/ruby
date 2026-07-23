@@ -711,7 +711,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::BoxBool { val } => gen_box_bool(asm, opnd!(val)),
         &Insn::BoxFixnum { val, state } => gen_box_fixnum(jit, asm, function, opnd!(val), &function.frame_state(state)),
         &Insn::UnboxFixnum { val } => gen_unbox_fixnum(asm, opnd!(val)),
-        Insn::Test { val } => gen_test(asm, opnd!(val)),
+        Insn::Test { val } => gen_test(asm, opnd!(val), function.type_of(*val)),
         Insn::RefineType { val, .. } => opnd!(val),
         Insn::HasType { val, expected } => {
             let val_type = function.type_of(*val);
@@ -2833,8 +2833,11 @@ fn gen_is_bit_not_equal(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) 
 }
 
 fn gen_box_bool(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
-    asm.test(val, val);
-    asm.csel_nz(Opnd::Value(Qtrue), Opnd::Value(Qfalse))
+    // Since we know val is either 0 or 1 and we are trying to get Qfalse or Qtrue, respectively,
+    // we can just multiply by Qtrue to get the correct boxed value.
+    assert_eq!(Qfalse.as_i64(), 0);
+    assert_eq!(Qtrue.as_i64(), 0b10100);
+    asm.mul(val, Qtrue.as_i64().into())
 }
 
 fn gen_box_fixnum(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
@@ -2855,7 +2858,14 @@ fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> l
 /// Produces a CBool type (0 or 1)
 /// In Ruby, only nil and false are falsy
 /// Everything else evaluates to true
-fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
+fn gen_test(asm: &mut Assembler, val: lir::Opnd, val_type: Type) -> lir::Opnd {
+    if val_type.is_subtype(types::BoolExact) {
+        // If the type is BoolExact, we know it's either Qtrue or Qfalse. We can just right shift
+        // to check what's in the fifth bit.
+        assert_eq!(Qfalse.as_i64(), 0);
+        assert_eq!(Qtrue.as_i64(), 0b10100);
+        return asm.rshift(val, Opnd::UImm(4));
+    }
     // Test if any bit (outside of the Qnil bit) is on
     // See RB_TEST(), include/ruby/internal/special_consts.h
     asm.test(val, Opnd::Imm(!Qnil.as_i64()));
