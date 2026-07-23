@@ -5735,6 +5735,21 @@ impl Function {
                         if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
                             compile_time_heap.clear();
                         }
+                        // If we allocate an object using the default allocator, we know what its
+                        // initial shape is.
+                        if let Insn::ObjectAllocClass { class, .. } = insn {
+                            if unsafe { rb_zjit_class_has_default_allocator(class) } {
+                                let mut _alloc_size: usize = 0;
+                                let mut shape_id: shape_id_t = 0;
+                                unsafe {
+                                    rb_zjit_class_allocate_instance_fastpath(class, &mut _alloc_size, &mut shape_id)
+                                };
+                                let shape = self.new_insn(Insn::Const { val: Const::CShape(ShapeId(shape_id)) });
+                                self.insn_types[shape.0] = self.infer_type(shape);
+                                new_insns.push(shape);
+                                compile_time_heap.insert((insn_id, unsafe { rb_shape_id_offset() } as i32), shape);
+                            }
+                        }
                         insn_id
                     }
                 };
