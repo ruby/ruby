@@ -177,7 +177,8 @@ module SyncDefaultGems
       "ext/json/extconf.rb",
     ]),
     mmtk: repo(["ruby/mmtk", "main"], [
-      ["gc/mmtk", "gc/mmtk"],
+      ["gc/mmtk", "gc/mmtk",
+       "test/.excludes-mmtk", "test/mmtk"],
     ]),
     open3: lib("ruby/open3", gemspec_in_subdir: true).tap {
       it.exclude << "lib/open3/jruby_windows.rb"
