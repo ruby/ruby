@@ -14292,9 +14292,13 @@ fn add_iseq_to_hir(
                                 } else {
                                     fun.count(block, Counter::invokeblock_handler_monomorphic_other);
                                 }
-                            } else if summary.is_skewed_polymorphic() || summary.is_polymorphic() {
+                            } else if summary.is_skewed_polymorphic() {
+                                fun.count(block, Counter::invokeblock_handler_skewed_polymorphic);
+                            } else if summary.is_polymorphic() {
                                 fun.count(block, Counter::invokeblock_handler_polymorphic);
-                            } else if summary.is_skewed_megamorphic() || summary.is_megamorphic() {
+                            } else if summary.is_skewed_megamorphic() {
+                                fun.count(block, Counter::invokeblock_handler_skewed_megamorphic);
+                            } else if summary.is_megamorphic() {
                                 fun.count(block, Counter::invokeblock_handler_megamorphic);
                             } else {
                                 fun.count(block, Counter::invokeblock_handler_no_profiles);
