@@ -113,7 +113,7 @@ fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
     });
 }
 
-fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
+fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr) {
     let src_addr = cb.get_write_ptr().as_offset();
     let dst_addr = dst_ptr.as_offset();
 
@@ -121,7 +121,7 @@ fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
     // branch instruction. Otherwise, we'll move the
     // destination into a register and use the branch
     // register instruction.
-    let num_insns = if b_offset_fits_bits((dst_addr - src_addr) / 4) {
+    if b_offset_fits_bits((dst_addr - src_addr) / 4) {
         b(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
         1
     } else {
@@ -129,16 +129,6 @@ fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
         br(cb, Assembler::EMIT_OPND);
         num_insns + 1
     };
-
-    if padding {
-        // Make sure it's always a consistent number of
-        // instructions in case it gets patched and has to
-        // use the other branch.
-        assert!(num_insns * 4 <= cb.jmp_ptr_bytes());
-        for _ in num_insns..(cb.jmp_ptr_bytes() / 4) {
-            nop(cb);
-        }
-    }
 }
 
 /// Emit the required instructions to load the given value into the
@@ -1478,7 +1468,7 @@ impl Assembler {
                 Insn::Jmp(target) => {
                     match *target {
                         Target::CodePtr(dst_ptr) => {
-                            emit_jmp_ptr(cb, dst_ptr, true);
+                            emit_jmp_ptr(cb, dst_ptr);
                         },
                         Target::Label(label_idx) => {
                             // Reserve space for a single B instruction
