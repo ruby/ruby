@@ -394,6 +394,15 @@ class TestHash < Test::Unit::TestCase
     h = @cls[a: 1, b: nil, c: false, d: true, e: nil]
     assert_equal({a: 1, c: false, d: true}, h.compact)
     assert_equal({a: 1, b: nil, c: false, d: true, e: nil}, h)
+
+    h = @cls[]
+    (1..20).each {|i| h[i] = i.even? ? nil : i}
+    assert_equal((1..20).select(&:odd?), h.compact.keys)
+    assert_equal(20, h.size)
+    assert_nil(h[2])
+    assert_equal(1, h[1])
+
+    h = @cls[a: 1, b: nil, c: false, d: true, e: nil]
     assert_same(h, h.compact!)
     assert_equal({a: 1, c: false, d: true}, h)
     assert_nil(h.compact!)
@@ -409,6 +418,37 @@ class TestHash < Test::Unit::TestCase
       assert_not_same(a, b)
       assert_equal(false, b.frozen?)
     end
+  end
+
+  def test_dup_large_hash_mutation_isolation
+    h = @cls[]
+    (1..20).each {|i| h[i] = i}
+
+    dup = h.dup
+    h[:source] = :source
+    dup[:dup] = :dup
+
+    assert_equal(:source, h[:source])
+    assert_nil(h[:dup])
+    assert_nil(dup[:source])
+    assert_equal(:dup, dup[:dup])
+    assert_equal((1..20).to_a, (1..20).select {|i| dup[i] == i})
+  end
+
+  def test_dup_large_compare_by_identity_hash_mutation_isolation
+    h = @cls[].compare_by_identity
+    (1..20).each {|i| h[i] = i}
+
+    dup = h.dup
+    source_key = +"key"
+    dup_key = +"key"
+    h[source_key] = :source
+    dup[dup_key] = :dup
+
+    assert_predicate(h, :compare_by_identity?)
+    assert_predicate(dup, :compare_by_identity?)
+    assert_nil(h[dup_key])
+    assert_nil(dup[source_key])
   end
 
   def test_dup_equality
@@ -436,6 +476,23 @@ class TestHash < Test::Unit::TestCase
     h[1] = 1
     h[2] = 2
     assert_equal([[1,1],[2,2]], h.each.to_a)
+
+    (1..9).each {|i| h[i] = i}
+    h.dup.each do |k, v|
+      assert_equal(v, h.delete(k))
+    end
+    assert_equal(@cls[], h)
+
+    h = @cls[]
+    (1..20).each {|i| h[i] = i}
+    h = h.dup
+    count = 0
+    h.each do
+      count += 1
+      h.clear
+    end
+    assert_equal(1, count)
+    assert_empty(h)
   end
 
   def test_each_key
@@ -448,6 +505,23 @@ class TestHash < Test::Unit::TestCase
       h.delete(k)
     end
     assert_equal(@cls[], h)
+
+    (1..9).each {|i| h[i] = i}
+    h.dup.each_key do |k|
+      assert_equal(k, h.delete(k))
+    end
+    assert_equal(@cls[], h)
+
+    h = @cls[]
+    (1..20).each {|i| h[i] = i}
+    h = h.dup
+    count = 0
+    h.each_key do
+      count += 1
+      h.clear
+    end
+    assert_equal(1, count)
+    assert_empty(h)
   end
 
   def test_each_pair
@@ -460,6 +534,23 @@ class TestHash < Test::Unit::TestCase
       assert_equal(v, h.delete(k))
     end
     assert_equal(@cls[], h)
+
+    (1..9).each {|i| h[i] = i}
+    h.dup.each_pair do |k, v|
+      assert_equal(v, h.delete(k))
+    end
+    assert_equal(@cls[], h)
+
+    h = @cls[]
+    (1..20).each {|i| h[i] = i}
+    h = h.dup
+    count = 0
+    h.each_pair do
+      count += 1
+      h.clear
+    end
+    assert_equal(1, count)
+    assert_empty(h)
   end
 
   def test_each_value
@@ -475,6 +566,17 @@ class TestHash < Test::Unit::TestCase
 
     assert_equal([], expected - res)
     assert_equal([], res - expected)
+
+    h = @cls[]
+    (1..20).each {|i| h[i] = i}
+    h = h.dup
+    count = 0
+    h.each_value do
+      count += 1
+      h.clear
+    end
+    assert_equal(1, count)
+    assert_empty(h)
   end
 
   def test_empty?

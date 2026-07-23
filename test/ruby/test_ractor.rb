@@ -229,6 +229,18 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_shareable_frozen_hash_dup
+    hash = 40.times.to_h { |i| [i, i] }
+    dup = hash.dup.freeze
+
+    assert_predicate dup, :frozen?
+    assert Ractor.shareable?(dup)
+    assert_nil GC.verify_internal_consistency
+
+    hash[0] = :changed
+    assert_equal 0, dup[0]
+  end
+
   def test_fork_raise_isolation_error
     assert_ractor(<<~'RUBY')
       ractor = Ractor.new do
