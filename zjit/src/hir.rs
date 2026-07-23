@@ -6504,8 +6504,7 @@ impl Function {
         // inlining just grows the code for a `yield` that still falls back.
         let inline_block = unsafe { rb_jit_iseq_builtin_attrs(callee_iseq) } & BUILTIN_ATTR_INLINE_BLOCK != 0
             && blockiseq.is_some_and(|bi| iseq_supports_jit_entry(bi)
-                && unsafe { rb_simple_iseq_p(bi) }
-                && !crate::codegen::block_iseq_may_throw(bi));
+                && unsafe { rb_simple_iseq_p(bi) });
 
         // Check callee bytecode size against threshold.
         let callee_size = unsafe { get_iseq_encoded_size(callee_iseq) } as usize;

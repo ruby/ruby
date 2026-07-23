@@ -9438,6 +9438,31 @@ fn test_inlined_method_with_block_break_across_inlined_boundary() {
 }
 
 #[test]
+fn test_inline_block_attribute_accepts_throwing_block() {
+    // A threshold of one is too small for Integer#times, so this only inlines
+    // when its :inline_block attribute accepts the throwing literal block.
+    with_inlining_threshold(1, || {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def test_inline_block_attribute_accepts_throwing_block
+              log = []
+              result = 3.times do |i|
+                begin
+                  break :stopped if i == 1
+                  log << i
+                ensure
+                  log << :ensured
+                end
+              end
+              [result, log]
+            end
+
+            test_inline_block_attribute_accepts_throwing_block
+            test_inline_block_attribute_accepts_throwing_block
+        "), @"[:stopped, [0, :ensured, :ensured]]");
+    });
+}
+
+#[test]
 fn test_load_immediates_into_registers_before_masking() {
     // See https://github.com/ruby/ruby/pull/16669 -- this is a reduced reproduction from a Ruby
     // spec.
