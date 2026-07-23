@@ -5683,8 +5683,9 @@ impl Function {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
-                match self.find(insn_id) {
-                    Insn::Send { state, reason: SendFallbackReason::SendNoProfiles, .. } => {
+                self.resolve(insn_id);
+                match self.insn(insn_id) {
+                    &Insn::Send { state, reason: SendFallbackReason::SendNoProfiles, .. } => {
                         self.push_insn(block, Insn::SideExit { state, reason: Box::new(SideExitReason::NoProfileSend), recompile: Some(Recompile) });
                         // SideExit is a terminator; don't add remaining instructions
                         break;
