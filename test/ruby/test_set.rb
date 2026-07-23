@@ -700,6 +700,32 @@ class TC_Set < Test::Unit::TestCase
       ret2 = set2 ^ [2,4,5,5]
       assert_instance_of(klass, ret2)
       assert_equal(klass[1,3,5], ret2)
+
+      # Set ^ Set should not mutate either operand and should be symmetric
+      a = klass[1,2,3,4]
+      b = klass[2,4,5]
+      a_copy = a.dup
+      b_copy = b.dup
+      ret3 = a ^ b
+      ret4 = b ^ a
+      assert_equal(klass[1,3,5], ret3)
+      assert_equal(ret3, ret4)
+      assert_equal(a_copy, a)
+      assert_equal(b_copy, b)
+      assert_instance_of(klass, ret3)
+      assert_instance_of(klass, ret4)
+
+      # compare_by_identity should keep distinct objects from enumerable RHS
+      iset = Set.new.compare_by_identity
+      x1 = +"x"
+      x2 = +"x"
+      ret5 = iset ^ [x1, x2]
+      assert_equal(2, ret5.size)
+      arr = ret5.to_a
+      assert_include(arr, x1)
+      assert_include(arr, x2)
+      assert_not_predicate(x1, :frozen?)
+      assert_not_predicate(x2, :frozen?)
     }
   end
 
@@ -980,6 +1006,95 @@ class TC_Set < Test::Unit::TestCase
       end
     end
     assert_equal([2, 1], c[2].to_a)
+  end
+
+  def test_iteration_mutation_guards
+    set = Set[1, 2]
+    assert_raise(RuntimeError) { set.each { set.add(3) } }
+    assert_raise(RuntimeError) { set.each { set.merge([3]) } }
+    assert_raise(RuntimeError) { set.each { set.compare_by_identity } }
+    assert_raise(RuntimeError) { set.each { set.reset } }
+  end
+
+  def test_string_freezing_semantics
+    s = "foo"
+    set = Set.new
+    set << s
+    stored = set.to_a.first
+    assert_not_same(s, stored)
+    assert_predicate(stored, :frozen?)
+
+    s2 = "bar"
+    iset = Set.new.compare_by_identity
+    iset << s2
+    stored2 = iset.to_a.first
+    assert_same(s2, stored2)
+    assert_not_predicate(stored2, :frozen?)
+
+    sf = "baz".freeze
+    set2 = Set.new
+    set2 << sf
+    assert_same(sf, set2.to_a.first)
+  end
+
+  def test_compare_by_identity_hash_and_eq
+    a1, a2 = "a", "a"
+    set_default1 = Set[a1]
+    set_default2 = Set[a2]
+    assert_equal(set_default1, set_default2)
+    assert_equal(set_default1.hash, set_default2.hash)
+
+    iset = Set.new.compare_by_identity
+    iset.merge([a1, a2])
+    assert_not_equal(set_default1, iset)
+    refute_equal(set_default1.hash, iset.hash)
+  end
+
+  def test_insertion_order_preserved
+    set = Set[3, 1, 2]
+    assert_equal([3, 1, 2], set.to_a)
+
+    iset = Set.new.compare_by_identity
+    iset.merge([3, 1, 2])
+    assert_equal([3, 1, 2], iset.to_a)
+  end
+
+  def test_compare_by_identity_preservation
+    iset = Set.new.compare_by_identity
+
+    # 1. Intersection (&)
+    assert_predicate(iset & [1, 2], :compare_by_identity?)
+
+    # 2. Collect! / Map!
+    iset_collect = Set["a", "b"].compare_by_identity
+    iset_collect.collect! { |x| x }
+    assert_predicate(iset_collect, :compare_by_identity?)
+
+    # 3. Flatten / Flatten!
+    iset_flat = Set[Set[1, 2]].compare_by_identity
+    assert_predicate(iset_flat.flatten, :compare_by_identity?)
+    iset_flat.flatten!
+    assert_predicate(iset_flat, :compare_by_identity?)
+
+    # 4. Classify
+    iset_classify = Set["a", "b"].compare_by_identity
+    classified = iset_classify.classify { |x| x }
+    classified.each_value do |subset|
+      assert_predicate(subset, :compare_by_identity?)
+    end
+
+    # 5. Divide (arity 1 and arity 2)
+    iset_divide1 = Set["a", "b"].compare_by_identity
+    divided1 = iset_divide1.divide { |x| x }
+    divided1.each do |subset|
+      assert_predicate(subset, :compare_by_identity?)
+    end
+
+    iset_divide2 = Set["a", "b"].compare_by_identity
+    divided2 = iset_divide2.divide { |x, y| x == y }
+    divided2.each do |subset|
+      assert_predicate(subset, :compare_by_identity?)
+    end
   end
 
 end
