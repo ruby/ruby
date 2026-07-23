@@ -16,9 +16,9 @@ use crate::hir::{self, FieldName};
 
 // Array iteration builtin functions (defined in array.c)
 unsafe extern "C" {
-    fn rb_jit_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
-    fn rb_jit_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
-    fn rb_jit_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
+    fn rb_builtin_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
+    fn rb_builtin_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
+    fn rb_builtin_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
     fn rb_str_equal(str1: VALUE, str2: VALUE) -> VALUE;
 }
 
@@ -297,9 +297,9 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_cSymbol, "empty?", types::BoolExact);
 
     // Array iteration builtins (used in with_jit Array#each, map, select, find)
-    builtin_funcs.insert(rb_jit_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
-    builtin_funcs.insert(rb_jit_ary_at as *mut c_void, FnProperties { inline: inline_ary_at, ..Default::default() });
-    builtin_funcs.insert(rb_jit_ary_at_end as *mut c_void, FnProperties { inline: inline_ary_at_end, return_type: types::BoolExact, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_ary_at as *mut c_void, FnProperties { inline: inline_ary_at, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_ary_at_end as *mut c_void, FnProperties { inline: inline_ary_at_end, return_type: types::BoolExact, ..Default::default() });
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
