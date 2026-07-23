@@ -4984,12 +4984,10 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
         return Qnil;
 
     if (origenc && origenc != rb_enc_get(resolved)) {
-        if (rb_enc_str_asciionly_p(resolved)) {
-            rb_enc_associate(resolved, origenc);
-        }
-        else {
+        if (!rb_enc_str_asciionly_p(resolved)) {
             resolved = rb_str_conv_enc(resolved, NULL, origenc);
         }
+        rb_enc_associate(resolved, origenc);
     }
 
     RB_GC_GUARD(unresolved_path);
