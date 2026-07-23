@@ -11,7 +11,7 @@ unicode_version = InputDataDir[/.*\/(\d+\.\d+\.\d+)(?=\/|\z)/, 1]
 
 # convenience methods
 class Integer
-  def to_UTF8() # convert to string, taking legibility into account
+  def to_UTF8 # convert to string, taking legibility into account
     if self>0xFFFF
       "\\u{#{to_s(16).upcase}}"
     elsif self>0x7f
@@ -20,10 +20,20 @@ class Integer
       chr.sub(/[\\\"]/, "\\\\\\\&")
     end
   end
+
+  def to_codepoint
+    "0x#{to_s(16).upcase}"
+  end
 end
 
 class Array
-  def to_UTF8() collect {|c| c.to_UTF8}.join('') end
+  def to_UTF8
+    collect {|c| c.to_UTF8}.join('')
+  end
+
+  def to_codepoint
+    "[#{collect {|c| c.to_codepoint}.join(', ')}]"
+  end
 
   def each_regexp_chars(n = 1) # converts an array of Integers to character ranges
     sort.inject([]) do |ranges, value|
@@ -189,17 +199,15 @@ module UnicodeNormalize  # :nodoc:
     "[<% kompatible_table.keys.each_regexp_chars do |rx|%><%=rx%>" \
     "<%end%>]"
 
-  class_table = {
+  CLASS_TABLE = {
 % combining_class.each do |key, value|
-    "<%=key.to_UTF8%>"=><%=value%><%=%>,
+    <%=key.to_codepoint%>=><%=value%><%=%>,
 % end
-  }
-  class_table.default = 0
-  CLASS_TABLE = class_table.freeze
+  }.freeze
 
   DECOMPOSITION_TABLE = {
 % decomposition_table.each do |key, value|
-    "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>",
+    <%=key.to_codepoint%>=><%=value.to_codepoint%><%=%>,
 % end
   }.freeze
 
@@ -211,7 +219,7 @@ module UnicodeNormalize  # :nodoc:
 
   COMPOSITION_TABLE = {
 % composition_table.each do |key, value|
-    "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>",
+    <%=key.to_codepoint%>=><%=value.to_codepoint%><%=%>,
 % end
   }.freeze
 end
