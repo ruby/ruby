@@ -195,6 +195,188 @@ class TestFiber < Test::Unit::TestCase
     assert_equal([:baz], ary)
   end
 
+  def test_exit
+    log = []
+    target = worker = nil
+    target = Fiber.new do
+      worker = Fiber.new do
+        log << :worker
+        Fiber.exit(target, :from_worker)
+        log << :unreachable
+      end
+      log << worker.transfer
+      log << worker.alive?
+    end
+    target.resume
+    assert_equal([:worker, :from_worker, false], log)
+  end
+
+  def test_exit_without_target
+    # Without a target, Fiber.exit terminates the current fiber and returns to
+    # the fiber it would normally return to (here, the resumer):
+    log = []
+    captured = nil
+    fiber = Fiber.new do
+      captured = Fiber.current
+      log << :before
+      Fiber.exit
+      log << :unreachable
+    end
+    fiber.resume
+    log << :resumed
+    refute_predicate(captured, :alive?)
+    assert_equal([:before, :resumed], log)
+  end
+
+  def test_exit_to_resumer
+    # Exiting to your own resumer is allowed and behaves like a return:
+    log = []
+    outer = nil
+    outer = Fiber.new do
+      inner = Fiber.new do
+        log << :inner
+        Fiber.exit(outer)
+        log << :unreachable
+      end
+      inner.resume
+      log << :outer_after
+    end
+    outer.resume
+    assert_equal([:inner, :outer_after], log)
+  end
+
+  def test_exit_to_resuming_fiber
+    # Exiting to a fiber that is resuming another fiber (an ancestor in the
+    # resume chain, other than our own resumer) is forbidden, like transfer:
+    root = Fiber.current
+    a = Fiber.new do
+      b = Fiber.new{Fiber.exit(root)}
+      b.resume
+    end
+    assert_raise(FiberError) do
+      a.resume
+    end
+  end
+
+  def test_exit_to_yielding_fiber
+    yielding = Fiber.new{Fiber.yield}
+    yielding.resume
+    f = Fiber.new{Fiber.exit(yielding)}
+    assert_raise(FiberError) do
+      f.resume
+    end
+  end
+
+  def test_exit_from_resumed_fiber
+    # Exiting to a target from a fiber that was entered via resume must detach
+    # from the resumer cleanly (no dangling resume link):
+    log = []
+    a = b = target = nil
+    target = Fiber.new { log << :target }
+    b = Fiber.new do
+      log << :b
+      Fiber.exit(target)
+      log << :unreachable
+    end
+    a = Fiber.new do
+      log << :a_before
+      b.resume
+      log << :a_after
+    end
+    a.resume
+    log << :main
+    assert_equal([:a_before, :b, :target, :a_after, :main], log)
+  end
+
+  def test_exit_does_not_run_ensure
+    # `exit` transfers immediately without unwinding, so ensure blocks in the
+    # exiting fiber are not run:
+    log = []
+    target = nil
+    target = Fiber.new do
+      worker = Fiber.new do
+        begin
+          Fiber.exit(target)
+        ensure
+          log << :ensure
+        end
+      end
+      worker.transfer
+      log << :resumed
+    end
+    target.resume
+    assert_equal([:resumed], log)
+  end
+
+  def test_exit_marks_fiber_terminated
+    captured = nil
+    target = nil
+    target = Fiber.new do
+      worker = Fiber.new do
+        captured = Fiber.current
+        Fiber.exit(target)
+      end
+      worker.transfer
+    end
+    target.resume
+    refute_predicate(captured, :alive?)
+  end
+
+  def test_exit_stress
+    # Repeatedly exit to make sure terminating the current fiber mid-stack and
+    # transferring is stable under GC:
+    begin
+      GC.stress = true
+      50.times do
+        result = nil
+        driver = nil
+        driver = Fiber.new do
+          worker = Fiber.new do
+            [1, 2, 3].map {|x| x.to_s}  # some frames/allocations on the stack
+            Fiber.exit(driver, :ok)
+          end
+          result = worker.transfer
+        end
+        driver.resume
+        assert_equal(:ok, result)
+      end
+    ensure
+      GC.stress = false
+    end
+  end
+
+  def test_exit_returns_across_transfer
+    # `exit` is a directed transfer, so it returns to the target even when the
+    # target was itself entered via transfer (off the resume chain):
+    result = nil
+    loop_fiber = Fiber.new do
+      task = Fiber.new do
+        Fiber.exit(loop_fiber, :done)
+      end
+      result = task.transfer
+    end
+    loop_fiber.transfer
+    assert_equal(:done, result)
+  end
+
+  def test_exit_to_current_fiber
+    assert_raise(FiberError) do
+      Fiber.exit(Fiber.current)
+    end
+  end
+
+  def test_exit_to_terminated_fiber
+    dead = Fiber.new{}
+    dead.resume
+    refute_predicate(dead, :alive?)
+    f = Fiber.new do
+      Fiber.exit(dead)
+    end
+    assert_raise(FiberError) do
+      f.resume
+    end
+  end
+
   def test_terminate_transferred_fiber
     log = []
     fa1 = fa2 = fb1 = r1 = nil
