@@ -2472,11 +2472,11 @@ fn gen_new_hash(
     if elements.is_empty() {
         gen_prepare_leaf_call_with_gc(asm, state);
 
-        let alloc_size = unsafe { rb_zjit_hash_new_size() };
-        let flags = RUBY_T_HASH as u64;
+        let mut flags = VALUE(0);
+        let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags) };
         let klass = unsafe { rb_cHash };
 
-        gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass,
+        gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass,
             &|asm, hash| {
                 asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
             },
@@ -2491,11 +2491,11 @@ fn gen_new_hash(
 
         let num_pairs = elements.len() / 2;
         let hash = if num_pairs <= RUBY_RHASH_AR_TABLE_MAX_SIZE as usize {
-            let alloc_size = unsafe { rb_zjit_hash_new_size() };
-            let flags = RUBY_T_HASH as u64;
+            let mut flags = VALUE(0);
+            let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags) };
             let klass = unsafe { rb_cHash };
 
-            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass,
+            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass,
                 &|asm, hash| {
                     asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
                 },
