@@ -1,0 +1,17 @@
+prelude: |
+  ascii = "Hello, World! This is a benchmark test string." * 100
+  utf8 = "こんにちは世界。これはベンチマーク用のテスト文字列です。" * 100
+  mixed = ("Hello World! " + "テスト" + " is great! ") * 100
+  binary_ascii = ("Hello\x00World\xFF" * 100).b
+  binary_nonascii = ("\xE3\x81\x82" * 100).b
+  escaped_chars = "\n\r\t\f\v\b\a\e\"\\#" * 100
+  evstr = 'abc#$x def#@x ghi#{$x} ' * 100
+
+benchmark:
+  dump_ascii: ascii.dump
+  dump_utf8: utf8.dump
+  dump_mixed: mixed.dump
+  dump_binary_ascii: binary_ascii.dump
+  dump_binary_nonascii: binary_nonascii.dump
+  dump_escaped_chars: escaped_chars.dump
+  dump_evstr: evstr.dump
