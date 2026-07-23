@@ -1,18 +1,29 @@
 require 'test/unit'
 require 'tmpdir'
 require 'stringio'
-require_relative '../mkdepend'
+require_relative '../../lib/mkmf/depend'
+
+TOP_SRCDIR = File.expand_path("../..", __dir__)
+
+TestDepend = Class.new(MakeMakefile::Depend) do
+  public(*MakeMakefile::Depend.private_instance_methods(false))
+
+  class << self
+    public :parse_options
+  end
+end
 
 class TestMkdepend < Test::Unit::TestCase
-  MARK_START = Mkdepend::MARK_START
-  MARK_END = Mkdepend::MARK_END
+  MARK_START = MakeMakefile::Depend.const_get(:MARK_START, false)
+  MARK_END = MakeMakefile::Depend.const_get(:MARK_END, false)
+  Scanner = MakeMakefile::Depend.const_get(:Scanner, false)
 
   def mkdepend
-    @mkdepend ||= Mkdepend.new
+    @mkdepend ||= TestDepend.new
   end
 
   def test_parse_options
-    options, inputs = Mkdepend.parse_options(%w[
+    options, inputs = TestDepend.parse_options(%w[
       --root=src --thread-model=win32 --output=.deps
       --scope=extensions --nmake --sources --verbose depend
     ])
@@ -35,39 +46,39 @@ class TestMkdepend < Test::Unit::TestCase
 
   def test_parse_options_rejects_unknown_options
     assert_raise(OptionParser::InvalidOption) do
-      Mkdepend.parse_options(["--unknown"])
+      TestDepend.parse_options(["--unknown"])
     end
   end
 
   def test_parse_options_rejects_unknown_scope
     assert_raise(OptionParser::InvalidArgument) do
-      Mkdepend.parse_options(["--scope=unknown"])
+      TestDepend.parse_options(["--scope=unknown"])
     end
   end
 
   def test_parse_options_selects_update_mode
     assert_equal(
       {mode: :inplace},
-      Mkdepend.parse_options(["--inplace"]).first,
+      TestDepend.parse_options(["--inplace"]).first,
     )
     assert_equal(
       {mode: :check},
-      Mkdepend.parse_options(["--check"]).first,
+      TestDepend.parse_options(["--check"]).first,
     )
   end
 
   def test_parse_options_uses_last_update_mode
-    options, = Mkdepend.parse_options(["--output=.deps", "--check"])
+    options, = TestDepend.parse_options(["--output=.deps", "--check"])
     assert_equal({mode: :check}, options)
 
-    options, = Mkdepend.parse_options(["--inplace", "--output=.deps"])
+    options, = TestDepend.parse_options(["--inplace", "--output=.deps"])
     assert_equal({mode: :output, output: ".deps"}, options)
   end
 
   def test_help_explains_update_mode_precedence
     stdout, $stdout = $stdout, StringIO.new
     exit_status = assert_raise(SystemExit) do
-      Mkdepend.parse_options(["--help"])
+      TestDepend.parse_options(["--help"])
     end
     assert_true(exit_status.success?)
     help = $stdout.string
@@ -119,7 +130,7 @@ class TestMkdepend < Test::Unit::TestCase
       File.write(File.join(dir, 'path/parse.h'), "#include \"../path_nested.h\"\n")
       File.write(File.join(dir, 'path_nested.h'), "")
 
-      scanner = Mkdepend::Scanner.new(
+      scanner = Scanner.new(
         root: dir,
         include_dirs: [dir],
         macros: {'GENERATED_HEADER' => 'generated.h'},
@@ -161,7 +172,7 @@ class TestMkdepend < Test::Unit::TestCase
       )
       File.write(File.join(outer_missing_dir, 'wrong.h'), '')
 
-      scanner = Mkdepend::Scanner.new(
+      scanner = Scanner.new(
         root: root,
         include_dirs: [root],
       )
@@ -198,7 +209,7 @@ class TestMkdepend < Test::Unit::TestCase
         "#{MARK_START}\nexample.o: example.c\n#{MARK_END}\n",
       )
 
-      rules = Mkdepend.new(root: root).makedepend('ext/example/example.c').join
+      rules = TestDepend.new(root: root).makedepend('ext/example/example.c').join
       assert_include(rules, 'example.o: $(top_srcdir)/internal/gc.h')
       assert_include(rules, 'example.o: $(top_srcdir)/internal/project.h')
       assert_not_include(rules, 'public.h')
@@ -279,7 +290,7 @@ class TestMkdepend < Test::Unit::TestCase
         # mkdepend: scan enc/trans/*.c => enc/trans/*.trans
       DEPEND
 
-      mkdepend = Mkdepend.new(root: dir)
+      mkdepend = TestDepend.new(root: dir)
       assert_equal(
         {
           'enc/trans/example.c' => 'enc/trans/example.trans',
@@ -324,7 +335,7 @@ class TestMkdepend < Test::Unit::TestCase
       DEPEND
 
       output = File.join(dir, '.deps')
-      mkdepend = Mkdepend.new(root: dir)
+      mkdepend = TestDepend.new(root: dir)
       assert_true(
         mkdepend.run([input], mode: :output, output: output, nmake: true),
       )
@@ -352,7 +363,7 @@ class TestMkdepend < Test::Unit::TestCase
       ].each do |declaration|
         File.write(path, "manual: rule\n#{declaration}\n")
         error = assert_raise(RuntimeError) do
-          Mkdepend.new(root: dir).parse_dependency_declarations(path)
+          TestDepend.new(root: dir).parse_dependency_declarations(path)
         end
         assert_equal(
           "#{path}:2: invalid mkdepend declaration: #{declaration}",
@@ -370,7 +381,7 @@ class TestMkdepend < Test::Unit::TestCase
         # mkdepend: depends generated.c => generated.inc
       DEPEND
       error = assert_raise(RuntimeError) do
-        Mkdepend.new(root: dir).parse_dependency_declarations(path)
+        TestDepend.new(root: dir).parse_dependency_declarations(path)
       end
       assert_equal(
         "#{path}:2: duplicate mkdepend declaration: generated.c",
@@ -389,12 +400,12 @@ class TestMkdepend < Test::Unit::TestCase
         generated.o: generated.c
         #{MARK_END}
       DEPEND
-      declarations = Mkdepend.new(root: dir).
+      declarations = TestDepend.new(root: dir).
         parse_dependency_declarations(path, content)
       assert_equal(%w[$(GENERATED_HEADER)], declarations.dependencies['generated.h'])
       assert_equal(
         %w[generated.h],
-        Mkdepend.new(root: dir).dependency_targets(path, content),
+        TestDepend.new(root: dir).dependency_targets(path, content),
       )
     end
   end
@@ -415,7 +426,7 @@ class TestMkdepend < Test::Unit::TestCase
       content = "#{MARK_START}\n#{MARK_END}\n"
       File.write(path, content)
       File.write(ignored, "manual: rule\n")
-      mkdepend = Mkdepend.new(root: dir)
+      mkdepend = TestDepend.new(root: dir)
 
       assert_equal(%w[depend], mkdepend.dependency_files)
       File.unlink(path)
@@ -433,7 +444,7 @@ class TestMkdepend < Test::Unit::TestCase
         File.write(path, "#{MARK_START}\n#{MARK_END}\n")
       end
 
-      mkdepend = Mkdepend.new(root: dir)
+      mkdepend = TestDepend.new(root: dir)
       assert_equal(%w[depend enc/depend], mkdepend.dependency_files(:core))
       assert_equal(
         %w[depend enc/depend ext/example/depend],
@@ -456,7 +467,7 @@ class TestMkdepend < Test::Unit::TestCase
 
       Dir.mktmpdir('mkdepend-output') do |output|
         assert_true(
-          Mkdepend.main([
+          MakeMakefile::Depend.main([
             "--root=#{root}", "--scope=extensions", "--output=#{output}",
           ]),
         )
@@ -491,7 +502,7 @@ class TestMkdepend < Test::Unit::TestCase
         #{MARK_END}
       DEPEND
 
-      rules = Mkdepend.new(root: root, thread_model: 'win32').
+      rules = TestDepend.new(root: root, thread_model: 'win32').
         makedepend('ext/example/example.c').join
       assert_include(rules, 'example.o: $(top_srcdir)/thread_win32.h')
       assert_include(rules, 'example.o: $(top_srcdir)/win32_only.h')
@@ -694,6 +705,51 @@ class TestMkdepend < Test::Unit::TestCase
     DEPEND
   end
 
+  def test_minimize_deps_keeps_upstream_dependencies
+    rules = <<~RULES
+      generator.o: $(hdrdir)/ruby.h
+      generator.o: $(srcdir)/../json.h
+      generator.o: generator.c
+    RULES
+    expected = <<~DEPEND
+      generator.o: $(srcdir)/../json.h
+      generator.o: generator.c
+    DEPEND
+    assert_equal(
+      expected,
+      mkdepend.minimize_deps(rules, 'ext/json/generator/depend'),
+    )
+  end
+
+  def test_sources_regenerates_upstream_dependencies
+    Dir.mktmpdir('mkdepend') do |root|
+      source_dir = File.join(root, 'ext/example')
+      FileUtils.mkdir_p(source_dir)
+      File.write(File.join(root, 'ext/current.h'), '')
+      File.write(File.join(source_dir, 'example.c'), <<~SOURCE)
+        #include "../current.h"
+      SOURCE
+      depend = File.join(source_dir, 'depend')
+      File.write(depend, <<~DEPEND)
+        #{MARK_START}
+        example.o: $(srcdir)/../stale.h
+        example.o: example.c
+        #{MARK_END}
+      DEPEND
+
+      TestDepend.new(root: root).run(
+        [depend], sources: true, mode: :inplace,
+      )
+
+      assert_equal(<<~DEPEND, File.read(depend))
+        #{MARK_START}
+        example.o: $(srcdir)/../current.h
+        example.o: example.c
+        #{MARK_END}
+      DEPEND
+    end
+  end
+
   def test_minimize_deps_preserves_text_outside_markers
     content = +<<~DEPEND
       manual: rule
@@ -720,6 +776,57 @@ class TestMkdepend < Test::Unit::TestCase
         #{MARK_END}
         upstream: rule
       DEPEND
+    end
+  end
+
+  def test_update_extension_uses_explicit_source_map
+    Dir.mktmpdir('mkdepend-extension') do |root|
+      source_dir = File.join(root, 'ext/example')
+      FileUtils.mkdir_p(source_dir)
+      FileUtils.mkdir_p(File.join(root, 'include'))
+      File.write(File.join(root, 'ext/shared.h'), '')
+      File.write(File.join(root, 'include/project.h'), '')
+      File.write(File.join(source_dir, 'example.c'), <<~SOURCE)
+        #include "../shared.h"
+        #include "../../include/project.h"
+      SOURCE
+      depend = File.join(source_dir, 'depend')
+      File.write(depend, <<~DEPEND)
+        #{MARK_START}
+        stale.o: stale.c
+        #{MARK_END}
+      DEPEND
+
+      MakeMakefile::Depend.new(root: root).update_extension(
+        depend,
+        {'example' => File.join(source_dir, 'example.c')},
+      )
+
+      assert_equal(<<~DEPEND, File.read(depend))
+        #{MARK_START}
+        example.o: $(srcdir)/../../include/project.h
+        example.o: $(srcdir)/../shared.h
+        example.o: example.c
+        #{MARK_END}
+      DEPEND
+    end
+  end
+
+  def test_update_extension_requires_markers
+    Dir.mktmpdir('mkdepend-extension') do |root|
+      source_dir = File.join(root, 'ext/example')
+      FileUtils.mkdir_p(source_dir)
+      File.write(File.join(source_dir, 'example.c'), '')
+      depend = File.join(source_dir, 'depend')
+      File.write(depend, "example.o: example.c\n")
+
+      error = assert_raise(RuntimeError) do
+        MakeMakefile::Depend.new(root: root).update_extension(
+          depend,
+          {'example' => File.join(source_dir, 'example.c')},
+        )
+      end
+      assert_include(error.message, "no autogenerated dependency section")
     end
   end
 
@@ -791,7 +898,7 @@ class TestMkdepend < Test::Unit::TestCase
   def test_run_writes_unchanged_dependencies_to_output_directory
     Dir.mktmpdir('mkdepend-input') do |input_dir|
       Dir.mktmpdir('mkdepend-output') do |output|
-        mkdepend = Mkdepend.new(root: input_dir)
+        mkdepend = TestDepend.new(root: input_dir)
         input = File.join(input_dir, 'depend')
         File.write(File.join(input_dir, 'array.c'), '')
         rules = "array.$(OBJEXT): {$(VPATH)}array.c\n"
@@ -833,7 +940,8 @@ class TestMkdepend < Test::Unit::TestCase
     assert_include(win32, 'DEPENDENCIES_DIR = .deps')
     assert_include(win32, 'DEPENDENCIES_DIR = $(srcdir)')
     assert_include(setup, '--scope=core')
-    assert_not_include(mkmf, 'Mkdepend.new')
+    assert_include(mkmf, 'if arg_config("--update-depend")')
+    assert_include(mkmf, 'MakeMakefile::Depend.new')
     assert_include(configure_ext, '--scope=extensions')
     assert_include(configure_ext, '--thread-model=$(THREAD_MODEL)')
     assert_match(
