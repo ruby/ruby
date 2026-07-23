@@ -137,9 +137,12 @@ RSpec.describe "bundle install with git sources" do
       sha = git.ref_for("main", 11)
       spec_file = scoped_gem_path(bundled_app("vendor/dir[1]")).join("bundler/gems/foo-1.0-#{sha}/foo.gemspec")
       expect(spec_file).to exist
-      ruby_code = Gem::Specification.load(spec_file.to_s).to_ruby
+      # Serialize with the RubyGems that wrote the file, since `#to_ruby`
+      # output differs across RubyGems versions
+      ruby "print Gem::Specification.load(#{spec_file.to_s.dump}).to_ruby"
+      ruby_code = out
       file_code = File.read(spec_file)
-      expect(file_code).to eq(ruby_code)
+      expect(file_code.strip).to eq(ruby_code)
     end
 
     it "does not update the git source implicitly" do
