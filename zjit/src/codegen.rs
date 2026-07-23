@@ -447,7 +447,9 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
             // Compile all parameters
             for (idx, &insn_id) in block.params().enumerate() {
-                match function.find(insn_id) {
+                let insn_id = function.find_id(insn_id);
+                // Param does not have operands, so fake a ResolvedInsnId.
+                match crate::hir::ResolvedInsnId(insn_id).insn(function) {
                     Insn::Param => {
                         jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx));
                     },
@@ -459,7 +461,9 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             // so that calling convention registers are reserved early, like Param.
             if function.is_entry_block(block_id) {
                 for &insn_id in block.insns() {
-                    if let Insn::LoadArg { idx, .. } = function.find(insn_id) {
+                    let insn_id = function.find_id(insn_id);
+                    // Param does not have operands, so fake a ResolvedInsnId.
+                    if let &Insn::LoadArg { idx, .. } = crate::hir::ResolvedInsnId(insn_id).insn(function) {
                         jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx as usize));
                     }
                 }
