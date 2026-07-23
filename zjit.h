@@ -88,6 +88,7 @@ void rb_zjit_mark_all_executable(void);
 void rb_zjit_iseq_free(const rb_iseq_t *iseq);
 void rb_zjit_before_ractor_spawn(void);
 void rb_zjit_tracing_invalidate_all(void);
+void rb_zjit_invalidate_newobj_hook(void);
 void rb_zjit_invalidate_no_singleton_class(VALUE klass);
 void rb_zjit_invalidate_root_box(void);
 void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_frame);
@@ -99,6 +100,7 @@ bool rb_zjit_str_resurrect_fastpath(VALUE str, bool chilled, size_t *size_out, V
 bool rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_out, long *len_out);
 void rb_zjit_range_new_fastpath(bool exclude_end, size_t *alloc_size_out, VALUE *flags_out);
 void rb_zjit_array_new_fastpath(size_t *alloc_size_out, VALUE *flags_out);
+bool rb_zjit_newobj_hook_enabled_p(void);
 
 // Special value for cfp->jit_return that means "this is a C method frame, use
 // rb_zjit_c_frame as the JITFrame". We don't control the native stack layout
@@ -136,6 +138,7 @@ static inline void rb_zjit_invalidate_no_ep_escape(const rb_iseq_t *iseq) {}
 static inline void rb_zjit_constant_state_changed(ID id) {}
 static inline void rb_zjit_before_ractor_spawn(void) {}
 static inline void rb_zjit_tracing_invalidate_all(void) {}
+static inline void rb_zjit_invalidate_newobj_hook(void) {}
 static inline void rb_zjit_invalidate_no_singleton_class(VALUE klass) {}
 static inline void rb_zjit_invalidate_root_box(void) {}
 static inline void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_frame) {}

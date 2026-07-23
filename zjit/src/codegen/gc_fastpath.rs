@@ -7,7 +7,8 @@ use crate::cruby::{
     RUBY_OFFSET_THREAD_RACTOR, VALUE, VALUE_BITS, rb_zjit_offset_ractor_newobj_cache,
     rb_zjit_offset_ractor_pub_id,
 };
-use super::JITState;
+use crate::hir::{FrameState, Function, Invariant};
+use super::{JITState, gen_patch_point};
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -63,6 +64,8 @@ unsafe extern "C" {
         klass: VALUE,
         fastpath: *mut RbGcZjitFastpath,
     ) -> bool;
+
+    fn rb_zjit_newobj_hook_enabled_p() -> bool;
 }
 
 enum PreparedNewObjFastpath {
@@ -73,6 +76,8 @@ enum PreparedNewObjFastpath {
 pub(super) fn gc_fastpath_new_obj(
     jit: &mut JITState,
     asm: &mut Assembler,
+    function: &Function,
+    state: &FrameState,
     alloc_size: usize,
     flags: u64,
     klass: VALUE,
@@ -82,6 +87,18 @@ pub(super) fn gc_fastpath_new_obj(
     let Some(fastpath) = prepare_new_obj_fastpath(alloc_size, flags, klass) else {
         return slow_path(asm);
     };
+
+    // The default GC's inline fast path bumps the ractor cache cursor in emitted
+    // code without calling rb_newobj, so it can't fire the NEWOBJ internal event.
+    // If such a hook is active, use the C path instead; otherwise assume none is
+    // active and install a patch point that discards this code if one is enabled
+    // later. (MMTk's fast path checks for the hook at run time, so it needs neither.)
+    if let PreparedNewObjFastpath::Default(_) = &fastpath {
+        if unsafe { rb_zjit_newobj_hook_enabled_p() } {
+            return slow_path(asm);
+        }
+        gen_patch_point(jit, asm, function, &Invariant::NoNewObjHook, state);
+    }
 
     asm_comment!(asm, "GC inline allocation");
 

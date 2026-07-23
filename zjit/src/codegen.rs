@@ -13,7 +13,7 @@ use crate::backend::current::ALLOC_REGS;
 use crate::invariants::{
     track_bop_assumption, track_cme_assumption, track_no_ep_escape_assumption, track_no_trace_point_assumption,
     track_single_ractor_assumption, track_stable_constant_names_assumption, track_no_singleton_class_assumption,
-    track_root_box_assumption
+    track_root_box_assumption, track_no_newobj_hook_assumption
 };
 use crate::gc::append_gc_offsets;
 use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
@@ -615,13 +615,13 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             gen_const_uint32(val.0)
         }
         Insn::Const { .. } => panic!("Unexpected Const in gen_insn: {insn}"),
-        Insn::NewArray { elements, state } => gen_new_array(jit, asm, opnds!(elements), &function.frame_state(*state)),
+        Insn::NewArray { elements, state } => gen_new_array(jit, asm, function, opnds!(elements), &function.frame_state(*state)),
         Insn::NewHash { elements, state } => {
             let sym_keys = elements.iter().step_by(2).all(|&key| function.type_of(key).is_subtype(types::Symbol));
             gen_new_hash(jit, asm, function, opnds!(elements), sym_keys, &function.frame_state(*state))
         }
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, function, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
-        Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
+        Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(jit, asm, function, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(jit, asm, function, *val, opnd!(val), &function.frame_state(*state)),
         Insn::AdjustBounds { index, length } => gen_adjust_bounds(asm, opnd!(index), opnd!(length)),
         Insn::ArrayAref { array, index, .. } => gen_array_aref(asm, opnd!(array), opnd!(index)),
@@ -631,7 +631,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ArrayPop { array, state } => gen_array_pop(asm, opnd!(array), &function.frame_state(*state)),
         Insn::ArrayLength { array } => gen_array_length(asm, opnd!(array)),
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, function, opnd!(val), &function.frame_state(*state)),
-        &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(jit, asm, class, &function.frame_state(state)),
+        &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(jit, asm, function, class, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(jit, asm, function, *val, opnd!(val), *chilled, &function.frame_state(*state)),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, function, opnds!(strings), &function.frame_state(*state)),
         &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
@@ -1002,6 +1002,9 @@ pub fn split_patch_point(asm: &mut Assembler, target: &Target, invariant: Invari
             }
             Invariant::NoTracePoint => {
                 track_no_trace_point_assumption(code_ptr, side_exit_ptr, version);
+            }
+            Invariant::NoNewObjHook => {
+                track_no_newobj_hook_assumption(code_ptr, side_exit_ptr, version);
             }
             Invariant::NoEPEscape(iseq) => {
                 track_no_ep_escape_assumption(iseq, code_ptr, side_exit_ptr, version);
@@ -2083,7 +2086,7 @@ fn gen_string_copy(jit: &mut JITState, asm: &mut Assembler, function: &Function,
     // pool). Here we choose an arbitrary threshold (128 bytes, or 16 stores),
     // above which we'll emit a C call to memcpy instead of multiple stores.
     if byte_size > STR_INLINE_STORE_MAX_BYTES {
-        return gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, full_flags, klass,
+        return gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, full_flags, klass,
             &|asm, obj| {
                 asm.store(Opnd::mem(VALUE_BITS, obj, RUBY_OFFSET_RSTRING_LEN), Opnd::Imm(len));
                 let src_obj = asm.load(Opnd::Value(src));
@@ -2105,7 +2108,7 @@ fn gen_string_copy(jit: &mut JITState, asm: &mut Assembler, function: &Function,
     let mut string_bytes = vec![0u8; padded_size];
     string_bytes[..src_bytes.len()].copy_from_slice(src_bytes);
 
-    gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, full_flags, klass,
+    gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, full_flags, klass,
         &|asm, obj| {
             asm.store(Opnd::mem(VALUE_BITS, obj, RUBY_OFFSET_RSTRING_LEN), Opnd::Imm(len));
             for (i, chunk) in string_bytes.chunks_exact(8).enumerate() {
@@ -2144,7 +2147,7 @@ fn gen_array_dup(
         let mut len: std::os::raw::c_long = 0;
         if unsafe { rb_zjit_array_dup_can_fastpath(src, &mut alloc_size, &mut flags, &mut len) } {
             let klass = unsafe { rb_cArray };
-            return gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass, &|asm, obj| {
+            return gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.as_u64(), klass, &|asm, obj| {
                 for i in 0..len {
                     let elem = unsafe { rb_ary_entry(src, i) };
                     let offset = RUBY_OFFSET_RARRAY_AS_ARY + (i as i32) * SIZEOF_VALUE_I32;
@@ -2166,6 +2169,7 @@ fn gen_array_dup(
 fn gen_new_array(
     jit: &mut JITState,
     asm: &mut Assembler,
+    function: &Function,
     elements: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
@@ -2183,7 +2187,7 @@ fn gen_new_array(
     unsafe { rb_zjit_array_new_fastpath(&mut alloc_size, &mut flags) };
     let klass = unsafe { rb_cArray };
 
-    gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass, &|_asm, _obj| {}, |asm| {
+    gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.as_u64(), klass, &|_asm, _obj| {}, |asm| {
         asm_ccall!(asm, rb_ec_ary_new_from_values, EC, 0i64.into(), Opnd::UImm(0))
     })
 }
@@ -2476,7 +2480,7 @@ fn gen_new_hash(
         let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags) };
         let klass = unsafe { rb_cHash };
 
-        gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass,
+        gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.as_u64(), klass,
             &|asm, hash| {
                 asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
             },
@@ -2495,7 +2499,7 @@ fn gen_new_hash(
             let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags) };
             let klass = unsafe { rb_cHash };
 
-            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass,
+            gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.as_u64(), klass,
                 &|asm, hash| {
                     asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
                 },
@@ -2537,6 +2541,7 @@ fn gen_new_range(
 fn gen_new_range_fixnum(
     jit: &mut JITState,
     asm: &mut Assembler,
+    function:  &Function,
     low: lir::Opnd,
     high: lir::Opnd,
     flag: RangeType,
@@ -2550,7 +2555,7 @@ fn gen_new_range_fixnum(
     };
 
     let klass = unsafe { rb_cRange };
-    gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass,
+    gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.as_u64(), klass,
         &|asm, range| {
             asm.store(Opnd::mem(VALUE_BITS, range, RUBY_OFFSET_RSTRUCT_FIELDS_OBJ), Opnd::UImm(0));
             asm.store(Opnd::mem(VALUE_BITS, range, RUBY_OFFSET_RSTRUCT_AS_ARY), low);
@@ -2569,7 +2574,7 @@ fn gen_object_alloc(jit: &JITState, asm: &mut Assembler, function: &Function, va
     asm_ccall!(asm, rb_obj_alloc, val)
 }
 
-fn gen_object_alloc_class(jit: &mut JITState, asm: &mut Assembler, class: VALUE, state: &FrameState) -> lir::Opnd {
+fn gen_object_alloc_class(jit: &mut JITState, asm: &mut Assembler, function: &Function, class: VALUE, state: &FrameState) -> lir::Opnd {
     // Allocating an object for a known class with default allocator is leaf; see doc for
     // `ObjectAllocClass`.
     gen_prepare_leaf_call_with_gc(asm, state);
@@ -2581,7 +2586,7 @@ fn gen_object_alloc_class(jit: &mut JITState, asm: &mut Assembler, class: VALUE,
         };
         if has_fastpath {
             let flags = (RUBY_T_OBJECT as u64) | ((shape_id as u64) << RB_SHAPE_FLAG_SHIFT as u64);
-            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, class, &|_asm, _obj| {}, |asm| {
+            gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags, class, &|_asm, _obj| {}, |asm| {
                 asm_ccall!(asm, rb_class_allocate_instance, class.into())
             })
         } else {
