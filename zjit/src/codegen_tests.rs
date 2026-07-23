@@ -6501,6 +6501,21 @@ fn test_ivar_set_with_multi_ractor_mode() {
 }
 
 #[test]
+fn test_gc_fastpath_sets_ractor_belonging() {
+    assert_snapshot!(inspect(r#"
+        def alloc = [1, 2, 3]
+
+        alloc
+        alloc
+
+        Ractor.new {
+          arr = alloc
+          arr.sum
+        }.value
+    "#), @"6");
+}
+
+#[test]
 fn test_global_tracepoint() {
     assert_snapshot!(inspect("
         def foo = 1

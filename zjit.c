@@ -174,6 +174,12 @@ rb_zjit_offset_ractor_newobj_cache(void)
     return offsetof(rb_ractor_t, newobj_cache);
 }
 
+size_t
+rb_zjit_offset_ractor_pub_id(void)
+{
+    return offsetof(rb_ractor_t, pub) + offsetof(struct rb_ractor_pub, id);
+}
+
 VALUE
 rb_zjit_defined_ivar(VALUE obj, ID id, VALUE pushval)
 {

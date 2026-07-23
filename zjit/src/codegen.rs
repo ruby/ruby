@@ -2178,12 +2178,12 @@ fn gen_new_array(
         return asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv);
     }
 
-    let alloc_size = std::mem::size_of::<RArray>();
-
-    let flags = (RUBY_T_ARRAY as u64) | (RARRAY_EMBED_FLAG as u64);
+    let mut alloc_size: usize = 0;
+    let mut flags: VALUE = VALUE(0);
+    unsafe { rb_zjit_array_new_fastpath(&mut alloc_size, &mut flags) };
     let klass = unsafe { rb_cArray };
 
-    gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass, &|_asm, _obj| {}, |asm| {
+    gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass, &|_asm, _obj| {}, |asm| {
         asm_ccall!(asm, rb_ec_ary_new_from_values, EC, 0i64.into(), Opnd::UImm(0))
     })
 }
@@ -2472,11 +2472,11 @@ fn gen_new_hash(
     if elements.is_empty() {
         gen_prepare_leaf_call_with_gc(asm, state);
 
-        let alloc_size = unsafe { rb_zjit_hash_new_size() };
-        let flags = RUBY_T_HASH as u64;
+        let mut flags: VALUE = VALUE(0);
+        let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags) };
         let klass = unsafe { rb_cHash };
 
-        gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass,
+        gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass,
             &|asm, hash| {
                 asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
             },
@@ -2491,11 +2491,11 @@ fn gen_new_hash(
 
         let num_pairs = elements.len() / 2;
         let hash = if num_pairs <= RUBY_RHASH_AR_TABLE_MAX_SIZE as usize {
-            let alloc_size = unsafe { rb_zjit_hash_new_size() };
-            let flags = RUBY_T_HASH as u64;
+            let mut flags: VALUE = VALUE(0);
+            let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags) };
             let klass = unsafe { rb_cHash };
 
-            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass,
+            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass,
                 &|asm, hash| {
                     asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
                 },

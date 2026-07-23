@@ -11,6 +11,7 @@ struct rb_gc_zjit_default_new_obj_fastpath {
     size_t cursor_offset;
     size_t cursor_end_offset;
     size_t slot_size;
+    size_t ractor_belonging_id_offset;
     VALUE flags;
     VALUE klass;
 };

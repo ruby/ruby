@@ -2027,6 +2027,7 @@ pub struct rb_gc_zjit_default_new_obj_fastpath {
     pub cursor_offset: usize,
     pub cursor_end_offset: usize,
     pub slot_size: usize,
+    pub ractor_belonging_id_offset: usize,
     pub flags: VALUE,
     pub klass: VALUE,
 }
@@ -2272,7 +2273,7 @@ unsafe extern "C" {
     pub fn rb_iseq_label(iseq: *const rb_iseq_t) -> VALUE;
     pub fn rb_iseq_defined_string(type_: defined_type) -> VALUE;
     pub fn rb_zjit_profile_enable(iseq: *const rb_iseq_t);
-    pub fn rb_zjit_hash_new_size() -> usize;
+    pub fn rb_zjit_hash_new_size(flags_out: *mut VALUE) -> usize;
     pub fn rb_zjit_class_allocate_instance_fastpath(
         klass: VALUE,
         size_out: *mut usize,
@@ -2297,6 +2298,7 @@ unsafe extern "C" {
         alloc_size_out: *mut usize,
         flags_out: *mut VALUE,
     );
+    pub fn rb_zjit_array_new_fastpath(alloc_size_out: *mut usize, flags_out: *mut VALUE);
     pub fn rb_profile_frames(
         start: ::std::os::raw::c_int,
         limit: ::std::os::raw::c_int,
