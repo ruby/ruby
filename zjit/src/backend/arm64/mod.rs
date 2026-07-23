@@ -99,20 +99,6 @@ impl From<&Opnd> for A64Opnd {
     }
 }
 
-/// Call emit_jmp_ptr and immediately invalidate the written range.
-/// This is needed when next_page also moves other_cb that is not invalidated
-/// by compile_with_regs. Doing it here allows you to avoid invalidating a lot
-/// more than necessary when other_cb jumps from a position early in the page.
-/// This invalidates a small range of cb twice, but we accept the small cost.
-fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
-    let start = cb.get_write_ptr();
-    emit_jmp_ptr(cb, dst_ptr, true);
-    let end = cb.get_write_ptr();
-    trace_compile_phase("invalidate_icache", || {
-        unsafe { rb_jit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
-    });
-}
-
 fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr) {
     let src_addr = cb.get_write_ptr().as_offset();
     let dst_addr = dst_ptr.as_offset();
