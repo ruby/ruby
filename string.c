@@ -2976,6 +2976,12 @@ rb_str_to_cstr(VALUE str)
     return str_null_check(str, &w);
 }
 
+const char *
+rb_str_cstr(VALUE str)
+{
+    return str_to_cstr(str);
+}
+
 char *
 rb_string_value_cstr(volatile VALUE *ptr)
 {

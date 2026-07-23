@@ -685,6 +685,18 @@ describe "C-API String function" do
     end
   end
 
+  ruby_version_is "4.1" do
+    describe "rb_str_cstr" do
+      it "returns a NUL-terminated C string for a simple string" do
+        @s.rb_str_cstr("Hello").should == "Hello"
+      end
+
+      it "raises an ArgumentError if a string contains a null" do
+        -> { @s.rb_str_cstr("Hello\0 with a null.") }.should.raise(ArgumentError)
+      end
+    end
+  end
+
   describe "RSTRING_LEN" do
     it "returns the size of the string" do
       @s.RSTRING_LEN("gumdrops").should == 8

@@ -302,6 +302,18 @@ char *rb_string_value_ptr(volatile VALUE *ptr);
 char *rb_string_value_cstr(volatile VALUE *ptr);
 
 /**
+ * Returns a pointer to the string contents as a C string. This checks that the
+ * string does not contain embedded NUL bytes and that it is properly
+ * NUL-terminated.
+ *
+ * @param[in]  str             String in question.
+ * @exception  rb_eArgError    The contents include a NUL byte in the middle.
+ * @return     Pointer to its contents.
+ * @pre        `str` must be an instance of ::RString.
+ */
+const char *rb_str_cstr(VALUE str);
+
+/**
  * Identical  to rb_str_to_str(),  except it  additionally converts  the string
  * into default  external encoding.   Ruby has a  concept called  encodings.  A
  * string can  have different encoding  than the environment  expects.  Someone
