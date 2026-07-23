@@ -2084,7 +2084,7 @@ fn gen_string_copy(jit: &mut JITState, asm: &mut Assembler, function: &Function,
     // above which we'll emit a C call to memcpy instead of multiple stores.
     if byte_size > STR_INLINE_STORE_MAX_BYTES {
         return gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, full_flags, klass,
-            &|asm, obj| {
+            |asm, obj| {
                 asm.store(Opnd::mem(VALUE_BITS, obj, RUBY_OFFSET_RSTRING_LEN), Opnd::Imm(len));
                 let src_obj = asm.load(Opnd::Value(src));
                 let src_ptr = asm.lea(Opnd::mem(64, src_obj, RUBY_OFFSET_RSTRING_AS_ARY));
@@ -2106,7 +2106,7 @@ fn gen_string_copy(jit: &mut JITState, asm: &mut Assembler, function: &Function,
     string_bytes[..src_bytes.len()].copy_from_slice(src_bytes);
 
     gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, full_flags, klass,
-        &|asm, obj| {
+        |asm, obj| {
             asm.store(Opnd::mem(VALUE_BITS, obj, RUBY_OFFSET_RSTRING_LEN), Opnd::Imm(len));
             for (i, chunk) in string_bytes.chunks_exact(8).enumerate() {
                 let word = u64::from_le_bytes(chunk.try_into().unwrap());
@@ -2144,7 +2144,7 @@ fn gen_array_dup(
         let mut len: std::os::raw::c_long = 0;
         if unsafe { rb_zjit_array_dup_can_fastpath(src, &mut alloc_size, &mut flags, &mut len) } {
             let klass = unsafe { rb_cArray };
-            return gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass, &|asm, obj| {
+            return gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass, |asm, obj| {
                 for i in 0..len {
                     let elem = unsafe { rb_ary_entry(src, i) };
                     let offset = RUBY_OFFSET_RARRAY_AS_ARY + (i as i32) * SIZEOF_VALUE_I32;
@@ -2183,7 +2183,7 @@ fn gen_new_array(
     let flags = (RUBY_T_ARRAY as u64) | (RARRAY_EMBED_FLAG as u64);
     let klass = unsafe { rb_cArray };
 
-    gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass, &|_asm, _obj| {}, |asm| {
+    gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass, |_asm, _obj| {}, |asm| {
         asm_ccall!(asm, rb_ec_ary_new_from_values, EC, 0i64.into(), Opnd::UImm(0))
     })
 }
@@ -2477,7 +2477,7 @@ fn gen_new_hash(
         let klass = unsafe { rb_cHash };
 
         gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass,
-            &|asm, hash| {
+            |asm, hash| {
                 asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
             },
             |asm| {
@@ -2496,7 +2496,7 @@ fn gen_new_hash(
             let klass = unsafe { rb_cHash };
 
             gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass,
-                &|asm, hash| {
+                |asm, hash| {
                     asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
                 },
                 |asm| {
@@ -2551,7 +2551,7 @@ fn gen_new_range_fixnum(
 
     let klass = unsafe { rb_cRange };
     gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), klass,
-        &|asm, range| {
+        |asm, range| {
             asm.store(Opnd::mem(VALUE_BITS, range, RUBY_OFFSET_RSTRUCT_FIELDS_OBJ), Opnd::UImm(0));
             asm.store(Opnd::mem(VALUE_BITS, range, RUBY_OFFSET_RSTRUCT_AS_ARY), low);
             asm.store(Opnd::mem(VALUE_BITS, range, RUBY_OFFSET_RSTRUCT_AS_ARY + SIZEOF_VALUE_I32), high);
@@ -2581,7 +2581,7 @@ fn gen_object_alloc_class(jit: &mut JITState, asm: &mut Assembler, class: VALUE,
         };
         if has_fastpath {
             let flags = (RUBY_T_OBJECT as u64) | ((shape_id as u64) << RB_SHAPE_FLAG_SHIFT as u64);
-            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, class, &|_asm, _obj| {}, |asm| {
+            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, class, |_asm, _obj| {}, |asm| {
                 asm_ccall!(asm, rb_class_allocate_instance, class.into())
             })
         } else {
