@@ -15848,7 +15848,7 @@ mod hir_opt_tests {
           v15:Fixnum[5] = Const Value(5)
           PatchPoint MethodRedefined(Integer@0x1008, <<@0x1010, cme:0x1018)
           v28:Fixnum = GuardType v10, Fixnum recompile
-          v29:Fixnum = FixnumLShift v28, v15
+          v29:Integer = FixnumLShift v28, v15
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v29

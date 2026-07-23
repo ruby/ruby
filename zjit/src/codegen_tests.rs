@@ -4301,6 +4301,41 @@ fn test_fixnum_mul() {
 }
 
 #[test]
+fn test_fixnum_lshift_overflow_uses_integer_slow_path() {
+    eval("
+        def test(n) = n << 1
+        def test_wide(n) = n << 63
+        test(3) # profile opt_ltlt
+        test_wide(0) # profile opt_ltlt at the largest inline shift
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_contains_opcode("test_wide", YARVINSN_opt_ltlt);
+    assert_snapshot!(assert_compiles("
+        [
+          test(3),
+          test(4611686018427387903),
+          test(-4611686018427387904),
+          test_wide(0),
+          test_wide(1),
+          test_wide(-1),
+        ]
+    "), @"[6, 9223372036854775806, -9223372036854775808, 0, 9223372036854775808, -9223372036854775808]");
+}
+
+#[test]
+fn test_fixnum_lshift_overflow_propagates_bignum() {
+    eval("
+        def test(n) = (n << 1) & 1
+        test(3) # profile opt_ltlt and opt_and
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_snapshot!(
+        assert_compiles_allowing_exits("test(4611686018427387903)"),
+        @"0"
+    );
+}
+
+#[test]
 fn test_fixnum_div() {
     eval("
         C = 48

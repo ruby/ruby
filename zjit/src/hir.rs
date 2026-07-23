@@ -2196,7 +2196,9 @@ impl Insn {
             Insn::FixnumXor { .. } => effects::Empty,
             Insn::IntAnd { .. } => effects::Empty,
             Insn::IntOr { .. } => effects::Empty,
-            Insn::FixnumLShift { .. } => effects::Empty,
+            // The fast path is register-only, but overflow calls rb_int_lshift
+            // to allocate the Bignum result.
+            Insn::FixnumLShift { .. } => allocates,
             Insn::FixnumRShift { .. } => effects::Empty,
             Insn::AnyToString { .. } => effects::Any,
             Insn::GuardType { guard_type, .. }
@@ -4331,7 +4333,9 @@ impl Function {
             Insn::FixnumXor  { .. } => types::Fixnum,
             Insn::IntAnd { .. } => types::CInt64,
             Insn::IntOr { left, .. } => self.type_of(*left).unspecialized(),
-            Insn::FixnumLShift { .. } => types::Fixnum,
+            // The operands are Fixnums, but an overflowing left shift promotes
+            // the result to a Bignum.
+            Insn::FixnumLShift { .. } => types::Integer,
             Insn::FixnumRShift { .. } => types::Fixnum,
             Insn::PutSpecialObject { .. } => types::BasicObject,
             Insn::SendDirect(_) => types::BasicObject,
@@ -11544,7 +11548,7 @@ impl Function {
                 | Insn::FixnumLt { .. } | Insn::FixnumLe { .. }
                 | Insn::FixnumGt { .. } | Insn::FixnumGe { .. } | Insn::FixnumCmpBool { .. }
                 | Insn::FixnumAnd { .. } | Insn::FixnumOr { .. } | Insn::FixnumXor { .. }
-                | Insn::FixnumLShift { .. } | Insn::FixnumRShift { .. } | Insn::FixnumAref { .. }
+                | Insn::FixnumRShift { .. } | Insn::FixnumAref { .. }
                 | Insn::IntAnd { .. } | Insn::IntOr { .. }
                 | Insn::FloatAdd { .. } | Insn::FloatSub { .. } | Insn::FloatMul { .. }
                 | Insn::FloatDiv { .. } | Insn::FloatCmp { .. } | Insn::FloatMin { .. }
