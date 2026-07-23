@@ -5393,103 +5393,145 @@ impl Function {
     /// This function implements algorithm 2 from <https://c9x.me/compile/bib/braun13cc.pdf>.
     /// Light modifications are made to use block params instead of phis.
     fn remove_trivial_block_params(&mut self) {
+        // This abstract domain represents block param optimization potential
+        // If it were constructed as a lattice, Unknown is bottom, trivial is above, nontrivial is top (and above trivial)
+        #[derive(Clone)]
+        enum ParamState {
+            Unknown,
+            NonTrivial,
+            Trivial(InsnId)
+        }
 
-        // Helper function for remove_trivial_block_params
+        fn prune_vec_by_indices<T>(v: &mut Vec<T>, indices: &[usize]) {
+            let mut i: usize = 0;
+            v.retain(|_| {
+                let valid_id = !indices.contains(&i);
+                i += 1;
+                valid_id
+            })
+        }
+
         // Remove an argument of the edge at index if the conditional matches target_block
-        fn prune_branch_edge(edge: BranchEdge, target_block: BlockId, index: usize) -> BranchEdge {
+        fn prune_branch_edge(edge: BranchEdge, indices: &Vec<usize>) -> BranchEdge {
             let mut args = edge.args.clone();
-            if edge.target == target_block {
-                args.remove(index);
-            }
+            prune_vec_by_indices(&mut args, indices);
             BranchEdge { target: edge.target, args }
         }
 
-        // TODO: This stupid function causes borrowing issues so we just duplicated the code for it all over the place omg. Do we remove this or fix it??
-        // fetch_last_insn is a helper to retrieve the final instruction from a block.
-        // We use standard basic blocks so we know that each jump msut be the final instruction in a block.
-        fn fetch_last_insn(blocks: Vec<Block>, block_id: BlockId) -> InsnId {
-            *blocks[block_id.0].insns.last().unwrap()
+        let mut changed = true;
+
+        while changed {
+
+        changed = false;
+
+        // Instantiate the domain for abstract interpretation
+        // Outer index is block
+        // Inner index is param index
+        // Value is the state of the param. This is used to determine whether block param optimization can occur.
+        let mut predecessor_domain: Vec<Vec<ParamState>> = vec![Vec::new(); self.blocks.len()];
+        for (i, block) in self.blocks.iter().enumerate() {
+            predecessor_domain[i].extend(std::iter::repeat_n(ParamState::Unknown, block.params.len()))
         }
 
-        // Find each block that ends with Insn::Jump or Insn::CondBranch. (Equivalently, this is all blocks that don't end with Insn::Return)
-        let jump_blocks: Vec<BlockId> = self.reverse_post_order().into_iter()
+        // Store references to all the conditional instructions.
+        // We need to update these conditionals in the case of trivial block params.
+        let jumps: Vec<(BlockId, usize)> = self.reverse_post_order().into_iter()
             .filter(|&block_id| matches!(
                 self.find(*self.blocks[block_id.0].insns.last().unwrap()),
-                Insn::CondBranch {..} | Insn::Jump {..} )
-            ).collect();
+                Insn::CondBranch {..} | Insn::Jump {..}
+            ))
+            .map(|block_id| (block_id, self.blocks[block_id.0].insns.len() - 1))
+            .collect();
 
-        // Note: The outer vec represents all blocks in the CFG. Using a vec instead of HashMap with keys is safe
-        // because blocks are represented by contiguous values between 0 and len() - 1
-        // This invariant holds because new_block adds a new id based on length, and remove_block only allows the highest block value to be removed.
-        // These are the two functions used to modify block sizes.
-        #[derive(Hash, Eq, PartialEq, Clone, Copy)]
-        struct ArgKey {
-            block: BlockId,
-            index: usize
-        }
-        let mut predecessors: HashMap<ArgKey, Vec<InsnId>> = HashMap::new();
 
-        let mut add_preds = |block: BlockId, args: Vec<InsnId>| {
-            for index in 0..args.len() {
-                predecessors.entry(ArgKey{ block, index }).or_default().push(args[index]);
-            }
-        };
+        // Scan through each jump, collecting edges from CondBranch and Jump insns.
+        for (block_id, insn_index) in &jumps {
+            let insn_id = self.blocks[block_id.0].insns[*insn_index];
+            let mut edges: Vec<BranchEdge> = vec![];
 
-        // Find the predecessors for each conditional HIR instruction in the CFG
-        for insn_id in jump_blocks.iter().map(|block_id| {self.blocks[block_id.0].insns.last().unwrap()}) {
-            match self.find(*insn_id) {
+            match self.find(insn_id) {
                 Insn::CondBranch { if_true, if_false, .. } => {
-                    add_preds(if_true.target, if_true.args);
-                    add_preds(if_false.target, if_false.args);
+                    edges.push(if_true);
+                    edges.push(if_false);
                 }
                 Insn::Jump(edge) => {
-                    add_preds(edge.target, edge.args);
+                    edges.push(edge);
                 }
                 _ => {}
             }
-        }
 
-        // Remove the predecessor self-references
-        let mut external_preds = predecessors.clone();
-        for (key, predecessors) in external_preds.iter_mut() {
-            let pred_from_current_block = self.chase_insn(*self.block(key.block).params().nth(key.index).unwrap());
-            predecessors.retain(|insn_id| self.chase_insn(*insn_id) != pred_from_current_block);
-        }
-
-        // Identify the trivial block params. Trivial means that each external predecessor has the same insn_id.
-        for (ArgKey { block, index }, predecessors) in external_preds.iter() {
-            match predecessors.as_slice() {
-                [] => {} // Unreachable. This should never happen
-                [first, rest @ ..] if rest.iter().any(|insn_id| insn_id != first) => {} // non-trivial
-                [insn_id, ..] => {
-                    // Save the insn_id of the block param to be removed
-                    let trivial_block_param = self.blocks[block.0].params[*index];
-                    // Remove the trivial block param from the block definition
-                    self.blocks[block.0].params.remove(*index);
-                    // Replace the trivial block param with the SSA insn_id that it must always be.
-                    self.make_equal_to(trivial_block_param, *insn_id);
-
-                    // At this point we have fixed params at the block definition, but not to conditionals that branch to the block.
-
-                    // Prune the block params from each Insn::Jump and Insn::CondBranch that targets `block`
-                    for &block_with_jump in &jump_blocks {
-                        let insn_id = self.blocks[block_with_jump.0].insns.last().unwrap();
-                        match self.find(*insn_id) {
-                            Insn::Jump(edge) => {
-                                let new_edge = prune_branch_edge(edge, *block, *index);
-                                self.insns[insn_id.0] = Insn::Jump(new_edge);
+            // Update the states
+            for BranchEdge { target, args } in edges {
+                for (i, arg) in args.iter().enumerate().rev() {
+                    // If the param is the same as passed into the block, this means it is a self loop
+                    // We can safely ignore these cases.
+                    if self.chase_insn(*arg) == self.chase_insn(self.blocks[target.0].params[i]) {
+                        continue
+                    }
+                    let state = &mut predecessor_domain[target.0][i];
+                    match *state {
+                        ParamState::Unknown => {
+                            *state = ParamState::Trivial(self.chase_insn(*arg));
+                        },
+                        ParamState::Trivial(value) => {
+                            if value != self.chase_insn(*arg) {
+                                *state = ParamState::NonTrivial;
                             }
-                            Insn::CondBranch { val, if_true, if_false } => {
-                                let new_true_edge = prune_branch_edge(if_true, *block, *index);
-                                let new_false_edge = prune_branch_edge(if_false, *block, *index);
-                                self.insns[insn_id.0] = Insn::CondBranch { val, if_true: new_true_edge, if_false: new_false_edge };
-                            }
-                            _ => {} // This is unreachable
                         }
+                        ParamState::NonTrivial => {},
                     }
                 }
             }
         }
+
+        // Remove the trivial block params and fix up our SSA representation
+        // This is done by as follows.
+        // 1. Replace uses of the trivial params with the concretized value
+        // 2. Remove trivial params from the basic block definition
+        // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
+        for (block_id, block) in predecessor_domain.iter().enumerate() {
+            // TODO: Don't do this
+            let block_id = BlockId(block_id);
+
+            let trivial_indices: Vec<usize> = block.iter().enumerate()
+                .filter_map(|(idx, state)|
+                    matches!(state, ParamState::Trivial(_)).then_some(idx)
+                ).collect();
+
+            // Replace uses of the trivial params with the concretized value
+            for param_index in &trivial_indices {
+                if let ParamState::Trivial(concretized_insn) = block[*param_index] {
+                    self.make_equal_to(self.blocks[block_id.0].params[*param_index], concretized_insn);
+                    changed = true;
+                }
+            }
+
+            // Update the block
+            prune_vec_by_indices(&mut self.blocks[block_id.0].params, &trivial_indices);
+
+            // Update the conditionals that branch to block
+            for (jump_block_id, index) in &jumps {
+                let cond_insn_id = self.blocks[jump_block_id.0].insns[*index];
+                match self.find(cond_insn_id) {
+                    Insn::Jump(edge) => {
+                        if edge.target == block_id {
+                            let edge = prune_branch_edge(edge, &trivial_indices);
+                            self.insns[cond_insn_id.0] = Insn::Jump(edge);
+                        }
+                    }
+                    Insn::CondBranch { val, if_true, if_false } => {
+                        if if_true.target == block_id || if_false.target == block_id {
+                            let if_true = prune_branch_edge(if_true, &trivial_indices);
+                            let if_false = prune_branch_edge(if_false, &trivial_indices);
+                            self.insns[cond_insn_id.0] = Insn::CondBranch{ val, if_true, if_false };
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        }
+
     }
 
 
