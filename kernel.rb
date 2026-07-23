@@ -28,6 +28,10 @@ module Kernel
   #  <i>obj</i> are copied, but not the objects they reference.
   #  #clone copies the frozen value state of <i>obj</i>, unless the
   #  +:freeze+ keyword argument is given with a false or true value.
+  #  When +:freeze+ is true, the copy is frozen regardless of whether
+  #  <i>obj</i> is frozen. When +:freeze+ is false, the copy is not frozen
+  #  even if <i>obj</i> is frozen.
+  #
   #  See also the discussion under Object#dup.
   #
   #     class Klass
