@@ -6357,7 +6357,9 @@ impl Function {
             let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
             for insn_id in insns {
-                let insn = self.find(insn_id);
+                // PatchPoint is never in union-find and it does not have operands, so fake a
+                // ResolvedInsnId.
+                let insn = ResolvedInsnId(insn_id).insn(self);
                 if let Insn::PatchPoint { invariant, .. } = insn {
                     if !seen.insert(invariant) {
                         continue;
