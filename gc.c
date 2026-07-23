@@ -1178,6 +1178,12 @@ rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, shape_id
                                                   rb_gc_size_slot_size(size));
     return true;
 }
+
+bool
+rb_zjit_newobj_hook_enabled_p(void)
+{
+    return rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_NEWOBJ);
+}
 #endif
 
 void
@@ -3477,7 +3483,7 @@ rb_gc_ractor_cache_free(void *cache)
 bool
 rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath)
 {
-#if RACTOR_CHECK_MODE || defined(RUBY_ASAN_ENABLED)
+#if defined(RUBY_ASAN_ENABLED)
     (void)rb_gc_impl_zjit_new_obj_fastpath;
     return false;
 #else

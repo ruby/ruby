@@ -32,6 +32,7 @@
 #include "internal/class.h"
 #include "internal/cont.h"
 #include "internal/error.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/proc.h"
@@ -44,6 +45,7 @@
 #include "ruby/st.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
+#include "shape.h"
 #include "symbol.h"
 #include "ruby/thread_native.h"
 #include "ruby/ractor.h"
@@ -1464,9 +1466,13 @@ hash_alloc(VALUE klass)
 
 #if USE_ZJIT
 size_t
-rb_zjit_hash_new_size(void)
+rb_zjit_hash_new_size(VALUE *flags_out)
 {
-    return hash_slot_size(sizeof(st_table) > sizeof(ar_table));
+    size_t size = hash_slot_size(sizeof(st_table) > sizeof(ar_table));
+    shape_id_t shape_id = rb_shape_transition_slot_size(ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER,
+                                                        rb_gc_size_slot_size(size));
+    *flags_out = T_HASH | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
+    return size;
 }
 #endif
 

@@ -146,7 +146,8 @@ update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_
     // as for all ractors. That's not how it works right now, so we shouldn't rely on it apart from the
     // internal events. Since it doesn't work like this, we have to track more state with `ruby_vm_iseq_events_enabled`,
     // `ruby_vm_c_events_enabled`, etc.
-    rb_event_flag_t new_events_global = (ruby_vm_event_flags & ~prev_events) | new_events;
+    rb_event_flag_t prev_events_global = ruby_vm_event_flags;
+    rb_event_flag_t new_events_global = (prev_events_global & ~prev_events) | new_events;
     ruby_vm_event_flags = new_events_global;
 
     // Modify ISEQs or CCs to enable tracing
@@ -173,6 +174,13 @@ update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_
     ruby_vm_event_enabled_global_flags |= new_events; // NOTE: this is only ever added to
     if (new_events_global & RUBY_INTERNAL_EVENT_MASK) {
         rb_objspace_set_event_hook(new_events_global);
+    }
+
+    // ZJIT's inline allocation fast path bypasses rb_newobj, so it can't fire the
+    // NEWOBJ internal event. Enabling such a hook invalidates the fast path code so
+    // allocation falls back to the interpreter, which fires the event.
+    if ((new_events_global & RUBY_INTERNAL_EVENT_NEWOBJ) && !(prev_events_global & RUBY_INTERNAL_EVENT_NEWOBJ)) {
+        rb_zjit_invalidate_newobj_hook();
     }
 
     // Invalidate JIT code as needed

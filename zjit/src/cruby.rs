@@ -123,6 +123,7 @@ unsafe extern "C" {
     ) -> *const rb_callable_method_entry_t;
 
     pub fn rb_zjit_offset_ractor_newobj_cache() -> usize;
+    pub fn rb_zjit_offset_ractor_pub_id() -> usize;
 
     // Floats within range will be encoded without creating objects in the heap.
     // (Range is 0x3000000000000001 to 0x4fffffffffffffff (1.7272337110188893E-77 to 2.3158417847463237E+77).

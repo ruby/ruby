@@ -249,7 +249,7 @@ typedef struct ractor_newobj_heap_cache {
     struct free_region *next_region;
     struct heap_page *using_page;
     uintptr_t region_end;
-    size_t allocated_objects_count;
+    uintptr_t last_counted_cursor;
 } rb_ractor_newobj_heap_cache_t;
 
 typedef struct ractor_newobj_cache {
@@ -2476,13 +2476,19 @@ rb_gc_impl_size_allocatable_p(size_t size)
     return size <= rb_gc_impl_max_allocation_size();
 }
 
-static inline void
+/* Allocations are not counted individually: both the interpreter and the ZJIT
+ * inline fast path only bump the cursor. The number of objects allocated since
+ * the last flush is (cursor - last_counted_cursor) / slot_size, so counting is
+ * deferred to flush time (region advance, GC, GC.stat, verify). */
+static inline size_t
 gc_bump_flush_alloc_count(rb_ractor_newobj_heap_cache_t *heap_cache, rb_heap_t *heap)
 {
-    if (heap_cache->allocated_objects_count > 0) {
-        RUBY_ATOMIC_SIZE_ADD(heap->total_allocated_objects, heap_cache->allocated_objects_count);
-        heap_cache->allocated_objects_count = 0;
+    size_t count = (heap_cache->cursor - heap_cache->last_counted_cursor) / (size_t)heap->slot_size;
+    if (count > 0) {
+        RUBY_ATOMIC_SIZE_ADD(heap->total_allocated_objects, count);
+        heap_cache->last_counted_cursor = heap_cache->cursor;
     }
+    return count;
 }
 
 static void
@@ -2521,6 +2527,7 @@ ractor_cache_advance_region(rb_objspace_t *objspace, rb_ractor_newobj_heap_cache
     rb_asan_unpoison_object((VALUE)region, false);
     GC_ASSERT(RB_TYPE_P((VALUE)region, T_NONE));
     heap_cache->cursor = (uintptr_t)region;
+    heap_cache->last_counted_cursor = (uintptr_t)region;
     heap_cache->region_end = region->end;
     heap_cache->next_region = region->next;
     rb_asan_poison_object((VALUE)region);
@@ -2552,7 +2559,6 @@ ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc
     VALUE obj = (VALUE)cursor;
     rb_asan_unpoison_object(obj, true);
     heap_cache->cursor = cursor + slot_size;
-    heap_cache->allocated_objects_count++;
 
 #if RGENGC_CHECK_MODE
     GC_ASSERT(rb_gc_impl_obj_slot_size(obj) == heap_slot_size(heap_idx));
@@ -2599,6 +2605,7 @@ ractor_cache_set_page(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_cach
     rb_asan_unpoison_object((VALUE)region, false);
     GC_ASSERT(RB_TYPE_P((VALUE)region, T_NONE));
     heap_cache->cursor = (uintptr_t)region;
+    heap_cache->last_counted_cursor = (uintptr_t)region;
     heap_cache->region_end = region->end;
     heap_cache->next_region = region->next;
     rb_asan_poison_object((VALUE)region);
@@ -2649,7 +2656,7 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
     size_t heap_idx = 0;
     size_t slot_size = 0;
     for (; pool_slot_sizes[heap_idx] != 0; heap_idx++) {
-        if (alloc_size <= pool_slot_sizes[heap_idx]) {
+        if (alloc_size + RVALUE_OVERHEAD <= pool_slot_sizes[heap_idx]) {
             slot_size = pool_slot_sizes[heap_idx];
             break;
         }
@@ -2663,6 +2670,7 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
         base + offsetof(rb_ractor_newobj_heap_cache_t, cursor),
         base + offsetof(rb_ractor_newobj_heap_cache_t, cursor_end),
         slot_size,
+        RB_GC_OBJ_HAS_SUFFIX ? slot_size - RVALUE_OVERHEAD : 0,
         flags,
         klass
     };
@@ -2714,8 +2722,7 @@ newobj_bump_pointer_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_c
         }
 
         if (is_incremental_marking(objspace)) {
-            cache->incremental_mark_step_allocated_slots += heap_cache->allocated_objects_count;
-            gc_bump_flush_alloc_count(heap_cache, heap);
+            cache->incremental_mark_step_allocated_slots += gc_bump_flush_alloc_count(heap_cache, heap);
 
             if (cache->incremental_mark_step_allocated_slots >= INCREMENTAL_MARK_STEP_ALLOCATIONS) {
                 gc_continue(objspace, heap);
@@ -4170,6 +4177,7 @@ gc_ractor_newobj_cache_clear(void *c, void *data)
         cache->next_region = NULL;
         cache->region_end = 0;
         cache->cursor = 0;
+        cache->last_counted_cursor = 0;
         cache->cursor_end = 0;
     }
 }

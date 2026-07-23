@@ -88,6 +88,9 @@ pub struct Invariants {
     /// Set of patch points that assume that the TracePoint is not enabled
     no_trace_point_patch_points: HashSet<PatchPoint>,
 
+    /// Set of patch points that assume no NEWOBJ internal event hook is active
+    no_newobj_hook_patch_points: HashSet<PatchPoint>,
+
     /// Set of patch points that assume that the interpreter is running with only one ractor
     single_ractor_patch_points: HashSet<PatchPoint>,
 
@@ -457,6 +460,42 @@ pub extern "C" fn rb_zjit_tracing_invalidate_all() {
         let patch_points = mem::take(&mut ZJITState::get_invariants().no_trace_point_patch_points);
 
         compile_patch_points!(cb, patch_points, TracePoint, "TracePoint is enabled, invalidating no TracePoint assumption");
+
+        cb.mark_all_executable();
+    });
+}
+
+/// Track the JIT code that assumes no NEWOBJ internal event hook is active
+pub fn track_no_newobj_hook_assumption(
+    patch_point_ptr: CodePtr,
+    side_exit_ptr: CodePtr,
+    version: IseqVersionRef,
+) {
+    let invariants = ZJITState::get_invariants();
+    invariants.no_newobj_hook_patch_points.insert(PatchPoint::new(
+        patch_point_ptr,
+        side_exit_ptr,
+        version,
+    ));
+}
+
+/// Callback for when a NEWOBJ internal event hook is enabled. The inline
+/// allocation fast path bypasses rb_newobj, so it never fires NEWOBJ; invalidate
+/// every block that assumed no such hook was active so it falls back to the
+/// interpreter, which fires the event.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_invalidate_newobj_hook() {
+    // If ZJIT isn't enabled, do nothing
+    if !zjit_enabled_p() {
+        return;
+    }
+
+    with_vm_lock(src_loc!(), || {
+        let cb = ZJITState::get_code_block();
+        let patch_points = mem::take(&mut ZJITState::get_invariants().no_newobj_hook_patch_points);
+
+        // Invalidate all patch points for the no NEWOBJ hook assumption
+        compile_patch_points!(cb, patch_points, NewObjHook, "NEWOBJ hook enabled, invalidating no NEWOBJ hook assumption");
 
         cb.mark_all_executable();
     });

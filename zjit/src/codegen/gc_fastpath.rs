@@ -5,8 +5,10 @@ use crate::cruby::{
     RB_GC_ZJIT_FASTPATH_DEFAULT, RB_GC_ZJIT_FASTPATH_MMTK,
     RUBY_OFFSET_EC_THREAD_PTR, RUBY_OFFSET_RBASIC_FLAGS, RUBY_OFFSET_RBASIC_KLASS,
     RUBY_OFFSET_THREAD_RACTOR, VALUE, VALUE_BITS, rb_zjit_offset_ractor_newobj_cache,
+    rb_zjit_offset_ractor_pub_id,
 };
-use super::JITState;
+use crate::hir::{FrameState, Function, Invariant};
+use super::{JITState, gen_patch_point};
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -14,6 +16,7 @@ struct RbGcZjitDefaultNewObjFastpath {
     cursor_offset: usize,
     cursor_end_offset: usize,
     slot_size: usize,
+    ractor_belonging_id_offset: usize,
     flags: VALUE,
     klass: VALUE,
 }
@@ -61,6 +64,8 @@ unsafe extern "C" {
         klass: VALUE,
         fastpath: *mut RbGcZjitFastpath,
     ) -> bool;
+
+    fn rb_zjit_newobj_hook_enabled_p() -> bool;
 }
 
 enum PreparedNewObjFastpath {
@@ -71,6 +76,8 @@ enum PreparedNewObjFastpath {
 pub(super) fn gc_fastpath_new_obj(
     jit: &mut JITState,
     asm: &mut Assembler,
+    function: &Function,
+    state: &FrameState,
     alloc_size: usize,
     flags: u64,
     klass: VALUE,
@@ -80,6 +87,18 @@ pub(super) fn gc_fastpath_new_obj(
     let Some(fastpath) = prepare_new_obj_fastpath(alloc_size, flags, klass) else {
         return slow_path(asm);
     };
+
+    // The default GC's inline fast path bumps the ractor cache cursor in emitted
+    // code without calling rb_newobj, so it can't fire the NEWOBJ internal event.
+    // If such a hook is active, use the C path instead; otherwise assume none is
+    // active and install a patch point that discards this code if one is enabled
+    // later. (MMTk's fast path checks for the hook at run time, so it needs neither.)
+    if let PreparedNewObjFastpath::Default(_) = &fastpath {
+        if unsafe { rb_zjit_newobj_hook_enabled_p() } {
+            return slow_path(asm);
+        }
+        gen_patch_point(jit, asm, function, &Invariant::NoNewObjHook, state);
+    }
 
     asm_comment!(asm, "GC inline allocation");
 
@@ -202,6 +221,14 @@ fn emit_default_new_obj_fastpath(
         Opnd::mem(VALUE_BITS, cursor, RUBY_OFFSET_RBASIC_KLASS),
         fastpath.klass.into(),
     );
+
+    // only in debug mode
+    if fastpath.ractor_belonging_id_offset != 0 {
+        let belonging_offset: i32 = fastpath.ractor_belonging_id_offset.try_into().ok()?;
+        let pub_id_offset: i32 = unsafe { rb_zjit_offset_ractor_pub_id() }.try_into().ok()?;
+        let ractor_id = asm.load(Opnd::mem(32, ractor, pub_id_offset));
+        asm.store(Opnd::mem(32, cursor, belonging_offset), ractor_id);
+    }
 
     init(asm, cursor);
 

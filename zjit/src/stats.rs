@@ -220,6 +220,7 @@ make_counters! {
         exit_patchpoint_method_redefined,
         exit_patchpoint_stable_constant_names,
         exit_patchpoint_no_tracepoint,
+        exit_patchpoint_no_newobj_hook,
         exit_patchpoint_no_ep_escape,
         exit_patchpoint_single_ractor_mode,
         exit_patchpoint_no_singleton_class,
@@ -642,6 +643,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
                                       => exit_patchpoint_stable_constant_names,
         PatchPoint(Invariant::NoTracePoint)
                                       => exit_patchpoint_no_tracepoint,
+        PatchPoint(Invariant::NoNewObjHook)
+                                      => exit_patchpoint_no_newobj_hook,
         PatchPoint(Invariant::NoEPEscape(_))
                                       => exit_patchpoint_no_ep_escape,
         PatchPoint(Invariant::SingleRactorMode)

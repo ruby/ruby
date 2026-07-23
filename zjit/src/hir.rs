@@ -169,6 +169,10 @@ pub enum Invariant {
     },
     /// TracePoint is not enabled. If TracePoint is enabled, this is invalidated.
     NoTracePoint,
+    /// No NEWOBJ internal event hook is active. The inline allocation fast path
+    /// bypasses rb_newobj, so it can't fire NEWOBJ; this is invalidated when such
+    /// a hook is enabled.
+    NoNewObjHook,
     /// cfp->ep is not escaped to the heap on the ISEQ
     NoEPEscape(IseqPtr),
     /// There is one ractor running. If a non-root ractor gets spawned, this is invalidated.
@@ -312,6 +316,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                 write!(f, ")")
             }
             Invariant::NoTracePoint => write!(f, "NoTracePoint"),
+            Invariant::NoNewObjHook => write!(f, "NoNewObjHook"),
             Invariant::NoEPEscape(iseq) => write!(f, "NoEPEscape({})", &iseq_name(iseq)),
             Invariant::SingleRactorMode => write!(f, "SingleRactorMode"),
             Invariant::NoSingletonClass { klass } => {
