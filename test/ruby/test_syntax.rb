@@ -1377,6 +1377,204 @@ eom
     end;
   end
 
+  def test_for_comprehension
+    # Scala-style `for ... then` comprehension desugars nested flat_map/map.
+
+    # single iterator => map
+    assert_equal([2, 4, 6], eval("for x in [1, 2, 3] then x * 2 end"))
+    # multiple iterators => flat_map (all but last) + map (last)
+    assert_equal([[1, 10], [1, 20], [2, 10], [2, 20]],
+                 eval("for x in [1, 2], y in [10, 20] then [x, y] end"))
+    assert_equal([[1, 3, 4], [1, 3, 5], [2, 3, 4], [2, 3, 5]],
+                 eval("for x in [1, 2], y in [3], z in [4, 5] then [x, y, z] end"))
+    # a later iterator may reference an earlier loop variable
+    assert_equal([11, 22, 33],
+                 eval("for x in [1, 2, 3], y in [x * 10] then x + y end"))
+    # destructuring loop variables (same as legacy `for`)
+    assert_equal([3, 7], eval("for (a, b) in [[1, 2], [3, 4]] then a + b end"))
+    assert_equal([3, 7], eval("for a, b in [[1, 2], [3, 4]] then a + b end"))
+    # multi-statement body: value of the last expression is the element
+    assert_equal([2, 5, 10], eval("for x in [1, 2, 3] then z = x * x; z + 1 end"))
+    # empty source
+    assert_equal([], eval("for x in [] then x end"))
+    # a parenthesized command-call source is allowed
+    assert_equal([1, 2], eval("def self.id(x) = x; for x in id([1, 2]) then x end"))
+  end
+
+  def test_for_comprehension_when_guard
+    # a `when` guard filters the iterator's expression (desugars to filter)
+
+    # single iterator with a guard
+    assert_equal([20, 40], eval("for x in [1, 2, 3, 4] when x.even? then x * 10 end"))
+    # guard on the first of several iterators
+    assert_equal([[1, 10], [1, 20], [3, 10], [3, 20]],
+                 eval("for x in [1, 2, 3] when x.odd?, y in [10, 20] then [x, y] end"))
+    # a later iterator's guard may reference earlier variables
+    assert_equal([[1, 2], [1, 3], [2, 3]],
+                 eval("for x in [1, 2, 3], y in [1, 2, 3] when x < y then [x, y] end"))
+    # guards on every iterator
+    assert_equal([[2, 1], [2, 3], [4, 1], [4, 3]],
+                 eval("for x in [1,2,3,4] when x.even?, y in [1,2,3,4] when y.odd? then [x, y] end"))
+    # guard with a destructuring loop variable
+    assert_equal([3], eval("for (a, b) in [[1, 2], [3, 3], [4, 1]] when a < b then a + b end"))
+    # a guard may filter everything out
+    assert_equal([], eval("for x in [1, 3, 5] when x.even? then x end"))
+    # a temporary assigned in a guard does not cause an internal error even
+    # when the comprehension has several iterators (the guard's filter block and
+    # the map/flat_map block are siblings, so every synthesized block carries a
+    # binding for the temporary)
+    assert_equal([[2, 10]],
+                 eval("for x in [1, 2] when ((t = x * 2; t > 2)), y in [10] then [x, y] end"))
+    # each synthesized block binds the temporary independently, so one assigned
+    # in a guard is not visible (reads as nil) in the body or a later iterator
+    assert_equal([nil], eval("for x in [1] when ((t = 9; true)), y in [2] then t end"))
+    assert_equal([[1, nil], [2, nil]],
+                 eval("for x in [1, 2] when ((t = x * 2; true)), y in [t] then [x, y] end"))
+    # case/when is unaffected
+    assert_equal("one", eval("for x in [1] do break(case x when 1 then 'one' end) end"))
+  end
+
+  def test_for_comprehension_does_not_break_for_loop
+    # the legacy `for` loop is unchanged: it iterates and returns the collection
+    a = [1, 2, 3]
+    seen = []
+    assert_same(a, eval("for x in a do seen << x end", binding))
+    assert_equal([1, 2, 3], seen)
+    # an unparenthesized command-call source still works for the legacy loop
+    assert_nothing_raised(SyntaxError) do
+      assert_valid_syntax("def f(x) = x; for i in f [1] do end")
+    end
+    # the legacy `for` loop variable still leaks
+    assert_equal("local-variable", eval("for x in [1, 2, 3] do end; defined?(x)"))
+  end
+
+  def test_for_comprehension_scopes_loop_variables
+    # unlike the legacy `for` loop, comprehension loop variables are scoped to
+    # the synthesized blocks and do not leak into the surrounding scope.
+
+    assert_nil(eval("for x in [1, 2, 3] then x end; defined?(x)"))
+    # every iterator's variable is scoped
+    assert_nil(eval("for a in [1], b in [2] then [a, b] end; defined?(a) || defined?(b)"))
+    # body temporaries are scoped too
+    assert_nil(eval("for x in [1] then z = x; z end; defined?(z)"))
+    # destructuring loop variables are scoped
+    assert_nil(eval("for (a, b) in [[1, 2]] then a + b end; defined?(a) || defined?(b)"))
+    # a same-named outer variable is shadowed, not modified
+    assert_equal([100, [2, 4, 6]], eval("x = 100; r = for x in [1, 2, 3] then x * 2 end; [x, r]"))
+    # each iteration binds a fresh variable (captured distinctly by closures)
+    assert_equal([1, 2, 3], eval("for x in [1, 2, 3] then -> { x } end.map(&:call)"))
+  end
+
+  def test_for_comprehension_circular_reference
+    # a freshly introduced loop variable cannot be referenced in its own
+    # iterator expression: it is not bound yet and never denotes a value
+    circular = /circular reference of loop variable - x/
+    %w[parse.y prism].each do |parser|
+      assert_in_out_err(["--parser=#{parser}", "-e", "for x in [x] then x end"], "", [], circular)
+      assert_in_out_err(["--parser=#{parser}", "-e", "for x in [x, 2] then x end"], "", [], circular)
+      assert_in_out_err(["--parser=#{parser}", "-e", "for x in ([x] rescue [2]) then x end"], "", [], circular)
+      assert_in_out_err(["--parser=#{parser}", "-e", 'for x in ["#{x}"] then x end'], "", [], circular)
+      assert_in_out_err(["--parser=#{parser}", "-e", "for (a, b) in [[a, b]] then 0 end"], "", [],
+                        /circular reference of loop variable - a/)
+    end
+    # in an eval scope (or, in parse.y, in a later iterator) the specific
+    # message is not always available, but it is still a SyntaxError
+    assert_raise(SyntaxError) { eval("for x in [x] then x end") }
+    assert_raise(SyntaxError) { eval("for x in [1], y in [y] then [x, y] end") }
+    # a same-named outer variable in the iterator expression is not circular
+    assert_equal([[6], 5], eval("x = 5; r = for x in [x + 1] then x end; [r, x]"))
+    # nor is a nested block's own same-named variable
+    assert_equal([20], eval("for x in [1].map {|x| x + 1 } then x * 10 end"))
+  end
+
+  def test_for_comprehension_break_not_allowed
+    # a bare `break` would desugar into one synthesized flat_map/map block and
+    # escape only that innermost block, so it is rejected
+    msg = /Invalid break in for-comprehension/
+    %w[parse.y prism].each do |parser|
+      assert_in_out_err(["--parser=#{parser}", "-e", "for x in [1, 2] then break end"], "", [], msg)
+    end
+    assert_raise(SyntaxError) { eval("for x in [1, 2] then break end") }
+    assert_raise(SyntaxError) { eval("for x in [1, 2] then break 9 if x == 1; x end") }
+    # break in a `when` guard is rejected too
+    assert_raise(SyntaxError) { eval("for x in [1, 2] when (break; true) then x end") }
+    # break in a later iterator's source is rejected
+    assert_raise(SyntaxError) { eval("for x in [1, 2], y in [break] then [x, y] end") }
+
+    # break inside a nested block or loop in the body remains valid: it belongs
+    # to that construct, not the comprehension
+    assert_equal([1, 2], eval("for x in [1, 2] then [3, 4].each { |y| break if y == 4 }; x end"))
+    assert_equal([1, 2], eval("for x in [1, 2] then while true; break; end; x end"))
+
+    # next and redo keep ordinary block semantics and are still allowed
+    assert_equal([10, 0, 30], eval("for x in [1, 2, 3] then next 0 if x == 2; x * 10 end"))
+    assert_equal([3], eval("n = 0; for x in [1] then n += 1; redo if n < 3; x * n end"))
+
+    # the legacy `for` loop still supports break
+    assert_equal(99, eval("for x in [1, 2, 3] do break 99 if x == 2 end"))
+  end
+
+  def test_for_comprehension_loop_variable_must_be_local
+    # a comprehension loop variable must be a local variable: assigning to an
+    # ivar/gvar/cvar/constant or an attribute/index setter on each iteration is
+    # a side effect with no role in the mapped result
+    msg = /for-comprehension loop variable must be a local variable/
+    %w[parse.y prism].each do |parser|
+      assert_in_out_err(["--parser=#{parser}", "-e", "for @x in [1] then @x end"], "", [], msg)
+    end
+    assert_raise(SyntaxError) { eval("for @x in [1, 2] then @x end") }
+    assert_raise(SyntaxError) { eval("for $g in [1, 2] then $g end") }
+    assert_raise(SyntaxError) { eval("for K in [1, 2] then K end") }
+    assert_raise(SyntaxError) { eval("o = Object.new; for o.foo in [1, 2] then 0 end") }
+    assert_raise(SyntaxError) { eval("a = []; for a[0] in [1, 2] then 0 end") }
+    # also rejected inside destructuring and in a later iterator
+    assert_raise(SyntaxError) { eval("for (a, @b) in [[1, 2]] then 0 end") }
+    assert_raise(SyntaxError) { eval("for x in [1], @y in [2] then 0 end") }
+
+    # local variables (including destructuring and splats) remain fine
+    assert_equal([2, 4], eval("for x in [1, 2] then x * 2 end"))
+    assert_equal([3, 7], eval("for (a, b) in [[1, 2], [3, 4]] then a + b end"))
+    assert_equal([[1, [2, 3]]], eval("for (a, *b) in [[1, 2, 3]] then [a, b] end"))
+
+    # the legacy `for` loop still allows non-local targets
+    assert_equal(3, eval("for @z in [1, 2, 3] do end; @z"))
+  end
+
+  def test_for_comprehension_it_and_numbered_parameters
+    # the synthesized flat_map/map/filter blocks take the loop variable as an
+    # ordinary parameter, so `it` and numbered parameters cannot be implicit
+    # parameters of the comprehension body, guard, or later iterators
+    msg = /ordinary parameter is defined/
+    %w[parse.y prism].each do |parser|
+      assert_in_out_err(["--parser=#{parser}", "-e", "for x in [1] then it end"], "", [], msg)
+    end
+    assert_raise(SyntaxError) { eval("for x in [1, 2] then it end") }
+    assert_raise(SyntaxError) { eval("for x in [1, 2] then _1 end") }
+    assert_raise(SyntaxError) { eval("for x in [1, 2] then _2 end") }
+    assert_raise(SyntaxError) { eval("for x in [1, 2] when it.odd? then x end") }
+    assert_raise(SyntaxError) { eval("for x in [1], y in it then [x, y] end") }
+
+    # `it`/numbered parameters inside a nested block in the body bind to that
+    # block, as usual
+    assert_equal([[10], [20]], eval("for x in [1, 2] then [x * 10].map { it } end"))
+    assert_equal([[5], [10]], eval("for x in [1, 2] then [x * 5].map { _1 } end"))
+    # `it` in the first iterator's expression belongs to the enclosing block
+    assert_equal([[1], [2], [3]], eval("[1, 2, 3].each_slice(1).map { for y in it then y end }"))
+    # `it` remains usable as an ordinary method call
+    assert_equal([10, 20, 30], eval("def self.it(n) = n * 10; for x in [1, 2, 3] then it(x) end"))
+  end
+
+  def test_for_comprehension_no_bogus_unused_warning
+    # the relocated first-iterator variable must not trigger a spurious
+    # "assigned but unused variable" warning for its renamed internal slot,
+    # and an unused loop variable behaves like a block parameter (no warning)
+    assert_warning("") do
+      eval("def _fcw1; for x in [1, 2], y in [3] then x end; end", nil, __FILE__, __LINE__)
+    end
+  ensure
+    self.class.remove_method(:_fcw1) if self.class.method_defined?(:_fcw1)
+  end
+
   def test_no_warning_logop_literal
     assert_warning("") do
       eval("true||raise;nil")

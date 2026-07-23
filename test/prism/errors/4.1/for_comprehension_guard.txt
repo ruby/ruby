@@ -1,0 +1,3 @@
+for x in [1] when then x end
+             ^~~~ expected a guard expression after the `when` in a for-comprehension
+

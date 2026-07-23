@@ -1067,6 +1067,52 @@ pm_locals_reads(pm_locals_t *locals, pm_constant_id_t name) {
 }
 
 /**
+ * Delete the local with the given name from the set, compacting the indices of
+ * the surviving locals so that pm_locals_order produces a dense list with no
+ * gap. The surviving locals are snapshotted in their original relative order
+ * and re-inserted, which reassigns indices and rebuilds the hash placement and
+ * bloom filter so all invariants of the set are preserved.
+ *
+ * This is used to relocate a for-comprehension's first loop variable out of
+ * the enclosing scope, where the shared `for` prefix registered it before the
+ * comprehension was recognized, so that it does not leak into that scope.
+ */
+static void
+pm_locals_delete(pm_locals_t *locals, pm_constant_id_t name) {
+    if (pm_locals_find(locals, name) == UINT32_MAX) return;
+
+    uint32_t size = locals->size;
+    pm_local_t *ordered = xcalloc(size, sizeof(pm_local_t));
+    if (ordered == NULL) abort();
+
+    // Snapshot the surviving locals into their index-ordered positions. This
+    // leaves a hole (a zeroed, PM_CONSTANT_ID_UNSET entry) at the deleted
+    // local's index.
+    uint32_t capacity = locals->capacity < PM_LOCALS_HASH_THRESHOLD ? size : locals->capacity;
+    for (uint32_t index = 0; index < capacity; index++) {
+        pm_local_t *local = &locals->locals[index];
+        if (local->name != PM_CONSTANT_ID_UNSET && local->name != name) {
+            ordered[local->index] = *local;
+        }
+    }
+
+    // Reset the set and re-insert the survivors in order. Skipping the hole
+    // reassigns dense indices to the remaining locals.
+    memset(locals->locals, 0, locals->capacity * sizeof(pm_local_t));
+    locals->size = 0;
+    locals->bloom = 0;
+
+    for (uint32_t index = 0; index < size; index++) {
+        pm_local_t *local = &ordered[index];
+        if (local->name != PM_CONSTANT_ID_UNSET) {
+            pm_locals_write(locals, local->name, local->location.start, local->location.length, local->reads);
+        }
+    }
+
+    xfree(ordered);
+}
+
+/**
  * Write out the locals into the given list of constant ids in the correct
  * order. This is used to set the list of locals on the nodes in the tree once
  * we're sure no additional locals will be added to the set.
@@ -7923,6 +7969,7 @@ static const uint32_t context_terminators[] = {
     [PM_CONTEXT_ELSIF] = (1U << PM_TOKEN_KEYWORD_ELSE) | (1U << PM_TOKEN_KEYWORD_ELSIF) | (1U << PM_TOKEN_KEYWORD_END),
     [PM_CONTEXT_EMBEXPR] = (1U << PM_TOKEN_EMBEXPR_END),
     [PM_CONTEXT_FOR] = (1U << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_FOR_COMP] = (1U << PM_TOKEN_KEYWORD_END),
     [PM_CONTEXT_FOR_INDEX] = (1U << PM_TOKEN_KEYWORD_IN),
     [PM_CONTEXT_IF] = (1U << PM_TOKEN_KEYWORD_ELSE) | (1U << PM_TOKEN_KEYWORD_ELSIF) | (1U << PM_TOKEN_KEYWORD_END),
     [PM_CONTEXT_LAMBDA_BRACES] = (1U << PM_TOKEN_BRACE_RIGHT),
@@ -8081,6 +8128,7 @@ context_human(pm_context_t context) {
         case PM_CONTEXT_MODULE_ENSURE:
         case PM_CONTEXT_SCLASS_ENSURE: return "'ensure' clause";
         case PM_CONTEXT_FOR: return "for loop";
+        case PM_CONTEXT_FOR_COMP: return "for-comprehension";
         case PM_CONTEXT_FOR_INDEX: return "for loop index";
         case PM_CONTEXT_IF: return "if statement";
         case PM_CONTEXT_LAMBDA_BRACES: return "'{'..'}' lambda block";
@@ -15260,6 +15308,25 @@ static const char * const pm_numbered_parameter_names[] = {
 };
 
 /**
+ * When a scope has ordinary (explicit) parameters, it cannot also use implicit
+ * parameters (`it` or numbered parameters). Report the appropriate error for
+ * the first implicit parameter, if any is present.
+ */
+static void
+pm_parser_err_implicit_parameters_with_ordinary(pm_parser_t *parser, pm_node_list_t *implicit_parameters) {
+    if (implicit_parameters->size == 0) return;
+
+    pm_node_t *node = implicit_parameters->nodes[0];
+    if (PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_READ_NODE)) {
+        pm_parser_err_node(parser, node, PM_ERR_NUMBERED_PARAMETER_ORDINARY);
+    } else if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
+        pm_parser_err_node(parser, node, PM_ERR_IT_NOT_ALLOWED_ORDINARY);
+    } else {
+        assert(false && "unreachable");
+    }
+}
+
+/**
  * Return the node that should be used in the parameters field of a block-like
  * (block or lambda) node, depending on the kind of parameters that were
  * declared in the current scope.
@@ -15272,18 +15339,7 @@ parse_blocklike_parameters(pm_parser_t *parser, pm_node_t *parameters, const pm_
     // parameters.
     if (parameters != NULL) {
         // If we also have implicit parameters, then this is an error.
-        if (implicit_parameters->size > 0) {
-            pm_node_t *node = implicit_parameters->nodes[0];
-
-            if (PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_READ_NODE)) {
-                pm_parser_err_node(parser, node, PM_ERR_NUMBERED_PARAMETER_ORDINARY);
-            } else if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
-                pm_parser_err_node(parser, node, PM_ERR_IT_NOT_ALLOWED_ORDINARY);
-            } else {
-                assert(false && "unreachable");
-            }
-        }
-
+        pm_parser_err_implicit_parameters_with_ordinary(parser, implicit_parameters);
         return parameters;
     }
 
@@ -15559,6 +15615,7 @@ parse_return(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_ELSE:
             case PM_CONTEXT_ELSIF:
             case PM_CONTEXT_EMBEXPR:
+            case PM_CONTEXT_FOR_COMP:
             case PM_CONTEXT_FOR_INDEX:
             case PM_CONTEXT_FOR:
             case PM_CONTEXT_IF:
@@ -15650,6 +15707,15 @@ parse_block_exit(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_WHILE:
                 // These are the good cases. We're allowed to have a block exit
                 // in these contexts.
+                return;
+            case PM_CONTEXT_FOR_COMP:
+                // A for-comprehension desugars into a chain of blocks, so a
+                // break could only escape the innermost synthesized block,
+                // which would be confusing. next and redo keep their ordinary
+                // block semantics.
+                if (PM_NODE_TYPE_P(node, PM_BREAK_NODE)) {
+                    pm_parser_err_node(parser, node, PM_ERR_FOR_COMP_BREAK);
+                }
                 return;
             case PM_CONTEXT_POSTEXE:
                 // https://bugs.ruby-lang.org/issues/20409
@@ -17922,6 +17988,7 @@ parse_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_ELSE:
             case PM_CONTEXT_ELSIF:
             case PM_CONTEXT_EMBEXPR:
+            case PM_CONTEXT_FOR_COMP:
             case PM_CONTEXT_FOR_INDEX:
             case PM_CONTEXT_FOR:
             case PM_CONTEXT_IF:
@@ -18004,6 +18071,7 @@ parse_yield(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_ELSE:
             case PM_CONTEXT_ELSIF:
             case PM_CONTEXT_EMBEXPR:
+            case PM_CONTEXT_FOR_COMP:
             case PM_CONTEXT_FOR_INDEX:
             case PM_CONTEXT_FOR:
             case PM_CONTEXT_IF:
@@ -19344,6 +19412,236 @@ parse_splat(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 }
 
 /**
+ * Bind the leaf targets of a for-comprehension index into the comprehension
+ * scope. Only local variables (or destructuring of local variables) are valid
+ * loop variables: other targets would be per-iteration side effects with no
+ * role in the mapped result, so they are rejected.
+ *
+ * For the first iterator (`first` is true), the index was parsed before we
+ * knew this was a comprehension, so its fresh variables were registered in
+ * the enclosing scope; they are relocated here so that they do not leak. For
+ * later iterators, fresh variables were registered directly into the
+ * comprehension scope. In both cases `locals_base` is the size the checked
+ * scope's locals had before the index was parsed, which distinguishes fresh
+ * variables from pre-existing ones of the same name (which are shadowed, not
+ * relocated).
+ */
+static void
+parse_for_comp_bind(pm_parser_t *parser, pm_node_t *node, uint32_t locals_base, bool first, pm_constant_id_list_t *iterator_locals) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_LOCAL_VARIABLE_TARGET_NODE: {
+            pm_local_variable_target_node_t *cast = (pm_local_variable_target_node_t *) node;
+            pm_scope_t *scope = parser->current_scope;
+            pm_scope_t *check_scope = first ? scope->previous : scope;
+            uint32_t slot = (cast->depth == 0) ? pm_locals_find(&check_scope->locals, cast->name) : UINT32_MAX;
+
+            if (slot != UINT32_MAX && check_scope->locals.locals[slot].index >= locals_base) {
+                pm_local_t *local = &check_scope->locals.locals[slot];
+
+                // A fresh loop variable that is read by its own iterator's
+                // collection expression would be unbound at runtime, so it is
+                // rejected (`for x in [x] then x end`).
+                if (local->reads > 0) {
+                    pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, cast->name);
+                    PM_PARSER_ERR_NODE_FORMAT(parser, node, PM_ERR_FOR_COMP_CIRCULAR, (int) constant->length, (const char *) constant->start);
+                }
+
+                if (first) {
+                    // The shared `for` prefix registered this fresh loop
+                    // variable in the enclosing scope before the comprehension
+                    // was recognized. Remove it so it does not leak; the real
+                    // binding is created in the comprehension scope below.
+                    // (`local` is invalidated by this call.)
+                    pm_locals_delete(&check_scope->locals, cast->name);
+                } else {
+                    // Loop variables behave like block parameters, which are
+                    // exempt from unused-variable warnings.
+                    local->reads = 1;
+                }
+            }
+
+            // Bind the name in the comprehension scope (shadowing any outer
+            // variable of the same name) and point the target at it.
+            if (pm_locals_find(&scope->locals, cast->name) == UINT32_MAX) {
+                pm_locals_write(&scope->locals, cast->name, node->location.start, node->location.length, 1);
+            }
+            if (!pm_constant_id_list_includes(iterator_locals, cast->name)) {
+                pm_constant_id_list_append(parser->arena, iterator_locals, cast->name);
+            }
+            cast->depth = 0;
+
+            break;
+        }
+        case PM_MULTI_TARGET_NODE: {
+            pm_multi_target_node_t *cast = (pm_multi_target_node_t *) node;
+
+            for (size_t index = 0; index < cast->lefts.size; index++) {
+                parse_for_comp_bind(parser, cast->lefts.nodes[index], locals_base, first, iterator_locals);
+            }
+            if (cast->rest != NULL) parse_for_comp_bind(parser, cast->rest, locals_base, first, iterator_locals);
+            for (size_t index = 0; index < cast->rights.size; index++) {
+                parse_for_comp_bind(parser, cast->rights.nodes[index], locals_base, first, iterator_locals);
+            }
+
+            break;
+        }
+        case PM_SPLAT_NODE: {
+            pm_splat_node_t *cast = (pm_splat_node_t *) node;
+            if (cast->expression != NULL) parse_for_comp_bind(parser, cast->expression, locals_base, first, iterator_locals);
+            break;
+        }
+        case PM_IMPLICIT_REST_NODE:
+        case PM_ERROR_RECOVERY_NODE:
+            break;
+        default:
+            pm_parser_err_node(parser, node, PM_ERR_FOR_COMP_INDEX_NOT_LOCAL);
+            break;
+    }
+}
+
+/**
+ * Parse the remainder of a for-comprehension, after the shared
+ * `for INDEX in COLLECTION` prefix has been parsed and a `when`, `,`, or
+ * `then` token has been seen:
+ *
+ *     for x in xs when x.even?, y in ys then [x, y] end
+ *
+ * The comprehension binds its loop variables in a single pushed scope (they
+ * do not leak, unlike the legacy for loop) and compiles into a chain of
+ * filter/flat_map/map calls.
+ */
+static pm_node_t *
+parse_for_comprehension(pm_parser_t *parser, uint8_t flags, const pm_token_t *for_keyword, const pm_token_t *in_keyword, pm_node_t *index, pm_node_t *collection, uint32_t locals_base, size_t opening_newline_index, uint16_t depth) {
+    context_push(parser, PM_CONTEXT_FOR_COMP);
+    pm_parser_scope_push(parser, false);
+
+    pm_constant_id_list_t iterator_locals = { 0 };
+    parse_for_comp_bind(parser, index, locals_base, true, &iterator_locals);
+
+    pm_node_list_t iterators = { 0 };
+    pm_token_t in_kw = *in_keyword;
+
+    while (true) {
+        // Parse the optional `when` guard of the current iterator.
+        pm_node_t *guard = NULL;
+        pm_token_t when_keyword = { 0 };
+
+        if (accept1(parser, PM_TOKEN_KEYWORD_WHEN)) {
+            when_keyword = parser->previous;
+            guard = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, (uint8_t) (flags & PM_PARSE_ACCEPTS_DO_BLOCK), PM_ERR_FOR_COMP_GUARD, (uint16_t) (depth + 1));
+        }
+
+        const pm_node_t *last = (guard != NULL) ? guard : collection;
+        pm_node_t *iterator = UP(pm_for_comprehension_iterator_node_new(
+            parser->arena,
+            ++parser->node_id,
+            0,
+            PM_LOCATION_INIT(PM_NODE_START(index), PM_NODE_END(last) - PM_NODE_START(index)),
+            iterator_locals,
+            index,
+            collection,
+            guard,
+            TOK2LOC(parser, &in_kw),
+            NTOK2LOC(parser, NTOK2PTR(when_keyword))
+        ));
+        pm_node_list_append(parser->arena, &iterators, iterator);
+
+        if (!accept1(parser, PM_TOKEN_COMMA)) break;
+        iterator_locals = (pm_constant_id_list_t) { 0 };
+
+        // Parse the next iterator, mirroring the shared prefix: INDEX `in`
+        // COLLECTION. This time the index registers its fresh variables
+        // directly into the comprehension scope.
+        uint32_t base = parser->current_scope->locals.size;
+        context_push(parser, PM_CONTEXT_FOR_INDEX);
+
+        if (accept1(parser, PM_TOKEN_USTAR)) {
+            index = parse_splat(parser, flags, depth);
+        } else if (token_begins_expression_p(parser->current.type)) {
+            index = parse_expression(parser, PM_BINDING_POWER_INDEX, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_COMMA, (uint16_t) (depth + 1));
+        } else {
+            pm_parser_err_token(parser, &parser->previous, PM_ERR_FOR_INDEX);
+            index = UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous)));
+        }
+
+        if (match1(parser, PM_TOKEN_COMMA)) {
+            index = parse_targets(parser, index, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
+        } else {
+            index = parse_target(parser, index, false, false);
+        }
+
+        context_pop(parser);
+        pm_do_loop_stack_push(parser, true);
+
+        expect1(parser, PM_TOKEN_KEYWORD_IN, PM_ERR_FOR_IN);
+        in_kw = parser->previous;
+
+        collection = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, (uint8_t) (flags & PM_PARSE_ACCEPTS_DO_BLOCK), PM_ERR_FOR_COLLECTION, (uint16_t) (depth + 1));
+        pm_do_loop_stack_pop(parser);
+
+        parse_for_comp_bind(parser, index, base, false, &iterator_locals);
+    }
+
+    // The body of the comprehension is marked by `then`, which must follow
+    // the last iterator on the same line (a newline before `then` would be
+    // ambiguous with the legacy for loop in parse.y's LALR grammar, so it is
+    // rejected there; we reject it too so both parsers accept the same
+    // programs).
+    expect1(parser, PM_TOKEN_KEYWORD_THEN, PM_ERR_FOR_COMP_EXPECT_THEN);
+    pm_token_t then_keyword = parser->previous;
+
+    pm_statements_node_t *statements = NULL;
+    if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
+        statements = parse_statements(parser, PM_CONTEXT_FOR_COMP, (uint16_t) (depth + 1));
+    }
+
+    parser_warn_indentation_mismatch(parser, opening_newline_index, for_keyword, false, false);
+    expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_FOR_TERM, for_keyword);
+    pm_token_t end_keyword = parser->previous;
+
+    // The synthesized blocks take the loop variables as ordinary parameters,
+    // so implicit parameters (`it` and numbered parameters) are not allowed
+    // anywhere in the comprehension.
+    pm_parser_err_implicit_parameters_with_ordinary(parser, &parser->current_scope->implicit_parameters);
+
+    pm_constant_id_list_t locals;
+    pm_locals_order(parser, &parser->current_scope->locals, &locals, pm_parser_scope_toplevel_p(parser));
+    pm_parser_scope_pop(parser);
+    context_pop(parser);
+
+    // Temporaries assigned in guards or the body are added to every
+    // iterator's locals: each synthesized (filter/flat_map/map) block gets
+    // its own binding, so a reference from any of them resolves.
+    for (size_t index = 0; index < locals.size; index++) {
+        pm_constant_id_t id = locals.ids[index];
+        if (id == PM_CONSTANT_ID_UNSET) continue;
+
+        bool bound = false;
+        for (size_t iterator_index = 0; !bound && iterator_index < iterators.size; iterator_index++) {
+            bound = pm_constant_id_list_includes(&((pm_for_comprehension_iterator_node_t *) iterators.nodes[iterator_index])->locals, id);
+        }
+        if (!bound) {
+            for (size_t iterator_index = 0; iterator_index < iterators.size; iterator_index++) {
+                pm_constant_id_list_append(parser->arena, &((pm_for_comprehension_iterator_node_t *) iterators.nodes[iterator_index])->locals, id);
+            }
+        }
+    }
+
+    return UP(pm_for_comprehension_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, for_keyword, &end_keyword),
+        locals,
+        iterators,
+        statements,
+        TOK2LOC(parser, for_keyword),
+        TOK2LOC(parser, &then_keyword),
+        TOK2LOC(parser, &end_keyword)
+    ));
+}
+
+/**
  * Parse an expression that begins with the previous node that we just lexed.
  */
 static PRISM_INLINE pm_node_t *
@@ -20140,6 +20438,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             pm_token_t for_keyword = parser->previous;
             pm_node_t *index;
 
+            // Remember how many locals the current scope had before the index
+            // is parsed. If this turns out to be a for-comprehension, this
+            // tells us which index variables are fresh (as opposed to
+            // pre-existing variables of the same name).
+            uint32_t locals_base = parser->current_scope->locals.size;
+
             context_push(parser, PM_CONTEXT_FOR_INDEX);
 
             // First, parse out the first index expression.
@@ -20167,6 +20471,14 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
             pm_node_t *collection = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_FOR_COLLECTION, (uint16_t) (depth + 1));
             pm_do_loop_stack_pop(parser);
+
+            // A `when`, `,`, or `then` after the collection (all syntax
+            // errors in a legacy for loop) marks a for-comprehension. This is
+            // an experimental feature, so it is gated on the latest version;
+            // parsing with an older, released version rejects it as before.
+            if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_1 && match3(parser, PM_TOKEN_KEYWORD_WHEN, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN)) {
+                return parse_for_comprehension(parser, flags, &for_keyword, &in_keyword, index, collection, locals_base, opening_newline_index, (uint16_t) (depth + 1));
+            }
 
             pm_token_t do_keyword = { 0 };
             if (accept1(parser, PM_TOKEN_KEYWORD_DO_LOOP)) {

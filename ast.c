@@ -449,6 +449,8 @@ node_children(VALUE ast_value, const NODE *node)
         return rb_ary_new_from_node_args(ast_value, 2, RNODE_ITER(node)->nd_iter, RNODE_ITER(node)->nd_body);
       case NODE_FOR_MASGN:
         return rb_ary_new_from_node_args(ast_value, 1, RNODE_FOR_MASGN(node)->nd_var);
+      case NODE_FOR_COMP:
+        return rb_ary_new_from_node_args(ast_value, 3, RNODE_FOR_COMP(node)->nd_iter, RNODE_FOR_COMP(node)->nd_guard, RNODE_FOR_COMP(node)->nd_body);
       case NODE_BREAK:
         return rb_ary_new_from_node_args(ast_value, 1, RNODE_BREAK(node)->nd_stts);
       case NODE_NEXT:

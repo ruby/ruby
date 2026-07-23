@@ -1,0 +1,3 @@
+for x in [1], y in [2] end
+                      ^ expected a `then` to start the for-comprehension body
+

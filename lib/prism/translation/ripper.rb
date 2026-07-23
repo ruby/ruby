@@ -2204,6 +2204,18 @@ module Prism
         on_for(index, collection, statements)
       end
 
+      # for x in xs then x end
+      # ^^^^^^^^^^^^^^^^^^^^^^^
+      def visit_for_comprehension_node(node)
+        raise "Cannot visit for-comprehension nodes directly"
+      end
+
+      # x in xs when y
+      # ^^^^^^^^^^^^^^
+      def visit_for_comprehension_iterator_node(node)
+        raise "Cannot visit for-comprehension iterator nodes directly"
+      end
+
       # def foo(...); bar(...); end
       #                   ^^^
       def visit_forwarding_arguments_node(node)

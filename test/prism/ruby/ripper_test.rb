@@ -48,6 +48,9 @@ module Prism
     incorrect << "4.1/void_value.txt"
     # https://bugs.ruby-lang.org/issues/19107
     incorrect << "4.1/trailing_comma_after_method_arguments.txt"
+    # The for-comprehension has no representation in Ripper's S-expressions, so
+    # the translation raises rather than emitting a bogus tree.
+    incorrect << "4.1/for_comprehension.txt"
 
     # Skip these tests that we haven't implemented yet.
     omitted_sexp_raw = [

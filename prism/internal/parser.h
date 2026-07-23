@@ -352,6 +352,9 @@ typedef enum {
     /* a for loop */
     PM_CONTEXT_FOR,
 
+    /* a for-comprehension (for ... then ... end) */
+    PM_CONTEXT_FOR_COMP,
+
     /* a for loop's index */
     PM_CONTEXT_FOR_INDEX,
 

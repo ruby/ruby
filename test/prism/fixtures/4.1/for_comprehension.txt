@@ -1,0 +1,17 @@
+for x in xs then x * 2 end
+
+for x in xs, y in ys then [x, y] end
+
+for x in xs, y in f(x) then [x, y] end
+
+for x in xs when x.even?, y in ys when x < y then [x, y] end
+
+for (a, b) in pairs then a + b end
+
+for a, b in pairs then a + b end
+
+for x in xs,
+    y in ys then
+  z = x + y
+  [x, y, z]
+end
