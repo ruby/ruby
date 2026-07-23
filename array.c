@@ -3387,6 +3387,7 @@ rb_ary_reverse_m(VALUE ary)
         const VALUE *p1 = RARRAY_CONST_PTR(ary);
         VALUE *p2 = (VALUE *)RARRAY_CONST_PTR(dup) + len - 1;
         do *p2-- = *p1++; while (--len > 0);
+        rb_gc_writebarrier_remember(dup);
     }
     ARY_SET_LEN(dup, RARRAY_LEN(ary));
     return dup;
