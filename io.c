@@ -3572,7 +3572,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
  *
  *  - Contains +maxlen+ bytes from the stream, if available.
  *  - Otherwise contains all available bytes, if any available.
- *  - Otherwise is an empty string.
+ *  - Is an empty string if +maxlen+ is zero.
  *
  *  With the single non-negative integer argument +maxlen+ given,
  *  returns a new string:
