@@ -4980,6 +4980,12 @@ impl Function {
             return false;
         }
 
+        // Always inline methods marked with `Primitive.inline_block`; this helps turn e.g.
+        // `Array#each` into a loop.
+        if (unsafe { rb_jit_iseq_builtin_attrs(callee_iseq) } & BUILTIN_ATTR_INLINE_BLOCK) != 0 {
+            return true;
+        }
+
         // Per-caller cumulative budget. Once that count crosses the budget, every further callee
         // is rejected and the optimization fixed-point loop reaches its terminal iteration. See
         // `Options::inline_budget` for the full unit/semantics caveat.
