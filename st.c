@@ -1242,6 +1242,21 @@ st_insert(st_table *tab, st_data_t key, st_data_t value)
     return 1;
 }
 
+#ifdef RUBY
+/* Insert (KEY, VALUE) into table TAB like st_insert(), but return -1
+   without any change when st_insert() would rebuild the table.  The
+   insertion is guaranteed to be allocation (and GC) free when it is done. */
+int
+st_insert_no_rebuild(st_table *tab, st_data_t key, st_data_t value)
+{
+    if (tab->entries_bound == get_allocated_entries(tab)) {
+        /* st_insert() will rebuild the table */
+        return -1;
+    }
+    return st_insert(tab, key, value);
+}
+#endif
+
 /* Insert (KEY, VALUE, HASH) into table TAB.  The table should not have
    entry with KEY before the insertion.  */
 static inline void

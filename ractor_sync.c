@@ -397,11 +397,33 @@ ractor_add_port(rb_ractor_t *r, st_data_t id)
 
     RUBY_DEBUG_LOG("id:%u", (unsigned int)id);
 
+    // Rebuilding the table on insertion can run GC by the allocation and the
+    // GC acquires the VM lock, which is prohibited under the ractor lock.
+    st_table *const old_tab = r->sync.ports;
+    bool inserted;
+
     RACTOR_LOCK(r);
     {
-        st_insert(r->sync.ports, id, (st_data_t)rq);
+        inserted = st_insert_no_rebuild(old_tab, id, (st_data_t)rq) >= 0;
     }
     RACTOR_UNLOCK(r);
+
+    if (!inserted) {
+        // The table is full. Rebuild it outside of the ractor lock (mutators
+        // are serialized by the per-ractor GVL) and swap it under the lock
+        // to exclude the readers (other ractors).
+        st_table *const new_tab = st_copy(old_tab);
+        st_insert(new_tab, id, (st_data_t)rq);
+
+        RACTOR_LOCK(r);
+        {
+            VM_ASSERT(r->sync.ports == old_tab);
+            r->sync.ports = new_tab;
+        }
+        RACTOR_UNLOCK(r);
+
+        st_free_table(old_tab);
+    }
 }
 
 static void
