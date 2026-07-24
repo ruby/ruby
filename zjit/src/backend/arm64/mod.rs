@@ -3190,7 +3190,7 @@ mod tests {
         0x38: adds x0, x2, x3
         0x3c: adds x0, x2, x4
         ");
-        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2a40080d2e103bfa9e30bbfa9ff13bfa9100080d200023fd6ff13c1a8e30bc1a8e103c1a8000001ab400003ab400004ab");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2a40080d2e103bfa9e30bbfa9ff13bfa9100080d200023fd6e013c1a8e30bc1a8e103c1a8000001ab400003ab400004ab");
     }
 
     #[test]
