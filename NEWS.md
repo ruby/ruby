@@ -39,6 +39,12 @@ Note: We're only listing outstanding class updates.
       given names, raising `KeyError` for missing names unless a block is
       given. [[Feature #21781]]
 
+* Enumerator
+
+    * `Enumerator#close` is added to close an enumerator and release resources
+      used by external iteration. Further iteration raises
+      `Enumerator::ClosedError`. [[Feature #21957]]
+
 * Kernel
 
     * `Kernel#autoload_relative` and `Module#autoload_relative` are added.

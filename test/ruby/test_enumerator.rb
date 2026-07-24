@@ -246,6 +246,43 @@ class TestEnumerator < Test::Unit::TestCase
     assert_raise(StopIteration) { e.next }
   end
 
+  def test_close
+    e = 3.times
+    assert_nil(e.close)
+    assert_nil(e.close)
+    assert_kind_of(Class, Enumerator::ClosedError)
+    assert_operator(Enumerator::ClosedError, :<, StopIteration)
+    assert_raise(Enumerator::ClosedError) { e.each {} }
+    assert_raise(Enumerator::ClosedError) { e.next }
+    assert_raise(Enumerator::ClosedError) { e.peek }
+    assert_raise(Enumerator::ClosedError) { e.next_values }
+    assert_raise(Enumerator::ClosedError) { e.peek_values }
+    assert_raise(Enumerator::ClosedError) { e.feed(:value) }
+    assert_raise(Enumerator::ClosedError) { e.rewind }
+  end
+
+  def test_close_for_each_without_block
+    e = 3.times
+    e.close
+    assert_raise(Enumerator::ClosedError) { e.each }
+    assert_raise(Enumerator::ClosedError) { e.each(:arg) }
+  end
+
+  def test_close_releases_external_iteration_fiber
+    finalized = false
+    e = Enumerator.new do |y|
+      begin
+        y << :ok
+      ensure
+        finalized = true
+      end
+    end
+
+    assert_equal(:ok, e.next)
+    e.close
+    assert_equal(true, finalized)
+  end
+
   def test_stop_result
     a = [1]
     res = a.each {}
