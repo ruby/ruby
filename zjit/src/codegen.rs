@@ -2193,14 +2193,25 @@ fn gen_new_array(
     elements: &[InsnId],
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_leaf_call_with_gc(asm, state);
-
     let num: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
     if !elements.is_empty() {
+        if hir_values_require_f64_boxing(jit, function, elements) {
+            gen_prepare_non_leaf_call(jit, asm, function, state);
+            let stack_bottom = state.stack().len()
+                .checked_sub(elements.len())
+                .expect("newarray elements are on the stack");
+            gen_store_hir_values_to_stack(jit, asm, function, elements, stack_bottom);
+            let argv = asm.lea(Opnd::mem(64, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
+            return asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv);
+        }
+
+        gen_prepare_leaf_call_with_gc(asm, state);
         let argv = gen_push_hir_values(jit, asm, function, elements);
         return asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv);
     }
+
+    gen_prepare_leaf_call_with_gc(asm, state);
 
     let alloc_size = std::mem::size_of::<RArray>();
 
@@ -4418,6 +4429,12 @@ fn gen_push_hir_values(jit: &JITState, asm: &mut Assembler, function: &Function,
     }
 
     argv
+}
+
+fn hir_values_require_f64_boxing(jit: &JITState, function: &Function, insns: &[InsnId]) -> bool {
+    insns.iter().any(|&insn_id| {
+        matches!(build_stack_map_entry(jit, function, insn_id), StackMapEntry::F64(_))
+    })
 }
 
 fn gen_store_hir_values_to_stack(
