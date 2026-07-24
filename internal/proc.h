@@ -11,6 +11,7 @@
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 #include "ruby/st.h"            /* for st_index_t */
 struct rb_block;                /* in vm_core.h */
+struct rb_code_location_struct; /* in rubyparser.h */
 struct rb_iseq_struct;          /* in vm_core.h */
 
 /* proc.c */
@@ -21,6 +22,8 @@ int rb_block_arity(void);
 int rb_block_min_max_arity(int *max);
 VALUE rb_block_to_s(VALUE self, const struct rb_block *block, const char *additional_info);
 VALUE rb_callable_receiver(VALUE);
+VALUE rb_source_range_new(VALUE path, VALUE absolute_path,
+                          const struct rb_code_location_struct *location);
 
 VALUE rb_func_proc_dup(VALUE src_obj);
 VALUE rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_argc);
