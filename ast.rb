@@ -330,3 +330,177 @@ module RubyVM::AbstractSyntaxTree
     end
   end
 end
+
+class RubyVM::InstructionSequence
+  #  call-seq:
+  #     iseq.syntax_tree -> Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #
+  #  Returns the AST node that this instruction sequence was compiled from,
+  #  by re-parsing the source with the same parser that compiled it: a
+  #  Prism::Node if it was compiled by prism, or a
+  #  RubyVM::AbstractSyntaxTree::Node if it was compiled by parse.y.
+  #
+  #  Returns +nil+ whenever the node cannot be retrieved reliably. For
+  #  example: the source is not available (such as eval'ed code without
+  #  RubyVM.keep_script_lines enabled), or the source file has been modified
+  #  since it was compiled.
+  #
+  #  When a prism gem other than the default gem is loaded, a warning is
+  #  emitted in verbose mode, because the loaded prism may parse the source
+  #  differently from the parser that compiled the instruction sequence.
+  #
+  #  This method is experimental and might change without notice.
+  def syntax_tree
+    source_hash = self.source_hash
+    return nil unless source_hash
+
+    # When the source is kept in memory (RubyVM.keep_script_lines), use it
+    # instead of the file. This also works for eval'ed code.
+    if (lines = script_lines)
+      source = lines.join
+    else
+      path = absolute_path
+      return nil unless path && File.file?(path)
+    end
+
+    node_id = self.node_id
+    if Primitive.iseq_compiled_by_prism_p
+      require "prism"
+
+      # Only the default gem prism is the same parser as the one built into
+      # the interpreter. Another prism gem is still likely to parse the
+      # source in the same way, so continue with a warning.
+      if $VERBOSE && (spec = defined?(Gem) && Gem.loaded_specs["prism"]) && !spec.default_gem?
+        warn "syntax_tree: a prism gem other than the default gem is loaded; " \
+             "the result may not correspond exactly to the compiled code"
+      end
+
+      begin
+        result = source ? Prism.parse(source, version: "current") : Prism.parse_file(path, version: "current")
+      rescue ArgumentError
+        # The loaded prism does not know the grammar of the running Ruby.
+        return nil
+      end
+      return nil unless result.success?
+
+      # Hash exactly the bytes that prism parsed. The data section after an
+      # __END__ marker is not part of the code, so the hash covers the source
+      # only up to the end of the __END__ line.
+      code = result.source.source
+      if (data_loc = result.data_loc) && (eol = code.byteindex("\n", data_loc.start_offset))
+        code = code.byteslice(0, eol + 1)
+      end
+      return nil unless Primitive.source_hash_of(code) == source_hash
+
+      root = result.value
+    else
+      begin
+        root = source ? RubyVM::AbstractSyntaxTree.parse(source, keep_script_lines: true) :
+                        RubyVM::AbstractSyntaxTree.parse_file(path, keep_script_lines: true)
+      rescue SyntaxError
+        # The source has been modified into invalid Ruby.
+        return nil
+      end
+      return nil unless Primitive.ast_node_source_hash(root) == source_hash
+
+      return Primitive.ast_node_find(root, node_id)
+    end
+
+    return root if root.node_id == node_id
+
+    queue = [root]
+    while (node = queue.shift)
+      node.compact_child_nodes.each do |child|
+        if child.node_id == node_id
+          # A block iseq refers to the block node itself. Return the outer
+          # node that owns the block (a CallNode, SuperNode, or
+          # ForwardingSuperNode) instead.
+          return child.type == :block_node ? node : child
+        end
+        queue << child
+      end
+    end
+
+    nil
+  end
+end
+
+class Proc
+  #  call-seq:
+  #     prc.syntax_tree -> Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #
+  #  Returns the AST node that this proc was compiled from. See
+  #  RubyVM::InstructionSequence#syntax_tree for details and for when +nil+
+  #  is returned.
+  #
+  #  This method is experimental and might change without notice.
+  def syntax_tree
+    RubyVM::InstructionSequence.of(self)&.syntax_tree
+  end
+end
+
+class Method
+  #  call-seq:
+  #     meth.syntax_tree -> Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #
+  #  Returns the AST node that this method was compiled from. Returns
+  #  +nil+ for methods not written in Ruby. See
+  #  RubyVM::InstructionSequence#syntax_tree for other cases where +nil+ is
+  #  returned.
+  #
+  #  This method is experimental and might change without notice.
+  def syntax_tree
+    RubyVM::InstructionSequence.of(self)&.syntax_tree
+  end
+end
+
+class UnboundMethod
+  #  call-seq:
+  #     meth.syntax_tree -> Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #
+  #  Returns the AST node that this method was compiled from. Returns
+  #  +nil+ for methods not written in Ruby. See
+  #  RubyVM::InstructionSequence#syntax_tree for other cases where +nil+ is
+  #  returned.
+  #
+  #  This method is experimental and might change without notice.
+  def syntax_tree
+    RubyVM::InstructionSequence.of(self)&.syntax_tree
+  end
+end
+
+class Thread::Backtrace::Location
+  #  call-seq:
+  #     location.syntax_tree -> Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #
+  #  Returns the AST node at this location, by re-parsing the source file. See
+  #  RubyVM::InstructionSequence#syntax_tree for when +nil+ is returned.
+  #
+  #  This method is experimental and might change without notice.
+  def syntax_tree
+    iseq = Primitive.iseq_of_backtrace_location(self)
+    return nil unless iseq
+
+    node_id = Primitive.node_id_for_backtrace_location(self)
+    return nil unless node_id
+
+    scope = iseq.syntax_tree
+    return nil unless scope
+
+    if scope.is_a?(RubyVM::AbstractSyntaxTree::Node)
+      return Primitive.ast_node_find(scope, node_id)
+    end
+
+    return scope if scope.node_id == node_id
+
+    queue = [scope]
+    while (node = queue.shift)
+      node.compact_child_nodes.each do |child|
+        return child if child.node_id == node_id
+        queue << child
+      end
+    end
+
+    nil
+  end
+end

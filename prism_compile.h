@@ -103,6 +103,9 @@ typedef struct pm_scope_node {
     pm_constant_id_list_t locals;
 
     const pm_parser_t *parser;
+
+    /** The source hash of the parsed source, propagated to every iseq. */
+    uint64_t source_hash;
     const pm_options_t *options;
     const pm_line_offset_list_t *line_offsets;
     int32_t start_line;

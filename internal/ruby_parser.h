@@ -40,6 +40,10 @@ VALUE rb_node_integer_literal_val(const NODE *);
 VALUE rb_node_float_literal_val(const NODE *);
 VALUE rb_node_rational_literal_val(const NODE *);
 VALUE rb_node_imaginary_literal_val(const NODE *);
+
+void rb_source_hash_init(rb_source_hash_state_t *state);
+void rb_source_hash_update(rb_source_hash_state_t *state, const uint8_t *ptr, size_t len);
+uint64_t rb_source_hash_finalize(const rb_source_hash_state_t *state);
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_parser_end_seen_p(VALUE);

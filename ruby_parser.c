@@ -440,6 +440,11 @@ static const rb_parser_config_t rb_global_parser_config = {
     /* For Ripper */
     .static_id2sym = static_id2sym,
     .str_coderange_scan_restartable = str_coderange_scan_restartable,
+
+    /* Source hash */
+    .source_hash_init = rb_source_hash_init,
+    .source_hash_update = rb_source_hash_update,
+    .source_hash_finalize = rb_source_hash_finalize,
 };
 #endif
 
@@ -1089,6 +1094,32 @@ parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
     if (rb_hash_lookup(hash, path) == Qnil) return;
     script_lines = rb_parser_build_script_lines_from(lines);
     rb_hash_aset(hash, path, script_lines);
+}
+
+/* The source hash API currently computes FNV-1a, but the algorithm is an
+ * implementation detail. The hash values are only ever compared against
+ * hashes computed by the same interpreter, so the algorithm can be changed
+ * freely between releases. */
+void
+rb_source_hash_init(rb_source_hash_state_t *state)
+{
+    state->hash = 0xcbf29ce484222325; /* FNV-1a offset basis */
+}
+
+void
+rb_source_hash_update(rb_source_hash_state_t *state, const uint8_t *ptr, size_t len)
+{
+    uint64_t hash = state->hash;
+    for (size_t i = 0; i < len; i++) {
+        hash = (hash ^ ptr[i]) * 0x100000001b3; /* FNV-1a prime */
+    }
+    state->hash = hash;
+}
+
+uint64_t
+rb_source_hash_finalize(const rb_source_hash_state_t *state)
+{
+    return state->hash;
 }
 
 VALUE
