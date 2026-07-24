@@ -2928,6 +2928,13 @@ zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cf
                         stack--;
                         *stack = ((VALUE *)cfp->jit_return)[-(ssize_t)ZJIT_STACK_MAP_VREG_INDEX(entry)];
                     }
+                    else if (ZJIT_STACK_MAP_F64_P(entry)) {
+                        uint64_t bits = ((uint64_t *)cfp->jit_return)[-(ssize_t)ZJIT_STACK_MAP_F64_INDEX(entry)];
+                        double value;
+                        memcpy(&value, &bits, sizeof(value));
+                        stack--;
+                        *stack = rb_float_new(value);
+                    }
                     else if (ZJIT_STACK_MAP_SKIP_P(entry)) {
                         stack -= ZJIT_STACK_MAP_SKIP_SIZE(entry);
                     }

@@ -17,6 +17,7 @@
 // zero, so RB_SPECIAL_CONST_P is false.
 #define ZJIT_STACK_MAP_VREG_TAG 0x08
 #define ZJIT_STACK_MAP_SKIP_TAG 0x10
+#define ZJIT_STACK_MAP_F64_TAG (ZJIT_STACK_MAP_VREG_TAG | ZJIT_STACK_MAP_SKIP_TAG)
 #define ZJIT_STACK_MAP_TAG_MASK 0xff
 #define ZJIT_STACK_MAP_SHIFT 8
 
@@ -44,6 +45,18 @@ ZJIT_STACK_MAP_SKIP_SIZE(VALUE entry)
     return entry >> ZJIT_STACK_MAP_SHIFT;
 }
 
+static inline bool
+ZJIT_STACK_MAP_F64_P(VALUE entry)
+{
+    return (entry & ZJIT_STACK_MAP_TAG_MASK) == ZJIT_STACK_MAP_F64_TAG;
+}
+
+static inline size_t
+ZJIT_STACK_MAP_F64_INDEX(VALUE entry)
+{
+    return entry >> ZJIT_STACK_MAP_SHIFT;
+}
+
 // JITFrame is defined here as the single source of truth and imported into
 // Rust via bindgen. C code reads fields directly; Rust uses an impl block.
 typedef struct zjit_jit_frame {
@@ -62,8 +75,8 @@ typedef struct zjit_jit_frame {
     // Number of stack map entries in stack[].
     uint32_t stack_size;
     // Flexible array of stack map entries. Each entry is either an immediate
-    // VALUE, a tagged native-stack index from cfp->jit_return for a value
-    // kept by the JIT, or a tagged count of VM stack slots to skip.
+    // VALUE, a tagged native-stack index from cfp->jit_return for a value or
+    // raw F64 kept by the JIT, or a tagged count of VM stack slots to skip.
     VALUE stack[];
 } zjit_jit_frame_t;
 

@@ -191,6 +191,140 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
     }
 }
 
+fn emit_u32(cb: &mut CodeBlock, instruction: u32) {
+    cb.write_bytes(&instruction.to_le_bytes());
+}
+
+fn emit_fmov_f64_from_gp(cb: &mut CodeBlock, dst_f64_reg_no: u8, src_gp: A64Opnd) {
+    if let A64Opnd::Reg(src_gp) = src_gp {
+        assert_eq!(src_gp.num_bits, 64, "fmov dN, xN expects a 64-bit GP source");
+        assert!(dst_f64_reg_no < 32, "invalid f64 register");
+        emit_u32(cb, 0x9e67_0000 | ((src_gp.reg_no as u32) << 5) | dst_f64_reg_no as u32);
+    } else {
+        unreachable!("fmov dN, xN expects a GP register source");
+    }
+}
+
+fn emit_fmov_gp_from_f64(cb: &mut CodeBlock, dst_gp: A64Opnd, src_f64_reg_no: u8) {
+    if let A64Opnd::Reg(dst_gp) = dst_gp {
+        assert_eq!(dst_gp.num_bits, 64, "fmov xN, dN expects a 64-bit GP destination");
+        assert!(src_f64_reg_no < 32, "invalid f64 register");
+        emit_u32(cb, 0x9e66_0000 | ((src_f64_reg_no as u32) << 5) | dst_gp.reg_no as u32);
+    } else {
+        unreachable!("fmov xN, dN expects a GP register destination");
+    }
+}
+
+fn emit_f64_mem(cb: &mut CodeBlock, base: u32, f64_reg_no: u8, mem: A64Opnd) {
+    if let A64Opnd::Mem(mem) = mem {
+        assert!(f64_reg_no < 32, "invalid f64 register");
+        assert!(mem_disp_fits_bits(mem.disp), "expected displacement {} to be 9 bits or less", mem.disp);
+        let imm9 = (mem.disp as i32 as u32) & 0x1ff;
+        emit_u32(cb, base | (imm9 << 12) | ((mem.base_reg_no as u32) << 5) | f64_reg_no as u32);
+    } else {
+        unreachable!("f64 memory instruction expects a memory operand");
+    }
+}
+
+fn emit_ldur_f64(cb: &mut CodeBlock, dst_f64_reg_no: u8, mem: A64Opnd) {
+    emit_f64_mem(cb, 0xfc40_0000, dst_f64_reg_no, mem);
+}
+
+fn emit_stur_f64(cb: &mut CodeBlock, src_f64_reg_no: u8, mem: A64Opnd) {
+    emit_f64_mem(cb, 0xfc00_0000, src_f64_reg_no, mem);
+}
+
+fn emit_f64_binop(cb: &mut CodeBlock, op: F64BinOp, dst: u8, left: u8, right: u8) {
+    assert!(dst < 32 && left < 32 && right < 32, "invalid f64 register");
+    let base = match op {
+        F64BinOp::Mul => 0x1e60_0800,
+        F64BinOp::Div => 0x1e60_1800,
+        F64BinOp::Add => 0x1e60_2800,
+        F64BinOp::Sub => 0x1e60_3800,
+    };
+    emit_u32(cb, base | ((right as u32) << 16) | ((left as u32) << 5) | dst as u32);
+}
+
+fn emit_f64_raw_binop(cb: &mut CodeBlock, op: F64BinOp, left: A64Opnd, right: A64Opnd, out: A64Opnd) {
+    let left = left.unwrap_reg().reg_no;
+    let right = right.unwrap_reg().reg_no;
+    let out = out.unwrap_reg().reg_no;
+    emit_f64_binop(cb, op, out, left, right);
+}
+
+fn emit_f64_raw_sqrt(cb: &mut CodeBlock, val: A64Opnd, out: A64Opnd) {
+    let val = val.unwrap_reg().reg_no;
+    let out = out.unwrap_reg().reg_no;
+    assert!(val < 32 && out < 32, "invalid f64 register");
+    emit_u32(cb, 0x1e61_c000 | ((val as u32) << 5) | out as u32);
+}
+
+fn emit_fcmp_f64(cb: &mut CodeBlock, left: u8, right: u8) {
+    assert!(left < 32 && right < 32, "invalid f64 register");
+    emit_u32(cb, 0x1e60_2000 | ((right as u32) << 16) | ((left as u32) << 5));
+}
+
+fn emit_fcmp_zero_f64(cb: &mut CodeBlock, val: u8) {
+    assert!(val < 32, "invalid f64 register");
+    emit_u32(cb, 0x1e60_2008 | ((val as u32) << 5));
+}
+
+fn emit_bool_from_condition(cb: &mut CodeBlock, out: A64Opnd, condition: u8) {
+    emit_load_value(cb, out, Qfalse.as_u64());
+    emit_load_value(cb, A64Opnd::Reg(X16_REG), Qtrue.as_u64());
+    csel(cb, out, A64Opnd::Reg(X16_REG), out, condition);
+}
+
+fn emit_f64_raw_cmp(cb: &mut CodeBlock, op: F64BoolCmpOp, left: A64Opnd, right: A64Opnd, out: A64Opnd) {
+    let left = left.unwrap_reg().reg_no;
+    let right = right.unwrap_reg().reg_no;
+    emit_fcmp_f64(cb, left, right);
+
+    let condition = match op {
+        F64BoolCmpOp::Eq => Condition::EQ,
+        // FCMP sets V for unordered. These conditions match Ruby's unordered => false semantics.
+        F64BoolCmpOp::Lt => Condition::MI,
+        F64BoolCmpOp::Le => Condition::LS,
+        F64BoolCmpOp::Gt => Condition::GT,
+        F64BoolCmpOp::Ge => Condition::GE,
+    };
+    emit_bool_from_condition(cb, out, condition);
+}
+
+fn emit_f64_raw_cmp_value(cb: &mut CodeBlock, left: A64Opnd, right: A64Opnd, out: A64Opnd) {
+    let left = left.unwrap_reg().reg_no;
+    let right = right.unwrap_reg().reg_no;
+    emit_fcmp_f64(cb, left, right);
+
+    emit_load_value(cb, out, Qnil.as_u64());
+    emit_load_value(cb, A64Opnd::Reg(X16_REG), VALUE::fixnum_from_usize(0).as_u64());
+    csel(cb, out, A64Opnd::Reg(X16_REG), out, Condition::EQ);
+    emit_load_value(cb, A64Opnd::Reg(X16_REG), VALUE::fixnum_from_usize(1).as_u64());
+    csel(cb, out, A64Opnd::Reg(X16_REG), out, Condition::GT);
+    emit_load_value(cb, A64Opnd::Reg(X16_REG), VALUE::fixnum_from_isize(-1).as_u64());
+    csel(cb, out, A64Opnd::Reg(X16_REG), out, Condition::MI);
+}
+
+fn emit_f64_raw_zero_cmp(cb: &mut CodeBlock, condition: u8, val: A64Opnd, out: A64Opnd) {
+    emit_fcmp_zero_f64(cb, val.unwrap_reg().reg_no);
+    emit_bool_from_condition(cb, out, condition);
+}
+
+fn emit_scvtf_f64_from_gp(cb: &mut CodeBlock, dst_f64_reg_no: u8, src_gp: A64Opnd) {
+    if let A64Opnd::Reg(src_gp) = src_gp {
+        assert_eq!(src_gp.num_bits, 64, "scvtf dN, xN expects a 64-bit GP source");
+        assert!(dst_f64_reg_no < 32, "invalid f64 register");
+        emit_u32(cb, 0x9e62_0000 | ((src_gp.reg_no as u32) << 5) | dst_f64_reg_no as u32);
+    } else {
+        unreachable!("scvtf dN, xN expects a GP register source");
+    }
+}
+
+fn emit_fixnum_to_f64_raw(cb: &mut CodeBlock, val: A64Opnd, out: A64Opnd) {
+    asr(cb, A64Opnd::Reg(X16_REG), val, A64Opnd::new_uimm(1));
+    emit_scvtf_f64_from_gp(cb, out.unwrap_reg().reg_no, A64Opnd::Reg(X16_REG));
+}
+
 /// List of registers that can be used for register allocation.
 /// This has the same number of registers for x86_64 and arm64.
 /// SCRATCH_OPND, SCRATCH1_OPND, and EMIT_OPND are excluded.
@@ -205,15 +339,32 @@ pub const ALLOC_REGS: &[Reg] = &[
     X12_REG,
 ];
 
+/// Floating-point registers used for F64 virtual registers.
+/// We currently use caller-saved registers only and preserve live ones around C calls explicitly.
+pub const FP_ALLOC_REGS: &[Reg] = &[
+    X0_REG,
+    X1_REG,
+    X2_REG,
+    X3_REG,
+    X4_REG,
+    X5_REG,
+    Reg { num_bits: 64, reg_no: 6 },
+    Reg { num_bits: 64, reg_no: 7 },
+];
+
 /// Special scratch registers for intermediate processing. They should be used only by
 /// [`Assembler::arm64_scratch_split`] or [`Assembler::new_with_scratch_reg`].
 const SCRATCH0_OPND: Opnd = Opnd::Reg(X15_REG);
 const SCRATCH1_OPND: Opnd = Opnd::Reg(X17_REG);
+const FP_SCRATCH0_OPND: Opnd = Opnd::Reg(Reg { num_bits: 64, reg_no: 16 });
+const FP_SCRATCH1_OPND: Opnd = Opnd::Reg(Reg { num_bits: 64, reg_no: 17 });
 
 /// A scratch register available for use by resolve_ssa to break register copy cycles.
 /// Must not overlap with ALLOC_REGS or other preserved registers.
 pub const SCRATCH_REG: Reg = X15_REG;
 const SCRATCH2_OPND: Opnd = Opnd::Reg(X14_REG);
+pub const FP_SAVE_SCRATCH_REG: Reg = X14_REG;
+pub const FP_SAVE_SCRATCH2_REG: Reg = X17_REG;
 
 impl Assembler {
     const MAX_FRAME_STACK_SLOTS: usize = 2048;
@@ -452,6 +603,25 @@ impl Assembler {
                 Insn::Sub { left, right, .. } => {
                     *left = split_load_operand(asm, *left);
                     *right = split_shifted_immediate(asm, *right);
+                    asm.push_insn(insn);
+                }
+                Insn::F64BinOpRaw { .. } |
+                Insn::F64SqrtRaw { .. } |
+                Insn::F64BoolCmpRaw { .. } |
+                Insn::F64CmpRaw { .. } => {
+                    asm.push_insn(insn);
+                }
+                Insn::BitsToF64Raw { val, .. } |
+                Insn::F64ToBitsRaw { val, .. } => {
+                    *val = split_load_operand(asm, *val);
+                    asm.push_insn(insn);
+                }
+                Insn::F64ZeroCmpRaw { val, .. } => {
+                    let _ = val;
+                    asm.push_insn(insn);
+                }
+                Insn::FixnumToF64Raw { val, .. } => {
+                    *val = split_load_operand(asm, *val);
                     asm.push_insn(insn);
                 }
                 Insn::And { left, right, .. } |
@@ -737,6 +907,34 @@ impl Assembler {
             }
         }
 
+        /// If opnd is an F64 stack spill, load it directly into an FP scratch register.
+        fn split_f64_memory_read(asm: &mut Assembler, opnd: Opnd, addr_scratch: Opnd, fp_scratch: Opnd) -> Opnd {
+            if let Opnd::Mem(_) = opnd {
+                let opnd = split_stack_membase(asm, opnd, addr_scratch);
+                asm.push_insn(Insn::LoadF64Raw { opnd, out: fp_scratch });
+                fp_scratch
+            } else {
+                opnd
+            }
+        }
+
+        /// If out is an F64 stack spill, compute into an FP scratch and return
+        /// the spill slot that needs to receive the raw bits afterwards.
+        fn split_f64_memory_write(out: &mut Opnd, fp_scratch: Opnd) -> Option<Opnd> {
+            if let Opnd::Mem(_) = out {
+                let mem_opnd = out.clone();
+                *out = fp_scratch;
+                Some(mem_opnd)
+            } else {
+                None
+            }
+        }
+
+        fn store_f64_to_memory(asm: &mut Assembler, mem_out: Opnd, fp_src: Opnd, addr_scratch: Opnd) {
+            let mem_out = split_stack_membase(asm, mem_out, addr_scratch);
+            asm.push_insn(Insn::StoreF64Raw { dest: mem_out, src: fp_src });
+        }
+
         let mut asm_local = Assembler::new_with_asm_without_blocks(&self);
         asm_local.accept_scratch_reg = true;
 
@@ -776,6 +974,42 @@ impl Assembler {
                         asm.store(mem_out, SCRATCH0_OPND);
                     }
                 }
+                Insn::F64BinOpRaw { left, right, out, .. } => {
+                    *left = split_f64_memory_read(asm, *left, SCRATCH0_OPND, FP_SCRATCH0_OPND);
+                    *right = split_f64_memory_read(asm, *right, SCRATCH1_OPND, FP_SCRATCH1_OPND);
+                    let mem_out = split_f64_memory_write(out, FP_SCRATCH0_OPND);
+                    let fp_out = *out;
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        store_f64_to_memory(asm, mem_out, fp_out, SCRATCH1_OPND);
+                    }
+                }
+                Insn::F64SqrtRaw { val, out } => {
+                    *val = split_f64_memory_read(asm, *val, SCRATCH0_OPND, FP_SCRATCH0_OPND);
+                    let mem_out = split_f64_memory_write(out, FP_SCRATCH0_OPND);
+                    let fp_out = *out;
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        store_f64_to_memory(asm, mem_out, fp_out, SCRATCH1_OPND);
+                    }
+                }
+                Insn::F64BoolCmpRaw { left, right, out, .. } |
+                Insn::F64CmpRaw { left, right, out } => {
+                    *left = split_f64_memory_read(asm, *left, SCRATCH0_OPND, FP_SCRATCH0_OPND);
+                    *right = split_f64_memory_read(asm, *right, SCRATCH1_OPND, FP_SCRATCH1_OPND);
+                    let mem_out = split_memory_write(out, SCRATCH0_OPND);
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND);
+                        asm.store(mem_out, SCRATCH0_OPND);
+                    }
+                }
                 Insn::Mul { left, right, out } => {
                     *left = split_memory_read(asm, *left, SCRATCH0_OPND);
                     *right = split_memory_read(asm, *right, SCRATCH1_OPND);
@@ -797,8 +1031,43 @@ impl Assembler {
                     }
                 }
                 Insn::LShift { opnd, out, .. } |
-                Insn::RShift { opnd, out, .. } => {
+                Insn::RShift { opnd, out, .. } |
+                Insn::URShift { opnd, out, .. } => {
                     *opnd = split_memory_read(asm, *opnd, SCRATCH0_OPND);
+                    let mem_out = split_memory_write(out, SCRATCH0_OPND);
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND);
+                        asm.store(mem_out, SCRATCH0_OPND);
+                    }
+                }
+                Insn::F64ZeroCmpRaw { val: opnd, out, .. } => {
+                    *opnd = split_f64_memory_read(asm, *opnd, SCRATCH0_OPND, FP_SCRATCH0_OPND);
+                    let mem_out = split_memory_write(out, SCRATCH0_OPND);
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND);
+                        asm.store(mem_out, SCRATCH0_OPND);
+                    }
+                }
+                Insn::FixnumToF64Raw { val, out } |
+                Insn::BitsToF64Raw { val, out } => {
+                    *val = split_memory_read(asm, *val, SCRATCH0_OPND);
+                    let mem_out = split_f64_memory_write(out, FP_SCRATCH0_OPND);
+                    let fp_out = *out;
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        store_f64_to_memory(asm, mem_out, fp_out, SCRATCH1_OPND);
+                    }
+                }
+                Insn::F64ToBitsRaw { val, out } => {
+                    *val = split_f64_memory_read(asm, *val, SCRATCH0_OPND, FP_SCRATCH0_OPND);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
 
                     asm.push_insn(insn);
@@ -817,7 +1086,8 @@ impl Assembler {
                 // For compile_exits, support splitting simple C arguments here
                 Insn::CCall { data } if !data.opnds.is_empty() => {
                     for (i, opnd) in data.opnds.iter().enumerate() {
-                        asm.load_into(C_ARG_OPNDS[i], *opnd);
+                        let opnd = split_stack_membase(asm, *opnd, SCRATCH0_OPND);
+                        asm.load_into(C_ARG_OPNDS[i], opnd);
                     }
                     data.opnds = vec![];
                     asm.push_insn(insn);
@@ -1244,6 +1514,40 @@ impl Assembler {
                             mul(cb, out.into(), left.into(), right.into());
                         }
                     }
+                },
+                Insn::BitsToF64Raw { val, out } => {
+                    emit_fmov_f64_from_gp(cb, A64Opnd::from(*out).unwrap_reg().reg_no, (*val).into());
+                },
+                Insn::F64ToBitsRaw { val, out } => {
+                    emit_fmov_gp_from_f64(cb, (*out).into(), A64Opnd::from(*val).unwrap_reg().reg_no);
+                },
+                Insn::LoadF64Raw { opnd, out } => {
+                    emit_ldur_f64(cb, A64Opnd::from(*out).unwrap_reg().reg_no, (*opnd).into());
+                },
+                Insn::StoreF64Raw { dest, src } => {
+                    emit_stur_f64(cb, A64Opnd::from(*src).unwrap_reg().reg_no, (*dest).into());
+                },
+                Insn::F64BinOpRaw { op, left, right, out } => {
+                    emit_f64_raw_binop(cb, *op, (*left).into(), (*right).into(), (*out).into());
+                },
+                Insn::F64SqrtRaw { val, out } => {
+                    emit_f64_raw_sqrt(cb, (*val).into(), (*out).into());
+                },
+                Insn::F64BoolCmpRaw { op, left, right, out } => {
+                    emit_f64_raw_cmp(cb, *op, (*left).into(), (*right).into(), (*out).into());
+                },
+                Insn::F64CmpRaw { left, right, out } => {
+                    emit_f64_raw_cmp_value(cb, (*left).into(), (*right).into(), (*out).into());
+                },
+                Insn::F64ZeroCmpRaw { op, val, out } => {
+                    let condition = match op {
+                        F64ZeroCmpOp::Positive => Condition::GT,
+                        F64ZeroCmpOp::Negative => Condition::MI,
+                    };
+                    emit_f64_raw_zero_cmp(cb, condition, (*val).into(), (*out).into());
+                },
+                Insn::FixnumToF64Raw { val, out } => {
+                    emit_fixnum_to_f64_raw(cb, (*val).into(), (*out).into());
                 },
                 Insn::And { left, right, out } => {
                     and(cb, out.into(), left.into(), right.into());
@@ -1947,6 +2251,49 @@ mod tests {
         0x4: stur x0, [x2]
         ");
         assert_snapshot!(cb.hexdump(), @"000001ab400000f8");
+    }
+
+    #[test]
+    fn test_emit_f64_binop_raw() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.f64_binop_raw(F64BinOp::Add, Opnd::Reg(X0_REG), Opnd::Reg(X1_REG));
+        let bits = asm.f64_to_bits_raw(opnd);
+        asm.store(Opnd::mem(64, Opnd::Reg(X3_REG), 0), bits);
+        asm.compile_with_regs(&mut cb, vec![X2_REG]).unwrap();
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: fadd d0, d0, d1
+        0x4: fmov x0, d0
+        0x8: stur x0, [x3]
+        ");
+        assert_snapshot!(cb.hexdump(), @"0028611e0000669e600000f8");
+    }
+
+    #[test]
+    fn test_emit_f64_load_store_raw() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.push_insn(Insn::LoadF64Raw {
+            opnd: Opnd::mem(64, Opnd::Reg(X1_REG), 0),
+            out: Opnd::Reg(Reg { num_bits: 64, reg_no: 0 }),
+        });
+        asm.push_insn(Insn::StoreF64Raw {
+            dest: Opnd::mem(64, Opnd::Reg(X1_REG), 0),
+            src: Opnd::Reg(Reg { num_bits: 64, reg_no: 0 }),
+        });
+        asm.push_insn(Insn::LoadF64Raw {
+            opnd: Opnd::mem(64, Opnd::Reg(X4_REG), -8),
+            out: Opnd::Reg(Reg { num_bits: 64, reg_no: 16 }),
+        });
+        asm.push_insn(Insn::StoreF64Raw {
+            dest: Opnd::mem(64, Opnd::Reg(X5_REG), 16),
+            src: Opnd::Reg(Reg { num_bits: 64, reg_no: 17 }),
+        });
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_snapshot!(cb.hexdump(), @"200040fc200000fc90805ffcb10001fc");
     }
 
     #[test]
@@ -2847,6 +3194,51 @@ mod tests {
     }
 
     #[test]
+    fn test_ccall_f64_register_preservation() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let v0 = asm.bits_to_f64_raw(Opnd::Reg(X0_REG));
+        let v1 = asm.bits_to_f64_raw(Opnd::Reg(X1_REG));
+        asm.ccall(0 as _, vec![]);
+        let sum = asm.f64_binop_raw(F64BinOp::Add, v0, v1);
+        let bits = asm.f64_to_bits_raw(sum);
+        asm.mov(C_RET_OPND, bits);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert!(!cb.hexdump().is_empty(), "FP caller-save sequence should compile");
+    }
+
+    #[test]
+    fn test_f64_spill_reload_compiles() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let vals: Vec<_> = (0..9)
+            .map(|idx| {
+                let bits = asm.load((idx + 1).into());
+                asm.bits_to_f64_raw(bits)
+            })
+            .collect();
+
+        let mut acc = vals[0];
+        for val in vals.into_iter().skip(1) {
+            acc = asm.f64_binop_raw(F64BinOp::Add, acc, val);
+        }
+        let bits = asm.f64_to_bits_raw(acc);
+        asm.mov(C_RET_OPND, bits);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        #[cfg(feature = "disasm")]
+        {
+            let disasm = cb.disasm();
+            assert!(disasm.contains("ldur d"), "spilled FP values should reload with LDUR D:\n{disasm}");
+            assert!(disasm.contains("stur d"), "spilled FP values should spill with STUR D:\n{disasm}");
+        }
+        assert!(!cb.hexdump().is_empty(), "spilled FP values should compile");
+    }
+
+    #[test]
     fn test_ccall_resolve_parallel_moves_large_cycle() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -2917,6 +3309,24 @@ mod tests {
         0xc: lsl x0, x15, #1
         ");
         assert_snapshot!(cb.hexdump(), @"300080d2b0831ff8af835ff8e0f97fd3");
+    }
+
+    #[test]
+    fn test_split_spilled_urshift() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd_vreg = asm.load(1.into());
+        let out_vreg = asm.urshift(opnd_vreg, Opnd::UImm(1));
+        asm.mov(C_RET_OPND, out_vreg);
+        asm.compile_with_num_regs(&mut cb, 0); // spill every VReg
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x16, #1
+        0x4: stur x16, [x29, #-8]
+        0x8: ldur x15, [x29, #-8]
+        0xc: lsr x0, x15, #1
+        ");
+        assert_snapshot!(cb.hexdump(), @"300080d2b0831ff8af835ff8e0fd41d3");
     }
 
     #[test]

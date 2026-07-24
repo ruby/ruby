@@ -14,8 +14,10 @@ use std::ffi::c_void;
 use crate::hir_type::{types, Type};
 use crate::hir::{self, FieldName};
 
-// Array iteration builtin functions (defined in array.c)
+// CRuby globals and builtin C functions referenced by annotations below.
 unsafe extern "C" {
+    static mut rb_mMath: VALUE;
+    static mut rb_cComplex: VALUE;
     fn rb_builtin_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_builtin_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_builtin_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
@@ -271,21 +273,33 @@ pub fn init() -> Annotations {
     annotate!(rb_cFloat, "-", inline_float_minus);
     annotate!(rb_cFloat, "*", inline_float_mul);
     annotate!(rb_cFloat, "/", inline_float_div);
+    annotate!(rb_cFloat, "**", inline_float_pow, types::Float);
+    annotate!(rb_cFloat, "==", inline_float_eq, types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cFloat, "<=>", inline_float_cmp, types::Fixnum.union(types::NilClass), no_gc, leaf, elidable);
+    annotate!(rb_cFloat, ">", inline_float_gt, types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cFloat, ">=", inline_float_ge, types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cFloat, "<", inline_float_lt, types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cFloat, "<=", inline_float_le, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cFloat, "to_i", inline_float_to_i);
     annotate!(rb_cFloat, "to_int", inline_float_to_i);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
-    annotate!(rb_cFloat, "nan?", types::BoolExact, no_gc, leaf, elidable);
-    annotate!(rb_cFloat, "finite?", types::BoolExact, no_gc, leaf, elidable);
-    annotate!(rb_cFloat, "infinite?", types::Fixnum.union(types::NilClass), no_gc, leaf, elidable);
+    annotate!(rb_cFloat, "nan?", inline_float_nan_p, types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cFloat, "finite?", inline_float_finite_p, types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cFloat, "infinite?", inline_float_infinite_p, types::Fixnum.union(types::NilClass), no_gc, leaf, elidable);
+    annotate!(rb_cComplex, "*", inline_complex_mul, types::BasicObject);
+    let math_singleton = unsafe { rb_singleton_class(rb_mMath) };
+    annotate!(math_singleton, "sqrt", inline_math_sqrt, types::Float);
+    annotate!(math_singleton, "sin", inline_math_sin, types::Float);
+    annotate!(math_singleton, "cos", inline_math_cos, types::Float);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
     annotate!(thread_singleton, "current", inline_thread_current, types::BasicObject, no_gc, leaf);
 
     annotate_builtin!(rb_cInteger, "zero?", types::BoolExact);
     annotate_builtin!(rb_cInteger, "even?", types::BoolExact);
     annotate_builtin!(rb_cInteger, "odd?", types::BoolExact);
-    annotate_builtin!(rb_cFloat, "zero?", types::BoolExact);
-    annotate_builtin!(rb_cFloat, "positive?", types::BoolExact);
-    annotate_builtin!(rb_cFloat, "negative?", types::BoolExact);
+    annotate_builtin!(rb_cFloat, "zero?", inline_float_zero_p, types::BoolExact, no_gc, leaf, elidable);
+    annotate_builtin!(rb_cFloat, "positive?", inline_float_positive_p, types::BoolExact, no_gc, leaf, elidable);
+    annotate_builtin!(rb_cFloat, "negative?", inline_float_negative_p, types::BoolExact, no_gc, leaf, elidable);
     annotate_builtin!(rb_mKernel, "Float", types::Float.union(types::NilClass));
     annotate_builtin!(rb_mKernel, "Integer", types::Integer.union(types::NilClass));
     annotate_builtin!(rb_mKernel, "class", inline_kernel_class, types::Class, leaf);
@@ -645,22 +659,76 @@ fn inline_integer_xor(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
     None
 }
 
-fn try_inline_float_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
-    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, FLOAT_REDEFINED_OP_FLAG) } {
+fn basic_op_unredefined(bop: u32, redefined_flag: u32) -> bool {
+    unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, redefined_flag) }
+}
+
+fn try_inline_float_op(fun: &mut hir::Function, block: hir::BlockId, op: hir::F64BinOp, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    if !basic_op_unredefined(bop, FLOAT_REDEFINED_OP_FLAG) {
         return None;
     }
-    // Receiver must be Flonum (cheap tag check: (val & 3) == 2).
-    // The other operand can be Flonum or Fixnum since rb_float_plus/minus/mul/div
-    // handle both via fast paths (FIXNUM_P check + cast to double).
-    // HeapFloat falls back to CCallWithFrame via the default Send path.
-    if fun.likely_a(recv, types::Flonum, state)
-        && (fun.likely_a(other, types::Flonum, state) || fun.likely_a(other, types::Fixnum, state))
+    // Receiver must be convertible to a raw C double, unless it is a
+    // still-virtual BoxFloat from a prior inlined Float operation. The other
+    // operand can also be Fixnum since we convert it to a raw C double before
+    // native arithmetic. Unknown object types fall back to CCallWithFrame via
+    // the default Send path.
+    if can_float_op_operand(fun, recv, true, state) && can_float_op_operand(fun, other, false, state)
     {
-        let recv = coerce_float_op_operand(fun, block, recv, types::Flonum, state);
-        let other_type = if fun.likely_a(other, types::Flonum, state) { types::Flonum } else { types::Fixnum };
-        let other = coerce_float_op_operand(fun, block, other, other_type, state);
-        return Some(fun.push_insn(block, f(recv, other)));
+        let recv = float_op_operand_f64(fun, block, recv, true, state)?;
+        let other = float_op_operand_f64(fun, block, other, false, state)?;
+        let result = fun.push_insn(block, hir::Insn::F64BinOp { op, left: recv, right: other });
+        return Some(box_f64_result(fun, block, result, state));
     }
+    None
+}
+
+fn try_inline_float_value_rhs_op(fun: &mut hir::Function, block: hir::BlockId, op: hir::F64BinOp, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    if !basic_op_unredefined(bop, FLOAT_REDEFINED_OP_FLAG) {
+        return None;
+    }
+    if !matches!(fun.find(other), hir::Insn::ArrayAref { .. } | hir::Insn::LoadField { .. }) {
+        return None;
+    }
+    let recv = float_op_operand_f64(fun, block, recv, true, state)?;
+    let result = fun.push_insn(block, hir::Insn::F64ValueRhsOp { op, left: recv, right: other, state });
+    Some(box_f64_result(fun, block, result, state))
+}
+
+fn box_f64_result(fun: &mut hir::Function, block: hir::BlockId, val: hir::InsnId, state: hir::InsnId) -> hir::InsnId {
+    fun.push_insn(block, hir::Insn::BoxFloat { val, state })
+}
+
+fn can_float_op_operand(fun: &hir::Function, val: hir::InsnId, is_recv: bool, state: hir::InsnId) -> bool {
+    can_float_compare_operand(fun, val, state)
+        || (!is_recv && fun.likely_a(val, types::Fixnum, state))
+}
+
+fn can_float_compare_operand(fun: &hir::Function, val: hir::InsnId, state: hir::InsnId) -> bool {
+    matches!(fun.find(val), hir::Insn::BoxFloat { .. })
+        || fun.likely_a(val, types::Flonum, state)
+        || fun.likely_a(val, types::Float, state)
+}
+
+fn float_op_operand_f64(fun: &mut hir::Function, block: hir::BlockId, val: hir::InsnId, is_recv: bool, state: hir::InsnId) -> Option<hir::InsnId> {
+    if let hir::Insn::BoxFloat { val: f64_val, .. } = fun.find(val) {
+        return Some(f64_val);
+    }
+
+    if fun.likely_a(val, types::Flonum, state) {
+        let val = coerce_float_op_operand(fun, block, val, types::Flonum, state);
+        return Some(fun.push_insn(block, hir::Insn::UnboxFloat { val }));
+    }
+
+    if !is_recv && fun.likely_a(val, types::Fixnum, state) {
+        let val = coerce_float_op_operand(fun, block, val, types::Fixnum, state);
+        return Some(fun.push_insn(block, hir::Insn::FixnumToF64 { val }));
+    }
+
+    if fun.likely_a(val, types::Float, state) {
+        let val = coerce_float_op_operand(fun, block, val, types::Float, state);
+        return Some(fun.push_insn(block, hir::Insn::UnboxRubyFloat { val }));
+    }
+
     None
 }
 
@@ -672,37 +740,275 @@ fn coerce_float_op_operand(fun: &mut hir::Function, block: hir::BlockId, val: hi
     }
 }
 
-fn inline_float_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_float_binop(fun: &mut hir::Function, block: hir::BlockId, op: hir::F64BinOp, bop: u32, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatAdd { recv, other, state }, BOP_PLUS, recv, other, state)
+    try_inline_float_op(fun, block, op, bop, recv, other, state)
+        .or_else(|| try_inline_float_value_rhs_op(fun, block, op, bop, recv, other, state))
+}
+
+fn inline_float_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    inline_float_binop(fun, block, hir::F64BinOp::Add, BOP_PLUS, recv, args, state)
 }
 
 fn inline_float_minus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    let &[other] = args else { return None; };
-    try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatSub { recv, other, state }, BOP_MINUS, recv, other, state)
+    inline_float_binop(fun, block, hir::F64BinOp::Sub, BOP_MINUS, recv, args, state)
 }
 
 fn inline_float_mul(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    let &[other] = args else { return None; };
-    try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatMul { recv, other, state }, BOP_MULT, recv, other, state)
+    inline_float_binop(fun, block, hir::F64BinOp::Mul, BOP_MULT, recv, args, state)
 }
 
 fn inline_float_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    inline_float_binop(fun, block, hir::F64BinOp::Div, BOP_DIV, recv, args, state)
+}
+
+fn inline_float_pow(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatDiv { recv, other, state }, BOP_DIV, recv, other, state)
+    if !can_float_op_operand(fun, recv, true, state) || !can_float_op_operand(fun, other, false, state) {
+        return None;
+    }
+
+    let recv = float_op_operand_f64(fun, block, recv, true, state)?;
+    if !is_nonnegative_f64(fun, recv, 0) {
+        return None;
+    }
+
+    let other = float_op_operand_f64(fun, block, other, false, state)?;
+    let result = fun.push_insn(block, hir::Insn::F64Pow { left: recv, right: other });
+    Some(box_f64_result(fun, block, result, state))
+}
+
+fn inline_math_sqrt(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[arg] = args else { return None; };
+    let arg = float_op_operand_f64(fun, block, arg, false, state)?;
+    if !is_nonnegative_f64(fun, arg, 0) {
+        fun.push_insn(block, hir::Insn::F64GuardNonnegative { val: arg, state });
+    }
+
+    let result = fun.push_insn(block, hir::Insn::F64Sqrt { val: arg });
+    Some(box_f64_result(fun, block, result, state))
+}
+
+fn inline_math_sin(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[arg] = args else { return None; };
+    let arg = float_op_operand_f64(fun, block, arg, false, state)?;
+    let result = fun.push_insn(block, hir::Insn::F64Sin { val: arg });
+    Some(box_f64_result(fun, block, result, state))
+}
+
+fn inline_math_cos(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[arg] = args else { return None; };
+    let arg = float_op_operand_f64(fun, block, arg, false, state)?;
+    let result = fun.push_insn(block, hir::Insn::F64Cos { val: arg });
+    Some(box_f64_result(fun, block, result, state))
+}
+
+fn inline_complex_mul(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    if !basic_op_unredefined(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)
+        || !basic_op_unredefined(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)
+        || !basic_op_unredefined(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)
+    {
+        return None;
+    }
+
+    let complex_type = Type::from_class(unsafe { rb_cComplex });
+    if !fun.likely_a(recv, complex_type, state) || !fun.likely_a(other, complex_type, state) {
+        return None;
+    }
+
+    let recv = fun.coerce_to(block, recv, complex_type, state);
+    let other = fun.coerce_to(block, other, complex_type, state);
+    let areal = fun.load_field(block, recv, FieldName::rcomplex_real, RUBY_OFFSET_RCOMPLEX_REAL, types::BasicObject);
+    let aimag = fun.load_field(block, recv, FieldName::rcomplex_imag, RUBY_OFFSET_RCOMPLEX_IMAG, types::BasicObject);
+    let breal = fun.load_field(block, other, FieldName::rcomplex_real, RUBY_OFFSET_RCOMPLEX_REAL, types::BasicObject);
+    let bimag = fun.load_field(block, other, FieldName::rcomplex_imag, RUBY_OFFSET_RCOMPLEX_IMAG, types::BasicObject);
+    let areal = fun.coerce_to(block, areal, types::Flonum, state);
+    let aimag = fun.coerce_to(block, aimag, types::Flonum, state);
+    let breal = fun.coerce_to(block, breal, types::Flonum, state);
+    let bimag = fun.coerce_to(block, bimag, types::Flonum, state);
+
+    Some(fun.push_insn(block, hir::Insn::ComplexMulFlonum { areal, aimag, breal, bimag, state }))
+}
+
+fn is_nonnegative_f64(fun: &hir::Function, val: hir::InsnId, depth: usize) -> bool {
+    if depth > 8 {
+        return false;
+    }
+
+    match fun.find(val) {
+        hir::Insn::Const { val: hir::Const::CDouble(val) } => val >= 0.0 || val.is_nan(),
+        hir::Insn::Const { val: hir::Const::Value(val) } if val.flonum_p() => {
+            let val = val.as_flonum_f64();
+            val >= 0.0 || val.is_nan()
+        }
+        hir::Insn::Const { val: hir::Const::Value(val) } if val.fixnum_p() => val.as_fixnum() >= 0,
+        hir::Insn::UnboxFloat { val } | hir::Insn::UnboxRubyFloat { val } => is_nonnegative_f64(fun, val, depth + 1),
+        hir::Insn::FixnumToF64 { val } => is_nonnegative_f64(fun, val, depth + 1),
+        hir::Insn::F64BinOp { op: hir::F64BinOp::Mul, left, right } if left == right => true,
+        hir::Insn::F64BinOp { op: hir::F64BinOp::Div, left, right } => {
+            is_nonnegative_f64(fun, left, depth + 1) && is_positive_f64(fun, right, depth + 1)
+        }
+        hir::Insn::F64BinOp { op: hir::F64BinOp::Add, left, right } => {
+            is_nonnegative_f64(fun, left, depth + 1) && is_nonnegative_f64(fun, right, depth + 1)
+        }
+        _ => false,
+    }
+}
+
+fn is_positive_f64(fun: &hir::Function, val: hir::InsnId, depth: usize) -> bool {
+    if depth > 8 {
+        return false;
+    }
+
+    match fun.find(val) {
+        hir::Insn::Const { val: hir::Const::CDouble(val) } => val > 0.0 || val.is_nan(),
+        hir::Insn::Const { val: hir::Const::Value(val) } if val.flonum_p() => {
+            let val = val.as_flonum_f64();
+            val > 0.0 || val.is_nan()
+        }
+        hir::Insn::Const { val: hir::Const::Value(val) } if val.fixnum_p() => val.as_fixnum() > 0,
+        hir::Insn::UnboxFloat { val } | hir::Insn::UnboxRubyFloat { val } => is_positive_f64(fun, val, depth + 1),
+        hir::Insn::FixnumToF64 { val } => is_positive_f64(fun, val, depth + 1),
+        _ => false,
+    }
+}
+
+fn float_compare_operands(fun: &mut hir::Function, block: hir::BlockId, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<(hir::InsnId, hir::InsnId)> {
+    if !basic_op_unredefined(bop, FLOAT_REDEFINED_OP_FLAG) {
+        return None;
+    }
+
+    if can_float_compare_operand(fun, recv, state) && can_float_compare_operand(fun, other, state) {
+        let recv = float_op_operand_f64(fun, block, recv, true, state)?;
+        let other = float_op_operand_f64(fun, block, other, true, state)?;
+        return Some((recv, other));
+    }
+
+    None
+}
+
+fn try_inline_float_bool_compare(fun: &mut hir::Function, block: hir::BlockId, op: hir::F64BoolCmpOp, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    let (recv, other) = float_compare_operands(fun, block, bop, recv, other, state)?;
+    Some(fun.push_insn(block, hir::Insn::F64BoolCmp { op, left: recv, right: other }))
+}
+
+fn try_inline_float_compare(fun: &mut hir::Function, block: hir::BlockId, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    let (recv, other) = float_compare_operands(fun, block, bop, recv, other, state)?;
+    Some(fun.push_insn(block, hir::Insn::F64Cmp { left: recv, right: other }))
+}
+
+fn float_fixnum_compare_operands(fun: &mut hir::Function, block: hir::BlockId, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<(hir::InsnId, hir::InsnId)> {
+    if !basic_op_unredefined(bop, FLOAT_REDEFINED_OP_FLAG) {
+        return None;
+    }
+
+    if can_float_compare_operand(fun, recv, state) && fun.likely_a(other, types::Fixnum, state) {
+        let recv = float_op_operand_f64(fun, block, recv, true, state)?;
+        let other = coerce_float_op_operand(fun, block, other, types::Fixnum, state);
+        return Some((recv, other));
+    }
+
+    None
+}
+
+fn try_inline_float_fixnum_bool_compare(fun: &mut hir::Function, block: hir::BlockId, op: hir::F64BoolCmpOp, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    let (recv, other) = float_fixnum_compare_operands(fun, block, bop, recv, other, state)?;
+    Some(fun.push_insn(block, hir::Insn::F64FixnumBoolCmp { op, left: recv, right: other }))
+}
+
+fn try_inline_float_fixnum_compare(fun: &mut hir::Function, block: hir::BlockId, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    let (recv, other) = float_fixnum_compare_operands(fun, block, bop, recv, other, state)?;
+    Some(fun.push_insn(block, hir::Insn::F64FixnumCmp { left: recv, right: other }))
+}
+
+fn inline_float_bool_cmp(fun: &mut hir::Function, block: hir::BlockId, op: hir::F64BoolCmpOp, bop: u32, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_fixnum_bool_compare(fun, block, op, bop, recv, other, state)
+        .or_else(|| try_inline_float_bool_compare(fun, block, op, bop, recv, other, state))
+}
+
+fn inline_float_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    inline_float_bool_cmp(fun, block, hir::F64BoolCmpOp::Eq, BOP_EQ, recv, args, state)
+}
+
+fn inline_float_cmp(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_fixnum_compare(fun, block, BOP_CMP, recv, other, state)
+        .or_else(|| try_inline_float_compare(fun, block, BOP_CMP, recv, other, state))
+}
+
+fn inline_float_gt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    inline_float_bool_cmp(fun, block, hir::F64BoolCmpOp::Gt, BOP_GT, recv, args, state)
+}
+
+fn inline_float_ge(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    inline_float_bool_cmp(fun, block, hir::F64BoolCmpOp::Ge, BOP_GE, recv, args, state)
+}
+
+fn inline_float_lt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    inline_float_bool_cmp(fun, block, hir::F64BoolCmpOp::Lt, BOP_LT, recv, args, state)
+}
+
+fn inline_float_le(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    inline_float_bool_cmp(fun, block, hir::F64BoolCmpOp::Le, BOP_LE, recv, args, state)
 }
 
 fn inline_float_to_i(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
-    if fun.likely_a(recv, types::Flonum, state) {
-        let recv = fun.coerce_to(block, recv, types::Flonum, state);
-        return Some(fun.push_insn(block, hir::Insn::FloatToInt { recv, state }));
+    let recv = float_op_operand_f64(fun, block, recv, true, state)?;
+    // rb_jit_f64_to_i can raise for NaN and infinities. Only inline values
+    // proven finite so this path stays a leaf conversion.
+    let value = fun.type_of(recv).cdouble_value()?;
+    if !value.is_finite() {
+        return None;
     }
-    None
+    Some(fun.push_insn(block, hir::Insn::F64ToInt { val: recv, state }))
+}
+
+fn inline_float_predicate(
+    fun: &mut hir::Function,
+    block: hir::BlockId,
+    op: hir::F64PredicateOp,
+    recv: hir::InsnId,
+    args: &[hir::InsnId],
+    state: hir::InsnId,
+) -> Option<hir::InsnId> {
+    let recv = match args {
+        [] => recv,
+        [arg] if *arg == recv => recv,
+        _ => return None,
+    };
+    let recv = float_op_operand_f64(fun, block, recv, true, state)?;
+    Some(fun.push_insn(block, hir::Insn::F64Predicate { op, val: recv }))
+}
+
+fn inline_float_nan_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    inline_float_predicate(fun, block, hir::F64PredicateOp::Nan, recv, args, state)
+}
+
+fn inline_float_finite_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    inline_float_predicate(fun, block, hir::F64PredicateOp::Finite, recv, args, state)
+}
+
+fn inline_float_infinite_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    inline_float_predicate(fun, block, hir::F64PredicateOp::Infinite, recv, args, state)
+}
+
+fn inline_float_zero_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    inline_float_predicate(fun, block, hir::F64PredicateOp::Zero, recv, args, state)
+}
+
+fn inline_float_positive_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    inline_float_predicate(fun, block, hir::F64PredicateOp::Positive, recv, args, state)
+}
+
+fn inline_float_negative_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    inline_float_predicate(fun, block, hir::F64PredicateOp::Negative, recv, args, state)
 }
 
 fn try_inline_fixnum_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, left: hir::InsnId, right: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
-    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
+    if !basic_op_unredefined(bop, INTEGER_REDEFINED_OP_FLAG) {
         // If the basic operation is already redefined, we cannot optimize it.
         return None;
     }
@@ -719,29 +1025,64 @@ fn try_inline_fixnum_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn
     None
 }
 
+fn try_inline_fixnum_float_op(fun: &mut hir::Function, block: hir::BlockId, op: hir::F64BinOp, bop: u32, left: hir::InsnId, right: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    if !basic_op_unredefined(bop, INTEGER_REDEFINED_OP_FLAG) {
+        return None;
+    }
+
+    if fun.likely_a(left, types::Fixnum, state) && can_float_compare_operand(fun, right, state) {
+        let left = fun.coerce_to(block, left, types::Fixnum, state);
+        let left = fun.push_insn(block, hir::Insn::FixnumToF64 { val: left });
+        let right = float_op_operand_f64(fun, block, right, false, state)?;
+        let result = fun.push_insn(block, hir::Insn::F64BinOp { op, left, right });
+        return Some(box_f64_result(fun, block, result, state));
+    }
+
+    None
+}
+
+fn try_inline_fixnum_float_compare(fun: &mut hir::Function, block: hir::BlockId, op: hir::F64BoolCmpOp, bop: u32, left: hir::InsnId, right: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    if !basic_op_unredefined(bop, INTEGER_REDEFINED_OP_FLAG) {
+        return None;
+    }
+
+    if fun.likely_a(left, types::Fixnum, state) && can_float_compare_operand(fun, right, state) {
+        let left = fun.coerce_to(block, left, types::Fixnum, state);
+        let right = float_op_operand_f64(fun, block, right, false, state)?;
+        return Some(fun.push_insn(block, hir::Insn::F64FixnumBoolCmp { op, left: right, right: left }));
+    }
+
+    None
+}
+
 fn inline_integer_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumEq { left, right }, BOP_EQ, recv, other, state)
+        .or_else(|| try_inline_fixnum_float_compare(fun, block, hir::F64BoolCmpOp::Eq, BOP_EQ, recv, other, state))
 }
 
 fn inline_integer_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumAdd { left, right, state }, BOP_PLUS, recv, other, state)
+        .or_else(|| try_inline_fixnum_float_op(fun, block, hir::F64BinOp::Add, BOP_PLUS, recv, other, state))
 }
 
 fn inline_integer_minus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumSub { left, right, state }, BOP_MINUS, recv, other, state)
+        .or_else(|| try_inline_fixnum_float_op(fun, block, hir::F64BinOp::Sub, BOP_MINUS, recv, other, state))
 }
 
 fn inline_integer_mult(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumMult { left, right, state }, BOP_MULT, recv, other, state)
+        .or_else(|| try_inline_fixnum_float_op(fun, block, hir::F64BinOp::Mul, BOP_MULT, recv, other, state))
 }
 
 fn inline_integer_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumDiv { left, right, state }, BOP_DIV, recv, other, state)
+        .or_else(|| try_inline_fixnum_float_op(fun, block, hir::F64BinOp::Div, BOP_DIV, recv, other, state))
 }
 
 fn inline_integer_mod(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
@@ -762,21 +1103,25 @@ fn inline_integer_or(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
 fn inline_integer_gt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumGt { left, right }, BOP_GT, recv, other, state)
+        .or_else(|| try_inline_fixnum_float_compare(fun, block, hir::F64BoolCmpOp::Lt, BOP_GT, recv, other, state))
 }
 
 fn inline_integer_ge(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumGe { left, right }, BOP_GE, recv, other, state)
+        .or_else(|| try_inline_fixnum_float_compare(fun, block, hir::F64BoolCmpOp::Le, BOP_GE, recv, other, state))
 }
 
 fn inline_integer_lt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumLt { left, right }, BOP_LT, recv, other, state)
+        .or_else(|| try_inline_fixnum_float_compare(fun, block, hir::F64BoolCmpOp::Gt, BOP_LT, recv, other, state))
 }
 
 fn inline_integer_le(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumLe { left, right }, BOP_LE, recv, other, state)
+        .or_else(|| try_inline_fixnum_float_compare(fun, block, hir::F64BoolCmpOp::Ge, BOP_LE, recv, other, state))
 }
 
 fn inline_integer_lshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {

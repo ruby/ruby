@@ -24,7 +24,7 @@ use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Co
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
+use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, Const, F64BinOp, F64BoolCmpOp, F64PredicateOp, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, InlineDepth, PerfMap, DEFAULT_MAX_VERSIONS};
 use crate::cast::IntoUsize;
@@ -446,10 +446,10 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             );
 
             // Compile all parameters
-            for (idx, &insn_id) in block.params().enumerate() {
+            for &insn_id in block.params() {
                 match function.find(insn_id) {
                     Insn::Param => {
-                        jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx));
+                        jit.opnds[insn_id.0] = Some(gen_param_for_type(&mut asm, function.type_of(insn_id)));
                     },
                     insn => unreachable!("Non-param insn found in block.params: {insn:?}"),
                 }
@@ -459,8 +459,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             // so that calling convention registers are reserved early, like Param.
             if function.is_entry_block(block_id) {
                 for &insn_id in block.insns() {
-                    if let Insn::LoadArg { idx, .. } = function.find(insn_id) {
-                        jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx as usize));
+                    if let Insn::LoadArg { .. } = function.find(insn_id) {
+                        jit.opnds[insn_id.0] = Some(gen_value_param(&mut asm));
                     }
                 }
             }
@@ -609,6 +609,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Const { val: Const::CUInt16(val) } => gen_const_uint16(val),
         &Insn::Const { val: Const::CUInt32(val) } => gen_const_uint32(val),
         &Insn::Const { val: Const::CUInt64(val) } => Opnd::UImm(val),
+        &Insn::Const { val: Const::CDouble(val) } => Opnd::UImm(val.to_bits()),
         &Insn::Const { val: Const::CAttrIndex(val) } => gen_const_attr_index_t(val),
         &Insn::Const { val: Const::CShape(val) } => {
             assert_eq!(SHAPE_ID_NUM_BITS, 32);
@@ -675,11 +676,24 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
         Insn::FixnumMult { left, right, state } => gen_fixnum_mult(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
         Insn::FixnumDiv { left, right, state } => gen_fixnum_div(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
-        Insn::FloatAdd { recv, other, state } => gen_float_add(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
-        Insn::FloatSub { recv, other, state } => gen_float_sub(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
-        Insn::FloatMul { recv, other, state } => gen_float_mul(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
-        Insn::FloatDiv { recv, other, state } => gen_float_div(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
-        Insn::FloatToInt { recv, state } => gen_float_to_int(asm, opnd!(recv), &function.frame_state(*state)),
+        Insn::UnboxFloat { val } => gen_unbox_float(asm, opnd!(val)),
+        Insn::UnboxRubyFloat { val } => gen_unbox_ruby_float(jit, asm, opnd!(val)),
+        Insn::FixnumToF64 { val } => asm.fixnum_to_f64_raw(opnd!(val)),
+        Insn::BoxFloat { val, state } => gen_box_float(jit, asm, opnd!(val), &function.frame_state(*state)),
+        Insn::F64BinOp { op, left, right } => gen_f64_binop(asm, *op, opnd!(left), opnd!(right)),
+        Insn::F64ValueRhsOp { op, left, right, state } => gen_f64_value_rhs_op(jit, asm, function, *op, opnd!(left), opnd!(right), &function.frame_state(*state)),
+        Insn::F64Sqrt { val } => gen_f64_sqrt(asm, opnd!(val)),
+        Insn::F64Sin { val } => gen_f64_sin(asm, opnd!(val)),
+        Insn::F64Cos { val } => gen_f64_cos(asm, opnd!(val)),
+        Insn::F64Pow { left, right } => gen_f64_pow(asm, opnd!(left), opnd!(right)),
+        Insn::F64GuardNonnegative { val, state } => no_output!(gen_f64_guard_nonnegative(jit, asm, function, opnd!(val), &function.frame_state(*state))),
+        Insn::ComplexMulFlonum { areal, aimag, breal, bimag, state } => gen_complex_mul_flonum(asm, opnd!(areal), opnd!(aimag), opnd!(breal), opnd!(bimag), &function.frame_state(*state)),
+        Insn::F64ToInt { val, state } => gen_f64_to_int(asm, opnd!(val), &function.frame_state(*state)),
+        Insn::F64Predicate { op, val } => gen_f64_predicate(asm, *op, opnd!(val)),
+        Insn::F64BoolCmp { op, left, right } => gen_f64_bool_cmp(asm, *op, opnd!(left), opnd!(right)),
+        Insn::F64Cmp { left, right } => gen_f64_cmp(asm, opnd!(left), opnd!(right)),
+        Insn::F64FixnumBoolCmp { op, left, right } => gen_f64_fixnum_bool_cmp(asm, *op, opnd!(left), opnd!(right)),
+        Insn::F64FixnumCmp { left, right } => gen_f64_fixnum_cmp(asm, opnd!(left), opnd!(right)),
         Insn::FixnumEq { left, right } => gen_fixnum_eq(asm, opnd!(left), opnd!(right)),
         Insn::FixnumNeq { left, right } => gen_fixnum_neq(asm, opnd!(left), opnd!(right)),
         Insn::FixnumLt { left, right } => gen_fixnum_lt(asm, opnd!(left), opnd!(right)),
@@ -1046,7 +1060,7 @@ fn gen_ccall_with_frame(
     gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, caller_stack_size);
     gen_spill_stack(jit, asm, function, state);
-    gen_spill_locals(jit, asm, state);
+    gen_spill_locals(jit, asm, function, state);
 
     let block_handler_specval = if let Some(BlockHandler::BlockIseq(block_iseq)) = block {
         // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
@@ -1141,7 +1155,7 @@ fn gen_ccall_variadic(
     gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, caller_stack_size);
     gen_spill_stack(jit, asm, function, state);
-    gen_spill_locals(jit, asm, state);
+    gen_spill_locals(jit, asm, function, state);
 
     let block_handler_specval = if let Some(BlockHandler::BlockIseq(blockiseq)) = block {
         gen_block_handler_specval(asm, blockiseq)
@@ -1463,9 +1477,18 @@ fn gen_const_attr_index_t(val: attr_index_t) -> lir::Opnd {
     Opnd::UImm(val as u64)
 }
 
-/// Compile a basic block argument
-fn gen_param(asm: &mut Assembler, _idx: usize) -> lir::Opnd {
-    let vreg = asm.new_block_param(VALUE_BITS);
+/// Compile a VALUE basic block argument.
+fn gen_value_param(asm: &mut Assembler) -> lir::Opnd {
+    gen_param_for_type(asm, types::BasicObject)
+}
+
+/// Compile a typed basic block argument.
+fn gen_param_for_type(asm: &mut Assembler, ty: Type) -> lir::Opnd {
+    let vreg = if ty.is_subtype(types::CDouble) {
+        asm.new_fp_vreg(64)
+    } else {
+        asm.new_block_param(VALUE_BITS)
+    };
     asm.current_block().add_parameter(vreg);
     vreg
 }
@@ -1587,7 +1610,7 @@ fn gen_push_inline_frame(
     gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, stack_size);
 
-    gen_spill_locals(jit, asm, state);
+    gen_spill_locals(jit, asm, function, state);
 
     // This mirrors vm_caller_setup_arg_block() for the `blockiseq != NULL` case.
     // The HIR specialization guards ensure we will only reach here for literal blocks,
@@ -1726,7 +1749,7 @@ fn gen_send_iseq_direct(
     let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
     gen_save_sp(asm, stack_size);
 
-    gen_spill_locals(jit, asm, state);
+    gen_spill_locals(jit, asm, function, state);
     asm.stack_map(stack_map, jit_frame, state.depth);
 
     // This mirrors vm_caller_setup_arg_block() in for the `blockiseq != NULL` case.
@@ -1956,7 +1979,7 @@ fn gen_invoke_block_iseq_direct(
     let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
     gen_save_sp(asm, stack_size);
 
-    gen_spill_locals(jit, asm, state);
+    gen_spill_locals(jit, asm, function, state);
     asm.stack_map(stack_map, jit_frame, state.depth);
 
     gen_push_frame(asm, args.len(), state, ControlFrame {
@@ -2693,34 +2716,358 @@ fn gen_fixnum_div(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
     asm_ccall!(asm, rb_jit_fix_div_fix, left, right)
 }
 
-/// Compile Float + Float
-fn gen_float_add(asm: &mut Assembler, recv: lir::Opnd, other: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    gen_prepare_leaf_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_float_plus, recv, other)
+/// Unbox a Ruby Float into a C double bit pattern.
+fn gen_unbox_float(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
+    let bits = gen_unbox_flonum(asm, val);
+    asm.bits_to_f64_raw(bits)
 }
 
-/// Compile Float - Float
-fn gen_float_sub(asm: &mut Assembler, recv: lir::Opnd, other: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    gen_prepare_leaf_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_float_minus, recv, other)
+/// Unbox any Ruby Float into a C double bit pattern.
+fn gen_unbox_ruby_float(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
+    let val = asm.load_mem(val);
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let flonum_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let flonum_edge = Target::Block(Box::new(lir::BranchEdge {
+        target: flonum_block,
+        args: vec![],
+    }));
+    let result_edge = |bits| Target::Block(Box::new(lir::BranchEdge {
+        target: result_block,
+        args: vec![bits],
+    }));
+
+    let masked = asm.and(val, lir::Opnd::UImm(RUBY_FLONUM_MASK as u64));
+    asm.cmp(masked, lir::Opnd::UImm(RUBY_FLONUM_FLAG as u64));
+    asm.je(jit, flonum_edge);
+
+    let bits = asm.load(Opnd::mem(64, val, RUBY_OFFSET_RFLOAT_VALUE));
+    asm.jmp(result_edge(bits));
+
+    asm.set_current_block(flonum_block);
+    let flonum_label = jit.get_label(asm, flonum_block, hir_block_id);
+    asm.write_label(flonum_label);
+    let bits = gen_unbox_flonum(asm, val);
+    asm.jmp(result_edge(bits));
+
+    asm.set_current_block(result_block);
+    let result_label = jit.get_label(asm, result_block, hir_block_id);
+    asm.write_label(result_label);
+    let bits = asm.new_block_param(VALUE_BITS);
+    asm.current_block().add_parameter(bits);
+    asm.bits_to_f64_raw(bits)
 }
 
-/// Compile Float * Float
-fn gen_float_mul(asm: &mut Assembler, recv: lir::Opnd, other: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    gen_prepare_leaf_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_float_mul, recv, other)
+unsafe extern "C" {
+    fn rb_jit_f64_sin(bits: u64) -> u64;
+    fn rb_jit_f64_cos(bits: u64) -> u64;
+    fn rb_jit_f64_pow(left_bits: u64, right_bits: u64) -> u64;
+    fn rb_jit_complex_mul_flonum(areal: VALUE, aimag: VALUE, breal: VALUE, bimag: VALUE) -> VALUE;
+    fn rb_jit_f64_to_i(bits: u64) -> VALUE;
+    fn rb_jit_f64_fixnum_cmp(left_bits: u64, right: VALUE) -> VALUE;
 }
 
-/// Compile Float / Float
-fn gen_float_div(asm: &mut Assembler, recv: lir::Opnd, other: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    gen_prepare_leaf_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_float_div, recv, other)
+fn gen_unbox_flonum(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
+    let sign_bit = asm.urshift(val, lir::Opnd::UImm(63));
+    let exponent_prefix = asm.sub(lir::Opnd::UImm(2), sign_bit);
+    let payload = asm.and(val, lir::Opnd::UImm(FLONUM_CLEAR_TAG_MASK));
+    let encoded = asm.or(exponent_prefix, payload);
+    let high = asm.lshift(encoded, lir::Opnd::UImm(61));
+    let low = asm.urshift(encoded, lir::Opnd::UImm(3));
+    let decoded = asm.or(high, low);
+
+    asm.cmp(val, lir::Opnd::UImm(FLONUM_ZERO_VALUE));
+    asm.csel_e(lir::Opnd::UImm(0), decoded)
 }
 
-/// Compile Float#to_i (truncate to integer)
-fn gen_float_to_int(asm: &mut Assembler, recv: lir::Opnd, state: &FrameState) -> lir::Opnd {
+fn gen_f64_opnd(asm: &mut Assembler, opnd: lir::Opnd) -> lir::Opnd {
+    match opnd {
+        lir::Opnd::UImm(_) | lir::Opnd::Imm(_) | lir::Opnd::Value(_) => {
+            let bits = asm.load(opnd);
+            asm.bits_to_f64_raw(bits)
+        }
+        _ => opnd,
+    }
+}
+
+fn gen_f64_bits_opnd(asm: &mut Assembler, opnd: lir::Opnd) -> lir::Opnd {
+    let opnd = gen_f64_opnd(asm, opnd);
+    asm.f64_to_bits_raw(opnd)
+}
+
+/// Box a C double bit pattern into a Ruby Float.
+fn gen_box_float(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
+    let val = gen_f64_opnd(asm, val);
+    let bits = asm.f64_to_bits_raw(val);
+
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let fallback_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let fallback_edge = Target::Block(Box::new(lir::BranchEdge {
+        target: fallback_block,
+        args: vec![],
+    }));
+    let result_edge = |v| Target::Block(Box::new(lir::BranchEdge {
+        target: result_block,
+        args: vec![v],
+    }));
+
+    asm.cmp(bits, lir::Opnd::UImm(0));
+    asm.je(jit, result_edge(lir::Opnd::UImm(FLONUM_ZERO_VALUE)));
+
+    asm.cmp(bits, lir::Opnd::UImm(FLONUM_MAGIC_EXCLUDED_BITS));
+    asm.je(jit, fallback_edge.clone());
+
+    let shifted_high_bits = asm.urshift(bits, lir::Opnd::UImm(60));
+    let high_bits = asm.and(shifted_high_bits, lir::Opnd::UImm(0x7));
+    let high_bits_minus_three = asm.sub(high_bits, lir::Opnd::UImm(3));
+    let high_bits_invalid = asm.and(high_bits_minus_three, lir::Opnd::UImm(!0x1));
+    asm.cmp(high_bits_invalid, lir::Opnd::UImm(0));
+    asm.jne(jit, fallback_edge);
+
+    let encoded_high = asm.lshift(bits, lir::Opnd::UImm(3));
+    let encoded_low = asm.urshift(bits, lir::Opnd::UImm(61));
+    let encoded_rotl = asm.or(encoded_high, encoded_low);
+    let encoded_without_low_bit = asm.and(encoded_rotl, lir::Opnd::UImm(FLONUM_CLEAR_LOW_BIT_MASK));
+    let encoded = asm.or(encoded_without_low_bit, lir::Opnd::UImm(FLONUM_TAG));
+    asm.jmp(result_edge(encoded));
+
+    asm.set_current_block(fallback_block);
+    let fallback_label = jit.get_label(asm, fallback_block, hir_block_id);
+    asm.write_label(fallback_label);
     gen_prepare_leaf_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_flo_to_i, recv)
+    let fallback = asm_ccall!(asm, rb_jit_f64_to_float, bits);
+    asm.jmp(result_edge(fallback));
+
+    asm.set_current_block(result_block);
+    let result_label = jit.get_label(asm, result_block, hir_block_id);
+    asm.write_label(result_label);
+    let param = asm.new_block_param(VALUE_BITS);
+    asm.current_block().add_parameter(param);
+    param
+}
+
+fn gen_f64_binop(asm: &mut Assembler, op: F64BinOp, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
+    let left = gen_f64_opnd(asm, left);
+    let right = gen_f64_opnd(asm, right);
+
+    asm.f64_binop_raw(op, left, right)
+}
+
+fn gen_f64_value_rhs_op(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    function: &Function,
+    op: F64BinOp,
+    left: lir::Opnd,
+    right: lir::Opnd,
+    state: &FrameState,
+) -> lir::Opnd {
+    let left = gen_f64_opnd(asm, left);
+
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let flonum_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let flonum_edge = Target::Block(Box::new(lir::BranchEdge { target: flonum_block, args: vec![] }));
+    let result_edge = |v| Target::Block(Box::new(lir::BranchEdge { target: result_block, args: vec![v] }));
+
+    let masked = asm.and(right, lir::Opnd::UImm(RUBY_FLONUM_MASK as u64));
+    asm.cmp(masked, lir::Opnd::UImm(RUBY_FLONUM_FLAG as u64));
+    asm.je(jit, flonum_edge);
+
+    asm.test(right, lir::Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+    asm.jz(jit, side_exit_with_recompile(jit, function, state, GuardType(types::Flonum.union(types::Fixnum)), Some(Recompile)));
+    let right_f64 = asm.fixnum_to_f64_raw(right);
+    asm.jmp(result_edge(right_f64));
+
+    asm.set_current_block(flonum_block);
+    let flonum_label = jit.get_label(asm, flonum_block, hir_block_id);
+    asm.write_label(flonum_label);
+    let right_f64 = gen_unbox_float(asm, right);
+    asm.jmp(result_edge(right_f64));
+
+    asm.set_current_block(result_block);
+    let result_label = jit.get_label(asm, result_block, hir_block_id);
+    asm.write_label(result_label);
+    let right_f64 = asm.new_fp_vreg(64);
+    asm.current_block().add_parameter(right_f64);
+    gen_f64_binop(asm, op, left, right_f64)
+}
+
+fn gen_f64_sqrt(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
+    let val = gen_f64_opnd(asm, val);
+    asm.f64_sqrt_raw(val)
+}
+
+fn gen_f64_sin(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
+    let bits = gen_f64_bits_opnd(asm, val);
+    let result = asm_ccall!(asm, rb_jit_f64_sin, bits);
+    asm.bits_to_f64_raw(result)
+}
+
+fn gen_f64_cos(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
+    let bits = gen_f64_bits_opnd(asm, val);
+    let result = asm_ccall!(asm, rb_jit_f64_cos, bits);
+    asm.bits_to_f64_raw(result)
+}
+
+fn gen_f64_pow(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
+    let left = gen_f64_bits_opnd(asm, left);
+    let right = gen_f64_bits_opnd(asm, right);
+    let result = asm_ccall!(asm, rb_jit_f64_pow, left, right);
+    asm.bits_to_f64_raw(result)
+}
+
+fn gen_f64_guard_nonnegative(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, state: &FrameState) {
+    let val = gen_f64_opnd(asm, val);
+    let zero = gen_f64_opnd(asm, lir::Opnd::UImm(0));
+    let nonnegative = asm.f64_bool_cmp_raw(F64BoolCmpOp::Ge, val, zero);
+    asm.cmp(nonnegative, Qfalse.into());
+    asm.je(jit, side_exit(jit, function, state, SideExitReason::GuardGreaterEq));
+}
+
+fn gen_complex_mul_flonum(asm: &mut Assembler, areal: lir::Opnd, aimag: lir::Opnd, breal: lir::Opnd, bimag: lir::Opnd, state: &FrameState) -> lir::Opnd {
+    gen_prepare_leaf_call_with_gc(asm, state);
+    asm_ccall!(asm, rb_jit_complex_mul_flonum, areal, aimag, breal, bimag)
+}
+
+fn f64_abs_bits_from_bits(asm: &mut Assembler, bits: lir::Opnd) -> lir::Opnd {
+    const F64_ABS_MASK: u64 = 0x7fff_ffff_ffff_ffff;
+
+    asm.and(bits, lir::Opnd::UImm(F64_ABS_MASK))
+}
+
+const F64_INFINITY_BITS: u64 = 0x7ff0_0000_0000_0000;
+
+fn gen_f64_nan_p_from_bits(asm: &mut Assembler, bits: lir::Opnd) -> lir::Opnd {
+    let abs = f64_abs_bits_from_bits(asm, bits);
+    asm.cmp(abs, lir::Opnd::UImm(F64_INFINITY_BITS));
+    asm.csel_g(Qtrue.into(), Qfalse.into())
+}
+
+fn gen_f64_finite_p_from_bits(asm: &mut Assembler, bits: lir::Opnd) -> lir::Opnd {
+    let abs = f64_abs_bits_from_bits(asm, bits);
+    asm.cmp(abs, lir::Opnd::UImm(F64_INFINITY_BITS));
+    asm.csel_l(Qtrue.into(), Qfalse.into())
+}
+
+fn gen_f64_infinite_p_from_bits(asm: &mut Assembler, bits: lir::Opnd) -> lir::Opnd {
+    const F64_SIGN_MASK: u64 = 0x8000_0000_0000_0000;
+
+    let sign = asm.and(bits, lir::Opnd::UImm(F64_SIGN_MASK));
+    asm.cmp(sign, lir::Opnd::UImm(0));
+    let signed_result = asm.csel_e(VALUE::fixnum_from_usize(1).into(), VALUE::fixnum_from_isize(-1).into());
+
+    let abs = f64_abs_bits_from_bits(asm, bits);
+    asm.cmp(abs, lir::Opnd::UImm(F64_INFINITY_BITS));
+    asm.csel_e(signed_result, Qnil.into())
+}
+
+fn gen_f64_zero_p_from_bits(asm: &mut Assembler, bits: lir::Opnd) -> lir::Opnd {
+    let abs = f64_abs_bits_from_bits(asm, bits);
+    gen_equal_p(asm, abs, lir::Opnd::UImm(0))
+}
+
+fn gen_equal_p(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
+    asm.cmp(left, right);
+    asm.csel_e(Qtrue.into(), Qfalse.into())
+}
+
+/// Compile Float#to_i from a C double bit pattern.
+fn gen_f64_to_int(asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
+    let val = gen_f64_bits_opnd(asm, val);
+
+    gen_prepare_leaf_call_with_gc(asm, state);
+    asm_ccall!(asm, rb_jit_f64_to_i, val)
+}
+
+fn gen_f64_predicate(asm: &mut Assembler, op: F64PredicateOp, val: lir::Opnd) -> lir::Opnd {
+    let val = gen_f64_opnd(asm, val);
+
+    match op {
+        F64PredicateOp::Positive => asm.f64_zero_cmp_raw(lir::F64ZeroCmpOp::Positive, val),
+        F64PredicateOp::Negative => asm.f64_zero_cmp_raw(lir::F64ZeroCmpOp::Negative, val),
+        _ => {
+            let bits = asm.f64_to_bits_raw(val);
+            match op {
+                F64PredicateOp::Nan => gen_f64_nan_p_from_bits(asm, bits),
+                F64PredicateOp::Finite => gen_f64_finite_p_from_bits(asm, bits),
+                F64PredicateOp::Infinite => gen_f64_infinite_p_from_bits(asm, bits),
+                F64PredicateOp::Zero => gen_f64_zero_p_from_bits(asm, bits),
+                _ => unreachable!(),
+            }
+        }
+    }
+}
+
+fn gen_f64_bool_cmp(asm: &mut Assembler, op: F64BoolCmpOp, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
+    let left = gen_f64_opnd(asm, left);
+    let right = gen_f64_opnd(asm, right);
+
+    asm.f64_bool_cmp_raw(op, left, right)
+}
+
+fn gen_f64_cmp(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
+    let left = gen_f64_opnd(asm, left);
+    let right = gen_f64_opnd(asm, right);
+    asm.f64_cmp_raw(left, right)
+}
+
+fn gen_f64_fixnum_bool_cmp(asm: &mut Assembler, op: F64BoolCmpOp, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
+    if fixnum_opnd_exact_as_f64(right) {
+        let left = gen_f64_opnd(asm, left);
+        let right = asm.fixnum_to_f64_raw(right);
+
+        return asm.f64_bool_cmp_raw(op, left, right);
+    }
+
+    let left = gen_f64_bits_opnd(asm, left);
+    let rel = asm_ccall!(asm, rb_jit_f64_fixnum_cmp, left, right);
+    let minus_one = VALUE::fixnum_from_isize(-1);
+    let zero = VALUE::fixnum_from_usize(0);
+    let one = VALUE::fixnum_from_usize(1);
+
+    match op {
+        F64BoolCmpOp::Eq => gen_equal_p(asm, rel, zero.into()),
+        F64BoolCmpOp::Lt => gen_equal_p(asm, rel, minus_one.into()),
+        F64BoolCmpOp::Le => {
+            let less = gen_equal_p(asm, rel, minus_one.into());
+            asm.cmp(rel, zero.into());
+            asm.csel_e(Qtrue.into(), less)
+        },
+        F64BoolCmpOp::Gt => gen_equal_p(asm, rel, one.into()),
+        F64BoolCmpOp::Ge => {
+            let greater = gen_equal_p(asm, rel, one.into());
+            asm.cmp(rel, zero.into());
+            asm.csel_e(Qtrue.into(), greater)
+        },
+    }
+}
+
+fn gen_f64_fixnum_cmp(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
+    if fixnum_opnd_exact_as_f64(right) {
+        let left = gen_f64_opnd(asm, left);
+        let right = asm.fixnum_to_f64_raw(right);
+        return asm.f64_cmp_raw(left, right);
+    }
+
+    let left = gen_f64_bits_opnd(asm, left);
+    asm_ccall!(asm, rb_jit_f64_fixnum_cmp, left, right)
+}
+
+fn fixnum_opnd_exact_as_f64(opnd: lir::Opnd) -> bool {
+    const MAX_EXACT_I64_IN_F64: i64 = 1_i64 << 53;
+
+    let lir::Opnd::Value(value) = opnd else {
+        return false;
+    };
+    if !value.fixnum_p() {
+        return false;
+    }
+    value.as_fixnum().abs() <= MAX_EXACT_I64_IN_F64
 }
 
 /// Compile Fixnum == Fixnum
@@ -2996,6 +3343,14 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
     } else if guard_type.is_subtype(types::NilClass) {
         asm.cmp(val, Qnil.into());
         asm.jne(jit, side_exit_with_recompile(jit, function, state, GuardType(guard_type), recompile));
+    } else if guard_type.bit_equal(types::BoolExact) {
+        let side_exit = side_exit_with_recompile(jit, function, state, GuardType(guard_type), recompile);
+        let ok = asm.new_label("guard_bool_ok");
+        asm.cmp(val, Qtrue.into());
+        asm.je(jit, ok.clone());
+        asm.cmp(val, Qfalse.into());
+        asm.jne(jit, side_exit);
+        asm.write_label(ok);
     } else if guard_type.is_subtype(types::TrueClass) {
         asm.cmp(val, Qtrue.into());
         asm.jne(jit, side_exit_with_recompile(jit, function, state, GuardType(guard_type), recompile));
@@ -3277,7 +3632,7 @@ fn gen_prepare_leaf_call_with_gc(asm: &mut Assembler, state: &FrameState) {
 /// Save the current SP on the CFP
 fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
     // Update cfp->sp which will be read by the interpreter. We also have the SP register in JIT
-    // code, and ZJIT's codegen currently assumes the SP register doesn't move, e.g. gen_param().
+    // code, and ZJIT's codegen currently assumes the SP register doesn't move, e.g. gen_value_param().
     // So we don't update the SP register here. We could update the SP register to avoid using
     // an extra register for asm.lea(), but you'll need to manage the SP offset like YJIT does.
     gen_incr_counter(asm, Counter::vm_write_sp_count);
@@ -3288,12 +3643,17 @@ fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
 }
 
 /// Spill locals onto the stack.
-fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
+fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, function: &Function, state: &FrameState) {
     // TODO: Avoid spilling locals that have been spilled before and not changed.
     gen_incr_counter(asm, Counter::vm_write_locals_count);
     asm_comment!(asm, "spill locals");
     for (idx, &insn_id) in state.locals().enumerate() {
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
+        let opnd = match build_stack_map_entry(jit, function, insn_id) {
+            StackMapEntry::Opnd(opnd) => opnd,
+            StackMapEntry::F64(opnd) => gen_box_stack_map_f64(asm, opnd),
+            StackMapEntry::Skip(_) => unreachable!("locals do not use StackMap skips"),
+        };
+        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), opnd);
     }
 }
 
@@ -3311,6 +3671,11 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
                 offset -= 1;
                 asm.mov(Opnd::mem(64, SP, offset * SIZEOF_VALUE_I32), opnd);
             }
+            StackMapEntry::F64(opnd) => {
+                offset -= 1;
+                let boxed = gen_box_stack_map_f64(asm, opnd);
+                asm.mov(Opnd::mem(64, SP, offset * SIZEOF_VALUE_I32), boxed);
+            }
             StackMapEntry::Skip(skip) => {
                 offset -= skip as i32;
             }
@@ -3326,7 +3691,7 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
 fn gen_prepare_fallback_call(jit: &JITState, asm: &mut Assembler, function: &Function, state: &FrameState) {
     gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, state.stack_size());
-    gen_spill_locals(jit, asm, state);
+    gen_spill_locals(jit, asm, function, state);
     gen_spill_stack(jit, asm, function, state);
 }
 
@@ -3338,12 +3703,7 @@ fn build_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> V
     let mut current_state = state.clone();
     loop {
         stack.extend(current_state.stack().rev().copied().map(|insn_id| {
-            let opnd = jit.get_opnd(insn_id);
-            assert!(
-                matches!(opnd, Opnd::Value(_) | Opnd::VReg { .. }),
-                "FrameState should only reference Opnd::Value or Opnd::VReg, but got: {opnd:?}",
-            );
-            StackMapEntry::Opnd(opnd)
+            build_stack_map_entry(jit, function, insn_id)
         }));
 
         let Some(caller) = current_state.caller() else {
@@ -3353,6 +3713,45 @@ fn build_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> V
         current_state = function.frame_state(caller);
     }
     stack
+}
+
+fn build_stack_map_entry(jit: &JITState, function: &Function, insn_id: InsnId) -> StackMapEntry {
+    if let Insn::BoxFloat { val, .. } = function.find(insn_id) {
+        let opnd = jit.get_opnd(val);
+        if let Opnd::UImm(bits) = opnd {
+            let float = f64::from_bits(bits);
+            if let Some(value) = VALUE::flonum_from_f64(float) {
+                return StackMapEntry::Opnd(Opnd::Value(value));
+            }
+        }
+
+        assert!(
+            matches!(opnd, Opnd::UImm(_) | Opnd::Imm(_) | Opnd::VReg { .. }),
+            "BoxFloat stack map should reference raw F64 bits or VReg, but got: {opnd:?}",
+        );
+        return StackMapEntry::F64(opnd);
+    }
+
+    if function.type_of(insn_id).is_subtype(types::CDouble) {
+        let opnd = jit.get_opnd(insn_id);
+        assert!(
+            matches!(opnd, Opnd::UImm(_) | Opnd::Imm(_) | Opnd::VReg { .. }),
+            "raw F64 stack map should reference CDouble bits or VReg, but got: {opnd:?}",
+        );
+        return StackMapEntry::F64(opnd);
+    }
+
+    let opnd = jit.get_opnd(insn_id);
+    assert!(
+        matches!(opnd, Opnd::Value(_) | Opnd::VReg { .. }),
+        "FrameState should only reference Opnd::Value or Opnd::VReg, but got: {opnd:?}",
+    );
+    StackMapEntry::Opnd(opnd)
+}
+
+fn gen_box_stack_map_f64(asm: &mut Assembler, opnd: Opnd) -> Opnd {
+    let bits = gen_f64_bits_opnd(asm, opnd);
+    asm_ccall!(asm, rb_jit_f64_to_float, bits)
 }
 
 fn inline_frame_stack_gap(iseq: IseqPtr) -> usize {
@@ -3376,7 +3775,7 @@ fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, function: &Fun
     asm.stack_map(stack_map, jit_frame, state.depth);
 
     // Spill locals in case the method looks at caller Bindings
-    gen_spill_locals(jit, asm, state);
+    gen_spill_locals(jit, asm, function, state);
 }
 
 /// Frame metadata written by gen_push_frame()
@@ -3519,12 +3918,12 @@ fn side_exit_with_recompile(jit: &JITState, function: &Function, state: &FrameSt
 fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> SideExit {
     let mut stack = Vec::new();
     for &insn_id in state.stack() {
-        stack.push(jit.get_opnd(insn_id));
+        stack.push(build_stack_map_entry(jit, function, insn_id));
     }
 
     let mut locals = Vec::new();
     for &insn_id in state.locals() {
-        locals.push(jit.get_opnd(insn_id));
+        locals.push(build_stack_map_entry(jit, function, insn_id));
     }
 
     SideExit{

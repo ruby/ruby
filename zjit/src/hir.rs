@@ -524,6 +524,33 @@ impl PtrPrintMap {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum F64BinOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum F64BoolCmpOp {
+    Eq,
+    Lt,
+    Le,
+    Gt,
+    Ge,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum F64PredicateOp {
+    Nan,
+    Finite,
+    Infinite,
+    Zero,
+    Positive,
+    Negative,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum SideExitReason {
     UnhandledNewarraySend(vm_opt_newarray_send_type),
@@ -818,6 +845,8 @@ pub enum FieldName {
     shape_id,
     as_heap,
     fields_obj,
+    rcomplex_real,
+    rcomplex_imag,
     thread_ptr,
     len,
     SelfParam,
@@ -1189,13 +1218,35 @@ pub enum Insn {
     FixnumLShift { left: InsnId, right: InsnId, state: InsnId },
     FixnumRShift { left: InsnId, right: InsnId },
 
-    /// Float arithmetic: delegates to rb_float_plus/minus/mul/div with GC preparation
-    FloatAdd  { recv: InsnId, other: InsnId, state: InsnId },
-    FloatSub  { recv: InsnId, other: InsnId, state: InsnId },
-    FloatMul  { recv: InsnId, other: InsnId, state: InsnId },
-    FloatDiv  { recv: InsnId, other: InsnId, state: InsnId },
-    /// Float#to_i: truncate float to integer via rb_jit_flo_to_i
-    FloatToInt { recv: InsnId, state: InsnId },
+    /// Convert a Ruby Float VALUE to an unboxed C double bit pattern.
+    UnboxFloat { val: InsnId },
+    /// Convert any Ruby Float VALUE to an unboxed C double bit pattern.
+    UnboxRubyFloat { val: InsnId },
+    /// Convert a Ruby Fixnum VALUE to an unboxed C double bit pattern.
+    FixnumToF64 { val: InsnId },
+    /// Convert an unboxed C double bit pattern to a Ruby Float VALUE.
+    BoxFloat { val: InsnId, state: InsnId },
+    /// Unboxed C double arithmetic.
+    F64BinOp { op: F64BinOp, left: InsnId, right: InsnId },
+    /// Float arithmetic with a Ruby VALUE RHS. Used when profiling proves the
+    /// RHS usually comes from memory as either Flonum or Fixnum.
+    F64ValueRhsOp { op: F64BinOp, left: InsnId, right: InsnId, state: InsnId },
+    F64Sqrt { val: InsnId },
+    F64Sin { val: InsnId },
+    F64Cos { val: InsnId },
+    F64Pow { left: InsnId, right: InsnId },
+    F64GuardNonnegative { val: InsnId, state: InsnId },
+    ComplexMulFlonum { areal: InsnId, aimag: InsnId, breal: InsnId, bimag: InsnId, state: InsnId },
+    /// Float#to_i on an unboxed C double bit pattern.
+    F64ToInt { val: InsnId, state: InsnId },
+    /// Float predicates on an unboxed C double bit pattern.
+    F64Predicate { op: F64PredicateOp, val: InsnId },
+    /// Float comparisons on unboxed C double bit patterns.
+    F64BoolCmp { op: F64BoolCmpOp, left: InsnId, right: InsnId },
+    F64Cmp { left: InsnId, right: InsnId },
+    /// Float comparisons with a Fixnum RHS, preserving CRuby's exact integer/float ordering.
+    F64FixnumBoolCmp { op: F64BoolCmpOp, left: InsnId, right: InsnId },
+    F64FixnumCmp { left: InsnId, right: InsnId },
 
     AnyToString { val: InsnId, state: InsnId },
 
@@ -1390,16 +1441,42 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*right);
                 $visit_one!(*state);
             }
-            Insn::FloatAdd { recv, other, state }
-            | Insn::FloatSub { recv, other, state }
-            | Insn::FloatMul { recv, other, state }
-            | Insn::FloatDiv { recv, other, state } => {
-                $visit_one!(*recv);
-                $visit_one!(*other);
+            Insn::UnboxFloat { val }
+            | Insn::UnboxRubyFloat { val }
+            | Insn::FixnumToF64 { val } => {
+                $visit_one!(*val);
+            }
+            Insn::BoxFloat { val, state }
+            | Insn::F64GuardNonnegative { val, state }
+            | Insn::F64ToInt { val, state } => {
+                $visit_one!(*val);
                 $visit_one!(*state);
             }
-            Insn::FloatToInt { recv, state } => {
-                $visit_one!(*recv);
+            Insn::ComplexMulFlonum { areal, aimag, breal, bimag, state } => {
+                $visit_one!(*areal);
+                $visit_one!(*aimag);
+                $visit_one!(*breal);
+                $visit_one!(*bimag);
+                $visit_one!(*state);
+            }
+            Insn::F64Predicate { val, .. }
+            | Insn::F64Sqrt { val }
+            | Insn::F64Sin { val }
+            | Insn::F64Cos { val } => {
+                $visit_one!(*val);
+            }
+            Insn::F64BinOp { left, right, .. }
+            | Insn::F64Pow { left, right }
+            | Insn::F64BoolCmp { left, right, .. }
+            | Insn::F64Cmp { left, right }
+            | Insn::F64FixnumBoolCmp { left, right, .. }
+            | Insn::F64FixnumCmp { left, right } => {
+                $visit_one!(*left);
+                $visit_one!(*right);
+            }
+            Insn::F64ValueRhsOp { left, right, state, .. } => {
+                $visit_one!(*left);
+                $visit_one!(*right);
                 $visit_one!(*state);
             }
             Insn::FixnumLt { left, right }
@@ -1587,6 +1664,7 @@ impl Insn {
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
             | Insn::ArrayAset { .. }
+            | Insn::F64GuardNonnegative { .. }
             | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. } => false,
             _ => true,
         }
@@ -1786,11 +1864,24 @@ impl Insn {
             Insn::FixnumMult { .. } => effects::Empty,
             Insn::FixnumDiv { .. } => effects::Any,
             Insn::FixnumMod { .. } => effects::Any,
-            Insn::FloatAdd { .. } => effects::Any,
-            Insn::FloatSub { .. } => effects::Any,
-            Insn::FloatMul { .. } => effects::Any,
-            Insn::FloatDiv { .. } => effects::Any,
-            Insn::FloatToInt { .. } => effects::Any,
+            Insn::UnboxFloat { .. }
+            | Insn::UnboxRubyFloat { .. }
+            | Insn::FixnumToF64 { .. }
+            | Insn::F64BinOp { .. }
+            | Insn::F64Sqrt { .. }
+            | Insn::F64Sin { .. }
+            | Insn::F64Cos { .. }
+            | Insn::F64Pow { .. }
+            | Insn::F64Predicate { .. }
+            | Insn::F64BoolCmp { .. }
+            | Insn::F64Cmp { .. }
+            | Insn::F64FixnumBoolCmp { .. }
+            | Insn::F64FixnumCmp { .. } => effects::Empty,
+            Insn::BoxFloat { .. } => allocates,
+            Insn::F64ValueRhsOp { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
+            Insn::F64GuardNonnegative { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
+            Insn::ComplexMulFlonum { .. } => allocates,
+            Insn::F64ToInt { .. } => effects::Any,
             Insn::FixnumEq { .. } => effects::Empty,
             Insn::FixnumNeq { .. } => effects::Empty,
             Insn::FixnumLt { .. } => effects::Empty,
@@ -2176,11 +2267,34 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumMult { left, right, .. } => { write!(f, "FixnumMult {left}, {right}") },
             Insn::FixnumDiv  { left, right, .. } => { write!(f, "FixnumDiv {left}, {right}") },
             Insn::FixnumMod  { left, right, .. } => { write!(f, "FixnumMod {left}, {right}") },
-            Insn::FloatAdd   { recv, other, .. } => { write!(f, "FloatAdd {recv}, {other}") },
-            Insn::FloatSub   { recv, other, .. } => { write!(f, "FloatSub {recv}, {other}") },
-            Insn::FloatMul   { recv, other, .. } => { write!(f, "FloatMul {recv}, {other}") },
-            Insn::FloatDiv   { recv, other, .. } => { write!(f, "FloatDiv {recv}, {other}") },
-            Insn::FloatToInt { recv, .. } => { write!(f, "FloatToInt {recv}") },
+            Insn::UnboxFloat { val } => { write!(f, "UnboxFloat {val}") },
+            Insn::UnboxRubyFloat { val } => { write!(f, "UnboxRubyFloat {val}") },
+            Insn::FixnumToF64 { val } => { write!(f, "FixnumToF64 {val}") },
+            Insn::BoxFloat { val, .. } => { write!(f, "BoxFloat {val}") },
+            Insn::F64BinOp { op, left, right } => { write!(f, "F64BinOp::{op:?} {left}, {right}") },
+            Insn::F64ValueRhsOp { op, left, right, .. } => { write!(f, "F64ValueRhsOp::{op:?} {left}, {right}") },
+            Insn::F64Sqrt { val } => { write!(f, "F64Sqrt {val}") },
+            Insn::F64Sin { val } => { write!(f, "F64Sin {val}") },
+            Insn::F64Cos { val } => { write!(f, "F64Cos {val}") },
+            Insn::F64Pow { left, right } => { write!(f, "F64Pow {left}, {right}") },
+            Insn::F64GuardNonnegative { val, .. } => { write!(f, "F64GuardNonnegative {val}") },
+            Insn::ComplexMulFlonum { areal, aimag, breal, bimag, .. } => { write!(f, "ComplexMulFlonum {areal}, {aimag}, {breal}, {bimag}") },
+            Insn::F64ToInt { val, .. } => { write!(f, "F64ToInt {val}") },
+            Insn::F64Predicate { op, val } => {
+                let name = match op {
+                    F64PredicateOp::Nan => "F64NanP",
+                    F64PredicateOp::Finite => "F64FiniteP",
+                    F64PredicateOp::Infinite => "F64InfiniteP",
+                    F64PredicateOp::Zero => "F64ZeroP",
+                    F64PredicateOp::Positive => "F64PositiveP",
+                    F64PredicateOp::Negative => "F64NegativeP",
+                };
+                write!(f, "{name} {val}")
+            },
+            Insn::F64BoolCmp { op, left, right } => { write!(f, "F64BoolCmp::{op:?} {left}, {right}") },
+            Insn::F64Cmp { left, right } => { write!(f, "F64Cmp {left}, {right}") },
+            Insn::F64FixnumBoolCmp { op, left, right } => { write!(f, "F64FixnumBoolCmp::{op:?} {left}, {right}") },
+            Insn::F64FixnumCmp { left, right } => { write!(f, "F64FixnumCmp {left}, {right}") },
             Insn::FixnumEq   { left, right, .. } => { write!(f, "FixnumEq {left}, {right}") },
             Insn::FixnumNeq  { left, right, .. } => { write!(f, "FixnumNeq {left}, {right}") },
             Insn::FixnumLt   { left, right, .. } => { write!(f, "FixnumLt {left}, {right}") },
@@ -3174,6 +3288,12 @@ impl Function {
         self.union_find.borrow_mut().make_equal_to(insn, replacement);
     }
 
+    fn infer_type_if_any(&mut self, insn: InsnId) {
+        if self.type_of(insn).bit_equal(types::Any) {
+            self.insn_types[insn.0] = self.infer_type(insn);
+        }
+    }
+
     pub fn type_of(&self, insn: InsnId) -> Type {
         assert!(self.insns[insn.0].has_output());
         self.insn_types[self.union_find.borrow_mut().find(insn).0]
@@ -3197,6 +3317,7 @@ impl Function {
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. }
+            | Insn::F64GuardNonnegative { .. }
             | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
@@ -3269,11 +3390,30 @@ impl Function {
             // Downstream Fixnum ops insert their own GuardType(Fixnum)
             Insn::FixnumDiv  { .. } => types::Integer,
             Insn::FixnumMod  { .. } => types::Fixnum,
-            Insn::FloatAdd   { .. } => types::Float,
-            Insn::FloatSub   { .. } => types::Float,
-            Insn::FloatMul   { .. } => types::Float,
-            Insn::FloatDiv   { .. } => types::Float,
-            Insn::FloatToInt { .. } => types::Integer,
+            Insn::UnboxFloat { .. }
+            | Insn::UnboxRubyFloat { .. }
+            | Insn::FixnumToF64 { .. }
+            | Insn::F64BinOp { .. }
+            | Insn::F64ValueRhsOp { .. }
+            | Insn::F64Sqrt { .. }
+            | Insn::F64Sin { .. }
+            | Insn::F64Cos { .. }
+            | Insn::F64Pow { .. } => types::CDouble,
+            Insn::BoxFloat { val, .. } => self
+                .type_of(*val)
+                .cdouble_value()
+                .and_then(VALUE::flonum_from_f64)
+                .map_or(types::Float, Type::from_value),
+            Insn::ComplexMulFlonum { .. } => types::HeapBasicObject,
+            Insn::F64ToInt { .. } => types::Integer,
+            Insn::F64Predicate { op, .. } => match op {
+                F64PredicateOp::Infinite => types::Fixnum.union(types::NilClass),
+                _ => types::BoolExact,
+            },
+            Insn::F64BoolCmp { .. } => types::BoolExact,
+            Insn::F64Cmp { .. } => types::Fixnum.union(types::NilClass),
+            Insn::F64FixnumBoolCmp { .. } => types::BoolExact,
+            Insn::F64FixnumCmp { .. } => types::Fixnum.union(types::NilClass),
             Insn::FixnumEq   { .. } => types::BoolExact,
             Insn::FixnumNeq  { .. } => types::BoolExact,
             Insn::FixnumLt   { .. } => types::BoolExact,
@@ -3999,14 +4139,82 @@ impl Function {
             let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
             self.blocks[block.0].insns.extend(insns);
             self.count(block, Counter::inline_cfunc_optimized_send_count);
-            if self.type_of(replacement).bit_equal(types::Any) {
-                // Not set yet; infer type
-                self.insn_types[replacement.0] = self.infer_type(replacement);
-            }
+            self.infer_type_if_any(replacement);
             self.remove_block(tmp_block);
             return replacement;
         }
         return self.push_insn(block, insn);
+    }
+
+    fn inline_invoke_builtins(&mut self) -> bool {
+        let mut changed = false;
+
+        for block in self.reverse_post_order() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+
+            for insn_id in old_insns {
+                let insn = self.find(insn_id).clone();
+                let Insn::InvokeBuiltin { bf, recv, ref args, state, .. } = insn else {
+                    self.blocks[block.0].insns.push(insn_id);
+                    continue;
+                };
+
+                let props = ZJITState::get_method_annotations().get_builtin_properties(bf).unwrap_or_default();
+                let tmp_block = self.new_block(u32::MAX);
+                if let Some(replacement) = (props.inline)(self, tmp_block, recv, args, state) {
+                    let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
+                    self.blocks[block.0].insns.extend(insns);
+                    self.make_equal_to(insn_id, replacement);
+                    self.remove_block(tmp_block);
+                    changed = true;
+                } else {
+                    self.remove_block(tmp_block);
+                    self.blocks[block.0].insns.push(insn_id);
+                }
+            }
+        }
+
+        changed
+    }
+
+    fn inline_annotated_ccalls(&mut self) -> bool {
+        let mut changed = false;
+
+        for block in self.reverse_post_order() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+
+            for insn_id in old_insns {
+                let insn = self.find(insn_id).clone();
+                let Insn::CCallWithFrame(data) = insn else {
+                    self.blocks[block.0].insns.push(insn_id);
+                    continue;
+                };
+
+                if data.block.is_some() {
+                    self.blocks[block.0].insns.push(insn_id);
+                    continue;
+                }
+
+                let props = ZJITState::get_method_annotations().get_cfunc_properties(data.cme).unwrap_or_default();
+                let tmp_block = self.new_block(u32::MAX);
+                if let Some(replacement) = (props.inline)(self, tmp_block, data.recv, &data.args, data.state) {
+                    let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
+                    for &insn in &insns {
+                        self.infer_type_if_any(insn);
+                    }
+                    self.blocks[block.0].insns.extend(insns);
+                    self.make_equal_to(insn_id, replacement);
+                    self.infer_type_if_any(replacement);
+                    self.remove_block(tmp_block);
+                    changed = true;
+                } else {
+                    self.remove_block(tmp_block);
+                    self.blocks[block.0].insns.push(insn_id);
+                }
+            }
+        }
+
+        changed
     }
 
     /// Try trivially inlining the method. If we can't, emit a SendDirect instruction instead and
@@ -5426,13 +5634,6 @@ impl Function {
             // too-complex shapes can't use index access
             return Err(Counter::getivar_fallback_complex);
         }
-        if self.policy.no_side_exits {
-            // On the final version, skip GetIvar shape specialization.
-            // iseq_to_hir already generates polymorphic branches with a
-            // GetIvar C call fallback for getinstancevariable, so we don't
-            // need to wrap it again here.
-            return Err(Counter::getivar_fallback_no_side_exits);
-        }
         let self_val = self.guard_heap(block, self_val, state);
         let shape = self.load_shape(block, self_val);
         self.guard_shape(block, shape, profiled_type.shape(), state, Some(Recompile));
@@ -5534,10 +5735,6 @@ impl Function {
     }
 
     fn try_emit_optimized_setivar(&mut self, block: BlockId, self_val: InsnId, id: ID, val: InsnId, profiled_type: ProfiledType, state: InsnId, recompile: Option<Recompile>) -> Result<(), Counter> {
-        if self.policy.no_side_exits {
-            // On the final version, don't add a shape guard without a fallback.
-            return Err(Counter::setivar_fallback_no_side_exits);
-        }
         let spec = self.prepare_optimized_setivar(id, profiled_type)?;
         let self_val = self.guard_heap(block, self_val, state);
         let shape = self.load_shape(block, self_val);
@@ -5770,6 +5967,13 @@ impl Function {
             .unwrap_or(insn_id)
     }
 
+    fn fold_f64_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(f64, f64) -> f64) -> InsnId {
+        match (self.type_of(left).cdouble_value(), self.type_of(right).cdouble_value()) {
+            (Some(left), Some(right)) => self.new_insn(Insn::Const { val: Const::CDouble(f(left, right)) }),
+            _ => insn_id,
+        }
+    }
+
     /// Block-local canonicalize: rewrite each operand through union-find and a
     /// per-block map of the most recent `Guard*` for that value. Forwards
     /// guarded values into branch-edge args (so `infer_types` narrows merge-block
@@ -5833,8 +6037,16 @@ impl Function {
         for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
+            let mut unboxed_float_for_value: HashMap<InsnId, InsnId> = HashMap::new();
             for insn_id in old_insns {
                 let replacement_id = match self.find(insn_id) {
+                    Insn::GuardType { val, guard_type, .. }
+                        if guard_type.is_subtype(types::Flonum)
+                            && matches!(self.find(self.chase_insn(val)), Insn::BoxFloat { .. }) =>
+                    {
+                        self.make_equal_to(insn_id, val);
+                        continue;
+                    }
                     Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
                         self.make_equal_to(insn_id, val);
                         // Don't bother re-inferring the type of val; we already know it.
@@ -5887,6 +6099,42 @@ impl Function {
                             _ => insn_id,
                         }
                     },
+                    Insn::UnboxFloat { val } | Insn::UnboxRubyFloat { val } => {
+                        let val = self.chase_insn(val);
+                        if self.type_of(val).is_subtype(types::CDouble) {
+                            self.make_equal_to(insn_id, val);
+                            continue;
+                        } else if let Some(float_value) = self.type_of(val).ruby_object().filter(|value| value.flonum_p()) {
+                            self.new_insn(Insn::Const { val: Const::CDouble(float_value.as_flonum_f64()) })
+                        } else {
+                            let boxed_float = match self.find(val) {
+                                Insn::BoxFloat { val: float_val, .. } => Some(float_val),
+                                Insn::GuardType { val: guarded_val, .. } => match self.find(guarded_val) {
+                                    Insn::BoxFloat { val: float_val, .. } => Some(float_val),
+                                    _ => None,
+                                },
+                                _ => None,
+                            };
+
+                            if let Some(float_val) = boxed_float {
+                                self.make_equal_to(insn_id, float_val);
+                                continue;
+                            } else if let Some(cached_unbox) = unboxed_float_for_value.get(&val).copied() {
+                                self.make_equal_to(insn_id, cached_unbox);
+                                continue;
+                            } else {
+                                unboxed_float_for_value.insert(val, insn_id);
+                                insn_id
+                            }
+                        }
+                    }
+                    Insn::BoxFloat { val, .. } => {
+                        let val = self.chase_insn(val);
+                        match self.type_of(val).cdouble_value().and_then(VALUE::flonum_from_f64) {
+                            Some(float_value) => self.new_insn(Insn::Const { val: Const::Value(float_value) }),
+                            None => insn_id,
+                        }
+                    }
                     Insn::GuardGreaterEq { left, right, state, reason } => {
                         let left_num = self.type_of(left).cint64_value();
                         let right_num = self.type_of(right).cint64_value();
@@ -6019,6 +6267,23 @@ impl Function {
                             _ => None,
                         })
                     }
+                    Insn::F64BinOp { op: F64BinOp::Add, left, right } => {
+                        self.fold_f64_bop(insn_id, left, right, |left, right| left + right)
+                    }
+                    Insn::F64BinOp { op: F64BinOp::Sub, left, right } => {
+                        self.fold_f64_bop(insn_id, left, right, |left, right| left - right)
+                    }
+                    Insn::F64BinOp { op: F64BinOp::Mul, left, right } => {
+                        self.fold_f64_bop(insn_id, left, right, |left, right| left * right)
+                    }
+                    Insn::F64BinOp { op: F64BinOp::Div, left, right } => {
+                        let right_value = self.type_of(right).cdouble_value();
+                        if matches!(right_value, Some(right) if right != 0.0) {
+                            self.fold_f64_bop(insn_id, left, right, |left, right| left / right)
+                        } else {
+                            insn_id
+                        }
+                    }
                     Insn::FixnumXor { left, right, .. } => {
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l ^ r),
@@ -6131,6 +6396,201 @@ impl Function {
                 }
             }
             self.blocks[block.0].insns = new_insns;
+        }
+    }
+
+    fn can_be_raw_float_arg(&self, arg: InsnId) -> bool {
+        match self.find(arg) {
+            Insn::BoxFloat { .. } => true,
+            Insn::Const { val: Const::Value(value) } => value.flonum_p(),
+            _ => false,
+        }
+    }
+
+    fn unbox_loop_float_params(&mut self) {
+        let rpo = self.reverse_post_order();
+        let rpo_pos: HashMap<BlockId, usize> = rpo.iter().enumerate().map(|(idx, &block)| (block, idx)).collect();
+        let mut candidate_set = HashSet::new();
+        let mut candidates = Vec::new();
+
+        loop {
+            let mut changed = false;
+
+            for &target in &rpo {
+                for (idx, &param) in self.blocks[target.0].params.iter().enumerate() {
+                    if candidate_set.contains(&param) {
+                        continue;
+                    }
+
+                    let mut saw_incoming = false;
+                    let mut saw_backedge = false;
+                    let mut all_incoming_raw = true;
+                    for &source in &rpo {
+                        let Some(&terminator_id) = self.blocks[source.0].insns.last() else { continue };
+                        match self.find(terminator_id) {
+                            Insn::Jump(BranchEdge { target: edge_target, args }) if edge_target == target => {
+                                saw_incoming = true;
+                                saw_backedge |= rpo_pos[&source] >= rpo_pos[&target];
+                                all_incoming_raw &= self.can_be_raw_float_arg(args[idx]) || candidate_set.contains(&args[idx]);
+                            }
+                            Insn::CondBranch { if_true, if_false, .. } => {
+                                for edge in [if_true, if_false] {
+                                    if edge.target == target {
+                                        saw_incoming = true;
+                                        saw_backedge |= rpo_pos[&source] >= rpo_pos[&target];
+                                        all_incoming_raw &= self.can_be_raw_float_arg(edge.args[idx]) || candidate_set.contains(&edge.args[idx]);
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+
+                    if !saw_incoming || !saw_backedge || !all_incoming_raw {
+                        continue;
+                    }
+
+                    let mut supported_uses = true;
+                    for other_id in 0..self.insns.len() {
+                        let other = self.find(InsnId(other_id));
+                        match &other {
+                            Insn::Snapshot { .. } => {}
+                            Insn::GuardType { val, guard_type, .. } if self.chase_insn(*val) == param && guard_type.is_subtype(types::Flonum) => {}
+                            Insn::UnboxFloat { val } if self.chase_insn(*val) == param => {}
+                            Insn::Return { val } if self.chase_insn(*val) == param => {}
+                            Insn::Jump(_) | Insn::CondBranch { .. } => {}
+                            other => {
+                                other.for_each_operand(|operand| {
+                                    if self.chase_insn(operand) == param {
+                                        supported_uses = false;
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    if supported_uses {
+                        candidate_set.insert(param);
+                        candidates.push((target, idx, param));
+                        changed = true;
+                    }
+                }
+            }
+
+            if !changed {
+                break;
+            }
+        }
+
+        if candidates.is_empty() {
+            return;
+        }
+
+        let mut raw_params = HashMap::new();
+        for (block, idx, old_param) in candidates {
+            let raw_param = self.new_insn(Insn::Param);
+            self.blocks[block.0].params[idx] = raw_param;
+            raw_params.insert(old_param, raw_param);
+        }
+
+        for &block in &rpo {
+            let Some(term_idx) = self.blocks[block.0].insns.len().checked_sub(1) else { continue };
+            let term_id = self.blocks[block.0].insns[term_idx];
+            let mut insertions = Vec::new();
+
+            let mut terminator = self.find(term_id);
+            match &mut terminator {
+                Insn::Jump(edge) => self.rewrite_raw_float_edge(edge, &raw_params, &mut insertions),
+                Insn::CondBranch { if_true, if_false, .. } => {
+                    self.rewrite_raw_float_edge(if_true, &raw_params, &mut insertions);
+                    self.rewrite_raw_float_edge(if_false, &raw_params, &mut insertions);
+                }
+                _ => {}
+            }
+            self.blocks[block.0].insns.splice(term_idx..term_idx, insertions);
+            self.insns[term_id.0] = terminator;
+        }
+
+        for &block in &rpo {
+            let mut last_snapshot = None;
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            let mut new_insns = Vec::with_capacity(old_insns.len());
+
+            for insn_id in old_insns {
+                let replacement = match self.find(insn_id) {
+                    Insn::Snapshot { mut state } => {
+                        for val in state.stack.iter_mut().chain(state.locals.iter_mut()) {
+                            self.rewrite_raw_float_state_value(val, &raw_params);
+                        }
+                        self.insns[insn_id.0] = Insn::Snapshot { state };
+                        last_snapshot = Some(insn_id);
+                        None
+                    }
+                    Insn::GuardType { val, guard_type, .. } if guard_type.is_subtype(types::Flonum) => raw_params.get(&val).copied(),
+                    Insn::UnboxFloat { val } => raw_params.get(&val).copied(),
+                    Insn::Return { val } => {
+                        if let Some(&raw) = raw_params.get(&val) {
+                            let state = last_snapshot.expect("Return of raw float param should have a dominating Snapshot");
+                            let boxed = self.new_insn(Insn::BoxFloat { val: raw, state });
+                            new_insns.push(boxed);
+                            self.insns[insn_id.0] = Insn::Return { val: boxed };
+                        }
+                        None
+                    }
+                    _ => None,
+                };
+
+                if let Some(raw) = replacement {
+                    self.make_equal_to(insn_id, raw);
+                } else {
+                    new_insns.push(insn_id);
+                }
+            }
+
+            self.blocks[block.0].insns = new_insns;
+        }
+
+        self.infer_types();
+    }
+
+    fn rewrite_raw_float_state_value(&self, val: &mut InsnId, raw_params: &HashMap<InsnId, InsnId>) {
+        if let Some(&raw) = raw_params.get(val) {
+            *val = raw;
+        } else if let Insn::BoxFloat { val: raw, .. } = self.find(*val) {
+            *val = raw;
+        }
+    }
+
+    fn rewrite_raw_float_edge(&mut self, edge: &mut BranchEdge, raw_params: &HashMap<InsnId, InsnId>, insertions: &mut Vec<InsnId>) {
+        for (idx, arg) in edge.args.iter_mut().enumerate() {
+            let target_param = self.blocks[edge.target.0].params[idx];
+            let target_is_raw = raw_params.values().any(|&raw| raw == target_param);
+            if let Some(&raw) = raw_params.get(arg) {
+                *arg = raw;
+                continue;
+            }
+
+            let chased_arg = self.chase_insn(*arg);
+            if let Some(&raw) = raw_params.get(&chased_arg) {
+                *arg = raw;
+                continue;
+            }
+
+            if !target_is_raw {
+                continue;
+            }
+
+            match self.find(*arg) {
+                Insn::BoxFloat { val, .. } => {
+                    *arg = val;
+                }
+                Insn::Const { val: Const::Value(value) } if value.flonum_p() => {
+                    let raw_const = self.new_insn(Insn::Const { val: Const::CDouble(value.as_flonum_f64()) });
+                    insertions.push(raw_const);
+                    *arg = raw_const;
+                }
+                _ => {}
+            }
         }
     }
 
@@ -6465,6 +6925,9 @@ impl Function {
             // Bucket all strength reduction together
             (type_specialize) => { Counter::compile_hir_strength_reduce_time_ns };
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
+            (inline_invoke_builtins) => { Counter::compile_hir_strength_reduce_time_ns };
+            (inline_annotated_ccalls) => { Counter::compile_hir_strength_reduce_time_ns };
+            (unbox_loop_float_params) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
             (inline_methods) => { Counter::compile_hir_inline_methods_time_ns };
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
@@ -6516,9 +6979,13 @@ impl Function {
             } else {
                 false
             };
+            run_pass!(inline_invoke_builtins);
             run_pass!(convert_no_profile_sends);
             run_pass!(optimize_load_store);
             run_pass!(canonicalize);
+            run_pass!(fold_constants);
+            run_pass!(unbox_loop_float_params);
+            run_pass!(inline_annotated_ccalls);
             run_pass!(fold_constants);
             run_pass!(clean_cfg);
             run_pass!(remove_redundant_patch_points);
@@ -6758,6 +7225,9 @@ impl Function {
             | Insn::StoreField { .. } => {
                 Ok(())
             }
+            Insn::F64GuardNonnegative { val, .. } => {
+                self.assert_subtype(insn_id, val, types::CDouble)
+            }
             // Instructions with 1 Ruby object operand
             Insn::Test { val }
             | Insn::IsMethodCfunc { val, .. }
@@ -6976,17 +7446,48 @@ impl Function {
                 self.assert_subtype(insn_id, left, types::Fixnum)?;
                 self.assert_subtype(insn_id, right, types::Fixnum)
             }
-            Insn::FloatAdd { recv, other, .. }
-            | Insn::FloatSub { recv, other, .. }
-            | Insn::FloatMul { recv, other, .. }
-            | Insn::FloatDiv { recv, other, .. }
-            => {
-                self.assert_subtype(insn_id, recv, types::Flonum)?;
-                // other can be Flonum or Fixnum (rb_float_plus etc. handle both)
-                self.assert_subtype(insn_id, other, types::Flonum.union(types::Fixnum))
+            Insn::UnboxFloat { val } => {
+                self.assert_subtype(insn_id, val, types::Flonum)
             }
-            Insn::FloatToInt { recv, .. } => {
-                self.assert_subtype(insn_id, recv, types::Flonum)
+            Insn::UnboxRubyFloat { val } => {
+                self.assert_subtype(insn_id, val, types::Float)
+            }
+            Insn::FixnumToF64 { val } => {
+                self.assert_subtype(insn_id, val, types::Fixnum)
+            }
+            Insn::BoxFloat { val, .. } => {
+                self.assert_subtype(insn_id, val, types::CDouble)
+            }
+            Insn::F64BinOp { left, right, .. }
+            | Insn::F64Pow { left, right }
+            | Insn::F64BoolCmp { left, right, .. }
+            | Insn::F64Cmp { left, right } => {
+                self.assert_subtype(insn_id, left, types::CDouble)?;
+                self.assert_subtype(insn_id, right, types::CDouble)
+            }
+            Insn::F64ValueRhsOp { left, right, .. } => {
+                self.assert_subtype(insn_id, left, types::CDouble)?;
+                self.assert_subtype(insn_id, right, types::BasicObject)
+            }
+            Insn::F64FixnumBoolCmp { left, right, .. }
+            | Insn::F64FixnumCmp { left, right } => {
+                self.assert_subtype(insn_id, left, types::CDouble)?;
+                self.assert_subtype(insn_id, right, types::Fixnum)
+            }
+            Insn::F64ToInt { val, .. } => {
+                self.assert_subtype(insn_id, val, types::CDouble)
+            }
+            Insn::F64Predicate { val, .. }
+            | Insn::F64Sqrt { val }
+            | Insn::F64Sin { val }
+            | Insn::F64Cos { val } => {
+                self.assert_subtype(insn_id, val, types::CDouble)
+            }
+            Insn::ComplexMulFlonum { areal, aimag, breal, bimag, .. } => {
+                self.assert_subtype(insn_id, areal, types::Flonum)?;
+                self.assert_subtype(insn_id, aimag, types::Flonum)?;
+                self.assert_subtype(insn_id, breal, types::Flonum)?;
+                self.assert_subtype(insn_id, bimag, types::Flonum)
             }
             Insn::FixnumLShift { left, right, .. }
             | Insn::FixnumRShift { left, right, .. } => {
