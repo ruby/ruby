@@ -502,12 +502,26 @@ class TestMkdepend < Test::Unit::TestCase
         #{MARK_END}
       DEPEND
 
-      rules = TestDepend.new(root: root, thread_model: 'win32').
-        makedepend('ext/example/example.c').join
+      mkdepend = TestDepend.new(root: root)
+      out = StringIO.new
+      mkdepend.run(
+        [File.join(root, 'ext/example/example.c')],
+        out: out,
+        thread_model: 'win32',
+      )
+      rules = out.string
       assert_include(rules, 'example.o: $(top_srcdir)/thread_win32.h')
       assert_include(rules, 'example.o: $(top_srcdir)/win32_only.h')
       assert_not_include(rules, 'THREAD_MODEL')
       assert_not_include(rules, 'thread_pthread.h')
+
+      out = StringIO.new
+      mkdepend.run([File.join(root, 'ext/example/example.c')], out: out)
+      assert_include(
+        out.string,
+        'example.o: $(top_srcdir)/thread_$(THREAD_MODEL).h',
+      )
+      assert_not_include(out.string, 'thread_win32.h')
     end
   end
 

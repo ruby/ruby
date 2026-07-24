@@ -307,23 +307,29 @@ class MakeMakefile::Depend
     end
 
     # Creates an updater and runs it with the parsed command-line options.
-    def execute(inputs, root: DEFAULT_ROOT, thread_model: nil, **options)
-      new(root: root, thread_model: thread_model).run(inputs, **options)
+    def execute(inputs, root: DEFAULT_ROOT, **options)
+      new(root: root).run(inputs, **options)
     end
   end
 
   # Creates a dependency updater for +root+.
-  #
-  # +thread_model+ replaces <tt>$(THREAD_MODEL)</tt> in declarations.
-  def initialize(root: DEFAULT_ROOT, thread_model: nil)
+  def initialize(root: DEFAULT_ROOT)
     @root = File.expand_path(root)
-    @thread_model = thread_model
+    @thread_model = nil
     @dependency_declarations = {}
     @dependency_targets = {}
     @dependency_contents = {}
   end
 
   private
+
+  # Selects the thread model used to expand dependency declarations.
+  def select_thread_model(thread_model)
+    return if @thread_model == thread_model
+
+    @thread_model = thread_model
+    @dependency_declarations.clear
+  end
 
   # Expands matching wildcards in a +scan+ declaration.
   #
@@ -823,6 +829,7 @@ class MakeMakefile::Depend
   # +source_map+ maps object targets to source paths.  Returns +true+ when
   # the file changed and +false+ when its dependencies were already current.
   def update_extension(input, source_map, nmake: false, verbose: false)
+    select_thread_model(nil)
     input = File.expand_path(input)
     deps = File.read(input) if File.file?(input)
     match = MARK_SECTION.match(deps) if deps
@@ -889,10 +896,12 @@ class MakeMakefile::Depend
 
   # Processes dependency +inputs+ according to the selected update +mode+.
   #
+  # +thread_model+ replaces <tt>$(THREAD_MODEL)</tt> in declarations.
+  #
   # Returns +false+ only when check mode finds an outdated dependency file.
   def run(inputs = ARGV, out: $stdout, err: $stderr, mode: :stdout,
           output: nil, nmake: false, sources: false, scope: nil,
-          verbose: false)
+          thread_model: nil, verbose: false)
     case mode
     when :output
       raise ArgumentError, "output directory is missing" unless output
@@ -901,6 +910,7 @@ class MakeMakefile::Depend
     else
       raise ArgumentError, "unknown update mode: #{mode.inspect}"
     end
+    select_thread_model(thread_model)
     if scope
       inputs = dependency_files(scope).map {|file| File.join(@root, file)}
     end
