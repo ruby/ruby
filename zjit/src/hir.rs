@@ -5680,6 +5680,160 @@ impl Function {
         }
     }
 
+
+    // TODO: Add a comment about the paper and where this function comes from, as well as how it's used in ZJIT
+    // (It's used more individually and differently than the paper)
+    // TODO: Update comments to consider block params rather than phi nodes and demarcate differences from the algorithm clearly
+    // TODO: Fix input arguments. We need block params, not just the phi
+    /// If all possible phi values are the same, replace the phi with the value
+
+    /// Sometimes block params can only come from one place and safely removed as block params.
+    /// Trivial block param removal increases the efficacy of CFG-based optimization passes.
+    /// This function implements algorithm 2 from <https://c9x.me/compile/bib/braun13cc.pdf>.
+    /// Light modifications are made to use block params instead of phis.
+    fn remove_trivial_block_params(&mut self) {
+        // This abstract domain represents block param optimization potential
+        // If it were constructed as a lattice, Unknown is bottom, trivial is above, nontrivial is top (and above trivial)
+        #[derive(Clone)]
+        enum ParamState {
+            Unknown,
+            NonTrivial,
+            Trivial(InsnId)
+        }
+
+        fn prune_vec_by_indices<T>(v: &mut Vec<T>, indices: &[usize]) {
+            let mut i: usize = 0;
+            v.retain(|_| {
+                let valid_id = !indices.contains(&i);
+                i += 1;
+                valid_id
+            })
+        }
+
+        // Remove an argument of the edge at index if the conditional matches target_block
+        fn prune_branch_edge(edge: BranchEdge, indices: &Vec<usize>) -> BranchEdge {
+            let mut args = edge.args.clone();
+            prune_vec_by_indices(&mut args, indices);
+            BranchEdge { target: edge.target, args }
+        }
+
+        let mut changed = true;
+
+        while changed {
+
+        changed = false;
+
+        // Instantiate the domain for abstract interpretation
+        // Outer index is block
+        // Inner index is param index
+        // Value is the state of the param. This is used to determine whether block param optimization can occur.
+        let mut predecessor_domain: Vec<Vec<ParamState>> = vec![Vec::new(); self.blocks.len()];
+        for (i, block) in self.blocks.iter().enumerate() {
+            predecessor_domain[i].extend(std::iter::repeat_n(ParamState::Unknown, block.params.len()))
+        }
+
+        // Store references to all the conditional instructions.
+        // We need to update these conditionals in the case of trivial block params.
+        let jumps: Vec<(BlockId, usize)> = self.reverse_post_order().into_iter()
+            .filter(|&block_id| matches!(
+                self.find(*self.blocks[block_id.0].insns.last().unwrap()),
+                Insn::CondBranch {..} | Insn::Jump {..}
+            ))
+            .map(|block_id| (block_id, self.blocks[block_id.0].insns.len() - 1))
+            .collect();
+
+
+        // Scan through each jump, collecting edges from CondBranch and Jump insns.
+        for (block_id, insn_index) in &jumps {
+            let insn_id = self.blocks[block_id.0].insns[*insn_index];
+            let mut edges: Vec<BranchEdge> = vec![];
+
+            match self.find(insn_id) {
+                Insn::CondBranch { if_true, if_false, .. } => {
+                    edges.push(if_true);
+                    edges.push(if_false);
+                }
+                Insn::Jump(edge) => {
+                    edges.push(edge);
+                }
+                _ => {}
+            }
+
+            // Update the states
+            for BranchEdge { target, args } in edges {
+                for (i, arg) in args.iter().enumerate().rev() {
+                    // If the param is the same as passed into the block, this means it is a self loop
+                    // We can safely ignore these cases.
+                    if self.chase_insn(*arg) == self.chase_insn(self.blocks[target.0].params[i]) {
+                        continue
+                    }
+                    let state = &mut predecessor_domain[target.0][i];
+                    match *state {
+                        ParamState::Unknown => {
+                            *state = ParamState::Trivial(self.chase_insn(*arg));
+                        },
+                        ParamState::Trivial(value) => {
+                            if value != self.chase_insn(*arg) {
+                                *state = ParamState::NonTrivial;
+                            }
+                        }
+                        ParamState::NonTrivial => {},
+                    }
+                }
+            }
+        }
+
+        // Remove the trivial block params and fix up our SSA representation
+        // This is done by as follows.
+        // 1. Replace uses of the trivial params with the concretized value
+        // 2. Remove trivial params from the basic block definition
+        // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
+        for (block_id, block) in predecessor_domain.iter().enumerate() {
+            // TODO: Don't do this
+            let block_id = BlockId(block_id);
+
+            let trivial_indices: Vec<usize> = block.iter().enumerate()
+                .filter_map(|(idx, state)|
+                    matches!(state, ParamState::Trivial(_)).then_some(idx)
+                ).collect();
+
+            // Replace uses of the trivial params with the concretized value
+            for param_index in &trivial_indices {
+                if let ParamState::Trivial(concretized_insn) = block[*param_index] {
+                    self.make_equal_to(self.blocks[block_id.0].params[*param_index], concretized_insn);
+                    changed = true;
+                }
+            }
+
+            // Update the block
+            prune_vec_by_indices(&mut self.blocks[block_id.0].params, &trivial_indices);
+
+            // Update the conditionals that branch to block
+            for (jump_block_id, index) in &jumps {
+                let cond_insn_id = self.blocks[jump_block_id.0].insns[*index];
+                match self.find(cond_insn_id) {
+                    Insn::Jump(edge) => {
+                        if edge.target == block_id {
+                            let edge = prune_branch_edge(edge, &trivial_indices);
+                            self.insns[cond_insn_id.0] = Insn::Jump(edge);
+                        }
+                    }
+                    Insn::CondBranch { val, if_true, if_false } => {
+                        if if_true.target == block_id || if_false.target == block_id {
+                            let if_true = prune_branch_edge(if_true, &trivial_indices);
+                            let if_false = prune_branch_edge(if_false, &trivial_indices);
+                            self.insns[cond_insn_id.0] = Insn::CondBranch{ val, if_true, if_false };
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        }
+
+    }
+
+
     fn optimize_load_store(&mut self) {
         for block in self.reverse_post_order() {
             let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
@@ -6467,6 +6621,7 @@ impl Function {
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
             (inline_methods) => { Counter::compile_hir_inline_methods_time_ns };
+            (remove_trivial_block_params) => { Counter::compile_hir_remove_trivial_block_params_time_ns };
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
             (canonicalize) => { Counter::compile_hir_canonicalize_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
@@ -6517,6 +6672,10 @@ impl Function {
                 false
             };
             run_pass!(convert_no_profile_sends);
+            // TODO: Figure out where the pass should go and remove these comments
+            // It's not clear where converting to minimal SSA should occur
+            // We need it for a global optimize_load_store, so this is a good starting point
+            run_pass!(remove_trivial_block_params);
             run_pass!(optimize_load_store);
             run_pass!(canonicalize);
             run_pass!(fold_constants);
