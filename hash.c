@@ -1918,6 +1918,10 @@ rb_hash_s_try_convert(VALUE dummy, VALUE hash)
  *  call-seq:
  *     Hash.ruby2_keywords_hash?(hash) -> true or false
  *
+ *  Deprecated: will be removed in Ruby 4.5, one version after the
+ *  removal of the ruby2_keywords mechanism.  See
+ *  https://bugs.ruby-lang.org/issues/22205 for the schedule.
+ *
  *  Checks if a given hash is flagged by Module#ruby2_keywords (or
  *  Proc#ruby2_keywords).
  *  This method is not for casual use; debugging, researching, and
@@ -1939,6 +1943,10 @@ rb_hash_s_ruby2_keywords_hash_p(VALUE dummy, VALUE hash)
 /*
  *  call-seq:
  *     Hash.ruby2_keywords_hash(hash) -> hash
+ *
+ *  Deprecated: will be removed in Ruby 4.5, one version after the
+ *  removal of the ruby2_keywords mechanism.  See
+ *  https://bugs.ruby-lang.org/issues/22205 for the schedule.
  *
  *  Duplicates a given hash and adds a ruby2_keywords flag.
  *  This method is not for casual use; debugging, researching, and

@@ -4641,6 +4641,11 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *  call-seq:
  *     proc.ruby2_keywords -> proc
  *
+ *  Deprecated: will be removed in Ruby 4.4.  Use explicit delegation
+ *  (<tt>*args, **kwargs</tt>) instead; it works correctly on Ruby 3.0
+ *  and later.  See https://bugs.ruby-lang.org/issues/22205 for the
+ *  schedule.
+ *
  *  Marks the proc as passing keywords through a normal argument splat.
  *  This should only be called on procs that accept an argument splat
  *  (<tt>*args</tt>) but not explicit keywords or a keyword splat.  It
@@ -4654,19 +4659,6 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *  This should only be used for procs that delegate keywords to another
  *  method, and only for backwards compatibility with Ruby versions before
  *  2.7.
- *
- *  This method will probably be removed at some point, as it exists only
- *  for backwards compatibility. As it does not exist in Ruby versions
- *  before 2.7, check that the proc responds to this method before calling
- *  it. Also, be aware that if this method is removed, the behavior of the
- *  proc will change so that it does not pass through keywords.
- *
- *    module Mod
- *      foo = ->(meth, *args, &block) do
- *        send(:"do_#{meth}", *args, &block)
- *      end
- *      foo.ruby2_keywords if foo.respond_to?(:ruby2_keywords)
- *    end
  */
 
 static VALUE
