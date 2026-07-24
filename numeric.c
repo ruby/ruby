@@ -27,6 +27,7 @@
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/bits.h"
 #include "internal/compilers.h"
 #include "internal/complex.h"
 #include "internal/enumerator.h"
@@ -4052,6 +4053,48 @@ rb_int_uminus(VALUE num)
  * lookup-table itoa optimisation; both rb_fix2str here and big2str_2bdigits
  * in bignum.c consume it. */
 
+STATIC_ASSERT(fix_decimal_unsigned_long_fits_uint64, SIZEOF_LONG <= sizeof(uint64_t));
+
+static const uint64_t fix_decimal_powers[] = {
+    UINT64_C(1),
+    UINT64_C(10),
+    UINT64_C(100),
+    UINT64_C(1000),
+    UINT64_C(10000),
+    UINT64_C(100000),
+    UINT64_C(1000000),
+    UINT64_C(10000000),
+    UINT64_C(100000000),
+    UINT64_C(1000000000),
+    UINT64_C(10000000000),
+    UINT64_C(100000000000),
+    UINT64_C(1000000000000),
+    UINT64_C(10000000000000),
+    UINT64_C(100000000000000),
+    UINT64_C(1000000000000000),
+    UINT64_C(10000000000000000),
+    UINT64_C(100000000000000000),
+    UINT64_C(1000000000000000000),
+    UINT64_C(10000000000000000000),
+};
+
+static inline int
+fix_decimal_numdigits(unsigned long value)
+{
+    RUBY_ASSERT(value > 0);
+    uint64_t u = value;
+    unsigned int bit_length = 64 - nlz_int64(u);
+    /* Integer log10 via the well-known bit-twiddling trick: 1233 / 4096
+     * approximates log10(2), so bit_length * 1233 >> 12 is floor(log10) + 1
+     * for a 1..64 bit input, then the power-of-ten table corrects the
+     * off-by-one at each boundary.  See Sean Anderson's Bit Twiddling Hacks,
+     * "Find integer log base 10 of an integer"
+     * (https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog10). */
+    unsigned int guess = bit_length * 1233 >> 12;
+    RUBY_ASSERT(guess < numberof(fix_decimal_powers));
+    return (int)(guess - (u < fix_decimal_powers[guess]) + 1);
+}
+
 VALUE
 rb_fix2str(VALUE x, int base)
 {
@@ -4085,27 +4128,40 @@ rb_fix2str(VALUE x, int base)
         u = val;
     }
     if (base == 10) {
-        /* Emit two digits per iteration from a precomputed table.  The
-         * compiler lowers `u % 100` and `u / 100` to a single multiply +
-         * shift, so each iteration costs roughly one multiply, one shift,
-         * and two stores.  About 2x fewer iterations than the classic
-         * per-digit loop for multi-digit inputs. */
+        /* Construct the decimal string directly in its result buffer, sized
+         * up front, instead of formatting into `buf` and copying.  The length
+         * stays zero until every byte is written, so the partially filled
+         * buffer is never observable and nothing below allocates. */
+        long len = fix_decimal_numdigits(u) + neg;
+        VALUE str = rb_str_buf_new(len);
+        char *p = RSTRING_PTR(str) + len;
+
         while (u >= 100) {
             unsigned long idx = (u % 100) * 2;
             u /= 100;
-            b -= 2;
-            b[0] = ruby_decimal_digit_pairs[idx];
-            b[1] = ruby_decimal_digit_pairs[idx + 1];
+            p -= 2;
+            p[0] = ruby_decimal_digit_pairs[idx];
+            p[1] = ruby_decimal_digit_pairs[idx + 1];
         }
         if (u >= 10) {
             unsigned long idx = u * 2;
-            b -= 2;
-            b[0] = ruby_decimal_digit_pairs[idx];
-            b[1] = ruby_decimal_digit_pairs[idx + 1];
+            p -= 2;
+            p[0] = ruby_decimal_digit_pairs[idx];
+            p[1] = ruby_decimal_digit_pairs[idx + 1];
         }
         else {
-            *--b = (char)('0' + u);
+            *--p = (char)('0' + u);
         }
+        if (neg) {
+            *--p = '-';
+        }
+
+        RUBY_ASSERT(p == RSTRING_PTR(str));
+        RSTRING(str)->len = len;
+        RSTRING_PTR(str)[len] = '\0';
+        ENCODING_SET_INLINED(str, ENCINDEX_US_ASCII);
+        ENC_CODERANGE_SET(str, ENC_CODERANGE_7BIT);
+        return str;
     }
     else {
         do {
