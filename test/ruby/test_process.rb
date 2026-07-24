@@ -2461,6 +2461,24 @@ EOS
     assert_equal(th, x, bug11166)
   end if defined?(fork)
 
+  def test_kill_zero_exited_child
+    bug7082 = '[Bug #7082]'
+    assert_equal(1, Process.kill(0, Process.pid), bug7082)
+    IO.popen([RUBY, "-e", "exit"]) do |io|
+      pid = io.pid
+      io.read # wait for the child to exit
+      EnvUtil.timeout(10) do
+        loop do
+          Process.kill(0, pid)
+          sleep 0.01
+        rescue Errno::ESRCH
+          break
+        end
+      end
+      assert_raise(Errno::ESRCH, bug7082) {Process.kill(0, pid)}
+    end
+  end if windows?
+
   def test_exec_fd_3_redirect
     # ensure we can redirect anything to fd=3 in a child process.
     # fd=3 is a commonly reserved FD for the timer thread pipe in the
