@@ -289,18 +289,79 @@ location_cfunc_p(rb_backtrace_location_t *loc)
     }
 }
 
+/* Return the module where the running method body was actually defined.
+ *
+ * For an alias or a method installed via define_method(UnboundMethod), the CME's
+ * owner and defined_class point at the site where the alias/copy was installed,
+ * not where the body was originally defined. Combined with the method name (taken
+ * from the original definition) that yields a "Class#method" pair which never
+ * existed -- e.g. an alias in a subclass reported as Child#original instead of
+ * Parent#original, or define_method(Original.instance_method(:m)) reported as
+ * A#m instead of Original#m ([Bug #22197]).
+ *
+ * Only a shared definition (def->aliased) can carry a misleading owner, so plain
+ * defs -- including singleton (def obj.m) and class (def self.m) methods -- keep
+ * their owner untouched. For a shared def, rb_alias() copies the real module into
+ * defined_class (owner != defined_class), while define_method() overwrites both
+ * owner and defined_class with the install class, leaving the original module
+ * recoverable only from the iseq's cref. */
+static VALUE
+location_original_defined_class(const rb_callable_method_entry_t *cme)
+{
+    if (!cme) return Qnil;
+
+    const rb_method_entry_t *me = (const rb_method_entry_t *)cme;
+
+    /* Unwrap the explicit alias/refined wrappers (the defined_class == 0 form). */
+    while (me->def) {
+        if (me->def->type == VM_METHOD_TYPE_ALIAS) {
+            me = me->def->body.alias.original_me;
+        }
+        else if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) {
+            me = me->def->body.refined.orig_me;
+        }
+        else {
+            break;
+        }
+    }
+
+    VALUE owner = me->owner;
+
+    if (me->def && me->def->aliased) {
+        VALUE defined_class = me->defined_class;
+        if (RB_TYPE_P(defined_class, T_ICLASS)) {
+            defined_class = RBASIC_CLASS(defined_class);
+        }
+        /* rb_alias() copied the real module here. */
+        if (defined_class && !NIL_P(defined_class) && defined_class != owner) {
+            return defined_class;
+        }
+        /* define_method(UnboundMethod) overwrote owner and defined_class alike;
+         * the original module survives only on the iseq's cref. A body written
+         * as `def self.m` / `def obj.m` records its *lexical* class in cref, not
+         * the singleton class it lives on, so when owner is exactly the singleton
+         * of cref's class (e.g. an aliased class method) keep owner instead. */
+        if (me->def->type == VM_METHOD_TYPE_ISEQ && me->def->body.iseq.cref) {
+            VALUE cref_class = CREF_CLASS(me->def->body.iseq.cref);
+            if (RB_TYPE_P(owner, T_CLASS) && RCLASS_SINGLETON_P(owner) &&
+                    RCLASS_ATTACHED_OBJECT(owner) == cref_class) {
+                return owner;
+            }
+            return cref_class;
+        }
+    }
+
+    return owner;
+}
+
 static VALUE
 location_label(rb_backtrace_location_t *loc)
 {
     if (location_cfunc_p(loc)) {
-        return rb_gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
+        return rb_gen_method_name(location_original_defined_class(loc->cme), rb_id2str(loc->cme->def->original_id));
     }
     else {
-        VALUE owner = Qnil;
-        if (loc->cme) {
-            owner = loc->cme->owner;
-        }
-        return calculate_iseq_label(owner, loc->iseq);
+        return calculate_iseq_label(location_original_defined_class(loc->cme), loc->iseq);
     }
 }
 /*
@@ -482,13 +543,13 @@ location_to_str(rb_backtrace_location_t *loc)
             file = GET_VM()->progname;
             lineno = 0;
         }
-        name = rb_gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
+        name = rb_gen_method_name(location_original_defined_class(loc->cme), rb_id2str(loc->cme->def->original_id));
     }
     else {
         file = rb_iseq_path(loc->iseq);
         lineno = calc_lineno(loc->iseq, loc->pc);
         if (loc->cme) {
-            owner = loc->cme->owner;
+            owner = location_original_defined_class(loc->cme);
         }
         name = calculate_iseq_label(owner, loc->iseq);
     }
