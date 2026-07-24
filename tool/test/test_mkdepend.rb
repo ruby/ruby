@@ -24,14 +24,14 @@ class TestMkdepend < Test::Unit::TestCase
 
   def test_parse_options
     options, inputs = TestDepend.parse_options(%w[
-      --root=src --thread-model=win32 --output=.deps
+      --root=src THREAD_MODEL=pthread --thread-model=win32 --output=.deps
       --scope=extensions --nmake --sources --verbose depend
     ])
 
     assert_equal(
       {
         root: "src",
-        thread_model: "win32",
+        make_variables: {"THREAD_MODEL" => "win32"},
         output: ".deps",
         mode: :output,
         scope: :extensions,
@@ -42,6 +42,29 @@ class TestMkdepend < Test::Unit::TestCase
       options,
     )
     assert_equal(["depend"], inputs)
+  end
+
+  def test_parse_options_accepts_make_variable_assignments
+    options, inputs = TestDepend.parse_options(
+      ["LOCAL_HDRS=", "--thread-model=win32", "THREAD_MODEL=pthread", "depend"],
+    )
+
+    assert_equal(
+      {
+        make_variables: {
+          "LOCAL_HDRS" => "",
+          "THREAD_MODEL" => "pthread",
+        },
+      },
+      options,
+    )
+    assert_equal(["depend"], inputs)
+  end
+
+  def test_parse_options_rejects_empty_thread_model
+    assert_raise(OptionParser::InvalidArgument) do
+      TestDepend.parse_options(["--thread-model="])
+    end
   end
 
   def test_parse_options_rejects_unknown_options
@@ -83,6 +106,8 @@ class TestMkdepend < Test::Unit::TestCase
     assert_true(exit_status.success?)
     help = $stdout.string
 
+    assert_include(help, "[VAR=value ...]")
+    assert_include(help, "same as THREAD_MODEL=MODEL")
     assert_include(
       help,
       "Update mode (last one wins; default: stdout):",
@@ -503,17 +528,22 @@ class TestMkdepend < Test::Unit::TestCase
       DEPEND
 
       mkdepend = TestDepend.new(root: root)
-      out = StringIO.new
-      mkdepend.run(
-        [File.join(root, 'ext/example/example.c')],
-        out: out,
-        thread_model: 'win32',
-      )
-      rules = out.string
-      assert_include(rules, 'example.o: $(top_srcdir)/thread_win32.h')
-      assert_include(rules, 'example.o: $(top_srcdir)/win32_only.h')
-      assert_not_include(rules, 'THREAD_MODEL')
-      assert_not_include(rules, 'thread_pthread.h')
+      [
+        {make_variables: {"THREAD_MODEL" => "win32"}},
+        {thread_model: "win32"},
+      ].each do |options|
+        out = StringIO.new
+        mkdepend.run(
+          [File.join(root, 'ext/example/example.c')],
+          out: out,
+          **options,
+        )
+        rules = out.string
+        assert_include(rules, 'example.o: $(top_srcdir)/thread_win32.h')
+        assert_include(rules, 'example.o: $(top_srcdir)/win32_only.h')
+        assert_not_include(rules, 'THREAD_MODEL')
+        assert_not_include(rules, 'thread_pthread.h')
+      end
 
       out = StringIO.new
       mkdepend.run([File.join(root, 'ext/example/example.c')], out: out)
@@ -826,6 +856,40 @@ class TestMkdepend < Test::Unit::TestCase
     end
   end
 
+  def test_update_extension_expands_make_variables_in_manual_rules
+    Dir.mktmpdir('mkdepend-extension') do |root|
+      source_dir = File.join(root, 'ext/example')
+      FileUtils.mkdir_p(source_dir)
+      File.write(File.join(source_dir, 'local.h'), '')
+      File.write(
+        File.join(source_dir, 'example.c'),
+        "#include \"local.h\"\n",
+      )
+      depend = File.join(source_dir, 'depend')
+      File.write(depend, <<~DEPEND)
+        example.o: $(LOCAL_HDRS)
+
+        #{MARK_START}
+        stale.o: stale.c
+        #{MARK_END}
+      DEPEND
+
+      MakeMakefile::Depend.new(root: root).update_extension(
+        depend,
+        {'example' => File.join(source_dir, 'example.c')},
+        make_variables: {"LOCAL_HDRS" => ["{.;$(VPATH)}local.h"]},
+      )
+
+      assert_equal(<<~DEPEND, File.read(depend))
+        example.o: $(LOCAL_HDRS)
+
+        #{MARK_START}
+        example.o: example.c
+        #{MARK_END}
+      DEPEND
+    end
+  end
+
   def test_update_extension_requires_markers
     Dir.mktmpdir('mkdepend-extension') do |root|
       source_dir = File.join(root, 'ext/example')
@@ -907,6 +971,15 @@ class TestMkdepend < Test::Unit::TestCase
       assert_include(generated, 'id.o: id.c')
       assert_not_include(generated, '{$(VPATH)}')
     end
+  end
+
+  def test_normalize_dependency_rules_removes_vpath_search
+    assert_equal(
+      "one.h two.h\n",
+      mkdepend.normalize_dependency_rules(
+        "{$(VPATH)}one.h {.;$(VPATH)}two.h\n",
+      ),
+    )
   end
 
   def test_run_writes_unchanged_dependencies_to_output_directory

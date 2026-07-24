@@ -2721,7 +2721,9 @@ site-install-rb: install-rb
         "--depend-root", MakeMakefile::Depend.find_root(srcdir)
       )
       MakeMakefile::Depend.new(root: depend_root).update_extension(
-        source_depend, source_map, nmake: !!$nmake,
+        source_depend, source_map,
+        make_variables: {"LOCAL_HDRS" => $headers},
+        nmake: !!$nmake,
       )
     end
 

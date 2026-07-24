@@ -5,6 +5,9 @@
 # Check committed source mappings without modifying files:
 #   ruby tool/mkdepend.rb --scope=all --sources --check
 # The command can be run from either the source or a build directory.
+# Known Make variables can be supplied as +VAR=value+.  The
+# <tt>--thread-model=MODEL</tt> option is equivalent to
+# +THREAD_MODEL=MODEL+.
 #
 # Dependency files can declare inputs that do not exist in the source tree:
 #
@@ -257,17 +260,23 @@ class MakeMakefile::Depend
     # Parses command-line arguments into runner options and input paths.
     def parse_options(argv)
       options = {}
+      make_variables = {}
       output = nil
       select_mode = proc do |mode|
         options[:mode] = mode
       end
       parser = OptionParser.new do |opts|
-        opts.banner = "Usage: #{File.basename($0)} [options] [files]"
+        opts.banner =
+          "Usage: #{File.basename($0)} [options] [VAR=value ...] [files]"
         opts.separator ""
         opts.separator "Input selection:"
         opts.on("--root=DIR", "source tree root") {|value| options[:root] = value}
-        opts.on("--thread-model=MODEL", "thread model") do |value|
-          options[:thread_model] = value
+        opts.on(
+          "--thread-model=MODEL",
+          String,
+          "thread model (same as THREAD_MODEL=MODEL)",
+        ) do |value|
+          make_variables["THREAD_MODEL"] = value
         end
         opts.on(
           "--scope=SCOPE", [:all, :core, :extensions],
@@ -301,7 +310,16 @@ class MakeMakefile::Depend
           options[:verbose] = true
         end
       end
-      inputs = parser.parse(argv)
+      inputs = []
+      rest = parser.order(argv) do |arg|
+        if /\A([A-Za-z_]\w*)=(.*)\z/m =~ arg
+          make_variables[$1] = $2
+        else
+          inputs << arg
+        end
+      end
+      inputs.concat(rest)
+      options[:make_variables] = make_variables unless make_variables.empty?
       options[:output] = output if options[:mode] == :output
       [options, inputs]
     end
@@ -315,7 +333,7 @@ class MakeMakefile::Depend
   # Creates a dependency updater for +root+.
   def initialize(root: DEFAULT_ROOT)
     @root = File.expand_path(root)
-    @thread_model = nil
+    @make_variables = {}
     @dependency_declarations = {}
     @dependency_targets = {}
     @dependency_contents = {}
@@ -323,12 +341,45 @@ class MakeMakefile::Depend
 
   private
 
-  # Selects the thread model used to expand dependency declarations.
-  def select_thread_model(thread_model)
-    return if @thread_model == thread_model
+  # Selects known Make variable values used during dependency generation.
+  def select_make_variables(make_variables)
+    make_variables = make_variables.to_h do |name, value|
+      [name.to_s, Array(value).map(&:to_s)]
+    end
+    return if @make_variables == make_variables
 
-    @thread_model = thread_model
+    @make_variables = make_variables
     @dependency_declarations.clear
+  end
+
+  # Expands known Make variables embedded in +value+.
+  def expand_make_variables(value, defaults: {})
+    value.gsub(/\$\((\w+)\)/) do |variable|
+      name = $1
+      values = if @make_variables.key?(name)
+        @make_variables[name]
+      elsif defaults.key?(name)
+        Array(defaults[name])
+      else
+        next variable
+      end
+      unless values.one?
+        raise ArgumentError, "#{name} is not a scalar Make variable"
+      end
+      values.first.to_s
+    end
+  end
+
+  # Expands known Make variables that stand for dependency lists.
+  def expand_dependency_variables(dependencies)
+    dependencies.flat_map do |dependency|
+      if /\A\$\((\w+)\)\z/ =~ dependency &&
+          (values = @make_variables[$1])
+        values.flat_map(&:split)
+      else
+        expand_make_variables(dependency)
+      end
+    end
   end
 
   # Expands matching wildcards in a +scan+ declaration.
@@ -390,14 +441,10 @@ class MakeMakefile::Depend
       end
     end
     declarations.scan.transform_values! do |source|
-      source.gsub('$(THREAD_MODEL)', @thread_model || 'pthread')
+      expand_make_variables(source, defaults: {"THREAD_MODEL" => "pthread"})
     end
-    if @thread_model
-      declarations.dependencies.transform_values! do |dependencies|
-        dependencies.map do |dependency|
-          dependency.gsub('$(THREAD_MODEL)', @thread_model)
-        end
-      end
+    declarations.dependencies.transform_values! do |dependencies|
+      expand_dependency_variables(dependencies)
     end
     declarations
   end
@@ -705,9 +752,33 @@ class MakeMakefile::Depend
     lines.uniq.sort.join
   end
 
+  # Returns target and dependency pairs from Make rules.
+  def dependency_pairs(rules)
+    rules = normalize_dependency_rules(rules)
+    rules.each_line.each_with_object(Set.new) do |line, pairs|
+      next unless /\A(\S+(?:\s+\S+)*):\s*(.*?)\s*\z/ =~ line
+
+      targets = $1.split
+      dependencies = expand_dependency_variables($2.split).map do |dependency|
+        normalize_dependency_rules(dependency)
+      end
+      targets.product(dependencies) {|pair| pairs << pair}
+    end
+  end
+
+  # Removes generated dependencies already covered by +manual_rules+.
+  def remove_manual_dependencies(generated, manual_rules)
+    manual = dependency_pairs(manual_rules)
+    generated.each_line.reject do |line|
+      normalized = normalize_dependency_rules(line)
+      /\A(\S+):\s+(\S+)\s*\z/ =~ normalized &&
+        manual.include?([$1, $2])
+    end.join
+  end
+
   # Removes VPATH markers that are unnecessary in build-directory output.
   def normalize_dependency_rules(rules)
-    rules.gsub('{$(VPATH)}', '')
+    rules.gsub(/\{(?:\.;)?\$\(VPATH\)\}/, '')
   end
 
   # Returns whether two rule sets differ only by removable VPATH markers.
@@ -826,10 +897,13 @@ class MakeMakefile::Depend
 
   # Updates the marked dependency section in extension file +input+.
   #
-  # +source_map+ maps object targets to source paths.  Returns +true+ when
-  # the file changed and +false+ when its dependencies were already current.
-  def update_extension(input, source_map, nmake: false, verbose: false)
-    select_thread_model(nil)
+  # +source_map+ maps object targets to source paths.  +make_variables+
+  # supplies values of Make variables used by manual dependency rules.
+  # Returns +true+ when the file changed and +false+ when its dependencies
+  # were already current.
+  def update_extension(input, source_map, make_variables: {}, nmake: false,
+                       verbose: false)
+    select_make_variables(make_variables)
     input = File.expand_path(input)
     deps = File.read(input) if File.file?(input)
     match = MARK_SECTION.match(deps) if deps
@@ -848,7 +922,9 @@ class MakeMakefile::Depend
         source, generated, target: target, input: input, project: true
       )
     end
-    expected = compact_dependencies(generated.join, group: !nmake)
+    manual = match.pre_match + match.post_match
+    generated = remove_manual_dependencies(generated.join, manual)
+    expected = compact_dependencies(generated, group: !nmake)
     updated = match.pre_match + expected + match.post_match
     return false if same_dependency_rules?(match[0], expected)
 
@@ -896,12 +972,13 @@ class MakeMakefile::Depend
 
   # Processes dependency +inputs+ according to the selected update +mode+.
   #
-  # +thread_model+ replaces <tt>$(THREAD_MODEL)</tt> in declarations.
+  # +make_variables+ supplies values for Make variables in declarations.
+  # +thread_model+ is a shortcut for its <tt>THREAD_MODEL</tt> entry.
   #
   # Returns +false+ only when check mode finds an outdated dependency file.
   def run(inputs = ARGV, out: $stdout, err: $stderr, mode: :stdout,
-          output: nil, nmake: false, sources: false, scope: nil,
-          thread_model: nil, verbose: false)
+          output: nil, make_variables: {}, nmake: false, sources: false,
+          scope: nil, thread_model: nil, verbose: false)
     case mode
     when :output
       raise ArgumentError, "output directory is missing" unless output
@@ -910,7 +987,13 @@ class MakeMakefile::Depend
     else
       raise ArgumentError, "unknown update mode: #{mode.inspect}"
     end
-    select_thread_model(thread_model)
+    unless thread_model.nil?
+      if thread_model.empty?
+        raise ArgumentError, "thread model must not be empty"
+      end
+      make_variables = make_variables.merge("THREAD_MODEL" => thread_model)
+    end
+    select_make_variables(make_variables)
     if scope
       inputs = dependency_files(scope).map {|file| File.join(@root, file)}
     end
