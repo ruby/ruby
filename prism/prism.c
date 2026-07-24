@@ -8716,6 +8716,13 @@ lex_identifier(pm_parser_t *parser, bool previous_command_start) {
     if (encoding_changed) {
         return parser->encoding->isupper_char(current_start, end - current_start) ? PM_TOKEN_CONSTANT : PM_TOKEN_IDENTIFIER;
     }
+
+    /* Identifiers usually start with an ASCII byte, for which the uppercase
+     * check is a simple range comparison. This avoids the call into the
+     * encoding module for every identifier. */
+    if (*current_start < 0x80) {
+        return (*current_start >= 'A' && *current_start <= 'Z') ? PM_TOKEN_CONSTANT : PM_TOKEN_IDENTIFIER;
+    }
     return pm_encoding_utf_8_isupper_char(current_start, end - current_start) ? PM_TOKEN_CONSTANT : PM_TOKEN_IDENTIFIER;
 }
 
