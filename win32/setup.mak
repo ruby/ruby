@@ -57,8 +57,8 @@ prefix = $(prefix:\=/)
 
 -dependencies-: -baseruby-
 !if "$(HAVE_BASERUBY)" != "no"
-	@$(WIN32DIR:/=\)\rm.bat -f -r .deps
-	@$(BASERUBY:/=\) $(srcdir)/tool/mkdepend.rb --root=$(srcdir) --scope=core --nmake --output=.deps
+	@if exist .deps (rd /s /q .deps)
+	$(MAKE) -f $(srcdir)/depend BASERUBY=$(BASERUBY) srcdir=$(srcdir) nmake=yes
 !endif
 
 -gmp-:

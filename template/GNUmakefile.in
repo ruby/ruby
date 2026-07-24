@@ -35,6 +35,6 @@ endif
 
 -include uncommon.mk
 ifeq ($(DEPENDENCIES_DIR),.deps)
-include $(DEPENDENCIES_DIR)/depend
+-include $(DEPENDENCIES_DIR)/depend
 endif
 include $(srcdir)/defs/gmake.mk

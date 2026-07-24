@@ -260,6 +260,10 @@ class TestMkdepend < Test::Unit::TestCase
       'prism/templates/include/prism/ast.h.erb',
       declarations.scan['prism/ast.h'],
     )
+    assert_equal(
+      'prism/templates/include/prism/internal/diagnostic.h.erb',
+      declarations.scan['prism/internal/diagnostic.h'],
+    )
     assert_equal('thread_pthread.h', declarations.scan['THREAD_IMPL_H'])
     assert_equal('thread_pthread.c', declarations.scan['THREAD_IMPL_SRC'])
     assert_equal(
