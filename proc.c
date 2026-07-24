@@ -374,10 +374,10 @@ enum refinement_memo_index {
 static VALUE refinement_memo_map; /* set once under the VM lock */
 
 static bool
-refinement_memo_key_match(VALUE memo, VALUE base_cref, long argc, const VALUE *mods)
+refinement_memo_key_match(VALUE memo, const rb_cref_t *base_cref, long argc, const VALUE *mods)
 {
     const VALUE *p = RARRAY_CONST_PTR(memo);
-    if (p[REFINEMENT_MEMO_BASE_CREF] != base_cref) return false;
+    if (p[REFINEMENT_MEMO_BASE_CREF] != (VALUE)base_cref) return false;
     if (RARRAY_LEN(memo) - REFINEMENT_MEMO_MODS != argc) return false;
     for (long i = 0; i < argc; i++) {
         if (p[REFINEMENT_MEMO_MODS + i] != mods[i]) return false;
@@ -386,7 +386,7 @@ refinement_memo_key_match(VALUE memo, VALUE base_cref, long argc, const VALUE *m
 }
 
 static bool
-refinement_memo_lookup(const rb_iseq_t *src_iseq, VALUE base_cref,
+refinement_memo_lookup(const rb_iseq_t *src_iseq, const rb_cref_t *base_cref,
                        long argc, const VALUE *mods,
                        const rb_iseq_t **iseq_out, const rb_cref_t **cref_out)
 {
@@ -422,14 +422,14 @@ refinement_memo_lookup(const rb_iseq_t *src_iseq, VALUE base_cref,
 }
 
 static void
-refinement_memo_store(const rb_iseq_t *src_iseq, VALUE base_cref,
+refinement_memo_store(const rb_iseq_t *src_iseq, const rb_cref_t *base_cref,
                       long argc, const VALUE *mods,
                       const rb_iseq_t *copied_iseq, const rb_cref_t *cref)
 {
     VM_ASSERT(ISEQ_BODY(src_iseq)->type == ISEQ_TYPE_BLOCK);
 
     VALUE memo = rb_ary_hidden_new(REFINEMENT_MEMO_MODS + argc);
-    rb_ary_push(memo, base_cref);
+    rb_ary_push(memo, (VALUE)base_cref);
     rb_ary_push(memo, (VALUE)copied_iseq);
     rb_ary_push(memo, (VALUE)cref);
     for (long i = 0; i < argc; i++) {
@@ -501,7 +501,7 @@ refinement_memo_store(const rb_iseq_t *src_iseq, VALUE base_cref,
  * nested blocks so that the copy can resolve methods through the refinements
  * without affecting the original Proc.  Applying refinements therefore
  * increases memory use roughly in proportion to the size of the block.  The
- * copy is cached and reused for the same receiver and the same modules.
+ * copy is cached and reused for the same block and the same modules.
  */
 static VALUE
 proc_refined(int argc, VALUE *argv, VALUE self)
@@ -523,14 +523,14 @@ proc_refined(int argc, VALUE *argv, VALUE self)
         Check_Type(argv[i], T_MODULE);
     }
 
-    VALUE base_cref = (VALUE)rb_vm_get_cref(src->block.as.captured.ep);
+    const rb_cref_t *base_cref = rb_vm_get_cref(src->block.as.captured.ep);
     const rb_iseq_t *src_iseq = src->block.as.captured.code.iseq;
 
     const rb_iseq_t *new_iseq;
     const rb_cref_t *new_cref;
     if (!refinement_memo_lookup(src_iseq, base_cref, argc, argv, &new_iseq, &new_cref)) {
         new_iseq = rb_iseq_dup_with_independent_caches(src_iseq);
-        rb_cref_t *cref = rb_vm_cref_dup((const rb_cref_t *)base_cref);
+        rb_cref_t *cref = rb_vm_cref_dup(base_cref);
         /* rb_using_module_recursive modifies shared subclass lists */
         RB_VM_LOCKING() {
             for (int i = 0; i < argc; i++) {
