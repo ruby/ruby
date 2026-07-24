@@ -4057,11 +4057,93 @@ rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
     return rb_reg_match_p(re, argv[0], pos);
 }
 
+enum reg_literal_kind {
+    REG_LITERAL_NONE,
+    REG_LITERAL_PREFIX,  /* /\Afoo/   */
+    REG_LITERAL_SUFFIX,  /* /foo\z/   */
+    REG_LITERAL_EXACT,   /* /\Afoo\z/ */
+};
+
+static enum reg_literal_kind
+reg_classify_literal(VALUE re, const char **lit_ptr, long *lit_len)
+{
+    OnigOptionType opts = RREGEXP_PTR(re)->options;
+    if (opts & (ONIG_OPTION_IGNORECASE | ONIG_OPTION_EXTEND | ONIG_OPTION_MULTILINE)) {
+        return REG_LITERAL_NONE;
+    }
+
+    const char *src = RREGEXP_SRC_PTR(re);
+    long len = RREGEXP_SRC_LEN(re);
+
+    int has_prefix = 0;
+    if (len >= 2 && src[0] == '\\' && src[1] == 'A') {
+        has_prefix = 1;
+        src += 2;
+        len -= 2;
+    }
+    int has_suffix = 0;
+    if (len >= 2 && src[len-2] == '\\' && src[len-1] == 'z') {
+        has_suffix = 1;
+        len -= 2;
+    }
+    if (!has_prefix && !has_suffix) return REG_LITERAL_NONE;
+
+    /* ASCII bytes never appear as trailing bytes of a multibyte sequence in
+     * ASCII-compat encodings, so a raw byte scan is safe. */
+    for (long i = 0; i < len; i++) {
+        unsigned char c = (unsigned char)src[i];
+        if (c >= 0x80) return REG_LITERAL_NONE;
+        switch (c) {
+          case '.': case '*': case '+': case '?':
+          case '(': case ')': case '[': case ']':
+          case '{': case '}': case '|': case '^':
+          case '$': case '\\': case '#':
+            return REG_LITERAL_NONE;
+        }
+    }
+
+    *lit_ptr = src;
+    *lit_len = len;
+    if (has_prefix && has_suffix) return REG_LITERAL_EXACT;
+    if (has_prefix) return REG_LITERAL_PREFIX;
+    return REG_LITERAL_SUFFIX;
+}
+
 VALUE
 rb_reg_match_p(VALUE re, VALUE str, long pos)
 {
     if (NIL_P(str)) return Qfalse;
     str = SYMBOL_P(str) ? rb_sym2str(str) : StringValue(str);
+
+    if (pos == 0) {
+        const char *src = RREGEXP_SRC_PTR(re);
+        long src_len = RREGEXP_SRC_LEN(re);
+        /* Cheap byte-level anchor check to skip classifier work on the common
+         * unanchored path. */
+        int has_anchor = src_len >= 2 &&
+            ((src[0] == '\\' && src[1] == 'A') ||
+             (src[src_len-2] == '\\' && src[src_len-1] == 'z'));
+        if (has_anchor && rb_enc_asciicompat(rb_enc_get(str))) {
+            const char *lit_ptr;
+            long lit_len;
+            long slen = RSTRING_LEN(str);
+            switch (reg_classify_literal(re, &lit_ptr, &lit_len)) {
+              case REG_LITERAL_NONE:
+                break;
+              case REG_LITERAL_PREFIX:
+                if (slen < lit_len) return Qfalse;
+                return RBOOL(memcmp(RSTRING_PTR(str), lit_ptr, lit_len) == 0);
+              case REG_LITERAL_SUFFIX:
+                if (slen < lit_len) return Qfalse;
+                return RBOOL(memcmp(RSTRING_PTR(str) + slen - lit_len,
+                                    lit_ptr, lit_len) == 0);
+              case REG_LITERAL_EXACT:
+                if (slen != lit_len) return Qfalse;
+                return RBOOL(lit_len == 0 || memcmp(RSTRING_PTR(str), lit_ptr, lit_len) == 0);
+            }
+        }
+    }
+
     if (pos) {
         if (pos < 0) {
             pos += NUM2LONG(rb_str_length(str));
