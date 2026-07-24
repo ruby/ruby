@@ -3046,6 +3046,21 @@ fn test_opt_newarray_send_pack() {
 }
 
 #[test]
+fn test_opt_newarray_send_pack_handles_raw_float_elements() {
+    eval(r#"
+        def test
+          v = 1.23
+          [v, v * 2, v * 3].pack("E*").unpack("E*") == [v, v * 2, v * 3]
+        end
+        test
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+    assert_snapshot!(assert_compiles(r#"
+        test
+    "#), @"true");
+}
+
+#[test]
 fn test_opt_newarray_send_pack_redefined() {
     eval(r#"
         class Array
@@ -3402,6 +3417,18 @@ fn test_new_hash_with_computation() {
 }
 
 #[test]
+fn test_new_hash_boxes_raw_float_elements() {
+    assert_snapshot!(inspect(r#"
+        def test
+          v = 1.23
+          {v => v * 2}
+        end
+        test
+        test
+    "#), @"{1.23 => 2.46}");
+}
+
+#[test]
 fn test_new_hash_with_user_defined_hash_method() {
     assert_snapshot!(inspect(r#"
         class CustomKey
@@ -3702,6 +3729,18 @@ fn test_new_array_order() {
         test
         test
     "), @"[3, 2, 1]");
+}
+
+#[test]
+fn test_new_array_boxes_raw_float_elements() {
+    assert_snapshot!(inspect(r#"
+        def test
+          v = 1.23
+          [v, v * 2, v * 3].pack("E*").unpack("E*") == [v, v * 2, v * 3]
+        end
+        test
+        test
+    "#), @"true");
 }
 
 #[test]
@@ -7312,10 +7351,63 @@ fn test_float_arithmetic() {
     assert_snapshot!(assert_compiles_allowing_exits("def test = 3.5 - 2.0; test"), @"1.5");
     assert_snapshot!(assert_compiles_allowing_exits("def test = 5.0 / 2.0; test"), @"2.5");
     assert_snapshot!(assert_compiles_allowing_exits("def test = 1.5 * 3; test"), @"4.5"); // Float * Fixnum
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 1 + 2.5; test"), @"3.5");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 1 - 2.5; test"), @"-1.5");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 2 * 2.5; test"), @"5.0");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 5 / 2.0; test"), @"2.5");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 1 / -0.0; test"), @"-Infinity");
     assert_snapshot!(assert_compiles_allowing_exits("def test = (Float::NAN + 1.0).nan?; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (0.0 / 0.0).nan?; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (-0.0 / 0.0).nan?; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = Math.sqrt(Float::NAN).nan?; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test(x) = x.nan?(x) rescue $!.class; test(1.0)"), @"ArgumentError");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 / 2.0).finite?; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 / 0.0).infinite?; test"), @"1");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 / -0.0).infinite?; test"), @"-1");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 - 1.0).zero?; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (-0.0).zero?; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (-0.0).negative?; test"), @"false");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 - 2.0).positive?; test"), @"false");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 - 2.0).negative?; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 + 1.5) == 2.5; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 + 1.5) < 2.5; test"), @"false");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 + 1.5) <= 2.5; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 + 1.5) > 2.0; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 + 1.5) >= 2.6; test"), @"false");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 + 1.5) <=> 2.6; test"), @"-1");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (0.0 / 0.0) <=> 1.0; test"), @"nil");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (0.0 / 0.0) == Float::NAN; test"), @"false");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (-0.0) == 0.0; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (-0.0) <=> 0.0; test"), @"0");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 + 1.0) == 2; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (-0.0) == 0; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (-0.0) <=> 0; test"), @"0");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (0.0 / 0.0) == 0; test"), @"false");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (0.0 / 0.0) <=> 0; test"), @"nil");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 2 == (1.0 + 1.0); test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 2 < (1.0 + 1.5); test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 3 <= (1.0 + 1.5); test"), @"false");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 3 > (1.0 + 1.5); test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 2 >= (1.0 + 1.5); test"), @"false");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 + 1.5) < 3; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 + 1.5) <= 2; test"), @"false");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 + 1.5) > 2; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 + 1.5) >= 3; test"), @"false");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 + 1.5) <=> 3; test"), @"-1");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (2305843009213693952.0 + 2305843009213693952.0) == 4611686018427387903; test"), @"false");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (2305843009213693952.0 + 2305843009213693952.0) > 4611686018427387903; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (2305843009213693952.0 + 2305843009213693952.0) <=> 4611686018427387903; test"), @"1");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 4611686018427387903 == (2305843009213693952.0 + 2305843009213693952.0); test"), @"false");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = 4611686018427387903 < (2305843009213693952.0 + 2305843009213693952.0); test"), @"true");
     assert_snapshot!(assert_compiles_allowing_exits("def test = Float::INFINITY * 2.0; test"), @"Infinity");
     assert_snapshot!(assert_compiles_allowing_exits("def test = 3.7.to_i; test"), @"3");
     assert_snapshot!(assert_compiles_allowing_exits("def test = (-2.9).to_i; test"), @"-2");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.25 + 2.75).to_i; test"), @"4");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 / 0.0).to_i rescue $!.class; test"), @"FloatDomainError");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = (0.0 / 0.0).to_i rescue $!.class; test"), @"FloatDomainError");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = Float::INFINITY.to_i rescue $!.class; test"), @"FloatDomainError");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = Float::NAN.to_i rescue $!.class; test"), @"FloatDomainError");
+    assert_snapshot!(assert_compiles_allowing_exits(r#"def test(a, b, c) = (a + b) + c; test(1.25, 2.5, 3.75); test(1.25, 2.5, "x") rescue $!.message"#), @r#""String can't be coerced into Float""#);
 }
 
 #[test]

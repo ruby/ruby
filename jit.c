@@ -14,6 +14,7 @@
 #include "iseq.h"
 #include "internal/compile.h"
 #include "internal/gc.h"
+#include "internal/numeric.h"
 #include "vm_sync.h"
 #include "internal/fixnum.h"
 #include "internal/hash.h"
@@ -22,6 +23,10 @@
 #include "internal/imemo.h"
 #include "ruby/internal/core/rtypeddata.h"
 #include "zjit.h"
+
+#include <float.h>
+#include <limits.h>
+#include <math.h>
 
 #ifndef _WIN32
 #include <sys/mman.h>
@@ -819,6 +824,145 @@ VALUE
 rb_jit_fix_div_fix(VALUE recv, VALUE obj)
 {
     return rb_fix_div_fix(recv, obj);
+}
+
+static inline uint64_t
+rb_jit_f64_bits(double value)
+{
+    union { double f; uint64_t bits; } conv = { .f = value };
+    return conv.bits;
+}
+
+static inline double
+rb_jit_f64_from_bits(uint64_t bits)
+{
+    union { double f; uint64_t bits; } conv = { .bits = bits };
+    return conv.f;
+}
+
+VALUE
+rb_jit_f64_to_float(uint64_t bits)
+{
+    return DBL2NUM(rb_jit_f64_from_bits(bits));
+}
+
+uint64_t
+rb_jit_f64_sin(uint64_t bits)
+{
+    return rb_jit_f64_bits(sin(rb_jit_f64_from_bits(bits)));
+}
+
+uint64_t
+rb_jit_f64_cos(uint64_t bits)
+{
+    return rb_jit_f64_bits(cos(rb_jit_f64_from_bits(bits)));
+}
+
+uint64_t
+rb_jit_f64_pow(uint64_t left_bits, uint64_t right_bits)
+{
+    return rb_jit_f64_bits(pow(rb_jit_f64_from_bits(left_bits), rb_jit_f64_from_bits(right_bits)));
+}
+
+static double
+rb_jit_complex_safe_mul_double(double left, double right, bool left_zero, bool right_zero)
+{
+    if (!left_zero && right_zero && !isnan(left)) {
+        left = signbit(left) ? -1.0 : 1.0;
+    }
+    if (!right_zero && left_zero && !isnan(right)) {
+        right = signbit(right) ? -1.0 : 1.0;
+    }
+    return left * right;
+}
+
+VALUE
+rb_jit_complex_mul_flonum(VALUE areal, VALUE aimag, VALUE breal, VALUE bimag)
+{
+    double ar = RFLOAT_VALUE(areal);
+    double ai = RFLOAT_VALUE(aimag);
+    double br = RFLOAT_VALUE(breal);
+    double bi = RFLOAT_VALUE(bimag);
+    bool arzero = ar == 0.0;
+    bool aizero = ai == 0.0;
+    bool brzero = br == 0.0;
+    bool bizero = bi == 0.0;
+    double real = rb_jit_complex_safe_mul_double(ar, br, arzero, brzero) -
+        rb_jit_complex_safe_mul_double(ai, bi, aizero, bizero);
+    double imag = rb_jit_complex_safe_mul_double(ar, bi, arzero, bizero) +
+        rb_jit_complex_safe_mul_double(ai, br, aizero, brzero);
+
+    return rb_complex_new(DBL2NUM(real), DBL2NUM(imag));
+}
+
+VALUE
+rb_jit_f64_to_i(uint64_t bits)
+{
+    double value = rb_jit_f64_from_bits(bits);
+
+    if (value > 0.0) {
+        value = floor(value);
+    }
+    if (value < 0.0) {
+        value = ceil(value);
+    }
+
+    if (FIXABLE(value)) {
+        return LONG2FIX((long)value);
+    }
+    return rb_dbl2big(value);
+}
+
+static VALUE
+rb_jit_fixnum_f64_cmp(VALUE fixnum, uint64_t f64_bits)
+{
+    double yd = rb_jit_f64_from_bits(f64_bits);
+    double yi, yf;
+
+    if (isnan(yd))
+        return Qnil;
+    if (isinf(yd)) {
+        if (yd > 0.0) return INT2FIX(-1);
+        else return INT2FIX(1);
+    }
+    yf = modf(yd, &yi);
+#if SIZEOF_LONG * CHAR_BIT < DBL_MANT_DIG /* assume FLT_RADIX == 2 */
+    double xd = (double)FIX2LONG(fixnum);
+    if (xd < yd)
+        return INT2FIX(-1);
+    if (xd > yd)
+        return INT2FIX(1);
+    return INT2FIX(0);
+#else
+    long xn, yn;
+    if (yi < FIXNUM_MIN)
+        return INT2FIX(1);
+    if (FIXNUM_MAX+1 <= yi)
+        return INT2FIX(-1);
+    xn = FIX2LONG(fixnum);
+    yn = (long)yi;
+    if (xn < yn)
+        return INT2FIX(-1);
+    if (xn > yn)
+        return INT2FIX(1);
+    if (yf < 0.0)
+        return INT2FIX(1);
+    if (0.0 < yf)
+        return INT2FIX(-1);
+    return INT2FIX(0);
+#endif
+}
+
+VALUE
+rb_jit_f64_fixnum_cmp(uint64_t left_bits, VALUE right)
+{
+    VALUE rel = rb_jit_fixnum_f64_cmp(right, left_bits);
+
+    if (FIXNUM_P(rel)) {
+        return LONG2FIX(-FIX2LONG(rel));
+    }
+
+    return rel;
 }
 
 // YJIT/ZJIT need this function to never allocate and never raise

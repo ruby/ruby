@@ -5,7 +5,8 @@ use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
 use crate::codegen::{perf_symbol_range_start, perf_symbol_range_end, register_with_perf};
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, rb_jit_f64_to_float, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
+pub use crate::hir::{F64BinOp, F64BoolCmpOp};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, PerfMap, get_option};
@@ -15,6 +16,8 @@ use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 use crate::state::{ZJITState, rb_zjit_record_exit_stack};
 use crate::cast::IntoUsize;
+
+const ZJIT_STACK_MAP_F64_TAG: usize = ZJIT_STACK_MAP_VREG_TAG as usize | ZJIT_STACK_MAP_SKIP_TAG as usize;
 
 /// LIR Block ID. Unique ID for each block, and also defined in LIR so
 /// we can differentiate it from HIR block ids.
@@ -76,6 +79,18 @@ impl std::fmt::Display for VRegId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "v{}", self.0)
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Ord, PartialOrd)]
+pub enum RegClass {
+    GP,
+    FP,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum F64ZeroCmpOp {
+    Positive,
+    Negative,
 }
 
 /// Dummy HIR block ID used when creating test or invalid LIR blocks
@@ -321,7 +336,7 @@ pub enum Opnd
     Value(VALUE),
 
     /// Virtual register. Lowered to Reg or Mem during register assignment.
-    VReg{ idx: VRegId, num_bits: u8 },
+    VReg{ idx: VRegId, num_bits: u8, class: RegClass },
 
     // Low-level operands, for lowering
     Imm(i64),           // Raw signed immediate
@@ -352,7 +367,7 @@ impl Ord for Opnd {
         match (self, other) {
             (Opnd::None, Opnd::None) => std::cmp::Ordering::Equal,
             (Opnd::Value(l), Opnd::Value(r)) => l.0.cmp(&r.0),
-            (Opnd::VReg { idx: lidx, num_bits: lnum_bits }, Opnd::VReg { idx: ridx, num_bits: rnum_bits }) => (lidx, lnum_bits).cmp(&(ridx, rnum_bits)),
+            (Opnd::VReg { idx: lidx, num_bits: lnum_bits, class: lclass }, Opnd::VReg { idx: ridx, num_bits: rnum_bits, class: rclass }) => (lidx, lnum_bits, lclass).cmp(&(ridx, rnum_bits, rclass)),
             (Opnd::Imm(l), Opnd::Imm(r)) => l.cmp(&r),
             (Opnd::UImm(l), Opnd::UImm(r)) => l.cmp(&r),
             (Opnd::Mem(l), Opnd::Mem(r)) => l.cmp(&r),
@@ -371,8 +386,10 @@ impl fmt::Display for Opnd {
             None => write!(f, "None"),
             Value(VALUE(value)) if *value < 10 => write!(f, "Value({value:x})"),
             Value(VALUE(value)) => write!(f, "Value(0x{value:x})"),
-            VReg { idx, num_bits } if *num_bits == 64 => write!(f, "{idx}"),
-            VReg { idx, num_bits } => write!(f, "VReg{num_bits}({idx})"),
+            VReg { idx, num_bits, class: RegClass::GP } if *num_bits == 64 => write!(f, "{idx}"),
+            VReg { idx, num_bits, class: RegClass::GP } => write!(f, "VReg{num_bits}({idx})"),
+            VReg { idx, num_bits, class: RegClass::FP } if *num_bits == 64 => write!(f, "FReg({idx})"),
+            VReg { idx, num_bits, class: RegClass::FP } => write!(f, "FReg{num_bits}({idx})"),
             Imm(value) if value.abs() < 10 => write!(f, "Imm({value:x})"),
             Imm(value) => write!(f, "Imm(0x{value:x})"),
             UImm(value) if *value < 10 => write!(f, "{value:x}"),
@@ -389,8 +406,10 @@ impl fmt::Debug for Opnd {
         match self {
             Self::None => write!(fmt, "None"),
             Value(val) => write!(fmt, "Value({val:?})"),
-            VReg { idx, num_bits } if *num_bits == 64 => write!(fmt, "VReg({})", idx.0),
-            VReg { idx, num_bits } => write!(fmt, "VReg{num_bits}({})", idx.0),
+            VReg { idx, num_bits, class: RegClass::GP } if *num_bits == 64 => write!(fmt, "VReg({})", idx.0),
+            VReg { idx, num_bits, class: RegClass::GP } => write!(fmt, "VReg{num_bits}({})", idx.0),
+            VReg { idx, num_bits, class: RegClass::FP } if *num_bits == 64 => write!(fmt, "FReg({})", idx.0),
+            VReg { idx, num_bits, class: RegClass::FP } => write!(fmt, "FReg{num_bits}({})", idx.0),
             Imm(signed) => write!(fmt, "{signed:x}_i64"),
             UImm(unsigned) => write!(fmt, "{unsigned:x}_u64"),
             // Say Mem and Reg only once
@@ -419,7 +438,7 @@ impl Opnd
                 })
             },
 
-            Opnd::VReg{idx, num_bits: out_num_bits } => {
+            Opnd::VReg{idx, num_bits: out_num_bits, .. } => {
                 assert!(num_bits <= out_num_bits);
                 Opnd::Mem(Mem {
                     base: MemBase::VReg(idx),
@@ -487,7 +506,7 @@ impl Opnd
         match *self {
             Opnd::Reg(reg) => Opnd::Reg(reg.with_num_bits(num_bits)),
             Opnd::Mem(Mem { base, disp, .. }) => Opnd::Mem(Mem { base, disp, num_bits }),
-            Opnd::VReg { idx, .. } => Opnd::VReg { idx, num_bits },
+            Opnd::VReg { idx, class, .. } => Opnd::VReg { idx, num_bits, class },
             _ => unreachable!("with_num_bits should not be used for: {self:?}"),
         }
     }
@@ -501,8 +520,8 @@ impl Opnd
     /// instructions.
     pub fn map_index(self, indices: &[usize]) -> Opnd {
         match self {
-            Opnd::VReg { idx, num_bits } => {
-                Opnd::VReg { idx: indices[idx].into(), num_bits }
+            Opnd::VReg { idx, num_bits, class } => {
+                Opnd::VReg { idx: indices[idx].into(), num_bits, class }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
                 Opnd::Mem(Mem { base: MemBase::VReg(indices[idx].into()), disp, num_bits })
@@ -583,8 +602,8 @@ impl From<VALUE> for Opnd {
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExit {
     pub pc: Opnd,
-    pub stack: Vec<Opnd>,
-    pub locals: Vec<Opnd>,
+    pub stack: Vec<StackMapEntry>,
+    pub locals: Vec<StackMapEntry>,
     pub iseq: IseqPtr,
     /// Stack map for older inlined frames that are not written directly by this
     /// side exit. The current frame's stack and locals are still handled by
@@ -802,6 +821,36 @@ pub enum Insn {
     /// Tear down the frame stack as necessary per the architecture.
     FrameTeardown { preserved: &'static [Opnd], },
 
+    /// Perform a binary operation on raw C doubles.
+    F64BinOpRaw { op: F64BinOp, left: Opnd, right: Opnd, out: Opnd },
+
+    /// Move raw C double bits from a GP register to an F64 register.
+    BitsToF64Raw { val: Opnd, out: Opnd },
+
+    /// Move raw C double bits from an F64 register to a GP register.
+    F64ToBitsRaw { val: Opnd, out: Opnd },
+
+    /// Load a raw C double from memory into an F64 register.
+    LoadF64Raw { opnd: Opnd, out: Opnd },
+
+    /// Store a raw C double from an F64 register into memory.
+    StoreF64Raw { dest: Opnd, src: Opnd },
+
+    /// Square root of a raw C double bit pattern, returning a raw C double bit pattern.
+    F64SqrtRaw { val: Opnd, out: Opnd },
+
+    /// Compare two raw C double bit patterns, returning a Ruby boolean.
+    F64BoolCmpRaw { op: F64BoolCmpOp, left: Opnd, right: Opnd, out: Opnd },
+
+    /// Compare two raw C double bit patterns with <=>, returning -1, 0, 1, or nil.
+    F64CmpRaw { left: Opnd, right: Opnd, out: Opnd },
+
+    /// Compare a raw C double bit pattern with zero, returning a Ruby boolean.
+    F64ZeroCmpRaw { op: F64ZeroCmpOp, val: Opnd, out: Opnd },
+
+    /// Convert a Ruby Fixnum VALUE into a raw C double bit pattern.
+    FixnumToF64Raw { val: Opnd, out: Opnd },
+
     // Atomically increment a counter
     // Input: memory operand, increment value
     // Produces no output
@@ -929,11 +978,19 @@ macro_rules! target_for_each_operand_impl {
     ($self:expr, $visit_one:ident, $visit_many:ident, $reborrow:ident) => {
         match $self {
             Target::SideExit(data) => {
-                visit_many!(data.exit.stack);
-                visit_many!(data.exit.locals);
+                for entry in $reborrow!(data.exit.stack) {
+                    if let StackMapEntry::Opnd(opnd) | StackMapEntry::F64(opnd) = entry {
+                        visit_one!(opnd);
+                    }
+                }
+                for entry in $reborrow!(data.exit.locals) {
+                    if let StackMapEntry::Opnd(opnd) | StackMapEntry::F64(opnd) = entry {
+                        visit_one!(opnd);
+                    }
+                }
                 if let Some(StackMap { stack, .. }) = $reborrow!(data.exit.stack_map) {
                     for entry in stack {
-                        if let StackMapEntry::Opnd(opnd) = entry {
+                        if let StackMapEntry::Opnd(opnd) | StackMapEntry::F64(opnd) = entry {
                             visit_one!(opnd);
                         }
                     }
@@ -994,8 +1051,14 @@ macro_rules! for_each_operand_impl {
             Insn::JmpOpnd(opnd) |
             Insn::Lea { opnd, .. } |
             Insn::Load { opnd, .. } |
+            Insn::LoadF64Raw { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
-            Insn::Not { opnd, .. } => {
+            Insn::Not { opnd, .. } |
+            Insn::BitsToF64Raw { val: opnd, .. } |
+            Insn::F64ToBitsRaw { val: opnd, .. } |
+            Insn::F64ZeroCmpRaw { val: opnd, .. } |
+            Insn::F64SqrtRaw { val: opnd, .. } |
+            Insn::FixnumToF64Raw { val: opnd, .. } => {
                 visit_one!(opnd);
             }
             Insn::Add { left: opnd0, right: opnd1, .. } |
@@ -1011,12 +1074,16 @@ macro_rules! for_each_operand_impl {
             Insn::CSelNE { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelNZ { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelZ { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::F64BinOpRaw { left: opnd0, right: opnd1, .. } |
+            Insn::F64BoolCmpRaw { left: opnd0, right: opnd1, .. } |
+            Insn::F64CmpRaw { left: opnd0, right: opnd1, .. } |
             Insn::IncrCounter { mem: opnd0, value: opnd1, .. } |
             Insn::LoadInto { dest: opnd0, opnd: opnd1 } |
             Insn::LShift { opnd: opnd0, shift: opnd1, .. } |
             Insn::Mov { dest: opnd0, src: opnd1 } |
             Insn::Or { left: opnd0, right: opnd1, .. } |
             Insn::RShift { opnd: opnd0, shift: opnd1, .. } |
+            Insn::StoreF64Raw { dest: opnd0, src: opnd1 } |
             Insn::Store { dest: opnd0, src: opnd1 } |
             Insn::Sub { left: opnd0, right: opnd1, .. } |
             Insn::Mul { left: opnd0, right: opnd1, .. } |
@@ -1033,7 +1100,7 @@ macro_rules! for_each_operand_impl {
                 // both.
                 if let Some(StackMap { stack, .. }) = $reborrow!(data.stack_map) {
                     for entry in stack {
-                        if let StackMapEntry::Opnd(opnd) = entry {
+                        if let StackMapEntry::Opnd(opnd) | StackMapEntry::F64(opnd) = entry {
                             visit_one!(opnd);
                         }
                     }
@@ -1138,6 +1205,16 @@ impl Insn {
             Insn::CSelNE { .. } => "CSelNE",
             Insn::CSelNZ { .. } => "CSelNZ",
             Insn::CSelZ { .. } => "CSelZ",
+            Insn::F64BinOpRaw { .. } => "F64BinOpRaw",
+            Insn::BitsToF64Raw { .. } => "BitsToF64Raw",
+            Insn::F64ToBitsRaw { .. } => "F64ToBitsRaw",
+            Insn::LoadF64Raw { .. } => "LoadF64Raw",
+            Insn::StoreF64Raw { .. } => "StoreF64Raw",
+            Insn::F64SqrtRaw { .. } => "F64SqrtRaw",
+            Insn::F64BoolCmpRaw { .. } => "F64BoolCmpRaw",
+            Insn::F64CmpRaw { .. } => "F64CmpRaw",
+            Insn::F64ZeroCmpRaw { .. } => "F64ZeroCmpRaw",
+            Insn::FixnumToF64Raw { .. } => "FixnumToF64Raw",
             Insn::FrameSetup { .. } => "FrameSetup",
             Insn::FrameTeardown { .. } => "FrameTeardown",
             Insn::IncrCounter { .. } => "IncrCounter",
@@ -1195,6 +1272,15 @@ impl Insn {
             Insn::CSelNE { out, .. } |
             Insn::CSelNZ { out, .. } |
             Insn::CSelZ { out, .. } |
+            Insn::F64BinOpRaw { out, .. } |
+            Insn::BitsToF64Raw { out, .. } |
+            Insn::F64ToBitsRaw { out, .. } |
+            Insn::LoadF64Raw { out, .. } |
+            Insn::F64SqrtRaw { out, .. } |
+            Insn::F64BoolCmpRaw { out, .. } |
+            Insn::F64CmpRaw { out, .. } |
+            Insn::F64ZeroCmpRaw { out, .. } |
+            Insn::FixnumToF64Raw { out, .. } |
             Insn::Lea { out, .. } |
             Insn::LeaJumpTarget { out, .. } |
             Insn::Load { out, .. } |
@@ -1227,6 +1313,15 @@ impl Insn {
             Insn::CSelNE { out, .. } |
             Insn::CSelNZ { out, .. } |
             Insn::CSelZ { out, .. } |
+            Insn::F64BinOpRaw { out, .. } |
+            Insn::BitsToF64Raw { out, .. } |
+            Insn::F64ToBitsRaw { out, .. } |
+            Insn::LoadF64Raw { out, .. } |
+            Insn::F64SqrtRaw { out, .. } |
+            Insn::F64BoolCmpRaw { out, .. } |
+            Insn::F64CmpRaw { out, .. } |
+            Insn::F64ZeroCmpRaw { out, .. } |
+            Insn::FixnumToF64Raw { out, .. } |
             Insn::Lea { out, .. } |
             Insn::LeaJumpTarget { out, .. } |
             Insn::Load { out, .. } |
@@ -1363,17 +1458,23 @@ impl LiveRange {
 pub struct Interval {
     pub range: LiveRange,
     pub id: VRegId,
+    pub class: RegClass,
 }
 
 impl Interval {
     /// Create a new Interval with no range
     pub fn new(i: VRegId) -> Self {
+        Self::new_with_class(i, RegClass::GP)
+    }
+
+    pub fn new_with_class(i: VRegId, class: RegClass) -> Self {
         Self {
             range: LiveRange {
                 start: None,
                 end: None,
             },
             id: i,
+            class,
         }
     }
 
@@ -1433,23 +1534,30 @@ pub enum Allocation {
 }
 
 impl Allocation {
-    fn assigned_reg(self) -> Option<Reg> {
-        use crate::backend::current::ALLOC_REGS;
+    fn assigned_reg(self, class: RegClass) -> Option<Reg> {
+        use crate::backend::current::{ALLOC_REGS, FP_ALLOC_REGS};
 
         match self {
-            Allocation::Reg(n) => Some(ALLOC_REGS[n]),
+            Allocation::Reg(n) => match class {
+                RegClass::GP => Some(ALLOC_REGS[n]),
+                RegClass::FP => Some(FP_ALLOC_REGS[n]),
+            },
             Allocation::Fixed(reg) => Some(reg),
             Allocation::Stack(_) => None,
         }
     }
 
-    fn alloc_pool_index(self, num_registers: usize) -> Option<usize> {
+    fn alloc_pool_index(self, class: RegClass, num_registers: usize) -> Option<usize> {
         match self {
             Allocation::Reg(n) => Some(n),
             Allocation::Fixed(reg) => {
-                use crate::backend::current::ALLOC_REGS;
+                use crate::backend::current::{ALLOC_REGS, FP_ALLOC_REGS};
+                let regs = match class {
+                    RegClass::GP => ALLOC_REGS,
+                    RegClass::FP => FP_ALLOC_REGS,
+                };
 
-                ALLOC_REGS
+                regs
                     .iter()
                     .take(num_registers)
                     .position(|candidate| candidate.reg_no == reg.reg_no)
@@ -1623,6 +1731,8 @@ impl StackMap {
 pub enum StackMapEntry {
     /// Immediate Ruby VALUE or VReg to materialize.
     Opnd(Opnd),
+    /// Raw C double bits or FP VReg to box as a Ruby Float on materialization.
+    F64(Opnd),
     /// Number of VM stack slots to skip when materializing across inlined frames.
     Skip(usize),
 }
@@ -1644,6 +1754,9 @@ pub struct Assembler {
     /// Number of VRegs allocated
     pub(super) num_vregs: usize,
 
+    /// Register class for each VReg.
+    pub(super) vreg_classes: Vec<RegClass>,
+
     /// Names of labels
     pub(super) label_names: Vec<String>,
 
@@ -1664,6 +1777,7 @@ pub struct Assembler {
     /// consumes this through Insn::CCall, after it knows whether each live VReg
     /// is in a saved register or an allocator spill slot.
     stack_map: Option<StackMap>,
+
 }
 
 impl Assembler
@@ -1678,6 +1792,7 @@ impl Assembler
             basic_blocks: Vec::default(),
             current_block_id: BlockId(0),
             num_vregs: 0,
+            vreg_classes: Vec::default(),
             idx: 0,
             stack_map: None,
         }
@@ -1720,6 +1835,7 @@ impl Assembler
         // Initialize num_vregs to match the old assembler's size
         // This allows reusing VRegs from the old assembler
         asm.num_vregs = old_asm.num_vregs;
+        asm.vreg_classes = old_asm.vreg_classes.clone();
 
         asm
     }
@@ -1976,8 +2092,18 @@ impl Assembler
 
     /// Build an Opnd::VReg
     pub fn new_vreg(&mut self, num_bits: u8) -> Opnd {
-        let vreg = Opnd::VReg { idx: self.num_vregs.into(), num_bits };
+        self.new_vreg_with_class(num_bits, RegClass::GP)
+    }
+
+    /// Build an Opnd::VReg assigned from the FP register pool.
+    pub fn new_fp_vreg(&mut self, num_bits: u8) -> Opnd {
+        self.new_vreg_with_class(num_bits, RegClass::FP)
+    }
+
+    fn new_vreg_with_class(&mut self, num_bits: u8, class: RegClass) -> Opnd {
+        let vreg = Opnd::VReg { idx: self.num_vregs.into(), num_bits, class };
         self.num_vregs += 1;
+        self.vreg_classes.push(class);
         vreg
     }
 
@@ -2111,6 +2237,10 @@ impl Assembler
         assert_eq!(preferred_registers.len(), intervals.len());
 
         let mut free_registers: BTreeSet<usize> = (0..num_registers).collect();
+        let mut free_fp_registers: BTreeSet<usize> = {
+            use crate::backend::current::FP_ALLOC_REGS;
+            (0..FP_ALLOC_REGS.len()).collect()
+        };
         let mut active: Vec<&Interval> = Vec::new(); // vreg indices sorted by increasing end point
         let mut assignment: Vec<Option<Allocation>> = vec![None; intervals.len()];
         let mut num_stack_slots: usize = 0;
@@ -2129,23 +2259,40 @@ impl Assembler
                     true
                 } else {
                     if let Some(allocation) = assignment[active_interval.id] {
-                        if let Some(reg) = allocation.alloc_pool_index(num_registers) {
-                            let was_not_there_before = free_registers.insert(reg);
+                        let class = active_interval.class;
+                        let pool_len = match class {
+                            RegClass::GP => num_registers,
+                            RegClass::FP => {
+                                use crate::backend::current::FP_ALLOC_REGS;
+                                FP_ALLOC_REGS.len()
+                            }
+                        };
+                        let free_pool = match class {
+                            RegClass::GP => &mut free_registers,
+                            RegClass::FP => &mut free_fp_registers,
+                        };
+                        if let Some(reg) = allocation.alloc_pool_index(class, pool_len) {
+                            let was_not_there_before = free_pool.insert(reg);
                             assert!(
                                 was_not_there_before,
                                 "attempted to return allocator register {:?} to the free pool more than once",
-                                allocation.assigned_reg().unwrap(),
+                                allocation.assigned_reg(class).unwrap(),
                             );
                         } else {
                             assert!(
-                                allocation.assigned_reg().is_none_or(|reg| {
-                                    crate::backend::current::ALLOC_REGS
+                                allocation.assigned_reg(class).is_none_or(|reg| {
+                                    use crate::backend::current::{ALLOC_REGS, FP_ALLOC_REGS};
+                                    let regs = match class {
+                                        RegClass::GP => ALLOC_REGS,
+                                        RegClass::FP => FP_ALLOC_REGS,
+                                    };
+                                    regs
                                         .iter()
-                                        .take(num_registers)
+                                        .take(pool_len)
                                         .all(|candidate| candidate.reg_no != reg.reg_no)
                                 }),
                                 "attempted to return non-allocatable register {:?} to the allocator pool",
-                                allocation.assigned_reg().unwrap(),
+                                allocation.assigned_reg(class).unwrap(),
                             );
                         }
                     }
@@ -2157,13 +2304,13 @@ impl Assembler
             let preferred_taken = preferred_reg.is_some_and(|reg| {
                 active.iter().any(|active_interval| {
                     assignment[active_interval.id]
-                        .and_then(|alloc| alloc.assigned_reg())
+                        .and_then(|alloc| alloc.assigned_reg(active_interval.class))
                         .is_some_and(|active_reg| active_reg.reg_no == reg.reg_no)
                 })
             });
 
-            if let Some(preferred_reg) = preferred_reg.filter(|_| !preferred_taken) {
-                if let Some(reg_idx) = Allocation::Fixed(preferred_reg).alloc_pool_index(num_registers) {
+            if let Some(preferred_reg) = preferred_reg.filter(|_| interval.class == RegClass::GP && !preferred_taken) {
+                if let Some(reg_idx) = Allocation::Fixed(preferred_reg).alloc_pool_index(RegClass::GP, num_registers) {
                     if free_registers.remove(&reg_idx) {
                         assignment[interval.id] = Some(Allocation::Fixed(preferred_reg));
                         let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
@@ -2178,13 +2325,19 @@ impl Assembler
                 }
             }
 
-            if free_registers.is_empty() {
+            let free_pool = match interval.class {
+                RegClass::GP => &mut free_registers,
+                RegClass::FP => &mut free_fp_registers,
+            };
+
+            if free_pool.is_empty() {
                 // Spill: pick the longest-lived active interval (last in sorted active)
                 // but only from the allocatable register pool. Fixed register
                 // assignments represent preferred/pinned physical registers
                 // (for example SP) and should not be selected as spill victims.
                 let spill = active.iter().rev().copied().find(|active_interval| {
-                    matches!(assignment[active_interval.id], Some(Allocation::Reg(_)))
+                    active_interval.class == interval.class &&
+                        matches!(assignment[active_interval.id], Some(Allocation::Reg(_)))
                 });
                 let slot = Allocation::Stack(num_stack_slots);
                 num_stack_slots += 1;
@@ -2204,8 +2357,8 @@ impl Assembler
                 }
             } else {
                 // Allocate lowest free register
-                let reg = *free_registers.iter().min().unwrap();
-                free_registers.remove(&reg);
+                let reg = *free_pool.iter().min().unwrap();
+                free_pool.remove(&reg);
                 assignment[interval.id] = Some(Allocation::Reg(reg));
                 // Insert into sorted active
                 let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
@@ -2222,6 +2375,88 @@ impl Assembler
     pub fn resolve_ssa(&mut self, _intervals: &[Interval], assignments: &[Option<Allocation>]) {
         use crate::backend::parcopy;
         use crate::backend::current::SCRATCH_REG;
+
+        #[derive(Clone, Copy)]
+        struct TypedCopy {
+            source: Opnd,
+            destination: Opnd,
+            source_is_fp: bool,
+            destination_is_fp: bool,
+        }
+
+        fn opnd_is_fp(opnd: Opnd) -> bool {
+            matches!(opnd, Opnd::VReg { class: RegClass::FP, .. })
+        }
+
+        fn lower_typed_copy(copy: TypedCopy) -> Vec<Insn> {
+            let scratch = Opnd::Reg(SCRATCH_REG);
+            match (copy.destination_is_fp, copy.source_is_fp, copy.destination, copy.source) {
+                (true, true, destination @ Opnd::Reg(_), source @ Opnd::Reg(_)) => vec![
+                    Insn::F64ToBitsRaw { val: source, out: scratch },
+                    Insn::BitsToF64Raw { val: scratch, out: destination },
+                ],
+                (true, true, destination @ Opnd::Reg(_), source @ Opnd::Mem(_)) => vec![
+                    Insn::LoadF64Raw { opnd: source, out: destination },
+                ],
+                (true, true, destination @ Opnd::Mem(_), source) => vec![
+                    Insn::StoreF64Raw { dest: destination, src: source },
+                ],
+                (true, false, destination @ Opnd::Reg(_), source @ Opnd::Mem(_)) => vec![
+                    Insn::LoadF64Raw { opnd: source, out: destination },
+                ],
+                (true, false, destination @ Opnd::Reg(_), source @ Opnd::Reg(_)) => vec![
+                    Insn::BitsToF64Raw { val: source, out: destination },
+                ],
+                (true, false, destination @ Opnd::Reg(_), source) => vec![
+                    Insn::LoadInto { dest: scratch, opnd: source },
+                    Insn::BitsToF64Raw { val: scratch, out: destination },
+                ],
+                (true, false, destination @ Opnd::Mem(_), source) => vec![
+                    Insn::Mov { dest: destination, src: source },
+                ],
+                (false, true, destination @ Opnd::Mem(_), source) => vec![
+                    Insn::StoreF64Raw { dest: destination, src: source },
+                ],
+                (false, true, destination, source) => vec![
+                    Insn::F64ToBitsRaw { val: source, out: destination },
+                ],
+                (false, false, destination, source @ Opnd::Value(_)) => vec![
+                    Insn::LoadInto { dest: destination, opnd: source },
+                ],
+                (false, false, destination, source) => vec![
+                    Insn::Mov { dest: destination, src: source },
+                ],
+                _ => unreachable!("unexpected typed SSA copy: {} -> {} (fp {} -> fp {})",
+                    copy.source, copy.destination, copy.source_is_fp, copy.destination_is_fp),
+            }
+        }
+
+        fn lower_copies(copies: Vec<TypedCopy>) -> Vec<Insn> {
+            let mut moves = Vec::new();
+            let mut gp_copies = Vec::new();
+
+            for copy in copies {
+                if copy.source_is_fp || copy.destination_is_fp {
+                    moves.extend(lower_typed_copy(copy));
+                } else if copy.source != copy.destination {
+                    gp_copies.push(parcopy::RegisterCopy::<Opnd> {
+                        destination: copy.destination,
+                        source: copy.source,
+                    });
+                }
+            }
+
+            let sequentialized = parcopy::sequentialize_register(&gp_copies, Opnd::Reg(SCRATCH_REG));
+            moves.extend(sequentialized.iter().flat_map(|copy| {
+                lower_typed_copy(TypedCopy {
+                    source: copy.source,
+                    destination: copy.destination,
+                    source_is_fp: false,
+                    destination_is_fp: false,
+                })
+            }));
+            moves
+        }
 
         // Count predecessors for each block
         let mut num_predecessors: HashMap<BlockId, usize> = HashMap::new();
@@ -2251,30 +2486,19 @@ impl Assembler
                 // Build the list of register-to-register copies and immediate moves.
                 // Rewrite VRegs to physical registers BEFORE sequentialization so
                 // the parcopy algorithm can see real physical register conflicts.
-                let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = edge.args
+                let copies: Vec<TypedCopy> = edge.args
                     .iter()
                     .zip(params.iter())
                     .filter(|(_arg, param)| assignments[param.vreg_idx()].is_some() )
-                    .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> {
+                    .map(|(arg, param)| TypedCopy {
                         destination: Self::rewritten_opnd(*param, assignments),
                         source: Self::rewritten_opnd(*arg, assignments),
+                        destination_is_fp: opnd_is_fp(*param),
+                        source_is_fp: opnd_is_fp(*arg),
                     })
-                    .filter(|copy| copy.source != copy.destination)
                     .collect();
 
-                // Sequentialize register copies.
-                // Copies must use physical registers, not VRegs, so the
-                // parcopy algorithm can detect physical register conflicts.
-                debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
-                    "parcopy must operate on physical registers, not VRegs");
-                let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
-                let moves: Vec<Insn> = sequentialized
-                    .iter()
-                    .map(|copy| match copy.source {
-                        Opnd::Value(_) => Insn::LoadInto { dest: copy.destination, opnd: copy.source },
-                        _ => Insn::Mov { dest: copy.destination, src: copy.source },
-                    })
-                    .collect();
+                let moves = lower_copies(copies);
 
                 if moves.is_empty() {
                     continue;
@@ -2348,30 +2572,16 @@ impl Assembler
 
             // Rewrite VRegs to physical registers before sequentialization
             // so the parcopy algorithm can detect physical register conflicts.
-            let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
-                .map(|(i, param)| parcopy::RegisterCopy::<Opnd> {
+            let copies: Vec<TypedCopy> = params.iter().enumerate()
+                .map(|(i, param)| TypedCopy {
                     source: C_ARG_OPNDS[i],
                     destination: Self::rewritten_opnd(*param, assignments),
+                    source_is_fp: false,
+                    destination_is_fp: opnd_is_fp(*param),
                 })
-                .filter(|copy| copy.source != copy.destination)
                 .collect();
 
-            debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
-                "parcopy must operate on physical registers, not VRegs");
-            let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
-            let moves: Vec<Insn> = sequentialized
-                .iter()
-                .map(|copy| match copy.source {
-                    Opnd::Value(_) => Insn::LoadInto {
-                        dest: copy.destination,
-                        opnd: copy.source,
-                    },
-                    _ => Insn::Mov {
-                        dest: copy.destination,
-                        src: copy.source,
-                    },
-                })
-                .collect();
+            let moves = lower_copies(copies);
 
             // Find the position after FrameSetup to insert moves
             let insert_pos = self.basic_blocks[block_id.0].insns.iter()
@@ -2409,7 +2619,10 @@ impl Assembler
         regs: &[Reg],
     ) {
         use crate::backend::parcopy;
-        use crate::backend::current::{C_RET_OPND, SCRATCH_REG, ALLOC_REGS};
+        use crate::backend::current::{
+            ALLOC_REGS, C_RET_OPND, FP_ALLOC_REGS, FP_SAVE_SCRATCH2_REG, FP_SAVE_SCRATCH_REG,
+            SCRATCH_REG,
+        };
 
         for block_id in self.block_order() {
             let block = &mut self.basic_blocks[block_id.0];
@@ -2434,7 +2647,7 @@ impl Assembler
                     // Build a set of VRegIds that can be referenced by JITFrame for materializing the VM stack
                     let stack_vreg_ids: HashSet<VRegId> = if let Some(StackMap { stack, .. }) = &stack_map {
                         stack.iter().filter_map(|entry| match entry {
-                            StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => Some(*idx),
+                            StackMapEntry::Opnd(Opnd::VReg { idx, .. }) | StackMapEntry::F64(Opnd::VReg { idx, .. }) => Some(*idx),
                             _ => None,
                         }).collect()
                     } else {
@@ -2452,25 +2665,52 @@ impl Assembler
                             let survives_call = interval.has_bounds() && interval.survives(insn_number);
                             // 2) The VReg is referenced by the stack map for the CCall
                             let stack_map_reg = stack_vreg_ids.contains(&interval.id);
-                            let is_register = assignments[interval.id].and_then(|alloc| alloc.alloc_pool_index(ALLOC_REGS.len())).is_some();
+                            let pool_len = match interval.class {
+                                RegClass::GP => ALLOC_REGS.len(),
+                                RegClass::FP => FP_ALLOC_REGS.len(),
+                            };
+                            let is_register = assignments[interval.id].and_then(|alloc| alloc.alloc_pool_index(interval.class, pool_len)).is_some();
                             is_register && (survives_call || stack_map_reg)
                         })
                         .map(|interval| interval.id)
                         .collect();
 
-                    let survivor_regs: Vec<Opnd> = survivors.iter()
+                    let survivor_regs: Vec<(RegClass, Opnd)> = survivors.iter()
                         .map(|&s| match assignments[s].unwrap() {
-                            Allocation::Reg(n) => Opnd::Reg(ALLOC_REGS[n]),
-                            Allocation::Fixed(reg) => Opnd::Reg(reg),
+                            Allocation::Reg(n) => match intervals[s].class {
+                                RegClass::GP => (RegClass::GP, Opnd::Reg(ALLOC_REGS[n])),
+                                RegClass::FP => (RegClass::FP, Opnd::Reg(FP_ALLOC_REGS[n])),
+                            },
+                            Allocation::Fixed(reg) => (intervals[s].class, Opnd::Reg(reg)),
                             _ => unreachable!(),
                         })
                         .collect();
 
                     // Push all survivors on the stack, pairing adjacent pushes when possible.
+                    // FP registers are saved as their raw bits because CPushPair works on GP registers.
                     for group in survivor_regs.chunks(2) {
+                        let saved_opnd = |new_insns: &mut Vec<Insn>, new_ids: &mut Vec<Option<InsnId>>, idx: usize, class: RegClass, reg: Opnd| {
+                            match class {
+                                RegClass::GP => reg,
+                                RegClass::FP => {
+                                    let scratch = if idx == 0 { Opnd::Reg(FP_SAVE_SCRATCH_REG) } else { Opnd::Reg(FP_SAVE_SCRATCH2_REG) };
+                                    new_insns.push(Insn::F64ToBitsRaw { val: reg, out: scratch });
+                                    new_ids.push(None);
+                                    scratch
+                                }
+                            }
+                        };
+
                         match group {
-                            &[left, right] => new_insns.push(Insn::CPushPair(left, right)),
-                            &[reg]         => new_insns.push(Insn::CPushPair(reg, 0.into())),
+                            &[(left_class, left_reg), (right_class, right_reg)] => {
+                                let left = saved_opnd(&mut new_insns, &mut new_ids, 0, left_class, left_reg);
+                                let right = saved_opnd(&mut new_insns, &mut new_ids, 1, right_class, right_reg);
+                                new_insns.push(Insn::CPushPair(left, right));
+                            }
+                            &[(class, reg)] => {
+                                let reg = saved_opnd(&mut new_insns, &mut new_ids, 0, class, reg);
+                                new_insns.push(Insn::CPushPair(reg, 0.into()));
+                            }
                             _ => unreachable!(),
                         }
                         new_ids.push(None);
@@ -2496,7 +2736,7 @@ impl Assembler
                                     debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap skip should not look like an immediate VALUE");
                                     VALUE(encoded)
                                 }
-                                StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) => {
+                                StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) | StackMapEntry::F64(Opnd::VReg { idx: vreg, .. }) => {
                                     let vreg_stack_index = match assignments[vreg].expect("StackMap VReg should have an allocation") {
                                         Allocation::Reg(_) | Allocation::Fixed(_) => {
                                             let caller_saved_reg_idx = survivors.iter().position(|&survivor_id| survivor_id == vreg).unwrap();
@@ -2509,7 +2749,11 @@ impl Assembler
                                     };
 
                                     // Encode the offset as a shifted-and-tagged integer.
-                                    let encoded = (vreg_stack_index << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_VREG_TAG as usize;
+                                    let tag = match *stack_entry {
+                                        StackMapEntry::F64(_) => ZJIT_STACK_MAP_F64_TAG,
+                                        _ => ZJIT_STACK_MAP_VREG_TAG as usize,
+                                    };
+                                    let encoded = (vreg_stack_index << ZJIT_STACK_MAP_SHIFT) | tag;
                                     debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap VReg should not look like an immediate VALUE");
                                     VALUE(encoded)
                                 }
@@ -2583,24 +2827,67 @@ impl Assembler
                         }
                     } else {
                         if call_result_live {
-                            // Save CCall result to scratch immediately, before pops
-                            // can clobber either C_RET or the output register.
                             new_insns.push(Insn::Mov { dest: Opnd::Reg(SCRATCH_REG), src: C_RET_OPND });
                             new_ids.push(None);
                         }
 
+                        let restore_scratch = |avoid: &[Opnd]| {
+                            [C_RET_OPND, Opnd::Reg(FP_SAVE_SCRATCH_REG), Opnd::Reg(FP_SAVE_SCRATCH2_REG), Opnd::Reg(SCRATCH_REG)]
+                                .into_iter()
+                                .find(|scratch| {
+                                    !avoid.contains(scratch) && !(call_result_live && *scratch == Opnd::Reg(SCRATCH_REG))
+                                })
+                                .expect("at least one restore scratch register should be available")
+                        };
+
                         // Restore all survivors in reverse stack order, pairing adjacent pops when possible.
                         for group in survivor_regs.chunks(2).rev() {
+                            let restore_opnd = |idx: usize, class: RegClass, reg: Opnd, avoid: &[Opnd]| {
+                                match class {
+                                    RegClass::GP => reg,
+                                    RegClass::FP => {
+                                        if idx == 0 {
+                                            Opnd::Reg(FP_SAVE_SCRATCH_REG)
+                                        } else {
+                                            restore_scratch(avoid)
+                                        }
+                                    }
+                                }
+                            };
+
                             match group {
-                                &[reg]         => new_insns.push(Insn::CPopPairInto(reg, reg)),
-                                &[left, right] => new_insns.push(Insn::CPopPairInto(right, left)),
+                                &[(class, reg)] => {
+                                    let restored = restore_opnd(0, class, reg, &[]);
+                                    let padding = restore_scratch(&[restored]);
+                                    new_insns.push(Insn::CPopPairInto(padding, restored));
+                                    new_ids.push(None);
+                                    if class == RegClass::FP {
+                                        new_insns.push(Insn::BitsToF64Raw { val: restored, out: reg });
+                                        new_ids.push(None);
+                                    }
+                                }
+                                &[(left_class, left_reg), (right_class, right_reg)] => {
+                                    let left = match left_class {
+                                        RegClass::GP => left_reg,
+                                        RegClass::FP => restore_scratch(&[right_reg]),
+                                    };
+                                    let right = restore_opnd(1, right_class, right_reg, &[left]);
+                                    new_insns.push(Insn::CPopPairInto(right, left));
+                                    new_ids.push(None);
+                                    if left_class == RegClass::FP {
+                                        new_insns.push(Insn::BitsToF64Raw { val: left, out: left_reg });
+                                        new_ids.push(None);
+                                    }
+                                    if right_class == RegClass::FP {
+                                        new_insns.push(Insn::BitsToF64Raw { val: right, out: right_reg });
+                                        new_ids.push(None);
+                                    }
+                                }
                                 _ => unreachable!(),
                             }
-                            new_ids.push(None);
                         }
 
                         if call_result_live {
-                            // Move result from scratch to output AFTER all pops.
                             let out = Self::rewritten_opnd(out, assignments);
                             new_insns.push(Insn::Mov { dest: out, src: Opnd::Reg(SCRATCH_REG) });
                             new_ids.push(None);
@@ -2641,13 +2928,13 @@ impl Assembler
         stack.iter().filter(|entry| match entry {
             StackMapEntry::Opnd(Opnd::Value(value)) => !value.special_const_p(),
             StackMapEntry::Opnd(Opnd::UImm(value)) => !VALUE(*value as usize).special_const_p(),
-            StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => {
+            StackMapEntry::Opnd(Opnd::VReg { idx, .. }) | StackMapEntry::F64(Opnd::VReg { idx, .. }) => {
                 matches!(
                     assignments[idx.to_usize()].expect("StackMap VReg should have an allocation"),
                     Allocation::Reg(_) | Allocation::Fixed(_)
                 )
             }
-            StackMapEntry::Opnd(Opnd::Reg(_)) => true,
+            StackMapEntry::Opnd(Opnd::Reg(_)) | StackMapEntry::F64(Opnd::Reg(_) | Opnd::UImm(_) | Opnd::Imm(_)) => true,
             _ => false,
         }).count()
     }
@@ -2673,14 +2960,17 @@ impl Assembler
     }
 
     fn rewrite_opnd(opnd: &mut Opnd, assignments: &[Option<Allocation>]) {
-        use crate::backend::current::ALLOC_REGS;
-        let regs = &ALLOC_REGS;
+        use crate::backend::current::{ALLOC_REGS, FP_ALLOC_REGS};
 
         match opnd {
-            Opnd::VReg { idx, num_bits } => {
+            Opnd::VReg { idx, num_bits, class } => {
                 if let Some(assignment) = assignments[*idx] {
                     match assignment {
                         Allocation::Reg(n) => {
+                            let regs = match *class {
+                                RegClass::GP => ALLOC_REGS,
+                                RegClass::FP => FP_ALLOC_REGS,
+                            };
                             let mut reg = regs[n];
                             reg.num_bits = *num_bits;
                             *opnd = Opnd::Reg(reg);
@@ -2706,7 +2996,7 @@ impl Assembler
                 match assignments[*idx].unwrap() {
                     Allocation::Reg(n) => {
                         if let Opnd::Mem(mem) = opnd {
-                            mem.base = MemBase::Reg(regs[n].reg_no);
+                            mem.base = MemBase::Reg(ALLOC_REGS[n].reg_no);
                         }
                     }
                     Allocation::Fixed(reg) => {
@@ -2773,14 +3063,14 @@ impl Assembler
             value.special_const_p().then_some(value)
         }
 
-        fn encode_stack_map_index(asm: &Assembler, stack_idx: usize, frame_depth: usize) -> VALUE {
+        fn encode_stack_map_index(asm: &Assembler, stack_idx: usize, frame_depth: usize, tag: usize) -> VALUE {
             let vreg_stack_index = asm.stack_state.stack_map_index_for_spill(stack_idx, frame_depth);
-            let encoded = (vreg_stack_index << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_VREG_TAG as usize;
+            let encoded = (vreg_stack_index << ZJIT_STACK_MAP_SHIFT) | tag;
             debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap VReg should not look like an immediate VALUE");
             VALUE(encoded)
         }
 
-        fn capture_stack_map_opnd(asm: &mut Assembler, opnd: Opnd, capture_idx: &mut usize, frame_depth: usize) -> VALUE {
+        fn capture_stack_map_opnd(asm: &mut Assembler, opnd: Opnd, capture_idx: &mut usize, frame_depth: usize, tag: usize) -> VALUE {
             let stack_idx = asm.stack_state.stack_idx_for_side_exit_stack_map(*capture_idx);
             *capture_idx += 1;
             let capture_slot = Opnd::Mem(Mem {
@@ -2790,7 +3080,15 @@ impl Assembler
             });
             let opnd = if matches!(opnd, Opnd::Reg(_)) { opnd.with_num_bits(64) } else { opnd };
             asm.store(capture_slot, opnd);
-            encode_stack_map_index(asm, stack_idx, frame_depth)
+            encode_stack_map_index(asm, stack_idx, frame_depth, tag)
+        }
+
+        fn capture_stack_map_f64(asm: &mut Assembler, opnd: Opnd, capture_idx: &mut usize, frame_depth: usize) -> VALUE {
+            let bits = match opnd {
+                Opnd::Reg(_) => asm.f64_to_bits_raw(opnd),
+                _ => opnd,
+            };
+            capture_stack_map_opnd(asm, bits, capture_idx, frame_depth, ZJIT_STACK_MAP_F64_TAG)
         }
 
         fn compile_exit_stack_map(asm: &mut Assembler, stack_map: &StackMap) {
@@ -2801,10 +3099,9 @@ impl Assembler
             let mut capture_idx = 0;
             for (idx, stack_entry) in stack.iter().enumerate() {
                 let entry = match *stack_entry {
-                    StackMapEntry::Opnd(Opnd::Value(_) | Opnd::UImm(_)) => {
-                        let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
+                    StackMapEntry::Opnd(opnd @ (Opnd::Value(_) | Opnd::UImm(_))) => {
                         immediate_stack_map_value(opnd)
-                            .unwrap_or_else(|| capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth))
+                            .unwrap_or_else(|| capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth, ZJIT_STACK_MAP_VREG_TAG as usize))
                     }
                     StackMapEntry::Skip(size) => {
                         let encoded = (size << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_SKIP_TAG as usize;
@@ -2813,11 +3110,17 @@ impl Assembler
                     }
                     StackMapEntry::Opnd(Opnd::Mem(Mem { base: MemBase::Stack { stack_idx, .. }, disp, .. })) => {
                         assert_eq!(disp, 0, "StackMap stack slot should not have a displacement");
-                        encode_stack_map_index(asm, stack_idx.to_usize(), *frame_depth)
+                        encode_stack_map_index(asm, stack_idx.to_usize(), *frame_depth, ZJIT_STACK_MAP_VREG_TAG as usize)
                     }
-                    StackMapEntry::Opnd(Opnd::Reg(_)) => {
-                        let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
-                        capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth)
+                    StackMapEntry::Opnd(opnd @ Opnd::Reg(_)) => {
+                        capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth, ZJIT_STACK_MAP_VREG_TAG as usize)
+                    }
+                    StackMapEntry::F64(Opnd::Mem(Mem { base: MemBase::Stack { stack_idx, .. }, disp, .. })) => {
+                        assert_eq!(disp, 0, "StackMap F64 stack slot should not have a displacement");
+                        encode_stack_map_index(asm, stack_idx.to_usize(), *frame_depth, ZJIT_STACK_MAP_F64_TAG)
+                    }
+                    StackMapEntry::F64(opnd) => {
+                        capture_stack_map_f64(asm, opnd, &mut capture_idx, *frame_depth)
                     }
                     _ => unreachable!("unexpected entry in SideExit StackMap: {stack_entry:?}"),
                 };
@@ -2832,6 +3135,8 @@ impl Assembler
 
         /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
+            use crate::backend::current::{ALLOC_REGS, FP_ALLOC_REGS};
+
             let SideExit { pc, stack, locals, iseq, stack_map, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
@@ -2848,19 +3153,151 @@ impl Assembler
             asm_comment!(asm, "save cfp->iseq");
             asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
 
-            // cfp->block_code and cfp->jit_return are cleared by the materialize_exit trampoline
+            // cfp->block_code is cleared by the materialize_exit trampoline. cfp->jit_return is
+            // normally cleared there too, but F64 boxing below can call into C before then.
 
-            if !stack.is_empty() {
-                asm_comment!(asm, "write stack slots: {}", join_opnds(&stack, ", "));
-                for (idx, &opnd) in stack.iter().enumerate() {
-                    asm.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
+            let save_exit_boxing_regs = |asm: &mut Assembler| {
+                let saved_regs = ALLOC_REGS.iter()
+                    .map(|&reg| (RegClass::GP, Opnd::Reg(reg)))
+                    .chain(FP_ALLOC_REGS.iter().map(|&reg| (RegClass::FP, Opnd::Reg(reg))))
+                    .collect::<Vec<_>>();
+
+                for group in saved_regs.chunks(2) {
+                    let saved_opnd = |asm: &mut Assembler, idx: usize, class: RegClass, reg: Opnd| {
+                        match class {
+                            RegClass::GP => reg,
+                            RegClass::FP => {
+                                let scratch = C_ARG_OPNDS[idx];
+                                asm.f64_to_bits_raw_into(scratch, reg);
+                                scratch
+                            }
+                        }
+                    };
+
+                    match group {
+                        &[(left_class, left_reg), (right_class, right_reg)] => {
+                            let left = saved_opnd(asm, 0, left_class, left_reg);
+                            let right = saved_opnd(asm, 1, right_class, right_reg);
+                            asm.push_insn(Insn::CPushPair(left, right));
+                        }
+                        &[(class, reg)] => {
+                            let reg = saved_opnd(asm, 0, class, reg);
+                            asm.push_insn(Insn::CPushPair(reg, 0.into()));
+                        }
+                        _ => unreachable!(),
+                    }
                 }
-            }
 
-            if !locals.is_empty() {
-                asm_comment!(asm, "write locals: {}", join_opnds(&locals, ", "));
-                for (idx, &opnd) in locals.iter().enumerate() {
-                    asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
+                saved_regs
+            };
+
+            let restore_exit_boxing_regs = |asm: &mut Assembler, saved_regs: &[(RegClass, Opnd)]| {
+                let restore_scratch = |avoid: &[Opnd]| {
+                    C_ARG_OPNDS
+                        .into_iter()
+                        .find(|scratch| !avoid.contains(scratch))
+                        .expect("at least one restore scratch register should be available")
+                };
+
+                for group in saved_regs.chunks(2).rev() {
+                    let restore_opnd = |idx: usize, class: RegClass, reg: Opnd, avoid: &[Opnd]| {
+                        match class {
+                            RegClass::GP => reg,
+                            RegClass::FP => {
+                                if idx == 0 {
+                                    C_ARG_OPNDS[0]
+                                } else {
+                                    restore_scratch(avoid)
+                                }
+                            }
+                        }
+                    };
+
+                    match group {
+                        &[(class, reg)] => {
+                            let restored = restore_opnd(0, class, reg, &[]);
+                            let padding = restore_scratch(&[restored]);
+                            asm.push_insn(Insn::CPopPairInto(padding, restored));
+                            if class == RegClass::FP {
+                                asm.push_insn(Insn::BitsToF64Raw { val: restored, out: reg });
+                            }
+                        }
+                        &[(left_class, left_reg), (right_class, right_reg)] => {
+                            let left = match left_class {
+                                RegClass::GP => left_reg,
+                                RegClass::FP => restore_scratch(&[right_reg]),
+                            };
+                            let right = restore_opnd(1, right_class, right_reg, &[left]);
+                            asm.push_insn(Insn::CPopPairInto(right, left));
+                            if left_class == RegClass::FP {
+                                asm.push_insn(Insn::BitsToF64Raw { val: left, out: left_reg });
+                            }
+                            if right_class == RegClass::FP {
+                                asm.push_insn(Insn::BitsToF64Raw { val: right, out: right_reg });
+                            }
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+            };
+
+            let write_f64_exit_entry = |asm: &mut Assembler, dest: Opnd, opnd: Opnd| {
+                let saved_regs = save_exit_boxing_regs(asm);
+
+                let bits = match opnd {
+                    Opnd::Reg(reg) if FP_ALLOC_REGS.contains(&reg) => {
+                        asm.f64_to_bits_raw_into(C_ARG_OPNDS[0], opnd);
+                        C_ARG_OPNDS[0]
+                    }
+                    _ => opnd,
+                };
+                asm_comment!(asm, "call rb_jit_f64_to_float");
+                asm.count_call_to("rb_jit_f64_to_float");
+                asm.ccall_into(C_RET_OPND, rb_jit_f64_to_float as *const u8, vec![bits]);
+                asm.store(dest, C_RET_OPND);
+
+                restore_exit_boxing_regs(asm, &saved_regs);
+            };
+
+            let locations = stack.iter()
+                .enumerate()
+                .map(|(idx, &entry)| (Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), entry))
+                .chain(locals.iter().enumerate().map(|(idx, &entry)| {
+                    let dest = Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32);
+                    (dest, entry)
+                }))
+                .collect::<Vec<_>>();
+
+            let write_value_entry = |asm: &mut Assembler, dest: Opnd, entry: StackMapEntry| {
+                match entry {
+                    StackMapEntry::Opnd(opnd) => asm.store(dest, opnd),
+                    StackMapEntry::F64(_) => {}
+                    StackMapEntry::Skip(_) => unreachable!("current-frame side exits do not use StackMap skips"),
+                }
+            };
+
+            if !stack.is_empty() || !locals.is_empty() {
+                // Write all Ruby VALUEs before boxing F64 entries. Boxing calls C
+                // and may clobber caller-saved registers referenced by other slots.
+                asm_comment!(asm, "write stack slots: {:?}", stack);
+                asm_comment!(asm, "write locals: {:?}", locals);
+                for &(dest, entry) in &locations {
+                    write_value_entry(asm, dest, entry);
+                }
+
+                if locations.iter().any(|&(_, entry)| matches!(entry, StackMapEntry::F64(_))) {
+                    // Clear cfp->jit_return before boxing F64 values. rb_jit_f64_to_float can
+                    // allocate, so GC must not see a JITFrame for this materialized frame.
+                    asm_comment!(asm, "clear cfp->jit_return");
+                    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+                }
+
+                for &(dest, entry) in &locations {
+                    match entry {
+                        StackMapEntry::F64(opnd) => write_f64_exit_entry(asm, dest, opnd),
+                        StackMapEntry::Opnd(_) => {}
+                        StackMapEntry::Skip(_) => unreachable!("current-frame side exits do not use StackMap skips"),
+                    }
                 }
             }
 
@@ -3170,8 +3607,9 @@ impl Assembler
     /// Calculate live intervals for each VReg.
     pub fn build_intervals(&self, live_in: Vec<BitSet<usize>>) -> Vec<Interval> {
         let num_vregs = self.num_vregs;
+        assert_eq!(self.vreg_classes.len(), num_vregs);
         let mut intervals: Vec<Interval> = (0..num_vregs)
-            .map(|i| Interval::new(i.into()))
+            .map(|i| Interval::new_with_class(i.into(), self.vreg_classes[i]))
             .collect();
 
         let blocks = self.block_order();
@@ -3661,6 +4099,66 @@ impl Assembler {
     pub fn add_into(&mut self, left: Opnd, right: Opnd) {
         assert!(matches!(left, Opnd::Reg(_)), "Destination of add_into must be Opnd::Reg, but got: {left:?}");
         self.push_insn(Insn::Add { left, right, out: left });
+    }
+
+    #[must_use]
+    pub fn f64_binop_raw(&mut self, op: F64BinOp, left: Opnd, right: Opnd) -> Opnd {
+        let out = self.new_fp_vreg(64);
+        self.push_insn(Insn::F64BinOpRaw { op, left, right, out });
+        out
+    }
+
+    #[must_use]
+    pub fn bits_to_f64_raw(&mut self, val: Opnd) -> Opnd {
+        let out = self.new_fp_vreg(64);
+        self.push_insn(Insn::BitsToF64Raw { val, out });
+        out
+    }
+
+    #[must_use]
+    pub fn f64_to_bits_raw(&mut self, val: Opnd) -> Opnd {
+        let out = self.new_vreg(64);
+        self.push_insn(Insn::F64ToBitsRaw { val, out });
+        out
+    }
+
+    pub fn f64_to_bits_raw_into(&mut self, out: Opnd, val: Opnd) {
+        self.push_insn(Insn::F64ToBitsRaw { val, out });
+    }
+
+    #[must_use]
+    pub fn f64_sqrt_raw(&mut self, val: Opnd) -> Opnd {
+        let out = self.new_fp_vreg(64);
+        self.push_insn(Insn::F64SqrtRaw { val, out });
+        out
+    }
+
+    #[must_use]
+    pub fn f64_bool_cmp_raw(&mut self, op: F64BoolCmpOp, left: Opnd, right: Opnd) -> Opnd {
+        let out = self.new_vreg(64);
+        self.push_insn(Insn::F64BoolCmpRaw { op, left, right, out });
+        out
+    }
+
+    #[must_use]
+    pub fn f64_cmp_raw(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        let out = self.new_vreg(64);
+        self.push_insn(Insn::F64CmpRaw { left, right, out });
+        out
+    }
+
+    #[must_use]
+    pub fn f64_zero_cmp_raw(&mut self, op: F64ZeroCmpOp, val: Opnd) -> Opnd {
+        let out = self.new_vreg(64);
+        self.push_insn(Insn::F64ZeroCmpRaw { op, val, out });
+        out
+    }
+
+    #[must_use]
+    pub fn fixnum_to_f64_raw(&mut self, val: Opnd) -> Opnd {
+        let out = self.new_fp_vreg(64);
+        self.push_insn(Insn::FixnumToF64Raw { val, out });
+        out
     }
 
     #[must_use]
@@ -5002,6 +5500,28 @@ mod tests {
         if let Insn::CCall { data } = ccall {
             assert!(data.opnds.is_empty(), "CCall opnds should be empty after handle_caller_saved_regs");
         }
+
+        // Preserve the C return value across caller-saved restores, then move
+        // it to its assigned destination after restoring registers. Otherwise
+        // a restore can overwrite the result or the C return register itself.
+        let ccall_idx = insns.iter().position(|i| matches!(i, Insn::CCall { .. })).unwrap();
+        let scratch = scratch_reg();
+        let save_result_idx = insns.iter().position(|i| {
+            matches!(i, Insn::Mov { dest, src } if *dest == scratch && *src == C_RET_OPND)
+        }).expect("expected the C return register to be saved in scratch");
+        let last_pop_idx = insns.iter().rposition(|i| matches!(i, Insn::CPopPairInto(..))).unwrap();
+        let result_move_idx = insns.iter().rposition(|i| {
+            matches!(i, Insn::Mov { src, .. } if *src == scratch)
+        }).expect("expected a move from the C return register");
+        assert!(ccall_idx < save_result_idx, "CCall result should be saved after CCall");
+        assert!(save_result_idx < last_pop_idx, "CCall result should stay saved while restoring caller-saved registers");
+        assert!(last_pop_idx < result_move_idx, "CCall result must be moved after restoring caller-saved registers");
+        assert!(
+            insns[save_result_idx + 1..result_move_idx].iter().all(|insn| {
+                !matches!(insn, Insn::CPopPairInto(left, right) if *left == scratch || *right == scratch)
+            }),
+            "caller-saved restore must not clobber the saved CCall result",
+        );
 
         // v0 should be rewritten to a Stack operand
         // Find an Add that uses a Stack operand (the v0+v4 add)

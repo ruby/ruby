@@ -100,6 +100,12 @@ pub type size_t = u64;
 /// shifted 1s but not explicitly an enum.
 pub type RedefinitionFlag = u32;
 
+pub const FLONUM_ZERO_VALUE: u64 = 0x8000_0000_0000_0002;
+pub const FLONUM_CLEAR_TAG_MASK: u64 = !0x3;
+pub const FLONUM_MAGIC_EXCLUDED_BITS: u64 = 0x3000_0000_0000_0000;
+pub const FLONUM_CLEAR_LOW_BIT_MASK: u64 = !0x1;
+pub const FLONUM_TAG: u64 = 0x2;
+
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(dead_code)]
 #[allow(clippy::all)] // warning meant to help with reading; not useful for generated code
@@ -127,6 +133,7 @@ unsafe extern "C" {
     // Floats within range will be encoded without creating objects in the heap.
     // (Range is 0x3000000000000001 to 0x4fffffffffffffff (1.7272337110188893E-77 to 2.3158417847463237E+77).
     pub fn rb_float_new(d: f64) -> VALUE;
+    pub fn rb_jit_f64_to_float(bits: u64) -> VALUE;
 
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
     pub fn rb_ary_new_from_args(n: c_long, ...) -> VALUE;
@@ -693,6 +700,18 @@ impl VALUE {
         us
     }
 
+    pub fn as_flonum_f64(self) -> f64 {
+        assert!(self.flonum_p());
+
+        if self.0 as u64 == FLONUM_ZERO_VALUE {
+            return 0.0;
+        }
+
+        let sign_bit = (self.0 as u64) >> 63;
+        let encoded = (2 - sign_bit) | ((self.0 as u64) & FLONUM_CLEAR_TAG_MASK);
+        f64::from_bits(encoded.rotate_right(3))
+    }
+
     pub fn as_ptr<T>(self) -> *const T {
         let VALUE(us) = self;
         us as *const T
@@ -757,6 +776,19 @@ impl VALUE {
         assert!(item <= RUBY_FIXNUM_MAX);
         let k: isize = item.wrapping_add(item.wrapping_add(1));
         VALUE(k as usize)
+    }
+
+    pub fn flonum_from_f64(item: f64) -> Option<Self> {
+        let bits = item.to_bits();
+        let high_bits = (bits >> 60) & 0x7;
+
+        if bits != FLONUM_MAGIC_EXCLUDED_BITS && (high_bits.wrapping_sub(3) & FLONUM_CLEAR_LOW_BIT_MASK) == 0 {
+            Some(VALUE(((bits.rotate_left(3) & FLONUM_CLEAR_LOW_BIT_MASK) | FLONUM_TAG) as usize))
+        } else if bits == 0 {
+            Some(VALUE(FLONUM_ZERO_VALUE as usize))
+        } else {
+            None
+        }
     }
 
     /// Call the write barrier after separately writing val to self.
@@ -1208,6 +1240,7 @@ mod manual_defs {
     // redeclare all the Ruby C structs and write our own offsetof macro. For now, we use constants.
     pub const RUBY_OFFSET_RBASIC_FLAGS: i32 = 0; // struct RBasic, field "flags"
     pub const RUBY_OFFSET_RBASIC_KLASS: i32 = 8; // struct RBasic, field "klass"
+    pub const RUBY_OFFSET_RFLOAT_VALUE: i32 = 16; // struct RFloat, field "float_value"
     pub const RUBY_OFFSET_RARRAY_AS_HEAP_LEN: i32 = 16; // struct RArray, subfield "as.heap.len"
     pub const RUBY_OFFSET_RARRAY_AS_HEAP_PTR: i32 = 32; // struct RArray, subfield "as.heap.ptr"
     pub const RUBY_OFFSET_RARRAY_AS_ARY: i32 = 16; // struct RArray, subfield "as.ary"
@@ -1215,6 +1248,9 @@ mod manual_defs {
     pub const RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR: i32 = 32; // struct RStruct, subfield "as.heap.ptr"
     pub const RUBY_OFFSET_RSTRUCT_FIELDS_OBJ: i32 = 16; // struct RStruct, field "fields_obj"
     pub const RUBY_OFFSET_RSTRUCT_AS_ARY: i32 = 24; // struct RStruct, subfield "as.ary"
+
+    pub const RUBY_OFFSET_RCOMPLEX_REAL: i32 = 16; // struct RComplex, field "real"
+    pub const RUBY_OFFSET_RCOMPLEX_IMAG: i32 = 24; // struct RComplex, field "imag"
 
     pub const RUBY_OFFSET_RSTRING_AS_HEAP_PTR: i32 = 24; // struct RString, subfield "as.heap.ptr"
     pub const RUBY_OFFSET_RSTRING_AS_ARY: i32 = 24; // struct RString, subfield "as.embed.ary"
@@ -1468,6 +1504,31 @@ pub mod test_utils {
         assert_eq!(VALUE::fixnum_from_usize(RUBY_FIXNUM_MAX as usize), VALUE(0x7fffffffffffffff));
         assert_eq!(VALUE::fixnum_from_isize(RUBY_FIXNUM_MAX), VALUE(0x7fffffffffffffff));
         assert_eq!(VALUE::fixnum_from_isize(RUBY_FIXNUM_MIN), VALUE(0x8000000000000001));
+    }
+
+    #[test]
+    fn value_from_f64_matches_cruby_flonum_encoding() {
+        with_rubyvm(|| {
+            for val in [0.0, 1.0, -1.0, 1.25, 2.5, 3.75] {
+                let expected = unsafe { rb_float_new(val) };
+                assert!(expected.flonum_p(), "{val:?} should be a flonum");
+                assert_eq!(VALUE::flonum_from_f64(val), Some(expected));
+                assert_eq!(expected.as_flonum_f64().to_bits(), val.to_bits());
+            }
+
+            for val in [
+                -0.0,
+                f64::INFINITY,
+                f64::NEG_INFINITY,
+                f64::NAN,
+                f64::MIN_POSITIVE,
+                f64::from_bits(FLONUM_MAGIC_EXCLUDED_BITS),
+            ] {
+                let expected = unsafe { rb_float_new(val) };
+                assert!(!expected.flonum_p(), "{val:?} should be a heap float");
+                assert_eq!(VALUE::flonum_from_f64(val), None);
+            }
+        });
     }
 
     #[test]

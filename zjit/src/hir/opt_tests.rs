@@ -18032,88 +18032,40 @@ mod hir_opt_tests {
         ");
     }
 
+    fn assert_float_predicate_inline(
+        method: &str,
+        value: &str,
+        expected_op: &str,
+        expected_type: &str,
+    ) {
+        let script = format!("def test(x) = x.{method}\ntest({value})");
+        eval(&script);
+        let hir = hir_string("test");
+        assert!(hir.contains(expected_op), "{hir}");
+        assert!(hir.contains(expected_type), "{hir}");
+        assert_eq!(1, hir.matches("UnboxFloat").count(), "{hir}");
+        assert!(!hir.contains("CCallWithFrame"), "{hir}");
+    }
+
+    fn assert_hir_contains_all(hir: &str, expected: &[&str]) {
+        for item in expected {
+            assert!(hir.contains(item), "expected {item:?} in HIR:\n{hir}");
+        }
+    }
+
     #[test]
     fn test_float_nan_p_annotation() {
-        eval(r#"
-            def test(x) = x.nan?
-            test(1.0)
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
-        bb2():
-          EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, nan?@0x1010, cme:0x1018)
-          v23:Flonum = GuardType v10, Flonum recompile
-          v24:BoolExact = CCall v23, :Float#nan?@0x1040
-          CheckInterrupts
-          Return v24
-        ");
+        assert_float_predicate_inline("nan?", "1.0", "F64NanP", "BoolExact");
     }
 
     #[test]
     fn test_float_finite_p_annotation() {
-        eval(r#"
-            def test(x) = x.finite?
-            test(1.0)
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
-        bb2():
-          EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, finite?@0x1010, cme:0x1018)
-          v23:Flonum = GuardType v10, Flonum recompile
-          v24:BoolExact = CCall v23, :Float#finite?@0x1040
-          CheckInterrupts
-          Return v24
-        ");
+        assert_float_predicate_inline("finite?", "1.0", "F64FiniteP", "BoolExact");
     }
 
     #[test]
     fn test_float_infinite_p_annotation() {
-        eval(r#"
-            def test(x) = x.infinite?
-            test(1.0)
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
-        bb2():
-          EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, infinite?@0x1010, cme:0x1018)
-          v23:Flonum = GuardType v10, Flonum recompile
-          v24:NilClass|Fixnum = CCall v23, :Float#infinite?@0x1040
-          CheckInterrupts
-          Return v24
-        ");
+        assert_float_predicate_inline("infinite?", "1.0", "F64InfiniteP", "NilClass|Fixnum");
     }
 
     #[test]
@@ -18174,213 +18126,51 @@ mod hir_opt_tests {
 
     #[test]
     fn test_float_zero_p_annotation() {
-        eval(r#"
-            def test(x) = x.zero?
-            test(1.0)
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
-        bb2():
-          EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, zero?@0x1010, cme:0x1018)
-          v22:Flonum = GuardType v10, Flonum recompile
-          v23:BoolExact = InvokeBuiltin leaf <inline_expr>, v22
-          CheckInterrupts
-          Return v23
-        ");
+        assert_float_predicate_inline("zero?", "1.0", "F64ZeroP", "BoolExact");
     }
 
     #[test]
     fn test_float_positive_p_annotation() {
-        eval(r#"
-            def test(x) = x.positive?
-            test(1.0)
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
-        bb2():
-          EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, positive?@0x1010, cme:0x1018)
-          v22:Flonum = GuardType v10, Flonum recompile
-          v23:BoolExact = InvokeBuiltin leaf <inline_expr>, v22
-          CheckInterrupts
-          Return v23
-        ");
+        assert_float_predicate_inline("positive?", "1.0", "F64PositiveP", "BoolExact");
     }
 
     #[test]
     fn test_float_negative_p_annotation() {
-        eval(r#"
-            def test(x) = x.negative?
-            test(-1.0)
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
-        bb2():
-          EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, negative?@0x1010, cme:0x1018)
-          v22:Flonum = GuardType v10, Flonum recompile
-          v23:BoolExact = InvokeBuiltin leaf <inline_expr>, v22
-          CheckInterrupts
-          Return v23
-        ");
+        assert_float_predicate_inline("negative?", "-1.0", "F64NegativeP", "BoolExact");
     }
+
+    fn assert_float_binop_inline(body: &str, expected_op: &str) {
+        let script = format!("def test(a, b) = {body}\ntest(1.5, 2.5)");
+        eval(&script);
+        let hir = hir_string("test");
+        assert!(hir.contains(expected_op), "{hir}");
+        assert_eq!(2, hir.matches("UnboxFloat").count(), "{hir}");
+        assert_eq!(1, hir.matches("BoxFloat").count(), "{hir}");
+        assert!(!hir.contains("CCallWithFrame"), "{hir}");
+    }
+
     #[test]
     fn test_float_add_inline() {
-        eval(r#"
-            def test(a, b) = a + b
-            test(1.0, 2.0)
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, +@0x1010, cme:0x1018)
-          v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum recompile
-          v30:Float = FloatAdd v28, v29
-          CheckInterrupts
-          Return v30
-        ");
+        assert_float_binop_inline("a + b", "F64BinOp::Add");
     }
 
     #[test]
     fn test_float_mul_inline() {
-        eval(r#"
-            def test(a, b) = a * b
-            test(1.5, 2.5)
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
-          v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum recompile
-          v30:Float = FloatMul v28, v29
-          CheckInterrupts
-          Return v30
-        ");
+        assert_float_binop_inline("a * b", "F64BinOp::Mul");
     }
 
     #[test]
     fn test_float_sub_inline() {
-        eval(r#"
-            def test(a, b) = a - b
-            test(5.0, 3.0)
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, -@0x1010, cme:0x1018)
-          v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum recompile
-          v30:Float = FloatSub v28, v29
-          CheckInterrupts
-          Return v30
-        ");
+        assert_float_binop_inline("a - b", "F64BinOp::Sub");
     }
 
     #[test]
     fn test_float_div_inline() {
-        eval(r#"
-            def test(a, b) = a / b
-            test(10.0, 3.0)
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, /@0x1010, cme:0x1018)
-          v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum recompile
-          v30:Float = FloatDiv v28, v29
-          CheckInterrupts
-          Return v30
-        ");
+        assert_float_binop_inline("a / b", "F64BinOp::Div");
     }
 
     #[test]
-    fn test_float_to_i_inline() {
+    fn test_float_to_i_dynamic_uses_fallback() {
         eval(r#"
             def test(a) = a.to_i
             test(3.7)
@@ -18401,9 +18191,9 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(Float@0x1008, to_i@0x1010, cme:0x1018)
           v23:Flonum = GuardType v10, Flonum recompile
-          v24:Integer = FloatToInt v23
+          v25:BasicObject = CCallWithFrame v23, :Float#to_i@0x1040
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -18413,29 +18203,123 @@ mod hir_opt_tests {
             def test(a, b) = a * b
             test(1.5, 3)
         "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
-          v28:Flonum = GuardType v12, Flonum recompile
-          v29:Fixnum = GuardType v13, Fixnum recompile
-          v30:Float = FloatMul v28, v29
-          CheckInterrupts
-          Return v30
-        ");
+        let hir = hir_string("test");
+        assert_hir_contains_all(&hir, &["FixnumToF64", "F64BinOp::Mul"]);
+        assert_eq!(1, hir.matches("UnboxFloat").count(), "{hir}");
+        assert_eq!(1, hir.matches("BoxFloat").count(), "{hir}");
+        assert!(!hir.contains("CCallWithFrame"), "{hir}");
+    }
+
+    #[test]
+    fn test_float_chain_stays_unboxed_between_ops() {
+        eval(r#"
+            def test(a, b, c) = ((a + b) * c - b) / a
+            test(1.25, 2.5, 3.75)
+        "#);
+        let hir = hir_string("test");
+        assert_hir_contains_all(&hir, &["F64BinOp::Add", "F64BinOp::Mul", "F64BinOp::Sub", "F64BinOp::Div"]);
+        assert_eq!(3, hir.matches("UnboxFloat").count(), "{hir}");
+        assert_eq!(4, hir.matches("BoxFloat").count(), "{hir}");
+        assert!(!hir.contains("CCallWithFrame"), "{hir}");
+    }
+
+    #[test]
+    fn test_float_literal_chain_folds_without_boxing() {
+        eval(r#"
+            def test = (1.25 + 2.5) * 3.75
+            test
+        "#);
+        let hir = hir_string("test");
+        assert!(hir.contains("Return"), "{hir}");
+        assert!(!hir.contains("Const CDouble"), "{hir}");
+        assert!(!hir.contains("F64BinOp::Add"), "{hir}");
+        assert!(!hir.contains("F64BinOp::Mul"), "{hir}");
+        assert!(!hir.contains("UnboxFloat"), "{hir}");
+        assert!(!hir.contains("BoxFloat"), "{hir}");
+    }
+
+    #[test]
+    fn test_float_literal_division_by_zero_folds() {
+        eval(r#"
+            def test = 1.0 / 0.0
+            test
+        "#);
+        let hir = hir_string("test");
+        assert!(hir.contains("Return"), "{hir}");
+        assert!(hir.contains("Const CDouble(inf)"), "{hir}");
+        assert!(!hir.contains("F64BinOp::Div"), "{hir}");
+        assert!(!hir.contains("UnboxFloat"), "{hir}");
+    }
+
+    #[test]
+    fn test_float_chain_predicate_avoids_boxing_result() {
+        eval(r#"
+            def test(a, b) = (a / b).finite?
+            test(1.25, 2.5)
+        "#);
+        let hir = hir_string("test");
+        assert_hir_contains_all(&hir, &["F64BinOp::Div", "F64FiniteP"]);
+        assert_eq!(1, hir.matches("BoxFloat").count(), "{hir}");
+        assert!(!hir.contains("CCallWithFrame"), "{hir}");
+    }
+
+    #[test]
+    fn test_math_sqrt_inline_with_nonnegative_guard() {
+        eval(r#"
+            def test(a) = Math.sqrt(a)
+            test(1.25)
+        "#);
+        let hir = hir_string("test");
+        assert_hir_contains_all(&hir, &["F64GuardNonnegative", "F64Sqrt"]);
+        assert!(!hir.contains("CCallWithFrame"), "{hir}");
+    }
+
+    #[test]
+    fn test_fixnum_float_rhs_uses_unboxed_float_ops() {
+        eval(r#"
+            def test(a, b) = ((a + b) * b - a) / b
+            test(1, 2.5)
+        "#);
+        let hir = hir_string("test");
+        assert_hir_contains_all(&hir, &["FixnumToF64", "F64BinOp::Add", "F64BinOp::Mul", "F64BinOp::Sub", "F64BinOp::Div"]);
+        assert_eq!(4, hir.matches("BoxFloat").count(), "{hir}");
+        assert!(!hir.contains("CCallWithFrame"), "{hir}");
+    }
+
+    #[test]
+    fn test_float_chain_comparison_avoids_boxing_result() {
+        eval(r#"
+            def test(a, b) = [(a + b) == b, (a + b) < b, (a + b) <= b, (a + b) > b, (a + b) >= b, (a + b) <=> b]
+            test(1.25, 2.5)
+        "#);
+        let hir = hir_string("test");
+        assert_hir_contains_all(&hir, &["F64BoolCmp::Eq", "F64BoolCmp::Lt", "F64BoolCmp::Le", "F64BoolCmp::Gt", "F64BoolCmp::Ge", "F64Cmp"]);
+        assert_eq!(6, hir.matches("BoxFloat").count(), "{hir}");
+        assert!(!hir.contains("CCallWithFrame"), "{hir}");
+    }
+
+    #[test]
+    fn test_float_chain_fixnum_comparison_uses_exact_helpers() {
+        eval(r#"
+            def test(a, b, n) = [(a + b) == n, (a + b) < n, (a + b) <= n, (a + b) > n, (a + b) >= n, (a + b) <=> n]
+            test(1.25, 2.5, 4)
+        "#);
+        let hir = hir_string("test");
+        assert_hir_contains_all(&hir, &["F64FixnumBoolCmp::Eq", "F64FixnumBoolCmp::Lt", "F64FixnumBoolCmp::Le", "F64FixnumBoolCmp::Gt", "F64FixnumBoolCmp::Ge", "F64FixnumCmp"]);
+        assert_eq!(6, hir.matches("BoxFloat").count(), "{hir}");
+        assert!(!hir.contains("CCallWithFrame"), "{hir}");
+    }
+
+    #[test]
+    fn test_fixnum_float_rhs_comparison_uses_exact_helpers() {
+        eval(r#"
+            def test(n, a, b) = [n == (a + b), n < (a + b), n <= (a + b), n > (a + b), n >= (a + b)]
+            test(4, 1.25, 2.5)
+        "#);
+        let hir = hir_string("test");
+        assert_hir_contains_all(&hir, &["F64FixnumBoolCmp::Eq", "F64FixnumBoolCmp::Lt", "F64FixnumBoolCmp::Le", "F64FixnumBoolCmp::Gt", "F64FixnumBoolCmp::Ge"]);
+        assert_eq!(5, hir.matches("BoxFloat").count(), "{hir}");
+        assert!(!hir.contains("CCallWithFrame"), "{hir}");
     }
 
     #[test]
@@ -18448,7 +18332,7 @@ mod hir_opt_tests {
         "#);
 
         let intermediate_hir = hir_string("test_float_mul_recompile");
-        assert!(intermediate_hir.contains("FloatMul"), "{intermediate_hir}");
+        assert!(intermediate_hir.contains("F64BinOp::Mul"), "{intermediate_hir}");
 
         eval(r#"
             30.times { test_float_mul_recompile(1.5, -0.0) }
@@ -18456,51 +18340,7 @@ mod hir_opt_tests {
 
         let final_hir = hir_string("test_float_mul_recompile");
         assert!(final_hir.contains("CCallWithFrame"), "{final_hir}");
-        assert!(!final_hir.contains("FloatMul"), "{final_hir}");
-        assert_snapshot!(format!("{intermediate_hir}\n{final_hir}"), @"
-        fn test_float_mul_recompile@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
-          v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum recompile
-          v30:Float = FloatMul v28, v29
-          CheckInterrupts
-          Return v30
-
-        fn test_float_mul_recompile@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
-          v28:Flonum = GuardType v12, Flonum recompile
-          v29:BasicObject = CCallWithFrame v28, :Float#*@0x1040, v13
-          CheckInterrupts
-          Return v29
-        ");
+        assert!(!final_hir.contains("F64BinOp::Mul"), "{final_hir}");
     }
 
     #[test]
@@ -18513,7 +18353,7 @@ mod hir_opt_tests {
         "#);
 
         let intermediate_hir = hir_string("test_float_mul_recompile");
-        assert!(intermediate_hir.contains("FloatMul"), "{intermediate_hir}");
+        assert!(intermediate_hir.contains("F64BinOp::Mul"), "{intermediate_hir}");
 
         eval(r#"
             30.times { test_float_mul_recompile(-0.0, 1.5) }
@@ -18521,67 +18361,7 @@ mod hir_opt_tests {
 
         let final_hir = hir_string("test_float_mul_recompile");
         assert!(final_hir.contains("CCallWithFrame"), "{final_hir}");
-        assert!(!final_hir.contains("FloatMul"), "{final_hir}");
-        assert_snapshot!(format!("{intermediate_hir}\n{final_hir}"), @"
-        fn test_float_mul_recompile@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
-          v28:Flonum = GuardType v12, Flonum recompile
-          v29:Flonum = GuardType v13, Flonum recompile
-          v30:Float = FloatMul v28, v29
-          CheckInterrupts
-          Return v30
-
-        fn test_float_mul_recompile@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v21:CBool = HasType v12, HeapFloat
-          CondBranch v21, bb5(), bb6()
-        bb5():
-          v24:HeapFloat = RefineType v12, HeapFloat
-          PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
-          v42:BasicObject = CCallWithFrame v24, :Float#*@0x1040, v13
-          Jump bb4(v42)
-        bb6():
-          v27:CBool = HasType v12, Flonum
-          CondBranch v27, bb7(), bb8()
-        bb7():
-          v30:Flonum = RefineType v12, Flonum
-          PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
-          v45:BasicObject = CCallWithFrame v30, :Float#*@0x1040, v13
-          Jump bb4(v45)
-        bb8():
-          v33:BasicObject = Send v12, :*, v13 # SendFallbackReason: Send: polymorphic call site
-          Jump bb4(v33)
-        bb4(v20:BasicObject):
-          CheckInterrupts
-          Return v20
-        ");
+        assert!(!final_hir.contains("F64BinOp::Mul"), "{final_hir}");
     }
 
     #[test]
@@ -18782,143 +18562,14 @@ mod hir_opt_tests {
         ");
         let final_hir = hir_string_proc("C.new.method(:f)");
 
-        assert_snapshot!(format!("{intermediate_hir}\n{final_hir}"), @"
-        fn f@<compiled>:4:
-        bb1():
-          EntryPoint interpreter
-          v1:HeapBasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:HeapBasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :x@1
-          v9:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9)
-        bb3(v11:HeapBasicObject, v12:BasicObject, v13:NilClass):
-          v17:Fixnum[1] = Const Value(1)
-          PatchPoint SingleRactorMode
-          v21:CShape = LoadField v11, :shape_id@0x1001
-          v22:CShape[0x1002] = Const CShape(0x1002)
-          v23:CBool = IsBitEqual v21, v22
-          CondBranch v23, bb5(), bb6()
-        bb5():
-          StoreField v11, :@a@0x1003, v17
-          WriteBarrier v11, v17
-          Jump bb4()
-        bb6():
-          v28:CShape[0x1004] = Const CShape(0x1004)
-          v29:CBool = IsBitEqual v21, v28
-          CondBranch v29, bb7(), bb8()
-        bb7():
-          StoreField v11, :@a@0x1003, v17
-          WriteBarrier v11, v17
-          v35:CShape[0x1002] = Const CShape(0x1002)
-          StoreField v11, :shape_id@0x1001, v35
-          Jump bb4()
-        bb8():
-          SetIvar v11, :@a, v17
-          Jump bb4()
-        bb4():
-          PatchPoint NoEPEscape(f)
-          v44:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v72:Fixnum = GuardType v12, Fixnum recompile
-          v73:Fixnum = FixnumAdd v72, v44
-          PatchPoint SingleRactorMode
-          v55:CShape = LoadField v11, :shape_id@0x1001
-          v56:CShape[0x1002] = Const CShape(0x1002)
-          v57:CBool = IsBitEqual v55, v56
-          CondBranch v57, bb10(), bb11()
-        bb10():
-          StoreField v11, :@a@0x1003, v73
-          WriteBarrier v11, v73
-          Jump bb9()
-        bb11():
-          SetIvar v11, :@a, v73
-          Jump bb9()
-        bb9():
-          CheckInterrupts
-          Return v73
+        assert!(intermediate_hir.contains("GuardType"), "{intermediate_hir}");
+        assert!(intermediate_hir.contains("FixnumAdd"), "{intermediate_hir}");
+        assert!(!intermediate_hir.contains("HasType"), "{intermediate_hir}");
 
-        fn f@<compiled>:4:
-        bb1():
-          EntryPoint interpreter
-          v1:HeapBasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:HeapBasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :x@1
-          v9:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9)
-        bb3(v11:HeapBasicObject, v12:BasicObject, v13:NilClass):
-          v17:Fixnum[1] = Const Value(1)
-          PatchPoint SingleRactorMode
-          v21:CShape = LoadField v11, :shape_id@0x1001
-          v22:CShape[0x1002] = Const CShape(0x1002)
-          v23:CBool = IsBitEqual v21, v22
-          CondBranch v23, bb5(), bb6()
-        bb5():
-          StoreField v11, :@a@0x1003, v17
-          WriteBarrier v11, v17
-          Jump bb4()
-        bb6():
-          v28:CShape[0x1004] = Const CShape(0x1004)
-          v29:CBool = IsBitEqual v21, v28
-          CondBranch v29, bb7(), bb8()
-        bb7():
-          StoreField v11, :@a@0x1003, v17
-          WriteBarrier v11, v17
-          v35:CShape[0x1002] = Const CShape(0x1002)
-          StoreField v11, :shape_id@0x1001, v35
-          Jump bb4()
-        bb8():
-          SetIvar v11, :@a, v17
-          Jump bb4()
-        bb4():
-          PatchPoint NoEPEscape(f)
-          v44:Fixnum[1] = Const Value(1)
-          v48:CBool = HasType v12, Fixnum
-          CondBranch v48, bb10(), bb11()
-        bb10():
-          v51:Fixnum = RefineType v12, Fixnum
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v86:Fixnum = FixnumAdd v51, v44
-          Jump bb9(v86)
-        bb11():
-          v54:CBool = HasType v12, Flonum
-          CondBranch v54, bb12(), bb13()
-        bb12():
-          v57:Flonum = RefineType v12, Flonum
-          PatchPoint MethodRedefined(Float@0x1040, +@0x1010, cme:0x1048)
-          v89:Float = FloatAdd v57, v44
-          Jump bb9(v89)
-        bb13():
-          v60:BasicObject = Send v12, :+, v44 # SendFallbackReason: Send: polymorphic call site
-          Jump bb9(v60)
-        bb9(v47:BasicObject):
-          PatchPoint SingleRactorMode
-          v69:CShape = LoadField v11, :shape_id@0x1001
-          v70:CShape[0x1002] = Const CShape(0x1002)
-          v71:CBool = IsBitEqual v69, v70
-          CondBranch v71, bb15(), bb16()
-        bb15():
-          StoreField v11, :@a@0x1003, v47
-          WriteBarrier v11, v47
-          Jump bb14()
-        bb16():
-          SetIvar v11, :@a, v47
-          Jump bb14()
-        bb14():
-          CheckInterrupts
-          Return v47
-        ");
+        assert!(final_hir.contains("HasType"), "{final_hir}");
+        assert!(final_hir.contains("FixnumAdd"), "{final_hir}");
+        assert!(final_hir.contains("F64BinOp::Add"), "{final_hir}");
+        assert!(final_hir.contains("SendFallbackReason: Send: polymorphic call site"), "{final_hir}");
     }
 
     // Helper that compiles with inlining enabled. Temporarily sets the inline
