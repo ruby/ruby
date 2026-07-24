@@ -3476,6 +3476,92 @@ rb_fiber_m_kill(VALUE self)
 
 /*
  *  call-seq:
+ *     Fiber.exit(fiber = nil, *arguments)
+ *
+ *  Terminates the current fiber. If +fiber+ is given, control is transferred to
+ *  it (like Fiber#transfer), passing +arguments+; otherwise control returns to
+ *  the fiber that would normally be resumed when the current fiber ends.
+ *
+ *  Unlike ending a fiber normally, this is a directed transfer: the current
+ *  fiber becomes dead and control resumes in +fiber+ regardless of how the
+ *  current fiber was entered (resume or transfer). This is useful for
+ *  transfer-based fiber schedulers that need to hand control back to the
+ *  scheduler when a task finishes.
+ *
+ *  The current fiber is terminated immediately and does not unwind, so its
+ *  +ensure+ blocks are not run. Use Fiber#kill (or run cleanup before calling
+ *  Fiber.exit) if unwinding is required.
+ *
+ *  Raises FiberError if +fiber+ is the current fiber, is already terminated, or
+ *  belongs to another thread.
+ */
+static VALUE
+rb_fiber_s_exit(int argc, VALUE *argv, VALUE klass)
+{
+    rb_fiber_t *current = fiber_current();
+    rb_fiber_t *target = NULL;
+
+    // The first argument is the optional target fiber; the remaining arguments
+    // are passed to it.
+    if (argc >= 1 && !NIL_P(argv[0])) {
+        target = fiber_ptr(argv[0]);
+
+        if (target == current) {
+            rb_raise(rb_eFiberError, "attempt to exit to the current fiber");
+        }
+
+        if (FIBER_TERMINATED_P(target)) {
+            rb_raise(rb_eFiberError, "attempt to exit to a terminated fiber");
+        }
+
+        if (cont_thread_value(&target->cont) != GET_THREAD()->self) {
+            rb_raise(rb_eFiberError, "fiber called across threads");
+        }
+
+        // As with Fiber#transfer, we cannot switch into a fiber that is
+        // suspended in Fiber.yield, nor one that is in the middle of resuming
+        // another fiber - except our own resumer (target->resuming_fiber ==
+        // current), which is the natural place to return to:
+        if (target->yielding) {
+            rb_raise(rb_eFiberError, "attempt to exit to a yielding fiber");
+        }
+
+        if (target->resuming_fiber && target->resuming_fiber != current) {
+            rb_raise(rb_eFiberError, "attempt to exit to a resuming fiber");
+        }
+    }
+
+    VALUE value = argc > 0 ? make_passing_arg(argc - 1, argv + 1) : Qnil;
+
+    // Mark the current fiber as terminated and transfer directly to the target.
+    // The current fiber does not unwind (ensure blocks do not run); it simply
+    // becomes dead once we switch away.
+    rb_fiber_close(current);
+    current->cont.machine.stack = NULL;
+    current->cont.machine.stack_size = 0;
+
+    if (target) {
+        // We are not returning to our resumer, so detach from it (mirroring
+        // return_fiber) - otherwise it would be left marked as resuming a
+        // terminated fiber:
+        if (current->prev) {
+            current->prev->resuming_fiber = NULL;
+            current->prev = NULL;
+        }
+    }
+    else {
+        // Without an explicit target, fall back to the fiber we would normally
+        // return to when terminating:
+        target = return_fiber(true);
+    }
+
+    fiber_switch(target, 1, &value, RB_NO_KEYWORDS, NULL, false);
+
+    UNREACHABLE_RETURN(Qnil);
+}
+
+/*
+ *  call-seq:
  *     Fiber.current -> fiber
  *
  *  Returns the current fiber. If you are not running in the context of
@@ -3704,6 +3790,7 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
     rb_define_method(rb_cFiber, "raise", rb_fiber_m_raise, -1);
     rb_define_method(rb_cFiber, "kill", rb_fiber_m_kill, 0);
+    rb_define_singleton_method(rb_cFiber, "exit", rb_fiber_s_exit, -1);
     rb_define_method(rb_cFiber, "backtrace", rb_fiber_backtrace, -1);
     rb_define_method(rb_cFiber, "backtrace_locations", rb_fiber_backtrace_locations, -1);
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
