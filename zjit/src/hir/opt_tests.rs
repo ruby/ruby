@@ -18246,9 +18246,9 @@ mod hir_opt_tests {
         "#);
         let hir = hir_string("test");
         assert!(hir.contains("Return"), "{hir}");
+        assert!(hir.contains("Const CDouble(inf)"), "{hir}");
         assert!(!hir.contains("F64BinOp::Div"), "{hir}");
         assert!(!hir.contains("UnboxFloat"), "{hir}");
-        assert!(!hir.contains("BoxFloat"), "{hir}");
     }
 
     #[test]
