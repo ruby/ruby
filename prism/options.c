@@ -243,6 +243,20 @@ pm_options_freeze_set(pm_options_t *options, bool freeze) {
     options->freeze = freeze;
 }
 
+/**
+ * Get the raise_error option on the given options struct.
+ */
+uint8_t pm_options_raise_error(const pm_options_t *options) {
+    return options->raise_error;
+}
+
+/**
+ * Set the raise_error option on the given options struct.
+ */
+void pm_options_raise_error_set(pm_options_t *options, uint8_t raise_error) {
+    options->raise_error = raise_error;
+}
+
 // For some reason, GCC analyzer thinks we're leaking allocated scopes and
 // locals here, even though we definitely aren't. This is a false positive.
 // Ideally we wouldn't need to suppress this.

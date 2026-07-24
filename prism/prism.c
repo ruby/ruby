@@ -23376,6 +23376,41 @@ pm_serialize_parse_stream(pm_buffer_t *buffer, pm_source_t *source, const char *
 }
 
 /**
+ * Parse the given source and format any errors that are encountered into the
+ * given buffer using the given format type. If the source parses without any
+ * errors, then -1 is returned and the buffer is left empty. Otherwise, the
+ * name of the encoding of the source is written to the buffer, followed by a
+ * null byte, followed by the formatted errors, and the error level of the
+ * error with the highest precedence is returned.
+ */
+int8_t
+pm_serialize_parse_errors_format(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data, pm_errors_format_type_t format_type) {
+    pm_options_t options = { 0 };
+    pm_options_read(&options, data);
+
+    pm_arena_t arena = { 0 };
+    pm_parser_t parser;
+    pm_parser_init(&arena, &parser, source, size, &options);
+
+    pm_parse(&parser);
+
+    int8_t result = -1;
+    if (parser.error_list.size > 0) {
+        const char *encoding_name = parser.encoding->name;
+        pm_buffer_append_string(buffer, encoding_name, strlen(encoding_name));
+        pm_buffer_append_byte(buffer, '\0');
+
+        result = (int8_t) pm_errors_format(&parser, buffer, format_type);
+    }
+
+    pm_parser_cleanup(&parser);
+    pm_arena_cleanup(&arena);
+    pm_options_cleanup(&options);
+
+    return result;
+}
+
+/**
  * Parse and serialize the comments in the given source to the given buffer.
  */
 void

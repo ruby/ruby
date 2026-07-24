@@ -14,6 +14,7 @@ extern "C" {
 #include "prism/ast.h"
 #include "prism/buffer.h"
 #include "prism/diagnostic.h"
+#include "prism/errors_format.h"
 #include "prism/json.h"
 #include "prism/node.h"
 #include "prism/options.h"
