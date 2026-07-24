@@ -101,6 +101,7 @@ LIBPRISM_OBJS = \
 		prism/constant_pool.$(OBJEXT) \
 		prism/diagnostic.$(OBJEXT) \
 		prism/encoding.$(OBJEXT) \
+		prism/errors_format.$(OBJEXT) \
 		prism/integer.$(OBJEXT) \
 		prism/json.$(OBJEXT) \
 		prism/line_offset_list.$(OBJEXT) \
