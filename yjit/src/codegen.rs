@@ -8290,17 +8290,14 @@ fn gen_send_iseq(
         callee_ctx.set_inline_block(iseq);
     }
 
-    // Set the argument types in the callee's context
-    for arg_idx in 0..argc {
-        let stack_offs: u8 = (argc - arg_idx - 1).try_into().unwrap();
-        let arg_type = asm.ctx.get_opnd_type(StackOpnd(stack_offs));
-        callee_ctx.set_local_type(arg_idx.try_into().unwrap(), arg_type);
-    }
-
-    // If we're in a forwarding callee, there will be one unknown type
-    // written in to the local table (the caller's CI object)
-    if forwarding {
-        callee_ctx.set_local_type(0, Type::Unknown)
+    // Forwarding callees store a callinfo object rather than arguments in
+    // their local table, so their argument types do not map to local types.
+    if !forwarding {
+        for arg_idx in 0..argc {
+            let stack_offs: u8 = (argc - arg_idx - 1).try_into().unwrap();
+            let arg_type = asm.ctx.get_opnd_type(StackOpnd(stack_offs));
+            callee_ctx.set_local_type(arg_idx.try_into().unwrap(), arg_type);
+        }
     }
 
     // Set the receiver type in the callee's context
