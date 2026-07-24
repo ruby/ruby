@@ -3,6 +3,26 @@ require 'test/unit'
 require 'tempfile'
 
 class TestBacktrace < Test::Unit::TestCase
+  class LabelAliasSource
+    def original
+      caller_locations(0, 1).first
+    end
+  end
+
+  class LabelAlias < LabelAliasSource
+    alias aliased original
+  end
+
+  module LabelCopiedSource
+    def original
+      caller_locations(0, 1).first
+    end
+  end
+
+  class LabelCopied
+    define_method :copied, LabelCopiedSource.instance_method(:original)
+  end
+
   def test_exception
     bt = Fiber.new{
       begin
@@ -317,6 +337,16 @@ class TestBacktrace < Test::Unit::TestCase
       raise
     rescue
       assert_equal("TestBacktrace##{__method__}", caller_locations(0, 1)[0].label)
+    end
+  end
+
+  def test_caller_locations_label_uses_original_method_owner
+    {
+      LabelAlias.new.aliased => "TestBacktrace::LabelAliasSource#original",
+      LabelCopied.new.copied => "TestBacktrace::LabelCopiedSource#original",
+    }.each do |location, expected_label|
+      assert_equal(expected_label, location.label)
+      assert_match(/:in '#{Regexp.escape(expected_label)}'\z/, location.to_s)
     end
   end
 

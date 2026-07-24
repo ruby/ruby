@@ -290,17 +290,24 @@ location_cfunc_p(rb_backtrace_location_t *loc)
 }
 
 static VALUE
+location_iseq_owner(const rb_callable_method_entry_t *cme)
+{
+    if (cme && cme->def->type == VM_METHOD_TYPE_ISEQ &&
+        cme->called_id != cme->def->original_id) {
+        const rb_cref_t *cref = cme->def->body.iseq.cref;
+        if (cref) return CREF_CLASS(cref);
+    }
+    return cme ? cme->owner : Qnil;
+}
+
+static VALUE
 location_label(rb_backtrace_location_t *loc)
 {
     if (location_cfunc_p(loc)) {
         return rb_gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
     }
     else {
-        VALUE owner = Qnil;
-        if (loc->cme) {
-            owner = loc->cme->owner;
-        }
-        return calculate_iseq_label(owner, loc->iseq);
+        return calculate_iseq_label(location_iseq_owner(loc->cme), loc->iseq);
     }
 }
 /*
@@ -487,9 +494,7 @@ location_to_str(rb_backtrace_location_t *loc)
     else {
         file = rb_iseq_path(loc->iseq);
         lineno = calc_lineno(loc->iseq, loc->pc);
-        if (loc->cme) {
-            owner = loc->cme->owner;
-        }
+        owner = location_iseq_owner(loc->cme);
         name = calculate_iseq_label(owner, loc->iseq);
     }
 
