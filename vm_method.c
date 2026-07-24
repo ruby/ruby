@@ -3115,6 +3115,12 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *  call-seq:
  *     ruby2_keywords(method_name, ...)    -> nil
  *
+ *  Deprecated: will be removed in Ruby 4.4.  Use <tt>...</tt>
+ *  {argument forwarding}[rdoc-ref:syntax/methods.rdoc@Argument+Forwarding]
+ *  or other delegation styles instead; they work correctly on Ruby 3.0
+ *  and later.  See https://bugs.ruby-lang.org/issues/22205 for the
+ *  schedule.
+ *
  *  For the given method names, marks the method as passing keywords through
  *  a normal argument splat.  This should only be called on methods that
  *  accept an argument splat (<tt>*args</tt>) but not explicit keywords or
@@ -3130,21 +3136,6 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *  method, and only for backwards compatibility with Ruby versions before 3.0.
  *  See https://www.ruby-lang.org/en/news/2019/12/12/separation-of-positional-and-keyword-arguments-in-ruby-3-0/
  *  for details on why +ruby2_keywords+ exists and when and how to use it.
- *
- *  This method will probably be removed at some point, as it exists only
- *  for backwards compatibility. As it does not exist in Ruby versions before
- *  2.7, check that the module responds to this method before calling it:
- *
- *    module Mod
- *      def foo(meth, *args, &block)
- *        send(:"do_#{meth}", *args, &block)
- *      end
- *      ruby2_keywords(:foo) if respond_to?(:ruby2_keywords, true)
- *    end
- *
- *  However, be aware that if the +ruby2_keywords+ method is removed, the
- *  behavior of the +foo+ method using the above approach will change so that
- *  the method does not pass through keywords.
  */
 
 static VALUE
@@ -3316,6 +3307,12 @@ top_private(int argc, VALUE *argv, VALUE _)
 /*
  *  call-seq:
  *     ruby2_keywords(method_name, ...) -> self
+ *
+ *  Deprecated: will be removed in Ruby 4.4.  Use <tt>...</tt>
+ *  {argument forwarding}[rdoc-ref:syntax/methods.rdoc@Argument+Forwarding]
+ *  or other delegation styles instead; they work correctly on Ruby 3.0
+ *  and later.  See https://bugs.ruby-lang.org/issues/22205 for the
+ *  schedule.
  *
  *  For the given method names, marks the method as passing keywords through
  *  a normal argument splat.  See Module#ruby2_keywords in detail.

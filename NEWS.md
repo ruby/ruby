@@ -39,6 +39,11 @@ Note: We're only listing outstanding class updates.
       given names, raising `KeyError` for missing names unless a block is
       given. [[Feature #21781]]
 
+* Hash
+
+    * `Hash.ruby2_keywords_hash?` and `Hash.ruby2_keywords_hash` are
+      deprecated and will be removed in Ruby 4.5. [[Feature #22205]]
+
 * Integer
 
     * `Integer#bit_count` is added. It returns the number of `1` bits in the
@@ -59,6 +64,11 @@ Note: We're only listing outstanding class updates.
     * `MatchData#integer_at` is added.  It converts the matched substring to
       integer and return the result.  [[Feature #21932]]
 
+* Module
+
+    * `Module#ruby2_keywords` and top-level `ruby2_keywords` are
+      deprecated and will be removed in Ruby 4.4. [[Feature #22205]]
+
 * ObjectSpace
 
     * `ObjectSpace._id2ref` was removed.  [[Feature #22135]]
@@ -69,6 +79,8 @@ Note: We're only listing outstanding class updates.
       receiver but with the refinements activated by the given modules
       in effect inside its body, without affecting the original `Proc`.
       [[Feature #22097]]
+    * `Proc#ruby2_keywords` is deprecated and will be removed in Ruby 4.4.
+      [[Feature #22205]]
 
 * Range
 
@@ -264,6 +276,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22139]: https://bugs.ruby-lang.org/issues/22139
 [Feature #22175]: https://bugs.ruby-lang.org/issues/22175
 [Feature #22185]: https://bugs.ruby-lang.org/issues/22185
+[Feature #22205]: https://bugs.ruby-lang.org/issues/22205
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
 [RubyGems-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/v4.0.5
