@@ -3115,10 +3115,11 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *  call-seq:
  *     ruby2_keywords(method_name, ...)    -> nil
  *
- *  Deprecated: will be removed in Ruby 4.4.  Use <tt>...</tt> argument
- *  forwarding or explicit delegation (<tt>*args, **kwargs</tt>)
- *  instead; they work correctly on Ruby 3.0 and later.  See
- *  https://bugs.ruby-lang.org/issues/22205 for the schedule.
+ *  Deprecated: will be removed in Ruby 4.4.  Use <tt>...</tt>
+ *  {argument forwarding}[rdoc-ref:syntax/methods.rdoc@Argument+Forwarding]
+ *  or other delegation styles instead; they work correctly on Ruby 3.0
+ *  and later.  See https://bugs.ruby-lang.org/issues/22205 for the
+ *  schedule.
  *
  *  For the given method names, marks the method as passing keywords through
  *  a normal argument splat.  This should only be called on methods that
@@ -3307,10 +3308,11 @@ top_private(int argc, VALUE *argv, VALUE _)
  *  call-seq:
  *     ruby2_keywords(method_name, ...) -> self
  *
- *  Deprecated: will be removed in Ruby 4.4.  Use <tt>...</tt> argument
- *  forwarding or explicit delegation (<tt>*args, **kwargs</tt>)
- *  instead; they work correctly on Ruby 3.0 and later.  See
- *  https://bugs.ruby-lang.org/issues/22205 for the schedule.
+ *  Deprecated: will be removed in Ruby 4.4.  Use <tt>...</tt>
+ *  {argument forwarding}[rdoc-ref:syntax/methods.rdoc@Argument+Forwarding]
+ *  or other delegation styles instead; they work correctly on Ruby 3.0
+ *  and later.  See https://bugs.ruby-lang.org/issues/22205 for the
+ *  schedule.
  *
  *  For the given method names, marks the method as passing keywords through
  *  a normal argument splat.  See Module#ruby2_keywords in detail.
