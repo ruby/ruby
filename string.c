@@ -44,6 +44,7 @@
 #include "ruby/encoding.h"
 #include "ruby/re.h"
 #include "ruby/thread.h"
+#include "ruby/thread_native.h"
 #include "ruby/util.h"
 #include "ruby/ractor.h"
 #include "ruby_assert.h"
@@ -175,8 +176,8 @@ VALUE rb_cSymbol;
 
 #define STR_SET_SHARED(str, shared_str) do { \
     if (!FL_TEST(str, STR_FAKESTR)) { \
-        RUBY_ASSERT(RSTRING_PTR(shared_str) <= RSTRING_PTR(str)); \
-        RUBY_ASSERT(RSTRING_PTR(str) <= RSTRING_PTR(shared_str) + RSTRING_LEN(shared_str)); \
+        RUBY_ASSERT(RSTRING_RAW_PTR(shared_str) <= RSTRING_RAW_PTR(str)); \
+        RUBY_ASSERT(RSTRING_RAW_PTR(str) <= RSTRING_RAW_PTR(shared_str) + RSTRING_LEN(shared_str)); \
         RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
         FL_SET((str), STR_SHARED); \
         rb_gc_register_pinning_obj(str); \
@@ -202,7 +203,7 @@ zero_filled(const char *s, int n)
 }
 
 #if !defined SHARABLE_MIDDLE_SUBSTRING
-# define SHARABLE_MIDDLE_SUBSTRING 0
+# define SHARABLE_MIDDLE_SUBSTRING 1
 #endif
 
 static inline bool
@@ -1459,18 +1460,18 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
     char *ptr;
     long len;
 
-    RSTRING_GETMEM(str, ptr, len);
+    ptr = RSTRING_RAW_PTR(str);
+    len = RSTRING_LEN(str);
     if (str_embed_capa(str2) >= len + termlen) {
         char *ptr2 = RSTRING(str2)->as.embed.ary;
         STR_SET_EMBED(str2);
-        memcpy(ptr2, RSTRING_PTR(str), len);
+        memcpy(ptr2, ptr, len);
         TERM_FILL(ptr2+len, termlen);
     }
     else {
         VALUE root;
         if (STR_SHARED_P(str)) {
             root = RSTRING(str)->as.heap.aux.shared;
-            RSTRING_GETMEM(str, ptr, len);
         }
         else {
             root = rb_str_new_frozen(str);
@@ -1751,9 +1752,51 @@ rb_str_tmp_new(long len)
     return str_new(0, 0, len);
 }
 
+/*
+ * Global table for null-terminated copies of shared middle substrings created
+ * without the GVL.
+ */
+static rb_nativethread_lock_t ephemeral_term_lock;
+static st_table *ephemeral_term_table;
+static rb_atomic_t ephemeral_term_count;
+
+static void
+ephemeral_term_cleanup(VALUE str)
+{
+    /* Skip the mutex when the table is empty. */
+    if (RUBY_ATOMIC_LOAD(ephemeral_term_count) == 0) return;
+
+    st_data_t key = (st_data_t)str;
+    st_data_t buf;
+    rb_nativethread_lock_lock(&ephemeral_term_lock);
+    bool deleted = st_delete(ephemeral_term_table, &key, &buf);
+    if (deleted) RUBY_ATOMIC_DEC(ephemeral_term_count);
+    rb_nativethread_lock_unlock(&ephemeral_term_lock);
+    if (deleted) ruby_mimfree((void *)buf);
+}
+
+static int
+ephemeral_term_free_i(st_data_t str, st_data_t buf, st_data_t arg)
+{
+    ruby_mimfree((void *)buf);
+    return ST_CONTINUE;
+}
+
+void
+rb_free_ephemeral_term_table(void)
+{
+    st_foreach(ephemeral_term_table, ephemeral_term_free_i, 0);
+    RUBY_ATOMIC_SET(ephemeral_term_count, 0);
+    st_free_table(ephemeral_term_table);
+    ephemeral_term_table = NULL;
+}
+
 void
 rb_str_free(VALUE str)
 {
+    /* Clean up any ephemeral null-termination buffer for this string. */
+    ephemeral_term_cleanup(str);
+
     if (STR_EMBED_P(str)) {
         RB_DEBUG_COUNTER_INC(obj_str_embed);
     }
@@ -1830,7 +1873,7 @@ str_shared_replace(VALUE str, VALUE str2)
 
         STR_SET_NOEMBED(str);
         FL_UNSET(str, STR_SHARED);
-        RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
+        RSTRING(str)->as.heap.ptr = RSTRING_RAW_PTR(str2);
 
         if (FL_TEST(str2, STR_SHARED)) {
             VALUE shared = RSTRING(str2)->as.heap.aux.shared;
@@ -1880,7 +1923,7 @@ str_replace(VALUE str, VALUE str2)
         RUBY_ASSERT(OBJ_FROZEN(shared));
         STR_SET_NOEMBED(str);
         STR_SET_LEN(str, len);
-        RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
+        RSTRING(str)->as.heap.ptr = RSTRING_RAW_PTR(str2);
         STR_SET_SHARED(str, shared);
         rb_enc_cr_str_exact_copy(str, str2);
     }
@@ -1959,7 +2002,7 @@ str_duplicate_setup_heap(VALUE klass, VALUE str, VALUE dup)
     RUBY_ASSERT(!STR_SHARED_P(root));
     RUBY_ASSERT(RB_OBJ_FROZEN_RAW(root));
 
-    RSTRING(dup)->as.heap.ptr = RSTRING_PTR(str);
+    RSTRING(dup)->as.heap.ptr = RSTRING_RAW_PTR(str);
     FL_SET_RAW(dup, RSTRING_NOEMBED);
     STR_SET_SHARED(dup, root);
     flags |= RSTRING_NOEMBED | STR_SHARED;
@@ -2751,7 +2794,7 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
     }
 
     ptr = ALLOC_N(char, (size_t)capa + termlen);
-    oldptr = RSTRING_PTR(str);
+    oldptr = RSTRING_RAW_PTR(str);
     if (oldptr) {
         memcpy(ptr, oldptr, len);
     }
@@ -2884,7 +2927,7 @@ str_fill_term(VALUE str, char *s, long len, int termlen)
         TERM_FILL(s + len, termlen);
         return s;
     }
-    return RSTRING_PTR(str);
+    return RSTRING_RAW_PTR(str);
 }
 
 void
@@ -2919,7 +2962,7 @@ rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int terml
 static char *
 str_null_check(VALUE str, int *w)
 {
-    char *s = RSTRING_PTR(str);
+    char *s = RSTRING_RAW_PTR(str);
     long len = RSTRING_LEN(str);
     int minlen = 1;
 
@@ -3000,9 +3043,48 @@ str_to_cstr(VALUE str)
 char *
 rb_str_fill_terminator(VALUE str, const int newminlen)
 {
-    char *s = RSTRING_PTR(str);
+    char *s = RSTRING_RAW_PTR(str);
     long len = RSTRING_LEN(str);
     return str_fill_term(str, s, len, newminlen);
+}
+
+char *
+rbimpl_str_ensure_terminator(VALUE str)
+{
+    RUBY_ASSERT(FL_TEST_RAW(str, STR_NOEMBED | STR_SHARED));
+
+    int termlen = TERM_LEN(str);
+    long len = RSTRING_LEN(str);
+    char *ptr = RSTRING(str)->as.heap.ptr;
+
+    if (zero_filled(ptr + len, termlen)) return ptr;
+
+    if (!ruby_thread_has_gvl_p()) {
+        /* Allocate a null-terminated copy outside the GC heap and
+         * cache it in ephemeral_term_table, keyed by this string's VALUE.
+         * The copy is freed when the string is freed (rb_str_free). */
+        char *result;
+        rb_nativethread_lock_lock(&ephemeral_term_lock);
+        if (st_lookup(ephemeral_term_table, (st_data_t)str, (st_data_t *)&result)) {
+            rb_nativethread_lock_unlock(&ephemeral_term_lock);
+            return result;
+        }
+        result = ruby_mimmalloc((size_t)len + (size_t)termlen);
+        if (!result) {
+            rb_nativethread_lock_unlock(&ephemeral_term_lock);
+            fprintf(stderr, "[FATAL] failed to allocate memory\n");
+            exit(EXIT_FAILURE);
+        }
+        memcpy(result, ptr, (size_t)len);
+        memset(result + len, 0, (size_t)termlen);
+        st_insert(ephemeral_term_table, (st_data_t)str, (st_data_t)result);
+        RUBY_ATOMIC_INC(ephemeral_term_count);
+        rb_nativethread_lock_unlock(&ephemeral_term_lock);
+        return result;
+    }
+
+    str_make_independent_expand(str, len, 0L, termlen);
+    return RSTRING_RAW_PTR(str);
 }
 
 VALUE
@@ -3186,12 +3268,11 @@ str_subseq(VALUE str, long beg, long len)
         return str2;
     }
 
-    str2 = str_alloc_heap(rb_cString);
-    if (str_embed_capa(str2) >= len + termlen) {
+    if (STR_EMBEDDABLE_P(len, termlen)) {
+        str2 = str_alloc_embed(rb_cString, len + termlen);
         char *ptr2 = RSTRING(str2)->as.embed.ary;
-        STR_SET_EMBED(str2);
-        memcpy(ptr2, RSTRING_PTR(str) + beg, len);
-        TERM_FILL(ptr2+len, termlen);
+        memcpy(ptr2, RSTRING_RAW_PTR(str) + beg, len);
+        TERM_FILL(ptr2 + len, termlen);
 
         STR_SET_LEN(str2, len);
         if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
@@ -3199,18 +3280,19 @@ str_subseq(VALUE str, long beg, long len)
         }
 
         RB_GC_GUARD(str);
+        return str2;
     }
-    else {
-        str_replace_shared(str2, str);
-        RUBY_ASSERT(!STR_EMBED_P(str2));
-        if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
-            ENC_CODERANGE_CLEAR(str2);
-        }
 
-        RSTRING(str2)->as.heap.ptr += beg;
-        if (RSTRING_LEN(str2) > len) {
-            STR_SET_LEN(str2, len);
-        }
+    str2 = str_alloc_heap(rb_cString);
+    str_replace_shared(str2, str);
+    RUBY_ASSERT(!STR_EMBED_P(str2));
+    if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+        ENC_CODERANGE_CLEAR(str2);
+    }
+
+    RSTRING(str2)->as.heap.ptr += beg;
+    if (RSTRING_LEN(str2) > len) {
+        STR_SET_LEN(str2, len);
     }
 
     return str2;
@@ -10970,7 +11052,6 @@ rb_str_oct(VALUE str)
 }
 
 #ifndef HAVE_CRYPT_R
-# include "ruby/thread_native.h"
 # include "ruby/atomic.h"
 
 static struct {
@@ -12885,6 +12966,9 @@ fstring_set_class_i(VALUE *str, void *data)
 void
 Init_String(void)
 {
+    rb_nativethread_lock_initialize(&ephemeral_term_lock);
+    ephemeral_term_table = st_init_numtable();
+
     rb_cString  = rb_define_class("String", rb_cObject);
 
     rb_concurrent_set_foreach_with_replace(fstring_table_obj, fstring_set_class_i, NULL);

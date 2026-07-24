@@ -117,6 +117,7 @@ void rb_str_tmp_frozen_release(VALUE str, VALUE tmp);
 VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
 RUBY_SYMBOL_EXPORT_END
 
+void rb_free_ephemeral_term_table(void);
 VALUE rb_fstring_new(const char *ptr, long len);
 void rb_gc_free_fstring(VALUE obj);
 bool rb_obj_is_fstring_table(VALUE obj);
@@ -213,7 +214,7 @@ rb_str_eql_internal(const VALUE str1, const VALUE str2)
 
     if (len != RSTRING_LEN(str2)) return Qfalse;
     if (!rb_str_comparable(str1, str2)) return Qfalse;
-    if ((ptr1 = RSTRING_PTR(str1)) == (ptr2 = RSTRING_PTR(str2)))
+    if ((ptr1 = RSTRING_RAW_PTR(str1)) == (ptr2 = RSTRING_RAW_PTR(str2)))
         return Qtrue;
     if (memcmp(ptr1, ptr2, len) == 0)
         return Qtrue;

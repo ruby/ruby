@@ -73,7 +73,7 @@ struct strscanner
     CLEAR_NAMED_CAPTURES(s);\
 } while (0)
 
-#define S_PBEG(s)  (RSTRING_PTR((s)->str))
+#define S_PBEG(s)  (RSTRING_RAW_PTR((s)->str))
 #define S_LEN(s)  (RSTRING_LEN((s)->str))
 #define S_PEND(s)  (S_PBEG(s) + S_LEN(s))
 #define CURPTR(s) (S_PBEG(s) + (s)->curr)
@@ -774,14 +774,14 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
         if (headonly) {
             strscan_enc_check(p->str, pattern);
 
-            if (memcmp(CURPTR(p), RSTRING_PTR(pattern), RSTRING_LEN(pattern)) != 0) {
+            if (memcmp(CURPTR(p), RSTRING_RAW_PTR(pattern), RSTRING_LEN(pattern)) != 0) {
                 return Qnil;
             }
             set_registers(p, 0, RSTRING_LEN(pattern));
         }
         else {
             rb_encoding *enc = rb_enc_check(p->str, pattern);
-            long pos = rb_memsearch(RSTRING_PTR(pattern), RSTRING_LEN(pattern),
+            long pos = rb_memsearch(RSTRING_RAW_PTR(pattern), RSTRING_LEN(pattern),
                                     CURPTR(p), S_RESTLEN(p), enc);
             if (pos == -1) {
                 return Qnil;

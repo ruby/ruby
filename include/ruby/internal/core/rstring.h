@@ -352,6 +352,16 @@ void rb_check_safe_str(VALUE);
  * @param[in]  func           The function name where encountered NULL pointer.
  */
 void rb_debug_rstring_null_ptr(const char *func);
+
+/**
+ * @private
+ *
+ * Ensures the string has a null terminator after its content.
+ *
+ * @param[in]  str  A shared heap string that may lack a null terminator.
+ * @return     Pointer to the (now null-terminated) string contents.
+ */
+char *rbimpl_str_ensure_terminator(VALUE str);
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -371,18 +381,59 @@ RSTRING_LEN(VALUE str)
 
 RBIMPL_ATTR_ARTIFICIAL()
 /**
- * Queries the contents pointer of the string.
+ * Queries  the raw contents pointer  of  the string  without guaranteeing null
+ * termination.
  *
  * @param[in]  str  String in question.
  * @return     Pointer to its contents.
+ * @pre        `str` must be an instance of ::RString.
+ *
+ * @warning    The   returned   pointer  is  invalidated   if  the  string   is
+ *             subsequently   unshared.   Operations   such  as   RSTRING_PTR()
+ *             and   RSTRING_END()  may  unshare  the  string  and   reallocate
+ *             its  buffer,  making  this  pointer  dangling.  Only  call  this
+ *             function  after  all  unsharing   operations   on   `str`   have
+ *             completed,  or  when  `str`  is  known  to  be  independent.  To
+ *             obtain   the  end  pointer   without  risking  invalidation, use
+ *             `RSTRING_RAW_PTR(str) + RSTRING_LEN(str)`.
+ */
+static inline char *
+RSTRING_RAW_PTR(VALUE str)
+{
+    char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
+        RSTRING(str)->as.heap.ptr :
+        RSTRING(str)->as.embed.ary;
+
+    if (RUBY_DEBUG && RB_UNLIKELY(! ptr)) {
+        rb_debug_rstring_null_ptr("RSTRING_RAW_PTR");
+    }
+
+    return ptr;
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Queries the contents pointer of the string.
+ *
+ * @param[in]  str  String in question.
+ * @return     Pointer to its null-terminated contents.
  * @pre        `str` must be an instance of ::RString.
  */
 static inline char *
 RSTRING_PTR(VALUE str)
 {
-    char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
-        RSTRING(str)->as.heap.ptr :
-        RSTRING(str)->as.embed.ary;
+    char *ptr;
+    if (RB_FL_TEST_RAW(str, RSTRING_NOEMBED)) {
+        if (RB_FL_TEST_RAW(str, RUBY_ELTS_SHARED)) {
+            ptr = rbimpl_str_ensure_terminator(str);
+        }
+        else {
+            ptr = RSTRING(str)->as.heap.ptr;
+        }
+    }
+    else {
+        ptr = RSTRING(str)->as.embed.ary;
+    }
 
     if (RUBY_DEBUG && RB_UNLIKELY(! ptr)) {
         /* :BEWARE: @shyouhei thinks  that currently, there are  rooms for this
@@ -408,9 +459,18 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline char *
 RSTRING_END(VALUE str)
 {
-    char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
-        RSTRING(str)->as.heap.ptr :
-        RSTRING(str)->as.embed.ary;
+    char *ptr;
+    if (RB_FL_TEST_RAW(str, RSTRING_NOEMBED)) {
+        if (RB_FL_TEST_RAW(str, RUBY_ELTS_SHARED)) {
+            ptr = rbimpl_str_ensure_terminator(str);
+        }
+        else {
+            ptr = RSTRING(str)->as.heap.ptr;
+        }
+    }
+    else {
+        ptr = RSTRING(str)->as.embed.ary;
+    }
     long len = RSTRING_LEN(str);
 
     if (RUBY_DEBUG && RB_UNLIKELY(!ptr)) {

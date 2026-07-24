@@ -1818,7 +1818,7 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
     }
 
     if (pos > 0 && ONIGENC_MBC_MAXLEN(enc) != 1 && pos < RSTRING_LEN(str)) {
-         string = (UChar*)RSTRING_PTR(str);
+         string = (UChar*)RSTRING_RAW_PTR(str);
 
          if (range > 0) {
               p = onigenc_get_right_adjust_char_head(enc, string, string + pos, string + RSTRING_LEN(str));
@@ -1841,9 +1841,8 @@ static OnigPosition
 reg_onig_search(regex_t *reg, VALUE str, struct re_registers *regs, void *args_ptr)
 {
     struct reg_onig_search_args *args = (struct reg_onig_search_args *)args_ptr;
-    const char *ptr;
-    long len;
-    RSTRING_GETMEM(str, ptr, len);
+    const char *ptr = RSTRING_RAW_PTR(str);
+    long len = RSTRING_LEN(str);
 
     return onig_search(
         reg,
@@ -1933,9 +1932,8 @@ rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
 static OnigPosition
 reg_onig_match(regex_t *reg, VALUE str, struct re_registers *regs, void *_)
 {
-    const char *ptr;
-    long len;
-    RSTRING_GETMEM(str, ptr, len);
+    const char *ptr = RSTRING_RAW_PTR(str);
+    long len = RSTRING_LEN(str);
 
     return onig_match(
         reg,
@@ -4656,7 +4654,8 @@ do_regsub(VALUE str, VALUE src, VALUE regexp, int num_regs, const OnigPosition *
     long n;
 #define ASCGET(s,e,cl) (acompat ? (*(cl)=1,ISASCII((s)[0])?(s)[0]:-1) : rb_enc_ascget((s), (e), (cl), str_enc))
 
-    RSTRING_GETMEM(str, s, n);
+    s = RSTRING_RAW_PTR(str);
+    n = RSTRING_LEN(str);
     p = s;
     e = s + n;
 
@@ -4710,7 +4709,7 @@ do_regsub(VALUE str, VALUE src, VALUE regexp, int num_regs, const OnigPosition *
                     name_end += c == -1 ? mbclen(name_end, e, str_enc) : clen;
                 }
                 if (name_end < e) {
-                    VALUE n = rb_str_subseq(str, (long)(name - RSTRING_PTR(str)),
+                    VALUE n = rb_str_subseq(str, (long)(name - RSTRING_RAW_PTR(str)),
                                             (long)(name_end - name));
                     struct re_registers tmp = {
                         .allocated = num_regs,
@@ -4738,11 +4737,11 @@ do_regsub(VALUE str, VALUE src, VALUE regexp, int num_regs, const OnigPosition *
             break;
 
           case '`':
-            rb_enc_str_buf_cat(val, RSTRING_PTR(src), beg[0], src_enc);
+            rb_enc_str_buf_cat(val, RSTRING_RAW_PTR(src), beg[0], src_enc);
             continue;
 
           case '\'':
-            rb_enc_str_buf_cat(val, RSTRING_PTR(src)+end[0], RSTRING_LEN(src)-end[0], src_enc);
+            rb_enc_str_buf_cat(val, RSTRING_RAW_PTR(src)+end[0], RSTRING_LEN(src)-end[0], src_enc);
             continue;
 
           case '+':
