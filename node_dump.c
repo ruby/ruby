@@ -789,6 +789,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
             LAST_NODE;
             F_NODE(nd_args, RNODE_MATCH2, "named captures");
         }
+        LAST_NODE;
+        F_LOC(message_loc, RNODE_MATCH2);
         return;
 
       case NODE_MATCH3:
