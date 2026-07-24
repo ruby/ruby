@@ -3661,7 +3661,7 @@ fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, function: &Function, st
     gen_incr_counter(asm, Counter::vm_write_locals_count);
     asm_comment!(asm, "spill locals");
     let entries = state.locals()
-        .map(|&insn_id| build_stack_map_entry(jit, function, insn_id))
+        .map(|&insn_id| build_materialized_value_entry(jit, function, insn_id))
         .collect::<Vec<_>>();
 
     for (idx, &entry) in entries.iter().enumerate() {
@@ -3688,7 +3688,7 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
     gen_incr_counter(asm, Counter::vm_write_stack_count);
     asm_comment!(asm, "spill stack");
 
-    let entries = build_stack_map(jit, function, state);
+    let entries = build_materialized_value_map(jit, function, state);
     let mut offset = state.stack_size() as i32;
     let mut locations = Vec::new();
     for entry in entries {
@@ -3744,6 +3744,42 @@ fn build_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> V
         current_state = function.frame_state(caller);
     }
     stack
+}
+
+fn build_materialized_value_map(jit: &JITState, function: &Function, state: &FrameState) -> Vec<StackMapEntry> {
+    let mut stack = Vec::new();
+    let mut current_state = state.clone();
+    loop {
+        stack.extend(current_state.stack().rev().copied().map(|insn_id| {
+            build_materialized_value_entry(jit, function, insn_id)
+        }));
+
+        let Some(caller) = current_state.caller() else {
+            break;
+        };
+        stack.push(StackMapEntry::Skip(inline_frame_stack_gap(current_state.iseq)));
+        current_state = function.frame_state(caller);
+    }
+    stack
+}
+
+fn build_materialized_value_entry(jit: &JITState, function: &Function, insn_id: InsnId) -> StackMapEntry {
+    let ty = function.type_of(insn_id);
+    if !ty.bit_equal(types::Empty) && ty.is_subtype(types::CDouble) {
+        let opnd = jit.get_opnd(insn_id);
+        assert!(
+            matches!(opnd, Opnd::UImm(_) | Opnd::Imm(_) | Opnd::VReg { .. }),
+            "raw F64 materialization should reference CDouble bits or VReg, but got: {opnd:?}",
+        );
+        return StackMapEntry::F64(opnd);
+    }
+
+    let opnd = jit.get_opnd(insn_id);
+    assert!(
+        matches!(opnd, Opnd::Value(_) | Opnd::VReg { .. }),
+        "Ruby value materialization should only reference Opnd::Value or Opnd::VReg, but got: {opnd:?}",
+    );
+    StackMapEntry::Opnd(opnd)
 }
 
 fn build_stack_map_entry(jit: &JITState, function: &Function, insn_id: InsnId) -> StackMapEntry {
@@ -4401,7 +4437,7 @@ fn gen_push_opnds(jit: &JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::O
 
 fn gen_push_hir_values(jit: &JITState, asm: &mut Assembler, function: &Function, insns: &[InsnId]) -> lir::Opnd {
     let entries = insns.iter().map(|&insn_id| {
-        build_stack_map_entry(jit, function, insn_id)
+        build_materialized_value_entry(jit, function, insn_id)
     }).collect::<Vec<_>>();
 
     let argv = if !entries.is_empty() {
@@ -4433,7 +4469,7 @@ fn gen_push_hir_values(jit: &JITState, asm: &mut Assembler, function: &Function,
 
 fn hir_values_require_f64_boxing(jit: &JITState, function: &Function, insns: &[InsnId]) -> bool {
     insns.iter().any(|&insn_id| {
-        matches!(build_stack_map_entry(jit, function, insn_id), StackMapEntry::F64(_))
+        matches!(build_materialized_value_entry(jit, function, insn_id), StackMapEntry::F64(_))
     })
 }
 
@@ -4445,7 +4481,7 @@ fn gen_store_hir_values_to_stack(
     stack_bottom: usize,
 ) {
     let entries = insns.iter().map(|&insn_id| {
-        build_stack_map_entry(jit, function, insn_id)
+        build_materialized_value_entry(jit, function, insn_id)
     }).collect::<Vec<_>>();
 
     for (idx, &entry) in entries.iter().enumerate() {
