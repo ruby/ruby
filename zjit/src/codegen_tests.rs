@@ -7344,6 +7344,7 @@ fn test_float_arithmetic() {
     assert_snapshot!(assert_compiles_allowing_exits("def test = (Float::NAN + 1.0).nan?; test"), @"true");
     assert_snapshot!(assert_compiles_allowing_exits("def test = (0.0 / 0.0).nan?; test"), @"true");
     assert_snapshot!(assert_compiles_allowing_exits("def test = (-0.0 / 0.0).nan?; test"), @"true");
+    assert_snapshot!(assert_compiles_allowing_exits("def test = Math.sqrt(Float::NAN).nan?; test"), @"true");
     assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 / 2.0).finite?; test"), @"true");
     assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 / 0.0).infinite?; test"), @"1");
     assert_snapshot!(assert_compiles_allowing_exits("def test = (1.0 / -0.0).infinite?; test"), @"-1");

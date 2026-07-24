@@ -2925,8 +2925,8 @@ fn gen_f64_pow(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::O
 fn gen_f64_guard_nonnegative(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, state: &FrameState) {
     let val = gen_f64_opnd(asm, val);
     let zero = gen_f64_opnd(asm, lir::Opnd::UImm(0));
-    let nonnegative = asm.f64_bool_cmp_raw(F64BoolCmpOp::Ge, val, zero);
-    asm.cmp(nonnegative, Qfalse.into());
+    let negative = asm.f64_bool_cmp_raw(F64BoolCmpOp::Lt, val, zero);
+    asm.cmp(negative, Qtrue.into());
     asm.je(jit, side_exit(jit, function, state, SideExitReason::GuardGreaterEq));
 }
 
