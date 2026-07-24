@@ -1155,8 +1155,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: def method_name([nd_body=some], [nd_next..])");
         ANN("example: def foo(a, b=1, c); end");
         F_NODE(nd_body, RNODE_OPT_ARG, "body");
-        LAST_NODE;
         F_NODE(nd_next, RNODE_OPT_ARG, "next");
+        F_LOC(name_loc, RNODE_OPT_ARG);
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_OPT_ARG);
         return;
 
       case NODE_KW_ARG:
