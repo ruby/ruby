@@ -266,10 +266,8 @@ pub fn gen_iseq_call(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<(), 
 
         // Update the JIT-to-JIT call to call the stub
         let stub_addr = stub_ptr.raw_ptr(cb);
-        let iseq = iseq_call.iseq.get();
-        iseq_call.regenerate(cb, |asm| {
-            asm_comment!(asm, "call function stub: {}", iseq_get_location(iseq, 0));
-            asm.ccall_into(C_RET_OPND, stub_addr, vec![]);
+        iseq_call.regenerate(cb, |cb| {
+            Assembler::emit_call(cb, stub_addr as u64);
         });
         Ok(())
     })
@@ -3781,11 +3779,9 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
     // Update the stub to call the code pointer
     let jit_entry_ptr = jit_entry_ptrs[iseq_call.jit_entry_idx.to_usize()];
     let code_addr = jit_entry_ptr.raw_ptr(cb);
-    let iseq = iseq_call.iseq.get();
     trace_compile_phase("compile_stub", || {
-        iseq_call.regenerate(cb, |asm| {
-            asm_comment!(asm, "call compiled function: {}", iseq_get_location(iseq, 0));
-            asm.ccall_into(C_RET_OPND, code_addr, vec![]);
+        iseq_call.regenerate(cb, |cb| {
+            Assembler::emit_call(cb, code_addr as u64);
         });
     });
 
@@ -3795,6 +3791,7 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
 /// Compile a stub for an ISEQ called by SendDirect
 fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
+    asm.i_solemnly_swear_not_to_use_a_vreg();
     asm.new_block_without_id("gen_function_stub");
     asm_comment!(asm, "Stub: {}", iseq_get_location(iseq_call.iseq.get(), 0));
 
@@ -4149,12 +4146,9 @@ impl IseqCall {
     }
 
     /// Regenerate a IseqCall with a given callback
-    fn regenerate(&self, cb: &mut CodeBlock, callback: impl Fn(&mut Assembler)) {
+    fn regenerate(&self, cb: &mut CodeBlock, callback: impl Fn(&mut CodeBlock)) {
         cb.with_write_ptr(self.start_addr.get().expect("expected a start address"), |cb| {
-            let mut asm = Assembler::new();
-            asm.new_block_without_id("regenerate");
-            callback(&mut asm);
-            asm.compile(cb).unwrap();
+            callback(cb);
             assert_eq!(self.end_addr.get().unwrap(), cb.get_write_ptr());
         });
     }
