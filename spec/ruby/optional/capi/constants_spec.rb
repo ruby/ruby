@@ -173,6 +173,12 @@ describe "C-API exception constant" do
     @s = CApiConstantsSpecs.new
   end
 
+  ruby_version_is "4.1" do
+    specify "rb_eAbstractMethodError references the AbstractMethodError class" do
+      @s.rb_eAbstractMethodError.should == AbstractMethodError
+    end
+  end
+
   specify "rb_eArgError references the ArgumentError class" do
     @s.rb_eArgError.should == ArgumentError
   end
