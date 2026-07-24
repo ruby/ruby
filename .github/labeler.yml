@@ -5,3 +5,36 @@ Documentation:
 Backport:
 - base-branch: 'ruby_3_\d'
 - base-branch: 'ruby_4_\d'
+
+jit:
+- changed-files:
+  - any-glob-to-any-file:
+    # JIT sources (Rust + C + Ruby)
+    - 'jit/**'
+    - 'yjit/**'
+    - 'zjit/**'
+    - 'jit.c'
+    - 'jit_hook.rb'
+    - 'jit_undef.rb'
+    - '{y,z}jit.{c,h,rb}'
+
+    # Build + GC fast paths
+    - 'defs/jit.mk'
+    - 'gc/**/zjit_fastpath.h'
+
+    # Docs
+    - 'doc/jit/**'
+
+    # Specs + tests
+    - 'spec/zjit.mspec'
+    - 'test/.excludes-zjit/**'
+    - 'test/lib/jit_support.rb'
+    - 'test/ruby/test_*jit*.rb'
+    - 'bootstraptest/test_*jit*.rb'
+
+    # Tooling
+    - 'tool/zjit_*'
+    - 'tool/ruby_vm/**/*zjit*'
+
+    # CI
+    - '.github/workflows/*jit*.yml'
