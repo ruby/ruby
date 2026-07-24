@@ -3160,6 +3160,35 @@ fn test_opt_newarray_send_max_redefined() {
 }
 
 #[test]
+fn test_opt_newarray_send_min() {
+    eval("
+        def test(a,b) = [a,b].min
+        test(10, 20)
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+    assert_snapshot!(assert_compiles("[test(10, 20), test(40, 30)]"), @"[10, 30]");
+}
+
+#[test]
+fn test_opt_newarray_send_min_redefined() {
+    eval("
+        class Array
+          alias_method :old_min, :min
+          def min
+            old_min * 2
+          end
+        end
+        def test(a,b) = [a,b].min
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+    assert_snapshot!(assert_compiles_allowing_exits("
+        def test(a,b) = [a,b].min
+        test(15, 30)
+        [test(15, 30), test(45, 35)]
+    "), @"[30, 70]");
+}
+
+#[test]
 fn test_new_hash_empty() {
     eval("
         def test = {}

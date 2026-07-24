@@ -7908,6 +7908,95 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_array_max() {
+        eval(r##"
+            def test(a,b) = [a,b].max
+        "##);
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
+          v20:BasicObject = ArrayMax v12, v13
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_min() {
+        eval(r##"
+            def test(a,b) = [a,b].min
+        "##);
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MIN)
+          v20:BasicObject = ArrayMin v12, v13
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_array_min_if_redefined() {
+        eval(r##"
+            class Array
+              def min = []
+            end
+            def test = [4,5,6].min
+        "##);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v11:ArrayExact = ArrayDup v10
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, min@0x1010, cme:0x1018)
+          PushInlineFrame v11 (0x1040)
+          v27:ArrayExact = NewArray
+          CheckInterrupts
+          PopInlineFrame
+          Return v27
+        ");
+    }
+
+    #[test]
     fn test_set_type_from_constant() {
         eval("
             MY_SET = Set.new
