@@ -3185,4 +3185,188 @@ CODE
       4.times { GC.start } # Now the tracepoints can be GC'd because the ractors can be GC'd
     end;
   end
+
+  # :branch TracePoint event tests
+  # TracePoint#enable automatically sets up branch coverage when :branch
+  # events are requested. Subprocess tests via assert_in_out_err because
+  # coverage affects compilation.
+
+  def test_tp_branch_if
+    Dir.mktmpdir {|tmp|
+      File.write("#{tmp}/target.rb", <<~'RUBY')
+        def helper(x)
+          if x > 0
+            :pos
+          else
+            :neg
+          end
+        end
+        helper(1)
+        helper(-1)
+      RUBY
+
+      assert_in_out_err([], <<-"RUBY", ["2"], [])
+        events = []
+        TracePoint.new(:branch) { |tp| events << [tp.event, tp.path, tp.lineno] }.enable
+        load "#{ tmp }/target.rb"
+        puts events.length
+      RUBY
+    }
+  end
+
+  def test_tp_branch_case_when
+    Dir.mktmpdir {|tmp|
+      File.write("#{tmp}/target.rb", <<~'RUBY')
+        def helper(x)
+          case x
+          when 1 then :one
+          when 2 then :two
+          else :other
+          end
+        end
+        helper(1)
+        helper(2)
+        helper(3)
+      RUBY
+
+      assert_in_out_err([], <<-"RUBY", ["3"], [])
+        events = []
+        TracePoint.new(:branch) { |tp| events << tp.lineno }.enable
+        load "#{ tmp }/target.rb"
+        puts events.length
+      RUBY
+    }
+  end
+
+  def test_tp_branch_while
+    Dir.mktmpdir {|tmp|
+      File.write("#{tmp}/target.rb", <<~'RUBY')
+        i = 0
+        while i < 3
+          i += 1
+        end
+      RUBY
+
+      assert_in_out_err([], <<-"RUBY", ["3"], [])
+        events = []
+        TracePoint.new(:branch) { |tp| events << tp.lineno }.enable
+        load "#{ tmp }/target.rb"
+        puts events.length
+      RUBY
+    }
+  end
+
+  def test_tp_branch_safe_navigation
+    Dir.mktmpdir {|tmp|
+      File.write("#{tmp}/target.rb", <<~'RUBY')
+        def helper(x)
+          x&.to_s
+        end
+        helper("hi")
+        helper(nil)
+      RUBY
+
+      assert_in_out_err([], <<-"RUBY", ["2"], [])
+        events = []
+        TracePoint.new(:branch) { |tp| events << tp.lineno }.enable
+        load "#{ tmp }/target.rb"
+        puts events.length
+      RUBY
+    }
+  end
+
+  def test_tp_branch_src_dst
+    Dir.mktmpdir {|tmp|
+      File.write("#{tmp}/target.rb", <<~'RUBY')
+        x = 1
+        if x > 0
+          :pos
+        else
+          :neg
+        end
+      RUBY
+
+      assert_in_out_err([], <<-"RUBY", [], [])
+        events = []
+        tp = TracePoint.new(:branch) { |t|
+          src = t.branch_src
+          dst = t.branch_dst
+          events << { src: src, dst: dst } if src && dst
+        }
+
+        tp.enable
+        load "#{ tmp }/target.rb"
+        tp.disable
+
+        raise "no events" if events.empty?
+        e = events.first
+        raise "src not array: \#{e[:src].inspect}" unless e[:src].is_a?(Array)
+        raise "dst not array: \#{e[:dst].inspect}" unless e[:dst].is_a?(Array)
+        raise "src length \#{e[:src].length}" unless e[:src].length == 5
+        raise "dst length \#{e[:dst].length}" unless e[:dst].length == 5
+        raise "src type not :if: \#{e[:src][0]}" unless e[:src][0] == :if
+        raise "dst type not :then or :else" unless [:then, :else].include?(e[:dst][0])
+      RUBY
+    }
+  end
+
+  def test_tp_branch_error_on_wrong_event
+    assert_in_out_err([], <<-'RUBY', [], /not available for this event/)
+      TracePoint.new(:line) { |tp|
+        tp.branch_src
+      }.enable {
+        _x = 1
+      }
+    RUBY
+  end
+
+  def test_tp_branch_auto_enables_coverage
+    Dir.mktmpdir {|tmp|
+      File.write("#{tmp}/target.rb", <<~'RUBY')
+        x = 1
+        if x > 0
+          :pos
+        else
+          :neg
+        end
+      RUBY
+
+      assert_in_out_err([], <<-"RUBY", ["1"], [])
+        events = []
+        TracePoint.new(:branch) { |tp|
+          events << tp.lineno
+        }.enable
+        load "#{ tmp }/target.rb"
+        puts events.length
+      RUBY
+    }
+  end
+
+  def test_tp_branch_loaded_before_enable
+    Dir.mktmpdir {|tmp|
+      File.write("#{tmp}/target.rb", <<~'RUBY')
+        def branchy(x)
+          if x > 0
+            :pos
+          else
+            :neg
+          end
+        end
+      RUBY
+
+      assert_in_out_err([], <<-"RUBY", ["0"], [])
+        load "#{ tmp }/target.rb"
+
+        events = []
+        TracePoint.new(:branch) { |tp|
+          events << [tp.branch_src, tp.branch_dst]
+        }.enable
+
+        branchy(1)
+        branchy(-1)
+
+        puts events.length
+      RUBY
+    }
+  end
 end

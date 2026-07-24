@@ -443,6 +443,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
         if (!rb_gc_checking_shareable()) {
             rb_gc_mark_and_move(&body->variable.coverage);
             rb_gc_mark_and_move(&body->variable.pc2branchindex);
+            rb_gc_mark_and_move(&body->variable.pc2branchindex_cache);
         }
     }
 
@@ -786,6 +787,99 @@ rb_iseq_init_trace(rb_iseq_t *iseq)
     }
 }
 
+/*
+ * Build branch info lookup: counter_idx -> [src_info, dst_info]
+ * where src_info = [type, lineno, column, end_lineno, end_column]
+ * and   dst_info = [type, lineno, column, end_lineno, end_column]
+ *
+ * Built from the ISEQ_BRANCH_COVERAGE structure during iseq finalization.
+ */
+
+struct branch_info_build_arg {
+    VALUE cache;
+};
+
+static int
+branch_info_build_i(VALUE base_key, VALUE base_entry, VALUE arg)
+{
+    struct branch_info_build_arg *build_arg = (struct branch_info_build_arg *)arg;
+    VALUE cache = build_arg->cache;
+
+    // base_entry = [type, first_ln, first_col, last_ln, last_col, branches_hash]
+    VALUE base_type     = RARRAY_AREF(base_entry, 0);
+    VALUE base_lineno   = RARRAY_AREF(base_entry, 1);
+    VALUE base_column   = RARRAY_AREF(base_entry, 2);
+    VALUE base_end_line = RARRAY_AREF(base_entry, 3);
+    VALUE base_end_col  = RARRAY_AREF(base_entry, 4);
+    VALUE branches_hash = RARRAY_AREF(base_entry, 5);
+
+    VALUE src_info = rb_ary_new_from_args(
+        5, base_type, base_lineno, base_column, base_end_line, base_end_col
+    );
+    rb_obj_freeze(src_info);
+
+    if (RB_TYPE_P(branches_hash, T_HASH)) {
+        VALUE keys = rb_hash_keys(branches_hash);
+        long i, len = RARRAY_LEN(keys);
+        for (i = 0; i < len; i++) {
+            VALUE branch_key = RARRAY_AREF(keys, i);
+            VALUE branch_entry = rb_hash_aref(branches_hash, branch_key);
+
+            // branch_entry = [type, first_ln, first_col, last_ln, last_col, counter_idx]
+            VALUE dst_type     = RARRAY_AREF(branch_entry, 0);
+            VALUE dst_lineno   = RARRAY_AREF(branch_entry, 1);
+            VALUE dst_column   = RARRAY_AREF(branch_entry, 2);
+            VALUE dst_end_line = RARRAY_AREF(branch_entry, 3);
+            VALUE dst_end_col  = RARRAY_AREF(branch_entry, 4);
+            long counter_idx   = FIX2LONG(RARRAY_AREF(branch_entry, 5));
+
+            VALUE dst_info = rb_ary_new_from_args(
+                5, dst_type, dst_lineno, dst_column, dst_end_line, dst_end_col
+            );
+            rb_obj_freeze(dst_info);
+
+            VALUE pair = rb_ary_new_from_args(2, src_info, dst_info);
+            rb_obj_freeze(pair);
+
+            while (RARRAY_LEN(cache) <= counter_idx) {
+                rb_ary_push(cache, Qnil);
+            }
+            RARRAY_ASET(cache, counter_idx, pair);
+        }
+    }
+
+    return ST_CONTINUE;
+}
+
+static void
+iseq_build_branch_info(rb_iseq_t *iseq)
+{
+    VALUE coverage = ISEQ_COVERAGE(iseq);
+
+    /*
+     * Exit early if coverage tracking is not enabled, e.g.
+     *   - Coverage.start(branches: true)
+     *   - Coverage.setup(branches: true)
+     *   - TracePoint.new(:branch)
+     *   - rb_enable_branch_coverage()
+     */
+    if (!RB_TYPE_P(coverage, T_ARRAY)) return;
+
+    VALUE branches = ISEQ_BRANCH_COVERAGE(iseq);
+    if (!branches || !RB_TYPE_P(branches, T_ARRAY)) return;
+
+    VALUE structure = RARRAY_AREF(branches, 0);
+    if (!structure || !RB_TYPE_P(structure, T_HASH)) return;
+
+    struct branch_info_build_arg arg;
+    arg.cache = rb_ary_new();
+
+    rb_hash_foreach(structure, branch_info_build_i, (VALUE)&arg);
+
+    rb_obj_freeze(arg.cache);
+    ISEQ_PC2BRANCHINFO_SET(iseq, arg.cache);
+}
+
 static VALUE
 finish_iseq_build(rb_iseq_t *iseq)
 {
@@ -809,6 +903,7 @@ finish_iseq_build(rb_iseq_t *iseq)
     RB_DEBUG_COUNTER_INC(iseq_num);
     RB_DEBUG_COUNTER_ADD(iseq_cd_num, ISEQ_BODY(iseq)->ci_size);
 
+    iseq_build_branch_info(iseq);
     rb_iseq_init_trace(iseq);
     return Qtrue;
 }

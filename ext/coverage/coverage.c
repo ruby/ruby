@@ -130,6 +130,18 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
         rb_set_coverages(coverages, mode, me2counter);
         current_state = SUSPENDED;
     }
+    else if (current_state == IDLE) {
+        /*
+         * Coverages hash already exists but Coverage module hasn't started.
+         * This happens when rb_enable_branch_coverage was called first.
+         * Merge our requested mode with the existing mode.
+         */
+        int existing_mode = rb_get_coverage_mode();
+        current_mode = mode;
+        if (mode == 0) mode = COVERAGE_TARGET_LINES;
+        rb_set_coverages(coverages, mode | existing_mode, me2counter);
+        current_state = SUSPENDED;
+    }
     else if (current_mode != mode) {
         rb_raise(rb_eRuntimeError, "cannot change the measuring target during coverage measurement");
     }

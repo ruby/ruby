@@ -528,6 +528,7 @@ struct rb_iseq_constant_body {
         VALUE script_lines;
         VALUE coverage;
         VALUE pc2branchindex;
+        VALUE pc2branchindex_cache; /* Cached reverse lookup: counter_idx -> [src_info, dst_info] */
         VALUE *original_iseq;
     } variable;
 
@@ -805,6 +806,7 @@ typedef struct rb_vm_struct {
     VALUE orig_progname, progname;
     VALUE coverages, me2counter;
     int coverage_mode;
+    int branch_coverage_enabled;
 
     struct {
         struct rb_objspace *objspace;
@@ -2428,10 +2430,6 @@ size_t rb_vm_memsize_postponed_job_queue(void); /* vm_trace.c */
 RUBY_SYMBOL_EXPORT_BEGIN
 
 int rb_thread_check_trap_pending(void);
-
-/* #define RUBY_EVENT_RESERVED_FOR_INTERNAL_USE 0x030000 */ /* from vm_core.h */
-#define RUBY_EVENT_COVERAGE_LINE                0x010000
-#define RUBY_EVENT_COVERAGE_BRANCH              0x020000
 
 extern VALUE rb_get_coverages(void);
 extern void rb_set_coverages(VALUE, int, VALUE);
