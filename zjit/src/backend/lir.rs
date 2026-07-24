@@ -2395,6 +2395,9 @@ impl Assembler
                     Insn::F64ToBitsRaw { val: source, out: scratch },
                     Insn::BitsToF64Raw { val: scratch, out: destination },
                 ],
+                (true, true, destination @ Opnd::Reg(_), source @ Opnd::Mem(_)) => vec![
+                    Insn::LoadF64Raw { opnd: source, out: destination },
+                ],
                 (true, true, destination @ Opnd::Mem(_), source) => vec![
                     Insn::StoreF64Raw { dest: destination, src: source },
                 ],

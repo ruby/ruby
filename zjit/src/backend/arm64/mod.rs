@@ -3183,7 +3183,7 @@ mod tests {
         0x1c: stp xzr, x4, [sp, #-0x10]!
         0x20: mov x16, #0
         0x24: blr x16
-        0x28: ldp xzr, x4, [sp], #0x10
+        0x28: ldp x0, x4, [sp], #0x10
         0x2c: ldp x3, x2, [sp], #0x10
         0x30: ldp x1, x0, [sp], #0x10
         0x34: adds x0, x0, x1

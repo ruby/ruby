@@ -4137,6 +4137,9 @@ impl Function {
             // Copy contents of tmp_block to block
             assert_ne!(block, tmp_block);
             let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
+            for &insn in &insns {
+                self.infer_type_if_any(insn);
+            }
             self.blocks[block.0].insns.extend(insns);
             self.count(block, Counter::inline_cfunc_optimized_send_count);
             self.infer_type_if_any(replacement);
@@ -4163,8 +4166,12 @@ impl Function {
                 let tmp_block = self.new_block(u32::MAX);
                 if let Some(replacement) = (props.inline)(self, tmp_block, recv, args, state) {
                     let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
+                    for &insn in &insns {
+                        self.infer_type_if_any(insn);
+                    }
                     self.blocks[block.0].insns.extend(insns);
                     self.make_equal_to(insn_id, replacement);
+                    self.infer_type_if_any(replacement);
                     self.remove_block(tmp_block);
                     changed = true;
                 } else {
@@ -6402,6 +6409,7 @@ impl Function {
     fn can_be_raw_float_arg(&self, arg: InsnId) -> bool {
         match self.find(arg) {
             Insn::BoxFloat { .. } => true,
+            Insn::Const { val: Const::CDouble(_) } => true,
             Insn::Const { val: Const::Value(value) } => value.flonum_p(),
             _ => false,
         }
@@ -6410,14 +6418,40 @@ impl Function {
     fn unbox_loop_float_params(&mut self) {
         let rpo = self.reverse_post_order();
         let rpo_pos: HashMap<BlockId, usize> = rpo.iter().enumerate().map(|(idx, &block)| (block, idx)).collect();
+        let mut incoming_by_target: HashMap<BlockId, Vec<(BlockId, Vec<InsnId>)>> = HashMap::new();
+        let mut uses_by_value: HashMap<InsnId, Vec<InsnId>> = HashMap::new();
         let mut candidate_set = HashSet::new();
         let mut candidates = Vec::new();
+
+        for &source in &rpo {
+            let Some(&terminator_id) = self.blocks[source.0].insns.last() else { continue };
+            match self.find(terminator_id) {
+                Insn::Jump(BranchEdge { target, args }) => {
+                    incoming_by_target.entry(target).or_default().push((source, args));
+                }
+                Insn::CondBranch { if_true, if_false, .. } => {
+                    for edge in [if_true, if_false] {
+                        incoming_by_target.entry(edge.target).or_default().push((source, edge.args));
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        for other_id in 0..self.insns.len() {
+            let other_id = InsnId(other_id);
+            let other = self.find(other_id);
+            other.for_each_operand(|operand| {
+                uses_by_value.entry(self.chase_insn(operand)).or_default().push(other_id);
+            });
+        }
 
         loop {
             let mut changed = false;
 
             for &target in &rpo {
-                for (idx, &param) in self.blocks[target.0].params.iter().enumerate() {
+                let params = self.blocks[target.0].params.clone();
+                for (idx, param) in params.into_iter().enumerate() {
                     if candidate_set.contains(&param) {
                         continue;
                     }
@@ -6425,25 +6459,10 @@ impl Function {
                     let mut saw_incoming = false;
                     let mut saw_backedge = false;
                     let mut all_incoming_raw = true;
-                    for &source in &rpo {
-                        let Some(&terminator_id) = self.blocks[source.0].insns.last() else { continue };
-                        match self.find(terminator_id) {
-                            Insn::Jump(BranchEdge { target: edge_target, args }) if edge_target == target => {
-                                saw_incoming = true;
-                                saw_backedge |= rpo_pos[&source] >= rpo_pos[&target];
-                                all_incoming_raw &= self.can_be_raw_float_arg(args[idx]) || candidate_set.contains(&args[idx]);
-                            }
-                            Insn::CondBranch { if_true, if_false, .. } => {
-                                for edge in [if_true, if_false] {
-                                    if edge.target == target {
-                                        saw_incoming = true;
-                                        saw_backedge |= rpo_pos[&source] >= rpo_pos[&target];
-                                        all_incoming_raw &= self.can_be_raw_float_arg(edge.args[idx]) || candidate_set.contains(&edge.args[idx]);
-                                    }
-                                }
-                            }
-                            _ => {}
-                        }
+                    for (source, args) in incoming_by_target.get(&target).into_iter().flatten() {
+                        saw_incoming = true;
+                        saw_backedge |= rpo_pos[source] >= rpo_pos[&target];
+                        all_incoming_raw &= self.can_be_raw_float_arg(args[idx]) || candidate_set.contains(&args[idx]);
                     }
 
                     if !saw_incoming || !saw_backedge || !all_incoming_raw {
@@ -6451,21 +6470,14 @@ impl Function {
                     }
 
                     let mut supported_uses = true;
-                    for other_id in 0..self.insns.len() {
-                        let other = self.find(InsnId(other_id));
-                        match &other {
+                    for &other_id in uses_by_value.get(&param).into_iter().flatten() {
+                        match self.find(other_id) {
                             Insn::Snapshot { .. } => {}
-                            Insn::GuardType { val, guard_type, .. } if self.chase_insn(*val) == param && guard_type.is_subtype(types::Flonum) => {}
-                            Insn::UnboxFloat { val } if self.chase_insn(*val) == param => {}
-                            Insn::Return { val } if self.chase_insn(*val) == param => {}
+                            Insn::GuardType { val, guard_type, .. } if self.chase_insn(val) == param && guard_type.is_subtype(types::Flonum) => {}
+                            Insn::UnboxFloat { val } if self.chase_insn(val) == param => {}
+                            Insn::Return { val } if self.chase_insn(val) == param => {}
                             Insn::Jump(_) | Insn::CondBranch { .. } => {}
-                            other => {
-                                other.for_each_operand(|operand| {
-                                    if self.chase_insn(operand) == param {
-                                        supported_uses = false;
-                                    }
-                                });
-                            }
+                            _ => supported_uses = false,
                         }
                     }
 
