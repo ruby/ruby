@@ -979,6 +979,22 @@ fn inline_float_predicate(
     Some(fun.push_insn(block, hir::Insn::F64Predicate { op, val: recv }))
 }
 
+fn inline_float_builtin_predicate(
+    fun: &mut hir::Function,
+    block: hir::BlockId,
+    op: hir::F64PredicateOp,
+    recv: hir::InsnId,
+    args: &[hir::InsnId],
+    state: hir::InsnId,
+) -> Option<hir::InsnId> {
+    let &[arg] = args else { return None; };
+    if arg != recv {
+        return None;
+    }
+    let recv = float_op_operand_f64(fun, block, recv, true, state)?;
+    Some(fun.push_insn(block, hir::Insn::F64Predicate { op, val: recv }))
+}
+
 fn inline_float_nan_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     inline_float_predicate(fun, block, hir::F64PredicateOp::Nan, recv, args, state)
 }
@@ -992,15 +1008,15 @@ fn inline_float_infinite_p(fun: &mut hir::Function, block: hir::BlockId, recv: h
 }
 
 fn inline_float_zero_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    inline_float_predicate(fun, block, hir::F64PredicateOp::Zero, recv, args, state)
+    inline_float_builtin_predicate(fun, block, hir::F64PredicateOp::Zero, recv, args, state)
 }
 
 fn inline_float_positive_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    inline_float_predicate(fun, block, hir::F64PredicateOp::Positive, recv, args, state)
+    inline_float_builtin_predicate(fun, block, hir::F64PredicateOp::Positive, recv, args, state)
 }
 
 fn inline_float_negative_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    inline_float_predicate(fun, block, hir::F64PredicateOp::Negative, recv, args, state)
+    inline_float_builtin_predicate(fun, block, hir::F64PredicateOp::Negative, recv, args, state)
 }
 
 fn try_inline_fixnum_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, left: hir::InsnId, right: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {

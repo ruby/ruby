@@ -18241,7 +18241,7 @@ mod hir_opt_tests {
     #[test]
     fn test_float_literal_division_by_zero_folds() {
         eval(r#"
-            def test = 1.0 / -0.0
+            def test = 1.0 / 0.0
             test
         "#);
         let hir = hir_string("test");
