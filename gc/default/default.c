@@ -2705,12 +2705,6 @@ newobj_bump_pointer_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *gc_c
                 }
                 rb_bug("object allocation during garbage collection phase");
             }
-
-            if (ruby_gc_stressful) {
-                if (!garbage_collect(objspace, GPR_FLAG_NEWOBJ)) {
-                    rb_memerror();
-                }
-            }
         }
 
         if (is_incremental_marking(objspace)) {
