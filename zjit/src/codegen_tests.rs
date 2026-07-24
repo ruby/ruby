@@ -3046,6 +3046,21 @@ fn test_opt_newarray_send_pack() {
 }
 
 #[test]
+fn test_opt_newarray_send_pack_handles_raw_float_elements() {
+    eval(r#"
+        def test
+          v = 1.23
+          [v, v * 2, v * 3].pack("E*").unpack("E*") == [v, v * 2, v * 3]
+        end
+        test
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+    assert_snapshot!(assert_compiles(r#"
+        test
+    "#), @"true");
+}
+
+#[test]
 fn test_opt_newarray_send_pack_redefined() {
     eval(r#"
         class Array

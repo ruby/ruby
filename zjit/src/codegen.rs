@@ -791,13 +791,13 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::StoreField { recv, id, offset, val, num_bits } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), num_bits)),
         &Insn::WriteBarrier { recv, val } => no_output!(gen_write_barrier(jit, asm, opnd!(recv), opnd!(val), function.type_of(val))),
         &Insn::IsBlockGiven { block_handler } => gen_is_block_given(asm, opnd!(block_handler)),
-        Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, function, opnds!(elements), opnd!(target), &function.frame_state(*state)),
-        Insn::ArrayPackBuffer { elements, fmt, buffer, state } => gen_array_pack_buffer(jit, asm, function, opnds!(elements), opnd!(fmt), (*buffer).map(|buffer| opnd!(buffer)), &function.frame_state(*state)),
+        Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, function, elements, *target, &function.frame_state(*state)),
+        Insn::ArrayPackBuffer { elements, fmt, buffer, state } => gen_array_pack_buffer(jit, asm, function, elements, *fmt, *buffer, &function.frame_state(*state)),
         &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, function, ary, opnd!(target), &function.frame_state(state)),
-        Insn::ArrayHash { elements, state } => gen_opt_newarray_hash(jit, asm, function, opnds!(elements), &function.frame_state(*state)),
+        Insn::ArrayHash { elements, state } => gen_opt_newarray_hash(jit, asm, function, elements, &function.frame_state(*state)),
         &Insn::IsA { val, class } => gen_is_a(jit, asm, opnd!(val), opnd!(class)),
-        &Insn::ArrayMax { ref elements, state } => gen_array_max(jit, asm, function, opnds!(elements), &function.frame_state(state)),
-        &Insn::ArrayMin { ref elements, state } => gen_array_min(jit, asm, function, opnds!(elements), &function.frame_state(state)),
+        &Insn::ArrayMax { ref elements, state } => gen_array_max(jit, asm, function, elements, &function.frame_state(state)),
+        &Insn::ArrayMin { ref elements, state } => gen_array_min(jit, asm, function, elements, &function.frame_state(state)),
         &Insn::Throw { state, .. } => return Err(state),
         &Insn::CondBranch { .. }
         | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
@@ -2277,7 +2277,7 @@ fn gen_opt_newarray_hash(
     jit: &JITState,
     asm: &mut Assembler,
     function: &Function,
-    elements: Vec<Opnd>,
+    elements: &[InsnId],
     state: &FrameState,
 ) -> lir::Opnd {
     // `Array#hash` will hash the elements of the array.
@@ -2285,9 +2285,8 @@ fn gen_opt_newarray_hash(
 
     let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
-    // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
-    // Get a pointer to the first element on the Ruby stack.
     let stack_bottom = state.stack().len() - elements.len();
+    gen_store_hir_values_to_stack(jit, asm, function, elements, stack_bottom);
     let elements_ptr = asm.lea(Opnd::mem(64, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
 
     unsafe extern "C" {
@@ -2305,16 +2304,15 @@ fn gen_array_max(
     jit: &JITState,
     asm: &mut Assembler,
     function: &Function,
-    elements: Vec<Opnd>,
+    elements: &[InsnId],
     state: &FrameState,
 ) -> lir::Opnd {
     gen_prepare_fallback_call(jit, asm, function, state);
 
     let array_len: u32 = elements.len().try_into().expect("Unable to fit length of elements into u32");
 
-    // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
-    // Get a pointer to the first element on the Ruby stack.
     let stack_bottom = state.stack().len() - elements.len();
+    gen_store_hir_values_to_stack(jit, asm, function, elements, stack_bottom);
     let elements_ptr = asm.lea(Opnd::mem(VALUE_BITS, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
 
     unsafe extern "C" {
@@ -2332,16 +2330,15 @@ fn gen_array_min(
     jit: &JITState,
     asm: &mut Assembler,
     function: &Function,
-    elements: Vec<Opnd>,
+    elements: &[InsnId],
     state: &FrameState,
 ) -> lir::Opnd {
     gen_prepare_fallback_call(jit, asm, function, state);
 
     let array_len: u32 = elements.len().try_into().expect("Unable to fit length of elements into u32");
 
-    // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
-    // Get a pointer to the first element on the Ruby stack.
     let stack_bottom = state.stack().len() - elements.len();
+    gen_store_hir_values_to_stack(jit, asm, function, elements, stack_bottom);
     let elements_ptr = asm.lea(Opnd::mem(VALUE_BITS, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
 
     unsafe extern "C" {
@@ -2358,19 +2355,20 @@ fn gen_array_include(
     jit: &JITState,
     asm: &mut Assembler,
     function: &Function,
-    elements: Vec<Opnd>,
-    target: Opnd,
+    elements: &[InsnId],
+    target: InsnId,
     state: &FrameState,
 ) -> lir::Opnd {
     gen_prepare_fallback_call(jit, asm, function, state);
 
     let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
-    // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
-    // The elements are at the bottom of the virtual stack, followed by the target.
-    // Get a pointer to the first element on the Ruby stack.
-    let stack_bottom = state.stack().len() - elements.len() - 1;
+    let mut values = elements.to_vec();
+    values.push(target);
+    let stack_bottom = state.stack().len() - values.len();
+    gen_store_hir_values_to_stack(jit, asm, function, &values, stack_bottom);
     let elements_ptr = asm.lea(Opnd::mem(64, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
+    let target = Opnd::mem(VALUE_BITS, SP, (stack_bottom + elements.len()) as i32 * SIZEOF_VALUE_I32);
 
     unsafe extern "C" {
         fn rb_vm_opt_newarray_include_p(ec: EcPtr, num: c_long, elts: *const VALUE, target: VALUE) -> VALUE;
@@ -2383,27 +2381,36 @@ fn gen_array_include(
 }
 
 fn gen_array_pack_buffer(
-    jit: &JITState,
+    jit: &mut JITState,
     asm: &mut Assembler,
     function: &Function,
-    elements: Vec<Opnd>,
-    fmt: Opnd,
-    buffer: Option<Opnd>,
+    elements: &[InsnId],
+    fmt: InsnId,
+    buffer: Option<InsnId>,
     state: &FrameState,
 ) -> lir::Opnd {
+    if any_hir_value_requires_boxing(jit, function, elements) {
+        return gen_array_pack_buffer_with_boxed_elements(jit, asm, function, elements, fmt, buffer, state);
+    }
+
     gen_prepare_fallback_call(jit, asm, function, state);
 
     let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
-    // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
-    // The elements are at the bottom of the virtual stack, followed by the fmt, and optionally the buffer.
-    // Get a pointer to the first element on the Ruby stack.
-    let stack_bottom = if buffer.is_some() {
-        state.stack().len() - elements.len() - 2
-    } else {
-        state.stack().len() - elements.len() - 1
-    };
+    let mut values = elements.to_vec();
+    values.push(fmt);
+    if let Some(buffer) = buffer {
+        values.push(buffer);
+    }
+    let stack_bottom = state.stack().len() - values.len();
+    gen_store_hir_values_to_stack(jit, asm, function, &values, stack_bottom);
     let elements_ptr = asm.lea(Opnd::mem(64, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
+    let fmt = Opnd::mem(VALUE_BITS, SP, (stack_bottom + elements.len()) as i32 * SIZEOF_VALUE_I32);
+    let buffer = if buffer.is_some() {
+        Opnd::mem(VALUE_BITS, SP, (stack_bottom + elements.len() + 1) as i32 * SIZEOF_VALUE_I32)
+    } else {
+        Qundef.into()
+    };
 
     unsafe extern "C" {
         fn rb_vm_opt_newarray_pack_buffer(ec: EcPtr, num: c_long, elts: *const VALUE, fmt: VALUE, buffer: VALUE) -> VALUE;
@@ -2411,8 +2418,44 @@ fn gen_array_pack_buffer(
     asm_ccall!(
         asm,
         rb_vm_opt_newarray_pack_buffer,
-        EC, array_len.into(), elements_ptr, fmt, buffer.unwrap_or_else(|| Qundef.into())
+        EC, array_len.into(), elements_ptr, fmt, buffer
     )
+}
+
+fn gen_array_pack_buffer_with_boxed_elements(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    function: &Function,
+    elements: &[InsnId],
+    fmt: InsnId,
+    buffer: Option<InsnId>,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, function, state);
+
+    let mut values = vec![fmt];
+    if let Some(buffer) = buffer {
+        values.push(buffer);
+    }
+    let elements_offset = values.len() as i32 * SIZEOF_VALUE_I32;
+    values.extend_from_slice(elements);
+    let values_ptr = gen_push_hir_values(jit, asm, function, &values);
+
+    let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+    let argv = asm.lea(Opnd::mem(64, values_ptr, elements_offset));
+    let ary = asm_ccall!(asm, rb_ec_ary_new_from_values, EC, array_len.into(), argv);
+
+    let fmt = asm.load(Opnd::mem(VALUE_BITS, values_ptr, 0));
+    let buffer = if buffer.is_some() {
+        asm.load(Opnd::mem(VALUE_BITS, values_ptr, SIZEOF_VALUE_I32))
+    } else {
+        Qnil.into()
+    };
+
+    unsafe extern "C" {
+        fn rb_ec_pack_ary(ec: EcPtr, ary: VALUE, fmt: VALUE, buffer: VALUE) -> VALUE;
+    }
+    asm_ccall!(asm, rb_ec_pack_ary, EC, ary, fmt, buffer)
 }
 
 fn gen_dup_array_include(
@@ -4388,15 +4431,69 @@ fn gen_push_opnds(jit: &JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::O
 }
 
 fn gen_push_hir_values(jit: &JITState, asm: &mut Assembler, function: &Function, insns: &[InsnId]) -> lir::Opnd {
-    let values = insns.iter().map(|&insn_id| {
-        match build_stack_map_entry(jit, function, insn_id) {
-            StackMapEntry::Opnd(opnd) => opnd,
-            StackMapEntry::F64(opnd) => gen_box_stack_map_f64(asm, opnd),
-            StackMapEntry::Skip(_) => unreachable!("HIR value lists do not use StackMap skips"),
-        }
+    let entries = insns.iter().map(|&insn_id| {
+        build_stack_map_entry(jit, function, insn_id)
     }).collect::<Vec<_>>();
 
-    gen_push_opnds(jit, asm, &values)
+    let argv = if !entries.is_empty() {
+        asm_comment!(asm, "allocate space on C stack for {} values", entries.len());
+        asm.alloc_stack(jit, entries.len())
+    } else {
+        asm_comment!(asm, "no opnds to allocate");
+        Opnd::UImm(0)
+    };
+
+    for (idx, &entry) in entries.iter().enumerate() {
+        let opnd = match entry {
+            StackMapEntry::Opnd(opnd) => opnd,
+            StackMapEntry::F64(_) => Qnil.into(),
+            StackMapEntry::Skip(_) => unreachable!("HIR value lists do not use StackMap skips"),
+        };
+        asm.mov(Opnd::mem(VALUE_BITS, argv, idx as i32 * SIZEOF_VALUE_I32), opnd);
+    }
+
+    for (idx, &entry) in entries.iter().enumerate() {
+        if let StackMapEntry::F64(opnd) = entry {
+            let boxed = gen_box_stack_map_f64(asm, opnd);
+            asm.mov(Opnd::mem(VALUE_BITS, argv, idx as i32 * SIZEOF_VALUE_I32), boxed);
+        }
+    }
+
+    argv
+}
+
+fn gen_store_hir_values_to_stack(
+    jit: &JITState,
+    asm: &mut Assembler,
+    function: &Function,
+    insns: &[InsnId],
+    stack_bottom: usize,
+) {
+    let entries = insns.iter().map(|&insn_id| {
+        build_stack_map_entry(jit, function, insn_id)
+    }).collect::<Vec<_>>();
+
+    for (idx, &entry) in entries.iter().enumerate() {
+        let opnd = match entry {
+            StackMapEntry::Opnd(opnd) => opnd,
+            StackMapEntry::F64(_) => Qnil.into(),
+            StackMapEntry::Skip(_) => unreachable!("HIR value lists do not use StackMap skips"),
+        };
+        asm.mov(Opnd::mem(VALUE_BITS, SP, (stack_bottom + idx) as i32 * SIZEOF_VALUE_I32), opnd);
+    }
+
+    for (idx, &entry) in entries.iter().enumerate() {
+        if let StackMapEntry::F64(opnd) = entry {
+            let boxed = gen_box_stack_map_f64(asm, opnd);
+            asm.mov(Opnd::mem(VALUE_BITS, SP, (stack_bottom + idx) as i32 * SIZEOF_VALUE_I32), boxed);
+        }
+    }
+}
+
+fn any_hir_value_requires_boxing(jit: &JITState, function: &Function, insns: &[InsnId]) -> bool {
+    insns.iter().any(|&insn_id| {
+        matches!(build_stack_map_entry(jit, function, insn_id), StackMapEntry::F64(_))
+    })
 }
 
 fn gen_toregexp(jit: &mut JITState, asm: &mut Assembler, function: &Function, opt: usize, values: Vec<Opnd>, state: &FrameState) -> Opnd {

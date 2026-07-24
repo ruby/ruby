@@ -1077,6 +1077,23 @@ impl Assembler {
                         asm.store(mem_out, SCRATCH0_OPND);
                     }
                 }
+                Insn::LoadF64Raw { opnd, out } => {
+                    *opnd = split_stack_membase(asm, *opnd, SCRATCH0_OPND);
+                    let mem_out = split_f64_memory_write(out, FP_SCRATCH0_OPND);
+                    let fp_out = *out;
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        store_f64_to_memory(asm, mem_out, fp_out, SCRATCH1_OPND);
+                    }
+                }
+                Insn::StoreF64Raw { dest, src } => {
+                    *dest = split_stack_membase(asm, *dest, SCRATCH0_OPND);
+                    *src = split_f64_memory_read(asm, *src, SCRATCH1_OPND, FP_SCRATCH1_OPND);
+
+                    asm.push_insn(insn);
+                }
                 Insn::Cmp { left, right } |
                 Insn::Test { left, right } => {
                     *left = split_memory_read(asm, *left, SCRATCH0_OPND);
@@ -2294,6 +2311,29 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_snapshot!(cb.hexdump(), @"200040fc200000fc90805ffcb10001fc");
+    }
+
+    #[test]
+    fn test_emit_f64_load_store_raw_from_stack_spill() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let stack_mem = Opnd::Mem(Mem {
+            base: MemBase::Stack { stack_idx: 0, num_bits: 64 },
+            disp: 0,
+            num_bits: 64,
+        });
+        asm.push_insn(Insn::LoadF64Raw {
+            opnd: stack_mem,
+            out: Opnd::Reg(Reg { num_bits: 64, reg_no: 0 }),
+        });
+        asm.push_insn(Insn::StoreF64Raw {
+            dest: stack_mem,
+            src: Opnd::Reg(Reg { num_bits: 64, reg_no: 0 }),
+        });
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert!(!cb.hexdump().is_empty(), "F64 stack spill load/store should compile");
     }
 
     #[test]
