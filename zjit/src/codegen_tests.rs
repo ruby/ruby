@@ -5961,6 +5961,18 @@ fn test_invokeblock_ifunc_map() {
 }
 
 #[test]
+fn test_invokeblock_ifunc_kwarg() {
+    eval("
+        def foo
+          yield 1, a: 2
+        end
+        def test = enum_for(:foo).to_a
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"[[1, {a: 2}]]");
+}
+
+#[test]
 fn test_ccall_variadic_with_multiple_args() {
     eval("
         def test

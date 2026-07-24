@@ -17853,6 +17853,34 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_invokeblock_ifunc_kwarg() {
+        eval("
+            def foo
+              yield 1, a: 2
+            end
+            def test = enum_for(:foo).to_a
+            test
+        ");
+        assert_snapshot!(hir_string("foo"), @"
+        fn foo@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[1] = Const Value(1)
+          v12:Fixnum[2] = Const Value(2)
+          v14:BasicObject = InvokeBlock v10, v12 # SendFallbackReason: InvokeBlock: not yet specialized
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
     fn test_dedup_guard_type() {
         // Two subtractions on the same Fixnum operand `n` each require a
         // GuardType n, Fixnum.  The second guard is redundant and should be
