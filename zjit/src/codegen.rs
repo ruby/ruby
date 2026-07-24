@@ -2389,48 +2389,6 @@ fn gen_array_pack_buffer(
     buffer: Option<InsnId>,
     state: &FrameState,
 ) -> lir::Opnd {
-    if any_hir_value_requires_boxing(jit, function, elements) {
-        return gen_array_pack_buffer_with_boxed_elements(jit, asm, function, elements, fmt, buffer, state);
-    }
-
-    gen_prepare_fallback_call(jit, asm, function, state);
-
-    let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
-
-    let mut values = elements.to_vec();
-    values.push(fmt);
-    if let Some(buffer) = buffer {
-        values.push(buffer);
-    }
-    let stack_bottom = state.stack().len() - values.len();
-    gen_store_hir_values_to_stack(jit, asm, function, &values, stack_bottom);
-    let elements_ptr = asm.lea(Opnd::mem(64, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
-    let fmt = Opnd::mem(VALUE_BITS, SP, (stack_bottom + elements.len()) as i32 * SIZEOF_VALUE_I32);
-    let buffer = if buffer.is_some() {
-        Opnd::mem(VALUE_BITS, SP, (stack_bottom + elements.len() + 1) as i32 * SIZEOF_VALUE_I32)
-    } else {
-        Qundef.into()
-    };
-
-    unsafe extern "C" {
-        fn rb_vm_opt_newarray_pack_buffer(ec: EcPtr, num: c_long, elts: *const VALUE, fmt: VALUE, buffer: VALUE) -> VALUE;
-    }
-    asm_ccall!(
-        asm,
-        rb_vm_opt_newarray_pack_buffer,
-        EC, array_len.into(), elements_ptr, fmt, buffer
-    )
-}
-
-fn gen_array_pack_buffer_with_boxed_elements(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-    function: &Function,
-    elements: &[InsnId],
-    fmt: InsnId,
-    buffer: Option<InsnId>,
-    state: &FrameState,
-) -> lir::Opnd {
     gen_prepare_non_leaf_call(jit, asm, function, state);
 
     let mut values = vec![fmt];
@@ -4488,12 +4446,6 @@ fn gen_store_hir_values_to_stack(
             asm.mov(Opnd::mem(VALUE_BITS, SP, (stack_bottom + idx) as i32 * SIZEOF_VALUE_I32), boxed);
         }
     }
-}
-
-fn any_hir_value_requires_boxing(jit: &JITState, function: &Function, insns: &[InsnId]) -> bool {
-    insns.iter().any(|&insn_id| {
-        matches!(build_stack_map_entry(jit, function, insn_id), StackMapEntry::F64(_))
-    })
 }
 
 fn gen_toregexp(jit: &mut JITState, asm: &mut Assembler, function: &Function, opt: usize, values: Vec<Opnd>, state: &FrameState) -> Opnd {
