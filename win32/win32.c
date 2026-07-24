@@ -1811,6 +1811,9 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
                 // terminating close-quote. If it is, we're finished with
                 // the string, but not necessarily with the element.
                 // If we're not already in a string, start one.
+                // A pair of double quotes inside a double-quoted string
+                // is an escaped double quote, and does not terminate
+                // the string.
                 //
 
                 if (!(slashes & 1)) {
@@ -1819,7 +1822,8 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
                     else if (quote == *ptr) {
                         if (quote == L'"' && quote == ptr[1])
                             ptr++;
-                        quote = L'\0';
+                        else
+                            quote = L'\0';
                     }
                 }
                 escape++;
@@ -1873,7 +1877,8 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
                         if (quote) {
                             if (quote == L'"' && quote == *p)
                                 p++;
-                            quote = L'\0';
+                            else
+                                quote = L'\0';
                         }
                         else
                             quote = c;
