@@ -3289,6 +3289,10 @@ impl Function {
     }
 
     fn infer_type_if_any(&mut self, insn: InsnId) {
+        if !self.insns[insn.0].has_output() {
+            return;
+        }
+
         if self.type_of(insn).bit_equal(types::Any) {
             self.insn_types[insn.0] = self.infer_type(insn);
         }

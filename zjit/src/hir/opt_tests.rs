@@ -18251,6 +18251,17 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_math_sqrt_inline_with_nonnegative_guard() {
+        eval(r#"
+            def test(a) = Math.sqrt(a)
+            test(1.25)
+        "#);
+        let hir = hir_string("test");
+        assert_hir_contains_all(&hir, &["F64GuardNonnegative", "F64Sqrt"]);
+        assert!(!hir.contains("CCallWithFrame"), "{hir}");
+    }
+
+    #[test]
     fn test_fixnum_float_rhs_uses_unboxed_float_ops() {
         eval(r#"
             def test(a, b) = ((a + b) * b - a) / b
