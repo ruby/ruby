@@ -5770,27 +5770,28 @@ impl Function {
             .unwrap_or(insn_id)
     }
 
-    /// Block-local canonicalize: rewrite each operand through union-find and a
-    /// per-block map of the most recent `Guard*` for that value. Forwards
-    /// guarded values into branch-edge args (so `infer_types` narrows merge-block
-    /// parameters and `fold_constants` drops redundant CFG-join guards) and
-    /// ordinary in-block uses.
+    /// Canonicalize: rewrite each operand through union-find and a map of the most recent `Guard*`
+    /// for that value in the dominator tree. Forwards guarded values into branch-edge args (so
+    /// `infer_types` narrows merge-block parameters and `fold_constants` drops redundant CFG-join
+    /// guards) and ordinary in-block uses.
     ///
-    /// `Guard*` substitutions are unconditional within a block: a guard's
-    /// side-exit semantics guarantee the substituted value type holds for every
-    /// downstream use in the same block.
+    /// `Guard*` substitutions are unconditional for dominated uses: a guard's side-exit semantics
+    /// guarantee the substituted value type holds for every dominated use.
     ///
-    /// `RefineType` is intentionally skipped: its narrowing is only valid on one
-    /// branch arm, which would require dropping refine-derived rewrites at each
-    /// `IfTrue`/`IfFalse`. Cross-arm refine forwarding is left for a follow-up
+    /// `RefineType` is intentionally skipped: as constructed in HIR build right now, its narrowing
+    /// is only valid on one branch arm, which would require dropping refine-derived rewrites at
+    /// each `IfTrue`/`IfFalse`. Cross-arm refine forwarding is left for a follow-up
     /// dominator-scoped pass.
     ///
     /// Inspired by Cranelift's aegraph canonicalize step
     /// (<https://cfallin.org/blog/2026/04/09/aegraph/>).
     fn canonicalize(&mut self) {
-        let mut rewrite_map: HashMap<InsnId, InsnId> = HashMap::new();
+        // TODO(max): Don't make so many maps. Instead, use either undo-redo or dominator numbering
+        // information for dominator tree.
+        let mut rewrite_maps: Vec<HashMap<InsnId, InsnId>> = vec![HashMap::new(); self.blocks.len()];
+        let dominators = Dominators::new(self);
         for block in self.reverse_post_order() {
-            rewrite_map.clear();
+            let mut rewrite_map = rewrite_maps[dominators.idom(block).0].clone();
             for i in 0..self.blocks[block.0].insns.len() {
                 let insn_id = self.blocks[block.0].insns[i];
                 let canonical_id = self.union_find.borrow().find_const(insn_id);
@@ -5815,6 +5816,7 @@ impl Function {
                     _ => {}
                 }
             }
+            rewrite_maps[block.0] = rewrite_map;
         }
 
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());

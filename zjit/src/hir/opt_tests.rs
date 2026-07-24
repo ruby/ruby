@@ -7596,7 +7596,7 @@ mod hir_opt_tests {
           v23:String = RefineType v39, String
           Jump bb6(v23)
         bb5():
-          v25:StringExact = AnyToString v10
+          v25:StringExact = AnyToString v18
           Jump bb6(v25)
         bb6(v27:String):
           v29:StringExact = StringConcat v14, v27
@@ -19022,6 +19022,74 @@ mod hir_opt_tests {
           PopInlineFrame
           CheckInterrupts
           Return v56
+        ");
+    }
+
+    #[test]
+    fn test_canonicalize_global() {
+        set_call_threshold(3);
+        eval("
+            def test(n)
+              if n < 0
+                if n < 0
+                  if n < 0
+                    3
+                  end
+                end
+              end
+            end
+            test(-2)
+            test(-1)
+            test(1)
+        ");
+        assert_snapshot!(hir_string_with_inlining("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          v85:Fixnum = GuardType v10, Fixnum recompile
+          v86:BoolExact = FixnumLt v85, v15
+          v20:CBool = Test v86
+          CondBranch v20, bb7(), bb6(v9, v85)
+        bb7():
+          v27:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          v90:BoolExact = FixnumLt v85, v27
+          v32:CBool = Test v90
+          CondBranch v32, bb8(), bb5(v9, v85)
+        bb8():
+          v39:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          v94:BoolExact = FixnumLt v85, v39
+          v44:CBool = Test v94
+          CondBranch v44, bb9(), bb4(v9, v85)
+        bb9():
+          v50:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v50
+        bb4(v73:BasicObject, v74:Fixnum):
+          v77:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v77
+        bb5(v64:BasicObject, v65:Fixnum):
+          v68:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v68
+        bb6(v55:BasicObject, v56:Fixnum):
+          v59:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v59
         ");
     }
 
