@@ -125,8 +125,10 @@ ruby_version_is "4.1" do
       Class.new.class_eval(&refined).should == "HI!"
     end
 
-    it "raises ArgumentError when called with no modules" do
-      -> { -> {}.refined }.should.raise(ArgumentError)
+    it "returns the receiver when called with no modules" do
+      original = -> {}
+      refined = original.refined
+      refined.should.equal?(original)
     end
 
     it "raises TypeError when called with a non-Module argument" do
@@ -140,17 +142,22 @@ ruby_version_is "4.1" do
       -> { method_proc.refined(ProcRefinedSpecs::StringShout) }.should.raise(ArgumentError)
     end
 
-    it "raises ArgumentError for a Proc that already has refinements applied" do
-      refined = -> s { s.shout }.refined(ProcRefinedSpecs::StringShout)
-      -> { refined.refined(ProcRefinedSpecs::StringQuiet) }.should.raise(ArgumentError)
+    it "activates the refinements of all the given modules when chained" do
+      pr = -> s { [s.shout, s.quiet] }
+      refined = pr.refined(ProcRefinedSpecs::StringShout).refined(ProcRefinedSpecs::StringQuiet)
+      refined.call("Hi").should == ["hi", "..."]
+    end
+
+    it "gives precedence to the module applied last when chained" do
+      pr = -> s { s.shout }
+      pr.refined(ProcRefinedSpecs::StringShout).refined(ProcRefinedSpecs::StringQuiet).call("Hi").should == "hi"
+      pr.refined(ProcRefinedSpecs::StringQuiet).refined(ProcRefinedSpecs::StringShout).call("Hi").should == "HI!"
     end
 
     it "keeps the refinements on dup and clone" do
       refined = -> s { s.shout }.refined(ProcRefinedSpecs::StringShout)
       refined.dup.call("hi").should == "HI!"
       refined.clone.call("hi").should == "HI!"
-      -> { refined.dup.refined(ProcRefinedSpecs::StringQuiet) }.should.raise(ArgumentError)
-      -> { refined.clone.refined(ProcRefinedSpecs::StringQuiet) }.should.raise(ArgumentError)
     end
 
     it "raises ArgumentError when the result is passed to define_method" do

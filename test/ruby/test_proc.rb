@@ -607,8 +607,12 @@ class TestProc < Test::Unit::TestCase
     assert_equal("Z!", refined.clone.call("z"))
   end
 
+  def test_refined_no_arguments
+    original = -> {}
+    assert_same(original, original.refined)
+  end
+
   def test_refined_errors
-    assert_raise(ArgumentError) { ->(s) { s }.refined }
     assert_raise(TypeError) { ->(s) { s }.refined(42) }
     # non-iseq Procs are not supported
     assert_raise(ArgumentError) { :upcase.to_proc.refined(RefinementsModule) }
@@ -674,18 +678,6 @@ class TestProc < Test::Unit::TestCase
     RUBY
   end
 
-  def test_refined_chain_rejected
-    # Chaining would need merge-or-replace semantics for the refinement sets;
-    # both are confusing, so a refined proc rejects further refined.
-    # Multiple modules can be activated by passing them in a single call.
-    refined = ->(s) { s.shout }.refined(RefinementsModule)
-    assert_raise(ArgumentError) { refined.refined(RefinementsModule2) }
-    # the refinement state survives dup, so the dup is rejected too
-    assert_raise(ArgumentError) { refined.dup.refined(RefinementsModule2) }
-    # the receiver remains usable
-    assert_equal("HI!", refined.call("hi"))
-  end
-
   def test_refined_using_in_body_rejected
     # The refinement set of a refined proc is fixed at refined() time: procs
     # derived from the same source and modules share the copied iseq (and its
@@ -737,13 +729,7 @@ class TestProc < Test::Unit::TestCase
     end
   end
 
-  def test_refined_nested_proc_is_not_a_chain
-    # A Proc created lexically INSIDE a refined Proc is not itself "a
-    # Proc that already has refinements": it only inherits the enclosing
-    # refinements lexically.  refined (and define_method) must therefore
-    # be accepted on it, and the inner Proc must see both the enclosing
-    # refinement and the one it adds.  Only the Proc returned by refined
-    # is rejected for chaining.
+  def test_refined_nested_proc
     result = -> {
       inner = ->(s, n) { [s.shout, n.doubled] }
       inner.refined(RefinementsStringOnly).call("hi", 3)
@@ -757,6 +743,16 @@ class TestProc < Test::Unit::TestCase
     assert_nothing_raised do
       -> { Class.new { define_method(:m, ->(s) { s }) } }.refined(RefinementsIntegerOnly).call
     end
+  end
+
+  def test_refined_chain
+    refined = ->(s, n) { [s.shout, n.doubled] }.refined(RefinementsStringOnly).refined(RefinementsIntegerOnly)
+    assert_equal(["HI!", 6], refined.call("hi", 3))
+
+    refined2 = ->(s) { s.shout }.refined(RefinementsModule).refined(RefinementsModule2)
+    assert_equal("?", refined2.call("hi"))
+    refined3 = ->(s) { s.shout }.refined(RefinementsModule2).refined(RefinementsModule)
+    assert_equal("HI!", refined3.call("hi"))
   end
 
   def test_refined_gc
@@ -897,6 +893,19 @@ class TestProc < Test::Unit::TestCase
       pr.refined(M1)
       pr.refined(M2) # evicts the M1 entry
       assert_equal(1, $warned.grep(/different modules/).size)
+    RUBY
+  end
+
+  def test_refined_chain_warning
+    assert_separately([], <<~'RUBY')
+      module M1; refine(String) { def shout = "1" }; end
+      module M2; refine(String) { def shout = "2" }; end
+      Warning[:performance] = true
+      $warned = []
+      def Warning.warn(msg, category: nil) = $warned << msg
+      pr = ->(s) { s.shout }
+      pr.refined(M1).refined(M2)
+      assert_equal(1, $warned.grep(/already refined/).size)
     RUBY
   end
 
@@ -1061,8 +1070,6 @@ class TestProc < Test::Unit::TestCase
   def test_refined_preserved_by_clone
     refined = ->(s) { s.shout }.refined(RefinementsModule)
     assert_equal("Z!", refined.clone.call("z"))
-    # the refinement state survives clone, so chaining on the clone is rejected too
-    assert_raise(ArgumentError) { refined.clone.refined(RefinementsModule2) }
   end
 
   def test_refined_module_precedence
