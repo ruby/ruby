@@ -3732,7 +3732,8 @@ fn build_stack_map_entry(jit: &JITState, function: &Function, insn_id: InsnId) -
         return StackMapEntry::F64(opnd);
     }
 
-    if function.type_of(insn_id).is_subtype(types::CDouble) {
+    let ty = function.type_of(insn_id);
+    if !ty.bit_equal(types::Empty) && ty.is_subtype(types::CDouble) {
         let opnd = jit.get_opnd(insn_id);
         assert!(
             matches!(opnd, Opnd::UImm(_) | Opnd::Imm(_) | Opnd::VReg { .. }),

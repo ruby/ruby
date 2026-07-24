@@ -2249,19 +2249,19 @@ mod tests {
         0x20: push 0
         0x22: mov eax, 0
         0x27: call rax
-        0x29: pop r8
-        0x2b: pop r8
-        0x2d: pop rcx
-        0x2e: pop rdx
-        0x2f: pop rsi
-        0x30: pop rdi
-        0x31: add rdi, rsi
-        0x34: mov rdi, rdx
-        0x37: add rdi, rcx
-        0x3a: mov rdi, rdx
-        0x3d: add rdi, r8
+        0x29: pop rax
+        0x2a: pop r8
+        0x2c: pop rcx
+        0x2d: pop rdx
+        0x2e: pop rsi
+        0x2f: pop rdi
+        0x30: add rdi, rsi
+        0x33: mov rdi, rdx
+        0x36: add rdi, rcx
+        0x39: mov rdi, rdx
+        0x3c: add rdi, r8
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005756525141506a00b800000000ffd041584158595a5e5f4801f74889d74801cf4889d74c01c7");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005756525141506a00b800000000ffd0584158595a5e5f4801f74889d74801cf4889d74c01c7");
     }
 
     #[test]
@@ -2331,16 +2331,15 @@ mod tests {
 
         assert_disasm_snapshot!(cb.disasm(), @"
             0x0: ucomisd xmm0, xmm1
-            0x4: mov edi, 8
-            0x9: mov esi, 2
-            0xe: mov eax, -1
-            0x13: cmove rdi, rsi
-            0x17: cmova rdi, rax
-            0x1b: mov eax, 1
-            0x20: cmovb rdi, rax
-            0x24: mov eax, 4
-            0x29: cmovp rdi, rax
-            0x2d: mov rax, rdi
+            0x4: mov eax, 4
+            0x9: mov r11d, 1
+            0xf: cmove rax, r11
+            0x13: mov r11d, 3
+            0x19: cmova rax, r11
+            0x1d: mov r11, 0xffffffffffffffff
+            0x24: cmovb rax, r11
+            0x28: mov r11d, 4
+            0x2e: cmovp rax, r11
         ");
     }
 

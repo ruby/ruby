@@ -5081,14 +5081,11 @@ pub(crate) mod hir_build_tests {
           v12:BasicObject = LoadField v11, :<empty>@0x1003
           Jump bb3(v8, v9, v10, v12)
         bb3(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject):
-          v21:BoolExact = GuardType v16, BoolExact recompile
-          v22:Fixnum = GuardType v15, Fixnum recompile
-          v23:CDouble = FixnumToF64 v22
-          v24:Float = BoxFloat v23
-          Jump bb4(v14, v15, v16, v17, v24)
-        bb4(v26:BasicObject, v27:BasicObject, v28:BasicObject, v29:BasicObject, v30:Float):
+          v21:NilClass|Float = InvokeBuiltin rb_f_float, v14, v15, v16
+          Jump bb4(v14, v15, v16, v17, v21)
+        bb4(v23:BasicObject, v24:BasicObject, v25:BasicObject, v26:BasicObject, v27:NilClass|Float):
           CheckInterrupts
-          Return v30
+          Return v27
         ");
     }
 
