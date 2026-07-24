@@ -5427,7 +5427,7 @@ vm_invoke_proc_block_with_cref(rb_execution_context_t *ec, rb_control_frame_t *r
                                struct rb_calling_info *calling, const struct rb_callinfo *ci,
                                bool is_lambda, VALUE block_handler, VALUE refined_procval)
 {
-    const rb_cref_t *cref = rb_proc_refinements_cref(refined_procval);
+    const rb_cref_t *cref = rb_proc_refinements_cref_for_call(refined_procval);
     return vm_invoke_iseq_block_with_cref(ec, reg_cfp, calling, ci, is_lambda, block_handler, cref);
 }
 

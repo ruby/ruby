@@ -2637,7 +2637,6 @@ rb_fiber_start(rb_fiber_t *fiber_arg)
     rb_fiber_t * volatile fiber = fiber_arg;
     rb_thread_t * volatile th = fiber->cont.saved_ec.thread_ptr;
 
-    rb_proc_t *proc;
     enum ruby_tag_type state;
 
     VM_ASSERT(th->ec == GET_EC());
@@ -2647,12 +2646,10 @@ rb_fiber_start(rb_fiber_t *fiber_arg)
         th->blocking += 1;
     }
 
-    /* resolved before EC_PUSH_TAG to keep the setjmp region minimal */
-    const rb_cref_t *cref = rb_proc_refinements_cref(fiber->first_proc);
-
     EC_PUSH_TAG(th->ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         rb_context_t *cont = &fiber->cont;
+        rb_proc_t *proc;
         int argc;
         const VALUE *argv, args = cont->value;
         GetProcPtr(fiber->first_proc, proc);
@@ -2663,6 +2660,7 @@ rb_fiber_start(rb_fiber_t *fiber_arg)
         th->ec->root_svar = Qfalse;
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
+        const rb_cref_t *cref = rb_proc_refinements_cref_for_call(fiber->first_proc);
         cont->value = rb_vm_invoke_proc(th->ec, proc, argc, argv, cont->kw_splat, VM_BLOCK_HANDLER_NONE, cref);
     }
     EC_POP_TAG();
