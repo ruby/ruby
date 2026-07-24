@@ -289,18 +289,47 @@ location_cfunc_p(rb_backtrace_location_t *loc)
     }
 }
 
+/* Return the module where the running method body was actually defined.
+ *
+ * For an alias or a method installed via define_method(UnboundMethod), the CME's
+ * owner points at the site where the alias/copy was installed, not where the body
+ * was originally defined. Combined with the method name (taken from the original
+ * definition) that yields a "Class#method" pair which never existed -- e.g. an
+ * alias in a subclass reported as Child#original instead of Parent#original, or
+ * define_method(Original.instance_method(:m)) reported as A#m instead of
+ * Original#m ([Bug #22197]).
+ *
+ * The definition module is recorded once on the (reference-counted, shared)
+ * method definition when the body is first created, so every alias/define_method
+ * copy keeps pointing at the original module.
+ *
+ * The exception is module_function, which installs the instance method's *shared*
+ * def onto the module's singleton class as well: that copy must be labeled as a
+ * class method of the module (M.f), i.e. by its owner. Such a copy is exactly the
+ * one whose owner is the singleton class of the definition module. */
+static VALUE
+location_original_module(const rb_callable_method_entry_t *cme)
+{
+    if (!cme || !cme->def) return Qnil;
+    VALUE owner = cme->owner;
+    VALUE defined_in = cme->def->original_module;
+    if (!defined_in) return owner;
+    if (defined_in != owner &&
+            RB_TYPE_P(owner, T_CLASS) && RCLASS_SINGLETON_P(owner) &&
+            RCLASS_ATTACHED_OBJECT(owner) == defined_in) {
+        return owner;
+    }
+    return defined_in;
+}
+
 static VALUE
 location_label(rb_backtrace_location_t *loc)
 {
     if (location_cfunc_p(loc)) {
-        return rb_gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
+        return rb_gen_method_name(location_original_module(loc->cme), rb_id2str(loc->cme->def->original_id));
     }
     else {
-        VALUE owner = Qnil;
-        if (loc->cme) {
-            owner = loc->cme->owner;
-        }
-        return calculate_iseq_label(owner, loc->iseq);
+        return calculate_iseq_label(location_original_module(loc->cme), loc->iseq);
     }
 }
 /*
@@ -482,13 +511,13 @@ location_to_str(rb_backtrace_location_t *loc)
             file = GET_VM()->progname;
             lineno = 0;
         }
-        name = rb_gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
+        name = rb_gen_method_name(location_original_module(loc->cme), rb_id2str(loc->cme->def->original_id));
     }
     else {
         file = rb_iseq_path(loc->iseq);
         lineno = calc_lineno(loc->iseq, loc->pc);
         if (loc->cme) {
-            owner = loc->cme->owner;
+            owner = location_original_module(loc->cme);
         }
         name = calculate_iseq_label(owner, loc->iseq);
     }
