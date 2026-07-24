@@ -8020,21 +8020,33 @@ rb_str_ascii_casemap(VALUE source, VALUE target, OnigCaseFoldType *flags, rb_enc
     return target;
 }
 
+#define ASCII_CASE_BIT ('A'^'a')
+STATIC_ASSERT(ascii_case_bit_single, (ASCII_CASE_BIT & (ASCII_CASE_BIT-1)) == 0);
+STATIC_ASSERT(ascii_case_bit_z, ASCII_CASE_BIT == ('Z'^'z'));
+STATIC_ASSERT(ascii_upper_range, 'Z' - 'A' == 25); // upper case are continuous
+STATIC_ASSERT(ascii_lower_range, 'z' - 'a' == 25); // lower case are continuous
+
 static bool
-upcase_single(VALUE str)
+upcase_single(const char *s, const char *send, char *d, bool always_write)
 {
-    char *s = RSTRING_PTR(str), *send = RSTRING_END(str);
     bool modified = false;
 
     while (s < send) {
         unsigned int c = *(unsigned char*)s;
+        bool changed = ('a' <= c && c <= 'z');
 
-        if ('a' <= c && c <= 'z') {
-            *s = 'A' + (c - 'a');
+        if (changed) {
+            c &= ~ASCII_CASE_BIT;
             modified = true;
         }
+
+        if (always_write || changed) {
+            *d = (char)c;
+        }
         s++;
+        d++;
     }
+
     return modified;
 }
 
@@ -8060,7 +8072,8 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
     str_modify_keep_cr(str);
     enc = str_true_enc(str);
     if (case_option_single_p(flags, enc, str)) {
-        if (upcase_single(str))
+        char *s = RSTRING_PTR(str), *send = RSTRING_END(str);
+        if (upcase_single(s, send, s, false))
             flags |= ONIGENC_CASE_MODIFIED;
     }
     else if (flags&ONIGENC_CASE_ASCII_ONLY)
@@ -8090,9 +8103,9 @@ rb_str_upcase(int argc, VALUE *argv, VALUE str)
     flags = check_case_options(argc, argv, flags);
     enc = str_true_enc(str);
     if (case_option_single_p(flags, enc, str)) {
-        ret = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
+        ret = rb_str_new(0, RSTRING_LEN(str));
         str_enc_copy_direct(ret, str);
-        upcase_single(ret);
+        upcase_single(RSTRING_PTR(str), RSTRING_END(str), RSTRING_PTR(ret), true);
     }
     else if (flags&ONIGENC_CASE_ASCII_ONLY) {
         ret = rb_str_new(0, RSTRING_LEN(str));
@@ -8106,19 +8119,24 @@ rb_str_upcase(int argc, VALUE *argv, VALUE str)
 }
 
 static bool
-downcase_single(VALUE str)
+downcase_single(const char *s, const char *send, char *d, bool always_write)
 {
-    char *s = RSTRING_PTR(str), *send = RSTRING_END(str);
     bool modified = false;
 
     while (s < send) {
         unsigned int c = *(unsigned char*)s;
+        bool changed = ('A' <= c && c <= 'Z');
 
-        if ('A' <= c && c <= 'Z') {
-            *s = 'a' + (c - 'A');
+        if (changed) {
+            c |= ASCII_CASE_BIT;
             modified = true;
         }
+
+        if (always_write || changed) {
+            *d = (char)c;
+        }
         s++;
+        d++;
     }
 
     return modified;
@@ -8146,7 +8164,8 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
     str_modify_keep_cr(str);
     enc = str_true_enc(str);
     if (case_option_single_p(flags, enc, str)) {
-        if (downcase_single(str))
+        char *s = RSTRING_PTR(str), *send = RSTRING_END(str);
+        if (downcase_single(s, send, s, false))
             flags |= ONIGENC_CASE_MODIFIED;
     }
     else if (flags&ONIGENC_CASE_ASCII_ONLY)
@@ -8177,9 +8196,9 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
     flags = check_case_options(argc, argv, flags);
     enc = str_true_enc(str);
     if (case_option_single_p(flags, enc, str)) {
-        ret = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
+        ret = rb_str_new(0, RSTRING_LEN(str));
         str_enc_copy_direct(ret, str);
-        downcase_single(ret);
+        downcase_single(RSTRING_PTR(str), RSTRING_END(str), RSTRING_PTR(ret), true);
     }
     else if (flags&ONIGENC_CASE_ASCII_ONLY) {
         ret = rb_str_new(0, RSTRING_LEN(str));
