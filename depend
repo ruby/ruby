@@ -101,6 +101,7 @@ prism/char.$(OBJEXT): $(top_srcdir)/prism/char.c
 prism/constant_pool.$(OBJEXT): $(top_srcdir)/prism/constant_pool.c
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/diagnostic.c
 prism/encoding.$(OBJEXT): $(top_srcdir)/prism/encoding.c
+prism/errors_format.$(OBJEXT): $(top_srcdir)/prism/errors_format.c
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/extension.c
 prism/integer.$(OBJEXT): $(top_srcdir)/prism/integer.c
 prism/json.$(OBJEXT): $(top_srcdir)/prism/json.c
