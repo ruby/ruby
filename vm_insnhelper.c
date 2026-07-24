@@ -6975,7 +6975,17 @@ vm_opt_and(VALUE recv, VALUE obj)
         OP_UNREDEFINED_P(AND, INTEGER)) {
         return ret;
     }
-    else {
+    switch (recv) {
+      case Qtrue:
+        if (!OP_UNREDEFINED_P(AND, TRUE)) return Qundef;
+        return RBOOL(RTEST(obj));
+      case Qfalse:
+        if (!OP_UNREDEFINED_P(AND, FALSE)) return Qundef;
+        return Qfalse;
+      case Qnil:
+        if (!OP_UNREDEFINED_P(AND, NIL)) return Qundef;
+        return Qfalse;
+      default:
         return Qundef;
     }
 }
@@ -6987,7 +6997,17 @@ vm_opt_or(VALUE recv, VALUE obj)
         OP_UNREDEFINED_P(OR, INTEGER)) {
         return recv | obj;
     }
-    else {
+    switch (recv) {
+      case Qtrue:
+        if (!OP_UNREDEFINED_P(OR, TRUE)) return Qundef;
+        return Qtrue;
+      case Qfalse:
+        if (!OP_UNREDEFINED_P(OR, FALSE)) return Qundef;
+        return RBOOL(RTEST(obj));
+      case Qnil:
+        if (!OP_UNREDEFINED_P(OR, NIL)) return Qundef;
+        return RBOOL(RTEST(obj));
+      default:
         return Qundef;
     }
 }
