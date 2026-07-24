@@ -974,11 +974,7 @@ fn inline_float_predicate(
     args: &[hir::InsnId],
     state: hir::InsnId,
 ) -> Option<hir::InsnId> {
-    let recv = match args {
-        [] => recv,
-        [arg] if *arg == recv => recv,
-        _ => return None,
-    };
+    let &[] = args else { return None; };
     let recv = float_op_operand_f64(fun, block, recv, true, state)?;
     Some(fun.push_insn(block, hir::Insn::F64Predicate { op, val: recv }))
 }

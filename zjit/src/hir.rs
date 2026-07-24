@@ -6281,12 +6281,7 @@ impl Function {
                         self.fold_f64_bop(insn_id, left, right, |left, right| left * right)
                     }
                     Insn::F64BinOp { op: F64BinOp::Div, left, right } => {
-                        let right_value = self.type_of(right).cdouble_value();
-                        if matches!(right_value, Some(right) if right != 0.0) {
-                            self.fold_f64_bop(insn_id, left, right, |left, right| left / right)
-                        } else {
-                            insn_id
-                        }
+                        self.fold_f64_bop(insn_id, left, right, |left, right| left / right)
                     }
                     Insn::FixnumXor { left, right, .. } => {
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {

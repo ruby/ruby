@@ -18239,6 +18239,19 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_float_literal_division_by_zero_folds() {
+        eval(r#"
+            def test = 1.0 / -0.0
+            test
+        "#);
+        let hir = hir_string("test");
+        assert!(hir.contains("Return"), "{hir}");
+        assert!(!hir.contains("F64BinOp::Div"), "{hir}");
+        assert!(!hir.contains("UnboxFloat"), "{hir}");
+        assert!(!hir.contains("BoxFloat"), "{hir}");
+    }
+
+    #[test]
     fn test_float_chain_predicate_avoids_boxing_result() {
         eval(r#"
             def test(a, b) = (a / b).finite?
