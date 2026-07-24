@@ -7,6 +7,7 @@ use crate::options::asm_dump;
 use crate::stats::{CompileError, trace_compile_phase};
 use crate::virtualmem::CodePtr;
 use crate::cast::*;
+use std::collections::{HashMap, HashSet};
 
 // Use the arm64 register type for this platform
 pub type Reg = A64Reg;
@@ -166,6 +167,148 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
             num_insns += 1;
         }
         num_insns
+    }
+}
+
+/// Determine how many instructions [`emit_load_value`] uses for `value`.
+fn emit_load_size(value: u64) -> u8 {
+    if value <= 0xffff || u16::try_from(!value).is_ok() || BitmaskImmediate::try_from(value).is_ok() {
+        1
+    } else if value < (1 << 32) {
+        2
+    } else if value < (1 << 48) {
+        3
+    } else {
+        4
+    }
+}
+
+/// A literal-pool key includes whether the bits are a movable Ruby object.
+/// A raw pointer and a VALUE can have the same bits, but only the VALUE may be
+/// relocated by GC.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+struct LiteralPoolKey {
+    bits: u64,
+    gc_managed: bool,
+}
+
+impl LiteralPoolKey {
+    fn gc_value(value: VALUE) -> Self {
+        debug_assert!(!value.special_const_p());
+        Self { bits: value.as_u64(), gc_managed: true }
+    }
+
+    fn immediate(bits: u64) -> Self {
+        Self { bits, gc_managed: false }
+    }
+}
+
+struct LiteralPoolEntry {
+    key: LiteralPoolKey,
+    label: Label,
+}
+
+/// Per-compilation ARM64 literal pool.
+///
+/// Loads are linked after the pool slots have been emitted. Large compilations
+/// periodically flush an island with a branch around its data so every LDR
+/// remains within its signed 19-bit, instruction-scaled range.
+struct LiteralPool {
+    selected: HashSet<LiteralPoolKey>,
+    labels: HashMap<LiteralPoolKey, Label>,
+    entries: Vec<LiteralPoolEntry>,
+    first_ref_pos: Option<usize>,
+    island_idx: usize,
+}
+
+impl LiteralPool {
+    /// Leave ample room for a worst-case island containing one distinct
+    /// eight-byte slot per four-byte load.
+    const MAX_CODE_DISTANCE: usize = 384 * 1024;
+
+    fn new(selected: HashSet<LiteralPoolKey>) -> Self {
+        Self {
+            selected,
+            labels: HashMap::new(),
+            entries: Vec::new(),
+            first_ref_pos: None,
+            island_idx: 0,
+        }
+    }
+
+    fn emit_load(&mut self, cb: &mut CodeBlock, dest: A64Opnd, key: LiteralPoolKey) -> bool {
+        if !self.selected.contains(&key) {
+            return false;
+        }
+
+        let label = if let Some(&label) = self.labels.get(&key) {
+            label
+        } else {
+            let label = cb.new_label("literal_pool_entry");
+            self.labels.insert(key, label);
+            self.entries.push(LiteralPoolEntry { key, label });
+            label
+        };
+        self.first_ref_pos.get_or_insert(cb.get_write_pos());
+
+        cb.label_ref(label, 4, move |cb, end_addr, dst_addr| {
+            // CodeBlock reports the address after the reserved instruction.
+            // ARM64 LDR literal offsets are relative to the instruction itself.
+            let offset = (dst_addr - end_addr) / 4 + 1;
+            if imm_fits_bits(offset, 19) {
+                ldr_literal(cb, dest, InstructionOffset::from_insns(offset as i32));
+                Ok(())
+            } else {
+                Err(())
+            }
+        });
+        true
+    }
+
+    fn flush_if_needed(&mut self, cb: &mut CodeBlock, gc_offsets: &mut Vec<CodePtr>, next_bytes: usize) {
+        let Some(first_ref_pos) = self.first_ref_pos else {
+            return;
+        };
+        if cb.get_write_pos().saturating_add(next_bytes).saturating_sub(first_ref_pos) >= Self::MAX_CODE_DISTANCE {
+            self.flush(cb, gc_offsets);
+        }
+    }
+
+    fn flush(&mut self, cb: &mut CodeBlock, gc_offsets: &mut Vec<CodePtr>) {
+        if self.entries.is_empty() {
+            return;
+        }
+
+        // Generic Assembler users are allowed to fall through their last LIR
+        // instruction, so always branch around pool data.
+        let end_label = cb.new_label("literal_pool_end");
+        cb.label_ref(end_label, 4, |cb, end_addr, dst_addr| {
+            let offset = (dst_addr - end_addr) / 4 + 1;
+            if b_offset_fits_bits(offset) {
+                b(cb, InstructionOffset::from_insns(offset as i32));
+                Ok(())
+            } else {
+                Err(())
+            }
+        });
+
+        while cb.get_write_pos() % SIZEOF_VALUE != 0 {
+            cb.write_byte(0);
+        }
+
+        for entry in self.entries.drain(..) {
+            cb.write_label(entry.label);
+            let slot = cb.get_write_ptr();
+            cb.write_bytes(&entry.key.bits.to_le_bytes());
+            if entry.key.gc_managed {
+                gc_offsets.push(slot);
+            }
+        }
+        cb.write_label(end_label);
+
+        self.labels.clear();
+        self.first_ref_pos = None;
+        self.island_idx += 1;
     }
 }
 
@@ -985,26 +1128,6 @@ impl Assembler {
     /// Emit platform-specific machine code
     /// Returns a list of GC offsets. Can return failure to signal caller to retry.
     fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Result<Vec<CodePtr>, CompileError> {
-        /// Determine how many instructions it will take to represent moving
-        /// this value into a register. Note that the return value of this
-        /// function must correspond to how many instructions are used to
-        /// represent this load in the emit_load_value function.
-        fn emit_load_size(value: u64) -> u8 {
-            if BitmaskImmediate::try_from(value).is_ok() {
-                return 1;
-            }
-
-            if value < (1 << 16) {
-                1
-            } else if value < (1 << 32) {
-                2
-            } else if value < (1 << 48) {
-                3
-            } else {
-                4
-            }
-        }
-
         /// Lower a CSel to a single `cset` when it selects between the constants
     /// 1 and 0 (the shape FixnumCmpBool produces; arm64_split preserves the
     /// pair as (Imm 1, xzr)); otherwise emit a plain csel.
@@ -1176,7 +1299,13 @@ impl Assembler {
         }
 
         /// Load a VALUE to a register and remember it for GC marking and reference updating
-        fn emit_load_gc_value(cb: &mut CodeBlock, gc_offsets: &mut Vec<CodePtr>, dest: A64Opnd, value: VALUE) {
+        fn emit_load_gc_value(
+            cb: &mut CodeBlock,
+            gc_offsets: &mut Vec<CodePtr>,
+            literal_pool: &mut LiteralPool,
+            dest: A64Opnd,
+            value: VALUE,
+        ) {
             // Special-const VALUEs are immediates (no heap pointer to track), so
             // load the bits directly. Passes after arm64_split -- e.g. parallel-
             // move resolution materializing a block-argument constant -- can
@@ -1184,6 +1313,10 @@ impl Assembler {
             // Opnd::Value-to-UImm lowering never saw.
             if value.special_const_p() {
                 emit_load_value(cb, dest, value.as_u64());
+                return;
+            }
+
+            if literal_pool.emit_load(cb, dest, LiteralPoolKey::gc_value(value)) {
                 return;
             }
 
@@ -1234,6 +1367,52 @@ impl Assembler {
         let mut insn_idx: usize = 0;
         assert_eq!(self.basic_blocks.len(), 1, "Assembler should be linearized into a single block before arm64_emit");
         let insns = &self.basic_blocks[0].insns;
+
+        // Pool only constants for which the loads plus one deduplicated slot
+        // beat their current encodings. Account conservatively for the branch
+        // and alignment needed to skip a pool island.
+        let mut literal_counts: HashMap<LiteralPoolKey, (usize, usize)> = HashMap::new();
+        for insn in insns {
+            let candidate = match insn {
+                Insn::Store { src, .. } => Some(*src),
+                Insn::Load { opnd, .. } | Insn::LoadInto { opnd, .. } => Some(*opnd),
+                _ => None,
+            };
+            let Some((key, inline_bytes)) = candidate.and_then(|opnd| match opnd {
+                Opnd::Value(value) if !value.special_const_p() => {
+                    Some((LiteralPoolKey::gc_value(value), 16))
+                }
+                Opnd::UImm(value) => {
+                    Some((LiteralPoolKey::immediate(value), emit_load_size(value) as usize * 4))
+                }
+                Opnd::Imm(value) => {
+                    let value = value as u64;
+                    Some((LiteralPoolKey::immediate(value), emit_load_size(value) as usize * 4))
+                }
+                _ => None,
+            }) else {
+                continue;
+            };
+            let entry = literal_counts.entry(key).or_insert((0, inline_bytes));
+            entry.0 += 1;
+            debug_assert_eq!(entry.1, inline_bytes);
+        }
+
+        let mut selected_literals = HashSet::new();
+        let mut selected_savings = 0;
+        for (key, (count, inline_bytes)) in literal_counts {
+            let current_size = count * inline_bytes;
+            let pooled_size = count * 4 + SIZEOF_VALUE;
+            if current_size > pooled_size {
+                selected_literals.insert(key);
+                selected_savings += current_size - pooled_size;
+            }
+        }
+        // A pool island needs a four-byte branch and up to four bytes of alignment.
+        if selected_savings <= 8 {
+            selected_literals.clear();
+        }
+        let mut literal_pool = LiteralPool::new(selected_literals);
 
         /// Does `opnd` read the register `reg_no` (directly or as a memory base)?
         fn reads_reg(opnd: &Opnd, reg_no: u8) -> bool {
@@ -1330,6 +1509,18 @@ impl Assembler {
                 // and anything unlisted: assume the flags are gone.
                 _ => { live_cmp = None; }
             }
+
+            // Do not let a pending literal load get stranded beyond LDR's
+            // signed 19-bit range by an unusually large embedded string.
+            let next_bytes = match insn {
+                Insn::BakeString(text) => {
+                    let bytes_with_nul = text.len() + 1;
+                    bytes_with_nul + (4 - bytes_with_nul % 4)
+                }
+                _ => 0,
+            };
+            literal_pool.flush_if_needed(cb, &mut gc_offsets, next_bytes);
+
             match insn {
                 Insn::Comment(text) => {
                     cb.add_comment(text);
@@ -1544,15 +1735,20 @@ impl Assembler {
                         Opnd::UImm(0) | Opnd::Imm(0) => XZR_REG,
                         // Immediates
                         &Opnd::Imm(imm) => {
-                            emit_load_value(cb, Self::EMIT_OPND, imm as u64);
+                            let imm = imm as u64;
+                            if !literal_pool.emit_load(cb, Self::EMIT_OPND, LiteralPoolKey::immediate(imm)) {
+                                emit_load_value(cb, Self::EMIT_OPND, imm);
+                            }
                             Self::EMIT_REG
                         }
                         &Opnd::UImm(imm) => {
-                            emit_load_value(cb, Self::EMIT_OPND, imm);
+                            if !literal_pool.emit_load(cb, Self::EMIT_OPND, LiteralPoolKey::immediate(imm)) {
+                                emit_load_value(cb, Self::EMIT_OPND, imm);
+                            }
                             Self::EMIT_REG
                         }
                         &Opnd::Value(value) => {
-                            emit_load_gc_value(cb, &mut gc_offsets, Self::EMIT_OPND, value);
+                            emit_load_gc_value(cb, &mut gc_offsets, &mut literal_pool, Self::EMIT_OPND, value);
                             Self::EMIT_REG
                         }
                         src_mem @ &Opnd::Mem(Mem { num_bits: src_num_bits, base: MemBase::Reg(src_base_reg_no), disp: src_disp }) => {
@@ -1595,10 +1791,15 @@ impl Assembler {
                             mov(cb, out.into(), opnd.into());
                         },
                         Opnd::UImm(uimm) => {
-                            emit_load_value(cb, out.into(), uimm);
+                            if !literal_pool.emit_load(cb, out.into(), LiteralPoolKey::immediate(uimm)) {
+                                emit_load_value(cb, out.into(), uimm);
+                            }
                         },
                         Opnd::Imm(imm) => {
-                            emit_load_value(cb, out.into(), imm as u64);
+                            let imm = imm as u64;
+                            if !literal_pool.emit_load(cb, out.into(), LiteralPoolKey::immediate(imm)) {
+                                emit_load_value(cb, out.into(), imm);
+                            }
                         },
                         Opnd::Mem(_) => {
                             match opnd.rm_num_bits() {
@@ -1609,7 +1810,7 @@ impl Assembler {
                             };
                         },
                         Opnd::Value(value) => {
-                            emit_load_gc_value(cb, &mut gc_offsets, out.into(), value);
+                            emit_load_gc_value(cb, &mut gc_offsets, &mut literal_pool, out.into(), value);
                         },
                         Opnd::None => {
                             unreachable!("Attempted to load from None operand");
@@ -1882,6 +2083,8 @@ impl Assembler {
 
             insn_idx += 1;
         }
+
+        literal_pool.flush(cb, &mut gc_offsets);
 
         // Error if we couldn't write out everything
         if cb.has_dropped_bytes() {
@@ -2541,6 +2744,45 @@ mod tests {
             0x10: stur x16, [x21]
         ");
         assert_snapshot!(cb.hexdump(), @"50000058030000140010000000000000b00200f8");
+    }
+
+    #[test]
+    fn test_deduplicate_pooled_values() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let imitation_heap_value = VALUE(0x1000);
+        assert!(imitation_heap_value.heap_object_p());
+        for offset in [0, 8, 16] {
+            asm.store(Opnd::mem(VALUE_BITS, SP, offset), imitation_heap_value.into());
+        }
+
+        for name in &asm.label_names {
+            cb.new_label(*name);
+        }
+        let gc_offsets = asm.arm64_emit(&mut cb).unwrap();
+        cb.link_labels().unwrap();
+
+        assert_eq!(40, cb.get_write_pos(), "three inline VALUE loads would use 60 bytes");
+        assert_eq!(vec![cb.get_ptr(32)], gc_offsets, "the shared slot must be reported to the GC");
+    }
+
+    #[test]
+    fn test_deduplicate_pooled_immediates() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let immediate = 0x1234_5678_9abc_def0_u64;
+        for offset in [0, 8, 16] {
+            asm.store(Opnd::mem(VALUE_BITS, SP, offset), immediate.into());
+        }
+
+        for name in &asm.label_names {
+            cb.new_label(*name);
+        }
+        let gc_offsets = asm.arm64_emit(&mut cb).unwrap();
+        cb.link_labels().unwrap();
+
+        assert_eq!(40, cb.get_write_pos(), "three four-instruction loads would use 60 bytes");
+        assert!(gc_offsets.is_empty(), "raw immediates must not be reported to the GC");
     }
 
     #[test]

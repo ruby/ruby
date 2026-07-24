@@ -3483,12 +3483,14 @@ impl Assembler
         // Start a new perf range for side exits.
         let symbol_range = perf::symbol_range_start(self, "side exit");
 
-        // Mark the start of side-exit code so we can measure its size
-        if !targets.is_empty() {
-            self.pos_marker(move |start_pos, cb| {
-                let end_pos = cb.get_write_ptr();
-                let size = end_pos.as_offset() - start_pos.as_offset();
-                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size_bytes, size as u64);
+        // Mark both ends of side-exit code so data appended by the backend,
+        // such as a literal pool, is not counted as side-exit code.
+        let has_targets = !targets.is_empty();
+        let side_exit_range_start = Rc::new(Cell::new(None));
+        if has_targets {
+            let side_exit_range_start = Rc::clone(&side_exit_range_start);
+            self.pos_marker(move |start_pos, _| {
+                side_exit_range_start.set(Some(start_pos));
             });
         }
 
@@ -3552,6 +3554,15 @@ impl Assembler
 
                 *self.basic_blocks[block_id].insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
             }
+        }
+
+        if has_targets {
+            self.pos_marker(move |end_pos, _| {
+                let start_pos = side_exit_range_start.get()
+                    .expect("side-exit end marker must follow its start marker");
+                let size = end_pos.as_offset() - start_pos.as_offset();
+                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size_bytes, size as u64);
+            });
         }
 
         // Measure time spent compiling side-exit LIR
