@@ -2519,7 +2519,7 @@ fn gen_new_hash(
 
 /// Compile a new range instruction
 fn gen_new_range(
-    jit: &JITState,
+    jit: &mut JITState,
     asm: &mut Assembler,
     function: &Function,
     low: lir::Opnd,
@@ -2527,11 +2527,49 @@ fn gen_new_range(
     flag: RangeType,
     state: &FrameState,
 ) -> lir::Opnd {
-    // Sometimes calls `low.<=>(high)`
-    gen_prepare_non_leaf_call(jit, asm, function, state);
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let fast_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let slow_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let fast_edge = Target::Block(Box::new(lir::BranchEdge { target: fast_block, args: vec![] }));
+    let slow_edge = Target::Block(Box::new(lir::BranchEdge { target: slow_block, args: vec![] }));
+    let result_edge = |range| Target::Block(Box::new(lir::BranchEdge {
+        target: result_block,
+        args: vec![range],
+    }));
 
-    // Call rb_range_new(low, high, flag)
-    asm_ccall!(asm, rb_range_new, low, high, (flag as i32).into())
+    // rb_range_new skips the call to <=> when either endpoint is nil or both are fixnums.
+    asm.cmp(low, Qnil.into());
+    asm.je(jit, fast_edge.clone());
+    asm.cmp(high, Qnil.into());
+    asm.je(jit, fast_edge.clone());
+    asm.test(low, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+    asm.jz(jit, slow_edge.clone());
+    asm.test(high, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+    asm.jz(jit, slow_edge.clone());
+    asm.jmp(fast_edge);
+
+    asm.set_current_block(fast_block);
+    let label = jit.get_label(asm, fast_block, hir_block_id);
+    asm.write_label(label);
+    let range = gen_new_range_fixnum(jit, asm, low, high, flag, state);
+    asm.jmp(result_edge(range));
+
+    asm.set_current_block(slow_block);
+    let label = jit.get_label(asm, slow_block, hir_block_id);
+    asm.write_label(label);
+    // May call `low.<=>(high)`.
+    gen_prepare_non_leaf_call(jit, asm, function, state);
+    let range = asm_ccall!(asm, rb_range_new, low, high, (flag as i32).into());
+    asm.jmp(result_edge(range));
+
+    asm.set_current_block(result_block);
+    let label = jit.get_label(asm, result_block, hir_block_id);
+    asm.write_label(label);
+    let param = asm.new_block_param(VALUE_BITS);
+    asm.current_block().add_parameter(param);
+    param
 }
 
 fn gen_new_range_fixnum(
