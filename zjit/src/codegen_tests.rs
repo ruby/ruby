@@ -3402,6 +3402,18 @@ fn test_new_hash_with_computation() {
 }
 
 #[test]
+fn test_new_hash_boxes_raw_float_elements() {
+    assert_snapshot!(inspect(r#"
+        def test
+          v = 1.23
+          {v => v * 2}
+        end
+        test
+        test
+    "#), @"{1.23 => 2.46}");
+}
+
+#[test]
 fn test_new_hash_with_user_defined_hash_method() {
     assert_snapshot!(inspect(r#"
         class CustomKey
@@ -3702,6 +3714,18 @@ fn test_new_array_order() {
         test
         test
     "), @"[3, 2, 1]");
+}
+
+#[test]
+fn test_new_array_boxes_raw_float_elements() {
+    assert_snapshot!(inspect(r#"
+        def test
+          v = 1.23
+          [v, v * 2, v * 3].pack("E*").unpack("E*") == [v, v * 2, v * 3]
+        end
+        test
+        test
+    "#), @"true");
 }
 
 #[test]

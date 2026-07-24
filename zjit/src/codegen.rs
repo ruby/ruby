@@ -616,10 +616,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             gen_const_uint32(val.0)
         }
         Insn::Const { .. } => panic!("Unexpected Const in gen_insn: {insn}"),
-        Insn::NewArray { elements, state } => gen_new_array(jit, asm, opnds!(elements), &function.frame_state(*state)),
+        Insn::NewArray { elements, state } => gen_new_array(jit, asm, function, elements, &function.frame_state(*state)),
         Insn::NewHash { elements, state } => {
             let sym_keys = elements.iter().step_by(2).all(|&key| function.type_of(key).is_subtype(types::Symbol));
-            gen_new_hash(jit, asm, function, opnds!(elements), sym_keys, &function.frame_state(*state))
+            gen_new_hash(jit, asm, function, elements, sym_keys, &function.frame_state(*state))
         }
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, function, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
@@ -2189,7 +2189,8 @@ fn gen_array_dup(
 fn gen_new_array(
     jit: &mut JITState,
     asm: &mut Assembler,
-    elements: Vec<Opnd>,
+    function: &Function,
+    elements: &[InsnId],
     state: &FrameState,
 ) -> lir::Opnd {
     gen_prepare_leaf_call_with_gc(asm, state);
@@ -2197,7 +2198,7 @@ fn gen_new_array(
     let num: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
     if !elements.is_empty() {
-        let argv = gen_push_opnds(jit, asm, &elements);
+        let argv = gen_push_hir_values(jit, asm, function, elements);
         return asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv);
     }
 
@@ -2488,7 +2489,7 @@ fn gen_new_hash(
     jit: &mut JITState,
     asm: &mut Assembler,
     function: &Function,
-    elements: Vec<Opnd>,
+    elements: &[InsnId],
     sym_keys: bool,
     state: &FrameState,
 ) -> lir::Opnd {
@@ -2529,13 +2530,13 @@ fn gen_new_hash(
             asm_ccall!(asm, rb_hash_new_with_size, num_pairs.into())
         };
 
-        let argv = gen_push_opnds(jit, asm, &elements);
+        let argv = gen_push_hir_values(jit, asm, function, elements);
         asm_ccall!(asm, rb_hash_bulk_insert, elements.len().into(), argv, hash);
         hash
     } else {
         gen_prepare_non_leaf_call(jit, asm, function, state);
 
-        let argv = gen_push_opnds(jit, asm, &elements);
+        let argv = gen_push_hir_values(jit, asm, function, elements);
         asm_ccall!(asm, rb_hash_new_with_bulk_insert, elements.len().into(), argv)
     }
 }
@@ -4366,6 +4367,18 @@ fn gen_push_opnds(jit: &JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::O
     }
 
     argv
+}
+
+fn gen_push_hir_values(jit: &JITState, asm: &mut Assembler, function: &Function, insns: &[InsnId]) -> lir::Opnd {
+    let values = insns.iter().map(|&insn_id| {
+        match build_stack_map_entry(jit, function, insn_id) {
+            StackMapEntry::Opnd(opnd) => opnd,
+            StackMapEntry::F64(opnd) => gen_box_stack_map_f64(asm, opnd),
+            StackMapEntry::Skip(_) => unreachable!("HIR value lists do not use StackMap skips"),
+        }
+    }).collect::<Vec<_>>();
+
+    gen_push_opnds(jit, asm, &values)
 }
 
 fn gen_toregexp(jit: &mut JITState, asm: &mut Assembler, function: &Function, opt: usize, values: Vec<Opnd>, state: &FrameState) -> Opnd {
