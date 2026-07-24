@@ -13783,10 +13783,11 @@ struct InterpreterEntry {
     load_all_locals: bool,
 }
 
-/// Build every PC/state shape accepted by the C-to-JIT entry. Normal compiled
-/// bodies initialize only formal parameters. Every entry into an exception
-/// body has an existing VM frame, so it loads all locals; catch-table
-/// continuations additionally restore their pre-existing temporary stack.
+/// Build every PC/state shape accepted by the C-to-JIT entry. Normal versions
+/// accept the ISEQ's parameter entries and initialize only formal parameters.
+/// Exception versions accept only exceptional continuations: they have an
+/// existing VM frame, so they load all locals, and catch-table continuations
+/// additionally restore their pre-existing temporary stack.
 fn interpreter_entries(
     iseq: IseqPtr,
     normal_entry_insns: &[u32],
@@ -13797,15 +13798,19 @@ fn interpreter_entries(
         ISEQ_TYPE_RESCUE | ISEQ_TYPE_ENSURE
     );
     let load_all_locals = handler_iseq || runtime_exception_entry.is_some();
-    let mut entries = normal_entry_insns
-        .iter()
-        .copied()
-        .map(|insn_idx| InterpreterEntry {
-            insn_idx,
-            stack_size: 0,
-            load_all_locals,
-        })
-        .collect::<Vec<_>>();
+    let mut entries = if runtime_exception_entry.is_some() {
+        vec![]
+    } else {
+        normal_entry_insns
+            .iter()
+            .copied()
+            .map(|insn_idx| InterpreterEntry {
+                insn_idx,
+                stack_size: 0,
+                load_all_locals,
+            })
+            .collect::<Vec<_>>()
+    };
     entries.dedup();
 
     if runtime_exception_entry.is_some() {
@@ -14240,13 +14245,19 @@ fn add_iseq_to_hir(
     } else {
         vec![]
     };
-    let mut root_insns = jit_entry_insns.clone();
+    let mut root_insns = if fun.exception_entry.is_some() {
+        vec![]
+    } else {
+        jit_entry_insns.clone()
+    };
     root_insns.extend(interpreter_entries.iter().map(|entry| entry.insn_idx));
     root_insns.sort_unstable();
     root_insns.dedup();
     let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &root_insns);
 
-    let compile_jit_entries = matches!(mode, AddIseqMode::Standalone) && iseq_supports_jit_entry(iseq);
+    let compile_jit_entries = matches!(mode, AddIseqMode::Standalone)
+        && fun.exception_entry.is_none()
+        && iseq_supports_jit_entry(iseq);
 
     // Make all empty basic blocks. The ordering of the BBs matters for getting fallthrough jumps
     // in good places, but it's not necessary for correctness. TODO: Higher quality scheduling during lowering.

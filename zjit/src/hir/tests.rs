@@ -6378,6 +6378,14 @@ pub(crate) mod hir_build_tests {
                 dynamic.insn_idx,
                 dynamic.stack_size,
             ).unwrap();
+            let mut expected_insns = entries
+                .iter()
+                .map(|entry| entry.insn_idx)
+                .collect::<Vec<_>>();
+            expected_insns.sort_unstable();
+            expected_insns.dedup();
+            assert_eq!(expected_insns, function.interpreter_entry_insns());
+            assert!(function.jit_entry_blocks.is_empty());
             for entry in &entries {
                 assert!(function.interpreter_entry_insns().contains(&entry.insn_idx));
             }
