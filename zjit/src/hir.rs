@@ -3148,6 +3148,33 @@ impl Function {
         result
     }
 
+    pub fn resolve(&mut self, insn_id: InsnId) {
+        macro_rules! find {
+            ( $x:expr ) => {
+                {
+                    // TODO(max): Figure out why borrow_mut().find() causes `already borrowed:
+                    // BorrowMutError`
+                    self.union_find.borrow().find_const($x)
+                }
+            };
+        }
+        let insn_id = find!(insn_id);
+        let result = &mut self.insns[insn_id.0];
+        result.for_each_operand_mut(&mut |operand: &mut InsnId| {
+            *operand = find!(*operand);
+        });
+    }
+
+    pub fn insn_mut(&mut self, insn_id: InsnId) -> &mut Insn {
+        let insn_id = self.union_find.borrow().find_const(insn_id);
+        &mut self.insns[insn_id.0]
+    }
+
+    pub fn insn(&self, insn_id: InsnId) -> &Insn {
+        let insn_id = self.union_find.borrow().find_const(insn_id);
+        &self.insns[insn_id.0]
+    }
+
     /// Update DynamicSendReason for the instruction at insn_id
     fn set_dynamic_send_reason(&mut self, insn_id: InsnId, dynamic_send_reason: SendFallbackReason) {
         use Insn::*;
@@ -5666,8 +5693,9 @@ impl Function {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
-                match self.find(insn_id) {
-                    Insn::Send { state, reason: SendFallbackReason::SendNoProfiles, .. } => {
+                self.resolve(insn_id);
+                match self.insn(insn_id) {
+                    &Insn::Send { state, reason: SendFallbackReason::SendNoProfiles, .. } => {
                         self.push_insn(block, Insn::SideExit { state, reason: Box::new(SideExitReason::NoProfileSend), recompile: Some(Recompile) });
                         // SideExit is a terminator; don't add remaining instructions
                         break;
@@ -5686,8 +5714,9 @@ impl Function {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
             for insn_id in old_insns {
-                let replacement_insn: InsnId = match self.find(insn_id) {
-                    Insn::StoreField { recv, offset, val, .. } => {
+                self.resolve(insn_id);
+                let replacement_insn: InsnId = match self.insn(insn_id) {
+                    &Insn::StoreField { recv, offset, val, .. } => {
                         let key = (self.chase_insn(recv), offset);
                         let heap_entry = compile_time_heap.get(&key).copied();
                         // TODO(Jacob): Switch from actual to partial equality
@@ -5700,7 +5729,7 @@ impl Function {
                         compile_time_heap.insert(key, val);
                         insn_id
                     },
-                    Insn::LoadField { recv, offset, return_type, .. } => {
+                    &Insn::LoadField { recv, offset, return_type, .. } => {
                         let key = (self.chase_insn(recv), offset);
                         match compile_time_heap.entry(key) {
                             std::collections::hash_map::Entry::Occupied(entry) => {
@@ -5711,7 +5740,8 @@ impl Function {
                                 // type than the cached entry (`CPtr` vs `BasicObject`). While the loaded value would be the same in either case, the
                                 // difference in associated type causes type checking to fail. Consequently, we conservatively retain the duplicate `LoadField`.
                                 // The `optimize_load_store_does_not_alias_loads_with_incompatible_return_types` test checks the problematic case.
-                                let can_forward_cached_insn = match self.find(cached_insn) {
+                                self.resolve(cached_insn);
+                                let can_forward_cached_insn = match self.insn(cached_insn) {
                                     Insn::LoadField { return_type : cached_return_type,.. } => cached_return_type.is_subtype(return_type),
                                     _ => true
                                 };
@@ -5730,7 +5760,7 @@ impl Function {
                         }
                         insn_id
                     }
-                    Insn::WriteBarrier { .. } => {
+                    &Insn::WriteBarrier { .. } => {
                         // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
                         // We don't use LoadField for mark bits so we can ignore them for now.
                         // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
@@ -5834,18 +5864,19 @@ impl Function {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
             for insn_id in old_insns {
-                let replacement_id = match self.find(insn_id) {
-                    Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
+                self.resolve(insn_id);
+                let replacement_id = match self.insn(insn_id) {
+                    &Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
                         self.make_equal_to(insn_id, val);
                         // Don't bother re-inferring the type of val; we already know it.
                         continue;
                     }
-                    Insn::RefineType { val, new_type, .. } if self.is_a(val, new_type) => {
+                    &Insn::RefineType { val, new_type, .. } if self.is_a(val, new_type) => {
                         self.make_equal_to(insn_id, val);
                         // Don't bother re-inferring the type of val; we already know it.
                         continue;
                     }
-                    Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
+                    &Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
                             u32::try_from(offset).is_ok() => {
                         let offset = (offset as u32).to_usize();
                         let recv_type = self.type_of(recv);
@@ -5858,7 +5889,7 @@ impl Function {
                             _ => insn_id,
                         }
                     }
-                    Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::CShape) &&
+                    &Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::CShape) &&
                             u32::try_from(offset).is_ok() => {
                         let offset = (offset as u32).to_usize();
                         let recv_type = self.type_of(recv);
@@ -5871,7 +5902,7 @@ impl Function {
                             _ => insn_id,
                         }
                     }
-                    Insn::ArrayLength { array } => {
+                    &Insn::ArrayLength { array } => {
                         match self.type_of(array).ruby_object() {
                             Some(array_obj) if array_obj.is_frozen() => {
                                 let length = unsafe { rb_jit_array_len(array_obj) };
@@ -5880,14 +5911,14 @@ impl Function {
                             _ => insn_id,
                         }
                     }
-                    Insn::UnboxFixnum { val } => {
+                    &Insn::UnboxFixnum { val } => {
                         let recv_type = self.type_of(val);
                         match recv_type.fixnum_value() {
                             Some(val) => self.new_insn(Insn::Const { val: Const::CInt64(val) }),
                             _ => insn_id,
                         }
                     },
-                    Insn::GuardGreaterEq { left, right, state, reason } => {
+                    &Insn::GuardGreaterEq { left, right, state, ref reason } => {
                         let left_num = self.type_of(left).cint64_value();
                         let right_num = self.type_of(right).cint64_value();
                         match (left_num, right_num) {
@@ -5895,11 +5926,11 @@ impl Function {
                                 self.make_equal_to(insn_id, left);
                                 continue
                             },
-                            (Some(_), Some(_)) => self.new_insn(Insn::SideExit { state, reason, recompile: None }),
+                            (Some(_), Some(_)) => self.new_insn(Insn::SideExit { state, reason: reason.clone(), recompile: None }),
                             _ => insn_id,
                         }
                     },
-                    Insn::GuardLess { left, right, state, reason } => {
+                    &Insn::GuardLess { left, right, state, ref reason } => {
                         let left_num = self.type_of(left).cint64_value();
                         let right_num = self.type_of(right).cint64_value();
                         match (left_num, right_num) {
@@ -5907,11 +5938,11 @@ impl Function {
                                 self.make_equal_to(insn_id, left);
                                 continue
                             },
-                            (Some(_), Some(_)) => self.new_insn(Insn::SideExit { state, reason, recompile: None }),
+                            (Some(_), Some(_)) => self.new_insn(Insn::SideExit { state, reason: reason.clone(), recompile: None }),
                             _ => insn_id,
                         }
                     },
-                    Insn::GuardBitEquals { val, expected, .. } => {
+                    &Insn::GuardBitEquals { val, expected, .. } => {
                         let recv_type = self.type_of(val);
                         if recv_type.has_value(expected) {
                             self.make_equal_to(insn_id, val);
@@ -5920,7 +5951,7 @@ impl Function {
                             insn_id
                         }
                     }
-                    Insn::IsA { val, class } => 'is_a: {
+                    &Insn::IsA { val, class } => 'is_a: {
                         let class_type = self.type_of(class);
                         if !class_type.is_subtype(types::Class) {
                             break 'is_a insn_id;
@@ -5938,7 +5969,7 @@ impl Function {
                             insn_id
                         }
                     }
-                    Insn::StringEqual { left, right } => {
+                    &Insn::StringEqual { left, right } => {
                         let left = self.chase_insn(left);
                         let right = self.chase_insn(right);
                         // If both operands resolve to the same SSA value,
@@ -5960,7 +5991,7 @@ impl Function {
                             }
                         }
                     }
-                    Insn::FixnumAdd { left, right, .. } => {
+                    &Insn::FixnumAdd { left, right, .. } => {
                         match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
                             (Some(0), _) => { self.make_equal_to(insn_id, right); continue; }
                             (_, Some(0)) => { self.make_equal_to(insn_id, left); continue; }
@@ -5971,7 +6002,7 @@ impl Function {
                             _ => None,
                         })
                     }
-                    Insn::FixnumSub { left, right, .. } => {
+                    &Insn::FixnumSub { left, right, .. } => {
                         match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
                             (_, Some(0)) => { self.make_equal_to(insn_id, left); continue; }
                             _ => {}
@@ -5981,7 +6012,7 @@ impl Function {
                             _ => None,
                         })
                     }
-                    Insn::FixnumMult { left, right, .. } => {
+                    &Insn::FixnumMult { left, right, .. } => {
                         match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
                             (Some(1), _) => { self.make_equal_to(insn_id, right); continue; }
                             (_, Some(1)) => { self.make_equal_to(insn_id, left); continue; }
@@ -5993,7 +6024,7 @@ impl Function {
                             _ => None,
                         })
                     }
-                    Insn::FixnumDiv { left, right, .. } => {
+                    &Insn::FixnumDiv { left, right, .. } => {
                         match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
                             (_, Some(1)) => { self.make_equal_to(insn_id, left); continue; }
                             _ => {}
@@ -6009,7 +6040,7 @@ impl Function {
                             _ => None,
                         })
                     }
-                    Insn::FixnumMod { left, right, .. } => {
+                    &Insn::FixnumMod { left, right, .. } => {
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) if r != 0 => {
                                 let l_obj = VALUE::fixnum_from_isize(l as isize);
@@ -6019,61 +6050,61 @@ impl Function {
                             _ => None,
                         })
                     }
-                    Insn::FixnumXor { left, right, .. } => {
+                    &Insn::FixnumXor { left, right, .. } => {
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l ^ r),
                             _ => None,
                         })
                     }
-                    Insn::FixnumAnd { left, right, .. } => {
+                    &Insn::FixnumAnd { left, right, .. } => {
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l & r),
                             _ => None,
                         })
                     }
-                    Insn::FixnumOr { left, right, .. } => {
+                    &Insn::FixnumOr { left, right, .. } => {
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l | r),
                             _ => None,
                         })
                     }
-                    Insn::FixnumEq { left, right, .. } => {
+                    &Insn::FixnumEq { left, right, .. } => {
                         self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l == r),
                             _ => None,
                         })
                     }
-                    Insn::FixnumNeq { left, right, .. } => {
+                    &Insn::FixnumNeq { left, right, .. } => {
                         self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l != r),
                             _ => None,
                         })
                     }
-                    Insn::FixnumLt { left, right, .. } => {
+                    &Insn::FixnumLt { left, right, .. } => {
                         self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l < r),
                             _ => None,
                         })
                     }
-                    Insn::FixnumLe { left, right, .. } => {
+                    &Insn::FixnumLe { left, right, .. } => {
                         self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l <= r),
                             _ => None,
                         })
                     }
-                    Insn::FixnumGt { left, right, .. } => {
+                    &Insn::FixnumGt { left, right, .. } => {
                         self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l > r),
                             _ => None,
                         })
                     }
-                    Insn::FixnumGe { left, right, .. } => {
+                    &Insn::FixnumGe { left, right, .. } => {
                         self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l >= r),
                             _ => None,
                         })
                     }
-                    Insn::ArrayAref { array, index }
+                    &Insn::ArrayAref { array, index }
                         if self.type_of(array).ruby_object_known()
                             && self.type_of(index).is_subtype(types::CInt64) => {
                         let array_obj = self.type_of(array).ruby_object().unwrap();
@@ -6085,7 +6116,7 @@ impl Function {
                             _ => insn_id,
                         }
                     }
-                    Insn::AdjustBounds { index, .. } => {
+                    &Insn::AdjustBounds { index, .. } => {
                         // If index is known nonnegative, then we don't need to adjust bounds.
                         if self.type_of(index).known_nonnegative() {
                             self.make_equal_to(insn_id, index);
@@ -6095,25 +6126,25 @@ impl Function {
                             insn_id
                         }
                     }
-                    Insn::Test { val } if self.type_of(val).is_known_falsy() => {
+                    &Insn::Test { val } if self.type_of(val).is_known_falsy() => {
                         self.new_insn(Insn::Const { val: Const::CBool(false) })
                     }
-                    Insn::Test { val } if self.type_of(val).is_known_truthy() => {
+                    &Insn::Test { val } if self.type_of(val).is_known_truthy() => {
                         self.new_insn(Insn::Const { val: Const::CBool(true) })
                     }
-                    Insn::Test { val: test_val } => {
-                        if let Insn::BoxBool { val: bool_val } = self.find(test_val) {
+                    &Insn::Test { val: test_val } => {
+                        if let &Insn::BoxBool { val: bool_val } = self.insn(test_val) {
                             self.make_equal_to(insn_id, bool_val);
                             continue;
                         } else {
                             insn_id
                         }
                     }
-                    Insn::CondBranch { val, if_true, .. } if self.is_a(val, Type::from_cbool(true)) => {
-                        self.new_insn(Insn::Jump(if_true))
+                    &Insn::CondBranch { val, ref if_true, .. } if self.is_a(val, Type::from_cbool(true)) => {
+                        self.new_insn(Insn::Jump(if_true.clone()))
                     }
-                    Insn::CondBranch { val, if_false, .. } if self.is_a(val, Type::from_cbool(false)) => {
-                        self.new_insn(Insn::Jump(if_false))
+                    &Insn::CondBranch { val, ref if_false, .. } if self.is_a(val, Type::from_cbool(false)) => {
+                        self.new_insn(Insn::Jump(if_false.clone()))
                     }
                     _ => insn_id,
                 };
@@ -6165,19 +6196,23 @@ impl Function {
     }
 
     fn absorb_dst_block(&mut self, num_in_edges: &[u32], block: BlockId) -> bool {
-        let Some(terminator_id) = self.blocks[block.0].insns.last()
+        let Some(&terminator_id) = self.blocks[block.0].insns.last()
             else { return false };
-        let Insn::Jump(BranchEdge { target, args }) = self.find(*terminator_id)
+        self.resolve(terminator_id);
+        let &mut Insn::Jump(ref mut edge) = self.insn_mut(terminator_id)
             else { return false };
-        if target == block {
+        if edge.target == block {
             // Can't absorb self
             return false;
         }
-        if num_in_edges[target.0] != 1 {
+        if num_in_edges[edge.target.0] != 1 {
             // Can't absorb block if it's the target of more than one branch
             return false;
         }
         // Link up params with block args
+        let args = std::mem::take(&mut edge.args);
+        let target = edge.target;
+        let _ = edge;
         let params = std::mem::take(&mut self.blocks[target.0].params);
         assert_eq!(args.len(), params.len());
         for (arg, param) in args.iter().zip(params) {
@@ -6232,7 +6267,7 @@ impl Function {
             let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
             for insn_id in insns {
-                let insn = self.find(insn_id);
+                let insn = self.insn(insn_id);
                 if let Insn::PatchPoint { invariant, .. } = insn {
                     if !seen.insert(invariant) {
                         continue;
