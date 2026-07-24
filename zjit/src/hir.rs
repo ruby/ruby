@@ -8594,16 +8594,9 @@ fn add_iseq_to_hir(
                             let elements = state.stack_pop_n(count - 1)?;
                             (BOP_INCLUDE_P, Insn::ArrayInclude { elements, target, state: exit_id })
                         }
-                        VM_OPT_NEWARRAY_SEND_PACK => {
-                            let fmt = state.stack_pop()?;
-                            let elements = state.stack_pop_n(count - 1)?;
-                            (BOP_PACK, Insn::ArrayPackBuffer { elements, fmt, buffer: None, state: exit_id })
-                        }
-                        VM_OPT_NEWARRAY_SEND_PACK_BUFFER => {
-                            let buffer = state.stack_pop()?;
-                            let fmt = state.stack_pop()?;
-                            let elements = state.stack_pop_n(count - 2)?;
-                            (BOP_PACK, Insn::ArrayPackBuffer { elements, fmt, buffer: Some(buffer), state: exit_id })
+                        VM_OPT_NEWARRAY_SEND_PACK | VM_OPT_NEWARRAY_SEND_PACK_BUFFER => {
+                            fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledNewarraySend(method)), recompile: None });
+                            break;  // End the block
                         }
                         _ => {
                             // Unknown opcode; side-exit into the interpreter

@@ -3040,7 +3040,7 @@ fn test_opt_newarray_send_pack() {
         test(65)
     "#);
     assert_contains_opcode("test", YARVINSN_opt_newarray_send);
-    assert_snapshot!(assert_compiles(r#"
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
         [test(65), test(66), test(67)]
     "#), @r#"["A", "B", "C"]"#);
 }
@@ -3055,7 +3055,7 @@ fn test_opt_newarray_send_pack_handles_raw_float_elements() {
         test
     "#);
     assert_contains_opcode("test", YARVINSN_opt_newarray_send);
-    assert_snapshot!(assert_compiles(r#"
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
         test
     "#), @"true");
 }
@@ -3088,7 +3088,7 @@ fn test_opt_newarray_send_pack_buffer() {
         test(65, "")
     "#);
     assert_contains_opcode("test", YARVINSN_opt_newarray_send);
-    assert_snapshot!(assert_compiles(r#"
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
         buf = ""
         [test(65, buf), test(66, buf), test(67, buf), buf]
     "#), @r#"["ABC", "ABC", "ABC", "ABC"]"#);
