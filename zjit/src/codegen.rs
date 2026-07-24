@@ -2391,21 +2391,21 @@ fn gen_array_pack_buffer(
 ) -> lir::Opnd {
     gen_prepare_non_leaf_call(jit, asm, function, state);
 
-    let mut values = vec![fmt];
+    let mut values = elements.to_vec();
+    values.push(fmt);
     if let Some(buffer) = buffer {
         values.push(buffer);
     }
-    let elements_offset = values.len() as i32 * SIZEOF_VALUE_I32;
-    values.extend_from_slice(elements);
-    let values_ptr = gen_push_hir_values(jit, asm, function, &values);
+    let stack_bottom = state.stack().len() - values.len();
+    gen_store_hir_values_to_stack(jit, asm, function, &values, stack_bottom);
 
     let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
-    let argv = asm.lea(Opnd::mem(64, values_ptr, elements_offset));
+    let argv = asm.lea(Opnd::mem(64, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
     let ary = asm_ccall!(asm, rb_ec_ary_new_from_values, EC, array_len.into(), argv);
 
-    let fmt = asm.load(Opnd::mem(VALUE_BITS, values_ptr, 0));
+    let fmt = asm.load(Opnd::mem(VALUE_BITS, SP, (stack_bottom + elements.len()) as i32 * SIZEOF_VALUE_I32));
     let buffer = if buffer.is_some() {
-        asm.load(Opnd::mem(VALUE_BITS, values_ptr, SIZEOF_VALUE_I32))
+        asm.load(Opnd::mem(VALUE_BITS, SP, (stack_bottom + elements.len() + 1) as i32 * SIZEOF_VALUE_I32))
     } else {
         Qnil.into()
     };
