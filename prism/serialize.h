@@ -17,6 +17,7 @@
 #include "prism/compiler/nonnull.h"
 
 #include "prism/buffer.h"
+#include "prism/errors_format.h"
 #include "prism/parser.h"
 #include "prism/source.h"
 #include "prism/stream.h"
@@ -90,6 +91,24 @@ PRISM_EXPORTED_FUNCTION void pm_serialize_parse_lex(pm_buffer_t *buffer, const u
  * @returns True if the source parses without errors or warnings.
  */
 PRISM_EXPORTED_FUNCTION bool pm_serialize_parse_success_p(const uint8_t *source, size_t size, const char *data) PRISM_NONNULL(1);
+
+/**
+ * Parse the given source and format any errors that are encountered into the
+ * given buffer using the given format type. If the source parses without any
+ * errors, then -1 is returned and the buffer is left empty. Otherwise, the
+ * name of the encoding of the source is written to the buffer, followed by a
+ * null byte, followed by the formatted errors, and the error level of the
+ * error with the highest precedence is returned.
+ *
+ * @param buffer The buffer to write the encoding name and formatted errors to.
+ * @param source The source to parse.
+ * @param size The size of the source.
+ * @param data The optional data to pass to the parser.
+ * @param format_type The type of formatting to use when formatting the errors.
+ * @returns The error level of the error with the highest precedence, or -1 if
+ *   the source parsed without errors.
+ */
+PRISM_EXPORTED_FUNCTION int8_t pm_serialize_parse_errors_format(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data, pm_errors_format_type_t format_type) PRISM_NONNULL(1, 2);
 
 #endif
 

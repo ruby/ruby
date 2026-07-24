@@ -39,13 +39,51 @@ ID rb_id_option_frozen_string_literal;
 ID rb_id_option_line;
 ID rb_id_option_main_script;
 ID rb_id_option_partial_script;
+ID rb_id_option_raise_error;
 ID rb_id_option_scopes;
 ID rb_id_option_version;
+
 ID rb_id_source_for;
+
 ID rb_id_forwarding_positionals;
 ID rb_id_forwarding_keywords;
 ID rb_id_forwarding_block;
 ID rb_id_forwarding_all;
+
+ID rb_id_raise_error_plain;
+ID rb_id_raise_error_style;
+ID rb_id_raise_error_color;
+
+/******************************************************************************/
+/* Result struct for working with functions that may need to raise errors.    */
+/******************************************************************************/
+
+typedef struct {
+    enum {
+        RESULT_OK,
+        RESULT_ERR
+    } type;
+    VALUE value;
+} result_t;
+
+static result_t
+result_ok(VALUE value) {
+    return (result_t) { .type = RESULT_OK, .value = value };
+}
+
+static result_t
+result_err(VALUE value) {
+    return (result_t) { .type = RESULT_ERR, .value = value };
+}
+
+static VALUE
+result_get(result_t result) {
+    if (result.type == RESULT_OK) {
+        return result.value;
+    } else {
+        rb_exc_raise(result.value);
+    }
+}
 
 /******************************************************************************/
 /* IO of Ruby code                                                            */
@@ -65,7 +103,6 @@ check_string(VALUE value) {
     // Otherwise, return the value as a C string.
     return RSTRING_PTR(value);
 }
-
 
 /******************************************************************************/
 /* Building C options from Ruby options                                       */
@@ -233,6 +270,44 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         if (!NIL_P(value)) pm_options_partial_script_set(options, RTEST(value));
     } else if (key_id == rb_id_option_freeze) {
         if (!NIL_P(value)) pm_options_freeze_set(options, RTEST(value));
+    } else if (key_id == rb_id_option_raise_error) {
+        if (!NIL_P(value)) {
+            if (value == Qtrue) {
+                /* When given true, color when $stderr is a terminal (unless
+                 * NO_COLOR is set), bold styling when NO_COLOR is set, plain
+                 * otherwise.
+                 *
+                 * rb_stderr_tty_p is not available to extensions, so instead
+                 * we call the tty? method on $stderr, guarding against it
+                 * having been replaced by an object that does not respond to
+                 * tty?. */
+                if (rb_respond_to(rb_stderr, rb_intern_const("tty?")) && RTEST(rb_funcall(rb_stderr, rb_intern_const("tty?"), 0))) {
+                    const char *no_color = getenv("NO_COLOR");
+                    if (no_color == NULL || no_color[0] == '\0') {
+                        pm_options_raise_error_set(options, (uint8_t) PM_ERRORS_FORMAT_COLOR);
+                    } else {
+                        pm_options_raise_error_set(options, (uint8_t) PM_ERRORS_FORMAT_STYLE);
+                    }
+                } else {
+                    pm_options_raise_error_set(options, (uint8_t) PM_ERRORS_FORMAT_PLAIN);
+                }
+            } else {
+                if (!SYMBOL_P(value)) {
+                    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected Symbol)", rb_obj_class(value));
+                }
+
+                ID value_id = SYM2ID(value);
+                if (value_id == rb_id_raise_error_plain) {
+                    pm_options_raise_error_set(options, (uint8_t) PM_ERRORS_FORMAT_PLAIN);
+                } else if (value_id == rb_id_raise_error_style) {
+                    pm_options_raise_error_set(options, (uint8_t) PM_ERRORS_FORMAT_STYLE);
+                } else if (value_id == rb_id_raise_error_color) {
+                    pm_options_raise_error_set(options, (uint8_t) PM_ERRORS_FORMAT_COLOR);
+                } else {
+                    rb_raise(rb_eArgError, "invalid raise_error value: %" PRIsVALUE, value);
+                }
+            }
+        }
     } else {
         rb_raise(rb_eArgError, "unknown keyword: %" PRIsVALUE, key);
     }
@@ -358,6 +433,56 @@ file_options(int argc, VALUE *argv, pm_options_t *options, VALUE *encoded_filepa
     return pm_src;
 }
 
+/**
+ * Check if the given parser has any errors and the raise option was set. If
+ * both are true, format them and return the formatted error wrapped in a
+ * result.
+ */
+static result_t
+check_raise_error_option(pm_parser_t *parser, const pm_options_t *options, rb_encoding *path_encoding) {
+    if (pm_parser_errors_size(parser) == 0) return result_ok(Qnil);
+
+    uint8_t raise_error = pm_options_raise_error(options);
+    if (raise_error == 0) return result_ok(Qnil);
+
+    pm_buffer_t *buffer = pm_buffer_new();
+    if (buffer == NULL) {
+        return result_err(rb_exc_new_cstr(rb_eNoMemError, "failed to allocate memory"));
+    }
+
+    pm_error_level_t error_level = pm_errors_format(parser, buffer, (pm_errors_format_type_t) raise_error);
+
+    /* Copy the message out of the buffer and free it before building any
+     * other Ruby objects so that the buffer cannot be leaked if building the
+     * objects raises. */
+    rb_encoding *message_encoding = (error_level == PM_ERROR_LEVEL_LOAD) ? rb_locale_encoding() : rb_enc_find(pm_parser_encoding_name(parser));
+    VALUE message = rb_enc_str_new(pm_buffer_value(buffer), (long) pm_buffer_length(buffer), message_encoding);
+    pm_buffer_free(buffer);
+
+    VALUE error = Qnil;
+    switch (error_level) {
+        case PM_ERROR_LEVEL_SYNTAX: {
+            error = rb_exc_new_str(rb_eSyntaxError, message);
+
+            rb_encoding *path_encoding_normal = path_encoding == NULL ? rb_utf8_encoding() : path_encoding;
+            VALUE path = rb_enc_str_new((const char *) pm_string_source(pm_options_filepath(options)), pm_string_length(pm_options_filepath(options)), path_encoding_normal);
+            rb_ivar_set(error, rb_intern_const("@path"), path);
+            break;
+        }
+        case PM_ERROR_LEVEL_ARGUMENT: {
+            error = rb_exc_new_str(rb_eArgError, message);
+            break;
+        }
+        case PM_ERROR_LEVEL_LOAD: {
+            error = rb_exc_new_str(rb_eLoadError, message);
+            rb_ivar_set(error, rb_intern_const("@path"), Qnil);
+            break;
+        }
+    }
+
+    return result_err(error);
+}
+
 #ifndef PRISM_EXCLUDE_SERIALIZATION
 
 /******************************************************************************/
@@ -367,21 +492,26 @@ file_options(int argc, VALUE *argv, pm_options_t *options, VALUE *encoded_filepa
 /**
  * Dump the AST corresponding to the given input to a string.
  */
-static VALUE
-dump_input(const uint8_t *input, size_t input_length, const pm_options_t *options) {
-    pm_buffer_t *buffer = pm_buffer_new();
-    if (!buffer) {
-        rb_raise(rb_eNoMemError, "failed to allocate memory");
-    }
-
+static result_t
+dump_input(const uint8_t *input, size_t input_length, const pm_options_t *options, rb_encoding *path_encoding) {
     pm_arena_t *arena = pm_arena_new();
     pm_parser_t *parser = pm_parser_new(arena, input, input_length, options);
-
     pm_node_t *node = pm_parse(parser);
-    pm_serialize(parser, node, buffer);
 
-    VALUE result = rb_str_new(pm_buffer_value(buffer), pm_buffer_length(buffer));
-    pm_buffer_free(buffer);
+    result_t result = check_raise_error_option(parser, options, path_encoding);
+    if (result.type == RESULT_OK) {
+        pm_buffer_t *buffer = pm_buffer_new();
+        if (buffer) {
+            pm_serialize(parser, node, buffer);
+            result = result_ok(rb_str_new(pm_buffer_value(buffer), pm_buffer_length(buffer)));
+            pm_buffer_free(buffer);
+
+            if (pm_options_freeze(options)) rb_obj_freeze(result.value);
+        } else {
+            result = result_err(rb_exc_new_cstr(rb_eNoMemError, "failed to allocate memory"));
+        }
+    }
+
     pm_parser_free(parser);
     pm_arena_free(arena);
 
@@ -410,8 +540,7 @@ dump(int argc, VALUE *argv, VALUE self) {
     source = (const uint8_t *) dup;
 #endif
 
-    VALUE value = dump_input(source, length, options);
-    if (pm_options_freeze(options)) rb_obj_freeze(value);
+    result_t result = dump_input(source, length, options, NULL);
 
 #ifdef PRISM_BUILD_DEBUG
 #ifdef xfree_sized
@@ -422,8 +551,7 @@ dump(int argc, VALUE *argv, VALUE self) {
 #endif
 
     pm_options_free(options);
-
-    return value;
+    return result_get(result);
 }
 
 /**
@@ -441,11 +569,11 @@ dump_file(int argc, VALUE *argv, VALUE self) {
     VALUE encoded_filepath;
     pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    VALUE value = dump_input(pm_source_source(src), pm_source_length(src), options);
+    result_t result = dump_input(pm_source_source(src), pm_source_length(src), options, rb_enc_get(encoded_filepath));
     pm_source_free(src);
     pm_options_free(options);
 
-    return value;
+    return result_get(result);
 }
 
 #endif
@@ -780,8 +908,8 @@ parse_lex_encoding_changed_callback(pm_parser_t *parser) {
  * Parse the given input and return a ParseResult containing just the tokens or
  * the nodes and tokens.
  */
-static VALUE
-parse_lex_input(const uint8_t *input, size_t input_length, const pm_options_t *options, bool return_nodes) {
+static result_t
+parse_lex_input(const uint8_t *input, size_t input_length, const pm_options_t *options, rb_encoding *path_encoding, bool return_nodes) {
     pm_arena_t *arena = pm_arena_new();
     pm_parser_t *parser = pm_parser_new(arena, input, input_length, options);
     pm_parser_encoding_changed_callback_set(parser, parse_lex_encoding_changed_callback);
@@ -802,32 +930,34 @@ parse_lex_input(const uint8_t *input, size_t input_length, const pm_options_t *o
 
     pm_node_t *node = pm_parse(parser);
 
-    /* Update the Source object with the correct encoding and line offsets,
-     * which are only available after pm_parse() completes. */
-    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
-    rb_enc_associate(source_string, encoding);
+    result_t result = check_raise_error_option(parser, options, path_encoding);
+    if (result.type == RESULT_OK) {
+        /* Update the Source object with the correct encoding and line offsets,
+         * which are only available after pm_parse() completes. */
+        rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
+        rb_enc_associate(source_string, encoding);
 
-    const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(parser);
-    for (size_t index = 0; index < line_offsets->size; index++) {
-        rb_ary_store(offsets, (long) index, ULONG2NUM(line_offsets->offsets[index]));
-    }
+        const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(parser);
+        for (size_t index = 0; index < line_offsets->size; index++) {
+            rb_ary_store(offsets, (long) index, ULONG2NUM(line_offsets->offsets[index]));
+        }
 
-    if (pm_options_freeze(options)) {
-        rb_obj_freeze(source_string);
-        rb_obj_freeze(offsets);
-        rb_obj_freeze(source);
-        rb_obj_freeze(parse_lex_data.tokens);
-    }
+        if (pm_options_freeze(options)) {
+            rb_obj_freeze(source_string);
+            rb_obj_freeze(offsets);
+            rb_obj_freeze(source);
+            rb_obj_freeze(parse_lex_data.tokens);
+        }
 
-    VALUE result;
-    if (return_nodes) {
-        VALUE value = rb_ary_new_capa(2);
-        rb_ary_push(value, pm_ast_new(parser, node, parse_lex_data.encoding, source, pm_options_freeze(options)));
-        rb_ary_push(value, parse_lex_data.tokens);
-        if (pm_options_freeze(options)) rb_obj_freeze(value);
-        result = parse_result_create(rb_cPrismParseLexResult, parser, value, parse_lex_data.encoding, source, pm_options_freeze(options));
-    } else {
-        result = parse_result_create(rb_cPrismLexResult, parser, parse_lex_data.tokens, parse_lex_data.encoding, source, pm_options_freeze(options));
+        if (return_nodes) {
+            VALUE value = rb_ary_new_capa(2);
+            rb_ary_push(value, pm_ast_new(parser, node, parse_lex_data.encoding, source, pm_options_freeze(options)));
+            rb_ary_push(value, parse_lex_data.tokens);
+            if (pm_options_freeze(options)) rb_obj_freeze(value);
+            result = result_ok(parse_result_create(rb_cPrismParseLexResult, parser, value, parse_lex_data.encoding, source, pm_options_freeze(options)));
+        } else {
+            result = result_ok(parse_result_create(rb_cPrismLexResult, parser, parse_lex_data.tokens, parse_lex_data.encoding, source, pm_options_freeze(options)));
+        }
     }
 
     pm_parser_free(parser);
@@ -849,10 +979,10 @@ lex(int argc, VALUE *argv, VALUE self) {
     pm_options_t *options = pm_options_new();
     VALUE string = string_options(argc, argv, options);
 
-    VALUE result = parse_lex_input((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options, false);
+    result_t result = parse_lex_input((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options, NULL, false);
     pm_options_free(options);
 
-    return result;
+    return result_get(result);
 }
 
 /**
@@ -870,11 +1000,11 @@ lex_file(int argc, VALUE *argv, VALUE self) {
     VALUE encoded_filepath;
     pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    VALUE value = parse_lex_input(pm_source_source(src), pm_source_length(src), options, false);
+    result_t result = parse_lex_input(pm_source_source(src), pm_source_length(src), options, rb_enc_get(encoded_filepath), false);
     pm_source_free(src);
     pm_options_free(options);
 
-    return value;
+    return result_get(result);
 }
 
 /******************************************************************************/
@@ -884,21 +1014,25 @@ lex_file(int argc, VALUE *argv, VALUE self) {
 /**
  * Parse the given input and return a ParseResult instance.
  */
-static VALUE
-parse_input(const uint8_t *input, size_t input_length, const pm_options_t *options) {
+static result_t
+parse_input(const uint8_t *input, size_t input_length, const pm_options_t *options, rb_encoding *path_encoding) {
     pm_arena_t *arena = pm_arena_new();
     pm_parser_t *parser = pm_parser_new(arena, input, input_length, options);
 
     pm_node_t *node = pm_parse(parser);
-    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-    bool freeze = pm_options_freeze(options);
-    VALUE source = pm_source_new(parser, encoding, freeze);
-    VALUE value = pm_ast_new(parser, node, encoding, source, freeze);
-    VALUE result = parse_result_create(rb_cPrismParseResult, parser, value, encoding, source, freeze);
+    result_t result = check_raise_error_option(parser, options, path_encoding);
+    if (result.type == RESULT_OK) {
+        rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-    if (freeze) {
-        rb_obj_freeze(source);
+        bool freeze = pm_options_freeze(options);
+        VALUE source = pm_source_new(parser, encoding, freeze);
+        VALUE value = pm_ast_new(parser, node, encoding, source, freeze);
+        result = result_ok(parse_result_create(rb_cPrismParseResult, parser, value, encoding, source, freeze));
+
+        if (freeze) {
+            rb_obj_freeze(source);
+        }
     }
 
     pm_parser_free(parser);
@@ -939,6 +1073,20 @@ parse_input(const uint8_t *input, size_t input_length, const pm_options_t *optio
  *       script that you know will be embedded inside another script later, but
  *       you do not have that context yet. For example, when parsing an ERB
  *       template that will be evaluated inside another script.
+ * * `raise_error` - either nil, true, or a symbol indicating that an error
+ *       should be raised if the source contains any errors. The message of
+ *       the error will include the source of the lines that contain errors
+ *       when possible, and the value of this option controls how those lines
+ *       are formatted. Valid values are `:plain` (no formatting), `:style`
+ *       (bold formatting), and `:color` (bold and color formatting). When
+ *       `true` is given, the formatting is determined by whether or not
+ *       `$stderr` is a terminal and whether or not the `NO_COLOR` environment
+ *       variable is set, mirroring the behavior of CRuby itself. Syntax-level
+ *       errors raise SyntaxError, argument-level errors raise ArgumentError,
+ *       and load-level errors raise LoadError. Note that this option is
+ *       honored by every API that accepts these options, including predicates
+ *       like Prism.parse_success?, which will raise instead of returning a
+ *       boolean when the source contains errors.
  * * `scopes` - the locals that are in scope surrounding the code that is being
  *       parsed. This should be an array of arrays of symbols or nil. Scopes are
  *       ordered from the outermost scope to the innermost one.
@@ -966,7 +1114,7 @@ parse(int argc, VALUE *argv, VALUE self) {
     source = (const uint8_t *) dup;
 #endif
 
-    VALUE value = parse_input(source, length, options);
+    result_t result = parse_input(source, length, options, NULL);
 
 #ifdef PRISM_BUILD_DEBUG
 #ifdef xfree_sized
@@ -977,7 +1125,7 @@ parse(int argc, VALUE *argv, VALUE self) {
 #endif
 
     pm_options_free(options);
-    return value;
+    return result_get(result);
 }
 
 /**
@@ -995,24 +1143,28 @@ parse_file(int argc, VALUE *argv, VALUE self) {
     VALUE encoded_filepath;
     pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    VALUE value = parse_input(pm_source_source(src), pm_source_length(src), options);
+    result_t result = parse_input(pm_source_source(src), pm_source_length(src), options, rb_enc_get(encoded_filepath));
     pm_source_free(src);
     pm_options_free(options);
 
-    return value;
+    return result_get(result);
 }
 
 /**
  * Parse the given input and return nothing.
  */
-static void
-profile_input(const uint8_t *input, size_t input_length, const pm_options_t *options) {
+static result_t
+profile_input(const uint8_t *input, size_t input_length, const pm_options_t *options, rb_encoding *path_encoding) {
     pm_arena_t *arena = pm_arena_new();
     pm_parser_t *parser = pm_parser_new(arena, input, input_length, options);
 
     pm_parse(parser);
+
+    result_t result = check_raise_error_option(parser, options, path_encoding);
     pm_parser_free(parser);
     pm_arena_free(arena);
+
+    return result;
 }
 
 /**
@@ -1029,8 +1181,9 @@ profile(int argc, VALUE *argv, VALUE self) {
     pm_options_t *options = pm_options_new();
     VALUE string = string_options(argc, argv, options);
 
-    profile_input((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options);
+    result_t result = profile_input((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options, NULL);
     pm_options_free(options);
+    result_get(result);
 
     return Qnil;
 }
@@ -1051,9 +1204,10 @@ profile_file(int argc, VALUE *argv, VALUE self) {
     VALUE encoded_filepath;
     pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    profile_input(pm_source_source(src), pm_source_length(src), options);
+    result_t result = profile_input(pm_source_source(src), pm_source_length(src), options, rb_enc_get(encoded_filepath));
     pm_source_free(src);
     pm_options_free(options);
+    result_get(result);
 
     return Qnil;
 }
@@ -1147,38 +1301,46 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
     pm_parser_t *parser;
 
     pm_node_t *node = pm_parse_stream(&parser, arena, src, options);
-    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-    VALUE source = pm_source_new(parser, encoding, pm_options_freeze(options));
-    VALUE value = pm_ast_new(parser, node, encoding, source, pm_options_freeze(options));
-    VALUE result = parse_result_create(rb_cPrismParseResult, parser, value, encoding, source, pm_options_freeze(options));
+    result_t result = check_raise_error_option(parser, options, NULL);
+    if (result.type == RESULT_OK) {
+        rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
+
+        VALUE source = pm_source_new(parser, encoding, pm_options_freeze(options));
+        VALUE value = pm_ast_new(parser, node, encoding, source, pm_options_freeze(options));
+        result = result_ok(parse_result_create(rb_cPrismParseResult, parser, value, encoding, source, pm_options_freeze(options)));
+    }
 
     pm_source_free(src);
     pm_parser_free(parser);
     pm_arena_free(arena);
     pm_options_free(options);
 
-    return result;
+    return result_get(result);
 }
 
 /**
  * Parse the given input and return an array of Comment objects.
  */
-static VALUE
-parse_input_comments(const uint8_t *input, size_t input_length, const pm_options_t *options) {
+static result_t
+parse_input_comments(const uint8_t *input, size_t input_length, const pm_options_t *options, rb_encoding *path_encoding) {
     pm_arena_t *arena = pm_arena_new();
     pm_parser_t *parser = pm_parser_new(arena, input, input_length, options);
 
     pm_parse(parser);
-    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-    VALUE source = pm_source_new(parser, encoding, pm_options_freeze(options));
-    VALUE comments = parser_comments(parser, source, pm_options_freeze(options));
+    result_t result = check_raise_error_option(parser, options, path_encoding);
+    if (result.type == RESULT_OK) {
+        rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
+
+        VALUE source = pm_source_new(parser, encoding, pm_options_freeze(options));
+        result = result_ok(parser_comments(parser, source, pm_options_freeze(options)));
+    }
 
     pm_parser_free(parser);
     pm_arena_free(arena);
 
-    return comments;
+    return result;
 }
 
 /**
@@ -1194,10 +1356,10 @@ parse_comments(int argc, VALUE *argv, VALUE self) {
     pm_options_t *options = pm_options_new();
     VALUE string = string_options(argc, argv, options);
 
-    VALUE result = parse_input_comments((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options);
+    result_t result = parse_input_comments((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options, NULL);
     pm_options_free(options);
 
-    return result;
+    return result_get(result);
 }
 
 /**
@@ -1215,11 +1377,11 @@ parse_file_comments(int argc, VALUE *argv, VALUE self) {
     VALUE encoded_filepath;
     pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    VALUE value = parse_input_comments(pm_source_source(src), pm_source_length(src), options);
+    result_t result = parse_input_comments(pm_source_source(src), pm_source_length(src), options, rb_enc_get(encoded_filepath));
     pm_source_free(src);
     pm_options_free(options);
 
-    return value;
+    return result_get(result);
 }
 
 /**
@@ -1242,10 +1404,10 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
     pm_options_t *options = pm_options_new();
     VALUE string = string_options(argc, argv, options);
 
-    VALUE value = parse_lex_input((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options, true);
+    result_t result = parse_lex_input((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options, NULL, true);
     pm_options_free(options);
 
-    return value;
+    return result_get(result);
 }
 
 /**
@@ -1270,24 +1432,27 @@ parse_lex_file(int argc, VALUE *argv, VALUE self) {
     VALUE encoded_filepath;
     pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    VALUE value = parse_lex_input(pm_source_source(src), pm_source_length(src), options, true);
+    result_t result = parse_lex_input(pm_source_source(src), pm_source_length(src), options, rb_enc_get(encoded_filepath), true);
     pm_source_free(src);
     pm_options_free(options);
 
-    return value;
+    return result_get(result);
 }
 
 /**
  * Parse the given input and return true if it parses without errors.
  */
-static VALUE
-parse_input_success_p(const uint8_t *input, size_t input_length, const pm_options_t *options) {
+static result_t
+parse_input_success_p(const uint8_t *input, size_t input_length, const pm_options_t *options, rb_encoding *path_encoding) {
     pm_arena_t *arena = pm_arena_new();
     pm_parser_t *parser = pm_parser_new(arena, input, input_length, options);
-
     pm_parse(parser);
 
-    VALUE result = pm_parser_errors_size(parser) == 0 ? Qtrue : Qfalse;
+    result_t result = check_raise_error_option(parser, options, path_encoding);
+    if (result.type == RESULT_OK) {
+        result = result_ok(pm_parser_errors_size(parser) == 0 ? Qtrue : Qfalse);
+    }
+
     pm_parser_free(parser);
     pm_arena_free(arena);
 
@@ -1307,10 +1472,10 @@ parse_success_p(int argc, VALUE *argv, VALUE self) {
     pm_options_t *options = pm_options_new();
     VALUE string = string_options(argc, argv, options);
 
-    VALUE result = parse_input_success_p((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options);
+    result_t result = parse_input_success_p((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options, NULL);
     pm_options_free(options);
 
-    return result;
+    return result_get(result);
 }
 
 /**
@@ -1341,11 +1506,11 @@ parse_file_success_p(int argc, VALUE *argv, VALUE self) {
     VALUE encoded_filepath;
     pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    VALUE result = parse_input_success_p(pm_source_source(src), pm_source_length(src), options);
+    result_t result = parse_input_success_p(pm_source_source(src), pm_source_length(src), options, rb_enc_get(encoded_filepath));
     pm_source_free(src);
     pm_options_free(options);
 
-    return result;
+    return result_get(result);
 }
 
 /**
@@ -1435,8 +1600,8 @@ string_query_method_name_p(VALUE self, VALUE string) {
  */
 RUBY_FUNC_EXPORTED void
 Init_prism(void) {
-    // Make sure that the prism library version matches the expected version.
-    // Otherwise something was compiled incorrectly.
+    /* Make sure that the prism library version matches the expected version.
+     * Otherwise something was compiled incorrectly. */
     if (strcmp(pm_version(), EXPECTED_PRISM_VERSION) != 0) {
         rb_raise(
             rb_eRuntimeError,
@@ -1447,12 +1612,12 @@ Init_prism(void) {
     }
 
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
-    // Mark this extension as Ractor-safe.
+    /* Mark this extension as Ractor-safe. */
     rb_ext_ractor_safe(true);
 #endif
 
-    // Grab up references to all of the constants that we're going to need to
-    // reference throughout this extension.
+    /* Grab up references to all of the constants that we are going to need to
+     * reference throughout this extension. */
     rb_cPrism = rb_define_module("Prism");
     rb_cPrismNode = rb_define_class_under(rb_cPrism, "Node", rb_cObject);
     rb_cPrismSource = rb_define_class_under(rb_cPrism, "Source", rb_cObject);
@@ -1473,8 +1638,8 @@ Init_prism(void) {
 
     rb_cPrismCurrentVersionError = rb_const_get(rb_cPrism, rb_intern("CurrentVersionError"));
 
-    // Intern all of the IDs eagerly that we support so that we don't have to do
-    // it every time we parse.
+    /* Intern all of the IDs eagerly that we support so that we do not have to
+     * do it every time we parse. */
     rb_id_option_command_line = rb_intern_const("command_line");
     rb_id_option_encoding = rb_intern_const("encoding");
     rb_id_option_filepath = rb_intern_const("filepath");
@@ -1483,20 +1648,26 @@ Init_prism(void) {
     rb_id_option_line = rb_intern_const("line");
     rb_id_option_main_script = rb_intern_const("main_script");
     rb_id_option_partial_script = rb_intern_const("partial_script");
+    rb_id_option_raise_error = rb_intern_const("raise_error");
     rb_id_option_scopes = rb_intern_const("scopes");
     rb_id_option_version = rb_intern_const("version");
+
     rb_id_source_for = rb_intern("for");
+
     rb_id_forwarding_positionals = rb_intern("*");
     rb_id_forwarding_keywords = rb_intern("**");
     rb_id_forwarding_block = rb_intern("&");
     rb_id_forwarding_all = rb_intern("...");
+
+    rb_id_raise_error_plain = rb_intern_const("plain");
+    rb_id_raise_error_style = rb_intern_const("style");
+    rb_id_raise_error_color = rb_intern_const("color");
 
     /**
      * The version of the prism library.
      */
     rb_define_const(rb_cPrism, "VERSION", rb_str_freeze(rb_str_new_cstr(EXPECTED_PRISM_VERSION)));
 
-    // First, the functions that have to do with lexing and parsing.
     rb_define_singleton_method(rb_cPrism, "lex", lex, -1);
     rb_define_singleton_method(rb_cPrism, "lex_file", lex_file, -1);
     rb_define_singleton_method(rb_cPrism, "parse", parse, -1);
@@ -1522,6 +1693,5 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrismStringQuery, "constant?", string_query_constant_p, 1);
     rb_define_singleton_method(rb_cPrismStringQuery, "method_name?", string_query_method_name_p, 1);
 
-    // Next, initialize the other APIs.
     Init_prism_api_node();
 }
