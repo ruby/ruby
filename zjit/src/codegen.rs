@@ -609,7 +609,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Const { val: Const::CUInt16(val) } => gen_const_uint16(val),
         &Insn::Const { val: Const::CUInt32(val) } => gen_const_uint32(val),
         &Insn::Const { val: Const::CUInt64(val) } => Opnd::UImm(val),
-        &Insn::Const { val: Const::CDouble(val) } => Opnd::UImm(val.to_bits()),
+        &Insn::Const { val: Const::CDouble(val) } => gen_f64_opnd(asm, Opnd::UImm(val.to_bits())),
         &Insn::Const { val: Const::CAttrIndex(val) } => gen_const_attr_index_t(val),
         &Insn::Const { val: Const::CShape(val) } => {
             assert_eq!(SHAPE_ID_NUM_BITS, 32);
@@ -2410,21 +2410,20 @@ fn gen_array_pack_buffer(
     let stack_bottom = state.stack().len() - values.len();
     gen_store_hir_values_to_stack(jit, asm, function, &values, stack_bottom);
 
-    let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+    let array_len: rb_num_t = elements.len().try_into().expect("Unable to fit length of elements into rb_num_t");
     let argv = asm.lea(Opnd::mem(64, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
-    let ary = asm_ccall!(asm, rb_ec_ary_new_from_values, EC, array_len.into(), argv);
 
     let fmt = asm.load(Opnd::mem(VALUE_BITS, SP, (stack_bottom + elements.len()) as i32 * SIZEOF_VALUE_I32));
     let buffer = if buffer.is_some() {
         asm.load(Opnd::mem(VALUE_BITS, SP, (stack_bottom + elements.len() + 1) as i32 * SIZEOF_VALUE_I32))
     } else {
-        Qnil.into()
+        Qundef.into()
     };
 
     unsafe extern "C" {
-        fn rb_ec_pack_ary(ec: EcPtr, ary: VALUE, fmt: VALUE, buffer: VALUE) -> VALUE;
+        fn rb_vm_opt_newarray_pack_buffer(ec: EcPtr, array_len: rb_num_t, ptr: *const VALUE, fmt: VALUE, buffer: VALUE) -> VALUE;
     }
-    asm_ccall!(asm, rb_ec_pack_ary, EC, ary, fmt, buffer)
+    asm_ccall!(asm, rb_vm_opt_newarray_pack_buffer, EC, array_len.into(), argv, fmt, buffer)
 }
 
 fn gen_dup_array_include(

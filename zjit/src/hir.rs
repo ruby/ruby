@@ -5636,6 +5636,9 @@ impl Function {
     }
 
     fn try_emit_optimized_getivar(&mut self, block: BlockId, self_val: InsnId, id: ID, profiled_type: ProfiledType, state: InsnId) -> Result<InsnId, Counter> {
+        if self.policy.no_side_exits {
+            return Err(Counter::getivar_fallback_no_side_exits);
+        }
         if profiled_type.flags().is_immediate() {
             // Instance variable lookups on immediate values are always nil
             return Err(Counter::getivar_fallback_immediate);
@@ -5746,6 +5749,9 @@ impl Function {
     }
 
     fn try_emit_optimized_setivar(&mut self, block: BlockId, self_val: InsnId, id: ID, val: InsnId, profiled_type: ProfiledType, state: InsnId, recompile: Option<Recompile>) -> Result<(), Counter> {
+        if self.policy.no_side_exits {
+            return Err(Counter::setivar_fallback_no_side_exits);
+        }
         let spec = self.prepare_optimized_setivar(id, profiled_type)?;
         let self_val = self.guard_heap(block, self_val, state);
         let shape = self.load_shape(block, self_val);
@@ -6530,10 +6536,10 @@ impl Function {
                         last_snapshot = Some(insn_id);
                         None
                     }
-                    Insn::GuardType { val, guard_type, .. } if guard_type.is_subtype(types::Flonum) => raw_params.get(&val).copied(),
-                    Insn::UnboxFloat { val } => raw_params.get(&val).copied(),
+                    Insn::GuardType { val, guard_type, .. } if guard_type.is_subtype(types::Flonum) => self.raw_float_replacement(val, &raw_params),
+                    Insn::UnboxFloat { val } => self.raw_float_replacement(val, &raw_params),
                     Insn::Return { val } => {
-                        if let Some(&raw) = raw_params.get(&val) {
+                        if let Some(raw) = self.raw_float_replacement(val, &raw_params) {
                             let state = last_snapshot.expect("Return of raw float param should have a dominating Snapshot");
                             let boxed = self.new_insn(Insn::BoxFloat { val: raw, state });
                             new_insns.push(boxed);
@@ -6555,6 +6561,13 @@ impl Function {
         }
 
         self.infer_types();
+    }
+
+    fn raw_float_replacement(&self, val: InsnId, raw_params: &HashMap<InsnId, InsnId>) -> Option<InsnId> {
+        raw_params.get(&val).copied().or_else(|| match self.find(val) {
+            Insn::GuardType { val, guard_type, .. } if guard_type.is_subtype(types::Flonum) => raw_params.get(&val).copied(),
+            _ => None,
+        })
     }
 
     fn rewrite_raw_float_state_value(&self, val: &mut InsnId, raw_params: &HashMap<InsnId, InsnId>) {
