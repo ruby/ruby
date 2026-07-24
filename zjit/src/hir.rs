@@ -6047,13 +6047,6 @@ impl Function {
             let mut unboxed_float_for_value: HashMap<InsnId, InsnId> = HashMap::new();
             for insn_id in old_insns {
                 let replacement_id = match self.find(insn_id) {
-                    Insn::GuardType { val, guard_type, .. }
-                        if guard_type.is_subtype(types::Flonum)
-                            && matches!(self.find(self.chase_insn(val)), Insn::BoxFloat { .. }) =>
-                    {
-                        self.make_equal_to(insn_id, val);
-                        continue;
-                    }
                     Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
                         self.make_equal_to(insn_id, val);
                         // Don't bother re-inferring the type of val; we already know it.
