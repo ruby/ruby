@@ -15209,6 +15209,8 @@ rb_iseq_dup_with_independent_caches(const rb_iseq_t *src_root)
             rb_ibf_load_iseq_complete(copy);
         }
 
+        FL_SET((VALUE)copy, ISEQ_REFINED_COPY);
+
         struct rb_iseq_constant_body *cb = ISEQ_BODY(copy);
         if (!cb->local_iseq) RB_OBJ_WRITE(copy, &cb->local_iseq, sb->local_iseq);
         RB_OBJ_WRITE(copy, &cb->location.pathobj, sb->location.pathobj);
