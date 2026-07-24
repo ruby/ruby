@@ -1,0 +1,8 @@
+Returns the number of set bits in +self+:
+
+  "\x00".bit_count # => 0
+  "\xFF".bit_count # => 8
+  "\xAA".bit_count # => 4
+
+The count is over the bytes of +self+ and is independent of string encoding.
+Raises +ArgumentError+ if any argument is given.

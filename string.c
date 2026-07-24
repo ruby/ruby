@@ -26,6 +26,7 @@
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/bits.h"
 #include "internal/compar.h"
 #include "internal/compilers.h"
 #include "internal/concurrent_set.h"
@@ -6755,6 +6756,437 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
     return value;
 }
 
+#define STR_BIT_LEN(byte_len) ((uint64_t)(byte_len) * CHAR_BIT)
+
+/*
+ * Bit offsets are handled as uint64_t so that large strings work on platforms
+ * where long is narrower than the address space, such as 32-bit and LLP64.
+ * The Fixnum/Bignum branches below only control error classes; the arithmetic
+ * afterwards is a single uint64_t path.
+ */
+static inline uint64_t
+str_bit_offset_from_index(VALUE index)
+{
+    VALUE integer = rb_to_int(index);
+    long fix_value;
+
+    if (FIXNUM_P(integer)) {
+        fix_value = FIX2LONG(integer);
+        if (fix_value < 0) {
+            rb_raise(rb_eIndexError, "bit index out of range");
+        }
+        return (uint64_t)fix_value;
+    }
+
+    RUBY_ASSERT(RB_TYPE_P(integer, T_BIGNUM));
+    if (rb_int_negative_p(integer)) {
+        rb_raise(rb_eIndexError, "bit index out of range");
+    }
+    if (rb_cmpint(rb_int_cmp(integer, ULL2NUM(UINT64_MAX)), integer, ULL2NUM(UINT64_MAX)) > 0) {
+        rb_raise(rb_eArgError, "bit index out of representable range");
+    }
+
+    return (uint64_t)NUM2ULL(integer);
+}
+
+static bool
+str_lsb_first(int argc, VALUE *argv, VALUE *index)
+{
+    static ID keywords[1];
+    VALUE opts, vlsb_first;
+
+    if (!keywords[0]) {
+        keywords[0] = rb_intern_const("lsb_first");
+    }
+
+    rb_scan_args(argc, argv, "1:", index, &opts);
+    rb_get_kwargs(opts, keywords, 0, 1, &vlsb_first);
+    if (vlsb_first == Qundef || vlsb_first == Qtrue) {
+        return true;
+    }
+    if (vlsb_first == Qfalse) {
+        return false;
+    }
+    rb_raise(rb_eArgError, "lsb_first must be true or false");
+    UNREACHABLE_RETURN(FALSE);
+}
+
+static inline uint64_t
+str_logical_to_physical_bit(uint64_t logical, bool lsb_first)
+{
+    return lsb_first ? logical : ((logical & ~(uint64_t)7) | (7 - (logical & 7)));
+}
+
+struct str_bit_location {
+    long byte_index;
+    unsigned int bit_offset;
+};
+
+static inline struct str_bit_location
+str_bit_location_from_offset(uint64_t logical, bool lsb_first)
+{
+    /*
+     * When long is 32-bit, a bit offset for a large string can be a Bignum
+     * while the byte index still fits in long, which is RSTRING_LEN's type.
+     * The caller must have bounds-checked the offset against the string.
+     */
+    uint64_t physical = str_logical_to_physical_bit(logical, lsb_first);
+    struct str_bit_location location;
+    location.byte_index = (long)(physical / CHAR_BIT);
+    location.bit_offset = (unsigned int)(physical % CHAR_BIT);
+    return location;
+}
+
+static inline int
+str_get_bit(const char *ptr, struct str_bit_location location)
+{
+    return (((unsigned char)ptr[location.byte_index]) >> location.bit_offset) & 1;
+}
+
+static int
+str_bit_get(int argc, VALUE *argv, VALUE str)
+{
+    VALUE index;
+    bool lsb_first = str_lsb_first(argc, argv, &index);
+    uint64_t offset = str_bit_offset_from_index(index);
+
+    if (STR_BIT_LEN(RSTRING_LEN(str)) <= offset) {
+        return -1;
+    }
+
+    return str_get_bit(RSTRING_PTR(str), str_bit_location_from_offset(offset, lsb_first));
+}
+
+/*
+ *  call-seq:
+ *    bit_get(offset, lsb_first: true) -> 0, 1, or nil
+ *
+ *  :include: doc/string/bit_get.rdoc
+ *
+ */
+static VALUE
+rb_str_bit_get(int argc, VALUE *argv, VALUE str)
+{
+    int bit = str_bit_get(argc, argv, str);
+    return bit < 0 ? Qnil : INT2FIX(bit);
+}
+
+/*
+ *  call-seq:
+ *    bit_set?(offset, lsb_first: true) -> true, false, or nil
+ *
+ *  :include: doc/string/bit_set_p.rdoc
+ *
+ */
+static VALUE
+rb_str_bit_set_p(int argc, VALUE *argv, VALUE str)
+{
+    int bit = str_bit_get(argc, argv, str);
+    return bit < 0 ? Qnil : RBOOL(bit);
+}
+
+enum str_bit_mutation {
+    STR_BIT_SET,
+    STR_BIT_CLEAR,
+    STR_BIT_FLIP
+};
+
+static VALUE
+str_mutate_bit(int argc, VALUE *argv, VALUE str, enum str_bit_mutation mutation)
+{
+    VALUE index;
+    bool lsb_first = str_lsb_first(argc, argv, &index);
+    uint64_t offset = str_bit_offset_from_index(index);
+    struct str_bit_location location;
+    unsigned char *ptr;
+    unsigned char mask;
+
+    if (STR_BIT_LEN(RSTRING_LEN(str)) <= offset) {
+        rb_raise(rb_eIndexError, "bit index out of range");
+    }
+
+    rb_str_modify(str);
+    ptr = (unsigned char *)RSTRING_PTR(str);
+    location = str_bit_location_from_offset(offset, lsb_first);
+    mask = (unsigned char)(1u << location.bit_offset);
+
+    switch (mutation) {
+      case STR_BIT_SET:
+        ptr[location.byte_index] |= mask;
+        break;
+      case STR_BIT_CLEAR:
+        ptr[location.byte_index] &= (unsigned char)~mask;
+        break;
+      case STR_BIT_FLIP:
+        ptr[location.byte_index] ^= mask;
+        break;
+    }
+
+    return str;
+}
+
+/*
+ *  call-seq:
+ *    bit_set(offset, lsb_first: true) -> self
+ *
+ *  :include: doc/string/bit_set.rdoc
+ *
+ */
+static VALUE
+rb_str_bit_set(int argc, VALUE *argv, VALUE str)
+{
+    return str_mutate_bit(argc, argv, str, STR_BIT_SET);
+}
+
+/*
+ *  call-seq:
+ *    bit_clear(offset, lsb_first: true) -> self
+ *
+ *  :include: doc/string/bit_clear.rdoc
+ *
+ */
+static VALUE
+rb_str_bit_clear(int argc, VALUE *argv, VALUE str)
+{
+    return str_mutate_bit(argc, argv, str, STR_BIT_CLEAR);
+}
+
+/*
+ *  call-seq:
+ *    bit_flip(offset, lsb_first: true) -> self
+ *
+ *  :include: doc/string/bit_flip.rdoc
+ *
+ */
+static VALUE
+rb_str_bit_flip(int argc, VALUE *argv, VALUE str)
+{
+    return str_mutate_bit(argc, argv, str, STR_BIT_FLIP);
+}
+
+static uint64_t
+str_count_bits(const unsigned char *ptr, long len)
+{
+    uint64_t count = 0;
+    long off = 0;
+    long unrolled_end = len & ~31L;
+    long aligned_end = len & ~7L;
+
+    // 32 bytes (256 bits) at a time
+    for (; off < unrolled_end; off += 32) {
+        uint64_t w0, w1, w2, w3;
+        memcpy(&w0, ptr + off, 8);
+        memcpy(&w1, ptr + off + 8, 8);
+        memcpy(&w2, ptr + off + 16, 8);
+        memcpy(&w3, ptr + off + 24, 8);
+        count += rb_popcount64(w0);
+        count += rb_popcount64(w1);
+        count += rb_popcount64(w2);
+        count += rb_popcount64(w3);
+    }
+
+    // 8 bytes (64 bits) at a time
+    for (; off < aligned_end; off += 8) {
+        uint64_t word;
+        memcpy(&word, ptr + off, 8);
+        count += rb_popcount64(word);
+    }
+
+    // remaining bytes
+    if (off < len) {
+        uint64_t word = 0;
+        int shift = 0;
+        for (; off < len; off++, shift += CHAR_BIT) {
+            word |= (uint64_t)ptr[off] << shift;
+        }
+        count += rb_popcount64(word);
+    }
+
+    return count;
+}
+
+/*
+ *  call-seq:
+ *    bit_count -> integer
+ *
+ *  :include: doc/string/bit_count.rdoc
+ *
+ */
+static VALUE
+rb_str_bit_count(VALUE str)
+{
+    return ULL2NUM(str_count_bits((const unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str)));
+}
+
+static void
+str_check_bitwise_length(VALUE str, VALUE other)
+{
+    if (RSTRING_LEN(str) != RSTRING_LEN(other)) {
+        rb_raise(rb_eArgError, "operands must have the same length (%ld vs %ld)",
+                 RSTRING_LEN(str), RSTRING_LEN(other));
+    }
+}
+
+static VALUE
+str_bitwise_result(VALUE str)
+{
+    long len = RSTRING_LEN(str);
+    VALUE result = rb_str_buf_new(len);
+    rb_str_resize(result, len);
+    rb_enc_associate(result, rb_ascii8bit_encoding());
+    ENC_CODERANGE_CLEAR(result);
+    return result;
+}
+
+#define STR_DEFINE_UNARY_BITWISE_KERNEL(name, expr_word, expr_byte)         \
+    static void                                                             \
+    name(unsigned char *dst, const unsigned char *src, long len)            \
+    {                                                                       \
+        long off = 0;                                                       \
+        long unrolled_end = len & ~31L;                                     \
+        long aligned_end = len & ~7L;                                       \
+        for (; off < unrolled_end; off += 32) {                             \
+            uint64_t s0, s1, s2, s3;                                        \
+            memcpy(&s0, src + off, 8);                                      \
+            memcpy(&s1, src + off + 8, 8);                                  \
+            memcpy(&s2, src + off + 16, 8);                                 \
+            memcpy(&s3, src + off + 24, 8);                                 \
+            s0 = (expr_word(s0));                                           \
+            s1 = (expr_word(s1));                                           \
+            s2 = (expr_word(s2));                                           \
+            s3 = (expr_word(s3));                                           \
+            memcpy(dst + off, &s0, 8);                                      \
+            memcpy(dst + off + 8, &s1, 8);                                  \
+            memcpy(dst + off + 16, &s2, 8);                                 \
+            memcpy(dst + off + 24, &s3, 8);                                 \
+        }                                                                   \
+        for (; off < aligned_end; off += 8) {                               \
+            uint64_t word;                                                  \
+            memcpy(&word, src + off, 8);                                    \
+            word = (expr_word(word));                                       \
+            memcpy(dst + off, &word, 8);                                    \
+        }                                                                   \
+        for (; off < len; off++) dst[off] = (expr_byte(src[off]));          \
+    }
+
+#define STR_DEFINE_BINARY_BITWISE_KERNEL(name, expr_word, expr_byte)        \
+    static void                                                             \
+    name(unsigned char *dst, const unsigned char *lhs,                      \
+         const unsigned char *rhs, long len)                                \
+    {                                                                       \
+        long off = 0;                                                       \
+        long unrolled_end = len & ~31L;                                     \
+        long aligned_end = len & ~7L;                                       \
+        for (; off < unrolled_end; off += 32) {                             \
+            uint64_t l0, l1, l2, l3, r0, r1, r2, r3;                        \
+            memcpy(&l0, lhs + off, 8); memcpy(&r0, rhs + off, 8);           \
+            memcpy(&l1, lhs + off + 8, 8); memcpy(&r1, rhs + off + 8, 8);   \
+            memcpy(&l2, lhs + off + 16, 8); memcpy(&r2, rhs + off + 16, 8); \
+            memcpy(&l3, lhs + off + 24, 8); memcpy(&r3, rhs + off + 24, 8); \
+            l0 = expr_word(l0, r0);                                         \
+            l1 = expr_word(l1, r1);                                         \
+            l2 = expr_word(l2, r2);                                         \
+            l3 = expr_word(l3, r3);                                         \
+            memcpy(dst + off, &l0, 8);                                      \
+            memcpy(dst + off + 8, &l1, 8);                                  \
+            memcpy(dst + off + 16, &l2, 8);                                 \
+            memcpy(dst + off + 24, &l3, 8);                                 \
+        }                                                                   \
+        for (; off < aligned_end; off += 8) {                               \
+            uint64_t lhs_word, rhs_word;                                    \
+            memcpy(&lhs_word, lhs + off, 8);                                \
+            memcpy(&rhs_word, rhs + off, 8);                                \
+            lhs_word = expr_word(lhs_word, rhs_word);                       \
+            memcpy(dst + off, &lhs_word, 8);                                \
+        }                                                                   \
+        for (; off < len; off++) dst[off] = expr_byte(lhs[off], rhs[off]);  \
+    }
+
+#define STR_BITWISE_NOT_WORD(x)    (~(x))
+#define STR_BITWISE_NOT_BYTE(x)    ((unsigned char)~(x))
+#define STR_BITWISE_AND_WORD(x, y) ((x) & (y))
+#define STR_BITWISE_AND_BYTE(x, y) ((unsigned char)((x) & (y)))
+#define STR_BITWISE_OR_WORD(x, y)  ((x) | (y))
+#define STR_BITWISE_OR_BYTE(x, y)  ((unsigned char)((x) | (y)))
+#define STR_BITWISE_XOR_WORD(x, y) ((x) ^ (y))
+#define STR_BITWISE_XOR_BYTE(x, y) ((unsigned char)((x) ^ (y)))
+
+STR_DEFINE_UNARY_BITWISE_KERNEL(str_bitwise_not, STR_BITWISE_NOT_WORD, STR_BITWISE_NOT_BYTE)
+STR_DEFINE_BINARY_BITWISE_KERNEL(str_bitwise_and, STR_BITWISE_AND_WORD, STR_BITWISE_AND_BYTE)
+STR_DEFINE_BINARY_BITWISE_KERNEL(str_bitwise_or,  STR_BITWISE_OR_WORD,  STR_BITWISE_OR_BYTE)
+STR_DEFINE_BINARY_BITWISE_KERNEL(str_bitwise_xor, STR_BITWISE_XOR_WORD, STR_BITWISE_XOR_BYTE)
+
+/*
+ *  call-seq:
+ *    bitwise_not -> string
+ *
+ *  :include: doc/string/bitwise_not.rdoc
+ *
+ */
+static VALUE
+rb_str_bitwise_not(VALUE str)
+{
+    long len = RSTRING_LEN(str);
+    VALUE result = str_bitwise_result(str);
+    str_bitwise_not((unsigned char *)RSTRING_PTR(result),
+                    (const unsigned char *)RSTRING_PTR(str), len);
+    return result;
+}
+
+/*
+ *  call-seq:
+ *    bitwise_not! -> self
+ *
+ *  :include: doc/string/bitwise_not_bang.rdoc
+ *
+ */
+static VALUE
+rb_str_bitwise_not_bang(VALUE str)
+{
+    long len;
+    unsigned char *ptr;
+
+    rb_str_modify(str);
+    len = RSTRING_LEN(str);
+    ptr = (unsigned char *)RSTRING_PTR(str);
+    str_bitwise_not(ptr, ptr, len);
+    return str;
+}
+
+#define STR_DEFINE_BINARY_BITWISE_METHOD(name)                              \
+    static VALUE                                                            \
+    rb_str_bitwise_##name(VALUE str, VALUE other)                           \
+    {                                                                       \
+        long len;                                                           \
+        VALUE result;                                                       \
+        StringValue(other);                                                 \
+        str_check_bitwise_length(str, other);                               \
+        len = RSTRING_LEN(str);                                             \
+        result = str_bitwise_result(str);                                   \
+        str_bitwise_##name((unsigned char *)RSTRING_PTR(result),            \
+                           (const unsigned char *)RSTRING_PTR(str),         \
+                           (const unsigned char *)RSTRING_PTR(other), len); \
+        return result;                                                      \
+    }                                                                       \
+    static VALUE                                                            \
+    rb_str_bitwise_##name##_bang(VALUE str, VALUE other)                    \
+    {                                                                       \
+        long len;                                                           \
+        unsigned char *ptr;                                                 \
+        StringValue(other);                                                 \
+        str_check_bitwise_length(str, other);                               \
+        rb_str_modify(str);                                                 \
+        len = RSTRING_LEN(str);                                             \
+        ptr = (unsigned char *)RSTRING_PTR(str);                            \
+        str_bitwise_##name(ptr, ptr,                                        \
+                           (const unsigned char *)RSTRING_PTR(other), len); \
+        return str;                                                         \
+    }
+
+STR_DEFINE_BINARY_BITWISE_METHOD(and)
+STR_DEFINE_BINARY_BITWISE_METHOD(or)
+STR_DEFINE_BINARY_BITWISE_METHOD(xor)
+
 static VALUE
 str_byte_substr(VALUE str, long beg, long len, int empty)
 {
@@ -12929,6 +13361,20 @@ Init_String(void)
     rb_define_method(rb_cString, "chr", rb_str_chr, 0);
     rb_define_method(rb_cString, "getbyte", rb_str_getbyte, 1);
     rb_define_method(rb_cString, "setbyte", rb_str_setbyte, 2);
+    rb_define_method(rb_cString, "bit_get", rb_str_bit_get, -1);
+    rb_define_method(rb_cString, "bit_set?", rb_str_bit_set_p, -1);
+    rb_define_method(rb_cString, "bit_set", rb_str_bit_set, -1);
+    rb_define_method(rb_cString, "bit_clear", rb_str_bit_clear, -1);
+    rb_define_method(rb_cString, "bit_flip", rb_str_bit_flip, -1);
+    rb_define_method(rb_cString, "bit_count", rb_str_bit_count, 0);
+    rb_define_method(rb_cString, "bitwise_not", rb_str_bitwise_not, 0);
+    rb_define_method(rb_cString, "bitwise_not!", rb_str_bitwise_not_bang, 0);
+    rb_define_method(rb_cString, "bitwise_and", rb_str_bitwise_and, 1);
+    rb_define_method(rb_cString, "bitwise_and!", rb_str_bitwise_and_bang, 1);
+    rb_define_method(rb_cString, "bitwise_or", rb_str_bitwise_or, 1);
+    rb_define_method(rb_cString, "bitwise_or!", rb_str_bitwise_or_bang, 1);
+    rb_define_method(rb_cString, "bitwise_xor", rb_str_bitwise_xor, 1);
+    rb_define_method(rb_cString, "bitwise_xor!", rb_str_bitwise_xor_bang, 1);
     rb_define_method(rb_cString, "byteslice", rb_str_byteslice, -1);
     rb_define_method(rb_cString, "bytesplice", rb_str_bytesplice, -1);
     rb_define_method(rb_cString, "scrub", str_scrub, -1);

@@ -1,0 +1,20 @@
+Returns +true+ or +false+ for whether the bit at zero-based bit +offset+ is set:
+
+  s = "\xAA" # 0b10101010
+  s.bit_set?(0) # => false
+  s.bit_set?(1) # => true
+
+Returns +nil+ if +offset+ is beyond the end of +self+:
+
+  s.bit_set?(8) # => nil
+
+By default, bits within each byte are numbered from least-significant to
+most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
+within each byte are numbered from most-significant to least-significant:
+
+  s.bit_set?(0, lsb_first: false) # => true
+  s.bit_set?(1, lsb_first: false) # => false
+
+Raises +IndexError+ if +offset+ is negative.
+Raises +ArgumentError+ if +offset+ is too large to be represented.
+Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.

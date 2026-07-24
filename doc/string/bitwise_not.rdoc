@@ -1,0 +1,5 @@
+Returns a new string whose bytes are the bitwise complement of +self+:
+
+  "\x00\xAA".bitwise_not # => "\xFF\x55"
+
+The returned string has BINARY encoding.
