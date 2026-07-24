@@ -47,6 +47,7 @@ rb_call_inits(void)
     CALL(marshal);
     CALL(Range);
     CALL(IO);
+    CALL(MemoryView); /* Must precede IO_Buffer */
     CALL(IO_Buffer)
     CALL(Dir);
     CALL(Time);
@@ -70,7 +71,6 @@ rb_call_inits(void)
     CALL(process);
     CALL(Rational);
     CALL(Complex);
-    CALL(MemoryView);
     CALL(pathname);
     CALL(version);
     CALL(vm_trace);
