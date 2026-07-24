@@ -362,7 +362,9 @@ VALUE rb_proc_dup_with_iseq_and_cref(VALUE self, const rb_iseq_t *iseq, const rb
  *   [base_cref, copied_iseq, cref, mod1, mod2, ...]
  *
  * keyed by (base_cref, modules).
- * An entry is retained for the VM's lifetime */
+ * An entry is retained for the VM's lifetime.
+ * Refined Procs are never used as memo sources, so keys are always iseqs of
+ * original blocks. */
 
 enum refinement_memo_index {
     REFINEMENT_MEMO_BASE_CREF,   /* key: captured cref of the source proc */
@@ -454,7 +456,7 @@ refinement_memo_store(const rb_iseq_t *src_iseq, const rb_cref_t *base_cref,
 
 /*
  * call-seq:
- *   prc.refined(mod, ...) -> a_proc
+ *   prc.refined(*modules) -> a_proc
  *
  * Returns a new Proc that behaves like the receiver but with the refinements
  * activated by the given modules in effect inside its body.  The receiver is
@@ -471,14 +473,13 @@ refinement_memo_store(const rb_iseq_t *src_iseq, const rb_cref_t *base_cref,
  *   refined_proc.call("hi")  #=> "HI!"
  *   original.call("hi")      #=> NoMethodError
  *
- * Only Procs created from a Ruby block are supported; calling this on a Proc
- * backed by a C function, a Symbol, or a method raises ArgumentError.
+ * If no modules are given, returns the receiver.
+ * Otherwise, only Procs created from a Ruby block are supported; calling this
+ * on a Proc backed by a C function, a Symbol, or a method raises ArgumentError.
  *
- * Calling this method on a Proc that already has refinements applied by this
- * method also raises ArgumentError.  To activate the refinements of multiple
- * modules, pass them all in a single call:
- *
- *   refined_proc = original.refined(StringRefinement, OtherRefinement)
+ * When calls of this method are chained, all the given modules are activated
+ * in the order they are given, so refinements activated by a later call take
+ * precedence.
  *
  * The refinement set of the returned Proc is fixed when it is created:
  * calling +using+ inside its body raises RuntimeError.
@@ -502,6 +503,8 @@ refinement_memo_store(const rb_iseq_t *src_iseq, const rb_cref_t *base_cref,
  * without affecting the original Proc.  Applying refinements therefore
  * increases memory use roughly in proportion to the size of the block.  The
  * copy is cached and reused for the same block and the same modules.
+ * A chained call copies the block again and is not cached; passing all the
+ * modules in a single call is more efficient.
  */
 static VALUE
 proc_refined(int argc, VALUE *argv, VALUE self)
@@ -509,26 +512,35 @@ proc_refined(int argc, VALUE *argv, VALUE self)
     rb_proc_t *src;
     GetProcPtr(self, src);
 
-    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    if (argc == 0) {
+        return self;
+    }
 
     if (vm_block_type(&src->block) != block_type_iseq || src->is_from_method) {
         rb_raise(rb_eArgError, "can't apply refinements to a Proc without a Ruby block");
-    }
-
-    if (src->is_refined) {
-        rb_raise(rb_eArgError, "can't apply refinements to a Proc that already has refinements");
     }
 
     for (int i = 0; i < argc; i++) {
         Check_Type(argv[i], T_MODULE);
     }
 
-    const rb_cref_t *base_cref = rb_vm_get_cref(src->block.as.captured.ep);
+    const rb_cref_t *base_cref;
+    if (src->is_refined) {
+        base_cref = rb_proc_refinements_cref(self);
+        rb_category_warn(
+            RB_WARN_CATEGORY_PERFORMANCE,
+            "Proc#refined on an already refined Proc is not memoized"
+        );
+    }
+    else {
+        base_cref = rb_vm_get_cref(src->block.as.captured.ep);
+    }
     const rb_iseq_t *src_iseq = src->block.as.captured.code.iseq;
 
     const rb_iseq_t *new_iseq;
     const rb_cref_t *new_cref;
-    if (!refinement_memo_lookup(src_iseq, base_cref, argc, argv, &new_iseq, &new_cref)) {
+    if (src->is_refined ||
+        !refinement_memo_lookup(src_iseq, base_cref, argc, argv, &new_iseq, &new_cref)) {
         new_iseq = rb_iseq_dup_with_independent_caches(src_iseq);
         rb_cref_t *cref = rb_vm_cref_dup(base_cref);
         /* rb_using_module_recursive modifies shared subclass lists */
@@ -547,7 +559,9 @@ proc_refined(int argc, VALUE *argv, VALUE self)
         CREF_OMOD_SHARED_SET(cref);
         CREF_REFINED_PROC_SET(cref);
         new_cref = cref;
-        refinement_memo_store(src_iseq, base_cref, argc, argv, new_iseq, new_cref);
+        if (!src->is_refined) {
+            refinement_memo_store(src_iseq, base_cref, argc, argv, new_iseq, new_cref);
+        }
     }
 
     return rb_proc_dup_with_iseq_and_cref(self, new_iseq, new_cref);
