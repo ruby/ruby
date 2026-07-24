@@ -1392,9 +1392,9 @@ class Pathname    # * File *
   #  :markup: markdown
   #
   #  call-seq:
-  #    Pathname.lchmod(mode) -> 1
+  #    lchmod(mode) -> 1
   #
-  #  Not supported on some platforms (raises Errno:: ENOTSUP).
+  #  Not supported on some platforms (raises Errno::ENOTSUP).
   #
   #  When supported: like Pathname::chmod, but does not follow symbolic links,
   #  and therefore changes the mode of the entry specified by `self`:
@@ -1514,7 +1514,7 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   File.fnmatch(pattern, flags = 0) -> true or false
+  #   fnmatch(pattern, flags = 0) -> true or false
   #
   # Returns whether string `pattern` matches against the string path in `self`,
   # under the control of the given `flags`;
@@ -2473,7 +2473,7 @@ class Pathname
   # each based on a selected filesystem entry.
   #
   # With a block given, calls the block with pathnames,
-  # each based on a selected filesytem entry.
+  # each based on a selected filesystem entry.
   #
   def Pathname.glob(*args, **kwargs) # :yield: pathname
     if block_given?
