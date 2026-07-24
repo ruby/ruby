@@ -59,9 +59,9 @@ Note: We're only listing outstanding class updates.
 
 * Proc
 
-    * `Proc#refined` is added. It returns a new Proc that behaves like the
+    * `Proc#refined` is added. It returns a new `Proc` that behaves like the
       receiver but with the refinements activated by the given modules
-      ineffect inside its body, without affecting the original Proc.
+      in effect inside its body, without affecting the original `Proc`.
       [[Feature #22097]]
 
 * Range
