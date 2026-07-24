@@ -13522,6 +13522,84 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn dont_specialize_call_to_iseq_with_monomorphic_caller_splat() {
+        enable_zjit_stats();
+        eval("
+            def foo(*args) = args
+            def test(args) = foo(*args)
+            test([1])
+            test([2])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :args@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :args@1
+          IncrCounterPtr
+          Jump bb3(v6, v7)
+        bb3(v10:BasicObject, v11:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v20:ArrayExact = ToArray v11
+          IncrCounter zjit_insn_count
+          IncrCounter complex_arg_pass_caller_splat
+          IncrCounter caller_splat_profile_monomorphic
+          v23:BasicObject = Send v10, :foo, v20 # SendFallbackReason: Complex argument passing
+          IncrCounter zjit_insn_count
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_call_to_iseq_with_polymorphic_caller_splat() {
+        enable_zjit_stats();
+        set_call_threshold(3);
+        eval("
+            def foo(*args) = args
+            def test(args) = foo(*args)
+            test([1])
+            test([1, 2])
+            test([3])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :args@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :args@1
+          IncrCounterPtr
+          Jump bb3(v6, v7)
+        bb3(v10:BasicObject, v11:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v20:ArrayExact = ToArray v11
+          IncrCounter zjit_insn_count
+          IncrCounter complex_arg_pass_caller_splat
+          IncrCounter caller_splat_profile_polymorphic
+          v23:BasicObject = Send v10, :foo, v20 # SendFallbackReason: Complex argument passing
+          IncrCounter zjit_insn_count
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
     fn test_inline_symbol_to_sym() {
         eval(r#"
             def test(o) = o.to_sym
