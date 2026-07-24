@@ -946,6 +946,7 @@ s,@SHELL@,$$(COMSPEC),;t t
 s,@BUILD_FILE_SEPARATOR@,\,;t t
 s,@PATH_SEPARATOR@,;,;t t
 s,@CFLAGS@,$(CFLAGS),;t t
+s,@warnflags@,$(WARNFLAGS),;t t
 s,@WERRORFLAG@,$(WERRORFLAG),;t t
 s,@DEFS@,$(DEFS),;t t
 s,@CPPFLAGS@,$(CPPFLAGS),;t t
