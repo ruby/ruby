@@ -3648,13 +3648,24 @@ fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, function: &Function, st
     // TODO: Avoid spilling locals that have been spilled before and not changed.
     gen_incr_counter(asm, Counter::vm_write_locals_count);
     asm_comment!(asm, "spill locals");
-    for (idx, &insn_id) in state.locals().enumerate() {
-        let opnd = match build_stack_map_entry(jit, function, insn_id) {
+    let entries = state.locals()
+        .map(|&insn_id| build_stack_map_entry(jit, function, insn_id))
+        .collect::<Vec<_>>();
+
+    for (idx, &entry) in entries.iter().enumerate() {
+        let opnd = match entry {
             StackMapEntry::Opnd(opnd) => opnd,
-            StackMapEntry::F64(opnd) => gen_box_stack_map_f64(asm, opnd),
+            StackMapEntry::F64(_) => Qnil.into(),
             StackMapEntry::Skip(_) => unreachable!("locals do not use StackMap skips"),
         };
         asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), opnd);
+    }
+
+    for (idx, &entry) in entries.iter().enumerate() {
+        if let StackMapEntry::F64(opnd) = entry {
+            let boxed = gen_box_stack_map_f64(asm, opnd);
+            asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), boxed);
+        }
     }
 }
 
@@ -3665,8 +3676,10 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
     gen_incr_counter(asm, Counter::vm_write_stack_count);
     asm_comment!(asm, "spill stack");
 
+    let entries = build_stack_map(jit, function, state);
     let mut offset = state.stack_size() as i32;
-    for entry in build_stack_map(jit, function, state) {
+    let mut locations = Vec::new();
+    for entry in entries {
         match entry {
             StackMapEntry::Opnd(opnd) => {
                 offset -= 1;
@@ -3674,13 +3687,18 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
             }
             StackMapEntry::F64(opnd) => {
                 offset -= 1;
-                let boxed = gen_box_stack_map_f64(asm, opnd);
-                asm.mov(Opnd::mem(64, SP, offset * SIZEOF_VALUE_I32), boxed);
+                asm.mov(Opnd::mem(64, SP, offset * SIZEOF_VALUE_I32), Qnil.into());
+                locations.push((offset, opnd));
             }
             StackMapEntry::Skip(skip) => {
                 offset -= skip as i32;
             }
         }
+    }
+
+    for (offset, opnd) in locations {
+        let boxed = gen_box_stack_map_f64(asm, opnd);
+        asm.mov(Opnd::mem(64, SP, offset * SIZEOF_VALUE_I32), boxed);
     }
 }
 

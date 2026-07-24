@@ -3153,7 +3153,8 @@ impl Assembler
             asm_comment!(asm, "save cfp->iseq");
             asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
 
-            // cfp->block_code and cfp->jit_return are cleared by the materialize_exit trampoline
+            // cfp->block_code is cleared by the materialize_exit trampoline. cfp->jit_return is
+            // normally cleared there too, but F64 boxing below can call into C before then.
 
             let save_exit_boxing_regs = |asm: &mut Assembler| {
                 let saved_regs = ALLOC_REGS.iter()
@@ -3283,6 +3284,14 @@ impl Assembler
                 for &(dest, entry) in &locations {
                     write_value_entry(asm, dest, entry);
                 }
+
+                if locations.iter().any(|&(_, entry)| matches!(entry, StackMapEntry::F64(_))) {
+                    // Clear cfp->jit_return before boxing F64 values. rb_jit_f64_to_float can
+                    // allocate, so GC must not see a JITFrame for this materialized frame.
+                    asm_comment!(asm, "clear cfp->jit_return");
+                    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+                }
+
                 for &(dest, entry) in &locations {
                     match entry {
                         StackMapEntry::F64(opnd) => write_f64_exit_entry(asm, dest, opnd),
