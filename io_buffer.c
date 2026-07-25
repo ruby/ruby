@@ -1490,7 +1490,8 @@ rb_io_buffer_readonly_p(VALUE self)
  *  If the buffer is <i>read only</i>, meaning the buffer cannot be modified using
  *  #set_value, #set_string or #copy and similar.
  *
- *  Frozen strings and read-only files create read-only buffers.
+ *  A buffer created by IO::Buffer.for without a block is read-only, as is one
+ *  backed by a frozen string or a read-only file.
  */
 static VALUE
 io_buffer_readonly_p(VALUE self)
