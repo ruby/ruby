@@ -2736,15 +2736,23 @@ unsafe extern "C" {
     fn rb_simple_iseq_p(iseq: IseqPtr) -> bool;
 }
 
-/// Return the ISEQ's return value if it consists of one simple instruction and leave.
-fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags: u32) -> Option<IseqReturn> {
+/// Return the ISEQ's return value from the selected JIT entry if it consists
+/// of one simple instruction and leave.
+fn iseq_get_return_value( iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags: u32, jit_entry_idx: u16, ) -> Option<IseqReturn> {
     // Expect only two instructions and one possible operand
     // NOTE: If an ISEQ has an optional keyword parameter with a default value that requires
     // computation, the ISEQ will always have more than two instructions and won't be inlined.
 
-    // Get the first two instructions
-    let first_insn = iseq_opcode_at_idx(iseq, 0);
-    let second_insn = iseq_opcode_at_idx(iseq, insn_len(first_insn as usize));
+    // Get the first two instructions from the same optional-argument entry
+    // selected by SendDirect.
+    let first_insn_idx = unsafe { iseq.params() }
+        .opt_table_slice()
+        .get(jit_entry_idx as usize)
+        .expect("JIT entry index must be within the callee opt table")
+        .as_u32();
+    let first_insn = iseq_opcode_at_idx(iseq, first_insn_idx);
+    let second_insn_idx = first_insn_idx + insn_len(first_insn as usize);
+    let second_insn = iseq_opcode_at_idx(iseq, second_insn_idx);
 
     // Extract the return value if known
     if second_insn != YARVINSN_leave {
@@ -2766,7 +2774,7 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
                 return None;
             }
 
-            let ep_offset = unsafe { *rb_iseq_pc_at_idx(iseq, 1) }.as_u32();
+            let ep_offset = unsafe { *rb_iseq_pc_at_idx(iseq, first_insn_idx + 1) }.as_u32();
             let local_idx = ep_offset_to_local_idx(iseq, ep_offset);
 
             // Only inline if the local is a parameter (not a method-defined local) as we are indexing args.
@@ -2784,13 +2792,13 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
             None
         }
         YARVINSN_putnil => Some(IseqReturn::Value(Qnil)),
-        YARVINSN_putobject => Some(IseqReturn::Value(unsafe { *rb_iseq_pc_at_idx(iseq, 1) })),
+        YARVINSN_putobject => Some(IseqReturn::Value(unsafe { *rb_iseq_pc_at_idx(iseq, first_insn_idx + 1) })),
         YARVINSN_putobject_INT2FIX_0_ => Some(IseqReturn::Value(VALUE::fixnum_from_usize(0))),
         YARVINSN_putobject_INT2FIX_1_ => Some(IseqReturn::Value(VALUE::fixnum_from_usize(1))),
         // We don't support invokeblock for now. Such ISEQs are likely not used by blocks anyway.
         YARVINSN_putself if captured_opnd.is_none() => Some(IseqReturn::Receiver),
         YARVINSN_opt_invokebuiltin_delegate_leave => {
-            let pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, first_insn_idx) };
             let bf: *const rb_builtin_function = get_arg(pc, 0).as_ptr();
             let argc = unsafe { (*bf).argc } as usize;
             if argc != 0 { return None; }
@@ -4020,6 +4028,7 @@ impl Function {
         let cd = data.cd;
         let state = data.state;
         let args = &data.args;
+        let jit_entry_idx = data.jit_entry_idx;
         // The trivial inliner runs first to handle simple cases (constant returns,
         // parameter returns, etc.) without frame push/pop overhead. The general
         // inliner then handles more complex methods that require full inlining.
@@ -4029,7 +4038,7 @@ impl Function {
         if ci_flags & VM_CALL_OPT_SEND != 0 {
             return self.push_insn(block, insn);
         }
-        let Some(value) = iseq_get_return_value(iseq, None, ci_flags) else {
+        let Some(value) = iseq_get_return_value(iseq, None, ci_flags, jit_entry_idx) else {
             return self.push_insn(block, insn);
         };
         match value {

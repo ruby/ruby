@@ -19287,6 +19287,70 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_method_with_omitted_optional_return_default() {
+        // With the optional omitted, entry 0 runs the default expression and the
+        // trivial inliner can fold the early return.
+        eval("
+            def callee(arg = nil || (return :default))
+              arg
+            end
+            def test = callee
+            test
+            test
+        ");
+        assert_snapshot!(hir_string_with_inlining("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v19:StaticSymbol[:default] = Const Value(VALUE(0x1038))
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_supplied_optional_return_default() {
+        // With the optional supplied, use the selected optional entry instead
+        // of entry 0 so the default-expression return is not inlined.
+        eval("
+            def callee(arg = nil || (return :default))
+              arg
+            end
+            def test = callee(3)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string_with_inlining("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          v20:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame v20 (0x1038), v11
+          CheckInterrupts
+          PopInlineFrame
+          Return v11
+        ");
+    }
+
+    #[test]
     fn test_inline_method_with_rescue_handler() {
         eval("
             def maybe_rescue(x)
