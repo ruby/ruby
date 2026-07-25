@@ -83,8 +83,10 @@ describe "The module keyword" do
     -> { module ModuleSpecs::Modules::D; end }.should.raise(TypeError)
   end
 
-  it "raises a TypeError if the constant is false" do
-    -> { module ModuleSpecs::Modules::D; end }.should.raise(TypeError)
+  ruby_version_is "4.1" do
+    it "raises a TypeError if the constant is false" do
+      -> { module ModuleSpecs::Modules::E; end }.should.raise(TypeError)
+    end
   end
 end
 

@@ -5806,7 +5806,7 @@ static VALUE
 vm_const_get_under(ID id, rb_num_t flags, VALUE cbase)
 {
     if (!rb_const_defined_at(cbase, id)) {
-        return 0;
+        return Qundef;
     }
     else if (VM_DEFINECLASS_SCOPED_P(flags)) {
         return rb_public_const_get_at(cbase, id);
@@ -5907,7 +5907,7 @@ vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
     /* find klass */
     rb_autoload_load(cbase, id);
 
-    if ((klass = vm_const_get_under(id, flags, cbase)) != 0) {
+    if (!UNDEF_P(klass = vm_const_get_under(id, flags, cbase))) {
         if (!vm_check_if_class(id, flags, super, klass))
             unmatched_redefinition("class", cbase, id, klass);
         return klass;
@@ -5923,7 +5923,7 @@ vm_define_module(ID id, rb_num_t flags, VALUE cbase)
     VALUE mod;
 
     vm_check_if_namespace(cbase);
-    if ((mod = vm_const_get_under(id, flags, cbase)) != 0) {
+    if (!UNDEF_P(mod = vm_const_get_under(id, flags, cbase))) {
         if (!vm_check_if_module(id, mod))
             unmatched_redefinition("module", cbase, id, mod);
         return mod;
