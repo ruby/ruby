@@ -197,6 +197,7 @@ class TestEnv < Test::Unit::TestCase
 
   def test_keys_encoding
     bug20958 = '[ruby-core:120277] [Bug #20958]'
+    omit "locale encoding is not UTF-8" unless ENCODING == Encoding::UTF_8
     orig = ENV.to_hash
     ENV.clear
     key = "TEST20958\u{30c6 30b9 30c8}"
@@ -206,14 +207,15 @@ class TestEnv < Test::Unit::TestCase
       omit "platform does not support UTF-8 environment variables."
     end
     EnvUtil.with_default_internal(nil) do
-      enc = RUBY_PLATFORM =~ /mswin|mingw/ ?
-         Encoding::UTF_8 : Encoding.find("locale")
-      assert_equal(enc, ENV.keys.last.encoding, bug20958)
-      assert_equal(key.encode(enc), ENV.keys.last, bug20958)
+      assert_equal(ENCODING, ENV.keys.last.encoding, bug20958)
+      assert_equal(key.encode(ENCODING), ENV.keys.last, bug20958)
     end
 
     ENV.update(orig) #required to restore ENV[RbConfig::CONFIG['LIBPATHENV']]
-    env = {key => "x", "LOCALE" => "en_US.UTF-8", "LC_ALL" => "en_US.UTF-8"}
+    env = {key => "x"}
+    # invoke_ruby forces the C locale, restore the locale of this process,
+    # which is known to be UTF-8 here.
+    EnvUtil::LANG_ENVS.each {|e| env[e] = ENV[e]}
     load_path = $LOAD_PATH.map {|v| "-I#{v}" }
     internal_enc = "Windows-31J"
     params = [env, *load_path, "-Eutf-8:#{internal_enc}"]
