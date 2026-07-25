@@ -523,7 +523,7 @@ expand_include_path(VALUE path)
     return rb_file_expand_path(path, Qnil);
 }
 
-void
+static void
 ruby_incpush_expand(const char *path)
 {
     ruby_push_include(path, expand_include_path);
