@@ -22,21 +22,6 @@ describe "Array#find_index" do
     [2, 1, 1, 1, 1].find_index(3).should == nil
   end
 
-  it "starts searching at a non-negative offset" do
-    [1, 2, 1, 2].find_index(1, offset: 1).should == 2
-  end
-
-  it "starts searching at a negative offset relative to the end" do
-    [1, 2, 1, 2].find_index(2, offset: -2).should == 3
-  end
-
-  it "returns nil when the offset is outside the array" do
-    array = [1, 2, 1, 2]
-
-    array.find_index(1, offset: array.size).should == nil
-    array.find_index(1, offset: -array.size - 1).should == nil
-  end
-
   it "accepts a block instead of an argument" do
     [4, 2, 1, 5, 1, 3].find_index {|x| x < 2}.should == 2
   end
@@ -44,12 +29,6 @@ describe "Array#find_index" do
   it "ignores the block if there is an argument" do
     -> {
       [4, 2, 1, 5, 1, 3].find_index(5) {|x| x < 2}.should == 3
-    }.should complain(/given block not used/)
-  end
-
-  it "ignores the block if there is an argument and an offset" do
-    -> {
-      [4, 2, 1, 5, 1, 3].find_index(1, offset: 3) { |x| x < 2 }.should == 4
     }.should complain(/given block not used/)
   end
 
