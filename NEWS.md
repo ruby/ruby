@@ -27,6 +27,9 @@ Note: We're only listing outstanding class updates.
 
 * Array
 
+    * `Array#index`, `Array#find_index`, and `Array#rindex` accept an
+      `offset` keyword argument to specify where to start searching.
+      [[Feature #17056]]
     * `Array#pack` accepts new formats `R` and `r` for unsigned and signed
       LEB128 encoded integers. [[Feature #21785]]
     * `Array#pack` accepts new formats `x!` and `@!` to align the current
@@ -240,6 +243,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
+[Feature #17056]: https://bugs.ruby-lang.org/issues/17056
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21768]: https://bugs.ruby-lang.org/issues/21768
 [Feature #21781]: https://bugs.ruby-lang.org/issues/21781
