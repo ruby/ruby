@@ -157,6 +157,7 @@ runs:
       shell: bash
       working-directory: ${{ inputs.srcdir }}
       run: |
+        ruby tool/missing-baseruby.bat --verbose
         touch config.status .rbconfig.time
         for mk in Makefile GNUmakefile; do
           sed -f tool/prereq.status template/$mk.in > $mk
