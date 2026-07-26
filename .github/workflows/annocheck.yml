@@ -67,16 +67,16 @@ jobs:
           sparse-checkout: /.github
           persist-credentials: false
 
+      - uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # v1.319.0
+        with:
+          ruby-version: '3.1'
+          bundler: none
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
           builddir: build
           makeup: true
-
-      - uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # v1.319.0
-        with:
-          ruby-version: '3.1'
-          bundler: none
 
       # Minimal flags to pass the check.
       # -g0 disables backtraces when SEGV.  Do not set that.
