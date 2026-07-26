@@ -2455,7 +2455,23 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.writable_real?</tt>.
   def writable_real?() FileTest.writable_real?(@path) end
 
-  # See <tt>FileTest.zero?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   zero? -> true or false
+  #
+  # Returns whether the file at the path in `self` exists and has zero size:
+  #
+  # ```ruby
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('')
+  # pn.zero? # => true
+  # pn.write('foo')
+  # pn.zero? # => false
+  # pn.delete
+  # pn.zero? # => false  # Does not exist.
+  # ```
+  #
   def zero?() FileTest.zero?(@path) end
 end
 
