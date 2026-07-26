@@ -2425,7 +2425,24 @@ class Pathname    # * FileTest *
   #
   def symlink?() FileTest.symlink?(@path) end
 
-  # See <tt>FileTest.writable?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   writable? => true or false
+  #
+  # Returns whether the path in `self` points to an entry that is writable
+  # by the owner and group of the current process:
+  #
+  # ```ruby
+  # pn = Pathname('/tmp/secret.txt')
+  # pn.write('foo')
+  # pn.writable?                 # => true
+  # pn.chmod(0o000)
+  # pn.writable?                 # => false
+  # pn.delete
+  # Pathname('nosuch').writable? # => false
+  # ```
+  #
   def writable?() FileTest.writable?(@path) end
 
   # :markup: markdown
