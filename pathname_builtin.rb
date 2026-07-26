@@ -2455,7 +2455,37 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.writable_real?</tt>.
   def writable_real?() FileTest.writable_real?(@path) end
 
-  # See <tt>FileTest.zero?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   zero? -> true or false
+  #
+  # Returns whether the entry represented by `self` exists and has size zero:
+  #
+  # ```
+  # dir_pn = Pathname('example_dir')
+  # dir_pn.empty? # => false  # Dir does not exist.
+  # dir_pn.mkdir
+  # dir_pn.empty? # => true
+  # dir_pn.zero?  # => false
+  #
+  # dir_pn = Pathname('example_dir')
+  # dir_pn.zero?  # => false  # Dir does not exist.
+  # dir_pn.mkdir
+  # dir_pn.zero?  # => false   # Directory never has size zero.
+  # dir_pn.empty? # => true    # But this one is empty.
+  #
+  # file_pn = Pathname('example_dir/example.txt')
+  # file_pn.zero? # => false   # File does not exist.
+  # file_pn.write('')
+  # file_pn.zero? # => true
+  # file_pn.write('foo')
+  # file_pn.zero? # => false
+  #
+  # file_pn.delete
+  # dir_pn.delete
+  # ```
+  #
   def zero?() FileTest.zero?(@path) end
 end
 
