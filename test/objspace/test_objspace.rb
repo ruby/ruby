@@ -28,8 +28,10 @@ class TestObjSpace < Test::Unit::TestCase
                     ObjectSpace.memsize_of(//.match("")))
   end
 
+  STR_DUPLICATE_MAX_EMBED_LEN = 999 # From macro defined in string.c
+
   def test_memsize_of_root_shared_string
-    a = "a" * GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE]
+    a = "a" * (STR_DUPLICATE_MAX_EMBED_LEN + 1)
     b = a.dup
     c = nil
     ObjectSpace.each_object(String) {|x| break c = x if a == x and x.frozen?}
