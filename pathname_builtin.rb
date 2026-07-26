@@ -2283,7 +2283,6 @@ class Pathname    # * FileTest *
   # :markup: markdown
   #
   # call-seq:
-  #
   #   readable_real? -> true or false
   #
   # Like #readable?, but checks against the real user and group ids
@@ -2469,7 +2468,13 @@ class Pathname    # * FileTest *
   #
   def world_writable?() File.world_writable?(@path) end
 
-  # See <tt>FileTest.writable_real?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   writable_real? -> true or false
+  #
+  # Like #writable?, but checks against the real user and group ids
+  # instead of the effective ids.
   def writable_real?() FileTest.writable_real?(@path) end
 
   # See <tt>FileTest.zero?</tt>.
