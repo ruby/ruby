@@ -1916,7 +1916,7 @@ ec_str_alloc_heap(struct rb_execution_context_struct *ec, VALUE klass)
     return (VALUE)str;
 }
 
-static inline VALUE
+static inline void
 str_duplicate_setup_encoding(VALUE str, VALUE dup, VALUE flags)
 {
     int encidx = 0;
@@ -1926,12 +1926,11 @@ str_duplicate_setup_encoding(VALUE str, VALUE dup, VALUE flags)
     }
     FL_SET_RAW(dup, flags & ~FL_FREEZE);
     if (encidx) rb_enc_associate_index(dup, encidx);
-    return dup;
 }
 
 static const VALUE flag_mask = ENC_CODERANGE_MASK | ENCODING_MASK | FL_FREEZE;
 
-static inline VALUE
+static inline void
 str_duplicate_setup_embed(VALUE klass, VALUE str, VALUE dup)
 {
     VALUE flags = FL_TEST_RAW(str, flag_mask);
@@ -1941,10 +1940,10 @@ str_duplicate_setup_embed(VALUE klass, VALUE str, VALUE dup)
     RUBY_ASSERT(str_embed_capa(dup) >= len + TERM_LEN(str));
     MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(str)->as.embed.ary, char, len + TERM_LEN(str));
     STR_SET_LEN(dup, RSTRING_LEN(str));
-    return str_duplicate_setup_encoding(str, dup, flags);
+    str_duplicate_setup_encoding(str, dup, flags);
 }
 
-static inline VALUE
+static inline void
 str_duplicate_setup_heap(VALUE klass, VALUE str, VALUE dup)
 {
     VALUE flags = FL_TEST_RAW(str, flag_mask);
@@ -1965,32 +1964,30 @@ str_duplicate_setup_heap(VALUE klass, VALUE str, VALUE dup)
     flags |= RSTRING_NOEMBED | STR_SHARED;
 
     STR_SET_LEN(dup, RSTRING_LEN(str));
-    return str_duplicate_setup_encoding(str, dup, flags);
+    str_duplicate_setup_encoding(str, dup, flags);
 }
 
-static inline VALUE
-str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
-{
-    if (STR_EMBED_P(str)) {
-        return str_duplicate_setup_embed(klass, str, dup);
-    }
-    else {
-        return str_duplicate_setup_heap(klass, str, dup);
-    }
-}
+/* Force duplicated strings above 1024 bytes to be views rather than copies since
+ * copying will use memory and have significant overhead.
+ * Calculated as: 1024 - header size - NUL terminator size */
+#define STR_DUPLICATE_MAX_EMBED_LEN ((long)(1024 - offsetof(struct RString, as.embed) - 1))
 
 static inline VALUE
 str_duplicate(VALUE klass, VALUE str)
 {
     VALUE dup;
-    if (STR_EMBED_P(str)) {
+    if (STR_EMBED_P(str) && RSTRING_LEN(str) <= STR_DUPLICATE_MAX_EMBED_LEN) {
         dup = str_alloc_embed(klass, RSTRING_LEN(str) + TERM_LEN(str));
+
+        str_duplicate_setup_embed(klass, str, dup);
     }
     else {
         dup = str_alloc_heap(klass);
+
+        str_duplicate_setup_heap(klass, str, dup);
     }
 
-    return str_duplicate_setup(klass, str, dup);
+    return dup;
 }
 
 VALUE
