@@ -3731,15 +3731,25 @@ dir_collect_children(VALUE dir)
 
 /*
  * call-seq:
+ *   scan -> entries
  *   scan {|entry_name, entry_type| ... } -> nil
- *   scan -> [[entry_name, entry_type], ...]
  *
- * With no block, returns an array of entry-name and entry-type pairs.
- * With a block, yields each entry name and its type, and returns +nil+.
- * Entries <tt>'.'</tt> and <tt>'..'</tt> are excluded:
+ * Scans the entries in +self+, except for <tt>'.'</tt> and <tt>'..'</tt>.
+ *
+ * With no block given, returns +entries+, an array of 2-element arrays.
+ * Each nested array contains an entry name and its type:
  *
  *   dir = Dir.new('/example')
  *   dir.scan # => [["config.h", :file], ["lib", :directory], ["main.rb", :file]]
+ *
+ * With a block given, calls the block with each entry name and its type;
+ * returns +nil+:
+ *
+ *   entries = []
+ *   dir.scan do |entry_name, entry_type|
+ *     entries << [entry_name, entry_type]
+ *   end # => nil
+ *   entries # => [["config.h", :file], ["lib", :directory], ["main.rb", :file]]
  *
  */
 static VALUE
@@ -3786,20 +3796,33 @@ dir_s_children(int argc, VALUE *argv, VALUE io)
 
 /*
  * call-seq:
+ *   Dir.scan(dirpath) -> entries
+ *   Dir.scan(dirpath, encoding: 'UTF-8') -> entries
  *   Dir.scan(dirpath) {|entry_name, entry_type| ... } -> nil
  *   Dir.scan(dirpath, encoding: 'UTF-8') {|entry_name, entry_type| ... } -> nil
- *   Dir.scan(dirpath) -> [[entry_name, entry_type], ...]
- *   Dir.scan(dirpath, encoding: 'UTF-8') -> [[entry_name, entry_type], ...]
  *
- * With no block, returns an array of entry-name and entry-type pairs from the
- * directory at +dirpath+. With a block, yields each entry name and its type,
- * and returns +nil+. Entries <tt>'.'</tt> and <tt>'..'</tt> are excluded. The
- * given +encoding+ is used as the external encoding for each entry name.
+ * Scans the entries in the directory at +dirpath+, except for <tt>'.'</tt>
+ * and <tt>'..'</tt>.
  *
- * The type symbol is one of +:file+, +:directory+, +:characterSpecial+,
- * +:blockSpecial+, +:fifo+, +:link+, +:socket+, or +:unknown+:
+ * With no block given, returns +entries+, an array of 2-element arrays.
+ * Each nested array contains an entry name and its type:
  *
  *   Dir.scan('/example') # => [["config.h", :file], ["lib", :directory], ["main.rb", :file]]
+ *
+ * With a block given, calls the block with each entry name and its type;
+ * returns +nil+:
+ *
+ *   entries = []
+ *   Dir.scan('/example') do |entry_name, entry_type|
+ *     entries << [entry_name, entry_type]
+ *   end # => nil
+ *   entries # => [["config.h", :file], ["lib", :directory], ["main.rb", :file]]
+ *
+ * The type symbol is one of +:file+, +:directory+, +:characterSpecial+,
+ * +:blockSpecial+, +:fifo+, +:link+, +:socket+, or +:unknown+.
+ *
+ * The given +encoding+ is used as the external encoding for each entry name:
+ *
  *   Dir.scan('/example').first.first.encoding
  *   # => #<Encoding:UTF-8>
  *   Dir.scan('/example', encoding: 'US-ASCII').first.first.encoding
