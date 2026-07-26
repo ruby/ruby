@@ -4561,14 +4561,14 @@ rb_reg_s_union(VALUE self, VALUE args0)
  *    Regexp.union(*patterns) -> regexp
  *    Regexp.union(array_of_patterns) -> regexp
  *
- *  Returns a new regexp that is the union of the given patterns:
+ *  Returns a regexp that is the union of the given patterns:
  *
  *    r = Regexp.union(%w[cat dog])      # => /cat|dog/
  *    r.match('cat')      # => #<MatchData "cat">
  *    r.match('dog')      # => #<MatchData "dog">
  *    r.match('cog')      # => nil
  *
- *  For each pattern that is a string, <tt>Regexp.new(pattern)</tt> is used:
+ *  Each string pattern is escaped so that it is matched literally:
  *
  *    Regexp.union('penzance')             # => /penzance/
  *    Regexp.union('a+b*c')                # => /a\+b\*c/
