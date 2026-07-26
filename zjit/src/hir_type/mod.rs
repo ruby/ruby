@@ -461,6 +461,13 @@ impl Type {
         }
     }
 
+    pub fn cdouble_value(&self) -> Option<f64> {
+        match (self.is_subtype(types::CDouble), self.spec()) {
+            (true, Specialization::Double(val)) => Some(val),
+            _ => None,
+        }
+    }
+
     fn int_spec_signed(&self) -> Option<i64> {
         assert!(self.is_subtype(types::CSigned), "int_spec_signed() only makes sense for signed integer types");
         match self.spec() {

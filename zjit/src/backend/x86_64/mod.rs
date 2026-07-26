@@ -102,14 +102,29 @@ pub const ALLOC_REGS: &[Reg] = &[
     RAX_REG,
 ];
 
+pub const FP_ALLOC_REGS: &[Reg] = &[
+    XMM0_REG,
+    XMM1_REG,
+    XMM2_REG,
+    XMM3_REG,
+    XMM4_REG,
+    XMM5_REG,
+    XMM6_REG,
+    XMM7_REG,
+];
+
 /// Special scratch register for intermediate processing. It should be used only by
 /// [`Assembler::x86_scratch_split`] or [`Assembler::new_with_scratch_reg`].
 const SCRATCH0_OPND: Opnd = Opnd::Reg(R11_REG);
 const SCRATCH1_OPND: Opnd = Opnd::Reg(R10_REG);
+const FP_SCRATCH0_OPND: Opnd = Opnd::Reg(XMM14_REG);
+const FP_SCRATCH1_OPND: Opnd = Opnd::Reg(XMM15_REG);
 
 /// A scratch register available for use by resolve_ssa to break register copy cycles.
 /// Must not overlap with ALLOC_REGS or other preserved registers.
 pub const SCRATCH_REG: Reg = R11_REG;
+pub const FP_SAVE_SCRATCH_REG: Reg = R10_REG;
+pub const FP_SAVE_SCRATCH2_REG: Reg = R11_REG;
 
 impl Assembler {
     // This keeps frame growth below the +/-4096-byte displacement range we rely
@@ -185,6 +200,14 @@ impl Assembler {
                 Insn::Add { .. } |
                 Insn::Sub { .. } |
                 Insn::Mul { .. } |
+                Insn::F64BinOpRaw { .. } |
+                Insn::BitsToF64Raw { .. } |
+                Insn::F64ToBitsRaw { .. } |
+                Insn::LoadF64Raw { .. } |
+                Insn::StoreF64Raw { .. } |
+                Insn::F64SqrtRaw { .. } |
+                Insn::F64BoolCmpRaw { .. } |
+                Insn::FixnumToF64Raw { .. } |
                 Insn::And { .. } |
                 Insn::Or { .. } |
                 Insn::Xor { .. } => {
@@ -398,6 +421,32 @@ impl Assembler {
             }
         }
 
+        fn split_f64_memory_read(asm: &mut Assembler, opnd: Opnd, gp_scratch: Opnd, fp_scratch: Opnd) -> Opnd {
+            match opnd {
+                Opnd::Mem(_) => {
+                    let opnd = split_stack_membase(asm, opnd, gp_scratch);
+                    asm.push_insn(Insn::LoadF64Raw { opnd, out: fp_scratch });
+                    fp_scratch
+                }
+                _ => opnd,
+            }
+        }
+
+        fn split_f64_memory_write(opnd: &mut Opnd, scratch_opnd: Opnd) -> Option<Opnd> {
+            if let Opnd::Mem(_) = opnd {
+                let mem_opnd = *opnd;
+                *opnd = scratch_opnd;
+                Some(mem_opnd)
+            } else {
+                None
+            }
+        }
+
+        fn store_f64_to_memory(asm: &mut Assembler, mem_out: Opnd, fp_src: Opnd, gp_scratch: Opnd) {
+            let mem_out = split_stack_membase(asm, mem_out, gp_scratch);
+            asm.push_insn(Insn::StoreF64Raw { dest: mem_out, src: fp_src });
+        }
+
         fn assert_out_is_phys_reg_or_stack_mem(out: Opnd) {
             assert!(
                 matches!(out, Opnd::Reg(_) | Opnd::Mem(Mem { base: MemBase::Stack { .. }, .. })),
@@ -421,6 +470,20 @@ impl Assembler {
                 if let (Opnd::Mem(_), Opnd::Mem(_)) = (dst, src) {
                     asm.mov(scratch_opnd, src);
                     asm.mov(dst, scratch_opnd);
+                } else if let (Opnd::Mem(mem), Opnd::Imm(imm)) = (dst, src) {
+                    if mem.num_bits == 64 && imm_num_bits(imm) > 32 {
+                        asm.mov(scratch_opnd, src);
+                        asm.mov(dst, scratch_opnd);
+                    } else {
+                        asm.mov(dst, src);
+                    }
+                } else if let (Opnd::Mem(mem), Opnd::UImm(imm)) = (dst, src) {
+                    if mem.num_bits == 64 && imm_num_bits(imm as i64) > 32 {
+                        asm.mov(scratch_opnd, src);
+                        asm.mov(dst, scratch_opnd);
+                    } else {
+                        asm.mov(dst, src);
+                    }
                 } else if let (Opnd::Mem(_), Opnd::Value(value)) = (dst, src) {
                     if imm_num_bits(value.as_i64()) > 32 {
                         asm.mov(scratch_opnd, src);
@@ -528,6 +591,80 @@ impl Assembler {
                     asm.push_insn(insn);
                     asm_mov(asm, out, opnd, SCRATCH0_OPND);
                 }
+                Insn::F64BinOpRaw { left, right, out, .. } => {
+                    *left = split_f64_memory_read(asm, *left, SCRATCH0_OPND, FP_SCRATCH0_OPND);
+                    *right = split_f64_memory_read(asm, *right, SCRATCH1_OPND, FP_SCRATCH1_OPND);
+                    let mem_out = split_f64_memory_write(out, FP_SCRATCH0_OPND);
+                    let fp_out = *out;
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        store_f64_to_memory(asm, mem_out, fp_out, SCRATCH1_OPND);
+                    }
+                }
+                Insn::BitsToF64Raw { val, out } |
+                Insn::FixnumToF64Raw { val, out } => {
+                    *val = split_stack_membase(asm, *val, SCRATCH0_OPND);
+                    let mem_out = split_f64_memory_write(out, FP_SCRATCH0_OPND);
+                    let fp_out = *out;
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        store_f64_to_memory(asm, mem_out, fp_out, SCRATCH1_OPND);
+                    }
+                }
+                Insn::F64ToBitsRaw { val, out } => {
+                    *val = split_f64_memory_read(asm, *val, SCRATCH0_OPND, FP_SCRATCH0_OPND);
+                    let mem_out = split_memory_write(out, SCRATCH0_OPND);
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND);
+                        asm.store(mem_out, SCRATCH0_OPND);
+                    }
+                }
+                Insn::LoadF64Raw { opnd, out } => {
+                    *opnd = split_stack_membase(asm, *opnd, SCRATCH0_OPND);
+                    let mem_out = split_f64_memory_write(out, FP_SCRATCH0_OPND);
+                    let fp_out = *out;
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        store_f64_to_memory(asm, mem_out, fp_out, SCRATCH1_OPND);
+                    }
+                }
+                Insn::StoreF64Raw { dest, src } => {
+                    *dest = split_stack_membase(asm, *dest, SCRATCH0_OPND);
+                    *src = split_f64_memory_read(asm, *src, SCRATCH1_OPND, FP_SCRATCH1_OPND);
+                    asm.push_insn(insn);
+                }
+                Insn::F64SqrtRaw { val, out } => {
+                    *val = split_f64_memory_read(asm, *val, SCRATCH0_OPND, FP_SCRATCH0_OPND);
+                    let mem_out = split_f64_memory_write(out, FP_SCRATCH0_OPND);
+                    let fp_out = *out;
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        store_f64_to_memory(asm, mem_out, fp_out, SCRATCH1_OPND);
+                    }
+                }
+                Insn::F64BoolCmpRaw { left, right, out, .. } => {
+                    *left = split_f64_memory_read(asm, *left, SCRATCH0_OPND, FP_SCRATCH0_OPND);
+                    *right = split_f64_memory_read(asm, *right, SCRATCH1_OPND, FP_SCRATCH1_OPND);
+                    let mem_out = split_memory_write(out, SCRATCH0_OPND);
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND);
+                        asm.store(mem_out, SCRATCH0_OPND);
+                    }
+                }
                 Insn::Test { left, right } |
                 Insn::Cmp { left, right } => {
                     *left = split_stack_membase(asm, *left, SCRATCH1_OPND);
@@ -555,7 +692,8 @@ impl Assembler {
                 // For compile_exits, support splitting simple C arguments here
                 Insn::CCall { data } if !data.opnds.is_empty() => {
                     for (i, opnd) in data.opnds.iter().enumerate() {
-                        asm.load_into(C_ARG_OPNDS[i], *opnd);
+                        let opnd = split_stack_membase(asm, *opnd, SCRATCH0_OPND);
+                        asm.load_into(C_ARG_OPNDS[i], opnd);
                     }
                     data.opnds = vec![];
                     asm.push_insn(insn);
@@ -736,6 +874,22 @@ impl Assembler {
             }
         }
 
+        fn emit_f64_bool_compare(
+            cb: &mut CodeBlock,
+            left: Opnd,
+            right: Opnd,
+            out: Opnd,
+            cmov_fn: fn(&mut CodeBlock, X86Opnd, X86Opnd),
+        ) {
+            let scratch = if out == SCRATCH0_OPND { SCRATCH1_OPND } else { SCRATCH0_OPND };
+            ucomisd(cb, left.into(), right.into());
+            mov(cb, out.into(), Opnd::Value(Qfalse).into());
+            mov(cb, scratch.into(), Opnd::Value(Qtrue).into());
+            cmov_fn(cb, out.into(), scratch.into());
+            mov(cb, scratch.into(), Opnd::Value(Qfalse).into());
+            cmovp(cb, out.into(), scratch.into());
+        }
+
         fn emit_load_gc_value(cb: &mut CodeBlock, gc_offsets: &mut Vec<CodePtr>, dest_reg: X86Opnd, value: VALUE) {
             // Using movabs because mov might write value in 32 bits
             movabs(cb, dest_reg, value.0 as _);
@@ -828,6 +982,65 @@ impl Assembler {
                     imul(cb, left.into(), right.into());
                 },
 
+                Insn::BitsToF64Raw { val, out } => {
+                    movq_to_xmm(cb, (*out).into(), (*val).into());
+                },
+                Insn::F64ToBitsRaw { val, out } => {
+                    if let Opnd::Reg(X86Reg { reg_type: RegType::GP, .. }) = val {
+                        mov(cb, (*out).into(), (*val).into());
+                    } else {
+                        movq_from_xmm(cb, (*out).into(), (*val).into());
+                    }
+                },
+                Insn::LoadF64Raw { opnd, out } => {
+                    movsd_load(cb, (*out).into(), (*opnd).into());
+                },
+                Insn::StoreF64Raw { dest, src } => {
+                    movsd_store(cb, (*dest).into(), (*src).into());
+                },
+                Insn::F64BinOpRaw { op, left, right, out } => {
+                    let emit_op = |cb: &mut CodeBlock, dst, src| match op {
+                        F64BinOp::Add => addsd(cb, dst, src),
+                        F64BinOp::Sub => subsd(cb, dst, src),
+                        F64BinOp::Mul => mulsd(cb, dst, src),
+                        F64BinOp::Div => divsd(cb, dst, src),
+                    };
+
+                    if *out == *right && *out != *left && matches!(op, F64BinOp::Sub | F64BinOp::Div) {
+                        movsd_load(cb, FP_SCRATCH0_OPND.into(), (*left).into());
+                        emit_op(cb, FP_SCRATCH0_OPND.into(), (*right).into());
+                        movsd_load(cb, (*out).into(), FP_SCRATCH0_OPND.into());
+                    } else if *out == *right && *out != *left {
+                        emit_op(cb, (*out).into(), (*left).into());
+                    } else if *out != *left {
+                        movsd_load(cb, (*out).into(), (*left).into());
+                        emit_op(cb, (*out).into(), (*right).into());
+                    } else {
+                        emit_op(cb, (*out).into(), (*right).into());
+                    }
+                },
+                Insn::F64SqrtRaw { val, out } => {
+                    if *out != *val {
+                        movsd_load(cb, (*out).into(), (*val).into());
+                    }
+                    sqrtsd(cb, (*out).into(), (*out).into());
+                },
+                Insn::FixnumToF64Raw { val, out } => {
+                    mov(cb, R11, (*val).into());
+                    sar(cb, R11, uimm_opnd(1));
+                    cvtsi2sd(cb, (*out).into(), R11);
+                },
+                Insn::F64BoolCmpRaw { op, left, right, out } => {
+                    let cmov_fn = match op {
+                        F64BoolCmpOp::Eq => cmove,
+                        F64BoolCmpOp::Lt => cmovb,
+                        F64BoolCmpOp::Le => cmovbe,
+                        F64BoolCmpOp::Gt => cmova,
+                        F64BoolCmpOp::Ge => cmovae,
+                    };
+                    emit_f64_bool_compare(cb, *left, *right, *out, cmov_fn);
+                },
+
                 Insn::And { left, right, .. } => {
                     and(cb, left.into(), right.into());
                 },
@@ -863,6 +1076,7 @@ impl Assembler {
                         Opnd::Value(val) if val.heap_object_p() => {
                             emit_load_gc_value(cb, &mut gc_offsets, out.into(), *val);
                         }
+                        _ if *out == *opnd => {}
                         _ => mov(cb, out.into(), opnd.into())
                     }
                 },
@@ -873,7 +1087,9 @@ impl Assembler {
 
                 Insn::Store { dest, src } |
                 Insn::Mov { dest, src } => {
-                    mov(cb, dest.into(), src.into());
+                    if dest != src {
+                        mov(cb, dest.into(), src.into());
+                    }
                 },
 
                 // Load effective address
@@ -1301,6 +1517,7 @@ mod tests {
         asm.x86_scratch_split()
     }
 
+    #[cfg(feature = "disasm")]
     fn binop_mnemonic(kind: BinOpKind) -> &'static str {
         match kind {
             BinOpKind::Add => "add",
@@ -1311,6 +1528,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "disasm")]
     fn split_binop_disasm_lines(kind: BinOpKind, left: Opnd, right: Opnd, out: Opnd) -> Vec<String> {
         let mut asm = split_binop(kind, left, right, out);
         let mut cb = CodeBlock::new_dummy();
@@ -1331,6 +1549,7 @@ mod tests {
             .collect()
     }
 
+    #[cfg(feature = "disasm")]
     fn assert_split_binop_case(kind: BinOpKind, left: Opnd, right: Opnd, out: Opnd, case: &str) {
         fn reg_names(reg: Reg) -> (&'static str, &'static str) {
             const RAX_NO: u8 = RAX_REG.reg_no;
@@ -1985,19 +2204,19 @@ mod tests {
         0x20: push 0
         0x22: mov eax, 0
         0x27: call rax
-        0x29: pop r8
-        0x2b: pop r8
-        0x2d: pop rcx
-        0x2e: pop rdx
-        0x2f: pop rsi
-        0x30: pop rdi
-        0x31: add rdi, rsi
-        0x34: mov rdi, rdx
-        0x37: add rdi, rcx
-        0x3a: mov rdi, rdx
-        0x3d: add rdi, r8
+        0x29: pop rax
+        0x2a: pop r8
+        0x2c: pop rcx
+        0x2d: pop rdx
+        0x2e: pop rsi
+        0x2f: pop rdi
+        0x30: add rdi, rsi
+        0x33: mov rdi, rdx
+        0x36: add rdi, rcx
+        0x39: mov rdi, rdx
+        0x3c: add rdi, r8
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005756525141506a00b800000000ffd041584158595a5e5f4801f74889d74801cf4889d74c01c7");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005756525141506a00b800000000ffd0584158595a5e5f4801f74889d74801cf4889d74c01c7");
     }
 
     #[test]
@@ -2192,6 +2411,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "disasm")]
     fn test_add_split_direct_mem() {
         // RAX is safe to be clobbered because it's an output
         // c_ret <- add stack[0], stack[1]
@@ -2207,6 +2427,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "disasm")]
     fn test_add_split_stack_indirect_left_uses_scratch0_for_base_and_result() {
         // stack[1] <- add stack[mem[0]], cfp
         let lines = split_binop_disasm_lines(BinOpKind::Add, stack_indirect_mem(0), CFP, stack_mem(1));
@@ -2223,6 +2444,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "disasm")]
     fn test_add_split_stack_indirect_right_uses_separate_base_scratch() {
         // mem[1] <- add cfp, mem[stack[0]]
         let lines = split_binop_disasm_lines(BinOpKind::Add, CFP, stack_indirect_mem(0), stack_mem(1));
@@ -2239,6 +2461,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "disasm")]
     fn test_add_split_two_stack_indirect_inputs_need_two_scratch_regs() {
         // stack[2] <- add [stack[0]], [stack[1]]
         let lines = split_binop_disasm_lines(BinOpKind::Add,
@@ -2260,6 +2483,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "disasm")]
     fn test_add_split_memory_output_can_compute_in_place() {
         // stack[1] <- add cfp, stack[0]
         let lines = split_binop_disasm_lines(BinOpKind::Add, CFP, stack_mem(0), stack_mem(1));
@@ -2273,6 +2497,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "disasm")]
     fn test_add_split_reg_mem_mem_when_right_equals_out() {
         // stack[1] <- add cfp, stack[1]
         //
@@ -2367,6 +2592,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "disasm")]
     fn test_add_split_output_reg_reused_as_input_memory_base_with_imm() {
         // cfp <- add 7, [cfp + 16]
         //
@@ -2388,6 +2614,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "disasm")]
     fn test_binop_split_matrix() {
         let left_cases = [
             ("reg", CFP),
