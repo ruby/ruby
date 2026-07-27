@@ -141,18 +141,12 @@ require 'json/common'
 # Option +allow_duplicate_key+ specifies whether duplicate keys in objects
 # should be ignored or cause an error to be raised:
 #
-# When not specified:
-#   # The last value is used and a deprecation warning emitted.
-#   JSON.parse('{"a": 1, "a":2}') => {"a" => 2}
-#   # warning: detected duplicate keys in JSON object.
-#   # This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`
+# When set to +false+, the default:
+#   JSON.parse('{"a": 1, "a":2}') => duplicate key at line 1 column 1 (JSON::ParserError)
 #
 # When set to +true+:
 #   # The last value is used.
-#   JSON.parse('{"a": 1, "a":2}') => {"a" => 2}
-#
-# When set to +false+, the future default:
-#   JSON.parse('{"a": 1, "a":2}') => duplicate key at line 1 column 1 (JSON::ParserError)
+#   JSON.parse('{"a": 1, "a":2}', allow_duplicate_key: true) => {"a" => 2}
 #
 # ---
 #
@@ -360,18 +354,13 @@ require 'json/common'
 # hashes with duplicate keys should be allowed or produce an error.
 # defaults to emit a deprecation warning.
 #
-# With the default, (not set):
-#   Warning[:deprecated] = true
+# With the default, <tt>false</tt>:
 #   JSON.generate({ foo: 1, "foo" => 2 })
-#   # warning: detected duplicate key "foo" in {foo: 1, "foo" => 2}.
-#   # This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`
-#   # => '{"foo":1,"foo":2}'
-#
-# With <tt>false</tt>
-#   JSON.generate({ foo: 1, "foo" => 2 }, allow_duplicate_key: false)
 #   # detected duplicate key "foo" in {foo: 1, "foo" => 2} (JSON::GeneratorError)
 #
-# In version 3.0, <tt>false</tt> will become the default.
+# With <tt>true</tt>
+#   JSON.generate({ foo: 1, "foo" => 2 }, allow_duplicate_key: true)
+#   # => '{"foo":1,"foo":2}'
 #
 # ---
 #

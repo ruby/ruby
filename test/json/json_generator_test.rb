@@ -329,6 +329,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_state_defaults
     state = JSON::State.new
     assert_equal({
+      :allow_duplicate_key   => false,
       :allow_nan             => false,
       :array_nl              => "",
       :as_json               => false,
@@ -1088,13 +1089,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_generate_duplicate_keys_allowed
     hash = { foo: 1, "foo" => 2 }
     assert_equal %({"foo":1,"foo":2}), JSON.generate(hash, allow_duplicate_key: true)
-  end
-
-  def test_generate_duplicate_keys_deprecated
-    hash = { foo: 1, "foo" => 2 }
-    assert_deprecated_warning(/allow_duplicate_key/) do
-      assert_equal %({"foo":1,"foo":2}), JSON.generate(hash)
-    end
   end
 
   def test_generate_duplicate_keys_disallowed

@@ -9,12 +9,6 @@
 
 /* ruby api and some helpers */
 
-enum duplicate_key_action {
-    JSON_DEPRECATED = 0,
-    JSON_IGNORE,
-    JSON_RAISE,
-};
-
 typedef struct JSON_Generator_StateStruct {
     VALUE indent;
     VALUE space;
@@ -27,8 +21,7 @@ typedef struct JSON_Generator_StateStruct {
     long depth;
     long buffer_initial_length;
 
-    enum duplicate_key_action on_duplicate_key;
-
+    bool allow_duplicate_key;
     bool as_json_single_arg;
     bool allow_nan;
     bool ascii_only;
@@ -956,9 +949,8 @@ json_inspect_hash_with_mixed_keys(struct hash_foreach_arg *arg)
     arg->mixed_keys_encountered = true;
 
     JSON_Generator_State *state = arg->data->state;
-    if (state->on_duplicate_key != JSON_IGNORE) {
-        VALUE do_raise = state->on_duplicate_key == JSON_RAISE ? Qtrue : Qfalse;
-        rb_funcall(mJSON, rb_intern("on_mixed_keys_hash"), 2, arg->hash, do_raise);
+    if (!state->allow_duplicate_key) {
+        rb_funcall(mJSON, rb_intern("on_mixed_keys_hash"), 1, arg->hash);
     }
 }
 
@@ -1784,14 +1776,7 @@ static VALUE cState_sort_keys_set(VALUE self, VALUE value)
 static VALUE cState_allow_duplicate_key_p(VALUE self)
 {
     GET_STATE(self);
-    switch (state->on_duplicate_key) {
-        case JSON_IGNORE:
-            return Qtrue;
-        case JSON_DEPRECATED:
-            return Qnil;
-        default:
-            return Qfalse;
-    }
+    return state->allow_duplicate_key ? Qtrue : Qfalse;
 }
 
 /*
@@ -1885,7 +1870,7 @@ static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
     else if (key == sym_script_safe)           { state->script_safe = RTEST(val); }
     else if (key == sym_escape_slash)          { state->script_safe = RTEST(val); }
     else if (key == sym_strict)                { state->strict = RTEST(val); }
-    else if (key == sym_allow_duplicate_key)   { state->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
+    else if (key == sym_allow_duplicate_key)   { state->allow_duplicate_key = RTEST(val); }
     else if (key == sym_as_json)               {
         VALUE proc = RTEST(val) ? rb_convert_type(val, T_DATA, "Proc", "to_proc") : Qfalse;
         state->as_json_single_arg = proc && rb_proc_arity(proc) == 1;

@@ -413,9 +413,9 @@ typedef struct JSON_ParserStruct {
     VALUE on_load_proc;
     VALUE decimal_class;
     ID decimal_method_id;
-    enum deprecatable_action on_duplicate_key;
     enum deprecatable_action on_comment;
     int max_nesting;
+    bool allow_duplicate_key;
     bool allow_nan;
     bool allow_trailing_comma;
     bool allow_control_characters;
@@ -1219,17 +1219,6 @@ static VALUE json_find_duplicated_key(size_t count, const VALUE *pairs)
     return Qfalse;
 }
 
-NOINLINE(static) void emit_duplicate_key_warning(JSON_ParserState *state, VALUE duplicate_key)
-{
-    VALUE message = rb_sprintf(
-        "detected duplicate key %"PRIsVALUE" in JSON object. This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`",
-        rb_inspect(duplicate_key)
-    );
-
-    emit_parse_warning(RSTRING_PTR(message), state);
-    RB_GC_GUARD(message);
-}
-
 NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE duplicate_key)
 {
     VALUE message = rb_sprintf(
@@ -1250,23 +1239,9 @@ NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE d
 
 NOINLINE(static) void json_on_duplicate_key(JSON_ParserState *state, JSON_ParserConfig *config, size_t count, const VALUE *pairs)
 {
-    switch (config->on_duplicate_key) {
-        case JSON_IGNORE:
-            return;
-
-        case JSON_DEPRECATED:
-            // Only emit the first few deprecations to avoid spamming.
-            if (state->emitted_deprecations < MAX_DEPRECATIONS) {
-                state->emitted_deprecations++;
-                emit_duplicate_key_warning(state, json_find_duplicated_key(count, pairs));
-            }
-            return;
-
-        case JSON_RAISE:
-            raise_duplicate_key_error(state, json_find_duplicated_key(count, pairs));
-            return;
+    if (!config->allow_duplicate_key) {
+        raise_duplicate_key_error(state, json_find_duplicated_key(count, pairs));
     }
-    UNREACHABLE;
 }
 
 static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfig *config, size_t count)
@@ -2038,7 +2013,7 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
     else if (key == sym_symbolize_names)            { config->symbolize_names = RTEST(val); }
     else if (key == sym_freeze)                     { config->freeze = RTEST(val); }
     else if (key == sym_on_load)                    { parser_config_wb_write(self, &config->on_load_proc, RTEST(val) ? val : Qfalse); }
-    else if (key == sym_allow_duplicate_key)        { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
+    else if (key == sym_allow_duplicate_key)        { config->allow_duplicate_key = RTEST(val); }
     else if (key == sym_decimal_class)              {
         if (RTEST(val)) {
             if (rb_respond_to(val, i_try_convert)) {
