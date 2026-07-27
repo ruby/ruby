@@ -574,6 +574,13 @@ struct rb_iseq_constant_body {
     // ZJIT stores some data on each iseq.
     void *zjit_payload;
 #endif
+
+    /* NativeSorbet: optional pointer to precomputed native type-check metadata
+     * for this method. NULL (the ZALLOC default) for every method without a
+     * registered signature, so the per-call cost is a single load + predicted-
+     * not-taken branch. Set via rb_native_tc_attach(). Placed last so adding it
+     * does not shift any existing field offset. */
+    void *typecheck;
 };
 
 /* T_IMEMO/iseq */
@@ -1127,6 +1134,20 @@ struct rb_execution_context_struct {
 typedef struct rb_execution_context_struct rb_execution_context_t;
 #define rb_execution_context_t rb_execution_context_t
 #endif
+
+/* NativeSorbet: targeted native type-check callbacks. When an iseq's
+ * `body->typecheck` is non-NULL, the VM invokes these at method entry and on
+ * normal return (`leave`). Registered by an extension via rb_native_tc_set_hooks. */
+typedef void (*rb_native_tc_entry_func_t)(rb_execution_context_t *ec, rb_control_frame_t *cfp, void *data);
+typedef void (*rb_native_tc_return_func_t)(rb_execution_context_t *ec, rb_control_frame_t *cfp, void *data, VALUE retval);
+RUBY_EXTERN rb_native_tc_entry_func_t rb_native_tc_entry;
+RUBY_EXTERN rb_native_tc_return_func_t rb_native_tc_return;
+/* Exported so a native extension can resolve them at dlopen time (ruby is not
+ * linked -rdynamic; only RUBY_SYMBOL_EXPORT-marked symbols land in .dynsym). */
+RUBY_SYMBOL_EXPORT_BEGIN
+void rb_native_tc_set_hooks(rb_native_tc_entry_func_t entry, rb_native_tc_return_func_t ret);
+void rb_native_tc_attach(VALUE iseqw, void *data);
+RUBY_SYMBOL_EXPORT_END
 
 // for builtin.h
 #define VM_CORE_H_EC_DEFINED 1

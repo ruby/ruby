@@ -1191,6 +1191,12 @@ leave
         }
     }
 
+    /* NativeSorbet: targeted return type-check. `leave` runs only on normal
+     * return, so exception unwinding never reaches here (no masking). */
+    if (UNLIKELY(ISEQ_BODY(GET_ISEQ())->typecheck != NULL)) {
+        rb_native_tc_return(ec, GET_CFP(), ISEQ_BODY(GET_ISEQ())->typecheck, val);
+    }
+
     if (vm_pop_frame(ec, GET_CFP(), GET_EP())) {
 #if OPT_CALL_THREADED_CODE
         rb_ec_thread_ptr(ec)->retval = val;

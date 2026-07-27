@@ -3415,6 +3415,12 @@ vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, s
                   ISEQ_BODY(iseq)->iseq_encoded + opt_pc, sp,
                   local_size - param_size,
                   ISEQ_BODY(iseq)->stack_max);
+
+    /* NativeSorbet: targeted argument type-check. Common case is a single
+     * predicted-not-taken branch; the callback reads args off ec->cfp->ep. */
+    if (UNLIKELY(ISEQ_BODY(iseq)->typecheck != NULL)) {
+        rb_native_tc_entry(ec, ec->cfp, ISEQ_BODY(iseq)->typecheck);
+    }
     return Qundef;
 }
 

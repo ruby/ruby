@@ -2047,6 +2047,37 @@ rb_iseqw_to_iseq(VALUE iseqw)
     return iseqw_check(iseqw);
 }
 
+/* ---- NativeSorbet: targeted native type-check callbacks ---- */
+static void
+tc_noop_entry(rb_execution_context_t *ec, rb_control_frame_t *cfp, void *data)
+{
+    (void)ec; (void)cfp; (void)data;
+}
+static void
+tc_noop_return(rb_execution_context_t *ec, rb_control_frame_t *cfp, void *data, VALUE retval)
+{
+    (void)ec; (void)cfp; (void)data; (void)retval;
+}
+
+rb_native_tc_entry_func_t rb_native_tc_entry = tc_noop_entry;
+rb_native_tc_return_func_t rb_native_tc_return = tc_noop_return;
+
+void
+rb_native_tc_set_hooks(rb_native_tc_entry_func_t entry, rb_native_tc_return_func_t ret)
+{
+    rb_native_tc_entry = entry ? entry : tc_noop_entry;
+    rb_native_tc_return = ret ? ret : tc_noop_return;
+}
+
+/* Attach (or clear, if data == NULL) precomputed type-check metadata to the
+ * iseq underlying an InstructionSequence wrapper (RubyVM::InstructionSequence.of). */
+void
+rb_native_tc_attach(VALUE iseqw, void *data)
+{
+    const rb_iseq_t *iseq = rb_iseqw_to_iseq(iseqw);
+    ((struct rb_iseq_constant_body *)ISEQ_BODY(iseq))->typecheck = data;
+}
+
 /*
  *  call-seq:
  *     iseq.eval -> obj
