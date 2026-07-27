@@ -3,10 +3,6 @@ require_relative 'test_helper'
 require 'stringio'
 require 'tempfile'
 begin
-  require 'ostruct'
-rescue LoadError
-end
-begin
   require 'bigdecimal'
 rescue LoadError
 end
@@ -758,42 +754,31 @@ class JSONParserTest < Test::Unit::TestCase
     assert res.item_set?
   end
 
-  if defined?(::OpenStruct)
-    class SubOpenStruct < OpenStruct
-      def [](k)
-        __send__(k)
-      end
-
-      def []=(k, v)
-        @item_set = true
-        __send__("#{k}=", v)
-      end
-
-      def item_set?
-        @item_set
-      end
+  class OpenStructLike
+    def initialize
+      @attrs = {}
     end
 
-    def test_parse_object_custom_non_hash_derived_class
-      res = parse('{"foo":"bar"}', :object_class => SubOpenStruct)
-      assert_equal "bar", res.foo
-      assert_equal "bar", res[:foo]
-      assert_equal(SubOpenStruct, res.class)
-      assert res.item_set?
+    def [](k)
+      @attrs[k.to_sym]
     end
 
-    def test_parse_generic_object
-      res = parse(
-        '{"foo":"bar", "baz":{}}',
-        :object_class => JSON::GenericObject
-      )
-      assert_equal(JSON::GenericObject, res.class)
-      assert_equal "bar", res.foo
-      assert_equal "bar", res["foo"]
-      assert_equal "bar", res[:foo]
-      assert_equal "bar", res.to_hash[:foo]
-      assert_equal(JSON::GenericObject, res.baz.class)
+    def []=(k, v)
+      @attrs[k.to_sym] = v
     end
+
+    def method_missing(name, ...)
+      @attrs.fetch(name) do
+        super
+      end
+    end
+  end
+
+  def test_parse_object_custom_non_hash_derived_class
+    res = parse('{"foo":"bar"}', :object_class => OpenStructLike)
+    assert_equal "bar", res.foo
+    assert_equal "bar", res[:foo]
+    assert_equal(OpenStructLike, res.class)
   end
 
   def test_generate_core_subclasses_with_default_to_json

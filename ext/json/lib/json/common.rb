@@ -3,8 +3,6 @@
 require 'json/version'
 
 module JSON
-  autoload :GenericObject, 'json/generic_object'
-
   module ParserOptions # :nodoc:
     class << self
       def prepare(opts)
