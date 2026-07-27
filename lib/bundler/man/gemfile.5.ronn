@@ -137,6 +137,13 @@ Each _gem_ `MAY` have one or more version specifiers.
     gem "nokogiri", ">= 1.4.2"
     gem "RedCloth", ">= 4.1.0", "< 4.2.0"
 
+Most version specifiers, like `>= 1.0`, are self-explanatory. The pessimistic
+specifier `~>` constrains both a lower and an upper bound: `~> 2.0.3` is
+identical to `>= 2.0.3` and `< 2.1`, and `~> 2.1` is identical to `>= 2.1` and
+`< 3.0`. A pessimistic specifier with a prerelease component, like
+`~> 2.2.beta`, will match prerelease versions like `2.2.beta.12`. `~> 0` is
+identical to `>= 0.0` and `< 1.0`.
+
 ### REQUIRE AS
 
 Each _gem_ `MAY` specify files that should be used when autorequiring via
@@ -540,6 +547,18 @@ for the gemspec (defaults to: `{,*,*/*}.gemspec`), what named `.gemspec` it uses
 When a `gemspec` dependency encounters version conflicts during resolution, the
 local version under development will always be selected -- even if there are
 remote versions that better match other requirements for the `gemspec` gem.
+
+## EVAL_GEMFILE
+
+A Gemfile `MAY` be split across multiple files. The `eval_gemfile` method reads
+the contents of another file as if they appeared in the current Gemfile. A
+relative path is resolved against the directory of the file containing the
+call.
+
+    eval_gemfile "another.gemfile"
+
+This can be useful to run tests against multiple combinations of dependencies,
+or to load per-developer gems from an untracked gemfile.
 
 ## OVERRIDE
 
