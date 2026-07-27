@@ -3492,6 +3492,18 @@ vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, s
                   ISEQ_BODY(iseq)->iseq_encoded + opt_pc, sp,
                   local_size - param_size,
                   ISEQ_BODY(iseq)->stack_max);
+
+    /* NativeSorbet targeted-raw: st_table lookup, direct callback. */
+    if (UNLIKELY(rb_native_tc_raw_hooks != NULL)) {
+        st_data_t val;
+        if (st_lookup(rb_native_tc_raw_hooks, (st_data_t)iseq, &val)) {
+            struct rb_trace_arg_struct arg = {0};
+            arg.event = RUBY_EVENT_CALL;
+            arg.ec = ec;
+            arg.cfp = ec->cfp;
+            ((rb_native_tc_raw_func_t)val)(&arg);
+        }
+    }
     return Qundef;
 }
 

@@ -1170,6 +1170,19 @@ leave
         }
     }
 
+    /* NativeSorbet targeted-raw: st_table lookup, direct callback. */
+    if (UNLIKELY(rb_native_tc_raw_hooks != NULL)) {
+        st_data_t _val;
+        if (st_lookup(rb_native_tc_raw_hooks, (st_data_t)GET_ISEQ(), &_val)) {
+            struct rb_trace_arg_struct arg = {0};
+            arg.event = RUBY_EVENT_RETURN;
+            arg.ec = ec;
+            arg.cfp = GET_CFP();
+            arg.data = val;
+            ((rb_native_tc_raw_func_t)_val)(&arg);
+        }
+    }
+
     if (vm_pop_frame(ec, GET_CFP(), GET_EP())) {
 #if OPT_CALL_THREADED_CODE
         rb_ec_thread_ptr(ec)->retval = val;

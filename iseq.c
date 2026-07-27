@@ -2023,6 +2023,27 @@ rb_iseqw_to_iseq(VALUE iseqw)
     return iseqw_check(iseqw);
 }
 
+/* ---- NativeSorbet targeted-raw: per-iseq native callback ---- */
+st_table *rb_native_tc_raw_hooks = NULL;
+
+void
+rb_native_tc_raw_target(VALUE iseqw, rb_native_tc_raw_func_t func)
+{
+    const rb_iseq_t *iseq = rb_iseqw_to_iseq(iseqw);
+    if (!rb_native_tc_raw_hooks) {
+        rb_native_tc_raw_hooks = st_init_numtable();
+    }
+    st_insert(rb_native_tc_raw_hooks, (st_data_t)iseq, (st_data_t)func);
+}
+
+void
+rb_native_tc_raw_enable(void)
+{
+    if (!rb_native_tc_raw_hooks) {
+        rb_native_tc_raw_hooks = st_init_numtable();
+    }
+}
+
 /*
  *  call-seq:
  *     iseq.eval -> obj

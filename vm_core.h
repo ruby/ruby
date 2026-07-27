@@ -921,6 +921,17 @@ typedef struct rb_control_frame_struct {
 #endif
 } rb_control_frame_t;
 
+/* NativeSorbet targeted-raw: per-iseq native type-check callback stored in an
+ * st_table keyed by iseq pointer. The VM checks this at method entry (after
+ * frame push) and at `leave`; if found, calls the function directly with a
+ * minimal rb_trace_arg_struct. No TracePoint object, no hook list iteration. */
+typedef void (*rb_native_tc_raw_func_t)(const struct rb_trace_arg_struct *arg);
+extern st_table *rb_native_tc_raw_hooks;
+RUBY_SYMBOL_EXPORT_BEGIN
+void rb_native_tc_raw_target(VALUE iseqw, rb_native_tc_raw_func_t func);
+void rb_native_tc_raw_enable(void);
+RUBY_SYMBOL_EXPORT_END
+
 extern const rb_data_type_t ruby_threadptr_data_type;
 
 static inline struct rb_thread_struct *
