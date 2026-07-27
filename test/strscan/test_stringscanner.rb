@@ -578,6 +578,26 @@ module StringScannerTests
     assert_integer_at(s, 0, 0) # 0xaf
   end
 
+  def test_integer_at_shrunk
+    omit("not supported on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+
+    s = create_string_scanner(+"before 29 after")
+    s.skip_until(" ")
+    assert_equal("29", s.scan(/\d+/))
+    s.string.replace("before ")
+    assert_nil(s.integer_at(0))
+  end
+
+  def test_integer_at_shrunk_partial
+    omit("not supported on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+
+    s = create_string_scanner(+"before 29 after")
+    s.skip_until(" ")
+    assert_equal("29", s.scan(/\d+/))
+    s.string.replace("before 2")
+    assert_integer_at(s, 2)
+  end
+
   def test_pre_match
     s = create_string_scanner('a b c d e')
     s.scan(/\w/)

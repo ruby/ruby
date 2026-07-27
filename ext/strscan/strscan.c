@@ -1862,8 +1862,13 @@ strscan_integer_at(int argc, VALUE *argv, VALUE self)
         return Qnil;
 
     beg = adjust_register_position(p, p->regs.beg[i]);
+    if (beg > S_LEN(p))
+        return Qnil;
     end = adjust_register_position(p, p->regs.end[i]);
+    end = minl(end, S_LEN(p));
     len = end - beg;
+    if (len == 0)
+        return Qnil;
     ptr = S_PBEG(p) + beg;
 #ifdef HAVE_RB_INT_PARSE_CSTR
     {
