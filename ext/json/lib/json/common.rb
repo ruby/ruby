@@ -1136,36 +1136,6 @@ end
 module ::Kernel
   private
 
-  # Outputs _objs_ to STDOUT as JSON strings in the shortest form, that is in
-  # one line.
-  def j(*objs)
-    if RUBY_VERSION >= "3.0"
-      warn "Kernel#j is deprecated and will be removed in json 3.0.0", uplevel: 1, category: :deprecated
-    else
-      warn "Kernel#j is deprecated and will be removed in json 3.0.0", uplevel: 1
-    end
-
-    objs.each do |obj|
-      puts JSON.generate(obj, :allow_nan => true, :max_nesting => false)
-    end
-    nil
-  end
-
-  # Outputs _objs_ to STDOUT as JSON strings in a pretty format, with
-  # indentation and over many lines.
-  def jj(*objs)
-    if RUBY_VERSION >= "3.0"
-      warn "Kernel#jj is deprecated and will be removed in json 3.0.0", uplevel: 1, category: :deprecated
-    else
-      warn "Kernel#jj is deprecated and will be removed in json 3.0.0", uplevel: 1
-    end
-
-    objs.each do |obj|
-      puts JSON.pretty_generate(obj, :allow_nan => true, :max_nesting => false)
-    end
-    nil
-  end
-
   # If _object_ is string-like, parse the string and return the parsed result as
   # a Ruby data structure. Otherwise, generate a JSON text from the Ruby data
   # structure object and return it.
