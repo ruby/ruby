@@ -1,0 +1,7 @@
+exclude(:test_capacity_embedded, "depends on max slot size")
+exclude(:test_capacity_frozen, "depends on max slot size")
+exclude(:test_capacity_fstring, "depends on max slot size")
+exclude(:test_capacity_normal, "depends on max slot size")
+exclude(:test_io_read, "depends on max slot size")
+exclude(:test_literal_capacity, "depends on max slot size")
+exclude(:test_s_new_capacity, "depends on max slot size")
