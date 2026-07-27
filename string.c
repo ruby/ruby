@@ -1967,10 +1967,10 @@ str_duplicate_setup_heap(VALUE klass, VALUE str, VALUE dup)
     str_duplicate_setup_encoding(str, dup, flags);
 }
 
-/* Force duplicated strings above 1024 bytes to be views rather than copies since
+/* Force duplicated strings above 256 bytes to be views rather than copies since
  * copying will use memory and have significant overhead.
- * Calculated as: 1024 - header size - NUL terminator size */
-#define STR_DUPLICATE_MAX_EMBED_LEN ((long)(1024 - offsetof(struct RString, as.embed) - 1))
+ * Calculated as: 256 - header size - NUL terminator size */
+#define STR_DUPLICATE_MAX_EMBED_LEN ((long)(256 - offsetof(struct RString, as.embed) - 1))
 
 static inline VALUE
 str_duplicate(VALUE klass, VALUE str)

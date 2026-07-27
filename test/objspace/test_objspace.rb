@@ -28,7 +28,7 @@ class TestObjSpace < Test::Unit::TestCase
                     ObjectSpace.memsize_of(//.match("")))
   end
 
-  STR_DUPLICATE_MAX_EMBED_LEN = 999 # From macro defined in string.c
+  STR_DUPLICATE_MAX_EMBED_LEN = 256 - (RbConfig::SIZEOF["void*"] * 3) - 1 # From macro defined in string.c
 
   def test_memsize_of_root_shared_string
     a = "a" * (STR_DUPLICATE_MAX_EMBED_LEN + 1)
@@ -36,7 +36,7 @@ class TestObjSpace < Test::Unit::TestCase
     c = nil
     ObjectSpace.each_object(String) {|x| break c = x if a == x and x.frozen?}
     rv_size = Integer(ObjectSpace.dump(a)[/"slot_size":(\d+)/, 1])
-    assert_equal([rv_size, rv_size, a.length + 1 + rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
+    assert_equal([rv_size, GC::INTERNAL_CONSTANTS[:RVALUE_SIZE], rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
   end
 
   def test_argf_memsize
