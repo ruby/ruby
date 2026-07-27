@@ -271,12 +271,6 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     assert_equal JSON.dump(big_object), io.string
   end
 
-  def test_dump_should_modify_defaults
-    max_nesting = JSON._dump_default_options[:max_nesting]
-    dump([], StringIO.new, 10)
-    assert_equal max_nesting, JSON._dump_default_options[:max_nesting]
-  end
-
   def test_JSON
     assert_equal @json, JSON(@hash)
     assert_equal @json, JSON(@hash_with_method_missing)
@@ -312,12 +306,6 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
         JSON.load_file(path)
       end
       assert_equal data, loaded_data
-    end
-  end
-
-  def test_deprecated_dump_default_options
-    assert_deprecated_warning(/dump_default_options/) do
-      JSON.dump_default_options
     end
   end
 

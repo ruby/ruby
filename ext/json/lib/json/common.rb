@@ -64,7 +64,6 @@ module JSON
           when String
             opts[:match_string]&.each do |pattern, klass|
               if match = pattern.match(object)
-                create_additions_warning if create_additions.nil?
                 object = klass.json_create(object)
                 break
               end
@@ -79,7 +78,6 @@ module JSON
                 end
 
                 if klass.respond_to?(:json_creatable?) ? klass.json_creatable? : klass.respond_to?(:json_create)
-                  create_additions_warning if create_additions.nil?
                   object = klass.json_create(object)
                 end
               end
@@ -90,12 +88,6 @@ module JSON
         end
 
         opts
-      end
-
-      def create_additions_warning
-        JSON.deprecation_warning "JSON.load implicit support for `create_additions: true` is deprecated " \
-          "and will be removed in 3.0, use JSON.unsafe_load or explicitly " \
-          "pass `create_additions: true`"
       end
     end
   end
@@ -203,27 +195,6 @@ module JSON
         else
           set[key_str] = true
         end
-      end
-    end
-
-    def deprecated_singleton_attr_accessor(*attrs)
-      args = RUBY_VERSION >= "3.0" ? ", category: :deprecated" : ""
-      attrs.each do |attr|
-        singleton_class.class_eval <<~RUBY
-          def #{attr}
-            warn "JSON.#{attr} is deprecated and will be removed in json 3.0.0", uplevel: 1 #{args}
-            @#{attr}
-          end
-
-          def #{attr}=(val)
-            warn "JSON.#{attr}= is deprecated and will be removed in json 3.0.0", uplevel: 1 #{args}
-            @#{attr} = val
-          end
-
-          def _#{attr}
-            @#{attr}
-          end
-        RUBY
       end
     end
   end
@@ -531,30 +502,6 @@ module JSON
     State.generate(obj, options, nil)
   end
 
-  # Sets or returns default options for the JSON.unsafe_load method.
-  # Initially:
-  #   opts = JSON.load_default_options
-  #   opts # => {:max_nesting=>false, :allow_nan=>true, :allow_blank=>true, :create_additions=>true}
-  deprecated_singleton_attr_accessor :unsafe_load_default_options
-
-  @unsafe_load_default_options = {
-    :max_nesting      => false,
-    :allow_nan        => true,
-    :allow_blank      => true,
-    :create_additions => true,
-  }
-
-  # Sets or returns default options for the JSON.load method.
-  # Initially:
-  #   opts = JSON.load_default_options
-  #   opts # => {:max_nesting=>false, :allow_nan=>true, :allow_blank=>true, :create_additions=>true}
-  deprecated_singleton_attr_accessor :load_default_options
-
-  @load_default_options = {
-    :allow_nan        => true,
-    :allow_blank      => true,
-    :create_additions => nil,
-  }
   # :call-seq:
   #   JSON.unsafe_load(source, options = {}) -> object
   #   JSON.unsafe_load(source, proc = nil, options = {}) -> object
@@ -581,7 +528,6 @@ module JSON
   #   See details below.
   # - Argument +opts+, if given, contains a \Hash of options for the parsing.
   #   See {Parsing Options}[#module-JSON-label-Parsing+Options].
-  #   The default options can be changed via method JSON.unsafe_load_default_options=.
   #
   # ---
   #
@@ -687,16 +633,17 @@ module JSON
   #      @attributes={"type"=>"Admin", "password"=>"0wn3d"}>}
   #
   def unsafe_load(source, proc = nil, options = nil)
-    opts = if options.nil?
-      if proc && proc.is_a?(Hash)
-        options, proc = proc, nil
-        options
-      else
-        _unsafe_load_default_options
-      end
-    else
-      _unsafe_load_default_options.merge(options)
+    opts = {
+      max_nesting: false,
+      allow_nan: true,
+      allow_blank: true,
+      create_additions: true,
+    }
+    if options.nil? && proc && proc.is_a?(Hash)
+      options, proc = proc, nil
     end
+
+    opts.merge!(options) unless options.nil?
 
     unless source.is_a?(String)
       if source.respond_to? :to_str
@@ -752,7 +699,6 @@ module JSON
   #   See details below.
   # - Argument +opts+, if given, contains a \Hash of options for the parsing.
   #   See {Parsing Options}[#module-JSON-label-Parsing+Options].
-  #   The default options can be changed via method JSON.load_default_options=.
   #
   # ---
   #
@@ -863,16 +809,12 @@ module JSON
       proc = nil
     end
 
-    opts = if options.nil?
-      if proc && proc.is_a?(Hash)
-        options, proc = proc, nil
-        options
-      else
-        _load_default_options
-      end
-    else
-      _load_default_options.merge(options)
-    end
+    opts = {
+      allow_nan: true,
+      allow_blank: true,
+    }
+
+    opts.merge!(options) unless options.nil?
 
     unless source.is_a?(String)
       if source.respond_to? :to_str
@@ -895,16 +837,6 @@ module JSON
 
     parse(source, opts)
   end
-
-  # Sets or returns the default options for the JSON.dump method.
-  # Initially:
-  #   opts = JSON.dump_default_options
-  #   opts # => {:max_nesting=>false, :allow_nan=>true}
-  deprecated_singleton_attr_accessor :dump_default_options
-  @dump_default_options = {
-    :max_nesting => false,
-    :allow_nan   => true,
-  }
 
   # :call-seq:
   #   JSON.dump(obj, io = nil, limit = nil)
@@ -954,9 +886,11 @@ module JSON
       end
     end
 
-    opts = JSON._dump_default_options
-    opts = opts.merge(:max_nesting => limit) if limit
-    opts = opts.merge(kwargs) if kwargs
+    opts = {
+      allow_nan: true,
+      max_nesting: limit,
+    }
+    opts.merge!(kwargs) if kwargs
 
     begin
       State.generate(obj, opts, anIO)
