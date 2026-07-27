@@ -2537,7 +2537,8 @@ struct io_buffer_set_value_arguments {
  *  call-seq: set_value(type, offset, value) -> offset
  *
  *  Write to a buffer a +value+ of +type+ at +offset+. +type+ should be one of
- *  symbols described in #get_value.
+ *  symbols described in #get_value. Returns the offset just after the written
+ *  value.
  *
  *    buffer = IO::Buffer.new(8)
  *    # =>
@@ -2545,7 +2546,7 @@ struct io_buffer_set_value_arguments {
  *    # 0x00000000  00 00 00 00 00 00 00 00
  *
  *    buffer.set_value(:U8, 1, 111)
- *    # => 1
+ *    # => 2
  *
  *    buffer
  *    # =>
@@ -2577,10 +2578,12 @@ io_buffer_set_value(VALUE self, VALUE type, VALUE _offset, VALUE value)
  *
  *  Write +values+ of +buffer_types+ at +offset+ to the buffer. +buffer_types+
  *  should be an array of symbols as described in #get_value. +values+ should
- *  be an array of values to write.
+ *  be an array of values to write. Returns the offset just after the last
+ *  written value.
  *
  *    buffer = IO::Buffer.new(8)
  *    buffer.set_values([:U8, :U16], 0, [1, 2])
+ *    # => 3
  *    buffer
  *    # =>
  *    # #<IO::Buffer 0x696f717561746978+8 INTERNAL>
