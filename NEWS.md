@@ -169,6 +169,7 @@ releases.
 * syslog 0.4.0
   * 0.3.0 to [v0.4.0][syslog-v0.4.0]
 * csv 3.3.6
+  * 3.3.5 to [v3.3.6][csv-v3.3.6]
 * repl_type_completor 0.1.15
   * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14], [v0.1.15][repl_type_completor-v0.1.15]
 * pstore 0.2.1
@@ -343,6 +344,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [resolv-replace-v0.2.0]: https://github.com/ruby/resolv-replace/releases/tag/v0.2.0
 [nkf-v0.3.0]: https://github.com/ruby/nkf/releases/tag/v0.3.0
 [syslog-v0.4.0]: https://github.com/ruby/syslog/releases/tag/v0.4.0
+[csv-v3.3.6]: https://github.com/ruby/csv/releases/tag/v3.3.6
 [repl_type_completor-v0.1.13]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.13
 [repl_type_completor-v0.1.14]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.14
 [repl_type_completor-v0.1.15]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.15
