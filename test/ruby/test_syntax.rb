@@ -627,7 +627,7 @@ class TestSyntax < Test::Unit::TestCase
   def test_cmd_symbol_superclass
     bug6347 = '[ruby-dev:45563]'
     @not_label = Object
-    assert_not_label(:foo, 'class Foo < not_label:foo; end', bug6347)
+    assert_not_label(:foo, "class Foo#{self.class}#{Ractor.current.object_id} < not_label:foo; end", bug6347)
   end
 
   def test_no_label_with_percent
@@ -2091,7 +2091,7 @@ eom
     assert_equal(1, b.new.foo(1), bug21256)
   end
 
-  BUG_21669 = '[Bug #21669]'
+  BUG_21669 = '[Bug #21669]'.freeze
 
   def test_value_expr_in_block
     assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 2.1")
