@@ -17,10 +17,6 @@ module JSON
           opts[:on_load] = on_load
         end
 
-        if opts.fetch(:create_additions, false) != false
-          opts = create_additions_proc(opts)
-        end
-
         opts
       end
 
@@ -46,48 +42,6 @@ module JSON
           end
           on_load.nil? ? obj : on_load.call(obj)
         end
-      end
-
-      # TODO: extract :create_additions support to another gem for version 3.0
-      def create_additions_proc(opts)
-        if opts[:symbolize_names]
-          raise ArgumentError, "options :symbolize_names and :create_additions cannot be  used in conjunction"
-        end
-
-        opts = opts.dup
-        create_additions = opts.fetch(:create_additions, false)
-        on_load = opts[:on_load]
-        object_class = opts[:object_class] || Hash
-
-        opts[:on_load] = ->(object) do
-          case object
-          when String
-            opts[:match_string]&.each do |pattern, klass|
-              if match = pattern.match(object)
-                object = klass.json_create(object)
-                break
-              end
-            end
-          when object_class
-            if opts[:create_additions] != false
-              if class_path = object[JSON.create_id]
-                klass = begin
-                  Object.const_get(class_path)
-                rescue NameError => e
-                  raise ArgumentError, "can't get const #{class_path}: #{e}"
-                end
-
-                if klass.respond_to?(:json_creatable?) ? klass.json_creatable? : klass.respond_to?(:json_create)
-                  object = klass.json_create(object)
-                end
-              end
-            end
-          end
-
-          on_load.nil? ? object : on_load.call(object)
-        end
-
-        opts
       end
     end
   end
@@ -180,19 +134,6 @@ module JSON
         end
       end
     end
-  end
-
-  # Sets create identifier, which is used to decide if the _json_create_
-  # hook of a class should be called; initial value is +json_class+:
-  #   JSON.create_id # => 'json_class'
-  def self.create_id=(new_value)
-    Thread.current[:"JSON.create_id"] = new_value.dup.freeze
-  end
-
-  # Returns the current create identifier.
-  # See also JSON.create_id=.
-  def self.create_id
-    Thread.current[:"JSON.create_id"] || 'json_class'
   end
 
   NaN           = Float::NAN
@@ -491,7 +432,7 @@ module JSON
   #
   # Returns the Ruby objects created by parsing the given +source+.
   #
-  # BEWARE: This method is meant to serialise data from trusted user input,
+  # BEWARE: This method is meant to deserialise data from trusted user input,
   # like from your own database server or clients under your control, it could
   # be dangerous to allow untrusted users to pass JSON sources into it.
   #
@@ -620,7 +561,6 @@ module JSON
       max_nesting: false,
       allow_nan: true,
       allow_blank: true,
-      create_additions: true,
     }
     if options.nil? && proc && proc.is_a?(Hash)
       options, proc = proc, nil
@@ -655,16 +595,6 @@ module JSON
   #   JSON.load(source, proc = nil, options = {}) -> object
   #
   # Returns the Ruby objects created by parsing the given +source+.
-  #
-  # BEWARE: This method is meant to serialise data from trusted user input,
-  # like from your own database server or clients under your control, it could
-  # be dangerous to allow untrusted users to pass JSON sources into it.
-  # If you must use it, use JSON.unsafe_load instead to make it clear.
-  #
-  # Since JSON version 2.8.0, `load` emits a deprecation warning when a
-  # non native type is deserialized, without `create_additions` being explicitly
-  # enabled, and in JSON version 3.0, `load` will have `create_additions` disabled
-  # by default.
   #
   # - Argument +source+ must be, or be convertible to, a \String:
   #   - If +source+ responds to instance method +to_str+,

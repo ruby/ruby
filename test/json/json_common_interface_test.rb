@@ -54,14 +54,6 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     assert_match(/::(TruffleRuby)?Generator::State\z/, JSON.state.name)
   end
 
-  def test_create_id
-    assert_equal 'json_class', JSON.create_id
-    JSON.create_id = 'foo_bar'
-    assert_equal 'foo_bar', JSON.create_id
-  ensure
-    JSON.create_id = 'json_class'
-  end
-
   def test_parse
     assert_equal [ 1, 2, 3, ], JSON.parse('[ 1, 2, 3 ]')
   end

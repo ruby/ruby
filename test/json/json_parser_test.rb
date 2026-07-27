@@ -477,9 +477,6 @@ class JSONParserTest < Test::Unit::TestCase
       parse('{"foo":"bar", "baz":"quux"}'))
     assert_equal({ :foo => "bar", :baz => "quux" },
       parse('{"foo":"bar", "baz":"quux"}', :symbolize_names => true))
-    assert_raise(ArgumentError) do
-      parse('{}', :symbolize_names => true, :create_additions => true)
-    end
   end
 
   def test_freeze
@@ -687,20 +684,6 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
-  class SubArray2 < Array
-    def to_json(*a)
-      {
-        JSON.create_id => self.class.name,
-        'ary'          => to_a,
-      }.to_json(*a)
-    end
-
-    def self.json_create(o)
-      o.delete JSON.create_id
-      o['ary']
-    end
-  end
-
   class SubArrayWrapper
     def initialize
       @data = []
@@ -811,18 +794,6 @@ class JSONParserTest < Test::Unit::TestCase
       assert_equal "bar", res.to_hash[:foo]
       assert_equal(JSON::GenericObject, res.baz.class)
     end
-  end
-
-  def test_generate_core_subclasses_with_new_to_json
-    obj = SubHash2["foo" => SubHash2["bar" => true]]
-    obj_json = JSON(obj)
-    obj_again = parse(obj_json, :create_additions => true)
-    assert_kind_of SubHash2, obj_again
-    assert_kind_of SubHash2, obj_again['foo']
-    assert obj_again['foo']['bar']
-    assert_equal obj, obj_again
-    assert_equal ["foo"],
-      JSON(JSON(SubArray2["foo"]), :create_additions => true)
   end
 
   def test_generate_core_subclasses_with_default_to_json

@@ -26,32 +26,13 @@ class JSONGenericObjectTest < Test::Unit::TestCase
     assert_nil @go[:c]
   end
 
-  def test_generate_json
-    switch_json_creatable do
-      assert_equal @go, JSON(JSON(@go), :create_additions => true)
-    end
-  end
-
   def test_parse_json
-    assert_kind_of Hash,
-      JSON(
-        '{ "json_class": "JSON::GenericObject", "a": 1, "b": 2 }',
-        :create_additions => true
-      )
-    switch_json_creatable do
-      assert_equal @go, l =
-        JSON(
-          '{ "json_class": "JSON::GenericObject", "a": 1, "b": 2 }',
-             :create_additions => true
-        )
-      assert_equal 1, l.a
-      assert_equal @go,
-        l = JSON('{ "a": 1, "b": 2 }', :object_class => JSON::GenericObject)
-      assert_equal 1, l.a
-      assert_equal JSON::GenericObject[:a => JSON::GenericObject[:b => 2]],
-        l = JSON('{ "a": { "b": 2 } }', :object_class => JSON::GenericObject)
-      assert_equal 2, l.a.b
-    end
+    assert_equal @go,
+      l = JSON('{ "a": 1, "b": 2 }', :object_class => JSON::GenericObject)
+    assert_equal 1, l.a
+    assert_equal JSON::GenericObject[:a => JSON::GenericObject[:b => 2]],
+      l = JSON('{ "a": { "b": 2 } }', :object_class => JSON::GenericObject)
+    assert_equal 2, l.a.b
   end
 
   def test_from_hash
@@ -78,14 +59,5 @@ class JSONGenericObjectTest < Test::Unit::TestCase
 
     json = JSON::GenericObject.dump(JSON::GenericObject[:hello => 'world'])
     assert_equal JSON(json), JSON('{"json_class":"JSON::GenericObject","hello":"world"}')
-  end
-
-  private
-
-  def switch_json_creatable
-    JSON::GenericObject.json_creatable = true
-    yield
-  ensure
-    JSON::GenericObject.json_creatable = false
   end
 end
