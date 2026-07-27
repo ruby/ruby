@@ -287,10 +287,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
     json = generate({1=>2}, nil)
     assert_equal('{"1":2}', json)
     s = JSON.state.new
-    assert s.check_circular?
-    assert_deprecated_warning(/JSON::State/) do
-      assert s[:check_circular?]
-    end
     h = { 1=>2 }
     h[3] = h
     assert_raise(JSON::NestingError) {  generate(h) }
@@ -299,10 +295,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
     a = [ 1, 2 ]
     a << a
     assert_raise(JSON::NestingError) {  generate(a, s) }
-    assert s.check_circular?
-    assert_deprecated_warning(/JSON::State/) do
-      assert s[:check_circular?]
-    end
   end
 
   def test_falsy_state
@@ -576,35 +568,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   ensure
     bignum.class.define_method(:to_s, original_to_s) if original_to_s
-  end
-
-  def test_hash_likeness_set_symbol
-    assert_deprecated_warning(/JSON::State/) do
-      state = JSON.state.new
-      assert_equal nil, state[:foo]
-      assert_equal nil.class, state[:foo].class
-      assert_equal nil, state['foo']
-      state[:foo] = :bar
-      assert_equal :bar, state[:foo]
-      assert_equal :bar, state['foo']
-      state_hash = state.to_hash
-      assert_kind_of Hash, state_hash
-      assert_equal :bar, state_hash[:foo]
-    end
-  end
-
-  def test_hash_likeness_set_string
-    assert_deprecated_warning(/JSON::State/) do
-      state = JSON.state.new
-      assert_equal nil, state[:foo]
-      assert_equal nil, state['foo']
-      state['foo'] = :bar
-      assert_equal :bar, state[:foo]
-      assert_equal :bar, state['foo']
-      state_hash = state.to_hash
-      assert_kind_of Hash, state_hash
-      assert_equal :bar, state_hash[:foo]
-    end
   end
 
   def test_json_state_to_h_roundtrip
