@@ -345,28 +345,6 @@ module JSON
     end
   end
 
-  # :call-seq:
-  #   JSON.fast_generate(obj, opts) -> new_string
-  #
-  # Arguments +obj+ and +opts+ here are the same as
-  # arguments +obj+ and +opts+ in JSON.generate.
-  #
-  # By default, generates \JSON data without checking
-  # for circular references in +obj+ (option +max_nesting+ set to +false+, disabled).
-  #
-  # Raises an exception if +obj+ contains circular references:
-  #   a = []; b = []; a.push(b); b.push(a)
-  #   # Raises SystemStackError (stack level too deep):
-  #   JSON.fast_generate(a)
-  def fast_generate(obj, opts = nil)
-    if RUBY_VERSION >= "3.0"
-      warn "JSON.fast_generate is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1, category: :deprecated
-    else
-      warn "JSON.fast_generate is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1
-    end
-    generate(obj, opts)
-  end
-
   PRETTY_GENERATE_OPTIONS = {
     indent: '  ',
     space: ' ',
