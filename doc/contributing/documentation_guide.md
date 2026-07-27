@@ -27,7 +27,7 @@ the browser when you edit source files:
 make html-server
 ```
 
-Then visit http://localhost:4000 in your browser.
+Then visit `http://localhost:4000` in your browser.
 To use a different port: `make html-server RDOC_SERVER_PORT=8080`.
 
 If you don't have a build directory, follow the [quick start
