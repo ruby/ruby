@@ -2389,7 +2389,6 @@ rb_set_size(VALUE set)
  * - {Assigning}[rdoc-ref:Set@Methods+for+Assigning]
  * - {Deleting}[rdoc-ref:Set@Methods+for+Deleting]
  * - {Converting}[rdoc-ref:Set@Methods+for+Converting]
- * - {Iterating}[rdoc-ref:Set@Methods+for+Iterating]
  * - {And more....}[rdoc-ref:Set@Other+Methods]
  *
  * === Methods for Creating a \Set
