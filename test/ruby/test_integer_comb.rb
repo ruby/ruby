@@ -104,7 +104,7 @@ class TestIntegerComb < Test::Unit::TestCase
     0xffffffffffffffffffffffffffffffffffffffffffffffff,
     0x1000000000000000000000000000000000000000000000000,
     0x1000000000000000000000000000000000000000000000001
-  ]
+  ].freeze
 
   #VS.map! {|v| 0x4000000000000000.coerce(v)[0] }
   #VS.concat VS.find_all {|v| Fixnum === v }.map {|v| 0x4000000000000000.coerce(v)[0] }

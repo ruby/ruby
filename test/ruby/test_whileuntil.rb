@@ -7,7 +7,7 @@ class TestWhileuntil < Test::Unit::TestCase
     Dir.mktmpdir("ruby_while_tmp") {|tmpdir|
       tmpfilename = "#{tmpdir}/ruby_while_tmp.#{$$}"
 
-      tmp = open(tmpfilename, "w")
+      tmp = File.open(tmpfilename, "w")
       tmp.print "tvi925\n";
       tmp.print "tvi920\n";
       tmp.print "vt100\n";
@@ -15,7 +15,7 @@ class TestWhileuntil < Test::Unit::TestCase
       tmp.print "paper\n";
       tmp.close
 
-      tmp = open(tmpfilename, "r")
+      tmp = File.open(tmpfilename, "r")
       assert_instance_of(File, tmp)
 
       while line = tmp.gets()
@@ -26,7 +26,7 @@ class TestWhileuntil < Test::Unit::TestCase
       assert_match(/vt100/, line)
       tmp.close
 
-      tmp = open(tmpfilename, "r")
+      tmp = File.open(tmpfilename, "r")
       while line = tmp.gets()
         next if /vt100/ =~ line
         assert_no_match(/vt100/, line)
@@ -35,7 +35,7 @@ class TestWhileuntil < Test::Unit::TestCase
       assert_no_match(/vt100/, line)
       tmp.close
 
-      tmp = open(tmpfilename, "r")
+      tmp = File.open(tmpfilename, "r")
       while line = tmp.gets()
         lastline = line
         line = line.gsub(/vt100/, 'VT100')
@@ -59,14 +59,16 @@ class TestWhileuntil < Test::Unit::TestCase
       end
       assert_equal(220, sum)
 
-      tmp = open(tmpfilename, "r")
-      while line = tmp.gets()
-        break if $. == 3
-        assert_no_match(/vt100/, line)
-        assert_no_match(/Amiga/, line)
-        assert_no_match(/paper/, line)
+      if main_ractor?
+        tmp = File.open(tmpfilename, "r")
+        while line = tmp.gets()
+          break if $. == 3
+          assert_no_match(/vt100/, line)
+          assert_no_match(/Amiga/, line)
+          assert_no_match(/paper/, line)
+        end
+        tmp.close
       end
-      tmp.close
 
       File.unlink tmpfilename or `/bin/rm -f "#{tmpfilename}"`
       assert_file.not_exist?(tmpfilename)

@@ -6,7 +6,7 @@ class TestString < Test::Unit::TestCase
   WIDE_ENCODINGS = [
      Encoding::UTF_16BE, Encoding::UTF_16LE,
      Encoding::UTF_32BE, Encoding::UTF_32LE,
-  ]
+  ].freeze
 
   def initialize(*args)
     @cls = String
@@ -440,7 +440,7 @@ class TestString < Test::Unit::TestCase
 
   end
 
-  Bug2463 = '[ruby-dev:39856]'
+  Bug2463 = '[ruby-dev:39856]'.freeze
   def test_center
     assert_equal(S("hello"),       S("hello").center(4))
     assert_equal(S("   hello   "), S("hello").center(11))
@@ -812,6 +812,10 @@ class TestString < Test::Unit::TestCase
       assert_raise(ArgumentError) {S("mypassword".encode(enc)).crypt(S("aa"))}
     end
 
+  end
+
+  def test_crypt_no_memory_leak
+    good_salt = "$2a$04$0WVaz0pV3jzfZ5G5tpmHWu"
     if @cls == String
       assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", samples: 2..100)
       s = ''
@@ -4532,11 +4536,12 @@ class TestString < Test::Unit::TestCase
     assert_same(str, +str)
     assert_not_same(str, -str)
 
-    require 'objspace'
+  end
 
+  def test_uplus_minus_ractor_unsafe
+    require 'objspace'
     str = "test_uplus_minus_str".freeze
     assert_include ObjectSpace.dump(str), '"fstring":true'
-
     assert_predicate(str, :frozen?)
     assert_not_predicate(+str, :frozen?)
     assert_predicate(-str, :frozen?)

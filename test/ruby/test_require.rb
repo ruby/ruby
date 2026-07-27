@@ -161,7 +161,6 @@ class TestRequire < Test::Unit::TestCase
     ENV["RUBYPATH"] = "~" + "/foo" * 1024
     ENV["HOME"] = "/foo"
     assert_in_out_err(%w(-S -w test_ruby_test_require), "", [], pathname_too_long)
-
   ensure
     env_rubypath ? ENV["RUBYPATH"] = env_rubypath : ENV.delete("RUBYPATH")
     env_home ? ENV["HOME"] = env_home : ENV.delete("HOME")
@@ -217,18 +216,20 @@ class TestRequire < Test::Unit::TestCase
   end
 
   def assert_syntax_error_backtrace
-    loaded_features = $LOADED_FEATURES.dup
-    Dir.mktmpdir do |tmp|
-      req = File.join(tmp, "test.rb")
-      File.write(req, ",\n")
-      e = assert_raise_with_message(SyntaxError, /unexpected/) {
-        yield req
-      }
-      assert_not_nil(bt = e.backtrace, "no backtrace")
-      assert_not_empty(bt.find_all {|b| b.start_with? __FILE__}, proc {bt.inspect})
+    begin
+      loaded_features = $LOADED_FEATURES.dup
+      Dir.mktmpdir do |tmp|
+        req = File.join(tmp, "test.rb")
+        File.write(req, ",\n")
+        e = assert_raise_with_message(SyntaxError, /unexpected/) {
+          yield req
+        }
+        assert_not_nil(bt = e.backtrace, "no backtrace")
+        assert_not_empty(bt.find_all {|b| b.start_with? __FILE__}, proc {bt.inspect})
+      end
+    ensure
+      $LOADED_FEATURES.replace loaded_features
     end
-  ensure
-    $LOADED_FEATURES.replace loaded_features
   end
 
   def test_require_syntax_error

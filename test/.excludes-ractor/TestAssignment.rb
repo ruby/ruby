@@ -1,0 +1,5 @@
+exclude(:test_assignment, "ractor incompatible")
+exclude(:test_massign_const_order, "ractor incompatible")
+exclude(:test_next, "ractor incompatible")
+exclude(:test_return, "ractor incompatible")
+exclude(:test_yield, "ractor incompatible")
