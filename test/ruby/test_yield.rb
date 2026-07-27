@@ -89,7 +89,7 @@ end
 
 require_relative 'sentence'
 class TestRubyYieldGen < Test::Unit::TestCase
-  Syntax = {
+  Syntax = Ractor.make_shareable({
     :exp => [["0"],
              ["nil"],
              ["false"],
@@ -178,7 +178,7 @@ class TestRubyYieldGen < Test::Unit::TestCase
     :test_proc => [['def m() yield', :command_args_noblock, ' end; r = m {', :block_param_def, 'vars', '}; undef m; r']],
     :test_lambda => [['def m() yield', :command_args_noblock, ' end; r = m(&lambda {', :block_param_def, 'vars', '}); undef m; r']],
     :test_enum => [['o = Object.new; def o.each() yield', :command_args_noblock, ' end; r1 = r2 = nil; o.each {|*x| r1 = x }; o.to_enum.each {|*x| r2 = x }; [r1, r2]']]
-  }
+  })
 
   def rename_var(obj)
     vars = []

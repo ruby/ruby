@@ -495,10 +495,12 @@ class TestEnumerator < Test::Unit::TestCase
 
     assert_raise(LocalJumpError) {Enumerator::Generator.new}
     assert_raise(TypeError) {Enumerator::Generator.new(1)}
-    obj = eval("class C\u{1f5ff}; self; end").new
-    assert_raise_with_message(TypeError, /C\u{1f5ff}/) {
-      Enumerator::Generator.new(obj)
-    }
+    unless multiple_ractors?
+      obj = eval("class C\u{1f5ff}; self; end").new
+      assert_raise_with_message(TypeError, /C\u{1f5ff}/) {
+        Enumerator::Generator.new(obj)
+      }
+    end
   end
 
   def test_generator_args

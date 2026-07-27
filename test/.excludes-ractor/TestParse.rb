@@ -1,0 +1,6 @@
+exclude(:test_dstr, "class vars")
+exclude(:test_global_variable, "global variable access")
+exclude(:test_mlhs_node, "class ivars")
+exclude(:test_shareable_constant_value_nested, "can't access unshareables")
+exclude(:test_shareable_constant_value_simple, "can't access unshareables")
+exclude(:test_parsing_begin_statement_inside_method_definition, "global side effects")

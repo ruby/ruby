@@ -27,9 +27,9 @@ class TestGraphemeBreaksFromFile < Test::Unit::TestCase
   end
 
   UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
-  path = File.expand_path("../../../enc/unicode/data/#{UNICODE_VERSION}", __dir__)
-  UNICODE_DATA_PATH = File.directory?("#{path}/ucd/auxiliary") ? "#{path}/ucd/auxiliary" : path
-  GRAPHEME_BREAK_TEST_FILE = File.expand_path("#{UNICODE_DATA_PATH}/GraphemeBreakTest.txt", __dir__)
+  path = File.expand_path("../../../enc/unicode/data/#{UNICODE_VERSION}", __dir__).freeze
+  UNICODE_DATA_PATH = File.directory?("#{path}/ucd/auxiliary") ? "#{path}/ucd/auxiliary".freeze : path
+  GRAPHEME_BREAK_TEST_FILE = File.expand_path("#{UNICODE_DATA_PATH}/GraphemeBreakTest.txt", __dir__).freeze
 
   def self.file_available?
     File.exist? GRAPHEME_BREAK_TEST_FILE
@@ -44,10 +44,12 @@ class TestGraphemeBreaksFromFile < Test::Unit::TestCase
   if file_available?
     def read_data
       tests = []
+      lineno = 1
       File.foreach(GRAPHEME_BREAK_TEST_FILE, encoding: Encoding::UTF_8) do |line|
-        if $. == 1 and not line.start_with?("# GraphemeBreakTest-#{UNICODE_VERSION}.txt")
+        if lineno == 1 and not line.start_with?("# GraphemeBreakTest-#{UNICODE_VERSION}.txt")
           raise "File Version Mismatch"
         end
+        lineno += 1
         next if /\A#/.match? line
         tests << BreakTest.new($., *line.chomp.split('#')) rescue 'whatever'
       end
@@ -55,9 +57,9 @@ class TestGraphemeBreaksFromFile < Test::Unit::TestCase
     end
 
     def all_tests
-      @@tests ||= read_data
+      @grapheme_breaks_tests ||= read_data
     rescue Errno::ENOENT
-      @@tests ||= []
+      @grapheme_breaks_tests ||= []
     end
 
     def test_each_grapheme_cluster

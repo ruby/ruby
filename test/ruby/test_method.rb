@@ -362,9 +362,10 @@ class TestMethod < Test::Unit::TestCase
   PUBLIC_SINGLETON_TEST = Object.new
   class << PUBLIC_SINGLETON_TEST
     private
-    PUBLIC_SINGLETON_TEST.define_singleton_method(:dsm){}
+    PUBLIC_SINGLETON_TEST.define_singleton_method(:dsm, &Ractor.make_shareable(proc{}))
     def PUBLIC_SINGLETON_TEST.def; end
   end
+  PUBLIC_SINGLETON_TEST.freeze
   def test_define_singleton_method_public
     assert_nil(PUBLIC_SINGLETON_TEST.dsm)
     assert_nil(PUBLIC_SINGLETON_TEST.def)
@@ -1032,7 +1033,7 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(NameError) {c2.singleton_method(:quux)}
   end
 
-  Feature9783 = '[ruby-core:62212] [Feature #9783]'
+  Feature9783 = '[ruby-core:62212] [Feature #9783]'.freeze
 
   def assert_curry_three_args(m)
     curried = m.curry
@@ -1083,7 +1084,7 @@ class TestMethod < Test::Unit::TestCase
     assert_curry_var_args(c.new.method(:var_args))
   end
 
-  Feature9781 = '[ruby-core:62202] [Feature #9781]'
+  Feature9781 = '[ruby-core:62202] [Feature #9781]'.freeze
 
   def test_super_method
     o = Derived.new
@@ -1474,7 +1475,7 @@ class TestMethod < Test::Unit::TestCase
   end
 
   class C
-    D = "Const_D"
+    D = "Const_D".freeze
     def foo
       a = b = c = a = b = c = 12345
     end
@@ -1596,7 +1597,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(987, b.local_variable_get(:x))
   end
 
-  MethodInMethodClass_Setup = -> do
+  MethodInMethodClass_Setup = Ractor.make_shareable(proc do
     remove_const :MethodInMethodClass if defined? MethodInMethodClass
 
     class MethodInMethodClass
@@ -1607,7 +1608,7 @@ class TestMethod < Test::Unit::TestCase
       end
       private
     end
-  end
+  end)
 
   def test_method_in_method_visibility_should_be_public
     MethodInMethodClass_Setup.call
