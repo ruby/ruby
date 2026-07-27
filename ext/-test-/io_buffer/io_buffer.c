@@ -257,6 +257,9 @@ io_buffer_get_bytes_address(VALUE self, VALUE buffer)
 void
 Init_io_buffer(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
     VALUE mBug = rb_define_module("Bug");
     VALUE mIOBuffer = rb_define_module_under(mBug, "IOBuffer");
 

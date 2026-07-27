@@ -10,5 +10,6 @@ exclude(:test_expand_path_does_not_modify_a_home_string_argument, "global side e
 exclude(:test_flock_exclusive, "subprocess")
 exclude(:test_flock_shared, "subprocess")
 exclude(:test_stat_dotted_prefix_ractor_unsafe, "Dir.chdir")
+exclude(:test_symlink_to_relative_directory, "Dir.chdir")
 exclude(:test_utime_ractor_unsafe, "Dir.chdir")
 exclude(:test_umask, "global side effects")
