@@ -2464,19 +2464,13 @@ class Pathname    # * FileTest *
   #
   # ```
   # dir_pn = Pathname('example_dir')
-  # dir_pn.empty? # => false  # Dir does not exist.
-  # dir_pn.mkdir
-  # dir_pn.empty? # => true
-  # dir_pn.zero?  # => false
-  #
-  # dir_pn = Pathname('example_dir')
   # dir_pn.zero?  # => false  # Dir does not exist.
   # dir_pn.mkdir
-  # dir_pn.zero?  # => false   # Directory never has size zero.
-  # dir_pn.empty? # => true    # But this one is empty.
+  # dir_pn.zero?  # => false  # Directory never has size zero.
+  # dir_pn.empty? # => true   # But this one is empty.
   #
   # file_pn = Pathname('example_dir/example.txt')
-  # file_pn.zero? # => false   # File does not exist.
+  # file_pn.zero? # => false  # File does not exist.
   # file_pn.write('')
   # file_pn.zero? # => true
   # file_pn.write('foo')
