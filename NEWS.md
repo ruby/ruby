@@ -39,6 +39,12 @@ Note: We're only listing outstanding class updates.
       given names, raising `KeyError` for missing names unless a block is
       given. [[Feature #21781]]
 
+* Integer
+
+    * `Integer#bit_count` is added. It returns the number of `1` bits in the
+      binary representation of a non-negative integer (its population count).
+      [[Feature #20163]]
+
 * Kernel
 
     * `Kernel#autoload_relative` and `Module#autoload_relative` are added.
@@ -242,6 +248,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
+[Feature #20163]: https://bugs.ruby-lang.org/issues/20163
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21768]: https://bugs.ruby-lang.org/issues/21768
 [Feature #21781]: https://bugs.ruby-lang.org/issues/21781
