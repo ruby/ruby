@@ -126,7 +126,7 @@ consensus on ruby-core/ruby-dev.
 
 * *No maintainer*
 * https://github.com/ruby/English
-* https://rubygems.org/gems/English
+* https://rubygems.org/gems/english
 
 #### lib/delegate.rb
 
