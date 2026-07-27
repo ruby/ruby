@@ -2843,6 +2843,38 @@ fn test_fixnum_mod_negative() {
 }
 
 #[test]
+fn test_fixnum_aref_constant_index() {
+    eval("
+        def test(a) = a[12]
+        test(4096) # profile opt_aref
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_aref);
+    assert_snapshot!(assert_compiles("[test(4096), test(4095), test(0), test(-1), test(-4096)]"), @"[1, 0, 0, 1, 1]");
+}
+
+#[test]
+fn test_fixnum_aref_constant_index_beyond_fixnum_width() {
+    // An index beyond the fixnum width is not strength-reduced; FixnumAref handles it
+    eval("
+        def test(a) = a[100]
+        test(1) # profile opt_aref
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_aref);
+    assert_snapshot!(assert_compiles("[test(1), test(-1), test(4611686018427387903), test(-4611686018427387904)]"), @"[0, 1, 0, 1]");
+}
+
+#[test]
+fn test_fixnum_aref_constant_index_bignum_receiver() {
+    // A Bignum receiver fails the Fixnum guard and side-exits to the correct result
+    eval("
+        def test(a) = a[1]
+        test(5) # profile opt_aref
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_aref);
+    assert_snapshot!(assert_compiles_allowing_exits("[test(5), test(2**100 + 2)]"), @"[0, 1]");
+}
+
+#[test]
 fn test_fixnum_mod_by_zero() {
     eval("
         def test(a, b) = a % b rescue :zero_div
