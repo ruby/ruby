@@ -543,16 +543,8 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(ParserError) { parse('{} /*/', allow_comments: true) }
     assert_raise(ParserError) { parse('{} /x wrong comment', allow_comments: true) }
     assert_raise(ParserError) { parse('{} /', allow_comments: true) }
-  end
-
-  def test_parse_comments_deprecation
     assert_equal({}, parse('/**/ {}', allow_comments: true))
     assert_raise(ParserError) { parse('/**/ {}', allow_comments: false) }
-    if RUBY_ENGINE == 'ruby'
-      assert_deprecated_warning(/Encountered comment in JSON/) do
-        parse('/**/ {}')
-      end
-    end
   end
 
   def test_nesting

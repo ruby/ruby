@@ -184,13 +184,11 @@ require 'json/common'
 # JavaScript style comments (either <tt>// comment</tt> or <tt>/* comment */</tt>);
 # defaults to +false+.
 #
-# When not specified, a deprecation warning is emitted if a comment is encountered.
+# When set to +false+, the default:
+#   JSON.parse('/* comment */ {"a": 1, "a":2}') # unexpected character: '/' at line 1 column 1 (JSON::ParserError)
 #
 # When set to +true+, comments are ignored:
-#   JSON.parse('/* comment */ {"a": 1, "a":2}') # => {"a" => 2}
-#
-# When set to +false+, the future default:
-#   JSON.parse('/* comment */ {"a": 1, "a":2}') # unexpected character: '/' at line 1 column 1 (JSON::ParserError)
+#   JSON.parse('/* comment */ {"a": 1, "a":2} // more comment') # => {"a" => 2}
 #
 # ---
 #
