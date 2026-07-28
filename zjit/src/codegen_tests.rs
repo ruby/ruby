@@ -609,6 +609,20 @@ fn test_yield_inline_invocation_with_args() {
 }
 
 #[test]
+fn test_yield_with_too_many_args_for_lir() {
+    // Self plus six yield args don't fit in C argument registers, so the direct
+    // block invocation must be rejected instead of emitting an uncompilable CCall.
+    set_call_threshold(2);
+    eval("
+        def foo = yield(1, 2, 3, 4, 5, 6)
+        def test = foo { |a, b, c, d, e, f| a + b + c + d + e + f }
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"21");
+}
+
+#[test]
 fn test_yield_inline_invocation_live_stack_below_args() {
     // A live value sits on the stack below the yield args; the no-receiver-slot SP math
     // must preserve it so `x +` sees the right operand.

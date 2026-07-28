@@ -2875,6 +2875,12 @@ fn block_call_inlinable_iseq(iseq: IseqPtr, argc: usize) -> bool {
     if argc == 1 && !unsafe { rb_get_iseq_flags_ambiguous_param0(iseq) } {
         return false;
     }
+    // The JIT-to-JIT call in gen_invoke_block_iseq_direct passes captured self plus
+    // each argument in C argument registers.
+    // TODO: Support passing arguments on the stack in C calls
+    if 1 + argc > C_ARG_OPNDS.len() {
+        return false;
+    }
     !crate::codegen::block_iseq_may_throw(iseq)
 }
 
