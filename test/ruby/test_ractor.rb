@@ -419,6 +419,21 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_ractor_vm_once_dispatch
+    assert_ractor(<<~'RUBY', args: ["-W0"], timeout: 30)
+      vals = 10.times.map do
+        Ractor.new {
+          a = nil
+          /#{sleep 0.1; a = "set"}/o
+          a
+        }
+      end.map(&:value)
+      vals.compact!
+      assert_equal 1, vals.size
+      assert_equal "set", vals.first
+    RUBY
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)

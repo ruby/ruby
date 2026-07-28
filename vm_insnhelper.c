@@ -5503,7 +5503,7 @@ static VALUE
 vm_once_clear(VALUE data)
 {
     union iseq_inline_storage_entry *is = (union iseq_inline_storage_entry *)data;
-    is->once.running_thread = NULL;
+    rbimpl_atomic_ptr_store((volatile void **)&is->once.running_thread, NULL, RBIMPL_ATOMIC_RELEASE);
     return Qnil;
 }
 
@@ -6606,33 +6606,46 @@ vm_once_dispatch(rb_execution_context_t *ec, ISEQ iseq, ISE is)
 {
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     rb_thread_t *const RUNNING_THREAD_ONCE_DONE = (rb_thread_t *)(0x1);
+    rb_thread_t *running_th;
 
   again:
-    if (is->once.running_thread == RUNNING_THREAD_ONCE_DONE) {
+    running_th = rbimpl_atomic_ptr_load((void**)&is->once.running_thread, RBIMPL_ATOMIC_ACQUIRE);
+    if (running_th == RUNNING_THREAD_ONCE_DONE) {
         return is->once.value;
     }
-    else if (is->once.running_thread == NULL) {
-        VALUE val;
-        is->once.running_thread = th;
-        val = rb_ensure(vm_once_exec, (VALUE)iseq, vm_once_clear, (VALUE)is);
-        // TODO: confirm that it is shareable
+    else if (running_th == NULL) {
+        VALUE val = Qundef;
+        enum ruby_tag_type state;
+        if (rbimpl_atomic_ptr_cas((void**)&is->once.running_thread, running_th, th, RBIMPL_ATOMIC_RELEASE, RBIMPL_ATOMIC_RELAXED) != running_th) {
+            goto again;
+        }
+        EC_PUSH_TAG(ec);
+        if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+            val = vm_once_exec((VALUE)iseq);
+        }
+        EC_POP_TAG();
+        if (state != TAG_NONE) {
+            vm_once_clear((VALUE)is);
+            EC_JUMP_TAG(ec, state);
+        }
 
+        // TODO: confirm that it is shareable
         if (RB_FL_ABLE(val)) {
             RB_OBJ_SET_SHAREABLE(val);
         }
 
         RB_OBJ_WRITE(CFP_ISEQ(ec->cfp), &is->once.value, val);
 
-        /* is->once.running_thread is cleared by vm_once_clear() */
-        is->once.running_thread = RUNNING_THREAD_ONCE_DONE; /* success */
+        rbimpl_atomic_ptr_store((volatile void**)&is->once.running_thread, RUNNING_THREAD_ONCE_DONE, RBIMPL_ATOMIC_RELEASE); /* success */
         return val;
     }
-    else if (is->once.running_thread == th) {
+    else if (running_th == th) {
         /* recursive once */
         return vm_once_exec((VALUE)iseq);
     }
     else {
         /* waiting for finish */
+        /* NOTE: this is not ideal if we're the only thread in the Ractor (it's a busy loop!) */
         RUBY_VM_CHECK_INTS(ec);
         rb_thread_schedule();
         goto again;
