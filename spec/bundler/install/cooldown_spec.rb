@@ -257,6 +257,45 @@ RSpec.describe "bundle install with the cooldown setting" do
       expect(the_bundle).to include_gems("ripe_gem 1.0.0", "child 1.0.0")
     end
 
+    it "warns when the same source is declared again with a different cooldown and keeps the first value" do
+      # https://github.com/rubygems/rubygems/issues/9723: a second declaration
+      # of the same URL is deduped into the first one, so its cooldown cannot
+      # act as a per-gem exemption.
+      install_gemfile <<-G, artifice: "compact_index_cooldown"
+        source "https://gem.repo3", cooldown: 7
+        source "https://gem.repo3", cooldown: 0 do
+          gem "ripe_gem"
+        end
+      G
+
+      expect(err).to include("The source https://gem.repo3/ is declared more than once with different cooldown values (`cooldown: 0` here, `cooldown: 7` previously).")
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "does not warn when the same source is declared again without a cooldown" do
+      install_gemfile <<-G, artifice: "compact_index_cooldown"
+        source "https://gem.repo3", cooldown: 7
+        source "https://gem.repo3" do
+          gem "ripe_gem"
+        end
+      G
+
+      expect(err).not_to include("cooldown")
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "does not warn when the same source is declared again with the same cooldown" do
+      install_gemfile <<-G, artifice: "compact_index_cooldown"
+        source "https://gem.repo3", cooldown: 7
+        source "https://gem.repo3", cooldown: 7 do
+          gem "ripe_gem"
+        end
+      G
+
+      expect(err).not_to include("cooldown")
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
     it "is overridden by CLI --cooldown when Gemfile sets a different per-source value" do
       gemfile <<-G
         source "https://gem.repo3", cooldown: 0
