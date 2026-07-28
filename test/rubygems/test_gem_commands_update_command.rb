@@ -151,6 +151,40 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_equal 1, @ui.error.scan("publish times").size
   end
 
+  def test_execute_system_cooldown
+    spec_fetcher
+
+    ru8, ru8_gem = util_gem "rubygems-update", 8 do |s|
+      s.files = %w[setup.rb]
+    end
+    ru9, ru9_gem = util_gem "rubygems-update", 9 do |s|
+      s.files = %w[setup.rb]
+    end
+
+    util_setup_compact_index ru8, ru9, created_at: {
+      "rubygems-update-8" => util_cooldown_time(30),
+      "rubygems-update-9" => util_cooldown_time(1),
+    }
+    add_to_fetcher ru8, ru8_gem
+    add_to_fetcher ru9, ru9_gem
+
+    Gem::SpecFetcher.fetcher = nil
+
+    @cmd.options[:args]     = []
+    @cmd.options[:system]   = true
+    @cmd.options[:cooldown] = 7
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Installing RubyGems 8", out.shift
+    assert_equal "RubyGems system software updated", out.shift
+
+    assert_empty out
+  end
+
   def test_execute_multiple
     spec_fetcher do |fetcher|
       fetcher.download "a",  2
