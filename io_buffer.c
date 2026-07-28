@@ -1684,10 +1684,13 @@ io_buffer_validate_range(struct rb_io_buffer *buffer, size_t offset, size_t leng
 }
 
 /*
- *  call-seq: hexdump([offset, [length, [width]]]) -> string
+ *  call-seq: hexdump([offset, [length, [width]]]) -> string or nil
  *
  *  Returns a human-readable string representation of the buffer. The exact
  *  format is subject to change.
+ *
+ *  Returns +nil+ if the buffer does not reference any memory, that is, if
+ *  #null? returns +true+ (for example after #free or #transfer).
  *
  *    buffer = IO::Buffer.for("Hello World")
  *    puts buffer.hexdump
@@ -1961,10 +1964,18 @@ io_buffer_resize(VALUE self, VALUE size)
 }
 
 /*
- * call-seq: <=>(other) -> true or false
+ * call-seq: <=>(other) -> integer
  *
- * Buffers are compared by size and exact contents of the memory they are
- * referencing using +memcmp+.
+ * Returns a negative integer, zero, or a positive integer if the receiver is
+ * less than, equal to, or greater than +other+, respectively.
+ *
+ * Buffers are compared by size first, and if the sizes are equal, by the exact
+ * contents of the memory they are referencing using +memcmp+. Only the sign of
+ * the returned integer is meaningful; the result of +memcmp+ is returned as is.
+ *
+ *   IO::Buffer.for("abc") <=> IO::Buffer.for("abc") # => 0
+ *   IO::Buffer.for("abc") <=> IO::Buffer.for("ab")  # => 1
+ *   IO::Buffer.for("abc") <=> IO::Buffer.for("abd") # => -1
  */
 static VALUE
 rb_io_buffer_compare(VALUE self, VALUE other)
