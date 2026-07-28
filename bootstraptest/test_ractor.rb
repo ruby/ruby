@@ -2715,3 +2715,40 @@ assert_equal 'ok', %q{
   r.send(nil)
   r.value
 }
+
+# Ractor::Port.allocate leaves the owner Ractor NULL, so every method reachable
+# from Ruby must reject such a port instead of dereferencing it. [Bug #22214]
+assert_equal 'ok', %q{
+  port = Ractor::Port.allocate
+
+  messages = [
+    -> { port.send(1) },
+    -> { port << 1 },
+    -> { port.receive },
+    -> { port.close },
+    -> { port.closed? },
+    -> { port.inspect },
+    -> { Ractor::Port.new.__send__(:initialize_copy, port) },
+    -> { Ractor.new { :x }.monitor(port) },
+    -> { Ractor.new { :x }.unmonitor(port) },
+    -> { Ractor.select(port) },
+  ].map do |blk|
+    begin
+      blk.call
+      'not raised'
+    rescue TypeError => e
+      e.message
+    end
+  end
+
+  messages.uniq == ['uninitialized Ractor::Port'] ? :ok : messages
+}
+
+assert_equal 'uninitialized MyPort', %q{
+  class MyPort < Ractor::Port; end
+  begin
+    MyPort.allocate.closed?
+  rescue TypeError => e
+    e.message
+  end
+}

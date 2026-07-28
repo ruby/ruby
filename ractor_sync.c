@@ -53,6 +53,19 @@ RACTOR_PORT_PTR(VALUE self)
     return RTYPEDDATA_GET_DATA(self);
 }
 
+// r is NULL between Ractor::Port.allocate and ractor_port_init()
+static struct ractor_port *
+ractor_port_ptr_check(VALUE self)
+{
+    struct ractor_port *rp = RACTOR_PORT_PTR(self);
+
+    if (UNLIKELY(rp->r == NULL)) {
+        rb_raise(rb_eTypeError, "uninitialized %"PRIsVALUE, rb_obj_class(self));
+    }
+
+    return rp;
+}
+
 static VALUE
 ractor_port_alloc(VALUE klass)
 {
@@ -94,8 +107,8 @@ ractor_port_initialize(VALUE self)
 static VALUE
 ractor_port_initialize_copy(VALUE self, VALUE orig)
 {
-    struct ractor_port *dst = RACTOR_PORT_PTR(self);
-    struct ractor_port *src = RACTOR_PORT_PTR(orig);
+    struct ractor_port *dst = RACTOR_PORT_PTR(self); // uninitialized by definition
+    struct ractor_port *src = ractor_port_ptr_check(orig);
     dst->r = src->r;
     RB_OBJ_WRITTEN(self, Qundef, dst->r->pub.self);
     dst->id_ = ractor_port_id(src);
@@ -120,7 +133,7 @@ ractor_port_p(VALUE self)
 static VALUE
 ractor_port_receive(rb_execution_context_t *ec, VALUE self)
 {
-    const struct ractor_port *rp = RACTOR_PORT_PTR(self);
+    const struct ractor_port *rp = ractor_port_ptr_check(self);
 
     if (rp->r != rb_ec_ractor_ptr(ec)) {
         rb_raise(rb_eRactorError, "only allowed from the creator Ractor of this port");
@@ -134,7 +147,7 @@ ractor_port_receive(rb_execution_context_t *ec, VALUE self)
 static VALUE
 ractor_port_send(rb_execution_context_t *ec, VALUE self, VALUE obj, VALUE move)
 {
-    const struct ractor_port *rp = RACTOR_PORT_PTR(self);
+    const struct ractor_port *rp = ractor_port_ptr_check(self);
     ractor_send(ec, rp, obj, RTEST(move));
     RB_GC_GUARD(self);
     return self;
@@ -146,7 +159,7 @@ static bool ractor_close_port(rb_execution_context_t *ec, rb_ractor_t *r, const 
 static VALUE
 ractor_port_closed_p(rb_execution_context_t *ec, VALUE self)
 {
-    const struct ractor_port *rp = RACTOR_PORT_PTR(self);
+    const struct ractor_port *rp = ractor_port_ptr_check(self);
     rb_ractor_t *r = rp->r;
     bool closed;
 
@@ -173,7 +186,7 @@ ractor_port_closed_p(rb_execution_context_t *ec, VALUE self)
 static VALUE
 ractor_port_close(rb_execution_context_t *ec, VALUE self)
 {
-    const struct ractor_port *rp = RACTOR_PORT_PTR(self);
+    const struct ractor_port *rp = ractor_port_ptr_check(self);
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
 
     if (cr != rp->r) {
@@ -560,7 +573,7 @@ ractor_monitor(rb_execution_context_t *ec, VALUE self, VALUE port)
 {
     rb_ractor_t *r = RACTOR_PTR(self);
     bool terminated = false;
-    const struct ractor_port *rp = RACTOR_PORT_PTR(port);
+    const struct ractor_port *rp = ractor_port_ptr_check(port);
     struct ractor_monitor *rm = ALLOC(struct ractor_monitor);
     rm->port = *rp; // copy port information
 
@@ -592,7 +605,7 @@ static VALUE
 ractor_unmonitor(rb_execution_context_t *ec, VALUE self, VALUE port)
 {
     rb_ractor_t *r = RACTOR_PTR(self);
-    const struct ractor_port *rp = RACTOR_PORT_PTR(port);
+    const struct ractor_port *rp = ractor_port_ptr_check(port);
 
     RACTOR_LOCK(r);
     {
@@ -1310,7 +1323,7 @@ ractor_selector_add(VALUE selv, VALUE rpv)
     }
 
     struct ractor_selector *s = RACTOR_SELECTOR_PTR(selv);
-    const struct ractor_port *rp = RACTOR_PORT_PTR(rpv);
+    const struct ractor_port *rp = ractor_port_ptr_check(rpv);
 
     if (st_lookup(s->ports, (st_data_t)rpv, NULL)) {
         rb_raise(rb_eArgError, "already added");
