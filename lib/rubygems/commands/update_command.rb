@@ -2,6 +2,7 @@
 
 require_relative "../command"
 require_relative "../command_manager"
+require_relative "../cooldown"
 require_relative "../dependency_installer"
 require_relative "../install_update_options"
 require_relative "../local_remote_options"
@@ -95,6 +96,8 @@ command to remove old versions.
   end
 
   def execute
+    @cooldown = Gem::Cooldown.from_options options
+
     if options[:system]
       update_rubygems
       return
@@ -140,7 +143,12 @@ command to remove old versions.
 
     fetcher = Gem::SpecFetcher.fetcher
 
-    spec_tuples, errors = fetcher.search_for_dependency dependency
+    # The default indexes carry only the newest version of each gem, which
+    # leaves nothing to fall back to when the cooldown excludes it, so
+    # search the full index instead.
+    type = dependency.prerelease? ? :complete : :released if @cooldown&.active?
+
+    spec_tuples, errors = fetcher.search_for_dependency dependency, type: type
 
     error = errors.find {|e| e.respond_to? :exception }
 
@@ -167,10 +175,30 @@ command to remove old versions.
   def highest_remote_name_tuple(spec) # :nodoc:
     spec_tuples = fetch_remote_gems spec
 
-    highest_remote_gem = spec_tuples.max
+    highest_remote_gem = filter_cooldown_tuples(spec_tuples).max
     return unless highest_remote_gem
 
     highest_remote_gem.first
+  end
+
+  ##
+  # Rejects [NameTuple, Gem::Source] pairs published within the cooldown
+  # period.  Tuples with an unknown publish time are kept, so the cooldown
+  # fails open.
+
+  def filter_cooldown_tuples(spec_tuples) # :nodoc:
+    return spec_tuples unless @cooldown&.active?
+
+    with_times = spec_tuples.map do |tup, source|
+      [tup, source, source.created_at(tup.name, tup.version, tup.platform)]
+    end
+
+    if !with_times.empty? && with_times.none? {|_, _, created_at| created_at }
+      Gem::Cooldown.warn_missing_created_at with_times.first[1]
+    end
+
+    with_times.reject {|_, _, created_at| @cooldown.skip?(created_at) }.
+      map {|tup, source, _| [tup, source] }
   end
 
   def install_rubygems(spec) # :nodoc:

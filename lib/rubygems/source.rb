@@ -185,6 +185,42 @@ class Gem::Source
   end
 
   ##
+  # The publish time of gem +name+ at +version+ for +platform+, when this
+  # source provides it through the compact index created_at metadata.
+  # Returns nil when the source, the gem or the version has no known
+  # publish time.
+
+  def created_at(name, version, platform = Gem::Platform::RUBY)
+    return unless %w[http https].include?(uri.scheme)
+
+    @created_at_info ||= {}
+    info = @created_at_info[name] ||= begin
+      compact_index_client.fetch_info(name)
+    rescue Gem::RemoteFetcher::FetchError, Gem::CompactIndexClient::Error
+      []
+    end
+
+    platform = (platform || Gem::Platform::RUBY).to_s
+    version = version.to_s
+
+    row = info.find do |row_info|
+      row_info[Gem::CompactIndexClient::INFO_VERSION] == version &&
+        (row_info[Gem::CompactIndexClient::INFO_PLATFORM] || Gem::Platform::RUBY) == platform
+    end
+    return unless row
+
+    value = row[Gem::CompactIndexClient::INFO_REQS].assoc("created_at")&.last&.first
+    return unless value.is_a?(String)
+
+    require "time"
+    begin
+      Time.iso8601(value)
+    rescue ArgumentError
+      nil
+    end
+  end
+
+  ##
   # Downloads +spec+ and writes it to +dir+.  See also
   # Gem::RemoteFetcher#download.
 
