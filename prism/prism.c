@@ -22403,11 +22403,7 @@ parse_expression_terminator(pm_parser_t *parser, pm_node_t *node) {
             // A block call (command with do-block, or any call chained
             // from one) can only be followed by call chaining (., ::,
             // &.), composition (and/or), and modifier operators.
-            if (pm_block_call_p(node)) {
-                return left > PM_BINDING_POWER_COMPOSITION && left < PM_BINDING_POWER_CALL;
-            }
-
-            return false;
+            return left > PM_BINDING_POWER_COMPOSITION && left < PM_BINDING_POWER_CALL && pm_block_call_p(node);
         }
         case PM_SUPER_NODE:
         case PM_YIELD_NODE:
@@ -22419,10 +22415,7 @@ parse_expression_terminator(pm_parser_t *parser, pm_node_t *node) {
 
             /* A super carrying a do-block is a block call, so it may also be
              * followed by call chaining (`.`, `::`, `&.`). */
-            if (pm_block_call_p(node)) {
-                return left > PM_BINDING_POWER_COMPOSITION && left < PM_BINDING_POWER_CALL;
-            }
-            return false;
+            return left > PM_BINDING_POWER_COMPOSITION && left < PM_BINDING_POWER_CALL && pm_block_call_p(node);
         case PM_DEF_NODE:
             // An endless method whose body is a command-style call (e.g.,
             // `def f = foo bar`) is a command assignment and can only be
