@@ -5810,7 +5810,7 @@ impl Function {
         for block in self.reverse_post_order() {
             let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            let mut new_insns = vec![];
+            let mut new_insns = Vec::with_capacity(old_insns.len());
             for insn_id in old_insns {
                 let replacement_insn: InsnId = match self.resolve(insn_id).insn(self) {
                     &Insn::StoreField { recv, offset, val, .. } => {
@@ -5958,7 +5958,7 @@ impl Function {
         // function-level infer_types after each pruned branch.
         for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            let mut new_insns = vec![];
+            let mut new_insns = Vec::with_capacity(old_insns.len());
             for insn_id in old_insns {
                 let replacement_id = match self.resolve(insn_id).insn(self) {
                     &Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
