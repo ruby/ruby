@@ -451,7 +451,9 @@ Since the `bitbucket` method is a specialization of `git_source`, it accepts a `
 
 You can specify that a gem is located in a particular location
 on the file system. Relative paths are resolved relative to the
-directory containing the `Gemfile`.
+directory containing the `Gemfile`. The path must point to a
+directory containing the gem's unpacked source code, not to a
+packaged `.gem` file.
 
 Similar to the semantics of the `:git` option, the `:path`
 option requires that the directory in question either contains
