@@ -802,6 +802,10 @@ typedef struct rb_vm_struct {
     struct ccan_list_head workqueue; /* <=> rb_workqueue_job.jnode */
     rb_nativethread_lock_t workqueue_lock;
 
+    /* `once` completion event (see vm_once_dispatch) */
+    rb_nativethread_lock_t once_lock;
+    rb_nativethread_cond_t once_cond;
+
     VALUE orig_progname, progname;
     VALUE coverages, me2counter;
     int coverage_mode;

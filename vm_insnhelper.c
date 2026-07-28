@@ -28,6 +28,7 @@
 #include "internal/variable.h"
 #include "internal/set_table.h"
 #include "internal/struct.h"
+#include "ruby/thread.h"
 #include "variable.h"
 
 /* finish iseq array */
@@ -5499,11 +5500,49 @@ vm_once_exec(VALUE iseq)
     return rb_proc_call_with_block(proc, 0, 0, Qnil);
 }
 
+#define RUNNING_THREAD_ONCE_DONE ((rb_thread_t *)0x1)
+
+struct vm_once_wait_arg {
+    rb_vm_t *vm;
+    union iseq_inline_storage_entry *is;
+};
+
+static void
+vm_once_broadcast(rb_vm_t *vm)
+{
+    rb_native_mutex_lock(&vm->once_lock);
+    rb_native_cond_broadcast(&vm->once_cond);
+    rb_native_mutex_unlock(&vm->once_lock);
+}
+
+static void *
+vm_once_wait_no_gvl(void *ptr)
+{
+    struct vm_once_wait_arg *arg = (struct vm_once_wait_arg *)ptr;
+    rb_vm_t *vm = arg->vm;
+    rb_thread_t *running_th;
+
+    rb_native_mutex_lock(&vm->once_lock);
+    running_th = rbimpl_atomic_ptr_load((void **)&arg->is->once.running_thread, RBIMPL_ATOMIC_ACQUIRE);
+    if (running_th != NULL && running_th != RUNNING_THREAD_ONCE_DONE) {
+        rb_native_cond_wait(&vm->once_cond, &vm->once_lock);
+    }
+    rb_native_mutex_unlock(&vm->once_lock);
+    return NULL;
+}
+
+static void
+vm_once_wait_ubf(void *ptr)
+{
+    vm_once_broadcast((rb_vm_t *)ptr);
+}
+
 static VALUE
 vm_once_clear(VALUE data)
 {
     union iseq_inline_storage_entry *is = (union iseq_inline_storage_entry *)data;
     rbimpl_atomic_ptr_store((volatile void **)&is->once.running_thread, NULL, RBIMPL_ATOMIC_RELEASE);
+    vm_once_broadcast(GET_VM());
     return Qnil;
 }
 
@@ -6605,7 +6644,6 @@ static VALUE
 vm_once_dispatch(rb_execution_context_t *ec, ISEQ iseq, ISE is)
 {
     rb_thread_t *th = rb_ec_thread_ptr(ec);
-    rb_thread_t *const RUNNING_THREAD_ONCE_DONE = (rb_thread_t *)(0x1);
     rb_thread_t *running_th;
 
   again:
@@ -6637,6 +6675,7 @@ vm_once_dispatch(rb_execution_context_t *ec, ISEQ iseq, ISE is)
         RB_OBJ_WRITE(CFP_ISEQ(ec->cfp), &is->once.value, val);
 
         rbimpl_atomic_ptr_store((volatile void**)&is->once.running_thread, RUNNING_THREAD_ONCE_DONE, RBIMPL_ATOMIC_RELEASE); /* success */
+        vm_once_broadcast(rb_ec_vm_ptr(ec));
         return val;
     }
     else if (running_th == th) {
@@ -6644,10 +6683,11 @@ vm_once_dispatch(rb_execution_context_t *ec, ISEQ iseq, ISE is)
         return vm_once_exec((VALUE)iseq);
     }
     else {
-        /* waiting for finish */
-        /* NOTE: this is not ideal if we're the only thread in the Ractor (it's a busy loop!) */
+        /* wait for the winner to finish */
+        struct vm_once_wait_arg arg = { .vm = rb_ec_vm_ptr(ec), .is = is };
+        rb_nogvl(vm_once_wait_no_gvl, &arg, vm_once_wait_ubf, arg.vm,
+                 RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_INTR_FAIL);
         RUBY_VM_CHECK_INTS(ec);
-        rb_thread_schedule();
         goto again;
     }
 }
