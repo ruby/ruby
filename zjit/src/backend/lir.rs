@@ -601,6 +601,10 @@ pub struct SideExitRecompile {
     /// The compiled unit whose version must be invalidated to force a recompile. For inlined
     /// methods, this will be the outer function it was inlined into.
     pub compiled_iseq: Opnd,
+    /// The exiting frame's ISEQ, which owns the profile entry for `insn_idx`. For
+    /// an exit out of inlined code this is the inlined callee, not the compiled unit.
+    pub frame_iseq: Opnd,
+    /// The exiting frame's instruction index within `frame_iseq`.
     pub insn_idx: u32,
 }
 
@@ -2882,8 +2886,9 @@ impl Assembler
                 use crate::codegen::exit_recompile;
                 asm_comment!(asm, "profile and maybe recompile");
                 asm_ccall!(asm, exit_recompile,
-                    EC,
-                    recompile.compiled_iseq
+                    recompile.compiled_iseq,
+                    recompile.frame_iseq,
+                    Opnd::UImm(recompile.insn_idx as u64)
                 );
             }
         }

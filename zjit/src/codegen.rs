@@ -3515,6 +3515,7 @@ fn side_exit_with_recompile(jit: &JITState, function: &Function, state: &FrameSt
     let mut exit = build_side_exit(jit, function, state);
     exit.recompile = recompile.map(|_| SideExitRecompile {
         compiled_iseq: Opnd::Value(VALUE::from(jit.iseq())),
+        frame_iseq: Opnd::Value(VALUE::from(state.iseq)),
         insn_idx: state.insn_idx() as u32,
     });
     Target::SideExit(Box::new(SideExitTarget { exit, reason }))
@@ -3581,7 +3582,14 @@ c_callable! {
     /// of inlined code, the inliner folds the callee's body into the outer ISEQ, so
     /// the outer ISEQ's version holds the failing guard and must be invalidated to
     /// force a recompile. For non-inlined code, it is the same as the frame ISEQ.
-    pub(crate) fn exit_recompile(ec: EcPtr, compiled_iseq_raw: VALUE) {
+    ///
+    /// `frame_iseq_raw` and `insn_idx` identify the instruction this exit came from,
+    /// whose re-profiling gates the recompile. Both are baked in at compile time,
+    /// where the exit already knows them, rather than read back out of the control
+    /// frame: the control frame describes the exiting frame only because the exit
+    /// wrote its ISEQ and PC there moments earlier, and an exit path that does not
+    /// write them would silently gate the recompile on an unrelated instruction.
+    pub(crate) fn exit_recompile(compiled_iseq_raw: VALUE, frame_iseq_raw: VALUE, insn_idx: u32) {
         // Fast check before taking the VM lock: skip if the compiled unit is already
         // invalidated or at the version limit. This avoids expensive lock acquisition
         // on every shape guard exit after the recompile has already been triggered.
@@ -3601,7 +3609,8 @@ c_callable! {
             let compiled_iseq: IseqPtr = compiled_iseq_raw.as_iseq();
 
             let should_recompile = with_time_stat(Counter::profile_time_ns, || {
-                crate::profile::profile_recompile_insn(ec)
+                get_or_create_iseq_payload(frame_iseq_raw.as_iseq())
+                    .profile.done_profiling_at(insn_idx as YarvInsnIdx)
             });
 
             // Once we have enough profiles, invalidate the compiled unit so it

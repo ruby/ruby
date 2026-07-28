@@ -122,12 +122,6 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
     }
 }
 
-/// Return whether the interpreter finished profiling the current instruction.
-pub fn profile_recompile_insn(ec: EcPtr) -> bool {
-    let profiler = &Profiler::new(ec);
-    get_or_create_iseq_payload(profiler.iseq).profile.done_profiling_at(profiler.insn_idx)
-}
-
 /// Reset existing profile counters and install profiling instructions throughout an ISEQ.
 /// Newly reached instructions initialize their counters from the same option.
 pub(crate) fn reset_profiles_remaining(iseq: IseqPtr) {
