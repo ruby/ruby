@@ -188,21 +188,35 @@ impl BasicBlock {
         }
     }
 
+    pub fn successors(&self) -> impl DoubleEndedIterator<Item = BlockId> + '_ {
+        // Stub blocks (from new_block_without_id) have no real CFG structure.
+        if self.rpo_index == DUMMY_RPO_INDEX {
+            return None.into_iter().chain(None.into_iter());
+        }
+        assert!(self.insns.last().unwrap().is_terminator());
+        let extract_target = |insn: &Insn| -> Option<BlockId> {
+            if let Some(Target::Block(edge)) = insn.target() {
+                Some(edge.target)
+            } else {
+                None
+            }
+        };
+
+        let (succ1, succ2) = match self.insns.as_slice() {
+            [] => panic!("empty block"),
+            [.., second_last, last] => {
+                (extract_target(second_last), extract_target(last))
+            },
+            [.., last] => {
+                (extract_target(last), None)
+            }
+        };
+        succ1.into_iter().chain(succ2.into_iter())
+    }
+
     /// Sort key for scheduling blocks in code layout order
     pub fn sort_key(&self) -> (usize, usize) {
         (self.rpo_index, self.id.0)
-    }
-
-    pub fn successors(&self) -> Vec<BlockId> {
-        let EdgePair(edge1, edge2) = self.edges();
-        let mut succs = Vec::new();
-        if let Some(edge) = edge1 {
-            succs.push(edge.target);
-        }
-        if let Some(edge) = edge2 {
-            succs.push(edge.target);
-        }
-        succs
     }
 
     /// Get the output VRegs for this block.
@@ -3067,14 +3081,10 @@ impl Assembler
             }
             if !seen.insert(block) { continue; }
             stack.push((block, Action::VisitSelf));
-            let EdgePair(edge1, edge2) = self.basic_blocks[block.0].edges();
-            // Push edge2 before edge1 so that edge1 is popped first from the
+            // Push block2 before block1 so that block1 is popped first from the
             // LIFO stack, matching the visit order of a recursive DFS.
-            if let Some(edge) = edge2 {
-                stack.push((edge.target, Action::VisitEdges));
-            }
-            if let Some(edge) = edge1 {
-                stack.push((edge.target, Action::VisitEdges));
+            for block in self.basic_blocks[block.0].successors().rev() {
+                stack.push((block, Action::VisitEdges));
             }
         }
         result
