@@ -3540,7 +3540,7 @@ memory_and(unsigned char * restrict output, const unsigned char * restrict base,
  *
  *    IO::Buffer.for("1234567890") & IO::Buffer.for("\xFF\x00\x00\xFF")
  *    # =>
- *    # #<IO::Buffer 0x00005589b2758480+4 INTERNAL>
+ *    # #<IO::Buffer 0x00005589b2758480+10 INTERNAL>
  *    # 0x00000000  31 00 00 34 35 00 00 38 39 00                   1..45..89.
  */
 static VALUE
