@@ -165,12 +165,13 @@ module Prism
           else
             parts =
               if key.is_a?(SymbolNode)
-                if key.value.nil?
+                value_loc = key.value_loc
+                if value_loc.nil?
                   []
-                elsif key.value.include?("\n")
-                  string_nodes_from_line_continuations(key.unescaped, key.value, key.value_loc.start_offset, key.opening)
+                elsif value_loc.slice.include?("\n")
+                  string_nodes_from_line_continuations(key.unescaped, value_loc.slice, value_loc.start_offset, key.opening)
                 else
-                  [builder.string_internal([key.unescaped, srange(key.value_loc)])]
+                  [builder.string_internal([key.unescaped, srange(value_loc)])]
                 end
               else
                 visit_all(key.parts)
