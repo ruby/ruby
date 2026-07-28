@@ -115,6 +115,19 @@ RSpec.describe "bundle install with the cooldown setting" do
         build_gem "fresh_gem", "0.3.2" do |s|
           s.date = now - (1 * 86_400)
         end
+
+        # the generic build is outside the window, but a platform-specific
+        # build of the same version was pushed inside it
+        build_gem "late_platform", "1.0.0" do |s|
+          s.date = now - (30 * 86_400)
+        end
+        build_gem "late_platform", "2.0.0" do |s|
+          s.date = now - (30 * 86_400)
+        end
+        build_gem "late_platform", "2.0.0" do |s|
+          s.platform = "x86_64-linux"
+          s.date = now - (1 * 86_400)
+        end
       end
     end
 
@@ -710,6 +723,31 @@ RSpec.describe "bundle install with the cooldown setting" do
 
       expect(lockfile).to include("ripe_gem (1.0.0)")
       expect(lockfile).not_to include("ripe_gem (2.0.0)")
+    end
+
+    it "excludes a version on every platform when a platform-specific build of it is inside the window" do
+      # Exclusion is keyed on [name, version] and deliberately ignores
+      # platform: otherwise pushing a fresh platform-specific build under an
+      # already-ripe version number would slip new code past the cooldown.
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "late_platform"
+      G
+
+      bundle "install --cooldown 7", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("late_platform 1.0.0")
+    end
+
+    it "selects the version with a late platform-specific build when --cooldown 0 bypasses the filter" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "late_platform"
+      G
+
+      bundle "install --cooldown 0", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("late_platform 2.0.0")
     end
 
     it "applies CLI --cooldown on bundle lock --update" do
