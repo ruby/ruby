@@ -2085,8 +2085,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::SendDirect(insn) => {
                 let SendDirectData { recv, cme, iseq, args, block, jit_entry_idx, .. } = &**insn;
                 let blockiseq = block.map(|bh| match bh { BlockHandler::BlockIseq(iseq) => iseq, BlockHandler::BlockArg => unreachable!() });
+                let blockiseq_ptr = blockiseq.map_or(ptr::null(), |iseq| self.ptr_map.map_ptr(iseq));
                 let method_name = unsafe { (**cme).called_id };
-                write!(f, "SendDirect {recv}, {:p}, :{} ({:?})", self.ptr_map.map_ptr(&blockiseq), method_name, self.ptr_map.map_ptr(iseq))?;
+                write!(f, "SendDirect {recv}, {blockiseq_ptr:p}, :{method_name} ({:?})", self.ptr_map.map_ptr(*iseq))?;
                 if *jit_entry_idx != 0 {
                     write!(f, ", jit_entry_idx={jit_entry_idx}")?;
                 }
@@ -2094,7 +2095,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::PushInlineFrame { recv, iseq, args, .. } => {
-                write!(f, "PushInlineFrame {recv} ({:?})", self.ptr_map.map_ptr(iseq))?;
+                write!(f, "PushInlineFrame {recv} ({:?})", self.ptr_map.map_ptr(*iseq))?;
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
@@ -2118,19 +2119,19 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::SendForward { recv, cd, args, blockiseq, reason, .. } => {
-                write!(f, "SendForward {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
+                write!(f, "SendForward {recv}, {:p}, :{}", self.ptr_map.map_ptr(*blockiseq), ruby_call_method_name(*cd))?;
                 write_separated!(f, ", ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::InvokeSuper { recv, blockiseq, args, reason, .. } => {
-                write!(f, "InvokeSuper {recv}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
+                write!(f, "InvokeSuper {recv}, {:p}", self.ptr_map.map_ptr(*blockiseq))?;
                 write_separated!(f, ", ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::InvokeSuperForward { recv, blockiseq, args, reason, .. } => {
-                write!(f, "InvokeSuperForward {recv}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
+                write!(f, "InvokeSuperForward {recv}, {:p}", self.ptr_map.map_ptr(*blockiseq))?;
                 write_separated!(f, ", ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
@@ -2155,7 +2156,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::InvokeBlockIseqDirect { iseq, captured, args, .. } => {
-                write!(f, "InvokeBlockIseqDirect ({:?}), {captured}", self.ptr_map.map_ptr(iseq))?;
+                write!(f, "InvokeBlockIseqDirect ({:?}), {captured}", self.ptr_map.map_ptr(*iseq))?;
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
@@ -2233,7 +2234,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GetConstant { klass, id, allow_nil, .. } => {
                 write!(f, "GetConstant {klass}, :{}, {allow_nil}", id.contents_lossy())
             }
-            Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
+            Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(*ic)) },
             Insn::IsBlockGiven { block_handler } => { write!(f, "IsBlockGiven {block_handler}") },
             Insn::FixnumBitCheck {val, index} => { write!(f, "FixnumBitCheck {val}, {index}") },
             Insn::CCall { cfunc, recv, args, name, owner, return_type: _, elidable: _ } => {
@@ -2248,7 +2249,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write_separated!(f, ", ", ", ", args);
                 match block {
                     Some(BlockHandler::BlockIseq(blockiseq)) =>
-                        write!(f, ", block={:p}", self.ptr_map.map_ptr(blockiseq))?,
+                        write!(f, ", block={:p}", self.ptr_map.map_ptr(*blockiseq))?,
                     Some(BlockHandler::BlockArg) =>
                         write!(f, ", block=&block")?,
                     None => {}
