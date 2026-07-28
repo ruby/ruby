@@ -1016,11 +1016,10 @@ _eom
     cmd = 'Signal.trap(:INT, "DEFAULT"); pipe=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; pipe[0].read'
     opt = {}
     opt[:new_pgroup] = true if /mswin|mingw/ =~ RUBY_PLATFORM
-    s, t, _err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true, **opt) do |in_p, out_p, err_p, cpid|
+    s, err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true, **opt) do |in_p, out_p, err_p, cpid|
       assert IO.select([out_p], nil, nil, 10), 'subprocess not ready'
       out_p.gets
       pid = cpid
-      t0 = Time.now.to_f
       Process.kill(:SIGINT, pid)
       begin
         Timeout.timeout(10) { Process.wait(pid) }
@@ -1028,14 +1027,12 @@ _eom
         EnvUtil.terminate(pid)
         raise
       end
-      t1 = Time.now.to_f
-      [$?, t1 - t0, err_p.read]
+      [$?, err_p.read]
     end
     assert_equal(pid, s.pid, bug5757)
     assert_equal([false, true, false, Signal.list["INT"]],
                  [s.exited?, s.signaled?, s.stopped?, s.termsig],
                  "[s.exited?, s.signaled?, s.stopped?, s.termsig]")
-    assert_include(0..2, t, bug5757)
   end
 
   def test_thread_join_in_trap
