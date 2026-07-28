@@ -21,6 +21,8 @@ use crate::cast::IntoUsize;
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
 pub struct BlockId(pub usize);
 
+type BlockSet = BitSet<BlockId>;
+
 /// Underlying integer width of a virtual-register id. Narrow to keep `Opnd`/`Mem` small.
 pub type VRegIdBase = u32;
 /// Width of a stack-slot index inside `MemBase`. Separate id space from `VRegId`.
@@ -3072,7 +3074,7 @@ impl Assembler
             VisitSelf,
         }
         let mut result = vec![];
-        let mut seen = HashSet::with_capacity(self.basic_blocks.len());
+        let mut seen = BlockSet::with_capacity(self.basic_blocks.len());
         let mut stack: Vec<_> = starts.iter().map(|&start| (start, Action::VisitEdges)).collect();
         while let Some((block, action)) = stack.pop() {
             if action == Action::VisitSelf {
