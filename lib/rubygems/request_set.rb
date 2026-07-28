@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "cooldown"
 require_relative "vendored_tsort"
 
 ##
@@ -22,6 +23,11 @@ class Gem::RequestSet
   # Array of gems to install even if already installed
 
   attr_accessor :always_install
+
+  ##
+  # The Gem::Cooldown applied to release candidates, if any.
+
+  attr_accessor :cooldown
 
   attr_reader :dependencies
 
@@ -96,6 +102,7 @@ class Gem::RequestSet
 
     @always_install      = []
     @conservative        = false
+    @cooldown            = nil
     @dependency_names    = {}
     @development         = false
     @development_shallow = false
@@ -223,6 +230,7 @@ class Gem::RequestSet
     @prerelease  = options[:prerelease]
     @remote      = options[:domain] != :local
     @conservative = true if options[:conservative]
+    @cooldown = Gem::Cooldown.from_options options
 
     gem_deps_api = load_gemdeps gemdeps, options[:without_groups], true
 
@@ -442,6 +450,7 @@ class Gem::RequestSet
     set.prerelease = @prerelease
 
     resolver = Gem::Resolver.new @dependencies, set
+    resolver.cooldown            = @cooldown
     resolver.development         = @development
     resolver.development_shallow = @development_shallow
     resolver.ignore_dependencies = @ignore_dependencies

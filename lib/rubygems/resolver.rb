@@ -35,6 +35,11 @@ class Gem::Resolver
   attr_accessor :ignore_dependencies
 
   ##
+  # The Gem::Cooldown applied to release candidates, if any.
+
+  attr_accessor :cooldown
+
+  ##
   # Hash of gems to skip resolution.  Keyed by gem name, with arrays of
   # gem specifications as values.
 
@@ -94,6 +99,7 @@ class Gem::Resolver
     @set = set || Gem::Resolver::IndexSet.new
     @needed = needed
 
+    @cooldown            = nil
     @development         = false
     @development_shallow = false
     @ignore_dependencies = false
@@ -373,7 +379,25 @@ class Gem::Resolver
       end
     end
 
+    filtered = filter_cooldown_specs(filtered) if @cooldown&.active?
+
     filtered
+  end
+
+  ##
+  # Rejects specs published within the cooldown period.  Specs with an
+  # unknown publish time (installed gems, lockfiles, sources without
+  # timestamps) are kept, so the cooldown fails open.
+
+  def filter_cooldown_specs(specs)
+    remote = specs.select do |s|
+      Gem::Resolver::APISpecification === s || Gem::Resolver::IndexSpecification === s
+    end
+    if remote.any? && remote.none?(&:created_at)
+      Gem::Cooldown.warn_missing_created_at remote.first.source
+    end
+
+    specs.reject {|s| @cooldown.skip?(s.created_at) }
   end
 
   def spec_for(name, version)
@@ -484,6 +508,17 @@ class Gem::Resolver
       actual = sample.respond_to?(:spec) ? sample.spec : sample
       ruby_req = actual.required_ruby_version
       hints << "#{name} #{versions.join(", ")} requires Ruby #{ruby_req} (you have #{Gem.ruby_version})"
+    end
+
+    # Check for specs filtered by the cooldown period
+    if @cooldown&.active?
+      cooldown_specs = installable.select do |s|
+        constraint.range.include?(s.version) && @cooldown.skip?(s.created_at)
+      end
+      if cooldown_specs.any?
+        versions = cooldown_specs.map(&:version).uniq.sort.reverse.first(3)
+        hints << "#{name} #{versions.join(", ")} published within the cooldown period (#{@cooldown.days} days). Use --cooldown 0 to bypass it."
+      end
     end
 
     # Check for specs filtered by prerelease status
