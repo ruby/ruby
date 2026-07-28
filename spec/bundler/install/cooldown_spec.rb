@@ -747,7 +747,10 @@ RSpec.describe "bundle install with the cooldown setting" do
 
       bundle "install --cooldown 0", artifice: "compact_index_cooldown"
 
-      expect(the_bundle).to include_gems("late_platform 2.0.0")
+      # On x86_64-linux hosts this resolves to the platform-specific build, so
+      # assert on the lockfile instead of the installed platform.
+      expect(lockfile).to include("late_platform (2.0.0")
+      expect(lockfile).not_to include("late_platform (1.0.0)")
     end
 
     it "applies CLI --cooldown on bundle lock --update" do
