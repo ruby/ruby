@@ -890,10 +890,26 @@ pub enum Insn {
     /// Cold fields are boxed (see `PatchPointData`) to keep `Insn` small.
     PatchPoint(Box<PatchPointData>),
 
-    /// Make sure the last PatchPoint has enough space to insert a jump.
-    /// We insert this instruction at the end of each block so that the jump
-    /// will not overwrite the next block or a side exit.
+    /// Space reserved immediately before a PatchPoint, keeping the *preceding*
+    /// patch point's invalidation jump from running over this one's address.
+    /// The position right after this pad is itself where a jump gets written on
+    /// invalidation, so whatever follows has to keep `jmp_ptr_bytes()` of
+    /// distance from it in turn.
+    ///
+    /// Zero-width whenever there is already enough room, which is the common
+    /// case.
     PadPatchPoint,
+
+    /// Space reserved at a boundary that a preceding PatchPoint's invalidation
+    /// jump must not cross: the start of a non-entry block, the start of a side
+    /// exit, or the end of the last block. Nothing is ever patched at a
+    /// boundary, so unlike [`Insn::PadPatchPoint`] this only protects what comes
+    /// after it, and it does not become something later code has to keep away
+    /// from — the first patch point of a block needs no padding in front of it.
+    ///
+    /// Zero-width whenever there is already enough room, which is the common
+    /// case.
+    BoundaryPad,
 
     // Mark a position in the generated code
     PosMarker(PosMarkerFn),
@@ -981,6 +997,7 @@ macro_rules! for_each_operand_impl {
             }
 
             Insn::BakeString(_) |
+            Insn::BoundaryPad |
             Insn::Breakpoint | Insn::Abort |
             Insn::Comment(_) |
             Insn::CPop { .. } |
@@ -1119,6 +1136,7 @@ impl Insn {
             Insn::Add { .. } => "Add",
             Insn::And { .. } => "And",
             Insn::BakeString(_) => "BakeString",
+            Insn::BoundaryPad => "BoundaryPad",
             Insn::Breakpoint => "Breakpoint",
             Insn::Abort => "Abort",
             Insn::Comment(_) => "Comment",
@@ -1868,8 +1886,8 @@ impl Assembler
             // Entry blocks shouldn't ever be preceded by something that can
             // stomp on this block.
             if !block.is_entry {
-                push_insns_with_perf_symbol(&mut insns, "PadPatchPoint", |insns| {
-                    insns.push(Insn::PadPatchPoint);
+                push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
+                    insns.push(Insn::BoundaryPad);
                 });
             }
 
@@ -1902,8 +1920,8 @@ impl Assembler
 
             // Make sure we don't stomp on the next function
             if block_id.0 == num_blocks - 1 {
-                push_insns_with_perf_symbol(&mut insns, "PadPatchPoint", |insns| {
-                    insns.push(Insn::PadPatchPoint);
+                push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
+                    insns.push(Insn::BoundaryPad);
                 });
             }
         }
@@ -2837,7 +2855,7 @@ impl Assembler
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
             // so that nobody stomps on us
-            asm.pad_patch_point();
+            asm.boundary_pad();
 
             asm_comment!(asm, "save cfp->pc");
             asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
@@ -3958,6 +3976,10 @@ impl Assembler {
 
     pub fn pad_patch_point(&mut self) {
         self.push_insn(Insn::PadPatchPoint);
+    }
+
+    pub fn boundary_pad(&mut self) {
+        self.push_insn(Insn::BoundaryPad);
     }
 
     pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr, &CodeBlock) + 'static) {
