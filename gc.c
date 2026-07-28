@@ -1453,7 +1453,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
         return !(flags & RARRAY_EMBED_FLAG);
 
       case T_HASH:
-        return !(flags & RHASH_ST_TABLE_FLAG);
+        return (flags & RHASH_ST_TABLE_FLAG);
 
       case T_MATCH:
         return !((flags & (RMATCH_ONIG | RMATCH_OFFSETS_EXTERNAL)) || USE_DEBUG_COUNTER);
