@@ -2750,6 +2750,12 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
     if second_insn != YARVINSN_leave {
         return None;
     }
+    // Make sure the leave is the final instruction. Otherwise this is a
+    // non-trivial ISEQ that should go through the general inliner.
+    let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+    if insn_len(first_insn as usize) + insn_len(second_insn as usize) != iseq_size {
+        return None;
+    }
     match first_insn {
         YARVINSN_getlocal_WC_0  => {
             // Accept only cases where only positional arguments are used by both the callee and the caller.

@@ -1057,6 +1057,26 @@ fn test_send_optional_and_rest_arguments() {
 }
 
 #[test]
+fn test_send_optional_return_default_without_argument() {
+    eval("
+        def test(arg = nil || (return :default)) = arg
+        def entry = test
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @":default");
+}
+
+#[test]
+fn test_send_optional_return_default_with_argument() {
+    eval("
+        def test(arg = nil || (return :default)) = arg
+        def entry = test(1)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"1");
+}
+
+#[test]
 fn test_send_rest_arguments_with_keyword_to_positional_hash() {
     eval("
         def test(*args) = args
