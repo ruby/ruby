@@ -21,6 +21,12 @@ use the gems in the cache in preference to the ones on `rubygems.org`.
 * `--cache-path=CACHE-PATH`:
   Specify a different cache path than the default (vendor/cache).
 
+* `--cooldown=<number>`:
+  Only consider gem versions published at least <number> days ago when
+  resolving before caching. Pass `0` to disable cooldown for this run,
+  overriding any per-source or global configuration. See `cooldown` in
+  bundle-config(1).
+
 * `--gemfile=GEMFILE`:
   Use the specified gemfile instead of Gemfile.
 
