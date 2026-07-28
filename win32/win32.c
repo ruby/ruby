@@ -4010,17 +4010,18 @@ rb_w32_getservbyport(int port, const char *proto)
 
 /* License: Ruby's */
 static size_t
-socketpair_unix_path(struct sockaddr_un *sock_un)
+socketpair_unix_path(struct sockaddr_un *sock_un, WCHAR *wpath, const int maxpath)
 {
     SOCKET listener;
-    WCHAR wpath[sizeof(sock_un->sun_path)/sizeof(*sock_un->sun_path)] = L"";
 
     /* AF_UNIX/SOCK_STREAM became available in Windows 10
      * See https://devblogs.microsoft.com/commandline/af_unix-comes-to-windows
      */
     listener = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (listener == INVALID_SOCKET)
+    if (listener == INVALID_SOCKET) {
+        errno = EAFNOSUPPORT;
         return 0;
+    }
 
     memset(sock_un, 0, sizeof(*sock_un));
     sock_un->sun_family = AF_UNIX;
@@ -4035,14 +4036,15 @@ socketpair_unix_path(struct sockaddr_un *sock_un)
      */
     for (int try = 0; ; try++) {
         LARGE_INTEGER ticks;
-        size_t path_len = 0;
-        const size_t maxpath = sizeof(sock_un->sun_path)/sizeof(*sock_un->sun_path);
+        int path_len = 0;
+        static const WCHAR FALLBACK_TEMP[] = L"C:/Temp/"; // always C: exists?
+        static const int FALLBACK_TEMP_SIZE = numberof(FALLBACK_TEMP) - 1;
 
         switch (try) {
-        case 0:
+          case 0:
             /* user temp dir from TMP or TEMP env var, it ends with a backslash */
             path_len = GetTempPathW(maxpath, wpath);
-            if (path_len == 0 || path_len > maxpath) {
+            if (path_len == 0 || path_len >= maxpath) {
                 /* The env var path did not fit in wpath (GetTempPathW then
                  * returns the required length and leaves wpath unfilled), or
                  * the call failed.  Skip to the next candidate directory
@@ -4050,30 +4052,33 @@ socketpair_unix_path(struct sockaddr_un *sock_un)
                 continue;
             }
             break;
-        case 1:
-            wcsncpy(wpath, L"C:/Temp/", maxpath);
-            path_len = lstrlenW(wpath);
+          case 1:
+            if (FALLBACK_TEMP_SIZE >= maxpath) continue;
+            wcsncpy(wpath, FALLBACK_TEMP, maxpath);
+            path_len = FALLBACK_TEMP_SIZE;
             break;
-        case 2:
+          case 2:
             /* Current directory */
             path_len = 0;
             break;
-        case 3:
+          case 3:
             closesocket(listener);
+            errno = EADDRNOTAVAIL;
             return 0;
         }
 
         /* Windows UNIXSocket implementation expects UTF-8 instead of UTF16 */
-        path_len = WideCharToMultiByte(CP_UTF8, 0, wpath, path_len, sock_un->sun_path, maxpath, NULL, NULL);
+        int un_len = WideCharToMultiByte(CP_UTF8, 0, wpath, path_len, sock_un->sun_path, maxpath, NULL, NULL);
         QueryPerformanceCounter(&ticks);
-        path_len += snprintf(sock_un->sun_path + path_len,
-                 maxpath - path_len,
+        int base_len = snprintf(sock_un->sun_path + un_len,
+                 maxpath - un_len,
                  "%lld-%ld.($)",
                  ticks.QuadPart,
                  GetCurrentProcessId());
+        if (un_len + base_len >= maxpath) continue;
 
         /* Convert to UTF16 for DeleteFileW */
-        MultiByteToWideChar(CP_UTF8, 0, sock_un->sun_path, -1, wpath, sizeof(wpath)/sizeof(*wpath));
+        MultiByteToWideChar(CP_UTF8, 0, sock_un->sun_path + un_len, base_len + 1, wpath + path_len, maxpath - path_len);
 
         if (bind(listener, (struct sockaddr *)sock_un, sizeof(*sock_un)) != SOCKET_ERROR)
             break;
@@ -4127,11 +4132,9 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
 #ifdef HAVE_AFUNIX_H
       case AF_UNIX:
         addr = (struct sockaddr *)&sock_un;
-        len = socketpair_unix_path(&sock_un);
-        MultiByteToWideChar(CP_UTF8, 0, sock_un.sun_path, -1, wpath, sizeof(wpath)/sizeof(*wpath));
-        if (len)
-            break;
-        /* fall through */
+        len = socketpair_unix_path(&sock_un, wpath, numberof(wpath));
+        if (!len) return -1;
+        break;
 #endif
       default:
         errno = EAFNOSUPPORT;
