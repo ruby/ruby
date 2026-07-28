@@ -4713,7 +4713,8 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 #define filetime_diff_days ((1970-1601)*3652425UL/10000)
 #define filetime_diff_secs (filetime_diff_days * (24ULL * 60 * 60))
 #define unix_to_filetime(sec) (((sec) + filetime_diff_secs) * filetime_unit)
-#define filetime_unix_offset unix_to_filetime(0ULL)
+static const ULONGLONG filetime_unix_offset = unix_to_filetime(0ULL);
+static const unsigned long secs_in_ns = 1000000000UL;
 
 /* License: Ruby's */
 typedef union {
@@ -4723,21 +4724,38 @@ typedef union {
 } FILETIME_INTEGER;
 
 /* License: Ruby's */
-/* split FILETIME value into UNIX time and sub-seconds in NT ticks */
+/* split LARGE_INTEGER value into UNIX time and sub-seconds in NT ticks */
 static time_t
-filetime_split(const FILETIME* ft, long *subsec)
+li_time_split(ULONGLONG lt, long *subsec)
 {
-    FILETIME_INTEGER fi = {.ft = *ft};
-    ULONGLONG lt = fi.i.QuadPart;
-
     /* lt is now 100-nanosec intervals since 1601/01/01 00:00:00 UTC,
        convert it into UNIX time (since 1970/01/01 00:00:00 UTC).
        the first leap second is at 1972/06/30, so we doesn't need to think
        about it. */
-    lt -= unix_to_filetime(0);
+    lt -= filetime_unix_offset;
 
     *subsec = (long)(lt % filetime_unit);
     return (time_t)(lt / filetime_unit);
+}
+
+/* License: Ruby's */
+static time_t
+li_time_split_ns(ULONGLONG lt, long *ns)
+{
+    long subsec;
+    time_t t = li_time_split(lt, &subsec);
+
+    *ns = subsec * 100;
+    if (t < 0) return 0;
+    return t;
+}
+
+/* License: Ruby's */
+static ULONGLONG
+filetime_to_li_time(const FILETIME* ft)
+{
+    FILETIME_INTEGER fi = {.ft = *ft};
+    return fi.i.QuadPart;
 }
 
 /* License: Ruby's */
@@ -4748,23 +4766,36 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
     long subsec;
 
     GetSystemTimePreciseAsFileTime(&ft);
-    tv->tv_sec = filetime_split(&ft, &subsec);
+    tv->tv_sec = li_time_split(filetime_to_li_time(&ft), &subsec);
     tv->tv_usec = subsec / 10;
 
     return 0;
 }
 
 /* License: Ruby's */
-static void
-filetime_to_timespec(FILETIME ft, struct timespec *sp)
+static time_t
+filetime_to_unixtime(const FILETIME *ft)
 {
     long subsec;
-    sp->tv_sec = filetime_split(&ft, &subsec);
-    sp->tv_nsec = subsec * 100;
+    time_t t = li_time_split(filetime_to_li_time(ft), &subsec);
+
+    if (t < 0) return 0;
+    return t;
 }
 
 /* License: Ruby's */
-static const long secs_in_ns = 1000000000;
+static time_t
+filetime_split_ns(const FILETIME *ft, long *ns)
+{
+    return li_time_split_ns(filetime_to_li_time(ft), ns);
+}
+
+/* License: Ruby's */
+static void
+filetime_to_timespec(FILETIME ft, struct timespec *sp)
+{
+    sp->tv_sec = filetime_split_ns(&ft, &sp->tv_nsec);
+}
 
 /* License: Ruby's */
 int
@@ -5603,8 +5634,6 @@ isUNCRoot(const WCHAR *path)
         (dest).st_ctime = (src).st_ctime;	\
     } while (0)
 
-static time_t filetime_to_unixtime(const FILETIME *ft);
-static long filetime_to_nsec(const FILETIME *ft);
 static WCHAR *name_for_stat(WCHAR *buf, const WCHAR *path);
 static DWORD stati128_handle(HANDLE h, struct stati128 *st);
 
@@ -5670,12 +5699,9 @@ stati128_handle(HANDLE h, struct stati128 *st)
     if (GetFileInformationByHandle(h, &info)) {
         FILE_ID_INFO fii;
         st->st_size = ((__int64)info.nFileSizeHigh << 32) | info.nFileSizeLow;
-        st->st_atime = filetime_to_unixtime(&info.ftLastAccessTime);
-        st->st_atimensec = filetime_to_nsec(&info.ftLastAccessTime);
-        st->st_mtime = filetime_to_unixtime(&info.ftLastWriteTime);
-        st->st_mtimensec = filetime_to_nsec(&info.ftLastWriteTime);
-        st->st_ctime = filetime_to_unixtime(&info.ftCreationTime);
-        st->st_ctimensec = filetime_to_nsec(&info.ftCreationTime);
+        st->st_atime = filetime_split_ns(&info.ftLastAccessTime, &st->st_atimensec);
+        st->st_mtime = filetime_split_ns(&info.ftLastWriteTime, &st->st_mtimensec);
+        st->st_ctime = filetime_split_ns(&info.ftCreationTime, &st->st_ctimensec);
         st->st_nlink = info.nNumberOfLinks;
         attr = info.dwFileAttributes;
         if (get_ino(h, &fii)) {
@@ -5688,27 +5714,6 @@ stati128_handle(HANDLE h, struct stati128 *st)
         }
     }
     return attr;
-}
-
-/* License: Ruby's */
-static time_t
-filetime_to_unixtime(const FILETIME *ft)
-{
-    long subsec;
-    time_t t = filetime_split(ft, &subsec);
-
-    if (t < 0) return 0;
-    return t;
-}
-
-/* License: Ruby's */
-static long
-filetime_to_nsec(const FILETIME *ft)
-{
-    ULARGE_INTEGER tmp;
-    tmp.LowPart = ft->dwLowDateTime;
-    tmp.HighPart = ft->dwHighDateTime;
-    return (long)(tmp.QuadPart % 10000000) * 100;
 }
 
 /* License: Ruby's */
@@ -5818,12 +5823,9 @@ stat_by_find(const WCHAR *path, struct stati128 *st)
     }
     FindClose(h);
     st->st_mode  = fileattr_to_unixmode(wfd.dwFileAttributes, path, 0);
-    st->st_atime = filetime_to_unixtime(&wfd.ftLastAccessTime);
-    st->st_atimensec = filetime_to_nsec(&wfd.ftLastAccessTime);
-    st->st_mtime = filetime_to_unixtime(&wfd.ftLastWriteTime);
-    st->st_mtimensec = filetime_to_nsec(&wfd.ftLastWriteTime);
-    st->st_ctime = filetime_to_unixtime(&wfd.ftCreationTime);
-    st->st_ctimensec = filetime_to_nsec(&wfd.ftCreationTime);
+    st->st_atime = filetime_split_ns(&wfd.ftLastAccessTime, &st->st_atimensec);
+    st->st_mtime = filetime_split_ns(&wfd.ftLastWriteTime, &st->st_mtimensec);
+    st->st_ctime = filetime_split_ns(&wfd.ftCreationTime, &st->st_ctimensec);
     st->st_size = ((__int64)wfd.nFileSizeHigh << 32) | wfd.nFileSizeLow;
     st->st_nlink = 1;
     return 0;
@@ -5877,12 +5879,9 @@ static get_file_information_by_name_func get_file_information_by_name =
 static time_t
 large_integer_to_unixtime(const LARGE_INTEGER *at, long *nsecp)
 {
-    FILETIME ft;
-
-    ft.dwLowDateTime = at->LowPart;
-    ft.dwHighDateTime = at->HighPart;
-    *nsecp = filetime_to_nsec(&ft);
-    return filetime_to_unixtime(&ft);
+    time_t t = li_time_split_ns(at->QuadPart, nsecp);
+    if (t < 0) return 0;
+    return t;
 }
 
 /* License: Ruby's */
