@@ -1068,6 +1068,15 @@ impl Assembler {
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }
 
+        /// Fill nops until a jump written at `last_patch_pos` can no longer reach
+        /// past the current write position.
+        fn emit_pad_after_patch_point(cb: &mut CodeBlock, last_patch_pos: Option<usize>) {
+            let Some(last_patch_pos) = last_patch_pos else { return };
+            while cb.get_write_pos().saturating_sub(last_patch_pos) < cb.jmp_ptr_bytes() && !cb.has_dropped_bytes() {
+                nop(cb);
+            }
+        }
+
         // List of GC offsets
         let mut gc_offsets: Vec<CodePtr> = Vec::new();
 
@@ -1521,13 +1530,15 @@ impl Assembler {
                 },
                 Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PadPatchPoint in arm64_scratch_split"),
                 Insn::PadPatchPoint => {
-                    // If patch points are too close to each other or the end of the block, fill nop instructions
-                    if let Some(last_patch_pos) = last_patch_pos {
-                        while cb.get_write_pos().saturating_sub(last_patch_pos) < cb.jmp_ptr_bytes() && !cb.has_dropped_bytes() {
-                            nop(cb);
-                        }
-                    }
+                    emit_pad_after_patch_point(cb, last_patch_pos);
+                    // This position is itself where a jump gets written on invalidation, so it
+                    // becomes what following code has to keep its distance from.
                     last_patch_pos = Some(cb.get_write_pos());
+                },
+                Insn::BoundaryPad => {
+                    // A boundary is never patched, so it doesn't become a position to keep away
+                    // from. The last patch point stays that, and the pad just gave it its room.
+                    emit_pad_after_patch_point(cb, last_patch_pos);
                 },
                 Insn::IncrCounter { mem, value } => {
                     // Get the status register allocated by arm64_scratch_split
@@ -1803,11 +1814,10 @@ mod tests {
 
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x1, #1
-        0x4: nop
-        0x8: mov x0, x1
-        0xc: ret
+        0x4: mov x0, x1
+        0x8: ret
         ");
-        assert_snapshot!(cb.hexdump(), @"210080d21f2003d5e00301aac0035fd6");
+        assert_snapshot!(cb.hexdump(), @"210080d2e00301aac0035fd6");
     }
 
     #[test]
