@@ -521,51 +521,37 @@ WCHAR *
 rb_w32_home_dir(void)
 {
     WCHAR *buffer = NULL;
-    size_t buffer_len = MAX_PATH, len = 0;
-    enum {
-        HOME_NONE, ENV_HOME, ENV_USERPROFILE, ENV_DRIVEPATH
-    } home_type = HOME_NONE;
+    size_t len = 0, len2;
+    /* can't use xmalloc here, since it's called too early from init_env() */
+#define alloc_buffer(len) \
+    if ((buffer = malloc(sizeof(WCHAR) * len)) != NULL) ; \
+    else return NULL
 
     if ((len = GetEnvironmentVariableW(L"HOME", NULL, 0)) != 0) {
-        buffer_len = len;
-        home_type = ENV_HOME;
+        alloc_buffer(len);
+        GetEnvironmentVariableW(L"HOME", buffer, len);
     }
     else if ((len = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0)) != 0) {
-        buffer_len = len;
-        home_type = ENV_USERPROFILE;
+        alloc_buffer(len);
+        GetEnvironmentVariableW(L"USERPROFILE", buffer, len);
     }
-    else if ((len = GetEnvironmentVariableW(L"HOMEDRIVE", NULL, 0)) != 0) {
-        buffer_len = len;
-        if ((len = GetEnvironmentVariableW(L"HOMEPATH", NULL, 0)) != 0) {
-            buffer_len += len;
-            home_type = ENV_DRIVEPATH;
-        }
+    else if ((len = GetEnvironmentVariableW(L"HOMEDRIVE", NULL, 0)) != 0 &&
+             (len2 = GetEnvironmentVariableW(L"HOMEPATH", NULL, 0)) != 0) {
+        len2 += len;
+        alloc_buffer(len2);
+        len = GetEnvironmentVariableW(L"HOMEDRIVE", buffer, len);
+        GetEnvironmentVariableW(L"HOMEPATH", buffer + len, len2 - len);
     }
-
-    /* can't use xmalloc here, since it's called too early from init_env() */
-    buffer = malloc(sizeof(WCHAR) * buffer_len);
-    if (buffer == NULL) return NULL;
-
-    switch (home_type) {
-      case ENV_HOME:
-        GetEnvironmentVariableW(L"HOME", buffer, buffer_len);
-        break;
-      case ENV_USERPROFILE:
-        GetEnvironmentVariableW(L"USERPROFILE", buffer, buffer_len);
-        break;
-      case ENV_DRIVEPATH:
-        len = GetEnvironmentVariableW(L"HOMEDRIVE", buffer, buffer_len);
-        GetEnvironmentVariableW(L"HOMEPATH", buffer + len, buffer_len - len);
-        break;
-      default:
-        if (!get_special_folder(CSIDL_PROFILE, buffer, buffer_len) &&
-            !get_special_folder(CSIDL_PERSONAL, buffer, buffer_len)) {
+    else {
+        alloc_buffer(MAX_PATH);
+        if (!get_special_folder(CSIDL_PROFILE, buffer, MAX_PATH) &&
+            !get_special_folder(CSIDL_PERSONAL, buffer, MAX_PATH)) {
             free(buffer);
             return NULL;
         }
         buffer = realloc(buffer, sizeof(WCHAR) * (lstrlenW(buffer) + 1));
-        break;
     }
+#undef alloc_buffer
 
     /* sanitize backslashes with forwardslashes */
     regulate_path(buffer);
