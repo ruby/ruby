@@ -19288,8 +19288,8 @@ mod hir_opt_tests {
 
     #[test]
     fn test_inline_method_with_omitted_optional_return_default() {
-        // With the optional omitted, entry 0 runs the default expression and the
-        // trivial inliner can fold the early return.
+        // With the optional omitted, the general inliner enters entry 0 and
+        // runs the default expression path.
         eval("
             def callee(arg = nil || (return :default))
               arg
@@ -19311,16 +19311,20 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
           v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          v19:StaticSymbol[:default] = Const Value(VALUE(0x1038))
+          v40:NilClass = Const Value(nil)
+          PushInlineFrame v18 (0x1038)
+          v26:StaticSymbol[:default] = Const Value(VALUE(0x1040))
           CheckInterrupts
-          Return v19
+          PopInlineFrame
+          Return v26
         ");
     }
 
     #[test]
     fn test_inline_method_with_supplied_optional_return_default() {
-        // With the optional supplied, use the selected optional entry instead
-        // of entry 0 so the default-expression return is not inlined.
+        // With the optional supplied, the general inliner uses the selected
+        // optional entry instead of entry 0, so the default-expression return
+        // is not inlined.
         eval("
             def callee(arg = nil || (return :default))
               arg
