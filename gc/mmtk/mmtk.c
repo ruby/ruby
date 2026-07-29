@@ -906,6 +906,20 @@ obj_can_parallel_free_p(VALUE obj)
     }
 }
 
+static bool
+obj_need_obj_free_p(VALUE obj)
+{
+    switch (RB_BUILTIN_TYPE(obj)) {
+      case T_FLOAT:
+      case T_RATIONAL:
+      case T_COMPLEX:
+      case T_OBJECT:
+        return false;
+      default:
+        return true;
+    }
+}
+
 static void
 mmtk_flush_obj_free_buffer(struct MMTk_ractor_cache *cache)
 {
@@ -1001,8 +1015,9 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
         mmtk_post_alloc_fast_immix(objspace, ractor_cache, (uintptr_t)alloc_obj);
     }
 
-    // TODO: only add when object needs obj_free to be called
-    mmtk_buffer_obj_free_candidate(ractor_cache, (VALUE)alloc_obj);
+    if (obj_need_obj_free_p((VALUE)alloc_obj)) {
+        mmtk_buffer_obj_free_candidate(ractor_cache, (VALUE)alloc_obj);
+    }
 
     objspace->total_allocated_objects++;
 
