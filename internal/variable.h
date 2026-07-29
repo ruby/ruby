@@ -22,7 +22,6 @@ VALUE rb_search_class_path(VALUE);
 VALUE rb_attr_delete(VALUE, ID);
 void rb_autoload_str(VALUE mod, ID id, VALUE file);
 VALUE rb_autoload_at_p(VALUE, ID, int);
-void rb_autoload_copy_table_for_box(st_table *, const rb_box_t *);
 NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
 rb_gvar_getter_t *rb_gvar_getter_function_of(ID);
 rb_gvar_setter_t *rb_gvar_setter_function_of(ID);
