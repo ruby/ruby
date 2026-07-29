@@ -1379,20 +1379,18 @@ impl fmt::Debug for Insn {
 #[derive(Clone, Debug, PartialEq)]
 pub struct LiveRange {
     /// Index of the first instruction that used the VReg
-    pub start: usize,
+    pub from: usize,
     /// Index of the last instruction that used the VReg
-    pub end: usize,
+    pub to: usize,
 }
 
 impl LiveRange {
-    /// Shorthand for self.start.unwrap()
     pub fn start(&self) -> usize {
-        self.start
+        self.from
     }
 
-    /// Shorthand for self.end.unwrap()
     pub fn end(&self) -> usize {
-        self.end
+        self.to
     }
 }
 
@@ -1413,29 +1411,29 @@ impl Interval {
     }
 
     pub fn start(&self) -> usize {
-        self.ranges[0].start
+        self.ranges[0].from
     }
 
     pub fn end(&self) -> usize {
-        self.ranges.last().unwrap().end
+        self.ranges.last().unwrap().to
     }
 
     /// Check if the interval is alive at position x
     /// Panics if the range is not set
     pub fn survives(&self, x: usize) -> bool {
         assert!(self.ranges.len() > 0, "survives called on interval with no range");
-        let start = self.ranges[0].start;
-        let end = self.ranges[0].end;
+        let start = self.ranges[0].from;
+        let end = self.ranges.last().unwrap().to;
         start < x && end > x
     }
 
     pub fn born_at(&self, x:usize) -> bool {
-        let start = self.ranges[0].start;
+        let start = self.ranges[0].from;
         start == x
     }
 
     pub fn dies_at(&self, x:usize) -> bool {
-        let end = self.ranges[0].end;
+        let end = self.ranges[0].to;
         end == x
     }
 
@@ -1449,21 +1447,26 @@ impl Interval {
             panic!("Invalid range: {} to {}", from, to);
         }
 
-        if self.ranges.len() == 0 {
-            self.ranges.push(LiveRange { start: from, end: to });
-            return;
+        if self.ranges.len() > 0 {
+            let last = self.ranges.last_mut().unwrap();
+            if last.from <= to {
+                last.from = last.from.min(from);
+                last.to = last.to.max(to);
+                return;
+            }
         }
 
-        let range = self.ranges.first_mut().unwrap();
-        range.start = range.start.min(from);
-        range.end = range.end.max(to);
+        self.ranges.push(LiveRange { from, to });
     }
 
     /// Set the start of the range
     pub fn set_from(&mut self, from: usize) {
+        // We iterate through instructions backwards.  If an instruction
+        // has a def, but no use, then it's possible to encounter an
+        // interval that has no ranges, thus we have a None case.
         match self.ranges.first_mut() {
-            None => self.ranges.push(LiveRange { start: from, end: from + 1 }),
-            Some(range) => range.start = from
+            None => self.ranges.push(LiveRange { from, to: from + 1 }),
+            Some(range) => range.from = from
         }
     }
 }
