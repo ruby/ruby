@@ -1390,6 +1390,7 @@ pub struct Interval {
     pub ranges: Vec<LiveRange>,
     pub id: VRegId,
     pub state: State,
+    pub assigned: Option<Allocation>,
 }
 
 impl Interval {
@@ -1399,6 +1400,7 @@ impl Interval {
             ranges: vec![],
             id: i,
             state: State::Unhandled,
+            assigned: None,
         }
     }
 
@@ -2153,25 +2155,25 @@ impl Assembler
 
         let mut free_registers: BTreeSet<usize> = (0..num_registers).collect();
         let mut active: Vec<Interval> = Vec::new(); // sorted by increasing end point
-        let mut assignment: Vec<Option<Allocation>> = vec![None; intervals.len()];
         let mut num_stack_slots: usize = 0;
 
-        // Collect vreg indices that have valid ranges, sorted by start point
-        let mut sorted_intervals: Vec<Interval> = intervals.iter()
+        let mut handled: Vec<Interval> = Vec::new();
+        let num_intervals = intervals.len();
+
+        let mut sorted_intervals: Vec<Interval> = intervals.into_iter()
             .filter(|i| i.has_bounds())
-            .cloned()
             .collect();
         sorted_intervals.sort_by_key(|i| i.start());
 
         let mut unhandled: VecDeque<Interval> = sorted_intervals.into();
 
-        while let Some(interval) = unhandled.pop_front() {
-            // Expire old intervals
-            active.retain(|active_interval| {
-                if active_interval.end() > interval.start() {
-                    true
+        while let Some(mut interval) = unhandled.pop_front() {
+            // Expire old intervals.
+            for it in std::mem::take(&mut active) {
+                if it.end() > interval.start() {
+                    active.push(it);
                 } else {
-                    if let Some(allocation) = assignment[active_interval.id] {
+                    if let Some(allocation) = it.assigned {
                         if let Some(reg) = allocation.alloc_pool_index(num_registers) {
                             let was_not_there_before = free_registers.insert(reg);
                             assert!(
@@ -2192,14 +2194,14 @@ impl Assembler
                             );
                         }
                     }
-                    false
+                    handled.push(it);
                 }
-            });
+            }
 
             let preferred_reg = preferred_registers[interval.id];
             let preferred_taken = preferred_reg.is_some_and(|reg| {
                 active.iter().any(|active_interval| {
-                    assignment[active_interval.id]
+                    active_interval.assigned
                         .and_then(|alloc| alloc.assigned_reg())
                         .is_some_and(|active_reg| active_reg.reg_no == reg.reg_no)
                 })
@@ -2208,13 +2210,13 @@ impl Assembler
             if let Some(preferred_reg) = preferred_reg.filter(|_| !preferred_taken) {
                 if let Some(reg_idx) = Allocation::Fixed(preferred_reg).alloc_pool_index(num_registers) {
                     if free_registers.remove(&reg_idx) {
-                        assignment[interval.id] = Some(Allocation::Fixed(preferred_reg));
+                        interval.assigned = Some(Allocation::Fixed(preferred_reg));
                         let insert_idx = active.partition_point(|i| i.end() < interval.end());
                         active.insert(insert_idx, interval);
                         continue;
                     }
                 } else {
-                    assignment[interval.id] = Some(Allocation::Fixed(preferred_reg));
+                    interval.assigned = Some(Allocation::Fixed(preferred_reg));
                     let insert_idx = active.partition_point(|i| i.end() < interval.end());
                     active.insert(insert_idx, interval);
                     continue;
@@ -2230,7 +2232,7 @@ impl Assembler
                 // can be mutated below.
                 let spill = active.iter().rev()
                     .find(|active_interval| {
-                        matches!(assignment[active_interval.id], Some(Allocation::Reg(_)))
+                        matches!(active_interval.assigned, Some(Allocation::Reg(_)))
                     })
                     .map(|active_interval| (active_interval.id, active_interval.end()));
                 let slot = Allocation::Stack(num_stack_slots);
@@ -2238,26 +2240,33 @@ impl Assembler
 
                 if let Some((spill_id, _)) = spill.filter(|&(_, spill_end)| spill_end > interval.end()) {
                     // Spill the last active interval; give its register to current
-                    assignment[interval.id] = assignment[spill_id];
-                    assignment[spill_id] = Some(slot);
                     let spill_idx = active.iter().position(|active_interval| active_interval.id == spill_id).unwrap();
-                    active.remove(spill_idx);
+                    let mut spilled = active.remove(spill_idx);
+                    interval.assigned = spilled.assigned;
+                    spilled.assigned = Some(slot);
+                    handled.push(spilled);
                     // Insert current into sorted active
                     let insert_idx = active.partition_point(|i| i.end() < interval.end());
                     active.insert(insert_idx, interval);
                 } else {
                     // Spill the current interval
-                    assignment[interval.id] = Some(slot);
+                    interval.assigned = Some(slot);
+                    handled.push(interval);
                 }
             } else {
                 // Allocate lowest free register
                 let reg = *free_registers.iter().min().unwrap();
                 free_registers.remove(&reg);
-                assignment[interval.id] = Some(Allocation::Reg(reg));
+                interval.assigned = Some(Allocation::Reg(reg));
                 // Insert into sorted active
                 let insert_idx = active.partition_point(|i| i.end() < interval.end());
                 active.insert(insert_idx, interval);
             }
+        }
+
+        let mut assignment: Vec<Option<Allocation>> = vec![None; num_intervals];
+        for it in active.into_iter().chain(handled) {
+            assignment[it.id] = it.assigned;
         }
 
         (assignment, num_stack_slots)
