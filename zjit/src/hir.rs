@@ -478,9 +478,35 @@ impl std::fmt::LowerHex for Offset {
     }
 }
 
+/// Raw pointer types accepted by [`PtrPrintMap::map_ptr`]. Only implemented for
+/// raw pointers so that accidentally passing a reference (e.g. `&IseqPtr`), which
+/// would map the address of the reference itself, is a compile error.
+pub trait ActualPtr: Copy {
+    fn to_void(self) -> *const c_void;
+    fn from_void(ptr: *const c_void) -> Self;
+    /// Alignment of the pointee, used to pick a suitably aligned fake address
+    fn pointee_align() -> usize;
+    /// Size of the pointee, used to bump the fake address allocator
+    fn pointee_size() -> usize;
+}
+
+impl<T> ActualPtr for *const T {
+    fn to_void(self) -> *const c_void { self.cast() }
+    fn from_void(ptr: *const c_void) -> Self { ptr.cast() }
+    fn pointee_align() -> usize { align_of::<T>() }
+    fn pointee_size() -> usize { size_of::<T>() }
+}
+
+impl<T> ActualPtr for *mut T {
+    fn to_void(self) -> *const c_void { self.cast_const().cast() }
+    fn from_void(ptr: *const c_void) -> Self { ptr.cast::<T>().cast_mut() }
+    fn pointee_align() -> usize { align_of::<T>() }
+    fn pointee_size() -> usize { size_of::<T>() }
+}
+
 impl PtrPrintMap {
     /// Map a pointer for printing
-    pub fn map_ptr<T>(&self, ptr: *const T) -> *const T {
+    pub fn map_ptr<P: ActualPtr>(&self, ptr: P) -> P {
         // When testing, address stability is not a concern so print real address to enable code
         // reuse
         if !self.map_ptrs {
@@ -488,18 +514,19 @@ impl PtrPrintMap {
         }
 
         use std::collections::hash_map::Entry::*;
-        let ptr = ptr.cast();
+        let raw = ptr.to_void();
         let inner = &mut *self.inner.borrow_mut();
-        match inner.map.entry(ptr) {
-            Occupied(entry) => entry.get().cast(),
+        match inner.map.entry(raw) {
+            Occupied(entry) => P::from_void(*entry.get()),
             Vacant(entry) => {
-                // Pick a fake address that is suitably aligns for T and remember it in the map
-                let mapped = inner.next_ptr.wrapping_add(inner.next_ptr.align_offset(align_of::<T>()));
+                // Pick a fake address that is suitably aligned for the pointee and
+                // remember it in the map
+                let mapped = inner.next_ptr.wrapping_add(inner.next_ptr.align_offset(P::pointee_align()));
                 entry.insert(mapped);
 
                 // Bump for the next pointer
-                inner.next_ptr = mapped.wrapping_add(size_of::<T>());
-                mapped.cast()
+                inner.next_ptr = mapped.wrapping_add(P::pointee_size());
+                P::from_void(mapped)
             }
         }
     }
