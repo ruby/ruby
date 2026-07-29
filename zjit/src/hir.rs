@@ -478,9 +478,23 @@ impl std::fmt::LowerHex for Offset {
     }
 }
 
+/// Marker trait that allowlists the pointee types [`PtrPrintMap::map_ptr`] accepts.
+/// Without it, a multi-level pointer like `*const IseqPtr`, usually the result of
+/// casting a reference created by matching on an [`Insn`], would map the address
+/// of the temporary holding the pointer instead of the pointer value itself.
+pub trait HIRPointee {}
+impl HIRPointee for VALUE {}
+impl HIRPointee for ID {}
+impl HIRPointee for c_void {}
+impl HIRPointee for u8 {}
+impl HIRPointee for rb_iseq_t {}
+impl HIRPointee for rb_callable_method_entry_t {}
+impl HIRPointee for iseq_inline_constant_cache {}
+
 /// Raw pointer types accepted by [`PtrPrintMap::map_ptr`]. Only implemented for
-/// raw pointers so that accidentally passing a reference (e.g. `&IseqPtr`), which
-/// would map the address of the reference itself, is a compile error.
+/// raw pointers to [`HIRPointee`] types so that accidentally passing a reference
+/// (e.g. `&IseqPtr`), which would map the address of the reference itself, is a
+/// compile error.
 pub trait ActualPtr: Copy {
     fn to_void(self) -> *const c_void;
     fn from_void(ptr: *const c_void) -> Self;
@@ -490,14 +504,14 @@ pub trait ActualPtr: Copy {
     fn pointee_size() -> usize;
 }
 
-impl<T> ActualPtr for *const T {
+impl<T: HIRPointee> ActualPtr for *const T {
     fn to_void(self) -> *const c_void { self.cast() }
     fn from_void(ptr: *const c_void) -> Self { ptr.cast() }
     fn pointee_align() -> usize { align_of::<T>() }
     fn pointee_size() -> usize { size_of::<T>() }
 }
 
-impl<T> ActualPtr for *mut T {
+impl<T: HIRPointee> ActualPtr for *mut T {
     fn to_void(self) -> *const c_void { self.cast_const().cast() }
     fn from_void(ptr: *const c_void) -> Self { ptr.cast::<T>().cast_mut() }
     fn pointee_align() -> usize { align_of::<T>() }
