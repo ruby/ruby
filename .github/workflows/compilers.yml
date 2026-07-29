@@ -150,11 +150,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
-      # -Wno-strict-prototypes is necessary with current clang-15 since
-      # older autoconf generate functions without prototype and -pedantic
-      # now implies strict-prototypes. Disabling the error but leaving the
-      # warning generates a lot of noise from use of ANYARGS in
-      # rb_define_method() and friends.
+      # -Wno-strict-prototypes is necessary with clang-15 or newer, since
+      # older autoconf prior to 2.72 generate functions without prototype
+      # and -pedantic now implies strict-prototypes. Disabling the error
+      # but leaving the warning generates a lot of noise from use of
+      # ANYARGS in rb_define_method() and friends.
       # See: https://github.com/llvm/llvm-project/commit/11da1b53d8cd3507959022cd790d5a7ad4573d94
       - { uses: './.github/actions/compilers', name: 'C99',      with: { CFLAGS: '-std=c99 -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'C11',   with: { CFLAGS:   '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }, timeout-minutes: 8 }
