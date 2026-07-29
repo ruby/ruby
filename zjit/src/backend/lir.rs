@@ -1379,27 +1379,27 @@ impl fmt::Debug for Insn {
 #[derive(Clone, Debug, PartialEq)]
 pub struct LiveRange {
     /// Index of the first instruction that used the VReg
-    pub start: Option<usize>,
+    pub start: usize,
     /// Index of the last instruction that used the VReg
-    pub end: Option<usize>,
+    pub end: usize,
 }
 
 impl LiveRange {
     /// Shorthand for self.start.unwrap()
     pub fn start(&self) -> usize {
-        self.start.unwrap()
+        self.start
     }
 
     /// Shorthand for self.end.unwrap()
     pub fn end(&self) -> usize {
-        self.end.unwrap()
+        self.end
     }
 }
 
 /// Live Interval of a VReg
 #[derive(Clone)]
 pub struct Interval {
-    pub range: LiveRange,
+    pub ranges: Vec<LiveRange>,
     pub id: VRegId,
 }
 
@@ -1407,35 +1407,40 @@ impl Interval {
     /// Create a new Interval with no range
     pub fn new(i: VRegId) -> Self {
         Self {
-            range: LiveRange {
-                start: None,
-                end: None,
-            },
+            ranges: vec![],
             id: i,
         }
+    }
+
+    pub fn start(&self) -> usize {
+        self.ranges[0].start
+    }
+
+    pub fn end(&self) -> usize {
+        self.ranges.last().unwrap().end
     }
 
     /// Check if the interval is alive at position x
     /// Panics if the range is not set
     pub fn survives(&self, x: usize) -> bool {
-        assert!(self.range.start.is_some() && self.range.end.is_some(), "survives called on interval with no range");
-        let start = self.range.start.unwrap();
-        let end = self.range.end.unwrap();
+        assert!(self.ranges.len() > 0, "survives called on interval with no range");
+        let start = self.ranges[0].start;
+        let end = self.ranges[0].end;
         start < x && end > x
     }
 
     pub fn born_at(&self, x:usize) -> bool {
-        let start = self.range.start.unwrap();
+        let start = self.ranges[0].start;
         start == x
     }
 
     pub fn dies_at(&self, x:usize) -> bool {
-        let end = self.range.end.unwrap();
+        let end = self.ranges[0].end;
         end == x
     }
 
     pub fn has_bounds(&self) -> bool {
-        self.range.start.is_some() && self.range.end.is_some()
+        self.ranges.len() > 0
     }
 
     /// Add a range to the interval, extending it if necessary
@@ -1444,22 +1449,22 @@ impl Interval {
             panic!("Invalid range: {} to {}", from, to);
         }
 
-        if self.range.start.is_none() {
-            self.range.start = Some(from);
-            self.range.end = Some(to);
+        if self.ranges.len() == 0 {
+            self.ranges.push(LiveRange { start: from, end: to });
             return;
         }
 
-        // Extend the range to cover both the existing range and the new range
-        self.range.start = Some(self.range.start.unwrap().min(from));
-        self.range.end = Some(self.range.end.unwrap().max(to));
+        let range = self.ranges.first_mut().unwrap();
+        range.start = range.start.min(from);
+        range.end = range.end.max(to);
     }
 
     /// Set the start of the range
     pub fn set_from(&mut self, from: usize) {
-        let end = self.range.end.unwrap_or(from);
-        self.range.start = Some(from);
-        self.range.end = Some(end);
+        match self.ranges.first_mut() {
+            None => self.ranges.push(LiveRange { start: from, end: from + 1 }),
+            Some(range) => range.start = from
+        }
     }
 }
 
@@ -2151,15 +2156,15 @@ impl Assembler
 
         // Collect vreg indices that have valid ranges, sorted by start point
         let mut sorted_intervals: Vec<Interval> = intervals.iter()
-            .filter(|i| i.range.start.is_some() && i.range.end.is_some())
+            .filter(|i| i.has_bounds())
             .cloned()
             .collect();
-        sorted_intervals.sort_by_key(|i| i.range.start.unwrap());
+        sorted_intervals.sort_by_key(|i| i.start());
 
         for interval in &sorted_intervals {
             // Expire old intervals
             active.retain(|&active_interval| {
-                if active_interval.range.end.unwrap() > interval.range.start.unwrap() {
+                if active_interval.end() > interval.start() {
                     true
                 } else {
                     if let Some(allocation) = assignment[active_interval.id] {
@@ -2200,13 +2205,13 @@ impl Assembler
                 if let Some(reg_idx) = Allocation::Fixed(preferred_reg).alloc_pool_index(num_registers) {
                     if free_registers.remove(&reg_idx) {
                         assignment[interval.id] = Some(Allocation::Fixed(preferred_reg));
-                        let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
+                        let insert_idx = active.partition_point(|&i| i.end() < interval.end());
                         active.insert(insert_idx, &interval);
                         continue;
                     }
                 } else {
                     assignment[interval.id] = Some(Allocation::Fixed(preferred_reg));
-                    let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
+                    let insert_idx = active.partition_point(|&i| i.end() < interval.end());
                     active.insert(insert_idx, &interval);
                     continue;
                 }
@@ -2223,14 +2228,14 @@ impl Assembler
                 let slot = Allocation::Stack(num_stack_slots);
                 num_stack_slots += 1;
 
-                if let Some(spill) = spill.filter(|spill| spill.range.end.unwrap() > interval.range.end.unwrap()) {
+                if let Some(spill) = spill.filter(|spill| spill.end() > interval.end()) {
                     // Spill the last active interval; give its register to current
                     assignment[interval.id] = assignment[spill.id];
                     assignment[spill.id] = Some(slot);
                     let spill_idx = active.iter().position(|active_interval| active_interval.id == spill.id).unwrap();
                     active.remove(spill_idx);
                     // Insert current into sorted active
-                    let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
+                    let insert_idx = active.partition_point(|&i| i.end() < interval.end());
                     active.insert(insert_idx, &interval);
                 } else {
                     // Spill the current interval
@@ -2242,7 +2247,7 @@ impl Assembler
                 free_registers.remove(&reg);
                 assignment[interval.id] = Some(Allocation::Reg(reg));
                 // Insert into sorted active
-                let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
+                let insert_idx = active.partition_point(|&i| i.end() < interval.end());
                 active.insert(insert_idx, &interval);
             }
         }
@@ -2460,10 +2465,8 @@ impl Assembler
                     // Do we have a case where a ccall is emitted, but nobody
                     // uses the result?
                     let call_result_live = out.is_vreg()
-                        && intervals[out.vreg_idx()]
-                            .range
-                            .end
-                            .is_some_and(|end| end > insn_number);
+                        && intervals[out.vreg_idx()].has_bounds()
+                        && intervals[out.vreg_idx()].end() > insn_number;
 
                     // Build a set of VRegIds that can be referenced by JITFrame for materializing the VM stack
                     let stack_vreg_ids: HashSet<VRegId> = if let Some(StackMap { stack, .. }) = &stack_map {
@@ -3364,11 +3367,10 @@ pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
 
             // For each VReg, check if it's alive at this position
             for vreg_idx in 0..num_vregs {
-                let is_alive = intervals[vreg_idx].range.start.is_some() &&
-                               intervals[vreg_idx].range.end.is_some() &&
+                let is_alive = intervals[vreg_idx].has_bounds() &&
                                intervals[vreg_idx].survives(insn_id.0);
 
-                let has_range = intervals[vreg_idx].range.start.is_some();
+                let has_range = intervals[vreg_idx].has_bounds();
                 if has_range && intervals[vreg_idx].born_at(insn_id.0) {
                     output.push_str("  v ");
                 } else if has_range && intervals[vreg_idx].dies_at(insn_id.0) {
