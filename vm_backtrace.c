@@ -20,6 +20,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "ruby/encoding.h"
+#include "ruby/internal/intern/io.h"
 #include "vm_core.h"
 #include "zjit.h"
 
@@ -413,6 +414,67 @@ location_node_id(rb_backtrace_location_t *loc)
 extern VALUE rb_e_script;
 
 static bool
+location_source_end_marker_p(const uint8_t *line, size_t length)
+{
+    return (length == 7 && memcmp(line, "__END__", 7) == 0) ||
+        (length == 8 && memcmp(line, "__END__\n", 8) == 0) ||
+        (length == 9 && memcmp(line, "__END__\r\n", 9) == 0);
+}
+
+static bool
+location_source_hash_matches(VALUE source, uint64_t source_hash)
+{
+    StringValue(source);
+    const uint8_t *bytes = (const uint8_t *)RSTRING_PTR(source);
+    size_t length = (size_t)RSTRING_LEN(source);
+    size_t line_start = 0;
+    rb_source_hash_state_t state;
+    rb_source_hash_init(&state);
+
+    for (size_t index = 0; index < length; index++) {
+        if (bytes[index] != '\n') continue;
+
+        size_t line_length = index + 1 - line_start;
+        rb_source_hash_update(&state, bytes + line_start, line_length);
+        if (location_source_end_marker_p(bytes + line_start, line_length) &&
+            rb_source_hash_finalize(&state) == source_hash) {
+            return true;
+        }
+        line_start = index + 1;
+    }
+
+    if (line_start < length) {
+        size_t line_length = length - line_start;
+        rb_source_hash_update(&state, bytes + line_start, line_length);
+        if (location_source_end_marker_p(bytes + line_start, line_length) &&
+            rb_source_hash_finalize(&state) == source_hash) {
+            return true;
+        }
+    }
+
+    return rb_source_hash_finalize(&state) == source_hash;
+}
+
+static VALUE
+location_source_read(VALUE io)
+{
+    VALUE source = rb_str_buf_new(0);
+    VALUE line;
+
+    while (!NIL_P(line = rb_io_gets(io))) {
+        rb_str_buf_append(source, line);
+    }
+    return source;
+}
+
+static VALUE
+location_source_read_file(VALUE path)
+{
+    VALUE file = rb_file_open_str(path, "rb");
+    return rb_ensure(location_source_read, file, rb_io_close, file);
+}
+
+static bool
 location_code_location_equal(const rb_code_location_t *left, const rb_code_location_t *right)
 {
     return left->beg_pos.lineno == right->beg_pos.lineno &&
@@ -422,7 +484,7 @@ location_code_location_equal(const rb_code_location_t *left, const rb_code_locat
 }
 
 static bool
-iseq_from_e_script_p(const rb_iseq_t *iseq, VALUE path)
+iseq_from_e_script_p(const rb_iseq_t *iseq, VALUE path, uint64_t source_hash)
 {
     if (!RB_TYPE_P(path, T_STRING) ||
         RSTRING_LEN(path) != 2 ||
@@ -430,6 +492,7 @@ iseq_from_e_script_p(const rb_iseq_t *iseq, VALUE path)
         !RTEST(rb_e_script)) {
         return false;
     }
+    if (!location_source_hash_matches(rb_e_script, source_hash)) return false;
 
     const rb_iseq_t *source_iseq = iseq;
     for (; source_iseq; source_iseq = ISEQ_BODY(source_iseq)->parent_iseq) {
@@ -478,22 +541,21 @@ location_source_first_lineno(const rb_iseq_t *iseq, VALUE script_lines)
 
 /*
  * call-seq:
- *    location.source_range  -> Ruby::SourceRange or nil
+ *    location.source_range  -> Ruby::SourceRange
  *
  * Returns the Ruby::SourceRange for the Ruby expression associated with this
- * backtrace location, or +nil+ when the location is not available
- * (e.g., the source is not Ruby code).
+ * backtrace location.
  *
- * This method requires re-reading the source file from the filesystem
- * (since this information is not kept in the bytecode to avoid memory overhead).
- * Errno::ENOENT if the source file no longer exists.
- * RuntimeError is raised if the file has been modified.
+ * On CRuby, this method re-reads and re-parses the source file to determine
+ * the range. File errors encountered while reading the source are propagated.
+ * RuntimeError is raised if required source location information is
+ * unavailable, or if the source has changed.
  *
- * On CRuby, `RubyVM.keep_script_lines = true` can be used to avoid to re-read
- * source files from the filesystem, however this will increase memory usage,
- * by keeping all source files in memory.
+ * RubyVM.keep_script_lines = true can be used to retain source files in
+ * memory and avoid re-reading them from the filesystem.
  *
- * Locations from eval'd code are only available with `RubyVM.keep_script_lines = true`.
+ * Locations from eval'd code are only available with
+ * RubyVM.keep_script_lines = true.
  */
 static VALUE
 location_source_range_m(VALUE self)
@@ -501,27 +563,36 @@ location_source_range_m(VALUE self)
 #ifdef USE_ISEQ_NODE_ID
     rb_backtrace_location_t *backtrace_location = location_ptr(self);
     const rb_iseq_t *iseq = location_iseq(backtrace_location);
-    if (!iseq) return Qnil;
+    if (!iseq) {
+        rb_raise(rb_eRuntimeError, "cannot get source range for location without Ruby bytecode");
+    }
 
     rb_iseq_check(iseq);
     int node_id = location_node_id(backtrace_location);
-    if (node_id == -1) return Qnil;
+    if (node_id == -1) {
+        rb_raise(rb_eRuntimeError, "cannot get source range for location without a node ID");
+    }
+    if (!ISEQ_BODY(iseq)->has_source_hash) {
+        rb_raise(rb_eRuntimeError, "cannot get source range because the source hash is unavailable");
+    }
+    uint64_t source_hash = ISEQ_BODY(iseq)->source_hash;
 
     VALUE path = rb_iseq_path(iseq);
     VALUE absolute_path = rb_iseq_realpath(iseq);
     VALUE script_lines = ISEQ_BODY(iseq)->variable.script_lines;
-    VALUE source = script_lines;
+    VALUE source;
     VALUE parser_path = path;
     int first_lineno = 1;
 
     if (!NIL_P(script_lines)) {
+        source = rb_ary_join(script_lines, Qnil);
         first_lineno = location_source_first_lineno(iseq, script_lines);
     }
-    else if (iseq_from_e_script_p(iseq, path)) {
+    else if (iseq_from_e_script_p(iseq, path, source_hash)) {
         source = rb_e_script;
     }
     else if (!NIL_P(absolute_path)) {
-        source = Qnil;
+        source = location_source_read_file(absolute_path);
         parser_path = absolute_path;
     }
     else {
@@ -531,15 +602,21 @@ location_source_range_m(VALUE self)
     if (NIL_P(parser_path)) {
         parser_path = rb_str_new_cstr("(eval)");
     }
+    if (!location_source_hash_matches(source, source_hash)) {
+        rb_raise(rb_eRuntimeError, "source has been modified");
+    }
 
     rb_code_location_t code_location;
     bool found;
 
     if (ISEQ_BODY(iseq)->prism) {
-        if (RB_TYPE_P(source, T_ARRAY)) {
-            source = rb_ary_join(source, Qnil);
-        }
-        found = pm_node_source_location(source, parser_path, first_lineno, node_id, &code_location);
+        found = pm_node_source_location(
+            source,
+            parser_path,
+            first_lineno,
+            node_id,
+            &code_location
+        );
     }
     else {
         found = rb_ast_node_source_location(
@@ -559,7 +636,7 @@ location_source_range_m(VALUE self)
 
     return rb_source_range_new(path, absolute_path, &code_location);
 #else
-    return Qnil;
+    rb_raise(rb_eRuntimeError, "cannot get source range because node IDs are disabled");
 #endif
 }
 

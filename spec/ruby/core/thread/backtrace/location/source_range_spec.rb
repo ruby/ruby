@@ -185,6 +185,10 @@ ruby_version_is "4.1" do
       TEXT
       RUBY
 
+      "source with a data section" => "$nil.foo$\n__END__\ndata\n",
+
+      "__END__ inside a heredoc" => "value = <<TEXT\n__END__\nTEXT\n$nil.foo$\n",
+
       "multibyte identifiers with byte columns" => <<-RUBY,
       value = "été"
       $value.あいうえお$
@@ -272,6 +276,28 @@ ruby_version_is "4.1" do
       RUBY
     end
 
+    it "raises for a location without Ruby bytecode" do
+      report_on_exception = Thread.report_on_exception
+      Thread.report_on_exception = false
+
+      begin
+        thread = Thread.new(&method(:throw))
+        exception = begin
+          thread.value
+        rescue ArgumentError => error
+          error
+        end
+        location = exception.backtrace_locations.first
+
+        location.path.should == nil
+        -> {
+          location.source_range
+        }.should.raise(RuntimeError, "cannot get source range for location without Ruby bytecode")
+      ensure
+        Thread.report_on_exception = report_on_exception
+      end
+    end
+
     it "propagates an error when the absolute source file no longer exists" do
       keep_source(false) do
         location, path = capture_backtrace_location_from_source("nil.foo\n")
@@ -285,27 +311,40 @@ ruby_version_is "4.1" do
       end
     end
 
-    it "propagates a syntax error from changed source" do
+    it "raises when changed source has invalid syntax" do
       keep_source(false) do
         location, path = capture_backtrace_location_from_source("nil.foo\n")
         File.binwrite(path, "(\n")
 
         -> {
           location.source_range
-        }.should.raise(SyntaxError)
+        }.should.raise(RuntimeError, "source has been modified")
       ensure
         rm_r path if path
       end
     end
 
-    it "raises when changed source no longer contains the node ID" do
+    it "validates changed source before looking up the node ID" do
       keep_source(false) do
         location, path = capture_backtrace_location_from_source("first = 1\nsecond = 2\nnil.foo\n")
         File.binwrite(path, "nil\n")
 
         -> {
           location.source_range
-        }.should.raise(RuntimeError, /cannot find node ID \d+ in parsed source/)
+        }.should.raise(RuntimeError, "source has been modified")
+      ensure
+        rm_r path if path
+      end
+    end
+
+    it "raises when changed source has the same node ID layout" do
+      keep_source(false) do
+        location, path = capture_backtrace_location_from_source("nil.foo\n")
+        File.binwrite(path, "nil.longer_method_name\n")
+
+        -> {
+          location.source_range
+        }.should.raise(RuntimeError, "source has been modified")
       ensure
         rm_r path if path
       end
