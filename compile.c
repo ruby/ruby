@@ -15227,6 +15227,10 @@ rb_iseq_dup_with_independent_caches(const rb_iseq_t *src_root)
             RB_OBJ_WRITE(copy, &cb->parent_iseq, sb->parent_iseq);
             result = copy;
         }
+
+        /* Shared across Ractors through the Proc#refined memo; the duplicated
+         * subtree is self-contained, so mark each copy shareable. */
+        RB_OBJ_SET_SHAREABLE((VALUE)copy);
     }
 
     if (ISEQ_PC2BRANCHINDEX(src_root) != Qnil) {
