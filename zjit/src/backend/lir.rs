@@ -1418,13 +1418,19 @@ impl Interval {
         self.ranges.last().unwrap().to
     }
 
-    /// Check if the interval is alive at position x
+    /// Check if the interval is alive at position
     /// Panics if the range is not set
-    pub fn survives(&self, x: usize) -> bool {
+    pub fn survives(&self, position: usize) -> bool {
         assert!(self.ranges.len() > 0, "survives called on interval with no range");
-        let start = self.ranges[0].from;
-        let end = self.ranges.last().unwrap().to;
-        start < x && end > x
+        for range in self.ranges.iter() {
+            if position < range.from {
+                return false;
+            }
+            if position < range.to {
+                return true;
+            }
+        }
+        return false;
     }
 
     pub fn born_at(&self, x:usize) -> bool {
@@ -1447,9 +1453,11 @@ impl Interval {
             panic!("Invalid range: {} to {}", from, to);
         }
 
-        if self.ranges.len() > 0 {
-            let last = self.ranges.last_mut().unwrap();
-            if last.from <= to {
+        // Blocks are visited in ascending order, so only the last range can
+        // overlap or abut the new one. Anything earlier is separated by a
+        // lifetime hole and must stay a distinct range.
+        if let Some(last) = self.ranges.last_mut() {
+            if from <= last.to {
                 last.from = last.from.min(from);
                 last.to = last.to.max(to);
                 return;
@@ -1459,12 +1467,9 @@ impl Interval {
         self.ranges.push(LiveRange { from, to });
     }
 
-    /// Set the start of the range
+    /// Narrow the range covering `from` so that it begins at the def.
     pub fn set_from(&mut self, from: usize) {
-        // We iterate through instructions backwards.  If an instruction
-        // has a def, but no use, then it's possible to encounter an
-        // interval that has no ranges, thus we have a None case.
-        match self.ranges.first_mut() {
+        match self.ranges.last_mut() {
             None => self.ranges.push(LiveRange { from, to: from + 1 }),
             Some(range) => range.from = from
         }
@@ -3368,18 +3373,20 @@ pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
             // Print instruction ID
             output.push_str(&format!("i{:<6}: ", insn_id.0));
 
-            // For each VReg, check if it's alive at this position
+            // For each VReg, check if it's alive at this position. Each range is
+            // marked independently so lifetime holes show up as gaps.
             for vreg_idx in 0..num_vregs {
-                let is_alive = intervals[vreg_idx].has_bounds() &&
-                               intervals[vreg_idx].survives(insn_id.0);
-
-                let has_range = intervals[vreg_idx].has_bounds();
-                if has_range && intervals[vreg_idx].born_at(insn_id.0) {
-                    output.push_str("  v ");
-                } else if has_range && intervals[vreg_idx].dies_at(insn_id.0) {
-                    output.push_str("  ^ ");
-                } else if is_alive {
-                    output.push_str("  █ ");
+                let interval = &intervals[vreg_idx];
+                if interval.has_bounds() {
+                    if interval.born_at(insn_id.0) {
+                        output.push_str("  v ");
+                    } else if interval.dies_at(insn_id.0) {
+                        output.push_str("  ^ ");
+                    } else if interval.survives(insn_id.0) {
+                        output.push_str("  █ ");
+                    } else {
+                        output.push_str("  . ");
+                    }
                 } else {
                     output.push_str("  . ");
                 }
