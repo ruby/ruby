@@ -9,7 +9,7 @@ use crate::{
     backend::lir::C_ARG_OPNDS, cast::IntoUsize, codegen::max_iseq_versions, cruby::*, invariants::{self, iseq_seen_ep_escape}, json::Json, options::{DumpHIR, InlineDepth, debug, get_option}, payload::get_or_create_iseq_payload, profile::reset_profiles_remaining, state::{self, ZJITState},
 };
 use std::{
-    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter,
+    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, ptr, slice::Iter,
     sync::atomic::Ordering,
 };
 use crate::hir_type::{Type, types};
@@ -478,69 +478,71 @@ impl std::fmt::LowerHex for Offset {
     }
 }
 
-/// Marker trait that allowlists the pointee types [`PtrPrintMap::map_ptr`] accepts.
-/// Without it, a multi-level pointer like `*const IseqPtr`, usually the result of
-/// casting a reference created by matching on an [`Insn`], would map the address
-/// of the temporary holding the pointer instead of the pointer value itself.
-pub trait HIRPointee {}
-impl HIRPointee for VALUE {}
-impl HIRPointee for ID {}
-impl HIRPointee for c_void {}
-impl HIRPointee for u8 {}
-impl HIRPointee for rb_iseq_t {}
-impl HIRPointee for rb_callable_method_entry_t {}
-impl HIRPointee for iseq_inline_constant_cache {}
-
-/// Raw pointer types accepted by [`PtrPrintMap::map_ptr`]. Only implemented for
-/// raw pointers to [`HIRPointee`] types so that accidentally passing a reference
-/// (e.g. `&IseqPtr`), which would map the address of the reference itself, is a
-/// compile error.
-pub trait ActualPtr: Copy {
-    fn to_void(self) -> *const c_void;
-    fn from_void(ptr: *const c_void) -> Self;
-    /// Alignment of the pointee, used to pick a suitably aligned fake address
-    fn pointee_align() -> usize;
-    /// Size of the pointee, used to bump the fake address allocator
-    fn pointee_size() -> usize;
+/// A trait tailored for [`PtrPrintMap`] to disable coercion of `&*const T` into `*const *const T`.
+/// This is implemented for `*const/mut T`, but rules for coercing into `impl Trait` don't consider the
+/// underlying type, so we avoid the undesirable coercion. (It would be weird for the treatment of a
+/// trait to change based on the set of types that implements it since Rust has a nominal type system.)
+pub trait OneLevelPtr: Copy {
+    /// Get the address component of the pointer.
+    fn addr(self) -> usize;
+    /// The layout of the pointed-to type.
+    fn pointee_layout(self) -> std::alloc::Layout;
 }
 
-impl<T: HIRPointee> ActualPtr for *const T {
-    fn to_void(self) -> *const c_void { self.cast() }
-    fn from_void(ptr: *const c_void) -> Self { ptr.cast() }
-    fn pointee_align() -> usize { align_of::<T>() }
-    fn pointee_size() -> usize { size_of::<T>() }
+impl<T> OneLevelPtr for *const T {
+    fn addr(self) -> usize {
+        <*const T>::addr(self)
+    }
+
+    fn pointee_layout(self) -> std::alloc::Layout {
+        std::alloc::Layout::new::<T>()
+    }
 }
 
-impl<T: HIRPointee> ActualPtr for *mut T {
-    fn to_void(self) -> *const c_void { self.cast_const().cast() }
-    fn from_void(ptr: *const c_void) -> Self { ptr.cast::<T>().cast_mut() }
-    fn pointee_align() -> usize { align_of::<T>() }
-    fn pointee_size() -> usize { size_of::<T>() }
+impl<T> OneLevelPtr for *mut T {
+    fn addr(self) -> usize {
+        <*mut T>::addr(self)
+    }
+
+    fn pointee_layout(self) -> std::alloc::Layout {
+        std::alloc::Layout::new::<T>()
+    }
 }
 
 impl PtrPrintMap {
-    /// Map a pointer for printing
-    pub fn map_ptr<P: ActualPtr>(&self, ptr: P) -> P {
-        // When testing, address stability is not a concern so print real address to enable code
-        // reuse
+    /// Map a pointer for printing.
+    ///
+    /// The type bound on this function rejects `&*const T`, which we commonly get through matching:
+    ///
+    /// ```compile_fail
+    /// let value = 0;
+    /// let ptr: *const usize = &value;
+    /// let ref_to_ptr: &*const usize = &ptr;
+    ///
+    /// let map = zjit::hir::PtrPrintMap::identity();
+    /// // error[E0277]: the trait bound `&*const usize: OneLevelPtr` is not satisfied
+    /// map.map_ptr(ref_to_ptr);
+    /// ```
+    pub fn map_ptr(&self, ptr: impl OneLevelPtr) -> *const c_void {
+        let raw = ptr::without_provenance(ptr.addr());
         if !self.map_ptrs {
-            return ptr;
+            return raw
         }
 
         use std::collections::hash_map::Entry::*;
-        let raw = ptr.to_void();
         let inner = &mut *self.inner.borrow_mut();
         match inner.map.entry(raw) {
-            Occupied(entry) => P::from_void(*entry.get()),
+            Occupied(entry) => *entry.get(),
             Vacant(entry) => {
                 // Pick a fake address that is suitably aligned for the pointee and
                 // remember it in the map
-                let mapped = inner.next_ptr.wrapping_add(inner.next_ptr.align_offset(P::pointee_align()));
+                let layout = ptr.pointee_layout();
+                let mapped = inner.next_ptr.wrapping_add(inner.next_ptr.align_offset(layout.align()));
                 entry.insert(mapped);
 
                 // Bump for the next pointer
-                inner.next_ptr = mapped.wrapping_add(P::pointee_size());
-                P::from_void(mapped)
+                inner.next_ptr = mapped.wrapping_add(layout.size());
+                mapped
             }
         }
     }
