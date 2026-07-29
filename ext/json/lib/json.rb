@@ -121,9 +121,11 @@ require 'json/common'
 # ====== Input Options
 #
 # Option +max_nesting+ (\Integer) specifies the maximum nesting depth allowed;
-# defaults to +100+; specify +false+ to disable depth checking.
+# defaults to +100+;
+# You can set it to +false+ to disable depth checking entirely, but that is dangerous
+# when parsing untrusted input.
 #
-# With the default, +false+:
+# With the default, +100+:
 #   source = '[0, [1, [2, [3]]]]'
 #   ruby = JSON.parse(source)
 #   ruby # => [0, [1, [2, [3]]]]
@@ -383,6 +385,15 @@ require 'json/common'
 # Too deep:
 #   # Raises JSON::NestingError (nesting of 2 is too deep):
 #   JSON.generate(obj, max_nesting: 2)
+#
+# With +false+:
+#   obj = []
+#   obj[0] = obj
+#   # Raises  SystemStackError: stack level too deep
+#   JSON.generate(obj, max_nesting: false)
+#
+# Setting +max_nesting+ to +false+ can lead to a stackoverflow and may leave the program
+# in an unrecoverable state. It is discouraged.
 #
 # ====== Escaping Options
 #
