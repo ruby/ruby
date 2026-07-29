@@ -230,6 +230,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Gemfile to disable lockfile creation entirely (see gemfile(5)).
 * `lockfile_checksums` (`BUNDLE_LOCKFILE_CHECKSUMS`):
    Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources. Defaults to true.
+   Bundler's own checksum is only included when its `.gem` file is cached, which
+   may not be the case when Bundler is installed as a default gem.
 * `no_build_extension` (`BUNDLE_NO_BUILD_EXTENSION`):
    Whether Bundler should skip building native extensions during installation.
    When set, gems are installed without compiling their C extensions.
