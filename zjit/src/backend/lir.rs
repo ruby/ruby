@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 use std::fmt;
 use std::mem::take;
 use std::rc::Rc;
@@ -1376,11 +1376,20 @@ impl LiveRange {
     }
 }
 
+#[derive(Clone)]
+pub enum State {
+    Unhandled,
+    Active,
+    Inactive,
+    Handled,
+}
+
 /// Live Interval of a VReg
 #[derive(Clone)]
 pub struct Interval {
     pub ranges: Vec<LiveRange>,
     pub id: VRegId,
+    pub state: State,
 }
 
 impl Interval {
@@ -1389,6 +1398,7 @@ impl Interval {
         Self {
             ranges: vec![],
             id: i,
+            state: State::Unhandled,
         }
     }
 
@@ -1404,25 +1414,15 @@ impl Interval {
     /// Panics if the range is not set
     pub fn survives(&self, position: usize) -> bool {
         assert!(self.ranges.len() > 0, "survives called on interval with no range");
-        for range in self.ranges.iter() {
-            if position < range.from {
-                return false;
-            }
-            if position < range.to {
-                return true;
-            }
-        }
-        return false;
+        self.ranges.iter().any(|range| range.from < position && position < range.to)
     }
 
-    pub fn born_at(&self, x:usize) -> bool {
-        let start = self.ranges[0].from;
-        start == x
+    pub fn born_at(&self, x: usize) -> bool {
+        self.start() == x
     }
 
-    pub fn dies_at(&self, x:usize) -> bool {
-        let end = self.ranges[0].to;
-        end == x
+    pub fn dies_at(&self, x: usize) -> bool {
+        self.end() == x
     }
 
     pub fn has_bounds(&self) -> bool {
@@ -1452,9 +1452,17 @@ impl Interval {
     /// Narrow the range covering `from` so that it begins at the def.
     pub fn set_from(&mut self, from: usize) {
         match self.ranges.last_mut() {
+            // If there was no existing range, it means that we have a
+            // def with no use.  Instructions are evenly numbered, so we add
+            // 1 to indicate this is a dead interval
             None => self.ranges.push(LiveRange { from, to: from + 1 }),
             Some(range) => range.from = from
         }
+    }
+
+    /// Returns true if this interval represents a def with no use.
+    pub fn is_dead(&self) -> bool {
+        self.end() <= self.start() + 1
     }
 }
 
@@ -2144,7 +2152,7 @@ impl Assembler
         assert_eq!(preferred_registers.len(), intervals.len());
 
         let mut free_registers: BTreeSet<usize> = (0..num_registers).collect();
-        let mut active: Vec<&Interval> = Vec::new(); // vreg indices sorted by increasing end point
+        let mut active: Vec<Interval> = Vec::new(); // sorted by increasing end point
         let mut assignment: Vec<Option<Allocation>> = vec![None; intervals.len()];
         let mut num_stack_slots: usize = 0;
 
@@ -2155,9 +2163,11 @@ impl Assembler
             .collect();
         sorted_intervals.sort_by_key(|i| i.start());
 
-        for interval in &sorted_intervals {
+        let mut unhandled: VecDeque<Interval> = sorted_intervals.into();
+
+        while let Some(interval) = unhandled.pop_front() {
             // Expire old intervals
-            active.retain(|&active_interval| {
+            active.retain(|active_interval| {
                 if active_interval.end() > interval.start() {
                     true
                 } else {
@@ -2199,14 +2209,14 @@ impl Assembler
                 if let Some(reg_idx) = Allocation::Fixed(preferred_reg).alloc_pool_index(num_registers) {
                     if free_registers.remove(&reg_idx) {
                         assignment[interval.id] = Some(Allocation::Fixed(preferred_reg));
-                        let insert_idx = active.partition_point(|&i| i.end() < interval.end());
-                        active.insert(insert_idx, &interval);
+                        let insert_idx = active.partition_point(|i| i.end() < interval.end());
+                        active.insert(insert_idx, interval);
                         continue;
                     }
                 } else {
                     assignment[interval.id] = Some(Allocation::Fixed(preferred_reg));
-                    let insert_idx = active.partition_point(|&i| i.end() < interval.end());
-                    active.insert(insert_idx, &interval);
+                    let insert_idx = active.partition_point(|i| i.end() < interval.end());
+                    active.insert(insert_idx, interval);
                     continue;
                 }
             }
@@ -2216,21 +2226,25 @@ impl Assembler
                 // but only from the allocatable register pool. Fixed register
                 // assignments represent preferred/pinned physical registers
                 // (for example SP) and should not be selected as spill victims.
-                let spill = active.iter().rev().copied().find(|active_interval| {
-                    matches!(assignment[active_interval.id], Some(Allocation::Reg(_)))
-                });
+                // Take the id and end point rather than a reference, so that `active`
+                // can be mutated below.
+                let spill = active.iter().rev()
+                    .find(|active_interval| {
+                        matches!(assignment[active_interval.id], Some(Allocation::Reg(_)))
+                    })
+                    .map(|active_interval| (active_interval.id, active_interval.end()));
                 let slot = Allocation::Stack(num_stack_slots);
                 num_stack_slots += 1;
 
-                if let Some(spill) = spill.filter(|spill| spill.end() > interval.end()) {
+                if let Some((spill_id, _)) = spill.filter(|&(_, spill_end)| spill_end > interval.end()) {
                     // Spill the last active interval; give its register to current
-                    assignment[interval.id] = assignment[spill.id];
-                    assignment[spill.id] = Some(slot);
-                    let spill_idx = active.iter().position(|active_interval| active_interval.id == spill.id).unwrap();
+                    assignment[interval.id] = assignment[spill_id];
+                    assignment[spill_id] = Some(slot);
+                    let spill_idx = active.iter().position(|active_interval| active_interval.id == spill_id).unwrap();
                     active.remove(spill_idx);
                     // Insert current into sorted active
-                    let insert_idx = active.partition_point(|&i| i.end() < interval.end());
-                    active.insert(insert_idx, &interval);
+                    let insert_idx = active.partition_point(|i| i.end() < interval.end());
+                    active.insert(insert_idx, interval);
                 } else {
                     // Spill the current interval
                     assignment[interval.id] = Some(slot);
@@ -2241,8 +2255,8 @@ impl Assembler
                 free_registers.remove(&reg);
                 assignment[interval.id] = Some(Allocation::Reg(reg));
                 // Insert into sorted active
-                let insert_idx = active.partition_point(|&i| i.end() < interval.end());
-                active.insert(insert_idx, &interval);
+                let insert_idx = active.partition_point(|i| i.end() < interval.end());
+                active.insert(insert_idx, interval);
             }
         }
 
@@ -2460,7 +2474,7 @@ impl Assembler
                     // uses the result?
                     let call_result_live = out.is_vreg()
                         && intervals[out.vreg_idx()].has_bounds()
-                        && intervals[out.vreg_idx()].end() > insn_number;
+                        && !intervals[out.vreg_idx()].is_dead();
 
                     // Build a set of VRegIds that can be referenced by JITFrame for materializing the VM stack
                     let stack_vreg_ids: HashSet<VRegId> = if let Some(StackMap { stack, .. }) = &stack_map {
@@ -4484,18 +4498,62 @@ mod tests {
 
         // Add range to empty interval
         interval.add_range(5, 10);
-        assert_eq!(interval.range.start, Some(5));
-        assert_eq!(interval.range.end, Some(10));
+        assert_eq!(interval.ranges, vec![LiveRange { from: 5, to: 10 }]);
 
         // Extend range backward
         interval.add_range(3, 7);
-        assert_eq!(interval.range.start, Some(3));
-        assert_eq!(interval.range.end, Some(10));
+        assert_eq!(interval.ranges, vec![LiveRange { from: 3, to: 10 }]);
 
         // Extend range forward
         interval.add_range(8, 15);
-        assert_eq!(interval.range.start, Some(3));
-        assert_eq!(interval.range.end, Some(15));
+        assert_eq!(interval.ranges, vec![LiveRange { from: 3, to: 15 }]);
+    }
+
+    #[test]
+    fn test_interval_add_range_hole() {
+        let mut interval = Interval::new(VRegId(1));
+
+        // A range that does not reach the previous one stays separate: the gap
+        // between them is a lifetime hole.
+        interval.add_range(5, 10);
+        interval.add_range(20, 25);
+        assert_eq!(interval.ranges, vec![
+            LiveRange { from: 5, to: 10 },
+            LiveRange { from: 20, to: 25 },
+        ]);
+        // start()/end() still span the whole thing, hole included.
+        assert_eq!(interval.start(), 5);
+        assert_eq!(interval.end(), 25);
+
+        // The vreg is not live inside the hole ...
+        assert!(!interval.survives(10));
+        assert!(!interval.survives(15));
+        // ... but the interval is not over, so it must keep its register.
+        assert!(interval.end() > 15);
+        // ... and it is live again on the far side.
+        assert!(interval.survives(22));
+
+        // A range that abuts the last one merges into it.
+        interval.add_range(25, 30);
+        assert_eq!(interval.ranges, vec![
+            LiveRange { from: 5, to: 10 },
+            LiveRange { from: 20, to: 30 },
+        ]);
+    }
+
+    #[test]
+    fn test_interval_dies_at_last_range() {
+        let mut interval = Interval::new(VRegId(1));
+        interval.add_range(5, 10);
+        interval.add_range(20, 25);
+
+        // The end of the first range is only the start of a lifetime hole, not
+        // the death of the interval. Reporting otherwise lets
+        // preferred_register_assignments hand the register to something else
+        // while the vreg is still live after the hole.
+        assert!(interval.born_at(5));
+        assert!(!interval.dies_at(10));
+        assert!(interval.dies_at(25));
     }
 
     #[test]
@@ -4514,16 +4572,36 @@ mod tests {
     fn test_interval_set_from() {
         let mut interval = Interval::new(VRegId(1));
 
-        // With no range, sets both start and end
+        // With no range, records Wimmer's vacuous interval: the def occupies a
+        // register but nothing reads the value. Instructions are numbered by two,
+        // so position 11 belongs to no instruction.
         interval.set_from(10);
-        assert_eq!(interval.range.start, Some(10));
-        assert_eq!(interval.range.end, Some(10));
+        assert_eq!(interval.ranges, vec![LiveRange { from: 10, to: 11 }]);
+        assert!(!interval.survives(10));
+        assert!(interval.is_dead());
 
         // With existing range, updates start but keeps end
         interval.add_range(5, 20);
         interval.set_from(3);
-        assert_eq!(interval.range.start, Some(3));
-        assert_eq!(interval.range.end, Some(20));
+        assert_eq!(interval.ranges, vec![LiveRange { from: 3, to: 20 }]);
+        assert!(!interval.is_dead());
+    }
+
+    #[test]
+    fn test_interval_is_dead() {
+        // A def whose value is read by the next instruction is not dead.
+        let mut used = Interval::new(VRegId(1));
+        used.add_range(10, 12);
+        used.set_from(10);
+        assert!(!used.is_dead());
+
+        // A def with a lifetime hole is not dead either, even though its first
+        // range is only one position long.
+        let mut holed = Interval::new(VRegId(2));
+        holed.add_range(10, 11);
+        holed.add_range(20, 22);
+        holed.set_from(10);
+        assert!(!holed.is_dead());
     }
 
     #[test]
@@ -4563,23 +4641,26 @@ mod tests {
 
         // Assert expected ranges
         // Note: Rust CFG differs from Ruby due to conditional branches requiring two instructions (Jl + Jmp)
-        assert_eq!(intervals[r10_idx].range.start, Some(16));
-        assert_eq!(intervals[r10_idx].range.end, Some(38));
+        assert_eq!(intervals[r10_idx].ranges, vec![LiveRange { from: 16, to: 38 }]);
 
-        assert_eq!(intervals[r11_idx].range.start, Some(16));
-        assert_eq!(intervals[r11_idx].range.end, Some(20));
+        assert_eq!(intervals[r11_idx].ranges, vec![LiveRange { from: 16, to: 20 }]);
 
-        assert_eq!(intervals[r12_idx].range.start, Some(20));
-        assert_eq!(intervals[r12_idx].range.end, Some(38));
+        // r12 is live out of the first block and used again at the join, but is
+        // dead across the middle of the diamond, so 30..36 is a lifetime hole.
+        // start()/end() alone cannot see this: they still report 20..38.
+        assert_eq!(intervals[r12_idx].ranges, vec![
+            LiveRange { from: 20, to: 30 },
+            LiveRange { from: 36, to: 38 },
+        ]);
+        assert_eq!(intervals[r12_idx].start(), 20);
+        assert_eq!(intervals[r12_idx].end(), 38);
+        assert!(!intervals[r12_idx].survives(32));
 
-        assert_eq!(intervals[r13_idx].range.start, Some(20));
-        assert_eq!(intervals[r13_idx].range.end, Some(32));
+        assert_eq!(intervals[r13_idx].ranges, vec![LiveRange { from: 20, to: 32 }]);
 
-        assert_eq!(intervals[r14_idx].range.start, Some(30));
-        assert_eq!(intervals[r14_idx].range.end, Some(36));
+        assert_eq!(intervals[r14_idx].ranges, vec![LiveRange { from: 30, to: 36 }]);
 
-        assert_eq!(intervals[r15_idx].range.start, Some(32));
-        assert_eq!(intervals[r15_idx].range.end, Some(36));
+        assert_eq!(intervals[r15_idx].ranges, vec![LiveRange { from: 32, to: 36 }]);
     }
 
     #[test]
