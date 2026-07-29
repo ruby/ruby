@@ -5,6 +5,10 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::needless_bool)]
 
+// We make things public for doc-test to reach them,
+// and don't mind linking to private items in docs.
+#![allow(rustdoc::private_intra_doc_links)]
+
 // Add std docs to cargo doc.
 #[doc(inline)]
 pub use std;
@@ -13,7 +17,7 @@ mod state;
 mod distribution;
 mod cruby;
 mod cruby_methods;
-mod hir;
+pub mod hir;
 mod hir_type;
 mod hir_effect;
 mod codegen;

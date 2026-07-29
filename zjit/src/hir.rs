@@ -2520,7 +2520,7 @@ impl<T: Copy + Into<usize> + PartialEq + std::convert::From<usize>> UnionFind<T>
     ///
     /// and after `find(A)`:
     ///
-    /// ```
+    /// ```text
     /// A -> C
     /// B ---^
     /// ```
@@ -3182,7 +3182,7 @@ impl Function {
     ///
     /// This is _the_ function for reading [`Insn`]. Use frequently. Example:
     ///
-    /// ```rust
+    /// ```ignore
     /// match func.find(insn_id) {
     ///   IfTrue { val, target } if func.is_truthy(val) => {
     ///     let jump = self.new_insn(Insn::Jump(target));
