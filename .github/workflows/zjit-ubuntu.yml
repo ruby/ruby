@@ -53,6 +53,17 @@ jobs:
       - run: cargo clippy --all-targets --all-features
         working-directory: zjit
 
+  doc-test:
+    name: cargo test --doc
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - run: cargo test --doc
+        working-directory: zjit
+
   make:
     strategy:
       fail-fast: false
