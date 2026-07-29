@@ -1,0 +1,4 @@
+1 in ^$1
+     ^ expected a pattern expression after the `^` pin operator
+      ^~ unexpected numbered reference, expecting end-of-input
+

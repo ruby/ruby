@@ -17459,18 +17459,6 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
 
                     return UP(pm_pinned_variable_node_create(parser, &operator, variable));
                 }
-                case PM_TOKEN_NUMBERED_REFERENCE: {
-                    parser_lex(parser);
-                    pm_node_t *variable = UP(pm_numbered_reference_read_node_create(parser, &parser->previous));
-
-                    return UP(pm_pinned_variable_node_create(parser, &operator, variable));
-                }
-                case PM_TOKEN_BACK_REFERENCE: {
-                    parser_lex(parser);
-                    pm_node_t *variable = UP(pm_back_reference_read_node_create(parser, &parser->previous));
-
-                    return UP(pm_pinned_variable_node_create(parser, &operator, variable));
-                }
                 case PM_TOKEN_PARENTHESIS_LEFT: {
                     bool previous_pattern_matching_newlines = parser->pattern_matching_newlines;
                     parser->pattern_matching_newlines = false;
