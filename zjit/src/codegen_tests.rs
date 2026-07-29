@@ -610,7 +610,7 @@ fn test_yield_inline_invocation_with_args() {
 
 #[test]
 fn test_yield_with_too_many_args_for_lir() {
-    // Self plus six yield args don't fit in C argument registers, so the direct
+    // `self` + six yield args don't fit in C argument registers, so the direct
     // block invocation must be rejected instead of emitting an uncompilable CCall.
     set_call_threshold(2);
     eval("
