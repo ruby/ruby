@@ -4545,24 +4545,6 @@ iseqw_script_lines(VALUE self)
     return ISEQ_BODY(iseq)->variable.script_lines;
 }
 
-/* Returns the hash of the source this iseq was compiled from, or nil if it
- * is unavailable. */
-static VALUE
-iseqw_source_hash(VALUE self)
-{
-    const rb_iseq_t *iseq = iseqw_check(self);
-    if (!ISEQ_BODY(iseq)->has_source_hash) return Qnil;
-    return ULL2NUM(ISEQ_BODY(iseq)->source_hash);
-}
-
-/* Returns the node id of the AST node this iseq corresponds to. */
-static VALUE
-iseqw_node_id(VALUE self)
-{
-    const rb_iseq_t *iseq = iseqw_check(self);
-    return INT2NUM(ISEQ_BODY(iseq)->location.node_id);
-}
-
 /*
  *  Document-class: RubyVM::InstructionSequence
  *
@@ -4634,8 +4616,6 @@ Init_ISeq(void)
 
     // script lines
     rb_define_method(rb_cISeq, "script_lines", iseqw_script_lines, 0);
-    rb_define_method(rb_cISeq, "source_hash", iseqw_source_hash, 0);
-    rb_define_method(rb_cISeq, "node_id", iseqw_node_id, 0);
 
     rb_undef_method(CLASS_OF(rb_cISeq), "translate");
     rb_undef_method(CLASS_OF(rb_cISeq), "load_iseq");
