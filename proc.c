@@ -436,6 +436,9 @@ refinement_memo_store(const rb_iseq_t *src_iseq, const rb_cref_t *base_cref,
         rb_ary_push(memo, mods[i]);
     }
     OBJ_FREEZE(memo);
+    /* Every element is shareable, so mark the memo array shareable too for
+     * reuse from any Ractor. */
+    RB_OBJ_SET_SHAREABLE(memo);
 
     /* create the map outside the lock; losing the race just discards it */
     VALUE new_map = 0;
