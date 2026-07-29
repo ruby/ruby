@@ -3950,6 +3950,78 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_yield_with_too_many_args_for_lir_falls_back() {
+        // Captured self plus six args don't fit in C argument registers, so the profiled
+        // invokeblock specialization must not emit InvokeBlockIseqDirect.
+        let result = eval("
+            def foo = yield(1, 2, 3, 4, 5, 6)
+            def test = foo { |a, b, c, d, e, f| a + b + c + d + e + f }
+            test
+            test
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(21), result);
+        assert_snapshot!(hir_string("foo"), @"
+        fn foo@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[1] = Const Value(1)
+          v12:Fixnum[2] = Const Value(2)
+          v14:Fixnum[3] = Const Value(3)
+          v16:Fixnum[4] = Const Value(4)
+          v18:Fixnum[5] = Const Value(5)
+          v20:Fixnum[6] = Const Value(6)
+          v22:BasicObject = InvokeBlock v10, v12, v14, v16, v18, v20 # SendFallbackReason: InvokeBlock: not yet specialized
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_inlined_yield_with_too_many_args_for_lir_falls_back() {
+        // Same as test_yield_with_too_many_args_for_lir_falls_back, but for the guard-free
+        // yield dispatch inside an inlined callee whose caller passes a literal block.
+        let result = eval("
+            def foo = yield(1, 2, 3, 4, 5, 6)
+            def test = foo { |a, b, c, d, e, f| a + b + c + d + e + f }
+            test
+            test
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(21), result);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame v18 (0x1038)
+          v25:Fixnum[1] = Const Value(1)
+          v27:Fixnum[2] = Const Value(2)
+          v29:Fixnum[3] = Const Value(3)
+          v31:Fixnum[4] = Const Value(4)
+          v33:Fixnum[5] = Const Value(5)
+          v35:Fixnum[6] = Const Value(6)
+          v37:BasicObject = InvokeBlock v25, v27, v29, v31, v33, v35 # SendFallbackReason: InvokeBlock: not yet specialized
+          CheckInterrupts
+          PopInlineFrame
+          Return v37
+        ");
+    }
+
+    #[test]
     fn test_yield_lambda_falls_back() {
         // A lambda passed via &l becomes a proc block handler (not imemo_iseq), so it never inlines invocation.
         // Compiles to Send.
