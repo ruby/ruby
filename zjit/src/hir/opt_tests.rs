@@ -16652,6 +16652,7 @@ mod hir_opt_tests {
           v43:BasicObject = CCallWithFrame v42, :Kernel#proc@0x1040, block=0x1048
           v22:CPtr = GetEP 0
           v23:BasicObject = LoadField v22, :blk@0x1001
+          v24:BasicObject = LoadField v22, :other_block@0x1002
           SetLocal :other_block, l0, EP@3, v43
           v30:CPtr = GetEP 0
           v31:BasicObject = LoadField v30, :other_block@0x1002
@@ -17295,6 +17296,7 @@ mod hir_opt_tests {
           v132:BasicObject = CCallWithFrame v131, :Kernel#lambda@0x1048, block=0x1050
           v89:CPtr = GetEP 0
           v90:BasicObject = LoadField v89, :list@0x1001
+          v91:BasicObject = LoadField v89, :sep@0x1002
           v92:BasicObject = LoadField v89, :iter_method@0x1005
           v93:BasicObject = LoadField v89, :kwsplat@0x1006
           SetLocal :sep, l0, EP@5, v132

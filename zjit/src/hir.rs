@@ -1350,7 +1350,6 @@ macro_rules! for_each_operand_impl {
             | Insn::HasType { val, .. }
             | Insn::Return { val }
             | Insn::Test { val }
-            | Insn::SetLocal { val, .. }
             | Insn::BoxBool { val } => {
                 $visit_one!(*val);
             }
@@ -1366,6 +1365,7 @@ macro_rules! for_each_operand_impl {
             | Insn::ToArray { val, state }
             | Insn::IsMethodCfunc { val, state, .. }
             | Insn::ToNewArray { val, state }
+            | Insn::SetLocal { val, state, .. }
             | Insn::BoxFixnum { val, state } => {
                 $visit_one!(*val);
                 $visit_one!(*state);
