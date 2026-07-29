@@ -2860,28 +2860,32 @@ fn block_call_inlinable(flags: u32) -> bool {
     (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG | VM_CALL_ARGS_BLOCKARG)) == 0
 }
 
-/// True if `yield` with `argc` positional args can dispatch by inlining the block ISEQ
+/// Ok if `yield` with `argc` positional args can dispatch by inlining the block ISEQ
 /// frame. The block must take the simple callee-setup path (`rb_simple_iseq_p`)
 /// with an exact arity match, avoid arg0 auto-splat, and contain no `throw` (break /
-/// non-local return). Anything else falls back to the generic `invokeblock` dispatch.
-fn block_call_inlinable_iseq(iseq: IseqPtr, argc: usize) -> bool {
+/// non-local return). Anything else falls back to the generic `invokeblock` dispatch,
+/// with the returned reason attached to the fallback instruction.
+fn block_call_inlinable_iseq(iseq: IseqPtr, argc: usize) -> Result<(), SendFallbackReason> {
     if !unsafe { rb_simple_iseq_p(iseq) } {
-        return false;
+        return Err(InvokeBlockNotSpecialized);
     }
     let lead_num = unsafe { rb_get_iseq_body_param_lead_num(iseq) } as usize;
     if argc != lead_num {
-        return false;
+        return Err(InvokeBlockNotSpecialized);
     }
     if argc == 1 && !unsafe { rb_get_iseq_flags_ambiguous_param0(iseq) } {
-        return false;
+        return Err(InvokeBlockNotSpecialized);
     }
     // The JIT-to-JIT call in gen_invoke_block_iseq_direct passes captured self plus
     // each argument in C argument registers.
     // TODO: Support passing arguments on the stack in C calls
     if 1 + argc > C_ARG_OPNDS.len() {
-        return false;
+        return Err(TooManyArgsForLir);
     }
-    !crate::codegen::block_iseq_may_throw(iseq)
+    if crate::codegen::block_iseq_may_throw(iseq) {
+        return Err(InvokeBlockNotSpecialized);
+    }
+    Ok(())
 }
 
 impl Function {
@@ -9379,11 +9383,15 @@ fn add_iseq_to_hir(
 
                     // If the block handler is a known simple ISEQ block with exact arity and no
                     // non-local exit, push its frame inline instead of calling rb_vm_invokeblock.
+                    let mut fallback_reason = InvokeBlockNotSpecialized;
                     let inline_iseq = if block_call_inlinable(flags) {
                         block_handler_class.and_then(|obj| {
                             if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 } {
                                 let iseq = obj.as_iseq();
-                                if block_call_inlinable_iseq(iseq, args.len()) { return Some(iseq); }
+                                match block_call_inlinable_iseq(iseq, args.len()) {
+                                    Ok(()) => return Some(iseq),
+                                    Err(reason) => fallback_reason = reason,
+                                }
                             }
                             None
                         })
@@ -9397,9 +9405,14 @@ fn add_iseq_to_hir(
                             // TODO: if block iseqs become inlinable, a yield here could resolve to an ancestor frame
                             // (level > 0). To stay guard-free we'd bake in get_lvar_level(...) as the level and fetch
                             // that ancestor's blockiseq from the inline caller chain instead of bi.
-                            && get_lvar_level(exit_state.iseq) == 0
-                            && block_call_inlinable_iseq(bi, args.len()) {
-                            Some(bi)
+                            && get_lvar_level(exit_state.iseq) == 0 {
+                            match block_call_inlinable_iseq(bi, args.len()) {
+                                Ok(()) => Some(bi),
+                                Err(reason) => {
+                                    fallback_reason = reason;
+                                    None
+                                }
+                            }
                         } else { None }
                     } else { None };
 
@@ -9454,7 +9467,7 @@ fn add_iseq_to_hir(
                         block = join_block;
                         join_param
                     } else {
-                        fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id, reason: InvokeBlockNotSpecialized })
+                        fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id, reason: fallback_reason })
                     };
                     state.stack_push(result);
                 }

@@ -3977,7 +3977,7 @@ mod hir_opt_tests {
           v16:Fixnum[4] = Const Value(4)
           v18:Fixnum[5] = Const Value(5)
           v20:Fixnum[6] = Const Value(6)
-          v22:BasicObject = InvokeBlock v10, v12, v14, v16, v18, v20 # SendFallbackReason: InvokeBlock: not yet specialized
+          v22:BasicObject = InvokeBlock v10, v12, v14, v16, v18, v20 # SendFallbackReason: Too many arguments for LIR
           CheckInterrupts
           Return v22
         ");
@@ -4014,7 +4014,7 @@ mod hir_opt_tests {
           v31:Fixnum[4] = Const Value(4)
           v33:Fixnum[5] = Const Value(5)
           v35:Fixnum[6] = Const Value(6)
-          v37:BasicObject = InvokeBlock v25, v27, v29, v31, v33, v35 # SendFallbackReason: InvokeBlock: not yet specialized
+          v37:BasicObject = InvokeBlock v25, v27, v29, v31, v33, v35 # SendFallbackReason: Too many arguments for LIR
           CheckInterrupts
           PopInlineFrame
           Return v37
