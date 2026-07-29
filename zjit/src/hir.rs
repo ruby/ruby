@@ -1694,7 +1694,7 @@ impl Insn {
             Insn::IsBitNotEqual { .. } => effects::Empty,
             Insn::BoxBool { .. } => effects::Empty,
             Insn::BoxFixnum { .. } => effects::Empty,
-            Insn::UnboxFixnum { .. } => effects::Any,
+            Insn::UnboxFixnum { .. } => effects::Empty,
             Insn::FixnumAref { .. } => effects::Empty,
             Insn::Defined { .. } => effects::Any,
             Insn::GetConstant { .. } => effects::Any,
