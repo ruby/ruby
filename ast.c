@@ -224,24 +224,10 @@ rb_ast_node_source_location(VALUE source, VALUE path, int first_lineno,
                             int node_id, bool block_iseq, int iseq_node_id,
                             rb_code_location_t *location)
 {
-    VALUE ast;
-
-    if (NIL_P(source)) {
-        ast = rb_ast_parse_file(path, Qfalse, Qfalse, Qfalse);
-    }
-    else {
-        VALUE ast_value;
-        VALUE vparser = setup_vparser(Qfalse, Qfalse, Qfalse);
-
-        if (RB_TYPE_P(source, T_ARRAY)) {
-            ast_value = rb_parser_compile_array(vparser, path, source, first_lineno);
-        }
-        else {
-            StringValue(source);
-            ast_value = rb_parser_compile_string_path(vparser, path, source, first_lineno);
-        }
-        ast = ast_parse_done(ast_value);
-    }
+    StringValue(source);
+    VALUE vparser = setup_vparser(Qfalse, Qfalse, Qfalse);
+    VALUE ast_value = rb_parser_compile_string_path(vparser, path, source, first_lineno);
+    VALUE ast = ast_parse_done(ast_value);
 
     struct node_find_result result = { Qnil, Qnil };
     if (!node_find_with_parent(ast, Qnil, node_id, &result)) return false;

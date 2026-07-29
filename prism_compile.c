@@ -11682,14 +11682,8 @@ pm_node_source_location(VALUE source, VALUE filepath, int start_line,
     pm_parse_result_t result;
     pm_parse_result_init(&result);
 
-    VALUE error;
-    if (NIL_P(source)) {
-        error = pm_load_parse_file(&result, filepath, NULL);
-    }
-    else {
-        pm_options_line_set(result.options, start_line);
-        error = pm_parse_string(&result, source, filepath, NULL);
-    }
+    pm_options_line_set(result.options, start_line);
+    VALUE error = pm_parse_string(&result, source, filepath, NULL);
 
     if (!NIL_P(error)) {
         pm_parse_result_free(&result);
