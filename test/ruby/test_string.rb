@@ -3506,23 +3506,39 @@ CODE
   end
 
   def test_shared_middle_string_terminator
-    ten = "0123456789"
-    hundred = ten * 10
-    str = "#{hundred}\0#{hundred}".freeze
-
     require 'objspace'
+    thousand = "0123456789" * 100
+    str = "#{thousand}\0#{thousand}".freeze
 
-    substr = str.byteslice(0, hundred.bytesize)
-    assert_equal hundred, substr
+    # str[1000] == '\0' satisfies the 1-byte terminator naturally.
+    substr = str.byteslice(0, thousand.bytesize)
+    assert_equal thousand, substr
     assert_includes ObjectSpace.dump(substr), ' "shared":true,'
 
-    # Larger terminator
-    substr.force_encoding(Encoding::UTF_16BE)
-    assert_equal hundred.dup.force_encoding(Encoding::UTF_16BE), substr
-    refute_includes ObjectSpace.dump(substr), ' "shared":true,'
+    # str[1001] == '0' != '\0': no natural terminator, but still shared under
+    # SHARABLE_MIDDLE_SUBSTRING; ensure_terminator handles it lazily on RSTRING_PTR.
+    substr = str.byteslice(0, thousand.bytesize + 1)
+    assert_equal thousand + "\0", substr
+    assert_includes ObjectSpace.dump(substr), ' "shared":true,'
+  end
 
-    substr = str.byteslice(0, hundred.bytesize + 1)
-    assert_equal hundred + "\0", substr
+  def test_embedded_middle_string_terminator
+    require 'objspace'
+    hundred = "0123456789" * 10
+    str = "#{hundred}\0#{hundred}".freeze
+    substr = str.byteslice(0, hundred.bytesize)
+    assert_equal hundred, substr
+    assert_includes ObjectSpace.dump(substr), ' "embedded":true,'
+  end
+
+  def test_shared_middle_string_larger_terminator
+    require 'objspace'
+    thousand = "0123456789" * 100
+    str = "#{thousand}\0#{thousand}".freeze
+    substr = str.byteslice(0, thousand.bytesize)
+    assert_includes ObjectSpace.dump(substr), ' "shared":true,'
+    substr.force_encoding(Encoding::UTF_16BE)
+    assert_equal thousand.dup.force_encoding(Encoding::UTF_16BE), substr
     refute_includes ObjectSpace.dump(substr), ' "shared":true,'
   end
 
