@@ -898,12 +898,12 @@ pub enum Insn {
     ///
     /// Zero-width whenever there is already enough room, which is the common
     /// case.
-    PadPatchPoint,
+    PatchPointPad,
 
     /// Space reserved at a boundary that a preceding PatchPoint's invalidation
     /// jump must not cross: the start of a non-entry block, the start of a side
     /// exit, or the end of the last block. Nothing is ever patched at a
-    /// boundary, so unlike [`Insn::PadPatchPoint`] this only protects what comes
+    /// boundary, so unlike [`Insn::PatchPointPad`] this only protects what comes
     /// after it, and it does not become something later code has to keep away
     /// from — the first patch point of a block needs no padding in front of it.
     ///
@@ -1001,7 +1001,7 @@ macro_rules! for_each_operand_impl {
             Insn::Breakpoint | Insn::Abort |
             Insn::Comment(_) |
             Insn::CPop { .. } |
-            Insn::PadPatchPoint |
+            Insn::PatchPointPad |
             Insn::PosMarker(_) |
             Insn::PosMarkerAtBlockEnd(_) => {},
 
@@ -1185,7 +1185,7 @@ impl Insn {
             Insn::Not { .. } => "Not",
             Insn::Or { .. } => "Or",
             Insn::PatchPoint(..) => "PatchPoint",
-            Insn::PadPatchPoint => "PadPatchPoint",
+            Insn::PatchPointPad => "PatchPointPad",
             Insn::PosMarker(_) => "PosMarker",
             Insn::PosMarkerAtBlockEnd(_) => "PosMarkerAtBlockEnd",
             Insn::RShift { .. } => "RShift",
@@ -3970,8 +3970,8 @@ impl Assembler {
         self.push_insn(Insn::PatchPoint(Box::new(PatchPointData { target, invariant, version })));
     }
 
-    pub fn pad_patch_point(&mut self) {
-        self.push_insn(Insn::PadPatchPoint);
+    pub fn patch_point_pad(&mut self) {
+        self.push_insn(Insn::PatchPointPad);
     }
 
     pub fn boundary_pad(&mut self) {

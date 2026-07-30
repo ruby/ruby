@@ -977,7 +977,7 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, function: &Function,
     asm.patch_point(Target::SideExit(Box::new(SideExitTarget { exit, reason: PatchPoint(invariant) })), invariant, jit.version);
 }
 
-/// This is used by scratch_split to lower PatchPoint into PadPatchPoint and PosMarker.
+/// This is used by scratch_split to lower PatchPoint into PatchPointPad and PosMarker.
 /// It's called at scratch_split so that we can use the Label after side-exit deduplication in compile_exits.
 pub fn split_patch_point(asm: &mut Assembler, target: &Target, invariant: Invariant, version: IseqVersionRef) {
     let Target::Label(exit_label) = *target else {
@@ -985,7 +985,7 @@ pub fn split_patch_point(asm: &mut Assembler, target: &Target, invariant: Invari
     };
 
     // Fill nop instructions if the last patch point is too close.
-    asm.pad_patch_point();
+    asm.patch_point_pad();
 
     // Remember the current address as a patch point
     asm.pos_marker(move |code_ptr, cb| {
