@@ -1409,6 +1409,7 @@ pub struct Interval {
     pub id: VRegId,
     pub state: State,
     pub assigned: Option<Allocation>,
+    pub preferred: Option<Reg>,
 }
 
 impl Interval {
@@ -1419,6 +1420,7 @@ impl Interval {
             id: i,
             state: State::Unhandled,
             assigned: None,
+            preferred: None,
         }
     }
 
@@ -2116,9 +2118,7 @@ impl Assembler
 
     /// Discover vregs that should preferentially reuse a physical register,
     /// such as a newborn vreg immediately moved into a preg in the next instruction.
-    pub fn preferred_register_assignments(&self, intervals: &[Interval]) -> Vec<Option<Reg>> {
-        let mut preferred = vec![None; self.num_vregs];
-
+    pub fn preferred_register_assignments(&self, intervals: &mut [Interval]) {
         for block in &self.basic_blocks {
             let mut prev_insn: Option<(InsnId, &Insn)> = None;
 
@@ -2139,7 +2139,7 @@ impl Assembler
                                 && intervals[*idx].born_at(prev_id.0)
                                 && intervals[*idx].dies_at(insn_id.0)
                             {
-                                preferred[*idx].get_or_insert(*dest_reg);
+                                intervals[*idx].preferred.get_or_insert(*dest_reg);
                             }
                         }
                     }
@@ -2148,8 +2148,6 @@ impl Assembler
                 }
             }
         }
-
-        preferred
     }
 
     fn release_assignment(it: &Interval, num_registers: usize, free_registers: &mut BTreeSet<usize>) {
@@ -2187,10 +2185,7 @@ impl Assembler
         &self,
         intervals: Vec<Interval>,
         num_registers: usize,
-        preferred_registers: &[Option<Reg>],
     ) -> (Vec<Option<Allocation>>, usize) {
-        assert_eq!(preferred_registers.len(), intervals.len());
-
         let mut free_registers: BTreeSet<usize> = (0..num_registers).collect();
         let mut active: Vec<Interval> = Vec::new(); // sorted by increasing end point
         let mut inactive: Vec<Interval> = Vec::new(); // intervals with lifetime holes
@@ -2218,7 +2213,7 @@ impl Assembler
                 }
             }
 
-            let preferred_reg = preferred_registers[interval.id];
+            let preferred_reg = interval.preferred;
             let preferred_taken = preferred_reg.is_some_and(|reg| {
                 active.iter().any(|active_interval| {
                     active_interval.assigned
@@ -4707,12 +4702,12 @@ mod tests {
         asm.number_instructions(16);
 
         // Build intervals
-        let intervals = asm.build_intervals(live_in);
+        let mut intervals = asm.build_intervals(live_in);
 
         println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
 
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 5, &preferred_registers);
+        asm.preferred_register_assignments(&mut intervals);
+        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 5);
 
         // Extract vreg indices
         let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
@@ -4746,11 +4741,11 @@ mod tests {
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(16);
-        let intervals = asm.build_intervals(live_in);
+        let mut intervals = asm.build_intervals(live_in);
 
         // 3 registers -- only r10 needs to spill
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 3, &preferred_registers);
+        asm.preferred_register_assignments(&mut intervals);
+        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 3);
 
         let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
         let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
@@ -4774,11 +4769,11 @@ mod tests {
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(16);
-        let intervals = asm.build_intervals(live_in);
+        let mut intervals = asm.build_intervals(live_in);
 
         // Only 1 register available -- forces spills
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 1, &preferred_registers);
+        asm.preferred_register_assignments(&mut intervals);
+        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 1);
 
         let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
         let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
@@ -4811,13 +4806,13 @@ mod tests {
 
         asm.number_instructions(0);
         let live_in = asm.analyze_liveness();
-        let intervals = asm.build_intervals(live_in);
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
+        let mut intervals = asm.build_intervals(live_in);
+        asm.preferred_register_assignments(&mut intervals);
 
         let vreg_idx = new_sp.vreg_idx();
-        assert_eq!(preferred_registers[vreg_idx], Some(sp.unwrap_reg()));
+        assert_eq!(intervals[vreg_idx].preferred, Some(sp.unwrap_reg()));
 
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 0, &preferred_registers);
+        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 0);
         assert_eq!(num_stack_slots, 0);
         assert_eq!(assignments[vreg_idx], Some(Allocation::Fixed(sp.unwrap_reg())));
     }
@@ -4847,9 +4842,9 @@ mod tests {
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(16);
-        let intervals = asm.build_intervals(live_in);
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, _) = asm.linear_scan(intervals.clone(), 5, &preferred_registers);
+        let mut intervals = asm.build_intervals(live_in);
+        asm.preferred_register_assignments(&mut intervals);
+        let (assignments, _) = asm.linear_scan(intervals.clone(), 5);
 
         asm.resolve_ssa(&intervals, &assignments);
 
@@ -4893,9 +4888,9 @@ mod tests {
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(16);
-        let intervals = asm.build_intervals(live_in);
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, _) = asm.linear_scan(intervals.clone(), 5, &preferred_registers);
+        let mut intervals = asm.build_intervals(live_in);
+        asm.preferred_register_assignments(&mut intervals);
+        let (assignments, _) = asm.linear_scan(intervals.clone(), 5);
 
         // Entry block b1 has parameters [v0, v1].
         // With 5 registers: v0 -> Reg(0) = regs[0], arrival = C_ARG_OPNDS[0] = regs[0] -> self-move, filtered
@@ -4940,9 +4935,9 @@ mod tests {
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(0);
-        let intervals = asm.build_intervals(live_in);
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, _) = asm.linear_scan(intervals.clone(), 5, &preferred_registers);
+        let mut intervals = asm.build_intervals(live_in);
+        asm.preferred_register_assignments(&mut intervals);
+        let (assignments, _) = asm.linear_scan(intervals.clone(), 5);
 
         asm.resolve_ssa(&intervals, &assignments);
 
@@ -4998,10 +4993,10 @@ mod tests {
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(16);
-        let intervals = asm.build_intervals(live_in);
+        let mut intervals = asm.build_intervals(live_in);
         let num_regs = 5;
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, _) = asm.linear_scan(intervals.clone(), num_regs, &preferred_registers);
+        asm.preferred_register_assignments(&mut intervals);
+        let (assignments, _) = asm.linear_scan(intervals.clone(), num_regs);
 
         assert_eq!(asm.basic_blocks.len(), 3);
 
@@ -5102,10 +5097,10 @@ mod tests {
         // Run liveness + numbering + intervals + linear scan with 2 registers
         let live_in = asm.analyze_liveness();
         asm.number_instructions(0);
-        let intervals = asm.build_intervals(live_in);
+        let mut intervals = asm.build_intervals(live_in);
         let num_regs = 2;
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals.clone(), num_regs, &preferred_registers);
+        asm.preferred_register_assignments(&mut intervals);
+        let (assignments, num_stack_slots) = asm.linear_scan(intervals.clone(), num_regs);
         asm.stack_state.num_spill_slots = num_stack_slots;
 
         let regs = &ALLOC_REGS[..num_regs];
