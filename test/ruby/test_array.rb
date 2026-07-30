@@ -2507,6 +2507,8 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[9, 8, 7, 6], a)
     assert_equal(@cls[1, 2, 3, 4].permutation.to_a, b)
 
+    assert_equal(24, @cls[1, 2, 3, 4].permutation(nil).size)
+
     bug3708 = '[ruby-dev:42067]'
     assert_equal(b, @cls[0, 1, 2, 3, 4][1, 4].permutation.to_a, bug3708)
   end
