@@ -286,38 +286,14 @@ impl ProfiledType {
 
     /// Profile the class and shape of the given object
     fn new(obj: VALUE) -> Self {
-        if obj == Qfalse {
-            return Self { class: unsafe { rb_cFalseClass },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj == Qtrue {
-            return Self { class: unsafe { rb_cTrueClass },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj == Qnil {
-            return Self { class: unsafe { rb_cNilClass },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj.fixnum_p() {
-            return Self { class: unsafe { rb_cInteger },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj.flonum_p() {
-            return Self { class: unsafe { rb_cFloat },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj.static_sym_p() {
-            return Self { class: unsafe { rb_cSymbol },
+        if obj.special_const_p() {
+            return Self { class: obj.class_of(),
                           shape: INVALID_SHAPE_ID,
                           flags: Flags::immediate() };
         }
         let mut flags = Flags::none();
-        if obj.shape_id_of().layout() == ShapeLayout::RObject {
+        let shape = obj.shape_id_of();
+        if shape.layout() == ShapeLayout::RObject {
             flags.0 |= Flags::IS_EMBEDDED;
         }
         if obj.struct_embedded_p() {
@@ -326,7 +302,7 @@ impl ProfiledType {
         if unsafe { RB_TYPE_P(obj, RUBY_T_OBJECT) } {
             flags.0 |= Flags::IS_T_OBJECT;
         }
-        Self { class: obj.class_of(), shape: obj.shape_id_of(), flags }
+        Self { class: obj.class_of(), shape, flags }
     }
 
     pub fn empty() -> Self {
