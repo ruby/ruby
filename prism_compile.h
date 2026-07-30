@@ -154,6 +154,15 @@ typedef struct pm_scope_node {
      * nearby byte offsets. This avoids repeated binary searches.
      */
     size_t last_line;
+
+    /**
+     * When this scope is a block synthesized for a for-comprehension iterator
+     * whose body is the rest of the comprehension chain (i.e. every iterator
+     * but the last), these identify the comprehension node and the position
+     * of the next iterator to compile. for_comp is NULL otherwise.
+     */
+    const pm_node_t *for_comp;
+    size_t for_comp_position;
 } pm_scope_node_t;
 
 void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous);

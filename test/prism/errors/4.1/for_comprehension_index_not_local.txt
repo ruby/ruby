@@ -1,0 +1,3 @@
+for @x in [1] then @x end
+    ^~ for-comprehension loop variable must be a local variable
+

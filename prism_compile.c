@@ -3342,6 +3342,8 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         scope->local_table_for_iseq_size = 0;
         scope->index_lookup_table = (pm_index_lookup_table_t) PM_INDEX_LOOKUP_TABLE_INIT;
         scope->pre_execution_anchor = NULL;
+        scope->for_comp = NULL;
+        scope->for_comp_position = 0;
     }
     else {
         memset(scope, 0, sizeof(pm_scope_node_t));
@@ -3383,6 +3385,14 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
             scope->base.location.length = cast->statements->base.location.length;
         }
 
+        break;
+      }
+      case PM_FOR_COMPREHENSION_ITERATOR_NODE: {
+        const pm_for_comprehension_iterator_node_t *cast = (const pm_for_comprehension_iterator_node_t *) node;
+        scope->locals = cast->locals;
+        // The body is set by the caller: the guard for a filter block; the
+        // comprehension statements (or the rest of the iterator chain) for a
+        // map/flat_map block.
         break;
       }
       case PM_FOR_NODE: {
@@ -4211,6 +4221,9 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
       case PM_FOR_NODE:
         // defined?(for a in 1 do end)
         //          ^^^^^^^^^^^^^^^^^
+      case PM_FOR_COMPREHENSION_NODE:
+        // defined?(for a in 1 then a end)
+        //          ^^^^^^^^^^^^^^^^^^^^^
       case PM_IF_NODE:
         // defined?(if a then end)
         //          ^^^^^^^^^^^^^
@@ -4639,6 +4652,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 /* Unreachable (clauses) ******************************************************/
       case PM_ELSE_NODE:
       case PM_ENSURE_NODE:
+      case PM_FOR_COMPREHENSION_ITERATOR_NODE:
       case PM_IN_NODE:
       case PM_RESCUE_NODE:
       case PM_WHEN_NODE:
@@ -5384,6 +5398,74 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
 }
 
 /**
+ * Compile the chain of a for-comprehension starting at the iterator at the
+ * given position:
+ *
+ *     for x in xs when x.even?, y in ys then [x, y] end
+ *
+ * compiles into the equivalent of:
+ *
+ *     xs.filter { |x| x.even? }.flat_map { |x| ys.map { |y| [x, y] } }
+ *
+ * Every iterator but the last sends flat_map; the last sends map. A guard
+ * filters the iterator's collection first. Each synthesized block takes one
+ * hidden parameter and assigns it to the loop variables on entry, exactly
+ * like the hidden block of a for loop; the loop variables are locals of the
+ * block, so they do not leak (and each iteration binds them freshly). break
+ * is rejected at parse time, so no break catch table is needed; next and
+ * redo keep their ordinary block semantics.
+ */
+static void
+pm_compile_for_comprehension(rb_iseq_t *iseq, const pm_node_t *node, size_t position, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_for_comprehension_node_t *cast = (const pm_for_comprehension_node_t *) node;
+    const pm_for_comprehension_iterator_node_t *iterator = (const pm_for_comprehension_iterator_node_t *) cast->iterators.nodes[position];
+    bool last = (position + 1 == cast->iterators.size);
+    const pm_node_location_t location = *node_location;
+
+    // Compile the receiver of the chain: the iterator's collection, filtered
+    // by the guard if there is one.
+    pm_compile_node(iseq, iterator->collection, ret, false, scope_node);
+
+    if (iterator->guard != NULL) {
+        pm_scope_node_t next_scope_node;
+        pm_scope_node_init((const pm_node_t *) iterator, &next_scope_node, scope_node);
+        next_scope_node.body = iterator->guard;
+
+        const rb_iseq_t *filter_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, location.line);
+        pm_scope_node_destroy(&next_scope_node);
+
+        const rb_iseq_t *prev_block = ISEQ_COMPILE_DATA(iseq)->current_block;
+        ISEQ_COMPILE_DATA(iseq)->current_block = filter_iseq;
+        PUSH_SEND_WITH_BLOCK(ret, location, rb_intern("filter"), INT2FIX(0), filter_iseq);
+        ISEQ_COMPILE_DATA(iseq)->current_block = prev_block;
+    }
+
+    // Send flat_map (or map, for the last iterator), passing the rest of the
+    // comprehension (or the body, for the last iterator) as the block.
+    pm_scope_node_t next_scope_node;
+    pm_scope_node_init((const pm_node_t *) iterator, &next_scope_node, scope_node);
+
+    if (last) {
+        next_scope_node.body = (pm_node_t *) cast->statements;
+    }
+    else {
+        next_scope_node.for_comp = node;
+        next_scope_node.for_comp_position = position + 1;
+    }
+
+    const rb_iseq_t *block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, location.line);
+    pm_scope_node_destroy(&next_scope_node);
+
+    const rb_iseq_t *prev_block = ISEQ_COMPILE_DATA(iseq)->current_block;
+    ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
+    PUSH_SEND_WITH_BLOCK(ret, location, last ? rb_intern("map") : rb_intern("flat_map"), INT2FIX(0), block_iseq);
+    ISEQ_COMPILE_DATA(iseq)->current_block = prev_block;
+
+    if (popped) PUSH_INSN(ret, location, pop);
+}
+
+/**
  * When compiling a for loop, we need to write the iteration variable to
  * whatever expression exists in the index slot. This function performs that
  * compilation.
@@ -5393,11 +5475,19 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
 {
     const pm_node_location_t location = PM_NODE_START_LOCATION(node);
 
+    // The hidden iteration variable is the first entry of the local table
+    // (the block's single parameter), which the getlocal instruction
+    // addresses relative to the end of the table. For a for loop's hidden
+    // block the table contains only the hidden variable, so this is 1; a
+    // for-comprehension iterator block also holds its loop variables and
+    // temporaries, which come after the hidden variable.
+    const int hidden_index = scope_node->local_table_for_iseq_size;
+
     switch (PM_NODE_TYPE(node)) {
       case PM_LOCAL_VARIABLE_TARGET_NODE: {
         // For local variables, all we have to do is retrieve the value and then
         // compile the index node.
-        PUSH_GETLOCAL(ret, location, 1, 0);
+        PUSH_GETLOCAL(ret, location, hidden_index, 0);
         pm_compile_target_node(iseq, node, ret, ret, ret, scope_node, NULL);
         break;
       }
@@ -5418,7 +5508,7 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
         state.position = 1;
         pm_compile_target_node(iseq, node, ret, writes, cleanup, scope_node, &state);
 
-        PUSH_GETLOCAL(ret, location, 1, 0);
+        PUSH_GETLOCAL(ret, location, hidden_index, 0);
         PUSH_INSN2(ret, location, expandarray, INT2FIX(1), INT2FIX(0));
 
         PUSH_SEQ(ret, writes);
@@ -5443,7 +5533,7 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
         //
         //     (args.length == 1 && Array.try_convert(args[0])) || args
         //
-        PUSH_GETLOCAL(ret, location, 1, 0);
+        PUSH_GETLOCAL(ret, location, hidden_index, 0);
         PUSH_INSN(ret, location, dup);
         PUSH_CALL(ret, location, idLength, INT2FIX(0));
         PUSH_INSN1(ret, location, putobject, INT2FIX(1));
@@ -6292,9 +6382,9 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
 
     int table_size = (int) locals_size;
 
-    // For nodes have a hidden iteration variable. We add that to the local
-    // table size here.
-    if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) table_size++;
+    // For nodes and for-comprehension iterator blocks have a hidden iteration
+    // variable. We add that to the local table size here.
+    if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_COMPREHENSION_ITERATOR_NODE)) table_size++;
 
     if (keywords_list && keywords_list->size) {
         table_size++;
@@ -6828,9 +6918,14 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         }
     }
 
-    // Set any anonymous locals for the for node
-    if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
-        if (PM_NODE_TYPE_P(((const pm_for_node_t *) scope_node->ast_node)->index, PM_LOCAL_VARIABLE_TARGET_NODE)) {
+    // Set any anonymous locals for the for node or for-comprehension
+    // iterator block
+    if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_COMPREHENSION_ITERATOR_NODE)) {
+        const pm_node_t *index = PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)
+            ? ((const pm_for_node_t *) scope_node->ast_node)->index
+            : ((const pm_for_comprehension_iterator_node_t *) scope_node->ast_node)->index;
+
+        if (PM_NODE_TYPE_P(index, PM_LOCAL_VARIABLE_TARGET_NODE)) {
             body->param.lead_num++;
         }
         else {
@@ -7031,9 +7126,13 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         // For nodes automatically assign the iteration variable to whatever
         // index variable. We need to handle that write here because it has
         // to happen in the context of the block. Note that this happens
-        // before the B_CALL tracepoint event.
+        // before the B_CALL tracepoint event. The blocks synthesized for a
+        // for-comprehension iterator bind their loop variables the same way.
         if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
             pm_compile_for_node_index(iseq, ((const pm_for_node_t *) scope_node->ast_node)->index, ret, scope_node);
+        }
+        else if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_COMPREHENSION_ITERATOR_NODE)) {
+            pm_compile_for_node_index(iseq, ((const pm_for_comprehension_iterator_node_t *) scope_node->ast_node)->index, ret, scope_node);
         }
 
         PUSH_TRACE(ret, RUBY_EVENT_B_CALL);
@@ -7065,6 +7164,11 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                 pm_compile_node(iseq, scope_node->body, ret, popped, scope_node);
                 break;
             }
+        }
+        else if (scope_node->for_comp != NULL) {
+            // This block was synthesized for a for-comprehension iterator
+            // whose body is the rest of the comprehension chain.
+            pm_compile_for_comprehension(iseq, scope_node->for_comp, scope_node->for_comp_position, &block_location, ret, popped, scope_node);
         }
         else {
             PUSH_INSN(ret, block_location, putnil);
@@ -9295,6 +9399,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, child_iseq, retry_end_l);
         return;
       }
+      case PM_FOR_COMPREHENSION_NODE: {
+        // for x in xs, y in ys then [x, y] end
+        // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pm_compile_for_comprehension(iseq, node, 0, &location, ret, popped, scope_node);
+        return;
+      }
+      case PM_FOR_COMPREHENSION_ITERATOR_NODE:
+        rb_bug("Cannot compile a ForComprehensionIteratorNode directly\n");
+        return;
       case PM_FORWARDING_ARGUMENTS_NODE:
         rb_bug("Cannot compile a ForwardingArgumentsNode directly\n");
         return;

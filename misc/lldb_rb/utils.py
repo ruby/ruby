@@ -321,6 +321,8 @@ class RbInspector(LLDBInterface):
             self._append_expression("*(rb_node_for_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_FOR_MASGN"]:
             self._append_expression("*(rb_node_for_masgn_t *) %0#x" % val.GetValueAsUnsigned())
+        elif nd_type == self.ruby_globals["NODE_FOR_COMP"]:
+            self._append_expression("*(rb_node_for_comp_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_BREAK"]:
             self._append_expression("*(rb_node_break_t *) %0#x" % val.GetValueAsUnsigned())
         elif nd_type == self.ruby_globals["NODE_NEXT"]:

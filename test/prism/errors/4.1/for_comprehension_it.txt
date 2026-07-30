@@ -1,0 +1,3 @@
+for x in [1] then it end
+                  ^~ 'it' is not allowed when an ordinary parameter is defined
+
