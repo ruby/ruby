@@ -2170,7 +2170,6 @@ impl Assembler
     // TODO: We want to make the following refactoring so that we DON'T have
     // to parcopy in to entry blocks
     //
-    // * Move Allocation to Interval
     // * Pre-allocate pinned regs
     // * Update linear scan to handle pinned LRs
     //
