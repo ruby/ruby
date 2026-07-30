@@ -183,24 +183,92 @@ rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n
 }
 #endif
 
-static inline long
-rb_memsearch_qs(const unsigned char *xs, long m, const unsigned char *ys, long n)
-{
-    const unsigned char *x = xs, *xe = xs + m;
-    const unsigned char *y = ys;
-    VALUE i, qstable[256];
+typedef enum {
+    RB_MEMSEARCH_STRAT_TRIVIAL,
+    RB_MEMSEARCH_STRAT_SS,
+    RB_MEMSEARCH_STRAT_QS_UTF8,
+    RB_MEMSEARCH_STRAT_WCHAR,
+    RB_MEMSEARCH_STRAT_QCHAR,
+    RB_MEMSEARCH_STRAT_QS,
+} rb_memsearch_strategy_t;
 
-    /* Preprocessing */
+static rb_memsearch_strategy_t
+rb_memsearch_select(long m, rb_encoding *enc)
+{
+    int minlen;
+
+    if (m <= 1) return RB_MEMSEARCH_STRAT_TRIVIAL;
+
+    minlen = rb_enc_mbminlen(enc);
+    if (LIKELY(minlen == 1)) {
+        if (m <= SIZEOF_VALUE) {
+            return RB_MEMSEARCH_STRAT_SS;
+        }
+        else if (enc == rb_utf8_encoding()) {
+            return RB_MEMSEARCH_STRAT_QS_UTF8;
+        }
+    }
+    else if (LIKELY(minlen == 2)) {
+        return RB_MEMSEARCH_STRAT_WCHAR;
+    }
+    else if (LIKELY(minlen == 4)) {
+        return RB_MEMSEARCH_STRAT_QCHAR;
+    }
+    return RB_MEMSEARCH_STRAT_QS;
+}
+
+bool
+rb_memsearch_qs_usable_p(long m, rb_encoding *enc)
+{
+    return rb_memsearch_select(m, enc) == RB_MEMSEARCH_STRAT_QS;
+}
+
+void
+rb_memsearch_qs_prepare(struct rb_memsearch_qs_state *state, const void *x0, long m)
+{
+    const unsigned char *x = x0, *xe = x + m;
+    VALUE i;
+
+    state->needle = x0;
+    state->needle_len = m;
+
     for (i = 0; i < 256; ++i)
-        qstable[i] = m + 1;
+        state->qstable[i] = m + 1;
     for (; x < xe; ++x)
-        qstable[*x] = xe - x;
+        state->qstable[*x] = xe - x;
+}
+
+long
+rb_memsearch_qs_search(const struct rb_memsearch_qs_state *state, const void *y0, long n)
+{
+    const unsigned char *xs = state->needle, *ys = y0;
+    const unsigned char *y = ys;
+    long m = state->needle_len;
+
+    RUBY_ASSERT(m > 1);
+
+    if (m > n) return -1;
+    else if (m == n) {
+        return memcmp(xs, y0, m) == 0 ? 0 : -1;
+    }
+
+    RUBY_ASSERT(m < n);
+
     /* Searching */
-    for (; y + m <= ys + n; y += *(qstable + y[m])) {
+    for (; y + m <= ys + n; y += state->qstable[y[m]]) {
         if (*xs == *y && memcmp(xs, y, m) == 0)
             return y - ys;
     }
     return -1;
+}
+
+static inline long
+rb_memsearch_qs(const unsigned char *xs, long m, const unsigned char *ys, long n)
+{
+    struct rb_memsearch_qs_state state;
+
+    rb_memsearch_qs_prepare(&state, xs, m);
+    return rb_memsearch_qs_search(&state, ys, n);
 }
 
 static inline unsigned int
@@ -301,21 +369,22 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
         else
             return -1;
     }
-    else if (LIKELY(rb_enc_mbminlen(enc) == 1)) {
-        if (m <= SIZEOF_VALUE) {
-            return rb_memsearch_ss(x0, m, y0, n);
-        }
-        else if (enc == rb_utf8_encoding()){
-            return rb_memsearch_qs_utf8(x0, m, y0, n);
-        }
-    }
-    else if (LIKELY(rb_enc_mbminlen(enc) == 2)) {
+
+    switch (rb_memsearch_select(m, enc)) {
+      case RB_MEMSEARCH_STRAT_TRIVIAL:
+        break;
+      case RB_MEMSEARCH_STRAT_SS:
+        return rb_memsearch_ss(x0, m, y0, n);
+      case RB_MEMSEARCH_STRAT_QS_UTF8:
+        return rb_memsearch_qs_utf8(x0, m, y0, n);
+      case RB_MEMSEARCH_STRAT_WCHAR:
         return rb_memsearch_wchar(x0, m, y0, n);
-    }
-    else if (LIKELY(rb_enc_mbminlen(enc) == 4)) {
+      case RB_MEMSEARCH_STRAT_QCHAR:
         return rb_memsearch_qchar(x0, m, y0, n);
+      case RB_MEMSEARCH_STRAT_QS:
+        return rb_memsearch_qs(x0, m, y0, n);
     }
-    return rb_memsearch_qs(x0, m, y0, n);
+    UNREACHABLE_RETURN(-1);
 }
 
 static int

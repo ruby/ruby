@@ -1192,6 +1192,22 @@ CODE
     assert_equal(S("hello!"), res[0])
     assert_equal(S("world"),  res[1])
 
+    sep = S("abcdefghijklmnop").b
+    res = []
+    (S("aa").b + sep + S("bb").b + sep + S("cc").b).each_line(sep) {|x| res << x}
+    assert_equal([S("aa").b + sep, S("bb").b + sep, S("cc").b], res)
+
+    old_sep = S("abcdefghijklmnop").b
+    new_sep = S("qrstuvwxyzabcdef").b
+    sep = old_sep.dup
+    sep.setbyte(0, sep.getbyte(0))
+    res = []
+    (S("aa").b + old_sep + S("bb").b + new_sep + S("cc").b).each_line(sep) do |x|
+      res << x
+      new_sep.each_byte.with_index {|byte, idx| sep.setbyte(idx, byte) } if res.size == 1
+    end
+    assert_equal([S("aa").b + old_sep, S("bb").b + new_sep, S("cc").b], res)
+
     $/ = "ab"
 
     res=[]
@@ -1423,6 +1439,14 @@ CODE
     assert_include(S("foobar"), S("foo"))
     assert_not_include(S("foobar"), S("baz"))
     assert_not_include(S("foobar"), ?z)
+
+    # This shape reaches rb_memsearch_qs today: ASCII-8BIT is a
+    # non-UTF-8, minlen-1 encoding, and the needle is longer than
+    # SIZEOF_VALUE, so rb_memsearch avoids its shorter/specialized paths.
+    needle = S("abcdefghijklmnop").b
+    haystack = (S("x").b * 17) + needle + S("y").b
+    assert_include(haystack, needle)
+    assert_not_include(haystack, S("abcdefghijklmnox").b)
   end
 
   def test_index
@@ -1455,6 +1479,12 @@ CODE
     s << "yx"
     assert_index(4 * 1000, s, S("x"))
     assert_index(4 * 1000, s, S("xyx"))
+
+    # See test_include? for why this search reaches rb_memsearch_qs.
+    needle = S("abcdefghijklmnop").b
+    haystack = (S("x").b * 17) + needle + S("y").b
+    assert_index(17, haystack, needle)
+    assert_index(nil, haystack, S("abcdefghijklmnox").b)
 
     o = Object.new
     def o.to_str; "bar"; end
@@ -1873,6 +1903,16 @@ CODE
     assert_equal([S("a"), S(""), S("b"), S("c")], S("a||b|c|").split(S('|')))
     assert_equal([S("a"), S(""), S("b"), S("c"), S("")], S("a||b|c|").split(S('|'), -1))
 
+    sep = S("abcdefghijklmnop").b
+    assert_equal([S("aa").b, S("bb").b, S("cc").b],
+                 (S("aa").b + sep + S("bb").b + sep + S("cc").b).split(sep))
+
+    tail_miss = S("abcdefghijklmnox").b
+    assert_equal([S("aa").b, tail_miss],
+                 (S("aa").b + sep + tail_miss).split(sep))
+    assert_equal([S("aa").b, S("").b, S("").b],
+                 (S("aa").b + sep + sep).split(sep, -1))
+
     assert_equal([], S("").split(//, 1))
   ensure
     EnvUtil.suppress_warning {$; = fs}
@@ -1911,6 +1951,17 @@ CODE
     assert_equal([S("a"), S(""), S("b"), S("c")], result)
     result = []; S("a||b|c|").split(S('|'), -1) {|s| result << s}
     assert_equal([S("a"), S(""), S("b"), S("c"), S("")], result)
+
+    old_sep = S("abcdefghijklmnop").b
+    new_sep = S("qrstuvwxyzabcdef").b
+    sep = old_sep.dup
+    sep.setbyte(0, sep.getbyte(0))
+    result = []
+    (S("aa").b + old_sep + S("bb").b + new_sep + S("cc").b).split(sep) do |s|
+      result << s
+      new_sep.each_byte.with_index {|byte, idx| sep.setbyte(idx, byte) } if result.size == 1
+    end
+    assert_equal([S("aa").b, S("bb").b, S("cc").b], result)
 
     result = []; S("").split(//, 1) {|s| result << s}
     assert_equal([], result)
