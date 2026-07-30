@@ -235,7 +235,7 @@ io_buffer_initialize(VALUE self, struct rb_io_buffer *buffer, void *base, size_t
 }
 
 static void
-io_buffer_free(struct rb_io_buffer *buffer)
+io_buffer_release(struct rb_io_buffer *buffer)
 {
     if (buffer->base) {
         if (buffer->flags & RB_IO_BUFFER_INTERNAL) {
@@ -264,9 +264,9 @@ io_buffer_free(struct rb_io_buffer *buffer)
 
 #if defined(_WIN32)
     if (buffer->mapping) {
-        if (RB_IO_BUFFER_DEBUG) fprintf(stderr, "io_buffer_free:CloseHandle -> %p\n", buffer->mapping);
+        if (RB_IO_BUFFER_DEBUG) fprintf(stderr, "io_buffer_release:CloseHandle -> %p\n", buffer->mapping);
         if (!CloseHandle(buffer->mapping)) {
-            fprintf(stderr, "io_buffer_free:GetLastError -> %lu\n", GetLastError());
+            fprintf(stderr, "io_buffer_release:GetLastError -> %lu\n", GetLastError());
         }
         buffer->mapping = NULL;
     }
@@ -309,7 +309,7 @@ rb_io_buffer_type_free(void *_buffer)
 {
     struct rb_io_buffer *buffer = _buffer;
 
-    io_buffer_free(buffer);
+    io_buffer_release(buffer);
 }
 
 static size_t
@@ -1659,6 +1659,20 @@ rb_io_buffer_locked(VALUE self)
     return rb_ensure(rb_yield, self, rb_io_buffer_locked_ensure, self);
 }
 
+VALUE
+rb_io_buffer_free(VALUE self)
+{
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    if (io_buffer_locked(buffer)) {
+        rb_raise(rb_eIOBufferLockedError, "Buffer is locked!");
+    }
+
+    io_buffer_release(buffer);
+
+    return self;
+}
+
 /*
  *  call-seq: free -> self
  *
@@ -1684,19 +1698,20 @@ rb_io_buffer_locked(VALUE self)
  *    buffer.get_string # => ""
  *
  *    buffer.get_value(:U8, 0) # raises ArgumentError
+ *
+ *  A frozen buffer cannot be freed, as that would release the memory its
+ *  contents live in:
+ *
+ *    buffer = IO::Buffer.for('test').freeze
+ *    buffer.free
+ *    # in `free': can't modify frozen IO::Buffer (FrozenError)
  */
-VALUE
-rb_io_buffer_free(VALUE self)
+static VALUE
+io_buffer_free(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    rb_check_frozen(self);
 
-    if (io_buffer_locked(buffer)) {
-        rb_raise(rb_eIOBufferLockedError, "Buffer is locked!");
-    }
-
-    io_buffer_free(buffer);
-
-    return self;
+    return rb_io_buffer_free(self);
 }
 
 VALUE rb_io_buffer_free_locked(VALUE self)
@@ -1712,7 +1727,7 @@ VALUE rb_io_buffer_free_locked(VALUE self)
     }
 
     io_buffer_unlock(buffer);
-    io_buffer_free(buffer);
+    io_buffer_release(buffer);
 
     return self;
 }
@@ -1928,7 +1943,7 @@ io_buffer_resize_copy(VALUE self, struct rb_io_buffer *buffer, size_t size)
         io_buffer_resize_clear(buffer, resized.base, size);
     }
 
-    io_buffer_free(buffer);
+    io_buffer_release(buffer);
     *buffer = resized;
 }
 
@@ -1994,7 +2009,7 @@ rb_io_buffer_resize(VALUE self, size_t size)
     }
 
     if (size == 0) {
-        io_buffer_free(buffer);
+        io_buffer_release(buffer);
         return;
     }
 
@@ -2055,11 +2070,13 @@ rb_io_buffer_resize(VALUE self, size_t size)
  *  does not change, a slice can be resized while its source is locked.
  *
  *  External owning buffers (created with ::for), and locked owning buffers
- *  cannot be resized.
+ *  cannot be resized. Frozen buffers cannot be resized.
  */
 static VALUE
 io_buffer_resize(VALUE self, VALUE size)
 {
+    rb_check_frozen(self);
+
     rb_io_buffer_resize(self, io_buffer_extract_size(size));
 
     return self;
@@ -4325,7 +4342,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "<=>", rb_io_buffer_compare, 1);
     rb_define_method(rb_cIOBuffer, "resize", io_buffer_resize, 1);
     rb_define_method(rb_cIOBuffer, "clear", io_buffer_clear, -1);
-    rb_define_method(rb_cIOBuffer, "free", rb_io_buffer_free, 0);
+    rb_define_method(rb_cIOBuffer, "free", io_buffer_free, 0);
 
     rb_include_module(rb_cIOBuffer, rb_mComparable);
 
