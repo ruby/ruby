@@ -176,7 +176,7 @@ releases.
   * 0.3.0 to [v0.4.0][syslog-v0.4.0]
 * csv 3.3.6
   * 3.3.5 to [v3.3.6][csv-v3.3.6]
-* repl_type_completor 0.1.15
+* repl_type_completor 0.1.16
   * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14], [v0.1.15][repl_type_completor-v0.1.15]
 * pstore 0.2.1
   * 0.2.0 to [v0.2.1][pstore-v0.2.1]
