@@ -1598,7 +1598,7 @@ impl Assembler {
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, mut regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
         let use_scratch_reg = !self.accept_scratch_reg;
         asm_dump!(self, init);
@@ -1620,8 +1620,9 @@ impl Assembler {
                 }
             }
 
-            trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&mut intervals));
-            let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(intervals.clone(), regs.len()));
+            let allocatable_regs = regs.len();
+            trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&mut intervals, &mut regs));
+            let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(intervals.clone(), allocatable_regs, &regs));
 
             asm.stack_state.num_spill_slots = num_stack_slots;
             asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&assignments);
@@ -1661,8 +1662,8 @@ impl Assembler {
             });
 
             trace_compile_phase("resolve_ssa", || {
-                asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
-                asm.resolve_ssa(&intervals, &assignments);
+                asm.handle_caller_saved_regs(&intervals, &assignments, &regs, &C_ARG_REGREGS);
+                asm.resolve_ssa(&intervals, &assignments, &regs);
             });
 
             Ok(())
@@ -1920,10 +1921,10 @@ mod tests {
 
         // Assert that only 2 instructions were written.
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: adds x0, x0, x1
-        0x4: stur x0, [x2]
+        0x0: adds x3, x0, x1
+        0x4: stur x3, [x2]
         ");
-        assert_snapshot!(cb.hexdump(), @"000001ab400000f8");
+        assert_snapshot!(cb.hexdump(), @"030001ab430000f8");
     }
 
     #[test]
