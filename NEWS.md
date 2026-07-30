@@ -177,7 +177,7 @@ releases.
 * csv 3.3.6
   * 3.3.5 to [v3.3.6][csv-v3.3.6]
 * repl_type_completor 0.1.16
-  * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14], [v0.1.15][repl_type_completor-v0.1.15]
+  * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14], [v0.1.15][repl_type_completor-v0.1.15], [v0.1.16][repl_type_completor-v0.1.16]
 * pstore 0.2.1
   * 0.2.0 to [v0.2.1][pstore-v0.2.1]
 * rdoc 8.0.0
@@ -355,6 +355,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [repl_type_completor-v0.1.13]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.13
 [repl_type_completor-v0.1.14]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.14
 [repl_type_completor-v0.1.15]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.15
+[repl_type_completor-v0.1.16]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.16
 [pstore-v0.2.1]: https://github.com/ruby/pstore/releases/tag/v0.2.1
 [rdoc-v7.0.4]: https://github.com/ruby/rdoc/releases/tag/v7.0.4
 [rdoc-v7.1.0]: https://github.com/ruby/rdoc/releases/tag/v7.1.0
