@@ -1877,9 +1877,7 @@ impl Assembler
 
         // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
-
         let block_ids = self.block_order();
-        let num_blocks = block_ids.len();
 
         for (i, block_id) in block_ids.iter().enumerate() {
             let block = &self.basic_blocks[block_id.0];
@@ -1917,14 +1915,12 @@ impl Assembler
             if let Some(marker) = block_end_pos_marker {
                 insns.push(Insn::PosMarker(marker));
             }
-
-            // Make sure we don't stomp on the next function
-            if block_id.0 == num_blocks - 1 {
-                push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
-                    insns.push(Insn::BoundaryPad);
-                });
-            }
         }
+        // Make sure we don't stomp on the next function
+        push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
+            insns.push(Insn::BoundaryPad);
+        });
+
         insns
     }
 
