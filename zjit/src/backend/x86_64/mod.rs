@@ -1069,8 +1069,8 @@ impl Assembler {
 
                 Insn::Joz(..) | Insn::Jonz(..) => unreachable!("Joz/Jonz should be unused for now"),
 
-                Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PadPatchPoint in x86_scratch_split"),
-                Insn::PadPatchPoint => {
+                Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PatchPointPad in x86_scratch_split"),
+                Insn::PatchPointPad => {
                     emit_pad_after_patch_point(cb, last_patch_pos);
                     // This position is itself where a jump gets written on invalidation, so it
                     // becomes what following code has to keep its distance from.

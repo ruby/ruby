@@ -1528,8 +1528,8 @@ impl Assembler {
                 Insn::Jonz(opnd, target) => {
                     emit_cmp_zero_jump(cb, opnd.into(), false, target.clone());
                 },
-                Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PadPatchPoint in arm64_scratch_split"),
-                Insn::PadPatchPoint => {
+                Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PatchPointPad in arm64_scratch_split"),
+                Insn::PatchPointPad => {
                     emit_pad_after_patch_point(cb, last_patch_pos);
                     // This position is itself where a jump gets written on invalidation, so it
                     // becomes what following code has to keep its distance from.
