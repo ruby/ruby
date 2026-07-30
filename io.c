@@ -845,7 +845,7 @@ rb_io_set_write_io(VALUE io, VALUE w)
         GetWriteIO(w);
     }
     write_io = fptr->tied_io_for_writing;
-    fptr->tied_io_for_writing = w;
+    RB_OBJ_WRITE(io, &fptr->tied_io_for_writing, w);
     return write_io ? write_io : Qnil;
 }
 
@@ -1113,7 +1113,7 @@ ruby_dup(int orig)
 static VALUE
 io_alloc(VALUE klass)
 {
-    UNPROTECTED_NEWOBJ_OF(io, struct RFile, klass, T_FILE, sizeof(struct RFile));
+    NEWOBJ_OF(io, struct RFile, klass, T_FILE, sizeof(struct RFile));
 
     io->fptr = 0;
 
@@ -1740,21 +1740,21 @@ make_writeconv(rb_io_t *fptr)
             if (!senc && !(fptr->encs.ecflags & ECONV_STATEFUL_DECORATOR_MASK)) {
                 /* single conversion */
                 fptr->writeconv_pre_ecflags = ecflags;
-                fptr->writeconv_pre_ecopts = ecopts;
+                RB_OBJ_WRITE(fptr->self, &fptr->writeconv_pre_ecopts, ecopts);
                 fptr->writeconv = NULL;
                 fptr->writeconv_asciicompat = Qnil;
             }
             else {
                 /* double conversion */
                 fptr->writeconv_pre_ecflags = ecflags & ~ECONV_STATEFUL_DECORATOR_MASK;
-                fptr->writeconv_pre_ecopts = ecopts;
+                RB_OBJ_WRITE(fptr->self, &fptr->writeconv_pre_ecopts, ecopts);
                 if (senc) {
                     denc = rb_enc_name(enc);
-                    fptr->writeconv_asciicompat = rb_str_new2(senc);
+                    RB_OBJ_WRITE(fptr->self, &fptr->writeconv_asciicompat, rb_str_new2(senc));
                 }
                 else {
                     senc = denc = "";
-                    fptr->writeconv_asciicompat = rb_str_new2(rb_enc_name(enc));
+                    RB_OBJ_WRITE(fptr->self, &fptr->writeconv_asciicompat, rb_str_new2(rb_enc_name(enc)));
                 }
                 ecflags = fptr->encs.ecflags & (ECONV_ERROR_HANDLER_MASK|ECONV_STATEFUL_DECORATOR_MASK);
                 ecopts = fptr->encs.ecopts;
@@ -1897,7 +1897,7 @@ io_allocate_write_buffer(rb_io_t *fptr, int sync)
     }
 
     if (NIL_P(fptr->write_lock)) {
-        fptr->write_lock = rb_mutex_new();
+        RB_OBJ_WRITE(fptr->self, &fptr->write_lock, rb_mutex_new());
         rb_mutex_allow_trap(fptr->write_lock, 1);
     }
 }
@@ -5983,9 +5983,13 @@ rb_io_close_read(VALUE io)
         wfptr->pid = fptr->pid;
         fptr->pid = 0;
         RFILE(io)->fptr = wfptr;
+        wfptr->self = io;
+        rb_gc_writebarrier_remember(io);
         /* bind to write_io temporarily to get rid of memory/fd leak */
         fptr->tied_io_for_writing = 0;
         RFILE(write_io)->fptr = fptr;
+        fptr->self = write_io;
+        rb_gc_writebarrier_remember(write_io);
         rb_io_fptr_cleanup(fptr, FALSE);
         /* should not finalize fptr because another thread may be reading it */
         return Qnil;
@@ -7263,13 +7267,14 @@ rb_file_open_generic(VALUE io, VALUE filename, int oflags, enum rb_io_mode fmode
     MakeOpenFile(io, fptr);
     fptr->mode = fmode;
     fptr->encs = *convconfig;
+    RB_OBJ_WRITTEN(io, Qundef, fptr->encs.ecopts);
     pathv = rb_str_new_frozen(filename);
 #ifdef O_TMPFILE
     if (!(oflags & O_TMPFILE)) {
-        fptr->pathv = pathv;
+        RB_OBJ_WRITE(io, &fptr->pathv, pathv);
     }
 #else
-    fptr->pathv = pathv;
+    RB_OBJ_WRITE(io, &fptr->pathv, pathv);
 #endif
     fptr->fd = rb_sysopen(pathv, oflags, perm);
     io_check_tty(fptr);
@@ -7790,6 +7795,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
     fptr->mode = fmode | FMODE_SYNC|FMODE_DUPLEX;
     if (convconfig) {
         fptr->encs = *convconfig;
+        RB_OBJ_WRITTEN(port, Qundef, fptr->encs.ecopts);
 #if RUBY_CRLF_ENVIRONMENT
         if (fptr->encs.ecflags & ECONV_DEFAULT_NEWLINE_DECORATOR) {
             fptr->encs.ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
@@ -7814,7 +7820,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
         write_fptr->fd = write_fd;
         write_fptr->mode = (fmode & ~FMODE_READABLE)| FMODE_SYNC|FMODE_DUPLEX;
         fptr->mode &= ~FMODE_WRITABLE;
-        fptr->tied_io_for_writing = write_port;
+        RB_OBJ_WRITE(port, &fptr->tied_io_for_writing, write_port);
         rb_ivar_set(port, rb_intern("@tied_io_for_writing"), write_port);
     }
 
@@ -8395,9 +8401,10 @@ io_reopen(VALUE io, VALUE nfile)
     /* copy rb_io_t structure */
     fptr->mode = orig->mode | (fptr->mode & FMODE_EXTERNAL);
     fptr->encs = orig->encs;
+    RB_OBJ_WRITTEN(io, Qundef, fptr->encs.ecopts);
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
-    if (RTEST(orig->pathv)) fptr->pathv = orig->pathv;
+    if (RTEST(orig->pathv)) RB_OBJ_WRITE(io, &fptr->pathv, orig->pathv);
     else if (!RUBY_IO_EXTERNAL_P(fptr)) fptr->pathv = Qnil;
     fptr_copy_finalizer(fptr, orig);
 
@@ -8526,12 +8533,13 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         }
         fptr->mode = fmode;
         fptr->encs = convconfig;
+        RB_OBJ_WRITTEN(file, Qundef, fptr->encs.ecopts);
     }
     else {
         oflags = rb_io_fmode_oflags(fptr->mode);
     }
 
-    fptr->pathv = fname;
+    RB_OBJ_WRITE(file, &fptr->pathv, fname);
     if (fptr->fd < 0) {
         fptr->fd = rb_sysopen(fptr->pathv, oflags, 0666);
         fptr->stdio_file = 0;
@@ -8597,16 +8605,17 @@ rb_io_init_copy(VALUE dest, VALUE io)
     /* copy rb_io_t structure */
     fptr->mode = orig->mode & ~FMODE_EXTERNAL;
     fptr->encs = orig->encs;
+    RB_OBJ_WRITTEN(dest, Qundef, fptr->encs.ecopts);
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
-    fptr->timeout = orig->timeout;
+    RB_OBJ_WRITE(dest, &fptr->timeout, orig->timeout);
 
     ccan_list_head_init(&fptr->blocking_operations);
     fptr->closing_ec = NULL;
     fptr->wakeup_mutex = Qnil;
     fptr->fork_generation = GET_VM()->fork_gen;
 
-    if (!NIL_P(orig->pathv)) fptr->pathv = orig->pathv;
+    if (!NIL_P(orig->pathv)) RB_OBJ_WRITE(dest, &fptr->pathv, orig->pathv);
     fptr_copy_finalizer(fptr, orig);
 
     fd = ruby_dup(orig->fd);
@@ -8621,7 +8630,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     write_io = GetWriteIO(io);
     if (io != write_io) {
         write_io = rb_obj_dup(write_io);
-        fptr->tied_io_for_writing = write_io;
+        RB_OBJ_WRITE(dest, &fptr->tied_io_for_writing, write_io);
         rb_ivar_set(dest, rb_intern("@tied_io_for_writing"), write_io);
     }
 
@@ -9326,10 +9335,10 @@ rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE t
     }
     else {
         StringValue(path);
-        io->pathv = rb_str_new_frozen(path);
+        RB_OBJ_WRITE(self, &io->pathv, rb_str_new_frozen(path));
     }
 
-    io->timeout = timeout;
+    RB_OBJ_WRITE(self, &io->timeout, timeout);
 
     ccan_list_head_init(&io->blocking_operations);
     io->closing_ec = NULL;
@@ -9338,6 +9347,7 @@ rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE t
 
     if (encoding) {
         io->encs = *encoding;
+        RB_OBJ_WRITTEN(self, Qundef, io->encs.ecopts);
     }
 
     rb_update_max_fd(descriptor);
@@ -9608,7 +9618,8 @@ io_initialize(VALUE io, VALUE fnum, VALUE vmode, VALUE opt)
     fp->fd = fd;
     fp->mode = fmode;
     fp->encs = convconfig;
-    fp->pathv = path;
+    RB_OBJ_WRITTEN(io, Qundef, fp->encs.ecopts);
+    RB_OBJ_WRITE(io, &fp->pathv, path);
     fp->timeout = Qnil;
     ccan_list_head_init(&fp->blocking_operations);
     fp->closing_ec = NULL;
@@ -10307,6 +10318,7 @@ argf_next_argv(VALUE argf)
             GetOpenFile(ARGF.current_file, fptr);
             if (ARGF.encs.enc) {
                 fptr->encs = ARGF.encs;
+                RB_OBJ_WRITTEN(ARGF.current_file, Qundef, fptr->encs.ecopts);
                 clear_codeconv(fptr);
             }
             else {
@@ -11832,7 +11844,7 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
     fptr->encs.enc = enc;
     fptr->encs.enc2 = enc2;
     fptr->encs.ecflags = ecflags;
-    fptr->encs.ecopts = ecopts;
+    RB_OBJ_WRITE(fptr->self, &fptr->encs.ecopts, ecopts);
     clear_codeconv(fptr);
 
 }
