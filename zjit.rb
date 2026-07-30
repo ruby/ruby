@@ -116,6 +116,7 @@ class << RubyVM::ZJIT
     # use multiple complex features, a decrease in this number does not
     # necessarily mean an increase in number of optimized calls.
     print_counters_with_prefix(prefix: 'complex_arg_pass_', prompt: 'popular complex argument-parameter features not optimized', buf:, stats:, limit: 10)
+    print_counters_with_prefix(prefix: 'caller_splat_profile_', prompt: 'caller splat length profiles', buf:, stats:, limit: 10)
 
     # Show exit counters, ordered by the typical amount of exits for the prefix at the time
     print_counters_with_prefix(prefix: 'compile_error_', prompt: 'compile error reasons', buf:, stats:, limit: 20)
