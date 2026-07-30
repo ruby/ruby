@@ -343,6 +343,26 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # [Feature #21930]
+  def test_port_and_ractor_empty_nonblocking
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      assert_equal true, port.empty?
+
+      r = Ractor.new(port) do |p|
+        p.send 1
+        p.send 2
+      end
+
+      sleep 0.1
+      port.receive
+      assert_equal false, port.empty?
+      port.receive
+      assert_equal true, port.empty?
+      r.join
+    RUBY
+  end
+
   def test_mn_threads
     # Ideally, we would assert that vm->ractor.sched.max_cpu equals sysconf(_SC_NPROCESSORS_ONLN)
     # when RUBY_MAX_CPU is not set.
