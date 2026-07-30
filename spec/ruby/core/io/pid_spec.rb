@@ -28,6 +28,12 @@ describe "IO#pid" do
     @io.pid.should_not == nil
   end
 
+  ruby_version_is "4.1" do
+    it "returns the ID of a process associated with stream as a Process::ID" do
+      @io.pid.should.instance_of?(Process::ID)
+    end
+  end
+
   it "raises an IOError on closed stream" do
     @io.close
     -> { @io.pid }.should.raise(IOError)

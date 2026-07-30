@@ -75,7 +75,8 @@ struct rb_execarg {
 };
 
 /* process.c */
-rb_pid_t rb_call_proc__fork(void);
+VALUE rb_call_proc__fork(void);
+VALUE rb_process_id_new(rb_pid_t pid);
 void rb_last_status_clear(void);
 static inline char **ARGVSTR2ARGV(VALUE argv_str);
 static inline size_t ARGVSTR2ARGC(VALUE argv_str);

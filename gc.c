@@ -3298,6 +3298,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         if (RFILE(obj)->fptr) {
             gc_mark_internal(RFILE(obj)->fptr->self);
             gc_mark_internal(RFILE(obj)->fptr->pathv);
+            gc_mark_internal(RFILE(obj)->fptr->pid_value);
             gc_mark_internal(RFILE(obj)->fptr->tied_io_for_writing);
             gc_mark_internal(RFILE(obj)->fptr->writeconv_asciicompat);
             gc_mark_internal(RFILE(obj)->fptr->writeconv_pre_ecopts);
@@ -4238,6 +4239,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
         if (RFILE(obj)->fptr) {
             UPDATE_IF_MOVED(objspace, RFILE(obj)->fptr->self);
             UPDATE_IF_MOVED(objspace, RFILE(obj)->fptr->pathv);
+            UPDATE_IF_MOVED(objspace, RFILE(obj)->fptr->pid_value);
             UPDATE_IF_MOVED(objspace, RFILE(obj)->fptr->tied_io_for_writing);
             UPDATE_IF_MOVED(objspace, RFILE(obj)->fptr->writeconv_asciicompat);
             UPDATE_IF_MOVED(objspace, RFILE(obj)->fptr->writeconv_pre_ecopts);

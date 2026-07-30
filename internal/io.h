@@ -123,6 +123,9 @@ struct rb_io {
      */
     VALUE timeout;
 
+    /** Ruby object for child's pid (for pipes) */
+    VALUE pid_value;
+
     /**
      * Threads that are performing a blocking operation without the GVL using
      * this IO. On calling IO#close, these threads will be interrupted so that

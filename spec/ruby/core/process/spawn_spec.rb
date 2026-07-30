@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/common'
+require_relative '../../shared/process/id'
 
 newline = "\n"
 platform_is :windows do
@@ -48,11 +49,7 @@ describe "Process.spawn" do
     -> { Process.wait Process.spawn("echo spawn") }.should output_to_fd("spawn\n")
   end
 
-  it "returns the process ID of the new process as an Integer" do
-    pid = Process.spawn(*ruby_exe, "-e", "exit")
-    Process.wait pid
-    pid.should.instance_of?(Integer)
-  end
+  it_returns_process_id { Process.spawn(*ruby_exe, "-e", "exit") }
 
   it "returns immediately" do
     start = Time.now
