@@ -1491,7 +1491,6 @@ impl Interval {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Allocation {
     Reg(usize),
-    Fixed(Reg),
     Stack(usize),
 }
 
@@ -1499,7 +1498,6 @@ impl Allocation {
     fn assigned_reg(self, regs: &[Reg]) -> Option<Reg> {
         match self {
             Allocation::Reg(n) => Some(regs[n]),
-            Allocation::Fixed(reg) => Some(reg),
             Allocation::Stack(_) => None,
         }
     }
@@ -1507,14 +1505,6 @@ impl Allocation {
     fn alloc_pool_index(self, num_registers: usize) -> Option<usize> {
         match self {
             Allocation::Reg(n) => (n < num_registers).then_some(n),
-            Allocation::Fixed(reg) => {
-                use crate::backend::current::ALLOC_REGS;
-
-                ALLOC_REGS
-                    .iter()
-                    .take(num_registers)
-                    .position(|candidate| candidate.reg_no == reg.reg_no)
-            }
             Allocation::Stack(_) => None,
         }
     }
@@ -2569,7 +2559,7 @@ impl Assembler
                                 }
                                 StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) => {
                                     let vreg_stack_index = match assignments[vreg].expect("StackMap VReg should have an allocation") {
-                                        Allocation::Reg(_) | Allocation::Fixed(_) => {
+                                        Allocation::Reg(_) => {
                                             let caller_saved_reg_idx = survivors.iter().position(|&survivor_id| survivor_id == vreg).unwrap();
                                             let stack_idx = self.stack_state.stack_idx_for_caller_saved_reg(caller_saved_reg_idx);
                                             self.stack_state.stack_map_index_for_spill(stack_idx, frame_depth)
@@ -2715,7 +2705,7 @@ impl Assembler
             StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => {
                 matches!(
                     assignments[idx.to_usize()].expect("StackMap VReg should have an allocation"),
-                    Allocation::Reg(_) | Allocation::Fixed(_)
+                    Allocation::Reg(_)
                 )
             }
             StackMapEntry::Opnd(Opnd::Reg(_)) => true,
@@ -2753,10 +2743,6 @@ impl Assembler
                             reg.num_bits = *num_bits;
                             *opnd = Opnd::Reg(reg);
                         }
-                        Allocation::Fixed(mut reg) => {
-                            reg.num_bits = *num_bits;
-                            *opnd = Opnd::Reg(reg);
-                        }
                         Allocation::Stack(n) => {
                             let num_bits = *num_bits;
                             *opnd = Opnd::Mem(Mem {
@@ -2775,11 +2761,6 @@ impl Assembler
                     Allocation::Reg(n) => {
                         if let Opnd::Mem(mem) = opnd {
                             mem.base = MemBase::Reg(regs[n].reg_no);
-                        }
-                    }
-                    Allocation::Fixed(reg) => {
-                        if let Opnd::Mem(mem) = opnd {
-                            mem.base = MemBase::Reg(reg.reg_no);
                         }
                     }
                     Allocation::Stack(n) => {
