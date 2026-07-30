@@ -1640,7 +1640,6 @@ impl Assembler {
                             let end = &intervals[i].end();
                             let alloc_str = match alloc {
                                 Allocation::Reg(n) => format!("{}", regs[*n]),
-                                Allocation::Fixed(reg) => format!("{}", reg),
                                 Allocation::Stack(n) => format!("Stack[{}]", n),
                             };
                             println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, start, end);
