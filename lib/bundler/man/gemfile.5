@@ -166,7 +166,7 @@ bundle config set \-\-local without development test
 .P
 Also, calling \fBBundler\.setup\fR with no parameters, or calling \fBrequire "bundler/setup"\fR will setup all groups except for the ones you excluded via \fB\-\-without\fR (since they are not available)\.
 .P
-Note that on \fBbundle install\fR, bundler downloads and evaluates all gems, in order to create a single canonical list of all of the required gems and their dependencies\. This means that you cannot list different versions of the same gems in different groups\. For more details, see Understanding Bundler \fIhttps://bundler\.io/rationale\.html\fR\.
+Note that on \fBbundle install\fR, bundler downloads and evaluates all gems, in order to create a single canonical list of all of the required gems and their dependencies\. This means that you cannot list different versions of the same gems in different groups\. For more details, see Dependency management \fIhttps://guides\.rubygems\.org/dependency_management/\fR\.
 .SS "PLATFORMS"
 If a gem should only be used in a particular platform or set of platforms, you can specify them\. Platforms are essentially identical to groups, except that you do not need to use the \fB\-\-without\fR install\-time flag to exclude groups of gems for other platforms\.
 .P

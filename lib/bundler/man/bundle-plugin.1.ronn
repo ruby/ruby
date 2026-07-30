@@ -81,4 +81,4 @@ No options.
 
 ## SEE ALSO
 
-* [How to write a Bundler plugin](https://bundler.io/guides/bundler_plugins.html)
+* [How to write a Bundler plugin](https://guides.rubygems.org/bundler_plugins/)
