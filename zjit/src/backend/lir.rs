@@ -2138,6 +2138,30 @@ impl Assembler
         preferred
     }
 
+    fn release_assignment(it: &Interval, num_registers: usize, free_registers: &mut BTreeSet<usize>) {
+        if let Some(allocation) = it.assigned {
+            if let Some(reg) = allocation.alloc_pool_index(num_registers) {
+                let was_not_there_before = free_registers.insert(reg);
+                assert!(
+                    was_not_there_before,
+                    "attempted to return allocator register {:?} to the free pool more than once",
+                    allocation.assigned_reg().unwrap(),
+                );
+            } else {
+                assert!(
+                    allocation.assigned_reg().is_none_or(|reg| {
+                        crate::backend::current::ALLOC_REGS
+                            .iter()
+                            .take(num_registers)
+                            .all(|candidate| candidate.reg_no != reg.reg_no)
+                    }),
+                    "attempted to return non-allocatable register {:?} to the allocator pool",
+                    allocation.assigned_reg().unwrap(),
+                );
+            }
+        }
+    }
+
     // TODO: We want to make the following refactoring so that we DON'T have
     // to parcopy in to entry blocks
     //
@@ -2155,9 +2179,10 @@ impl Assembler
 
         let mut free_registers: BTreeSet<usize> = (0..num_registers).collect();
         let mut active: Vec<Interval> = Vec::new(); // sorted by increasing end point
+        let mut inactive: Vec<Interval> = Vec::new(); // intervals with lifetime holes
         let mut num_stack_slots: usize = 0;
-
         let mut handled: Vec<Interval> = Vec::new();
+        let mut free_until_pos = vec![0usize; num_registers];
         let num_intervals = intervals.len();
 
         let mut sorted_intervals: Vec<Interval> = intervals.into_iter()
@@ -2169,31 +2194,12 @@ impl Assembler
 
         while let Some(mut interval) = unhandled.pop_front() {
             // Expire old intervals.
-            for it in std::mem::take(&mut active) {
+            for mut it in std::mem::take(&mut active) {
                 if it.end() > interval.start() {
                     active.push(it);
                 } else {
-                    if let Some(allocation) = it.assigned {
-                        if let Some(reg) = allocation.alloc_pool_index(num_registers) {
-                            let was_not_there_before = free_registers.insert(reg);
-                            assert!(
-                                was_not_there_before,
-                                "attempted to return allocator register {:?} to the free pool more than once",
-                                allocation.assigned_reg().unwrap(),
-                            );
-                        } else {
-                            assert!(
-                                allocation.assigned_reg().is_none_or(|reg| {
-                                    crate::backend::current::ALLOC_REGS
-                                        .iter()
-                                        .take(num_registers)
-                                        .all(|candidate| candidate.reg_no != reg.reg_no)
-                                }),
-                                "attempted to return non-allocatable register {:?} to the allocator pool",
-                                allocation.assigned_reg().unwrap(),
-                            );
-                        }
-                    }
+                    Self::release_assignment(&it, num_registers, &mut free_registers);
+                    it.state = State::Handled;
                     handled.push(it);
                 }
             }
