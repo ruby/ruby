@@ -8625,18 +8625,28 @@ compile_for_masgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
     return COMPILE_OK;
 }
 
+static const NODE *
+ret_args(const NODE *node)
+{
+    if (node && nd_type_p(node, NODE_LIST) && !RNODE_LIST(node)->nd_next) {
+        return RNODE_LIST(node)->nd_head;
+    }
+    return node;
+}
+
 static int
 compile_break(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     const NODE *line_node = node;
     unsigned long throw_flag = 0;
+    const NODE *retval = ret_args(RNODE_BREAK(node)->nd_stts);
 
     if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0 && can_add_ensure_iseq(iseq)) {
         /* while/until */
         LABEL *splabel = NEW_LABEL(0);
         ADD_LABEL(ret, splabel);
         ADD_ADJUST(ret, line_node, ISEQ_COMPILE_DATA(iseq)->redo_label);
-        CHECK(COMPILE_(ret, "break val (while/until)", RNODE_BREAK(node)->nd_stts,
+        CHECK(COMPILE_(ret, "break val (while/until)", retval,
                        ISEQ_COMPILE_DATA(iseq)->loopval_popped));
         add_ensure_iseq(ret, iseq, 0);
         ADD_INSNL(ret, line_node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
@@ -8671,7 +8681,7 @@ compile_break(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
             }
 
             /* escape from block */
-            CHECK(COMPILE(ret, "break val (block)", RNODE_BREAK(node)->nd_stts));
+            CHECK(COMPILE(ret, "break val (block)", retval));
             ADD_INSN1(ret, line_node, throw, INT2FIX(throw_flag | TAG_BREAK));
             if (popped) {
                 ADD_INSN(ret, line_node, pop);
@@ -8689,12 +8699,13 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 {
     const NODE *line_node = node;
     unsigned long throw_flag = 0;
+    const NODE *retval = ret_args(RNODE_NEXT(node)->nd_stts);
 
     if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0 && can_add_ensure_iseq(iseq)) {
         LABEL *splabel = NEW_LABEL(0);
         debugs("next in while loop\n");
         ADD_LABEL(ret, splabel);
-        CHECK(COMPILE(ret, "next val/valid syntax?", RNODE_NEXT(node)->nd_stts));
+        CHECK(COMPILE(ret, "next val/valid syntax?", retval));
         add_ensure_iseq(ret, iseq, 0);
         ADD_ADJUST(ret, line_node, ISEQ_COMPILE_DATA(iseq)->redo_label);
         ADD_INSNL(ret, line_node, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
@@ -8708,7 +8719,7 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         debugs("next in block\n");
         ADD_LABEL(ret, splabel);
         ADD_ADJUST(ret, line_node, ISEQ_COMPILE_DATA(iseq)->start_label);
-        CHECK(COMPILE(ret, "next val", RNODE_NEXT(node)->nd_stts));
+        CHECK(COMPILE(ret, "next val", retval));
         add_ensure_iseq(ret, iseq, 0);
         ADD_INSNL(ret, line_node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
         ADD_ADJUST_RESTORE(ret, splabel);
@@ -8742,7 +8753,7 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
             ip = ISEQ_BODY(ip)->parent_iseq;
         }
         if (ip != 0) {
-            CHECK(COMPILE(ret, "next val", RNODE_NEXT(node)->nd_stts));
+            CHECK(COMPILE(ret, "next val", retval));
             ADD_INSN1(ret, line_node, throw, INT2FIX(throw_flag | TAG_NEXT));
 
             if (popped) {
@@ -9015,7 +9026,7 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
         enum rb_iseq_type type = ISEQ_BODY(iseq)->type;
         const rb_iseq_t *is = iseq;
         enum rb_iseq_type t = type;
-        const NODE *retval = RNODE_RETURN(node)->nd_stts;
+        const NODE *retval = ret_args(RNODE_RETURN(node)->nd_stts);
         LABEL *splabel = 0;
 
         while (t == ISEQ_TYPE_RESCUE || t == ISEQ_TYPE_ENSURE) {
