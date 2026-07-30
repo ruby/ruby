@@ -421,6 +421,32 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "Ciao! World", hello
   end
 
+  def test_transfer_frozen
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    buffer.freeze
+
+    assert_raise(FrozenError) do
+      buffer.transfer
+    end
+
+    refute_predicate buffer, :null?
+    assert_equal "test", buffer.get_string
+  end
+
+  def test_transfer_frozen_external
+    string = "Hello World".freeze
+    buffer = IO::Buffer.for(string)
+    buffer.freeze
+
+    assert_raise(FrozenError) do
+      buffer.transfer
+    end
+
+    refute_predicate buffer, :null?
+    assert_equal string, buffer.get_string
+  end
+
   def test_locked
     buffer = IO::Buffer.new(128, IO::Buffer::INTERNAL|IO::Buffer::LOCKED)
 

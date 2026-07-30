@@ -1813,24 +1813,6 @@ io_buffer_slice(int argc, VALUE *argv, VALUE self)
     return rb_io_buffer_slice(buffer, self, offset, length);
 }
 
-/*
- *  call-seq: transfer -> new_io_buffer
- *
- *  Transfers ownership of the underlying memory to a new buffer, causing the
- *  current buffer to become uninitialized.
- *
- *    buffer = IO::Buffer.new('test')
- *    other = buffer.transfer
- *    other
- *    # =>
- *    # #<IO::Buffer 0x00007f136a15f7b0+4 SLICE>
- *    # 0x00000000  74 65 73 74                                     test
- *    buffer
- *    # =>
- *    # #<IO::Buffer 0x0000000000000000+0 NULL>
- *    buffer.null?
- *    # => true
- */
 VALUE
 rb_io_buffer_transfer(VALUE self)
 {
@@ -1848,6 +1830,39 @@ rb_io_buffer_transfer(VALUE self)
     io_buffer_zero(buffer);
 
     return instance;
+}
+
+/*
+ *  call-seq: transfer -> new_io_buffer
+ *
+ *  Transfers ownership of the underlying memory to a new buffer, causing the
+ *  current buffer to become uninitialized.
+ *
+ *    buffer = IO::Buffer.new('test')
+ *    other = buffer.transfer
+ *    other
+ *    # =>
+ *    # #<IO::Buffer 0x00007f136a15f7b0+4 SLICE>
+ *    # 0x00000000  74 65 73 74                                     test
+ *    buffer
+ *    # =>
+ *    # #<IO::Buffer 0x0000000000000000+0 NULL>
+ *    buffer.null?
+ *    # => true
+ *
+ *  A frozen buffer cannot transfer ownership, as that would leave it
+ *  uninitialized:
+ *
+ *    buffer = IO::Buffer.for('test').freeze
+ *    buffer.transfer
+ *    # in `transfer': can't modify frozen IO::Buffer (FrozenError)
+ */
+static VALUE
+io_buffer_transfer(VALUE self)
+{
+    rb_check_frozen(self);
+
+    return rb_io_buffer_transfer(self);
 }
 
 static void
@@ -4099,7 +4114,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "size", rb_io_buffer_size, 0);
     rb_define_method(rb_cIOBuffer, "valid?", rb_io_buffer_valid_p, 0);
 
-    rb_define_method(rb_cIOBuffer, "transfer", rb_io_buffer_transfer, 0);
+    rb_define_method(rb_cIOBuffer, "transfer", io_buffer_transfer, 0);
 
     /* Indicates that the memory in the buffer is owned by someone else. See #external? for more details. */
     rb_define_const(rb_cIOBuffer, "EXTERNAL", RB_INT2NUM(RB_IO_BUFFER_EXTERNAL));
