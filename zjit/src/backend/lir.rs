@@ -2194,14 +2194,9 @@ impl Assembler
 
             let preferred_alloc = interval.preferred;
             let preferred_taken = preferred_alloc
-                .and_then(|alloc| alloc.assigned_reg(regs))
-                .is_some_and(|reg| {
-                    active.iter().any(|active_interval| {
-                        active_interval.assigned
-                            .and_then(|alloc| alloc.assigned_reg(regs))
-                            .is_some_and(|active_reg| active_reg.reg_no == reg.reg_no)
-                    })
-                });
+                .is_some_and(|alloc|
+                    active.iter().any(|active_interval| active_interval.assigned == Some(alloc))
+                );
 
             if let Some(preferred_alloc) = preferred_alloc.filter(|_| !preferred_taken) {
                 if let Some(reg_idx) = preferred_alloc.alloc_pool_index(num_registers) {
@@ -2221,14 +2216,15 @@ impl Assembler
 
             if free_registers.is_empty() {
                 // Spill: pick the longest-lived active interval (last in sorted active)
-                // but only from the allocatable register pool. Fixed register
-                // assignments represent preferred/pinned physical registers
-                // (for example SP) and should not be selected as spill victims.
+                // but only from the allocatable partition of the pool. An index
+                // at or past `num_registers` is a pinned physical register (for
+                // example SP), which is not ours to hand to someone else.
                 // Take the id and end point rather than a reference, so that `active`
                 // can be mutated below.
                 let spill = active.iter().rev()
                     .find(|active_interval| {
-                        matches!(active_interval.assigned, Some(Allocation::Reg(_)))
+                        active_interval.assigned
+                            .is_some_and(|alloc| alloc.alloc_pool_index(num_registers).is_some())
                     })
                     .map(|active_interval| (active_interval.id, active_interval.end()));
                 let slot = Allocation::Stack(num_stack_slots);
@@ -5114,11 +5110,7 @@ mod tests {
         assert!(!pushes.is_empty(), "Expected at least one saved register across CCall");
 
         // The survivor register should match v1's allocation
-        let v1_reg = match assignments[v1.vreg_idx()].unwrap() {
-            Allocation::Reg(n) => Opnd::Reg(regs[n]),
-            Allocation::Fixed(reg) => Opnd::Reg(reg),
-            _ => unreachable!(),
-        };
+        let v1_reg = Opnd::Reg(assignments[v1.vreg_idx()].unwrap().assigned_reg(&regs).unwrap());
         let pushed_v1 = pushes.iter().any(|insn| matches!(**insn, Insn::CPushPair(first, second) if first == v1_reg || second == v1_reg));
         let popped_v1 = pops.iter().any(|insn| matches!(**insn, Insn::CPopPairInto(first, second) if first == v1_reg || second == v1_reg));
         assert!(pushed_v1, "CPushPair should save v1's register");
