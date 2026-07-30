@@ -668,6 +668,19 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_equal 0, error.column
   end
 
+  def test_duplicate_key_warning_message
+    parser = new_parser
+    parser << (%q({"a":1,"a":2,"pad":") + ("x" * (4 * 1024 * 1024)))
+    refute parser.parse
+
+    parser << %q(",)
+    refute parser.parse
+
+    assert_deprecated_warning(/duplicate key "a"/) do
+      parser.partial_value
+    end
+  end
+
   private
 
   def assert_parse_error(json, expected_error_message = nil)

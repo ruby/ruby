@@ -589,6 +589,8 @@ static inline char peek(JSON_ParserState *state)
 
 static void cursor_position(JSON_ParserState *state, long *line_out, long *column_out)
 {
+    JSON_ASSERT(!state->parser);
+    JSON_ASSERT(state->cursor);
     JSON_ASSERT(state->cursor <= state->end);
 
     // Redundant but helpful for hardening
@@ -621,10 +623,14 @@ static const unsigned int MAX_DEPRECATIONS = 5;
 
 static void emit_parse_warning(const char *message, JSON_ParserState *state)
 {
-    long line, column;
-    cursor_position(state, &line, &column);
-
-    VALUE warning = rb_sprintf("%s at line %ld column %ld", message, line, column);
+    VALUE warning;
+    if (state->parser) { // line and columns can't be accurate in resumable
+        warning = rb_utf8_str_new_cstr(message);
+    } else {
+        long line, column;
+        cursor_position(state, &line, &column);
+        warning = rb_sprintf("%s at line %ld column %ld", message, line, column);
+    }
     rb_funcall(mJSON, rb_intern("deprecation_warning"), 1, warning);
 }
 
@@ -2566,6 +2572,7 @@ static VALUE cResumableParser_parse(VALUE self)
     if (eos(&parser->state)) {
         json_str_clear(parser->buffer);
         parser->buffer = Qfalse;
+        parser->state.start = parser->state.cursor = parser->state.end = 0;
     }
     parser->in_use = false;
 
