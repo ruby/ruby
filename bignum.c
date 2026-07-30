@@ -41,6 +41,7 @@
 #include "internal/sanitizers.h"
 #include "internal/variable.h"
 #include "internal/warnings.h"
+#include "ruby/atomic.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
@@ -4762,7 +4763,7 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
     if (MAX_BASE36_POWER_TABLE_ENTRIES <= power_level)
         rb_bug("too big power number requested: maxpow_in_bdigit_dbl(%d)**(2**%d)", base, power_level);
 
-    VALUE power = base36_power_cache[base - 2][power_level];
+    VALUE power = rbimpl_atomic_value_load(&base36_power_cache[base - 2][power_level], RBIMPL_ATOMIC_ACQUIRE);
     if (!power) {
         size_t numdigits;
         if (power_level == 0) {
@@ -4777,9 +4778,16 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
             numdigits *= 2;
         }
         rb_obj_hide(power);
-        base36_power_cache[base - 2][power_level] = power;
-        base36_numdigits_cache[base - 2][power_level] = numdigits;
-        rb_vm_register_global_object(power);
+        base36_numdigits_cache[base - 2][power_level] = numdigits; // benign race
+        /* Ractors can race this fill */
+        VALUE old = rbimpl_atomic_value_cas(&base36_power_cache[base - 2][power_level], 0, power,
+                                            RBIMPL_ATOMIC_RELEASE, RBIMPL_ATOMIC_ACQUIRE);
+        if (old) {
+            power = old;
+        }
+        else {
+            rb_vm_register_global_object(power);
+        }
     }
     if (numdigits_ret)
         *numdigits_ret = base36_numdigits_cache[base - 2][power_level];
