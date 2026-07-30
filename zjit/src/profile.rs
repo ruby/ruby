@@ -320,6 +320,8 @@ impl ProfiledType {
 
     /// Profile the class and shape of the given object
     fn new(obj: VALUE) -> Self {
+        // Qundef must never escape the VM internals; rb_class_of(Qundef) is undefined
+        debug_assert_ne!(obj, Qundef, "should not profile Qundef");
         if obj.special_const_p() {
             return Self { class: obj.class_of(),
                           shape: INVALID_SHAPE_ID,
