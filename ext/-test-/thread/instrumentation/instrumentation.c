@@ -91,6 +91,17 @@ ex_callback(rb_event_flag_t event, const rb_internal_thread_event_data_t *event_
     rb_event_flag_t last_event = find_last_event(event_data->thread);
     bool strict = (bool)user_data;
 
+    // The `resumed` event fires on the thread that has just acquired the GVL,
+    // so the callback must run with the GVL held and on that same thread.
+    if (event == RUBY_INTERNAL_THREAD_EVENT_RESUMED) {
+        if (!ruby_thread_has_gvl_p()) {
+            unexpected(strict, "[thread=%"PRIxVALUE"] expected the GVL to be held during `%s` event", event_data->thread, event);
+        }
+        if (event_data->thread != rb_thread_current()) {
+            unexpected(strict, "[thread=%"PRIxVALUE"] `%s` event must fire on the thread being resumed", event_data->thread, event);
+        }
+    }
+
     if (last_event != 0) {
         switch (event) {
           case RUBY_INTERNAL_THREAD_EVENT_STARTED:
