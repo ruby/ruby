@@ -1,0 +1,70 @@
+name: Check JIT PR title
+on:
+  pull_request_target:
+    types: [labeled, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  check-title:
+    name: Check JIT PR title prefix
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    if: >-
+      ${{ github.repository == 'ruby/ruby'
+      && contains(github.event.pull_request.labels.*.name, 'jit') }}
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const magicComment = '<!-- AUTO-GENERATED-COMMENT-JIT-PR-TITLE -->';
+            const pr = context.payload.pull_request;
+            const titleOk = /^[ZY]?JIT: /.test(pr.title);
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+            });
+            const existingComment = comments.find(comment => comment.body.startsWith(magicComment));
+
+            const runLink = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const footer = `This is an automated comment by the [\`jit_pr_title.yml\`](${runLink}) workflow.`;
+
+            if (titleOk) {
+              if (existingComment) {
+                core.info(`Title is fine now; updating ${existingComment.html_url}`);
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: `${magicComment}\n:white_check_mark: The pull request title now has the expected JIT prefix. Thanks!\n\n${footer}`,
+                });
+              }
+              return;
+            }
+
+            const body = `${magicComment}
+            This pull request is labeled \`jit\`, so its title should start with \`ZJIT:\`, \`YJIT:\`, or \`JIT:\` (for changes shared between the two). Please update the title.
+
+            ${footer}`.replace(/^ {12}/gm, '');
+
+            if (existingComment) {
+              core.info(`Updating existing comment: ${existingComment.html_url}`);
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body,
+              });
+            }
