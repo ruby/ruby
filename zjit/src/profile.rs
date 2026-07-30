@@ -155,9 +155,13 @@ pub type TypeDistribution = Distribution<ProfiledType, DISTRIBUTION_SIZE>;
 
 pub type TypeDistributionSummary = DistributionSummary<ProfiledType, DISTRIBUTION_SIZE>;
 
-pub type SplatLengthDistribution = Distribution<usize, DISTRIBUTION_SIZE>;
+pub type SplatLength = u32;
 
-pub type SplatLengthDistributionSummary = DistributionSummary<usize, DISTRIBUTION_SIZE>;
+/// `None` records an unknown length so this distribution covers the same
+/// executions as the operand type profile.
+pub type SplatLengthDistribution = Distribution<Option<SplatLength>, DISTRIBUTION_SIZE>;
+
+pub type SplatLengthDistributionSummary = DistributionSummary<Option<SplatLength>, DISTRIBUTION_SIZE>;
 
 /// Profile the Type of top-`n` stack operands
 fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize) {
@@ -178,24 +182,26 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
 
 fn profile_splat_length(profiler: &mut Profiler, profile: &mut IseqProfile, ci: *const rb_callinfo) {
     let flags = unsafe { rb_vm_ci_flag(ci) };
+    // Only call sites with VM_CALL_ARGS_SPLAT have a splat array on the stack.
     if flags & VM_CALL_ARGS_SPLAT == 0 {
         return;
     }
 
     let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
     let caller_kw_count = if kwarg.is_null() { 0 } else { (unsafe { get_cikw_keyword_len(kwarg) }) as usize };
+    // Starting at the top of the stack, skip the block argument, keyword-splat
+    // hash, and explicit keyword values to reach the splat array.
     let splat_pos = usize::from(flags & VM_CALL_ARGS_BLOCKARG != 0)
         + usize::from(flags & VM_CALL_KW_SPLAT != 0)
         + caller_kw_count;
     let splat_array = profiler.peek_at_stack(splat_pos as isize);
-    if !unsafe { RB_TYPE_P(splat_array, RUBY_T_ARRAY) } {
-        return;
-    }
-
-    let Ok(length) = usize::try_from(unsafe { rb_jit_array_len(splat_array) }) else {
-        return;
+    let length = if unsafe { RB_TYPE_P(splat_array, RUBY_T_ARRAY) } {
+        SplatLength::try_from(unsafe { rb_jit_array_len(splat_array) }).ok()
+    } else {
+        None
     };
-    profile.entry_mut(profiler.insn_idx).splat_lengths.observe(length);
+    profile.splat_lengths.entry(profiler.insn_idx)
+        .or_insert_with(SplatLengthDistribution::new).observe(length);
 }
 
 fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
@@ -426,8 +432,6 @@ pub struct ProfileEntry {
     insn_idx: u32,
     /// Type information of YARV instruction operands
     opnd_types: Vec<TypeDistribution>,
-    /// Observed lengths of the caller splat array.
-    splat_lengths: SplatLengthDistribution,
     /// Number of profiles remaining before recompilation. Counts down from --zjit-num-profiles.
     profiles_remaining: NumProfiles,
 }
@@ -445,7 +449,10 @@ pub struct IseqProfile {
     entries: Vec<ProfileEntry>,
 
     /// Method entries for `super` calls (stored as VALUE to be GC-safe)
-    super_cme: HashMap<YarvInsnIdx, TypeDistribution>
+    super_cme: HashMap<YarvInsnIdx, TypeDistribution>,
+
+    /// Observed lengths of caller splat arrays for call instructions.
+    splat_lengths: HashMap<YarvInsnIdx, SplatLengthDistribution>,
 }
 
 impl IseqProfile {
@@ -453,6 +460,7 @@ impl IseqProfile {
         Self {
             entries: Vec::new(),
             super_cme: HashMap::new(),
+            splat_lengths: HashMap::new(),
         }
     }
 
@@ -465,7 +473,6 @@ impl IseqProfile {
                 self.entries.insert(i, ProfileEntry {
                     insn_idx: idx,
                     opnd_types: Vec::new(),
-                    splat_lengths: SplatLengthDistribution::new(),
                     profiles_remaining: get_option!(num_profiles),
                 });
                 &mut self.entries[i]
@@ -491,8 +498,8 @@ impl IseqProfile {
     }
 
     pub fn get_splat_length_summary(&self, insn_idx: YarvInsnIdx) -> Option<SplatLengthDistributionSummary> {
-        self.entry(insn_idx)
-            .map(|entry| SplatLengthDistributionSummary::new(&entry.splat_lengths))
+        self.splat_lengths.get(&insn_idx)
+            .map(SplatLengthDistributionSummary::new)
     }
 
     pub fn get_super_method_entry(&self, insn_idx: YarvInsnIdx) -> Option<*const rb_callable_method_entry_t> {
