@@ -220,8 +220,11 @@ pm_node_hash_insert(pm_node_hash_t *hash, const pm_static_literals_metadata_t *m
             pm_node_t *node = hash->nodes[index];
 
             if (node != NULL) {
-                uint32_t index = node_hash(metadata, node) & mask;
-                new_nodes[index] = node;
+                uint32_t new_index = node_hash(metadata, node) & mask;
+                while (new_nodes[new_index] != NULL) {
+                    new_index = (new_index + 1) & mask;
+                }
+                new_nodes[new_index] = node;
             }
         }
 
