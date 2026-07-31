@@ -355,7 +355,7 @@
 #   Returns a Time object containing the time of the most recent modification
 #   to the entry at the path in +self+.
 # - #utime:
-#   For the entry at the path in self,
+#   For the entry at the path in +self+,
 #   updates its access time and its modification time to the given times.
 #
 # === Iterating
