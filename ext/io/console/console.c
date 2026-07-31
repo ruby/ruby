@@ -118,22 +118,6 @@ io_path_fallback(VALUE io)
 #define rb_io_path io_path_fallback
 #endif
 
-#ifndef HAVE_RB_IO_GET_WRITE_IO
-static VALUE
-io_get_write_io_fallback(VALUE io)
-{
-    rb_io_t *fptr;
-    GetOpenFile(io, fptr);
-    VALUE wio = fptr->tied_io_for_writing;
-    return wio ? wio : io;
-}
-#define rb_io_get_write_io io_get_write_io_fallback
-#endif
-
-#ifndef DHAVE_RB_SYSERR_FAIL_STR
-# define rb_syserr_fail_str(e, mesg) rb_exc_raise(rb_syserr_new_str(e, mesg))
-#endif
-
 #define sys_fail(io) do { \
     int err = errno; \
     rb_syserr_fail_str(err, rb_io_path(io)); \
