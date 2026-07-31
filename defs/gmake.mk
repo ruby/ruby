@@ -436,12 +436,14 @@ endif
 
 ifeq ($(HAVE_GIT),yes)
 REVISION_LATEST := $(shell $(GIT_IN_SRC) rev-parse HEAD 2>/dev/null)
+ifneq ($(REVISION_LATEST),)
 REVISION_IN_HEADER := $(shell sed '/^\#define RUBY_FULL_REVISION "\(.*\)"/!d;s//\1/;q' $(wildcard $(srcdir)/revision.h revision.h) /dev/null 2>/dev/null)
 ifeq ($(REVISION_IN_HEADER),)
 REVISION_IN_HEADER := none
 endif
 ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
 $(REVISION_H): PHONY
+endif
 endif
 endif
 
