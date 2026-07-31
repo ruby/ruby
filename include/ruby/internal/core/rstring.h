@@ -352,6 +352,11 @@ void rb_check_safe_str(VALUE);
  * @param[in]  func           The function name where encountered NULL pointer.
  */
 void rb_debug_rstring_null_ptr(const char *func);
+
+/**
+ * @private
+ */
+char *rb_str_terminate(VALUE str);
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -380,6 +385,10 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline char *
 RSTRING_PTR(VALUE str)
 {
+    if (RB_UNLIKELY(RB_FL_TEST_RAW(str, RUBY_FL_UNUSED10))) {
+        return rb_str_terminate(str);
+    }
+
     char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
         RSTRING(str)->as.heap.ptr :
         RSTRING(str)->as.embed.ary;
@@ -408,6 +417,10 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline char *
 RSTRING_END(VALUE str)
 {
+    if (RB_UNLIKELY(RB_FL_TEST_RAW(str, RUBY_FL_UNUSED10))) {
+        return rb_str_terminate(str) + RSTRING_LEN(str);
+    }
+
     char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
         RSTRING(str)->as.heap.ptr :
         RSTRING(str)->as.embed.ary;
