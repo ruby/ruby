@@ -365,7 +365,7 @@
 # - #each_entry:
 #   Calls the block with a new pathname for each entry in the entry at the path in +self+.
 # - #each_line:
-#   calls the block with each line from the file at the path in +self+.
+#   Calls the block with each line from the file at the path in +self+.
 #
 # === Other
 #
