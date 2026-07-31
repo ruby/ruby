@@ -1360,7 +1360,24 @@ class Resolv
         when Name
           return arg
         when String
-          return Name.new(Label.split(arg), /\.\z/ =~ arg ? true : false)
+          labels = Label.split(arg)
+          # Enforce the DNS size limits at construction time so an attacker
+          # controlled hostname cannot reach the encoder with a label that
+          # overflows its length octet. [RFC 1035 2.3.4, 3.1] size counts the
+          # encoded form, so it starts at 1 for the root label's terminating
+          # zero octet.
+          size = 1
+          labels.each do |label|
+            len = label.string.bytesize
+            if len > 63
+              raise ArgumentError, "DNS label is too long (#{len} bytes): #{label.string.inspect}"
+            end
+            size += 1 + len
+            if size > 255
+              raise ArgumentError, "DNS name is too long (exceeds 255 octets): #{arg.inspect}"
+            end
+          end
+          return Name.new(labels, /\.\z/ =~ arg ? true : false)
         else
           raise ArgumentError.new("cannot interpret as DNS name: #{arg.inspect}")
         end
@@ -1594,8 +1611,15 @@ class Resolv
         end
 
         def put_string(d)
-          self.put_pack("C", d.length)
-          @data << d
+          s = d.to_s
+          # A character-string is prefixed by a single length octet, so it can
+          # hold at most 255 octets. [RFC 1035 3.3] Reject anything longer to
+          # avoid silently truncating the length to its low 8 bits (mod 256).
+          if s.bytesize > 255
+            raise ArgumentError, "character-string is too long (#{s.bytesize} bytes): #{s.inspect}"
+          end
+          self.put_pack("C", s.bytesize)
+          @data << s
         end
 
         def put_string_list(ds)
@@ -1625,7 +1649,15 @@ class Resolv
         end
 
         def put_label(d)
-          self.put_string(d.to_s)
+          s = d.to_s
+          # A DNS label is limited to 63 octets. [RFC 1035 2.3.4] A longer label
+          # would overflow the single length octet and be written with the top
+          # bits of the length set, which a decoder reads as a compression
+          # pointer or reserved value, silently changing the encoded name.
+          if s.bytesize > 63
+            raise ArgumentError, "DNS label is too long (#{s.bytesize} bytes): #{s.inspect}"
+          end
+          self.put_string(s)
         end
       end
 

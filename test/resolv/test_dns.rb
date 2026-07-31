@@ -636,6 +636,123 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
+  # A DNS label is limited to 63 octets. [RFC 1035 2.3.4] Writing a longer label
+  # through the label path must raise instead of overflowing the length octet.
+  def test_put_label_rejects_label_over_63_octets
+    Resolv::DNS::Message::MessageEncoder.new {|msg|
+      assert_nothing_raised { msg.put_label("a" * 63) }
+      assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+        msg.put_label("a" * 64)
+      end
+    }
+    # put_labels drives put_label, so the same guard applies to the name path.
+    Resolv::DNS::Message::MessageEncoder.new {|msg|
+      assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+        msg.put_labels(["a" * 64])
+      end
+    }
+  end
+
+  # Name.create is the entry point for application supplied hostnames, so the
+  # size limits are enforced there before an attacker controlled name reaches
+  # the encoder. [RFC 1035 2.3.4, 3.1]
+  def test_name_create_rejects_too_long_label
+    assert_nothing_raised { Resolv::DNS::Name.create("a" * 63) }
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      Resolv::DNS::Name.create("a" * 64)
+    end
+  end
+
+  def test_name_create_rejects_too_long_name
+    # Five 63-octet labels total 321 encoded octets, over the 255 octet limit,
+    # while each individual label is still valid.
+    too_long = (["a" * 63] * 5).join(".")
+    assert_raise_with_message(ArgumentError, /DNS name is too long/) do
+      Resolv::DNS::Name.create(too_long)
+    end
+  end
+
+  # The 255 octet limit counts the encoded form, including each label's length
+  # octet and the root label's terminating zero octet. [RFC 1035 2.3.4, 3.1]
+  # So the longest legal name encodes to exactly 255 octets.
+  def test_name_create_total_length_boundary
+    at_limit = (["a" * 63] * 3 + ["a" * 61]).join(".")
+    name = Resolv::DNS::Name.create(at_limit)
+    encoded = Resolv::DNS::Message::MessageEncoder.new {|msg| msg.put_name(name) }.to_s
+    assert_equal(255, encoded.bytesize, "longest legal name encodes to 255 octets")
+
+    over_limit = (["a" * 63] * 3 + ["a" * 62]).join(".")
+    assert_raise_with_message(ArgumentError, /DNS name is too long/) do
+      Resolv::DNS::Name.create(over_limit)
+    end
+
+    # Four 63-octet labels encode to 257 octets. Counting the presentation
+    # form instead of the encoded form lets these two extra octets through.
+    assert_raise_with_message(ArgumentError, /DNS name is too long/) do
+      Resolv::DNS::Name.create((["a" * 63] * 4).join("."))
+    end
+  end
+
+  # A single 262-octet label whose bytes start with "target\x03com\x00". The
+  # old encoder wrote the length octet as 262 & 0xff == 6, so the wire bytes
+  # decoded to the unrelated name "target.com" (query name confusion /
+  # allowlist bypass).
+  def test_encoder_rejects_label_length_wrap
+    poc_label = "target".b + "\x03com\x00".b + ("a".b * 251)
+    assert_equal(262, poc_label.bytesize)
+    assert_equal(6, poc_label.bytesize & 0xff, "precondition: the length octet wraps to 6")
+
+    # The bytes the buggy encoder would have emitted really do decode to a
+    # different name. This is the vulnerability being fixed.
+    wrapped = [poc_label.bytesize & 0xff].pack("C") + poc_label
+    Resolv::DNS::Message::MessageDecoder.new(wrapped) {|msg|
+      assert_equal("target.com", msg.get_labels.map(&:to_s).join("."))
+    }
+
+    # The fixed encoder refuses to emit it instead of silently wrapping, so it
+    # can no longer produce "target.com" from this input.
+    Resolv::DNS::Message::MessageEncoder.new {|msg|
+      assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+        msg.put_label(poc_label)
+      end
+    }
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      Resolv::DNS::Name.create(poc_label)
+    end
+  end
+
+  # A character-string (e.g. TXT rdata) is prefixed by a single length octet and
+  # may legitimately be up to 255 octets, so the 63 octet label limit must not
+  # leak into put_string. [RFC 1035 3.3]
+  def test_put_string_allows_character_string_up_to_255
+    [64, 200, 255].each do |n|
+      s = "a" * n
+      m = Resolv::DNS::Message::MessageEncoder.new {|msg| msg.put_string(s) }
+      encoded = m.to_s
+      assert_equal(n, encoded.getbyte(0), "length octet for #{n} byte string")
+      assert_equal(n + 1, encoded.bytesize)
+      Resolv::DNS::Message::MessageDecoder.new(encoded) {|msg|
+        assert_equal(s, msg.get_string)
+      }
+    end
+  end
+
+  def test_txt_record_roundtrip_with_long_character_strings
+    txt = Resolv::DNS::Resource::IN::TXT.new("a" * 255, "b" * 64)
+    m = Resolv::DNS::Message.new(0)
+    m.add_answer("example.com.", 3600, txt)
+    decoded = Resolv::DNS::Message.decode(m.encode)
+    _, _, res = decoded.answer.first
+    assert_equal(["a" * 255, "b" * 64], res.strings)
+  end
+
+  # put_string still guards against the length octet wrapping past 255 octets.
+  def test_put_string_rejects_over_255_octets
+    assert_raise_with_message(ArgumentError, /character-string is too long/) do
+      Resolv::DNS::Message::MessageEncoder.new {|msg| msg.put_string("a" * 256) }
+    end
+  end
+
   def assert_no_fd_leak
     socket = assert_throw(self) do |tag|
       Resolv::DNS.stub(:bind_random_port, ->(s, *) {throw(tag, s)}) do
