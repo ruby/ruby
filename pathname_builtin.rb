@@ -145,7 +145,7 @@
 # - #entries:
 #   Returns an array of pathnames, one for each entry in the directory at the path in +self+.
 # - #executable?:
-#   Returns whether the entry entry at the path in +self+ is executable.
+#   Returns whether the entry at the path in +self+ is executable.
 # - #executable_real?:
 #   Returns whether the entry at the path in +self++ is executable by the real user
 #   and group id of the current process.
