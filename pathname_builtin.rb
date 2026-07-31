@@ -289,7 +289,7 @@
 # - #chown:
 #   Changes the owner and group of an entry (directory or file).
 # - #lchmod:
-#   Like ::chmod, but does not follow symbolic links,
+#   Like #chmod, but does not follow symbolic links,
 #   and therefore changes the mode of the entry at the path in +self+.
 # - #lchown:
 #   Like #chown, but does not follow symbolic links,
