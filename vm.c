@@ -3907,7 +3907,6 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 
     rb_gc_mark(ec->errinfo);
     rb_gc_mark(ec->root_svar);
-    rb_gc_mark(ec->svar_table);
     if (ec->local_storage) {
         rb_id_table_foreach_values(ec->local_storage, mark_local_storage_i, NULL);
     }
@@ -3968,6 +3967,7 @@ thread_mark(void *ptr)
 
     RUBY_ASSERT(th->ec == NULL || th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
     rb_gc_mark(th->last_status);
+    rb_gc_mark(th->svar_table);
     rb_gc_mark(th->locking_mutex);
     rb_gc_mark(th->name);
 
@@ -4095,7 +4095,6 @@ rb_ec_close(rb_execution_context_t *ec)
 {
     // Fiber storage is not accessible from outside the running fiber, so it is safe to clear it here.
     ec->storage = Qnil;
-    ec->svar_table = Qnil;
 }
 
 static void
@@ -4131,6 +4130,7 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 
     th->status = THREAD_RUNNABLE;
     th->last_status = Qnil;
+    th->svar_table = Qnil;
     th->top_wrapper = 0;
     if (box->top_self) {
         th->top_self = box->top_self;
@@ -4142,7 +4142,6 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 
     th->ec->errinfo = Qnil;
     th->ec->root_svar = Qfalse;
-    th->ec->svar_table = Qnil;
     th->ec->local_storage_recursive_hash = Qnil;
     th->ec->local_storage_recursive_hash_for_trace = Qnil;
 

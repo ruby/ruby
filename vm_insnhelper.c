@@ -582,9 +582,9 @@ vm_svar_valid_p(VALUE svar)
 }
 #endif
 
-/* Table mapping an escaped env to the svar this execution context uses for it,
- * so that $~ and $_ are not shared between the threads running a block. The
- * keys are weak, the values are strong. */
+/* Table mapping an escaped env to the svar this thread uses for it, so that
+ * svars are not shared between the threads running a block. The keys are weak,
+ * the values are strong. */
 
 struct svar_table {
     st_table *table;
@@ -700,11 +700,11 @@ svar_table_new(void)
 }
 
 static inline struct vm_svar *
-ec_svar_table_lookup(const rb_execution_context_t *ec, const VALUE *lep)
+th_svar_table_lookup(const rb_thread_t *th, const VALUE *lep)
 {
-    if (!RTEST(ec->svar_table)) return NULL;
+    if (!RTEST(th->svar_table)) return NULL;
 
-    struct svar_table *t = RTYPEDDATA_GET_DATA(ec->svar_table);
+    struct svar_table *t = RTYPEDDATA_GET_DATA(th->svar_table);
     st_data_t svar;
 
     if (!st_lookup(t->table, (st_data_t)VM_ENV_ENVVAL(lep), &svar)) return NULL;
@@ -713,29 +713,29 @@ ec_svar_table_lookup(const rb_execution_context_t *ec, const VALUE *lep)
 }
 
 static inline void
-ec_svar_table_insert(rb_execution_context_t *ec, const VALUE *lep, const struct vm_svar *svar)
+th_svar_table_insert(rb_thread_t *th, const VALUE *lep, const struct vm_svar *svar)
 {
-    if (!RTEST(ec->svar_table)) {
-        RB_OBJ_WRITE(rb_ec_thread_ptr(ec)->self, &ec->svar_table, svar_table_new());
+    if (!RTEST(th->svar_table)) {
+        RB_OBJ_WRITE(th->self, &th->svar_table, svar_table_new());
     }
 
-    struct svar_table *t = RTYPEDDATA_GET_DATA(ec->svar_table);
+    struct svar_table *t = RTYPEDDATA_GET_DATA(th->svar_table);
     VALUE env = VM_ENV_ENVVAL(lep);
 
     st_insert(t->table, (st_data_t)env, (st_data_t)svar);
 
     /* The key is remembered as well, not to keep the env alive, but so that a
      * minor GC which could collect it also runs the weak reference handler. */
-    RB_OBJ_WRITTEN(ec->svar_table, Qundef, env);
-    RB_OBJ_WRITTEN(ec->svar_table, Qundef, (VALUE)svar);
+    RB_OBJ_WRITTEN(th->svar_table, Qundef, env);
+    RB_OBJ_WRITTEN(th->svar_table, Qundef, (VALUE)svar);
 }
 
 static inline struct vm_svar *
-lep_svar_owned(const rb_execution_context_t *ec, VALUE svar_val)
+lep_svar_owned(const rb_thread_t *th, VALUE svar_val)
 {
     if (svar_val != Qfalse && imemo_type_p(svar_val, imemo_svar)) {
         struct vm_svar *sv = (struct vm_svar *)svar_val;
-        if (sv->owner_thread == rb_ec_thread_ptr(ec)->self) {
+        if (sv->owner_thread == th->self) {
             return sv;
         }
     }
@@ -778,9 +778,11 @@ lep_svar_get(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key)
     const struct vm_svar *svar;
 
     if (lep && ec && ec->root_lep != lep && VM_ENV_ESCAPED_P(lep)) {
-        svar = lep_svar_owned(ec, lep[VM_ENV_DATA_INDEX_ME_CREF]);
+        const rb_thread_t *th = rb_ec_thread_ptr(ec);
+
+        svar = lep_svar_owned(th, lep[VM_ENV_DATA_INDEX_ME_CREF]);
         if (!svar) {
-            svar = ec_svar_table_lookup(ec, lep);
+            svar = th_svar_table_lookup(th, lep);
         }
         if (!svar) return Qnil;
     }
@@ -823,23 +825,23 @@ static void
 lep_svar_set(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, VALUE val)
 {
     struct vm_svar *svar;
-    VALUE this_thread = rb_ec_thread_ptr(ec)->self;
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     if (lep && ec && ec->root_lep != lep && VM_ENV_ESCAPED_P(lep)) {
         VALUE ep_val = lep[VM_ENV_DATA_INDEX_ME_CREF];
 
-        svar = lep_svar_owned(ec, ep_val);
-        if (!svar) svar = ec_svar_table_lookup(ec, lep);
+        svar = lep_svar_owned(th, ep_val);
+        if (!svar) svar = th_svar_table_lookup(th, lep);
 
         if (!svar) {
             if (ep_val != Qfalse && imemo_type_p(ep_val, imemo_svar)) {
                 /* Another thread owns the svar in the env, so keep ours in the
-                 * table of this execution context. */
-                svar = svar_new(((struct vm_svar *)ep_val)->cref_or_me, this_thread);
-                ec_svar_table_insert((rb_execution_context_t *)ec, lep, svar);
+                 * table of this thread. */
+                svar = svar_new(((struct vm_svar *)ep_val)->cref_or_me, th->self);
+                th_svar_table_insert(th, lep, svar);
             }
             else {
-                svar = svar_new(ep_val, this_thread);
+                svar = svar_new(ep_val, th->self);
                 lep_svar_write(ec, lep, svar);
             }
         }
@@ -847,7 +849,7 @@ lep_svar_set(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, V
     else {
         svar = lep_svar(ec, lep);
         if ((VALUE)svar == Qfalse || imemo_type((VALUE)svar) != imemo_svar) {
-            lep_svar_write(ec, lep, svar = svar_new((VALUE)svar, this_thread));
+            lep_svar_write(ec, lep, svar = svar_new((VALUE)svar, th->self));
         }
     }
 

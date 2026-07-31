@@ -536,6 +536,8 @@ thread_cleanup_func(void *th_ptr, int atfork)
     rb_thread_t *th = th_ptr;
 
     th->locking_mutex = Qfalse;
+    // The svars a dead thread held for escaped envs are unreachable now.
+    th->svar_table = Qnil;
     thread_cleanup_func_before_exec(th_ptr);
 
     if (atfork) {
@@ -606,7 +608,6 @@ thread_do_start_proc(rb_thread_t *th)
     th->ec->errinfo = Qnil;
     th->ec->root_lep = rb_vm_proc_local_ep(procval);
     th->ec->root_svar = Qfalse;
-    th->ec->svar_table = Qnil;
 
     vm_check_ints_blocking(th->ec);
 

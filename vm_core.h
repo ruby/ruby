@@ -1094,7 +1094,6 @@ struct rb_execution_context_struct {
     /* eval env */
     const VALUE *root_lep;
     VALUE root_svar;
-    VALUE svar_table; /* WeakKeyMap: escaped env → per-thread vm_svar; Qnil until needed */
 
     /* trace information */
     struct rb_trace_arg_struct *trace_arg;
@@ -1174,6 +1173,10 @@ typedef struct rb_thread_struct {
     rb_atomic_t serial; // only for RUBY_DEBUG_LOG()
 
     VALUE last_status; /* $? */
+
+    /* Weak-keyed table of escaped env -> the svar this thread uses for it, so
+     * that svars are not shared between threads. Qnil until needed. */
+    VALUE svar_table;
 
     /* for cfunc */
     struct rb_calling_info *calling;
