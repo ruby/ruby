@@ -163,12 +163,12 @@ impl GCTriggerPolicy<Ruby> for CpuHeapTrigger {
         plan.collection_required(space_full, space)
     }
 
-    fn on_gc_start(&self, _mmtk: &'static MMTK<Ruby>) {
+    fn on_pause_start(&self, _mmtk: &'static MMTK<Ruby>) {
         let mut state = self.state.lock().unwrap();
         state.gc_start_wall = Some(std::time::Instant::now());
     }
 
-    fn on_gc_end(&self, mmtk: &'static MMTK<Ruby>) {
+    fn on_pause_end(&self, mmtk: &'static MMTK<Ruby>) {
         // Skip nursery-only GCs for generational plans. The heap resizing
         // decision is driven by the (much more expensive) full collections
         // where the signal-to-noise ratio is high enough to be useful.
