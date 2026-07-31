@@ -61,16 +61,32 @@ class TestIO_Console < Test::Unit::TestCase
     end
   end
 
+  TTY_ENHANCED = IO.instance_method(:tty?).arity != 0
+
   def test_tty?
-    omit "not supported" if IO.instance_method(:tty?).arity == 0
-    assert_include([true, false], STDIN.tty?(:any))
+    pend "not supported" unless TTY_ENHANCED
+
+    tty = STDIN.tty?(:any)
+    assert_include([true, false], tty)
+    assert_equal(tty, STDIN.tty?(:any, :any))
+  end
+
+  def test_tty_non_tty
+    pend "not supported" unless TTY_ENHANCED
+
     File.open(IO::NULL) do |f|
+      assert_not_predicate(f, :tty?)
       assert_not_operator(f, :tty?, :any)
+      assert_not_send([f, :tty?, :any, :any])
+
+      assert_raise(TypeError) {f.tty?("any")}
+      assert_raise(ArgumentError) {f.tty?(:unknown)}
     end
   end
 end
 
-defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
+defined?(PTY) and defined?(IO.console) and \
+class TestIO_Console
   Bug6116 = '[ruby-dev:45309]'
 
   def test_raw
@@ -247,6 +263,19 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       sleep 0.1
       assert_equal("a\r\nb\r\n", m.gets + m.gets)
       assert_equal("a\n", s.gets)
+    }
+  end
+
+  def test_tty_on_pty
+    pend "not supported" unless TTY_ENHANCED
+
+    helper {|_, s|
+      assert_predicate(s, :tty?)
+      assert_operator(s, :tty?, :any)
+      assert_send([s, :tty?, :any, :any])
+
+      assert_raise(TypeError) {s.tty?("any")}
+      assert_raise(ArgumentError) {s.tty?(:unknown)}
     }
   end
 
@@ -503,7 +532,8 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 end
 
-defined?(IO.console) and IO.console and TestIO_Console.class_eval do
+defined?(IO.console) and IO.console and \
+class TestIO_Console
   def test_get_winsize_console
     s = IO.console.winsize
     assert_kind_of(Array, s)
@@ -613,8 +643,8 @@ defined?(IO.console) and IO.console and TestIO_Console.class_eval do
   end
 end
 
-defined?(IO.console) and IO.console and IO.console.respond_to?(:pressed?) and
-  TestIO_Console.class_eval do
+defined?(IO.console) and IO.console and IO.console.respond_to?(:pressed?) and \
+class TestIO_Console
   def test_pressed_valid
     assert_include([true, false], IO.console.pressed?("HOME"))
     assert_include([true, false], IO.console.pressed?(:"HOME"))
@@ -628,7 +658,7 @@ defined?(IO.console) and IO.console and IO.console.respond_to?(:pressed?) and
   end
 end
 
-TestIO_Console.class_eval do
+class TestIO_Console
   def test_stringio_getch
     assert_ruby_status %w"--disable=gems -rstringio -rio/console", %q{
       abort unless StringIO.method_defined?(:getch)

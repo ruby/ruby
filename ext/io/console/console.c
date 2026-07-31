@@ -1914,52 +1914,59 @@ console_ttyname(VALUE io)
 # define console_ttyname rb_f_notimplement
 #endif
 
-typedef enum {
-    platform_none,
 #ifdef HAVE_RB_PREPEND_MODULE
-    platform_any,
+typedef enum {
+    platform_default,
 #if defined _WIN32 || defined __CYGWIN__
     platform_cygwin,
     platform_msys,
 #endif
+    platform_any,
+
+    platform_default_bit = 1U << platform_default,
+#if defined _WIN32 || defined __CYGWIN__
+    platform_cygwin_bit = 1U << platform_cygwin,
+    platform_msys_bit = 1U << platform_msys,
 #endif
-    platform_max
+    platform_any_bit = (1U << platform_any) - 1 /* all bits */
 } console_platform_t;
 
-#ifdef HAVE_RB_PREPEND_MODULE
 /*
  * call-seq:
- *   io.tty?([mode])	-> true or false
+ *   io.tty?([mode, ...])	-> true or false
  *
  * Returns +true+ if the stream is associated with a terminal device (tty),
  * +false+ otherwise.
  *
- * If non-nil +mode+ is given, platform dependent tty is also checked
- * in addition to the default tty.
+ * If one or more +type+s are given, returns +true+ if the stream is
+ * associated with any of the specified tty types.
  *
- * - +:any+ : Returns +true+ for any known kind of tty.
+ * - +:any+ : Returns +true+ for any known kind of tty, including the
+ *   default tty.
  * - +:cygwin+ : Returns +true+ for cygwin tty, on Windows.
  * - +:msys+ : Returns +true+ for msys2 tty, on Windows.
  */
 static VALUE
 console_platform_tty_p(int argc, VALUE *argv, VALUE io)
 {
-    VALUE ret;
-    console_platform_t mode = platform_none;
+    VALUE ret = Qfalse;
+    int mode = 0;
 
-    if (rb_check_arity(argc, 0, 1)) {
-	VALUE m = argv[0];
-	if (!NIL_P(m)) {
+    if (argc > 0) {
+	int i;
+	for (i = 0; i < argc; ++i) {
+	    VALUE m = argv[i];
+	    if (NIL_P(m)) continue;
 	    Check_Type(m, T_SYMBOL);
 	    if (m == ID2SYM(rb_intern("any"))) {
-		mode = platform_any;
+		mode |= platform_any_bit;
 	    }
 #if defined _WIN32 || defined __CYGWIN__
 	    else if (m == ID2SYM(rb_intern("cygwin"))) {
-		mode = platform_cygwin;
+		mode |= platform_cygwin_bit;
 	    }
 	    else if (m == ID2SYM(rb_intern("msys"))) {
-		mode = platform_msys;
+		mode |= platform_msys_bit;
 	    }
 #endif
 	    else {
@@ -1967,37 +1974,34 @@ console_platform_tty_p(int argc, VALUE *argv, VALUE io)
 	    }
 	}
     }
-    ret = rb_call_super(0, 0);
-    if (mode != platform_none && !RTEST(ret)) {
+    if ((mode & platform_default_bit) || (mode == 0)) {
+	ret = rb_call_super(0, 0);
+    }
+    if ((mode & ~platform_default_bit) && !RTEST(ret)) {
 #if defined _WIN32 || defined __CYGWIN__
-	HANDLE h;
-	union {
-	    FILE_NAME_INFO info;
-	    WCHAR rest[MAX_PATH];
-	} buffer;
-	WCHAR *const name = buffer.info.FileName;
-	const WCHAR *ptr;
-	DWORD len;
+	if (mode & (platform_cygwin_bit | platform_msys_bit)) {
+	    struct {
+		FILE_NAME_INFO info;
+		WCHAR rest[MAX_PATH];
+	    } buffer;
 
-	h = (HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
-	if (GetFileType(h) != FILE_TYPE_PIPE) return Qfalse;
-	if (!GetFileInformationByHandleEx(h, FileNameInfo, &buffer, sizeof(buffer))) return Qfalse;
-	len = buffer.info.FileNameLength / sizeof(WCHAR);
-	name[len] = L'\0';
-# define skip_platform_tty_prefix(type) \
-	(memcmp(name, L"\\" #type "-", sizeof(L"\\" #type)) == 0 ? \
-	 &name[rb_strlen_lit(L"\\" #type "-")] : 0)
-	if (mode == platform_cygwin || mode == platform_any) {
-	    ptr = skip_platform_tty_prefix(cygwin);
+	    HANDLE h = (HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
+	    if ((GetFileType(h) == FILE_TYPE_PIPE) &&
+		GetFileInformationByHandleEx(h, FileNameInfo, &buffer, sizeof(buffer))) {
+		WCHAR *const name = buffer.info.FileName;
+		DWORD len = buffer.info.FileNameLength / sizeof(WCHAR);
+		name[len] = L'\0';
+# define tty_pipe_p(type) \
+		(memcmp(name, L"\\" #type "-", sizeof(L"\\" #type)) == 0 && \
+		 wcsstr(&name[rb_strlen_lit("\\" #type "-")], L"-pty") != NULL)
+		if (!ret && (mode & platform_cygwin_bit)) {
+		    ret = tty_pipe_p(cygwin);
+		}
+		if (!ret && (mode & platform_msys_bit)) {
+		    ret = tty_pipe_p(msys);
+		}
+	    }
 	}
-	else if (mode == platform_msys || mode == platform_any) {
-	    ptr = skip_platform_tty_prefix(msys);
-	}
-	else {
-	    return Qfalse;
-	}
-	if (!ptr) return Qfalse;
-	if (wcsstr(ptr, L"-pty")) ret = Qtrue;
 #endif
     }
     return ret;
