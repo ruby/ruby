@@ -623,6 +623,12 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_equal ["a\nb\nc"],
                  scan('tstring_content', ":'a\nb\nc'"),
                  "bug#4544"
+    assert_equal ['x#$%'],
+                 scan('tstring_content', '"x#$%"'),
+                 "[Bug #21849] invalid gvar after #$ should not split token"
+    assert_equal ['x#@%y'],
+                 scan('tstring_content', '"x#@%y"'),
+                 "[Bug #21849] invalid ivar after #@ should not split token"
   end
 
   def test_tstring_end
