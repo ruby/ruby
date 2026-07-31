@@ -98,6 +98,280 @@
 #   p6.children.take(2)
 #   # => [#<Pathname:usr/../var/local>, #<Pathname:usr/../var/spool>]
 #
+# == What's Here
+#
+# First, what's elsewhere. Class \Pathname:
+#
+# - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+#
+# Here, class \Pathname provides methods that are useful for:
+#
+# - {Creating a \Pathname object}[rdoc-ref:Pathname@Creating].
+# - {Querying}[rdoc-ref:Pathname@Querying].
+# - {Comparing}[rdoc-ref:Pathname@Comparing].
+# - {Analyzing}[rdoc-ref:Pathname@Analyzing].
+# - {Converting}[rdoc-ref:Pathname@Converting].
+# - {Ownership and Permissions}[rdoc-ref:Pathname@Ownership+and+Permissions].
+# - {Reading and Writing}[rdoc-ref:Pathname@Reading+and+Writing].
+# - {Times}[rdoc-ref:Pathname@Times].
+#
+# === Creating
+#
+# - ::getwd (aliased as ::pwd):
+#   Returns a new \Pathname object containing the path to the current working directory.
+# - ::mktmpdir:
+#   Creates a \Pathname object containing the path to a new temporary directory;
+#   returns it or passes it to the block.
+# - ::new:
+#   Returns a new \Pathname object based on the given path.
+#
+# === Querying
+#
+# - ::glob:
+#   Selects filesystem entries; creates a pathname for each;
+#   returns them or passes them to the block.
+# - #absolute?:
+#   Returns whether +self+ contains an absolute path.
+# - #blockdev?:
+#   Returns whether the entry at the path in +self+ is a block device.
+#   (i.e., a direct-access device).
+# - #chardev?:
+#   Returns whether entry at the path in +self+ is a character device.
+#   (i.e., a sequential-access device).
+# - #directory?:
+#   Returns whether the entry at the path in +self+ is a directory.
+# - #empty?:
+#   Returns whether the entry at the path in +self_ exists and is empty.
+# - #entries:
+#   Returns an array of pathnames, one for each entry in the directory at the path in +self+.
+# - #executable?:
+#   Returns whether the entry entry at the path in +self+ is executable.
+# - #executable_real?:
+#   Returns whether the entry at the path in +self++ is executable by the real user
+#   and group id of the current process.
+# - #exist?:
+#   Returns whether the entry at the path in +self+ exists.
+# - #extname:
+#   Returns the filename extension of +self+.
+# - #file?:
+#   Returns whether the entry at the path in +self+ exists and is a regular file.
+# - #find:
+#   Returns whether the entry at the path in +self+ exists,
+#   and the effective group id of the calling process is the owner of the entry.
+# - #fnmatch:
+#   Returns whether the given pattern matches against the path in +self+.
+# - #fnmatch?:
+#   Same as #fnmatch.
+# - #ftype:
+#   Returns the string type of the entry at the path in +self+.
+# - #glob:
+#   Finds entries and returns or yields pathnames.
+# - #grpowned?:
+#   Returns whether the entry for the path in +self+ exists,
+#   and the effective group id of the calling process is the owner of the entry.
+# - #lstat:
+#   Returns a File::Stat entry for the path in +self+,
+#   but does does not follow symbolic links,
+#   and therefore returns the stat object for the entry at the path in +self+.
+# - #mountpoint?:
+#   Returns whether the entry at the path in +self+ is a mountpoint.
+# - #owned?:
+#   Returns whether the entry at the path in +self+ exists
+#   and is owned by the user of the current process.
+# - #parent:
+#   Returns a new pathname containing the path to the parent directory
+#   of the entry in +self+.
+# - #pipe?:
+#   Returns whether the entry at the path in +self+ is a pipe.
+# - #readable?:
+#   Returns whether the entry at the path in +self+ is readable
+#   by the owner and group of the current process.
+# - #readable_real?:
+#   Like readable?, but checks against the real user and group ids
+#   instead of the effective ids.
+# - #root?:
+#   Returns whether the entry at the path in +self+ is a root directory.
+# - #setgid?:
+#   Returns whether the setgid bit is set in the permissions
+#   for the entry at the path in +self+.
+# - #setuid?:
+#   Returns whether the setuid bit is set in the permissions
+#   for the entry at the path in +self+.
+# - #size:
+#   Returns the size of the entry at the path in +self+.
+# - #size?:
+#   Returns the size of the entry at the path in +self+
+#   if the entry exists and has non-zero size; +nil+ otherwise.
+# - #socket?:
+#   Returns whether the entry at the path in +self+ is a socket.
+# - #split:
+#   Returns a 2-element array containing the #dirname and #basename of the path in +self+.
+# - #stat:
+#   Returns a File::Stat object for the entry at the path in +self+.
+# - #sticky?:
+#   Returns whether the sticky bit is set for the entry at the path in +self+.
+# - #symlink?:
+#   Returns whether the entry at the path in +self+ is a symbolic link.
+# - #world_readable?:
+#   If the entry at the path in +self+ is readable by others,
+#   returns the integer permissions for the entry.
+# - #world_writable?:
+#   If the entry at the path in +self+ is writable by others,
+#   returns the integer permissions for the entry.
+# - #writable?:
+#   Returns whether the file entry at the path in +self+ is writable
+#   by the effective user and group id of this process.
+# - #writable_real?:
+#   Like #writable?,
+#   but checks against the real user and group ids instead of the effective ids.
+# - #zero?:
+#   Returns whether the entry at the path in +self+ exists and has size zero.
+#
+# === Comparing
+#
+# - #<=>:
+#   Compares the contents of +self+ and the given object as strings.
+# - #== (aliased as #=== and #eql?):
+#   Returns whether the paths in +self+ and the given object are equal.
+#
+# === Analyzing
+#
+# - #ascend:
+#   yields +self+ to the block, then yields a new pathname for each successive dirname
+#   in the path in +self+.
+# - #basename:
+#   Returns all or part of the last component of the path in +self+.
+# - #children:
+#   Returns an array of pathnames,
+#   each containing the path to a child of the entry at the path in +self+.
+# - #descend:
+#   Yields to the block a new pathname for each successive dirname in the path in +self+.
+# - #dirname:
+# - #each_filename:
+#   calls the block with each component of the path in +self+.
+#
+# === Converting
+#
+# - #+ (aliased as #/):
+#   Returns a new \Pathname object based on the content of +self+ and the given object.
+# - #cleanpath:
+#   Returns a new pathname,
+#   “cleaned” of unnecessary separators, single-dot entries, and double-dot entries.
+# - #expand_path:
+#   Returns a new pathname containing the absolute path for +self+.
+# - #join:
+#   Joins the string-converted given objects to the string path in +self+;
+#   returns the joined string as a pathname.
+# - #readlink:
+#   Returns a new pathname containing the path to the entry referenced by +self+.
+# - #realdirpath:
+#   Returns a new pathname containing the real (absolute) path
+#   of the directory entry at the path in +self+.
+# - #realpath:
+#   Returns a new pathname containing the real (absolute) path
+#   of the file entry at the path in +self+.
+# - #relative?:
+#   Returns whether +self+ contains a relative path.
+# - #relative_path_from:
+#   Returns a new pathname containing the relative path from the given directory path
+#   to the path in +self+.
+# - #sub:
+#   Returns a new pathname whose path is the path in +self+, after specified substitutions.
+# - #sub_ext:
+#   Returns a new pathname whose path is the path in +self+, after specified changes.
+# - #to_s (aliased as #to_path):
+#   Returns a copy of the path in +self+/
+#
+# === Ownership and Permissions
+#
+# - #chmod:
+#   Changes the mode (i.e., permissions) of the entry at the path in +self+.
+# - #chown:
+#   Changes the owner and group of an entry (directory or file).
+# - #lchmod:
+#   Like ::chmod, but does not follow symbolic links,
+#   and therefore changes the mode of the entry at the path in +self+.
+# - #lchown:
+#   Like #chown, but does not follow symbolic links,
+#   and therefore changes the ownership of the entry at the path in +self+.
+#
+# === Reading and Writing
+#
+# - #binread:
+#   Behaves like #read, except that the file is opened in binary mode
+#   with ASCII-8BIT encoding.
+# - #binwrite:
+#   Behaves like #write, except that the file is opened in binary mode
+#   with ASCII-8BIT encoding.
+# - #make_link:
+#   Creates a new entry at the path in +self+ for the existing entry at path
+#   using a hard link.
+# - #make_symlink:
+#   Creates a symbolic link at the path in +self+ to the entry at path.
+# - #mkdir:
+#   Creates a directory entry at the path in +self+.
+# - #mkpath:
+#   Creates a directory entry at the path in +self+;
+#   creates intermediate directories as needed.
+# - #open:
+#   Opens the file at the entry in +self+ for reading or writing.
+# - #opendir:
+#   Creates end opens a Dir object for the directory at the path in +self+;
+#   either returns the Dir object or calls the block with it.
+# - #read:
+#   Reads and returns some or all of the content of the file entry at the path in +self+.
+# - #readlines:
+#   Returns an array of all lines read from file entry at the path in +self+.
+# - #rename:
+#   Renames the entry at the path in +self+.
+# - #rmdir:
+#   Deletes the directory entry at the path in +self+.
+# - #rmtree:
+#   Deletes the entire filetree at the entry at the path in +self+.
+# - #sysopen:
+#   Opens the file at the path in +self+; returns the integer file descriptor.
+# - #truncate:
+#   Adjusts the size of file at the path in +self+ to the given size.
+# - #unlink (aliased as #delete):
+#   Removes the entry at the path in +self+.
+# - #write:
+#   Opens the file at the entry at the path in +self+,
+#   writes given data to it, and closes the file.
+#
+# === Times
+#
+# - #atime:
+#   Returns the access time of the entry at the path in by +self+.
+# - #birthtime:
+#   Returns the birth time of the entry at the path in +self+.
+# - #ctime:
+#   On Windows, returns the birthtime.
+#   On other systems, returns a new Time object containing the time
+#   of the most recent metadata change to the entry at the path in +self+.
+# - #lutime:
+#   Like Pathname#utime, but does not follow symbolic links,
+#   and therefore changes the times of the entry at the path in +self+.
+# - #mtime:
+#   Returns a Time object containing the time of the most recent modification
+#   to the entry at the path in +self+.
+# - #utime:
+#   For the entry at the path in self,
+#   updates its access time and its modification time to the given times.
+#
+# === Iterating
+#
+# - #each_child:
+#   calls the block with a new pathname for each child of the entry at the path in +self+.
+# - #each_entry:
+#   calls the block with a new pathname for each entry in the entry at the path in +self+.
+# - #each_line:
+#   calls the block with each line from the file at the path in +self+.
+#
+# === Other
+#
+# - #freeze:
+#   Freezes +self+, preventing further modifications.
+#
 # == Breakdown of functionality
 #
 # === Core methods
