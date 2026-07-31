@@ -3830,6 +3830,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
             VALUE l = rb_str_length(str);
             pos += NUM2INT(l);
             if (pos < 0) {
+                rb_backref_set(Qnil);
                 return pos;
             }
         }
@@ -4024,7 +4025,6 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 
     pos = reg_match_pos(re, &str, pos, &result);
     if (pos < 0) {
-        rb_backref_set(Qnil);
         return Qnil;
     }
     rb_match_busy(result);
