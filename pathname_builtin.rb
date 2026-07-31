@@ -341,7 +341,7 @@
 # === Times
 #
 # - #atime:
-#   Returns the access time of the entry at the path in by +self+.
+#   Returns the access time of the entry at the path in +self+.
 # - #birthtime:
 #   Returns the birth time of the entry at the path in +self+.
 # - #ctime:
