@@ -114,6 +114,8 @@
 # - {Ownership and Permissions}[rdoc-ref:Pathname@Ownership+and+Permissions].
 # - {Reading and Writing}[rdoc-ref:Pathname@Reading+and+Writing].
 # - {Times}[rdoc-ref:Pathname@Times].
+# - {Iterating}[rdoc-ref:Pathname@Iterating].
+# - {Other}[rdoc-ref:Pathname@Other].
 #
 # === Creating
 #
@@ -156,8 +158,8 @@
 # - #file?:
 #   Returns whether the entry at the path in +self+ exists and is a regular file.
 # - #find:
-#   Returns whether the entry at the path in +self+ exists,
-#   and the effective group id of the calling process is the owner of the entry.
+#   Performs a depth-first traversal of the path in +self_;
+#   calls the block with each found path.
 # - #fnmatch:
 #   Returns whether the given pattern matches against the path in +self+.
 # - #fnmatch?:
@@ -189,6 +191,8 @@
 # - #readable_real?:
 #   Like readable?, but checks against the real user and group ids
 #   instead of the effective ids.
+# - #relative?:
+#   Returns whether +self+ contains a relative path.
 # - #root?:
 #   Returns whether the entry at the path in +self+ is a root directory.
 # - #setgid?:
@@ -247,6 +251,7 @@
 # - #descend:
 #   Yields to the block a new pathname for each successive dirname in the path in +self+.
 # - #dirname:
+#   Returns all but the last component of the path in +self+.
 # - #each_filename:
 #   Calls the block with each component of the path in +self+.
 #
@@ -270,8 +275,6 @@
 # - #realpath:
 #   Returns a new pathname containing the real (absolute) path
 #   of the file entry at the path in +self+.
-# - #relative?:
-#   Returns whether +self+ contains a relative path.
 # - #relative_path_from:
 #   Returns a new pathname containing the relative path from the given directory path
 #   to the path in +self+.
