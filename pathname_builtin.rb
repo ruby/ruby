@@ -280,7 +280,7 @@
 # - #sub_ext:
 #   Returns a new pathname whose path is the path in +self+, after specified changes.
 # - #to_s (aliased as #to_path):
-#   Returns a copy of the path in +self+/
+#   Returns a copy of the path in +self+.
 #
 # === Ownership and Permissions
 #
