@@ -1465,12 +1465,20 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
             svar_val = Qfalse;
         }
     }
-    RB_OBJ_WRITE(copied_env, &ep[VM_ENV_DATA_INDEX_ME_CREF], svar_val);
-
     ep[VM_ENV_DATA_INDEX_FLAGS] = src_ep[VM_ENV_DATA_INDEX_FLAGS] | VM_ENV_FLAG_ISOLATED;
     if (!VM_ENV_LOCAL_P(src_ep)) {
         VM_ENV_FLAGS_SET(ep, VM_ENV_FLAG_LOCAL);
     }
+
+    VALUE ep_me_cref;
+    if (VM_ENV_LOCAL_P(src_ep)) {
+        // Bare shareable svar so each Ractor uses the th->svar_table, not ep[-2].
+        ep_me_cref = rb_svar_new_bare_shareable(svar_val);
+    }
+    else {
+        ep_me_cref = svar_val;
+    }
+    RB_OBJ_WRITE((VALUE)copied_env, &ep[VM_ENV_DATA_INDEX_ME_CREF], ep_me_cref);
 
     if (read_only_variables) {
         for (int i=RARRAY_LENINT(read_only_variables)-1; i>=0; i--) {

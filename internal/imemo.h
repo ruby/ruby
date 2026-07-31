@@ -57,6 +57,8 @@ struct vm_svar {
     const VALUE others;
     const VALUE owner_thread; /*!< thread that owns this svar at ep[-2] */
 };
+/*! Bare shareable svar (owner_thread = Qnil) for ep[-2] of an isolated env. */
+VALUE rb_svar_new_bare_shareable(VALUE cref_or_me);
 
 /*! THROW_DATA */
 struct vm_throw_data {

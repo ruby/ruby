@@ -780,8 +780,9 @@ lep_svar_get(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key)
     if (lep && ec && ec->root_lep != lep && VM_ENV_ESCAPED_P(lep)) {
         const rb_thread_t *th = rb_ec_thread_ptr(ec);
 
-        svar = lep_svar_owned(th, lep[VM_ENV_DATA_INDEX_ME_CREF]);
-        if (!svar) {
+        VALUE ep_val = lep[VM_ENV_DATA_INDEX_ME_CREF];
+        svar = lep_svar_owned(th, ep_val);
+        if (ep_val != Qfalse && !svar) {
             svar = th_svar_table_lookup(th, lep);
         }
         if (!svar) return Qnil;
@@ -820,6 +821,16 @@ svar_new(VALUE obj, VALUE owner_thread)
 
     return svar;
 }
+/* Construct a bare, immutable Ractor-shareable svar that wraps +cref_or_me+ and owns no
+ * thread. Installed at ep[-2] of an isolated/shareable env so that every Ractor
+ * uses its own svar in th->svar_table */
+VALUE
+rb_svar_new_bare_shareable(VALUE cref_or_me)
+{
+    struct vm_svar *svar = svar_new(cref_or_me, Qnil);
+    RB_OBJ_SET_SHAREABLE((VALUE)svar);
+    return (VALUE)svar;
+}
 
 static void
 lep_svar_set(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, VALUE val)
@@ -831,9 +842,12 @@ lep_svar_set(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, V
         VALUE ep_val = lep[VM_ENV_DATA_INDEX_ME_CREF];
 
         svar = lep_svar_owned(th, ep_val);
-        if (!svar) svar = th_svar_table_lookup(th, lep);
+        if (ep_val != Qfalse && !svar) svar = th_svar_table_lookup(th, lep);
 
-        if (!svar) {
+        if (svar) {
+            rb_ractor_confirm_belonging((VALUE)svar);
+        }
+        else {
             if (ep_val != Qfalse && imemo_type_p(ep_val, imemo_svar)) {
                 /* Another thread owns the svar in the env, so keep ours in the
                  * table of this thread. */
