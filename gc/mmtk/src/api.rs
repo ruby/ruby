@@ -7,7 +7,6 @@ use mmtk::util::alloc::ImmixAllocator;
 use mmtk::util::conversions;
 use mmtk::util::options::PlanSelector;
 use std::str::FromStr;
-use std::sync::atomic::Ordering;
 
 use crate::abi::RawVecOfObjRef;
 use crate::abi::RubyBindingOptions;
@@ -297,7 +296,24 @@ pub extern "C" fn mmtk_handle_user_collection_request(
     force: bool,
     exhaustive: bool,
 ) {
+    // GC.start must run even when GC is disabled. However, GC.stress=true does
+    // not run when GC is disabled. force is true when GC.start and false when
+    // GC.stress=true.
+    // TODO: This is not Ractor-safe. Another Ractor could disable GC, which
+    //       would prevent the GC from running. Another Ractor could also enable
+    //       GC, which would be lost.
+    let gc_was_disabled = force && !crate::mmtk().is_collection_enabled();
+    if gc_was_disabled {
+        crate::mmtk().enable_collection();
+    }
+
     crate::mmtk().handle_user_collection_request(tls, force, exhaustive);
+
+    if gc_was_disabled {
+        crate::mmtk()
+            .disable_collection()
+            .unwrap_or_else(|_| panic!("failed to re-disable GC after GC"));
+    }
 }
 
 #[no_mangle]
