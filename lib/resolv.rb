@@ -1315,6 +1315,13 @@ class Resolv
 
       class Str # :nodoc:
         def initialize(string)
+          # A label is limited to 63 octets. [RFC 1035 2.3.4] Checking it here
+          # makes it an invariant of the object: every label, however it was
+          # built, fits in its length octet and cannot wrap it. Callers turn
+          # this into the error their own contract promises.
+          if string.bytesize > 63
+            raise ArgumentError, "DNS label is too long (#{string.bytesize} bytes, max 63): #{string.inspect}"
+          end
           @string = string
           # case insensivity of DNS labels doesn't apply non-ASCII characters. [RFC 4343]
           # This assumes @string is given in ASCII compatible encoding.
@@ -1360,22 +1367,21 @@ class Resolv
         when Name
           return arg
         when String
-          labels = Label.split(arg)
-          # Enforce the DNS size limits at construction time so an attacker
-          # controlled hostname cannot reach the encoder with a label that
-          # overflows its length octet. [RFC 1035 2.3.4, 3.1] size counts the
-          # encoded form, so it starts at 1 for the root label's terminating
-          # zero octet.
           # A hostname is runtime data rather than a programming mistake, so
-          # these raise ResolvError to stay rescuable alongside the rest of
-          # name resolution. The type check below keeps raising ArgumentError.
+          # both size limits surface as ResolvError to stay rescuable alongside
+          # the rest of name resolution. The type check below is a caller
+          # mistake and keeps raising ArgumentError.
+          begin
+            labels = Label.split(arg)
+          rescue ArgumentError => e
+            raise ResolvError.new(e.message)
+          end
+          # Label::Str enforces the per-label limit. Only the total is knowable
+          # here, and it counts the encoded form, so size starts at 1 for the
+          # root label's terminating zero octet. [RFC 1035 2.3.4, 3.1]
           size = 1
           labels.each do |label|
-            len = label.string.bytesize
-            if len > 63
-              raise ResolvError.new("DNS label is too long (#{len} bytes, max 63): #{label.string.inspect}")
-            end
-            size += 1 + len
+            size += 1 + label.string.bytesize
             if size > 255
               raise ResolvError.new("DNS name is too long (#{size} octets, max 255): #{arg.inspect}")
             end
@@ -1819,6 +1825,11 @@ class Resolv
 
         def get_label
           return Label::Str.new(self.get_string)
+        rescue ArgumentError => e
+          # A length octet of 64..191 is reserved rather than a label length,
+          # but this decoder used to read it as one. [RFC 1035 4.1.4] Report it
+          # the way the rest of a malformed message is reported.
+          raise DecodeError.new(e.message)
         end
 
         def get_question

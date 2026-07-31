@@ -653,9 +653,34 @@ class TestResolvDNS < Test::Unit::TestCase
     }
   end
 
-  # Name.create is the entry point for application supplied hostnames, so the
-  # size limits are enforced there before an attacker controlled name reaches
-  # the encoder. [RFC 1035 2.3.4, 3.1]
+  # The per-label limit is an invariant of Label::Str, so no label object can
+  # exist that would overflow its length octet. [RFC 1035 2.3.4]
+  def test_label_str_rejects_label_over_63_octets
+    assert_nothing_raised { Resolv::DNS::Label::Str.new("a" * 63) }
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      Resolv::DNS::Label::Str.new("a" * 64)
+    end
+  end
+
+  # Every way of building a name goes through Label::Str, so the paths that
+  # skip Name.create are covered too.
+  def test_label_length_is_enforced_on_every_construction_path
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      Resolv::DNS::Name.new(["a" * 64])
+    end
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      Resolv::DNS::Label.split("a" * 64)
+    end
+    # Config#generate_candidates appends search domains with Name.new, and the
+    # search list itself comes from Label.split, so a resolv.conf carrying an
+    # over-long label is rejected when the config is read.
+    config = Resolv::DNS::Config.new(nameserver: ['127.0.0.1'],
+                                     search: ["a" * 64], ndots: 1)
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      config.lazy_initialize
+    end
+  end
+
   def test_name_create_rejects_too_long_label
     assert_nothing_raised { Resolv::DNS::Name.create("a" * 63) }
     assert_raise_with_message(Resolv::ResolvError, /DNS label is too long/) do
@@ -681,6 +706,23 @@ class TestResolvDNS < Test::Unit::TestCase
     assert_raise(Resolv::ResolvError) { dns.getaddress((["a" * 63] * 5).join(".")) }
   ensure
     dns&.close
+  end
+
+  # A length octet of 64..191 is reserved, not a label length, but this decoder
+  # read it as one and accepted labels no encoder should ever produce.
+  # [RFC 1035 4.1.4] Rejecting them has to look like any other malformed
+  # message, so the caller's rescue DecodeError still covers it.
+  def test_decode_rejects_label_over_63_octets
+    message = ->(n) {
+      [0, 0x8180, 1, 0, 0, 0].pack("n*") +
+        [n].pack("C") + ("a" * n) + "\0" + [1, 1].pack("nn")
+    }
+    assert_nothing_raised { Resolv::DNS::Message.decode(message.call(63)) }
+    [64, 100, 191].each do |n|
+      assert_raise_with_message(Resolv::DNS::DecodeError, /DNS label is too long/) do
+        Resolv::DNS::Message.decode(message.call(n))
+      end
+    end
   end
 
   # The type check is a caller mistake rather than runtime data, so it keeps
