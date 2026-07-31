@@ -1663,6 +1663,17 @@ shareable_p_enter(VALUE obj)
              allow_frozen_shareable_p(obj)) {
         return traverse_cont;
     }
+    else if (RB_OBJ_FROZEN_RAW(obj) &&
+             RB_TYPE_P(obj, T_DATA) &&
+             (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_FROZEN_SHAREABLE_NO_REC)) {
+        // Similar to RUBY_TYPED_FROZEN_SHAREABLE, but the object is only
+        // shareable if all reachable objects are already shareable (they
+        // are not made shareable recursively).
+        if (obj_refer_only_shareables_p(obj)) {
+            mark_shareable(obj);
+            return traverse_skip;
+        }
+    }
 
     return traverse_stop; // fail
 }
