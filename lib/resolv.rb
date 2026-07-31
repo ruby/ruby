@@ -1625,7 +1625,7 @@ class Resolv
           # hold at most 255 octets. [RFC 1035 3.3] Reject anything longer to
           # avoid silently truncating the length to its low 8 bits (mod 256).
           if s.bytesize > 255
-            raise ArgumentError, "character-string is too long (#{s.bytesize} bytes): #{s.inspect}"
+            raise ArgumentError, "character-string is too long (#{s.bytesize} bytes, max 255): #{s.inspect}"
           end
           self.put_pack("C", s.bytesize)
           @data << s
@@ -1659,12 +1659,14 @@ class Resolv
 
         def put_label(d)
           s = d.to_s
-          # A DNS label is limited to 63 octets. [RFC 1035 2.3.4] A longer label
-          # would overflow the single length octet and be written with the top
-          # bits of the length set, which a decoder reads as a compression
-          # pointer or reserved value, silently changing the encoded name.
+          # Label::Str applies this limit when a label is built, so what is left
+          # for here is a raw string handed straight to put_labels. The two ways
+          # an over-long label goes wrong differ: 64 to 255 octets write a length
+          # octet in the reserved or compression pointer range, and 256 or more
+          # wrap it mod 256. Either way the encoded name stops being the name the
+          # caller asked for. [RFC 1035 2.3.4, 4.1.4]
           if s.bytesize > 63
-            raise ArgumentError, "DNS label is too long (#{s.bytesize} bytes): #{s.inspect}"
+            raise ArgumentError, "DNS label is too long (#{s.bytesize} bytes, max 63): #{s.inspect}"
           end
           self.put_string(s)
         end
