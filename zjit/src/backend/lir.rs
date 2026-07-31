@@ -2195,7 +2195,7 @@ impl Assembler
 
             // Expire old intervals.
             for mut it in std::mem::take(&mut active) {
-                assert!(it.state == State::Active);
+                debug_assert!(it.state == State::Active);
                 // If the interval ends before the current position, then we're
                 // done with it and can mark it handled.
                 if it.ends_before(position) {
@@ -2214,7 +2214,7 @@ impl Assembler
 
             // Check for intervals in inactive that are handled or active
             for mut it in std::mem::take(&mut inactive) {
-                assert!(it.state == State::Inactive);
+                debug_assert!(it.state == State::Inactive);
                 // If the inactive interval ends before the current position
                 if it.ends_before(position) {
                     // Move it to handled
