@@ -1783,7 +1783,9 @@ class Resolv
           prev_index = @index
           save_index = nil
           d = []
-          size = -1
+          # size counts the encoded form, so it starts at 1 for the root
+          # label's terminating zero octet. [RFC 1035 3.1]
+          size = 1
           while true
             raise DecodeError.new("limit exceeded") if @limit <= @index
             case @data.getbyte(@index)

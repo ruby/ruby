@@ -693,6 +693,27 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
+  # The decoder enforces the same limit, counted the same way.
+  def test_get_labels_total_length_boundary
+    encode = ->(labels) {
+      Resolv::DNS::Message::MessageEncoder.new {|msg|
+        msg.put_labels(labels.map {|l| Resolv::DNS::Label::Str.new(l) })
+      }.to_s
+    }
+
+    at_limit = encode.call(["a" * 63] * 3 + ["a" * 61])
+    assert_equal(255, at_limit.bytesize)
+    Resolv::DNS::Message::MessageDecoder.new(at_limit) {|msg|
+      assert_equal(4, msg.get_labels.length)
+    }
+
+    over_limit = encode.call(["a" * 63] * 4)
+    assert_equal(257, over_limit.bytesize)
+    assert_raise_with_message(Resolv::DNS::DecodeError, /name label data exceed 255 octets/) do
+      Resolv::DNS::Message::MessageDecoder.new(over_limit) {|msg| msg.get_labels }
+    end
+  end
+
   # A single 262-octet label whose bytes start with "target\x03com\x00". The
   # old encoder wrote the length octet as 262 & 0xff == 6, so the wire bytes
   # decoded to the unrelated name "target.com" (query name confusion /
