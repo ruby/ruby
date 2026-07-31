@@ -2,14 +2,9 @@
 require 'test/unit'
 require 'resolv'
 
-# Regression tests for the unbounded class/constant/symbol growth that used to
-# happen when decoding DNS responses containing unknown (type, class) pairs or
-# unknown SvcParamKeys. Each unknown value made Resolv generate and PERMANENTLY
-# register a fresh anonymous class, along with a constant and a symbol, so a
-# malicious or spoofed response holding many unknown values could exhaust memory
-# even after the response was discarded and GC ran (a denial of service). The
-# generated classes are now left unregistered and garbage-collectable.
-# [HackerOne #3769501]
+# Decoding a response with unknown (type, class) pairs or unknown SvcParamKeys
+# used to register a generated class permanently, so a malicious response could
+# exhaust memory even after the response was discarded.
 class TestResolvResourceLeak < Test::Unit::TestCase
   # Number of dynamically-registered "Type<n>_Class<n>" constants on +mod+.
   def type_const_count(mod)
