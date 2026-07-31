@@ -29,8 +29,8 @@ typedef struct {
     /** The line number that the parser starts on. */
     int32_t start_line;
 
-    /** The name of the encoding that the parser is using. */
-    const char *encoding_name;
+    /** The encoding that the parser is using. */
+    const pm_encoding_t *encoding;
 } pm_static_literals_metadata_t;
 
 static PRISM_INLINE uint32_t
@@ -95,6 +95,39 @@ integer_hash(const pm_integer_t *integer) {
 }
 
 /**
+ * Return the flags of the given node that determine the encoding of its string.
+ *
+ * The FORCED_* flags record how a literal was written. An escape that locks the
+ * encoding to UTF-8 (a `\u` escape above U+007F, or any `\u` in a character
+ * literal) sets FORCED_UTF8 whether or not the file is already UTF-8. So in a
+ * UTF-8 file a `\u00E9` escape and a literal e-acute carry different flags
+ * while being the same string, and the flag has to be dropped for them to
+ * compare equally.
+ */
+static pm_node_flags_t
+node_encoding_flags(const pm_static_literals_metadata_t *metadata, const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_STRING_NODE: {
+            pm_node_flags_t mask = PM_STRING_FLAGS_FORCED_BINARY_ENCODING;
+            if (metadata->encoding != PM_ENCODING_UTF_8_ENTRY) mask |= PM_STRING_FLAGS_FORCED_UTF8_ENCODING;
+            return node->flags & mask;
+        }
+        case PM_SYMBOL_NODE: {
+            pm_node_flags_t mask = PM_SYMBOL_FLAGS_FORCED_BINARY_ENCODING | PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING;
+            if (metadata->encoding != PM_ENCODING_UTF_8_ENTRY) mask |= PM_SYMBOL_FLAGS_FORCED_UTF8_ENCODING;
+            return node->flags & mask;
+        }
+        case PM_SOURCE_FILE_NODE:
+            /* __FILE__ takes the encoding of the filepath, and every instance
+             * of it in a parse resolves the same way. */
+            return 0;
+        default:
+            assert(false && "unreachable");
+            return 0;
+    }
+}
+
+/**
  * Return the hash of the given node. It is important that nodes that have
  * equivalent static literal values have the same hash. This is because we use
  * these hashes to look for duplicates.
@@ -134,11 +167,7 @@ node_hash(const pm_static_literals_metadata_t *metadata, const pm_node_t *node) 
             // Strings hash their value and mix in their flags so that different
             // encodings are not considered equal.
             const pm_string_t *value = &((const pm_string_node_t *) node)->unescaped;
-
-            pm_node_flags_t flags = node->flags;
-            flags &= (PM_STRING_FLAGS_FORCED_BINARY_ENCODING | PM_STRING_FLAGS_FORCED_UTF8_ENCODING);
-
-            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) flags);
+            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node_encoding_flags(metadata, node));
         }
         case PM_SOURCE_FILE_NODE: {
             // Source files hash their value and mix in their flags so that
@@ -156,7 +185,7 @@ node_hash(const pm_static_literals_metadata_t *metadata, const pm_node_t *node) 
             // Symbols hash their value and mix in their flags so that different
             // encodings are not considered equal.
             const pm_string_t *value = &((const pm_symbol_node_t *) node)->unescaped;
-            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node->flags);
+            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node_encoding_flags(metadata, node));
         }
         default:
             assert(false && "unreachable");
@@ -344,10 +373,21 @@ pm_string_value(const pm_node_t *node) {
  * A comparison function for comparing two nodes that have attached strings.
  */
 static int
-pm_compare_string_nodes(PRISM_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
+pm_compare_string_nodes(const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
     const pm_string_t *left_string = pm_string_value(left);
     const pm_string_t *right_string = pm_string_value(right);
-    return pm_string_compare(left_string, right_string);
+
+    int result = pm_string_compare(left_string, right_string);
+    if (result != 0) return result;
+
+    /*
+     * Equal bytes are not enough. In a binary source file the two bytes written
+     * as `"\xC3\xA9"` stay BINARY while a `"\u00E9"` escape is forced to UTF-8,
+     * so those are distinct keys even though the bytes match.
+     */
+    pm_node_flags_t left_flags = node_encoding_flags(metadata, left);
+    pm_node_flags_t right_flags = node_encoding_flags(metadata, right);
+    return PM_NUMERIC_COMPARISON(left_flags, right_flags);
 }
 
 /**
@@ -370,7 +410,7 @@ pm_compare_regular_expression_nodes(PRISM_UNUSED const pm_static_literals_metada
  * Add a node to the set of static literals.
  */
 pm_node_t *
-pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, pm_static_literals_t *literals, pm_node_t *node, bool replace) {
+pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, const pm_encoding_t *encoding, pm_static_literals_t *literals, pm_node_t *node, bool replace) {
     switch (PM_NODE_TYPE(node)) {
         case PM_INTEGER_NODE:
         case PM_SOURCE_LINE_NODE:
@@ -380,7 +420,7 @@ pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t 
                     .line_offsets = line_offsets,
                     .start = start,
                     .start_line = start_line,
-                    .encoding_name = NULL
+                    .encoding = encoding
                 },
                 node,
                 replace,
@@ -393,7 +433,7 @@ pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t 
                     .line_offsets = line_offsets,
                     .start = start,
                     .start_line = start_line,
-                    .encoding_name = NULL
+                    .encoding = encoding
                 },
                 node,
                 replace,
@@ -407,7 +447,7 @@ pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t 
                     .line_offsets = line_offsets,
                     .start = start,
                     .start_line = start_line,
-                    .encoding_name = NULL
+                    .encoding = encoding
                 },
                 node,
                 replace,
@@ -421,7 +461,7 @@ pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t 
                     .line_offsets = line_offsets,
                     .start = start,
                     .start_line = start_line,
-                    .encoding_name = NULL
+                    .encoding = encoding
                 },
                 node,
                 replace,
@@ -434,7 +474,7 @@ pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t 
                     .line_offsets = line_offsets,
                     .start = start,
                     .start_line = start_line,
-                    .encoding_name = NULL
+                    .encoding = encoding
                 },
                 node,
                 replace,
@@ -447,7 +487,7 @@ pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t 
                     .line_offsets = line_offsets,
                     .start = start,
                     .start_line = start_line,
-                    .encoding_name = NULL
+                    .encoding = encoding
                 },
                 node,
                 replace,
@@ -589,7 +629,7 @@ pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_met
             break;
         }
         case PM_SOURCE_ENCODING_NODE:
-            pm_buffer_append_format(buffer, "#<Encoding:%s>", metadata->encoding_name);
+            pm_buffer_append_format(buffer, "#<Encoding:%s>", metadata->encoding->name);
             break;
         case PM_SOURCE_FILE_NODE: {
             const pm_string_t *filepath = &((const pm_source_file_node_t *) node)->filepath;
@@ -627,14 +667,14 @@ pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_met
  * Create a string-based representation of the given static literal.
  */
 void
-pm_static_literal_inspect(pm_buffer_t *buffer, const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, const char *encoding_name, const pm_node_t *node) {
+pm_static_literal_inspect(pm_buffer_t *buffer, const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, const pm_encoding_t *encoding, const pm_node_t *node) {
     pm_static_literal_inspect_node(
         buffer,
         &(pm_static_literals_metadata_t) {
             .line_offsets = line_offsets,
             .start = start,
             .start_line = start_line,
-            .encoding_name = encoding_name
+            .encoding = encoding
         },
         node
     );

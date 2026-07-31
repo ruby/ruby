@@ -77,6 +77,57 @@ module Prism
       assert_warning("case 1; when 1, 1; end", "when' clause")
     end
 
+    # Two literals with the same bytes are the same key only when they also end
+    # up in the same encoding. An escape that locks the encoding to UTF-8 sets
+    # FORCED_UTF8 whether or not the file is already UTF-8, so the flag has to
+    # be resolved against the source encoding before literals are compared.
+    #
+    # In a binary file the raw bytes stay BINARY while the escape resolves to
+    # UTF-8, so these are genuinely different keys and must not warn.
+    def test_duplicated_literals_distinct_encodings
+      binary = "# -*- encoding: ascii-8bit -*-\n"
+
+      refute_warning("#{binary}{\"\xC3\xA9\" => 1, \"\\u00E9\" => 2}".b)
+      refute_warning("#{binary}{:\"\xC3\xA9\" => 1, :\"\\u00E9\" => 2}".b)
+      refute_warning("#{binary}case foo\nwhen \"\xC3\xA9\"\nwhen \"\\u00E9\"\nend".b)
+
+      # Written as two escapes rather than raw bytes, the pair still resolves to
+      # BINARY and UTF-8 respectively, and the hash really does hold two keys.
+      refute_warning("#{binary}{\"\\xC3\\xA9\" => 1, \"\\u00E9\" => 2}".b)
+      refute_warning("#{binary}{:\"\\xC3\\xA9\" => 1, :\"\\u00E9\" => 2}".b)
+
+      # A US-ASCII source is the only one that emits FORCED_BINARY, and BINARY
+      # is not the source encoding there, so the pair stays distinct.
+      us_ascii = "# -*- encoding: us-ascii -*-\n"
+
+      refute_warning("#{us_ascii}{\"\\xC3\\xA9\" => 1, \"\\u00E9\" => 2}")
+      refute_warning("#{us_ascii}{:\"\\xC3\\xA9\" => 1, :\"\\u00E9\" => 2}")
+    end
+
+    # The mirror image: in a UTF-8 file the escape resolves to the very same
+    # string, so the pair is a duplicate and still has to be reported.
+    def test_duplicated_literals_matching_encodings
+      assert_warning("{\"\xC3\xA9\" => 1, \"\\u00E9\" => 2}", "duplicated and overwritten")
+      assert_warning("{:\"\xC3\xA9\" => 1, :\"\\u00E9\" => 2}", "duplicated and overwritten")
+      assert_warning("case foo\nwhen \"\xC3\xA9\"\nwhen \"\\u00E9\"\nend", "when' clause")
+
+      # Same bytes and same encoding are duplicates in a binary file too.
+      binary = "# -*- encoding: ascii-8bit -*-\n"
+
+      assert_warning("#{binary}{\"\xC3\xA9\" => 1, \"\xC3\xA9\" => 2}".b, "duplicated and overwritten")
+      assert_warning("#{binary}{\"\\u00E9\" => 1, \"\\u00E9\" => 2}".b, "duplicated and overwritten")
+    end
+
+    # Hash patterns raise rather than warn, and resolve encodings the same way.
+    def test_duplicated_pattern_keys_resolve_encoding
+      binary = "# -*- encoding: ascii-8bit -*-\n"
+      distinct = "#{binary}case x\nin {\"\xC3\xA9\": a, \"\\u00E9\": b}\nend".b
+      duplicate = "case x\nin {\"\xC3\xA9\": a, \"\\u00E9\": b}\nend"
+
+      assert_empty Prism.parse(distinct).errors.map(&:message)
+      assert_equal ["duplicated key name"], Prism.parse(duplicate).errors.map(&:message)
+    end
+
     def test_float_out_of_range
       assert_warning("_ = 1.0e100000", "out of range")
     end
