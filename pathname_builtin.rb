@@ -141,7 +141,7 @@
 # - #directory?:
 #   Returns whether the entry at the path in +self+ is a directory.
 # - #empty?:
-#   Returns whether the entry at the path in +self_ exists and is empty.
+#   Returns whether the entry at the path in +self+ exists and is empty.
 # - #entries:
 #   Returns an array of pathnames, one for each entry in the directory at the path in +self+.
 # - #executable?:
