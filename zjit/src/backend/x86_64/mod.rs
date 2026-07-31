@@ -1184,12 +1184,13 @@ impl Assembler {
                     println!("VReg assignments:");
                     for (i, alloc) in assignments.iter().enumerate() {
                         if let Some(alloc) = alloc {
-                            let range = &intervals[i].range;
+                            let start = &intervals[i].start();
+                            let end = &intervals[i].end();
                             let alloc_str = match alloc {
                                 Allocation::Reg(n) => format!("{}", regs[*n]),
                                 Allocation::Stack(n) => format!("Stack[{}]", n),
                             };
-                            println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, range.start, range.end);
+                            println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, start, end);
                         }
                     }
                 }
