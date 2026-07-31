@@ -17,4 +17,7 @@ st_table *rb_st_init_existing_strtable_with_size(st_table *tab, st_index_t size)
 void rb_st_free_embedded_table(st_table *tab);
 #define st_free_embedded_table rb_st_free_embedded_table
 
+int rb_st_insert_no_rebuild(st_table *tab, st_data_t key, st_data_t value);
+#define st_insert_no_rebuild rb_st_insert_no_rebuild
+
 #endif
