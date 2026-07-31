@@ -248,7 +248,7 @@
 #   Yields to the block a new pathname for each successive dirname in the path in +self+.
 # - #dirname:
 # - #each_filename:
-#   calls the block with each component of the path in +self+.
+#   Calls the block with each component of the path in +self+.
 #
 # === Converting
 #
