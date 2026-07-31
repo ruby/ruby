@@ -302,14 +302,25 @@ pub extern "C" fn mmtk_handle_user_collection_request(
 
 #[no_mangle]
 pub extern "C" fn mmtk_set_gc_enabled(enable: bool) {
-    crate::CONFIGURATION
-        .gc_enabled
-        .store(enable, Ordering::Relaxed);
+    if enable {
+        crate::mmtk().enable_collection();
+    } else if crate::mmtk().is_collection_enabled() {
+        // We must not call disable_collection if GC is already disabled because
+        // MMTk keeps track of the depth of disable_collection. This would require
+        // enable_collection calls equal to the number of disable_collection calls
+        // before GC is enabled.
+
+        // We cannot panic on failing to disable GC because
+        // DURING_GC_COULD_MALLOC_REGION_START disables GC during GC. It's
+        // fine to ignore the failure because MMTk's malloc does not trigger
+        // GC.
+        let _ = crate::mmtk().disable_collection();
+    }
 }
 
 #[no_mangle]
 pub extern "C" fn mmtk_gc_enabled_p() -> bool {
-    crate::CONFIGURATION.gc_enabled.load(Ordering::Relaxed)
+    crate::mmtk().is_collection_enabled()
 }
 
 // =============== Object allocation ===============

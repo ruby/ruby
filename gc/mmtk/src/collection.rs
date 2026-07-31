@@ -25,10 +25,6 @@ static CURRENT_GC_MAY_MOVE: AtomicBool = AtomicBool::new(false);
 pub struct VMCollection {}
 
 impl Collection<Ruby> for VMCollection {
-    fn is_collection_enabled() -> bool {
-        crate::CONFIGURATION.gc_enabled.load(Ordering::Relaxed)
-    }
-
     fn stop_all_mutators<F>(tls: VMWorkerThread, mut mutator_visitor: F)
     where
         F: FnMut(&'static mut mmtk::Mutator<Ruby>),
