@@ -4361,12 +4361,18 @@ iseqw_to_binary(int argc, VALUE *argv, VALUE self)
  *  binary causes critical problem.
  *
  *  You should not load binary data provided by others.
- *  You should use binary data translated by yourself.
+ *  You should only use binary data translated by yourself.
  */
 static VALUE
 iseqw_s_load_from_binary(VALUE self, VALUE str)
 {
     return iseqw_new(rb_iseq_ibf_load(str));
+}
+
+VALUE
+rb_iseq_load_from_binary(const char *ptr, size_t len)
+{
+    return iseqw_new(rb_iseq_ibf_load_bytes(ptr, len));
 }
 
 /*
