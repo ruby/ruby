@@ -34,7 +34,9 @@ describe "Fiber.current" do
     fiber2 = Fiber.new do
       states << :fiber2
       fiber.transfer
-      flunk
+      # When `fiber` terminates it returns here, to the fiber that transferred
+      # into it, which then terminates and returns to `fiber3`. [Bug #20081]
+      states << :fiber2_terminated
     end
 
     fiber3 = Fiber.new do
@@ -45,6 +47,6 @@ describe "Fiber.current" do
 
     fiber3.resume
 
-    states.should == [:fiber3, :fiber2, :fiber, :fiber3_terminated]
+    states.should == [:fiber3, :fiber2, :fiber, :fiber2_terminated, :fiber3_terminated]
   end
 end
