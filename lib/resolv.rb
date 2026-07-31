@@ -1366,15 +1366,18 @@ class Resolv
           # overflows its length octet. [RFC 1035 2.3.4, 3.1] size counts the
           # encoded form, so it starts at 1 for the root label's terminating
           # zero octet.
+          # A hostname is runtime data rather than a programming mistake, so
+          # these raise ResolvError to stay rescuable alongside the rest of
+          # name resolution. The type check below keeps raising ArgumentError.
           size = 1
           labels.each do |label|
             len = label.string.bytesize
             if len > 63
-              raise ArgumentError, "DNS label is too long (#{len} bytes): #{label.string.inspect}"
+              raise ResolvError.new("DNS label is too long (#{len} bytes, max 63): #{label.string.inspect}")
             end
             size += 1 + len
             if size > 255
-              raise ArgumentError, "DNS name is too long (exceeds 255 octets): #{arg.inspect}"
+              raise ResolvError.new("DNS name is too long (#{size} octets, max 255): #{arg.inspect}")
             end
           end
           return Name.new(labels, /\.\z/ =~ arg ? true : false)

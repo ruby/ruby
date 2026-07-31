@@ -658,7 +658,7 @@ class TestResolvDNS < Test::Unit::TestCase
   # the encoder. [RFC 1035 2.3.4, 3.1]
   def test_name_create_rejects_too_long_label
     assert_nothing_raised { Resolv::DNS::Name.create("a" * 63) }
-    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+    assert_raise_with_message(Resolv::ResolvError, /DNS label is too long/) do
       Resolv::DNS::Name.create("a" * 64)
     end
   end
@@ -667,8 +667,27 @@ class TestResolvDNS < Test::Unit::TestCase
     # Five 63-octet labels total 321 encoded octets, over the 255 octet limit,
     # while each individual label is still valid.
     too_long = (["a" * 63] * 5).join(".")
-    assert_raise_with_message(ArgumentError, /DNS name is too long/) do
+    assert_raise_with_message(Resolv::ResolvError, /DNS name is too long/) do
       Resolv::DNS::Name.create(too_long)
+    end
+  end
+
+  # A hostname is runtime data, so an over-long one has to stay rescuable the
+  # way the rest of name resolution is. It reaches Name.create through
+  # Config#generate_candidates, which runs outside Config#resolv's own rescue.
+  def test_oversized_name_is_rescuable_as_resolv_error
+    dns = Resolv::DNS.new(nameserver_port: [['127.0.0.1', 53]])
+    assert_raise(Resolv::ResolvError) { dns.getaddress("a" * 64) }
+    assert_raise(Resolv::ResolvError) { dns.getaddress((["a" * 63] * 5).join(".")) }
+  ensure
+    dns&.close
+  end
+
+  # The type check is a caller mistake rather than runtime data, so it keeps
+  # raising ArgumentError.
+  def test_name_create_still_raises_argument_error_for_wrong_type
+    assert_raise_with_message(ArgumentError, /cannot interpret as DNS name/) do
+      Resolv::DNS::Name.create(123)
     end
   end
 
@@ -682,13 +701,13 @@ class TestResolvDNS < Test::Unit::TestCase
     assert_equal(255, encoded.bytesize, "longest legal name encodes to 255 octets")
 
     over_limit = (["a" * 63] * 3 + ["a" * 62]).join(".")
-    assert_raise_with_message(ArgumentError, /DNS name is too long/) do
+    assert_raise_with_message(Resolv::ResolvError, /DNS name is too long/) do
       Resolv::DNS::Name.create(over_limit)
     end
 
     # Four 63-octet labels encode to 257 octets. Counting the presentation
     # form instead of the encoded form lets these two extra octets through.
-    assert_raise_with_message(ArgumentError, /DNS name is too long/) do
+    assert_raise_with_message(Resolv::ResolvError, /DNS name is too long/) do
       Resolv::DNS::Name.create((["a" * 63] * 4).join("."))
     end
   end
@@ -737,7 +756,7 @@ class TestResolvDNS < Test::Unit::TestCase
         msg.put_label(poc_label)
       end
     }
-    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+    assert_raise_with_message(Resolv::ResolvError, /DNS label is too long/) do
       Resolv::DNS::Name.create(poc_label)
     end
   end
