@@ -363,7 +363,7 @@
 # - #each_child:
 #   Calls the block with a new pathname for each child of the entry at the path in +self+.
 # - #each_entry:
-#   calls the block with a new pathname for each entry in the entry at the path in +self+.
+#   Calls the block with a new pathname for each entry in the entry at the path in +self+.
 # - #each_line:
 #   calls the block with each line from the file at the path in +self+.
 #
