@@ -316,7 +316,7 @@
 # - #open:
 #   Opens the file at the entry in +self+ for reading or writing.
 # - #opendir:
-#   Creates end opens a Dir object for the directory at the path in +self+;
+#   Creates and opens a Dir object for the directory at the path in +self+;
 #   either returns the Dir object or calls the block with it.
 # - #read:
 #   Reads and returns some or all of the content of the file entry at the path in +self+.
