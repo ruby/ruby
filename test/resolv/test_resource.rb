@@ -34,6 +34,19 @@ class TestResolvResource < Test::Unit::TestCase
     assert_equal Resolv::DNS::Message.decode(wire), Resolv::DNS::Message.decode(wire)
   end
 
+  # Any descendant counts, not just a class create returned.
+  def test_generic_equality_between_descendants
+    generic = Resolv::DNS::Resource::Generic
+    direct = generic.create(40000, 60000)
+    descendant = Class.new(generic.create(40000, 60000))
+
+    assert_equal direct.new("\x01\x02\x03"), descendant.new("\x01\x02\x03")
+    assert_equal descendant.new("\x01\x02\x03"), direct.new("\x01\x02\x03")
+    assert_equal generic.new("\x01\x02\x03"), generic.new("\x01\x02\x03")
+    assert_not_equal direct.new("\x01\x02\x03"),
+      Class.new(generic.create(40001, 60000)).new("\x01\x02\x03")
+  end
+
   def test_generic_inequality
     rr = decode_generic(generic_answer(40000, "\x01\x02\x03"))
 
