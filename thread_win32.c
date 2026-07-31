@@ -185,7 +185,7 @@ ruby_thread_set_native(rb_thread_t *th)
 }
 
 void
-Init_native_thread(rb_thread_t *main_th)
+Init_thread_local_key(void)
 {
     if ((ruby_current_ec_key = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
         rb_bug("TlsAlloc() for ruby_current_ec_key fails");
@@ -193,7 +193,11 @@ Init_native_thread(rb_thread_t *main_th)
     if ((ruby_native_thread_key = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
         rb_bug("TlsAlloc() for ruby_native_thread_key fails");
     }
+}
 
+void
+Init_native_thread(rb_thread_t *main_th)
+{
     // setup main thread
 
     ruby_thread_set_native(main_th);

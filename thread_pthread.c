@@ -1824,6 +1824,19 @@ ruby_thread_set_native(rb_thread_t *th)
 #endif
 }
 
+#ifndef RB_THREAD_LOCAL_SPECIFIER
+void
+Init_thread_local_key(void)
+{
+    if (pthread_key_create(&ruby_native_thread_key, 0) == EAGAIN) {
+        rb_bug("pthread_key_create failed (ruby_native_thread_key)");
+    }
+    if (pthread_key_create(&ruby_current_ec_key, 0) == EAGAIN) {
+        rb_bug("pthread_key_create failed (ruby_current_ec_key)");
+    }
+}
+#endif
+
 static void native_thread_setup(struct rb_native_thread *nt);
 static void native_thread_setup_on_thread(struct rb_native_thread *nt);
 
@@ -1846,14 +1859,6 @@ Init_native_thread(rb_thread_t *main_th)
     }
 #endif
 
-#ifndef RB_THREAD_LOCAL_SPECIFIER
-    if (pthread_key_create(&ruby_native_thread_key, 0) == EAGAIN) {
-        rb_bug("pthread_key_create failed (ruby_native_thread_key)");
-    }
-    if (pthread_key_create(&ruby_current_ec_key, 0) == EAGAIN) {
-        rb_bug("pthread_key_create failed (ruby_current_ec_key)");
-    }
-#endif
     ruby_posix_signal(SIGVTALRM, null_func);
 
     // setup vm
