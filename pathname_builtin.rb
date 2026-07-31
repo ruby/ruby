@@ -237,7 +237,7 @@
 # === Analyzing
 #
 # - #ascend:
-#   yields +self+ to the block, then yields a new pathname for each successive dirname
+#   Yields +self+ to the block, then yields a new pathname for each successive dirname
 #   in the path in +self+.
 # - #basename:
 #   Returns all or part of the last component of the path in +self+.
