@@ -1378,6 +1378,57 @@ mod tests {
     }
 
     #[test]
+    fn test_fallthrough_to_a_patchpoint() {
+        // At one point, this generated unnecessary nop padding
+        use crate::cruby::test_utils::{compile_to_iseq, with_rubyvm};
+        use crate::hir::Invariant;
+        use crate::payload::IseqVersion;
+
+        let version = IseqVersion::new(compile_to_iseq("nil"));
+
+        // The PosMarker that split_patch_point() installs registers the patch point
+        // with ZJITState's invariant table while emitting, so the VM has to be booted.
+        let cb = with_rubyvm(|| {
+            crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
+            let mut asm = Assembler::new();
+            let mut cb = CodeBlock::new_dummy();
+
+            let bb0 = asm.new_block(crate::hir::BlockId(0), true, 0);
+            let bb1 = asm.new_block(crate::hir::BlockId(1), false, 1);
+
+            // The patch point's target only has to resolve to some address for the
+            // PosMarker that records it, so bb0 stands in for the side exit code.
+            let side_exit = asm.new_label("side_exit");
+
+            // bb0 falls through to bb1
+            asm.set_current_block(bb0);
+            let label_bb0 = asm.new_label("bb0");
+            asm.write_label(label_bb0);
+            asm.write_label(side_exit.clone());
+            asm.mov(C_ARG_OPNDS[0], Opnd::UImm(1));
+            asm.push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge { target: bb1, args: vec![] }))));
+
+            asm.set_current_block(bb1);
+            let label_bb1 = asm.new_label("bb1");
+            asm.write_label(label_bb1);
+            asm.patch_point(side_exit.clone(), Invariant::SingleRactorMode, version);
+            asm.cret(C_ARG_OPNDS[0]);
+
+            asm.compile_with_num_regs(&mut cb, 0);
+            cb
+        });
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: nop dword ptr [rax + rax]
+        0xa: mov rax, rdi
+        0xd: ret
+        0xe: nop
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf010000000f1f4400004889f8c390");
+    }
+
+    #[test]
     fn test_lir_string() {
         use crate::hir::SideExitReason;
 
