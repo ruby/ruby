@@ -20,6 +20,54 @@ class TestResolvResource < Test::Unit::TestCase
     assert_equal(@name1.hash, @name2.hash, bug10857)
   end
 
+  # Decoding an unknown (type, class) pair builds a fresh class every time, so
+  # equality must not rest on the class identity.
+  def test_generic_equality
+    wire = generic_answer(40000, "\x01\x02\x03")
+    rr1 = decode_generic(wire)
+    rr2 = decode_generic(wire)
+
+    assert_not_same rr1.class, rr2.class
+    assert_equal rr1, rr2
+    assert rr1.eql?(rr2)
+    assert_equal rr1.hash, rr2.hash
+    assert_equal Resolv::DNS::Message.decode(wire), Resolv::DNS::Message.decode(wire)
+  end
+
+  def test_generic_inequality
+    rr = decode_generic(generic_answer(40000, "\x01\x02\x03"))
+
+    assert_not_equal rr, decode_generic(generic_answer(40001, "\x01\x02\x03"))
+    assert_not_equal rr, decode_generic(generic_answer(40000, "\x09\x09\x09"))
+    assert_not_equal rr, Resolv::DNS::Resource::IN::A.new("192.168.0.1")
+  end
+
+  # A question holds the resource class itself, so it needs the same treatment.
+  def test_generic_question_equality
+    wire = generic_question(40000)
+
+    assert_equal Resolv::DNS::Message.decode(wire), Resolv::DNS::Message.decode(wire)
+    assert_not_equal Resolv::DNS::Message.decode(wire),
+      Resolv::DNS::Message.decode(generic_question(40001))
+  end
+
+  private def header(qdcount, ancount)
+    "\x00\x00\x00\x00".b + [qdcount, ancount, 0, 0].pack('nnnn')
+  end
+
+  private def generic_answer(type, rdata)
+    rdata = rdata.b
+    (header(0, 1) + "\x00".b + [type, 60000, 0, rdata.bytesize].pack('nnNn') + rdata).b
+  end
+
+  private def generic_question(type)
+    (header(1, 0) + "\x07example\x03com\x00".b + [type, 60000].pack('nn')).b
+  end
+
+  private def decode_generic(wire)
+    Resolv::DNS::Message.decode(wire).answer.first[2]
+  end
+
   def test_srv_no_compress
     # Domain name in SRV RDATA should not be compressed
     issue29 = 'https://github.com/ruby/resolv/issues/29'

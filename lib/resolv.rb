@@ -1508,10 +1508,27 @@ class Resolv
                @rd == other.rd &&
                @ra == other.ra &&
                @rcode == other.rcode &&
-               @question == other.question &&
+               question_equal?(other.question) &&
                @answer == other.answer &&
                @authority == other.authority &&
                @additional == other.additional
+      end
+
+      # A question holds the resource class itself, and decoding creates a fresh
+      # class for each unknown type, so the classes cannot be compared by
+      # identity alone.
+      private def question_equal?(other_question) # :nodoc:
+        return false unless @question.length == other_question.length
+        @question.zip(other_question).all? {|(name, typeclass), (o_name, o_typeclass)|
+          name == o_name && typeclass_equal?(typeclass, o_typeclass)
+        }
+      end
+
+      private def typeclass_equal?(typeclass, other) # :nodoc:
+        return true if typeclass.equal?(other)
+        Resource::Generic > typeclass && Resource::Generic > other &&
+          typeclass::TypeValue == other::TypeValue &&
+          typeclass::ClassValue == other::ClassValue
       end
 
       def add_question(name, typeclass)
@@ -2326,6 +2343,19 @@ class Resolv
 
         def self.decode_rdata(msg) # :nodoc:
           return self.new(msg.get_bytes)
+        end
+
+        # create makes a fresh class for each decoded resource, so the type and
+        # class values have to be compared instead of the class itself.
+        def ==(other) # :nodoc:
+          return false unless other.is_a?(Generic)
+          unless self.class.equal?(other.class)
+            return false unless self.class.superclass.equal?(Generic) &&
+                                other.class.superclass.equal?(Generic) &&
+                                self.class::TypeValue == other.class::TypeValue &&
+                                self.class::ClassValue == other.class::ClassValue
+          end
+          return @data == other.data
         end
 
         def self.create(type_value, class_value) # :nodoc:
