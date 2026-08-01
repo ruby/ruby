@@ -149,7 +149,7 @@
 # - #executable?:
 #   Returns whether the entry at the path in +self+ is executable.
 # - #executable_real?:
-#   Returns whether the entry at the path in +self++ is executable by the real user
+#   Returns whether the entry at the path in +self+ is executable by the real user
 #   and group id of the current process.
 # - #exist?:
 #   Returns whether the entry at the path in +self+ exists.
