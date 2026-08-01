@@ -173,7 +173,7 @@
 #   and the effective group id of the calling process is the owner of the entry.
 # - #lstat:
 #   Returns a File::Stat entry for the path in +self+,
-#   but does does not follow symbolic links,
+#   but does not follow symbolic links,
 #   and therefore returns the stat object for the entry at the path in +self+.
 # - #mountpoint?:
 #   Returns whether the entry at the path in +self+ is a mountpoint.
