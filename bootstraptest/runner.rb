@@ -618,7 +618,7 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
         raise Interrupt if $? and $?.signaled? && $?.termsig == Signal.list["INT"]
 
         begin
-          Process.kill :KILL, pid
+          kill_after_dump(pid)
         rescue Errno::ESRCH
           # OK
         end
@@ -718,7 +718,7 @@ def assert_normal_exit(testsrc, *rest, timeout: BT.timeout, **opt)
         $?
       }
       if !th.join(timeout)
-        Process.kill :KILL, pid
+        kill_after_dump(pid)
         timeout_signaled = true
       end
       status = th.value
@@ -746,6 +746,26 @@ def assert_normal_exit(testsrc, *rest, timeout: BT.timeout, **opt)
       end
       faildesc
     }
+  end
+end
+
+# timeout した子の hang 地点を CI ログへ残す。ABRT で ruby の crash report
+# (control frame / C backtrace / threading) を吐かせてから KILL する。
+def kill_after_dump(pid)
+  # Windows は子への ABRT 配送に対応しない。POSIX でのみ dump を試みる
+  if Signal.list.key?("ABRT") && !RUBY_PLATFORM.match?(/mswin|mingw/)
+    begin
+      Process.kill :ABRT, pid
+      10.times do
+        break if Process.waitpid(pid, Process::WNOHANG)
+        sleep 0.3
+      end
+    rescue StandardError
+    end
+  end
+  begin
+    Process.kill :KILL, pid
+  rescue StandardError
   end
 end
 
@@ -780,7 +800,7 @@ def assert_finish(timeout_seconds, testsrc, message = '')
         diff = tlimit - Time.now
       end
       if !waited
-        Process.kill(:KILL, pid)
+        kill_after_dump(pid)
         Process.waitpid pid
         faildesc = pretty(testsrc, "not finished in #{timeout_seconds} seconds", nil)
       end
