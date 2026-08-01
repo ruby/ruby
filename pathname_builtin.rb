@@ -2170,7 +2170,19 @@ class Pathname    # * FileTest *
   #
   def directory?() FileTest.directory?(@path) end
 
-  # See <tt>FileTest.file?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   file? -> true or false
+  #
+  # Returns whether the entry at the path in `self` exists and is a regular file:
+  #
+  # ```ruby
+  # Pathname('README.md').file? # => true
+  # Pathname('lib/').file?      # => false
+  # Pathname('nosuch').file?    # => false
+  # ```
+  #
   def file?() FileTest.file?(@path) end
 
   # :markup: markdown
