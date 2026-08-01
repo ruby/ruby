@@ -1,102 +1,84 @@
 # frozen_string_literal: true
 #
-# A \Pathname object contains a string directory path or filepath;
-# it does not represent a corresponding actual file or directory
-# -- which in fact may or may not exist.
+# A \Pathname object stores a string:
+#
+#   pn = Pathname('README.md') # => #<Pathname:README.md>
+#   pn.to_s                    # => "README.md"
+#
+# The string is usually an actual or potential path to an entry in the filesystem:
+#
+#   Pathname('lib')            # =>  #<Pathname:lib>        # Relative path.
+#   Pathname('/usr/lib')       # => #<Pathname:/usr/lib>    # Absolute path.
+#   Pathname('nosuch/foo')     # => #<Pathname:nosuch/foo>  # Need not exist.
+#   Pathname('!@#$%^&*()')     # => #<Pathname:!@#$%^&*()>  # Need not be a valid path.
+#
+# Through its many instance methods, the pathname object
+# provides a consistent and convenient interface
+# to numerous methods in other classes and modules:
+#
+# - Wraps almost all methods in class File and module FileTest.
+# - Wraps some methods in class Dir and module FileUtils.
+#
+# Advantages of using a pathname instead of these others:
+#
+# - You don't have to know which class or module has which methods.
+# - You don't have to keep typing the path variable or constants.
+#
+# Without pathnames:
+#
+#   path = 'README.md'
+#   File.exist?(path) # => true
+#   File.file?(path) # => true
+#   File.writable?(path) # => true
+#   Dir.mkdir('tempdir')
+#   Dir.rmdir('tempdir')
+#
+# With pathnames:
+#
+#   pn = Pathname('README.md') # => #<Pathname:README.md>
+#   pn.exist? # => true
+#   pn.file? # => true
+#   pn.writable? # => true
+#   pn = Pathname('tempdir') # => #<Pathname:tempdir>
+#   pn.mkdir
+#   pn.rmdir
+#
+# In additions to its wrapper methods,
+# \Pathname has certain "core" methods that are not simple wrappers:
+#
+# - #absolute?
+# - #children
+# - #cleanpath
+# - #each_child
+# - #each_filename
+# - #join
+# - #mountpoint?
+# - #parent
+# - #realdirpath
+# - #realpath
+# - #relative?
+# - #relative_path_from
+# - #root?
+# - +
+#
+# Of particular interest may be #cleanpath, which reduces a "noisy" path
+# to a simpler form.
+#
+# Some pathname methods return pathnames, which may be chained:
+#
+#   Pathname("/usr")
+#     .join("local")
+#     .join("bin")
+#     .exist?
+#   # => true
 #
 # A \Pathname object is immutable (except for method #freeze).
-#
-# A pathname may be relative or absolute:
-#
-#   Pathname.new('lib')            # => #<Pathname:lib>
-#   Pathname.new('/usr/local/bin') # => #<Pathname:/usr/local/bin>
 #
 # == About the Examples
 #
 # Many examples here use these variables:
 #
 #  :include: doc/examples/files.rdoc
-#
-# == Convenience Methods
-#
-# The class provides *all* functionality from class File and module FileTest,
-# along with some functionality from class Dir and module FileUtils.
-#
-# Here's an example string path and corresponding \Pathname object:
-#
-#   path = 'lib/fileutils.rb'
-#   pn = Pathname.new(path) # => #<Pathname:lib/fileutils.rb>
-#
-# Each of these method pairs (\Pathname vs. \File) gives exactly the same result:
-#
-#   pn.size               # => 83777
-#   File.size(path)       # => 83777
-#
-#   pn.directory?         # => false
-#   File.directory?(path) # => false
-#
-#   pn.read.size          # => 81074
-#   File.read(path).size# # => 81074
-#
-# Each of these method pairs gives similar results,
-# but each \Pathname method returns a more versatile \Pathname object,
-# instead of a string:
-#
-#   pn.dirname          # => #<Pathname:lib>
-#   File.dirname(path)  # => "lib"
-#
-#   pn.basename         # => #<Pathname:fileutils.rb>
-#   File.basename(path) # => "fileutils.rb"
-#
-#   pn.split            # => [#<Pathname:lib>, #<Pathname:fileutils.rb>]
-#   File.split(path)    # => ["lib", "fileutils.rb"]
-#
-# Each of these methods takes a block:
-#
-#   pn.open do |file|
-#     p file
-#   end
-#   File.open(path) do |file|
-#     p file
-#   end
-#
-# The outputs for each:
-#
-#   #<File:lib/fileutils.rb (closed)>
-#   #<File:lib/fileutils.rb (closed)>
-#
-# Each of these methods takes a block:
-#
-#   pn.each_line do |line|
-#     p line
-#     break
-#   end
-#   File.foreach(path) do |line|
-#     p line
-#     break
-#   end
-#
-# The outputs for each:
-#
-#   "# frozen_string_literal: true\n"
-#   "# frozen_string_literal: true\n"
-#
-# == More Methods
-#
-# Here is a sampling of other available methods:
-#
-#   p1 = Pathname.new('/usr/lib')  # => #<Pathname:/usr/lib>
-#   p1.absolute?                   # => true
-#   p2 = p1 + 'ruby/4.0'           # => #<Pathname:/usr/lib/ruby/4.0>
-#   p3 = p1.parent                 # => #<Pathname:/usr>
-#   p4 = p2.relative_path_from(p3) # => #<Pathname:lib/ruby/4.0>
-#   p4.absolute?                   # => false
-#   p5 = Pathname.new('.')         # => #<Pathname:.>
-#   p6 = p5 + 'usr/../var'         # => #<Pathname:usr/../var>
-#   p6.cleanpath                   # => #<Pathname:var>
-#   p6.realpath                    # => #<Pathname:/var>
-#   p6.children.take(2)
-#   # => [#<Pathname:usr/../var/local>, #<Pathname:usr/../var/spool>]
 #
 # == What's Here
 #
