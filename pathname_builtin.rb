@@ -2178,7 +2178,7 @@ class Pathname    # * FileTest *
   # call-seq:
   #   pipe? -> true or false
   #
-  # Returns whether the path in `self` points to a pipe:
+  # Returns whether entry at the path in `self` is a pipe:
   #
   # ```ruby
   # path = '/tmp/foo'
