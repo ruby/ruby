@@ -55,6 +55,13 @@ attr_index_t rb_ivar_set_index(VALUE obj, ID id, VALUE val);
 attr_index_t rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val);
 VALUE rb_ivar_get_at(VALUE obj, attr_index_t index, ID id);
 VALUE rb_ivar_get_at_no_ractor_check(VALUE obj, attr_index_t index);
+void rb_generic_fields_lock_atfork(void);
+void rb_imemo_fields_record_shrefs(VALUE fields_obj);
+
+/* 単一の global generic_fields 表について cb(tbl,arg) を呼ぶ。global GC の weak pass と
+ * compaction の参照更新（gc.c）から使う。 */
+void rb_generic_fields_tables_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg);
+void rb_generic_fields_shared_table_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* variable.c (export) */

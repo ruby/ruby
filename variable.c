@@ -66,8 +66,21 @@ static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t)
 static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility, VALUE *found_in);
 static st_table *generic_fields_tbl_;
 
+/* shareable 用の共有 generic_fields 表を守る mutex。local GC の mark
+ * (rb_mark_generic_ivar)がこの表を引くが VM lock を待てない（barrier 合流で
+ * half-collected heap を露出する）ため専用 mutex(vm->ractor.generic_fields_lock)を
+ * 使う。共有表の掃除は global GC の weak pass(barrier 下)なので lock 不要。
+ * alloc しうる区間は先に GC を無効化して自己再入を防ぐ。 */
+
 typedef int rb_ivar_foreach_callback_func(ID key, VALUE val, st_data_t arg);
 static void rb_field_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, bool ivar_only);
+
+void
+rb_generic_fields_lock_atfork(void)
+{
+    /* fork 時に他スレッドが保持しているかもしれないので子には作り直す */
+    rb_native_mutex_initialize(&GET_VM()->ractor.generic_fields_lock);
+}
 
 void
 Init_var_tables(void)
@@ -1238,38 +1251,65 @@ ivar_ractor_check(VALUE obj, ID id)
     }
 }
 
-static inline struct st_table *
-generic_fields_tbl_no_ractor_check(void)
-{
-    ASSERT_vm_locking();
-
-    return generic_fields_tbl_;
-}
-
 struct st_table *
 rb_generic_fields_tbl_get(void)
 {
     return generic_fields_tbl_;
 }
 
+/* generic_fields は単一の global 表。leaf lock 規律: gf_lock の下で他の lock・確保・
+ * safepoint を作らない。single-Ractor mode は GVL が直列化するので無 lock。 */
+static inline void
+gf_lock(void)
+{
+    if (rb_multi_ractor_p()) {
+        rb_native_mutex_lock(&GET_VM()->ractor.generic_fields_lock);
+    }
+}
+
+static inline void
+gf_unlock(void)
+{
+    if (rb_multi_ractor_p()) {
+        rb_native_mutex_unlock(&GET_VM()->ractor.generic_fields_lock);
+    }
+}
+
 void
 rb_mark_generic_ivar(VALUE obj)
 {
-    VALUE data;
-    // Bypass ASSERT_vm_locking() check because marking may happen concurrently with mmtk
-    if (st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&data)) {
+    /* multi-objspace の global GC（STW）では per-object 引きをせず、mark 後の
+     * rb_gc_vm_generic_fields_mark_foreach が live key の val を mark する。
+     * 単一 objspace impl (mmtk) はその pass を持たないのでここで mark する。 */
+    if (rb_gc_during_global_gc_p() && rb_gc_multi_objspace_p()) {
+        return;
+    }
+
+    /* local GC / compaction（single-objspace）の per-object mark。他 Ractor の writer
+     * とは gf_lock で排他（writer は確保も park もしない短窓なので待ちは有界）。 */
+    VALUE data = 0;
+    gf_lock();
+    st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&data);
+    gf_unlock();
+    if (data) {
         rb_gc_mark_movable(data);
     }
 }
 
+/* obj の generic fields を単一 global 表から引く。materialize 中の snapshot host
+ * （sender objspace 在住）も同じ表に居るので、受信側から直接引ける。 */
 VALUE
 rb_obj_fields_generic_uncached(VALUE obj)
 {
     VALUE fields_obj = 0;
-    RB_VM_LOCKING() {
-        if (!st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&fields_obj)) {
-            rb_bug("Object is missing entry in generic_fields_tbl");
-        }
+    int found = 0;
+
+    gf_lock();
+    found = st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&fields_obj);
+    gf_unlock();
+
+    if (!found) {
+        rb_bug("Object is missing entry in generic_fields_tbl");
     }
     return fields_obj;
 }
@@ -1356,10 +1396,23 @@ rb_free_generic_ivar(VALUE obj)
                     ec->gen_fields_cache.obj = Qundef;
                     ec->gen_fields_cache.fields_obj = Qundef;
                 }
-                RB_VM_LOCKING() {
-                    if (!st_delete(generic_fields_tbl_no_ractor_check(), &key, &value)) {
-                        rb_bug("Object is missing entry in generic_fields_tbl");
-                    }
+                /* mutator / local GC の sweep（host の obj_free）から走る write。owner
+                 * 専有なので per-Ractor 表は無ロック（shareable のみ global mutex）。global GC
+                 * の sweep からは来ない（下の during_global_gc ガードで弾く）。 */
+                if (rb_gc_during_global_gc_p() || ruby_vm_during_cleanup) {
+                    /* global GC の driver の GET_RACTOR() は owner と一致せず、表を取り違えて
+                     * entry を見失う。dead key の削除は weak pass の drain が全表で行うので
+                     * ここでは委譲する（rb_mark_generic_ivar の skip と同じ）。VM destruct の
+                     * free-at-exit walk も thread struct が先に free され GET_RACTOR() が
+                     * 使えず、表ごと破棄されるので per-entry 削除は不要。 */
+                    break;
+                }
+                int deleted = 0;
+                gf_lock();
+                deleted = st_delete(generic_fields_tbl_, &key, &value);
+                gf_unlock();
+                if (!deleted) {
+                    rb_bug("Object is missing entry in generic_fields_tbl");
                 }
             }
         }
@@ -1398,9 +1451,13 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
 
           default:
             {
-                RB_VM_LOCKING() {
-                    st_insert(generic_fields_tbl_, (st_data_t)obj, (st_data_t)fields_obj);
-                }
+                /* st_insert は malloc しうる。先に自 GC を無効化し、lock 保持中に自スレッドの
+                 * local GC (mark が gf_lock を取る) が起動する自己 deadlock を防ぐ。 */
+                bool gc_disabled = RTEST(rb_gc_local_disable_no_rest());
+                gf_lock();
+                st_insert(generic_fields_tbl_, (st_data_t)obj, (st_data_t)fields_obj);
+                gf_unlock();
+                if (!gc_disabled) rb_gc_local_enable();
                 RB_OBJ_WRITTEN(obj, original_fields_obj, fields_obj);
 
                 rb_execution_context_t *ec = GET_EC();
@@ -1702,6 +1759,27 @@ imemo_fields_complex_from_obj_i(ID key, VALUE val, st_data_t arg)
     RB_OBJ_WRITTEN(fields, Qundef, val);
 
     return ST_CONTINUE;
+}
+
+static int
+imemo_fields_shref_i(ID key, VALUE val, st_data_t arg)
+{
+    VALUE fields_obj = (VALUE)arg;
+    /* fields_obj が shareable 化した（rb_obj_set_shareable_no_assert）のに、この
+     * field value が unshareable のまま（例: 隠れた [path,line] ivar は make_shareable の
+     * traverse に届かない）。shareable から unshareable への辺を追うため shref を記録する。 */
+    if (!SPECIAL_CONST_P(val) && !RB_OBJ_SHAREABLE_P(val)) {
+        rb_gc_writebarrier(fields_obj, val);
+    }
+    return ST_CONTINUE;
+}
+
+/* shareable に昇格したばかりの fields imemo が持つ、まだ unshareable な値について
+ * shref を記録する。 */
+void
+rb_imemo_fields_record_shrefs(VALUE fields_obj)
+{
+    rb_field_foreach(fields_obj, imemo_fields_shref_i, (st_data_t)fields_obj, false);
 }
 
 static VALUE
@@ -2204,18 +2282,26 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
     }
 }
 
+/* compaction の参照更新用: 共有(shareable 用) generic_fields 表だけを lock 下で舐める。
+ * ローカル GC の update から呼ぶ。自 objspace の shareable host が動くと表のキー/値が
+ * stale になるので更新が要る。掃除ではなく更新専用（生死判定はしない）。 */
 void
-rb_replace_generic_ivar(VALUE clone, VALUE obj)
+rb_generic_fields_shared_table_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg)
 {
-    RB_VM_LOCKING() {
-        st_data_t fields_tbl, obj_data = (st_data_t)obj;
-        if (st_delete(generic_fields_tbl_, &obj_data, &fields_tbl)) {
-            st_insert(generic_fields_tbl_, (st_data_t)clone, fields_tbl);
-            RB_OBJ_WRITTEN(clone, Qundef, fields_tbl);
-        }
-        else {
-            rb_bug("unreachable");
-        }
+    rb_native_mutex_lock(&GET_VM()->ractor.generic_fields_lock);
+    if (generic_fields_tbl_ != NULL) {
+        cb(generic_fields_tbl_, arg);
+    }
+    rb_native_mutex_unlock(&GET_VM()->ractor.generic_fields_lock);
+}
+
+/* 単一の global generic_fields 表について cb(tbl, arg) を呼ぶ。global GC の weak pass と
+ * compaction の参照更新から使う。いずれも barrier 下なので走査にロックは要らない。 */
+void
+rb_generic_fields_tables_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg)
+{
+    if (generic_fields_tbl_ != NULL) {
+        cb(generic_fields_tbl_, arg);
     }
 }
 
