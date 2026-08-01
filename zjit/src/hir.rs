@@ -5634,7 +5634,7 @@ impl Function {
                 (self_val, true)
             },
             ShapeLayout::Extended => {
-                let fields = self.load_field(block, self_val, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::BasicObject);
+                let fields = self.load_field(block, self_val, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::RubyValue);
                 (fields, false)
             },
             ShapeLayout::Other | ShapeLayout::RClass => {
@@ -6916,8 +6916,8 @@ impl Function {
             | Insn::NewRange { low: left, high: right, .. }
             | Insn::CheckMatch { target: left, pattern: right, .. }
             | Insn::WriteBarrier { recv: left, val: right } => {
-                self.assert_subtype(insn_id, left, types::BasicObject)?;
-                self.assert_subtype(insn_id, right, types::BasicObject)
+                self.assert_subtype(insn_id, left, types::RubyValue)?;
+                self.assert_subtype(insn_id, right, types::RubyValue)
             }
             Insn::GetConstant { klass, allow_nil, .. } => {
                 self.assert_subtype(insn_id, klass, types::BasicObject)?;

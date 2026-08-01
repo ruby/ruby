@@ -6929,7 +6929,7 @@ mod hir_opt_tests {
           v17:HeapBasicObject = GuardType v9, HeapBasicObject
           v18:CShape = LoadField v17, :shape_id@0x1001
           v19:CShape[0x1002] = GuardBitEquals v18, CShape(0x1002) recompile
-          v20:BasicObject = LoadField v17, :as_heap@0x1003
+          v20:RubyValue = LoadField v17, :as_heap@0x1003
           StoreField v20, :@v0@0x1003, v10
           WriteBarrier v20, v10
           CheckInterrupts
@@ -20795,16 +20795,13 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
           v71:Fixnum = GuardType v15, Fixnum recompile
           v72:Fixnum = FixnumAdd v71, v17
-          v26:BasicObject = LoadField v11, :as_heap@0x1002
-          StoreField v26, :@hclk@0x1003, v72
-          WriteBarrier v26, v72
+          StoreField v14, :@hclk@0x1003, v72
+          WriteBarrier v14, v72
           PatchPoint SingleRactorMode
           v37:BasicObject = LoadField v14, :@hclk_target@0x1040
-          v44:BasicObject = LoadField v14, :@hclk@0x1003
           PatchPoint MethodRedefined(Integer@0x1008, <=@0x1041, cme:0x1048)
           v75:Fixnum = GuardType v37, Fixnum recompile
-          v76:Fixnum = GuardType v44, Fixnum
-          v77:BoolExact = FixnumLe v75, v76
+          v77:BoolExact = FixnumLe v75, v72
           v49:CBool = Test v77
           CondBranch v49, bb5(), bb4(v11)
         bb5():
