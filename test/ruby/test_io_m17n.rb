@@ -2396,6 +2396,166 @@ EOT
     }
   end
 
+  def test_binmode_paragraph_widechar_without_conversion
+    with_tmpdir do
+      content = "\n\n\n\nhello\n\n\n\nworld"
+      [Encoding::UTF_32BE, Encoding::UTF_32LE,
+       Encoding::UTF_16BE, Encoding::UTF_16LE].each do |e|
+        encoded = content.encode(e)
+        File.binwrite("widechar", encoded)
+        File.open("widechar", "rb", encoding: e) do |f|
+          assert_equal("hello\n\n".encode(e), f.gets(""), "[Bug #20819]")
+          assert_equal("world".encode(e), f.gets(""), "[Bug #20819]")
+        end
+
+        [1, "\n\n\n\nhello".encode(e).bytesize + 1,
+         "\n\n\n\nhello\n\n".encode(e).bytesize + 1].each do |split|
+          IO.pipe do |r, w|
+            r.binmode
+            r.set_encoding(e)
+            writer = Thread.new do
+              w.binmode
+              w.write(encoded.byteslice(0, split))
+              sleep 0.01
+              w.write(encoded.byteslice(split..))
+              w.close
+            end
+            actual = [r.gets(""), r.gets("")]
+            writer.join
+            message = "[Bug #20819] #{e} split at byte #{split}"
+            assert_equal(["hello\n\n".encode(e), "world".encode(e)],
+                         actual, message)
+          end
+        end
+      end
+
+      e = Encoding::UTF_16BE
+      content = "\n\n\n\nh\n\nworld"
+      encoded = content.encode(e)
+      split = "\n\n\n\nh\n".encode(e).bytesize - 1
+      IO.pipe do |r, w|
+        r.binmode
+        r.set_encoding(e)
+        writer = Thread.new do
+          w.binmode
+          w.write(encoded.byteslice(0, split))
+          sleep 0.01
+          w.write(encoded.byteslice(split..))
+          w.close
+        end
+        actual = [r.gets("", 1000), r.gets("", 1000)]
+        writer.join
+        assert_equal(["h\n\n".encode(e), "world".encode(e)], actual,
+                     "[Bug #20819] finite limit")
+      end
+
+      content = "\n\n\n\nh#{'x' * 10_000}\n\nworld"
+      encoded = content.encode(e)
+      split = "\n\n\n\nh".encode(e).bytesize - 1
+      IO.pipe do |r, w|
+        r.binmode
+        r.set_encoding(e)
+        writer = Thread.new do
+          w.binmode
+          w.write(encoded.byteslice(0, split))
+          sleep 0.01
+          w.write(encoded.byteslice(split..))
+          w.close
+        end
+        actual = [r.gets(""), r.gets("")]
+        writer.join
+        assert_equal(["h#{'x' * 10_000}\n\n".encode(e), "world".encode(e)],
+                     actual, "[Bug #20819] full-buffer lookahead")
+      end
+
+      e = Encoding::UTF_32BE
+      content = "#{'x' * 2_048}\n\nworld"
+      encoded = content.encode(e)
+      IO.pipe do |r, w|
+        r.binmode
+        r.set_encoding(e)
+        writer = Thread.new do
+          w.binmode
+          w.write(encoded.byteslice(0, 8_193))
+          sleep 0.01
+          w.write(encoded.byteslice(8_193..))
+          w.close
+        end
+        actual = [r.gets(""), r.gets("")]
+        writer.join
+        assert_equal(["#{'x' * 2_048}\n\n".encode(e), "world".encode(e)],
+                     actual, "[Bug #20819] partial character after full buffer")
+      end
+    end
+  end
+
+  def test_binmode_widechar_separator_without_conversion
+    with_tmpdir do
+      content = "one\u{3042}two\u{3042}three"
+      [Encoding::UTF_32BE, Encoding::UTF_32LE,
+       Encoding::UTF_16BE, Encoding::UTF_16LE].each do |e|
+        encoded = content.encode(e)
+        separator = "\u{3042}".encode(e)
+        File.binwrite("widechar", encoded)
+        File.open("widechar", "rb", encoding: e) do |f|
+          assert_equal("one\u{3042}".encode(e), f.gets(separator))
+          assert_equal("two\u{3042}".encode(e), f.gets(separator))
+          assert_equal("three".encode(e), f.gets(separator))
+        end
+
+        split = "one\u{3042}".encode(e).bytesize - 1
+        IO.pipe do |r, w|
+          r.binmode
+          r.set_encoding(e)
+          writer = Thread.new do
+            w.binmode
+            w.write(encoded.byteslice(0, split))
+            sleep 0.01
+            w.write(encoded.byteslice(split..))
+            w.close
+          end
+          actual = [r.gets(separator), r.gets(separator), r.gets(separator)]
+          writer.join
+          assert_equal(["one\u{3042}".encode(e), "two\u{3042}".encode(e),
+                        "three".encode(e)], actual)
+        end
+      end
+    end
+  end
+
+  def test_binmode_widechar_separator_at_limit
+    with_tmpdir do
+      [Encoding::UTF_32BE, Encoding::UTF_32LE,
+       Encoding::UTF_16BE, Encoding::UTF_16LE].each do |e|
+        width = "A".encode(e).bytesize
+
+        File.binwrite("paragraph", "\n\nA\n\nB".encode(e))
+        (1..width + 1).each do |limit|
+          File.open("paragraph", "rb", encoding: e) do |f|
+            expected = limit <= width ? "A" : "A\n"
+            assert_equal(expected.encode(e), f.gets("", limit),
+                         "[Bug #20819] #{e} paragraph limit #{limit}")
+          end
+        end
+
+        separator = "\u{3042}".encode(e)
+        File.binwrite("separator", "A\u{3042}B".encode(e))
+        (1..width + 1).each do |limit|
+          File.open("separator", "rb", encoding: e) do |f|
+            expected = limit <= width ? "A" : "A\u{3042}"
+            assert_equal(expected.encode(e), f.gets(separator, limit),
+                         "[Bug #20819] #{e} separator limit #{limit}")
+          end
+        end
+
+        File.open("paragraph", "rb", encoding: e) do |f|
+          assert_equal("A".encode(e), f.gets("", width * 3, chomp: true),
+                       "[Bug #20819] #{e} chomp at exact boundary")
+        end
+      end
+    end
+  end
+
   def test_puts_widechar
     bug = '[ruby-dev:42212]'
     pipe(Encoding::ASCII_8BIT,
