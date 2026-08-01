@@ -1678,7 +1678,11 @@ restore_defun(struct parser_params *p, rb_node_def_temp_t *temp)
     p->ctxt.in_rescue = ctxt.in_rescue;
     p->max_numparam = temp->save.max_numparam;
     numparam_pop(p, temp->save.numparam_save);
+#ifndef RIPPER
     clear_block_exit(p, true);
+#else
+    clear_block_exit(p, false);
+#endif
 }
 
 static void
@@ -3205,7 +3209,7 @@ top_stmts	: none
 
 top_stmt	: stmt
                     {
-                        clear_block_exit(p, true);
+                        clear_block_exit(p, ifndef_ripper(1)+0);
                         $$ = $1;
                     }
                 | keyword_BEGIN begin_block
@@ -4694,7 +4698,7 @@ primary		: inline_primary
                 }
             | keyword_retry[kw]
                 {
-                    if (!p->ctxt.in_defined) {
+                    if (ifndef_ripper(!p->ctxt.in_defined)+0) {
                         switch (p->ctxt.in_rescue) {
                           case before_rescue: yyerror1(&@kw, "Invalid retry without rescue"); break;
                           case after_rescue: /* ok */ break;
@@ -4876,7 +4880,9 @@ k_return	: keyword_return
 
 k_yield 	: keyword_yield
                     {
-                        if (!p->ctxt.in_defined && !p->ctxt.in_def && !compile_for_eval)
+                        if (ifndef_ripper(!p->ctxt.in_defined &&
+                                         !p->ctxt.in_def &&
+                                         !compile_for_eval)+0)
                             yyerror1(&@1, "Invalid yield");
                     }
                 ;
