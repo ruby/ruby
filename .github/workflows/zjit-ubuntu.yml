@@ -203,6 +203,33 @@ jobs:
         run: |
           echo "RUBY_CRASH_REPORT=$(pwd)/rb_crash_%p.txt" >> $GITHUB_ENV
 
+      # TEMPORARY forensics: capture a core at the rb_bug abort
+      # ("try to mark T_NONE" in rb_execution_context_mark) so the crashed
+      # cfp/jit_frame state can be inspected offline with gdb.
+      - name: ZJIT mark-bug forensics (temporary)
+        run: |
+          set -x
+          mkdir -p coredumps
+          sudo sysctl -w kernel.core_pattern="$PWD/coredumps/core.%e.%p"
+          cat > abort_core.c <<'EOF'
+          #define _GNU_SOURCE
+          #include <signal.h>
+          #include <dlfcn.h>
+          #include <stddef.h>
+          int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oldact)
+          {
+              static int (*real)(int, const struct sigaction *, struct sigaction *);
+              if (real == NULL) real = dlsym(RTLD_NEXT, "sigaction");
+              if (sig == SIGABRT && act != NULL) {
+                  if (oldact != NULL) real(sig, NULL, oldact);
+                  return 0;
+              }
+              return real(sig, act, oldact);
+          }
+          EOF
+          cc -shared -fPIC -O2 -o abort_core.so abort_core.c -ldl
+          echo "LD_PRELOAD=$PWD/abort_core.so" >> $GITHUB_ENV
+
       - name: Set up Launchable
         id: launchable
         uses: ./.github/actions/launchable/setup
@@ -218,6 +245,7 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: |
+          ulimit -c unlimited
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
           test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
 
@@ -246,6 +274,24 @@ jobs:
         run: |
           tail --verbose --lines=+1 rb_crash_*.txt
           exit 1
+
+      - name: Package ZJIT forensics cores
+        run: |
+          if ls coredumps/core.* >/dev/null 2>&1; then
+            cp -v ruby abort_core.so coredumps/ || true
+            cp -v /lib/x86_64-linux-gnu/libc.so.6 /lib64/ld-linux-x86-64.so.2 coredumps/ || true
+            cp -v rb_crash_*.txt coredumps/ || true
+          fi
+          ls -la coredumps/ || true
+        if: ${{ always() }}
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zjit-forensics-${{ matrix.test_task }}-${{ strategy.job-index }}
+          path: build/coredumps/
+          if-no-files-found: ignore
+          retention-days: 7
+        if: ${{ always() }}
 
       - uses: ./.github/actions/slack
         with:
