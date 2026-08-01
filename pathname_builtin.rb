@@ -1581,7 +1581,7 @@ class Pathname    # * File *
   # call-seq:
   #   readlink -> new_pathname
   #
-  # Returns a new pathname containing the string path to the entry referenced by `self`:
+  # Returns a new pathname containing the path to the entry represented by `self`:
   #
   # ```ruby
   # # Create Pathnames.
