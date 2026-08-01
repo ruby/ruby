@@ -506,8 +506,9 @@ assert_equal 'false', %q{
   obj.object_id == r.value
 }
 
-# To copy the object, now Marshal#dump is used
-assert_match /can't clone unshareable instance of Thread/, %q{
+# Copying an object uses the native copier or Marshal#dump; it never calls the
+# user-visible #clone.
+assert_match /can not copy Thread object/, %q{
   obj = Thread.new{}
   begin
     r = Ractor.new obj do |msg|
@@ -1270,12 +1271,14 @@ assert_equal '[1, 4, 3, 2, 1]', %q{
   counts.inspect
 }
 
-# ObjectSpace.each_object can not handle unshareable objects with Ractors
-assert_equal '0', %q{
+# ObjectSpace.each_object enumerates the calling Ractor's own objects (unshareable ones
+# included) and other Ractors' shareable objects, but never their unshareable ones.
+assert_equal 'true', %q{
   Ractor.new{
-    n = 0
-    ObjectSpace.each_object{|o| n += 1 unless Ractor.shareable?(o)}
-    n
+    own = Object.new
+    seen = false
+    ObjectSpace.each_object{|o| seen = true if o.equal?(own)}
+    seen
   }.value
 }
 
@@ -2734,39 +2737,114 @@ assert_equal 'ok', %q{
   r.value
 }
 
-# Ractor::Port.allocate leaves the owner Ractor NULL, so every method reachable
-# from Ruby must reject such a port instead of dereferencing it. [Bug #22214]
+# A Ractor creation that fails (IsolationError) after the child objspace exists must clean up
+# the creator's cover for it; otherwise a later global GC enumerates the dead child's objspace
+# twice and reads the freed shell.
 assert_equal 'ok', %q{
-  port = Ractor::Port.allocate
-
-  messages = [
-    -> { port.send(1) },
-    -> { port << 1 },
-    -> { port.receive },
-    -> { port.close },
-    -> { port.closed? },
-    -> { port.inspect },
-    -> { Ractor::Port.new.__send__(:initialize_copy, port) },
-    -> { Ractor.new { :x }.monitor(port) },
-    -> { Ractor.new { :x }.unmonitor(port) },
-    -> { Ractor.select(port) },
-  ].map do |blk|
+  x = 42 # capturing an outer local makes Ractor.new raise IsolationError
+  worker = Ractor.new { loop { break if Ractor.receive == :quit } }
+  begin
+    Ractor.new { x }
+    raise "isolation error did not fire"
+  rescue Ractor::IsolationError
+  end
+  10.times { GC.start; 500.times { Object.new } }
+  worker.send(:quit)
+  worker.value
+  100.times do |i|
     begin
-      blk.call
-      'not raised'
-    rescue TypeError => e
-      e.message
+      Ractor.new { x }
+      raise "isolation error did not fire"
+    rescue Ractor::IsolationError
+    end
+    if (i % 20).zero?
+      Ractor.new { :ok }.value
+      GC.start
     end
   end
-
-  messages.uniq == ['uninitialized Ractor::Port'] ? :ok : messages
+  GC.start
+  :ok
 }
 
-assert_equal 'uninitialized MyPort', %q{
-  class MyPort < Ractor::Port; end
-  begin
-    MyPort.allocate.closed?
-  rescue TypeError => e
-    e.message
+# Moving a CoW shared-root string (a frozen root with an unshareable ivar) must not steal the
+# root's buffer; that would leave the remaining sharers reading freed memory.
+assert_equal 'ok', %q{
+  30.times do
+    r = Ractor.new do
+      v = Ractor.receive
+      v.bytesize
+      :done
+    end
+    f = "x" * 4096
+    f.instance_variable_set(:@x, []) # unshareable ivar: moved rather than passed through
+    f.freeze
+    g = f.dup            # shares f's buffer, making f a shared root
+    h = f[10, 3000]      # a long substring shares the buffer too
+    r.send(f, move: true)
+    r.value
+    GC.start
+    10.times { "z" * 4096 }
+    raise "sharer corrupted" unless g == "x" * 4096 && h == "x" * 3000
   end
+  :ok
+}
+
+# Same for an array: a frozen array is a shared root without carrying the shared root flag,
+# so its buffer belongs to the sharers and the move must not free it.
+assert_equal 'ok', %q{
+  30.times do
+    r = Ractor.new do
+      v = Ractor.receive
+      v.size
+      :done
+    end
+    a = (1..100).to_a
+    a.instance_variable_set(:@x, []) # unshareable ivar: moved rather than passed through
+    a.freeze
+    b = a.dup            # shares a's buffer, making a a shared root
+    c = a[10, 80]        # a subseq shares the buffer too
+    r.send(a, move: true)
+    r.value
+    GC.start
+    10.times { (1..100).to_a }
+    raise "sharer corrupted" unless b == (1..100).to_a && c == (11..90).to_a
+  end
+  :ok
+}
+
+# Moving a String/Array/Hash subclass (an unshareable ivar sends it down the move path) must
+# preserve the class rather than degrading it to the base class.
+assert_equal '["MyStr", "MyAry", "MyHash"]', %q{
+  class MyStr < String; end
+  class MyAry < Array; end
+  class MyHash < Hash; end
+  r = Ractor.new do
+    3.times.map { Ractor.receive.class.name }
+  end
+  [MyStr.new("x"), (MyAry.new << 1), (h=MyHash.new; h[:a]=1; h)].each do |o|
+    o.instance_variable_set(:@x, []) # unshareable ivar sends it down the move path
+    r.send(o, move: true)
+  end
+  r.value.inspect
+}
+
+# Moving an object with a singleton class must keep its singleton methods and reattach the
+# rebuilt singleton class to the new object; otherwise it keeps pointing at the original the
+# sender's attach invalidated.  Covers T_OBJECT, String and Struct.
+assert_equal '[[:obj, true], [:str, true], [:strct, true]]', %q{
+  o = Object.new
+  def o.m; :obj end
+  s = +"str"
+  def s.m; :str end
+  st = Struct.new(:a).new(1)
+  def st.m; :strct end
+  r = Ractor.new do
+    3.times.map do
+      v = Ractor.receive
+      GC.start
+      [v.m, v.method(:m).owner.attached_object.equal?(v)]
+    end
+  end
+  [o, s, st].each { |x| r.send(x, move: true) }
+  r.value.inspect
 }

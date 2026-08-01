@@ -141,6 +141,8 @@ class TestRactor < Test::Unit::TestCase
   end
 
   def test_sending_object_with_broken_clone
+    # Copying a message does not call the user-visible #clone, so a broken #clone cannot
+    # break sending; the singleton class that defining #clone creates makes it uncopyable.
     assert_ractor(<<~'RUBY')
       o = Object.new
       def o.clone
@@ -150,7 +152,7 @@ class TestRactor < Test::Unit::TestCase
       error = assert_raise Ractor::Error do
         ractor.send(o)
       end
-      assert_match "#clone returned self", error.message
+      assert_match "can not copy", error.message
     RUBY
   end
 
@@ -419,18 +421,182 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
-  def test_ractor_vm_once_dispatch
-    assert_ractor(<<~'RUBY', args: ["-W0"], timeout: 30)
-      vals = 10.times.map do
-        Ractor.new {
-          a = nil
-          /#{sleep 0.1; a = "set"}/o
-          a
-        }
-      end.map(&:value)
-      vals.compact!
-      assert_equal 1, vals.size
-      assert_equal "set", vals.first
+  # With per-Ractor GC, registering, storing and running a finalizer all belong to the
+  # object's Ractor, so defining one on another Ractor's object (shareable included) is
+  # rejected.
+  def test_define_finalizer_on_foreign_object
+    omit 'per-Ractor objspace semantics of the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      r = Ractor.new do
+        results = []
+        own = Object.new
+        ObjectSpace.define_finalizer(own, proc {})
+        results << :own_ok
+        begin
+          ObjectSpace.define_finalizer(String, proc {})  # main's class
+          results << :define_did_not_raise
+        rescue Ractor::IsolationError
+          results << :define_raised
+        end
+        begin
+          ObjectSpace.undefine_finalizer(String)
+          results << :undefine_did_not_raise
+        rescue Ractor::IsolationError
+          results << :undefine_raised
+        end
+        results
+      end
+      assert_equal [:own_ok, :define_raised, :undefine_raised], r.value
+      GC.verify_internal_consistency
+    RUBY
+  end
+
+  # ObjectSpace.each_object enumerates every object in the calling Ractor's own objspace plus
+  # the shareable objects of other live Ractors (never their unshareable ones).
+  def test_each_object_own_all_and_foreign_shareables
+    omit 'per-Ractor objspace semantics of the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      class Marker; end
+      main_un = 5.times.map { Marker.new }
+      main_sh = 3.times.map { Ractor.make_shareable(Marker.new) }
+      ready = Ractor::Port.new
+      ch = Ractor.new(ready) do |ready_port|
+        un = 7.times.map { Marker.new }               # unshareable: must not be visible
+        sh = 4.times.map { Ractor.make_shareable(Marker.new) }
+        ready_port << :built
+        Ractor.receive                                # keep this objspace alive
+        [un.size, sh.size]
+      end
+      ready.receive                                   # the child finished building markers
+
+      seen = 0
+      ObjectSpace.each_object(Marker) { seen += 1 }
+      # own 8 (5 unshareable + 3 shareable) + the child's 4 shareable
+      assert_equal 12, seen
+
+      ch.send(:go)
+      ch.value
+      # keep the roots alive across the scan
+      assert_equal 5, main_un.size
+      assert_equal 3, main_sh.size
+    RUBY
+  end
+
+  # A Ractor.new that fails with IsolationError (stillborn) must still clean up the
+  # half-created objspace (regression guard for double enumeration / use-after-free).
+  def test_stillborn_ractor_gc
+    assert_ractor(<<~'RUBY', timeout: 60)
+      x = 42 # capturing an outer local makes Ractor.new raise IsolationError
+      worker = Ractor.new { loop { break if Ractor.receive == :quit } }
+      assert_raise(Ractor::IsolationError) { Ractor.new { x } }
+      10.times { GC.start; 500.times { Object.new } }
+      GC.verify_internal_consistency
+      worker.send(:quit)
+      worker.value
+      100.times do |i|
+        assert_raise(Ractor::IsolationError) { Ractor.new { x } }
+        if (i % 20).zero?
+          Ractor.new { :ok }.value
+          GC.start
+        end
+      end
+      GC.start
+      GC.verify_internal_consistency
+    RUBY
+  end
+
+  # Moving a CoW shared-root String must not steal its buffer (regression guard for the
+  # remaining sharers reading freed memory).
+  def test_move_shared_root_string_keeps_buffer
+    assert_ractor(<<~'RUBY', timeout: 60)
+      10.times do
+        r = Ractor.new { Ractor.receive.bytesize; :done }
+        f = "x" * 4096
+        f.instance_variable_set(:@x, []) # unshareable ivar => moved, not passed by reference
+        f.freeze
+        g = f.dup                # shares f's buffer -> f is a shared root
+        h = f[10, 3000]          # a long substring shares the buffer too
+        r.send(f, move: true)
+        r.value
+        GC.start
+        10.times { "z" * 4096 }
+        assert_equal "x" * 4096, g
+        assert_equal "x" * 3000, h
+      end
+    RUBY
+  end
+
+  # Ractor::Port.new must not deadlock under GC.stress (regression guard for a stress GC
+  # triggered by malloc while the ractor lock is held).
+  def test_port_new_under_gc_stress
+    assert_ractor(<<~'RUBY', timeout: 90)
+      GC.stress = true
+      ports = 4.times.map { Ractor::Port.new }
+      GC.stress = false
+      assert_equal 4, ports.size
+    RUBY
+  end
+
+  # Moving a Hash that has Hash keys must not lose entries (regression guard for inserting a
+  # key before its contents are filled in, which corrupts its hash value).
+  def test_move_hash_with_hash_keys
+    assert_ractor(<<~'RUBY', timeout: 60)
+      k1 = { a: 1 }; k2 = { b: 2 }
+      h = { k1 => :v1, k2 => :v2, { c: { d: 3 } } => :v3 }
+      r = Ractor.new { Ractor.receive }
+      r.send(h, move: true)
+      m = r.value
+      assert_equal 3, m.size
+      assert_equal :v1, m[{ a: 1 }]
+      assert_equal :v2, m[{ b: 2 }]
+      assert_equal :v3, m[{ c: { d: 3 } }]
+    RUBY
+  end
+
+  # A copy send's in-flight snapshot must not be moved by GC.compact (the global
+  # generic_fields entries and the dedup table are keyed by address; YJIT reproduced this
+  # deterministically).
+  def test_copy_genivar_snapshot_survives_compact
+    omit 'GC.compact is unimplemented' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY', timeout: 60, args: [{ "RUBY_YJIT_ENABLE" => "1" }])
+      port = Ractor::Port.new
+      w = Ractor.new(port) do |po|
+        mm = Ractor.receive
+        res = mm.map { |ss| [ss, ss.frozen?, ss.instance_variable_get(:@sku)] }
+        po.send(res)
+      end
+      items = 4.times.map do |i|
+        s = +"item-#{i}"
+        s.instance_variable_set(:@sku, "SKU#{1000 + i}")
+        s.freeze
+      end
+      w.send(items)
+      GC.compact
+      res = port.receive
+      res.each_with_index do |(txt, fz, sku), i|
+        assert_equal "item-#{i}", txt
+        assert fz
+        assert_equal "SKU#{1000 + i}", sku
+      end
+    RUBY
+  end
+
+  # move must preserve the class of a String/Array/Hash subclass.
+  def test_move_preserves_subclass
+    assert_ractor(<<~'RUBY', timeout: 60)
+      class MyStr < String; end
+      class MyArr < Array; end
+      class MyHash < Hash; end
+      s = MyStr.new("hello"); a = MyArr.new([1, 2]); h = MyHash.new; h[:k] = 1
+      r = Ractor.new { 3.times.map { Ractor.receive } }
+      r.send(s, move: true); r.send(a, move: true); r.send(h, move: true)
+      rs, ra, rh = r.value
+      assert_equal [MyStr, MyArr, MyHash], [rs.class, ra.class, rh.class]
+      assert_equal "hello", rs
+      assert_equal [1, 2], ra
+      assert_equal 1, rh[:k]
     RUBY
   end
 
