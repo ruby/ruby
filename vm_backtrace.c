@@ -586,6 +586,26 @@ backtrace_alloc_capa(long num_frames, rb_backtrace_t **backtrace)
     return btobj;
 }
 
+/* 例外コピーが送信元 backtrace への生ポインタを別 objspace へ持ち込まないよう複製する。
+ * frame は shareable な iseq / method entry の imemo のみ参照するので複製は安全。
+ * 遅延生成の文字列/location 配列は未設定のまま残し、受信側で再生成する。 */
+VALUE
+rb_backtrace_dup(VALUE btobj)
+{
+    rb_backtrace_t *src, *dst;
+    TypedData_Get_Struct(btobj, rb_backtrace_t, &backtrace_data_type, src);
+
+    VALUE dupobj = backtrace_alloc_capa(src->backtrace_size, &dst);
+    dst->backtrace_size = src->backtrace_size;
+    MEMCPY(dst->backtrace, src->backtrace, rb_backtrace_location_t, src->backtrace_size);
+    for (int i = 0; i < dst->backtrace_size; i++) {
+        const rb_backtrace_location_t *fi = &dst->backtrace[i];
+        if (fi->cme) RB_OBJ_WRITTEN(dupobj, Qundef, (VALUE)fi->cme);
+        if (fi->iseq) RB_OBJ_WRITTEN(dupobj, Qundef, (VALUE)fi->iseq);
+    }
+    return dupobj;
+}
+
 
 static long
 backtrace_size(const rb_execution_context_t *ec)

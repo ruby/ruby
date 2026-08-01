@@ -39,6 +39,7 @@
 #include "iseq.h"
 #include "ruby/util.h"
 #include "vm_core.h"
+#include "vm_sync.h"
 #include "ractor_core.h"
 #include "vm_callinfo.h"
 #include "yjit.h"
@@ -419,22 +420,68 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
             }
         }
 
-        if (reference_updating) {
-#if USE_YJIT
-            rb_yjit_iseq_update_references(iseq);
+#if USE_YJIT || USE_ZJIT
+        /* jit payload の排他域は VM lock (他 Ractor の compile/invalidate と競合し、
+         * yjit/zjit 側も rb_assert_holding_vm_lock)。lock-free な local GC からも
+         * 来るため barrier 非参加で取る。単一 objspace impl (mmtk) の mark は EC の
+         * 無い GC worker で走り lock は取得不能、STW なので競合も無く素で呼ぶ。 */
+        const bool jit_payload_lock_p = rb_gc_multi_objspace_p();
+        bool jit_payload_p = false;
+# if USE_YJIT
+        if (body->yjit_payload != NULL) jit_payload_p = true;
+# endif
+# if USE_ZJIT
+        if (body->zjit_payload != NULL) jit_payload_p = true;
+# endif
 #endif
-#if USE_ZJIT
-            rb_zjit_iseq_update_references(body->zjit_payload);
+        if (reference_updating) {
+#if USE_YJIT || USE_ZJIT
+            if (jit_payload_p) {
+                if (jit_payload_lock_p) {
+                    RB_VM_LOCKING_NO_BARRIER() {
+# if USE_YJIT
+                        rb_yjit_iseq_update_references(iseq);
+# endif
+# if USE_ZJIT
+                        rb_zjit_iseq_update_references(body->zjit_payload);
+# endif
+                    }
+                }
+                else {
+# if USE_YJIT
+                    rb_yjit_iseq_update_references(iseq);
+# endif
+# if USE_ZJIT
+                    rb_zjit_iseq_update_references(body->zjit_payload);
+# endif
+                }
+            }
 #endif
         }
         else {
             // TODO: check jit payload
             if (!rb_gc_checking_shareable()) {
-#if USE_YJIT
-                rb_yjit_iseq_mark(body->yjit_payload);
-#endif
-#if USE_ZJIT
-                rb_zjit_iseq_mark(body->zjit_payload);
+#if USE_YJIT || USE_ZJIT
+                if (jit_payload_p) {
+                    if (jit_payload_lock_p) {
+                        RB_VM_LOCKING_NO_BARRIER() {
+# if USE_YJIT
+                            rb_yjit_iseq_mark(body->yjit_payload);
+# endif
+# if USE_ZJIT
+                            rb_zjit_iseq_mark(body->zjit_payload);
+# endif
+                        }
+                    }
+                    else {
+# if USE_YJIT
+                        rb_yjit_iseq_mark(body->yjit_payload);
+# endif
+# if USE_ZJIT
+                        rb_zjit_iseq_mark(body->zjit_payload);
+# endif
+                    }
+                }
 #endif
             }
         }

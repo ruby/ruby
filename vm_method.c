@@ -30,18 +30,14 @@ mark_cc_entry_i(VALUE ccs_ptr, void *data)
     VM_ASSERT(vm_ccs_p(ccs));
 
     if (METHOD_ENTRY_INVALIDATED(ccs->cme)) {
-        /* Before detaching the CCs from this class, we need to invalidate the cc
-         * since we will no longer be marking the cme on their behalf.
-         */
+        /* GC からは決して prune しない（mark のみ）。cc table の walk（dup 等）は
+         * 途中の割り当てで GC を起こしうるので、mark 時の xfree+DELETE は walk 中の
+         * iterator を脱線させ freed ccs を読ませる。掃除は mutator（VM lock 下）が行う。 */
+        rb_gc_mark_movable((VALUE)ccs->cme);
         for (int i = 0; i < ccs->len; i++) {
-            const struct rb_callcache *cc = ccs->entries[i].cc;
-            if (cc->klass == Qundef) continue; // already invalidated
-            VM_ASSERT(cc->klass == Qundef || vm_cc_check_cme(cc, ccs->cme));
-            VM_ASSERT(!vm_cc_super_p(cc) && !vm_cc_refinement_p(cc));
-            vm_cc_invalidate(cc);
+            rb_gc_mark_movable((VALUE)ccs->entries[i].cc);
         }
-        ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
-        return ID_TABLE_DELETE;
+        return ID_TABLE_CONTINUE;
     }
     else {
         rb_gc_mark_movable((VALUE)ccs->cme);
