@@ -2020,7 +2020,21 @@ class Pathname    # * File *
   #
   def basename(...) self.class.new(File.basename(@path, ...)) end
 
-  # See <tt>File.dirname</tt>.  Returns all but the last component of the path.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   dirname -> new_pathname
+  #
+  # Returns a new pathname whose path is all but the last component of the path in `self`:
+  #
+  # ```ruby
+  # Pathname('/usr/lib/linux').basename # => #<Pathname:linux>
+  # Pathname('/usr').basename           # => #<Pathname:usr>
+  # Pathname('/').basename              # => #<Pathname:/>
+  # Pathname('lib/').basename           # => #<Pathname:lib>
+  # Pathname('nosuch').basename         # => #<Pathname:nosuch>
+  # ```
+  #
   def dirname() self.class.new(File.dirname(@path)) end
 
   # :markup: markdown
