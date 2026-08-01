@@ -4627,7 +4627,14 @@ do_select(VALUE p)
 
     RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec);
 
-    if (result < 0) {
+    if (result == 0) {
+        /* A pending VM interrupt can skip native_fd_select(), leaving these
+         * sets unchanged from their input state. */
+        if (set->rset) rb_fd_zero(set->rset);
+        if (set->wset) rb_fd_zero(set->wset);
+        if (set->eset) rb_fd_zero(set->eset);
+    }
+    else if (result < 0) {
         errno = lerrno;
     }
 
