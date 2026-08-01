@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 
 require 'io/nonblock'
+require 'socket'
 
 class TestIOTimeout < Test::Unit::TestCase
   def with_pipe
@@ -35,6 +36,39 @@ class TestIOTimeout < Test::Unit::TestCase
       i.timeout = 0.0001
 
       assert_raise(IO::TimeoutError) {i.read}
+    end
+  end
+
+  def test_timeout_read_preserves_buffered_data
+    with_pipe do |i, o|
+      data = "Hello" * 4_000
+      o.write(data)
+      i.timeout = 0.0001
+
+      assert_raise(IO::TimeoutError) {i.read}
+      assert_equal data, i.read_nonblock(data.bytesize)
+    end
+  end
+
+  def test_timeout_sized_read_preserves_partial_data
+    with_pipe do |i, o|
+      o.write("Hello")
+      i.timeout = 0.0001
+
+      assert_raise(IO::TimeoutError) {i.read(10)}
+      assert_equal "Hello", i.read_nonblock(5)
+    end
+  end
+
+  def test_timeout_read_preserves_existing_read_buffer
+    with_pipe do |i, o|
+      data = "Hello" * 3_276 + "Hell"
+      o.write("header\n" + data)
+      assert_equal "header\n", i.gets
+      i.timeout = 0.0001
+
+      assert_raise(IO::TimeoutError) {i.read(data.bytesize + 1)}
+      assert_equal data, i.read_nonblock(data.bytesize)
     end
   end
 

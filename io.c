@@ -976,6 +976,32 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
     MEMMOVE(fptr->rbuf.ptr+fptr->rbuf.off, RSTRING_PTR(str), char, len);
 }
 
+static void
+io_restore_read_buffer(VALUE str, rb_io_t *fptr)
+{
+    long len = RSTRING_LEN(str);
+
+    if (len > INT_MAX - fptr->rbuf.len) {
+        rb_raise(rb_eIOError, "read buffer too large");
+    }
+    if (fptr->rbuf.ptr == NULL || fptr->rbuf.capa >= len + fptr->rbuf.len) {
+        io_ungetbyte(str, fptr);
+    }
+    else {
+        int pending = fptr->rbuf.len;
+        int capa = (int)len + pending;
+        char *ptr = ALLOC_N(char, capa);
+
+        MEMMOVE(ptr, RSTRING_PTR(str), char, len);
+        MEMMOVE(ptr + len, fptr->rbuf.ptr + fptr->rbuf.off, char, pending);
+        ruby_xfree(fptr->rbuf.ptr);
+        fptr->rbuf.ptr = ptr;
+        fptr->rbuf.off = 0;
+        fptr->rbuf.len = capa;
+        fptr->rbuf.capa = capa;
+    }
+}
+
 static rb_io_t *
 flush_before_seek(rb_io_t *fptr, bool discard_rbuf)
 {
@@ -3082,12 +3108,13 @@ read_buffered_data(char *ptr, long len, rb_io_t *fptr)
 }
 
 static long
-io_bufread(char *ptr, long len, rb_io_t *fptr)
+io_bufread(char *ptr, long len, rb_io_t *fptr, long *read_len)
 {
     long offset = 0;
     long n = len;
     long c;
 
+    *read_len = 0;
     if (READ_DATA_PENDING(fptr) == 0) {
         while (n > 0) {
           again:
@@ -3100,6 +3127,7 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
                 return -1;
             }
             offset += c;
+            *read_len = offset;
             if ((n -= c) <= 0) break;
         }
         return len - n;
@@ -3109,6 +3137,7 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
         c = read_buffered_data(ptr+offset, n, fptr);
         if (c > 0) {
             offset += c;
+            *read_len = offset;
             if ((n -= c) <= 0) break;
         }
         rb_io_check_closed(fptr);
@@ -3123,16 +3152,43 @@ static int io_setstrbuf(VALUE *str, long len);
 
 struct bufread_arg {
     char *str_ptr;
+    long offset;
     long len;
+    long read_len;
     rb_io_t *fptr;
 };
+
+static VALUE
+bufread_body(VALUE arg)
+{
+    struct bufread_arg *p = (struct bufread_arg *)arg;
+    p->len = io_bufread(p->str_ptr + p->offset, p->len, p->fptr, &p->read_len);
+    return Qundef;
+}
+
+static VALUE
+bufread_timeout(VALUE arg, VALUE error)
+{
+    struct bufread_arg *p = (struct bufread_arg *)arg;
+
+    if (p->offset + p->read_len > 0) {
+        VALUE str = rb_str_new(p->str_ptr, p->offset + p->read_len);
+        io_restore_read_buffer(str, p->fptr);
+    }
+    rb_exc_raise(error);
+    UNREACHABLE_RETURN(Qnil);
+}
 
 static VALUE
 bufread_call(VALUE arg)
 {
     struct bufread_arg *p = (struct bufread_arg *)arg;
-    p->len = io_bufread(p->str_ptr, p->len, p->fptr);
-    return Qundef;
+
+    if (NIL_P(p->fptr->timeout)) {
+        return bufread_body(arg);
+    }
+    return rb_rescue2(bufread_body, arg, bufread_timeout, arg,
+                      rb_eIOTimeoutError, (VALUE)0);
 }
 
 static long
@@ -3142,8 +3198,10 @@ io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
     struct bufread_arg arg;
 
     io_setstrbuf(&str, offset + size);
-    arg.str_ptr = RSTRING_PTR(str) + offset;
+    arg.str_ptr = RSTRING_PTR(str);
+    arg.offset = offset;
     arg.len = size;
+    arg.read_len = 0;
     arg.fptr = fptr;
     rb_str_locktmp_ensure(str, bufread_call, (VALUE)&arg);
     len = arg.len;
