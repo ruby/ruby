@@ -55,6 +55,7 @@ struct rb_gc_object_metadata_entry {
 GC_IMPL_FN void *rb_gc_impl_objspace_alloc(void);
 GC_IMPL_FN void rb_gc_impl_objspace_init(void *objspace_ptr);
 GC_IMPL_FN void *rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor);
+GC_IMPL_FN void rb_gc_impl_objspace_retire_gc(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_set_params(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_init(void);
 // Shutdown
@@ -68,6 +69,9 @@ GC_IMPL_FN void rb_gc_impl_prepare_heap(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_gc_enable(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_gc_disable(void *objspace_ptr, bool finish_current_gc);
 GC_IMPL_FN bool rb_gc_impl_gc_enabled_p(void *objspace_ptr);
+GC_IMPL_FN bool rb_gc_impl_user_gc_disabled_set(void *objspace_ptr, bool disable);
+GC_IMPL_FN bool rb_gc_impl_user_gc_disabled_p(void *objspace_ptr);
+GC_IMPL_FN void rb_gc_impl_gc_rest(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_stress_set(void *objspace_ptr, VALUE flag);
 GC_IMPL_FN VALUE rb_gc_impl_stress_get(void *objspace_ptr);
 GC_IMPL_FN VALUE rb_gc_impl_config_get(void *objspace_ptr);
@@ -123,8 +127,19 @@ GC_IMPL_FN VALUE rb_gc_impl_location(void *objspace_ptr, VALUE value);
 GC_IMPL_FN void rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b);
 GC_IMPL_FN void rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN void rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj);
+GC_IMPL_FN void rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj);
+GC_IMPL_FN void rb_gc_impl_pin_in_flight_message(void *objspace_ptr, VALUE obj);
 // Heap walking
 GC_IMPL_FN void rb_gc_impl_each_objects(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
+GC_IMPL_FN void rb_gc_impl_each_objects_shareable(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
+GC_IMPL_FN void rb_gc_impl_each_objects_foreign(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
+/* Whether the impl supports multiple per-Ractor objspaces.  When false the VM shares a single
+ * objspace and passes the per-Ractor objspace machinery (retire, absorb, ...) straight through. */
+GC_IMPL_FN bool rb_gc_impl_multi_objspace_p(void);
+GC_IMPL_FN bool rb_gc_impl_during_global_gc_p(void *objspace_ptr);
+GC_IMPL_FN bool rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj);
+GC_IMPL_FN size_t rb_gc_impl_heap_page_count(void *objspace_ptr);
+GC_IMPL_FN void rb_gc_impl_objspace_absorb(void *dst_ptr, void *src_ptr);
 GC_IMPL_FN void rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), void *data);
 // Finalizers
 GC_IMPL_FN void rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data);
