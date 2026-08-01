@@ -330,7 +330,7 @@
 # - #rmdir:
 #   Deletes the directory entry at the path in +self+.
 # - #rmtree:
-#   Deletes the entire filetree at the entry at the path in +self+.
+#   Deletes the entire filetree at the path in +self+.
 # - #sysopen:
 #   Opens the file at the path in +self+; returns the integer file descriptor.
 # - #truncate:
