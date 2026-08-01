@@ -2212,7 +2212,6 @@ EOS
   end
 
   def test_clock_gettime_unit
-    t0 = Time.now.to_f
     [
       [:nanosecond,  1_000_000_000],
       [:microsecond, 1_000_000],
@@ -2228,6 +2227,7 @@ EOS
         assert_raise(ArgumentError){ Process.clock_gettime(Process::CLOCK_REALTIME, unit) }
         next
       end
+      t0 = Time.now.to_f
       t1 = Process.clock_gettime(Process::CLOCK_REALTIME, unit)
       assert_kind_of num.integer? ? Integer : num.class, t1, [unit, num].inspect
       assert_in_delta t0, t1/num, 1, [unit, num].inspect
