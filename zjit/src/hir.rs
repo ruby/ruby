@@ -926,6 +926,17 @@ pub struct SendDirectData {
     pub state: InsnId,
 }
 
+/// Payload of [`Insn::PushInlineFrame`]. Boxed in the enum to keep `Insn` small.
+#[derive(Debug, Clone)]
+pub struct PushInlineFrameData {
+    pub iseq: IseqPtr,
+    pub cme: *const rb_callable_method_entry_t,
+    pub recv: InsnId,
+    pub args: Vec<InsnId>,
+    pub blockiseq: Option<IseqPtr>,
+    pub state: InsnId,
+}
+
 /// Payload of [`Insn::CondBranch`]. Boxed in the enum to keep `Insn` small.
 #[derive(Debug, Clone)]
 pub struct CondBranchData {
@@ -1192,14 +1203,7 @@ pub enum Insn {
     SendDirect(Box<SendDirectData>),
 
     /// Push a lighter weight frame used for inlined methods.
-    PushInlineFrame {
-        iseq: IseqPtr,
-        cme: *const rb_callable_method_entry_t,
-        recv: InsnId,
-        args: Vec<InsnId>,
-        blockiseq: Option<IseqPtr>,
-        state: InsnId,
-    },
+    PushInlineFrame(Box<PushInlineFrameData>),
 
     /// Pop a lighter weight frame used for inlined methods.
     PopInlineFrame {
@@ -1521,7 +1525,6 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*state);
             }
             | Insn::SendForward { recv, args, state, .. }
-            | Insn::PushInlineFrame { recv, args, state, .. }
             | Insn::InvokeBuiltin { recv, args, state, .. }
             | Insn::InvokeSuper { recv, args, state, .. }
             | Insn::InvokeSuperForward { recv, args, state, .. }
@@ -1539,6 +1542,11 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(insn.state);
             }
             Insn::SendDirect(insn) => {
+                $visit_one!(insn.recv);
+                $visit_many!(insn.args);
+                $visit_one!(insn.state);
+            }
+            Insn::PushInlineFrame(insn) => {
                 $visit_one!(insn.recv);
                 $visit_many!(insn.args);
                 $visit_one!(insn.state);
@@ -2156,7 +2164,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
-            Insn::PushInlineFrame { recv, iseq, args, .. } => {
+            Insn::PushInlineFrame(insn) => {
+                let PushInlineFrameData { iseq, recv, args, .. } = &**insn;
                 write!(f, "PushInlineFrame {recv} ({:?})", self.ptr_map.map_ptr(*iseq))?;
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
@@ -5439,9 +5448,10 @@ impl Function {
                 self.push_insn_id(block, post_send_caller);
 
                 // Insert PushLightweightFrame and jump to callee body entry.
-                self.push_insn(block, Insn::PushInlineFrame {
+                let data = PushInlineFrameData {
                     iseq, cme, recv, args: args.clone(), blockiseq, state,
-                });
+                };
+                self.push_insn(block, Insn::PushInlineFrame(Box::new(data)));
                 self.count(block, Counter::inline_iseq_optimized_send_count);
                 self.push_insn(block, Insn::Jump(BranchEdge {
                     target: callee_entry_body_block,
@@ -6955,8 +6965,7 @@ impl Function {
                 Ok(())
             }
             // Instructions with recv and a Vec of Ruby objects
-            Insn::PushInlineFrame { recv, ref args, .. }
-            | Insn::SendForward { recv, ref args, .. }
+            Insn::SendForward { recv, ref args, .. }
             | Insn::InvokeSuper { recv, ref args, .. }
             | Insn::InvokeSuperForward { recv, ref args, .. }
             | Insn::InvokeBuiltin { recv, ref args, .. }
@@ -6969,6 +6978,13 @@ impl Function {
                 Ok(())
             }
             Insn::SendDirect(insn) => {
+                self.assert_subtype(insn_id, insn.recv, types::BasicObject)?;
+                for &arg in &insn.args {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
+            Insn::PushInlineFrame(insn) => {
                 self.assert_subtype(insn_id, insn.recv, types::BasicObject)?;
                 for &arg in &insn.args {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
