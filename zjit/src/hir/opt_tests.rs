@@ -20754,4 +20754,70 @@ mod hir_opt_tests {
           Return v59
         ");
     }
+
+    #[test]
+    fn test_elide_load_store_extended() {
+        eval(r#"
+            class C
+              def initialize
+                @foo = 1
+                100.times { |i| instance_variable_set(:"@v#{i}", i) }
+                @hclk = 1
+                @hclk_target = 2
+              end
+              def foo = 4
+              def wait_one_clock
+                @hclk += 1
+                foo if @hclk_target <= @hclk
+              end
+            end
+            O = C.new
+            O.wait_one_clock
+        "#);
+        assert_snapshot!(hir_string_proc("C.instance_method(:wait_one_clock)"), @"
+        fn wait_one_clock@<compiled>:11:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :shape_id@0x1000
+          v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001) recompile
+          v14:RubyValue = LoadField v11, :fields_obj@0x1002
+          v15:BasicObject = LoadField v14, :@hclk@0x1003
+          v17:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v71:Fixnum = GuardType v15, Fixnum recompile
+          v72:Fixnum = FixnumAdd v71, v17
+          v26:BasicObject = LoadField v11, :as_heap@0x1002
+          StoreField v26, :@hclk@0x1003, v72
+          WriteBarrier v26, v72
+          PatchPoint SingleRactorMode
+          v37:BasicObject = LoadField v14, :@hclk_target@0x1040
+          v44:BasicObject = LoadField v14, :@hclk@0x1003
+          PatchPoint MethodRedefined(Integer@0x1008, <=@0x1041, cme:0x1048)
+          v75:Fixnum = GuardType v37, Fixnum recompile
+          v76:Fixnum = GuardType v44, Fixnum
+          v77:BoolExact = FixnumLe v75, v76
+          v49:CBool = Test v77
+          CondBranch v49, bb5(), bb4(v11)
+        bb5():
+          PatchPoint NoSingletonClass(C@0x1070)
+          PatchPoint MethodRedefined(C@0x1070, foo@0x1078, cme:0x1080)
+          v80:ObjectSubclass[class_exact:C] = GuardType v11, ObjectSubclass[class_exact:C] recompile
+          v81:Fixnum[4] = Const Value(4)
+          CheckInterrupts
+          Return v81
+        bb4(v60:HeapBasicObject):
+          v63:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v63
+        ");
+    }
 }
