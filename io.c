@@ -3916,6 +3916,61 @@ search_delim(const char *p, long len, int delim, rb_encoding *enc)
 }
 
 static int
+read_raw_character(rb_io_t *fptr, rb_encoding *enc, char *buf)
+{
+    int n = 0;
+    int r;
+
+    do {
+        if (!READ_DATA_PENDING(fptr)) {
+            READ_CHECK(fptr);
+            if (io_fillbuf(fptr) < 0) break;
+        }
+        buf[n++] = *READ_DATA_PENDING_PTR(fptr);
+        fptr->rbuf.off++;
+        fptr->rbuf.len--;
+        r = rb_enc_precise_mbclen(buf, buf + n, enc);
+    } while (MBCLEN_NEEDMORE_P(r) && n < rb_enc_mbmaxlen(enc));
+
+    return n;
+}
+
+static void
+unread_raw_character(rb_io_t *fptr, const char *buf, int len)
+{
+    if (fptr->rbuf.capa - fptr->rbuf.len < len) {
+        if (fptr->rbuf.capa > INT_MAX - len)
+            rb_raise(rb_eIOError, "ungetbyte failed");
+        fptr->rbuf.capa += len;
+        REALLOC_N(fptr->rbuf.ptr, char, fptr->rbuf.capa);
+    }
+    io_ungetbyte(rb_str_new(buf, len), fptr);
+}
+
+static const char *
+search_wide_delim(const char *p, long len, const char *delim, int width)
+{
+    const char *e = p + len;
+    int index = 0;
+
+    while (index < width && delim[index] == 0) index++;
+    if (index == width) index = 0;
+
+    const char *candidate = p + index;
+    while (candidate < e) {
+        candidate = memchr(candidate, (unsigned char)delim[index], e - candidate);
+        if (candidate == NULL) break;
+        const char *start = candidate - index;
+        if ((start - p) % width == 0 && start + width <= e &&
+            memcmp(start, delim, width) == 0) {
+            return start;
+        }
+        candidate++;
+    }
+    return NULL;
+}
+
+static int
 appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp, rb_encoding *enc)
 {
     VALUE str = *strp;
@@ -3965,6 +4020,71 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp, rb_encoding *enc)
     }
 
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
+    if (rb_enc_mbminlen(enc) != 1) {
+        char buf[ONIGENC_CODE_TO_MBC_MAXLEN];
+        int len;
+
+        if (limit < 0) {
+            int width = rb_enc_mbminlen(enc);
+            int delim_len = rb_enc_codelen(delim, enc);
+
+            if (delim_len == width) {
+                rb_enc_mbcput(delim, buf, enc);
+                for (;;) {
+                    if (!READ_DATA_PENDING(fptr)) {
+                        READ_CHECK(fptr);
+                        if (io_fillbuf(fptr) < 0) return EOF;
+                    }
+                    long pending = READ_DATA_PENDING_COUNT(fptr);
+                    long complete = pending - pending % width;
+                    const char *p = READ_DATA_PENDING_PTR(fptr);
+                    const char *q = complete ? search_wide_delim(p, complete, buf, width) : NULL;
+                    long take = q ? q - p + width : complete;
+
+                    if (take > 0) {
+                        if (NIL_P(str))
+                            *strp = str = rb_str_buf_new(0);
+                        rb_str_buf_cat(str, p, take);
+                        fptr->rbuf.off += (int)take;
+                        fptr->rbuf.len -= (int)take;
+                    }
+                    if (q) return delim;
+                    if (complete == pending) continue;
+
+                    len = read_raw_character(fptr, enc, buf);
+                    if (len == 0) return EOF;
+                    if (NIL_P(str))
+                        *strp = str = rb_str_buf_new(0);
+                    rb_str_buf_cat(str, buf, len);
+                    int r = rb_enc_precise_mbclen(buf, buf + len, enc);
+                    if (MBCLEN_CHARFOUND_P(r) &&
+                        rb_enc_mbc_to_codepoint(buf, buf + len, enc) == (unsigned int)delim)
+                        return delim;
+                }
+            }
+        }
+
+        while ((len = read_raw_character(fptr, enc, buf)) > 0) {
+            if (NIL_P(str))
+                *strp = str = rb_str_buf_new(0);
+            rb_str_buf_cat(str, buf, len);
+            if (limit > 0) {
+                if (len > limit) {
+                    *lp = 0;
+                    return (unsigned char)buf[len - 1];
+                }
+                *lp = limit -= len;
+            }
+            int r = rb_enc_precise_mbclen(buf, buf + len, enc);
+            if (MBCLEN_CHARFOUND_P(r) &&
+                rb_enc_mbc_to_codepoint(buf, buf + len, enc) == (unsigned int)delim)
+                return delim;
+            if (limit == 0)
+                return (unsigned char)buf[len - 1];
+        }
+        *lp = limit;
+        return EOF;
+    }
     do {
         long pending = READ_DATA_PENDING_COUNT(fptr);
         if (pending > 0) {
@@ -4028,6 +4148,20 @@ swallow(rb_io_t *fptr, int term)
     }
 
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
+    rb_encoding *enc = io_read_encoding(fptr);
+    int widechar = rb_enc_mbminlen(enc) != 1;
+    if (widechar) {
+        char buf[ONIGENC_CODE_TO_MBC_MAXLEN];
+        int len;
+
+        while ((len = read_raw_character(fptr, enc, buf)) > 0) {
+            if (rb_enc_ascget(buf, buf + len, NULL, enc) != term) {
+                unread_raw_character(fptr, buf, len);
+                return TRUE;
+            }
+        }
+        return FALSE;
+    }
     do {
         size_t cnt;
         while ((cnt = READ_DATA_PENDING_COUNT(fptr)) > 0) {
