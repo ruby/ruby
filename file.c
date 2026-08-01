@@ -5822,16 +5822,22 @@ nogvl_truncate(void *ptr)
 
 /*
  *  call-seq:
- *     File.truncate(file_name, integer)  -> 0
+ *     File.truncate(filepath, size) -> 0
  *
- *  Truncates the file <i>file_name</i> to be at most <i>integer</i>
- *  bytes long. Not available on all platforms.
+ *  Adjusts the size of file +filepath+ to the given size; returns 0:
  *
- *     f = File.new("out", "w")
- *     f.write("1234567890")     #=> 10
- *     f.close                   #=> nil
- *     File.truncate("out", 5)   #=> 0
- *     File.size("out")          #=> 5
+ *    file = File.new('t.tmp', 'w+')
+ *    file.write('0123456789')
+ *    file.truncate(5)
+ *    file.rewind
+ *    file.read # => "01234"
+ *
+ *  Pads on the right with null characters if necessary:
+ *
+ *    file.truncate(10)
+ *    file.rewind
+ *    file.read # => "01234\u0000\u0000\u0000\u0000\u0000"
+ *    file.close
  *
  */
 
