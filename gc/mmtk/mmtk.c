@@ -22,6 +22,7 @@
 #endif
 
 struct objspace {
+    bool user_gc_disabled;
     bool measure_gc_time;
     bool gc_stress;
 
@@ -572,16 +573,30 @@ rb_mmtk_builder_init(void)
     return builder;
 }
 
+
 void *
 rb_gc_impl_objspace_alloc(void)
 {
-    MMTk_Builder *builder = rb_mmtk_builder_init();
-    MMTk_RubyBindingOptions binding_options = {
-        .suffix_size = RB_GC_OBJ_SUFFIX_SIZE,
-    };
-    mmtk_init_binding(builder, &binding_options, &ruby_upcalls);
+    /* One heap, binding and objspace per process (multi_objspace_p=false).  The VM
+     * shares the same objspace across all Ractors, so a re-entry returns the same
+     * instance. */
+    static struct objspace *the_objspace = NULL;
+    if (the_objspace == NULL) {
+        MMTk_Builder *builder = rb_mmtk_builder_init();
+        MMTk_RubyBindingOptions binding_options = {
+            .suffix_size = RB_GC_OBJ_SUFFIX_SIZE,
+        };
+        mmtk_init_binding(builder, &binding_options, &ruby_upcalls);
+        the_objspace = calloc(1, sizeof(struct objspace));
+    }
 
-    return calloc(1, sizeof(struct objspace));
+    return the_objspace;
+}
+
+bool
+rb_gc_impl_multi_objspace_p(void)
+{
+    return false;
 }
 
 static void gc_run_finalizers(void *data);
@@ -590,6 +605,10 @@ void
 rb_gc_impl_objspace_init(void *objspace_ptr)
 {
     struct objspace *objspace = objspace_ptr;
+
+    /* The objspace is a singleton (see rb_gc_impl_objspace_alloc).  A re-init must
+     * not clobber finalizer_table or ractor_caches. */
+    if (objspace->finalizer_table != NULL) return;
 
     objspace->measure_gc_time = true;
 
@@ -612,7 +631,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 void
 rb_gc_impl_objspace_free(void *objspace_ptr)
 {
-    free(objspace_ptr);
+    /* The objspace is a process-lifetime singleton. */
 }
 
 void *
@@ -631,6 +650,12 @@ rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor)
     cache->bump_pointer = mmtk_get_bump_pointer_allocator(cache->mutator);
 
     return cache;
+}
+
+void
+rb_gc_impl_objspace_retire_gc(void *objspace_ptr)
+{
+    /* A single objspace needs no per-Ractor GC at teardown. */
 }
 
 void
@@ -806,6 +831,22 @@ void
 rb_gc_impl_gc_disable(void *objspace_ptr, bool finish_current_gc)
 {
     mmtk_set_gc_enabled(false);
+}
+
+bool
+rb_gc_impl_user_gc_disabled_set(void *objspace_ptr, bool disable)
+{
+    struct objspace *objspace = objspace_ptr;
+    const bool was = objspace->user_gc_disabled;
+    objspace->user_gc_disabled = disable;
+    return was;
+}
+
+bool
+rb_gc_impl_user_gc_disabled_p(void *objspace_ptr)
+{
+    struct objspace *objspace = objspace_ptr;
+    return objspace->user_gc_disabled;
 }
 
 bool
@@ -1203,6 +1244,18 @@ void
 rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
 {
     mmtk_register_wb_unprotected_object((MMTk_ObjectReference)obj);
+}
+
+void
+rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
+{
+    /* MMTk has no per-page shareable bits. */
+}
+
+void
+rb_gc_impl_pin_in_flight_message(void *objspace_ptr, VALUE obj)
+{
+    /* With a single objspace there is nothing to pin. */
 }
 
 void
@@ -1744,4 +1797,72 @@ const char *
 rb_gc_impl_active_gc_name(void)
 {
     return "mmtk";
+}
+
+bool
+rb_gc_impl_during_global_gc_p(void *objspace_ptr)
+{
+    /* An mmtk GC is always a stop-the-world global GC.  Helpers used during marking
+     * (ractor_sync_mark and friends) read this to tell whether every mutator has
+     * stopped. */
+    struct objspace *objspace = objspace_ptr;
+    return objspace->world_stopped;
+}
+
+bool
+rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
+{
+    /* With a single objspace there is no cross-objspace pinning to track. */
+    return false;
+}
+
+size_t
+rb_gc_impl_heap_page_count(void *objspace_ptr)
+{
+    /* With a single objspace zombie_objspaces is always empty. */
+    return 0;
+}
+
+void
+rb_gc_impl_objspace_absorb(void *dst_ptr, void *src_ptr)
+{
+    /* A single objspace. */
+}
+
+void
+rb_gc_impl_gc_rest(void *objspace_ptr)
+{
+    /* An mmtk GC completes stop-the-world: there is no in-progress incremental
+     * mark or lazy sweep state. */
+}
+
+struct each_objects_shareable_data {
+    int (*func)(void *, void *, size_t, void *);
+    void *data;
+};
+
+static int
+each_objects_shareable_i(void *start, void *end, size_t stride, void *d)
+{
+    struct each_objects_shareable_data *data = d;
+    for (VALUE obj = (VALUE)start; obj < (VALUE)end; obj += stride) {
+        if (RB_FL_TEST_RAW(obj, RUBY_FL_SHAREABLE)) {
+            int ret = data->func((void *)obj, (void *)(obj + stride), stride, data->data);
+            if (ret) return ret;
+        }
+    }
+    return 0;
+}
+
+void
+rb_gc_impl_each_objects_shareable(void *objspace_ptr, int (*func)(void *, void *, size_t, void *), void *data)
+{
+    struct each_objects_shareable_data d = { func, data };
+    rb_gc_impl_each_objects(objspace_ptr, each_objects_shareable_i, &d);
+}
+
+void
+rb_gc_impl_each_objects_foreign(void *objspace_ptr, int (*func)(void *, void *, size_t, void *), void *data)
+{
+    /* With a single objspace no object lives in a foreign objspace. */
 }
