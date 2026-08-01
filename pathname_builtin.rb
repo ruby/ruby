@@ -1594,7 +1594,7 @@ class Pathname    # * File *
   # file.size                         # => 3469
   # file.close
   # ```
-  # 
+  #
   def open(...) # :yield: file
     File.open(@path, ...)
   end
