@@ -22,24 +22,25 @@
 # Advantages of using a pathname instead of these others:
 #
 # - You don't have to know which class or module has which methods.
-# - You don't have to keep typing the path variable or constants.
+# - You don't have to keep typing the class name and path variable.
 #
 # Without pathnames:
 #
-#   path = 'README.md'
-#   File.exist?(path) # => true
-#   File.file?(path) # => true
-#   File.writable?(path) # => true
-#   Dir.mkdir('tempdir')
-#   Dir.rmdir('tempdir')
+#   filepath = 'README.md'
+#   File.exist?(filepath)    # => true
+#   File.file?(filepath)     # => true
+#   File.writable?(filepath) # => true
+#   path = 'tempdir'
+#   Dir.mkdir(dirpath)
+#   Dir.rmdir(dirpath)
 #
 # With pathnames:
 #
-#   pn = Pathname('README.md') # => #<Pathname:README.md>
-#   pn.exist? # => true
-#   pn.file? # => true
+#   pn = Pathname('README.md')
+#   pn.exist?    # => true
+#   pn.file?     # => true
 #   pn.writable? # => true
-#   pn = Pathname('tempdir') # => #<Pathname:tempdir>
+#   pn = Pathname('tempdir')
 #   pn.mkdir
 #   pn.rmdir
 #
