@@ -700,10 +700,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
             r->r_stdout = rb_io_prep_stdout();
             r->r_stderr = rb_io_prep_stderr();
 
-            /* Build the interrupt queue and mask stack here, on the new Ractor's
-             * own main thread, instead of carrying over the ones the creating
-             * thread made. The mask stack starts empty so a new Ractor does not
-             * inherit the creating thread's Thread.handle_interrupt state. */
+            /* 割り込みキューとマスクスタックは親の objspace 上で作られたものなので、
+             * この Ractor 自身が所有するオブジェクトで作り直す。マスクスタックを空で
+             * 始めるのは、継承すると親の unshareable なマスク Hash を参照するため。 */
             th->pending_interrupt_queue = rb_ary_hidden_new(0);
             th->pending_interrupt_mask_stack = rb_ary_hidden_new(0);
         }
@@ -907,7 +906,6 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
         th->invoke_arg.proc.proc = rb_proc_isolate_bang(params->proc, Qnil);
         th->invoke_arg.proc.args = INT2FIX(RARRAY_LENINT(params->args));
         th->invoke_arg.proc.kw_splat = rb_keyword_given_p();
-        rb_ractor_send_parameters(ec, params->g, params->args);
         break;
 
       case thread_invoke_type_func:
@@ -924,11 +922,16 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
     th->thgroup = current_th->thgroup;
 
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
-        /* A new Ractor's main thread builds these on start
-         * (thread_start_func_2); leave them unset until then. */
+        /* 子 Ractor の main thread が起動時(thread_start_func_2)に自分の objspace で
+         * 作り直す。ここで作ると親の objspace 上に root 無しで残り、起動前に親の
+         * local GC に解放され後の mark が解放済みを踏む。0(未初期化)のままにする。 */
         th->pending_interrupt_queue = 0;
         th->pending_interrupt_mask_stack = 0;
         th->pending_interrupt_queue_checked = 0;
+        /* thread group も同様。親 Ractor の objspace 上にあり、ここで保持すると子の
+         * Thread wrapper が shref 無しで foreign な unshareable を指し containment
+         * 違反になる。thread_do_start_proc が作り直すまで 0(未初期化)にする。 */
+        th->thgroup = 0;
     }
     else {
         th->pending_interrupt_queue = rb_ary_hidden_new(0);
@@ -940,6 +943,24 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
     RUBY_DEBUG_LOG("r:%u th:%u", rb_ractor_id(th->ractor), rb_th_serial(th));
 
     rb_ractor_living_threads_insert(th->ractor, th);
+
+    if (th->invoke_type == thread_invoke_type_ractor_proc) {
+        /* 子が vm->ractor.set に入ってから default port を作り引数を送る。生成〜参照の間に
+         * global GC が走っても root scan が子の default_port を mark する。send が失敗
+         * (copy 不可等)したら set への参加を巻き戻す。残すと terminate_all が待ち続ける。 */
+        rb_ractor_setup_default_port(params->g);
+        enum ruby_tag_type state;
+        EC_PUSH_TAG(ec);
+        if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+            rb_ractor_send_parameters(ec, params->g, params->args);
+        }
+        EC_POP_TAG();
+        if (state != TAG_NONE) {
+            th->status = THREAD_KILLED;
+            rb_ractor_cancel_creation(params->g, th);
+            EC_JUMP_TAG(ec, state);
+        }
+    }
 
     /* kick thread */
     err = native_thread_create(th);
@@ -1074,7 +1095,58 @@ rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
         .args = args,
         .proc = proc,
     };
-    return thread_create_core(rb_thread_alloc(rb_cThread), &params);
+
+    /* 子 Ractor の main thread とルート Fiber の wrapper を子の objspace へ直接
+     * 割り当て、スレッドを所有オブジェクトで構成する。cr->objspace は whole-VM
+     * walk が参照するので、入れ替えは VM lock 下で他から不可視に行う。 */
+    VALUE thval;
+    rb_ractor_t *cr = GET_RACTOR();
+    const bool multi_objspace = rb_gc_multi_objspace_p();
+    RB_VM_LOCKING() {
+        void *const parent_objspace = cr->objspace;
+        if (multi_objspace) cr->objspace = r->objspace;
+        /* 下の wrapper 割り当てで GC を再入させない。cr->objspace が子を指す間は
+         * creator 自身の objspace がどの walk からも漏れ、global GC が飛ばして stale
+         * mark bits = UAF になる。単一オブジェクトなので抑止しても増えるだけ。 */
+        VALUE gc_was_disabled = rb_gc_local_disable_no_rest();
+        thval = rb_thread_alloc(rb_cThread);
+        if (gc_was_disabled == Qfalse) rb_gc_local_enable();
+        if (multi_objspace) cr->objspace = parent_objspace;
+        /* 子の objspace は wrapper を持つがまだ vm->ractor.set に無い。列挙可能に
+         * 保つ(ここと vm_insert_ractor の間に走る global GC が取りこぼし mark で
+         * ループするのを防ぐ)。vm_insert_ractor が set 参加時に VM lock 下でクリア。
+         * 単一スロット。set〜clear の間に GVL 解放は無く同 Ractor の生成は直列なので
+         * 上書き衝突は起きない(将来 GVL を手放す変更が入ると破れるので assert)。 */
+        if (multi_objspace) {
+            RUBY_ASSERT(cr->creating_child_objspace == NULL);
+            cr->creating_child_objspace = r->objspace;
+        }
+    }
+
+    /* vm_insert_ractor までに生成は失敗し得る(IsolationError 等)。cover を残すと
+     * 死んだ子の objspace が二重列挙され merge 後に dangle する。失敗時は VM lock
+     * 下で objspace を zombie_objspaces 表 へ渡し cover を落とし r->objspace=NULL にする。 */
+    enum ruby_tag_type state;
+    VALUE thret = Qundef;
+    rb_execution_context_t *ec = GET_EC();
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        thret = thread_create_core(thval, &params);
+    }
+    EC_POP_TAG();
+    if (state != TAG_NONE) {
+        RB_VM_LOCKING() {
+            if (cr->creating_child_objspace == r->objspace) {
+                cr->creating_child_objspace = NULL;
+            }
+            if (r->objspace) {
+                rb_gc_objspace_disown(r->objspace);
+                r->objspace = NULL;
+            }
+        }
+        EC_JUMP_TAG(ec, state);
+    }
+    return thret;
 }
 
 
@@ -5083,8 +5155,9 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
 
     /* may be held by any thread in parent */
     rb_native_mutex_initialize(&th->interrupt_lock);
-    rb_native_mutex_initialize(&vm->once_lock);
-    rb_native_cond_initialize(&vm->once_cond);
+    rb_gc_zombie_objspaces_atfork();
+    rb_gc_atfork_global_locks();
+    rb_generic_fields_lock_atfork();
     ccan_list_head_init(&th->interrupt_exec_tasks);
 
     vm->fork_gen++;
