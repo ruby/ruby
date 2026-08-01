@@ -69,6 +69,8 @@ class TestIO_Console < Test::Unit::TestCase
     tty = STDIN.tty?(:any)
     assert_include([true, false], tty)
     assert_equal(tty, STDIN.tty?(:any, :any))
+    assert_equal(tty, STDIN.tty?(nil, :any))
+    assert_equal(STDIN.tty?, STDIN.tty?(nil))
   end
 
   def test_tty_non_tty
@@ -77,7 +79,9 @@ class TestIO_Console < Test::Unit::TestCase
     File.open(IO::NULL) do |f|
       assert_not_predicate(f, :tty?)
       assert_not_operator(f, :tty?, :any)
+      assert_not_operator(f, :tty?, nil)
       assert_not_send([f, :tty?, :any, :any])
+      assert_not_send([f, :tty?, nil, :any])
 
       assert_raise(TypeError) {f.tty?("any")}
       assert_raise(ArgumentError) {f.tty?(:unknown)}
@@ -272,7 +276,9 @@ class TestIO_Console
     helper {|_, s|
       assert_predicate(s, :tty?)
       assert_operator(s, :tty?, :any)
+      assert_operator(s, :tty?, nil)
       assert_send([s, :tty?, :any, :any])
+      assert_send([s, :tty?, nil, :any])
 
       assert_raise(TypeError) {s.tty?("any")}
       assert_raise(ArgumentError) {s.tty?(:unknown)}

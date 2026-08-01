@@ -1941,6 +1941,8 @@ typedef enum {
  * If one or more +type+s are given, returns +true+ if the stream is
  * associated with any of the specified tty types.
  *
+ * - +nil+ : Returns the result of the default tty check, as if no type were
+ *   given.  It can be combined with other types.
  * - +:any+ : Returns +true+ for any known kind of tty, including the
  *   default tty.
  * - +:cygwin+ : Returns +true+ for cygwin tty, on Windows.
@@ -1956,7 +1958,10 @@ console_platform_tty_p(int argc, VALUE *argv, VALUE io)
 	int i;
 	for (i = 0; i < argc; ++i) {
 	    VALUE m = argv[i];
-	    if (NIL_P(m)) continue;
+	    if (NIL_P(m)) {
+		mode |= platform_default_bit;
+		continue;
+	    }
 	    Check_Type(m, T_SYMBOL);
 	    if (m == ID2SYM(rb_intern("any"))) {
 		mode |= platform_any_bit;
