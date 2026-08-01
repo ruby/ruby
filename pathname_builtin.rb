@@ -55,8 +55,6 @@
 # - #join
 # - #mountpoint?
 # - #parent
-# - #realdirpath
-# - #realpath
 # - #relative?
 # - #relative_path_from
 # - #root?
