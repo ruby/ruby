@@ -30,7 +30,7 @@
 #   File.exist?(filepath)    # => true
 #   File.file?(filepath)     # => true
 #   File.writable?(filepath) # => true
-#   path = 'tempdir'
+#   dirpath = 'tempdir'
 #   Dir.mkdir(dirpath)
 #   Dir.rmdir(dirpath)
 #
