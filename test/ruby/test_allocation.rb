@@ -6,6 +6,9 @@ class TestAllocation < Test::Unit::TestCase
     # The namespace changes on i686 platform triggers a bug to allocate objects unexpectedly.
     # For now, skip these tests only on i686
     pend if RUBY_PLATFORM =~ /^i686/
+    # ObjectSpace.count_objects の生存数差分で割当数を測るため、測定中に GC が
+    # 走ると負になる。mmtk は初期 heap が小さく測定中の GC が常態。
+    omit 'live-count deltas need an idle GC' unless GC.config[:implementation] == 'default'
   end
 
   def munge_checks(checks)
