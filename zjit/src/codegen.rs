@@ -23,7 +23,7 @@ use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_fo
 use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
-use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
+use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, InlineDepth, PerfMap, DEFAULT_MAX_VERSIONS};
@@ -3107,15 +3107,15 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
 }
 
 /// Compile an identity check with a side exit
-fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, expected: crate::hir::Const, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
+fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, expected: hir::Const, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
     if matches!(reason, SideExitReason::GuardShape(_) ) {
         gen_incr_counter(asm, Counter::guard_shape_count);
     }
     let expected_opnd: Opnd = match expected {
-        crate::hir::Const::Value(v) => { Opnd::Value(v) }
-        crate::hir::Const::CInt64(v) => { v.into() }
-        crate::hir::Const::CPtr(v) => { Opnd::const_ptr(v) }
-        crate::hir::Const::CShape(v) => { Opnd::UImm(v.0 as u64) }
+        hir::Const::Value(v) => { Opnd::Value(v) }
+        hir::Const::CInt64(v) => { v.into() }
+        hir::Const::CPtr(v) => { Opnd::const_ptr(v) }
+        hir::Const::CShape(v) => { Opnd::UImm(v.0 as u64) }
         _ => panic!("gen_guard_bit_equals: unexpected hir::Const {expected:?}"),
     };
     asm.cmp(val, expected_opnd);
@@ -3123,18 +3123,18 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, function: &Func
     val
 }
 
-fn mask_to_opnd(mask: crate::hir::Const) -> Option<Opnd> {
+fn mask_to_opnd(mask: hir::Const) -> Option<Opnd> {
     match mask {
-        crate::hir::Const::CUInt8(v) => Some(Opnd::UImm(v as u64)),
-        crate::hir::Const::CUInt16(v) => Some(Opnd::UImm(v as u64)),
-        crate::hir::Const::CUInt32(v) => Some(Opnd::UImm(v as u64)),
-        crate::hir::Const::CUInt64(v) => Some(Opnd::UImm(v)),
+        hir::Const::CUInt8(v) => Some(Opnd::UImm(v as u64)),
+        hir::Const::CUInt16(v) => Some(Opnd::UImm(v as u64)),
+        hir::Const::CUInt32(v) => Some(Opnd::UImm(v as u64)),
+        hir::Const::CUInt64(v) => Some(Opnd::UImm(v)),
         _ => None
     }
 }
 
 /// Compile a bitmask check with a side exit if none of the masked bits are not set
-fn gen_guard_any_bit_set(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, mask: crate::hir::Const, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
+fn gen_guard_any_bit_set(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, mask: hir::Const, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
     let mask_opnd = mask_to_opnd(mask).unwrap_or_else(|| panic!("gen_guard_any_bit_set: unexpected hir::Const {mask:?}"));
     asm.test(val, mask_opnd);
     asm.jz(jit, side_exit_with_recompile(jit, function, state, reason, recompile));
@@ -3142,7 +3142,7 @@ fn gen_guard_any_bit_set(jit: &mut JITState, asm: &mut Assembler, function: &Fun
 }
 
 /// Compile a bitmask check with a side exit if any of the masked bits are set
-fn gen_guard_no_bits_set(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, mask: crate::hir::Const, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
+fn gen_guard_no_bits_set(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, mask: hir::Const, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
     let mask_opnd = mask_to_opnd(mask).unwrap_or_else(|| panic!("gen_guard_no_bits_set: unexpected hir::Const {mask:?}"));
     asm.test(val, mask_opnd);
     asm.jnz(jit, side_exit(jit, function, state, reason));
@@ -3525,10 +3525,10 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
         return Err(CompileError::IseqStackTooLarge);
     }
 
-    let hir = trace_compile_phase("build_hir", ||
+    let function = trace_compile_phase("build_hir", ||
         crate::stats::with_time_stat(Counter::compile_hir_build_time_ns, || iseq_to_hir(iseq))
     );
-    let mut function = match hir {
+    let mut function = match function {
         Ok(function) => function,
         Err(err) => {
             debug!("ZJIT: iseq_to_hir: {err:?}: {}", iseq_get_location(iseq, 0));
