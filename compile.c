@@ -5857,7 +5857,10 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const 
                 ci = ci_flag_set(iseq, ci, VM_CALL_ARGS_SPLAT_MUT);
             }
             OPERAND_AT(iobj, 0) = (VALUE)ci;
-            RB_OBJ_WRITTEN(iseq, Qundef, iobj);
+            /* iobj は arena 上の INSN であって heap オブジェクトではない。barrier に渡すのは
+             * 新しく operand になった ci（f2286925f0 以来 iobj を渡していたが、非 heap ポインタの
+             * page を触りうる）。 */
+            RB_OBJ_WRITTEN(iseq, Qundef, ci);
 
             /* Given: h[*a], h[*b, 1] = ary
              *  h[*a] uses splatarray false and does not set VM_CALL_ARGS_SPLAT_MUT,
