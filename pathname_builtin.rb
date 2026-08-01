@@ -44,7 +44,7 @@
 #   pn.mkdir
 #   pn.rmdir
 #
-# In additions to its wrapper methods,
+# In addition to its wrapper methods,
 # \Pathname has certain "core" methods that are not simple wrappers:
 #
 # - #absolute?
