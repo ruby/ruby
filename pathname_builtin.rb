@@ -733,7 +733,7 @@ class Pathname
   # call-seq:
   #   mountpoint? -> true or false
   #
-  # Returns whether the path in `self` points to a mountpoint:
+  # Returns whether entry at the path in `self` is a mountpoint:
   #
   # ```ruby
   # Pathname('/').mountpoint?      # => true
@@ -1770,7 +1770,7 @@ class Pathname    # * File *
   # call-seq:
   #   readlink -> new_pathname
   #
-  # Returns a new pathname containing the string path to the entry referenced by `self`:
+  # Returns a new pathname containing the path to the entry represented by `self`:
   #
   # ```ruby
   # # Create Pathnames.
@@ -2411,7 +2411,7 @@ class Pathname    # * FileTest *
   # call-seq:
   #   socket? -> true or false
   #
-  # Returns whether the path in `self` points to a socket entry:
+  # Returns whether entry at the path in `self` is a socket:
   #
   # ```ruby
   # require 'socket'
@@ -2456,8 +2456,8 @@ class Pathname    # * FileTest *
   # call-seq:
   #   readable? -> true or false
   #
-  # Returns whether the path in `self` points to an entry
-  # that is readable by the owner and group of the current process:
+  # Returns whether the entry at the path in `self`
+  # is readable by the owner and group of the current process:
   #
   # ```ruby
   # pn = Pathname('/tmp/secret.txt')
@@ -2644,8 +2644,8 @@ class Pathname    # * FileTest *
   # call-seq:
   #   writable? => true or false
   #
-  # Returns whether the path in `self` points to an entry that is writable
-  # by the owner and group of the current process:
+  # Returns whether entry at the path in `self`
+  # is writable by the owner and group of the current process:
   #
   # ```ruby
   # pn = Pathname('/tmp/secret.txt')
@@ -2852,8 +2852,8 @@ class Pathname
   # pn.rmdir
   # ```
   #
-  # Raises an exception if the directory is not empty,
-  # or if the path does not point to a directory.
+  # Raises an exception if the entry at the path in `self` is not a directory,
+  # or if the directory is not empty.
   #
   # Use method #rmtree to delete the entire filetree at the path.
   def rmdir() Dir.rmdir(@path) end
