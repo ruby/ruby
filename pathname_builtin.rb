@@ -1682,7 +1682,12 @@ class Pathname    # * File *
   # see [Filename Matching](rdoc-ref:file/filename_matching.md).
   def fnmatch(pattern, ...) File.fnmatch(pattern, @path, ...) end
 
-  # See <tt>File.fnmatch?</tt> (same as #fnmatch).
+  # :markup: markdown
+  #
+  # call-seq:
+  #   fnmatch?(pattern, flags = 0) -> true or false
+  #
+  # Same as #fnmatch.
   def fnmatch?(pattern, ...) File.fnmatch?(pattern, @path, ...) end
 
   #  call-seq:
