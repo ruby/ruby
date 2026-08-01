@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "ENV.keys" do
 
@@ -8,7 +9,7 @@ describe "ENV.keys" do
 
   it "returns the keys in the locale encoding" do
     ENV.keys.each do |key|
-      key.encoding.should == Encoding.find('locale')
+      key.encoding.should == ENVSpecs.encoding
     end
   end
 end
