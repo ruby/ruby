@@ -158,7 +158,7 @@
 # - #file?:
 #   Returns whether the entry at the path in +self+ exists and is a regular file.
 # - #find:
-#   Performs a depth-first traversal of the path in +self_;
+#   Performs a depth-first traversal of the path in +self+;
 #   calls the block with each found path.
 # - #fnmatch:
 #   Returns whether the given pattern matches against the path in +self+.
