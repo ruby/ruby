@@ -1571,7 +1571,30 @@ class Pathname    # * File *
   # Raises an exception if the entry at the path in `self` exists.
   def make_link(old) File.link(old, @path) end
 
-  # See <tt>File.open</tt>.  Opens the file for reading or writing.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   open(mode = 'r', permissions = 0666, **options) {|file| ... } -> object
+  #   open(mode = 'r', permissions = 0666, **options) -> file
+  #
+  # Creates a File object for the entry at the path in `self` and opens the file;
+  # see File.new for details.
+  #
+  # With a block given, calls the block with the file;
+  # closes the file on block exit:
+  #
+  # ```ruby
+  # Pathname('README.md').open {|file| file.size } # => 3469
+  # ```
+  #
+  # With no block given, returns the file:
+  #
+  # ```ruby
+  # file = Pathname('README.md').open # => #<File:README.md>
+  # file.size                         # => 3469
+  # file.close
+  # ```
+  # 
   def open(...) # :yield: file
     File.open(@path, ...)
   end
