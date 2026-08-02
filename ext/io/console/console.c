@@ -1914,7 +1914,6 @@ console_ttyname(VALUE io)
 # define console_ttyname rb_f_notimplement
 #endif
 
-#ifdef HAVE_RB_PREPEND_MODULE
 typedef enum {
     platform_default,
 #if defined _WIN32 || defined __CYGWIN__
@@ -2011,7 +2010,6 @@ console_platform_tty_p(int argc, VALUE *argv, VALUE io)
     }
     return ret;
 }
-#endif
 
 /*
  * IO console methods
@@ -2081,7 +2079,6 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "check_winsize_changed", console_check_winsize_changed, 0);
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
     rb_define_method(rb_cIO, "ttyname", console_ttyname, 0);
-#ifdef HAVE_RB_PREPEND_MODULE
     {
 	/* :stopdoc: */
 	VALUE platform = rb_define_module_under(rb_cIO, "platform_tty");
@@ -2091,9 +2088,12 @@ InitVM_console(void)
 	    rb_define_method(rb_cIO, "tty?", console_platform_tty_p, -1);
 	    rb_define_method(rb_cIO, "isatty", console_platform_tty_p, -1);
 	}
+#ifdef HAVE_RB_PREPEND_MODULE
 	rb_prepend_module(rb_cIO, platform);
-    }
+#else
+	rb_funcall(rb_cIO, rb_intern_const("prepend"), 1, platform);
 #endif
+    }
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	/* :nodoc: */
