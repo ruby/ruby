@@ -545,7 +545,7 @@ _PREFIXED_SYMBOL = TOKEN_PASTE($(SYMBOL_PREFIX),name)
 
 probes.stamp: $(DTRACE_REBUILD_OBJS)
 	$(Q) if test -f $@ -o -f probes.$(OBJEXT); then \
-	  $(RM) $(DTRACE_REBUILD_OBJS) $@; \
+	  $(RM) $(DTRACE_REBUILD_OBJS) $@ probes.$(OBJEXT); \
 	  $(ECHO0) "rebuilding objects which were modified by \"dtrace -G\""; \
 	  $(MAKE) $(DTRACE_REBUILD_OBJS); \
 	fi
