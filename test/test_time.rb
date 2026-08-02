@@ -124,7 +124,11 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     s = "1996-12-19T16:39:57-08:00"
     assert_equal(t, Time.__send__(method, s))
     assert_equal(t, Time.__send__(method, s.sub(/:(?=00\z)/, '')))
-    assert_equal(t, Time.__send__(method, s.sub(/:00\z/, '')))
+    if method == :rfc3339
+      assert_raise(ArgumentError) { Time.rfc3339(s.sub(/:00\z/, '')) }
+    else
+      assert_equal(t, Time.__send__(method, s.sub(/:00\z/, '')))
+    end
     # There is no way to generate time string with arbitrary timezone.
     s = "1996-12-20T00:39:57Z"
     assert_equal(t, Time.__send__(method, s))
@@ -182,6 +186,7 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
       [Time.local(2000, 1, 1, 12, 0, 0), "2000-01-01T12:00:00"],
       [Time.local(2000, 1, 16, 12, 0, 0), "2000-01-16T12:00:00"],
       [Time.local(2000, 1, 16, 0, 0, 0), "2000-01-16T00:00:00"],
+      [Time.utc(2000, 1, 16, 0, 0, 0), "2000-01-16T00:00:00+00"],
     ]
     local_times.each do |expected, time|
       if method == :rfc3339

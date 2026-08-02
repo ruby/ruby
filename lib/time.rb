@@ -660,7 +660,7 @@ class Time
           [T\s]
           (\d\d):(\d\d):(\d\d)
           (\.\d+)?
-          (Z|[+-]\d\d(?::?\d\d)?)
+          (Z|[+-]\d\d:?\d\d)
           \s*\z/ix
       _xmlschema(pattern, time)
     end
