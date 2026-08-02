@@ -4762,13 +4762,25 @@ s_absolute_path(int c, const VALUE * v, VALUE _)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.absolute_path?(file_name)  ->  true or false
+ *    File.absolute_path?(path) -> true or false
  *
- *  Returns <code>true</code> if +file_name+ is an absolute path, and
- *  <code>false</code> otherwise.
+ *  Returns whether the given `path` is an absolute path:
  *
- *     File.absolute_path?("c:/foo")     #=> false (on Linux), true (on Windows)
+ *  ```ruby
+ *  File.absolute_path?('/home') # => true
+ *  File.absolute_path?('lib')   # => false
+ *  ```
+ *
+ *  The result is OS-dependent for some paths:
+ *
+ *  ```ruby
+ *  File.absolute_path?('C:/')   # => true   # On Windows.
+ *  File.absolute_path?('C:/')   # => false  # Elsewhere.
+ *  ```
+ *
  */
 
 static VALUE
