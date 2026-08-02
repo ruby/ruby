@@ -24,7 +24,7 @@ use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Co
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
 use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendData, SendDirectData, PushInlineFrameData, SendFallbackReason, qualified_method_name};
+use crate::hir::{BlockHandler, CCallData, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendData, SendDirectData, PushInlineFrameData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, InlineDepth, PerfMap, DEFAULT_MAX_VERSIONS};
 use crate::cast::IntoUsize;
@@ -735,7 +735,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardLess { left, right, ref reason, state } => gen_guard_less(jit, asm, function, opnd!(left), opnd!(right), **reason, &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state, .. } => gen_guard_greater_eq(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, function, invariant, &function.frame_state(*state))),
-        Insn::CCall { cfunc, recv, args, name, owner, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, *owner, opnd!(recv), opnds!(args)),
+        Insn::CCall(insn) => {
+            let CCallData { cfunc, recv, args, name, owner, return_type: _, elidable: _ } = &**insn;
+            gen_ccall(asm, *cfunc, *name, *owner, opnd!(recv), opnds!(args))
+        }
         Insn::CCallWithFrame(insn) => {
             let CCallWithFrameData { cfunc, recv, name, args, cme, state, block, .. } = &**insn;
             gen_ccall_with_frame(jit, asm, function, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *block, &function.frame_state(*state))

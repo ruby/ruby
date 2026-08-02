@@ -7,7 +7,7 @@ mod size_tests {
 
     #[test]
     fn test_size_of_insn() {
-        assert_eq!(std::mem::size_of::<Insn>(), 80);
+        assert_eq!(std::mem::size_of::<Insn>(), 72);
     }
 
     #[test]
@@ -38,7 +38,7 @@ mod printer_tests {
             let cme = unsafe { rb_callable_method_entry(rb_cInteger, name) };
             assert!(!cme.is_null());
 
-            let ccall = print_same_cfunc_twice(|| Insn::CCall {
+            let ccall = print_same_cfunc_twice(|| Insn::CCall(Box::new(CCallData {
                 cfunc,
                 recv: InsnId(0),
                 args: vec![],
@@ -46,7 +46,7 @@ mod printer_tests {
                 owner: Qnil,
                 return_type: types::Any,
                 elidable: false,
-            });
+            })));
             let ccall_with_frame = print_same_cfunc_twice(|| {
                 Insn::CCallWithFrame(Box::new(CCallWithFrameData {
                     cd: std::ptr::null(),
