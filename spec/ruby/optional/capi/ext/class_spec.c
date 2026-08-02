@@ -144,6 +144,11 @@ static VALUE class_spec_include_module(VALUE self, VALUE klass, VALUE module) {
   return klass;
 }
 
+static VALUE class_spec_prepend_module(VALUE self, VALUE klass, VALUE module) {
+  rb_prepend_module(klass, module);
+  return klass;
+}
+
 void Init_class_spec(void) {
   VALUE cls = rb_define_class("CApiClassSpecs", rb_cObject);
   rb_define_method(cls, "define_call_super_method", class_spec_define_call_super_method, 2);
@@ -173,6 +178,7 @@ void Init_class_spec(void) {
   rb_define_method(cls, "rb_define_class_id_under", class_spec_rb_define_class_id_under, 3);
   rb_define_method(cls, "rb_define_class_variable", class_spec_define_class_variable, 3);
   rb_define_method(cls, "rb_include_module", class_spec_include_module, 2);
+  rb_define_method(cls, "rb_prepend_module", class_spec_prepend_module, 2);
 }
 
 #ifdef __cplusplus
