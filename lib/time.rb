@@ -670,7 +670,9 @@ class Time
     if RUBY_VERSION >= "3.2"
       def _xmlschema(pattern, time) # :nodoc:
         if pattern.match?(time)
-          new(time.strip)
+          time = time.strip
+          time.upcase!
+          new(time)
         else
           raise ArgumentError.new("invalid xmlschema format: #{time.inspect}")
         end

@@ -166,6 +166,8 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
                  Time.__send__(method, "2000-03-04T23:00:00+03:00"))
     assert_equal(Time.utc(2000, 3, 4, 20, 0, 0),
                  Time.__send__(method, "2000-03-04T20:00:00Z"))
+    assert_equal(Time.utc(2000, 3, 4, 20, 0, 0),
+                 Time.__send__(method, "2000-03-04t20:00:00z"))
     assert_equal(Time.utc(2000, 1, 16, 12, 0, 0),
                  Time.__send__(method, "2000-01-16T12:00:00Z"))
     assert_equal(Time.utc(1999, 12, 31, 23, 0, 0),
