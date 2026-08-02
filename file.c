@@ -4743,16 +4743,42 @@ rb_file_s_absolute_path(int argc, const VALUE *argv)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.absolute_path(file_name [, dir_string] )  ->  abs_file_name
+ *    File.absolute_path(path, dirpath = '.') -> absolute_path
  *
- *  Converts a pathname to an absolute pathname. Relative paths are
- *  referenced from the current working directory of the process unless
- *  <i>dir_string</i> is given, in which case it will be used as the
- *  starting point. If the given pathname starts with a ``<code>~</code>''
- *  it is NOT expanded, it is treated as a normal directory name.
+ *  Returns the string absolute path for the given `path`.
  *
- *     File.absolute_path("~oracle/bin")       #=> "<relative_path>/~oracle/bin"
+ *  Evaluates a relative path with respect to the directory given by `dirpath`:
+ *
+ *  ```ruby
+ *  Dir.chdir('/snap')
+ *  # Default dirpath.
+ *  File.absolute_path('README')                  # => "/snap/README"
+ *  File.absolute_path('bin')                     # => "/snap/bin"
+ *  File.absolute_path('bin/../var')              # => "/snap/var"
+ *  # Other dirpath.
+ *  File.absolute_path('../zip', '/usr/bin/ruby') # => "/usr/bin/zip"
+ *  Dir.chdir('/usr/bin')
+ *  File.absolute_path('../../snap', '__FILE__')  # => "/usr/snap"
+ *  ```
+ *
+ *  Evaluates an absolute path without respect to `dirpath`:
+ *
+ *  ```ruby
+ *  File.absolute_path('/snap')                   # => "/snap"
+ *  File.absolute_path('/snap', 'nosuch')         # => "/snap"
+ *  File.absolute_path('/snap/../snap')           # => "/snap"
+ *  ```
+ *
+ *  If the given pathname starts with the tilde character (`'~'`),
+ *  it is not expanded:
+ *
+ *  ```ruby
+ *  File.absolute_path("~nosuch")                 # => "/usr/bin/~nosuch"
+ *  ```
+ *
  */
 
 static VALUE
