@@ -1159,18 +1159,6 @@ gc_malloc_counters_snapshot(rb_objspace_t *objspace, struct gc_malloc_bytes *c)
 #define gc_config_full_mark_set(b) (objspace->gc_config.full_mark = (int)(b))
 #define gc_config_full_mark_val    (objspace->gc_config.full_mark)
 
-#ifndef DURING_GC_COULD_MALLOC_REGION_START
-# define DURING_GC_COULD_MALLOC_REGION_START() \
-    assert(rb_during_gc()); \
-    bool _prev_enabled = rb_gc_impl_gc_enabled_p(objspace); \
-    rb_gc_impl_gc_disable(objspace, false)
-#endif
-
-#ifndef DURING_GC_COULD_MALLOC_REGION_END
-# define DURING_GC_COULD_MALLOC_REGION_END() \
-    if (_prev_enabled) rb_gc_impl_gc_enable(objspace)
-#endif
-
 static inline enum gc_mode
 gc_mode_verify(enum gc_mode mode)
 {
