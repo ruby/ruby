@@ -946,6 +946,131 @@ console_set_winsize(VALUE io, VALUE size)
 #endif
 
 #ifdef _WIN32
+typedef struct {
+    HANDLE handle;
+    INPUT_RECORD *records;
+    DWORD length;
+    DWORD count;
+    BOOL result;
+} read_console_input_args_t;
+
+static void *
+nogvl_read_console_input(void *ptr)
+{
+    read_console_input_args_t *args = ptr;
+    args->result = ReadConsoleInputW(args->handle, args->records, args->length, &args->count);
+    return 0;
+}
+
+static void
+console_input_event_set(VALUE event, const char *name, VALUE value)
+{
+    rb_hash_aset(event, ID2SYM(rb_intern(name)), value);
+}
+
+static VALUE
+console_input_event(const INPUT_RECORD *record)
+{
+    VALUE event = rb_hash_new();
+
+    switch (record->EventType) {
+      case KEY_EVENT:
+	console_input_event_set(event, "type", ID2SYM(rb_intern("key")));
+	console_input_event_set(event, "key_down", record->Event.KeyEvent.bKeyDown ? Qtrue : Qfalse);
+	console_input_event_set(event, "repeat_count", UINT2NUM(record->Event.KeyEvent.wRepeatCount));
+	console_input_event_set(event, "virtual_key_code", UINT2NUM(record->Event.KeyEvent.wVirtualKeyCode));
+	console_input_event_set(event, "virtual_scan_code", UINT2NUM(record->Event.KeyEvent.wVirtualScanCode));
+	console_input_event_set(event, "unicode_char", UINT2NUM(record->Event.KeyEvent.uChar.UnicodeChar));
+	console_input_event_set(event, "control_key_state", UINT2NUM(record->Event.KeyEvent.dwControlKeyState));
+	break;
+      case MOUSE_EVENT:
+	console_input_event_set(event, "type", ID2SYM(rb_intern("mouse")));
+	console_input_event_set(event, "position", rb_assoc_new(
+	    INT2NUM(record->Event.MouseEvent.dwMousePosition.Y),
+	    INT2NUM(record->Event.MouseEvent.dwMousePosition.X)));
+	console_input_event_set(event, "button_state", UINT2NUM(record->Event.MouseEvent.dwButtonState));
+	console_input_event_set(event, "control_key_state", UINT2NUM(record->Event.MouseEvent.dwControlKeyState));
+	console_input_event_set(event, "event_flags", UINT2NUM(record->Event.MouseEvent.dwEventFlags));
+	break;
+      case WINDOW_BUFFER_SIZE_EVENT:
+	console_input_event_set(event, "type", ID2SYM(rb_intern("window_buffer_size")));
+	console_input_event_set(event, "size", rb_assoc_new(
+	    INT2NUM(record->Event.WindowBufferSizeEvent.dwSize.Y),
+	    INT2NUM(record->Event.WindowBufferSizeEvent.dwSize.X)));
+	break;
+      case MENU_EVENT:
+	console_input_event_set(event, "type", ID2SYM(rb_intern("menu")));
+	console_input_event_set(event, "command_id", UINT2NUM(record->Event.MenuEvent.dwCommandId));
+	break;
+      case FOCUS_EVENT:
+	console_input_event_set(event, "type", ID2SYM(rb_intern("focus")));
+	console_input_event_set(event, "set_focus", record->Event.FocusEvent.bSetFocus ? Qtrue : Qfalse);
+	break;
+      default:
+	console_input_event_set(event, "type", UINT2NUM(record->EventType));
+	break;
+    }
+
+    return event;
+}
+
+/*
+ * call-seq:
+ *   io.console_input_events([max_events])   -> array
+ *
+ * Reads up to +max_events+ console input events, preserving their order.
+ * The default is one event.  Blocks until at least one event is available.
+ *
+ * Each event is returned as a Hash.  The +:type+ and remaining keys are:
+ *
+ * - +:key+ : +:key_down+, +:repeat_count+, +:virtual_key_code+,
+ *   +:virtual_scan_code+, +:unicode_char+, and +:control_key_state+.
+ * - +:mouse+ : +:position+ ([row, column]), +:button_state+,
+ *   +:control_key_state+, and +:event_flags+.
+ * - +:window_buffer_size+ : +:size+ ([rows, columns]).
+ * - +:menu+ : +:command_id+.
+ * - +:focus+ : +:set_focus+.
+ *
+ * This method is Windows only.
+ *
+ * You must require 'io/console' to use this method.
+ */
+static VALUE
+console_input_events(int argc, VALUE *argv, VALUE io)
+{
+    VALUE vmax;
+    DWORD max_events = 1;
+    read_console_input_args_t args;
+    VALUE event_buffer = 0;
+    VALUE events;
+    DWORD i;
+
+    rb_scan_args(argc, argv, "01", &vmax);
+    if (!NIL_P(vmax)) {
+	max_events = NUM2UINT(vmax);
+	if (max_events == 0) rb_raise(rb_eArgError, "max_events must be positive");
+    }
+
+    args.handle = (HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
+    args.records = ALLOCV_N(INPUT_RECORD, event_buffer, max_events);
+    args.length = max_events;
+    args.count = 0;
+    args.result = FALSE;
+    rb_thread_call_without_gvl(nogvl_read_console_input, &args, RUBY_UBF_IO, 0);
+    if (!args.result) {
+	int error = LAST_ERROR;
+	ALLOCV_END(event_buffer);
+	rb_syserr_fail(error, 0);
+    }
+
+    events = rb_ary_new_capa(args.count);
+    for (i = 0; i < args.count; ++i) {
+	rb_ary_push(events, console_input_event(&args.records[i]));
+    }
+    ALLOCV_END(event_buffer);
+    return events;
+}
+
 /*
  * call-seq:
  *   io.check_winsize_changed { ... }   -> io
@@ -974,6 +1099,7 @@ console_check_winsize_changed(VALUE io)
     return io;
 }
 #else
+#define console_input_events rb_f_notimplement
 #define console_check_winsize_changed rb_f_notimplement
 #endif
 
@@ -2076,6 +2202,7 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "scroll_backward", console_scroll_backward, 1);
     rb_define_method(rb_cIO, "clear_screen", console_clear_screen, 0);
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
+    rb_define_method(rb_cIO, "console_input_events", console_input_events, -1);
     rb_define_method(rb_cIO, "check_winsize_changed", console_check_winsize_changed, 0);
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
     rb_define_method(rb_cIO, "ttyname", console_ttyname, 0);

@@ -698,6 +698,77 @@ class TestIO_Console
   end
 end
 
+RbConfig::CONFIG["host_os"] =~ /mswin|mingw/ and defined?(IO.console) and IO.console and \
+TestIO_Console.class_eval do
+  def test_console_input_events
+    require "fiddle"
+
+    kernel32 = Fiddle.dlopen("kernel32.dll")
+    create_file = Fiddle::Function.new(
+      kernel32["CreateFileW"],
+      [Fiddle::TYPE_VOIDP, Fiddle::TYPE_LONG, Fiddle::TYPE_LONG, Fiddle::TYPE_VOIDP,
+       Fiddle::TYPE_LONG, Fiddle::TYPE_LONG, Fiddle::TYPE_VOIDP],
+      Fiddle::TYPE_INTPTR_T,
+    )
+    write_console_input = Fiddle::Function.new(
+      kernel32["WriteConsoleInputW"],
+      [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP, Fiddle::TYPE_LONG, Fiddle::TYPE_VOIDP],
+      Fiddle::TYPE_INT,
+    )
+    close_handle = Fiddle::Function.new(
+      kernel32["CloseHandle"],
+      [Fiddle::TYPE_VOIDP],
+      Fiddle::TYPE_INT,
+    )
+
+    key = [1, 0, 1, 2, 0x41, 0x1e, 0x03a9, 0x18].pack("S<S<L<S<S<S<S<L<")
+    resize = [4, 0, 120, 40].pack("S<S<s<s<").ljust(20, "\0")
+    mouse = [2, 0, 7, 9, 1, 0x10, 2].pack("S<S<s<s<L<L<L<")
+    menu = [8, 0, 123].pack("S<S<L<").ljust(20, "\0")
+    focus = [16, 0, 1].pack("S<S<L<").ljust(20, "\0")
+    written = [0].pack("L<")
+    conin = "CONIN$\0".encode(Encoding::UTF_16LE)
+    handle = create_file.call(conin, -0x40000000, 3, nil, 3, 0, nil)
+    assert_not_equal(-1, handle)
+    begin
+      records = key + resize + mouse + menu + focus
+      assert_not_equal(0, write_console_input.call(handle, records, 5, written))
+      assert_equal(5, written.unpack1("L<"))
+    ensure
+      close_handle.call(handle)
+    end
+
+    events = IO.console.console_input_events(128)
+    index = events.index {|event| event[:type] == :key && event[:unicode_char] == 0x03a9}
+    assert_not_nil(index)
+    assert_equal(
+      [
+        {
+          type: :key,
+          key_down: true,
+          repeat_count: 2,
+          virtual_key_code: 0x41,
+          virtual_scan_code: 0x1e,
+          unicode_char: 0x03a9,
+          control_key_state: 0x18,
+        },
+        {type: :window_buffer_size, size: [40, 120]},
+        {
+          type: :mouse,
+          position: [9, 7],
+          button_state: 1,
+          control_key_state: 0x10,
+          event_flags: 2,
+        },
+        {type: :menu, command_id: 123},
+        {type: :focus, set_focus: true},
+      ],
+      events[index, 5],
+    )
+    assert_raise(ArgumentError) {IO.console.console_input_events(0)}
+  end
+end
+
 class TestIO_Console
   def test_stringio_getch
     assert_ruby_status %w"--disable=gems -rstringio -rio/console", %q{
