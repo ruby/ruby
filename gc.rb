@@ -12,7 +12,7 @@ module GC
   # Keyword arguments:
   #
   # - +full_mark+:
-  #   its boolean value determines whether to perform a major garbage collection cycle:
+  #   a boolean value specifying whether to perform a major garbage collection cycle:
   #
   #   - +true+: initiates a major garbage collection cycle,
   #     meaning all objects (old and new) are marked.
@@ -20,20 +20,20 @@ module GC
   #     meaning only young objects are marked.
   #
   # - +immediate_mark+:
-  #   its boolean value determines whether to perform incremental marking:
+  #   a boolean value specifying whether marking is performed incrementally:
   #
   #   - +true+: marking is completed before the method returns.
-  #   - +false+: marking is performed by parts,
+  #   - +false+: marking is performed in parts,
   #     interleaved with program execution both before the method returns and afterward;
   #     therefore marking may not be completed before the return.
-  #     Note that if +full_mark+ is +false+, marking will always be immediate,
+  #     Note that if +full_mark+ is +false+, marking is always immediate,
   #     regardless of the value of +immediate_mark+.
   #
   # - +immediate_sweep+:
-  #   its boolean value determines whether to defer sweeping (using lazy sweep):
+  #   a boolean value specifying whether sweeping is deferred (lazy sweep):
   #
   #   - +true+: sweeping is completed before the method returns.
-  #   - +false+: sweeping is performed by parts,
+  #   - +false+: sweeping is performed in parts,
   #     interleaved with program execution both before the method returns and afterward;
   #     therefore sweeping may not be completed before the return.
   #
