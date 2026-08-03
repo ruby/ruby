@@ -91,22 +91,23 @@ module GC
   # call-seq:
   #   GC.stress = value -> value
   #
-  # Enables or disables stress mode;
-  # enabling stress mode will degrade performance; it is only for debugging.
+  # Enables or disables stress mode.
+  # Stress mode causes \GC to be invoked at every \GC opportunity
+  # (all memory and object allocations);
+  # it is intended only for debugging and severely degrades performance.
   #
   # Sets the current \GC stress mode to the given value:
   #
   # - If the value is +nil+ or +false+, disables stress mode.
   # - If the value is an integer,
   #   enables stress mode with certain flags; see below.
-  # - Otherwise, enables stress mode;
-  #   \GC is invoked at every \GC opportunity: all memory and object allocations.
+  # - Otherwise, enables stress mode without any flags.
   #
   # The flags are bits in the given integer:
   #
-  # - +0x01+: No major \GC.
-  # - +0x02+: No immediate sweep.
-  # - +0x04+: Full mark after malloc/calloc/realloc.
+  # - +0x01+: no major \GC.
+  # - +0x02+: no immediate sweep.
+  # - +0x04+: full mark after malloc/calloc/realloc.
   #
   def self.stress=(flag)
     Primitive.gc_stress_set_m flag
