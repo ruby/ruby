@@ -2545,7 +2545,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
  * file.write('foo')
  * File.atime(filepath) # => 2026-08-03 10:38:41.112266544 -0500
  * File.atime(dirpath)  # => 2026-08-03 10:31:02.899895047 -0500
- * # Write file; updates atime for file,but not directory.
+ * # Write file; updates atime for file, but not directory.
  * file.write('bar')
  * File.atime(filepath) # => 2026-08-03 10:38:41.112266544 -0500
  * File.atime(dirpath)  # => 2026-08-03 10:31:02.899895047 -0500
