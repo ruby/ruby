@@ -905,6 +905,23 @@ TestIO_Console.class_eval do
   end
 end
 
+RUBY_ENGINE == "jruby" && RbConfig::CONFIG["host_os"] =~ /mswin|mingw/ and \
+TestIO_Console.class_eval do
+  def test_jruby_windows_console_api
+    assert(IO::Console::Windows.const_defined?(:Native, false))
+    assert_respond_to(STDIN, :console_input_events)
+    assert_respond_to(STDIN, :input_pending?)
+    assert_respond_to(STDOUT, :console_mode)
+    assert_respond_to(STDOUT, :hide_cursor)
+    assert_respond_to(STDOUT, :show_cursor)
+  end
+
+  def test_jruby_windows_tty_types_are_all_validated
+    assert_raise(ArgumentError) {STDOUT.tty?(:any, :unknown)}
+    assert_raise(TypeError) {STDOUT.tty?(:any, "msys")}
+  end
+end
+
 class TestIO_Console
   def test_stringio_getch
     assert_ruby_status %w"--disable=gems -rstringio -rio/console", %q{

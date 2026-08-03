@@ -46,6 +46,7 @@ Gem::Specification.new do |s|
       lib/ffi/io/console/stty_console.rb
       lib/ffi/io/console/stub_console.rb
       lib/ffi/io/console/windows_constants.rb
+      lib/ffi/io/console/windows_console.rb
       lib/ffi/io/console/version.rb
     ])
   end
