@@ -122,6 +122,8 @@ unsafe extern "C" {
         ci: *const rb_callinfo,
     ) -> *const rb_callable_method_entry_t;
 
+    pub fn rb_jit_iseq_mark_ep_escape_recorded(iseq: IseqPtr);
+
     pub fn rb_zjit_offset_ractor_newobj_cache() -> usize;
 
     // Floats within range will be encoded without creating objects in the heap.
