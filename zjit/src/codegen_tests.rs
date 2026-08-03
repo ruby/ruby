@@ -1331,6 +1331,79 @@ fn test_send_nil_block_arg() {
 }
 
 #[test]
+fn test_send_proc_block_arg() {
+    assert_snapshot!(inspect("
+        def foo = yield 3
+        def test
+          blk = proc { |x| x * 2 }
+          foo(&blk)
+        end
+        test
+        test
+    "), @"6");
+}
+
+#[test]
+fn test_send_proc_block_arg_side_exit() {
+    assert_snapshot!(inspect("
+        def foo = yield 3
+        def test(blk) = foo(&blk)
+        test(proc { |x| x * 2 })
+        test(proc { |x| x * 2 })
+        [test(proc { |x| x * 2 }), test(:succ)]
+    "), @"[6, 4]");
+}
+
+#[test]
+fn test_send_proc_block_arg_lambda() {
+    assert_snapshot!(inspect("
+        def foo = yield 3
+        def test
+          blk = lambda { |x| x * 2 }
+          foo(&blk)
+        end
+        test
+        test
+    "), @"6");
+}
+
+#[test]
+fn test_send_proc_block_arg_rest_optional_keyword_callee() {
+    // Callee has rest/optional/keyword params (so `prepare_direct_send_args` builds
+    // a `NewArray` for the rest param) and also `yield`s, so it's eligible for the
+    // guarded-Proc block-arg direct-send specialization. The NewArray allocation
+    // happens between the Proc guard and the callee send.
+    assert_snapshot!(inspect("
+        def foo(opt = 10, *rest, kw: 20) = yield(opt + rest.sum + kw)
+        def test
+          blk = proc { |x| x + 1 }
+          foo(1, 2, &blk)
+        end
+        test
+        test
+    "), @"24");
+}
+
+#[test]
+fn test_send_proc_subclass_block_arg_falls_back() {
+    // A Proc subclass instance is not an exact-class Proc, so the block arg's
+    // profiled type should not match `is_proc` (which requires class_exact:Proc),
+    // and the call should fall back to a dynamic send rather than being
+    // (incorrectly) treated as a guardable exact Proc.
+    assert_snapshot!(inspect("
+        class MyProc < Proc; end
+
+        def foo = yield 3
+        def test
+          blk = MyProc.new { |x| x * 2 }
+          foo(&blk)
+        end
+        test
+        test
+    "), @"6");
+}
+
+#[test]
 fn test_send_symbol_block_arg() {
     assert_snapshot!(inspect("
         def test = [1, 2].map(&:to_s)
