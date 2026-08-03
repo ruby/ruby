@@ -454,6 +454,18 @@ class TestIO_Console
     end
   end unless RbConfig::CONFIG["host_os"] =~ /mswin|mingw/
 
+  def test_input_pending
+    IO.pipe do |read, write|
+      assert_false(read.input_pending?)
+      write.write("ab")
+      assert_true(read.input_pending?)
+      assert_equal("a", read.getc)
+      assert_true(read.input_pending?)
+      assert_equal("b", read.getc)
+      assert_false(read.input_pending?)
+    end
+  end unless RbConfig::CONFIG["host_os"] =~ /mswin|mingw/ || RUBY_ENGINE == "jruby"
+
   def assert_ctrl(expect, cc, r, w)
     sleep 0.1
     w.print cc
@@ -809,6 +821,12 @@ TestIO_Console.class_eval do
       records = key + resize + mouse + menu + focus
       assert_not_equal(0, write_console_input.call(handle, records, 5, written))
       assert_equal(5, written.unpack1("L<"))
+      assert_true(IO.console.input_pending?)
+      IO.pipe do |read, write|
+        assert_false(read.input_pending?)
+        write.write("a")
+        assert_true(read.input_pending?)
+      end
     ensure
       close_handle.call(handle)
     end

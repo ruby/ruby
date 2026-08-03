@@ -632,6 +632,43 @@ console_getch(int argc, VALUE *argv, VALUE io)
 
 /*
  * call-seq:
+ *   io.input_pending?          -> true or false
+ *
+ * Returns whether input can be read without blocking.
+ *
+ * You must require 'io/console' to use this method.
+ */
+static VALUE
+console_input_pending_p(VALUE io)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
+    if (rb_io_read_pending(fptr)) return Qtrue;
+#ifdef _WIN32
+    {
+	DWORD mode;
+	HANDLE h = (HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
+
+	if (GetConsoleMode(h, &mode)) return _kbhit() ? Qtrue : Qfalse;
+    }
+#endif
+#if defined HAVE_RB_IO_WAIT
+    return RTEST(rb_io_wait(io, RB_INT2NUM(RUBY_IO_READABLE), INT2FIX(0))) ? Qtrue : Qfalse;
+#else
+    {
+	struct timeval timeout = {0, 0};
+	int result;
+
+	result = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, &timeout);
+	if (result < 0) sys_fail(io);
+	return (result & RB_WAITFD_IN) ? Qtrue : Qfalse;
+    }
+#endif
+}
+
+/*
+ * call-seq:
  *   io.noecho {|io| }
  *
  * Yields +self+ with disabling echo back.
@@ -2306,6 +2343,7 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "cooked", console_cooked, 0);
     rb_define_method(rb_cIO, "cooked!", console_set_cooked, 0);
     rb_define_method(rb_cIO, "getch", console_getch, -1);
+    rb_define_method(rb_cIO, "input_pending?", console_input_pending_p, 0);
     rb_define_method(rb_cIO, "echo=", console_set_echo, 1);
     rb_define_method(rb_cIO, "echo?", console_echo_p, 0);
     rb_define_method(rb_cIO, "console_mode", console_conmode_get, 0);
