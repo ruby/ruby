@@ -8,11 +8,6 @@ require "bundler"
 RSpec.describe Bundler::ParallelInstaller do
   describe "priority queue" do
     before do
-      # Anchor the vendored Persistent classes on the real Gem::Net::HTTP
-      # before Artifice replaces it, see Artifice.activate_with. Requiring
-      # support/artifice/compact_index already activates Artifice, so this
-      # must come first.
-      require "bundler/vendored_persistent"
       require "support/artifice/compact_index"
       Artifice.activate_with(CompactIndexAPI)
 
@@ -103,11 +98,6 @@ RSpec.describe Bundler::ParallelInstaller do
         skip "This example does not work under a parent make jobserver"
       end
 
-      # Anchor the vendored Persistent classes on the real Gem::Net::HTTP
-      # before Artifice replaces it, see Artifice.activate_with. Requiring
-      # support/artifice/compact_index already activates Artifice, so this
-      # must come first.
-      require "bundler/vendored_persistent"
       require "support/artifice/compact_index"
       Artifice.activate_with(CompactIndexAPI)
 
