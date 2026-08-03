@@ -5425,7 +5425,7 @@ impl Function {
 
                 // Insert PushLightweightFrame and jump to callee body entry.
                 self.push_insn(block, Insn::PushInlineFrame {
-                    iseq, cme, recv, args: args.clone(), blockiseq, state,
+                    iseq, cme, recv, args, blockiseq, state,
                 });
                 self.count(block, Counter::inline_iseq_optimized_send_count);
                 self.push_insn(block, Insn::Jump(BranchEdge {
