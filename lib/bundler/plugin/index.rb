@@ -172,13 +172,15 @@ module Bundler
           data = index_f.read
 
           require "rubygems/yaml_serializer"
-          index = Gem::YAMLSerializer.load(data)
+          # Empty sections load as nil, e.g. from index files written by
+          # older Bundler versions, which dumped empty hashes as a bare key.
+          index = Gem::YAMLSerializer.load(data) || {}
 
-          @commands.merge!(index["commands"])
-          @hooks.merge!(index["hooks"])
+          @commands.merge!(index["commands"] || {})
+          @hooks.merge!(index["hooks"] || {})
           @load_paths.merge!(transform_index_paths(index["load_paths"]) {|p| absolutize_path(p, base) })
           @plugin_paths.merge!(transform_index_paths(index["plugin_paths"]) {|p| absolutize_path(p, base) })
-          @sources.merge!(index["sources"]) unless global
+          @sources.merge!(index["sources"] || {}) unless global
         end
       end
 
