@@ -444,6 +444,16 @@ class TestIO_Console
     end
   end
 
+  def test_cursor_visibility
+    run_pty(<<~'RUBY') do |r, _, _|
+      con = IO.console
+      abort unless con.hide_cursor.equal?(con)
+      abort unless con.show_cursor.equal?(con)
+    RUBY
+      assert_equal("\e[?25l\e[?25h", r.read(12))
+    end
+  end unless RbConfig::CONFIG["host_os"] =~ /mswin|mingw/
+
   def assert_ctrl(expect, cc, r, w)
     sleep 0.1
     w.print cc
@@ -700,6 +710,36 @@ end
 
 RbConfig::CONFIG["host_os"] =~ /mswin|mingw/ and defined?(IO.console) and IO.console and \
 TestIO_Console.class_eval do
+  def test_cursor_visibility
+    require "fiddle/import"
+
+    kernel32 = Module.new do
+      extend Fiddle::Importer
+      dlload "kernel32.dll"
+      extern "void *CreateFileW(void *, long, long, void *, long, long, void *)"
+      extern "int CloseHandle(void *)"
+      extern "int GetConsoleCursorInfo(void *, void *)"
+    end
+    File.open("CONOUT$", "r+") do |output|
+      info = [0, 0].pack("L<L<")
+      path = "CONOUT$\0".encode("UTF-16LE")
+      handle = kernel32.CreateFileW(path, -0x40000000, 3, nil, 3, 0, nil)
+      assert_not_equal(0, kernel32.GetConsoleCursorInfo(handle, info))
+      size, visible = info.unpack("L<L<")
+      begin
+        assert_same(output, output.hide_cursor)
+        assert_not_equal(0, kernel32.GetConsoleCursorInfo(handle, info))
+        assert_equal([size, 0], info.unpack("L<L<"))
+        assert_same(output, output.show_cursor)
+        assert_not_equal(0, kernel32.GetConsoleCursorInfo(handle, info))
+        assert_equal([size, 1], info.unpack("L<L<"))
+      ensure
+        visible == 0 ? output.hide_cursor : output.show_cursor
+        kernel32.CloseHandle(handle)
+      end
+    end
+  end
+
   def test_console_input_events
     require "fiddle"
 

@@ -1410,6 +1410,54 @@ console_cursor_pos(VALUE io)
 #endif
 }
 
+static VALUE
+console_cursor_visibility(VALUE io, int visible)
+{
+#ifdef _WIN32
+    HANDLE h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(io));
+    CONSOLE_CURSOR_INFO info;
+
+    if (!GetConsoleCursorInfo(h, &info)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    info.bVisible = visible;
+    if (!SetConsoleCursorInfo(h, &info)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+#else
+    rb_io_write(io, rb_str_new_cstr(visible ? CSI "?25h" : CSI "?25l"));
+#endif
+    return io;
+}
+
+/*
+ * call-seq:
+ *   io.hide_cursor             -> io
+ *
+ * Hides the cursor.
+ *
+ * You must require 'io/console' to use this method.
+ */
+static VALUE
+console_hide_cursor(VALUE io)
+{
+    return console_cursor_visibility(io, 0);
+}
+
+/*
+ * call-seq:
+ *   io.show_cursor             -> io
+ *
+ * Shows the cursor.
+ *
+ * You must require 'io/console' to use this method.
+ */
+static VALUE
+console_show_cursor(VALUE io)
+{
+    return console_cursor_visibility(io, 1);
+}
+
 /*
  * call-seq:
  *   io.goto(line, column)      -> io
@@ -2201,6 +2249,8 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "goto", console_goto, 2);
     rb_define_method(rb_cIO, "cursor", console_cursor_pos, 0);
     rb_define_method(rb_cIO, "cursor=", console_cursor_set, 1);
+    rb_define_method(rb_cIO, "hide_cursor", console_hide_cursor, 0);
+    rb_define_method(rb_cIO, "show_cursor", console_show_cursor, 0);
     rb_define_method(rb_cIO, "cursor_up", console_cursor_up, 1);
     rb_define_method(rb_cIO, "cursor_down", console_cursor_down, 1);
     rb_define_method(rb_cIO, "cursor_left", console_cursor_left, 1);
