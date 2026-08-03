@@ -135,7 +135,20 @@ pm_version(void) {
 #define PM_NODE_LENGTH_SET_TOKEN(parser_, node_, token_) (PM_NODE_LENGTH(node_) = PM_TOKEN_END(parser_, token_) - PM_NODE_START(node_))
 #define PM_NODE_LENGTH_SET_LOCATION(node_, location_) (PM_NODE_LENGTH(node_) = PM_LOCATION_END(location_) - PM_NODE_START(node_))
 
-#define PM_LOCATION_INIT(start_, length_) ((pm_location_t) { .start = (start_), .length = (length_) })
+/**
+ * A function instead of a compound literal: MSVC 19.16 (VS2017) miscompiles a
+ * conditional expression whose arms are both struct compound literals — it
+ * materializes both arms before testing the condition, so the token
+ * dereferences in the unselected arm of NTOK2LOC and friends fault on NULL.
+ * Function call arguments are only evaluated on the selected branch.
+ */
+static PRISM_INLINE pm_location_t
+pm_location_init(uint32_t start, uint32_t length) {
+    pm_location_t location = { .start = start, .length = length };
+    return location;
+}
+
+#define PM_LOCATION_INIT(start_, length_) pm_location_init((start_), (length_))
 #define PM_LOCATION_INIT_UNSET PM_LOCATION_INIT(0, 0)
 #define PM_LOCATION_INIT_TOKEN(parser_, token_) PM_LOCATION_INIT(PM_TOKEN_START(parser_, token_), PM_TOKEN_LENGTH(token_))
 #define PM_LOCATION_INIT_NODE(node_) UP(node_)->location
@@ -5670,12 +5683,15 @@ pm_match_write_node_create(pm_parser_t *parser, pm_call_node_t *call) {
  */
 static pm_module_node_t *
 pm_module_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const pm_token_t *module_keyword, pm_node_t *constant_path, const pm_token_t *name, pm_node_t *body, const pm_token_t *end_keyword) {
+    pm_constant_id_list_t module_locals = { .ids = NULL, .size = 0, .capacity = 0 };
+    if (locals != NULL) module_locals = *locals;
+
     return pm_module_node_new(
         parser->arena,
         ++parser->node_id,
         0,
         PM_LOCATION_INIT_TOKENS(parser, module_keyword, end_keyword),
-        (locals == NULL ? ((pm_constant_id_list_t) { .ids = NULL, .size = 0, .capacity = 0 }) : *locals),
+        module_locals,
         TOK2LOC(parser, module_keyword),
         constant_path,
         body,
@@ -16999,10 +17015,11 @@ parse_pattern_rest(pm_parser_t *parser, pm_constant_id_list_t *captures) {
             pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end, 0);
         }
 
-        parse_pattern_capture(parser, captures, constant_id, &TOK2LOC(parser, &parser->previous));
+        pm_location_t previous_loc = TOK2LOC(parser, &parser->previous);
+        parse_pattern_capture(parser, captures, constant_id, &previous_loc);
         name = UP(pm_local_variable_target_node_create(
             parser,
-            &TOK2LOC(parser, &parser->previous),
+            &previous_loc,
             constant_id,
             (uint32_t) (depth == -1 ? 0 : depth)
         ));
@@ -17035,10 +17052,11 @@ parse_pattern_keyword_rest(pm_parser_t *parser, pm_constant_id_list_t *captures)
             pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end, 0);
         }
 
-        parse_pattern_capture(parser, captures, constant_id, &TOK2LOC(parser, &parser->previous));
+        pm_location_t previous_loc = TOK2LOC(parser, &parser->previous);
+        parse_pattern_capture(parser, captures, constant_id, &previous_loc);
         value = UP(pm_local_variable_target_node_create(
             parser,
-            &TOK2LOC(parser, &parser->previous),
+            &previous_loc,
             constant_id,
             (uint32_t) (depth == -1 ? 0 : depth)
         ));
@@ -17282,10 +17300,11 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                 pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end, 0);
             }
 
-            parse_pattern_capture(parser, captures, constant_id, &TOK2LOC(parser, &parser->previous));
+            pm_location_t previous_loc = TOK2LOC(parser, &parser->previous);
+            parse_pattern_capture(parser, captures, constant_id, &previous_loc);
             return UP(pm_local_variable_target_node_create(
                 parser,
-                &TOK2LOC(parser, &parser->previous),
+                &previous_loc,
                 constant_id,
                 (uint32_t) (depth == -1 ? 0 : depth)
             ));
@@ -17634,10 +17653,11 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
             pm_parser_local_add(parser, constant_id, parser->previous.start, parser->previous.end, 0);
         }
 
-        parse_pattern_capture(parser, captures, constant_id, &TOK2LOC(parser, &parser->previous));
+        pm_location_t previous_loc = TOK2LOC(parser, &parser->previous);
+        parse_pattern_capture(parser, captures, constant_id, &previous_loc);
         pm_local_variable_target_node_t *target = pm_local_variable_target_node_create(
             parser,
-            &TOK2LOC(parser, &parser->previous),
+            &previous_loc,
             constant_id,
             (uint32_t) (depth == -1 ? 0 : depth)
         );
@@ -21418,7 +21438,9 @@ parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *c
 
         // Next, create the local variable target and add it to the list of
         // targets for the match.
-        pm_node_t *target = UP(pm_local_variable_target_node_create(parser, &TOK2LOC(parser, &((pm_token_t) { .type = 0, .start = start, .end = end })), name, depth == -1 ? 0 : (uint32_t) depth));
+        pm_token_t token = { .type = 0, .start = start, .end = end };
+        pm_location_t token_loc = TOK2LOC(parser, &token);
+        pm_node_t *target = UP(pm_local_variable_target_node_create(parser, &token_loc, name, depth == -1 ? 0 : (uint32_t) depth));
         pm_node_list_append(parser->arena, &callback_data->match->targets, target);
     }
 
