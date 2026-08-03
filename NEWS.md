@@ -201,6 +201,14 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 ## Supported platforms
 
+* Support code for the following platforms has been removed.  Note
+  that all of them reached end of life many years ago and Ruby has
+  long been unbuildable on them.
+
+    * Interix (Windows Services for UNIX)
+    * SunOS 4 (Solaris, i.e. SunOS 5, is unaffected)
+    * BSD/OS (BSDi)
+
 ## Compatibility issues
 
 * `Kernel#at_exit` and `END {}` now raise `Ractor::IsolationError` when called
