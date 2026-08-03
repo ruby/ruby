@@ -767,6 +767,12 @@ TestIO_Console.class_eval do
     )
     assert_raise(ArgumentError) {IO.console.console_input_events(0)}
   end
+
+  def test_check_winsize_changed_deprecated
+    assert_deprecated_warning(/IO#check_winsize_changed is deprecated/) do
+      IO.console.check_winsize_changed {}
+    end
+  end
 end
 
 class TestIO_Console

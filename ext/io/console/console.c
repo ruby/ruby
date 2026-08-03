@@ -89,6 +89,10 @@ static ID id_gets, id_flush, id_chomp_bang;
 # define rb_interned_str_cstr(str) rb_str_freeze(rb_usascii_str_new_cstr(str))
 #endif
 
+#if !defined(HAVE_RB_CATEGORY_WARN) || !defined(HAVE_CONST_RB_WARN_CATEGORY_DEPRECATED)
+# define rb_category_warn(category, ...) rb_warn(__VA_ARGS__)
+#endif
+
 #if defined HAVE_RUBY_FIBER_SCHEDULER_H
 # include "ruby/fiber/scheduler.h"
 #elif defined HAVE_RB_SCHEDULER_TIMEOUT
@@ -1077,6 +1081,9 @@ console_input_events(int argc, VALUE *argv, VALUE io)
  *
  * Yields while console input events are queued.
  *
+ * Deprecated because it discards queued input events other than window buffer
+ * size changes.  Use IO#console_input_events instead to preserve all events.
+ *
  * This method is Windows only.
  *
  * You must require 'io/console' to use this method.
@@ -1087,6 +1094,9 @@ console_check_winsize_changed(VALUE io)
     HANDLE h;
     DWORD num;
 
+    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
+		     "IO#check_winsize_changed is deprecated; "
+		     "use IO#console_input_events instead");
     h = (HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
     while (GetNumberOfConsoleInputEvents(h, &num) && num > 0) {
 	INPUT_RECORD rec;
