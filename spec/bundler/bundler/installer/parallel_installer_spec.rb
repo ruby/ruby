@@ -132,9 +132,12 @@ RSpec.describe Bundler::ParallelInstaller do
       Bundler.ui = Bundler::UI::Silent.new
     end
 
+    # The `before` hook can `skip` before it saves anything, so only restore
+    # what was actually captured. Otherwise every skipped example clobbers the
+    # globals with nil.
     after do
-      Bundler.ui = @old_ui
-      Gem::Request::ConnectionPools.client = @previous_client
+      Bundler.ui = @old_ui if @old_ui
+      Gem::Request::ConnectionPools.client = @previous_client if @previous_client
       Artifice.deactivate
     end
 
