@@ -1553,10 +1553,11 @@ make_shareable_check_shareable(VALUE obj)
         return traverse_skip;
     }
     else if (!allow_frozen_shareable_p(obj)) {
-        VM_ASSERT(RB_TYPE_P(obj, T_DATA));
-        const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
-
-        if (type->flags & RUBY_TYPED_FROZEN_SHAREABLE_NO_REC) {
+        if (!RB_TYPE_P(obj, T_DATA)) {
+            rb_raise(rb_eRactorError,
+                     "can not make shareable object for %+"PRIsVALUE, obj);
+        }
+        else if (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_FROZEN_SHAREABLE_NO_REC) {
             if (obj_refer_only_shareables_p(obj)) {
                 make_shareable_check_shareable_freeze(obj, traverse_skip);
                 RB_OBJ_SET_SHAREABLE(obj);
