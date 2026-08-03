@@ -449,6 +449,20 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_io_is_not_shareable
+    io = File.open(IO::NULL)
+    begin
+      assert_unshareable(io, "can not make shareable object for #{io.inspect}",
+                         exception: Ractor::Error)
+      # freezing an IO does not make it shareable either
+      io.freeze
+      refute Ractor.shareable?(io)
+      assert_raise(Ractor::Error) { Ractor.make_shareable(io) }
+    ensure
+      io.close
+    end
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
