@@ -4047,9 +4047,12 @@ mod hir_opt_tests {
           v7:BasicObject = LoadArg :l@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          v16:BasicObject = Send v9, &block, :foo, v10 # SendFallbackReason: Send: block argument is not nil
+          v22:ObjectSubclass[class_exact:Proc] = GuardType v10, ObjectSubclass[class_exact:Proc] recompile
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v26:BasicObject = SendDirect v25, &v22, :foo (0x1040)
           CheckInterrupts
-          Return v16
+          Return v26
         ");
     }
 
@@ -5746,9 +5749,11 @@ mod hir_opt_tests {
           v26:TrueClass = GuardBitEquals v25, Value(true) recompile
           Jump bb6(v24, v10)
         bb6(v16:BasicObject, v17:BasicObject):
-          v29:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Send: block argument is not nil
+          v35:ObjectSubclass[class_exact:Proc] = GuardType v16, ObjectSubclass[class_exact:Proc] recompile
+          PatchPoint MethodRedefined(Integer@0x1008, then@0x1010, cme:0x1018)
+          v39:BasicObject = SendDirect v14, &v35, :then (0x1040)
           CheckInterrupts
-          Return v29
+          Return v39
         ");
     }
 
@@ -10546,6 +10551,234 @@ mod hir_opt_tests {
           v38:Fixnum[42] = Const Value(42)
           CheckInterrupts
           Return v38
+        ");
+    }
+
+    #[test]
+    fn test_send_with_proc_block_arg_specialized() {
+        eval(r#"
+            def foo = yield
+
+            def test
+              blk = proc { 42 }
+              foo(&blk)
+            end
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          v7:CPtr = GetEP 0
+          StoreField v7, :blk@0x1000, v6
+          Jump bb3(v5, v6)
+        bb3(v10:BasicObject, v11:NilClass):
+          PatchPoint MethodRedefined(Object@0x1008, proc@0x1010, cme:0x1018)
+          v35:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v36:BasicObject = CCallWithFrame v35, :Kernel#proc@0x1040, block=0x1048
+          v17:CPtr = GetEP 0
+          v18:BasicObject = LoadField v17, :blk@0x1000
+          SetLocal :blk, l0, EP@3, v36
+          v24:CPtr = GetEP 0
+          v25:BasicObject = LoadField v24, :blk@0x1000
+          v37:ObjectSubclass[class_exact:Proc] = GuardType v25, ObjectSubclass[class_exact:Proc] recompile
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1070, cme:0x1078)
+          v41:BasicObject = SendDirect v35, &v37, :foo (0x10a0)
+          CheckInterrupts
+          Return v41
+        ");
+    }
+
+    #[test]
+    fn test_send_with_proc_block_arg_to_block_param_callee_falls_back() {
+        eval(r#"
+            def foo(&b) = b.call
+
+            def test
+              blk = proc { 42 }
+              foo(&blk)
+            end
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          v7:CPtr = GetEP 0
+          StoreField v7, :blk@0x1000, v6
+          Jump bb3(v5, v6)
+        bb3(v10:BasicObject, v11:NilClass):
+          PatchPoint MethodRedefined(Object@0x1008, proc@0x1010, cme:0x1018)
+          v35:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v36:BasicObject = CCallWithFrame v35, :Kernel#proc@0x1040, block=0x1048
+          v17:CPtr = GetEP 0
+          v18:BasicObject = LoadField v17, :blk@0x1000
+          SetLocal :blk, l0, EP@3, v36
+          v24:CPtr = GetEP 0
+          v25:BasicObject = LoadField v24, :blk@0x1000
+          v27:BasicObject = Send v35, &block, :foo, v25 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_send_with_proc_block_arg_to_blockless_callee_falls_back() {
+        eval(r#"
+            def foo = 42
+
+            def test
+              blk = proc { 42 }
+              foo(&blk)
+            end
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          v7:CPtr = GetEP 0
+          StoreField v7, :blk@0x1000, v6
+          Jump bb3(v5, v6)
+        bb3(v10:BasicObject, v11:NilClass):
+          PatchPoint MethodRedefined(Object@0x1008, proc@0x1010, cme:0x1018)
+          v35:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v36:BasicObject = CCallWithFrame v35, :Kernel#proc@0x1040, block=0x1048
+          v17:CPtr = GetEP 0
+          v18:BasicObject = LoadField v17, :blk@0x1000
+          SetLocal :blk, l0, EP@3, v36
+          v24:CPtr = GetEP 0
+          v25:BasicObject = LoadField v24, :blk@0x1000
+          v27:BasicObject = Send v35, &block, :foo, v25 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_send_with_proc_block_arg_to_rest_optional_keyword_callee() {
+        // The callee has rest/optional/keyword params, so `prepare_direct_send_args`
+        // builds a `NewArray` for the rest param. That allocation sits between the
+        // Proc `GuardType` and the `SendDirect` that stores the Proc into the callee
+        // frame's specval, so the guarded Proc is only reachable from the VReg at that
+        // point (it is not in the block-arg-stripped snapshot).
+        eval(r#"
+            def foo(opt = 10, *rest, kw: 20) = yield(opt + rest.sum + kw)
+
+            def test
+              blk = proc { |x| x + 1 }
+              foo(1, 2, &blk)
+            end
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          v7:CPtr = GetEP 0
+          StoreField v7, :blk@0x1000, v6
+          Jump bb3(v5, v6)
+        bb3(v10:BasicObject, v11:NilClass):
+          PatchPoint MethodRedefined(Object@0x1008, proc@0x1010, cme:0x1018)
+          v39:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v40:BasicObject = CCallWithFrame v39, :Kernel#proc@0x1040, block=0x1048
+          v17:CPtr = GetEP 0
+          v18:BasicObject = LoadField v17, :blk@0x1000
+          SetLocal :blk, l0, EP@3, v40
+          v24:Fixnum[1] = Const Value(1)
+          v26:Fixnum[2] = Const Value(2)
+          v28:CPtr = GetEP 0
+          v29:BasicObject = LoadField v28, :blk@0x1000
+          v41:ObjectSubclass[class_exact:Proc] = GuardType v29, ObjectSubclass[class_exact:Proc] recompile
+          v43:Fixnum[20] = Const Value(20)
+          v44:ArrayExact = NewArray v26
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1070, cme:0x1078)
+          v48:BasicObject = SendDirect v39, &v41, :foo (0x10a0), jit_entry_idx=1, v24, v44, v43
+          CheckInterrupts
+          Return v48
+        ");
+    }
+
+    #[test]
+    fn test_send_with_splat_and_proc_block_arg_falls_back() {
+        // Splat plus a block arg is complex argument passing, so this falls back to a
+        // dynamic send. The fallback must happen *before* the Proc `GuardType` is
+        // emitted: a guard in front of a dynamic send gates nothing and would only pay
+        // a side exit plus a recompile on every non-Proc block arg.
+        eval(r#"
+            def foo(a) = yield a
+
+            def test
+              blk = proc { |x| x + 1 }
+              args = [1]
+              foo(*args, &blk)
+            end
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb3(v1, v2, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:NilClass = Const Value(nil)
+          v8:CPtr = GetEP 0
+          StoreField v8, :blk@0x1000, v7
+          v10:NilClass = Const Value(nil)
+          StoreField v8, :args@0x1001, v10
+          Jump bb3(v6, v7, v10)
+        bb3(v13:BasicObject, v14:NilClass, v15:NilClass):
+          PatchPoint MethodRedefined(Object@0x1008, proc@0x1010, cme:0x1018)
+          v51:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v13, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v52:BasicObject = CCallWithFrame v51, :Kernel#proc@0x1040, block=0x1048
+          v21:CPtr = GetEP 0
+          v22:BasicObject = LoadField v21, :blk@0x1000
+          v23:BasicObject = LoadField v21, :args@0x1001
+          SetLocal :blk, l0, EP@4, v52
+          v28:ArrayExact[VALUE(0x1070)] = Const Value(VALUE(0x1070))
+          v29:ArrayExact = ArrayDup v28
+          SetLocal :args, l0, EP@3, v29
+          v35:CPtr = GetEP 0
+          v36:BasicObject = LoadField v35, :args@0x1001
+          v38:ArrayExact = ToArray v36
+          v40:CPtr = GetEP 0
+          v41:BasicObject = LoadField v40, :blk@0x1000
+          v43:BasicObject = Send v51, &block, :foo, v38, v41 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v43
         ");
     }
 
@@ -18091,7 +18324,7 @@ mod hir_opt_tests {
         bb5():
           v21:Truthy = RefineType v12, Truthy
           v25:Fixnum[42] = Const Value(42)
-          v28:BasicObject = Send v11, &block, :passthrough_recompile_blockarg, v25, v13 # SendFallbackReason: Send: block argument is not nil
+          v28:BasicObject = Send v11, &block, :passthrough_recompile_blockarg, v25, v13 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v28
         bb4(v33:BasicObject, v34:Falsy, v35:BasicObject):

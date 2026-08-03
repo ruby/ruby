@@ -2092,6 +2092,7 @@ unsafe extern "C" {
     pub static mut rb_cModule: VALUE;
     pub static mut rb_cNilClass: VALUE;
     pub static mut rb_cNumeric: VALUE;
+    pub static mut rb_cProc: VALUE;
     pub static mut rb_cRange: VALUE;
     pub static mut rb_cRegexp: VALUE;
     pub static mut rb_cSet: VALUE;
