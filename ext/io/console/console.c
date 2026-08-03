@@ -88,7 +88,7 @@ getattr(int fd, conmode *t)
 
 #define CSI "\x1b\x5b"
 
-static ID id_getc, id_close;
+static ID id_getc, id_close, id_timeout;
 static ID id_gets, id_flush, id_chomp_bang;
 
 #ifndef HAVE_RB_INTERNED_STR_CSTR
@@ -1058,11 +1058,20 @@ console_set_winsize(VALUE io, VALUE size)
 #endif
 
 #ifdef _WIN32
+enum console_input_handle_index {
+    console_input_handle,
+    console_input_wakeup,
+    console_input_handle_count
+};
+
 typedef struct {
-    HANDLE handle;
+    HANDLE handles[console_input_handle_count];
     INPUT_RECORD *records;
     DWORD length;
     DWORD count;
+    DWORD timeout;
+    DWORD wait_result;
+    DWORD error;
     BOOL result;
 } read_console_input_args_t;
 
@@ -1070,8 +1079,25 @@ static void *
 nogvl_read_console_input(void *ptr)
 {
     read_console_input_args_t *args = ptr;
-    args->result = ReadConsoleInputW(args->handle, args->records, args->length, &args->count);
+
+    args->wait_result = WaitForMultipleObjects(console_input_handle_count,
+					       args->handles, FALSE, args->timeout);
+    if (args->wait_result == WAIT_OBJECT_0 + console_input_handle) {
+	args->result = ReadConsoleInputW(args->handles[console_input_handle],
+					 args->records, args->length, &args->count);
+	if (!args->result) args->error = GetLastError();
+    }
+    else if (args->wait_result == WAIT_FAILED) {
+	args->error = GetLastError();
+    }
     return 0;
+}
+
+static void
+ubf_console_input(void *ptr)
+{
+    read_console_input_args_t *args = ptr;
+    SetEvent(args->handles[console_input_wakeup]);
 }
 
 static void
@@ -1126,12 +1152,45 @@ console_input_event(const INPUT_RECORD *record)
     return event;
 }
 
+static VALUE
+console_input_events_read(VALUE vargs)
+{
+    read_console_input_args_t *args = (read_console_input_args_t *)vargs;
+    VALUE events;
+    DWORD i;
+
+    rb_thread_call_without_gvl(nogvl_read_console_input, args,
+			       ubf_console_input, args);
+    if (args->wait_result == WAIT_TIMEOUT) return rb_ary_new();
+    if (args->wait_result != WAIT_OBJECT_0 + console_input_handle ||
+	!args->result) {
+	rb_syserr_fail(rb_w32_map_errno(args->error), 0);
+    }
+
+    events = rb_ary_new_capa(args->count);
+    for (i = 0; i < args->count; ++i) {
+	rb_ary_push(events, console_input_event(&args->records[i]));
+    }
+    return events;
+}
+
+static VALUE
+console_input_events_ensure(VALUE vargs)
+{
+    read_console_input_args_t *args = (read_console_input_args_t *)vargs;
+
+    CloseHandle(args->handles[console_input_wakeup]);
+    xfree(args->records);
+    return Qnil;
+}
+
 /*
  * call-seq:
- *   io.console_input_events([max_events])   -> array
+ *   io.console_input_events([max_events], timeout: nil)   -> array
  *
  * Reads up to +max_events+ console input events, preserving their order.
- * The default is one event.  Blocks until at least one event is available.
+ * The default is one event.  Blocks until at least one event is available,
+ * or for +timeout+ seconds if specified.  Returns an empty Array on timeout.
  *
  * Each event is returned as a Hash.  The +:type+ and remaining keys are:
  *
@@ -1150,37 +1209,45 @@ console_input_event(const INPUT_RECORD *record)
 static VALUE
 console_input_events(int argc, VALUE *argv, VALUE io)
 {
-    VALUE vmax;
+    VALUE vmax = Qnil, vopts = Qnil, vtimeout = Qundef;
+    VALUE values[1];
+    ID keywords[1] = {id_timeout};
     DWORD max_events = 1;
     read_console_input_args_t args;
-    VALUE event_buffer = 0;
-    VALUE events;
-    DWORD i;
 
-    rb_scan_args(argc, argv, "01", &vmax);
+    rb_scan_args(argc, argv, "01:", &vmax, &vopts);
+    if (rb_get_kwargs(vopts, keywords, 0, 1, values)) {
+	vtimeout = values[0];
+    }
     if (!NIL_P(vmax)) {
 	max_events = NUM2UINT(vmax);
 	if (max_events == 0) rb_raise(rb_eArgError, "max_events must be positive");
     }
 
-    args.handle = (HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
-    args.records = ALLOCV_N(INPUT_RECORD, event_buffer, max_events);
-    args.length = max_events;
-    args.count = 0;
-    args.result = FALSE;
-    rb_thread_call_without_gvl(nogvl_read_console_input, &args, RUBY_UBF_IO, 0);
-    if (!args.result) {
-	int error = LAST_ERROR;
-	ALLOCV_END(event_buffer);
-	rb_syserr_fail(error, 0);
+    args.timeout = INFINITE;
+    if (!NIL_OR_UNDEF_P(vtimeout)) {
+	struct timeval timeout = rb_time_interval(vtimeout);
+	uint64_t milliseconds = (uint64_t)timeout.tv_sec * 1000;
+	milliseconds += ((uint64_t)timeout.tv_usec + 999) / 1000;
+	args.timeout = milliseconds < INFINITE ? (DWORD)milliseconds : INFINITE - 1;
     }
 
-    events = rb_ary_new_capa(args.count);
-    for (i = 0; i < args.count; ++i) {
-	rb_ary_push(events, console_input_event(&args.records[i]));
+    args.handles[console_input_handle] =
+	(HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
+    args.records = ALLOC_N(INPUT_RECORD, max_events);
+    args.handles[console_input_wakeup] = CreateEvent(NULL, FALSE, FALSE, NULL);
+    if (!args.handles[console_input_wakeup]) {
+	int error = LAST_ERROR;
+	xfree(args.records);
+	rb_syserr_fail(error, 0);
     }
-    ALLOCV_END(event_buffer);
-    return events;
+    args.length = max_events;
+    args.count = 0;
+    args.wait_result = WAIT_FAILED;
+    args.error = ERROR_SUCCESS;
+    args.result = FALSE;
+    return rb_ensure(console_input_events_read, (VALUE)&args,
+		     console_input_events_ensure, (VALUE)&args);
 }
 
 /*
@@ -2324,6 +2391,7 @@ Init_console(void)
     id_flush = rb_intern("flush");
     id_chomp_bang = rb_intern("chomp!");
     id_close = rb_intern("close");
+    id_timeout = rb_intern("timeout");
 #define init_rawmode_opt_id(name) \
     rawmode_opt_ids[kwd_##name] = rb_intern(#name)
     init_rawmode_opt_id(min);

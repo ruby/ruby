@@ -859,6 +859,19 @@ TestIO_Console.class_eval do
       events[index, 5],
     )
     assert_raise(ArgumentError) {IO.console.console_input_events(0)}
+    assert_raise(ArgumentError) {IO.console.console_input_events(timeout: -1)}
+
+    assert_equal([], IO.console.console_input_events(128, timeout: 0.01))
+    started = Queue.new
+    thread = Thread.new do
+      Thread.current.report_on_exception = false
+      started << true
+      IO.console.console_input_events(128, timeout: 100)
+    end
+    started.pop
+    sleep 0.1
+    thread.raise(Interrupt)
+    assert_raise(Interrupt) {thread.value}
   end
 
   def test_check_winsize_changed_deprecated
