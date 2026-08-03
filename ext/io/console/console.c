@@ -2406,6 +2406,25 @@ Init_console(void)
 void
 InitVM_console(void)
 {
+    /* :nodoc: */
+    VALUE mConsole = rb_define_module_under(rb_cIO, "Console");
+#ifdef _WIN32
+    /* :nodoc: */
+    VALUE mWindows = rb_define_module_under(mConsole, "Windows");
+#define define_win32_const(name) rb_define_const(mWindows, #name, UINT2NUM(name))
+    EACH_VK(define_win32_const,;);
+    define_win32_const(RIGHT_ALT_PRESSED);
+    define_win32_const(LEFT_ALT_PRESSED);
+    define_win32_const(RIGHT_CTRL_PRESSED);
+    define_win32_const(LEFT_CTRL_PRESSED);
+    define_win32_const(SHIFT_PRESSED);
+    define_win32_const(NUMLOCK_ON);
+    define_win32_const(SCROLLLOCK_ON);
+    define_win32_const(CAPSLOCK_ON);
+    define_win32_const(ENHANCED_KEY);
+#undef define_win32_const
+#endif
+
     rb_define_method(rb_cIO, "raw", console_raw, -1);
     rb_define_method(rb_cIO, "raw!", console_set_raw, -1);
     rb_define_method(rb_cIO, "cooked", console_cooked, 0);
@@ -2466,7 +2485,6 @@ InitVM_console(void)
     }
     {
 	/* :nodoc: */
-	VALUE mConsole = rb_define_module_under(rb_cIO, "Console");
 	VALUE version = rb_obj_freeze(rb_str_new_cstr(IO_CONSOLE_VERSION));
 	ID cid, deprecate_constant = rb_intern_const("deprecate_constant");
 	rb_define_const(mConsole, "VERSION", version);

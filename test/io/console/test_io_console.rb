@@ -7,6 +7,10 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
+  def test_console_namespace
+    assert_kind_of(Module, IO::Console)
+  end unless RUBY_ENGINE == "jruby" && RbConfig::CONFIG["host_os"] !~ /mswin|mingw/
+
   HOST_OS = RbConfig::CONFIG['host_os']
 
   def test_version
@@ -717,6 +721,26 @@ class TestIO_Console
       IO.console.pressed?("HOME\0")
     end
     assert_match(/unknown virtual key code/, e.message)
+  end
+end
+
+RbConfig::CONFIG["host_os"] =~ /mswin|mingw/ and TestIO_Console.class_eval do
+  def test_virtual_key_constants
+    {
+      VK_TAB: 0x09, VK_RETURN: 0x0d, VK_SHIFT: 0x10,
+      VK_CONTROL: 0x11, VK_MENU: 0x12, VK_END: 0x23,
+      VK_HOME: 0x24, VK_LEFT: 0x25, VK_UP: 0x26,
+      VK_RIGHT: 0x27, VK_DOWN: 0x28, VK_DELETE: 0x2e,
+      VK_DIVIDE: 0x6f, VK_LMENU: 0xa4,
+      RIGHT_ALT_PRESSED: 0x0001, LEFT_ALT_PRESSED: 0x0002,
+      RIGHT_CTRL_PRESSED: 0x0004, LEFT_CTRL_PRESSED: 0x0008,
+      SHIFT_PRESSED: 0x0010, NUMLOCK_ON: 0x0020,
+      SCROLLLOCK_ON: 0x0040, CAPSLOCK_ON: 0x0080,
+      ENHANCED_KEY: 0x0100,
+    }.each do |name, value|
+      assert_equal(value, IO::Console::Windows.const_get(name, false))
+      assert_false(IO::Console.const_defined?(name, false))
+    end
   end
 end
 
