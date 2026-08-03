@@ -885,10 +885,10 @@ Letters:
 
 - +L+, +Letter+: +LC+, +Lm+, or +Lo+.
 - +LC+, +Cased_Letter+: +Ll+, +Lt+, or +Lu+.
-- {Lu, Lowercase_Letter}[https://www.compart.com/en/unicode/category/Ll].
-- {Lu, Modifier_Letter}[https://www.compart.com/en/unicode/category/Lm].
-- {Lu, Other_Letter}[https://www.compart.com/en/unicode/category/Lo].
-- {Lu, Titlecase_Letter}[https://www.compart.com/en/unicode/category/Lt].
+- {Ll, Lowercase_Letter}[https://www.compart.com/en/unicode/category/Ll].
+- {Lm, Modifier_Letter}[https://www.compart.com/en/unicode/category/Lm].
+- {Lo, Other_Letter}[https://www.compart.com/en/unicode/category/Lo].
+- {Lt, Titlecase_Letter}[https://www.compart.com/en/unicode/category/Lt].
 - {Lu, Uppercase_Letter}[https://www.compart.com/en/unicode/category/Lu].
 
 Marks:
@@ -896,7 +896,7 @@ Marks:
 - +M+, +Mark+: +Mc+, +Me+, or +Mn+.
 - {Mc, Spacing_Mark}[https://www.compart.com/en/unicode/category/Mc].
 - {Me, Enclosing_Mark}[https://www.compart.com/en/unicode/category/Me].
-- {Mn, Nonapacing_Mark}[https://www.compart.com/en/unicode/category/Mn].
+- {Mn, Nonspacing_Mark}[https://www.compart.com/en/unicode/category/Mn].
 
 Numbers:
 
