@@ -4764,19 +4764,21 @@ rb_file_s_absolute_path(int argc, const VALUE *argv)
  *  File.absolute_path('../../snap', '__FILE__')  # => "/usr/snap"
  *  ```
  *
- *  Evaluates an absolute path without respect to `dirpath`:
+ *  For an absolute path, argument `dirpath` is ignored:
  *
  *  ```ruby
  *  File.absolute_path('/snap')                   # => "/snap"
+ *  File.absolute_path('/snap', '/usr/bin')       # => "/snap"
  *  File.absolute_path('/snap', 'nosuch')         # => "/snap"
  *  File.absolute_path('/snap/../snap')           # => "/snap"
  *  ```
  *
- *  If the given pathname starts with the tilde character (`'~'`),
- *  it is not expanded:
+ *  A leading tilde character (`'~'`), is not expanded:
  *
  *  ```ruby
- *  File.absolute_path("~nosuch")                 # => "/usr/bin/~nosuch"
+ *  Dir.chdir('/usr/bin')
+ *  File.absolute_path("~")                       # => "/usr/bin/~"
+ *  File.absolute_path("~/Documents")             # => "/usr/bin/~/Documents"
  *  ```
  *
  */
