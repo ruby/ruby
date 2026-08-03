@@ -4194,12 +4194,15 @@ impl Function {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
-                match self.find(insn_id) {
-                    Insn::Send { recv, block: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
+                match self.resolve(insn_id).insn(self) {
+                    &Insn::Send { recv, block: None, ref args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
                         self.try_rewrite_freeze(block, insn_id, recv, state),
-                    Insn::Send { recv, block: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
+                    &Insn::Send { recv, block: None, ref args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
                         self.try_rewrite_uminus(block, insn_id, recv, state),
-                    ref send@Insn::Send { mut recv, cd, state, block: send_block, ref args, .. } => {
+                    Insn::Send { .. } => {
+                        let ref send@Insn::Send { mut recv, cd, state, block: send_block, ref args, .. } = self.find(insn_id) else {
+                            panic!("Expected Send instruction");
+                        };
                         let mut has_block = send_block.is_some();
                         let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), state) {
                             ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
@@ -4755,7 +4758,7 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                     }
-                    Insn::IsMethodCfunc { val, cd, cfunc, state } if self.type_of(val).ruby_object_known() => {
+                    &Insn::IsMethodCfunc { val, cd, cfunc, state } if self.type_of(val).ruby_object_known() => {
                         let class = self.type_of(val).ruby_object().unwrap();
                         let cme = unsafe { rb_zjit_vm_search_method(self.iseq.into(), cd as *mut rb_call_data, class) };
                         let is_expected_cfunc = unsafe { rb_zjit_cme_is_cfunc(cme, cfunc as *const c_void) };
@@ -4765,7 +4768,7 @@ impl Function {
                         self.insn_types[replacement.0] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
-                    Insn::ObjectAlloc { val, state } => {
+                    &Insn::ObjectAlloc { val, state } => {
                         if let Some(replacement) = self.try_inline_object_alloc(block, val, state) {
                             self.insn_types[replacement.0] = self.infer_type(replacement);
                             self.make_equal_to(insn_id, replacement);
@@ -4773,7 +4776,7 @@ impl Function {
                             self.push_insn_id(block, insn_id);
                         }
                     }
-                    Insn::NewRange { low, high, flag, state } => {
+                    &Insn::NewRange { low, high, flag, state } => {
                         let low_is_fix  = self.is_a(low,  types::Fixnum);
                         let high_is_fix = self.is_a(high, types::Fixnum);
 
@@ -4787,7 +4790,10 @@ impl Function {
                             self.push_insn_id(block, insn_id);
                         };
                     }
-                    Insn::InvokeSuper { recv, cd, blockiseq, args, state, .. } => {
+                    &Insn::InvokeSuper { .. } => {
+                        let Insn::InvokeSuper { recv, cd, blockiseq, args, state, .. } = self.find(insn_id) else {
+                            unreachable!("expected InvokeSuper insn");
+                        };
                         // Helper to emit common guards for super call optimization.
                         fn emit_super_call_guards(
                             fun: &mut Function,
