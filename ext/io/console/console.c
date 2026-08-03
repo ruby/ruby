@@ -1916,14 +1916,14 @@ console_ttyname(VALUE io)
 
 typedef enum {
     platform_default,
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     platform_cygwin,
     platform_msys,
 #endif
     platform_any,
 
     platform_default_bit = 1U << platform_default,
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     platform_cygwin_bit = 1U << platform_cygwin,
     platform_msys_bit = 1U << platform_msys,
 #endif
@@ -1965,7 +1965,7 @@ console_platform_tty_p(int argc, VALUE *argv, VALUE io)
 	    if (m == ID2SYM(rb_intern("any"))) {
 		mode |= platform_any_bit;
 	    }
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 	    else if (m == ID2SYM(rb_intern("cygwin"))) {
 		mode |= platform_cygwin_bit;
 	    }
@@ -1982,7 +1982,7 @@ console_platform_tty_p(int argc, VALUE *argv, VALUE io)
 	ret = rb_call_super(0, 0);
     }
     if ((mode & ~platform_default_bit) && !RTEST(ret)) {
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 	if (mode & (platform_cygwin_bit | platform_msys_bit)) {
 	    struct {
 		FILE_NAME_INFO info;
