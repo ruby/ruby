@@ -108,7 +108,7 @@ Note: We're only listing outstanding class updates.
     * An experimental libfyaml backend has been added.  It is only
       enabled when psych is built with `--enable-libfyaml`, and the
       default libyaml backend remains unchanged otherwise.  It is not
-      supported on Windows.
+      supported on Windows.  [[GH-psych #805]]
 
 ### The following bundled gems are added.
 
@@ -296,6 +296,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22175]: https://bugs.ruby-lang.org/issues/22175
 [Feature #22185]: https://bugs.ruby-lang.org/issues/22185
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
+[GH-psych #805]: https://github.com/ruby/psych/pull/805
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
 [RubyGems-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/v4.0.5
 [RubyGems-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/v4.0.6
