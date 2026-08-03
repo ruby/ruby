@@ -710,6 +710,41 @@ end
 
 RbConfig::CONFIG["host_os"] =~ /mswin|mingw/ and defined?(IO.console) and IO.console and \
 TestIO_Console.class_eval do
+  def test_output_console_mode
+    require "fiddle/import"
+
+    kernel32 = Module.new do
+      extend Fiddle::Importer
+      dlload "kernel32.dll"
+      extern "void *CreateFileW(void *, long, long, void *, long, long, void *)"
+      extern "int CloseHandle(void *)"
+      extern "int GetConsoleMode(void *, void *)"
+    end
+    File.open("CONOUT$", "r+") do |output|
+      path = "CONOUT$\0".encode("UTF-16LE")
+      handle = kernel32.CreateFileW(path, -0x40000000, 3, nil, 3, 0, nil)
+      buffer = [0].pack("L<")
+      assert_not_equal(0, kernel32.GetConsoleMode(handle, buffer))
+      original = buffer.unpack1("L<")
+      mode = output.console_mode
+      begin
+        assert_equal((original & 4) != 0, mode.virtual_terminal_processing?)
+        assert_equal((original & 2) != 0, mode.wrap_at_eol_output?)
+
+        mode.virtual_terminal_processing = (original & 4) == 0
+        mode.wrap_at_eol_output = (original & 2) == 0
+        output.console_mode = mode
+        assert_not_equal(0, kernel32.GetConsoleMode(handle, buffer))
+        assert_equal(original ^ 6, buffer.unpack1("L<"))
+      ensure
+        mode.virtual_terminal_processing = (original & 4) != 0
+        mode.wrap_at_eol_output = (original & 2) != 0
+        output.console_mode = mode
+        kernel32.CloseHandle(handle)
+      end
+    end
+  end
+
   def test_cursor_visibility
     require "fiddle/import"
 

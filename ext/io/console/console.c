@@ -56,6 +56,13 @@ typedef struct sgttyb conmode;
 #include <conio.h>
 typedef DWORD conmode;
 
+#ifndef ENABLE_WRAP_AT_EOL_OUTPUT
+# define ENABLE_WRAP_AT_EOL_OUTPUT 0x0002
+#endif
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+# define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#endif
+
 #define LAST_ERROR rb_w32_map_errno(GetLastError())
 #define SET_LAST_ERROR (errno = LAST_ERROR, 0)
 
@@ -749,6 +756,70 @@ conmode_raw_new(int argc, VALUE *argv, VALUE obj)
     set_rawmode(&t, optp);
     return conmode_new(rb_obj_class(obj), &t);
 }
+
+#ifdef _WIN32
+/*
+ * call-seq:
+ *   mode.virtual_terminal_processing? -> true or false
+ *
+ * Returns whether virtual terminal sequences are processed on output.
+ */
+static VALUE
+conmode_virtual_terminal_processing_p(VALUE obj)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    return (*t & ENABLE_VIRTUAL_TERMINAL_PROCESSING) ? Qtrue : Qfalse;
+}
+
+/*
+ * call-seq:
+ *   mode.virtual_terminal_processing = enabled
+ *
+ * Enables or disables virtual terminal sequence processing in +mode+.
+ * Assign +mode+ to IO#console_mode= to apply the change.
+ */
+static VALUE
+conmode_set_virtual_terminal_processing(VALUE obj, VALUE enabled)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    if (RTEST(enabled))
+	*t |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    else
+	*t &= ~ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    return obj;
+}
+
+/*
+ * call-seq:
+ *   mode.wrap_at_eol_output? -> true or false
+ *
+ * Returns whether output wraps at the end of a line.
+ */
+static VALUE
+conmode_wrap_at_eol_output_p(VALUE obj)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    return (*t & ENABLE_WRAP_AT_EOL_OUTPUT) ? Qtrue : Qfalse;
+}
+
+/*
+ * call-seq:
+ *   mode.wrap_at_eol_output = enabled
+ *
+ * Enables or disables wrapping at the end of a line in +mode+.
+ * Assign +mode+ to IO#console_mode= to apply the change.
+ */
+static VALUE
+conmode_set_wrap_at_eol_output(VALUE obj, VALUE enabled)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    if (RTEST(enabled))
+	*t |= ENABLE_WRAP_AT_EOL_OUTPUT;
+    else
+	*t &= ~ENABLE_WRAP_AT_EOL_OUTPUT;
+    return obj;
+}
+#endif
 
 /*
  * call-seq:
@@ -2310,5 +2381,11 @@ InitVM_console(void)
         rb_define_method(cConmode, "echo=", conmode_set_echo, 1);
         rb_define_method(cConmode, "raw!", conmode_set_raw, -1);
         rb_define_method(cConmode, "raw", conmode_raw_new, -1);
+#ifdef _WIN32
+        rb_define_method(cConmode, "virtual_terminal_processing?", conmode_virtual_terminal_processing_p, 0);
+        rb_define_method(cConmode, "virtual_terminal_processing=", conmode_set_virtual_terminal_processing, 1);
+        rb_define_method(cConmode, "wrap_at_eol_output?", conmode_wrap_at_eol_output_p, 0);
+        rb_define_method(cConmode, "wrap_at_eol_output=", conmode_set_wrap_at_eol_output, 1);
+#endif
     }
 }
