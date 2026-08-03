@@ -117,6 +117,14 @@ releases.
 * tsort 0.2.0
 * win32-registry 0.1.2
 
+### The following bundled gems are removed.
+
+* net-ftp 0.3.9
+* net-pop 0.1.2
+
+They are still available on rubygems.org and can be installed with
+`gem install`.  [[Feature #21835]]
+
 ### The following default gem is added.
 
 ### The following default gems are updated.
@@ -254,6 +262,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21781]: https://bugs.ruby-lang.org/issues/21781
 [Feature #21785]: https://bugs.ruby-lang.org/issues/21785
 [Feature #21796]: https://bugs.ruby-lang.org/issues/21796
+[Feature #21835]: https://bugs.ruby-lang.org/issues/21835
 [Feature #21853]: https://bugs.ruby-lang.org/issues/21853
 [Feature #21861]: https://bugs.ruby-lang.org/issues/21861
 [Feature #21932]: https://bugs.ruby-lang.org/issues/21932
