@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# Skip reloading when an identical copy (e.g. the one shipped inside the Bundler
+# gem) was already required from a different path, to avoid redefinition warnings.
+return if defined?(Gem::CompactIndexClient::INFO_REQS)
+
 ##
 # The CompactIndexClient fetches and parses the compact index files
 # (names, versions and info/[gem]) served by a gem server, keeping a

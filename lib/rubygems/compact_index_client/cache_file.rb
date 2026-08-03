@@ -2,7 +2,7 @@
 
 require "digest"
 require "fileutils"
-require_relative "../package"
+require "rubygems/package"
 
 class Gem::CompactIndexClient
   # write cache files in a way that is robust to concurrent modifications
