@@ -9,10 +9,9 @@ return if defined?(Gem::CompactIndexClient::INFO_REQS)
 # (names, versions and info/[gem]) served by a gem server, keeping a
 # local cache so subsequent fetches only transfer what changed.
 #
-# This is an independent RubyGems port of Bundler::CompactIndexClient.
-# Both implementations are intentionally kept separate so that changes
-# on either side cannot affect the other; this one only depends on
-# RubyGems itself.
+# This is the single shared client: Bundler ships a copy of it and uses
+# it underneath its own fetcher orchestration, injecting its fetcher and
+# filesystem access hook.
 
 class Gem::CompactIndexClient
   SUPPORTED_DIGESTS = { "sha-256" => :SHA256 }.freeze
