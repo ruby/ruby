@@ -45,6 +45,7 @@ struct rb_ractor_sync {
     rb_ractor_t *successor;
     VALUE legacy;
     bool legacy_exc;
+    bool legacy_taken; /* Ractor#value already returned the value */
 
     /* Number of receives currently materializing a copy (only the owner's threads
      * update it, under the GVL). */
@@ -124,12 +125,6 @@ struct rb_ractor_struct {
 
     struct ccan_list_node vmlr_node;
     bool in_terminated_set;  /* vmlr_node is on vm->ractor.terminated_set */
-    /* The list on which a successor (this Ractor) links the terminated Ractors it absorbed via
-     * #value.  An inherited join value (legacy / default port) is reachable only through a C
-     * struct, whose slot compaction does not update, so the successor's root scan marks and pins
-     * it from here. */
-    struct ccan_list_head value_taken;
-    struct ccan_list_node value_held_node; /* node linked into value_taken (the absorbed side) */
 
     // ractor local data
 

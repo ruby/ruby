@@ -316,18 +316,6 @@ ractor_mark(void *ptr)
     }
 }
 
-/* Serialization of the value_taken list.  add runs on the successor's thread, unlink from any
- * Ractor's sweep (ractor_free), and scan concurrently from the owner's local GC and the global
- * GC, so vm->ractor.value_taken_lock (a leaf lock) protects it.  The critical sections are pure
- * pointer operations with no safepoint (one would let a STW mark see a half-linked list). */
-static void
-rb_ractor_value_taken_add(rb_ractor_t *successor, rb_ractor_t *taken)
-{
-    rb_native_mutex_lock(&GET_VM()->ractor.value_taken_lock);
-    ccan_list_add_tail(&successor->value_taken, &taken->value_held_node);
-    rb_native_mutex_unlock(&GET_VM()->ractor.value_taken_lock);
-}
-
 /* Mark the GC roots reachable from Ractor r's C structs.  A local GC cannot rely on the
  * heap Ractor and Thread wrapper objects, which may live in another objspace, so this
  * Ractor's own possessions are rooted directly from here. */
@@ -343,18 +331,6 @@ rb_ractor_mark_local_roots(rb_ractor_t *r)
      * owner or to the global GC. */
     rb_gc_mark_vm_stack_values((long)r->registered_marks_cnt, r->registered_marks);
 
-    /* Mark and pin the return value (legacy) of a terminated Ractor absorbed by #value: it lives
-     * in this Ractor's objspace and is reachable only through a C struct, so compaction must not
-     * move it.  The default port is not returned by #value (the successor never takes it) and can
-     * be freed by a terminated Ractor's teardown, so a freed slot is left alone here: pinning it
-     * would poison it. */
-    rb_ractor_t *taken;
-    rb_native_mutex_lock(&GET_VM()->ractor.value_taken_lock);
-    ccan_list_for_each(&r->value_taken, taken, value_held_node) {
-        VALUE slot[] = { taken->sync.legacy };
-        rb_gc_mark_vm_stack_values((long)numberof(slot), slot);
-    }
-    rb_native_mutex_unlock(&GET_VM()->ractor.value_taken_lock);
 }
 
 /* Mark and pin a terminated, unfreed Ractor's return value (legacy); the global GC
@@ -410,22 +386,6 @@ ractor_free(void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
     RUBY_DEBUG_LOG("free r:%d", rb_ractor_id(r));
-
-    /* Unlink from the successor's value_taken if listed there (a Ractor already taken by #value
-     * but not yet freed).  The node is initialized in ractor_init, so this is safe even when it
-     * was never registered.  Also unlink every child left on one's own value_taken: without that,
-     * a child's ractor_free writes prev/next into this freed head after this struct is released
-     * (a UAF write).  It shows up when a successor and its children are collected in the same
-     * sweep (a #value chain plus a global GC). */
-    rb_native_mutex_lock(&GET_VM()->ractor.value_taken_lock);
-    ccan_list_del_init(&r->value_held_node);
-    {
-        rb_ractor_t *taken, *nxt;
-        ccan_list_for_each_safe(&r->value_taken, taken, nxt, value_held_node) {
-            ccan_list_del_init(&taken->value_held_node);
-        }
-    }
-    rb_native_mutex_unlock(&GET_VM()->ractor.value_taken_lock);
 
     free_targeted_hooks(&r->pub.targeted_hooks);
     rb_native_mutex_destroy(&r->sync.lock);
@@ -711,12 +671,6 @@ rb_ractor_main_alloc(void)
      * created later in Init_BareVM, once rb_gc_init_objspaces has set r->objspace. */
     ruby_single_main_ractor = r;
 
-    /* Under gc_stress a GC also runs during boot, before ractor_init (rb_ractor_main_setup), and
-     * rb_ractor_mark_local_roots walks value_taken.  A zero-filled ccan list head is not an empty
-     * list, so initialize it here (ractor_init's re-initialization leaves it empty). */
-    ccan_list_head_init(&r->value_taken);
-    ccan_list_node_init(&r->value_held_node);
-
     return r;
 }
 
@@ -732,7 +686,6 @@ rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
     /* Another thread may have held the lock at fork, so rebuild it in the child (the
      * same reason generic_fields_lock is re-initialized at fork).  The registry's list
      * head is left alone: the nodes of surviving couriers are still linked into it. */
-    rb_native_mutex_initialize(&vm->ractor.value_taken_lock);
     rb_native_mutex_initialize(&vm->ractor.move_courier_registry_lock);
     /* Only main survives a fork: the holds of dead Ractors and of critical sections are
      * gone, leaving main's own disable. */
@@ -790,8 +743,6 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
     // thread management
     rb_thread_sched_init(&r->threads.sched, false);
     rb_ractor_living_threads_init(r);
-    ccan_list_head_init(&r->value_taken);
-    ccan_list_node_init(&r->value_held_node);
 
     // naming
     if (!NIL_P(name)) {

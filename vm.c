@@ -4819,7 +4819,6 @@ Init_BareVM(void)
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
     rb_native_mutex_initialize(&vm->ractor.generic_fields_lock);
-    rb_native_mutex_initialize(&vm->ractor.value_taken_lock);
     rb_native_mutex_initialize(&vm->ractor.move_courier_registry_lock);
     ccan_list_head_init(&vm->ractor.move_courier_registry);
     rb_native_mutex_initialize(&vm->gc.registered_globals.lock);
