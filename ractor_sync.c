@@ -729,13 +729,10 @@ ractor_sync_mark(rb_ractor_t *r)
 
     rb_gc_mark(r->sync.default_port_value);
 
-    /* The roots of a copy snapshot being materialized are the frame chains of each EC
-     * (rb_execution_context_mark marks and re-pins them). */
-    /* This is the only reliable root for the return value (set at exit, read by Ractor#value)
-     * until it is absorbed (Qundef = not terminated, a no-op); after the absorb the
-     * successor's value_taken protects it.  Otherwise liveness would rest on the dead main
-     * thread's th->value/errinfo aliases, and an exception teardown path dropping those would
-     * make Ractor#value return freed memory. */
+    /* (A copy snapshot being materialized is not marked here: each EC's frame
+     * chain roots it in rb_execution_context_mark, which also re-pins it.) */
+    /* Until the value is absorbed this is its only reliable root (Qundef while the
+     * Ractor still runs); after Ractor#value returns it, the Ruby side roots it. */
     rb_gc_mark(r->sync.legacy);
 
     /* ractor_sync_init builds the rest, and a root scan reaches the main Ractor before
@@ -931,6 +928,10 @@ ractor_value(rb_execution_context_t *ec, VALUE self)
     rb_ractor_t *sr = ractor_set_successor_once(r, cr);
 
     if (sr == cr) {
+        if (r->sync.legacy_taken) {
+            rb_raise(rb_eRactorError, "The value was already taken");
+        }
+
         /* The value is returned by reference: inherit the dead Ractor's objspace first,
          * making it our own object (containment without a copy).  Wait for
          * ractor_terminated: a monitor-port wakeup arrives before the dying thread
@@ -943,15 +944,10 @@ ractor_value(rb_execution_context_t *ec, VALUE self)
          * below sweeps r's objspace, or the objects pinned there lose their root. */
         rb_ractor_absorb_registered_marks(GET_RACTOR(), r);
 
-        /* Whether this is the first absorb is told by whether the objspace was still there
-         * (absorb NULLs it out). */
-        bool first_absorb = (r->objspace != NULL);
         rb_gc_objspace_absorb_into_current(&r->objspace);
 
-        /* Keep legacy alive in a C local until it is registered in value_taken.  A GC after the
-         * absorb but before the registration would find legacy reachable only from a C struct and
-         * could collect it with no root, so let the conservative machine-stack mark pick it up and
-         * prevent both collection and moving (after registration value_taken protects it). */
+        /* Keep legacy alive in a C local until it is returned: after the absorb only
+         * the C struct reaches it, so let the conservative machine-stack mark find it. */
         volatile VALUE legacy_keep = r->sync.legacy;
 
         /* A dead Ractor's local storage is unreachable from Ruby (Ractor#[] only works
@@ -961,22 +957,20 @@ ractor_value(rb_execution_context_t *ec, VALUE self)
         r->local_storage = NULL;
         r->idkey_local_storage = NULL;
 
-        /* legacy lives in the successor's objspace and is reachable only through a C struct.  A
-         * shref pin protects it from the sweep, but compaction would still move it and leave the C
-         * slot stale.  Put it on the successor's value_taken so its root scan
-         * (rb_ractor_mark_local_roots) marks and pins it; ractor_free removes it when the wrapper
-         * is collected (add/unlink/scan are serialized by value_taken_lock). */
-        if (first_absorb) {
-            rb_ractor_value_taken_add(GET_RACTOR(), r);
-        }
+        /* The value is returned to the caller and rooted from Ruby afterwards.  Drop it
+         * from the C struct: keeping it would leave a C-only reference into the
+         * successor's objspace, needing marking and a pin against compaction. */
+        VALUE legacy = r->sync.legacy;
+        r->sync.legacy = Qnil;
+        r->sync.legacy_taken = true;
         RB_GC_GUARD(legacy_keep);
 
-        ractor_reset_belonging(r->sync.legacy);
+        ractor_reset_belonging(legacy);
 
         if (r->sync.legacy_exc) {
-            rb_exc_raise(ractor_make_remote_exception(r->sync.legacy, self));
+            rb_exc_raise(ractor_make_remote_exception(legacy, self));
         }
-        return r->sync.legacy;
+        return legacy;
     }
     else {
         rb_raise(rb_eRactorError, "Only the successor ractor can take a value");

@@ -2480,8 +2480,8 @@ assert_equal 'true', %q{
   ret == [1, 2, ret.object_id]
 }
 
-# Only one Ractor can call Ractor#value
-assert_equal '[["Only the successor ractor can take a value", 9], ["ok", 2]]', %q{
+# Only one Ractor can call Ractor#value, and only once
+assert_equal '[["Only the successor ractor can take a value", 9], ["The value was already taken", 1], ["ok", 1]]', %q{
   r = Ractor.new do
     'ok'
   end
@@ -2492,7 +2492,7 @@ assert_equal '[["Only the successor ractor can take a value", 9], ["ok", 2]]', %
     Ractor.new r do |r|
       begin
         Ractor.main << r.value
-        Ractor.main << r.value # this ractor can get same result
+        Ractor.main << r.value # the value is taken only once
       rescue Ractor::Error => e
         Ractor.main << e.message
       end
