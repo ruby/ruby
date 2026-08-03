@@ -42,7 +42,6 @@ module Spec
         "spec/bundler/env_spec.rb",
         "spec/install/gems/mirror_spec.rb",
         "spec/install/failure_spec.rb",
-        "spec/bundler/yaml_serializer_spec.rb",
         "spec/bundler/environment_preserver_spec.rb",
         "spec/install/gemfile/install_if_spec.rb",
         "spec/install/gems/gemfile_source_header_spec.rb",
