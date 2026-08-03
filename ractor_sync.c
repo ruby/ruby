@@ -1044,8 +1044,6 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
     VALUE v = Qfalse;
     bool marshaled = false;
     struct rb_ractor_move_courier *courier = NULL;
-    st_table *gen_fields = NULL;
-    (void)gen_fields;
 
     if (type == basket_type_move) {
         /* Serialize the graph into an off-heap courier; the sources become
@@ -1114,10 +1112,10 @@ ractor_basket_value(struct ractor_basket *b)
          * finishes.  Marshal.load allocates through this Ractor's normal newobj and
          * write-barrier paths.
          *
-         * Rebuilding can raise (marshal load hooks and autoload are user code, and asynchronous
-         * interrupts can happen anywhere) and those hooks can run a nested Ractor.receive.  The
-         * frame is pushed onto the machine stack and popped under a TAG, so the chain neither
-         * leaks a dead materialization nor drops an outer one. */
+         * Rebuilding can raise (marshal load hooks and autoload run user code and an
+         * async interrupt can arrive anywhere), and those hooks can run a nested
+         * Ractor.receive.  The frame is pushed on the machine stack and popped under a
+         * TAG, so the chain never leaks a dead materialization or drops an outer one. */
         rb_execution_context_t *ec = rb_current_ec_noinline();
         rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
         struct ractor_materialize_frame frame = {
@@ -1166,9 +1164,9 @@ ractor_basket_value(struct ractor_basket *b)
          * it; the VALUEs it carries are shareable or immediates, marked and pinned as
          * a global GC root by the in-flight registry (ractor.c).
          *
-         * Rebuilding can raise here too (rb_hash_aset on a moved key with a custom #hash is user
-         * code, as are asynchronous interrupts).  On a raise the courier is still owned by the
-         * basket (b->p.move_courier != NULL), so the basket's teardown frees it. */
+         * Rebuilding can raise here too (rb_hash_aset on a moved key with a custom
+         * #hash runs user code, and an async interrupt can arrive).  On a raise the
+         * courier is still owned by the basket, whose teardown frees it. */
         rb_execution_context_t *ec = rb_current_ec_noinline();
         struct rb_ractor_move_courier *courier = b->p.move_courier;
         /* Keep the materialized graph on the machine stack (result): it is the only

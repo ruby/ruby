@@ -25,6 +25,7 @@
 #include "internal/compilers.h"
 #include "internal/error.h"
 #include "internal/eval.h"
+#include "eval_intern.h"
 #include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/gc.h"
@@ -1456,10 +1457,17 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
                  * can still raise NoMemoryError, and leaking gf_lock hangs every later
                  * generic-fields access: unwind through a tag. */
                 bool gc_disabled = RTEST(rb_gc_local_disable_no_rest());
+                rb_execution_context_t *insert_ec = GET_EC();
+                enum ruby_tag_type state;
                 gf_lock();
-                st_insert(generic_fields_tbl_, (st_data_t)obj, (st_data_t)fields_obj);
+                EC_PUSH_TAG(insert_ec);
+                if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+                    st_insert(generic_fields_tbl_, (st_data_t)obj, (st_data_t)fields_obj);
+                }
+                EC_POP_TAG();
                 gf_unlock();
                 if (!gc_disabled) rb_gc_local_enable();
+                if (state != TAG_NONE) EC_JUMP_TAG(insert_ec, state);
                 RB_OBJ_WRITTEN(obj, original_fields_obj, fields_obj);
 
                 rb_execution_context_t *ec = GET_EC();
