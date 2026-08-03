@@ -2523,24 +2523,45 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
- *    File.atime(object) -> new_time
+ *    File.atime(object) -> time
  *
  * Returns a new Time object containing the time of the most recent
- * access (read or write) to the object,
- * which may be a string filepath or dirpath, or a File or Dir object:
+ * access (read or write) to the given `object`,
+ * which may be the string path to a file or directory, a File object, or a Dir object:
  *
- *   filepath = 't.tmp'
- *   File.exist?(filepath)             # => false
- *   File.atime(filepath)              # Raises Errno::ENOENT.
- *   File.write(filepath, 'foo')
- *   File.atime(filepath)              # => 2026-03-31 16:39:37.9290772 -0500
- *   File.write(filepath, 'bar')
- *   File.atime(filepath)              # => 2026-03-31 16:39:57.7710876 -0500
+ * ```ruby
+ * dirpath = 'doc/foo'
+ * # Create directory; establishes atime for directory.
+ * Dir.mkdir(dirpath)
+ * File.atime(dirpath)  # => 2026-08-03 10:31:02.899895047 -0500
+ * # Path for a (non-existent) file in the directory.
+ * filename = 't.tmp'
+ * filepath = File.join(dirpath, filename) # => "doc/foo/t.tmp"
+ * # Create file; establishes atime for file, updates atime for directory.
+ * file = File.new(filepath, 'w+')         # => #<File:doc/foo/t.tmp>
+ * file.write('foo')
+ * File.atime(filepath) # => 2026-08-03 10:38:41.112266544 -0500
+ * File.atime(dirpath)  # => 2026-08-03 10:31:02.899895047 -0500
+ * # Write file; updates atime for file,but not directory.
+ * file.write('bar')
+ * File.atime(filepath) # => 2026-08-03 10:38:41.112266544 -0500
+ * File.atime(dirpath)  # => 2026-08-03 10:31:02.899895047 -0500
+ * # Read file; may update atime for file, but not directory.
+ * file.read
+ * File.atime(filepath) # => 2026-08-03 10:42:41.303534591 -0500
+ * File.atime(dirpath)  # => 2026-08-03 10:31:02.899895047 -0500
+ * # Clean up.
+ * file.close
+ * File.delete(filepath)
+ * Dir.rmdir(dirpath)
  *
- *   File.atime('.')                   # => 2026-03-31 16:47:49.0970483 -0500
- *   File.atime(File.new('README.md')) # => 2026-03-31 11:15:27.8215934 -0500
- *   File.atime(Dir.new('.'))          # => 2026-03-31 12:39:45.5910591 -0500
+ * File.atime('.')                   # => 2026-03-31 16:47:49.0970483 -0500
+ * File.atime(File.new('README.md')) # => 2026-03-31 11:15:27.8215934 -0500
+ * File.atime(Dir.new('.'))          # => 2026-03-31 12:39:45.5910591 -0500
+ * ```
  *
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
