@@ -1493,7 +1493,10 @@ rb_obj_traverse(VALUE obj,
 static int
 allow_frozen_shareable_p(VALUE obj)
 {
-    if (!RB_TYPE_P(obj, T_DATA)) {
+    if (RB_TYPE_P(obj, T_FILE)) {
+        return false;
+    }
+    else if (!RB_TYPE_P(obj, T_DATA)) {
         return true;
     }
     else {

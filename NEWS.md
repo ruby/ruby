@@ -222,6 +222,11 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   in a non-main Ractor.  Previously the registered handler ran in the main
   Ractor at process exit, which was confusing. [[Feature #22139]]
 
+* `Ractor.make_shareable` now raises `Ractor::Error` for an `IO` object, and
+  `Ractor.shareable?` returns `false` for it.  A frozen `IO` used to be
+  shareable, but almost all of its methods raise `FrozenError` and it can
+  still refer to unshareable objects through the members of `rb_io_t`.
+
 ## Stdlib compatibility issues
 
 ## C API updates
