@@ -452,7 +452,7 @@ ex. (?<=a|bc) is OK. (?<=aaa(?:b|cd)) is not allowed.
     /ab\Kc/.match('abc')    # => #<MatchData "c">
     /(?<=ab)c/.match('abc') # => #<MatchData "c">
 
-  These match same string and <tt>$&</tt> equals <tt>'c'</tt>,
+  These match the same string and <tt>$&</tt> equals <tt>'c'</tt>,
   while the matched position is different.
 
   As are the following two regexps:
@@ -703,7 +703,7 @@ unless the entire subexpression must be abandoned and subsequently revisited.
 
 In this way _subexpression_ is treated as a non-divisible whole.
 Atomic grouping is typically used to optimise patterns
-to prevent needless backtracking .
+to prevent needless backtracking.
 
 Example (without atomic grouping):
 
@@ -999,7 +999,7 @@ The POSIX bracket expressions:
 
 - <tt>/[[:print:]]/</tt>: Matches <tt>/[[:graph:]]/</tt> or space character.
 
-- <tt>/[[:punct:]]/</tt>: Matches any (Unicode punctuation character}[https://www.compart.com/en/unicode/category/Po]:
+- <tt>/[[:punct:]]/</tt>: Matches any {Unicode punctuation character}[https://www.compart.com/en/unicode/category/Po]:
 
 Ruby also supports these (non-POSIX) bracket expressions:
 
@@ -1020,8 +1020,7 @@ Ruby also supports these (non-POSIX) bracket expressions:
 
 A comment may be included in a regexp pattern
 using the <tt>(?#</tt>_comment_<tt>)</tt> construct,
-where _comment_ is a substring that is to be ignored.
-arbitrary text ignored by the regexp engine:
+where _comment_ is arbitrary text ignored by the regexp engine:
 
   /foo(?#Ignore me)bar/.match('foobar') # => #<MatchData "foobar">
 
