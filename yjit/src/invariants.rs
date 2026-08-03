@@ -598,6 +598,8 @@ pub extern "C" fn rb_yjit_invalidate_ep_is_bp(iseq: IseqPtr) {
                 no_ep_escape_iseqs.insert(iseq, HashSet::new());
             }
         }
+
+        unsafe { rb_jit_iseq_mark_ep_escape_recorded(iseq) };
     });
 }
 
