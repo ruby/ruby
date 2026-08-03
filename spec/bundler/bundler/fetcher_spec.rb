@@ -78,18 +78,22 @@ RSpec.describe Bundler::Fetcher do
         end
       end
       it "consider no_proxy" do
-        with_env_vars("HTTP_PROXY" => "http://proxy-example4.com", "NO_PROXY" => ".example.com,.example.net") do
-          expect(
-            fetcher.send(:connection).no_proxy
-          ).to eq([".example.com", ".example.net"])
+        with_env_vars("HTTP_PROXY" => "http://proxy-example4.com", "NO_PROXY" => "example.com,.example.net") do
+          expect(fetcher.http_proxy).to be_nil
         end
       end
     end
 
+    def configured_connection
+      http = Gem::Net::HTTP.new(uri.host, uri.port)
+      fetcher.send(:connection).send(:configure_ssl, http)
+      http
+    end
+
     context "when no ssl configuration is set" do
       it "no cert" do
-        expect(fetcher.send(:connection).cert).to be_nil
-        expect(fetcher.send(:connection).key).to be_nil
+        expect(configured_connection.cert).to be_nil
+        expect(configured_connection.key).to be_nil
       end
     end
 
@@ -106,8 +110,9 @@ RSpec.describe Bundler::Fetcher do
         FileUtils.rm File.join(Spec::Path.tmpdir, "cert")
       end
       it "use bundler configuration" do
-        expect(fetcher.send(:connection).cert).to eq("cert")
-        expect(fetcher.send(:connection).key).to eq("key")
+        connection = configured_connection
+        expect(connection.cert).to eq("cert")
+        expect(connection.key).to eq("key")
       end
     end
 
@@ -126,8 +131,9 @@ RSpec.describe Bundler::Fetcher do
         expect(OpenSSL::X509::Store).to receive(:new).and_return(store)
       end
       it "use gem configuration" do
-        expect(fetcher.send(:connection).cert).to eq("cert")
-        expect(fetcher.send(:connection).key).to eq("key")
+        connection = configured_connection
+        expect(connection.cert).to eq("cert")
+        expect(connection.key).to eq("key")
       end
     end
   end
