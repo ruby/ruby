@@ -103,6 +103,13 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
+* Psych
+
+    * An experimental libfyaml backend has been added.  It is only
+      enabled when psych is built with `--enable-libfyaml`, and the
+      default libyaml backend remains unchanged otherwise.  It is not
+      supported on Windows.
+
 ### The following bundled gems are added.
 
 
