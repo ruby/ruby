@@ -1280,7 +1280,7 @@ static const rb_data_type_t monitor_data_type = {
     .function = {
         .dmark = monitor_mark,
         .dfree = RUBY_TYPED_DEFAULT_FREE,
-        .dsize = NULL, // Fully embeded
+        .dsize = NULL, // Fully embedded
         .dcompact = monitor_compact,
     },
     .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,

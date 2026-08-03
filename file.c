@@ -5104,7 +5104,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     }
 
     if (s < fend && s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
-        BUFINIT(result, buf, p, pend); // TOOD: right size the buffer
+        BUFINIT(result, buf, p, pend); // TODO: right size the buffer
 
         rb_len_t userlen = 0;
         if (s + 1 == fend || isdirsep(s[1])) {
@@ -5142,7 +5142,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 #ifdef DOSISH_DRIVE_LETTER
     /* skip drive letter */
     else if (s + 1 < fend && has_drive_letter(s)) {
-        BUFINIT(result, buf, p, pend); // TOOD: right size the buffer
+        BUFINIT(result, buf, p, pend); // TODO: right size the buffer
 
         if (s + 2 < fend && isdirsep(s[2])) {
             /* specified drive letter, and full path */
