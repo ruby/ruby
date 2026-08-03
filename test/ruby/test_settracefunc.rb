@@ -2752,6 +2752,48 @@ CODE
     tp_line.enable(target: method(:bar))
     bar
     EOS
+
+    # When another event fires at the same pc as a targeted :line hook (here,
+    # COVERAGE_LINE alongside LINE while Coverage is running), disabling the
+    # last targeted TracePoint on the iseq from inside the line hook must not
+    # leave vm_trace() dispatching the remaining event through the freed hook
+    # list.
+    assert_normal_exit(<<-'EOS', 'targeted TracePoint freed mid-dispatch')
+    require "coverage"
+    require "tempfile"
+
+    Coverage.start
+
+    file = Tempfile.new(["cov_tp", ".rb"])
+    50.times { |i| file.puts "def tracee#{i}; 1 + 1; end" }
+    file.close
+    require file.path
+
+    50.times do |i|
+      tp = TracePoint.new(:line) { tp.disable }
+      tp.enable(target: method("tracee#{i}"))
+      send("tracee#{i}")
+    end
+    EOS
+
+    # Same hazard for a bmethod's def-local hook list: a targeted :return
+    # TracePoint on the bmethod fires from vm_trace()'s special RETURN dispatch,
+    # which runs after the b_return event. A targeted :b_return hook that
+    # disables the :return TP frees that list before the special RETURN uses it.
+    assert_normal_exit(<<-'EOS', 'targeted bmethod TracePoint freed mid-dispatch')
+    50.times do
+      obj = Object.new
+      obj.define_singleton_method(:m) { 1 }
+
+      ret_tp = TracePoint.new(:return) { }
+      ret_tp.enable(target: obj.method(:m))
+
+      bret_tp = TracePoint.new(:b_return) { ret_tp.disable }
+      bret_tp.enable(target: obj.method(:m))
+
+      obj.m
+    end
+    EOS
   end
 
   def test_stat_exists
