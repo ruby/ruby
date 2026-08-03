@@ -303,10 +303,11 @@ pub extern "C" fn rb_yjit_cme_invalidate(callee_cme: *const rb_callable_method_e
     });
 }
 
-/// Callback for when Ruby is about to spawn a ractor. In that case we need to
-/// invalidate every block that is assuming single ractor mode.
+/// Invalidate every block that assumes single-ractor mode. Called when Ruby
+/// transitions from single-ractor to multi-ractor mode (i.e. a second ractor
+/// is spawned).
 #[no_mangle]
-pub extern "C" fn rb_yjit_before_ractor_spawn() {
+pub extern "C" fn rb_yjit_invalidate_single_ractor() {
     // If YJIT isn't enabled, do nothing
     if !yjit_enabled_p() {
         return;

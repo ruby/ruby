@@ -86,7 +86,7 @@ void rb_zjit_iseq_update_references(void *payload);
 void rb_zjit_mark_all_writable(void);
 void rb_zjit_mark_all_executable(void);
 void rb_zjit_iseq_free(const rb_iseq_t *iseq);
-void rb_zjit_before_ractor_spawn(void);
+void rb_zjit_invalidate_single_ractor(void);
 void rb_zjit_tracing_invalidate_all(void);
 void rb_zjit_invalidate_no_singleton_class(VALUE klass);
 void rb_zjit_invalidate_root_box(void);
@@ -133,7 +133,7 @@ static inline void rb_zjit_bop_redefined(int redefined_flag, enum ruby_basic_ope
 static inline void rb_zjit_cme_invalidate(const rb_callable_method_entry_t *cme) {}
 static inline void rb_zjit_invalidate_no_ep_escape(const rb_iseq_t *iseq) {}
 static inline void rb_zjit_constant_state_changed(ID id) {}
-static inline void rb_zjit_before_ractor_spawn(void) {}
+static inline void rb_zjit_invalidate_single_ractor(void) {}
 static inline void rb_zjit_tracing_invalidate_all(void) {}
 static inline void rb_zjit_invalidate_no_singleton_class(VALUE klass) {}
 static inline void rb_zjit_invalidate_root_box(void) {}

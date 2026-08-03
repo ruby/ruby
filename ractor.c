@@ -413,6 +413,9 @@ cancel_single_ractor_mode(void)
     RUBY_DEBUG_LOG("enable multi-ractor mode");
 
     ruby_single_main_ractor = NULL;
+    rb_yjit_invalidate_single_ractor();
+    rb_zjit_invalidate_single_ractor();
+
     rb_funcall(rb_cRactor, rb_intern("_activated"), 0);
 }
 
@@ -599,8 +602,6 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     r->verbose = cr->verbose;
     r->debug = cr->debug;
 
-    rb_yjit_before_ractor_spawn();
-    rb_zjit_before_ractor_spawn();
     rb_thread_create_ractor(r, args, block);
 
     RB_GC_GUARD(rv);
