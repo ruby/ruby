@@ -28,6 +28,13 @@
         set arch=%arg:~6%
         goto :argloop
     )
+    ::- cmd.exe splits arguments on `=`, so `-vcvars_ver=14.x` arrives
+    ::- as two tokens; reassemble them for `vsdevcmd.bat`.
+    @if /i "%arg%" == "-vcvars_ver" (
+        set VSDEV_ARGS=%VSDEV_ARGS% -vcvars_ver=%1
+        shift
+        goto :argloop
+    )
 
     @set VSDEV_ARGS=%VSDEV_ARGS% %arg%
     @goto :argloop
