@@ -9934,13 +9934,12 @@ rb_gc_verify_internal_consistency(void)
 
 /*
  *  call-seq:
- *     GC.verify_internal_consistency                  -> nil
+ *     GC.verify_internal_consistency -> nil
  *
- *  Verify internal consistency.
+ *  Verifies internal consistency of the GC.
+ *  This method should only be used for debugging.
  *
- *  This method is implementation specific.
- *  Now this method checks generational consistency
- *  if RGenGC is supported.
+ *  This method is only expected to work on CRuby.
  */
 static VALUE
 gc_verify_internal_consistency_m(VALUE dummy)
