@@ -909,8 +909,6 @@ ractor_set_successor_once(rb_ractor_t *r, rb_ractor_t *cr)
     return r->sync.successor;
 }
 
-static VALUE ractor_reset_belonging(VALUE obj);
-
 static VALUE
 ractor_make_remote_exception(VALUE cause, VALUE sender)
 {
@@ -964,8 +962,6 @@ ractor_value(rb_execution_context_t *ec, VALUE self)
         r->sync.legacy = Qnil;
         r->sync.legacy_taken = true;
         RB_GC_GUARD(legacy_keep);
-
-        ractor_reset_belonging(legacy);
 
         if (r->sync.legacy_exc) {
             rb_exc_raise(ractor_make_remote_exception(legacy, self));
@@ -1158,7 +1154,6 @@ ractor_basket_value(struct ractor_basket *b)
             EC_JUMP_TAG(ec, state);
         }
         /* keep rooting result from the stack after the frame is popped */
-        ractor_reset_belonging(result);
         b->p.v = result;
         RB_GC_GUARD(result);
         break;
@@ -1194,7 +1189,6 @@ ractor_basket_value(struct ractor_basket *b)
         }
         rb_ractor_move_courier_free(courier);
         b->p.move_courier = NULL;
-        ractor_reset_belonging(result);
         b->p.v = result;
         RB_GC_GUARD(result);
         break;

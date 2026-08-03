@@ -898,9 +898,6 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
         break;
 
       case thread_invoke_type_ractor_proc:
-#if RACTOR_CHECK_MODE > 0
-        rb_ractor_setup_belonging_to(thval, rb_ractor_id(params->g));
-#endif
         th->invoke_type = thread_invoke_type_ractor_proc;
         th->ractor = params->g;
         th->ec->ractor_id = rb_ractor_id(th->ractor);

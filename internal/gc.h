@@ -300,6 +300,7 @@ void rb_gc_writebarrier_remember(VALUE obj);
 void rb_gc_obj_became_shareable(VALUE obj);
 void rb_gc_pin_in_flight_message(VALUE obj);
 bool rb_gc_multi_objspace_p(void);
+bool rb_gc_obj_foreign_p(VALUE obj);
 void *rb_gc_objspace_alloc(void);
 void rb_gc_objspace_retire_gc(void);
 void rb_gc_objspace_retire(void **objspace_slot);

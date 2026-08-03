@@ -137,6 +137,9 @@ GC_IMPL_FN void rb_gc_impl_each_objects_foreign(void *objspace_ptr, int (*callba
  * objspace and passes the per-Ractor objspace machinery (retire, absorb, ...) straight through. */
 GC_IMPL_FN bool rb_gc_impl_multi_objspace_p(void);
 GC_IMPL_FN bool rb_gc_impl_during_global_gc_p(void *objspace_ptr);
+/* Whether obj is owned by an objspace other than objspace_ptr.  Always false for a single
+ * objspace impl. */
+GC_IMPL_FN bool rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN bool rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN size_t rb_gc_impl_heap_page_count(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_objspace_absorb(void *dst_ptr, void *src_ptr);
