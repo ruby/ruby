@@ -86,12 +86,16 @@ class Gem::CompactIndexClient
 
     def checksum_for_file(path)
       return unless path.file?
-      Digest::MD5.file(path).hexdigest
+      Gem::CompactIndexClient.filesystem_access(path, :read) do
+        Digest::MD5.file(path).hexdigest
+      end
     end
 
     def mkdir(name)
       directory.join(name).tap do |dir|
-        FileUtils.mkdir_p(dir)
+        Gem::CompactIndexClient.filesystem_access(dir) do
+          FileUtils.mkdir_p(dir)
+        end
       end
     end
 
@@ -112,7 +116,7 @@ class Gem::CompactIndexClient
 
     def read(path)
       return unless path.file?
-      path.read
+      Gem::CompactIndexClient.filesystem_access(path, :read, &:read)
     end
   end
 end

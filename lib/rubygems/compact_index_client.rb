@@ -32,6 +32,21 @@ class Gem::CompactIndexClient
 
   class Error < StandardError; end
 
+  # Filesystem reads and writes funnel through this hook so that a host
+  # (e.g. Bundler) can translate low-level Errno exceptions into its own
+  # friendlier errors. The default just yields the path.
+  def self.filesystem_access(path, action = :write, &block)
+    if @filesystem_access
+      @filesystem_access.call(path, action, &block)
+    else
+      yield path
+    end
+  end
+
+  def self.filesystem_access=(hook)
+    @filesystem_access = hook
+  end
+
   require_relative "compact_index_client/cache"
   require_relative "compact_index_client/cache_file"
   require_relative "compact_index_client/http_fetcher"

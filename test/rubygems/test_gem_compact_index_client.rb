@@ -109,6 +109,23 @@ class TestGemCompactIndexClient < Gem::TestCase
     assert_equal %w[versions versions], @fetcher.requests
   end
 
+  def test_filesystem_access_hook_wraps_reads_and_writes
+    accesses = []
+    Gem::CompactIndexClient.filesystem_access = lambda do |path, action, &block|
+      accesses << [path.basename.to_s, action]
+      block.call(path)
+    end
+
+    client = Gem::CompactIndexClient.new(File.join(@tempdir, "hooked_index"), @fetcher)
+    client.versions
+
+    assert_includes accesses, ["info", :write]
+    assert_includes accesses, ["versions", :write]
+    assert_includes accesses, ["versions", :read]
+  ensure
+    Gem::CompactIndexClient.filesystem_access = nil
+  end
+
   def test_info_uses_local_cache_when_checksum_matches
     @client.versions # prime info checksums and write cache
     @client.info("a")
