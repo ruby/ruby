@@ -3968,6 +3968,10 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
 
     asm_comment!(asm, "clear JITFrame materialized by exit code");
     asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+    // zjit_materialize_frames() identifies a JIT frame by a non-NULL jit_return, so
+    // it skips this frame and never runs its materialize_block_code branch.  Clear
+    // block_code here, as compile_exit_save_state() already documents we do.
+    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
 
     asm_comment!(asm, "materialize ZJIT frames");
     asm_ccall!(asm, rb_zjit_materialize_frames, EC, CFP);
