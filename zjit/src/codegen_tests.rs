@@ -3351,6 +3351,34 @@ fn test_new_hash_dynamic_sym_keys_gc_stress() {
     "#), @r#"[Hash, 2, [3], [3]]"#);
 }
 
+// The NewHash inline-alloc fast path must bake the slot-size shape_id into the
+// object flags. Without it, a cross-ractor move sizes the destination object
+// from a zero shape_id, so the moved hash is allocated too small and its keys
+// are corrupted.
+#[test]
+fn test_new_hash_sym_keys_ractor_move() {
+    eval("
+        def create_hash
+          { an_object: Array.new, hi: true, bonjour: true }
+        end
+    ");
+    assert_contains_opcode("create_hash", YARVINSN_newhash);
+    assert_snapshot!(inspect("
+        r = Ractor.new do
+          h = receive
+          30.times { |i| h[i] = true }
+          h.keys.delete_if { |k| Integer === k }
+        end
+
+        create_hash
+        create_hash
+
+        h = create_hash
+        r.send(h, move: true)
+        r.value
+    "), @"[:an_object, :hi, :bonjour]");
+}
+
 #[test]
 fn test_object_alloc_gc_stress() {
     eval("

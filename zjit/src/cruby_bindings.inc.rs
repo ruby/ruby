@@ -2272,7 +2272,7 @@ unsafe extern "C" {
     pub fn rb_iseq_label(iseq: *const rb_iseq_t) -> VALUE;
     pub fn rb_iseq_defined_string(type_: defined_type) -> VALUE;
     pub fn rb_zjit_profile_enable(iseq: *const rb_iseq_t);
-    pub fn rb_zjit_hash_new_size() -> usize;
+    pub fn rb_zjit_hash_new_size(flags_out: *mut VALUE) -> usize;
     pub fn rb_zjit_class_allocate_instance_fastpath(
         klass: VALUE,
         size_out: *mut usize,
