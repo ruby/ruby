@@ -362,50 +362,21 @@ rb_ractor_targeted_hooks_cnt(rb_ractor_t *cr)
 }
 
 #if RACTOR_CHECK_MODE > 0
-# define RACTOR_BELONGING_ID(obj) (*(uint32_t *)(((uintptr_t)(obj)) + rb_gc_obj_slot_size(obj)))
-
-uint32_t rb_ractor_current_id(void);
-
-static inline void
-rb_ractor_setup_belonging_to(VALUE obj, uint32_t rid)
-{
-    RACTOR_BELONGING_ID(obj) = rid;
-}
-
-static inline uint32_t
-rb_ractor_belonging(VALUE obj)
-{
-    if (SPECIAL_CONST_P(obj) || RB_OBJ_SHAREABLE_P(obj)) {
-        return 0;
-    }
-    else {
-        return RACTOR_BELONGING_ID(obj);
-    }
-}
 
 extern bool rb_ractor_ignore_belonging_flag;
 
+/* An object's owning Ractor is decided by the objspace its page belongs to
+ * (rb_gc_obj_foreign_p).  Putting an unshareable object on the VM stack of anyone
+ * but its owner is a containment violation. */
 static inline VALUE
 rb_ractor_confirm_belonging(VALUE obj)
 {
     if (rb_ractor_ignore_belonging_flag) return obj;
+    if (SPECIAL_CONST_P(obj) || RB_OBJ_SHAREABLE_P(obj)) return obj;
 
-    uint32_t id = rb_ractor_belonging(obj);
-
-    if (id == 0) {
-        if (UNLIKELY(!rb_ractor_shareable_p(obj))) {
-            rp(obj);
-            rb_bug("id == 0 but not shareable");
-        }
-    }
-    else if (UNLIKELY(id != rb_ractor_current_id())) {
-        if (rb_ractor_shareable_p(obj)) {
-            // ok
-        }
-        else {
-            rp(obj);
-            rb_bug("rb_ractor_confirm_belonging object-ractor id:%u, current-ractor id:%u", id, rb_ractor_current_id());
-        }
+    if (UNLIKELY(rb_gc_obj_foreign_p(obj))) {
+        rp(obj);
+        rb_bug("rb_ractor_confirm_belonging: unshareable object of another Ractor's objspace");
     }
     return obj;
 }

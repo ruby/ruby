@@ -489,19 +489,6 @@ RACTOR_PTR(VALUE self)
 #define MAIN_RACTOR_ID 1
 static rb_atomic_t ractor_last_id = MAIN_RACTOR_ID;
 
-#if RACTOR_CHECK_MODE > 0
-uint32_t
-rb_ractor_current_id(void)
-{
-    if (GET_THREAD()->ractor == NULL) {
-        return 1; // main ractor
-    }
-    else {
-        return rb_ractor_id(GET_RACTOR());
-    }
-}
-#endif
-
 #include "ractor_sync.c"
 
 // creation/termination
@@ -1602,7 +1589,6 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
       case T_FLOAT:
       case T_BIGNUM:
       case T_REGEXP:
-      case T_FILE:
       case T_SYMBOL:
         break;
 
@@ -1947,39 +1933,10 @@ rb_ractor_shareable_p_continue(VALUE obj)
     }
 }
 
-#if RACTOR_CHECK_MODE > 0
-void
-rb_ractor_setup_belonging(VALUE obj)
-{
-    rb_ractor_setup_belonging_to(obj, rb_ractor_current_id());
-}
-
-static enum obj_traverse_iterator_result
-reset_belonging_enter(VALUE obj)
-{
-    if (rb_ractor_shareable_p(obj)) {
-        return traverse_skip;
-    }
-    else {
-        rb_ractor_setup_belonging(obj);
-        return traverse_cont;
-    }
-}
-#endif
-
 static enum obj_traverse_iterator_result
 null_leave(VALUE obj)
 {
     return traverse_cont;
-}
-
-static VALUE
-ractor_reset_belonging(VALUE obj)
-{
-#if RACTOR_CHECK_MODE > 0
-    rb_obj_traverse(obj, reset_belonging_enter, null_leave, NULL);
-#endif
-    return obj;
 }
 
 

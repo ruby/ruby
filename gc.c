@@ -639,6 +639,7 @@ typedef struct gc_function_map {
     bool (*user_gc_disabled_p)(void *objspace_ptr);
     bool (*multi_objspace_p)(void);
     bool (*during_global_gc_p)(void *objspace_ptr);
+    bool (*obj_foreign_p)(void *objspace_ptr, VALUE obj);
     bool (*shref_marked_p)(void *objspace_ptr, VALUE obj);
     size_t (*heap_page_count)(void *objspace_ptr);
     void (*objspace_absorb)(void *dst_ptr, void *src_ptr);
@@ -832,6 +833,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(user_gc_disabled_p);
     load_modular_gc_func(multi_objspace_p);
     load_modular_gc_func(during_global_gc_p);
+    load_modular_gc_func(obj_foreign_p);
     load_modular_gc_func(shref_marked_p);
     load_modular_gc_func(heap_page_count);
     load_modular_gc_func(objspace_absorb);
@@ -934,6 +936,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_user_gc_disabled_p rb_gc_functions.user_gc_disabled_p
 # define rb_gc_impl_multi_objspace_p rb_gc_functions.multi_objspace_p
 # define rb_gc_impl_during_global_gc_p rb_gc_functions.during_global_gc_p
+# define rb_gc_impl_obj_foreign_p rb_gc_functions.obj_foreign_p
 # define rb_gc_impl_shref_marked_p rb_gc_functions.shref_marked_p
 # define rb_gc_impl_heap_page_count rb_gc_functions.heap_page_count
 # define rb_gc_impl_objspace_absorb rb_gc_functions.objspace_absorb
@@ -1130,11 +1133,6 @@ rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape
 
     GC_ASSERT(actual_alloc_size >= size);
     shape_id = rb_shape_transition_slot_size(shape_id, actual_alloc_size);
-
-#if RACTOR_CHECK_MODE
-    void rb_ractor_setup_belonging(VALUE obj);
-    rb_ractor_setup_belonging(obj);
-#endif
 
     RBASIC_SET_FULL_SHAPE_ID_NO_CHECKS(obj, shape_id);
 
@@ -4149,6 +4147,14 @@ bool
 rb_gc_multi_objspace_p(void)
 {
     return rb_gc_impl_multi_objspace_p();
+}
+
+/* Does obj belong to another Ractor's objspace rather than the current one?  Always
+ * false for a single-objspace impl, which cannot tell owners apart. */
+bool
+rb_gc_obj_foreign_p(VALUE obj)
+{
+    return rb_gc_impl_obj_foreign_p(rb_gc_get_objspace(), obj);
 }
 
 bool

@@ -858,15 +858,10 @@ global_objspace_init(void)
 #define HEAP_PAGE_ALIGN_LOG 16
 #endif
 
-#if RB_GC_OBJ_HAS_SUFFIX || GC_DEBUG
+#if GC_DEBUG
 struct rvalue_overhead {
-# if RB_GC_OBJ_HAS_SUFFIX
-    struct rb_gc_obj_suffix suffix;
-# endif
-# if GC_DEBUG
     const char *file;
     int line;
-# endif
 };
 
 // Make sure that RVALUE_OVERHEAD aligns to sizeof(VALUE)
@@ -8517,6 +8512,12 @@ rb_gc_impl_during_global_gc_p(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
     return objspace->flags.during_global_gc != 0;
+}
+
+bool
+rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj)
+{
+    return gc_foreign_object_p(objspace_ptr, obj);
 }
 
 

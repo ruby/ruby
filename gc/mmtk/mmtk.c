@@ -584,7 +584,7 @@ rb_gc_impl_objspace_alloc(void)
     if (the_objspace == NULL) {
         MMTk_Builder *builder = rb_mmtk_builder_init();
         MMTk_RubyBindingOptions binding_options = {
-            .suffix_size = RB_GC_OBJ_SUFFIX_SIZE,
+            .suffix_size = 0,
         };
         mmtk_init_binding(builder, &binding_options, &ruby_upcalls);
         the_objspace = calloc(1, sizeof(struct objspace));
@@ -708,11 +708,11 @@ bool
 rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass,
                                  struct rb_gc_zjit_fastpath *fastpath)
 {
-#if USE_ZJIT && RB_GC_OBJ_SUFFIX_SIZE == 0
+#if USE_ZJIT
     struct objspace *objspace = objspace_ptr;
 
-    size_t total_size = rb_mmtk_align_obj_size(alloc_size + sizeof(VALUE) + RB_GC_OBJ_SUFFIX_SIZE);
-    size_t object_size = total_size - sizeof(VALUE) - RB_GC_OBJ_SUFFIX_SIZE;
+    size_t total_size = rb_mmtk_align_obj_size(alloc_size + sizeof(VALUE));
+    size_t object_size = total_size - sizeof(VALUE);
     size_t value_size_shift = sizeof(VALUE) == 8 ? 3 : 2;
 
     if (total_size > objspace->max_non_los_default_alloc_bytes) return false;
@@ -1019,9 +1019,9 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
         rb_bug("rb_gc_impl_new_obj: allocation size out of range (size=%"PRIuSIZE")", alloc_size);
     }
 
-    // Layout: [hidden size header (sizeof(VALUE))][payload (alloc_size)][suffix (RB_GC_OBJ_SUFFIX_SIZE)]
-    size_t total_size = rb_mmtk_align_obj_size(alloc_size + sizeof(VALUE) + RB_GC_OBJ_SUFFIX_SIZE);
-    size_t object_size = total_size - sizeof(VALUE) - RB_GC_OBJ_SUFFIX_SIZE;
+    // Layout: [hidden size header (sizeof(VALUE))][payload (alloc_size)]
+    size_t total_size = rb_mmtk_align_obj_size(alloc_size + sizeof(VALUE));
+    size_t object_size = total_size - sizeof(VALUE);
     MMTk_AllocationSemantics semantics = total_size > objspace->max_non_los_default_alloc_bytes
         ? MMTK_ALLOCATION_SEMANTICS_LOS
         : MMTK_ALLOCATION_SEMANTICS_DEFAULT;
@@ -1078,7 +1078,7 @@ rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
         rb_bug("rb_gc_impl_size_slot_size: size too large (size=%"PRIuSIZE")", size);
     }
 
-    return rb_mmtk_align_obj_size(size + sizeof(VALUE) + RB_GC_OBJ_SUFFIX_SIZE) - sizeof(VALUE) - RB_GC_OBJ_SUFFIX_SIZE;
+    return rb_mmtk_align_obj_size(size + sizeof(VALUE)) - sizeof(VALUE);
 }
 
 bool
@@ -1807,6 +1807,13 @@ rb_gc_impl_during_global_gc_p(void *objspace_ptr)
      * stopped. */
     struct objspace *objspace = objspace_ptr;
     return objspace->world_stopped;
+}
+
+bool
+rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj)
+{
+    /* With a single objspace every object is our own. */
+    return false;
 }
 
 bool
