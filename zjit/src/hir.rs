@@ -5515,7 +5515,7 @@ impl Function {
                     TDATA_OFFSET_FIELDS_OBJ
                 };
 
-                let fields_obj = self.load_field(block, self_val, FieldName::fields_obj, offset, types::RubyValue);
+                let fields_obj = self.load_field(block, self_val, FieldName::fields_obj, offset, types::IMemo);
                 // All fields objects are embedded
                 self.load_ivar_embedded(block, fields_obj, id, ivar_index)
             },
@@ -5634,7 +5634,7 @@ impl Function {
                 (self_val, true)
             },
             ShapeLayout::Extended => {
-                let fields = self.load_field(block, self_val, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::RubyValue);
+                let fields = self.load_field(block, self_val, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::IMemo);
                 (fields, false)
             },
             ShapeLayout::Other | ShapeLayout::RClass => {

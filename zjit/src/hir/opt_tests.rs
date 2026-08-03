@@ -6929,7 +6929,7 @@ mod hir_opt_tests {
           v17:HeapBasicObject = GuardType v9, HeapBasicObject
           v18:CShape = LoadField v17, :shape_id@0x1001
           v19:CShape[0x1002] = GuardBitEquals v18, CShape(0x1002) recompile
-          v20:RubyValue = LoadField v17, :as_heap@0x1003
+          v20:IMemo = LoadField v17, :as_heap@0x1003
           StoreField v20, :@v0@0x1003, v10
           WriteBarrier v20, v10
           CheckInterrupts
@@ -9507,7 +9507,7 @@ mod hir_opt_tests {
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           v12:CShape = LoadField v11, :shape_id@0x1000
           v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001) recompile
-          v14:RubyValue = LoadField v11, :fields_obj@0x1002
+          v14:IMemo = LoadField v11, :fields_obj@0x1002
           v15:BasicObject = LoadField v14, :@foo@0x1003
           CheckInterrupts
           Return v15
@@ -9577,7 +9577,7 @@ mod hir_opt_tests {
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           v12:CShape = LoadField v11, :shape_id@0x1000
           v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001) recompile
-          v14:RubyValue = LoadField v11, :fields_obj@0x1002
+          v14:IMemo = LoadField v11, :fields_obj@0x1002
           v15:BasicObject = LoadField v14, :@foo@0x1003
           CheckInterrupts
           Return v15
@@ -9640,7 +9640,7 @@ mod hir_opt_tests {
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           v12:CShape = LoadField v11, :shape_id@0x1000
           v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001) recompile
-          v14:RubyValue = LoadField v11, :fields_obj@0x1002
+          v14:IMemo = LoadField v11, :fields_obj@0x1002
           v15:BasicObject = LoadField v14, :@a@0x1002
           CheckInterrupts
           Return v15
@@ -9675,7 +9675,7 @@ mod hir_opt_tests {
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           v12:CShape = LoadField v11, :shape_id@0x1000
           v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001) recompile
-          v14:RubyValue = LoadField v11, :fields_obj@0x1002
+          v14:IMemo = LoadField v11, :fields_obj@0x1002
           v15:BasicObject = LoadField v14, :@a@0x1002
           CheckInterrupts
           Return v15
@@ -9817,7 +9817,7 @@ mod hir_opt_tests {
           Jump bb4(v17)
         bb6():
           v19:CShape[0x1003] = GuardBitEquals v12, CShape(0x1003) recompile
-          v21:RubyValue = LoadField v11, :fields_obj@0x1004
+          v21:IMemo = LoadField v11, :fields_obj@0x1004
           v22:BasicObject = LoadField v21, :@foo@0x1004
           Jump bb4(v22)
         bb4(v13:BasicObject):
@@ -9880,7 +9880,7 @@ mod hir_opt_tests {
           v15:CBool = IsBitEqual v12, v14
           CondBranch v15, bb5(), bb6()
         bb5():
-          v17:RubyValue = LoadField v11, :fields_obj@0x1002
+          v17:IMemo = LoadField v11, :fields_obj@0x1002
           v18:BasicObject = LoadField v17, :@foo@0x1002
           Jump bb4(v18)
         bb6():
@@ -9995,12 +9995,12 @@ mod hir_opt_tests {
           v15:CBool = IsBitEqual v12, v14
           CondBranch v15, bb5(), bb6()
         bb5():
-          v17:RubyValue = LoadField v11, :fields_obj@0x1002
+          v17:IMemo = LoadField v11, :fields_obj@0x1002
           v18:BasicObject = LoadField v17, :@a@0x1002
           Jump bb4(v18)
         bb6():
           v20:CShape[0x1003] = GuardBitEquals v12, CShape(0x1003) recompile
-          v22:RubyValue = LoadField v11, :fields_obj@0x1004
+          v22:IMemo = LoadField v11, :fields_obj@0x1004
           v23:BasicObject = LoadField v22, :@a@0x1002
           Jump bb4(v23)
         bb4(v13:BasicObject):
@@ -20789,7 +20789,7 @@ mod hir_opt_tests {
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           v12:CShape = LoadField v11, :shape_id@0x1000
           v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001) recompile
-          v14:RubyValue = LoadField v11, :fields_obj@0x1002
+          v14:IMemo = LoadField v11, :fields_obj@0x1002
           v15:BasicObject = LoadField v14, :@hclk@0x1003
           v17:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
