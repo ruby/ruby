@@ -248,6 +248,12 @@ The following APIs, which have been deprecated for many years, are removed.
 
 - The default garbage collector has been switched from a freelist allocator to a bump pointer allocator. [[PR #17201]]
 
+- The error_highlight, did_you_mean, and syntax_suggest gems are now
+  loaded lazily on the first error display instead of at interpreter
+  boot, which reduces startup time.  `Process.warmup` loads them
+  eagerly so that pre-forking servers keep their code in
+  copy-on-write shared memory.  [[Feature #21951]]
+
 ### Ractor
 
 A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractor implementation closer to leaving experimental status.
@@ -266,6 +272,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21853]: https://bugs.ruby-lang.org/issues/21853
 [Feature #21861]: https://bugs.ruby-lang.org/issues/21861
 [Feature #21932]: https://bugs.ruby-lang.org/issues/21932
+[Feature #21951]: https://bugs.ruby-lang.org/issues/21951
 [Feature #21981]: https://bugs.ruby-lang.org/issues/21981
 [Feature #22097]: https://bugs.ruby-lang.org/issues/22097
 [Feature #22135]: https://bugs.ruby-lang.org/issues/22135
