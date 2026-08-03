@@ -2080,9 +2080,8 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
     rb_define_method(rb_cIO, "ttyname", console_ttyname, 0);
     {
-	/* :stopdoc: */
+	/* :nodoc: */
 	VALUE platform = rb_define_module_under(rb_cIO, "platform_tty");
-	/* :startdoc: */
 	{
 	    VALUE rb_cIO = platform;
 	    rb_define_method(rb_cIO, "tty?", console_platform_tty_p, -1);
