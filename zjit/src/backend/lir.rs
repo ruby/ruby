@@ -1458,6 +1458,13 @@ impl Interval {
         self.ranges.len() > 0
     }
 
+    pub fn ranges_string(&self) -> String {
+        self.ranges.iter()
+            .map(|range| format!("{}..{}", range.from, range.to))
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
     /// Add a range to the interval, extending it if necessary
     pub fn add_range(&mut self, from: usize, to: usize) {
         if to <= from {
