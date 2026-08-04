@@ -1375,7 +1375,6 @@ impl fmt::Debug for Insn {
 }
 
 /// Live range of a VReg
-/// TODO: Consider supporting lifetime holes
 #[derive(Clone, Debug, PartialEq)]
 pub struct LiveRange {
     /// Index of the first instruction that used the VReg
@@ -2160,7 +2159,8 @@ impl Assembler
                                         regs.push(*dest_reg);
                                         regs.len() - 1
                                     });
-                                intervals[*idx].preferred.get_or_insert(Allocation::Reg(regno));
+                                debug_assert!(intervals[*idx].preferred.is_none());
+                                intervals[*idx].preferred = Some(Allocation::Reg(regno));
                             }
                         }
                     }
@@ -2349,6 +2349,8 @@ impl Assembler
             assignment[it.id] = it.assigned;
         }
 
+        // TODO: Caller should just use the mutated intervals instead of
+        // using this assignment list
         (assignment, num_stack_slots)
     }
 
