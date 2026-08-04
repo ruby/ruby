@@ -80,7 +80,7 @@ The access time (along with the modification time) may also be updated explicitl
 
 Depending on a filesystem's settings, reading an entry may cause the access time
 to be updated immediately, later, or never;
-thus in the tables below, some entries say "Maybe."
+thus in the tables below, some entries say "Filesystem-dependent."
 
 ### File
 
