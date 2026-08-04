@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "command_execution"
-require_relative "path"
 
 module Spec
   module Subprocess
@@ -47,6 +46,10 @@ module Spec
       return if args.any? {|a| ["--global", "--system", "-f", "--file"].include?(a) || a.start_with?("--file=") }
       return if args.any? {|a| ["--get", "--get-all", "--get-regexp", "--get-urlmatch", "--list", "-l"].include?(a) }
 
+      # Required lazily because this file is loaded in every spawned ruby
+      # before RubygemsVersionManager switches RubyGems, where loading extra
+      # default gems (pathname, through support/path) breaks the setup.
+      require_relative "path"
       dir = File.expand_path(path.to_s)
       tmp_root = Spec::Path.tmp_root.to_s
       return if dir == tmp_root || dir.start_with?(tmp_root + File::SEPARATOR)
