@@ -423,10 +423,10 @@ class TestGemSafeMarshal < Gem::TestCase
     end
     assert_equal e.message, "Unexpected EOF"
 
-    e = assert_raise(Gem::SafeMarshal::Reader::EOFError) do
+    e = assert_raise(Gem::SafeMarshal::Reader::LengthTooLongError) do
       Gem::SafeMarshal.safe_load("\x04\x08[\x06")
     end
-    assert_equal e.message, "Unexpected EOF"
+    assert_equal e.message, "expected 1 elements, but only 0 bytes remain"
 
     e = assert_raise(Gem::SafeMarshal::Reader::EOFError) do
       Gem::SafeMarshal.safe_load("\004\010:\012")
@@ -459,6 +459,33 @@ class TestGemSafeMarshal < Gem::TestCase
     assert_raise(Gem::SafeMarshal::Reader::EOFError) do
       Gem::SafeMarshal.safe_load("\004\010@\377")
     end
+    assert_raise(Gem::SafeMarshal::Reader::NegativeLengthError) do
+      Gem::SafeMarshal.safe_load("\004\010{\325")
+    end
+  end
+
+  def test_length_too_long
+    huge_length = "\x04#{[2_000_000_000].pack("V")}".b
+
+    assert_raise(Gem::SafeMarshal::Reader::LengthTooLongError) do
+      Gem::SafeMarshal.safe_load("\x04\x08[#{huge_length}")
+    end
+    assert_raise(Gem::SafeMarshal::Reader::LengthTooLongError) do
+      Gem::SafeMarshal.safe_load("\x04\x08{#{huge_length}")
+    end
+    assert_raise(Gem::SafeMarshal::Reader::LengthTooLongError) do
+      Gem::SafeMarshal.safe_load("\x04\x08}#{huge_length}")
+    end
+    assert_raise(Gem::SafeMarshal::Reader::LengthTooLongError) do
+      Gem::SafeMarshal.safe_load("\x04\x08I\"\x00#{huge_length}")
+    end
+    assert_raise(Gem::SafeMarshal::Reader::LengthTooLongError) do
+      Gem::SafeMarshal.safe_load("\x04\x08o:\x06C#{huge_length}")
+    end
+
+    # lengths that fit within the remaining input still parse
+    assert_equal [1, 2, 3], Gem::SafeMarshal.safe_load("\x04\x08[\x08i\x06i\ai\x08")
+    assert_equal({ 1 => 2 }, Gem::SafeMarshal.safe_load("\x04\x08{\x06i\x06i\a"))
   end
 
   def test_date_user_defined_rejected
