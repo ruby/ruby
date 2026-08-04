@@ -1375,7 +1375,7 @@ impl LiveRange {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(PartialEq)]
 pub enum State {
     Unhandled,
     Active,
@@ -1384,7 +1384,6 @@ pub enum State {
 }
 
 /// Live Interval of a VReg
-#[derive(Clone)]
 pub struct Interval {
     pub ranges: Vec<LiveRange>,
     pub id: VRegId,
