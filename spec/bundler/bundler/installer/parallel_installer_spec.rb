@@ -227,6 +227,26 @@ RSpec.describe Bundler::ParallelInstaller do
     end
   end
 
+  describe "require tree in error reports" do
+    # require_tree_for_spec runs while reporting an install error. When no
+    # Gemfile can be located, default_gemfile raises GemfileNotFound, which
+    # would mask the original install error entirely.
+    it "falls back to a generic header when no Gemfile can be located" do
+      parallel_installer = Bundler::ParallelInstaller.new(nil, [], 1, false, false)
+
+      spec = double("spec", name: "mygem", version: Gem::Version.new("1.0"))
+      spec_set = double("spec_set", what_required: [spec])
+      parallel_installer.instance_variable_set(:@spec_set, spec_set)
+
+      allow(Bundler::SharedHelpers).to receive(:default_gemfile).
+        and_raise(Bundler::GemfileNotFound, "Could not locate Gemfile")
+
+      tree = parallel_installer.send(:require_tree_for_spec, spec)
+      expect(tree).to start_with("In Gemfile:\n")
+      expect(tree).to include("mygem")
+    end
+  end
+
   describe "make jobserver with nmake" do
     # nmake reads MAKEFLAGS from the environment and treats its contents as
     # bare option letters, so a GNU make `--jobserver-auth` aborts the build
