@@ -5916,11 +5916,15 @@ impl Function {
         // This abstract domain represents block param optimization potential
         // If it were constructed as a lattice, Unknown is bottom, trivial is above, nontrivial is top (and above trivial)
         #[derive(Clone)]
-        enum ParamState {
-            Unknown,
-            NonTrivial,
-            Trivial(InsnId)
+        enum ParamValue {
+            None,
+            One(InsnId),
+            Multiple
         }
+
+        // TODO: Make a note about how this breaks Dak2's test in the PR and this should probably be a discussion.
+        // canonicalize is block-local, and the generated test used block params. This caused a use of a value to be canonicalized (I think)
+        // which removed a type refinement that was passed
 
         fn prune_vec_by_indices<T>(v: &mut Vec<T>, indices: &[usize]) {
             let mut i: usize = 0;
@@ -5948,9 +5952,9 @@ impl Function {
         // Outer index is block
         // Inner index is param index
         // Value is the state of the param. This is used to determine whether block param optimization can occur.
-        let mut predecessor_domain: Vec<Vec<ParamState>> = vec![Vec::new(); self.blocks.len()];
+        let mut predecessor_domain: Vec<Vec<ParamValue>> = vec![Vec::new(); self.blocks.len()];
         for (i, block) in self.blocks.iter().enumerate() {
-            predecessor_domain[i].extend(std::iter::repeat_n(ParamState::Unknown, block.params.len()))
+            predecessor_domain[i].extend(std::iter::repeat_n(ParamValue::None, block.params.len()))
         }
 
         // Store references to all the conditional instructions.
@@ -5981,24 +5985,30 @@ impl Function {
             }
 
             // Update the states
-            for BranchEdge { target, args } in edges {
-                for (i, arg) in args.iter().enumerate().rev() {
+            for BranchEdge { target: block_id, args: params } in edges {
+                for (i, param) in params.iter().enumerate().rev() {
                     // If the param is the same as passed into the block, this means it is a self loop
                     // We can safely ignore these cases.
-                    if self.chase_insn(*arg) == self.chase_insn(self.blocks[target.0].params[i]) {
+                    // FIX: Do we always want the representative in the group? This throws away type information.
+                    // Seems like we have a strange edge case where we want to consider multiple different guards of a value to represent the same value and elide blockparams
+                    // But at the same time, we want subsequent blocks to use the most type information that we have, rather than the original canonical value.
+                    // I'm not sure how we can do this more generally. It feels like it's not the responsibility of this phi reduction pass, but of a type inference pass
+                    // Feels like we should do some kind of guard code motion of some kind...
+                    let param = self.find_id(*param);
+                    if param == self.find_id(self.blocks[block_id.0].params[i]) {
                         continue
                     }
-                    let state = &mut predecessor_domain[target.0][i];
+                    let state = &mut predecessor_domain[block_id.0][i];
                     match *state {
-                        ParamState::Unknown => {
-                            *state = ParamState::Trivial(self.chase_insn(*arg));
+                        ParamValue::None => {
+                            *state = ParamValue::One(param);
                         },
-                        ParamState::Trivial(value) => {
-                            if value != self.chase_insn(*arg) {
-                                *state = ParamState::NonTrivial;
+                        ParamValue::One(value) => {
+                            if value != param {
+                                *state = ParamValue::Multiple;
                             }
                         }
-                        ParamState::NonTrivial => {},
+                        ParamValue::Multiple => {},
                     }
                 }
             }
@@ -6015,13 +6025,13 @@ impl Function {
 
             let trivial_indices: Vec<usize> = block.iter().enumerate()
                 .filter_map(|(idx, state)|
-                    matches!(state, ParamState::Trivial(_)).then_some(idx)
+                    matches!(state, ParamValue::One(_)).then_some(idx)
                 ).collect();
 
             // Replace uses of the trivial params with the concretized value
             for param_index in &trivial_indices {
-                if let ParamState::Trivial(concretized_insn) = block[*param_index] {
-                    self.make_equal_to(self.blocks[block_id.0].params[*param_index], concretized_insn);
+                if let ParamValue::One(insn_id) = block[*param_index] {
+                    self.make_equal_to(self.blocks[block_id.0].params[*param_index], insn_id);
                     changed = true;
                 }
             }

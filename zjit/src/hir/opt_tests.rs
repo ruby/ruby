@@ -6499,6 +6499,7 @@ mod hir_opt_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v18:CBool = Test v12
+          v19:Falsy = RefineType v12, Falsy
           CondBranch v18, bb5(), bb4()
         bb5():
           v21:Truthy = RefineType v12, Truthy
@@ -9425,14 +9426,16 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v15:CBool = Test v10
+          v16:Falsy = RefineType v10, Falsy
           CondBranch v15, bb6(), bb4()
         bb6():
+          v18:Truthy = RefineType v10, Truthy
           v20:FalseClass = Const Value(false)
-          Jump bb5(v20)
+          Jump bb5(v18, v20)
         bb4():
           v27:NilClass = Const Value(nil)
-          Jump bb5(v27)
-        bb5(v31:Falsy):
+          Jump bb5(v16, v27)
+        bb5(v30:BasicObject, v31:Falsy):
           v36:CBool = HasType v31, FalseClass
           CondBranch v36, bb8(), bb9()
         bb8():
@@ -17746,6 +17749,7 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v15:CBool = Test v10
+          v16:Falsy = RefineType v10, Falsy
           CondBranch v15, bb7(), bb6()
         bb7():
           v18:Truthy = RefineType v10, Truthy
@@ -18726,6 +18730,7 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v15:CBool = Test v10
+          v16:Falsy = RefineType v10, Falsy
           CondBranch v15, bb5(), bb4()
         bb5():
           v18:Truthy = RefineType v10, Truthy
@@ -18797,6 +18802,7 @@ mod hir_opt_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v18:CBool = Test v12
+          v19:Falsy = RefineType v12, Falsy
           CondBranch v18, bb5(), bb4()
         bb5():
           v21:Truthy = RefineType v12, Truthy
@@ -18855,6 +18861,7 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v15:CBool = Test v10
+          v16:Falsy = RefineType v10, Falsy
           CondBranch v15, bb5(), bb4()
         bb5():
           v18:Truthy = RefineType v10, Truthy
@@ -19089,8 +19096,8 @@ mod hir_opt_tests {
           Jump bb3(v5, v6)
         bb3(v8:HeapBasicObject, v9:NilClass):
           v13:Fixnum[0] = Const Value(0)
-          Jump bb6(v13)
-        bb6(v19:Fixnum):
+          Jump bb6(v8, v13)
+        bb6(v18:HeapBasicObject, v19:Fixnum):
           v23:Fixnum[10] = Const Value(10)
           PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
           v94:BoolExact = FixnumLt v19, v23
@@ -19099,12 +19106,12 @@ mod hir_opt_tests {
           CondBranch v29, bb4(), bb7()
         bb4():
           PatchPoint SingleRactorMode
-          v46:CShape = LoadField v8, :shape_id@0x1038
+          v46:CShape = LoadField v18, :shape_id@0x1038
           v48:CShape[0x1039] = Const CShape(0x1039)
           v49:CBool = IsBitEqual v46, v48
           CondBranch v49, bb9(), bb10()
         bb9():
-          v51:BasicObject = LoadField v8, :@levar@0x103a
+          v51:BasicObject = LoadField v18, :@levar@0x103a
           Jump bb8(v51)
         bb10():
           v53:CShape[0x103b] = GuardBitEquals v46, CShape(0x103b) recompile
@@ -19112,23 +19119,23 @@ mod hir_opt_tests {
           Jump bb8(v55)
         bb8(v47:BasicObject):
           v58:CBool = Test v47
-          CondBranch v58, bb5(), bb12()
+          CondBranch v58, bb5(v18), bb12()
         bb12():
           PatchPoint NoEPEscape(set_value_loop)
           PatchPoint SingleRactorMode
-          v68:CShape = LoadField v8, :shape_id@0x1038
+          v68:CShape = LoadField v18, :shape_id@0x1038
           v69:CShape[0x103b] = GuardBitEquals v68, CShape(0x103b) recompile
-          StoreField v8, :@levar@0x103a, v19
-          WriteBarrier v8, v19
+          StoreField v18, :@levar@0x103a, v19
+          WriteBarrier v18, v19
           v72:CShape[0x1039] = Const CShape(0x1039)
-          StoreField v8, :shape_id@0x1038, v72
-          Jump bb5()
-        bb5():
+          StoreField v18, :shape_id@0x1038, v72
+          Jump bb5(v18)
+        bb5(v76:HeapBasicObject):
           PatchPoint NoEPEscape(set_value_loop)
           v84:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, +@0x103c, cme:0x1040)
           v98:Fixnum = FixnumAdd v19, v84
-          Jump bb6(v98)
+          Jump bb6(v76, v98)
         bb7():
           v34:NilClass = Const Value(nil)
           CheckInterrupts
@@ -21524,6 +21531,7 @@ mod hir_opt_tests {
           v45:Falsy = RefineType v15, Falsy
           CondBranch v44, bb5(), bb4(v13, v14, v45, v37)
           v42:CBool = Test v15
+          v43:Falsy = RefineType v15, Falsy
           CondBranch v42, bb5(), bb4()
         bb5():
           v47:Truthy = RefineType v15, Truthy
