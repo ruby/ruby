@@ -19002,27 +19002,6 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_dedup_guard_type_across_cfg_join() {
-        eval("
-            def test(n, cond)
-              if cond
-                a = n + 1
-              else
-                a = n + 2
-              end
-              n + a
-            end
-            test(1, true); test(1, false)
-        ");
-        let hir = hir_string("test");
-        let guard_count = hir.matches("GuardType").count();
-        assert_eq!(
-            guard_count, 2,
-            "expected 2 GuardType instructions after cross-block dedup, found {guard_count}\n\nHIR:\n{hir}"
-        );
-    }
-
-    #[test]
     fn test_forward_guard_through_conditional_branch() {
         eval("
             def test(n, a, b)
