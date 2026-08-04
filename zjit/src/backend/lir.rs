@@ -2208,43 +2208,48 @@ impl Assembler
             let position = interval.start();
 
             // Expire old intervals.
-            for mut it in std::mem::take(&mut active) {
+            active.retain_mut(|it| {
                 debug_assert!(it.state == State::Active);
                 // If the interval ends before the current position, then we're
                 // done with it and can mark it handled.
                 if it.ends_before(position) {
                     it.state = State::Handled;
-                    handled.push(it);
+                    handled.push(it.clone());
+                    false
                 } else if !it.covers(position) {
                     // If it doesn't cover the current position (there's a hole
                     // in the ranges), then move it to inactive
                     it.state = State::Inactive;
-                    inactive.push(it);
+                    inactive.push(it.clone());
+                    false
                 } else {
                     // Otherwise it's still live here and stays active.
-                    active.push(it);
+                    true
                 }
-            }
+            });
 
             // Check for intervals in inactive that are handled or active
-            for mut it in std::mem::take(&mut inactive) {
+            inactive.retain(|it| {
                 debug_assert!(it.state == State::Inactive);
                 // If the inactive interval ends before the current position
                 if it.ends_before(position) {
                     // Move it to handled
+                    let mut it = it.clone();
                     it.state = State::Handled;
                     handled.push(it);
-
+                    false
                 } else if it.covers(position) {
                     // If the current position falls inside one of the
                     // interval's ranges, then make it active
+                    let mut it = it.clone();
                     it.state = State::Active;
                     active.push(it);
+                    false
                 } else {
                     // It's still inactive
-                    inactive.push(it);
+                    true
                 }
-            }
+            });
 
             // Mark all registers as "free".  In other words, they aren't
             // in use until instruction number usize::MAX.
