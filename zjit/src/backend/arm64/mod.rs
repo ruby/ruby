@@ -1622,7 +1622,7 @@ impl Assembler {
 
             let allocatable_regs = regs.len();
             trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&mut intervals, &mut regs));
-            let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(intervals.clone(), allocatable_regs, &regs));
+            let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(&mut intervals, allocatable_regs, &regs));
 
             asm.stack_state.num_spill_slots = num_stack_slots;
             asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&assignments);
