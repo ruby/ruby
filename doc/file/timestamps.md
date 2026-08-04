@@ -9,12 +9,12 @@ the returned times may vary among filesystems, even on the same machine.
 
 These timestamps methods are:
 
-|               Name               | Meaning                                | Changes               |
-|:--------------------------------:|----------------------------------------|-----------------------|
-|  [`birthtime`](#birth-time)      | Create time.                           | Never.                |
-|  [`mtime`](#modification-time)   | Modification time.                     | When written.         |
-|     [`atime`](#access-time)      | Access time.                           | When read. |
-| [`ctime`](#metadata-change-time) | Metadata-change time (or create time). | See below.            |
+|               Name               | Meaning                                | Changes       |
+|:--------------------------------:|----------------------------------------|---------------|
+|  [`birthtime`](#birth-time)      | Create time.                           | Never.        |
+|  [`mtime`](#modification-time)   | Modification time.                     | When written. |
+|     [`atime`](#access-time)      | Access time.                           | When read.    |
+| [`ctime`](#metadata-change-time) | Metadata-change time (or create time). | See below.    |
 
 A method raises an exception if the filesystem does not support
 the corresponding timestamp.
@@ -79,7 +79,8 @@ The access time (along with the modification time) may also be updated explicitl
 - Pathname#utime.
 
 Depending on a filesystem's settings, reading an entry may cause the access time
-to be updated immediately, later, or never.
+to be updated immediately, later, or never;
+thus in the tables below, some entries say "Maybe."
 
 ### File
 
