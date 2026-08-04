@@ -123,6 +123,7 @@ unsafe extern "C" {
     ) -> *const rb_callable_method_entry_t;
 
     pub fn rb_jit_iseq_mark_ep_escape_recorded(iseq: IseqPtr);
+    pub fn rb_jit_iseq_ep_escape_recorded_p(iseq: IseqPtr) -> bool;
 
     pub fn rb_zjit_offset_ractor_newobj_cache() -> usize;
 
