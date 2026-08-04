@@ -9431,11 +9431,11 @@ mod hir_opt_tests {
         bb6():
           v18:Truthy = RefineType v10, Truthy
           v20:FalseClass = Const Value(false)
-          Jump bb5(v18, v20)
+          Jump bb5(v9, v18, v20)
         bb4():
           v27:NilClass = Const Value(nil)
-          Jump bb5(v16, v27)
-        bb5(v30:BasicObject, v31:Falsy):
+          Jump bb5(v9, v16, v27)
+        bb5(v29:BasicObject, v30:BasicObject, v31:Falsy):
           v36:CBool = HasType v31, FalseClass
           CondBranch v36, bb8(), bb9()
         bb8():
@@ -18363,9 +18363,9 @@ mod hir_opt_tests {
           CondBranch v17, bb9(), bb4()
         bb9():
           v35:Fixnum[0] = Const Value(0)
-          Jump bb8(v35)
-        bb8(v49:Fixnum):
-          v52:Array = RefineType v8, Array
+          Jump bb8(v8, v35)
+        bb8(v48:BasicObject, v49:Fixnum):
+          v52:Array = RefineType v48, Array
           v53:CInt64 = ArrayLength v52
           v54:Fixnum = BoxFixnum v53
           v55:BoolExact = FixnumGe v49, v54
@@ -18373,9 +18373,9 @@ mod hir_opt_tests {
           CondBranch v57, bb11(), bb7()
         bb11():
           CheckInterrupts
-          Return v8
+          Return v48
         bb7():
-          v75:Array = RefineType v8, Array
+          v75:Array = RefineType v48, Array
           v76:CInt64 = UnboxFixnum v49
           v77:BasicObject = ArrayAref v75, v76
           v79:CPtr = GetEP 0
@@ -18391,7 +18391,7 @@ mod hir_opt_tests {
           v92:Fixnum[1] = Const Value(1)
           v93:Fixnum = FixnumAdd v49, v92
           PatchPoint NoEPEscape(each)
-          Jump bb8(v93)
+          Jump bb8(v48, v93)
         bb4():
           v28:BasicObject = InvokeBuiltin <inline_expr>, v8
           CheckInterrupts
@@ -18999,6 +18999,27 @@ mod hir_opt_tests {
           CheckInterrupts
           Return v44
         ");
+    }
+
+    #[test]
+    fn test_dedup_guard_type_across_cfg_join() {
+        eval("
+            def test(n, cond)
+              if cond
+                a = n + 1
+              else
+                a = n + 2
+              end
+              n + a
+            end
+            test(1, true); test(1, false)
+        ");
+        let hir = hir_string("test");
+        let guard_count = hir.matches("GuardType").count();
+        assert_eq!(
+            guard_count, 2,
+            "expected 2 GuardType instructions after cross-block dedup, found {guard_count}\n\nHIR:\n{hir}"
+        );
     }
 
     #[test]

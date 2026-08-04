@@ -5913,8 +5913,10 @@ impl Function {
     /// This function implements algorithm 2 from <https://c9x.me/compile/bib/braun13cc.pdf>.
     /// Light modifications are made to use block params instead of phis.
     fn remove_trivial_block_params(&mut self) {
-        // This abstract domain represents block param optimization potential
-        // If it were constructed as a lattice, Unknown is bottom, trivial is above, nontrivial is top (and above trivial)
+        // Each block param corresponds to a ParamValue
+        // This is the abstract domain used for abstract interpretation
+        // If there are no predecessors or multiple predecessors to a param, no optimization can happen
+        // However if there is a single unique predecessor, then the block param is trivial and we can replace with its concretized value
         #[derive(Clone)]
         enum ParamValue {
             None,
@@ -5922,10 +5924,7 @@ impl Function {
             Multiple
         }
 
-        // TODO: Make a note about how this breaks Dak2's test in the PR and this should probably be a discussion.
-        // canonicalize is block-local, and the generated test used block params. This caused a use of a value to be canonicalized (I think)
-        // which removed a type refinement that was passed
-
+        // Helper function to remove selected indices from a vec in place
         fn prune_vec_by_indices<T>(v: &mut Vec<T>, indices: &[usize]) {
             let mut i: usize = 0;
             v.retain(|_| {
@@ -5935,31 +5934,30 @@ impl Function {
             })
         }
 
-        // Remove an argument of the edge at index if the conditional matches target_block
+        // Remove arguments of the edge at selected indices
         fn prune_branch_edge(edge: BranchEdge, indices: &Vec<usize>) -> BranchEdge {
             let mut args = edge.args.clone();
             prune_vec_by_indices(&mut args, indices);
             BranchEdge { target: edge.target, args }
         }
 
-        let mut changed = true;
-
-        while changed {
-
-        changed = false;
-
         // Instantiate the domain for abstract interpretation
         // Outer index is block
         // Inner index is param index
         // Value is the state of the param. This is used to determine whether block param optimization can occur.
         let mut predecessor_domain: Vec<Vec<ParamValue>> = vec![Vec::new(); self.blocks.len()];
-        for (i, block) in self.blocks.iter().enumerate() {
-            predecessor_domain[i].extend(std::iter::repeat_n(ParamValue::None, block.params.len()))
+        let mut updated = true;
+
+        while updated {
+
+        for (row, block) in predecessor_domain.iter_mut().zip(&self.blocks) {
+            row.resize(block.params.len(), ParamValue::None);
         }
+        updated = false;
 
         // Store references to all the conditional instructions.
         // We need to update these conditionals in the case of trivial block params.
-        let jumps: Vec<(BlockId, usize)> = self.reverse_post_order().into_iter()
+        let terminators: Vec<(BlockId, usize)> = self.reverse_post_order().into_iter()
             .filter(|&block_id| matches!(
                 self.find(*self.blocks[block_id.0].insns.last().unwrap()),
                 Insn::CondBranch {..} | Insn::Jump {..}
@@ -5969,7 +5967,7 @@ impl Function {
 
 
         // Scan through each jump, collecting edges from CondBranch and Jump insns.
-        for (block_id, insn_index) in &jumps {
+        for (block_id, insn_index) in &terminators {
             let insn_id = self.blocks[block_id.0].insns[*insn_index];
             let mut edges: Vec<BranchEdge> = vec![];
 
@@ -5987,14 +5985,9 @@ impl Function {
             // Update the states
             for BranchEdge { target: block_id, args: params } in edges {
                 for (i, param) in params.iter().enumerate().rev() {
-                    // If the param is the same as passed into the block, this means it is a self loop
-                    // We can safely ignore these cases.
-                    // FIX: Do we always want the representative in the group? This throws away type information.
-                    // Seems like we have a strange edge case where we want to consider multiple different guards of a value to represent the same value and elide blockparams
-                    // But at the same time, we want subsequent blocks to use the most type information that we have, rather than the original canonical value.
-                    // I'm not sure how we can do this more generally. It feels like it's not the responsibility of this phi reduction pass, but of a type inference pass
-                    // Feels like we should do some kind of guard code motion of some kind...
                     let param = self.find_id(*param);
+                    // If the param is the same as passed into the block, it is a self loop
+                    // We ignore self loops because they do not provide new information
                     if param == self.find_id(self.blocks[block_id.0].params[i]) {
                         continue
                     }
@@ -6032,15 +6025,15 @@ impl Function {
             for param_index in &trivial_indices {
                 if let ParamValue::One(insn_id) = block[*param_index] {
                     self.make_equal_to(self.blocks[block_id.0].params[*param_index], insn_id);
-                    changed = true;
+                    updated = true;
                 }
             }
 
             // Update the block
             prune_vec_by_indices(&mut self.blocks[block_id.0].params, &trivial_indices);
 
-            // Update the conditionals that branch to block
-            for (jump_block_id, index) in &jumps {
+            // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
+            for (jump_block_id, index) in &terminators {
                 let cond_insn_id = self.blocks[jump_block_id.0].insns[*index];
                 match self.find(cond_insn_id) {
                     Insn::Jump(edge) => {
@@ -6050,11 +6043,17 @@ impl Function {
                         }
                     }
                     Insn::CondBranch { val, if_true, if_false } => {
-                        if if_true.target == block_id || if_false.target == block_id {
-                            let if_true = prune_branch_edge(if_true, &trivial_indices);
-                            let if_false = prune_branch_edge(if_false, &trivial_indices);
-                            self.insns[cond_insn_id.0] = Insn::CondBranch{ val, if_true, if_false };
-                        }
+                        let if_true = if if_true.target == block_id {
+                            prune_branch_edge(if_true, &trivial_indices)
+                        } else {
+                            if_true
+                        };
+                        let if_false = if if_false.target == block_id {
+                            prune_branch_edge(if_false, &trivial_indices)
+                        } else {
+                            if_false
+                        };
+                        self.insns[cond_insn_id.0] = Insn::CondBranch{ val, if_true, if_false };
                     }
                     _ => {}
                 }
