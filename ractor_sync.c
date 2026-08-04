@@ -1073,7 +1073,22 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
     }
     else {
         v = ractor_prepare_payload(ec, obj, &type, &marshaled);
-        b = ractor_basket_alloc();
+        enum ruby_tag_type state;
+        EC_PUSH_TAG(ec);
+        if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+            b = ractor_basket_alloc();
+        }
+        EC_POP_TAG();
+        if (state != TAG_NONE) {
+            /* Drop the pin list, or every global GC re-pins the dead snapshot from it
+             * forever (rb_ractor_repin_in_flight walks it unconditionally).  The nodes
+             * stay shref-pinned only until the next global GC clears the bits. */
+            rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+            free(cr->pin_capture);
+            cr->pin_capture = NULL;
+            cr->pin_capture_cnt = cr->pin_capture_capa = 0;
+            EC_JUMP_TAG(ec, state);
+        }
         /* copy_enter pinned every node at construction with cr->pin_capture as the
          * re-pin source; hand it to the basket only after basket_alloc (which may GC)
          * so the cover never lapses.  A marshaled String is pinned here, after the
