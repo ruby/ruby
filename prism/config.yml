@@ -584,6 +584,8 @@ tokens:
     comment: "a numbered reference to a capture group in the previous regular expression match"
   - name: PARENTHESIS_LEFT
     comment: "("
+  - name: PARENTHESIS_LEFT_GROUPING
+    comment: "( scanned at the beginning of an expression"
   - name: PARENTHESIS_LEFT_PARENTHESES
     comment: "( for a parentheses node"
   - name: PERCENT

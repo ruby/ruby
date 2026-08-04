@@ -141,6 +141,7 @@ module Prism
           NEWLINE: :tNL,
           NUMBERED_REFERENCE: :tNTH_REF,
           PARENTHESIS_LEFT: :tLPAREN2,
+          PARENTHESIS_LEFT_GROUPING: :tLPAREN,
           PARENTHESIS_LEFT_PARENTHESES: :tLPAREN_ARG,
           PARENTHESIS_RIGHT: :tRPAREN,
           PERCENT: :tPERCENT,
@@ -193,19 +194,6 @@ module Prism
         EXPR_BEG = 0x1
         EXPR_LABEL = 0x400
 
-        # The `PARENTHESIS_LEFT` token in Prism is classified as either
-        # `tLPAREN` or `tLPAREN2` in the Parser gem. The following token types
-        # are listed as those classified as `tLPAREN`.
-        LPAREN_CONVERSION_TOKEN_TYPES = Set.new([
-          :kAND, :kBEGIN, :kBREAK, :kCASE, :kDO_COND, :kDO_LAMBDA, :kDO, :kELSE,
-          :kELSIF, :kENSURE, :kFOR, :kIF_MOD, :kIF, :kIN, :kNEXT, :kOR,
-          :kRESCUE_MOD, :kRESCUE, :kRETURN, :kTHEN, :kUNLESS_MOD, :kUNLESS,
-          :kUNTIL_MOD, :kUNTIL, :kWHEN, :kWHILE_MOD, :kWHILE,
-          :tAMPER, :tANDOP, :tBANG, :tCARET, :tCOMMA, :tDIVIDE, :tDOT2, :tDOT3,
-          :tEQL, :tLCURLY, :tLPAREN_ARG, :tLPAREN, :tLPAREN2, :tLSHFT, :tNL,
-          :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS
-        ])
-
         # Types of tokens that are allowed to continue a method call with comments in-between.
         # For these, the parser gem doesn't emit a newline token after the last comment.
         COMMENT_CONTINUATION_TYPES = Set.new([:COMMENT, :AMPERSAND_DOT, :DOT])
@@ -214,7 +202,7 @@ module Prism
         # Heredocs are complex and require us to keep track of a bit of info to refer to later
         HeredocData = Struct.new(:identifier, :common_whitespace, keyword_init: true)
 
-        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL, :LPAREN_CONVERSION_TOKEN_TYPES, :HeredocData
+        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL, :HeredocData
 
         # The Parser::Source::Buffer that the tokens were lexed from.
         attr_reader :source_buffer
@@ -326,8 +314,6 @@ module Prism
               value.chomp!(":")
             when :tLCURLY
               type = :tLBRACE if state == EXPR_BEG | EXPR_LABEL
-            when :tLPAREN2
-              type = :tLPAREN if tokens.empty? || LPAREN_CONVERSION_TOKEN_TYPES.include?(tokens.dig(-1, 0))
             when :tNTH_REF
               value = parse_integer(value.delete_prefix("$"))
             when :tOP_ASGN

@@ -111,7 +111,6 @@ module Prism
     skip_tokens = [
       "dash_heredocs.txt",
       "embdoc_no_newline_at_end.txt",
-      "methods.txt",
       "seattlerb/bug169.txt",
       "seattlerb/case_in.txt",
       "seattlerb/difficult4__leading_dots2.txt",

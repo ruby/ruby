@@ -191,6 +191,7 @@ module Prism
       NEWLINE: :on_nl,
       NUMBERED_REFERENCE: :on_backref,
       PARENTHESIS_LEFT: :on_lparen,
+      PARENTHESIS_LEFT_GROUPING: :on_lparen,
       PARENTHESIS_LEFT_PARENTHESES: :on_lparen,
       PARENTHESIS_RIGHT: :on_rparen,
       PERCENT: :on_op,

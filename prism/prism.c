@@ -10493,9 +10493,15 @@ parser_lex(pm_parser_t *parser) {
 
                 // (
                 case '(': {
+                    /* A parenthesis scanned at the beginning of an expression
+                     * groups the expression it wraps, while one scanned in
+                     * argument position with a preceding space wraps a command
+                     * argument. Everything else opens an argument list. */
                     pm_token_type_t type = PM_TOKEN_PARENTHESIS_LEFT;
 
-                    if (space_seen && (lex_state_arg_p(parser) || parser->lex_state == (PM_LEX_STATE_END | PM_LEX_STATE_LABEL))) {
+                    if (lex_state_beg_p(parser)) {
+                        type = PM_TOKEN_PARENTHESIS_LEFT_GROUPING;
+                    } else if (space_seen && (lex_state_arg_p(parser) || parser->lex_state == (PM_LEX_STATE_END | PM_LEX_STATE_LABEL))) {
                         type = PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES;
                     }
 
@@ -12752,6 +12758,14 @@ match4(const pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, 
 }
 
 /**
+ * Returns true if the current token is any of the five given types.
+ */
+static PRISM_INLINE bool
+match5(const pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, pm_token_type_t type3, pm_token_type_t type4, pm_token_type_t type5) {
+    return match1(parser, type1) || match1(parser, type2) || match1(parser, type3) || match1(parser, type4) || match1(parser, type5);
+}
+
+/**
  * Returns true if the current token is any of the six given types.
  */
 static PRISM_INLINE bool
@@ -13571,7 +13585,7 @@ parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t b
             pm_node_t *splat = UP(pm_splat_node_create(parser, &star_operator, name));
             pm_multi_target_node_targets_append(parser, result, splat);
             has_rest = true;
-        } else if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
+        } else if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
             context_push(parser, PM_CONTEXT_MULTI_TARGET);
             pm_node_t *target = parse_expression(parser, binding_power, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_COMMA, (uint16_t) (depth + 1));
             target = parse_target(parser, target, true, false);
@@ -14335,7 +14349,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
  */
 static pm_multi_target_node_t *
 parse_required_destructured_parameter(pm_parser_t *parser) {
-    expect1(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_ERR_EXPECT_LPAREN_REQ_PARAMETER);
+    expect1(parser, PM_TOKEN_PARENTHESIS_LEFT_GROUPING, PM_ERR_EXPECT_LPAREN_REQ_PARAMETER);
 
     pm_multi_target_node_t *node = pm_multi_target_node_create(parser);
     pm_multi_target_node_opening_set(parser, node, &parser->previous);
@@ -14354,7 +14368,7 @@ parse_required_destructured_parameter(pm_parser_t *parser) {
             break;
         }
 
-        if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
+        if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
             param = UP(parse_required_destructured_parameter(parser));
         } else if (accept1(parser, PM_TOKEN_USTAR)) {
             pm_token_t star = parser->previous;
@@ -14416,7 +14430,7 @@ static pm_parameters_order_t parameters_ordering[PM_TOKEN_MAXIMUM] = {
     [PM_TOKEN_AMPERSAND] = PM_PARAMETERS_ORDER_NOTHING_AFTER,
     [PM_TOKEN_UDOT_DOT_DOT] = PM_PARAMETERS_ORDER_NOTHING_AFTER,
     [PM_TOKEN_IDENTIFIER] = PM_PARAMETERS_ORDER_NAMED,
-    [PM_TOKEN_PARENTHESIS_LEFT] = PM_PARAMETERS_ORDER_NAMED,
+    [PM_TOKEN_PARENTHESIS_LEFT_GROUPING] = PM_PARAMETERS_ORDER_NAMED,
     [PM_TOKEN_EQUAL] = PM_PARAMETERS_ORDER_OPTIONAL,
     [PM_TOKEN_LABEL] = PM_PARAMETERS_ORDER_KEYWORDS,
     [PM_TOKEN_USTAR] = PM_PARAMETERS_ORDER_AFTER_OPTIONAL,
@@ -14523,7 +14537,7 @@ parse_parameters(
         bool parsing = true;
 
         switch (parser->current.type) {
-            case PM_TOKEN_PARENTHESIS_LEFT: {
+            case PM_TOKEN_PARENTHESIS_LEFT_GROUPING: {
                 update_parameter_state(parser, &parser->current, &order);
                 pm_node_t *param = UP(parse_required_destructured_parameter(parser));
 
@@ -15522,7 +15536,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
          * it, so pop the delimiter frame, push the command-args frame, and then
          * restore the delimiter frame on top (the delimiter's closing token
          * will pop it back off during argument parsing). */
-        bool lookahead_delimiter = match4(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES, PM_TOKEN_BRACKET_LEFT, PM_TOKEN_BRACKET_LEFT_ARRAY);
+        bool lookahead_delimiter = match5(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_PARENTHESIS_LEFT_GROUPING, PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES, PM_TOKEN_BRACKET_LEFT, PM_TOKEN_BRACKET_LEFT_ARRAY);
         if (lookahead_delimiter) pm_accepts_block_stack_pop(parser);
         pm_accepts_block_stack_push(parser, false);
         if (lookahead_delimiter) pm_accepts_block_stack_push(parser, true);
@@ -17501,7 +17515,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
 
                     return UP(pm_pinned_variable_node_create(parser, &operator, variable));
                 }
-                case PM_TOKEN_PARENTHESIS_LEFT: {
+                case PM_TOKEN_PARENTHESIS_LEFT_GROUPING: {
                     bool previous_pattern_matching_newlines = parser->pattern_matching_newlines;
                     parser->pattern_matching_newlines = false;
 
@@ -17604,7 +17618,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
 
                 break;
             }
-            case PM_TOKEN_PARENTHESIS_LEFT:
+            case PM_TOKEN_PARENTHESIS_LEFT_GROUPING:
             case PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES: {
                 pm_token_t operator = parser->previous;
                 pm_token_t opening = parser->current;
@@ -19506,7 +19520,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
             return UP(array);
         }
-        case PM_TOKEN_PARENTHESIS_LEFT:
+        case PM_TOKEN_PARENTHESIS_LEFT_GROUPING:
         case PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES:
             return parse_parentheses(parser, binding_power, flags, depth);
         case PM_TOKEN_BRACE_LEFT: {
@@ -20129,7 +20143,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             context_push(parser, PM_CONTEXT_DEFINED);
             bool newline = accept1(parser, PM_TOKEN_NEWLINE);
 
-            if (accept1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
+            if (accept2(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
                 lparen = parser->previous;
 
                 if (newline && accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
@@ -20298,7 +20312,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
             accept1(parser, PM_TOKEN_NEWLINE);
 
-            if (accept1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
+            if (accept2(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
                 pm_token_t lparen = parser->previous;
 
                 if (accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
