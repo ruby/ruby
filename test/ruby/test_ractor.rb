@@ -583,6 +583,20 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # A monitor entry holds a port of the monitoring Ractor, and the exit token is sent
+  # through it, so that Ractor's wrapper must stay alive while the entry exists.
+  def test_monitor_keeps_the_monitoring_ractor_alive
+    assert_ractor(<<~'RUBY', timeout: 60)
+      long = Ractor.new { Ractor.receive }
+      Ractor.new(long) { |l| l.monitor(Ractor::Port.new) }.value
+      GC.start                 # used to collect the monitoring Ractor's wrapper
+      3000.times { Object.new }
+      GC.start(full_mark: true)
+      long.send(:bye)
+      assert_equal :bye, long.value
+    RUBY
+  end
+
   # move must preserve the class of a String/Array/Hash subclass.
   def test_move_preserves_subclass
     assert_ractor(<<~'RUBY', timeout: 60)
