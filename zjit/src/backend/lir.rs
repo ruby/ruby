@@ -2259,13 +2259,17 @@ impl Assembler
                 }
             });
 
-            // Mark all registers as "free".  In other words, they aren't
-            // in use until instruction number usize::MAX.
+            // Mark all registers as "free".  Intervals that end before usize::MAX
+            // (at this point that would be all registers) are allowed to use
+            // any index from this list.
             free_registers.fill(usize::MAX);
 
-            // Mark all active intervals with assignments as "unavailable".  They are available
-            // again at instruction 0 which effectively means they can't be used (as all
-            // intervals will end after 0)
+            // Mark all active intervals with assignments as "unavailable".
+            // Intervals that want a register must find an index in the free_registers
+            // list where the value is greater than the intervals "end" (or
+            // the interval's end is _less than_ the value in the free_register list)
+            // All registers have an end that is greater than 0, so they will
+            // not pick any registers used by intervals in the active list.
             for &it in &active {
                 debug_assert!(intervals[it].state == State::Active);
                 match intervals[it].assigned.expect("should have assignment") {
