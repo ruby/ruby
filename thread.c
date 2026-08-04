@@ -946,12 +946,12 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
         /* Create the default port and send the arguments only after the child joined
          * vm->ractor.set, so a global GC in between still marks the port in its root
-         * scan.  If the send fails (an uncopyable argument, say), undo the membership:
-         * left in place it would make terminate_all wait forever. */
-        rb_ractor_setup_default_port(params->g);
+         * scan.  If either raises (an uncopyable argument, NoMemoryError), undo the
+         * membership: left in place it would make terminate_all wait forever. */
         enum ruby_tag_type state;
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+            rb_ractor_setup_default_port(params->g);
             rb_ractor_send_parameters(ec, params->g, params->args);
         }
         EC_POP_TAG();
@@ -966,7 +966,15 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
     err = native_thread_create(th);
     if (err) {
         th->status = THREAD_KILLED;
-        rb_ractor_living_threads_remove(th->ractor, th);
+        if (th->invoke_type == thread_invoke_type_ractor_proc) {
+            /* A child Ractor's main thread: the creator runs this, so the ordinary
+             * removal (which assumes the current Ractor and would run the Ractor exit
+             * protocol) does not apply.  Undo the creation like the send-failure path. */
+            rb_ractor_cancel_creation(th->ractor, th);
+        }
+        else {
+            rb_ractor_living_threads_remove(th->ractor, th);
+        }
         rb_raise(rb_eThreadError, "can't create Thread: %s", strerror(err));
     }
     return thval;
@@ -1099,9 +1107,11 @@ rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
     /* Allocate the child's main Thread and root Fiber wrappers directly in the child's
      * objspace, so the thread is built of objects it owns.  Whole-VM walks read
      * cr->objspace: swap it under the VM lock, unobservable to others. */
-    VALUE thval;
+    VALUE thval = Qundef;
     rb_ractor_t *cr = GET_RACTOR();
+    rb_execution_context_t *ec = GET_EC();
     const bool multi_objspace = rb_gc_multi_objspace_p();
+    enum ruby_tag_type alloc_state = TAG_NONE;
     RB_VM_LOCKING() {
         void *const parent_objspace = cr->objspace;
         if (multi_objspace) cr->objspace = r->objspace;
@@ -1110,7 +1120,13 @@ rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
          * GC would skip it and leave stale mark bits (a UAF).  Single allocations;
          * suppressing GC costs only a little growth. */
         VALUE gc_was_disabled = rb_gc_local_disable_no_rest();
-        thval = rb_thread_alloc(rb_cThread);
+        /* The alloc can raise NoMemoryError; a longjmp here would skip both the unlock
+         * of RB_VM_LOCKING and the objspace restore, so catch and rethrow outside. */
+        EC_PUSH_TAG(ec);
+        if ((alloc_state = EC_EXEC_TAG()) == TAG_NONE) {
+            thval = rb_thread_alloc(rb_cThread);
+        }
+        EC_POP_TAG();
         if (gc_was_disabled == Qfalse) rb_gc_local_enable();
         if (multi_objspace) cr->objspace = parent_objspace;
         /* The child's objspace holds the wrappers but is not in vm->ractor.set yet:
@@ -1118,10 +1134,20 @@ rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
          * slot suffices: the GVL is never released between set and clear and one
          * Ractor creates children serially, so no overwrite (asserted: releasing the
          * GVL here in the future would break it). */
-        if (multi_objspace) {
+        if (alloc_state == TAG_NONE && multi_objspace) {
             RUBY_ASSERT(cr->creating_child_objspace == NULL);
             cr->creating_child_objspace = r->objspace;
         }
+    }
+    if (alloc_state != TAG_NONE) {
+        /* No cover was set; park the child objspace for the orphan merge and re-raise. */
+        RB_VM_LOCKING() {
+            if (r->objspace) {
+                rb_gc_objspace_disown(r->objspace);
+                r->objspace = NULL;
+            }
+        }
+        EC_JUMP_TAG(ec, alloc_state);
     }
 
     /* Creation can still fail before vm_insert_ractor (an IsolationError, say), and a
@@ -1130,7 +1156,6 @@ rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
      * drop the cover, NULL r->objspace. */
     enum ruby_tag_type state;
     VALUE thret = Qundef;
-    rb_execution_context_t *ec = GET_EC();
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         thret = thread_create_core(thval, &params);

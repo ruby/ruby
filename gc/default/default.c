@@ -831,7 +831,6 @@ static rb_global_objspace_t *global_objspace = NULL;
  * below it, while a single fat zombie crosses it. */
 #define ZOMBIE_PAGES_TRIGGER 256
 
-
 static void objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src);
 
 
