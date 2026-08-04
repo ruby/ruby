@@ -130,7 +130,7 @@ module EnvUtil
 
     register("gdb") do
       class << self
-        def usable?; system(*%w[gdb --batch --quiet --nx -ex exit]); end
+        def usable?; system(*%w[gdb --batch --quiet --nx -ex exit], out: IO::NULL, err: IO::NULL); end
         def start(pid, *args, **opts)
           spawn(*%W[gdb --batch --quiet --pid #{pid}], *args, **opts)
         end
@@ -140,7 +140,7 @@ module EnvUtil
 
     register("lldb") do
       class << self
-        def usable?; system(*%w[lldb -Q --no-lldbinit -o exit]); end
+        def usable?; system(*%w[lldb -Q --no-lldbinit -o exit], out: IO::NULL, err: IO::NULL); end
         def start(pid, *args, **opts)
           spawn(*%W[lldb --batch -Q --attach-pid #{pid}], *args, **opts)
         end
@@ -149,7 +149,10 @@ module EnvUtil
     end
 
     def self.search
-      @debugger ||= @list.find(&:usable?)
+      # Cache the result even when no debugger is available, not to probe
+      # unusable debuggers repeatedly.
+      return @debugger if defined?(@debugger)
+      @debugger = @list.find(&:usable?)
     end
   end
 

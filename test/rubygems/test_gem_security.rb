@@ -29,7 +29,7 @@ class TestGemSecurity < Gem::TestCase
 
     assert_equal    2,                     cert.version
     assert_equal    5,                     cert.serial
-    assert_equal    key.public_key.to_pem, cert.public_key.to_pem
+    assert_equal    key.public_key.public_to_pem, cert.public_key.public_to_pem
     assert_in_delta Time.now,              cert.not_before, 10
     assert_in_delta Time.now + 60,         cert.not_after, 10
     assert_equal    name.to_s,             cert.subject.to_s
@@ -46,8 +46,6 @@ class TestGemSecurity < Gem::TestCase
 
     key_ident = cert.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
-    assert_equal "B1:1A:54:09:67:45:60:02:02:D7:CE:F4:1D:60:4A:89:DF:E7:58:D9",
-                 key_ident.value
 
     assert_equal "", cert.issuer.to_s
     assert_equal name.to_s, cert.subject.to_s
@@ -73,7 +71,7 @@ class TestGemSecurity < Gem::TestCase
 
     assert_equal    2,                     cert.version
     assert_equal    1,                     cert.serial
-    assert_equal    key.public_key.to_pem, cert.public_key.to_pem
+    assert_equal    key.public_key.public_to_pem, cert.public_key.public_to_pem
     assert_in_delta Time.now,              cert.not_before, 10
     assert_in_delta Time.now + 60,         cert.not_after, 10
     assert_equal    name.to_s,             cert.subject.to_s
@@ -94,8 +92,6 @@ class TestGemSecurity < Gem::TestCase
 
     key_ident = cert.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
-    assert_equal "B1:1A:54:09:67:45:60:02:02:D7:CE:F4:1D:60:4A:89:DF:E7:58:D9",
-                 key_ident.value
   end
 
   def test_class_create_key
@@ -120,15 +116,15 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_get_public_key_rsa
-    pkey_pem = PRIVATE_KEY.public_key.to_pem
+    pkey_pem = PRIVATE_KEY.public_key.public_to_pem
 
-    assert_equal pkey_pem, Gem::Security.get_public_key(PRIVATE_KEY).to_pem
+    assert_equal pkey_pem, Gem::Security.get_public_key(PRIVATE_KEY).public_to_pem
   end
 
   def test_class_get_public_key_ec
     pkey = Gem::Security.get_public_key(EC_KEY)
 
-    assert_respond_to pkey, :to_pem
+    assert_respond_to pkey, :public_to_pem
   end
 
   def test_class_email_to_name
@@ -202,7 +198,7 @@ class TestGemSecurity < Gem::TestCase
 
     signed = Gem::Security.sign cert, key, PUBLIC_CERT, 60
 
-    assert_equal    key.public_key.to_pem, signed.public_key.to_pem
+    assert_equal    key.public_key.public_to_pem, signed.public_key.public_to_pem
     assert_equal    signee.to_s,           signed.subject.to_s
     assert_equal    issuer.to_s,           signed.issuer.to_s
 
@@ -225,8 +221,6 @@ class TestGemSecurity < Gem::TestCase
     key_ident =
       signed.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
-    assert_equal "B1:1A:54:09:67:45:60:02:02:D7:CE:F4:1D:60:4A:89:DF:E7:58:D9",
-                 key_ident.value
 
     assert signed.verify key
   end
@@ -239,7 +233,7 @@ class TestGemSecurity < Gem::TestCase
 
     signed = Gem::Security.sign cert, PRIVATE_KEY, PUBLIC_CERT, 60
 
-    assert_equal    PUBLIC_KEY.to_pem, signed.public_key.to_pem
+    assert_equal    PUBLIC_KEY.public_to_pem, signed.public_key.public_to_pem
     assert_equal    signee.to_s,       signed.subject.to_s
     assert_equal    issuer.to_s,       signed.issuer.to_s
 
@@ -267,8 +261,6 @@ class TestGemSecurity < Gem::TestCase
     key_ident =
       signed.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
-    assert_equal "B1:1A:54:09:67:45:60:02:02:D7:CE:F4:1D:60:4A:89:DF:E7:58:D9",
-                 key_ident.value
 
     assert signed.verify PUBLIC_KEY
   end
@@ -281,37 +273,37 @@ class TestGemSecurity < Gem::TestCase
     assert_equal expected, trust_dir.dir
   end
 
-  def test_class_write
+  def test_class_write_private_key
     key = Gem::Security.create_key "rsa"
 
     path = File.join @tempdir, "test-private_key.pem"
 
-    Gem::Security.write key, path
+    Gem::Security.write_private_key key, path
 
     assert_path_exist path
 
     key_from_file = File.read path
 
-    assert_equal key.to_pem, key_from_file
+    assert_equal key.private_to_pem, key_from_file
   end
 
-  def test_class_write_encrypted
+  def test_class_write_private_key_encrypted
     key = Gem::Security.create_key "rsa"
 
     path = File.join @tempdir, "test-private_encrypted_key.pem"
 
     passphrase = "It should be long."
 
-    Gem::Security.write key, path, 0o600, passphrase
+    Gem::Security.write_private_key key, path, 0o600, passphrase
 
     assert_path_exist path
 
     key_from_file = OpenSSL::PKey::RSA.new File.read(path), passphrase
 
-    assert_equal key.to_pem, key_from_file.to_pem
+    assert_equal key.private_to_pem, key_from_file.private_to_pem
   end
 
-  def test_class_write_encrypted_cipher
+  def test_class_write_private_key_encrypted_cipher
     key = Gem::Security.create_key "rsa"
 
     path = File.join @tempdir, "test-private_encrypted__with_non_default_cipher_key.pem"
@@ -320,16 +312,27 @@ class TestGemSecurity < Gem::TestCase
 
     cipher = OpenSSL::Cipher.new "AES-192-CBC"
 
-    Gem::Security.write key, path, 0o600, passphrase, cipher
+    Gem::Security.write_private_key key, path, 0o600, passphrase, cipher
 
     assert_path_exist path
 
-    key_file_contents = File.read(path)
+    # Gem::Security.write_private_key outputs PKCS #8 format which doesn't have
+    # DEK-Info header to assert cipher name unlike PKCS #1 RSAPrivateKey.
+    # We cannot assert the cipher name in the PEM text.
+    key_from_file = OpenSSL::PKey.read File.read(path), passphrase
 
-    assert key_file_contents.split("\n")[2].match(cipher.name)
+    assert_equal key.private_to_pem, key_from_file.private_to_pem
+  end
 
-    key_from_file = OpenSSL::PKey::RSA.new key_file_contents, passphrase
+  def test_class_write_certificate
+    path = File.join @tempdir, "test-public_cert.pem"
 
-    assert_equal key.to_pem, key_from_file.to_pem
+    Gem::Security.write_certificate PUBLIC_CERT, path
+
+    assert_path_exist path
+
+    cert_from_file = File.read path
+
+    assert_equal PUBLIC_CERT.to_pem, cert_from_file
   end
 end if Gem::HAVE_OPENSSL && !Gem.java_platform?

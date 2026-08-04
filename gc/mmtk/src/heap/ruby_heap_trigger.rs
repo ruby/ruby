@@ -40,7 +40,7 @@ impl GCTriggerPolicy<Ruby> for RubyHeapTrigger {
         plan.collection_required(space_full, space)
     }
 
-    fn on_gc_end(&self, mmtk: &'static MMTK<Ruby>) {
+    fn on_pause_end(&self, mmtk: &'static MMTK<Ruby>) {
         if let Some(plan) = mmtk.get_plan().generational() {
             if plan.is_current_gc_nursery() {
                 // Nursery GC

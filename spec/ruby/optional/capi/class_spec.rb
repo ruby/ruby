@@ -149,6 +149,17 @@ describe "C-API Class function" do
     end
   end
 
+  describe "rb_prepend_module" do
+    it "prepends a module into a class" do
+      klass = Class.new
+      mod = Module.new
+
+      @s.rb_prepend_module(klass, mod)
+
+      klass.ancestors[0, 2].should == [mod, klass]
+    end
+  end
+
   describe "rb_define_attr" do
     before :each do
       @a = CApiClassSpecs::Attr.new

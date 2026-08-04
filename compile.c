@@ -3677,30 +3677,22 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
          */
         INSN *nobj = (INSN *)get_destination_insn(iobj);
 
-        /* This is super nasty hack!!!
-         *
-         * This jump-jump optimization may ignore event flags of the jump
-         * instruction being skipped.  Actually, Line 2 TracePoint event
-         * is never fired in the following code:
+        /* This jump-jump optimization may ignore line events on the jump
+         * instruction being skipped.  For example, the Line 2 TracePoint
+         * event would otherwise never fire in the following code:
          *
          *   1: raise if 1 == 2
          *   2: while true
          *   3:   break
          *   4: end
          *
-         * This is critical for coverage measurement.  [Bug #15980]
-         *
-         * This is a stopgap measure: stop the jump-jump optimization if
-         * coverage measurement is enabled and if the skipped instruction
-         * has any event flag.
-         *
-         * Note that, still, TracePoint Line event does not occur on Line 2.
-         * This should be fixed in future.
+         * Do not skip a jump that carries a line event.  This applies even
+         * when coverage is disabled because TracePoint consumes the same
+         * event.  [Bug #15980]
          */
         int stop_optimization =
-            ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq) &&
             nobj->link.type == ISEQ_ELEMENT_INSN &&
-            nobj->insn_info.events;
+            (nobj->insn_info.events & (RUBY_EVENT_LINE | RUBY_EVENT_COVERAGE_LINE));
         if (!stop_optimization) {
             INSN *pobj = (INSN *)iobj->link.prev;
             int prev_dup = 0;
@@ -5865,7 +5857,7 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const 
                 ci = ci_flag_set(iseq, ci, VM_CALL_ARGS_SPLAT_MUT);
             }
             OPERAND_AT(iobj, 0) = (VALUE)ci;
-            RB_OBJ_WRITTEN(iseq, Qundef, iobj);
+            RB_OBJ_WRITTEN(iseq, Qundef, ci);
 
             /* Given: h[*a], h[*b, 1] = ary
              *  h[*a] uses splatarray false and does not set VM_CALL_ARGS_SPLAT_MUT,
@@ -15227,6 +15219,10 @@ rb_iseq_dup_with_independent_caches(const rb_iseq_t *src_root)
             RB_OBJ_WRITE(copy, &cb->parent_iseq, sb->parent_iseq);
             result = copy;
         }
+
+        /* Shared across Ractors through the Proc#refined memo; the duplicated
+         * subtree is self-contained, so mark each copy shareable. */
+        RB_OBJ_SET_SHAREABLE((VALUE)copy);
     }
 
     if (ISEQ_PC2BRANCHINDEX(src_root) != Qnil) {

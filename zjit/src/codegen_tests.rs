@@ -609,6 +609,20 @@ fn test_yield_inline_invocation_with_args() {
 }
 
 #[test]
+fn test_yield_with_too_many_args_for_lir() {
+    // `self` + six yield args don't fit in C argument registers, so the direct
+    // block invocation must be rejected instead of emitting an uncompilable CCall.
+    set_call_threshold(2);
+    eval("
+        def foo = yield(1, 2, 3, 4, 5, 6)
+        def test = foo { |a, b, c, d, e, f| a + b + c + d + e + f }
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"21");
+}
+
+#[test]
 fn test_yield_inline_invocation_live_stack_below_args() {
     // A live value sits on the stack below the yield args; the no-receiver-slot SP math
     // must preserve it so `x +` sees the right operand.
@@ -3212,6 +3226,35 @@ fn test_opt_newarray_send_max_redefined() {
 }
 
 #[test]
+fn test_opt_newarray_send_min() {
+    eval("
+        def test(a,b) = [a,b].min
+        test(10, 20)
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+    assert_snapshot!(assert_compiles("[test(10, 20), test(40, 30)]"), @"[10, 30]");
+}
+
+#[test]
+fn test_opt_newarray_send_min_redefined() {
+    eval("
+        class Array
+          alias_method :old_min, :min
+          def min
+            old_min * 2
+          end
+        end
+        def test(a,b) = [a,b].min
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+    assert_snapshot!(assert_compiles_allowing_exits("
+        def test(a,b) = [a,b].min
+        test(15, 30)
+        [test(15, 30), test(45, 35)]
+    "), @"[30, 70]");
+}
+
+#[test]
 fn test_new_hash_empty() {
     eval("
         def test = {}
@@ -4330,6 +4373,17 @@ fn test_method_call() {
         test
         test
     "), @"12");
+}
+
+#[test]
+fn test_polymorphic_iseq_dispatch_same_site() {
+    assert_snapshot!(inspect("
+        class A; def foo = 1; end
+        class B; def foo = 2; end
+        def test(obj) = obj.foo
+        test(A.new); test(A.new)   # warm up and specialize the call site for A
+        [test(A.new), test(B.new)]
+    "), @"[1, 2]");
 }
 
 #[test]

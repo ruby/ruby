@@ -1924,4 +1924,8 @@ class TestMethod < Test::Unit::TestCase
       assert_equal 0, err.size, err.join("\n")
     end
   end
+
+  def test_unbound_method_ractor_shareable
+    assert Ractor.shareable?(BasicObject.instance_method(:equal?).freeze)
+  end
 end

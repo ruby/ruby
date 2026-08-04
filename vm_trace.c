@@ -166,7 +166,7 @@ update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_
     }
     ruby_vm_iseq_events_enabled += change_iseq_events;
     if (change_c_events < 0) {
-        RUBY_ASSERT(ruby_vm_c_events_enabled >= (unsigned int)(-change_iseq_events));
+        RUBY_ASSERT(ruby_vm_c_events_enabled >= (unsigned int)(-change_c_events));
     }
     ruby_vm_c_events_enabled += change_c_events;
 

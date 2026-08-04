@@ -171,14 +171,16 @@ module Bundler
 
           data = index_f.read
 
-          require_relative "../yaml_serializer"
-          index = YAMLSerializer.load(data)
+          require "rubygems/yaml_serializer"
+          # Empty sections load as nil, e.g. from index files written by
+          # older Bundler versions, which dumped empty hashes as a bare key.
+          index = Gem::YAMLSerializer.load(data) || {}
 
-          @commands.merge!(index["commands"])
-          @hooks.merge!(index["hooks"])
+          @commands.merge!(index["commands"] || {})
+          @hooks.merge!(index["hooks"] || {})
           @load_paths.merge!(transform_index_paths(index["load_paths"]) {|p| absolutize_path(p, base) })
           @plugin_paths.merge!(transform_index_paths(index["plugin_paths"]) {|p| absolutize_path(p, base) })
-          @sources.merge!(index["sources"]) unless global
+          @sources.merge!(index["sources"] || {}) unless global
         end
       end
 
@@ -196,10 +198,10 @@ module Bundler
           "sources" => @sources,
         }
 
-        require_relative "../yaml_serializer"
+        require "rubygems/yaml_serializer"
         SharedHelpers.filesystem_access(index_file) do |index_f|
           FileUtils.mkdir_p(index_f.dirname)
-          File.open(index_f, "w") {|f| f.puts YAMLSerializer.dump(index) }
+          File.open(index_f, "w") {|f| f.puts Gem::YAMLSerializer.dump(index) }
         end
       end
 

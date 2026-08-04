@@ -11,8 +11,14 @@ jit:
   - any-glob-to-any-file:
     # JIT sources (Rust + C + Ruby)
     - 'jit/**'
-    - 'yjit/**'
-    - 'zjit/**'
+    # All of {y,z}jit/ except the generated cruby_bindings.inc.rs files.
+    # `!(...)` can't span a `/`, so each pair splits the tree into
+    # non-Rust files and Rust files not named cruby_bindings.inc.rs;
+    # their union is everything but the bindings file.
+    - 'yjit/**/!(*.rs)'
+    - 'yjit/**/!(cruby_bindings.inc).rs'
+    - 'zjit/**/!(*.rs)'
+    - 'zjit/**/!(cruby_bindings.inc).rs'
     - 'jit.c'
     - 'jit_hook.rb'
     - 'jit_undef.rb'

@@ -139,7 +139,7 @@ Cooldown filtering depends on the gem server providing a per\-version \fBcreated
 .IP "\(bu" 4
 \fBlockfile\fR (\fBBUNDLE_LOCKFILE\fR): The path to the lockfile that bundler should use\. By default, Bundler adds \fB\.lock\fR to the end of the \fBgemfile\fR entry\. Can be set to \fBfalse\fR in the Gemfile to disable lockfile creation entirely (see gemfile(5))\.
 .IP "\(bu" 4
-\fBlockfile_checksums\fR (\fBBUNDLE_LOCKFILE_CHECKSUMS\fR): Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources\. Defaults to true\.
+\fBlockfile_checksums\fR (\fBBUNDLE_LOCKFILE_CHECKSUMS\fR): Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources\. Defaults to true\. Bundler's own checksum is only included when its \fB\.gem\fR file is cached, which may not be the case when Bundler is installed as a default gem\.
 .IP "\(bu" 4
 \fBno_build_extension\fR (\fBBUNDLE_NO_BUILD_EXTENSION\fR): Whether Bundler should skip building native extensions during installation\. When set, gems are installed without compiling their C extensions\. To build extensions later, unset this setting and run \fBbundle pristine <gem>\fR\.
 .IP "\(bu" 4

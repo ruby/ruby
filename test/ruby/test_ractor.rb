@@ -434,6 +434,35 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_bignum_to_s
+    assert_ractor(<<~'RUBY')
+      8.times.map do
+        Ractor.new do
+          1_000.times do |i|
+            v = (2**96 - 1) + i
+            s = v.to_s
+            # round-trip through str2big (uses the same cache)
+            raise "bad to_s: #{s.inspect}" unless Integer(s) == v
+          end
+        end
+      end.each(&:join)
+    RUBY
+  end
+
+  def test_io_is_not_shareable
+    io = File.open(IO::NULL)
+    begin
+      assert_unshareable(io, "can not make shareable object for #{io.inspect}",
+                         exception: Ractor::Error)
+      # freezing an IO does not make it shareable either
+      io.freeze
+      refute Ractor.shareable?(io)
+      assert_raise(Ractor::Error) { Ractor.make_shareable(io) }
+    ensure
+      io.close
+    end
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
@@ -446,5 +475,20 @@ class TestRactor < Test::Unit::TestCase
       Ractor.make_shareable(obj)
     end
     refute Ractor.shareable?(obj), "despite raising, object became shareable"
+  end
+  # $~ can hold the MatchData that a move hollows out in place.  The husk keeps
+  # the old RMatch body, so a later match must allocate instead of reusing it
+  # (a reused husk stays frozen and keeps its Ractor::MovedObject shape).
+  def test_move_matchdata_kept_in_backref
+    assert_ractor(<<~'RUBY', timeout: 60)
+      r = Ractor.new { Ractor.receive }
+      "abc123xyz".match(/([a-z]+)(\d+)/)      # $~ holds the MatchData
+      r.send($~, move: true)                   # husked in place; $~ still points at it
+      m = "qqq777".match(/([a-z]+)(\d+)/)
+      assert_instance_of MatchData, m
+      refute_predicate m, :frozen?
+      assert_equal ["qqq777", "qqq", "777"], [m[0], m[1], m[2]]
+      r.value
+    RUBY
   end
 end

@@ -1116,20 +1116,19 @@ rb_process_status_wait(rb_pid_t pid, int flags)
  *
  *  If there are child processes,
  *  waits for a child process to exit and returns a Process::Status object
- *  containing information on that process;
- *  sets thread-local variable <tt>$?</tt>:
+ *  containing information on that process.
+ *  Unlike Process.wait, this method does not set thread-local variable
+ *  <tt>$?</tt>:
  *
  *    Process.spawn('cat /nop') # => 1155880
  *    Process::Status.wait      # => #<Process::Status: pid 1155880 exit 1>
- *    $?                        # => #<Process::Status: pid 1155508 exit 1>
+ *    $?                        # => nil # Not set.
  *
  *  If there is no child process,
  *  returns an "empty" Process::Status object
- *  that does not represent an actual process;
- *  does not set thread-local variable <tt>$?</tt>:
+ *  that does not represent an actual process:
  *
  *    Process::Status.wait # => #<Process::Status: pid -1 exit 0>
- *    $?                   # => #<Process::Status: pid 1155508 exit 1> # Unchanged.
  *
  *  May invoke the scheduler hook Fiber::Scheduler#process_wait.
  *

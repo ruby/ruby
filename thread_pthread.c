@@ -1713,7 +1713,7 @@ get_native_thread_id(void)
 #endif
 
 #if defined(HAVE_WORKING_FORK)
-void rb_internal_thread_event_hooks_rw_lock_atfork(void);
+static void rb_internal_thread_event_hooks_rw_lock_atfork(void);
 
 static void
 thread_sched_atfork(struct rb_thread_sched *sched)
@@ -3559,7 +3559,7 @@ struct rb_internal_thread_event_hook {
 static pthread_rwlock_t rb_internal_thread_event_hooks_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 #if defined(HAVE_WORKING_FORK)
-void
+static void
 rb_internal_thread_event_hooks_rw_lock_atfork(void)
 {
   // After fork(), this rwlock may have been held by a now-dead thread.

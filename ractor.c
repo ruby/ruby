@@ -1493,7 +1493,10 @@ rb_obj_traverse(VALUE obj,
 static int
 allow_frozen_shareable_p(VALUE obj)
 {
-    if (!RB_TYPE_P(obj, T_DATA)) {
+    if (RB_TYPE_P(obj, T_FILE)) {
+        return false;
+    }
+    else if (!RB_TYPE_P(obj, T_DATA)) {
         return true;
     }
     else {
@@ -1553,10 +1556,11 @@ make_shareable_check_shareable(VALUE obj)
         return traverse_skip;
     }
     else if (!allow_frozen_shareable_p(obj)) {
-        VM_ASSERT(RB_TYPE_P(obj, T_DATA));
-        const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
-
-        if (type->flags & RUBY_TYPED_FROZEN_SHAREABLE_NO_REC) {
+        if (!RB_TYPE_P(obj, T_DATA)) {
+            rb_raise(rb_eRactorError,
+                     "can not make shareable object for %+"PRIsVALUE, obj);
+        }
+        else if (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_FROZEN_SHAREABLE_NO_REC) {
             if (obj_refer_only_shareables_p(obj)) {
                 make_shareable_check_shareable_freeze(obj, traverse_skip);
                 RB_OBJ_SET_SHAREABLE(obj);
@@ -1662,6 +1666,17 @@ shareable_p_enter(VALUE obj)
     else if (RB_OBJ_FROZEN_RAW(obj) &&
              allow_frozen_shareable_p(obj)) {
         return traverse_cont;
+    }
+    else if (RB_OBJ_FROZEN_RAW(obj) &&
+             RB_TYPE_P(obj, T_DATA) &&
+             (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_FROZEN_SHAREABLE_NO_REC)) {
+        // Similar to RUBY_TYPED_FROZEN_SHAREABLE, but the object is only
+        // shareable if all reachable objects are already shareable (they
+        // are not made shareable recursively).
+        if (obj_refer_only_shareables_p(obj)) {
+            mark_shareable(obj);
+            return traverse_skip;
+        }
     }
 
     return traverse_stop; // fail
@@ -2110,9 +2125,16 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     shape_id_t shape_id = (RBASIC_SHAPE_ID(obj) & SHAPE_ID_CAPACITY_MASK) | ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_ROBJECT | SHAPE_ID_FL_FROZEN;
 
     // Avoid mutations using bind_call, etc.
+    size_t slot_size = rb_gc_obj_slot_size(obj);
     MEMZERO((char *)obj, char, sizeof(struct RBasic));
     RBASIC(obj)->flags = flags;
     RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
+
+    // Wipe the old body too.  The husk has no fields, so nothing reads it as ivars,
+    // but C code that held the object from before the move still reads it with its
+    // old type (an Array iteration in progress, the RMatch capa behind $~): a zeroed
+    // body makes those reads see an empty object instead of stale internals.
+    MEMZERO((char *)obj + sizeof(struct RBasic), char, slot_size - sizeof(struct RBasic));
 
     // The husk keeps its original (larger) slot, so give it a field-less shape
     // sized to that slot; otherwise compaction's slot_size == shape_slot_size

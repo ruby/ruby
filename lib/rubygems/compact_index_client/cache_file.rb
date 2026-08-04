@@ -2,7 +2,7 @@
 
 require "digest"
 require "fileutils"
-require_relative "../package"
+require "rubygems/package"
 
 class Gem::CompactIndexClient
   # write cache files in a way that is robust to concurrent modifications
@@ -25,8 +25,10 @@ class Gem::CompactIndexClient
       new(path) do |file|
         file.initialize_digests
 
-        path.open("rb") do |s|
-          file.open {|f| IO.copy_stream(s, f) }
+        Gem::CompactIndexClient.filesystem_access(path, :read) do
+          path.open("rb") do |s|
+            file.open {|f| IO.copy_stream(s, f) }
+          end
         end
 
         yield file
@@ -91,8 +93,10 @@ class Gem::CompactIndexClient
     # Open the temp file for writing, reusing original permissions, yielding the IO object.
     def open(write_mode = "wb", perm = @perm, &block)
       raise ClosedError, "Cannot reopen closed file" if @closed
-      path.open(write_mode, perm) do |f|
-        yield digests? ? Gem::Package::DigestIO.new(f, @digests) : f
+      Gem::CompactIndexClient.filesystem_access(path, :write) do
+        path.open(write_mode, perm) do |f|
+          yield digests? ? Gem::Package::DigestIO.new(f, @digests) : f
+        end
       end
     end
 
@@ -126,7 +130,9 @@ class Gem::CompactIndexClient
     # The file is permanently closed.
     def commit
       raise ClosedError, "Cannot commit closed file" if @closed
-      FileUtils.mv(path, original_path)
+      Gem::CompactIndexClient.filesystem_access(original_path, :write) do
+        FileUtils.mv(path, original_path)
+      end
       @closed = true
     end
 

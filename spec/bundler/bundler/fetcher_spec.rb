@@ -141,6 +141,19 @@ RSpec.describe Bundler::Fetcher do
       expect(fetcher.user_agent).to match(%r{options/foo,bar})
     end
 
+    it "strips userinfo from settings keys that embed a URI" do
+      allow(Bundler.settings).to receive(:all).and_return(
+        %w[foo mirror.http://user:token@example.org/ mirror.https://token@example.net/]
+      )
+      options = fetcher.user_agent.split(" ").find {|x| x.start_with?("options/") }
+
+      expect(options).not_to include("token")
+      expect(options).not_to include("user:")
+      expect(options).to include("mirror.http://example.org/")
+      expect(options).to include("mirror.https://example.net/")
+      expect(options).to include("foo")
+    end
+
     describe "include CI information" do
       it "from one CI" do
         with_env_vars("CI" => nil, "JENKINS_URL" => "foo") do

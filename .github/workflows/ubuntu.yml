@@ -147,11 +147,13 @@ jobs:
       # assertion timeouts (e.g. assert_separately) flake. Scale them up, as
       # macos.yml does for slower/contended runners. SYNTAX_SUGGEST_TIMEOUT
       # covers syntax_suggest's own internal search timeout, which
-      # RUBY_TEST_TIMEOUT_SCALE does not affect.
+      # RUBY_TEST_TIMEOUT_SCALE does not affect. Note: setting SYNTAX_SUGGEST_TIMEOUT
+      # also activates the "does not timeout on massive files" integration test, so
+      # it must be large enough for the slower architecture to complete the search.
       - name: Set timeout scale for emulated runners
         run: |
           echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV
-          echo "SYNTAX_SUGGEST_TIMEOUT=10" >> $GITHUB_ENV
+          echo "SYNTAX_SUGGEST_TIMEOUT=60" >> $GITHUB_ENV
         if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
 
       - name: make ${{ matrix.test_task }}

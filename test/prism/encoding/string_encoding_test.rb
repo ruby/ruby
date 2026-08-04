@@ -86,7 +86,63 @@ module Prism
       end
     end
 
+    def test_encodings_are_not_leaked_across_array_elements
+      {
+        "[?\\u00E9, ?a, ?\\x61]" => [Encoding::UTF_8, Encoding::ASCII_8BIT, Encoding::ASCII_8BIT],
+        "[\"\\u00E9\", ?a]"      => [Encoding::UTF_8, Encoding::ASCII_8BIT],
+        "[?\\u00E9, \"a\"]"      => [Encoding::UTF_8, Encoding::ASCII_8BIT],
+        "[?\\u00E9, :a]"         => [Encoding::UTF_8, Encoding::US_ASCII],
+        "[\"\\u00E9\", :a]"      => [Encoding::UTF_8, Encoding::US_ASCII],
+        "[:\"\\u00E9\", :a]"     => [Encoding::UTF_8, Encoding::US_ASCII],
+        "[:\"\\u00E9\", :+]"     => [Encoding::UTF_8, Encoding::US_ASCII],
+        "%I[\\u00E9 a]"          => [Encoding::UTF_8, Encoding::US_ASCII],
+        "%W[\\u00E9 a]"          => [Encoding::UTF_8, Encoding::ASCII_8BIT]
+      }.each do |expression, expected|
+        result = Prism.parse("# encoding: ascii-8bit\n#{expression}")
+        assert_predicate result, :success?, "failed to parse: #{expression}"
+
+        actual = result.statement.elements.map { |node| binary_node_encoding(node) }
+        assert_equal expected, actual, expression
+      end
+    end
+
+    def test_encodings_are_not_leaked_across_hash_elements
+      {
+        "{\"\\u00E9\" => 1, a: 2}" => [Encoding::UTF_8, Encoding::US_ASCII],
+        "{\"\\u00E9\": :a}"        => [Encoding::UTF_8],
+        "{\"\\u00E9\": ?a}"        => [Encoding::UTF_8],
+        "{a: 1, \"\\u00E9\": 2}"   => [Encoding::US_ASCII, Encoding::UTF_8]
+      }.each do |expression, expected|
+        ["ascii-8bit", "us-ascii"].each do |encoding|
+          result = Prism.parse("# encoding: #{encoding}\n#{expression}")
+          assert_predicate result, :success?, "failed to parse: #{expression}"
+
+          actual = result.statement.elements.map { |assoc| binary_node_encoding(assoc.key) }
+          assert_equal expected, actual, "#{encoding} #{expression}"
+        end
+      end
+    end
+
     private
+
+    def binary_node_encoding(node)
+      case node
+      when StringNode
+        node.forced_utf8_encoding? ? Encoding::UTF_8 : Encoding::ASCII_8BIT
+      when SymbolNode
+        if node.forced_utf8_encoding?
+          Encoding::UTF_8
+        elsif node.forced_binary_encoding?
+          Encoding::ASCII_8BIT
+        elsif node.forced_us_ascii_encoding?
+          Encoding::US_ASCII
+        else
+          Encoding::ASCII_8BIT
+        end
+      else
+        flunk "unexpected node type: #{node.class}"
+      end
+    end
 
     def assert_encoding(encoding)
       escapes = ["\\x00", "\\x7F", "\\x80", "\\xFF", "\\u{00}", "\\u{7F}", "\\u{80}", "\\M-\\C-?"]
