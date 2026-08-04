@@ -302,6 +302,25 @@ The following APIs, which have been deprecated for many years, are removed.
 
 A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractor implementation closer to leaving experimental status.
 
+* The default GC now runs **per Ractor**: each Ractor collects its own heap
+  on its own thread without stopping the others, and a stop-the-world
+  collection only runs when it is really needed (explicit full `GC.start`,
+  shareable-object growth, reclaiming dead Ractors' heaps).  Allocation-heavy
+  Ractor programs now scale like forked processes.
+
+  Visible behavior changes:
+
+  * `Ractor#value` returns the value only once; a second call raises
+    `Ractor::Error`.
+  * `GC.disable`/`GC.enable` act as per-Ractor holds on a process-wide
+    switch: one Ractor's `GC.enable` no longer overrides another Ractor's
+    `GC.disable`.
+  * `ObjectSpace.each_object` enumerates the calling Ractor's own objects
+    plus other Ractors' shareable objects (`ObjectSpace.dump_all` still
+    covers everything).
+  * `ObjectSpace.define_finalizer` on another Ractor's object raises
+    `Ractor::IsolationError`.
+
 ## JIT
 
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
