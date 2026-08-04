@@ -326,10 +326,6 @@ jobs:
       - name: Configure
         run: ../src/win32/configure.bat --disable-install-doc
 
-      - run: nmake incs
-
-      - run: nmake mini
-
       - run: nmake prog
         timeout-minutes: 50
 
