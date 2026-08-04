@@ -2125,9 +2125,16 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     shape_id_t shape_id = (RBASIC_SHAPE_ID(obj) & SHAPE_ID_CAPACITY_MASK) | ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_ROBJECT | SHAPE_ID_FL_FROZEN;
 
     // Avoid mutations using bind_call, etc.
+    size_t slot_size = rb_gc_obj_slot_size(obj);
     MEMZERO((char *)obj, char, sizeof(struct RBasic));
     RBASIC(obj)->flags = flags;
     RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
+
+    // Wipe the old body too.  The husk has no fields, so nothing reads it as ivars,
+    // but C code that held the object from before the move still reads it with its
+    // old type (an Array iteration in progress, the RMatch capa behind $~): a zeroed
+    // body makes those reads see an empty object instead of stale internals.
+    MEMZERO((char *)obj + sizeof(struct RBasic), char, slot_size - sizeof(struct RBasic));
 
     // The husk keeps its original (larger) slot, so give it a field-less shape
     // sized to that slot; otherwise compaction's slot_size == shape_slot_size

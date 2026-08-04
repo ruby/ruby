@@ -476,4 +476,19 @@ class TestRactor < Test::Unit::TestCase
     end
     refute Ractor.shareable?(obj), "despite raising, object became shareable"
   end
+  # $~ can hold the MatchData that a move hollows out in place.  The husk keeps
+  # the old RMatch body, so a later match must allocate instead of reusing it
+  # (a reused husk stays frozen and keeps its Ractor::MovedObject shape).
+  def test_move_matchdata_kept_in_backref
+    assert_ractor(<<~'RUBY', timeout: 60)
+      r = Ractor.new { Ractor.receive }
+      "abc123xyz".match(/([a-z]+)(\d+)/)      # $~ holds the MatchData
+      r.send($~, move: true)                   # husked in place; $~ still points at it
+      m = "qqq777".match(/([a-z]+)(\d+)/)
+      assert_instance_of MatchData, m
+      refute_predicate m, :frozen?
+      assert_equal ["qqq777", "qqq", "777"], [m[0], m[1], m[2]]
+      r.value
+    RUBY
+  end
 end
