@@ -2182,12 +2182,16 @@ impl Assembler
     // The registers in `regs` from 0 to num_registers is allocatable,
     // num_registers to the end are only allocatable via "preferred" register
     // support.
+    //
+    // Allocations are written back in to `intervals` as each interval's
+    // `assigned` field.  The return value is the number of stack slots needed
+    // for the spills.
     pub fn linear_scan(
         &self,
         intervals: &mut [Interval],
         num_registers: usize, // number of allocatable regs
         regs: &[Reg],         // list of all registers used, partitioned by allocatability
-    ) -> (Vec<Option<Allocation>>, usize) {
+    ) -> usize {
         debug_assert!(num_registers <= regs.len());
 
         // `active`, `inactive`, and `unhandled` hold indexes in to `intervals`.
@@ -2348,19 +2352,13 @@ impl Assembler
         }
         debug_assert!(active.is_empty() && inactive.is_empty());
 
-        // TODO: Caller should just use the mutated intervals instead of
-        // using this assignment list
-        let assignment: Vec<Option<Allocation>> = intervals.iter()
-            .map(|it| it.assigned)
-            .collect();
-
-        (assignment, num_stack_slots)
+        num_stack_slots
     }
 
     /// Resolve SSA block parameters by inserting sequentialized move instructions
     /// at block boundaries. This is SSA deconstruction: after linear_scan assigns
     /// registers/stack slots, we lower block parameter passing to explicit moves.
-    pub fn resolve_ssa(&mut self, _intervals: &[Interval], assignments: &[Option<Allocation>], regs: &[Reg]) {
+    pub fn resolve_ssa(&mut self, intervals: &[Interval], regs: &[Reg]) {
         use crate::backend::parcopy;
         use crate::backend::current::SCRATCH_REG;
 
@@ -2395,10 +2393,10 @@ impl Assembler
                 let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = edge.args
                     .iter()
                     .zip(params.iter())
-                    .filter(|(_arg, param)| assignments[param.vreg_idx()].is_some() )
+                    .filter(|(_arg, param)| intervals[param.vreg_idx()].assigned.is_some() )
                     .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> {
-                        destination: Self::rewritten_opnd(*param, assignments, regs),
-                        source: Self::rewritten_opnd(*arg, assignments, regs),
+                        destination: Self::rewritten_opnd(*param, intervals, regs),
+                        source: Self::rewritten_opnd(*arg, intervals, regs),
                     })
                     .filter(|copy| copy.source != copy.destination)
                     .collect();
@@ -2492,7 +2490,7 @@ impl Assembler
             let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
                 .map(|(i, param)| parcopy::RegisterCopy::<Opnd> {
                     source: C_ARG_OPNDS[i],
-                    destination: Self::rewritten_opnd(*param, assignments, regs),
+                    destination: Self::rewritten_opnd(*param, intervals, regs),
                 })
                 .filter(|copy| copy.source != copy.destination)
                 .collect();
@@ -2537,7 +2535,7 @@ impl Assembler
             }
         }
 
-        self.rewrite_instructions(assignments, regs);
+        self.rewrite_instructions(intervals, regs);
     }
 
     /// Handle caller-saved registers around CCall instructions.
@@ -2546,7 +2544,6 @@ impl Assembler
     pub fn handle_caller_saved_regs(
         &mut self,
         intervals: &[Interval],
-        assignments: &[Option<Allocation>],
         alloc_regs: &[Reg],
         c_arg_regs: &[Reg],
     ) {
@@ -2592,14 +2589,14 @@ impl Assembler
                             let survives_call = interval.has_bounds() && interval.survives(insn_number);
                             // 2) The VReg is referenced by the stack map for the CCall
                             let stack_map_reg = stack_vreg_ids.contains(&interval.id);
-                            let is_register = assignments[interval.id].and_then(|alloc| alloc.alloc_pool_index(ALLOC_REGS.len())).is_some();
+                            let is_register = interval.assigned.and_then(|alloc| alloc.alloc_pool_index(ALLOC_REGS.len())).is_some();
                             is_register && (survives_call || stack_map_reg)
                         })
                         .map(|interval| interval.id)
                         .collect();
 
                     let survivor_regs: Vec<Opnd> = survivors.iter()
-                        .map(|&s| Opnd::Reg(assignments[s].unwrap().assigned_reg(alloc_regs).unwrap()))
+                        .map(|&s| Opnd::Reg(intervals[s].assigned.unwrap().assigned_reg(alloc_regs).unwrap()))
                         .collect();
 
                     // Push all survivors on the stack, pairing adjacent pushes when possible.
@@ -2633,7 +2630,7 @@ impl Assembler
                                     VALUE(encoded)
                                 }
                                 StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) => {
-                                    let vreg_stack_index = match assignments[vreg].expect("StackMap VReg should have an allocation") {
+                                    let vreg_stack_index = match intervals[vreg].assigned.expect("StackMap VReg should have an allocation") {
                                         Allocation::Reg(_) => {
                                             let caller_saved_reg_idx = survivors.iter().position(|&survivor_id| survivor_id == vreg).unwrap();
                                             let stack_idx = self.stack_state.stack_idx_for_caller_saved_reg(caller_saved_reg_idx);
@@ -2665,7 +2662,7 @@ impl Assembler
                         .zip(c_arg_regs.iter())
                         .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> {
                             destination: Opnd::Reg(*param),
-                            source: Self::rewritten_opnd(*arg, assignments, alloc_regs),
+                            source: Self::rewritten_opnd(*arg, intervals, alloc_regs),
                         })
                         .filter(|copy| copy.source != copy.destination)
                         .collect();
@@ -2713,7 +2710,7 @@ impl Assembler
                     if survivors.is_empty() {
                         if call_result_live {
                             // No survivors to restore -- move result directly to output.
-                            let out = Self::rewritten_opnd(out, assignments, alloc_regs);
+                            let out = Self::rewritten_opnd(out, intervals, alloc_regs);
                             new_insns.push(Insn::Mov { dest: out, src: C_RET_OPND });
                             new_ids.push(None);
                         }
@@ -2737,7 +2734,7 @@ impl Assembler
 
                         if call_result_live {
                             // Move result from scratch to output AFTER all pops.
-                            let out = Self::rewritten_opnd(out, assignments, alloc_regs);
+                            let out = Self::rewritten_opnd(out, intervals, alloc_regs);
                             new_insns.push(Insn::Mov { dest: out, src: Opnd::Reg(SCRATCH_REG) });
                             new_ids.push(None);
                         }
@@ -2756,17 +2753,17 @@ impl Assembler
 
     /// Return the maximum number of stack-map entries that any side exit needs
     /// to copy into reserved native stack slots.
-    pub fn side_exit_stack_map_slots(&self, assignments: &[Option<Allocation>]) -> usize {
+    pub fn side_exit_stack_map_slots(&self, intervals: &[Interval]) -> usize {
         self.block_order().into_iter().fold(0, |max_slots, block_id| {
             let block = &self.basic_blocks[block_id.0];
             block.insns.iter().fold(max_slots, |max_slots, insn| {
-                let slots = insn.target().map(|target| Self::side_exit_target_stack_map_slots(target, assignments)).unwrap_or(0);
+                let slots = insn.target().map(|target| Self::side_exit_target_stack_map_slots(target, intervals)).unwrap_or(0);
                 max_slots.max(slots)
             })
         })
     }
 
-    fn side_exit_target_stack_map_slots(target: &Target, assignments: &[Option<Allocation>]) -> usize {
+    fn side_exit_target_stack_map_slots(target: &Target, intervals: &[Interval]) -> usize {
         let Target::SideExit(data) = target else {
             return 0;
         };
@@ -2779,7 +2776,7 @@ impl Assembler
             StackMapEntry::Opnd(Opnd::UImm(value)) => !VALUE(*value as usize).special_const_p(),
             StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => {
                 matches!(
-                    assignments[idx.to_usize()].expect("StackMap VReg should have an allocation"),
+                    intervals[idx.to_usize()].assigned.expect("StackMap VReg should have an allocation"),
                     Allocation::Reg(_)
                 )
             }
@@ -2789,29 +2786,29 @@ impl Assembler
     }
 
     /// Walk every instruction and replace VReg operands with the physical
-    /// register (or stack slot) from the allocation assignments.
-    fn rewrite_instructions(&mut self, assignments: &[Option<Allocation>], regs: &[Reg]) {
+    /// register (or stack slot) assigned to the VReg's interval.
+    fn rewrite_instructions(&mut self, intervals: &[Interval], regs: &[Reg]) {
         for block_id in self.block_order() {
             for insn in self.basic_blocks[block_id.0].insns.iter_mut() {
                 insn.for_each_operand_mut(|opnd| {
-                    Self::rewrite_opnd(opnd, assignments, regs);
+                    Self::rewrite_opnd(opnd, intervals, regs);
                 });
                 if let Some(out) = insn.out_opnd_mut() {
-                    Self::rewrite_opnd(out, assignments, regs);
+                    Self::rewrite_opnd(out, intervals, regs);
                 }
             }
         }
     }
 
-    fn rewritten_opnd(mut opnd: Opnd, assignments: &[Option<Allocation>], regs: &[Reg]) -> Opnd {
-        Self::rewrite_opnd(&mut opnd, assignments, regs);
+    fn rewritten_opnd(mut opnd: Opnd, intervals: &[Interval], regs: &[Reg]) -> Opnd {
+        Self::rewrite_opnd(&mut opnd, intervals, regs);
         opnd
     }
 
-    fn rewrite_opnd(opnd: &mut Opnd, assignments: &[Option<Allocation>], regs: &[Reg]) {
+    fn rewrite_opnd(opnd: &mut Opnd, intervals: &[Interval], regs: &[Reg]) {
         match opnd {
             Opnd::VReg { idx, num_bits } => {
-                if let Some(assignment) = assignments[*idx] {
+                if let Some(assignment) = intervals[*idx].assigned {
                     match assignment {
                         Allocation::Reg(n) => {
                             let mut reg = regs[n];
@@ -2832,7 +2829,7 @@ impl Assembler
                 }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
-                match assignments[*idx].unwrap() {
+                match intervals[*idx].assigned.unwrap() {
                     Allocation::Reg(n) => {
                         if let Opnd::Mem(mem) = opnd {
                             mem.base = MemBase::Reg(regs[n].reg_no);
@@ -4764,7 +4761,7 @@ mod tests {
         let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
         let allocatable_regs = regs.len();
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        let (assignments, num_stack_slots) = asm.linear_scan(&mut intervals, 5.min(allocatable_regs), &regs);
+        let num_stack_slots = asm.linear_scan(&mut intervals, 5.min(allocatable_regs), &regs);
 
         // Extract vreg indices
         let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
@@ -4784,12 +4781,12 @@ mod tests {
         // r13: [20,38) gets Reg(2)
         // r14: [36,42) gets Reg(1) (r12 expired, reuses its register)
         // r15: [38,42) gets Reg(2) (r13 expired, reuses its register)
-        assert_eq!(assignments[r10_idx], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r11_idx], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r12_idx], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r13_idx], Some(Allocation::Reg(2)));
-        assert_eq!(assignments[r14_idx], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r15_idx], Some(Allocation::Reg(2)));
+        assert_eq!(intervals[r10_idx].assigned, Some(Allocation::Reg(0)));
+        assert_eq!(intervals[r11_idx].assigned, Some(Allocation::Reg(1)));
+        assert_eq!(intervals[r12_idx].assigned, Some(Allocation::Reg(1)));
+        assert_eq!(intervals[r13_idx].assigned, Some(Allocation::Reg(2)));
+        assert_eq!(intervals[r14_idx].assigned, Some(Allocation::Reg(1)));
+        assert_eq!(intervals[r15_idx].assigned, Some(Allocation::Reg(2)));
     }
 
     #[test]
@@ -4804,7 +4801,7 @@ mod tests {
         let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
         let allocatable_regs = regs.len();
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        let (assignments, num_stack_slots) = asm.linear_scan(&mut intervals, 3.min(allocatable_regs), &regs);
+        let num_stack_slots = asm.linear_scan(&mut intervals, 3.min(allocatable_regs), &regs);
 
         let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
         let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
@@ -4816,12 +4813,12 @@ mod tests {
         // Lifetime holes make three registers enough: nothing spills, and the
         // assignment is the same one five registers produce.
         assert_eq!(num_stack_slots, 0);
-        assert_eq!(assignments[r10_idx], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r11_idx], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r12_idx], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r13_idx], Some(Allocation::Reg(2)));
-        assert_eq!(assignments[r14_idx], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r15_idx], Some(Allocation::Reg(2)));
+        assert_eq!(intervals[r10_idx].assigned, Some(Allocation::Reg(0)));
+        assert_eq!(intervals[r11_idx].assigned, Some(Allocation::Reg(1)));
+        assert_eq!(intervals[r12_idx].assigned, Some(Allocation::Reg(1)));
+        assert_eq!(intervals[r13_idx].assigned, Some(Allocation::Reg(2)));
+        assert_eq!(intervals[r14_idx].assigned, Some(Allocation::Reg(1)));
+        assert_eq!(intervals[r15_idx].assigned, Some(Allocation::Reg(2)));
     }
 
     #[test]
@@ -4836,7 +4833,7 @@ mod tests {
         let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
         let allocatable_regs = regs.len();
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        let (assignments, num_stack_slots) = asm.linear_scan(&mut intervals, 1.min(allocatable_regs), &regs);
+        let num_stack_slots = asm.linear_scan(&mut intervals, 1.min(allocatable_regs), &regs);
 
         let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
         let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
@@ -4846,12 +4843,12 @@ mod tests {
         let r15_idx = if let Opnd::VReg { idx, .. } = r15 { idx } else { panic!() };
 
         assert_eq!(num_stack_slots, 3);
-        assert_eq!(assignments[r10_idx], Some(Allocation::Stack(0)));
-        assert_eq!(assignments[r11_idx], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r12_idx], Some(Allocation::Stack(1)));
-        assert_eq!(assignments[r13_idx], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r14_idx], Some(Allocation::Stack(2)));
-        assert_eq!(assignments[r15_idx], Some(Allocation::Reg(0)));
+        assert_eq!(intervals[r10_idx].assigned, Some(Allocation::Stack(0)));
+        assert_eq!(intervals[r11_idx].assigned, Some(Allocation::Reg(0)));
+        assert_eq!(intervals[r12_idx].assigned, Some(Allocation::Stack(1)));
+        assert_eq!(intervals[r13_idx].assigned, Some(Allocation::Reg(0)));
+        assert_eq!(intervals[r14_idx].assigned, Some(Allocation::Stack(2)));
+        assert_eq!(intervals[r15_idx].assigned, Some(Allocation::Reg(0)));
     }
 
     #[test]
@@ -4882,10 +4879,10 @@ mod tests {
         // Zero allocatable registers: the only register this interval can get
         // is the pinned one appended to the pool, so the preference is what
         // makes this succeed rather than spill.
-        let (assignments, num_stack_slots) = asm.linear_scan(&mut intervals, 0, &regs);
+        let num_stack_slots = asm.linear_scan(&mut intervals, 0, &regs);
         assert_eq!(num_stack_slots, 0);
-        assert_eq!(assignments[vreg_idx], Some(Allocation::Reg(regno)));
-        assert_eq!(assignments[vreg_idx].unwrap().assigned_reg(&regs), Some(sp.unwrap_reg()));
+        assert_eq!(intervals[vreg_idx].assigned, Some(Allocation::Reg(regno)));
+        assert_eq!(intervals[vreg_idx].assigned.unwrap().assigned_reg(&regs), Some(sp.unwrap_reg()));
     }
 
     #[test]
@@ -4917,9 +4914,9 @@ mod tests {
         let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
         let allocatable_regs = regs.len();
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        let (assignments, _) = asm.linear_scan(&mut intervals, 5.min(allocatable_regs), &regs);
+        asm.linear_scan(&mut intervals, 5.min(allocatable_regs), &regs);
 
-        asm.resolve_ssa(&intervals, &assignments, &regs);
+        asm.resolve_ssa(&intervals, &regs);
 
         use crate::backend::current::ALLOC_REGS;
         let regs = &ALLOC_REGS[..5];
@@ -4963,7 +4960,7 @@ mod tests {
         let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
         let allocatable_regs = regs.len();
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        let (assignments, _) = asm.linear_scan(&mut intervals, 5.min(allocatable_regs), &regs);
+        asm.linear_scan(&mut intervals, 5.min(allocatable_regs), &regs);
 
         // Entry block b1 has parameters [v0, v1].
         // With 5 registers: v0 -> Reg(0) = regs[0], arrival = C_ARG_OPNDS[0] = regs[0] -> self-move, filtered
@@ -4971,7 +4968,7 @@ mod tests {
         // Before resolve_ssa, b1 has: [Label, Jmp] = 2 insns
         assert_eq!(asm.basic_blocks[b1.0].insns.len(), 2);
 
-        asm.resolve_ssa(&intervals, &assignments, &regs);
+        asm.resolve_ssa(&intervals, &regs);
 
         // After resolve_ssa, b1 should still have the same number of insns
         // (plus any edge moves, but no entry param moves since they're all self-moves).
@@ -5012,9 +5009,9 @@ mod tests {
         let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
         let allocatable_regs = regs.len();
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        let (assignments, _) = asm.linear_scan(&mut intervals, 5.min(allocatable_regs), &regs);
+        asm.linear_scan(&mut intervals, 5.min(allocatable_regs), &regs);
 
-        asm.resolve_ssa(&intervals, &assignments, &regs);
+        asm.resolve_ssa(&intervals, &regs);
 
         assert!(matches!(asm.basic_blocks[block.0].insns[1], Insn::Abort));
     }
@@ -5073,16 +5070,16 @@ mod tests {
         let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
         let allocatable_regs = regs.len();
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        let (assignments, _) = asm.linear_scan(&mut intervals, num_regs.min(allocatable_regs), &regs);
+        asm.linear_scan(&mut intervals, num_regs.min(allocatable_regs), &regs);
 
         assert_eq!(asm.basic_blocks.len(), 3);
 
         // Verify v1 and v4 have different allocations (so moves are needed)
-        let v1_alloc = assignments[v1.vreg_idx()].unwrap();
-        let v4_alloc = assignments[v4.vreg_idx()].unwrap();
+        let v1_alloc = intervals[v1.vreg_idx()].assigned.unwrap();
+        let v4_alloc = intervals[v4.vreg_idx()].assigned.unwrap();
         assert_ne!(v1_alloc, v4_alloc, "Test setup: v1 and v4 should have different allocations");
 
-        asm.resolve_ssa(&intervals, &assignments, &regs);
+        asm.resolve_ssa(&intervals, &regs);
 
         // A new interstitial block should have been created for the critical edge b1->b3
         // b1->b3 is critical because b1 has 2 successors and b3 has 2 predecessors
@@ -5114,7 +5111,7 @@ mod tests {
         assert!(has_mov, "Expected Mov in split block for v1->v4");
 
         // b2->b3 is not a critical edge (b2 has single succ), so moves go before Jmp in b2
-        let v3_alloc = assignments[v3.vreg_idx()].unwrap();
+        let v3_alloc = intervals[v3.vreg_idx()].assigned.unwrap();
         let b2_insns = &asm.basic_blocks[b2.0].insns;
         if v3_alloc != v4_alloc {
             // Check that a Mov was inserted before the Jmp in b2
@@ -5179,7 +5176,7 @@ mod tests {
         let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
         let allocatable_regs = regs.len();
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        let (assignments, num_stack_slots) = asm.linear_scan(&mut intervals, num_regs.min(allocatable_regs), &regs);
+        let num_stack_slots = asm.linear_scan(&mut intervals, num_regs.min(allocatable_regs), &regs);
         asm.stack_state.num_spill_slots = num_stack_slots;
 
         // Stand in for the C calling convention's argument registers. These
@@ -5188,15 +5185,15 @@ mod tests {
         let c_arg_regs = &ALLOC_REGS[..num_regs];
 
         // v0 should be spilled (long-lived, only 2 regs)
-        assert!(matches!(assignments[v0.vreg_idx()], Some(Allocation::Stack(_))),
+        assert!(matches!(intervals[v0.vreg_idx()].assigned, Some(Allocation::Stack(_))),
             "v0 should be spilled to stack");
         // v1 should be in a register
-        assert!(matches!(assignments[v1.vreg_idx()], Some(Allocation::Reg(_))),
+        assert!(matches!(intervals[v1.vreg_idx()].assigned, Some(Allocation::Reg(_))),
             "v1 should be in a register");
 
         // Run the pipeline: handle_caller_saved_regs then resolve_ssa
-        asm.handle_caller_saved_regs(&intervals, &assignments, &regs, c_arg_regs);
-        asm.resolve_ssa(&intervals, &assignments, &regs);
+        asm.handle_caller_saved_regs(&intervals, &regs, c_arg_regs);
+        asm.resolve_ssa(&intervals, &regs);
 
         let insns = &asm.basic_blocks[b1.0].insns;
 
@@ -5207,7 +5204,7 @@ mod tests {
         assert!(!pushes.is_empty(), "Expected at least one saved register across CCall");
 
         // The survivor register should match v1's allocation
-        let v1_reg = Opnd::Reg(assignments[v1.vreg_idx()].unwrap().assigned_reg(&regs).unwrap());
+        let v1_reg = Opnd::Reg(intervals[v1.vreg_idx()].assigned.unwrap().assigned_reg(&regs).unwrap());
         let pushed_v1 = pushes.iter().any(|insn| matches!(**insn, Insn::CPushPair(first, second) if first == v1_reg || second == v1_reg));
         let popped_v1 = pops.iter().any(|insn| matches!(**insn, Insn::CPopPairInto(first, second) if first == v1_reg || second == v1_reg));
         assert!(pushed_v1, "CPushPair should save v1's register");
