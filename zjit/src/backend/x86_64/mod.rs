@@ -1188,7 +1188,7 @@ impl Assembler {
                                 Allocation::Reg(n) => format!("{}", regs[n]),
                                 Allocation::Stack(n) => format!("Stack[{}]", n),
                             };
-                            println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, interval.start(), interval.end());
+                            println!("  v{} => {} (ranges: {})", i, alloc_str, interval.ranges_string());
                         }
                     }
                 }
