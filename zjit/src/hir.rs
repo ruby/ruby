@@ -5906,14 +5906,8 @@ impl Function {
         // Inner index is param index
         // Value is the state of the param. This is used to determine whether block param optimization can occur.
         let mut predecessor_domain: Vec<Vec<ParamValue>> = vec![Vec::new(); self.blocks.len()];
+
         let mut updated = true;
-
-        while updated {
-
-        for (row, block) in predecessor_domain.iter_mut().zip(&self.blocks) {
-            row.resize(block.params.len(), ParamValue::None);
-        }
-        updated = false;
 
         // Store references to all the conditional instructions.
         // We need to update these conditionals in the case of trivial block params.
@@ -5925,6 +5919,12 @@ impl Function {
             .map(|block_id| (block_id, self.blocks[block_id.0].insns.len() - 1))
             .collect();
 
+        while updated {
+
+        for (row, block) in predecessor_domain.iter_mut().zip(&self.blocks) {
+            row.resize(block.params.len(), ParamValue::None);
+        }
+        updated = false;
 
         // Scan through each jump, collecting edges from CondBranch and Jump insns.
         for (block_id, insn_index) in &terminators {
