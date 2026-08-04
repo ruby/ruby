@@ -5817,113 +5817,148 @@ path_drive(const WCHAR *path)
     return _getdrive() - 1;
 }
 
+#if !defined(NTDDI_WIN11_ZN) || NTDDI_VERSION < NTDDI_WIN11_ZN
+/* FileStatBasicByNameInfo in FILE_INFO_BY_NAME_CLASS and
+ * FILE_STAT_BASIC_INFORMATION, in SDKs since Windows 11 24H2 */
+#define FileStatBasicByNameInfo 3
+
+typedef struct {
+    LARGE_INTEGER FileId;
+    LARGE_INTEGER CreationTime;
+    LARGE_INTEGER LastAccessTime;
+    LARGE_INTEGER LastWriteTime;
+    LARGE_INTEGER ChangeTime;
+    LARGE_INTEGER AllocationSize;
+    LARGE_INTEGER EndOfFile;
+    DWORD FileAttributes;
+    DWORD ReparseTag;
+    DWORD NumberOfLinks;
+    DWORD DeviceType;
+    DWORD DeviceCharacteristics;
+    DWORD Reserved;
+    LARGE_INTEGER VolumeSerialNumber;
+    FILE_ID_128 FileId128;
+} FILE_STAT_BASIC_INFORMATION;
+#endif
+
+#ifndef FILE_DEVICE_DISK
+#define FILE_DEVICE_DISK 7
+#endif
+
+typedef BOOL (WINAPI *get_file_information_by_name_func)
+    (PCWSTR, int /* FILE_INFO_BY_NAME_CLASS */, PVOID, ULONG);
+static get_file_information_by_name_func get_file_information_by_name =
+    (get_file_information_by_name_func)-1;
+
+/* License: Ruby's */
+static time_t
+large_integer_to_unixtime(const LARGE_INTEGER *at, long *nsecp)
+{
+    FILETIME ft;
+
+    ft.dwLowDateTime = at->LowPart;
+    ft.dwHighDateTime = at->HighPart;
+    *nsecp = filetime_to_nsec(&ft);
+    return filetime_to_unixtime(&ft);
+}
+
+/* License: Ruby's */
+static LONG_LONG
+path_drive_serial(const WCHAR *path)
+{
+    static LONG_LONG serials[26];
+    int drive;
+
+    if (path[0] && path[1] == L':') {
+        if (!iswalpha(path[0])) return 0;
+        drive = towupper(path[0]) - L'A';
+    }
+    else {
+        drive = _getdrive() - 1;
+    }
+    if (drive < 0 || (int)numberof(serials) <= drive) return 0;
+    if (!serials[drive]) {
+        FILE_STAT_BASIC_INFORMATION info;
+        WCHAR root[] = L"_:\\";
+        root[0] = L'A' + drive;
+        if (get_file_information_by_name(root, FileStatBasicByNameInfo,
+                                         &info, sizeof(info)))
+            serials[drive] = info.VolumeSerialNumber.QuadPart;
+    }
+    return serials[drive];
+}
+
+/* License: Ruby's */
+static int
+stat_by_name(const WCHAR *path, struct stati128 *st)
+{
+    /* Fill the stat result from a single metadata syscall, without
+     * opening a file handle.  Returns 1 to fall back to the
+     * handle-based path. */
+    FILE_STAT_BASIC_INFORMATION info;
+    unsigned __int64 ino;
+    __int64 inohigh;
+
+    if (get_file_information_by_name == (get_file_information_by_name_func)-1) {
+        /* Since Windows 11 24H2 */
+        get_file_information_by_name = (get_file_information_by_name_func)
+            get_proc_address("kernel32", "GetFileInformationByName", NULL);
+    }
+    if (!get_file_information_by_name) return 1;
+    if (!get_file_information_by_name(path, FileStatBasicByNameInfo,
+                                      &info, sizeof(info))) {
+        DWORD e = GetLastError();
+        switch (e) {
+          case ERROR_FILE_NOT_FOUND:
+          case ERROR_INVALID_NAME:
+          case ERROR_PATH_NOT_FOUND:
+          case ERROR_BAD_NETPATH:
+            errno = map_errno(e);
+            return -1;
+        }
+        return 1;               /* devices, UNC paths, unusual errors */
+    }
+    if (info.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+        return 1;               /* symlinks, junctions, AF_UNIX sockets */
+    if (info.DeviceType != FILE_DEVICE_DISK)
+        return 1;
+    if (info.VolumeSerialNumber.QuadPart != path_drive_serial(path))
+        return 1;               /* reparse point in intermediate components */
+    ino = *((unsigned __int64 *)&info.FileId128);
+    inohigh = *((__int64 *)&info.FileId128 + 1);
+    if (!ino && !inohigh)
+        return 1;               /* file ID is not available */
+    if (info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+        if (check_valid_dir(path)) return -1;
+    }
+    st->st_ino = ino;
+    st->st_inohigh = inohigh;
+    st->st_size = info.EndOfFile.QuadPart;
+    st->st_atime = large_integer_to_unixtime(&info.LastAccessTime, &st->st_atimensec);
+    st->st_mtime = large_integer_to_unixtime(&info.LastWriteTime, &st->st_mtimensec);
+    st->st_ctime = large_integer_to_unixtime(&info.CreationTime, &st->st_ctimensec);
+    st->st_nlink = info.NumberOfLinks;
+    st->st_mode = fileattr_to_unixmode(info.FileAttributes, path, 0);
+    st->st_dev = st->st_rdev = path_drive(path);
+    return 0;
+}
+
 /* License: Ruby's */
 static int
 winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
 {
-    /* ---- Fast path: avoid opening a file handle for the common case ----
-     *
-     * The original code below opens every existing file
-     * (open_special + GetFileInformationByHandle + GetFileType +
-     * get_handle_pathname + CloseHandle) just to stat it. `require` does
-     * this thousands of times per startup. For a regular file or directory
-     * a single metadata syscall is enough:
-     *
-     *   - GetFileInformationByName (Windows 11 24H2+): one syscall returning
-     *     size, all timestamps, attributes, real FileId and link count.
-     *     Resolved at runtime via GetProcAddress, so Windows 10 / older
-     *     simply falls through to GetFileAttributesExW below.
-     *   - GetFileAttributesExW (every supported Windows): one syscall for
-     *     size + timestamps + attributes. st_ino/st_nlink are left 0/1,
-     *     matching the existing stat_by_find fallback's compromise.
-     *
-     * Reparse points (symlinks, AF_UNIX sockets) fall through to the
-     * original handle-based path, which inspects the reparse tag. */
-    {
-        typedef struct {
-            LARGE_INTEGER FileId, CreationTime, LastAccessTime, LastWriteTime,
-                          ChangeTime, AllocationSize, EndOfFile;
-            ULONG FileAttributes, ReparseTag, NumberOfLinks;
-            ACCESS_MASK EffectiveAccess;
-        } RB_FILE_STAT_INFO;
-        typedef BOOL (WINAPI *gfibn_t)(PCWSTR, int, PVOID, ULONG);
-        static gfibn_t pGFIBN = (gfibn_t)-1;
-        if (pGFIBN == (gfibn_t)-1) {
-            HMODULE k = GetModuleHandleW(L"kernel32.dll");
-            pGFIBN = k ? (gfibn_t)GetProcAddress(k, "GetFileInformationByName") : NULL;
-        }
-        DWORD fp_attr = (DWORD)-1;
-        int fp_filled = 0;
-        if (pGFIBN) {
-            RB_FILE_STAT_INFO info;
-            if (pGFIBN(path, 0 /*FileStatByNameInfo*/, &info, sizeof(info))) {
-                fp_attr = info.FileAttributes;
-                if (!(fp_attr & FILE_ATTRIBUTE_REPARSE_POINT)) {
-                    memset(st, 0, sizeof(*st));
-                    st->st_size = info.EndOfFile.QuadPart;
-                    st->st_atime = filetime_to_unixtime((FILETIME *)&info.LastAccessTime);
-                    st->st_atimensec = filetime_to_nsec((FILETIME *)&info.LastAccessTime);
-                    st->st_mtime = filetime_to_unixtime((FILETIME *)&info.LastWriteTime);
-                    st->st_mtimensec = filetime_to_nsec((FILETIME *)&info.LastWriteTime);
-                    st->st_ctime = filetime_to_unixtime((FILETIME *)&info.CreationTime);
-                    st->st_ctimensec = filetime_to_nsec((FILETIME *)&info.CreationTime);
-                    st->st_nlink = info.NumberOfLinks;
-                    st->st_ino = info.FileId.QuadPart;
-                    fp_filled = 1;
-                }
-            }
-            else {
-                DWORD e = GetLastError();
-                if (e == ERROR_FILE_NOT_FOUND || e == ERROR_INVALID_NAME ||
-                    e == ERROR_PATH_NOT_FOUND || e == ERROR_BAD_NETPATH) {
-                    errno = map_errno(e);
-                    return -1;
-                }
-            }
-        }
-        else {
-            WIN32_FILE_ATTRIBUTE_DATA fad;
-            if (GetFileAttributesExW(path, GetFileExInfoStandard, &fad)) {
-                fp_attr = fad.dwFileAttributes;
-                if (!(fp_attr & FILE_ATTRIBUTE_REPARSE_POINT)) {
-                    memset(st, 0, sizeof(*st));
-                    st->st_size = ((__int64)fad.nFileSizeHigh << 32) | fad.nFileSizeLow;
-                    st->st_atime = filetime_to_unixtime(&fad.ftLastAccessTime);
-                    st->st_atimensec = filetime_to_nsec(&fad.ftLastAccessTime);
-                    st->st_mtime = filetime_to_unixtime(&fad.ftLastWriteTime);
-                    st->st_mtimensec = filetime_to_nsec(&fad.ftLastWriteTime);
-                    st->st_ctime = filetime_to_unixtime(&fad.ftCreationTime);
-                    st->st_ctimensec = filetime_to_nsec(&fad.ftCreationTime);
-                    st->st_nlink = 1;
-                    fp_filled = 1;
-                }
-            }
-            else {
-                DWORD e = GetLastError();
-                if (e == ERROR_FILE_NOT_FOUND || e == ERROR_INVALID_NAME ||
-                    e == ERROR_PATH_NOT_FOUND || e == ERROR_BAD_NETPATH) {
-                    errno = map_errno(e);
-                    return -1;
-                }
-            }
-        }
-        if (fp_filled) {
-            if (fp_attr & FILE_ATTRIBUTE_DIRECTORY) {
-                if (check_valid_dir(path)) return -1;
-            }
-            st->st_mode = fileattr_to_unixmode(fp_attr, path, 0);
-            st->st_dev = st->st_rdev = path_drive(path);
-            return 0;
-        }
-    }
-    /* ---- end fast path; original handle-based path follows ---- */
-
     DWORD flags = lstat ? FILE_FLAG_OPEN_REPARSE_POINT : 0;
     HANDLE f;
     WCHAR *finalname = 0;
     int open_error;
 
     memset(st, 0, sizeof(*st));
+    switch (stat_by_name(path, st)) {
+      case 0:
+        return 0;
+      case -1:
+        return -1;
+    }
     f = open_special(path, 0, flags);
     open_error = GetLastError();
     if (f == INVALID_HANDLE_VALUE && !lstat) {
