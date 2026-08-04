@@ -90,7 +90,7 @@ or if never read, the time it was created:
 |     Operation      | Updates Access \Time |
 |:------------------:|:--------------------:|
 |       Create       |         Yes          |
-|        Read        |        Maybe         |
+|        Read        | Filesystem-dependent |
 |       Write        |          No          |
 |       Rename       |          No          |
 |        Move        |          No          |
@@ -106,7 +106,7 @@ or if never read, the time it was created:
 |     Operation      | Updates Access \Time |
 |:------------------:|:--------------------:|
 |       Create       |         Yes          |
-|    Read entries    |        Maybe         |
+|    Read entries    | Filesystem-dependent |
 |   Write entries    |          No          |
 |       Rename       |          No          |
 |        Move        |          No          |
