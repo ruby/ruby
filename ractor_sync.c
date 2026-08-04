@@ -938,6 +938,12 @@ ractor_value(rb_execution_context_t *ec, VALUE self)
             rb_thread_schedule();
         }
 
+        /* The wait above yields the GVL, so another thread of this Ractor can take the
+         * value first: re-check. */
+        if (r->sync.legacy_taken) {
+            rb_raise(rb_eRactorError, "The value was already taken");
+        }
+
         /* Move r's rb_gc_register_mark_object pins to the joiner before the merge
          * below sweeps r's objspace, or the objects pinned there lose their root. */
         rb_ractor_absorb_registered_marks(GET_RACTOR(), r);
@@ -1039,29 +1045,44 @@ ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket
 static struct ractor_basket *
 ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type type, bool exc)
 {
-    /* Preparing the payload can raise (an uncopyable or unmovable object), so do it
-     * before allocating the basket and we cannot leak one. */
+    /* A copy payload's preparation can raise (an uncopyable object), so it runs before
+     * the basket is allocated and cannot leak one; the move branch allocates first,
+     * since an alloc raise must not orphan an already built courier. */
     VALUE v = Qfalse;
     bool marshaled = false;
     struct rb_ractor_move_courier *courier = NULL;
 
+    struct ractor_basket *b;
     if (type == basket_type_move) {
-        /* Serialize the graph into an off-heap courier; the sources become
-         * RactorMovedObject.  While in flight there is no GC object left for the
-         * sender's GC to mark, sweep or move. */
-        courier = rb_ractor_move_courier_build(obj);
+        /* Allocate the basket first: its xmalloc can raise NoMemoryError, and a courier
+         * already built (sources destroyed, registry entry live) would be orphaned. */
+        b = ractor_basket_alloc();
+        enum ruby_tag_type state;
+        EC_PUSH_TAG(ec);
+        if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+            /* Serialize the graph into an off-heap courier; the sources become
+             * RactorMovedObject.  While in flight there is no GC object left for the
+             * sender's GC to mark, sweep or move. */
+            courier = rb_ractor_move_courier_build(obj);
+        }
+        EC_POP_TAG();
+        if (state != TAG_NONE) {
+            SIZED_FREE(b);
+            EC_JUMP_TAG(ec, state);
+        }
     }
     else {
         v = ractor_prepare_payload(ec, obj, &type, &marshaled);
+        b = ractor_basket_alloc();
         /* copy_enter pinned every node at construction with cr->pin_capture as the
          * re-pin source; hand it to the basket only after basket_alloc (which may GC)
-         * so the cover never lapses.  A marshaled String is pinned here instead. */
+         * so the cover never lapses.  A marshaled String is pinned here, after the
+         * alloc, so an alloc raise leaves no stale pin. */
         if (type == basket_type_copy && marshaled) {
             rb_gc_pin_in_flight_message(v);
         }
     }
 
-    struct ractor_basket *b = ractor_basket_alloc();
     b->type = type;
     b->p.exception = exc;
     b->p.v = v;
