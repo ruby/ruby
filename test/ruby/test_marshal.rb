@@ -953,6 +953,28 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal([nil, nil], Marshal.load(input))
   end
 
+  def test_load_overread_string_body
+    input = Struct.new(:bytes, :count) do
+      def initialize
+        super("\x04\x08[\x07".bytes, 0)
+      end
+
+      def getbyte
+        bytes.shift
+      end
+
+      def read(_len, _outbuf = nil)
+        self.count += 1
+        case count
+        when 1 then "\"\x06" # TYPE_STRING, length 1
+        when 2 then "a" + "0" * (1024 * 128)
+        end
+      end
+    end.new
+
+    assert_equal(["a", nil], Marshal.load(input))
+  end
+
   def test_bignum_len_overflow
     assert_raise(ArgumentError) do
       Marshal.load("\x04\x08l+\x04\x00\x00\x00\x40")
