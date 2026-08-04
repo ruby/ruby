@@ -2420,6 +2420,24 @@ assert_equal 'true', %q{
   port.receive == :aborted
 }
 
+assert_equal 'ok', %q{
+  long = Ractor.new { Ractor.receive }
+  Ractor.new(long) { |t| t.monitor(Ractor::Port.new) }.value
+  GC.start
+  'ok'
+}
+
+assert_equal 'ok', %q{
+  long = Ractor.new { Ractor.receive }
+  20.times do
+    Ractor.new(long) { |t| t.monitor(Ractor::Port.new) }.value
+    GC.start
+  end
+  long.send(:bye)
+  long.join
+  'ok'
+}
+
 ## Ractor#join
 
 # Ractor#join returns self when the Ractor is terminated.
