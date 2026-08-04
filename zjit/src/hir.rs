@@ -5906,7 +5906,8 @@ impl Function {
     // (It's used more individually and differently than the paper)
     // TODO: Update comments to consider block params rather than phi nodes and demarcate differences from the algorithm clearly
     // TODO: Fix input arguments. We need block params, not just the phi
-    /// If all possible phi values are the same, replace the phi with the value
+    // If all possible phi values are the same, replace the phi with the value
+    // TODO: Add Max's optimization about not checking the first block. Maybe do this by keeping track of all changing edges and using a worklist?
 
     /// Sometimes block params can only come from one place and safely removed as block params.
     /// Trivial block param removal increases the efficacy of CFG-based optimization passes.
@@ -5961,104 +5962,107 @@ impl Function {
 
         while updated {
 
-        for (row, block) in predecessor_domain.iter_mut().zip(&self.blocks) {
-            row.resize(block.params.len(), ParamValue::None);
-        }
-        updated = false;
-
-        // Scan through each jump, collecting edges from CondBranch and Jump insns.
-        for (block_id, insn_index) in &terminators {
-            let insn_id = self.blocks[block_id.0].insns[*insn_index];
-            let mut edges: Vec<BranchEdge> = vec![];
-
-            match self.find(insn_id) {
-                Insn::CondBranch { if_true, if_false, .. } => {
-                    edges.push(if_true);
-                    edges.push(if_false);
-                }
-                Insn::Jump(edge) => {
-                    edges.push(edge);
-                }
-                _ => {}
+            for (row, block) in predecessor_domain.iter_mut().zip(&self.blocks) {
+                row.resize(block.params.len(), ParamValue::None);
             }
+            updated = false;
 
-            // Update the states
-            for BranchEdge { target: block_id, args: params } in edges {
-                for (i, param) in params.iter().enumerate().rev() {
-                    let param = self.find_id(*param);
-                    // If the param is the same as passed into the block, it is a self loop
-                    // We ignore self loops because they do not provide new information
-                    if param == self.find_id(self.blocks[block_id.0].params[i]) {
-                        continue
+            // TODO: Maybe move this outside the loop somehow? probably can't immediately, but we could keep track of a worklist of edges that change maybe?
+            // And only use the changed ones like a worklist? And then instead of looping to fixpoint we use a worklist based approach?
+            //
+            // Scan through each jump, collecting edges from CondBranch and Jump insns.
+            for (block_id, insn_index) in &terminators {
+                let insn_id = self.blocks[block_id.0].insns[*insn_index];
+                let mut edges: Vec<BranchEdge> = vec![];
+
+                match self.find(insn_id) {
+                    Insn::CondBranch { if_true, if_false, .. } => {
+                        edges.push(if_true);
+                        edges.push(if_false);
                     }
-                    let state = &mut predecessor_domain[block_id.0][i];
-                    match *state {
-                        ParamValue::None => {
-                            *state = ParamValue::One(param);
-                        },
-                        ParamValue::One(value) => {
-                            if value != param {
-                                *state = ParamValue::Multiple;
-                            }
-                        }
-                        ParamValue::Multiple => {},
-                    }
-                }
-            }
-        }
-
-        // Remove the trivial block params and fix up our SSA representation
-        // This is done by as follows.
-        // 1. Replace uses of the trivial params with the concretized value
-        // 2. Remove trivial params from the basic block definition
-        // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
-        for (block_id, block) in predecessor_domain.iter().enumerate() {
-            // TODO: Don't do this
-            let block_id = BlockId(block_id);
-
-            let trivial_indices: Vec<usize> = block.iter().enumerate()
-                .filter_map(|(idx, state)|
-                    matches!(state, ParamValue::One(_)).then_some(idx)
-                ).collect();
-
-            // Replace uses of the trivial params with the concretized value
-            for param_index in &trivial_indices {
-                if let ParamValue::One(insn_id) = block[*param_index] {
-                    self.make_equal_to(self.blocks[block_id.0].params[*param_index], insn_id);
-                    updated = true;
-                }
-            }
-
-            // Update the block
-            prune_vec_by_indices(&mut self.blocks[block_id.0].params, &trivial_indices);
-
-            // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
-            for (jump_block_id, index) in &terminators {
-                let cond_insn_id = self.blocks[jump_block_id.0].insns[*index];
-                match self.find(cond_insn_id) {
                     Insn::Jump(edge) => {
-                        if edge.target == block_id {
-                            let edge = prune_branch_edge(edge, &trivial_indices);
-                            self.insns[cond_insn_id.0] = Insn::Jump(edge);
-                        }
-                    }
-                    Insn::CondBranch { val, if_true, if_false } => {
-                        let if_true = if if_true.target == block_id {
-                            prune_branch_edge(if_true, &trivial_indices)
-                        } else {
-                            if_true
-                        };
-                        let if_false = if if_false.target == block_id {
-                            prune_branch_edge(if_false, &trivial_indices)
-                        } else {
-                            if_false
-                        };
-                        self.insns[cond_insn_id.0] = Insn::CondBranch{ val, if_true, if_false };
+                        edges.push(edge);
                     }
                     _ => {}
                 }
+
+                // Use the results of abstract interpretation to update the states
+                // Perform abstract interpretation
+                for BranchEdge { target: block_id, args: params } in edges {
+                    for (i, param) in params.iter().enumerate().rev() {
+                        let param = self.find_id(*param);
+                        // If the param is the same as passed into the block, it is a self loop and provides no new predecessor information.
+                        if param == self.find_id(self.blocks[block_id.0].params[i]) {
+                            continue
+                        }
+                        let state = &mut predecessor_domain[block_id.0][i];
+                        match *state {
+                            ParamValue::None => {
+                                *state = ParamValue::One(param);
+                            },
+                            ParamValue::One(value) => {
+                                if value != param {
+                                    *state = ParamValue::Multiple;
+                                }
+                            }
+                            ParamValue::Multiple => {},
+                        }
+                    }
+                }
             }
-        }
+
+            // Remove the trivial block params and fix up our SSA representation
+            // This is done by as follows.
+            // 1. Replace uses of the trivial params with the concretized value
+            // 2. Remove trivial params from the basic block definition
+            // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
+            for (block_id, block) in predecessor_domain.iter().enumerate() {
+                // TODO: Don't do this
+                let block_id = BlockId(block_id);
+
+                let trivial_indices: Vec<usize> = block.iter().enumerate()
+                    .filter_map(|(idx, state)|
+                        matches!(state, ParamValue::One(_)).then_some(idx)
+                    ).collect();
+
+                // Replace uses of the trivial params with the concretized value
+                for param_index in &trivial_indices {
+                    if let ParamValue::One(insn_id) = block[*param_index] {
+                        self.make_equal_to(self.blocks[block_id.0].params[*param_index], insn_id);
+                        updated = true;
+                    }
+                }
+
+                // Update the block
+                prune_vec_by_indices(&mut self.blocks[block_id.0].params, &trivial_indices);
+
+                // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
+                for (jump_block_id, index) in &terminators {
+                    let cond_insn_id = self.blocks[jump_block_id.0].insns[*index];
+                    match self.find(cond_insn_id) {
+                        Insn::Jump(edge) => {
+                            if edge.target == block_id {
+                                let edge = prune_branch_edge(edge, &trivial_indices);
+                                self.insns[cond_insn_id.0] = Insn::Jump(edge);
+                            }
+                        }
+                        Insn::CondBranch { val, if_true, if_false } => {
+                            let if_true = if if_true.target == block_id {
+                                prune_branch_edge(if_true, &trivial_indices)
+                            } else {
+                                if_true
+                            };
+                            let if_false = if if_false.target == block_id {
+                                prune_branch_edge(if_false, &trivial_indices)
+                            } else {
+                                if_false
+                            };
+                            self.insns[cond_insn_id.0] = Insn::CondBranch{ val, if_true, if_false };
+                        }
+                        _ => {}
+                    }
+                }
+            }
         }
 
     }
