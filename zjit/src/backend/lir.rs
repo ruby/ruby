@@ -2888,7 +2888,7 @@ impl Assembler
                 asm_ccall!(asm, exit_recompile,
                     recompile.compiled_iseq,
                     recompile.frame_iseq,
-                    Opnd::UImm(recompile.insn_idx as u64)
+                    recompile.insn_idx.into()
                 );
             }
         }
