@@ -1622,10 +1622,10 @@ impl Assembler {
 
             let allocatable_regs = regs.len();
             trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&mut intervals, &mut regs));
-            let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(&mut intervals, allocatable_regs, &regs));
+            let num_stack_slots = trace_compile_phase("linear_scan", || asm.linear_scan(&mut intervals, allocatable_regs, &regs));
 
             asm.stack_state.num_spill_slots = num_stack_slots;
-            asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&assignments);
+            asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&intervals);
             let stack_slot_count = asm.stack_state.stack_slot_count();
 
             // Dump vreg-to-physical-register mapping if requested
@@ -1634,15 +1634,13 @@ impl Assembler {
                     println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
 
                     println!("VReg assignments:");
-                    for (i, alloc) in assignments.iter().enumerate() {
-                        if let Some(alloc) = alloc {
-                            let start = &intervals[i].start();
-                            let end = &intervals[i].end();
+                    for (i, interval) in intervals.iter().enumerate() {
+                        if let Some(alloc) = interval.assigned {
                             let alloc_str = match alloc {
-                                Allocation::Reg(n) => format!("{}", regs[*n]),
+                                Allocation::Reg(n) => format!("{}", regs[n]),
                                 Allocation::Stack(n) => format!("Stack[{}]", n),
                             };
-                            println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, start, end);
+                            println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, interval.start(), interval.end());
                         }
                     }
                 }
@@ -1661,8 +1659,8 @@ impl Assembler {
             });
 
             trace_compile_phase("resolve_ssa", || {
-                asm.handle_caller_saved_regs(&intervals, &assignments, &regs, &C_ARG_REGREGS);
-                asm.resolve_ssa(&intervals, &assignments, &regs);
+                asm.handle_caller_saved_regs(&intervals, &regs, &C_ARG_REGREGS);
+                asm.resolve_ssa(&intervals, &regs);
             });
 
             Ok(())
