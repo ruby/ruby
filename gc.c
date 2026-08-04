@@ -2360,6 +2360,9 @@ rb_obj_memsize_of(VALUE obj)
         size += rb_ary_memsize(obj);
         break;
       case T_HASH:
+        if (RHASH_SHARED_TABLE_P(obj)) {
+            break;
+        }
         if (RHASH_ST_TABLE_P(obj)) {
             VM_ASSERT(RHASH_ST_TABLE(obj) != NULL);
             /* st_table is in the slot */
@@ -2782,6 +2785,12 @@ pin_key_mark_value(st_data_t key, st_data_t value, st_data_t data)
 static void
 mark_hash(VALUE hash)
 {
+    if (RHASH_SHARED_TABLE_P(hash)) {
+        gc_mark_internal(RHASH_SHARED_ROOT(hash));
+        gc_mark_internal(RHASH(hash)->ifnone);
+        return;
+    }
+
     if (rb_hash_compare_by_id_p(hash)) {
         rb_hash_stlike_foreach(hash, pin_key_mark_value, 0);
     }
@@ -3724,6 +3733,11 @@ rb_gc_update_set_refs(st_table *tbl)
 static void
 gc_ref_update_hash(void *objspace, VALUE v)
 {
+    if (RHASH_SHARED_TABLE_P(v)) {
+        UPDATE_IF_MOVED(objspace, *RHASH_SHARED_ROOT_REF(v));
+        return;
+    }
+
     rb_hash_stlike_foreach_with_replace(v, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace);
 }
 
@@ -4812,7 +4826,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
           }
           case T_HASH: {
             APPEND_F("[%c] %"PRIdSIZE,
-                     RHASH_AR_TABLE_P(obj) ? 'A' : 'S',
+                     RHASH_SHARED_TABLE_P(obj) ? 'H' : RHASH_AR_TABLE_P(obj) ? 'A' : 'S',
                      RHASH_SIZE(obj));
             break;
           }

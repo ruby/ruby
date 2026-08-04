@@ -20,6 +20,7 @@ struct ar_table_struct;
 typedef unsigned char ar_hint_t;
 
 enum ruby_rhash_flags {
+    RHASH_SHARED_TABLE_FLAG = FL_USER0,                                  /* FL 0 */
     RHASH_PASS_AS_KEYWORDS = FL_USER1,                                   /* FL 1 */
     RHASH_PROC_DEFAULT = FL_USER2,                                       /* FL 2 */
     RHASH_ST_TABLE_FLAG = FL_USER3,                                      /* FL 3 */
@@ -49,6 +50,10 @@ typedef struct ar_table_struct {
     /* 64bit CPU: 8B * 2 * 8 = 128B */
     ar_table_pair pairs[RHASH_AR_TABLE_MAX_SIZE];
 } ar_table;
+
+typedef struct hash_shared_table_struct {
+    VALUE root;
+} hash_shared_table;
 
 struct RHash {
     struct RBasic basic;
@@ -98,7 +103,12 @@ static inline size_t RHASH_SIZE(VALUE h);
 static inline bool RHASH_EMPTY_P(VALUE h);
 static inline bool RHASH_AR_TABLE_P(VALUE h);
 static inline bool RHASH_ST_TABLE_P(VALUE h);
+static inline bool RHASH_SHARED_TABLE_P(VALUE h);
 static inline struct ar_table_struct *RHASH_AR_TABLE(VALUE h);
+static inline hash_shared_table *RHASH_SHARED_TABLE(VALUE h);
+static inline VALUE *RHASH_SHARED_ROOT_REF(VALUE h);
+static inline VALUE RHASH_SHARED_ROOT(VALUE h);
+static inline st_table *RHASH_ST_TABLE_RAW(VALUE h);
 static inline st_table *RHASH_ST_TABLE(VALUE h);
 static inline size_t RHASH_ST_SIZE(VALUE h);
 static inline void RHASH_ST_CLEAR(VALUE h);
@@ -126,7 +136,7 @@ VALUE rb_hash_compare_by_id(VALUE hash);
 static inline bool
 RHASH_AR_TABLE_P(VALUE h)
 {
-    return ! FL_TEST_RAW(h, RHASH_ST_TABLE_FLAG);
+    return ! FL_TEST_RAW(h, RHASH_ST_TABLE_FLAG | RHASH_SHARED_TABLE_FLAG);
 }
 
 RBIMPL_ATTR_RETURNS_NONNULL()
@@ -137,10 +147,46 @@ RHASH_AR_TABLE(VALUE h)
 }
 
 RBIMPL_ATTR_RETURNS_NONNULL()
+static inline hash_shared_table *
+RHASH_SHARED_TABLE(VALUE h)
+{
+    return (hash_shared_table *)((uintptr_t)h + sizeof(struct RHash));
+}
+
+static inline VALUE *
+RHASH_SHARED_ROOT_REF(VALUE h)
+{
+    return &RHASH_SHARED_TABLE(h)->root;
+}
+
+static inline bool
+RHASH_SHARED_TABLE_P(VALUE h)
+{
+    return FL_TEST_RAW(h, RHASH_SHARED_TABLE_FLAG);
+}
+
+static inline VALUE
+RHASH_SHARED_ROOT(VALUE h)
+{
+    RUBY_ASSERT(RHASH_SHARED_TABLE_P(h));
+    return *RHASH_SHARED_ROOT_REF(h);
+}
+
+RBIMPL_ATTR_RETURNS_NONNULL()
+static inline st_table *
+RHASH_ST_TABLE_RAW(VALUE h)
+{
+    return (st_table *)((uintptr_t)h + sizeof(struct RHash));
+}
+
+RBIMPL_ATTR_RETURNS_NONNULL()
 static inline st_table *
 RHASH_ST_TABLE(VALUE h)
 {
-    return (st_table *)((uintptr_t)h + sizeof(struct RHash));
+    if (RHASH_SHARED_TABLE_P(h)) {
+        return RHASH_ST_TABLE(RHASH_SHARED_ROOT(h));
+    }
+    return RHASH_ST_TABLE_RAW(h);
 }
 
 static inline VALUE
@@ -169,7 +215,7 @@ RHASH_EMPTY_P(VALUE h)
 static inline bool
 RHASH_ST_TABLE_P(VALUE h)
 {
-    return ! RHASH_AR_TABLE_P(h);
+    return FL_TEST_RAW(h, RHASH_ST_TABLE_FLAG | RHASH_SHARED_TABLE_FLAG);
 }
 
 static inline size_t
@@ -181,7 +227,8 @@ RHASH_ST_SIZE(VALUE h)
 static inline void
 RHASH_ST_CLEAR(VALUE h)
 {
-    memset(RHASH_ST_TABLE(h), 0, sizeof(st_table));
+    RUBY_ASSERT(!RHASH_SHARED_TABLE_P(h));
+    memset(RHASH_ST_TABLE_RAW(h), 0, sizeof(st_table));
 }
 
 static inline unsigned
