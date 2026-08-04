@@ -326,7 +326,7 @@ jobs:
       - name: Configure
         run: ../src/win32/configure.bat --disable-install-doc
 
-      - run: nmake prog
+      - run: nmake ruby
         timeout-minutes: 50
 
       - name: ruby version
