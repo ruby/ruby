@@ -115,6 +115,9 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     test_command.concat %W[stdlib_test validate RBS_SKIP_TESTS=#{rbs_skip_tests.join(File::PATH_SEPARATOR)} SKIP_RBS_VALIDATION=true]
     first_timeout *= 3
 
+  when "rexml"
+    test_command[-2..-1] = %w[test/run.rb --ignore-name=/linear_performance/]
+
   when "debug"
     # needs pty
     next unless /mswin|mingw/ =~ RUBY_PLATFORM

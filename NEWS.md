@@ -103,6 +103,13 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
+* Psych
+
+    * An experimental libfyaml backend has been added.  It is only
+      enabled when psych is built with `--enable-libfyaml`, and the
+      default libyaml backend remains unchanged otherwise.  It is not
+      supported on Windows.  [[GH-psych #805]]
+
 ### The following bundled gems are added.
 
 
@@ -117,6 +124,14 @@ releases.
 * tsort 0.2.0
 * win32-registry 0.1.2
 
+### The following bundled gems are removed.
+
+* net-ftp 0.3.9
+* net-pop 0.1.2
+
+They are still available on rubygems.org and can be installed with
+`gem install`.  [[Feature #21835]]
+
 ### The following default gem is added.
 
 ### The following default gems are updated.
@@ -130,8 +145,8 @@ releases.
 * error_highlight 0.7.2
 * ipaddr 1.2.9
   * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
-* json 2.21.1
-  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0], [v2.21.0][json-v2.21.0]
+* json 2.21.2
+  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0], [v2.21.0][json-v2.21.0], [v2.21.2][json-v2.21.2]
 * openssl 4.0.2
   * 4.0.0 to [v4.0.1][openssl-v4.0.1], [v4.0.2][openssl-v4.0.2]
 * pp 0.6.4
@@ -193,11 +208,24 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 ## Supported platforms
 
+* Support code for the following platforms has been removed.  Note
+  that all of them reached end of life many years ago and Ruby has
+  long been unbuildable on them.
+
+    * Interix (Windows Services for UNIX)
+    * SunOS 4 (Solaris, i.e. SunOS 5, is unaffected)
+    * BSD/OS (BSDi)
+
 ## Compatibility issues
 
 * `Kernel#at_exit` and `END {}` now raise `Ractor::IsolationError` when called
   in a non-main Ractor.  Previously the registered handler ran in the main
   Ractor at process exit, which was confusing. [[Feature #22139]]
+
+* `Ractor.make_shareable` now raises `Ractor::Error` for an `IO` object, and
+  `Ractor.shareable?` returns `false` for it.  A frozen `IO` used to be
+  shareable, but almost all of its methods raise `FrozenError` and it can
+  still refer to unshareable objects through the members of `rb_io_t`.
 
 ## Stdlib compatibility issues
 
@@ -240,6 +268,12 @@ The following APIs, which have been deprecated for many years, are removed.
 
 - The default garbage collector has been switched from a freelist allocator to a bump pointer allocator. [[PR #17201]]
 
+- The error_highlight, did_you_mean, and syntax_suggest gems are now
+  loaded lazily on the first error display instead of at interpreter
+  boot, which reduces startup time.  `Process.warmup` loads them
+  eagerly so that pre-forking servers keep their code in
+  copy-on-write shared memory.  [[Feature #21951]]
+
 ### Ractor
 
 A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractor implementation closer to leaving experimental status.
@@ -254,9 +288,11 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21781]: https://bugs.ruby-lang.org/issues/21781
 [Feature #21785]: https://bugs.ruby-lang.org/issues/21785
 [Feature #21796]: https://bugs.ruby-lang.org/issues/21796
+[Feature #21835]: https://bugs.ruby-lang.org/issues/21835
 [Feature #21853]: https://bugs.ruby-lang.org/issues/21853
 [Feature #21861]: https://bugs.ruby-lang.org/issues/21861
 [Feature #21932]: https://bugs.ruby-lang.org/issues/21932
+[Feature #21951]: https://bugs.ruby-lang.org/issues/21951
 [Feature #21981]: https://bugs.ruby-lang.org/issues/21981
 [Feature #22097]: https://bugs.ruby-lang.org/issues/22097
 [Feature #22135]: https://bugs.ruby-lang.org/issues/22135
@@ -265,6 +301,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22175]: https://bugs.ruby-lang.org/issues/22175
 [Feature #22185]: https://bugs.ruby-lang.org/issues/22185
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
+[GH-psych #805]: https://github.com/ruby/psych/pull/805
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
 [RubyGems-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/v4.0.5
 [RubyGems-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/v4.0.6
@@ -313,6 +350,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [json-v2.19.9]: https://github.com/ruby/json/releases/tag/v2.19.9
 [json-v2.20.0]: https://github.com/ruby/json/releases/tag/v2.20.0
 [json-v2.21.0]: https://github.com/ruby/json/releases/tag/v2.21.0
+[json-v2.21.2]: https://github.com/ruby/json/releases/tag/v2.21.2
 [openssl-v4.0.1]: https://github.com/ruby/openssl/releases/tag/v4.0.1
 [openssl-v4.0.2]: https://github.com/ruby/openssl/releases/tag/v4.0.2
 [pp-v0.6.4]: https://github.com/ruby/pp/releases/tag/v0.6.4

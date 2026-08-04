@@ -79,9 +79,11 @@ class Gem::Package::Old < Gem::Package
         raise Gem::Package::FormatError, "#{full_name} in #{@gem} is corrupt" if
           file_data.length != entry["size"].to_i
 
-        FileUtils.rm_rf destination
-
         FileUtils.mkdir_p File.dirname(destination), mode: dir_mode && 0o755
+
+        verify_extraction_dir File.dirname(destination), destination_dir
+
+        FileUtils.rm_rf destination
 
         File.open destination, "wb", file_mode(entry["mode"]) do |out|
           out.write file_data

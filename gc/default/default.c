@@ -1159,18 +1159,6 @@ gc_malloc_counters_snapshot(rb_objspace_t *objspace, struct gc_malloc_bytes *c)
 #define gc_config_full_mark_set(b) (objspace->gc_config.full_mark = (int)(b))
 #define gc_config_full_mark_val    (objspace->gc_config.full_mark)
 
-#ifndef DURING_GC_COULD_MALLOC_REGION_START
-# define DURING_GC_COULD_MALLOC_REGION_START() \
-    assert(rb_during_gc()); \
-    bool _prev_enabled = rb_gc_impl_gc_enabled_p(objspace); \
-    rb_gc_impl_gc_disable(objspace, false)
-#endif
-
-#ifndef DURING_GC_COULD_MALLOC_REGION_END
-# define DURING_GC_COULD_MALLOC_REGION_END() \
-    if (_prev_enabled) rb_gc_impl_gc_enable(objspace)
-#endif
-
 static inline enum gc_mode
 gc_mode_verify(enum gc_mode mode)
 {
@@ -8607,10 +8595,7 @@ void
 rb_gc_impl_set_params(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
-    /* RUBY_GC_HEAP_FREE_SLOTS */
-    if (get_envparam_size("RUBY_GC_HEAP_FREE_SLOTS", &gc_params.heap_free_slots, 0)) {
-        /* ok */
-    }
+    get_envparam_size("RUBY_GC_HEAP_FREE_SLOTS", &gc_params.heap_free_slots, 0);
 
     get_envparam_size("RUBY_GC_HEAP_INIT_BYTES", &gc_params.heap_init_bytes, 0);
 
@@ -8882,7 +8867,8 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size, bool gc_a
             GPR_FLAG_IMMEDIATE_MARK      |                   \
             GPR_FLAG_IMMEDIATE_SWEEP     |                   \
             GPR_FLAG_MALLOC;                                 \
-        objspace_malloc_gc_stress(objspace);                 \
+        /* stress GC must also honor gc_allowed (malloc_gc_disabled) */ \
+        if (gc_allowed) objspace_malloc_gc_stress(objspace);  \
                                                              \
         if (RB_LIKELY((expr))) {                             \
             /* Success on 1st try */                         \
@@ -9937,13 +9923,12 @@ rb_gc_verify_internal_consistency(void)
 
 /*
  *  call-seq:
- *     GC.verify_internal_consistency                  -> nil
+ *     GC.verify_internal_consistency -> nil
  *
- *  Verify internal consistency.
+ *  Verifies internal consistency of the GC.
+ *  This method should only be used for debugging.
  *
- *  This method is implementation specific.
- *  Now this method checks generational consistency
- *  if RGenGC is supported.
+ *  This method is only expected to work on CRuby.
  */
 static VALUE
 gc_verify_internal_consistency_m(VALUE dummy)

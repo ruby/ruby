@@ -118,22 +118,6 @@ io_path_fallback(VALUE io)
 #define rb_io_path io_path_fallback
 #endif
 
-#ifndef HAVE_RB_IO_GET_WRITE_IO
-static VALUE
-io_get_write_io_fallback(VALUE io)
-{
-    rb_io_t *fptr;
-    GetOpenFile(io, fptr);
-    VALUE wio = fptr->tied_io_for_writing;
-    return wio ? wio : io;
-}
-#define rb_io_get_write_io io_get_write_io_fallback
-#endif
-
-#ifndef DHAVE_RB_SYSERR_FAIL_STR
-# define rb_syserr_fail_str(e, mesg) rb_exc_raise(rb_syserr_new_str(e, mesg))
-#endif
-
 #define sys_fail(io) do { \
     int err = errno; \
     rb_syserr_fail_str(err, rb_io_path(io)); \
@@ -1930,6 +1914,103 @@ console_ttyname(VALUE io)
 # define console_ttyname rb_f_notimplement
 #endif
 
+typedef enum {
+    platform_default,
+#if defined _WIN32
+    platform_cygwin,
+    platform_msys,
+#endif
+    platform_any,
+
+    platform_default_bit = 1U << platform_default,
+#if defined _WIN32
+    platform_cygwin_bit = 1U << platform_cygwin,
+    platform_msys_bit = 1U << platform_msys,
+#endif
+    platform_any_bit = (1U << platform_any) - 1 /* all bits */
+} console_platform_t;
+
+/*
+ * call-seq:
+ *   io.tty?([mode, ...])	-> true or false
+ *
+ * Returns +true+ if the stream is associated with a terminal device (tty),
+ * +false+ otherwise.
+ *
+ * If one or more +type+s are given, returns +true+ if the stream is
+ * associated with any of the specified tty types.
+ *
+ * - +nil+ : Returns the result of the default tty check, as if no type were
+ *   given.  It can be combined with other types.
+ * - +:any+ : Returns +true+ for any known kind of tty, including the
+ *   default tty.
+ * - +:cygwin+ : Returns +true+ for cygwin tty, on Windows.
+ * - +:msys+ : Returns +true+ for msys2 tty, on Windows.
+ */
+static VALUE
+console_platform_tty_p(int argc, VALUE *argv, VALUE io)
+{
+    VALUE ret = Qfalse;
+    int mode = 0;
+
+    if (argc > 0) {
+	int i;
+	for (i = 0; i < argc; ++i) {
+	    VALUE m = argv[i];
+	    if (NIL_P(m)) {
+		mode |= platform_default_bit;
+		continue;
+	    }
+	    Check_Type(m, T_SYMBOL);
+	    if (m == ID2SYM(rb_intern("any"))) {
+		mode |= platform_any_bit;
+	    }
+#if defined _WIN32
+	    else if (m == ID2SYM(rb_intern("cygwin"))) {
+		mode |= platform_cygwin_bit;
+	    }
+	    else if (m == ID2SYM(rb_intern("msys"))) {
+		mode |= platform_msys_bit;
+	    }
+#endif
+	    else {
+		rb_raise(rb_eArgError, "unknown tty type: %+" PRIsVALUE, m);
+	    }
+	}
+    }
+    if ((mode & platform_default_bit) || (mode == 0)) {
+	ret = rb_call_super(0, 0);
+    }
+    if ((mode & ~platform_default_bit) && !RTEST(ret)) {
+#if defined _WIN32
+	if (mode & (platform_cygwin_bit | platform_msys_bit)) {
+	    struct {
+		FILE_NAME_INFO info;
+		WCHAR rest[MAX_PATH];
+	    } buffer;
+
+	    HANDLE h = (HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
+	    if ((GetFileType(h) == FILE_TYPE_PIPE) &&
+		GetFileInformationByHandleEx(h, FileNameInfo, &buffer, sizeof(buffer))) {
+		WCHAR *const name = buffer.info.FileName;
+		DWORD len = buffer.info.FileNameLength / sizeof(WCHAR);
+		name[len] = L'\0';
+# define tty_pipe_p(type) \
+		(memcmp(name, L"\\" #type "-", sizeof(L"\\" #type)) == 0 && \
+		 wcsstr(&name[rb_strlen_lit("\\" #type "-")], L"-pty") != NULL)
+		if (!ret && (mode & platform_cygwin_bit)) {
+		    ret = tty_pipe_p(cygwin);
+		}
+		if (!ret && (mode & platform_msys_bit)) {
+		    ret = tty_pipe_p(msys);
+		}
+	    }
+	}
+#endif
+    }
+    return ret;
+}
+
 /*
  * IO console methods
  */
@@ -1998,6 +2079,20 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "check_winsize_changed", console_check_winsize_changed, 0);
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
     rb_define_method(rb_cIO, "ttyname", console_ttyname, 0);
+    {
+	/* :nodoc: */
+	VALUE platform = rb_define_module_under(rb_cIO, "platform_tty");
+	{
+	    VALUE rb_cIO = platform;
+	    rb_define_method(rb_cIO, "tty?", console_platform_tty_p, -1);
+	    rb_define_method(rb_cIO, "isatty", console_platform_tty_p, -1);
+	}
+#ifdef HAVE_RB_PREPEND_MODULE
+	rb_prepend_module(rb_cIO, platform);
+#else
+	rb_funcall(rb_cIO, rb_intern_const("prepend"), 1, platform);
+#endif
+    }
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	/* :nodoc: */

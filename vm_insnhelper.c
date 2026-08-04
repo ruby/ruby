@@ -7476,8 +7476,13 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
     }
 }
 
+/* Re-fetch the iseq-local hook list before each event: a hook fired by an
+ * earlier event at this pc can disable the last targeted TracePoint on this
+ * iseq, which frees local_hooks. Reload from its stable source (the ractor's
+ * targeted-hooks table) so we never dereference a dangling pointer. */
 #define VM_TRACE_HOOK(target_event, val) do { \
     if ((pc_events & (target_event)) & enabled_flags) { \
+        if (local_hooks_cnt > 0) local_hooks = rb_iseq_local_hooks(iseq, r, false); \
         vm_trace_hook(ec, reg_cfp, pc, pc_events, (target_event), global_hooks, local_hooks, (val)); \
     } \
 } while (0)
@@ -7517,6 +7522,8 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 
         rb_hook_list_t *bmethod_local_hooks = NULL;
         rb_event_flag_t bmethod_local_events = 0;
+        unsigned int bmethod_hooks_cnt = 0;
+        rb_method_definition_t *bmethod_def = NULL;
         const bool bmethod_frame = VM_FRAME_BMETHOD_P(reg_cfp);
         enabled_flags |= iseq_local_events;
 
@@ -7525,7 +7532,8 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
         if (bmethod_frame) {
             const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
             VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
-            unsigned int bmethod_hooks_cnt = me->def->body.bmethod.local_hooks_cnt;
+            bmethod_def = me->def;
+            bmethod_hooks_cnt = me->def->body.bmethod.local_hooks_cnt;
             if (RB_UNLIKELY(bmethod_hooks_cnt > 0)) {
                 st_data_t val;
                 if (st_lookup(rb_ractor_targeted_hooks(r), (st_data_t)me->def, &val)) {
@@ -7585,6 +7593,9 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             VM_TRACE_HOOK(RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN, TOPN(0));
             if ((pc_events & RUBY_EVENT_B_RETURN) && bmethod_frame && (bmethod_events & RUBY_EVENT_RETURN)) {
                 /* b_return instruction running as a method. Fire return event. */
+                /* An earlier event's hook at this pc may have freed bmethod_local_hooks
+                 * (see VM_TRACE_HOOK); reload it from its stable source. */
+                if (bmethod_hooks_cnt > 0) bmethod_local_hooks = rb_method_def_local_hooks(bmethod_def, r, false);
                 vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, bmethod_local_hooks, TOPN(0));
             }
         }

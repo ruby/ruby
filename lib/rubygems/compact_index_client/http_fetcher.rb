@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../remote_fetcher"
+require "rubygems/remote_fetcher"
 
 class Gem::CompactIndexClient
   # Fetches compact index files relative to +base_uri+ using

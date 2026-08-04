@@ -331,13 +331,10 @@ module Bundler
 
           gemspec_dep = [dep, current].find(&:gemspec_dev_dep?)
           if gemspec_dep
-            require_relative "vendor/pub_grub/lib/pub_grub/version_range"
-            require_relative "vendor/pub_grub/lib/pub_grub/version_constraint"
-            require_relative "vendor/pub_grub/lib/pub_grub/version_union"
-            require_relative "vendor/pub_grub/lib/pub_grub/rubygems"
+            require_relative "vendored_pub_grub"
 
-            current_gemspec_range = PubGrub::RubyGems.requirement_to_range(current.requirement)
-            next_gemspec_range = PubGrub::RubyGems.requirement_to_range(dep.requirement)
+            current_gemspec_range = Gem::PubGrub::RubyGems.requirement_to_range(current.requirement)
+            next_gemspec_range = Gem::PubGrub::RubyGems.requirement_to_range(dep.requirement)
 
             if current_gemspec_range.intersects?(next_gemspec_range)
               dep = Dependency.new(name, current.requirement.as_list + dep.requirement.as_list, options)

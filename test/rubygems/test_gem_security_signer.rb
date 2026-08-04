@@ -58,14 +58,14 @@ class TestGemSecuritySigner < Gem::TestCase
     FileUtils.mkdir_p File.join(Gem.user_home, ".gem")
 
     private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
-    Gem::Security.write PRIVATE_KEY, private_key_path
+    Gem::Security.write_private_key PRIVATE_KEY, private_key_path
 
     public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
-    Gem::Security.write PUBLIC_CERT, public_cert_path
+    Gem::Security.write_certificate PUBLIC_CERT, public_cert_path
 
     signer = Gem::Security::Signer.new nil, nil
 
-    assert_equal PRIVATE_KEY.to_pem, signer.key.to_pem
+    assert_equal PRIVATE_KEY.private_to_pem, signer.key.private_to_pem
     assert_equal [PUBLIC_CERT.to_pem], signer.cert_chain.map(&:to_pem)
   end
 
@@ -120,16 +120,8 @@ class TestGemSecuritySigner < Gem::TestCase
 
     signature = signer.sign "hello"
 
-    expected = <<-EXPECTED
-FmrCYxEXW3dgYYNMxPdS16VrdXT+d5nyXTVlRm64ZHSgMxMAaPtQJsVYv73m
-DWHTzNnLhhINSpgBMLh5a4atM52yxVdkPUTgqIH+LeIPBXn8xaP5JLmfDcmI
-tBpc/9DhS3v9iKCX40igAArFu7Gg3swbgQ61SP+U22LvG5nDQZQz3sudtsw3
-qKPykFVaYjrRwzvBdSdJ1PwlAsanSwcwS/GKPtmE/ykZ6X5XOx7wvCDL/zGy
-B8khkB8hDKC6moCzebmUxCBmTmXD0Wjzon+bf4MOriVE3a0ySGRvpr1mKR2+
-9EaVo7pDJLEM487+xg1CAZHRhwshd6II00XEzG/jBQ==
-    EXPECTED
-
-    assert_equal expected, [signature].pack("m")
+    digest = OpenSSL::Digest.new(Gem::Security::DIGEST_NAME)
+    assert PRIVATE_KEY.verify(digest, signature, "hello")
   end
 
   def test_sign_expired
@@ -147,10 +139,10 @@ B8khkB8hDKC6moCzebmUxCBmTmXD0Wjzon+bf4MOriVE3a0ySGRvpr1mKR2+
     FileUtils.mkdir_p File.join(Gem.user_home, ".gem"), mode: 0o700
 
     private_key_path = File.join(Gem.user_home, ".gem", "gem-private_key.pem")
-    Gem::Security.write PRIVATE_KEY, private_key_path
+    Gem::Security.write_private_key PRIVATE_KEY, private_key_path
 
     cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
-    Gem::Security.write EXPIRED_CERT, cert_path
+    Gem::Security.write_certificate EXPIRED_CERT, cert_path
 
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
 
@@ -177,13 +169,13 @@ B8khkB8hDKC6moCzebmUxCBmTmXD0Wjzon+bf4MOriVE3a0ySGRvpr1mKR2+
     expired_path =
       File.join Gem.user_home, "gem-public_cert.pem.expired.#{expiry}"
 
-    Gem::Security.write EXPIRED_CERT, expired_path
+    Gem::Security.write_certificate EXPIRED_CERT, expired_path
 
     private_key_path = File.join(Gem.user_home, "gem-private_key.pem")
-    Gem::Security.write PRIVATE_KEY, private_key_path
+    Gem::Security.write_private_key PRIVATE_KEY, private_key_path
 
     cert_path = File.join Gem.user_home, "gem-public_cert.pem"
-    Gem::Security.write EXPIRED_CERT, cert_path
+    Gem::Security.write_certificate EXPIRED_CERT, cert_path
 
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
 

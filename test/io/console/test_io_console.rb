@@ -60,9 +60,37 @@ class TestIO_Console < Test::Unit::TestCase
       end
     end
   end
+
+  TTY_ENHANCED = IO.instance_method(:tty?).arity != 0
+
+  def test_tty?
+    pend "not supported" unless TTY_ENHANCED
+
+    tty = STDIN.tty?(:any)
+    assert_include([true, false], tty)
+    assert_equal(tty, STDIN.tty?(:any, :any))
+    assert_equal(tty, STDIN.tty?(nil, :any))
+    assert_equal(STDIN.tty?, STDIN.tty?(nil))
+  end
+
+  def test_tty_non_tty
+    pend "not supported" unless TTY_ENHANCED
+
+    File.open(IO::NULL) do |f|
+      assert_not_predicate(f, :tty?)
+      assert_not_operator(f, :tty?, :any)
+      assert_not_operator(f, :tty?, nil)
+      assert_not_send([f, :tty?, :any, :any])
+      assert_not_send([f, :tty?, nil, :any])
+
+      assert_raise(TypeError) {f.tty?("any")}
+      assert_raise(ArgumentError) {f.tty?(:unknown)}
+    end
+  end
 end
 
-defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
+defined?(PTY) and defined?(IO.console) and \
+class TestIO_Console
   Bug6116 = '[ruby-dev:45309]'
 
   def test_raw
@@ -239,6 +267,44 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       sleep 0.1
       assert_equal("a\r\nb\r\n", m.gets + m.gets)
       assert_equal("a\n", s.gets)
+    }
+  end
+
+  def test_console_mode
+    helper {|m, s|
+      begin
+        original = s.console_mode
+        assert_kind_of(IO::ConsoleMode, original)
+
+        noecho = original.dup
+        noecho.echo = false
+        assert_same(noecho, s.send(:console_mode=, noecho))
+        assert_not_predicate(s, :echo?)
+
+        raw = original.raw
+        assert_not_same(original, raw)
+        assert_same(raw, raw.raw!)
+        assert_same(raw, s.send(:console_mode=, raw))
+        s.print "raw\n"
+        assert_equal("raw\n", m.gets)
+      ensure
+        s.console_mode = original if original
+      end
+    }
+  end
+
+  def test_tty_on_pty
+    pend "not supported" unless TTY_ENHANCED
+
+    helper {|_, s|
+      assert_predicate(s, :tty?)
+      assert_operator(s, :tty?, :any)
+      assert_operator(s, :tty?, nil)
+      assert_send([s, :tty?, :any, :any])
+      assert_send([s, :tty?, nil, :any])
+
+      assert_raise(TypeError) {s.tty?("any")}
+      assert_raise(ArgumentError) {s.tty?(:unknown)}
     }
   end
 
@@ -495,66 +561,65 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 end
 
-defined?(IO.console) and TestIO_Console.class_eval do
-  if IO.console
-    def test_get_winsize_console
-      s = IO.console.winsize
-      assert_kind_of(Array, s)
-      assert_equal(2, s.size)
-      assert_kind_of(Integer, s[0])
-      assert_kind_of(Integer, s[1])
-    end
+defined?(IO.console) and IO.console and \
+class TestIO_Console
+  def test_get_winsize_console
+    s = IO.console.winsize
+    assert_kind_of(Array, s)
+    assert_equal(2, s.size)
+    assert_kind_of(Integer, s[0])
+    assert_kind_of(Integer, s[1])
+  end
 
-    def test_set_winsize_console
-      set_winsize_setup
-      s = IO.console.winsize
-      assert_nothing_raised(TypeError) {IO.console.winsize = s}
-      bug = '[ruby-core:82741] [Bug #13888]'
-      begin
-        IO.console.winsize = [s[0], s[1]+1]
-        assert_equal([s[0], s[1]+1], IO.console.winsize, bug)
-      rescue Errno::EINVAL    # Error if run on an actual console.
-      else
-        IO.console.winsize = s
-        assert_equal(s, IO.console.winsize, bug)
-      end
-    ensure
-      set_winsize_teardown
+  def test_set_winsize_console
+    set_winsize_setup
+    s = IO.console.winsize
+    assert_nothing_raised(TypeError) {IO.console.winsize = s}
+    bug = '[ruby-core:82741] [Bug #13888]'
+    begin
+      IO.console.winsize = [s[0], s[1]+1]
+      assert_equal([s[0], s[1]+1], IO.console.winsize, bug)
+    rescue Errno::EINVAL    # Error if run on an actual console.
+    else
+      IO.console.winsize = s
+      assert_equal(s, IO.console.winsize, bug)
     end
+  ensure
+    set_winsize_teardown
+  end
 
-    def test_close
-      IO.console.close
-      assert_kind_of(IO, IO.console)
-      assert_nothing_raised(IOError) {IO.console.fileno}
+  def test_close
+    IO.console.close
+    assert_kind_of(IO, IO.console)
+    assert_nothing_raised(IOError) {IO.console.fileno}
 
-      IO.console(:close)
-      assert(IO.console(:tty?))
-    ensure
-      IO.console(:close)
-    end
+    IO.console(:close)
+    assert(IO.console(:tty?))
+  ensure
+    IO.console(:close)
+  end
 
-    def test_console_kw
-      io = IO.console(:clone, freeze: true)
-      io.close
-      assert_kind_of(IO, io)
-    end
+  def test_console_kw
+    io = IO.console(:clone, freeze: true)
+    io.close
+    assert_kind_of(IO, io)
+  end
 
-    def test_sync
-      assert(IO.console.sync, "console should be unbuffered")
-    ensure
-      IO.console(:close)
-    end
+  def test_sync
+    assert(IO.console.sync, "console should be unbuffered")
+  ensure
+    IO.console(:close)
+  end
 
-    def test_getch_timeout
-      assert_nil(IO.console.getch(intr: true, time: 0.1, min: 0))
-    end
+  def test_getch_timeout
+    assert_nil(IO.console.getch(intr: true, time: 0.1, min: 0))
+  end
 
-    def test_ttyname
-      return unless IO.method_defined?(:ttyname)
-      ttyname = IO.console.ttyname
-      assert_not_nil(ttyname)
-      File.open(ttyname) {|f| assert_predicate(f, :tty?)}
-    end
+  def test_ttyname
+    return unless IO.method_defined?(:ttyname)
+    ttyname = IO.console.ttyname
+    assert_not_nil(ttyname)
+    File.open(ttyname) {|f| assert_predicate(f, :tty?)}
   end
 
   case
@@ -563,6 +628,8 @@ defined?(IO.console) and TestIO_Console.class_eval do
   when !(rubyw = RbConfig::CONFIG["RUBYW_INSTALL_NAME"]).empty?
     dir, base = File.split(EnvUtil.rubybin)
     noctty = [File.join(dir, base.sub(RUBY_ENGINE, rubyw))]
+  else
+    rubyw = nil
   end
 
   if noctty
@@ -605,8 +672,8 @@ defined?(IO.console) and TestIO_Console.class_eval do
   end
 end
 
-defined?(IO.console) and IO.console and IO.console.respond_to?(:pressed?) and
-  TestIO_Console.class_eval do
+defined?(IO.console) and IO.console and IO.console.respond_to?(:pressed?) and \
+class TestIO_Console
   def test_pressed_valid
     assert_include([true, false], IO.console.pressed?("HOME"))
     assert_include([true, false], IO.console.pressed?(:"HOME"))
@@ -620,7 +687,7 @@ defined?(IO.console) and IO.console and IO.console.respond_to?(:pressed?) and
   end
 end
 
-TestIO_Console.class_eval do
+class TestIO_Console
   def test_stringio_getch
     assert_ruby_status %w"--disable=gems -rstringio -rio/console", %q{
       abort unless StringIO.method_defined?(:getch)

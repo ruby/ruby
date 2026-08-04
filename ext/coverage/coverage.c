@@ -21,7 +21,8 @@ static enum {
     RUNNING
 } current_state = IDLE;
 static int current_mode;
-static VALUE me2counter = Qnil;
+static VALUE cme2counter = Qnil;
+static VALUE me_set = Qnil;
 
 /*
  *  call-seq: Coverage.supported?(mode) -> true or false
@@ -115,10 +116,12 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
     }
 
     if (mode & COVERAGE_TARGET_METHODS) {
-        me2counter = rb_ident_hash_new();
+        cme2counter = rb_ident_hash_new();
+        me_set = rb_ident_hash_new();
     }
     else {
-        me2counter = Qnil;
+        cme2counter = Qnil;
+        me_set = Qnil;
     }
 
     coverages = rb_get_coverages();
@@ -127,7 +130,7 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
         rb_obj_hide(coverages);
         current_mode = mode;
         if (mode == 0) mode = COVERAGE_TARGET_LINES;
-        rb_set_coverages(coverages, mode, me2counter);
+        rb_set_coverages(coverages, mode, cme2counter, me_set);
         current_state = SUSPENDED;
     }
     else if (current_mode != mode) {
@@ -239,70 +242,60 @@ branch_coverage(VALUE branches)
     return b.result;
 }
 
-static int
-method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
+/*
+ * Fold a single method entry's contribution into the method coverage result.
+ * `add` is the number of calls to attribute to it (0 is used to make sure a
+ * defined-but-uncalled method shows up). Entries that resolve elsewhere (e.g.
+ * aliases) are skipped: their calls are attributed to the original definition
+ * via the [owner, mid, location] key, exactly like the old heap-walk did.
+ */
+static void
+method_coverage_add(const rb_method_entry_t *me, long add, VALUE ncoverages)
 {
-    /*
-     * ObjectSpace.each_object(Module){|mod|
-     *   mod.instance_methods.each{|mid|
-     *     m = mod.instance_method(mid)
-     *     if loc = m.source_location
-     *       p [m.name, loc, $g_method_cov_counts[m]]
-     *     end
-     *   }
-     * }
-     */
-    VALUE ncoverages = *(VALUE*)data, v;
+    VALUE data[5];
+    const rb_method_entry_t *me2 = rb_resolve_me_location(me, data);
+    if (me != me2) return;
 
-    for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
-        void *poisoned = rb_asan_poisoned_object_p(v);
-        rb_asan_unpoison_object(v, false);
+    VALUE klass = me->owner;
+    if (RB_TYPE_P(klass, T_ICLASS)) return;
 
-        if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
-            const rb_method_entry_t *me = (rb_method_entry_t *) v;
-            VALUE path, first_lineno, first_column, last_lineno, last_column;
-            VALUE data[5], ncoverage, methods;
-            VALUE methods_id = ID2SYM(rb_intern("methods"));
-            VALUE klass;
-            const rb_method_entry_t *me2 = rb_resolve_me_location(me, data);
-            if (me != me2) continue;
-            klass = me->owner;
-            if (RB_TYPE_P(klass, T_ICLASS)) {
-                rb_bug("T_ICLASS");
-            }
-            path = data[0];
-            first_lineno = data[1];
-            first_column = data[2];
-            last_lineno = data[3];
-            last_column = data[4];
-            if (FIX2LONG(first_lineno) <= 0) continue;
-            ncoverage = rb_hash_aref(ncoverages, path);
-            if (NIL_P(ncoverage)) continue;
-            methods = rb_hash_aref(ncoverage, methods_id);
+    VALUE first_lineno = data[1];
+    if (FIX2LONG(first_lineno) <= 0) return;
 
-            {
-                VALUE method_id = ID2SYM(me->def->original_id);
-                VALUE rcount = rb_hash_aref(me2counter, (VALUE) me);
-                VALUE key = rb_ary_new_from_args(6, klass, method_id, first_lineno, first_column, last_lineno, last_column);
-                VALUE rcount2 = rb_hash_aref(methods, key);
+    VALUE path = data[0];
+    VALUE ncoverage = rb_hash_aref(ncoverages, path);
+    if (NIL_P(ncoverage)) return;
 
-                if (NIL_P(rcount)) rcount = LONG2FIX(0);
-                if (NIL_P(rcount2)) rcount2 = LONG2FIX(0);
-                if (!POSFIXABLE(FIX2LONG(rcount) + FIX2LONG(rcount2))) {
-                    rcount = LONG2FIX(FIXNUM_MAX);
-                }
-                else {
-                    rcount = LONG2FIX(FIX2LONG(rcount) + FIX2LONG(rcount2));
-                }
-                rb_hash_aset(methods, key, rcount);
-            }
-        }
+    VALUE methods = rb_hash_aref(ncoverage, ID2SYM(rb_intern("methods")));
+    VALUE method_id = ID2SYM(me->def->original_id);
+    VALUE key = rb_ary_new_from_args(6, klass, method_id, data[1], data[2], data[3], data[4]);
 
-        if (poisoned) {
-            rb_asan_poison_object(v);
-        }
+    VALUE rcount = rb_hash_aref(methods, key);
+    long count = NIL_P(rcount) ? 0 : FIX2LONG(rcount);
+    if (!POSFIXABLE(count + add)) {
+        count = FIXNUM_MAX;
     }
-    return 0;
+    else {
+        count += add;
+    }
+    rb_hash_aset(methods, key, LONG2FIX(count));
+}
+
+/* me_set entries: every defined method, so uncalled ones appear with count 0. */
+static int
+method_coverage_me_i(VALUE key, VALUE value, VALUE ncoverages)
+{
+    method_coverage_add((const rb_method_entry_t *)key, 0, ncoverages);
+    return ST_CONTINUE;
+}
+
+/* cme2counter entries: call counts, attributed to the definition's key. */
+static int
+method_coverage_count_i(VALUE key, VALUE value, VALUE ncoverages)
+{
+    long add = FIXNUM_P(value) ? FIX2LONG(value) : 0;
+    method_coverage_add((const rb_method_entry_t *)key, add, ncoverages);
+    return ST_CONTINUE;
 }
 
 static int
@@ -368,7 +361,8 @@ rb_coverage_peek_result(VALUE klass)
     rb_hash_foreach(coverages, coverage_peek_result_i, ncoverages);
 
     if (current_mode & COVERAGE_TARGET_METHODS) {
-        rb_objspace_each_objects(method_coverage_i, &ncoverages);
+        if (RTEST(me_set)) rb_hash_foreach(me_set, method_coverage_me_i, ncoverages);
+        if (RTEST(cme2counter)) rb_hash_foreach(cme2counter, method_coverage_count_i, ncoverages);
     }
 
     rb_hash_freeze(ncoverages);
@@ -377,9 +371,9 @@ rb_coverage_peek_result(VALUE klass)
 
 
 static int
-clear_me2counter_i(VALUE key, VALUE value, VALUE unused)
+clear_cme2counter_i(VALUE key, VALUE value, VALUE unused)
 {
-    rb_hash_aset(me2counter, key, INT2FIX(0));
+    rb_hash_aset(cme2counter, key, INT2FIX(0));
     return ST_CONTINUE;
 }
 
@@ -435,14 +429,17 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
     }
     if (clear) {
         rb_clear_coverages();
-        if (!NIL_P(me2counter)) rb_hash_foreach(me2counter, clear_me2counter_i, Qnil);
+        /* Reset call counts, but keep me_set: the set of defined methods
+         * persists across clear so that uncalled methods keep showing up. */
+        if (!NIL_P(cme2counter)) rb_hash_foreach(cme2counter, clear_cme2counter_i, Qnil);
     }
     if (stop) {
         if (current_state == RUNNING) {
             rb_coverage_suspend(klass);
         }
         rb_reset_coverages();
-        me2counter = Qnil;
+        cme2counter = Qnil;
+        me_set = Qnil;
         current_state = IDLE;
     }
     return ncoverages;
@@ -706,5 +703,6 @@ Init_coverage(void)
     rb_define_module_function(rb_mCoverage, "peek_result", rb_coverage_peek_result, 0);
     rb_define_module_function(rb_mCoverage, "state", rb_coverage_state, 0);
     rb_define_module_function(rb_mCoverage, "running?", rb_coverage_running, 0);
-    rb_global_variable(&me2counter);
+    rb_global_variable(&cme2counter);
+    rb_global_variable(&me_set);
 }

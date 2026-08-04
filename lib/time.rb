@@ -660,7 +660,7 @@ class Time
           [T\s]
           (\d\d):(\d\d):(\d\d)
           (\.\d+)?
-          (Z|[+-]\d\d(?::?\d\d)?)?
+          (Z|[+-]\d\d:?\d\d)
           \s*\z/ix
       _xmlschema(pattern, time)
     end
@@ -670,7 +670,9 @@ class Time
     if RUBY_VERSION >= "3.2"
       def _xmlschema(pattern, time) # :nodoc:
         if pattern.match?(time)
-          new(time.strip)
+          time = time.strip
+          time.upcase!
+          new(time)
         else
           raise ArgumentError.new("invalid xmlschema format: #{time.inspect}")
         end

@@ -785,9 +785,13 @@ module Bundler
       return unless SharedHelpers.md5_available?
 
       require_relative "vendored_uri"
+      require "rubygems/compact_index_client"
+      if Gem::CompactIndexClient.respond_to?(:filesystem_access=)
+        Gem::CompactIndexClient.filesystem_access = SharedHelpers.method(:filesystem_access)
+      end
       remote = Source::Rubygems::Remote.new(Gem::URI("https://rubygems.org"))
       cache_path = Bundler.user_cache.join("compact_index", remote.cache_slug)
-      latest = Bundler::CompactIndexClient.new(cache_path).latest_version("bundler")
+      latest = Gem::CompactIndexClient.new(cache_path).latest_version("bundler")
       return unless latest
 
       current = Gem::Version.new(VERSION)

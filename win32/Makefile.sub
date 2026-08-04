@@ -657,6 +657,10 @@ config: config.status
 
 config.status: $(CONFIG_H)
 
+# {$(VPATH)}config.h prerequisites in common.mk resolve to this bare
+# name until $(RUBY_CONFIG_H) is generated.
+config.h: $(CONFIG_H)
+
 BANG = !
 
 !if !exist(config.status)
@@ -1123,9 +1127,9 @@ s,@ruby_pc@,$(ruby_pc),;t t
 s,@PKG_CONFIG@,$(PKG_CONFIG),;t t
 <<KEEP
 
-!if "$(HAVE_BASERUBY)" != "yes" || "$(CROSS_COMPILING)" == "yes"
+# BOOTSTRAPRUBY is $(MINIRUBY) here even with BASERUBY, so rbconfig.rb
+# generation always needs $(PREP).
 $(RBCONFIG): $(PREP)
-!endif
 
 miniruby: miniruby$(EXEEXT)
 
