@@ -491,4 +491,22 @@ class TestRactor < Test::Unit::TestCase
       r.value
     RUBY
   end
+
+  # String#dup of a frozen string shares the original's bytes, and for an embedded
+  # string those bytes live in its slot.  Moving the original must leave that slot
+  # alone: the sharer reads it for as long as it lives.
+  def test_move_string_sharing_its_embedded_bytes
+    assert_ractor(<<~'RUBY', timeout: 60)
+      [24, 100, 300].each do |len|
+        r = Ractor.new { Ractor.receive }
+        str = "x" * len
+        str.instance_variable_set(:@iv, [])   # unshareable, so it is moved
+        str.freeze
+        dup = str.dup                         # reads str's bytes in place
+        r.send(str, move: true)
+        assert_equal "x" * len, dup, "corrupted for length #{len}"
+        r.value
+      end
+    RUBY
+  end
 end

@@ -17,6 +17,7 @@
 #include "internal/rational.h"
 #include "internal/struct.h"
 #include "internal/st.h"
+#include "internal/string.h"
 #include "internal/thread.h"
 #include "variable.h"
 #include "yjit.h"
@@ -2124,6 +2125,11 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_PROMOTED);
     shape_id_t shape_id = (RBASIC_SHAPE_ID(obj) & SHAPE_ID_CAPACITY_MASK) | ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_ROBJECT | SHAPE_ID_FL_FROZEN;
 
+    // A copy-on-write sharer reads its bytes straight out of an embedded root's slot
+    // (String#dup of a frozen string), and it outlives the move, so that body has to
+    // survive as it is.
+    bool wipe_body = !(RB_TYPE_P(obj, T_STRING) && rb_str_embedded_shared_root_p(obj));
+
     // Avoid mutations using bind_call, etc.
     size_t slot_size = rb_gc_obj_slot_size(obj);
     MEMZERO((char *)obj, char, sizeof(struct RBasic));
@@ -2134,7 +2140,9 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     // but C code that held the object from before the move still reads it with its
     // old type (an Array iteration in progress, the RMatch capa behind $~): a zeroed
     // body makes those reads see an empty object instead of stale internals.
-    MEMZERO((char *)obj + sizeof(struct RBasic), char, slot_size - sizeof(struct RBasic));
+    if (wipe_body) {
+        MEMZERO((char *)obj + sizeof(struct RBasic), char, slot_size - sizeof(struct RBasic));
+    }
 
     // The husk keeps its original (larger) slot, so give it a field-less shape
     // sized to that slot; otherwise compaction's slot_size == shape_slot_size

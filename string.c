@@ -229,6 +229,14 @@ rb_str_reembeddable_p(VALUE str)
     return !FL_TEST(str, STR_NOFREE|STR_SHARED_ROOT|STR_SHARED);
 }
 
+/* True when other strings read this string's bytes out of its own slot, so the slot
+ * contents must stay valid for as long as the object does. */
+bool
+rb_str_embedded_shared_root_p(VALUE str)
+{
+    return STR_EMBED_P(str) && FL_TEST(str, STR_SHARED_ROOT);
+}
+
 static inline size_t
 rb_str_embed_size(long capa, long termlen)
 {
