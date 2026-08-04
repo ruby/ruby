@@ -2020,6 +2020,13 @@ class TestYJIT < Test::Unit::TestCase
     no_send_fallbacks: false,
     verify_ctx: false
   )
+    # [Bug #22228] Run a major GC to collect objects registered during
+    # initialization that would otherwise cause unexpected YJIT side
+    # exits when GC.stress is enabled.
+    run_gc = <<~RUBY
+      GC.start
+    RUBY
+
     reset_stats = <<~RUBY
       RubyVM::YJIT.runtime_stats
       RubyVM::YJIT.reset_stats!
@@ -2048,6 +2055,7 @@ class TestYJIT < Test::Unit::TestCase
       _test_proc = -> {
         #{test_script}
       }
+      #{run_gc}
       #{reset_stats}
       result = _test_proc.call
       #{write_results}
