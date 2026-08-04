@@ -26,7 +26,7 @@ class TestGemRemoteFetcherLocalSSLServer < Gem::TestCase
 
   def test_ssl_connection
     ssl_server = start_ssl_server
-    temp_ca_cert = File.join(certs_dir, "ca_cert.pem")
+    temp_ca_cert = CA_CERT_FILE
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
       fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
     end
@@ -36,7 +36,7 @@ class TestGemRemoteFetcherLocalSSLServer < Gem::TestCase
     omit_unless_support_pqc
 
     ssl_server = start_ssl_server(mode: :pqc)
-    temp_ca_cert = File.join(certs_dir, "mldsa65_ca_cert.pem")
+    temp_ca_cert = MLDSA65_CA_CERT_FILE
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
       fetcher.fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
     end
@@ -47,8 +47,8 @@ class TestGemRemoteFetcherLocalSSLServer < Gem::TestCase
       { verify_mode: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
     )
 
-    temp_ca_cert = File.join(certs_dir, "ca_cert.pem")
-    temp_client_cert = File.join(certs_dir, "client.pem")
+    temp_ca_cert = CA_CERT_FILE
+    temp_client_cert = CLIENT_FILE
 
     with_configured_fetcher(
       ":ssl_ca_cert: #{temp_ca_cert}\n" \
@@ -66,8 +66,8 @@ class TestGemRemoteFetcherLocalSSLServer < Gem::TestCase
       verify_mode: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
     )
 
-    temp_ca_cert = File.join(certs_dir, "mldsa65_ca_cert.pem")
-    temp_client_cert = File.join(certs_dir, "mldsa65_client.pem")
+    temp_ca_cert = MLDSA65_CA_CERT_FILE
+    temp_client_cert = MLDSA65_CLIENT_FILE
 
     with_configured_fetcher(
       ":ssl_ca_cert: #{temp_ca_cert}\n" \
@@ -82,8 +82,8 @@ class TestGemRemoteFetcherLocalSSLServer < Gem::TestCase
       { verify_mode: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
     )
 
-    temp_ca_cert = File.join(certs_dir, "ca_cert.pem")
-    temp_client_cert = File.join(certs_dir, "invalid_client.pem")
+    temp_ca_cert = CA_CERT_FILE
+    temp_client_cert = INVALID_CLIENT_FILE
 
     with_configured_fetcher(
       ":ssl_ca_cert: #{temp_ca_cert}\n" \
@@ -114,7 +114,7 @@ class TestGemRemoteFetcherLocalSSLServer < Gem::TestCase
   def test_do_not_follow_insecure_redirect
     @server_uri = "http://example.com"
     ssl_server = start_ssl_server
-    temp_ca_cert = File.join(certs_dir, "ca_cert.pem")
+    temp_ca_cert = CA_CERT_FILE
     expected_error_message =
       "redirecting to non-https resource: #{@server_uri} (https://localhost:#{ssl_server.addr[1]}/insecure_redirect?to=#{@server_uri})"
 

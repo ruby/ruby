@@ -12,19 +12,6 @@ if Gem.java_platform?
 end
 
 class TestGemCommandsCertCommand < Gem::TestCase
-  ALTERNATE_CERT = load_cert "alternate"
-  EXPIRED_PUBLIC_CERT = load_cert "expired"
-
-  ALTERNATE_KEY_FILE  = key_path "alternate"
-  PRIVATE_KEY_FILE    = key_path "private"
-  PRIVATE_EC_KEY_FILE = key_path "private_ec"
-  PUBLIC_KEY_FILE     = key_path "public"
-
-  ALTERNATE_CERT_FILE      = cert_path "alternate"
-  CHILD_CERT_FILE          = cert_path "child"
-  PUBLIC_CERT_FILE         = cert_path "public"
-  EXPIRED_PUBLIC_CERT_FILE = cert_path "expired"
-
   def setup
     super
 
@@ -84,8 +71,6 @@ class TestGemCommandsCertCommand < Gem::TestCase
   end
 
   def test_execute_add_twice
-    self.class.cert_path "alternate"
-
     @cmd.handle_options %W[
       --add #{PUBLIC_CERT_FILE}
       --add #{ALTERNATE_CERT_FILE}
@@ -289,7 +274,7 @@ Added '/CN=alternate/DC=example'
   def test_execute_build_encrypted_key
     @cmd.handle_options %W[
       --build nobody@example.com
-      --private-key #{ENCRYPTED_PRIVATE_KEY_PATH}
+      --private-key #{ENCRYPTED_PRIVATE_KEY_FILE}
     ]
 
     use_ui @ui do
@@ -310,7 +295,7 @@ Added '/CN=alternate/DC=example'
   def test_execute_build_ec_key
     @cmd.handle_options %W[
       --build nobody@example.com
-      --private-key #{PRIVATE_EC_KEY_FILE}
+      --private-key #{EC_PRIVATE_KEY_FILE}
     ]
 
     use_ui @ui do
@@ -397,7 +382,7 @@ Added '/CN=alternate/DC=example'
 
   def test_execute_encrypted_private_key
     use_ui @ui do
-      @cmd.send :handle_options, %W[--private-key #{ENCRYPTED_PRIVATE_KEY_PATH}]
+      @cmd.send :handle_options, %W[--private-key #{ENCRYPTED_PRIVATE_KEY_FILE}]
     end
 
     assert_equal "", @ui.output
@@ -517,7 +502,7 @@ Removed '/CN=alternate/DC=example'
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
     @cmd.handle_options %W[
-      --private-key #{ENCRYPTED_PRIVATE_KEY_PATH}
+      --private-key #{ENCRYPTED_PRIVATE_KEY_FILE}
       --certificate #{PUBLIC_CERT_FILE}
 
       --sign #{path}
@@ -684,12 +669,12 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     Dir.mkdir gem_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write_certificate EXPIRED_PUBLIC_CERT, path, 0o600
+    Gem::Security.write_certificate EXPIRED_CERT, path, 0o600
 
-    assert_equal "/CN=nobody/DC=example", EXPIRED_PUBLIC_CERT.issuer.to_s
+    assert_equal "/CN=nobody/DC=example", EXPIRED_CERT.issuer.to_s
 
-    tmp_expired_cert_file = File.join(@tempdir, File.basename(EXPIRED_PUBLIC_CERT_FILE))
-    File.write(tmp_expired_cert_file, File.read(EXPIRED_PUBLIC_CERT_FILE))
+    tmp_expired_cert_file = File.join(@tempdir, File.basename(EXPIRED_CERT_FILE))
+    File.write(tmp_expired_cert_file, File.read(EXPIRED_CERT_FILE))
 
     @cmd.handle_options %W[
       --private-key #{PRIVATE_KEY_FILE}
@@ -716,12 +701,12 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     Dir.mkdir gem_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write_certificate EXPIRED_PUBLIC_CERT, path, 0o600
+    Gem::Security.write_certificate EXPIRED_CERT, path, 0o600
 
-    assert_equal "/CN=nobody/DC=example", EXPIRED_PUBLIC_CERT.issuer.to_s
+    assert_equal "/CN=nobody/DC=example", EXPIRED_CERT.issuer.to_s
 
-    tmp_expired_cert_file = File.join(@tempdir, File.basename(EXPIRED_PUBLIC_CERT_FILE))
-    File.write(tmp_expired_cert_file, File.read(EXPIRED_PUBLIC_CERT_FILE))
+    tmp_expired_cert_file = File.join(@tempdir, File.basename(EXPIRED_CERT_FILE))
+    File.write(tmp_expired_cert_file, File.read(EXPIRED_CERT_FILE))
 
     @cmd.handle_options %W[
       --private-key #{PRIVATE_KEY_FILE}
@@ -851,7 +836,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
   def test_handle_options_sign_encrypted_key
     @cmd.handle_options %W[
       --private-key #{ALTERNATE_KEY_FILE}
-      --private-key #{ENCRYPTED_PRIVATE_KEY_PATH}
+      --private-key #{ENCRYPTED_PRIVATE_KEY_FILE}
 
       --certificate #{ALTERNATE_CERT_FILE}
       --certificate #{PUBLIC_CERT_FILE}

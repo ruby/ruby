@@ -7,14 +7,6 @@ unless Gem::HAVE_OPENSSL
 end
 
 class TestGemSecuritySigner < Gem::TestCase
-  ALTERNATE_KEY  = load_key "alternate"
-  CHILD_KEY      = load_key "child"
-  GRANDCHILD_KEY = load_key "grandchild"
-
-  CHILD_CERT      = load_cert "child"
-  GRANDCHILD_CERT = load_cert "grandchild"
-  EXPIRED_CERT    = load_cert "expired"
-
   def setup
     super
 
@@ -70,7 +62,7 @@ class TestGemSecuritySigner < Gem::TestCase
   end
 
   def test_initialize_key_path
-    key_file = PRIVATE_KEY_PATH
+    key_file = PRIVATE_KEY_FILE
 
     signer = Gem::Security::Signer.new key_file, nil
 
@@ -78,7 +70,7 @@ class TestGemSecuritySigner < Gem::TestCase
   end
 
   def test_initialize_encrypted_key_path
-    key_file = ENCRYPTED_PRIVATE_KEY_PATH
+    key_file = ENCRYPTED_PRIVATE_KEY_FILE
 
     signer = Gem::Security::Signer.new key_file, nil, PRIVATE_KEY_PASSPHRASE
 

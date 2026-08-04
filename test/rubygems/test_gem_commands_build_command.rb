@@ -5,12 +5,6 @@ require "rubygems/commands/build_command"
 require "rubygems/package"
 
 class TestGemCommandsBuildCommand < Gem::TestCase
-  CERT_FILE = cert_path "public3072"
-  SIGNING_KEY = key_path "private3072"
-
-  EXPIRED_CERT_FILE = cert_path "expired"
-  PRIVATE_KEY_FILE  = key_path "private"
-
   def setup
     super
 
@@ -591,8 +585,8 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     trust_dir = Gem::Security.trust_dir
 
     spec = util_spec "some_gem" do |s|
-      s.signing_key = SIGNING_KEY
-      s.cert_chain = [CERT_FILE]
+      s.signing_key = RSA3072_PRIVATE_KEY_FILE
+      s.cert_chain = [RSA3072_PUBLIC_CERT_FILE]
     end
 
     gemspec_file = File.join(@tempdir, spec.spec_name)
@@ -605,7 +599,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     util_test_build_gem spec
 
-    trust_dir.trust_cert OpenSSL::X509::Certificate.new(File.read(CERT_FILE))
+    trust_dir.trust_cert RSA3072_PUBLIC_CERT
 
     gem = Gem::Package.new(File.join(@tempdir, spec.file_name),
                            Gem::Security::HighSecurity)

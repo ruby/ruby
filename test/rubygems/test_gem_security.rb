@@ -12,13 +12,6 @@ if Gem.java_platform?
 end
 
 class TestGemSecurity < Gem::TestCase
-  CHILD_KEY = load_key "child"
-  EC_KEY = load_key "private_ec", "Foo bar"
-
-  ALTERNATE_CERT = load_cert "child"
-  CHILD_CERT     = load_cert "child"
-  EXPIRED_CERT   = load_cert "expired"
-
   def test_class_create_cert
     name = PUBLIC_CERT.subject
     key = PRIVATE_KEY
@@ -122,7 +115,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_get_public_key_ec
-    pkey = Gem::Security.get_public_key(EC_KEY)
+    pkey = Gem::Security.get_public_key(EC_PRIVATE_KEY)
 
     assert_respond_to pkey, :public_to_pem
   end
@@ -163,7 +156,7 @@ class TestGemSecurity < Gem::TestCase
     end
 
     assert_equal "#{child_alt_name.value} is not self-signed, contact " \
-                 "#{ALTERNATE_CERT.issuer} to obtain a valid certificate",
+                 "#{CHILD_CERT.issuer} to obtain a valid certificate",
                  e.message
   end
 

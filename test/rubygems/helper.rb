@@ -46,6 +46,7 @@ require "tmpdir"
 require "rubygems/vendor/uri/lib/uri"
 require "zlib"
 require_relative "mock_gem_ui"
+require_relative "pem_utilities"
 
 # JRuby on Windows raises TypeError inside File.symlink (the wincode helper
 # trips on a nil path), so any test that exercises Gem::Installer's symlink
@@ -1658,75 +1659,7 @@ Also, a list:
     end
   end
 
-  ##
-  # Loads certificate named +cert_name+ from <tt>test/rubygems/</tt>.
-
-  def self.load_cert(cert_name)
-    cert_file = cert_path cert_name
-
-    cert = File.read cert_file
-
-    OpenSSL::X509::Certificate.new cert
-  end
-
-  ##
-  # Returns the path to the certificate named +cert_name+ from
-  # <tt>test/rubygems/</tt>.
-
-  def self.cert_path(cert_name)
-    if begin
-         Time.at(2**32)
-       rescue StandardError
-         32
-       end == 32
-      cert_file = "#{__dir__}/#{cert_name}_cert_32.pem"
-
-      return cert_file if File.exist? cert_file
-    end
-
-    "#{__dir__}/#{cert_name}_cert.pem"
-  end
-
-  ##
-  # Loads a private key named +key_name+ with +passphrase+ in <tt>test/rubygems/</tt>
-
-  def self.load_key(key_name, passphrase = nil)
-    key_file = key_path key_name
-
-    key = File.read key_file
-
-    OpenSSL::PKey.read key, passphrase
-  end
-
-  ##
-  # Returns the path to the key named +key_name+ from <tt>test/rubygems</tt>
-
-  def self.key_path(key_name)
-    "#{__dir__}/#{key_name}_key.pem"
-  end
-
-  # :stopdoc:
-  # only available in RubyGems tests
-
-  PRIVATE_KEY_PASSPHRASE = "Foo bar"
-
-  begin
-    PRIVATE_KEY                 = load_key "private"
-    PRIVATE_KEY_PATH            = key_path "private"
-
-    # ENCRYPTED_PRIVATE_KEY is PRIVATE_KEY encrypted with PRIVATE_KEY_PASSPHRASE
-    ENCRYPTED_PRIVATE_KEY       = load_key "encrypted_private", PRIVATE_KEY_PASSPHRASE
-    ENCRYPTED_PRIVATE_KEY_PATH  = key_path "encrypted_private"
-
-    PUBLIC_KEY                  = PRIVATE_KEY.public_key
-
-    PUBLIC_CERT                 = load_cert "public"
-    PUBLIC_CERT_PATH            = cert_path "public"
-  rescue Errno::ENOENT
-    PRIVATE_KEY = nil
-    PUBLIC_KEY  = nil
-    PUBLIC_CERT = nil
-  end if Gem::HAVE_OPENSSL
+  include Gem::PemUtilities
 end
 
 # https://github.com/seattlerb/minitest/blob/13c48a03d84a2a87855a4de0c959f96800100357/lib/minitest/mock.rb#L192
