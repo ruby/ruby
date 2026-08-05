@@ -509,4 +509,29 @@ class TestRactor < Test::Unit::TestCase
       end
     RUBY
   end
+
+  # A frozen array is handed out as a shared root as it is, so a subseq of an embedded
+  # one reads the elements out of its slot.  Moving the original must leave that slot
+  # alone, and must not let it move afterwards: the sharer has no other copy.
+  def test_move_array_sharing_its_embedded_elements
+    assert_ractor(<<~'RUBY', timeout: 60)
+      [8, 20, 40].each do |len|
+        r = Ractor.new { Ractor.receive }
+        ary = Array.new(len) { |i| i + 1 }    # embedded
+        ary.instance_variable_set(:@iv, [])   # unshareable, so it is moved
+        ary.freeze
+        sharer = ary[1, len - 2]              # reads ary's elements in place
+        r.send(ary, move: true)
+        assert_equal (2..len - 1).to_a, sharer, "corrupted for length #{len}"
+
+        begin
+          GC.verify_compaction_references(expand_heap: true, toward: :empty)
+        rescue NotImplementedError
+          # no compaction on this platform
+        end
+        assert_equal (2..len - 1).to_a, sharer, "corrupted by compaction, length #{len}"
+        r.value
+      end
+    RUBY
+  end
 end
