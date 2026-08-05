@@ -5902,6 +5902,14 @@ impl Function {
             BranchEdge { target: edge.target, args }
         }
 
+        fn insn_passes_params(insn: Insn) -> bool {
+            match insn {
+                Insn::CondBranch {if_true, if_false, ..} => !if_true.args.is_empty() || !if_false.args.is_empty(),
+                Insn::Jump(edge) => !edge.args.is_empty(),
+                _ => false
+            }
+        }
+
         // Instantiate the domain for abstract interpretation
         // Outer index is block
         // Inner index is param index
@@ -5910,14 +5918,11 @@ impl Function {
 
         let mut updated = true;
 
-        // Store references to all the conditional instructions.
-        // We need to update these conditionals in the case of trivial block params.
-        let terminators: Vec<(BlockId, usize)> = self.reverse_post_order().into_iter()
-            .filter(|&block_id| matches!(
-                self.find(*self.blocks[block_id.0].insns.last().unwrap()),
-                Insn::CondBranch {..} | Insn::Jump {..}
-            ))
-            .map(|block_id| (block_id, self.blocks[block_id.0].insns.len() - 1))
+        // Find blocks that terminate with Jump or CondBranch instructions that pass block params along.
+        // These terminators are later analyzed for trivial block params.
+        let param_passing_blocks: Vec<BlockId> = self.reverse_post_order().into_iter()
+            .filter(|&block_id|
+                insn_passes_params(self.find(*self.blocks[block_id.0].insns.last().unwrap())))
             .collect();
 
         while updated {
@@ -5930,18 +5935,25 @@ impl Function {
             // TODO: Maybe move this outside the loop somehow? probably can't immediately, but we could keep track of a worklist of edges that change maybe?
             // And only use the changed ones like a worklist? And then instead of looping to fixpoint we use a worklist based approach?
             //
-            // Scan through each jump, collecting edges from CondBranch and Jump insns.
-            for (block_id, insn_index) in &terminators {
-                let insn_id = self.blocks[block_id.0].insns[*insn_index];
+            // Scan through each jump, collecting edges with params to analyze from CondBranch and Jump insns.
+            for block_id in &param_passing_blocks {
+                let insn_index = self.blocks[block_id.0].insns.len() - 1;
+                let insn_id = self.blocks[block_id.0].insns[insn_index];
                 let mut edges: Vec<BranchEdge> = vec![];
 
                 match self.find(insn_id) {
                     Insn::CondBranch { if_true, if_false, .. } => {
-                        edges.push(if_true);
-                        edges.push(if_false);
+                        if if_true.args.len() > 0 {
+                            edges.push(if_true);
+                        }
+                        if if_false.args.len() > 0 {
+                            edges.push(if_false);
+                        }
                     }
                     Insn::Jump(edge) => {
-                        edges.push(edge);
+                        if edge.args.len() > 0 {
+                            edges.push(edge);
+                        }
                     }
                     _ => {}
                 }
@@ -5976,18 +5988,26 @@ impl Function {
             // 1. Replace uses of the trivial params with the concretized value
             // 2. Remove trivial params from the basic block definition
             // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
-            for (block_id, block) in predecessor_domain.iter().enumerate() {
-                // TODO: Don't do this
+            for (block_id, block_preds) in predecessor_domain.iter().enumerate() {
+                // If there are no block params, there is nothing to optimize
+                // TODO: We scan predecessors and only keep track of blocks that pass params.
+                // We don't do this for block_preds but we should. This requires it kind of becoming hash-mappy again :|
+                // This conditional is a stop-gap to get most of the gains from such an optimization, though it should be removed
+                // Maybe we can get around this easier by not iterating over the predecessor domain, but over a subset of indices we care about
+                if block_preds.len() == 0 {
+                    continue
+                }
+
                 let block_id = BlockId(block_id);
 
-                let trivial_indices: Vec<usize> = block.iter().enumerate()
+                let trivial_indices: Vec<usize> = block_preds.iter().enumerate()
                     .filter_map(|(idx, state)|
                         matches!(state, ParamValue::One(_)).then_some(idx)
                     ).collect();
 
                 // Replace uses of the trivial params with the concretized value
                 for param_index in &trivial_indices {
-                    if let ParamValue::One(insn_id) = block[*param_index] {
+                    if let ParamValue::One(insn_id) = block_preds[*param_index] {
                         self.make_equal_to(self.blocks[block_id.0].params[*param_index], insn_id);
                         updated = true;
                     }
@@ -5997,8 +6017,9 @@ impl Function {
                 prune_vec_by_indices(&mut self.blocks[block_id.0].params, &trivial_indices);
 
                 // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
-                for (jump_block_id, index) in &terminators {
-                    let cond_insn_id = self.blocks[jump_block_id.0].insns[*index];
+                for jump_block_id in &param_passing_blocks {
+                    let index = self.blocks[jump_block_id.0].insns.len() - 1;
+                    let cond_insn_id = self.blocks[jump_block_id.0].insns[index];
                     match self.find(cond_insn_id) {
                         Insn::Jump(edge) => {
                             if edge.target == block_id {
