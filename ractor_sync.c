@@ -652,7 +652,7 @@ ractor_unmonitor(rb_execution_context_t *ec, VALUE self, VALUE port)
             struct ractor_monitor *rm, *nxt;
 
             ccan_list_for_each_safe(&r->sync.monitors, rm, nxt, node) {
-                if (ractor_port_id(&rm->port) == ractor_port_id(rp)) {
+                if (rm->port.r == rp->r && ractor_port_id(&rm->port) == ractor_port_id(rp)) {
                     RUBY_DEBUG_LOG("r:%u -> port:%u@r%u",
                                    (unsigned int)rb_ractor_id(r),
                                    (unsigned int)ractor_port_id(&rm->port),

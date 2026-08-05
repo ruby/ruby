@@ -597,6 +597,34 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # Port IDs are per-Ractor, so two monitoring Ractors can have the same port ID.
+  # Ractor#unmonitor must match both the owning Ractor and the port ID, otherwise
+  # it can remove a different Ractor's monitor entry.
+  def test_unmonitor_does_not_remove_other_ractors_monitor
+    assert_ractor(<<~'RUBY', timeout: 15)
+      target = Ractor.new { Ractor.receive }
+
+      b = Ractor.new(target) do |t|
+        t.monitor(p = Ractor::Port.new)
+        Ractor.main << :ready
+        p.receive
+      end
+
+      Ractor.receive  # b's monitor is registered
+
+      a = Ractor.new(target) do |t|
+        t.monitor(p = Ractor::Port.new)
+        t.unmonitor(p)
+        t << :terminate
+        p.close
+        begin; p.receive; rescue Ractor::ClosedError; :ok; end
+      end
+
+      assert_equal :ok, a.value
+      assert_equal :exited, b.value
+    RUBY
+  end
+
   # move must preserve the class of a String/Array/Hash subclass.
   def test_move_preserves_subclass
     assert_ractor(<<~'RUBY', timeout: 60)
