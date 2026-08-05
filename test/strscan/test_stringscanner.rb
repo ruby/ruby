@@ -231,6 +231,14 @@ module StringScannerTests
     assert_equal(8, scanner.charpos)
   end
 
+  def test_charpos_when_shrunk
+    s = "\u{e9}" * 64
+    sc = StringScanner.new(s)
+    sc.scan(/(?:\u{e9})+/)
+    s.replace("z")
+    assert_equal(s.length, sc.charpos)
+  end
+
   def test_concat
     s = create_string_scanner('a'.dup)
     s.scan(/a/)
