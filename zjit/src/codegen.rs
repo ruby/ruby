@@ -655,8 +655,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SendDirect(insn) => {
             let SendDirectData { cme, iseq, recv, args, kw_bits, jit_entry_idx, block, state, .. } = &**insn;
             let block = block.map(|bh| match bh {
-                BlockHandler::BlockIseq(blockiseq) => DirectBlock::Iseq(blockiseq),
-                BlockHandler::BlockArgProc(proc_id) => DirectBlock::ProcHandler(opnd!(proc_id)),
+                BlockHandler::BlockIseq(blockiseq) => lir::BlockHandler::Iseq(blockiseq),
+                BlockHandler::BlockArgProc(proc_id) => lir::BlockHandler::Proc(opnd!(proc_id)),
                 BlockHandler::BlockArg => unreachable!("BlockArg in SendDirect"),
             });
             gen_send_iseq_direct(
@@ -1705,13 +1705,6 @@ fn gen_pop_inline_frame(
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
 }
 
-/// Block for a direct ISEQ send, resolved for codegen: either a literal block
-/// ISEQ or an already-guarded Proc VALUE operand used as the block handler.
-enum DirectBlock {
-    Iseq(IseqPtr),
-    ProcHandler(lir::Opnd),
-}
-
 /// Compile a direct call to an ISEQ method.
 /// If `block_handler` is provided, it's used as the specval for the new frame (for forwarding blocks).
 /// Otherwise, `VM_BLOCK_HANDLER_NONE` is used.
@@ -1727,7 +1720,7 @@ fn gen_send_iseq_direct(
     kw_bits: u32,
     jit_entry_idx: u16,
     state: &FrameState,
-    block: Option<DirectBlock>,
+    block: Option<lir::BlockHandler>,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::iseq_optimized_send_count);
 
@@ -1748,8 +1741,8 @@ fn gen_send_iseq_direct(
     // This mirrors vm_caller_setup_arg_block() for the `blockiseq != NULL` case.
     // Unsupported block args (BlockHandler::BlockArg) are rejected upstream in `type_specialize`.
     let block_handler = block.map(|bh| match bh {
-        DirectBlock::Iseq(b) => gen_block_handler_specval(asm, b),
-        DirectBlock::ProcHandler(proc) => proc,
+        lir::BlockHandler::Iseq(b) => gen_block_handler_specval(asm, b),
+        lir::BlockHandler::Proc(proc) => proc,
     });
 
     let callee_is_bmethod = VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) };

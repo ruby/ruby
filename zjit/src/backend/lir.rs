@@ -595,6 +595,13 @@ impl From<VALUE> for Opnd {
     }
 }
 
+/// `hir::BlockHandler` lowered for codegen: a block ISEQ (encoded as a specval
+/// at frame push) or an already-guarded Proc VALUE.
+pub enum BlockHandler {
+    Iseq(IseqPtr),
+    Proc(Opnd),
+}
+
 /// Context for a side exit. If `SideExit` matches, it reuses the same code.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExit {
