@@ -9510,12 +9510,17 @@ fn add_iseq_to_hir(
                     }
                     let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
 
-                    // The monomorphic block handler class the profile recorded, if any. Both the
-                    // IFUNC and inline-ISEQ specializations below key off this single distribution.
-                    let block_handler_types = payload.profile.get_operand_types(exit_state.insn_idx);
-                    let block_handler_class = block_handler_types.and_then(|types| {
-                        if types.len() != 1 { return None; }
-                        let summary = TypeDistributionSummary::new(&types[0]);
+                    // The profiled block handler distribution. All the specializations below
+                    // (IFUNC, inline-ISEQ, and polymorphic ISEQ dispatch) key off this summary.
+                    let block_handler_summary = payload.profile.get_operand_types(exit_state.insn_idx).and_then(|types| {
+                        if let [block_handler_distribution] = types {
+                            Some(TypeDistributionSummary::new(block_handler_distribution))
+                        } else {
+                            None
+                        }
+                    });
+                    // The monomorphic block handler class the profile recorded, if any.
+                    let block_handler_class = block_handler_summary.as_ref().and_then(|summary| {
                         if !summary.is_monomorphic() { return None; }
                         Some(summary.bucket(0).class())
                     });
