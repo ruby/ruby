@@ -28,13 +28,11 @@ module Prism
           AMPERSAND_DOT: :tANDDOT,
           AMPERSAND_EQUAL: :tOP_ASGN,
           BACK_REFERENCE: :tBACK_REF,
-          BACKTICK: :tBACK_REF2,
+          BACKTICK: :tXSTRING_BEG,
           BANG: :tBANG,
           BANG_EQUAL: :tNEQ,
           BANG_TILDE: :tNMATCH,
           BRACE_LEFT: :tLCURLY,
-          BRACE_LEFT_ARGUMENT: :tLBRACE_ARG,
-          BRACE_LEFT_HASH: :tLBRACE,
           BRACE_RIGHT: :tRCURLY,
           BRACKET_LEFT: :tLBRACK2,
           BRACKET_LEFT_ARRAY: :tLBRACK,
@@ -143,7 +141,6 @@ module Prism
           NEWLINE: :tNL,
           NUMBERED_REFERENCE: :tNTH_REF,
           PARENTHESIS_LEFT: :tLPAREN2,
-          PARENTHESIS_LEFT_GROUPING: :tLPAREN,
           PARENTHESIS_LEFT_PARENTHESES: :tLPAREN_ARG,
           PARENTHESIS_RIGHT: :tRPAREN,
           PERCENT: :tPERCENT,
@@ -183,9 +180,31 @@ module Prism
           UPLUS: :tUPLUS,
           USTAR: :tSTAR,
           USTAR_STAR: :tDSTAR,
-          WORDS_SEP: :tSPACE,
-          XSTRING_BEGIN: :tXSTRING_BEG
+          WORDS_SEP: :tSPACE
         }
+
+        # These constants represent flags in our lex state. We really, really
+        # don't want to be using them and we really, really don't want to be
+        # exposing them as part of our public API. Unfortunately, we don't have
+        # another way of matching the exact tokens that the parser gem expects
+        # without them. We should find another way to do this, but in the
+        # meantime we'll hide them from the documentation and mark them as
+        # private constants.
+        EXPR_BEG = 0x1
+        EXPR_LABEL = 0x400
+
+        # The `PARENTHESIS_LEFT` token in Prism is classified as either
+        # `tLPAREN` or `tLPAREN2` in the Parser gem. The following token types
+        # are listed as those classified as `tLPAREN`.
+        LPAREN_CONVERSION_TOKEN_TYPES = Set.new([
+          :kAND, :kBEGIN, :kBREAK, :kCASE, :kDO_COND, :kDO_LAMBDA, :kDO, :kELSE,
+          :kELSIF, :kENSURE, :kFOR, :kIF_MOD, :kIF, :kIN, :kNEXT, :kOR,
+          :kRESCUE_MOD, :kRESCUE, :kRETURN, :kTHEN, :kUNLESS_MOD, :kUNLESS,
+          :kUNTIL_MOD, :kUNTIL, :kWHEN, :kWHILE_MOD, :kWHILE,
+          :tAMPER, :tANDOP, :tBANG, :tCARET, :tCOMMA, :tDIVIDE, :tDOT2, :tDOT3,
+          :tEQL, :tLCURLY, :tLPAREN_ARG, :tLPAREN, :tLPAREN2, :tLSHFT, :tNL,
+          :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS
+        ])
 
         # Types of tokens that are allowed to continue a method call with comments in-between.
         # For these, the parser gem doesn't emit a newline token after the last comment.
@@ -195,7 +214,7 @@ module Prism
         # Heredocs are complex and require us to keep track of a bit of info to refer to later
         HeredocData = Struct.new(:identifier, :common_whitespace, keyword_init: true)
 
-        private_constant :TYPES, :HeredocData
+        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL, :LPAREN_CONVERSION_TOKEN_TYPES, :HeredocData
 
         # The Parser::Source::Buffer that the tokens were lexed from.
         attr_reader :source_buffer
@@ -234,7 +253,7 @@ module Prism
           comment_newline_location = nil
 
           while index < length
-            token, _ = lexed[index]
+            token, state = lexed[index]
             index += 1
             next if TYPES_ALWAYS_SKIP.include?(token.type)
 
@@ -305,6 +324,10 @@ module Prism
               value.chomp!(":")
             when :tLABEL_END
               value.chomp!(":")
+            when :tLCURLY
+              type = :tLBRACE if state == EXPR_BEG | EXPR_LABEL
+            when :tLPAREN2
+              type = :tLPAREN if tokens.empty? || LPAREN_CONVERSION_TOKEN_TYPES.include?(tokens.dig(-1, 0))
             when :tNTH_REF
               value = parse_integer(value.delete_prefix("$"))
             when :tOP_ASGN
@@ -483,6 +506,10 @@ module Prism
                 type = :tIDENTIFIER
               end
             when :tXSTRING_BEG
+              if (next_token = lexed[index]&.first) && !%i[STRING_CONTENT STRING_END EMBEXPR_BEGIN].include?(next_token.type)
+                # self.`()
+                type = :tBACK_REF2
+              end
               quote_stack.push(value)
             when :tSYMBOLS_BEG, :tQSYMBOLS_BEG, :tWORDS_BEG, :tQWORDS_BEG
               if (next_token = lexed[index]&.first) && next_token.type == :WORDS_SEP
