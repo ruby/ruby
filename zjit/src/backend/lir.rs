@@ -1387,7 +1387,7 @@ pub enum IntervalState {
 /// Live Interval of a VReg
 pub struct Interval {
     pub ranges: Vec<LiveRange>,
-    pub id: VRegId,
+    pub vreg_id: VRegId,
 
     /// Where this interval is in the linear scan lifecycle.
     /// Transitions Unhandled -> Active <-> Inactive -> Handled.
@@ -1402,7 +1402,7 @@ impl Interval {
     pub fn new(i: VRegId) -> Self {
         Self {
             ranges: vec![],
-            id: i,
+            vreg_id: i,
             state: Cell::new(IntervalState::Unhandled),
             assigned: Cell::new(None),
             preferred: None,
@@ -2586,11 +2586,11 @@ impl Assembler
                             // 1) The VReg is referenced in an instruction after the CCall
                             let survives_call = interval.has_bounds() && interval.survives(insn_number);
                             // 2) The VReg is referenced by the stack map for the CCall
-                            let stack_map_reg = stack_vreg_ids.contains(&interval.id);
+                            let stack_map_reg = stack_vreg_ids.contains(&interval.vreg_id);
                             let is_register = interval.assigned.get().and_then(|alloc| alloc.alloc_pool_index(ALLOC_REGS.len())).is_some();
                             is_register && (survives_call || stack_map_reg)
                         })
-                        .map(|interval| interval.id)
+                        .map(|interval| interval.vreg_id)
                         .collect();
 
                     let survivor_regs: Vec<Opnd> = survivors.iter()
