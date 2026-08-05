@@ -3848,6 +3848,20 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
     return Qnil;
 }
 
+struct each_objects_foreign_arg {
+    void *self;
+    int (*callback)(void *, void *, size_t, void *);
+    void *data;
+};
+
+static void
+each_objects_foreign_i(void *objspace, void *arg)
+{
+    struct each_objects_foreign_arg *a = (struct each_objects_foreign_arg *)arg;
+    if (objspace == a->self) return;
+    rb_gc_impl_each_objects_foreign(objspace, a->callback, a->data);
+}
+
 /*
  * rb_objspace_each_objects() is special C API to walk through
  * Ruby object space.  This C API is too difficult to use it.
@@ -3904,18 +3918,11 @@ rb_objspace_each_objects(int (*callback)(void *, void *, size_t, void *), void *
         /* Like upstream, cover every object in the process: walk the other live
          * Ractors' objspaces too, under the VM lock and barrier, with a pure-C callback.
          * A foreign objspace's stopped lazy sweep is not settled; the walk skips its
-         * dead objects. */
-        rb_vm_t *vm = GET_VM();
-        rb_ractor_t *r;
-        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
-            if (r->objspace && r->objspace != self) {
-                rb_gc_impl_each_objects_foreign(r->objspace, callback, data);
-            }
-        }
+         * dead objects. Also covers zombie objspaces. */
+        struct each_objects_foreign_arg arg = { self, callback, data };
+        rb_gc_vm_each_objspace(each_objects_foreign_i, &arg);
     }
 }
-
-
 
 /* Enumerate every objspace: live Ractors' plus uninherited zombies.  Callers hold the
  * VM lock (reading another objspace also needs the barrier).  Missing even one leaves
