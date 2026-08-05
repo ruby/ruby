@@ -10898,7 +10898,7 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     lex_mode_push_string(parser, true, false, '\0', '`');
-                    LEX(PM_TOKEN_BACKTICK);
+                    LEX(PM_TOKEN_XSTRING_BEGIN);
                 }
 
                 // single-quoted string literal
@@ -16036,7 +16036,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
 #define PM_CASE_PRIMITIVE PM_TOKEN_INTEGER: case PM_TOKEN_INTEGER_IMAGINARY: case PM_TOKEN_INTEGER_RATIONAL: \
     case PM_TOKEN_INTEGER_RATIONAL_IMAGINARY: case PM_TOKEN_FLOAT: case PM_TOKEN_FLOAT_IMAGINARY: \
     case PM_TOKEN_FLOAT_RATIONAL: case PM_TOKEN_FLOAT_RATIONAL_IMAGINARY: case PM_TOKEN_SYMBOL_BEGIN: \
-    case PM_TOKEN_REGEXP_BEGIN: case PM_TOKEN_BACKTICK: case PM_TOKEN_PERCENT_LOWER_X: case PM_TOKEN_PERCENT_LOWER_I: \
+    case PM_TOKEN_REGEXP_BEGIN: case PM_TOKEN_XSTRING_BEGIN: case PM_TOKEN_PERCENT_LOWER_X: case PM_TOKEN_PERCENT_LOWER_I: \
     case PM_TOKEN_PERCENT_LOWER_W: case PM_TOKEN_PERCENT_UPPER_I: case PM_TOKEN_PERCENT_UPPER_W: \
     case PM_TOKEN_STRING_BEGIN: case PM_TOKEN_KEYWORD_NIL: case PM_TOKEN_KEYWORD_SELF: case PM_TOKEN_KEYWORD_TRUE: \
     case PM_TOKEN_KEYWORD_FALSE: case PM_TOKEN_KEYWORD___FILE__: case PM_TOKEN_KEYWORD___LINE__: \
@@ -20644,7 +20644,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             pm_interpolated_regular_expression_node_closing_set(parser, interpolated, &closing);
             return UP(interpolated);
         }
-        case PM_TOKEN_BACKTICK:
+        case PM_TOKEN_XSTRING_BEGIN:
         case PM_TOKEN_PERCENT_LOWER_X: {
             parser_lex(parser);
             pm_token_t opening = parser->previous;

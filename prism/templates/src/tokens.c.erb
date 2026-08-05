@@ -361,6 +361,8 @@ pm_token_str(pm_token_type_t token_type) {
             return "**";
         case PM_TOKEN_WORDS_SEP:
             return "string separator";
+        case PM_TOKEN_XSTRING_BEGIN:
+            return "backtick string literal";
         case PM_TOKEN___END__:
             return "'__END__'";
         case PM_TOKEN_MAXIMUM:

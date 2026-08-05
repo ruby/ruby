@@ -377,7 +377,7 @@ tokens:
   - name: AMPERSAND_EQUAL
     comment: "&="
   - name: BACKTICK
-    comment: "`"
+    comment: "` as a method name"
   - name: BACK_REFERENCE
     comment: "a back reference"
   - name: BANG
@@ -664,6 +664,8 @@ tokens:
     comment: "unary **"
   - name: WORDS_SEP
     comment: "a separator between words in a list"
+  - name: XSTRING_BEGIN
+    comment: "the beginning of an execution string"
   - name: __END__
     comment: "marker for the point in the file at which the parser should stop"
 flags:

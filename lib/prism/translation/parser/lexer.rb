@@ -28,7 +28,7 @@ module Prism
           AMPERSAND_DOT: :tANDDOT,
           AMPERSAND_EQUAL: :tOP_ASGN,
           BACK_REFERENCE: :tBACK_REF,
-          BACKTICK: :tXSTRING_BEG,
+          BACKTICK: :tBACK_REF2,
           BANG: :tBANG,
           BANG_EQUAL: :tNEQ,
           BANG_TILDE: :tNMATCH,
@@ -183,7 +183,8 @@ module Prism
           UPLUS: :tUPLUS,
           USTAR: :tSTAR,
           USTAR_STAR: :tDSTAR,
-          WORDS_SEP: :tSPACE
+          WORDS_SEP: :tSPACE,
+          XSTRING_BEGIN: :tXSTRING_BEG
         }
 
         # Types of tokens that are allowed to continue a method call with comments in-between.
@@ -482,10 +483,6 @@ module Prism
                 type = :tIDENTIFIER
               end
             when :tXSTRING_BEG
-              if (next_token = lexed[index]&.first) && !%i[STRING_CONTENT STRING_END EMBEXPR_BEGIN].include?(next_token.type)
-                # self.`()
-                type = :tBACK_REF2
-              end
               quote_stack.push(value)
             when :tSYMBOLS_BEG, :tQSYMBOLS_BEG, :tWORDS_BEG, :tQWORDS_BEG
               if (next_token = lexed[index]&.first) && next_token.type == :WORDS_SEP

@@ -236,6 +236,7 @@ module Prism
       USTAR: :on_op,
       USTAR_STAR: :on_op,
       WORDS_SEP: :on_words_sep,
+      XSTRING_BEGIN: :on_backtick,
       "__END__": :on___end__
     }.freeze
 
