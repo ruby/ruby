@@ -579,12 +579,21 @@ ssl_npn_select_cb_common(SSL *ssl, VALUE cb, const unsigned char **out,
     return SSL_TLSEXT_ERR_OK;
 }
 
+static VALUE
+ossl_sslctx_obj_from_ssl(const SSL *ssl)
+{
+    SSL_CTX *ctx = SSL_get_SSL_CTX(ssl);
+
+    return (VALUE)SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_ptr_idx);
+}
+
 #ifdef OSSL_USE_NEXTPROTONEG
 static int
 ssl_npn_advertise_cb(SSL *ssl, const unsigned char **out, unsigned int *outlen,
                      void *arg)
 {
-    VALUE protocols = rb_attr_get((VALUE)arg, id_npn_protocols_encoded);
+    VALUE protocols = rb_attr_get(ossl_sslctx_obj_from_ssl(ssl),
+                                  id_npn_protocols_encoded);
 
     *out = (const unsigned char *) RSTRING_PTR(protocols);
     *outlen = RSTRING_LENINT(protocols);
@@ -598,7 +607,7 @@ ssl_npn_select_cb(SSL *ssl, unsigned char **out, unsigned char *outlen,
 {
     VALUE sslctx_obj, cb;
 
-    sslctx_obj = (VALUE) arg;
+    sslctx_obj = ossl_sslctx_obj_from_ssl(ssl);
     cb = rb_attr_get(sslctx_obj, id_i_npn_select_cb);
 
     return ssl_npn_select_cb_common(ssl, cb, (const unsigned char **)out,
@@ -612,7 +621,7 @@ ssl_alpn_select_cb(SSL *ssl, const unsigned char **out, unsigned char *outlen,
 {
     VALUE sslctx_obj, cb;
 
-    sslctx_obj = (VALUE) arg;
+    sslctx_obj = ossl_sslctx_obj_from_ssl(ssl);
     cb = rb_attr_get(sslctx_obj, id_i_alpn_select_cb);
 
     return ssl_npn_select_cb_common(ssl, cb, out, outlen, in, inlen);
@@ -807,11 +816,11 @@ ossl_sslctx_setup(VALUE self)
     if (!NIL_P(val)) {
         VALUE encoded = ssl_encode_npn_protocols(val);
         rb_ivar_set(self, id_npn_protocols_encoded, encoded);
-        SSL_CTX_set_next_protos_advertised_cb(ctx, ssl_npn_advertise_cb, (void *)self);
+        SSL_CTX_set_next_protos_advertised_cb(ctx, ssl_npn_advertise_cb, NULL);
         OSSL_Debug("SSL NPN advertise callback added");
     }
     if (RTEST(rb_attr_get(self, id_i_npn_select_cb))) {
-        SSL_CTX_set_next_proto_select_cb(ctx, ssl_npn_select_cb, (void *) self);
+        SSL_CTX_set_next_proto_select_cb(ctx, ssl_npn_select_cb, NULL);
         OSSL_Debug("SSL NPN select callback added");
     }
 #endif
@@ -827,7 +836,7 @@ ossl_sslctx_setup(VALUE self)
         OSSL_Debug("SSL ALPN values added");
     }
     if (RTEST(rb_attr_get(self, id_i_alpn_select_cb))) {
-        SSL_CTX_set_alpn_select_cb(ctx, ssl_alpn_select_cb, (void *) self);
+        SSL_CTX_set_alpn_select_cb(ctx, ssl_alpn_select_cb, NULL);
         OSSL_Debug("SSL ALPN select callback added");
     }
 
