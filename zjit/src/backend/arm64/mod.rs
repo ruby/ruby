@@ -1622,7 +1622,7 @@ impl Assembler {
 
             let allocatable_regs = regs.len();
             trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&mut intervals, &mut regs));
-            let num_stack_slots = trace_compile_phase("linear_scan", || asm.linear_scan(&mut intervals, allocatable_regs, &regs));
+            let num_stack_slots = trace_compile_phase("linear_scan", || asm.linear_scan(&intervals, allocatable_regs, &regs));
 
             asm.stack_state.num_spill_slots = num_stack_slots;
             asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&intervals);
@@ -1635,7 +1635,7 @@ impl Assembler {
 
                     println!("VReg assignments:");
                     for (i, interval) in intervals.iter().enumerate() {
-                        if let Some(alloc) = interval.assigned {
+                        if let Some(alloc) = interval.assigned.get() {
                             let alloc_str = match alloc {
                                 Allocation::Reg(n) => format!("{}", regs[n]),
                                 Allocation::Stack(n) => format!("Stack[{}]", n),
