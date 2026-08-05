@@ -3960,6 +3960,128 @@ io_buffer_bit_count(int argc, VALUE *argv, VALUE self)
     return SIZET2NUM(count);
 }
 
+// `byte` provides the storage when the object is a single Integer byte, so it
+// must outlive the extracted bytes; likewise `object` in the remaining cases.
+static inline void
+io_buffer_extract_object(VALUE object, unsigned char *byte, const void **base, size_t *size)
+{
+    if (RB_INTEGER_TYPE_P(object)) {
+        if (rb_int_negative_p(object)) {
+            rb_raise(rb_eArgError, "Byte value can't be negative!");
+        }
+
+        unsigned long value = NUM2ULONG(object);
+
+        if (value > 0xFF) {
+            rb_raise(rb_eArgError, "Byte value must be at most 255!");
+        }
+
+        *byte = (unsigned char)value;
+        *base = byte;
+        *size = 1;
+    }
+    else if (RB_TYPE_P(object, T_STRING)) {
+        *base = RSTRING_PTR(object);
+        *size = RSTRING_LEN(object);
+    }
+    else {
+        rb_io_buffer_get_bytes_for_reading(object, base, size);
+    }
+}
+
+/*
+ *  call-seq: index(object, [offset, [length]]) -> integer or nil
+ *
+ *  Returns the offset of the first occurrence of +object+ in the buffer, or
+ *  +nil+ if it does not occur. The +object+ may be an Integer in the range
+ *  0..255 (a single byte), a String, or another IO::Buffer.
+ *
+ *  The search is performed on the bytes of the buffer without copying them, and
+ *  is byte-oriented: no encoding is considered, even if the +object+ is a String
+ *  with a non-binary encoding.
+ *
+ *    buffer = IO::Buffer.for("Hello World")
+ *    buffer.index("o")
+ *    # => 4
+ *    buffer.index("World")
+ *    # => 6
+ *    buffer.index("o".ord)
+ *    # => 4
+ *    buffer.index(IO::Buffer.for("World"))
+ *    # => 6
+ *    buffer.index("!")
+ *    # => nil
+ *
+ *  The search may be restricted to a subrange using +offset+ and +length+. The
+ *  returned offset is always relative to the start of the buffer, not to
+ *  +offset+:
+ *
+ *    buffer.index("o", 5)
+ *    # => 7
+ *    buffer.index("o", 0, 4)
+ *    # => nil
+ *
+ *  An empty +object+ matches at +offset+:
+ *
+ *    buffer.index("")
+ *    # => 0
+ *
+ *  Unlike String#index, an +offset+ or +length+ which falls outside the buffer
+ *  is an error rather than a failed match:
+ *
+ *    buffer.index("o", 100)
+ *    # => ArgumentError
+ */
+static VALUE
+io_buffer_index(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 1, 3);
+
+    size_t offset, length;
+    struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc-1, argv+1, &offset, &length);
+
+    io_buffer_validate_range(buffer, offset, length);
+
+    const void *base;
+    size_t size;
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
+
+    VALUE object = argv[0];
+    unsigned char byte;
+    const void *object_base;
+    size_t object_size;
+    io_buffer_extract_object(object, &byte, &object_base, &object_size);
+
+    VALUE result = Qnil;
+
+    if (object_size == 0) {
+        result = SIZET2NUM(offset);
+    }
+    else if (object_size <= length) {
+        // This is only reached when length > 0, so base is never NULL:
+        const unsigned char *search_base = (const unsigned char *)base + offset;
+
+        if (object_size == 1) {
+            const unsigned char *found = memchr(search_base, *(const unsigned char *)object_base, length);
+
+            if (found) {
+                result = SIZET2NUM(offset + (size_t)(found - search_base));
+            }
+        }
+        else {
+            long found = rb_memsearch(object_base, (long)object_size, search_base, (long)length, rb_ascii8bit_encoding());
+
+            if (found >= 0) {
+                result = SIZET2NUM(offset + (size_t)found);
+            }
+        }
+    }
+
+    RB_GC_GUARD(object);
+
+    return result;
+}
+
 /*
  *  Document-class: IO::Buffer
  *
@@ -4216,6 +4338,9 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "not!", io_buffer_not_inplace, 0);
 
     rb_define_method(rb_cIOBuffer, "bit_count", io_buffer_bit_count, -1);
+
+    // Searching:
+    rb_define_method(rb_cIOBuffer, "index", io_buffer_index, -1);
 
     // IO operations:
     rb_define_method(rb_cIOBuffer, "read", io_buffer_read, -1);
