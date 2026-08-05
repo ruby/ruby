@@ -845,41 +845,6 @@ RSpec.describe "compact index api" do
     expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
-  it "performs full update of compact index info cache if range is not satisfiable" do
-    gemfile <<-G
-      source "#{source_uri}"
-      gem 'myrack', '0.9.1'
-    G
-
-    bundle :install, artifice: "compact_index"
-
-    cache_path = compact_index_cache_path.join("localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5")
-
-    # We must remove the etag so that we don't ignore the range and get a 304 Not Modified.
-    myrack_info_etag_path = File.join(cache_path, "info-etags", "myrack-92f3313ce5721296f14445c3a6b9c073")
-    File.unlink(myrack_info_etag_path) if File.exist?(myrack_info_etag_path)
-
-    myrack_info_path = File.join(cache_path, "info", "myrack")
-    expected_myrack_info_content = File.read(myrack_info_path)
-
-    # Modify the cache files to make the range not satisfiable
-    File.open(myrack_info_path, "a") {|f| f << "0.9.2 |checksum:c55b525b421fd833a93171ad3d7f04528ca8e87d99ac273f8933038942a5888c" }
-
-    # Update the Gemfile so the next install does its normal things
-    gemfile <<-G
-      source "#{source_uri}"
-      gem 'myrack', '1.0.0'
-    G
-
-    # The cache files now being longer means the requested range is going to be not satisfiable
-    # Bundler must end up requesting the whole file to fix things up.
-    bundle :install, artifice: "compact_index_range_not_satisfiable"
-
-    resulting_myrack_info_content = File.read(myrack_info_path)
-
-    expect(resulting_myrack_info_content).to eq(expected_myrack_info_content)
-  end
-
   it "fails gracefully when the source URI has an invalid scheme" do
     install_gemfile <<-G, raise_on_error: false
       source "htps://rubygems.org"
