@@ -2043,19 +2043,56 @@ obj_free_object_id(VALUE obj)
             break;
           }
           default:
-            // For generic_fields, the T_IMEMO/fields is responsible for freeing the id.
-            return;
+          {
+            // Generic-field types (String, Array, Hash, etc.) store their
+            // object_id in a companion T_IMEMO/fields. Read the id from
+            // the companion so we can eagerly delete the id2ref_tbl entry
+            // during the owner's sweep, rather than deferring it until the
+            // companion's sweep (which may be much later). [Bug #22200]
+            //
+            // This reads the companion imemo's memory during sweep, which
+            // is safe for the default GC (heap pages are never unmapped
+            // during sweep, freed slots have flags zeroed to T_NONE).
+            // Modular GCs may free memory differently, so skip this.
+            if (rb_gc_modular_gc_loaded_p()) {
+                return;
+            }
+
+            shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+            if (!rb_shape_has_object_id(shape_id)) {
+                return;
+            }
+
+            VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
+            if (fields_obj) {
+                // The companion imemo may already have been swept (on a
+                // different page). Check that it is still an imemo_fields
+                // owned by obj — the slot could have been reused for a
+                // new imemo_fields belonging to a different object.
+                // If it was swept, its flags are zero and IMEMO_TYPE_P
+                // returns false; the T_IMEMO case above already handled
+                // the deletion in that scenario.
+                asan_unpoisoning_object(fields_obj) {
+                    if (IMEMO_TYPE_P(fields_obj, imemo_fields) &&
+                        rb_imemo_fields_owner(fields_obj) == obj &&
+                        rb_shape_has_object_id(RBASIC_SHAPE_ID(fields_obj))) {
+                        obj_id = object_id_get(fields_obj, RBASIC_SHAPE_ID(fields_obj));
+                        // Clear the imemo so that when it is swept later,
+                        // obj_free_object_id won't try to delete the same
+                        // id2ref_tbl entry a second time.
+                        rb_imemo_fields_clear(fields_obj);
+                    }
+                }
+            }
+            break;
+          }
         }
 
         if (RB_UNLIKELY(obj_id)) {
             RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj_id, T_BIGNUM));
 
             if (!st_delete(id2ref_tbl, (st_data_t *)&obj_id, NULL)) {
-                // The the object is a T_IMEMO/fields, then it's possible the actual object
-                // has been garbage collected already.
-                if (!RB_TYPE_P(obj, T_IMEMO)) {
-                    rb_bug("Object ID seen, but not in _id2ref table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
-                }
+                rb_bug("Object ID seen, but not in _id2ref table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
             }
         }
     }
