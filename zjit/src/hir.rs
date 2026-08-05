@@ -2642,15 +2642,21 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         return false
     }
 
-    // SendDirect only models explicit keyword slots for now, so leave this
-    // conversion to VM dispatch.
-    if keywords_as_positional_hash {
+    // Plain keyword-to-positional-hash is safe to synthesize below. Keep VM
+    // dispatch for callee modes that need keyword-sensitive handling: **nil
+    // rejection and ruby2_keywords flag preservation.
+    if keywords_as_positional_hash
+        && (params.flags.accepts_no_kwarg() != 0 || params.flags.ruby2_keywords() != 0)
+    {
         function.count(block, complex_arg_pass_keyword_to_positional_hash);
         function.set_dynamic_send_reason(send_insn, ComplexArgPass);
         return false;
     }
 
-    let keyword_ok = c_int::try_from(caller_kw_count)
+    // After keyword-to-positional-hash, SendDirect receives no keyword slots;
+    // the caller keywords are represented by one extra positional Hash.
+    let effective_keyword_count = if keywords_as_positional_hash { 0 } else { caller_kw_count };
+    let keyword_ok = c_int::try_from(effective_keyword_count)
         .as_ref()
         .map(|argc| (kw_req_num..=kw_total_num).contains(argc))
         .unwrap_or(false);
@@ -2670,7 +2676,9 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     // With *rest, SendDirect receives one rest-array slot instead of each rest
     // element, so cap positional argc at required/post + filled opts + rest slot.
     let passed_opt_num = (caller_positional_i32 - min_positional).min(opt_num) as usize;
-    let send_positional_argc = if has_rest { min_positional as usize + passed_opt_num + 1 } else { caller_positional };
+    // Without *rest, use the converted positional count so the synthesized
+    // keyword Hash is included in the SendDirect argument count.
+    let send_positional_argc = if has_rest { min_positional as usize + passed_opt_num + 1 } else { effective_positional };
     let send_argc = send_positional_argc + kw_total_num as usize;
     let c_argc = 1 + send_argc + block_arg; // +1 for self
 
@@ -3605,8 +3613,7 @@ impl Function {
         iseq: IseqPtr,
         state: InsnId,
     ) -> Result<SendDirectArgs, SendFallbackReason> {
-        let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
-        let (processed_args, caller_argc, kw_bits) = self.setup_keyword_arguments(block, args, kwarg, iseq)?;
+        let (processed_args, caller_argc, kw_bits) = self.setup_keyword_arguments(block, args, ci, iseq, state)?;
         let (processed_args, jit_entry_idx) = self.setup_rest_parameter(block, processed_args, iseq, state)?;
 
         // If args were reordered or synthesized, create a new snapshot with the updated stack
@@ -3639,17 +3646,49 @@ impl Function {
         &mut self,
         block: BlockId,
         args: &[InsnId],
-        kwarg: *const rb_callinfo_kwarg,
+        ci: *const rb_callinfo,
         iseq: IseqPtr,
+        state: InsnId,
     ) -> Result<(Vec<InsnId>, usize, u32), SendFallbackReason> {
+        let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
         let callee_keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
         if callee_keyword.is_null() {
-            if !kwarg.is_null() {
-                // Caller is passing kwargs but callee doesn't expect them.
+            if kwarg.is_null() {
+                // Neither caller nor callee have keywords - nothing to do
+                return Ok((args.to_vec(), args.len(), 0));
+            }
+
+            let params = unsafe { iseq.params() };
+            let ci_flags = unsafe { rb_vm_ci_flag(ci) };
+            if ci_flags & VM_CALL_KW_SPLAT != 0 {
+                // Caller **kw is one runtime Hash, not explicit keyword slots, so
+                // there is no static key/value list to repack here.
                 return Err(SendDirectKeywordMismatch);
             }
-            // Neither caller nor callee have keywords - nothing to do
-            return Ok((args.to_vec(), args.len(), 0));
+
+            if params.flags.accepts_no_kwarg() != 0 || params.flags.ruby2_keywords() != 0 {
+                // These callee modes need VM keyword setup even without a keyword table:
+                // **nil rejects keywords, and ruby2_keywords requires RHASH_PASS_AS_KEYWORDS.
+                return Err(SendDirectKeywordMismatch);
+            }
+
+            // Match vm_args.c's setup_parameters_complex via args_kw_argv_to_hash:
+            // explicit caller keywords passed to a method with no keyword table
+            // become one final positional Hash before regular parameter setup.
+            let caller_kw_count = unsafe { get_cikw_keyword_len(kwarg) } as usize;
+            let kw_args_start = args.len() - caller_kw_count;
+            let mut elements = Vec::with_capacity(caller_kw_count * 2);
+            for i in 0..caller_kw_count {
+                let keyword = unsafe { get_cikw_keywords_idx(kwarg, i as i32) };
+                let key = self.push_insn(block, Insn::Const { val: Const::Value(keyword) });
+                elements.push(key);
+                elements.push(args[kw_args_start + i]);
+            }
+
+            let hash = self.push_insn(block, Insn::NewHash { elements, state });
+            let mut processed_args = args[..kw_args_start].to_vec();
+            processed_args.push(hash);
+            return Ok((processed_args, args.len(), 0));
         }
 
         // kwarg may be null if caller passes no keywords but callee has optional keywords

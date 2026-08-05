@@ -4776,10 +4776,208 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn dont_specialize_call_to_rest_with_keyword_to_positional_hash() {
+    fn specialize_call_with_keyword_to_positional_hash() {
+        eval("
+            def foo(arg) = arg.class
+            def test = foo(k: 1)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v19:StaticSymbol[:k] = Const Value(VALUE(0x1000))
+          v20:HashExact = NewHash v19: v11
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v23 (0x1040), v20
+          PatchPoint NoSingletonClass(Hash@0x1068)
+          PatchPoint MethodRedefined(Hash@0x1068, class@0x1070, cme:0x1078)
+          v44:ClassSubclass[Hash@0x1068] = Const Value(VALUE(0x1068))
+          CheckInterrupts
+          PopInlineFrame
+          Return v44
+        ");
+    }
+
+    #[test]
+    fn specialize_call_with_multiple_keywords_to_positional_hash() {
+        eval("
+            def foo(arg) = arg
+            def test = foo(k: 1, v: 2)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          v21:StaticSymbol[:k] = Const Value(VALUE(0x1000))
+          v22:StaticSymbol[:v] = Const Value(VALUE(0x1008))
+          v23:HashExact = NewHash v21: v11, v22: v13
+          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
+          v26:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn specialize_call_with_positional_and_keyword_to_positional_hash() {
+        eval("
+            def foo(a, b) = [a, b]
+            def test = foo(1, k: 2)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          v21:StaticSymbol[:k] = Const Value(VALUE(0x1000))
+          v22:HashExact = NewHash v21: v13
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v25 (0x1040), v11, v22
+          v36:ArrayExact = NewArray v11, v22
+          CheckInterrupts
+          PopInlineFrame
+          Return v36
+        ");
+    }
+
+    #[test]
+    fn specialize_call_with_optional_and_keyword_to_positional_hash() {
+        eval("
+            def foo(a, b = 2) = [a, b]
+            def test = foo(k: 1)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v19:StaticSymbol[:k] = Const Value(VALUE(0x1000))
+          v20:HashExact = NewHash v19: v11
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v23 (0x1040), v20
+          v31:Fixnum[2] = Const Value(2)
+          v42:ArrayExact = NewArray v20, v31
+          CheckInterrupts
+          PopInlineFrame
+          Return v42
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_keyword_splat_to_positional_hash() {
         enable_zjit_stats();
         eval("
-            def foo(*args) = args
+            def foo(arg) = arg
+            def test = foo(**{k: 1})
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          IncrCounterPtr
+          Jump bb3(v4)
+        bb3(v7:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v14:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v15:HashExact = HashDup v14
+          IncrCounter zjit_insn_count
+          IncrCounter complex_arg_pass_caller_kw_splat
+          v18:BasicObject = Send v7, :foo, v15 # SendFallbackReason: Complex argument passing
+          IncrCounter zjit_insn_count
+          CheckInterrupts
+          Return v18
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_no_kwarg_to_positional_hash() {
+        enable_zjit_stats();
+        eval("
+            def foo(arg, **nil) = arg
+            def test = foo(k: 1)
+            begin; test; rescue ArgumentError; end
+            begin; test; rescue ArgumentError; end
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          IncrCounterPtr
+          Jump bb3(v4)
+        bb3(v7:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v14:Fixnum[1] = Const Value(1)
+          IncrCounter zjit_insn_count
+          IncrCounter complex_arg_pass_keyword_to_positional_hash
+          v17:BasicObject = Send v7, :foo, v14 # SendFallbackReason: Complex argument passing
+          IncrCounter zjit_insn_count
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_ruby2_keywords_to_positional_hash() {
+        enable_zjit_stats();
+        eval("
+            ruby2_keywords def foo(*args) = args
             def test = foo(k: 1)
             test
             test
@@ -4809,6 +5007,107 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn specialize_call_to_rest_with_optional_and_keyword_to_positional_hash() {
+        eval("
+            def foo(a, b = 2, *rest) = [a, b, rest]
+            def test = foo(1, k: 3)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[3] = Const Value(3)
+          v21:StaticSymbol[:k] = Const Value(VALUE(0x1000))
+          v22:HashExact = NewHash v21: v13
+          v23:ArrayExact = NewArray
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v26:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v26 (0x1040), v11, v22, v23
+          v39:ArrayExact = NewArray v11, v22, v23
+          CheckInterrupts
+          PopInlineFrame
+          Return v39
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_rest_with_keyword_to_positional_hash() {
+        eval("
+            def foo(*args) = args
+            def test = foo(k: 1)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v19:StaticSymbol[:k] = Const Value(VALUE(0x1000))
+          v20:HashExact = NewHash v19: v11
+          v21:ArrayExact = NewArray v20
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v24:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v24 (0x1040), v21
+          CheckInterrupts
+          PopInlineFrame
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_rest_and_post_with_keyword_to_positional_hash() {
+        eval("
+            def foo(a, *rest, b) = [a, rest, b]
+            def test = foo(1, 2, k: 3)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          v15:Fixnum[3] = Const Value(3)
+          v23:StaticSymbol[:k] = Const Value(VALUE(0x1000))
+          v24:HashExact = NewHash v23: v15
+          v25:ArrayExact = NewArray v13
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v28:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v28 (0x1040), v11, v25, v24
+          v41:ArrayExact = NewArray v11, v25, v24
+          CheckInterrupts
+          PopInlineFrame
+          Return v41
+        ");
+    }
+
+    #[test]
     fn dont_classify_keyword_to_positional_hash_argc_mismatch_as_complex_arg_pass() {
         eval("
             def foo(a, b) = a
@@ -4831,6 +5130,33 @@ mod hir_opt_tests {
           v13:BasicObject = Send v6, :foo, v11 # SendFallbackReason: Argument count does not match parameter count
           CheckInterrupts
           Return v13
+        ");
+    }
+
+    #[test]
+    fn dont_classify_keyword_to_positional_hash_too_many_args_as_complex_arg_pass() {
+        eval("
+            def foo(a) = a
+            def test = foo(1, k: 2)
+            begin; test; rescue ArgumentError; end
+            begin; test; rescue ArgumentError; end
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          v15:BasicObject = Send v6, :foo, v11, v13 # SendFallbackReason: Argument count does not match parameter count
+          CheckInterrupts
+          Return v15
         ");
     }
 

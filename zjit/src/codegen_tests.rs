@@ -1091,6 +1091,46 @@ fn test_send_optional_return_default_with_argument() {
 }
 
 #[test]
+fn test_send_keyword_to_positional_hash() {
+    eval("
+        def test(arg) = arg
+        def entry = test(k: 1)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"{k: 1}");
+}
+
+#[test]
+fn test_send_multiple_keywords_to_positional_hash() {
+    eval("
+        def test(arg) = arg
+        def entry = test(k: 1, v: 2)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"{k: 1, v: 2}");
+}
+
+#[test]
+fn test_send_positional_and_keyword_to_positional_hash() {
+    eval("
+        def test(a, b) = [a, b]
+        def entry = test(1, k: 2)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[1, {k: 2}]");
+}
+
+#[test]
+fn test_send_optional_and_keyword_to_positional_hash() {
+    eval("
+        def test(a, b = 2) = [a, b]
+        def entry = test(k: 1)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[{k: 1}, 2]");
+}
+
+#[test]
 fn test_send_rest_arguments_with_keyword_to_positional_hash() {
     eval("
         def test(*args) = args
@@ -1098,6 +1138,61 @@ fn test_send_rest_arguments_with_keyword_to_positional_hash() {
         entry
     ");
     assert_snapshot!(assert_compiles("entry"), @"[{k: 1}]");
+}
+
+#[test]
+fn test_send_optional_and_rest_arguments_with_keyword_to_positional_hash() {
+    eval("
+        def test(a, b = 2, *rest) = [a, b, rest]
+        def entry = test(1, k: 3)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[1, {k: 3}, []]");
+}
+
+#[test]
+fn test_send_rest_and_post_arguments_with_keyword_to_positional_hash() {
+    eval("
+        def test(a, *rest, b) = [a, rest, b]
+        def entry = test(1, 2, k: 3)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[1, [2], {k: 3}]");
+}
+
+#[test]
+fn test_send_keyword_splat_to_positional_hash_fallback() {
+    eval("
+        def test(arg) = arg
+        def entry = test(**{ k: 1 })
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"{k: 1}");
+}
+
+#[test]
+fn test_send_no_kwarg_to_positional_hash_fallback() {
+    eval("
+        def test(arg, **nil) = arg
+        def entry
+          test(k: 1)
+        rescue ArgumentError
+          :argument_error
+        end
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @":argument_error");
+}
+
+#[test]
+fn test_send_ruby2_keywords_to_positional_hash_fallback() {
+    eval("
+        def target(k:) = k
+        ruby2_keywords def forward(*args) = target(*args)
+        def entry = forward(k: 1)
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"1");
 }
 
 #[test]
