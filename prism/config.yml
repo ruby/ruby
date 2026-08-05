@@ -388,6 +388,10 @@ tokens:
     comment: "!~"
   - name: BRACE_LEFT
     comment: "{"
+  - name: BRACE_LEFT_ARGUMENT
+    comment: "{ for a block following a parenthesized argument"
+  - name: BRACE_LEFT_HASH
+    comment: "{ for a hash literal"
   - name: BRACKET_LEFT
     comment: "["
   - name: BRACKET_LEFT_ARRAY

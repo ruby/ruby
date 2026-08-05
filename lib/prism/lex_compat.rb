@@ -78,6 +78,8 @@ module Prism
       BANG_EQUAL: :on_op,
       BANG_TILDE: :on_op,
       BRACE_LEFT: :on_lbrace,
+      BRACE_LEFT_ARGUMENT: :on_lbrace,
+      BRACE_LEFT_HASH: :on_lbrace,
       BRACE_RIGHT: :on_rbrace,
       BRACKET_LEFT: :on_lbracket,
       BRACKET_LEFT_ARRAY: :on_lbracket,

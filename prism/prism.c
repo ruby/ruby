@@ -10560,24 +10560,28 @@ parser_lex(pm_parser_t *parser) {
                     pm_token_type_t type = PM_TOKEN_BRACE_LEFT;
 
                     if (parser->enclosure_nesting == parser->lambda_enclosure_nesting) {
-                        // This { begins a lambda
+                        /* This { begins a lambda */
                         parser->command_start = true;
                         lex_state_set(parser, PM_LEX_STATE_BEG);
                         type = PM_TOKEN_LAMBDA_BEGIN;
                     } else if (lex_state_p(parser, PM_LEX_STATE_LABELED)) {
-                        // This { begins a hash literal
+                        /* This { begins a hash literal */
                         lex_state_set(parser, PM_LEX_STATE_BEG | PM_LEX_STATE_LABEL);
+                        type = PM_TOKEN_BRACE_LEFT_HASH;
                     } else if (lex_state_p(parser, PM_LEX_STATE_ARG_ANY | PM_LEX_STATE_END | PM_LEX_STATE_ENDFN)) {
-                        // This { begins a block
+                        /* This { begins a block */
                         parser->command_start = true;
                         lex_state_set(parser, PM_LEX_STATE_BEG);
                     } else if (lex_state_p(parser, PM_LEX_STATE_ENDARG)) {
-                        // This { begins a block on a command
+                        /* This { begins a block following a parenthesized
+                         * command argument */
                         parser->command_start = true;
                         lex_state_set(parser, PM_LEX_STATE_BEG);
+                        type = PM_TOKEN_BRACE_LEFT_ARGUMENT;
                     } else {
-                        // This { begins a hash literal
+                        /* This { begins a hash literal */
                         lex_state_set(parser, PM_LEX_STATE_BEG | PM_LEX_STATE_LABEL);
+                        type = PM_TOKEN_BRACE_LEFT_HASH;
                     }
 
                     parser->enclosure_nesting++;
@@ -13796,7 +13800,7 @@ parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *nod
                 pm_token_t operator = parser->previous;
                 pm_node_t *value = NULL;
 
-                if (match1(parser, PM_TOKEN_BRACE_LEFT)) {
+                if (match1(parser, PM_TOKEN_BRACE_LEFT_HASH)) {
                     // If we're about to parse a nested hash that is being
                     // pushed into this hash directly with **, then we want the
                     // inner hash to share the static literals with the outer
@@ -15414,7 +15418,7 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
      * managed by the lexer. A `do`/`end` block is delimited by keywords, so we
      * push the frame here (covering the block parameters and body) and pop it
      * before consuming `end`, mirroring parse.y's `do_body` rule. */
-    bool do_block = opening.type != PM_TOKEN_BRACE_LEFT;
+    bool do_block = opening.type != PM_TOKEN_BRACE_LEFT && opening.type != PM_TOKEN_BRACE_LEFT_ARGUMENT;
     if (do_block) pm_accepts_block_stack_push(parser, true);
     pm_parser_scope_push(parser, false);
 
@@ -15439,7 +15443,7 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
     accept1(parser, PM_TOKEN_NEWLINE);
     pm_node_t *statements = NULL;
 
-    if (opening.type == PM_TOKEN_BRACE_LEFT) {
+    if (!do_block) {
         if (!match1(parser, PM_TOKEN_BRACE_RIGHT)) {
             statements = UP(parse_statements(parser, PM_CONTEXT_BLOCK_BRACES, (uint16_t) (depth + 1)));
         }
@@ -15558,7 +15562,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
          * it, pop the command-args frame beneath it, and restore the block
          * frame so the block's `}` still pops it. This mirrors the `tLBRACE_ARG`
          * lookahead handling in parse.y's `command_args` rule. */
-        bool lookahead_brace = match1(parser, PM_TOKEN_BRACE_LEFT);
+        bool lookahead_brace = match2(parser, PM_TOKEN_BRACE_LEFT, PM_TOKEN_BRACE_LEFT_ARGUMENT);
         if (lookahead_brace) pm_accepts_block_stack_pop(parser);
         pm_accepts_block_stack_pop(parser);
         if (lookahead_brace) pm_accepts_block_stack_push(parser, true);
@@ -15570,7 +15574,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
     if (full_arguments) {
         pm_block_node_t *block = NULL;
 
-        if (accept1(parser, PM_TOKEN_BRACE_LEFT)) {
+        if (accept2(parser, PM_TOKEN_BRACE_LEFT, PM_TOKEN_BRACE_LEFT_ARGUMENT)) {
             found |= true;
             block = parse_block(parser, (uint16_t) (depth + 1));
             pm_arguments_validate_block(parser, arguments, block);
@@ -17378,7 +17382,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
             pm_array_pattern_node_requireds_append(parser->arena, node, inner);
             return UP(node);
         }
-        case PM_TOKEN_BRACE_LEFT: {
+        case PM_TOKEN_BRACE_LEFT_HASH: {
             bool previous_pattern_matching_newlines = parser->pattern_matching_newlines;
             parser->pattern_matching_newlines = false;
 
@@ -17599,7 +17603,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
         switch (parser->current.type) {
             case PM_TOKEN_IDENTIFIER:
             case PM_TOKEN_BRACKET_LEFT_ARRAY:
-            case PM_TOKEN_BRACE_LEFT:
+            case PM_TOKEN_BRACE_LEFT_HASH:
             case PM_TOKEN_CARET:
             case PM_TOKEN_CONSTANT:
             case PM_TOKEN_UCOLON_COLON:
@@ -19200,6 +19204,13 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
     /* If this is the end of the file or we match a right parenthesis, then we
      * have an empty parentheses node, and we can immediately return. */
     if (match2(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_EOF)) {
+        /* A command argument group sets EXPR_ENDARG before its ')' is
+         * consumed, even when the group is empty, so that a following '{' is
+         * scanned as a block brace. */
+        if (match1(parser, PM_TOKEN_PARENTHESIS_RIGHT) && opening.type == PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES) {
+            lex_state_set(parser, PM_LEX_STATE_ENDARG);
+        }
+
         expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
         pop_block_exits(parser, previous_block_exits);
         return UP(pm_parentheses_node_create(parser, &opening, NULL, &parser->previous, paren_flags));
@@ -19523,7 +19534,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_PARENTHESIS_LEFT_GROUPING:
         case PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES:
             return parse_parentheses(parser, binding_power, flags, depth);
-        case PM_TOKEN_BRACE_LEFT: {
+        case PM_TOKEN_BRACE_LEFT_HASH: {
             // If we were passed a current_hash_keys via the parser, then that
             // means we're already parsing a hash and we want to share the set
             // of hash keys with this inner hash we're about to parse for the

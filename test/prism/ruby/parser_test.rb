@@ -111,11 +111,8 @@ module Prism
     skip_tokens = [
       "dash_heredocs.txt",
       "embdoc_no_newline_at_end.txt",
-      "seattlerb/bug169.txt",
       "seattlerb/case_in.txt",
       "seattlerb/difficult4__leading_dots2.txt",
-      "seattlerb/difficult6__7.txt",
-      "seattlerb/difficult6__8.txt",
       "seattlerb/heredoc_unicode.txt",
       "seattlerb/parse_line_heredoc.txt",
       "seattlerb/pct_w_heredoc_interp_nested.txt",
@@ -128,14 +125,10 @@ module Prism
       "whitequark/beginless_irange_after_newline.txt",
       "whitequark/forward_arg_with_open_args.txt",
       "whitequark/kwarg_no_paren.txt",
-      "whitequark/lbrace_arg_after_command_args.txt",
       "whitequark/multiple_pattern_matches.txt",
       "whitequark/newline_in_hash_argument.txt",
       "whitequark/pattern_matching_hash.txt",
-      "whitequark/ruby_bug_14690.txt",
-      "whitequark/ruby_bug_9669.txt",
-      "whitequark/space_args_arg_block.txt",
-      "whitequark/space_args_block.txt"
+      "whitequark/ruby_bug_9669.txt"
     ]
 
     Fixture.each_for_version(except: skip_syntax_error, version: "3.3") do |fixture|

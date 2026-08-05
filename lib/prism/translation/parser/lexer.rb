@@ -33,6 +33,8 @@ module Prism
           BANG_EQUAL: :tNEQ,
           BANG_TILDE: :tNMATCH,
           BRACE_LEFT: :tLCURLY,
+          BRACE_LEFT_ARGUMENT: :tLBRACE_ARG,
+          BRACE_LEFT_HASH: :tLBRACE,
           BRACE_RIGHT: :tRCURLY,
           BRACKET_LEFT: :tLBRACK2,
           BRACKET_LEFT_ARRAY: :tLBRACK,
@@ -184,16 +186,6 @@ module Prism
           WORDS_SEP: :tSPACE
         }
 
-        # These constants represent flags in our lex state. We really, really
-        # don't want to be using them and we really, really don't want to be
-        # exposing them as part of our public API. Unfortunately, we don't have
-        # another way of matching the exact tokens that the parser gem expects
-        # without them. We should find another way to do this, but in the
-        # meantime we'll hide them from the documentation and mark them as
-        # private constants.
-        EXPR_BEG = 0x1
-        EXPR_LABEL = 0x400
-
         # Types of tokens that are allowed to continue a method call with comments in-between.
         # For these, the parser gem doesn't emit a newline token after the last comment.
         COMMENT_CONTINUATION_TYPES = Set.new([:COMMENT, :AMPERSAND_DOT, :DOT])
@@ -202,7 +194,7 @@ module Prism
         # Heredocs are complex and require us to keep track of a bit of info to refer to later
         HeredocData = Struct.new(:identifier, :common_whitespace, keyword_init: true)
 
-        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL, :HeredocData
+        private_constant :TYPES, :HeredocData
 
         # The Parser::Source::Buffer that the tokens were lexed from.
         attr_reader :source_buffer
@@ -241,7 +233,7 @@ module Prism
           comment_newline_location = nil
 
           while index < length
-            token, state = lexed[index]
+            token, _ = lexed[index]
             index += 1
             next if TYPES_ALWAYS_SKIP.include?(token.type)
 
@@ -312,8 +304,6 @@ module Prism
               value.chomp!(":")
             when :tLABEL_END
               value.chomp!(":")
-            when :tLCURLY
-              type = :tLBRACE if state == EXPR_BEG | EXPR_LABEL
             when :tNTH_REF
               value = parse_integer(value.delete_prefix("$"))
             when :tOP_ASGN
