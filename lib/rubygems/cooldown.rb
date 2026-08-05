@@ -51,6 +51,39 @@ class Gem::Cooldown
   end
 
   ##
+  # Number of days until a gem version published at +created_at+ leaves
+  # the cooldown period, rounded up and at least 1.
+
+  def remaining_days(created_at)
+    remaining = @days * 86_400 - (@now - created_at)
+
+    [(remaining / 86_400.0).ceil, 1].max
+  end
+
+  ##
+  # Reports, per gem, the newest version the cooldown kept out of a
+  # completed installation or update.  +entries+ are hashes with :name,
+  # :version, :resolved and :available_in_days keys; when several entries
+  # name the same gem only the newest version is shown.
+
+  def self.output_skipped_summary(entries)
+    return if entries.nil? || entries.empty?
+
+    newest = {}
+    entries.each do |entry|
+      current = newest[entry[:name]]
+      newest[entry[:name]] = entry if current.nil? || entry[:version] > current[:version]
+    end
+
+    ui = Gem::DefaultUserInteraction.ui
+    ui.say "The following gem versions were skipped by the cooldown setting:"
+    newest.values.sort_by {|entry| entry[:name] }.each do |entry|
+      days = entry[:available_in_days]
+      ui.say "  * #{entry[:name]} #{entry[:version]} (available in #{days} #{days == 1 ? "day" : "days"}), resolved #{entry[:resolved]} instead"
+    end
+  end
+
+  ##
   # Warns once per process that +source+ did not provide publish times, so
   # the cooldown cannot be applied to gems from it.
 

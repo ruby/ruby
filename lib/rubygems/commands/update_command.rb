@@ -97,9 +97,11 @@ command to remove old versions.
 
   def execute
     @cooldown = Gem::Cooldown.from_options options
+    @cooldown_skipped = []
 
     if options[:system]
       update_rubygems
+      output_cooldown_skipped_summary
       return
     end
 
@@ -135,6 +137,8 @@ command to remove old versions.
     end
     say "Gems already up-to-date: #{up_to_date_names.join(" ")}" unless up_to_date_names.empty?
     say "Gems not currently installed: #{not_installed_names.join(" ")}" unless not_installed_names.empty?
+
+    output_cooldown_skipped_summary
   end
 
   def fetch_remote_gems(spec) # :nodoc:
@@ -197,8 +201,54 @@ command to remove old versions.
       Gem::Cooldown.warn_missing_created_at with_times.first[1]
     end
 
-    with_times.reject {|_, _, created_at| @cooldown.skip?(created_at) }.
-      map {|tup, source, _| [tup, source] }
+    with_times.reject do |tup, _, created_at|
+      next false unless @cooldown.skip?(created_at)
+
+      (@cooldown_skipped_tuples ||= {})[[tup.name, tup.version]] ||= created_at
+      true
+    end.map {|tup, source, _| [tup, source] }
+  end
+
+  ##
+  # Summary entries for tuples the cooldown kept out of the update, kept
+  # only when newer than the version the update actually settled on (the
+  # updated version, or the one already installed when nothing moved).
+
+  def cooldown_skipped_tuple_entries # :nodoc:
+    skipped = @cooldown_skipped_tuples
+    return [] unless skipped
+
+    resolved = {}
+    @updated.each do |spec|
+      version = resolved[spec.name]
+      resolved[spec.name] = spec.version if version.nil? || spec.version > version
+    end
+
+    skipped.filter_map do |(name, version), created_at|
+      resolved_version = resolved[name] || resolved_fallback_version(name)
+      next unless resolved_version && version > resolved_version
+
+      {
+        name: name,
+        version: version,
+        resolved: resolved_version,
+        available_in_days: @cooldown.remaining_days(created_at),
+      }
+    end
+  end
+
+  def resolved_fallback_version(name) # :nodoc:
+    if name == "rubygems-update"
+      Gem::Version.new Gem::VERSION
+    else
+      Gem::Specification.find_all_by_name(name).map(&:version).max
+    end
+  end
+
+  def output_cooldown_skipped_summary # :nodoc:
+    entries = (@cooldown_skipped || []) + cooldown_skipped_tuple_entries
+
+    Gem::Cooldown.output_skipped_summary entries
   end
 
   def install_rubygems(spec) # :nodoc:
@@ -284,6 +334,10 @@ command to remove old versions.
     @installer.installed_gems.each do |spec|
       @updated << spec
     end
+
+    (@cooldown_skipped ||= []).concat @installer.cooldown_skipped
+
+    @installer.installed_gems
   end
 
   def update_gems(gems_to_update)

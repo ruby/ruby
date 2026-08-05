@@ -108,6 +108,8 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_equal "Updating installed gems", out.shift
     assert_equal "Updating b", out.shift
     assert_equal "Gems updated: b", out.shift
+    assert_equal "The following gem versions were skipped by the cooldown setting:", out.shift
+    assert_equal "  * b 3 (available in 6 days), resolved 2 instead", out.shift
     assert_empty out
 
     assert_path_exist File.join(@gemhome, "specifications", "b-2.gemspec")
@@ -128,6 +130,8 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     out = @ui.output.split "\n"
     assert_equal "Updating installed gems", out.shift
     assert_equal "Nothing to update", out.shift
+    assert_equal "The following gem versions were skipped by the cooldown setting:", out.shift
+    assert_equal "  * b 3 (available in 6 days), resolved 1 instead", out.shift
     assert_empty out
   end
 
@@ -181,6 +185,8 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     out = @ui.output.split "\n"
     assert_equal "Installing RubyGems 8", out.shift
     assert_equal "RubyGems system software updated", out.shift
+    assert_equal "The following gem versions were skipped by the cooldown setting:", out.shift
+    assert_equal "  * rubygems-update 9 (available in 6 days), resolved 8 instead", out.shift
 
     assert_empty out
   end

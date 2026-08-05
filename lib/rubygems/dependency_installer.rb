@@ -45,6 +45,12 @@ class Gem::DependencyInstaller
   attr_reader :installed_gems
 
   ##
+  # Per-gem summary entries for the newest versions the cooldown kept out
+  # of the last resolution.  See Gem::Cooldown.output_skipped_summary.
+
+  attr_reader :cooldown_skipped
+
+  ##
   # Creates a new installer instance.
   #
   # Options are:
@@ -92,6 +98,7 @@ class Gem::DependencyInstaller
     @build_extension = options[:build_extension]
     @install_plugin = options[:install_plugin]
     @cooldown = Gem::Cooldown.from_options options
+    @cooldown_skipped = []
 
     # Indicates that we should not try to update any deps unless
     # we absolutely must.
@@ -261,6 +268,7 @@ class Gem::DependencyInstaller
     request_set.resolve installer_set
 
     @errors.concat request_set.errors
+    @cooldown_skipped = request_set.resolver&.cooldown_skipped || []
 
     request_set
   end

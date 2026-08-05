@@ -761,6 +761,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
     end
 
     assert_equal %w[a-1], @cmd.installed_specs.map(&:full_name)
+    assert_match "The following gem versions were skipped by the cooldown setting:", @ui.output
+    assert_match "* a 2 (available in 6 days), resolved 1 instead", @ui.output
   end
 
   def test_execute_remote_cooldown_explicit_version_error
