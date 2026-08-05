@@ -244,9 +244,7 @@ rb_jit_iseq_builtin_attrs(const rb_iseq_t *iseq)
     return iseq->body->builtin_attrs;
 }
 
-// Mark that an EP escape of this iseq has been reported to the enabled JIT.
-// Called by the JIT with the VM lock held. vm_make_env_each reads the flag
-// without the lock to skip re-reporting an escape it already reported.
+// Relaxed memory ordering, but called by the JIT with VM lock and barrier.
 void
 rb_jit_iseq_mark_ep_escape_recorded(const rb_iseq_t *iseq)
 {
