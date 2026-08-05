@@ -74,6 +74,29 @@ class TestObjSpaceRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # A joined-but-not-valued Ractor keeps its objspace as a zombie.
+  # ObjectSpace.dump_all should still walk it for shareables.
+  def test_dump_all_includes_zombie_objspace
+    assert_ractor(<<~'RUBY', require: ['objspace', 'json'])
+      port = Ractor::Port.new
+      ch = Ractor.new(port) do |port|
+        port << Object.new.freeze
+        Ractor.receive
+      end
+      obj = port.receive
+      ch.send(:go)
+      ch.join
+      loop until ch.inspect =~ /terminated/ # unfortunate
+
+      needle = JSON.parse(ObjectSpace.dump(obj))["address"] # relies on non-moving collector
+      found = ObjectSpace.dump_all(output: :string).each_line.any? do |line|
+        json = JSON.parse(line) rescue nil
+        json && json["address"] == needle
+      end
+      assert found, "zombie objspace object missing from dump_all"
+    RUBY
+  end
+
   def test_trace_object_allocations_with_ractor_tracepoint
     # Test that ObjectSpace.trace_object_allocations works globally across all Ractors
     assert_ractor(<<~'RUBY', require: 'objspace')
