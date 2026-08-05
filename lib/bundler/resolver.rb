@@ -500,9 +500,9 @@ module Bundler
 
     # Reports, per gem, the newest version that cooldown kept out of a
     # successful resolution. A skipped version is only worth reporting when it
-    # is newer than the version actually resolved and satisfies every
-    # requirement the final resolution places on that gem, so we don't claim a
-    # version the resolver could never have picked anyway.
+    # is newer than the resolved version and satisfies every requirement the
+    # final resolution places on that gem, so we don't claim a version the
+    # resolver could never have picked anyway.
     def cooldown_skipped_summary(spec_set)
       return [] if @cooldown_skipped_specs.empty?
 
