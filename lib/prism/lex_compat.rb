@@ -78,8 +78,6 @@ module Prism
       BANG_EQUAL: :on_op,
       BANG_TILDE: :on_op,
       BRACE_LEFT: :on_lbrace,
-      BRACE_LEFT_ARGUMENT: :on_lbrace,
-      BRACE_LEFT_HASH: :on_lbrace,
       BRACE_RIGHT: :on_rbrace,
       BRACKET_LEFT: :on_lbracket,
       BRACKET_LEFT_ARRAY: :on_lbracket,
@@ -193,7 +191,6 @@ module Prism
       NEWLINE: :on_nl,
       NUMBERED_REFERENCE: :on_backref,
       PARENTHESIS_LEFT: :on_lparen,
-      PARENTHESIS_LEFT_GROUPING: :on_lparen,
       PARENTHESIS_LEFT_PARENTHESES: :on_lparen,
       PARENTHESIS_RIGHT: :on_rparen,
       PERCENT: :on_op,
@@ -236,7 +233,6 @@ module Prism
       USTAR: :on_op,
       USTAR_STAR: :on_op,
       WORDS_SEP: :on_words_sep,
-      XSTRING_BEGIN: :on_backtick,
       "__END__": :on___end__
     }.freeze
 
