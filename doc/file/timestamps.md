@@ -9,12 +9,12 @@ the returned times may vary among filesystems, even on the same machine.
 
 These timestamps methods are:
 
-|               Name               | Meaning                                | Changes               |
-|:--------------------------------:|----------------------------------------|-----------------------|
-|  [`birthtime`](#birth-time)      | Create time.                           | Never.                |
-|  [`mtime`](#modification-time)   | Modification time.                     | When written.         |
-|     [`atime`](#access-time)      | Access time.                           | When read or written. |
-| [`ctime`](#metadata-change-time) | Metadata-change time (or create time). | See below.            |
+|               Name               | Meaning                                | Changes       |
+|:--------------------------------:|----------------------------------------|---------------|
+|  [`birthtime`](#birth-time)      | Create time.                           | Never.        |
+|  [`mtime`](#modification-time)   | Modification time.                     | When written. |
+|     [`atime`](#access-time)      | Access time.                           | When read.    |
+| [`ctime`](#metadata-change-time) | Metadata-change time (or create time). | See below.    |
 
 A method raises an exception if the filesystem does not support
 the corresponding timestamp.
@@ -61,11 +61,8 @@ The modification time (along with the access time) may also be updated explicitl
 
 ## Access \Time
 
-The access time for an entry is the time of the most recent read of or write to
-the content of the entry, as reported by the underlying filesystem.
-
-Depending on a filesystem's settings, reading an entry may cause the access time
-to be updated immediately, later, or never.
+The access time for an entry is the time of the most recent read for the entry,
+as reported by the underlying filesystem.
 
 Each of these methods returns the access time for an entry as a Time object:
 
@@ -80,6 +77,41 @@ The access time (along with the modification time) may also be updated explicitl
 - File::utime.
 - Pathname#lutime.
 - Pathname#utime.
+
+Depending on a filesystem's settings, reading an entry may cause the access time
+to be updated immediately, later, or never;
+thus in the tables below, some entries say "Filesystem-dependent."
+
+### File
+
+The access time for a file is commonly the most recent time the file was read,
+or if never read, the time it was created:
+
+|     Operation      | Updates Access \Time |
+|:------------------:|:--------------------:|
+|       Create       |         Yes          |
+|        Read        | Filesystem-dependent |
+|       Write        |          No          |
+|       Rename       |          No          |
+|        Move        |          No          |
+| Change permissions |          No          |
+|  Change ownership  |          No          |
+
+
+### Directory
+
+The access time for a directory is commonly the most recent time its entries were read,
+or if never read, the time it was created:
+
+|     Operation      | Updates Access \Time |
+|:------------------:|:--------------------:|
+|       Create       |         Yes          |
+|    Read entries    | Filesystem-dependent |
+|   Write entries    |          No          |
+|       Rename       |          No          |
+|        Move        |          No          |
+| Change permissions |          No          |
+|  Change ownership  |          No          |
 
 ## Metadata-Change \Time
 
