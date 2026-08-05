@@ -1151,9 +1151,6 @@ impl Assembler {
                 }
             }
 
-            // Capture the allocatable count before preferred_register_assignments
-            // appends any pinned registers to the pool. Everything at or past
-            // this index is a register the allocator must not hand out.
             let allocatable_regs = regs.len();
             trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&mut intervals, &mut regs));
             let num_stack_slots = trace_compile_phase("linear_scan", || asm.linear_scan(&intervals, allocatable_regs, &regs));
