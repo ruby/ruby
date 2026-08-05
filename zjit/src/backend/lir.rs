@@ -2136,7 +2136,7 @@ impl Assembler
         Some(new_moves)
     }
 
-    /// Discover vregs that should preferentially reuse a physical register,
+    /// Discover and append to `regs` vregs that should preferentially reuse a physical register,
     /// such as a newborn vreg immediately moved into a preg in the next instruction.
     pub fn preferred_register_assignments(&self, intervals: &mut [Interval], regs: &mut Vec<Reg>) {
         for block in &self.basic_blocks {
