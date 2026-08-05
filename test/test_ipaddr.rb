@@ -188,6 +188,23 @@ class TC_IPAddr < Test::Unit::TestCase
     }
   end
 
+  def test_class_netmask
+    assert_equal("0.0.0.0", IPAddr.netmask(0, Socket::AF_INET))
+    assert_equal("255.255.255.0", IPAddr.netmask(24, Socket::AF_INET))
+    assert_equal("255.255.255.255", IPAddr.netmask(32, Socket::AF_INET))
+    assert_raise(IPAddr::InvalidPrefixError) { IPAddr.netmask(33, Socket::AF_INET) }
+    assert_raise(IPAddr::InvalidPrefixError) { IPAddr.netmask(-1, Socket::AF_INET) }
+
+    assert_equal("0000:0000:0000:0000:0000:0000:0000:0000", IPAddr.netmask(0, Socket::AF_INET6))
+    assert_equal("ffff:ffff:ffff:ffff:0000:0000:0000:0000", IPAddr.netmask(64, Socket::AF_INET6))
+    assert_equal("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", IPAddr.netmask(128, Socket::AF_INET6))
+    assert_raise(IPAddr::InvalidPrefixError) { IPAddr.netmask(129, Socket::AF_INET6) }
+    assert_raise(IPAddr::InvalidPrefixError) { IPAddr.netmask(-1, Socket::AF_INET6) }
+
+    assert_raise(IPAddr::AddressFamilyError) { IPAddr.netmask(24) }
+    assert_raise(IPAddr::AddressFamilyError) { IPAddr.netmask(24, Socket::AF_UNSPEC) }
+  end
+
   def test_ipv4_compat
     a = IPAddr.new("::192.168.1.2")
     assert_equal("::192.168.1.2", a.to_s)
