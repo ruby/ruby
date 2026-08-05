@@ -2012,10 +2012,10 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
     }
 
     if (rb_funcall(object_id, rb_intern(">="), 1, ULL2NUM(LAST_OBJECT_ID()))) {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not an id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
+        rb_raise(rb_eRangeError, "%"PRIsVALUE" is not an id value", object_id);
     }
     else {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is a recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
+        rb_raise(rb_eRangeError, "%"PRIsVALUE" is a recycled object", object_id);
     }
 }
 
@@ -2146,7 +2146,7 @@ id2ref(VALUE objid)
                 }
             }
 
-            rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not an id value", rb_int2str(objid, 10));
+            rb_raise(rb_eRangeError, "%"PRIsVALUE" is not an id value", objid);
         }
     }
 
@@ -2155,7 +2155,7 @@ id2ref(VALUE objid)
         return obj;
     }
     else {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is the id of an unshareable object on multi-ractor", rb_int2str(objid, 10));
+        rb_raise(rb_eRangeError, "%"PRIsVALUE" is the id of an unshareable object on multi-ractor", objid);
     }
 }
 

@@ -73,6 +73,12 @@ End
     assert_raise_with_message(RangeError, msg) { EnvUtil.suppress_warning { ObjectSpace._id2ref(:a.object_id + 256) } }
   end
 
+  def test_id2ref_invalid_object_id
+    invalid_id = Object.new.object_id + 1000
+    assert_raise_with_message(RangeError, "#{invalid_id} is not an id value") { EnvUtil.suppress_warning { ObjectSpace._id2ref(invalid_id) } }
+    assert_raise_with_message(RangeError, "#{2**80} is not an id value") { EnvUtil.suppress_warning { ObjectSpace._id2ref(2**80) } }
+  end
+
   def test_count_objects
     h = {}
     ObjectSpace.count_objects(h)
