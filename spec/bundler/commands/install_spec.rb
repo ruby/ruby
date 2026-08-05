@@ -1389,7 +1389,7 @@ RSpec.describe "bundle install with gem sources" do
       end
     end
 
-    it "doesn't pass down -j to make when MAKEFLAGS is set" do
+    it "doesn't pass down -j to make when MAKEFLAGS is set", rubygems: ">= 4.1.0.dev" do
       ENV["MAKEFLAGS"] = "-j1"
 
       install_gemfile(<<~G, env: { "BUNDLE_JOBS" => "8" }, raise_on_error: false)
