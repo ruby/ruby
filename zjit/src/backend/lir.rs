@@ -1532,18 +1532,73 @@ pub enum Allocation {
 }
 
 impl Allocation {
-    fn assigned_reg(self, regs: &[Reg]) -> Option<Reg> {
+    fn assigned_reg(self, regs: &RegPool) -> Option<Reg> {
         match self {
-            Allocation::Reg(n) => Some(regs[n]),
+            Allocation::Reg(n) => Some(regs.reg_at(n)),
             Allocation::Stack(_) => None,
         }
     }
 
-    fn alloc_pool_index(self, num_registers: usize) -> Option<usize> {
+    fn alloc_pool_index(self, regs: &RegPool) -> Option<usize> {
         match self {
-            Allocation::Reg(n) => (n < num_registers).then_some(n),
+            Allocation::Reg(n) => (n < regs.num_allocatable()).then_some(n),
             Allocation::Stack(_) => None,
         }
+    }
+}
+
+/// The physical registers the register allocator hands out, partitioned by
+/// allocatability. The registers at indexes `0..num_allocatable()` are the ones
+/// linear_scan() is free to assign to any interval. The rest are pinned
+/// registers (NATIVE_STACK_PTR, for example) that an interval can only end up
+/// in through its `preferred` allocation.
+///
+/// The list and the boundary travel together so that consumers can't disagree
+/// about where the partition is, and so pinning a register can't move it.
+#[derive(Debug)]
+pub struct RegPool {
+    regs: Vec<Reg>,
+    allocatable: usize,
+}
+
+impl RegPool {
+    /// Build a pool in which every register is allocatable.
+    pub fn new(regs: Vec<Reg>) -> Self {
+        let allocatable = regs.len();
+        Self { regs, allocatable }
+    }
+
+    #[cfg(test)]
+    pub fn with_allocatable(regs: Vec<Reg>, allocatable: usize) -> Self {
+        assert!(allocatable <= regs.len());
+        Self { regs, allocatable }
+    }
+
+    /// The number of registers linear_scan() is free to allocate.
+    pub fn num_allocatable(&self) -> usize {
+        self.allocatable
+    }
+
+    /// The total number of registers in the pool.
+    pub fn len(&self) -> usize {
+        self.regs.len()
+    }
+
+    /// The register at `index`, in either partition.
+    pub fn reg_at(&self, index: usize) -> Reg {
+        self.regs[index]
+    }
+
+    /// Find the index of `reg` in the pool.  If the pool doesn't have the
+    /// reg, add it to the pool, but place it outside of the "allocatable"
+    /// register range.
+    pub fn find_or_add_index(&mut self, reg: Reg) -> usize {
+        self.regs.iter()
+            .position(|candidate| candidate.reg_no == reg.reg_no)
+            .unwrap_or_else(|| {
+                self.regs.push(reg);
+                self.regs.len() - 1
+            })
     }
 }
 
@@ -2141,9 +2196,9 @@ impl Assembler
         Some(new_moves)
     }
 
-    /// Discover and append to `regs` vregs that should preferentially reuse a physical register,
-    /// such as a newborn vreg immediately moved into a preg in the next instruction.
-    pub fn preferred_register_assignments(&self, intervals: &mut [Interval], regs: &mut Vec<Reg>) {
+    /// Record a preferred physical register on vregs that should reuse one, such as a
+    /// newborn vreg immediately moved into a preg in the next instruction.
+    pub fn preferred_register_assignments(&self, intervals: &mut [Interval], regs: &mut RegPool) {
         for block in &self.basic_blocks {
             let mut prev_insn: Option<(InsnId, &Insn)> = None;
 
@@ -2164,12 +2219,7 @@ impl Assembler
                                 && intervals[*idx].born_at(prev_id.0)
                                 && intervals[*idx].dies_at(insn_id.0)
                             {
-                                let regno = regs.iter()
-                                    .position(|candidate| candidate.reg_no == dest_reg.reg_no)
-                                    .unwrap_or_else(|| {
-                                        regs.push(*dest_reg);
-                                        regs.len() - 1
-                                    });
+                                let regno = regs.find_or_add_index(*dest_reg);
                                 debug_assert!(intervals[*idx].preferred.is_none());
                                 intervals[*idx].preferred = Some(Allocation::Reg(regno));
                             }
@@ -2188,22 +2238,15 @@ impl Assembler
     // * Pre-allocate pinned regs
     // * Update linear scan to handle pinned LRs
     //
-    // num_registers is the number of allocatable registers.  `regs` is a
-    // list of _all_ registers partitioned by allocatable and non-allocatable.
-    // The registers in `regs` from 0 to num_registers is allocatable,
-    // num_registers to the end are only allocatable via "preferred" register
-    // support.
+    // `regs` is the pool of _all_ registers, partitioned by allocatability.
+    // The registers below `regs.num_allocatable()` are allocatable here, the
+    // rest are only reachable via "preferred" register support.
     //
     // Allocations are written back in to `intervals` as each interval's
     // `assigned` field.  The return value is the number of stack slots needed
     // for the spills.
-    pub fn linear_scan(
-        &self,
-        intervals: &[Interval],
-        num_registers: usize, // number of allocatable regs
-        regs: &[Reg],         // list of all registers used, partitioned by allocatability
-    ) -> usize {
-        debug_assert!(num_registers <= regs.len());
+    pub fn linear_scan(&self, intervals: &[Interval], regs: &RegPool) -> usize {
+        let num_registers = regs.num_allocatable();
 
         // `active`, `inactive`, and `unhandled` borrow the intervals they hold.
         // Allocation results are written through the Cell fields, so a shared
@@ -2320,11 +2363,11 @@ impl Assembler
                 None => {
                     // Spill: pick the longest-lived active interval (last in sorted active)
                     // but only from the allocatable partition of the pool. An index
-                    // at or past `num_registers` is a pinned physical register (for
-                    // example SP), which is not ours to hand to someone else.
+                    // at or past the pool's allocatable boundary is a pinned physical
+                    // register (for example SP), which is not ours to hand to someone else.
                     let spill_idx = active.iter().rposition(|it| {
                         it.assigned.get()
-                            .is_some_and(|alloc| alloc.alloc_pool_index(num_registers).is_some())
+                            .is_some_and(|alloc| alloc.alloc_pool_index(regs).is_some())
                     });
                     let slot = Allocation::Stack(num_stack_slots);
                     num_stack_slots += 1;
@@ -2370,7 +2413,7 @@ impl Assembler
     /// Resolve SSA block parameters by inserting sequentialized move instructions
     /// at block boundaries. This is SSA deconstruction: after linear_scan assigns
     /// registers/stack slots, we lower block parameter passing to explicit moves.
-    pub fn resolve_ssa(&mut self, intervals: &[Interval], regs: &[Reg]) {
+    pub fn resolve_ssa(&mut self, intervals: &[Interval], regs: &RegPool) {
         use crate::backend::parcopy;
         use crate::backend::current::SCRATCH_REG;
 
@@ -2556,11 +2599,11 @@ impl Assembler
     pub fn handle_caller_saved_regs(
         &mut self,
         intervals: &[Interval],
-        alloc_regs: &[Reg],
+        alloc_regs: &RegPool,
         c_arg_regs: &[Reg],
     ) {
         use crate::backend::parcopy;
-        use crate::backend::current::{C_RET_OPND, SCRATCH_REG, ALLOC_REGS};
+        use crate::backend::current::{C_RET_OPND, SCRATCH_REG};
 
         for block_id in self.block_order() {
             let block = &mut self.basic_blocks[block_id.0];
@@ -2601,7 +2644,7 @@ impl Assembler
                             let survives_call = interval.has_bounds() && interval.survives(insn_number);
                             // 2) The VReg is referenced by the stack map for the CCall
                             let stack_map_reg = stack_vreg_ids.contains(&interval.vreg_id);
-                            let is_register = interval.assigned.get().and_then(|alloc| alloc.alloc_pool_index(ALLOC_REGS.len())).is_some();
+                            let is_register = interval.assigned.get().and_then(|alloc| alloc.alloc_pool_index(alloc_regs)).is_some();
                             is_register && (survives_call || stack_map_reg)
                         })
                         .map(|interval| interval.vreg_id)
@@ -2799,7 +2842,7 @@ impl Assembler
 
     /// Walk every instruction and replace VReg operands with the physical
     /// register (or stack slot) assigned to the VReg's interval.
-    fn rewrite_instructions(&mut self, intervals: &[Interval], regs: &[Reg]) {
+    fn rewrite_instructions(&mut self, intervals: &[Interval], regs: &RegPool) {
         for block_id in self.block_order() {
             for insn in self.basic_blocks[block_id.0].insns.iter_mut() {
                 insn.for_each_operand_mut(|opnd| {
@@ -2812,18 +2855,18 @@ impl Assembler
         }
     }
 
-    fn rewritten_opnd(mut opnd: Opnd, intervals: &[Interval], regs: &[Reg]) -> Opnd {
+    fn rewritten_opnd(mut opnd: Opnd, intervals: &[Interval], regs: &RegPool) -> Opnd {
         Self::rewrite_opnd(&mut opnd, intervals, regs);
         opnd
     }
 
-    fn rewrite_opnd(opnd: &mut Opnd, intervals: &[Interval], regs: &[Reg]) {
+    fn rewrite_opnd(opnd: &mut Opnd, intervals: &[Interval], regs: &RegPool) {
         match opnd {
             Opnd::VReg { idx, num_bits } => {
                 if let Some(assignment) = intervals[*idx].assigned.get() {
                     match assignment {
                         Allocation::Reg(n) => {
-                            let mut reg = regs[n];
+                            let mut reg = regs.reg_at(n);
                             reg.num_bits = *num_bits;
                             *opnd = Opnd::Reg(reg);
                         }
@@ -2844,7 +2887,7 @@ impl Assembler
                 match intervals[*idx].assigned.get().unwrap() {
                     Allocation::Reg(n) => {
                         if let Opnd::Mem(mem) = opnd {
-                            mem.base = MemBase::Reg(regs[n].reg_no);
+                            mem.base = MemBase::Reg(regs.reg_at(n).reg_no);
                         }
                     }
                     Allocation::Stack(n) => {
@@ -4263,6 +4306,12 @@ mod tests {
         Assembler::new_with_scratch_reg().1
     }
 
+    fn alloc_reg_pool(num_allocatable: usize) -> RegPool {
+        let regs = crate::backend::current::ALLOC_REGS.to_vec();
+        let num_allocatable = num_allocatable.min(regs.len());
+        RegPool::with_allocatable(regs, num_allocatable)
+    }
+
     #[test]
     fn test_size_of_insn() {
         // PatchPoint (PatchPointData), CCall (CCallData), and Target (Block/SideExit
@@ -4770,10 +4819,9 @@ mod tests {
 
         println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
 
-        let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
-        let allocatable_regs = regs.len();
+        let mut regs = alloc_reg_pool(5);
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        let num_stack_slots = asm.linear_scan(&intervals, 5.min(allocatable_regs), &regs);
+        let num_stack_slots = asm.linear_scan(&intervals, &regs);
 
         // Extract vreg indices
         let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
@@ -4810,10 +4858,9 @@ mod tests {
         let mut intervals = asm.build_intervals(live_in);
 
         // 3 registers -- enough for every interval once holes are reused
-        let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
-        let allocatable_regs = regs.len();
+        let mut regs = alloc_reg_pool(3);
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        let num_stack_slots = asm.linear_scan(&intervals, 3.min(allocatable_regs), &regs);
+        let num_stack_slots = asm.linear_scan(&intervals, &regs);
 
         let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
         let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
@@ -4842,10 +4889,9 @@ mod tests {
         let mut intervals = asm.build_intervals(live_in);
 
         // Only 1 register available -- forces spills
-        let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
-        let allocatable_regs = regs.len();
+        let mut regs = alloc_reg_pool(1);
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        let num_stack_slots = asm.linear_scan(&intervals, 1.min(allocatable_regs), &regs);
+        let num_stack_slots = asm.linear_scan(&intervals, &regs);
 
         let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
         let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
@@ -4879,19 +4925,19 @@ mod tests {
         asm.number_instructions(0);
         let live_in = asm.analyze_liveness();
         let mut intervals = asm.build_intervals(live_in);
-        let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
+        // Zero allocatable registers: the only register this interval can get
+        // is the pinned one appended to the pool, so the preference is what
+        // makes this succeed rather than spill.
+        let mut regs = alloc_reg_pool(0);
         asm.preferred_register_assignments(&mut intervals, &mut regs);
 
         let vreg_idx = new_sp.vreg_idx();
         let Some(Allocation::Reg(regno)) = intervals[vreg_idx].preferred else {
             panic!("expected a preferred register for v{vreg_idx}");
         };
-        assert_eq!(regs[regno], sp.unwrap_reg());
+        assert_eq!(regs.reg_at(regno), sp.unwrap_reg());
 
-        // Zero allocatable registers: the only register this interval can get
-        // is the pinned one appended to the pool, so the preference is what
-        // makes this succeed rather than spill.
-        let num_stack_slots = asm.linear_scan(&intervals, 0, &regs);
+        let num_stack_slots = asm.linear_scan(&intervals, &regs);
         assert_eq!(num_stack_slots, 0);
         assert_eq!(intervals[vreg_idx].assigned.get(), Some(Allocation::Reg(regno)));
         assert_eq!(intervals[vreg_idx].assigned.get().unwrap().assigned_reg(&regs), Some(sp.unwrap_reg()));
@@ -4923,10 +4969,9 @@ mod tests {
         let live_in = asm.analyze_liveness();
         asm.number_instructions(16);
         let mut intervals = asm.build_intervals(live_in);
-        let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
-        let allocatable_regs = regs.len();
+        let mut regs = alloc_reg_pool(5);
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        asm.linear_scan(&intervals, 5.min(allocatable_regs), &regs);
+        asm.linear_scan(&intervals, &regs);
 
         asm.resolve_ssa(&intervals, &regs);
 
@@ -4969,10 +5014,9 @@ mod tests {
         let live_in = asm.analyze_liveness();
         asm.number_instructions(16);
         let mut intervals = asm.build_intervals(live_in);
-        let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
-        let allocatable_regs = regs.len();
+        let mut regs = alloc_reg_pool(5);
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        asm.linear_scan(&intervals, 5.min(allocatable_regs), &regs);
+        asm.linear_scan(&intervals, &regs);
 
         // Entry block b1 has parameters [v0, v1].
         // With 5 registers: v0 -> Reg(0) = regs[0], arrival = C_ARG_OPNDS[0] = regs[0] -> self-move, filtered
@@ -5018,10 +5062,9 @@ mod tests {
         let live_in = asm.analyze_liveness();
         asm.number_instructions(0);
         let mut intervals = asm.build_intervals(live_in);
-        let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
-        let allocatable_regs = regs.len();
+        let mut regs = alloc_reg_pool(5);
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        asm.linear_scan(&intervals, 5.min(allocatable_regs), &regs);
+        asm.linear_scan(&intervals, &regs);
 
         asm.resolve_ssa(&intervals, &regs);
 
@@ -5078,11 +5121,9 @@ mod tests {
         let live_in = asm.analyze_liveness();
         asm.number_instructions(16);
         let mut intervals = asm.build_intervals(live_in);
-        let num_regs = 5;
-        let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
-        let allocatable_regs = regs.len();
+        let mut regs = alloc_reg_pool(5);
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        asm.linear_scan(&intervals, num_regs.min(allocatable_regs), &regs);
+        asm.linear_scan(&intervals, &regs);
 
         assert_eq!(asm.basic_blocks.len(), 3);
 
@@ -5185,10 +5226,9 @@ mod tests {
         asm.number_instructions(0);
         let mut intervals = asm.build_intervals(live_in);
         let num_regs = 2;
-        let mut regs = crate::backend::current::ALLOC_REGS.to_vec();
-        let allocatable_regs = regs.len();
+        let mut regs = alloc_reg_pool(num_regs);
         asm.preferred_register_assignments(&mut intervals, &mut regs);
-        let num_stack_slots = asm.linear_scan(&intervals, num_regs.min(allocatable_regs), &regs);
+        let num_stack_slots = asm.linear_scan(&intervals, &regs);
         asm.stack_state.num_spill_slots = num_stack_slots;
 
         // Stand in for the C calling convention's argument registers. These

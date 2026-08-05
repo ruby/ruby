@@ -1140,9 +1140,10 @@ impl Assembler {
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, mut regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
         let use_scratch_regs = !self.accept_scratch_reg;
+        let mut regs = RegPool::new(regs);
         asm_dump!(self, init);
 
         let mut asm = trace_compile_phase("split", || self.x86_split());
@@ -1162,9 +1163,8 @@ impl Assembler {
                 }
             }
 
-            let allocatable_regs = regs.len();
             trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&mut intervals, &mut regs));
-            let num_stack_slots = trace_compile_phase("linear_scan", || asm.linear_scan(&intervals, allocatable_regs, &regs));
+            let num_stack_slots = trace_compile_phase("linear_scan", || asm.linear_scan(&intervals, &regs));
 
             asm.stack_state.num_spill_slots = num_stack_slots;
             asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&intervals);
@@ -1182,7 +1182,7 @@ impl Assembler {
                     for (i, interval) in intervals.iter().enumerate() {
                         if let Some(alloc) = interval.assigned.get() {
                             let alloc_str = match alloc {
-                                Allocation::Reg(n) => format!("{}", regs[n]),
+                                Allocation::Reg(n) => format!("{}", regs.reg_at(n)),
                                 Allocation::Stack(n) => format!("Stack[{}]", n),
                             };
                             println!("  v{} => {} (ranges: {})", i, alloc_str, interval.ranges_string());
