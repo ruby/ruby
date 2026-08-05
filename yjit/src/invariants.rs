@@ -168,7 +168,7 @@ pub fn track_no_ep_escape_assumption(uninit_block: BlockRef, iseq: IseqPtr) {
         .insert(uninit_block);
 }
 
-/// Returns true if a given ISEQ has escaped an environment since a JIT was enabled.
+/// Returns true if a given ISEQ has escaped an environment since YJIT boot.
 pub fn seen_escaped_env(iseq: IseqPtr) -> bool {
     unsafe { rb_jit_iseq_ep_escape_recorded_p(iseq) }
 }
