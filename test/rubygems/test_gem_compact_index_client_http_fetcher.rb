@@ -34,6 +34,12 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     end
   end
 
+  class FakeRangeNotSatisfiable < Gem::Net::HTTPRangeNotSatisfiable
+    def initialize
+      super("1.1", "416", "Range Not Satisfiable")
+    end
+  end
+
   class FakeRemoteFetcher
     attr_reader :requests
 
@@ -114,6 +120,35 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     end
 
     assert_match(/too many redirects/, error.message)
+  end
+
+  def test_call_retries_without_range_on_range_not_satisfiable
+    requests = []
+    remote = Object.new
+    remote.define_singleton_method(:request) do |uri, request_class, &block|
+      request = request_class.new(uri)
+      block&.call(request)
+      requests << request
+      request["Range"] ? FakeRangeNotSatisfiable.new : FakeResponse.new("full data")
+    end
+
+    fetcher = Gem::CompactIndexClient::HTTPFetcher.new("https://index.example", remote)
+    response = fetcher.call("versions", "Range" => "bytes=100-", "If-None-Match" => '"abc"')
+
+    assert_equal "full data", response.body
+    assert_equal 2, requests.size
+    assert_nil requests.last["Range"]
+    assert_equal '"abc"', requests.last["If-None-Match"]
+  end
+
+  def test_call_raises_on_range_not_satisfiable_without_range
+    fetcher, _remote = fetcher_for("https://index.example/versions" => FakeRangeNotSatisfiable.new)
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    assert_match(/bad response Range Not Satisfiable 416/, error.message)
   end
 
   def test_call_raises_fetch_error_on_failure_response

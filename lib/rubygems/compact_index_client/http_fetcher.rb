@@ -41,6 +41,11 @@ class Gem::CompactIndexClient
         raise Gem::RemoteFetcher::FetchError.new("redirecting but no redirect location was given", uri) unless location
 
         fetch(uri + location, headers, redirects_remaining - 1)
+      when Gem::Net::HTTPRangeNotSatisfiable
+        raise Gem::RemoteFetcher::FetchError.new("bad response #{response.message} #{response.code}", uri) unless headers.key?("Range")
+
+        # The local cache is longer than the remote file, refetch it whole.
+        fetch(uri, headers.except("Range"), redirects_remaining)
       else
         raise Gem::RemoteFetcher::FetchError.new("bad response #{response.message} #{response.code}", uri)
       end
