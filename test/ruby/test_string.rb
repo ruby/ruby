@@ -3639,6 +3639,27 @@ CODE
     refute_includes ObjectSpace.dump(substr), ' "shared":true,'
   end
 
+  def test_substring_embed
+    str = "a" * 448
+
+    require 'objspace'
+
+    # 128 and 320 sit either side of STR_SUBSEQ_MAX_EMBED_SIZE in string.c, which
+    # the copy has to fit in along with the header and the terminator
+    substr = str.byteslice(320, 128)
+    assert_equal "a" * 128, substr
+    assert_includes ObjectSpace.dump(substr), ' "embedded":true,'
+
+    substr = str.byteslice(128, 320)
+    assert_equal "a" * 320, substr
+    assert_includes ObjectSpace.dump(substr), ' "shared":true,'
+
+    # A frozen source is a shared root itself, so the same substring is shared
+    substr = str.freeze.byteslice(320, 128)
+    assert_equal "a" * 128, substr
+    assert_includes ObjectSpace.dump(substr), ' "shared":true,'
+  end
+
   def test_unknown_string_option
     str = nil
     assert_nothing_raised(SyntaxError) do
