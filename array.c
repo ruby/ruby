@@ -228,6 +228,15 @@ rb_ary_embeddable_p(VALUE ary)
     return !(ARY_SHARED_ROOT_P(ary) || OBJ_FROZEN(ary) || ARY_SHARED_P(ary));
 }
 
+/* True when other arrays may read this array's elements out of its own slot, so the
+ * slot contents must stay valid for as long as the object does.  A frozen array is
+ * handed out as a shared root as it is, without the shared root flag. */
+bool
+rb_ary_embedded_shared_root_p(VALUE ary)
+{
+    return ARY_EMBED_P(ary) && OBJ_FROZEN(ary);
+}
+
 size_t
 rb_ary_size_as_embedded(VALUE ary)
 {

@@ -8,6 +8,7 @@
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "ractor_core.h"
+#include "internal/array.h"
 #include "internal/complex.h"
 #include "internal/error.h"
 #include "internal/gc.h"
@@ -2125,10 +2126,20 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_PROMOTED);
     shape_id_t shape_id = (RBASIC_SHAPE_ID(obj) & SHAPE_ID_CAPACITY_MASK) | ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_ROBJECT | SHAPE_ID_FL_FROZEN;
 
-    // A copy-on-write sharer reads its bytes straight out of an embedded root's slot
-    // (String#dup of a frozen string), and it outlives the move, so that body has to
-    // survive as it is.
-    bool wipe_body = !(RB_TYPE_P(obj, T_STRING) && rb_str_embedded_shared_root_p(obj));
+    // A copy-on-write sharer reads its payload straight out of an embedded root's slot
+    // (String#dup of a frozen string, Array#[] of a frozen array), and it outlives the
+    // move, so that body has to survive as it is.
+    bool wipe_body = true;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_STRING:
+        wipe_body = !rb_str_embedded_shared_root_p(obj);
+        break;
+      case T_ARRAY:
+        wipe_body = !rb_ary_embedded_shared_root_p(obj);
+        break;
+      default:
+        break;
+    }
 
     // Avoid mutations using bind_call, etc.
     size_t slot_size = rb_gc_obj_slot_size(obj);
