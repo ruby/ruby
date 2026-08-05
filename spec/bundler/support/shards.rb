@@ -95,7 +95,6 @@ module Spec
         "spec/bundler/retry_spec.rb",
         "spec/bundler/installer/spec_installation_spec.rb",
         "spec/bundler/spec_set_spec.rb",
-        "spec/quality_es_spec.rb",
         "spec/bundler/index_spec.rb",
         "spec/other/cli_man_pages_spec.rb",
       ],
