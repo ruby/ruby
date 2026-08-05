@@ -2442,7 +2442,7 @@ rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
  *      class Foo; end
  *
  *      Foo.module_eval("puts __LINE__") # => 1
- *      Foo.module_eval("puts __FILE__", nil, 10) # => 10
+ *      Foo.module_eval("puts __LINE__", nil, 10) # => 10
  *
  *  When a block is given, evaluates the block in the context
  *  of +self+:
