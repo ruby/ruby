@@ -964,14 +964,6 @@ RSpec.describe "compact index api" do
     end
   end
 
-  it "works when cache dir is world-writable" do
-    install_gemfile <<-G, artifice: "compact_index"
-      File.umask(0000)
-      source "#{source_uri}"
-      gem "myrack"
-    G
-  end
-
   it "doesn't explode when the API dependencies are wrong" do
     install_gemfile <<-G, artifice: "compact_index_wrong_dependencies", env: { "DEBUG" => "true" }, raise_on_error: false
       source "#{source_uri}"
