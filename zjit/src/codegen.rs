@@ -1738,10 +1738,12 @@ fn gen_send_iseq_direct(
     gen_spill_locals(jit, asm, state);
     asm.stack_map(stack_map, jit_frame, state.depth);
 
-    // This mirrors vm_caller_setup_arg_block() for the `blockiseq != NULL` case.
+    // This mirrors vm_caller_setup_arg_block().
     // Unsupported block args (BlockHandler::BlockArg) are rejected upstream in `type_specialize`.
     let block_handler = block.map(|bh| match bh {
+        // the `blockiseq != NULL` case
         lir::BlockHandler::Iseq(b) => gen_block_handler_specval(asm, b),
+        // the VM_CALL_ARGS_BLOCKARG case, where vm_to_proc(block_code) returns the given Proc as is
         lir::BlockHandler::Proc(proc) => proc,
     });
 
