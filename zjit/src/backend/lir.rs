@@ -1365,20 +1365,21 @@ pub struct LiveRange {
     pub to: usize,
 }
 
-impl LiveRange {
-    pub fn start(&self) -> usize {
-        self.from
-    }
-
-    pub fn end(&self) -> usize {
-        self.to
-    }
-}
-
+/// Possible states for an Interval.  During linear scan, intervals
+/// start as unhandled, then transition to:
+/// * Active: we are currently handling this interval
+/// * Inactive: this interval has a hole in it, so it's not "active" for the current range
+/// * Handled: we're done dealing with this interval
+///
+/// Intervals can transition back and forth between active and inactive, but
+/// once an interval is handled, it is "done" and cannot transition out of
+/// that state.
 #[derive(Clone, Copy, PartialEq)]
-pub enum State {
+pub enum IntervalState {
     Unhandled,
+    /// Currently being handled; occupies its assigned allocation.
     Active,
+    /// In a lifetime hole — allocation is free for others right now.
     Inactive,
     Handled,
 }
@@ -1387,7 +1388,11 @@ pub enum State {
 pub struct Interval {
     pub ranges: Vec<LiveRange>,
     pub id: VRegId,
-    pub state: Cell<State>,
+
+    /// Where this interval is in the linear scan lifecycle.
+    /// Transitions Unhandled -> Active <-> Inactive -> Handled.
+    pub state: Cell<IntervalState>,
+
     pub assigned: Cell<Option<Allocation>>,
     pub preferred: Option<Allocation>,
 }
@@ -1398,7 +1403,7 @@ impl Interval {
         Self {
             ranges: vec![],
             id: i,
-            state: Cell::new(State::Unhandled),
+            state: Cell::new(IntervalState::Unhandled),
             assigned: Cell::new(None),
             preferred: None,
         }
@@ -2207,16 +2212,16 @@ impl Assembler
 
             // Expire old intervals.
             active.retain(|&it| {
-                debug_assert!(it.state.get() == State::Active);
+                debug_assert!(it.state.get() == IntervalState::Active);
                 // If the interval ends before the current position, then we're
                 // done with it and can mark it handled.
                 if it.ends_before(position) {
-                    it.state.set(State::Handled);
+                    it.state.set(IntervalState::Handled);
                     false
                 } else if !it.covers(position) {
                     // If it doesn't cover the current position (there's a hole
                     // in the ranges), then move it to inactive
-                    it.state.set(State::Inactive);
+                    it.state.set(IntervalState::Inactive);
                     inactive.push(it);
                     false
                 } else {
@@ -2227,16 +2232,16 @@ impl Assembler
 
             // Check for intervals in inactive that are handled or active
             inactive.retain(|&it| {
-                debug_assert!(it.state.get() == State::Inactive);
+                debug_assert!(it.state.get() == IntervalState::Inactive);
                 // If the inactive interval ends before the current position
                 if it.ends_before(position) {
                     // Move it to handled
-                    it.state.set(State::Handled);
+                    it.state.set(IntervalState::Handled);
                     false
                 } else if it.covers(position) {
                     // If the current position falls inside one of the
                     // interval's ranges, then make it active
-                    it.state.set(State::Active);
+                    it.state.set(IntervalState::Active);
                     active.push(it);
                     false
                 } else {
@@ -2257,7 +2262,7 @@ impl Assembler
             // All registers have an end that is greater than 0, so they will
             // not pick any registers used by intervals in the active list.
             for it in &active {
-                debug_assert!(it.state.get() == State::Active);
+                debug_assert!(it.state.get() == IntervalState::Active);
                 match it.assigned.get().expect("should have assignment") {
                     Allocation::Reg(idx) => free_registers[idx] = 0,
                     _ => {},
@@ -2269,7 +2274,7 @@ impl Assembler
             // "free_registers" list when each interval will want to use its
             // assigned reg again.
             for it in &inactive {
-                debug_assert!(it.state.get() == State::Inactive);
+                debug_assert!(it.state.get() == IntervalState::Inactive);
                 let Some(pos) = it.next_intersection(cur) else { continue };
                 match it.assigned.get().expect("should have assignment") {
                     Allocation::Reg(idx) => free_registers[idx] = free_registers[idx].min(pos),
@@ -2282,7 +2287,7 @@ impl Assembler
             if let Some(Allocation::Reg(idx)) = cur.preferred {
                 if free_registers[idx] >= cur_end {
                     cur.assigned.set(Some(Allocation::Reg(idx)));
-                    cur.state.set(State::Active);
+                    cur.state.set(IntervalState::Active);
                     let insert_idx = active.partition_point(|it| it.end() < cur_end);
                     active.insert(insert_idx, cur);
                     continue;
@@ -2315,9 +2320,9 @@ impl Assembler
                             // Spill the last active interval; give its register to current
                             let spilled = active.remove(spill_idx);
                             cur.assigned.set(spilled.assigned.get());
-                            cur.state.set(State::Active);
+                            cur.state.set(IntervalState::Active);
                             spilled.assigned.set(Some(slot));
-                            spilled.state.set(State::Handled);
+                            spilled.state.set(IntervalState::Handled);
                             // Insert current into sorted active
                             let insert_idx = active.partition_point(|it| it.end() < cur_end);
                             active.insert(insert_idx, cur);
@@ -2325,13 +2330,13 @@ impl Assembler
                         None => {
                             // Spill the current interval
                             cur.assigned.set(Some(slot));
-                            cur.state.set(State::Handled);
+                            cur.state.set(IntervalState::Handled);
                         }
                     }
                 }
                 Some(reg) => {
                     cur.assigned.set(Some(Allocation::Reg(reg)));
-                    cur.state.set(State::Active);
+                    cur.state.set(IntervalState::Active);
                     // Insert into sorted active
                     let insert_idx = active.partition_point(|it| it.end() < cur_end);
                     active.insert(insert_idx, cur);
@@ -2341,7 +2346,7 @@ impl Assembler
 
         // Drain active and inactive and mark everything as handled.
         for it in active.drain(..).chain(inactive.drain(..)) {
-            it.state.set(State::Handled);
+            it.state.set(IntervalState::Handled);
         }
         debug_assert!(active.is_empty() && inactive.is_empty());
 
