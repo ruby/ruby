@@ -614,6 +614,16 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_move_preflight_matchdata_leaves_graph_intact
+    assert_ractor(<<~'RUBY', timeout: 60)
+      sibling = +"hello"
+      m = "foo".match(Class.new(Regexp).new("o"))
+      r = Ractor.new { Ractor.receive }
+      r.send([sibling, m], move: true) rescue Ractor::Error # expected: the Regexp subclass is unshareable
+      assert_equal "hello", sibling
+    RUBY
+  end
+
   def test_bignum_to_s
     assert_ractor(<<~'RUBY')
       8.times.map do

@@ -2726,8 +2726,12 @@ move_preflight(VALUE obj, st_table *seen)
       case T_STRING:
       case T_OBJECT:
         break;                       /* children are ivars only (below) */
-      case T_MATCH:
-        break;                       /* child = Regexp (shareable) + String */
+      case T_MATCH: {
+        struct RMatch *rm = RMATCH(obj);
+        move_preflight(rm->regexp, seen);
+        move_preflight(rm->str, seen);
+        break;
+      }
       case T_ARRAY:
         for (long i = 0; i < RARRAY_LEN(obj); i++) {
             move_preflight(RARRAY_AREF(obj, i), seen);
