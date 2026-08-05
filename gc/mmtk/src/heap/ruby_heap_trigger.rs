@@ -103,3 +103,54 @@ impl RubyHeapTrigger {
             .expect("Attempt to use RUBY_HEAP_TRIGGER_CONFIG before it is initialized")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const MIN_HEAP_PAGES: usize = 256;
+    const MAX_HEAP_PAGES: usize = 4096;
+
+    fn init_config() {
+        RUBY_HEAP_TRIGGER_CONFIG.get_or_init(|| RubyHeapTriggerConfig {
+            min_heap_pages: MIN_HEAP_PAGES,
+            max_heap_pages: MAX_HEAP_PAGES,
+            heap_pages_min_ratio: 0.2,
+            heap_pages_goal_ratio: 0.4,
+            heap_pages_max_ratio: 0.65,
+        });
+    }
+
+    fn trigger_with_target(target_heap_pages: usize) -> RubyHeapTrigger {
+        init_config();
+
+        RubyHeapTrigger {
+            target_heap_pages: AtomicUsize::new(target_heap_pages),
+        }
+    }
+
+    #[test]
+    fn starts_at_the_min_heap_size() {
+        init_config();
+
+        let trigger = RubyHeapTrigger::default();
+
+        assert_eq!(trigger.get_current_heap_size_in_pages(), MIN_HEAP_PAGES);
+    }
+
+    #[test]
+    fn reports_the_configured_max_heap_size() {
+        let trigger = trigger_with_target(MIN_HEAP_PAGES);
+
+        assert_eq!(trigger.get_max_heap_size_in_pages(), MAX_HEAP_PAGES);
+    }
+
+    #[test]
+    fn current_heap_size_tracks_the_target() {
+        let trigger = trigger_with_target(1024);
+        assert_eq!(trigger.get_current_heap_size_in_pages(), 1024);
+
+        trigger.target_heap_pages.store(2048, Ordering::Relaxed);
+        assert_eq!(trigger.get_current_heap_size_in_pages(), 2048);
+    }
+}
