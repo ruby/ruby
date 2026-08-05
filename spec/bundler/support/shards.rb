@@ -175,7 +175,6 @@ module Spec
         "spec/commands/licenses_spec.rb",
         "spec/install/gemfile/lockfile_spec.rb",
         "spec/bundler/fetcher/dependency_spec.rb",
-        "spec/quality_spec.rb",
         "spec/bundler/remote_specification_spec.rb",
         "spec/install/process_lock_spec.rb",
         "spec/install/binstubs_spec.rb",
