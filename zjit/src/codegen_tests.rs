@@ -596,6 +596,47 @@ fn test_yield_iseq_guard_miss_recompiles() {
 }
 
 #[test]
+fn test_yield_polymorphic_blocks_dispatch_directly() {
+    // A yield site shared by two call sites recompiles with a polymorphic ISEQ dispatch
+    // chain after the monomorphic guard miss. Once the polymorphic version is installed,
+    // both blocks must dispatch directly with no side exits.
+    set_call_threshold(2);
+    eval("
+        def invoke = yield(10)
+        def add_one = invoke { |x| x + 1 }
+        def double = invoke { |x| x * 2 }
+        add_one; double
+        add_one; double
+    ");
+    // Drive the re-profile window so the invalidated monomorphic version is replaced.
+    let num_profiles = get_option!(num_profiles);
+    for _ in 0..num_profiles + 2 {
+        eval("add_one; double");
+    }
+    assert_snapshot!(assert_compiles("[add_one, double]"), @"[11, 20]");
+}
+
+#[test]
+fn test_yield_polymorphic_non_iseq_handler_falls_back() {
+    // A proc handler at a polymorphic yield site fails the ISEQ tag check and takes the
+    // generic InvokeBlock fallback in-line, without a side exit or another recompile.
+    set_call_threshold(2);
+    eval("
+        def invoke = yield(10)
+        def add_one = invoke { |x| x + 1 }
+        def double = invoke { |x| x * 2 }
+        def via_proc(l) = invoke(&l)
+        add_one; double
+        add_one; double
+    ");
+    let num_profiles = get_option!(num_profiles);
+    for _ in 0..num_profiles + 2 {
+        eval("add_one; double; via_proc(proc { |x| x * 3 })");
+    }
+    assert_snapshot!(assert_compiles("[add_one, double, via_proc(proc { |x| x * 3 })]"), @"[11, 20, 30]");
+}
+
+#[test]
 fn test_yield_inline_invocation_with_args() {
     // Plain yield with two args to a matching-arity block inlines and returns correctly.
     set_call_threshold(2);
