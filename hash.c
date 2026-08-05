@@ -1767,7 +1767,7 @@ rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifn
 
     if (capa_value != INT2FIX(0)) {
         long capa = NUM2LONG(capa_value);
-        if (capa > 0 && RHASH_SIZE(hash) == 0 && RHASH_AR_TABLE_P(hash)) {
+        if (capa > RHASH_AR_TABLE_MAX_SIZE && RHASH_SIZE(hash) == 0 && RHASH_AR_TABLE_P(hash)) {
             hash_st_table_init(hash, &objhash, capa);
         }
     }
