@@ -56,7 +56,7 @@ End
   end
 
   def test_id2ref_geniv_liveness
-    assert_in_out_err(["-e", <<~'RUBY'], "", %w(:ok), [])
+    assert_in_out_err(["-W0", "-e", <<~'RUBY'], "", %w(:ok), [])
       ObjectSpace._id2ref(Object.new.object_id)
 
       strings1 = 10_000.times.map { String.new(capacity: 80) }
