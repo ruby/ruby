@@ -1099,6 +1099,7 @@ struct rb_execution_context_struct {
     /* eval env */
     const VALUE *root_lep;
     VALUE root_svar;
+    VALUE svar_table; /* WeakKeyMap: escaped env → this fiber's vm_svar; Qnil until needed */
 
     /* trace information */
     struct rb_trace_arg_struct *trace_arg;
@@ -2105,7 +2106,7 @@ RUBY_EXTERN unsigned int ruby_vm_c_events_enabled;
 #define GET_EC()     rb_current_execution_context(true)
 
 static inline rb_serial_t
-rb_ec_serial(struct rb_execution_context_struct *ec)
+rb_ec_serial(const struct rb_execution_context_struct *ec)
 {
     VM_ASSERT(ec->serial >= 1);
     return ec->serial;

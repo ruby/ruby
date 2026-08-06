@@ -1466,12 +1466,20 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
             svar_val = Qfalse;
         }
     }
-    RB_OBJ_WRITE(copied_env, &ep[VM_ENV_DATA_INDEX_ME_CREF], svar_val);
-
     ep[VM_ENV_DATA_INDEX_FLAGS] = src_ep[VM_ENV_DATA_INDEX_FLAGS] | VM_ENV_FLAG_ISOLATED;
     if (!VM_ENV_LOCAL_P(src_ep)) {
         VM_ENV_FLAGS_SET(ep, VM_ENV_FLAG_LOCAL);
     }
+
+    VALUE ep_me_cref;
+    if (VM_ENV_LOCAL_P(src_ep)) {
+        // Bare shareable svar so each fiber uses its ec->svar_table, not ep[-2].
+        ep_me_cref = rb_svar_new_bare_shareable(svar_val);
+    }
+    else {
+        ep_me_cref = svar_val;
+    }
+    RB_OBJ_WRITE((VALUE)copied_env, &ep[VM_ENV_DATA_INDEX_ME_CREF], ep_me_cref);
 
     if (read_only_variables) {
         for (int i=RARRAY_LENINT(read_only_variables)-1; i>=0; i--) {
@@ -2029,13 +2037,29 @@ rb_vm_invoke_proc_with_self(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
 
 /* special variable */
 
+/* The ep an ifunc captured may have escaped to the heap since, which leaves the
+ * env in ep[0] (see vm_make_env_each), so follow it to the env's own ep. */
+static VALUE *
+vm_ifunc_svar_lep(struct vm_ifunc *ifunc)
+{
+    if (ifunc->svar_lep) {
+        VALUE ep0 = ifunc->svar_lep[0];
+
+        if (RB_TYPE_P(ep0, T_IMEMO) && imemo_type_p(ep0, imemo_env)) {
+            ifunc->svar_lep = (VALUE *)((const rb_env_t *)ep0)->ep;
+        }
+    }
+
+    return ifunc->svar_lep;
+}
+
 VALUE *
 rb_vm_svar_lep(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
     while (!CFP_PC(cfp) || !CFP_ISEQ(cfp)) {
         if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_IFUNC) {
             struct vm_ifunc *ifunc = (struct vm_ifunc *)CFP_ISEQ(cfp);
-            return ifunc->svar_lep;
+            return vm_ifunc_svar_lep(ifunc);
         }
         else {
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -3894,6 +3918,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 
     rb_gc_mark(ec->errinfo);
     rb_gc_mark(ec->root_svar);
+    rb_gc_mark(ec->svar_table);
     if (ec->local_storage) {
         rb_id_table_foreach_values(ec->local_storage, mark_local_storage_i, NULL);
     }
@@ -4081,6 +4106,7 @@ rb_ec_close(rb_execution_context_t *ec)
 {
     // Fiber storage is not accessible from outside the running fiber, so it is safe to clear it here.
     ec->storage = Qnil;
+    ec->svar_table = Qnil;
 }
 
 static void
@@ -4127,6 +4153,7 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 
     th->ec->errinfo = Qnil;
     th->ec->root_svar = Qfalse;
+    th->ec->svar_table = Qnil;
     th->ec->local_storage_recursive_hash = Qnil;
     th->ec->local_storage_recursive_hash_for_trace = Qnil;
 

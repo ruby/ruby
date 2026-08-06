@@ -606,6 +606,7 @@ thread_do_start_proc(rb_thread_t *th)
     th->ec->errinfo = Qnil;
     th->ec->root_lep = rb_vm_proc_local_ep(procval);
     th->ec->root_svar = Qfalse;
+    th->ec->svar_table = Qnil;
 
     vm_check_ints_blocking(th->ec);
 

@@ -12,6 +12,7 @@
 #include <stddef.h>             /* for size_t */
 #include "id_table.h"
 #include "internal/array.h"     /* for rb_ary_hidden_new_fill */
+#include "internal/serial.h"    /* for rb_serial_t */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
@@ -55,7 +56,13 @@ struct vm_svar {
     const VALUE lastline;
     const VALUE backref;
     const VALUE others;
+    /*! serial of the fiber that owns this svar at ep[-2], SVAR_UNOWNED if
+     * none. Not a VALUE, so that the svar does not keep that fiber alive. */
+    rb_serial_t owner_ec_serial;
 };
+#define SVAR_UNOWNED ((rb_serial_t)0)
+/*! Bare shareable svar (owned by no fiber) for ep[-2] of an isolated env. */
+VALUE rb_svar_new_bare_shareable(VALUE cref_or_me);
 
 /*! THROW_DATA */
 struct vm_throw_data {
