@@ -1052,12 +1052,7 @@ fn gen_ccall_with_frame(
     gen_spill_locals(jit, asm, state);
 
     let block_handler_specval = if let Some(BlockHandler::BlockIseq(block_iseq)) = block {
-        // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
-        // VM_CFP_TO_CAPTURED_BLOCK then turns &cfp->self into a block handler.
-        // rb_captured_block->code.iseq aliases with cfp->block_code.
-        asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE::from(block_iseq).into());
-        let cfp_self_addr = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
-        asm.or(cfp_self_addr, Opnd::Imm(1))
+        gen_block_handler_specval(asm, block_iseq)
     } else {
         VM_BLOCK_HANDLER_NONE.into()
     };
@@ -1071,15 +1066,12 @@ fn gen_ccall_with_frame(
         write_block_code: false,
     });
 
-    asm_comment!(asm, "switch to new SP register");
-    let sp_offset = (caller_stack_size + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
-    let new_sp = asm.add(SP, sp_offset.into());
-    asm.mov(SP, new_sp);
-
-    asm_comment!(asm, "switch to new CFP");
-    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
-    asm.mov(CFP, new_cfp);
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+    // Unlike JIT-to-JIT calls, the C function doesn't use the SP and CFP registers,
+    // so we can leave them pointing at the caller frame and only update ec->cfp
+    // for the duration of the call.
+    asm_comment!(asm, "set ec->cfp to the callee CFP");
+    let callee_cfp = asm.lea(Opnd::mem(64, CFP, -(RUBY_SIZEOF_CONTROL_FRAME as i32)));
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), callee_cfp);
 
     let mut cfunc_args = vec![recv];
     cfunc_args.extend(args);
@@ -1087,13 +1079,7 @@ fn gen_ccall_with_frame(
     let result = asm.ccall(cfunc, cfunc_args);
 
     asm_comment!(asm, "pop C frame");
-    let new_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
-    asm.mov(CFP, new_cfp);
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
-
-    asm_comment!(asm, "restore SP register for the caller");
-    let new_sp = asm.sub(SP, sp_offset.into());
-    asm.mov(SP, new_sp);
 
     result
 }
@@ -1161,28 +1147,19 @@ fn gen_ccall_variadic(
         write_block_code: false,
     });
 
-    asm_comment!(asm, "switch to new SP register");
-    let sp_offset = (caller_stack_size + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
-    let new_sp = asm.add(SP, sp_offset.into());
-    asm.mov(SP, new_sp);
-
-    asm_comment!(asm, "switch to new CFP");
-    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
-    asm.mov(CFP, new_cfp);
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+    // Unlike JIT-to-JIT calls, the C function doesn't use the SP and CFP registers,
+    // so we can leave them pointing at the caller frame and only update ec->cfp
+    // for the duration of the call.
+    asm_comment!(asm, "set ec->cfp to the callee CFP");
+    let callee_cfp = asm.lea(Opnd::mem(64, CFP, -(RUBY_SIZEOF_CONTROL_FRAME as i32)));
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), callee_cfp);
 
     let argv_ptr = gen_push_opnds(jit, asm, &args);
     asm.count_call_to_with(|| qualified_method_name(unsafe { (*cme).owner }, name));
     let result = asm.ccall(cfunc, vec![args.len().into(), argv_ptr, recv]);
 
     asm_comment!(asm, "pop C frame");
-    let new_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
-    asm.mov(CFP, new_cfp);
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
-
-    asm_comment!(asm, "restore SP register for the caller");
-    let new_sp = asm.sub(SP, sp_offset.into());
-    asm.mov(SP, new_sp);
 
     result
 }
