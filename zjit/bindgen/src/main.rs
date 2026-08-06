@@ -79,6 +79,7 @@ fn main() {
         .allowlist_type("ruby_special_consts")
         .allowlist_function("rb_utf8_str_new")
         .allowlist_function("rb_str_buf_append")
+        .allowlist_function("rb_jit_str_simple_append")
         .allowlist_function("rb_str_dup")
         .allowlist_function("rb_str_getbyte")
         .allowlist_type("ruby_preserved_encindex")

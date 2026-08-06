@@ -248,12 +248,6 @@ rb_yjit_builtin_function(const rb_iseq_t *iseq)
     }
 }
 
-VALUE
-rb_yjit_str_simple_append(VALUE str1, VALUE str2)
-{
-    return rb_str_cat(str1, RSTRING_PTR(str2), RSTRING_LEN(str2));
-}
-
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
 
 VALUE
