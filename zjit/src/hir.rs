@@ -6875,11 +6875,8 @@ impl Function {
             } else {
                 false
             };
-            run_pass!(convert_no_profile_sends);
-            // TODO: Figure out where the pass should go and remove these comments
-            // It's not clear where converting to minimal SSA should occur
-            // We need it for a global optimize_load_store, so this is a good starting point
             run_pass!(remove_trivial_block_params);
+            run_pass!(convert_no_profile_sends);
             run_pass!(optimize_load_store);
             run_pass!(canonicalize);
             run_pass!(fold_constants);
