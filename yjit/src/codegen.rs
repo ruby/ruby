@@ -2940,8 +2940,6 @@ fn gen_get_ivar(
         _ => asm.load(recv),
     };
 
-    // Check if the comptime receiver is a T_OBJECT
-    let receiver_t_object = unsafe { RB_TYPE_P(comptime_receiver, RUBY_T_OBJECT) };
     // Use a general C call at the last chain to avoid exits on megamorphic shapes
     let megamorphic = asm.ctx.get_chain_depth() >= max_chain_depth;
     if megamorphic {
@@ -3014,31 +3012,59 @@ fn gen_get_ivar(
             asm.mov(out_opnd, Qnil.into());
         }
         Some(ivar_index) => {
-            let ivar_opnd = if receiver_t_object {
-                let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
+            let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
 
-                // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-                if comptime_receiver.embedded_p() {
-                   // Load the variable
-                   Opnd::mem(64, recv, offs)
-                } else {
-                   // Compile time value is *not* embedded.
+            let ivar_opnd = match comptime_receiver.shape_layout() {
+                ShapeLayout::RObject => {
+                    // Load the variable
+                    Opnd::mem(64, recv, offs)
+                },
+                ShapeLayout::Extended => {
+                    let receiver_t_object = unsafe { RB_TYPE_P(comptime_receiver, RUBY_T_OBJECT) };
+                    if receiver_t_object {
+                        // Get the T_IMEMO/fields
+                        let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
-                   // Get the T_IMEMO/fields
-                   let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
+                        // Read the ivar from the T_IMEMO/fields
+                        Opnd::mem(64, tbl_opnd, offs)
+                    } else {
+                        if assume_single_ractor_mode(jit, asm) {
+                            // Get the T_IMEMO/fields
+                            let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
-                   // Read the ivar from the T_IMEMO/fields
-                   Opnd::mem(64, tbl_opnd, offs)
-               }
-            } else {
-                asm_comment!(asm, "call rb_ivar_get_at()");
+                            // Read the ivar from the T_IMEMO/fields
+                            Opnd::mem(64, tbl_opnd, offs)
+                        } else {
+                            // The function could raise RactorIsolationError.
+                            jit_prepare_non_leaf_call(jit, asm);
+                            asm.ccall(rb_ivar_get_at as *const u8, vec![recv, Opnd::UImm((ivar_index as u32).into()), Opnd::UImm(ivar_name)])
+                        }
+                    }
+                },
+                ShapeLayout::RClass => {
+                    if assume_single_ractor_mode(jit, asm) {
+                        // Get the T_IMEMO/fields
+                        let tbl_opnd = asm.load(Opnd::mem(64, recv, RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32));
 
-                if assume_single_ractor_mode(jit, asm) {
-                    asm.ccall(rb_ivar_get_at_no_ractor_check as *const u8, vec![recv, Opnd::UImm((ivar_index as u32).into())])
-                } else {
-                    // The function could raise RactorIsolationError.
-                    jit_prepare_non_leaf_call(jit, asm);
-                    asm.ccall(rb_ivar_get_at as *const u8, vec![recv, Opnd::UImm((ivar_index as u32).into()), Opnd::UImm(ivar_name)])
+                        // In single Ractor mode, we can just read the ivar like we'd do for an extended
+                        // object without needing extra checks.
+                        Opnd::mem(64, tbl_opnd, offs)
+                    } else {
+                        // The function could raise RactorIsolationError.
+                        jit_prepare_non_leaf_call(jit, asm);
+                        asm.ccall(rb_ivar_get_at as *const u8, vec![recv, Opnd::UImm((ivar_index as u32).into()), Opnd::UImm(ivar_name)])
+                    }
+                },
+                ShapeLayout::Other => {
+                    asm_comment!(asm, "call rb_ivar_get_at()");
+
+                    if assume_single_ractor_mode(jit, asm) {
+                        asm.ccall(rb_ivar_get_at_no_ractor_check as *const u8, vec![recv, Opnd::UImm((ivar_index as u32).into())])
+                    } else {
+                        // The function could raise RactorIsolationError.
+                        jit_prepare_non_leaf_call(jit, asm);
+                        asm.ccall(rb_ivar_get_at as *const u8, vec![recv, Opnd::UImm((ivar_index as u32).into()), Opnd::UImm(ivar_name)])
+                    }
                 }
             };
 
