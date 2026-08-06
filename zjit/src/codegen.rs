@@ -30,7 +30,7 @@ use crate::options::{get_option, InlineDepth, PerfMap, DEFAULT_MAX_VERSIONS};
 use crate::cast::IntoUsize;
 
 /// Maximum number of compiled versions per ISEQ.
-/// Configurable via --zjit-max-versions (default: 2).
+/// Configurable via --zjit-max-versions.
 pub fn max_iseq_versions() -> usize {
     unsafe { crate::options::OPTIONS.as_ref() }
         .map_or(DEFAULT_MAX_VERSIONS, |opts| opts.max_versions)
