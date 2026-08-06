@@ -1082,7 +1082,8 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
     return result;
 }
 
-#define MAX_FAST_INTEGER_SIZE 18
+#define MAX_FAST_INTEGER_SIZE 19
+#define MAX_FAST_UINT64_SIZE  20
 #define MAX_NUMBER_STACK_BUFFER 128
 
 typedef VALUE (*json_number_decode_func_t)(const char *ptr);
@@ -1117,11 +1118,30 @@ NOINLINE(static) VALUE json_decode_large_integer(const char *start, long len)
 
 static inline VALUE json_decode_integer(uint64_t mantissa, int mantissa_digits, bool negative, const char *start, const char *end)
 {
-    if (RB_LIKELY(mantissa_digits < MAX_FAST_INTEGER_SIZE)) {
-        if (negative) {
+    if (RB_LIKELY(mantissa_digits <= MAX_FAST_INTEGER_SIZE)) {
+        if (RB_LIKELY(!negative)) {
+            return UINT64T2NUM(mantissa);
+        }
+
+        // For a negative number 19 digits in length, we only get half of the range,
+        // so ensure this negative number is less than INT64_MAX. 
+        //
+        // Note: This does miss INT64_MIN as it's value is one past INT64_MAX
+        // when converted to a uint64_t. It will still be parsed correctly by 
+        // falling through to json_decode_large_integer.
+        if (RB_LIKELY(mantissa <= (uint64_t)INT64_MAX)) {
             return INT64T2NUM(-((int64_t)mantissa));
         }
-        return UINT64T2NUM(mantissa);
+    }
+
+    if (!negative && mantissa_digits == MAX_FAST_UINT64_SIZE) {
+        // Not all 20 digit integers can be safely represented by a uint64_t but
+        // some can. The memcmp with uint64_max is safe as we've rejected leading
+        // zeros and we have guaranteed we're comparing it with a 20 digit number.
+        static const char uint64_max[] = "18446744073709551615";
+        if (memcmp(end - MAX_FAST_UINT64_SIZE, uint64_max, MAX_FAST_UINT64_SIZE) <= 0) {
+            return UINT64T2NUM(mantissa);
+        }
     }
 
     return json_decode_large_integer(start, end - start);
