@@ -5217,11 +5217,13 @@ impl Function {
                 let send_pos = search_start + offset;
 
                 let send_insn_id = self.blocks[block.0].insns[send_pos];
-                let Insn::SendDirect(data) = self.find(send_insn_id)
+                let send = self.resolve(send_insn_id);
+                let Insn::SendDirect(data) = send.insn(self)
                 else {
                     unreachable!("position {send_insn_id} is not a SendDirect");
                 };
-                let SendDirectData { recv, cme, iseq, args, kw_bits, jit_entry_idx, block: call_block, state, .. } = *data;
+                let &SendDirectData { recv, cme, iseq, kw_bits, jit_entry_idx, block: call_block, state, .. } = &**data;
+                let args_len = data.args.len();
                 // SendDirect invariant: block is either None or BlockIseq.
                 // BlockArg is rejected upstream during type specialization.
                 // TODO(max): If we accept BlockArg here, we need to change the folding of Defined
@@ -5287,7 +5289,7 @@ impl Function {
                 let caller_depth = self.frame_depth(state);
 
                 // The callee's perspective of the stack is with the receiver and arguments popped off.
-                let caller_stack_size = call_state.stack_size() - args.len() - 1; // -1 for receiver
+                let caller_stack_size = call_state.stack_size() - args_len - 1; // -1 for receiver
                 let post_send_caller = self.new_insn(Insn::Snapshot { state: Box::new(call_state.with_stack_size(caller_stack_size)) });
                 let mode = AddIseqMode::Inlined {
                     return_block: continuation,
@@ -5314,6 +5316,11 @@ impl Function {
                 // Past the point of no return: commit the inlining.
                 incr_counter!(inline_method_count);
                 did_inline = true;
+
+                let args = match send.insn(self) {
+                    Insn::SendDirect(data) => data.args.to_vec(),
+                    _ => unreachable!("position {send_insn_id} is not a SendDirect"),
+                };
 
                 // Split the original block at the SendDirect's position. Pre-Send
                 // instructions stay in `block`; the SendDirect itself is consumed
