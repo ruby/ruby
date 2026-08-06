@@ -18,7 +18,8 @@ ruby_version_is "4.1" do
     end
 
     it "raises an ArgumentError if byte sizes differ" do
-      -> { "\x00".bitwise_or("\x00\x00") }.should.raise(ArgumentError)
+      -> { "\xF0".bitwise_or("") }.should.raise(ArgumentError)
+      -> { "\xF0".bitwise_or("\x00\x00") }.should.raise(ArgumentError)
     end
 
     it "returns a BINARY string" do
