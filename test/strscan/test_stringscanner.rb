@@ -578,6 +578,13 @@ module StringScannerTests
     assert_integer_at(s, 0, 0) # 0xaf
   end
 
+  def test_integer_at_empty
+    s = create_string_scanner("")
+    assert_equal("", s.scan(/()/))
+    assert_nil(s.integer_at(0))
+    assert_nil(s.integer_at(1))
+  end
+
   def test_integer_at_shrunk
     omit("not supported on TruffleRuby") if RUBY_ENGINE == "truffleruby"
 
