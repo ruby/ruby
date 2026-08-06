@@ -607,14 +607,45 @@ ar_equal(VALUE x, VALUE y)
     return rb_any_cmp(x, y) == 0;
 }
 
+
+#if SIZEOF_VALUE == 8
+#define AR_HINT_BASE_MASK 0x101010101010101
+#define AR_HINT_NORMALIZE_MASK 0x7F7F7F7F7F7F7F7F
+#ifdef WORDS_BIGENDIAN
+#define AR_HINT_COUNT_TRAILING_ZERO_BYTES(x) (nlz_int64(x) >> 3)
+#else
+#define AR_HINT_COUNT_TRAILING_ZERO_BYTES(x) (ntz_int64(x) >> 3)
+#endif
+#else
+#define AR_HINT_BASE_MASK 0x1010101
+#define AR_HINT_NORMALIZE_MASK 0x7F7F7F7F
+#ifdef WORDS_BIGENDIAN
+#define AR_HINT_COUNT_TRAILING_ZERO_BYTES(x) (nlz_int32(x) >> 3)
+#else
+#define AR_HINT_COUNT_TRAILING_ZERO_BYTES(x) (ntz_int32(x) >> 3)
+#endif
+#endif
+
+static inline unsigned int
+ar_hint_first_match(ar_hint_t needle, VALUE haystack)
+{
+    // Common SWAR technique.
+    // First XOR all bytes so that matching ones are set to 0x00.
+    VALUE search_mask = AR_HINT_BASE_MASK * needle;
+    VALUE matches = haystack ^ search_mask;
+
+    // Then turns 0x00 into 0x80, and any other bytes into 0x00.
+    matches = ~((((matches & AR_HINT_NORMALIZE_MASK) + AR_HINT_NORMALIZE_MASK) | matches) | AR_HINT_NORMALIZE_MASK);
+    return AR_HINT_COUNT_TRAILING_ZERO_BYTES(matches);
+}
+
 // Returns the bin index if found, RHASH_AR_TABLE_MAX_BOUND if not found,
 // or RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE if #eql? or a Thread converted the hash to st_table.
 static unsigned
 ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
 {
-    /* if table is NULL, then bound also should be 0 */
-
-    for (unsigned i = 0; i < RHASH_AR_TABLE_BOUND(hash); i++) {
+    unsigned first_match = ar_hint_first_match(hint, RHASH_AR_TABLE(hash)->ar_hint.word);
+    for (unsigned i = first_match; i < RHASH_AR_TABLE_BOUND(hash); i++) {
         const ar_hint_t *hints = RHASH_AR_TABLE(hash)->ar_hint.ary;
         if (hints[i] == hint) {
             ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
