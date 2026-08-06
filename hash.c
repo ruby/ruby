@@ -5102,20 +5102,7 @@ add_new_i(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 int
 rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val)
 {
-    st_table *tbl;
-    int ret = -1;
-
-    if (RHASH_AR_TABLE_P(hash)) {
-        ret = ar_update(hash, (st_data_t)key, add_new_i, (st_data_t)val);
-        if (ret == -1) {
-            ar_force_convert_table(hash, __FILE__, __LINE__);
-        }
-    }
-
-    if (ret == -1) {
-        tbl = RHASH_TBL_RAW(hash);
-        ret = st_update(tbl, (st_data_t)key, add_new_i, (st_data_t)val);
-    }
+    int ret = rb_hash_stlike_update(hash, key, add_new_i, val);
     if (!ret) {
         // Newly inserted
         RB_OBJ_WRITTEN(hash, Qundef, key);
