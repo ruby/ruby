@@ -2642,15 +2642,21 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         return false
     }
 
-    // SendDirect only models explicit keyword slots for now, so leave this
-    // conversion to VM dispatch.
-    if keywords_as_positional_hash {
+    // Plain keyword-to-positional-hash is safe to synthesize below. Keep VM
+    // dispatch for callee modes that need keyword-sensitive handling: **nil
+    // rejection and ruby2_keywords flag preservation.
+    if keywords_as_positional_hash
+        && (params.flags.accepts_no_kwarg() != 0 || params.flags.ruby2_keywords() != 0)
+    {
         function.count(block, complex_arg_pass_keyword_to_positional_hash);
         function.set_dynamic_send_reason(send_insn, ComplexArgPass);
         return false;
     }
 
-    let keyword_ok = c_int::try_from(caller_kw_count)
+    // After keyword-to-positional-hash, SendDirect receives no keyword slots;
+    // the caller keywords are represented by one extra positional Hash.
+    let effective_keyword_count = if keywords_as_positional_hash { 0 } else { caller_kw_count };
+    let keyword_ok = c_int::try_from(effective_keyword_count)
         .as_ref()
         .map(|argc| (kw_req_num..=kw_total_num).contains(argc))
         .unwrap_or(false);
@@ -2670,7 +2676,9 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     // With *rest, SendDirect receives one rest-array slot instead of each rest
     // element, so cap positional argc at required/post + filled opts + rest slot.
     let passed_opt_num = (caller_positional_i32 - min_positional).min(opt_num) as usize;
-    let send_positional_argc = if has_rest { min_positional as usize + passed_opt_num + 1 } else { caller_positional };
+    // Without *rest, use the converted positional count so the synthesized
+    // keyword Hash is included in the SendDirect argument count.
+    let send_positional_argc = if has_rest { min_positional as usize + passed_opt_num + 1 } else { effective_positional };
     let send_argc = send_positional_argc + kw_total_num as usize;
     let c_argc = 1 + send_argc + block_arg; // +1 for self
 
@@ -3605,8 +3613,7 @@ impl Function {
         iseq: IseqPtr,
         state: InsnId,
     ) -> Result<SendDirectArgs, SendFallbackReason> {
-        let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
-        let (processed_args, caller_argc, kw_bits) = self.setup_keyword_arguments(block, args, kwarg, iseq)?;
+        let (processed_args, caller_argc, kw_bits) = self.setup_keyword_arguments(block, args, ci, iseq, state)?;
         let (processed_args, jit_entry_idx) = self.setup_rest_parameter(block, processed_args, iseq, state)?;
 
         // If args were reordered or synthesized, create a new snapshot with the updated stack
@@ -3639,17 +3646,49 @@ impl Function {
         &mut self,
         block: BlockId,
         args: &[InsnId],
-        kwarg: *const rb_callinfo_kwarg,
+        ci: *const rb_callinfo,
         iseq: IseqPtr,
+        state: InsnId,
     ) -> Result<(Vec<InsnId>, usize, u32), SendFallbackReason> {
+        let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
         let callee_keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
         if callee_keyword.is_null() {
-            if !kwarg.is_null() {
-                // Caller is passing kwargs but callee doesn't expect them.
+            if kwarg.is_null() {
+                // Neither caller nor callee have keywords - nothing to do
+                return Ok((args.to_vec(), args.len(), 0));
+            }
+
+            let params = unsafe { iseq.params() };
+            let ci_flags = unsafe { rb_vm_ci_flag(ci) };
+            if ci_flags & VM_CALL_KW_SPLAT != 0 {
+                // Caller **kw is one runtime Hash, not explicit keyword slots, so
+                // there is no static key/value list to repack here.
                 return Err(SendDirectKeywordMismatch);
             }
-            // Neither caller nor callee have keywords - nothing to do
-            return Ok((args.to_vec(), args.len(), 0));
+
+            if params.flags.accepts_no_kwarg() != 0 || params.flags.ruby2_keywords() != 0 {
+                // These callee modes need VM keyword setup even without a keyword table:
+                // **nil rejects keywords, and ruby2_keywords requires RHASH_PASS_AS_KEYWORDS.
+                return Err(SendDirectKeywordMismatch);
+            }
+
+            // Match vm_args.c's setup_parameters_complex via args_kw_argv_to_hash:
+            // explicit caller keywords passed to a method with no keyword table
+            // become one final positional Hash before regular parameter setup.
+            let caller_kw_count = unsafe { get_cikw_keyword_len(kwarg) } as usize;
+            let kw_args_start = args.len() - caller_kw_count;
+            let mut elements = Vec::with_capacity(caller_kw_count * 2);
+            for i in 0..caller_kw_count {
+                let keyword = unsafe { get_cikw_keywords_idx(kwarg, i as i32) };
+                let key = self.push_insn(block, Insn::Const { val: Const::Value(keyword) });
+                elements.push(key);
+                elements.push(args[kw_args_start + i]);
+            }
+
+            let hash = self.push_insn(block, Insn::NewHash { elements, state });
+            let mut processed_args = args[..kw_args_start].to_vec();
+            processed_args.push(hash);
+            return Ok((processed_args, args.len(), 0));
         }
 
         // kwarg may be null if caller passes no keywords but callee has optional keywords
@@ -4194,12 +4233,15 @@ impl Function {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
-                match self.find(insn_id) {
-                    Insn::Send { recv, block: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
+                match self.resolve(insn_id).insn(self) {
+                    &Insn::Send { recv, block: None, ref args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
                         self.try_rewrite_freeze(block, insn_id, recv, state),
-                    Insn::Send { recv, block: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
+                    &Insn::Send { recv, block: None, ref args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
                         self.try_rewrite_uminus(block, insn_id, recv, state),
-                    ref send@Insn::Send { mut recv, cd, state, block: send_block, ref args, .. } => {
+                    Insn::Send { .. } => {
+                        let ref send@Insn::Send { mut recv, cd, state, block: send_block, ref args, .. } = self.find(insn_id) else {
+                            panic!("Expected Send instruction");
+                        };
                         let mut has_block = send_block.is_some();
                         let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), state) {
                             ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
@@ -4755,7 +4797,7 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                     }
-                    Insn::IsMethodCfunc { val, cd, cfunc, state } if self.type_of(val).ruby_object_known() => {
+                    &Insn::IsMethodCfunc { val, cd, cfunc, state } if self.type_of(val).ruby_object_known() => {
                         let class = self.type_of(val).ruby_object().unwrap();
                         let cme = unsafe { rb_zjit_vm_search_method(self.iseq.into(), cd as *mut rb_call_data, class) };
                         let is_expected_cfunc = unsafe { rb_zjit_cme_is_cfunc(cme, cfunc as *const c_void) };
@@ -4765,7 +4807,7 @@ impl Function {
                         self.insn_types[replacement.0] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
-                    Insn::ObjectAlloc { val, state } => {
+                    &Insn::ObjectAlloc { val, state } => {
                         if let Some(replacement) = self.try_inline_object_alloc(block, val, state) {
                             self.insn_types[replacement.0] = self.infer_type(replacement);
                             self.make_equal_to(insn_id, replacement);
@@ -4773,7 +4815,7 @@ impl Function {
                             self.push_insn_id(block, insn_id);
                         }
                     }
-                    Insn::NewRange { low, high, flag, state } => {
+                    &Insn::NewRange { low, high, flag, state } => {
                         let low_is_fix  = self.is_a(low,  types::Fixnum);
                         let high_is_fix = self.is_a(high, types::Fixnum);
 
@@ -4787,7 +4829,10 @@ impl Function {
                             self.push_insn_id(block, insn_id);
                         };
                     }
-                    Insn::InvokeSuper { recv, cd, blockiseq, args, state, .. } => {
+                    &Insn::InvokeSuper { .. } => {
+                        let Insn::InvokeSuper { recv, cd, blockiseq, args, state, .. } = self.find(insn_id) else {
+                            unreachable!("expected InvokeSuper insn");
+                        };
                         // Helper to emit common guards for super call optimization.
                         fn emit_super_call_guards(
                             fun: &mut Function,
@@ -5419,7 +5464,7 @@ impl Function {
 
                 // Insert PushLightweightFrame and jump to callee body entry.
                 self.push_insn(block, Insn::PushInlineFrame {
-                    iseq, cme, recv, args: args.clone(), blockiseq, state,
+                    iseq, cme, recv, args, blockiseq, state,
                 });
                 self.count(block, Counter::inline_iseq_optimized_send_count);
                 self.push_insn(block, Insn::Jump(BranchEdge {
@@ -5515,7 +5560,7 @@ impl Function {
                     TDATA_OFFSET_FIELDS_OBJ
                 };
 
-                let fields_obj = self.load_field(block, self_val, FieldName::fields_obj, offset, types::RubyValue);
+                let fields_obj = self.load_field(block, self_val, FieldName::fields_obj, offset, types::IMemo);
                 // All fields objects are embedded
                 self.load_ivar_embedded(block, fields_obj, id, ivar_index)
             },
@@ -5634,7 +5679,7 @@ impl Function {
                 (self_val, true)
             },
             ShapeLayout::Extended => {
-                let fields = self.load_field(block, self_val, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::BasicObject);
+                let fields = self.load_field(block, self_val, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::IMemo);
                 (fields, false)
             },
             ShapeLayout::Other | ShapeLayout::RClass => {
@@ -6916,8 +6961,8 @@ impl Function {
             | Insn::NewRange { low: left, high: right, .. }
             | Insn::CheckMatch { target: left, pattern: right, .. }
             | Insn::WriteBarrier { recv: left, val: right } => {
-                self.assert_subtype(insn_id, left, types::BasicObject)?;
-                self.assert_subtype(insn_id, right, types::BasicObject)
+                self.assert_subtype(insn_id, left, types::RubyValue)?;
+                self.assert_subtype(insn_id, right, types::RubyValue)
             }
             Insn::GetConstant { klass, allow_nil, .. } => {
                 self.assert_subtype(insn_id, klass, types::BasicObject)?;
@@ -7811,6 +7856,23 @@ impl ProfileOracle {
     fn append(&mut self, callee: &ProfileOracle) {
         for (snapshot, entries) in &callee.types {
             self.types.entry(*snapshot).or_default().extend(entries.iter().cloned());
+        }
+    }
+
+    /// Copy the profile entries recorded for the `src` Snapshot to the `dst` Snapshot, excluding
+    /// entries for `exclude` (chased through guards). Used by polymorphic dispatch, where each
+    /// refined arm gets a fresh Snapshot: the receiver must resolve from its refined type rather
+    /// than the polymorphic profile, but the other operands' profiles should remain visible so
+    /// argument-profile-dependent specializations (e.g. Array#[]) still apply.
+    fn copy_entries_except(&mut self, src: InsnId, dst: InsnId, exclude: InsnId, fun: &Function) {
+        let Some(entries) = self.types.get(&src) else { return };
+        let exclude = fun.chase_insn(exclude);
+        let filtered: Vec<_> = entries.iter()
+            .filter(|(insn, _)| fun.chase_insn(*insn) != exclude)
+            .cloned()
+            .collect();
+        if !filtered.is_empty() {
+            self.types.insert(dst, filtered);
         }
     }
 }
@@ -9283,6 +9345,12 @@ fn add_iseq_to_hir(
                             // its refined, exact type instead of the polymorphic profile that is
                             // keyed at exit_id.
                             let snapshot = fun.push_insn(iftrue_block, Insn::Snapshot { state: Box::new(exit_state.clone()) });
+                            // Keep the other operands' profile entries visible at the fresh
+                            // Snapshot so the specialized send can still see argument profiles
+                            // (e.g. Array#[] needs a Fixnum-profiled index to be inlined). Only
+                            // the receiver's entry is dropped: it must resolve from its refined,
+                            // exact type, and resolve_receiver_type prefers profiles over types.
+                            profiles.copy_entries_except(exit_id, snapshot, recv, fun);
                             let refined_recv = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: expected });
                             let send = fun.push_insn(iftrue_block, Insn::Send { recv: refined_recv, cd, block: None, args: args.clone(), state: snapshot, reason: Uncategorized(opcode) });
                             fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));

@@ -270,6 +270,29 @@ class TestIO_Console
     }
   end
 
+  def test_console_mode
+    helper {|m, s|
+      begin
+        original = s.console_mode
+        assert_kind_of(IO::ConsoleMode, original)
+
+        noecho = original.dup
+        noecho.echo = false
+        assert_same(noecho, s.send(:console_mode=, noecho))
+        assert_not_predicate(s, :echo?)
+
+        raw = original.raw
+        assert_not_same(original, raw)
+        assert_same(raw, raw.raw!)
+        assert_same(raw, s.send(:console_mode=, raw))
+        s.print "raw\n"
+        assert_equal("raw\n", m.gets)
+      ensure
+        s.console_mode = original if original
+      end
+    }
+  end
+
   def test_tty_on_pty
     pend "not supported" unless TTY_ENHANCED
 

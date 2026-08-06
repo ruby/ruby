@@ -7,8 +7,6 @@ unless Gem::HAVE_OPENSSL
 end
 
 class TestGemSecurityTrustDir < Gem::TestCase
-  CHILD_CERT = load_cert "child"
-
   def setup
     super
 

@@ -1374,15 +1374,16 @@ VALUE
 rb_proc_dup(VALUE self)
 {
     VALUE procval = rb_proc_dup_0(self);
-    const rb_cref_t *cref = rb_proc_refinements_cref(self);
-    if (cref) rb_proc_set_refinements_cref(procval, cref);
+    VALUE recipe = rb_proc_refinements_recipe(self);
+    if (!NIL_P(recipe)) rb_proc_set_refinements_recipe(procval, recipe);
     return procval;
 }
 
-/* Proc#refined: build a Proc that runs `iseq` (a copy of self's block iseq)
- * with `cref` as its refinement cref, sharing self's environment. */
+/* Proc#refined: build a Proc that runs `iseq` with the refinements of
+ * `recipe`, sharing self's environment.  `iseq` is normally self's own block
+ * iseq, which the copy replaces on the first call. */
 VALUE
-rb_proc_dup_with_iseq_and_cref(VALUE self, const rb_iseq_t *iseq, const rb_cref_t *cref)
+rb_proc_dup_with_iseq_and_recipe(VALUE self, const rb_iseq_t *iseq, VALUE recipe)
 {
     rb_proc_t *src;
     GetProcPtr(self, src);
@@ -1392,7 +1393,7 @@ rb_proc_dup_with_iseq_and_cref(VALUE self, const rb_iseq_t *iseq, const rb_cref_
     block.as.captured.code.iseq = iseq;
 
     VALUE procval = proc_create(rb_obj_class(self), &block, src->is_from_method, src->is_lambda);
-    rb_proc_set_refinements_cref(procval, cref);
+    rb_proc_set_refinements_recipe(procval, recipe);
 
     RB_GC_GUARD(self);
     return procval;
@@ -1884,7 +1885,7 @@ invoke_block_from_c_bh(rb_execution_context_t *ec, VALUE block_handler,
             VALUE procval = VM_BH_TO_PROC(block_handler);
             rb_proc_t *po;
             GetProcPtr(procval, po);
-            if (po->is_refined) cref = rb_proc_refinements_cref(procval);
+            if (po->is_refined) cref = rb_proc_refinements_cref_for_call(procval);
             if (force_blockarg == FALSE) {
                 is_lambda = po->is_lambda;
             }

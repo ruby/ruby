@@ -188,6 +188,84 @@ RSpec.describe "bundle install with the cooldown setting" do
       expect(the_bundle).to include_gems("ripe_gem 2.0.0")
     end
 
+    it "summarizes skipped versions at the end of bundle install" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      bundle "install --cooldown 7", artifice: "compact_index_cooldown"
+
+      expect(out).to include("The following gem versions were skipped by the cooldown setting:")
+      expect(out).to include("* ripe_gem 2.0.0 (available in 6 days), resolved 1.0.0 instead")
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "summarizes skipped versions at the end of bundle update" do
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update ripe_gem", artifice: "compact_index_cooldown"
+
+      expect(out).to include("The following gem versions were skipped by the cooldown setting:")
+      expect(out).to include("* ripe_gem 2.0.0 (available in 6 days), resolved 1.0.0 instead")
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "does not print a skip summary when cooldown is disabled" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      bundle "install --cooldown 0", artifice: "compact_index_cooldown"
+
+      expect(out).not_to include("skipped by the cooldown setting")
+    end
+
+    it "does not print a skip summary for versions the Gemfile requirement rejects anyway" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem", "~> 1.0"
+      G
+
+      bundle "install --cooldown 7", artifice: "compact_index_cooldown"
+
+      expect(out).not_to include("skipped by the cooldown setting")
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "does not print a skip summary when installing from an up-to-date lockfile" do
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      bundle "install", artifice: "compact_index_cooldown"
+      expect(out).to include("skipped by the cooldown setting")
+
+      bundle "install", artifice: "compact_index_cooldown"
+      expect(out).not_to include("skipped by the cooldown setting")
+    end
+
     it "applies cooldown declared per-source in the Gemfile" do
       gemfile <<-G
         source "https://gem.repo3", cooldown: 7

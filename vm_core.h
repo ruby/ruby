@@ -577,6 +577,11 @@ struct rb_iseq_constant_body {
     // ZJIT stores some data on each iseq.
     void *zjit_payload;
 #endif
+
+    // Hash of the source this iseq was compiled from. Meaningful only when
+    // has_source_hash is set.
+    uint64_t source_hash;
+    bool has_source_hash;
 };
 
 /* T_IMEMO/iseq */
@@ -1334,10 +1339,14 @@ typedef struct {
     unsigned int is_refined: 1;         /* bool: Proc#refined */
 } rb_proc_t;
 
-/* A refined proc's cref lives in a hidden ivar on the proc object;
- * rb_proc_refinements_cref returns NULL unless is_refined is set. */
-const rb_cref_t *rb_proc_refinements_cref(VALUE procval);
-void rb_proc_set_refinements_cref(VALUE procval, const rb_cref_t *cref);
+/* A refined proc's refinements recipe (see Proc#refined) lives in a hidden
+ * ivar on the proc object; the accessors return nil/NULL unless is_refined is
+ * set.  rb_proc_refinements_cref_for_call also makes the copy of the block
+ * that Proc#refined defers until the first call, so it can raise and must not
+ * be called outside a tag. */
+VALUE rb_proc_refinements_recipe(VALUE procval);
+void rb_proc_set_refinements_recipe(VALUE procval, VALUE recipe);
+const rb_cref_t *rb_proc_refinements_cref_for_call(VALUE procval);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_proc_isolate(VALUE self);

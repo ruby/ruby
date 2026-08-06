@@ -740,3 +740,43 @@ class TestERBCoreWOStrScan < TestERBCore
     ERB::Compiler::Scanner.instance_variable_set('@scanner_map', @save_map)
   end
 end
+
+class TestERBRactor < Test::Unit::TestCase
+  def test_compile_and_result_in_ractor
+    assert_ractor(<<~RUBY, require: 'erb')
+      r = Ractor.new do
+        ERB.new("Hello, <%= 'world' %>!").result(binding)
+      end
+      assert_equal("Hello, world!", r.value)
+    RUBY
+  end
+
+  def test_trim_mode_in_ractor
+    assert_ractor(<<~RUBY, require: 'erb')
+      src = "<% [1, 2].each do |i| %>\\n<%= i %>\\n<% end %>\\n"
+      r = Ractor.new(src) { |s| ERB.new(s, trim_mode: '-').result(binding) }
+      assert_equal("\\n1\\n\\n2\\n\\n", r.value)
+
+      r = Ractor.new(src) { |s| ERB.new(s, trim_mode: '<>').result(binding) }
+      assert_equal("12", r.value)
+    RUBY
+  end
+
+  def test_frozen_erb_instance_reused_across_ractors
+    assert_ractor(<<~RUBY, require: 'erb')
+      erb = ERB.new("<%= 1 + 1 %>")
+      erb.freeze
+      rs = 2.times.map { Ractor.new(erb) { |e| e.result(binding) } }
+      assert_equal(["2", "2"], rs.map(&:value))
+    RUBY
+  end
+
+  def test_util_html_escape_in_ractor
+    assert_ractor(<<~RUBY, require: 'erb')
+      r = Ractor.new do
+        ERB::Util.html_escape("<script>")
+      end
+      assert_equal("&lt;script&gt;", r.value)
+    RUBY
+  end
+end

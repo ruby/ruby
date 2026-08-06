@@ -325,6 +325,8 @@ mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
     rb_gc_mark_and_move(&ment->defined_class);
 
     if (def) {
+        rb_gc_mark_and_move(&def->original_module);
+
         switch (def->type) {
           case VM_METHOD_TYPE_ISEQ:
             if (def->body.iseq.iseqptr) {

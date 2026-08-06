@@ -39,6 +39,11 @@ Note: We're only listing outstanding class updates.
       given names, raising `KeyError` for missing names unless a block is
       given. [[Feature #21781]]
 
+* Hash
+
+    * `Hash.ruby2_keywords_hash?` and `Hash.ruby2_keywords_hash` are
+      deprecated and will be removed in Ruby 4.5. [[Feature #22205]]
+
 * Integer
 
     * `Integer#bit_count` is added. It returns the number of `1` bits in the
@@ -59,6 +64,13 @@ Note: We're only listing outstanding class updates.
     * `MatchData#integer_at` is added.  It converts the matched substring to
       integer and return the result.  [[Feature #21932]]
 
+* Module
+
+    * `Module#descendants` is added.  It returns an array of classes and
+      modules that have the receiver in their ancestors.  [[Feature #9779]]
+    * `Module#ruby2_keywords` and top-level `ruby2_keywords` are
+      deprecated and will be removed in Ruby 4.4. [[Feature #22205]]
+
 * ObjectSpace
 
     * `ObjectSpace._id2ref` was removed.  [[Feature #22135]]
@@ -69,6 +81,8 @@ Note: We're only listing outstanding class updates.
       receiver but with the refinements activated by the given modules
       in effect inside its body, without affecting the original `Proc`.
       [[Feature #22097]]
+    * `Proc#ruby2_keywords` is deprecated and will be removed in Ruby 4.4.
+      [[Feature #22205]]
 
 * Range
 
@@ -100,6 +114,11 @@ Note: We're only listing outstanding class updates.
 * Symbol
 
     * `Symbol#to_s` now returns a frozen string. [[Feature #22137]]
+
+* Thread::Backtrace::Location
+
+    * `Thread::Backtrace::Location#source_range` is added. It returns a
+      `Ruby::SourceRange` for the Ruby expression associated with the frame.
 
 ## Stdlib updates
 
@@ -137,11 +156,11 @@ They are still available on rubygems.org and can be installed with
 ### The following default gems are updated.
 
 * RubyGems 4.1.0.dev
-  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17]
+  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18]
 * bundler 4.1.0.dev
   * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10], [v4.0.11][bundler-v4.0.11], [v4.0.12][bundler-v4.0.12], [v4.0.13][bundler-v4.0.13], [v4.0.14][bundler-v4.0.14], [v4.0.15][bundler-v4.0.15], [v4.0.16][bundler-v4.0.16], [v4.0.17][bundler-v4.0.17]
-* erb 6.0.6
-  * 6.0.1 to [v6.0.1.1][erb-v6.0.1.1], [v6.0.2][erb-v6.0.2], [v6.0.3][erb-v6.0.3], [v6.0.4][erb-v6.0.4], [v6.0.5][erb-v6.0.5], [v6.0.6][erb-v6.0.6]
+* erb 6.0.7
+  * 6.0.1 to [v6.0.1.1][erb-v6.0.1.1], [v6.0.2][erb-v6.0.2], [v6.0.3][erb-v6.0.3], [v6.0.4][erb-v6.0.4], [v6.0.5][erb-v6.0.5], [v6.0.6][erb-v6.0.6], [v6.0.7][erb-v6.0.7]
 * error_highlight 0.7.2
 * ipaddr 1.2.9
   * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
@@ -178,7 +197,7 @@ They are still available on rubygems.org and can be installed with
 * net-imap 0.6.6
   * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4], [v0.6.4.1][net-imap-v0.6.4.1], [v0.6.5][net-imap-v0.6.5], [v0.6.6][net-imap-v0.6.6]
 * rbs 4.0.3
-  * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3], [v3.10.4][rbs-v3.10.4], [v4.0.0.dev.5][rbs-v4.0.0.dev.5], [v4.0.0][rbs-v4.0.0], [v4.0.2][rbs-v4.0.2], [v4.0.3][rbs-v4.0.3]
+  * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3], [v3.10.4][rbs-v3.10.4], [v4.0.0.dev.1][rbs-v4.0.0.dev.1], [v4.0.0.dev.2][rbs-v4.0.0.dev.2], [v4.0.0.dev.3][rbs-v4.0.0.dev.3], [v4.0.0.dev.4][rbs-v4.0.0.dev.4], [v4.0.0.dev.5][rbs-v4.0.0.dev.5], [v4.0.0][rbs-v4.0.0], [v4.0.1.dev.1][rbs-v4.0.1.dev.1], [v4.0.1.dev.2][rbs-v4.0.1.dev.2], [v4.0.1][rbs-v4.0.1], [v4.0.2][rbs-v4.0.2], [v4.0.3][rbs-v4.0.3]
 * typeprof 0.32.0
 * mutex_m 0.3.0
 * bigdecimal 4.1.2
@@ -221,6 +240,11 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 * `Kernel#at_exit` and `END {}` now raise `Ractor::IsolationError` when called
   in a non-main Ractor.  Previously the registered handler ran in the main
   Ractor at process exit, which was confusing. [[Feature #22139]]
+
+* `Ractor.make_shareable` now raises `Ractor::Error` for an `IO` object, and
+  `Ractor.shareable?` returns `false` for it.  A frozen `IO` used to be
+  shareable, but almost all of its methods raise `FrozenError` and it can
+  still refer to unshareable objects through the members of `rb_io_t`.
 
 ## Stdlib compatibility issues
 
@@ -276,6 +300,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 ## JIT
 
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
+[Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
 [Feature #20163]: https://bugs.ruby-lang.org/issues/20163
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
@@ -295,6 +320,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22139]: https://bugs.ruby-lang.org/issues/22139
 [Feature #22175]: https://bugs.ruby-lang.org/issues/22175
 [Feature #22185]: https://bugs.ruby-lang.org/issues/22185
+[Feature #22205]: https://bugs.ruby-lang.org/issues/22205
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
@@ -311,6 +337,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [RubyGems-v4.0.15]: https://github.com/rubygems/rubygems/releases/tag/v4.0.15
 [RubyGems-v4.0.16]: https://github.com/rubygems/rubygems/releases/tag/v4.0.16
 [RubyGems-v4.0.17]: https://github.com/rubygems/rubygems/releases/tag/v4.0.17
+[RubyGems-v4.0.18]: https://github.com/rubygems/rubygems/releases/tag/v4.0.18
 [bundler-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.4
 [bundler-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.5
 [bundler-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.6
@@ -331,6 +358,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [erb-v6.0.4]: https://github.com/ruby/erb/releases/tag/v6.0.4
 [erb-v6.0.5]: https://github.com/ruby/erb/releases/tag/v6.0.5
 [erb-v6.0.6]: https://github.com/ruby/erb/releases/tag/v6.0.6
+[erb-v6.0.7]: https://github.com/ruby/erb/releases/tag/v6.0.7
 [ipaddr-v1.2.9]: https://github.com/ruby/ipaddr/releases/tag/v1.2.9
 [json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
 [json-v2.19.0]: https://github.com/ruby/json/releases/tag/v2.19.0
@@ -374,8 +402,15 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [rbs-v3.10.2]: https://github.com/ruby/rbs/releases/tag/v3.10.2
 [rbs-v3.10.3]: https://github.com/ruby/rbs/releases/tag/v3.10.3
 [rbs-v3.10.4]: https://github.com/ruby/rbs/releases/tag/v3.10.4
+[rbs-v4.0.0.dev.1]: https://github.com/ruby/rbs/releases/tag/v4.0.0.dev.1
+[rbs-v4.0.0.dev.2]: https://github.com/ruby/rbs/releases/tag/v4.0.0.dev.2
+[rbs-v4.0.0.dev.3]: https://github.com/ruby/rbs/releases/tag/v4.0.0.dev.3
+[rbs-v4.0.0.dev.4]: https://github.com/ruby/rbs/releases/tag/v4.0.0.dev.4
 [rbs-v4.0.0.dev.5]: https://github.com/ruby/rbs/releases/tag/v4.0.0.dev.5
 [rbs-v4.0.0]: https://github.com/ruby/rbs/releases/tag/v4.0.0
+[rbs-v4.0.1.dev.1]: https://github.com/ruby/rbs/releases/tag/v4.0.1.dev.1
+[rbs-v4.0.1.dev.2]: https://github.com/ruby/rbs/releases/tag/v4.0.1.dev.2
+[rbs-v4.0.1]: https://github.com/ruby/rbs/releases/tag/v4.0.1
 [rbs-v4.0.2]: https://github.com/ruby/rbs/releases/tag/v4.0.2
 [rbs-v4.0.3]: https://github.com/ruby/rbs/releases/tag/v4.0.3
 [bigdecimal-v4.1.0]: https://github.com/ruby/bigdecimal/releases/tag/v4.1.0

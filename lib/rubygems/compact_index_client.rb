@@ -1,14 +1,17 @@
 # frozen_string_literal: true
 
+# Skip reloading when an identical copy (e.g. the one shipped inside the Bundler
+# gem) was already required from a different path, to avoid redefinition warnings.
+return if defined?(Gem::CompactIndexClient::INFO_REQS)
+
 ##
 # The CompactIndexClient fetches and parses the compact index files
 # (names, versions and info/[gem]) served by a gem server, keeping a
 # local cache so subsequent fetches only transfer what changed.
 #
-# This is an independent RubyGems port of Bundler::CompactIndexClient.
-# Both implementations are intentionally kept separate so that changes
-# on either side cannot affect the other; this one only depends on
-# RubyGems itself.
+# This is the single shared client: Bundler ships a copy of it and uses
+# it underneath its own fetcher orchestration, injecting its fetcher and
+# filesystem access hook.
 
 class Gem::CompactIndexClient
   SUPPORTED_DIGESTS = { "sha-256" => :SHA256 }.freeze
@@ -27,6 +30,21 @@ class Gem::CompactIndexClient
   end
 
   class Error < StandardError; end
+
+  # Filesystem reads and writes funnel through this hook so that a host
+  # (e.g. Bundler) can translate low-level Errno exceptions into its own
+  # friendlier errors. The default just yields the path.
+  def self.filesystem_access(path, action = :write, &block)
+    if @filesystem_access
+      @filesystem_access.call(path, action, &block)
+    else
+      yield path
+    end
+  end
+
+  def self.filesystem_access=(hook)
+    @filesystem_access = hook
+  end
 
   require_relative "compact_index_client/cache"
   require_relative "compact_index_client/cache_file"

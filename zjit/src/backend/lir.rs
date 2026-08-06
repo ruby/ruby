@@ -617,6 +617,10 @@ pub struct SideExitRecompile {
     /// The compiled unit whose version must be invalidated to force a recompile. For inlined
     /// methods, this will be the outer function it was inlined into.
     pub compiled_iseq: Opnd,
+    /// The exiting frame's ISEQ, which owns the profile entry for `insn_idx`. For
+    /// an exit out of inlined code this is the inlined callee, not the compiled unit.
+    pub frame_iseq: Opnd,
+    /// The exiting frame's instruction index within `frame_iseq`.
     pub insn_idx: u32,
 }
 
@@ -906,10 +910,26 @@ pub enum Insn {
     /// Cold fields are boxed (see `PatchPointData`) to keep `Insn` small.
     PatchPoint(Box<PatchPointData>),
 
-    /// Make sure the last PatchPoint has enough space to insert a jump.
-    /// We insert this instruction at the end of each block so that the jump
-    /// will not overwrite the next block or a side exit.
-    PadPatchPoint,
+    /// Space reserved immediately before a PatchPoint, keeping the *preceding*
+    /// patch point's invalidation jump from running over this one's address.
+    /// The position right after this pad is itself where a jump gets written on
+    /// invalidation, so whatever follows has to keep `jmp_ptr_bytes()` of
+    /// distance from it in turn.
+    ///
+    /// Zero-width whenever there is already enough room, which is the common
+    /// case.
+    PatchPointPad,
+
+    /// Space reserved at a boundary that a preceding PatchPoint's invalidation
+    /// jump must not cross: the start of a non-entry block, the start of a side
+    /// exit, or the end of the last block. Nothing is ever patched at a
+    /// boundary, so unlike [`Insn::PatchPointPad`] this only protects what comes
+    /// after it, and it does not become something later code has to keep away
+    /// from — the first patch point of a block needs no padding in front of it.
+    ///
+    /// Zero-width whenever there is already enough room, which is the common
+    /// case.
+    BoundaryPad,
 
     // Mark a position in the generated code
     PosMarker(PosMarkerFn),
@@ -997,10 +1017,11 @@ macro_rules! for_each_operand_impl {
             }
 
             Insn::BakeString(_) |
+            Insn::BoundaryPad |
             Insn::Breakpoint | Insn::Abort |
             Insn::Comment(_) |
             Insn::CPop { .. } |
-            Insn::PadPatchPoint |
+            Insn::PatchPointPad |
             Insn::PosMarker(_) |
             Insn::PosMarkerAtBlockEnd(_) => {},
 
@@ -1135,6 +1156,7 @@ impl Insn {
             Insn::Add { .. } => "Add",
             Insn::And { .. } => "And",
             Insn::BakeString(_) => "BakeString",
+            Insn::BoundaryPad => "BoundaryPad",
             Insn::Breakpoint => "Breakpoint",
             Insn::Abort => "Abort",
             Insn::Comment(_) => "Comment",
@@ -1183,7 +1205,7 @@ impl Insn {
             Insn::Not { .. } => "Not",
             Insn::Or { .. } => "Or",
             Insn::PatchPoint(..) => "PatchPoint",
-            Insn::PadPatchPoint => "PadPatchPoint",
+            Insn::PatchPointPad => "PatchPointPad",
             Insn::PosMarker(_) => "PosMarker",
             Insn::PosMarkerAtBlockEnd(_) => "PosMarkerAtBlockEnd",
             Insn::RShift { .. } => "RShift",
@@ -1875,17 +1897,15 @@ impl Assembler
 
         // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
-
         let block_ids = self.block_order();
-        let num_blocks = block_ids.len();
 
         for (i, block_id) in block_ids.iter().enumerate() {
             let block = &self.basic_blocks[block_id.0];
             // Entry blocks shouldn't ever be preceded by something that can
             // stomp on this block.
             if !block.is_entry {
-                push_insns_with_perf_symbol(&mut insns, "PadPatchPoint", |insns| {
-                    insns.push(Insn::PadPatchPoint);
+                push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
+                    insns.push(Insn::BoundaryPad);
                 });
             }
 
@@ -1915,14 +1935,12 @@ impl Assembler
             if let Some(marker) = block_end_pos_marker {
                 insns.push(Insn::PosMarker(marker));
             }
-
-            // Make sure we don't stomp on the next function
-            if block_id.0 == num_blocks - 1 {
-                push_insns_with_perf_symbol(&mut insns, "PadPatchPoint", |insns| {
-                    insns.push(Insn::PadPatchPoint);
-                });
-            }
         }
+        // Make sure we don't stomp on the next function
+        push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
+            insns.push(Insn::BoundaryPad);
+        });
+
         insns
     }
 
@@ -2853,7 +2871,7 @@ impl Assembler
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
             // so that nobody stomps on us
-            asm.pad_patch_point();
+            asm.boundary_pad();
 
             asm_comment!(asm, "save cfp->pc");
             asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
@@ -2898,8 +2916,9 @@ impl Assembler
                 use crate::codegen::exit_recompile;
                 asm_comment!(asm, "profile and maybe recompile");
                 asm_ccall!(asm, exit_recompile,
-                    EC,
-                    recompile.compiled_iseq
+                    recompile.compiled_iseq,
+                    recompile.frame_iseq,
+                    recompile.insn_idx.into()
                 );
             }
         }
@@ -3968,8 +3987,12 @@ impl Assembler {
         self.push_insn(Insn::PatchPoint(Box::new(PatchPointData { target, invariant, version })));
     }
 
-    pub fn pad_patch_point(&mut self) {
-        self.push_insn(Insn::PadPatchPoint);
+    pub fn patch_point_pad(&mut self) {
+        self.push_insn(Insn::PatchPointPad);
+    }
+
+    pub fn boundary_pad(&mut self) {
+        self.push_insn(Insn::BoundaryPad);
     }
 
     pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr, &CodeBlock) + 'static) {

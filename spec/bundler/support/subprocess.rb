@@ -31,7 +31,31 @@ module Spec
     end
 
     def git(cmd, path = Dir.pwd, options = {})
+      reject_git_config_pollution!(cmd, path)
       sh("git #{cmd}", options.merge(dir: path))
+    end
+
+    # A local `git config` write in a directory without a `.git` makes git
+    # discover an enclosing repository, which can be the rubygems checkout
+    # itself, polluting its (possibly worktree-shared) `.git/config` with
+    # fixture identities. Only allow local config writes inside tmp/.
+    def reject_git_config_pollution!(cmd, path)
+      require "shellwords"
+      args = cmd.to_s.shellsplit
+      return unless args.first == "config"
+      return if args.any? {|a| ["--global", "--system", "-f", "--file"].include?(a) || a.start_with?("--file=") }
+      return if args.any? {|a| ["--get", "--get-all", "--get-regexp", "--get-urlmatch", "--list", "-l"].include?(a) }
+
+      # Required lazily because this file is loaded in every spawned ruby
+      # before RubygemsVersionManager switches RubyGems, where loading extra
+      # default gems (pathname, through support/path) breaks the setup.
+      require_relative "path"
+      dir = File.expand_path(path.to_s)
+      tmp_root = Spec::Path.tmp_root.to_s
+      return if dir == tmp_root || dir.start_with?(tmp_root + File::SEPARATOR)
+
+      raise "Refusing to run `git #{cmd}` in #{dir}: " \
+            "a local git config write outside tmp/ could end up in the checkout's own .git/config"
     end
 
     def sh(cmd, options = {})

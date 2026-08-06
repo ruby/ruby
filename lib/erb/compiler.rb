@@ -80,16 +80,11 @@ class ERB::Compiler # :nodoc:
   end
 
   class Scanner # :nodoc:
-    @scanner_map = defined?(Ractor) ? Ractor.make_shareable({}) : {}
+    @scanner_map = {}.freeze
+
     class << self
-      if defined?(Ractor)
-        def register_scanner(klass, trim_mode, percent)
-          @scanner_map = Ractor.make_shareable({ **@scanner_map, [trim_mode, percent] => klass })
-        end
-      else
-        def register_scanner(klass, trim_mode, percent)
-          @scanner_map[[trim_mode, percent]] = klass
-        end
+      def register_scanner(klass, trim_mode, percent)
+        @scanner_map = @scanner_map.merge([trim_mode, percent].freeze => klass).freeze
       end
       alias :regist_scanner :register_scanner
     end

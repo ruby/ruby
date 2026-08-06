@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "bundler/fetcher"
+require Spec::Path.rubygems_test_dir.join("pem_utilities")
 require Spec::Path.rubygems_test_dir.join("local_ssl_server_utilities")
 
 RSpec.describe "Bundler::Fetcher local SSL server", if: Gem::HAVE_OPENSSL do
@@ -19,7 +20,7 @@ RSpec.describe "Bundler::Fetcher local SSL server", if: Gem::HAVE_OPENSSL do
       it "connects" do
         ssl_server = start_ssl_server
         allow(Bundler.settings).to receive(:[]).and_call_original
-        allow(Bundler.settings).to receive(:[]).with(:ssl_ca_cert).and_return(File.join(certs_dir, "ca_cert.pem"))
+        allow(Bundler.settings).to receive(:[]).with(:ssl_ca_cert).and_return(Gem::PemUtilities::CA_CERT_FILE)
         response = fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
         expect(response.code).to eq("200")
       end
@@ -29,8 +30,8 @@ RSpec.describe "Bundler::Fetcher local SSL server", if: Gem::HAVE_OPENSSL do
           verify_mode: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
         )
         allow(Bundler.settings).to receive(:[]).and_call_original
-        allow(Bundler.settings).to receive(:[]).with(:ssl_ca_cert).and_return(File.join(certs_dir, "ca_cert.pem"))
-        allow(Bundler.settings).to receive(:[]).with(:ssl_client_cert).and_return(File.join(certs_dir, "client.pem"))
+        allow(Bundler.settings).to receive(:[]).with(:ssl_ca_cert).and_return(Gem::PemUtilities::CA_CERT_FILE)
+        allow(Bundler.settings).to receive(:[]).with(:ssl_client_cert).and_return(Gem::PemUtilities::CLIENT_FILE)
         response = fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
         expect(response.code).to eq("200")
       end
@@ -44,7 +45,7 @@ RSpec.describe "Bundler::Fetcher local SSL server", if: Gem::HAVE_OPENSSL do
       it "connects" do
         ssl_server = start_ssl_server(mode: :pqc)
         allow(Bundler.settings).to receive(:[]).and_call_original
-        allow(Bundler.settings).to receive(:[]).with(:ssl_ca_cert).and_return(File.join(certs_dir, "mldsa65_ca_cert.pem"))
+        allow(Bundler.settings).to receive(:[]).with(:ssl_ca_cert).and_return(Gem::PemUtilities::MLDSA65_CA_CERT_FILE)
         response = fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
         expect(response.code).to eq("200")
       end
@@ -55,8 +56,8 @@ RSpec.describe "Bundler::Fetcher local SSL server", if: Gem::HAVE_OPENSSL do
           verify_mode: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
         )
         allow(Bundler.settings).to receive(:[]).and_call_original
-        allow(Bundler.settings).to receive(:[]).with(:ssl_ca_cert).and_return(File.join(certs_dir, "mldsa65_ca_cert.pem"))
-        allow(Bundler.settings).to receive(:[]).with(:ssl_client_cert).and_return(File.join(certs_dir, "mldsa65_client.pem"))
+        allow(Bundler.settings).to receive(:[]).with(:ssl_ca_cert).and_return(Gem::PemUtilities::MLDSA65_CA_CERT_FILE)
+        allow(Bundler.settings).to receive(:[]).with(:ssl_client_cert).and_return(Gem::PemUtilities::MLDSA65_CLIENT_FILE)
         response = fetch_path("https://localhost:#{ssl_server.addr[1]}/yaml")
         expect(response.code).to eq("200")
       end

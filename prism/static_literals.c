@@ -11,6 +11,7 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -207,7 +208,7 @@ pm_node_hash_insert(pm_node_hash_t *hash, const pm_static_literals_metadata_t *m
         // First, allocate space for the new node list.
         uint32_t new_capacity = hash->capacity == 0 ? 4 : hash->capacity * 2;
         pm_node_t **new_nodes = xcalloc(new_capacity, sizeof(pm_node_t *));
-        if (new_nodes == NULL) return NULL;
+        if (new_nodes == NULL) abort();
 
         // It turns out to be more efficient to mask the hash value than to use
         // the modulo operator. Because our capacities are always powers of two,

@@ -64,6 +64,7 @@ module Bundler
       end
 
       Bundler::CLI::Common.output_post_install_messages installer.post_install_messages
+      Bundler::CLI::Common.output_cooldown_skipped_summary(definition)
 
       if CLI::Common.clean_after_install?
         require_relative "clean"

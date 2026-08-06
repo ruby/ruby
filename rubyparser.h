@@ -1175,12 +1175,20 @@ typedef struct node_buffer_struct node_buffer_t;
 typedef struct rb_parser_config_struct rb_parser_config_t;
 #endif
 
+/* Streaming state of a source hash. The layout and the hash algorithm are
+ * implementation details; use rb_source_hash_init/update/finalize. */
+typedef struct rb_source_hash_state {
+    uint64_t hash;
+} rb_source_hash_state_t;
+
 typedef struct rb_ast_body_struct {
     const NODE *root;
     rb_parser_ary_t *script_lines;
     int line_count;
     signed int frozen_string_literal:2; /* -1: not specified, 0: false, 1: true */
     signed int coverage_enabled:2; /* -1: not specified, 0: false, 1: true */
+    unsigned int has_source_hash:1;
+    uint64_t source_hash;
 } rb_ast_body_t;
 typedef struct rb_ast_struct {
     node_buffer_t *node_buffer;
@@ -1357,6 +1365,11 @@ typedef struct rb_parser_config_struct {
     int enc_coderange_unknown;
     VALUE (*static_id2sym)(ID id);
     long (*str_coderange_scan_restartable)(const char *s, const char *e, rb_encoding *enc, int *cr);
+
+    /* Source hash */
+    void (*source_hash_init)(rb_source_hash_state_t *state);
+    void (*source_hash_update)(rb_source_hash_state_t *state, const uint8_t *ptr, size_t len);
+    uint64_t (*source_hash_finalize)(const rb_source_hash_state_t *state);
 } rb_parser_config_t;
 
 #undef rb_encoding

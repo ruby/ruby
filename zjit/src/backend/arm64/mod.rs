@@ -1068,6 +1068,15 @@ impl Assembler {
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }
 
+        /// Fill nops until a jump written at `last_patch_pos` can no longer reach
+        /// past the current write position.
+        fn emit_pad_after_patch_point(cb: &mut CodeBlock, last_patch_pos: Option<usize>) {
+            let Some(last_patch_pos) = last_patch_pos else { return };
+            while cb.get_write_pos().saturating_sub(last_patch_pos) < cb.jmp_ptr_bytes() && !cb.has_dropped_bytes() {
+                nop(cb);
+            }
+        }
+
         // List of GC offsets
         let mut gc_offsets: Vec<CodePtr> = Vec::new();
 
@@ -1519,15 +1528,17 @@ impl Assembler {
                 Insn::Jonz(opnd, target) => {
                     emit_cmp_zero_jump(cb, opnd.into(), false, target.clone());
                 },
-                Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PadPatchPoint in arm64_scratch_split"),
-                Insn::PadPatchPoint => {
-                    // If patch points are too close to each other or the end of the block, fill nop instructions
-                    if let Some(last_patch_pos) = last_patch_pos {
-                        while cb.get_write_pos().saturating_sub(last_patch_pos) < cb.jmp_ptr_bytes() && !cb.has_dropped_bytes() {
-                            nop(cb);
-                        }
-                    }
+                Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PatchPointPad in arm64_scratch_split"),
+                Insn::PatchPointPad => {
+                    emit_pad_after_patch_point(cb, last_patch_pos);
+                    // This position is itself where a jump gets written on invalidation, so it
+                    // becomes what following code has to keep its distance from.
                     last_patch_pos = Some(cb.get_write_pos());
+                },
+                Insn::BoundaryPad => {
+                    // A boundary is never patched, so it doesn't become a position to keep away
+                    // from. The last patch point stays that, and the pad just gave it its room.
+                    emit_pad_after_patch_point(cb, last_patch_pos);
                 },
                 Insn::IncrCounter { mem, value } => {
                     // Get the status register allocated by arm64_scratch_split
@@ -1758,6 +1769,55 @@ mod tests {
         // have to reserve room for an absolute load-address plus br.
         let cb = CodeBlock::new_dummy_sized(128 * 1024 * 1024 + 4);
         assert_eq!(20, cb.jmp_ptr_bytes());
+    }
+
+    #[test]
+    fn test_fallthrough_to_a_patchpoint() {
+        // At one point, this generated unnecessary nop padding
+        use crate::cruby::test_utils::{compile_to_iseq, with_rubyvm};
+        use crate::hir::Invariant;
+        use crate::payload::IseqVersion;
+
+        let version = IseqVersion::new(compile_to_iseq("nil"));
+
+        // The PosMarker that split_patch_point() installs registers the patch point
+        // with ZJITState's invariant table while emitting, so the VM has to be booted.
+        let cb = with_rubyvm(|| {
+            crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
+            let mut asm = Assembler::new();
+            let mut cb = CodeBlock::new_dummy();
+
+            let bb0 = asm.new_block(crate::hir::BlockId(0), true, 0);
+            let bb1 = asm.new_block(crate::hir::BlockId(1), false, 1);
+
+            // The patch point's target only has to resolve to some address for the
+            // PosMarker that records it, so bb0 stands in for the side exit code.
+            let side_exit = asm.new_label("side_exit");
+
+            // bb0 falls through to bb1
+            asm.set_current_block(bb0);
+            let label_bb0 = asm.new_label("bb0");
+            asm.write_label(label_bb0);
+            asm.write_label(side_exit.clone());
+            asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::UImm(1));
+            asm.push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge { target: bb1, args: vec![] }))));
+
+            asm.set_current_block(bb1);
+            let label_bb1 = asm.new_label("bb1");
+            asm.write_label(label_bb1);
+            asm.patch_point(side_exit.clone(), Invariant::SingleRactorMode, version);
+            asm.cret(Opnd::Reg(TEMP_REGS[0]));
+
+            asm.compile_with_num_regs(&mut cb, 0);
+            cb
+        });
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x1, #1
+        0x4: mov x0, x1
+        0x8: ret
+        ");
+        assert_snapshot!(cb.hexdump(), @"210080d2e00301aac0035fd6");
     }
 
     #[test]

@@ -8,6 +8,7 @@
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "ractor_core.h"
+#include "internal/array.h"
 #include "internal/complex.h"
 #include "internal/error.h"
 #include "internal/gc.h"
@@ -17,6 +18,7 @@
 #include "internal/rational.h"
 #include "internal/struct.h"
 #include "internal/st.h"
+#include "internal/string.h"
 #include "internal/thread.h"
 #include "variable.h"
 #include "yjit.h"
@@ -413,6 +415,9 @@ cancel_single_ractor_mode(void)
     RUBY_DEBUG_LOG("enable multi-ractor mode");
 
     ruby_single_main_ractor = NULL;
+    rb_yjit_invalidate_single_ractor();
+    rb_zjit_invalidate_single_ractor();
+
     rb_funcall(rb_cRactor, rb_intern("_activated"), 0);
 }
 
@@ -599,8 +604,6 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     r->verbose = cr->verbose;
     r->debug = cr->debug;
 
-    rb_yjit_before_ractor_spawn();
-    rb_zjit_before_ractor_spawn();
     rb_thread_create_ractor(r, args, block);
 
     RB_GC_GUARD(rv);
@@ -1493,7 +1496,10 @@ rb_obj_traverse(VALUE obj,
 static int
 allow_frozen_shareable_p(VALUE obj)
 {
-    if (!RB_TYPE_P(obj, T_DATA)) {
+    if (RB_TYPE_P(obj, T_FILE)) {
+        return false;
+    }
+    else if (!RB_TYPE_P(obj, T_DATA)) {
         return true;
     }
     else {
@@ -1553,10 +1559,11 @@ make_shareable_check_shareable(VALUE obj)
         return traverse_skip;
     }
     else if (!allow_frozen_shareable_p(obj)) {
-        VM_ASSERT(RB_TYPE_P(obj, T_DATA));
-        const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
-
-        if (type->flags & RUBY_TYPED_FROZEN_SHAREABLE_NO_REC) {
+        if (!RB_TYPE_P(obj, T_DATA)) {
+            rb_raise(rb_eRactorError,
+                     "can not make shareable object for %+"PRIsVALUE, obj);
+        }
+        else if (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_FROZEN_SHAREABLE_NO_REC) {
             if (obj_refer_only_shareables_p(obj)) {
                 make_shareable_check_shareable_freeze(obj, traverse_skip);
                 RB_OBJ_SET_SHAREABLE(obj);
@@ -2120,10 +2127,34 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_PROMOTED);
     shape_id_t shape_id = (RBASIC_SHAPE_ID(obj) & SHAPE_ID_CAPACITY_MASK) | ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_ROBJECT | SHAPE_ID_FL_FROZEN;
 
+    // A copy-on-write sharer reads its payload straight out of an embedded root's slot
+    // (String#dup of a frozen string, Array#[] of a frozen array), and it outlives the
+    // move, so that body has to survive as it is.
+    bool wipe_body = true;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_STRING:
+        wipe_body = !rb_str_embedded_shared_root_p(obj);
+        break;
+      case T_ARRAY:
+        wipe_body = !rb_ary_embedded_shared_root_p(obj);
+        break;
+      default:
+        break;
+    }
+
     // Avoid mutations using bind_call, etc.
+    size_t slot_size = rb_gc_obj_slot_size(obj);
     MEMZERO((char *)obj, char, sizeof(struct RBasic));
     RBASIC(obj)->flags = flags;
     RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
+
+    // Wipe the old body too.  The husk has no fields, so nothing reads it as ivars,
+    // but C code that held the object from before the move still reads it with its
+    // old type (an Array iteration in progress, the RMatch capa behind $~): a zeroed
+    // body makes those reads see an empty object instead of stale internals.
+    if (wipe_body) {
+        MEMZERO((char *)obj + sizeof(struct RBasic), char, slot_size - sizeof(struct RBasic));
+    }
 
     // The husk keeps its original (larger) slot, so give it a field-less shape
     // sized to that slot; otherwise compaction's slot_size == shape_slot_size

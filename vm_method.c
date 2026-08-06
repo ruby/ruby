@@ -1153,12 +1153,18 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
             return;
           case VM_METHOD_TYPE_REFINED:
             {
-                RB_OBJ_WRITE(me, &def->body.refined.orig_me, (rb_method_entry_t *)opts);
+                const rb_method_entry_t *orig_me = (const rb_method_entry_t *)opts;
+                RB_OBJ_WRITE(me, &def->body.refined.orig_me, orig_me);
+                RB_OBJ_WRITE(me, &def->original_module, orig_me->def->original_module);
                 return;
             }
           case VM_METHOD_TYPE_ALIAS:
-            RB_OBJ_WRITE(me, &def->body.alias.original_me, (rb_method_entry_t *)opts);
-            return;
+            {
+                const rb_method_entry_t *orig_me = (const rb_method_entry_t *)opts;
+                RB_OBJ_WRITE(me, &def->body.alias.original_me, orig_me);
+                RB_OBJ_WRITE(me, &def->original_module, orig_me->def->original_module);
+                return;
+            }
           case VM_METHOD_TYPE_ZSUPER:
           case VM_METHOD_TYPE_UNDEF:
           case VM_METHOD_TYPE_MISSING:
@@ -1171,6 +1177,8 @@ static void
 method_definition_reset(const rb_method_entry_t *me)
 {
     rb_method_definition_t *def = me->def;
+
+    RB_OBJ_WRITTEN(me, Qundef, def->original_module);
 
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
@@ -1536,6 +1544,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
           def->body.cfunc.invoker = ractor_safe_call_cfunc_m1;
           def->body.cfunc.argc = -1;
         }
+        RB_OBJ_WRITE(me, &def->original_module, me->owner);
     }
     rb_method_definition_set(me, def, opts);
 
@@ -1663,6 +1672,7 @@ get_overloaded_cme(const rb_callable_method_entry_t *cme)
 
         RB_OBJ_WRITE(me, &def->body.iseq.cref, cme->def->body.iseq.cref);
         RB_OBJ_WRITE(me, &def->body.iseq.iseqptr, ISEQ_BODY(cme->def->body.iseq.iseqptr)->mandatory_only_iseq);
+        RB_OBJ_WRITE(me, &def->original_module, cme->def->original_module);
 
         ASSERT_vm_locking();
         st_insert(overloaded_cme_table(), (st_data_t)cme, (st_data_t)me);
@@ -3121,6 +3131,12 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *  call-seq:
  *     ruby2_keywords(method_name, ...)    -> nil
  *
+ *  Deprecated: will be removed in Ruby 4.4.  Use <tt>...</tt>
+ *  {argument forwarding}[rdoc-ref:syntax/methods.rdoc@Argument+Forwarding]
+ *  or other delegation styles instead; they work correctly on Ruby 3.0
+ *  and later.  See https://bugs.ruby-lang.org/issues/22205 for the
+ *  schedule.
+ *
  *  For the given method names, marks the method as passing keywords through
  *  a normal argument splat.  This should only be called on methods that
  *  accept an argument splat (<tt>*args</tt>) but not explicit keywords or
@@ -3136,21 +3152,6 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
  *  method, and only for backwards compatibility with Ruby versions before 3.0.
  *  See https://www.ruby-lang.org/en/news/2019/12/12/separation-of-positional-and-keyword-arguments-in-ruby-3-0/
  *  for details on why +ruby2_keywords+ exists and when and how to use it.
- *
- *  This method will probably be removed at some point, as it exists only
- *  for backwards compatibility. As it does not exist in Ruby versions before
- *  2.7, check that the module responds to this method before calling it:
- *
- *    module Mod
- *      def foo(meth, *args, &block)
- *        send(:"do_#{meth}", *args, &block)
- *      end
- *      ruby2_keywords(:foo) if respond_to?(:ruby2_keywords, true)
- *    end
- *
- *  However, be aware that if the +ruby2_keywords+ method is removed, the
- *  behavior of the +foo+ method using the above approach will change so that
- *  the method does not pass through keywords.
  */
 
 static VALUE
@@ -3322,6 +3323,12 @@ top_private(int argc, VALUE *argv, VALUE _)
 /*
  *  call-seq:
  *     ruby2_keywords(method_name, ...) -> self
+ *
+ *  Deprecated: will be removed in Ruby 4.4.  Use <tt>...</tt>
+ *  {argument forwarding}[rdoc-ref:syntax/methods.rdoc@Argument+Forwarding]
+ *  or other delegation styles instead; they work correctly on Ruby 3.0
+ *  and later.  See https://bugs.ruby-lang.org/issues/22205 for the
+ *  schedule.
  *
  *  For the given method names, marks the method as passing keywords through
  *  a normal argument splat.  See Module#ruby2_keywords in detail.

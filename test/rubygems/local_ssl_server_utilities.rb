@@ -5,14 +5,10 @@
 
 require "socket"
 require "openssl"
+require_relative "pem_utilities"
 
 module Gem::LocalSSLServerUtilities
-  CERTS_DIR = __dir__
-
-  def certs_dir
-    CERTS_DIR
-  end
-
+  include Gem::PemUtilities
   def initialize_ssl_server
     @ssl_server_thread = nil
     @ssl_server = nil
@@ -40,13 +36,13 @@ module Gem::LocalSSLServerUtilities
 
     case mode
     when :non_pqc
-      ctx.cert = cert("ssl_cert.pem")
-      ctx.key = key("ssl_key.pem")
-      ctx.ca_file = File.join(certs_dir, "ca_cert.pem")
+      ctx.cert = SSL_CERT
+      ctx.key = SSL_KEY
+      ctx.ca_file = CA_CERT_FILE
     when :pqc
-      ctx.cert = cert("mldsa65_ssl_cert.pem")
-      ctx.key = key("mldsa65_ssl_key.pem")
-      ctx.ca_file = File.join(certs_dir, "mldsa65_ca_cert.pem")
+      ctx.cert = MLDSA65_SSL_CERT
+      ctx.key = MLDSA65_SSL_KEY
+      ctx.ca_file = MLDSA65_CA_CERT_FILE
       ctx.groups = "X25519MLKEM768"
     end
 
@@ -77,14 +73,6 @@ module Gem::LocalSSLServerUtilities
     else
       client.print "HTTP/1.1 404 Not Found\r\n\r\n"
     end
-  end
-
-  def cert(filename)
-    OpenSSL::X509::Certificate.new(File.read(File.join(certs_dir, filename)))
-  end
-
-  def key(filename)
-    OpenSSL::PKey.read(File.read(File.join(certs_dir, filename)))
   end
 
   def without_pqc_support(&block)
@@ -123,8 +111,8 @@ module Gem::LocalSSLServerUtilities
   def self.probe_pqc_handshake
     server = TCPServer.new("127.0.0.1", 0)
     ctx = OpenSSL::SSL::SSLContext.new
-    ctx.cert = OpenSSL::X509::Certificate.new(File.read(File.join(CERTS_DIR, "mldsa65_ssl_cert.pem")))
-    ctx.key = OpenSSL::PKey.read(File.read(File.join(CERTS_DIR, "mldsa65_ssl_key.pem")))
+    ctx.cert = Gem::PemUtilities::MLDSA65_SSL_CERT
+    ctx.key = Gem::PemUtilities::MLDSA65_SSL_KEY
     ctx.groups = "X25519MLKEM768"
     ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)
 

@@ -973,6 +973,32 @@ class TestMkdepend < Test::Unit::TestCase
     end
   end
 
+  def test_run_from_build_directory_keeps_generated_dependency_names
+    Dir.mktmpdir('mkdepend-builddir') do |dir|
+      File.write(File.join(dir, 'builtin.c'), <<~SOURCE)
+        #include "builtin_binary.rbbin"
+      SOURCE
+      input = File.join(dir, 'depend')
+      File.write(input, <<~DEPEND)
+        #{MARK_START}
+        builtin.$(OBJEXT): {$(VPATH)}builtin.c
+        #{MARK_END}
+      DEPEND
+      build = File.join(dir, '.build')
+      FileUtils.mkdir_p(build)
+      File.write(File.join(build, 'builtin_binary.rbbin'), '')
+      output = File.join(build, '.deps')
+
+      mkdepend = TestDepend.new(root: dir)
+      Dir.chdir(build) do
+        assert_true(mkdepend.run([input], mode: :output, output: output))
+      end
+      generated = File.read(File.join(output, 'depend'))
+      assert_include(generated, "builtin.$(OBJEXT): builtin_binary.rbbin\n")
+      assert_not_include(generated, '.build/builtin_binary.rbbin')
+    end
+  end
+
   def test_normalize_dependency_rules_removes_vpath_search
     assert_equal(
       "one.h two.h\n",

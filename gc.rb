@@ -91,22 +91,23 @@ module GC
   # call-seq:
   #   GC.stress = value -> value
   #
-  # Enables or disables stress mode;
-  # enabling stress mode will degrade performance; it is only for debugging.
+  # Enables or disables stress mode.
+  # Stress mode causes \GC to be invoked at every \GC opportunity
+  # (all memory and object allocations);
+  # it is intended only for debugging and severely degrades performance.
   #
   # Sets the current \GC stress mode to the given value:
   #
   # - If the value is +nil+ or +false+, disables stress mode.
   # - If the value is an integer,
   #   enables stress mode with certain flags; see below.
-  # - Otherwise, enables stress mode;
-  #   \GC is invoked at every \GC opportunity: all memory and object allocations.
+  # - Otherwise, enables stress mode without any flags.
   #
   # The flags are bits in the given integer:
   #
-  # - +0x01+: No major \GC.
-  # - +0x02+: No immediate sweep.
-  # - +0x04+: Full mark after malloc/calloc/realloc.
+  # - +0x01+: no major \GC.
+  # - +0x02+: no immediate sweep.
+  # - +0x04+: full mark after malloc/calloc/realloc.
   #
   def self.stress=(flag)
     Primitive.gc_stress_set_m flag
@@ -137,40 +138,42 @@ module GC
   # and may change in the future without notice.
   #
   # With no argument given,
-  # returns information about the most recent garbage collection:
+  # returns a hash containing the \GC statistics:
   #
   #   GC.stat
   #   # =>
-  #   {count: 28,
-  #    time: 1,
-  #    marking_time: 1,
+  #   {count: 1,
+  #    time: 0,
+  #    marking_time: 0,
   #    sweeping_time: 0,
-  #    heap_allocated_pages: 521,
+  #    total_malloc_bytes: 10432791,
+  #    total_free_bytes: 6989873,
+  #    heap_allocated_pages: 41,
   #    heap_empty_pages: 0,
-  #    heap_allocatable_bytes: 0,
-  #    heap_available_slots: 539590,
-  #    heap_live_slots: 422243,
-  #    heap_free_slots: 117347,
-  #    heap_final_slots: 0,
-  #    heap_marked_slots: 264877,
-  #    heap_eden_pages: 521,
-  #    total_allocated_pages: 521,
+  #    heap_allocatable_bytes: 228656,
+  #    heap_eden_pages: 41,
+  #    total_allocated_pages: 41,
   #    total_freed_pages: 0,
-  #    total_allocated_objects: 2246376,
-  #    total_freed_objects: 1824133,
-  #    malloc_increase_bytes: 50982,
-  #    malloc_increase_bytes_limit: 18535172,
-  #    minor_gc_count: 18,
-  #    major_gc_count: 10,
+  #    malloc_increase_bytes: 0,
+  #    malloc_increase_bytes_limit: 16777216,
+  #    minor_gc_count: 0,
+  #    major_gc_count: 1,
   #    compact_count: 0,
   #    read_barrier_faults: 0,
   #    total_moved_objects: 0,
   #    remembered_wb_unprotected_objects: 0,
-  #    remembered_wb_unprotected_objects_limit: 2162,
-  #    old_objects: 216365,
-  #    old_objects_limit: 432540,
-  #    oldmalloc_increase_bytes: 1654232,
-  #    oldmalloc_increase_bytes_limit: 16846103}
+  #    remembered_wb_unprotected_objects_limit: 7,
+  #    old_objects: 721,
+  #    old_objects_limit: 1442,
+  #    oldmalloc_increase_bytes: 0,
+  #    oldmalloc_increase_bytes_limit: 16777216,
+  #    total_allocated_objects: 36735,
+  #    total_freed_objects: 19527,
+  #    heap_available_slots: 40591,
+  #    heap_live_slots: 17208,
+  #    heap_free_slots: 23383,
+  #    heap_final_slots: 0,
+  #    heap_marked_slots: 17175}
   #
   # With symbol argument +key+ given,
   # returns the value for that key:
@@ -189,37 +192,30 @@ module GC
   #
   # - +:count+:
   #   The total number of garbage collections run since application start
-  #   (count includes both minor and major garbage collections).
+  #   (the count includes both minor and major garbage collections).
   # - +:time+:
   #   The total time spent in garbage collections (in milliseconds).
+  # - +:marking_time+:
+  #   The total time spent marking objects (in milliseconds).
+  # - +:sweeping_time+:
+  #   The total time spent sweeping objects (in milliseconds).
+  # - +:total_malloc_bytes+:
+  #   The total number of bytes allocated by malloc since application start.
+  # - +:total_free_bytes+:
+  #   The total number of bytes freed since application start.
   # - +:heap_allocated_pages+:
   #   The total number of allocated pages.
   # - +:heap_empty_pages+:
   #   The number of pages with no live objects, and that could be released to the system.
-  # - +:heap_sorted_length+:
-  #   The number of pages that can fit into the buffer that holds references to  all pages.
-  # - +:heap_allocatable_pages+:
-  #   The total number of pages the application could allocate without additional \GC.
-  # - +:heap_available_slots+:
-  #   The total number of slots in all +:heap_allocated_pages+.
-  # - +:heap_live_slots+:
-  #   The total number of slots which contain live objects.
-  # - +:heap_free_slots+:
-  #   The total number of slots which do not contain live objects.
-  # - +:heap_final_slots+:
-  #   The total number of slots with pending finalizers to be run.
-  # - +:heap_marked_slots+:
-  #   The total number of objects marked in the last \GC.
+  # - +:heap_allocatable_bytes+:
+  #   The number of bytes that can be allocated without triggering a new
+  #   garbage collection cycle.
   # - +:heap_eden_pages+:
   #   The total number of pages which contain at least one live slot.
   # - +:total_allocated_pages+:
   #   The cumulative number of pages allocated since application start.
   # - +:total_freed_pages+:
   #   The cumulative number of pages freed since application start.
-  # - +:total_allocated_objects+:
-  #   The cumulative number of objects allocated since application start.
-  # - +:total_freed_objects+:
-  #   The cumulative number of objects freed since application start.
   # - +:malloc_increase_bytes+:
   #   Amount of memory allocated on the heap for objects. Decreased by any \GC.
   # - +:malloc_increase_bytes_limit+:
@@ -246,6 +242,20 @@ module GC
   #   Amount of memory allocated on the heap for objects. Decreased by major \GC.
   # - +:oldmalloc_increase_bytes_limit+:
   #   When +:oldmalloc_increase_bytes+ crosses this limit, major \GC is triggered.
+  # - +:total_allocated_objects+:
+  #   The cumulative number of objects allocated since application start.
+  # - +:total_freed_objects+:
+  #   The cumulative number of objects freed since application start.
+  # - +:heap_available_slots+:
+  #   The total number of slots in all +:heap_allocated_pages+.
+  # - +:heap_live_slots+:
+  #   The total number of slots which contain live objects.
+  # - +:heap_free_slots+:
+  #   The total number of slots which do not contain live objects.
+  # - +:heap_final_slots+:
+  #   The total number of slots with pending finalizers to be run.
+  # - +:heap_marked_slots+:
+  #   The total number of objects marked in the last \GC.
   #
   def self.stat hash_or_key = nil
     Primitive.gc_stat hash_or_key

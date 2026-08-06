@@ -550,6 +550,23 @@ class MakeMakefile::Depend
     expanded.start_with?(prefix) ? expanded.delete_prefix(prefix) : path
   end
 
+  # Makes +path+ relative to #root without consulting the current
+  # directory.  Unlike #relative_source, a relative name that does not
+  # refer to a source-tree file is kept as-is: generated dependencies
+  # such as builtin_binary.rbbin live in the build directory, and must
+  # keep the name their Make rules use even when the tool runs in a
+  # build directory nested inside the source tree.
+  def relative_dependency(path)
+    expanded = File.expand_path(path, @root)
+    prefix = @root + File::SEPARATOR
+    if expanded.start_with?(prefix) &&
+        (File.absolute_path?(path) || File.exist?(expanded))
+      expanded.delete_prefix(prefix)
+    else
+      path
+    end
+  end
+
   # Converts an extension dependency to the Make variable path it requires.
   def extension_dependency(file, source_dir)
     case file
@@ -607,7 +624,7 @@ class MakeMakefile::Depend
     end
     files = files.flat_map {|file| expand.call(file, [])}
     files.each_with_object([]) do |file, deps|
-      file = relative_source(file)
+      file = relative_dependency(file)
       dep = if file.start_with?('$(', '{$(')
         file
       elsif target = dependency_target(file, declaration_input)
@@ -696,7 +713,7 @@ class MakeMakefile::Depend
 
   # Appends Make dependency rules for +src+ to +out+ and returns +out+.
   def makedepend(src, out = [], target: nil, input: nil, project: false)
-    src = relative_source(src)
+    src = relative_dependency(src)
     declaration_input = input || dependency_input(src)
     declarations = dependency_declarations(declaration_input, source: src)
     vpath = dependency_vpath(input, src)
@@ -1001,7 +1018,7 @@ class MakeMakefile::Depend
     changed = false
     inputs.each do |input|
       if input.end_with?(".c", ".y")
-        out.puts makedepend(input)
+        out.puts makedepend(relative_source(input))
       else
         deps = dependency_file_content(input) || File.read(input)
         dependency_declarations(input, content: deps)

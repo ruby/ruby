@@ -3220,7 +3220,15 @@ rb_gc_mark_children(void *objspace, VALUE obj)
       case T_ARRAY:
         if (ARY_SHARED_P(obj)) {
             VALUE root = ARY_SHARED_ROOT(obj);
-            gc_mark_internal(root);
+            if (RB_TYPE_P(root, T_ARRAY)) {
+                gc_mark_internal(root);
+            }
+            else {
+                /* Ractor#send(move: true) hollowed the root out in place.  If it was
+                 * embedded our elements are still in its slot, and nothing says so any
+                 * more, so it must not move (gc_ref_update_array cannot re-point us). */
+                gc_mark_and_pin_internal(root);
+            }
         }
         else {
             long len = RARRAY_LEN(obj);
@@ -3624,8 +3632,10 @@ gc_ref_update_array(void *objspace, VALUE v)
         UPDATE_IF_MOVED(objspace, RARRAY(v)->as.heap.aux.shared_root);
 
         VALUE new_root = RARRAY(v)->as.heap.aux.shared_root;
+        // A root hollowed out by a move is no longer an array, and it is pinned rather
+        // than re-pointed (see the marking of a shared root).
         // If the root is embedded and its location has changed
-        if (ARY_EMBED_P(new_root) && new_root != old_root) {
+        if (RB_TYPE_P(new_root, T_ARRAY) && ARY_EMBED_P(new_root) && new_root != old_root) {
             size_t offset = (size_t)(RARRAY(v)->as.heap.ptr - RARRAY(old_root)->as.ary);
             GC_ASSERT(RARRAY(v)->as.heap.ptr >= RARRAY(old_root)->as.ary);
             RARRAY(v)->as.heap.ptr = RARRAY(new_root)->as.ary + offset;

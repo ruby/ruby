@@ -1582,7 +1582,12 @@ rb_match_count(VALUE match)
 static VALUE
 match_alloc_or_reuse(VALUE existing, int num_regs)
 {
+    /* $~ can hold a Ractor::MovedObject: Ractor#send(move: true) hollows the
+     * MatchData out in place and the husk keeps the old RMatch body, so its capa
+     * still reads as reusable.  Reusing it would write RMatch fields into a frozen
+     * T_OBJECT, so check the type before trusting the body. */
     if (!NIL_P(existing) &&
+        RB_TYPE_P(existing, T_MATCH) &&
         !FL_TEST(existing, MATCH_BUSY) &&
         RMATCH(existing)->capa >= num_regs * 2) {
         return existing;

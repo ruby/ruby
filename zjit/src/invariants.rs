@@ -384,10 +384,11 @@ pub fn track_single_ractor_assumption(
     ));
 }
 
-/// Callback for when Ruby is about to spawn a ractor. In that case we need to
-/// invalidate every block that is assuming single ractor mode.
+/// Invalidate every block that assumes single-ractor mode. Called when Ruby
+/// transitions from single-ractor to multi-ractor mode (i.e. a second ractor
+/// is spawned).
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_before_ractor_spawn() {
+pub extern "C" fn rb_zjit_invalidate_single_ractor() {
     // If ZJIT isn't enabled, do nothing
     if !zjit_enabled_p() {
         return;

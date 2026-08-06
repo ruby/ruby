@@ -12,9 +12,11 @@
 # guaranteed, the number of children nodes might change, there is no way to
 # access children nodes by name, etc.
 #
-# If you are looking for a stable API or an API working under multiple Ruby
-# implementations, consider using the _prism_ gem, which is the official
-# Ruby API to parse Ruby code.
+# Prism is the official Ruby API to parse Ruby code. It has a stable API
+# and is available on most Ruby implementations.
+# Therefore, it is the recommended replacement.
+# Using RubyVM::AbstractSyntaxTree is discouraged for new code for the reasons
+# above and because AbstractSyntaxTree might become deprecated in the future.
 #
 module RubyVM::AbstractSyntaxTree
 
