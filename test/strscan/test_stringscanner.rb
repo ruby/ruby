@@ -586,8 +586,6 @@ module StringScannerTests
   end
 
   def test_integer_at_shrunk
-    omit("not supported on TruffleRuby") if RUBY_ENGINE == "truffleruby"
-
     s = create_string_scanner(+"before 29 after")
     s.skip_until(" ")
     assert_equal("29", s.scan(/\d+/))
@@ -596,8 +594,6 @@ module StringScannerTests
   end
 
   def test_integer_at_shrunk_partial
-    omit("not supported on TruffleRuby") if RUBY_ENGINE == "truffleruby"
-
     s = create_string_scanner(+"before 29 after")
     s.skip_until(" ")
     assert_equal("29", s.scan(/\d+/))
