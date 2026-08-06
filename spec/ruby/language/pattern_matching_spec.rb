@@ -893,6 +893,17 @@ describe "Pattern matching" do
       }.should.raise(SyntaxError, /duplicated key name/)
     end
 
+    it "raises NoMatchingPatternKeyError if the key does not match" do
+      kwargs = {a: 1}
+      -> do
+        case kwargs
+        in {b: 2}
+        end
+      end.should raise_error(NoMatchingPatternKeyError, message: "key not found: :b")
+
+      NoMatchingPatternKeyError.superclass.should == NoMatchingPatternError
+    end
+
     it "matches an object with #deconstruct_keys method which returns a Hash with equal keys and each value in Hash matches value in pattern" do
       obj = Object.new
 

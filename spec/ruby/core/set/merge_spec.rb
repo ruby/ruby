@@ -26,4 +26,14 @@ describe "Set#merge" do
   it "accepts multiple arguments" do
     Set[:a, :b].merge(Set[:b, :c], [:d]).should == Set[:a, :b, :c, :d]
   end
+
+  it "retains compare_by_identity flag" do
+    set = Set[1, 2].compare_by_identity
+    set.merge([3, 4])
+    set.compare_by_identity?.should == true
+
+    set2 = Set[1, 2].compare_by_identity
+    set2.merge(Set[3, 4])
+    set2.compare_by_identity?.should == true
+  end
 end

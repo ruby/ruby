@@ -61,4 +61,11 @@ describe "File.split" do
   it "accepts an object that has a #to_path method" do
     File.split(mock_to_path("")).should == [".", ""]
   end
+
+  it "preserves the encoding of the path" do
+    path = "/foo/bar".encode(Encoding::EUC_JP)
+    dir, file = File.split(path)
+    dir.encoding.should == Encoding::EUC_JP
+    file.encoding.should == Encoding::EUC_JP
+  end
 end
