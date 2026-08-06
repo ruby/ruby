@@ -2994,6 +2994,12 @@ impl Function {
         self.load_field(block, str, FieldName::len, RUBY_OFFSET_RSTRING_LEN, types::CInt64)
     }
 
+    /// Load `captured->code.iseq` from a `struct rb_captured_block *`.
+    fn load_captured_code_iseq(&mut self, block: BlockId, captured: InsnId) -> InsnId {
+        let offset: i32 = std::mem::offset_of!(rb_captured_block, code).try_into().unwrap();
+        self.load_field(block, captured, FieldName::code_iseq, offset, types::CPtr)
+    }
+
     /// Emit the fast-path `yield` dispatch to a known ISEQ block.
     /// When `guarded`, the block handler is read from the runtime LEP and guarded (tag + iseq
     /// identity) because the profiled block can differ per caller. When the enclosing method is
@@ -3017,7 +3023,7 @@ impl Function {
         if guarded {
             // Guard captured->code.iseq is the comptime block iseq. Compare the raw imemo pointer:
             // type inference (from_value) can't type an iseq imemo, so guard it as a CPtr identity.
-            let captured_iseq = self.load_field(block, captured, FieldName::code_iseq, 2 * SIZEOF_VALUE_I32, types::CPtr);
+            let captured_iseq = self.load_captured_code_iseq(block, captured);
             self.push_insn(block, Insn::GuardBitEquals { val: captured_iseq, expected: Const::CPtr(block_iseq as *const u8), reason: Box::new(SideExitReason::InvokeBlockIseqChanged), state, recompile: Some(Recompile) });
         }
 
@@ -9584,7 +9590,7 @@ fn add_iseq_to_hir(
                         // captured = block_handler & ~0x3 (struct rb_captured_block *)
                         let untag_mask = fun.push_insn(dispatch_block, Insn::Const { val: Const::CInt64(!0x3) });
                         let captured = fun.push_insn(dispatch_block, Insn::IntAnd { left: block_handler, right: untag_mask });
-                        let captured_iseq = fun.load_field(dispatch_block, captured, FieldName::code_iseq, 2 * SIZEOF_VALUE_I32, types::CPtr);
+                        let captured_iseq = fun.load_captured_code_iseq(dispatch_block, captured);
 
                         let mut compare_block = dispatch_block;
                         for &block_iseq in &polymorphic_iseqs {
