@@ -1048,7 +1048,10 @@ fn gen_ccall_with_frame(
     // to account for the receiver and arguments (and block arguments if any)
     gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, caller_stack_size);
-    gen_spill_stack(jit, asm, function, state);
+    // The receiver and arguments are above the saved cfp->sp: the frame env
+    // written by gen_push_frame() overwrites their slots and nothing reads VM
+    // stack slots above cfp->sp, so only spill the stack below them.
+    gen_spill_stack(jit, asm, function, &state.with_stack_size(caller_stack_size));
     gen_spill_locals(jit, asm, state);
 
     let block_handler_specval = if let Some(BlockHandler::BlockIseq(block_iseq)) = block {
@@ -1129,7 +1132,10 @@ fn gen_ccall_variadic(
     // to account for the receiver and arguments (like gen_ccall_with_frame does)
     gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, caller_stack_size);
-    gen_spill_stack(jit, asm, function, state);
+    // The receiver and arguments are above the saved cfp->sp: the frame env
+    // written by gen_push_frame() overwrites their slots and nothing reads VM
+    // stack slots above cfp->sp, so only spill the stack below them.
+    gen_spill_stack(jit, asm, function, &state.with_stack_size(caller_stack_size));
     gen_spill_locals(jit, asm, state);
 
     let block_handler_specval = if let Some(BlockHandler::BlockIseq(blockiseq)) = block {
