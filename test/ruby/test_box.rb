@@ -938,6 +938,47 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_bundler_setup_not_loaded_while_decorator_gems_are_autoloaded
+    with_bundler_setup_log do |env|
+      # assert_separately w/ ENV_ENABLE_BOX and --enable=gems causes timeouts on CI @ Windows
+      assert_in_out_err([env, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+        begin;
+          Ruby::Box.new
+          puts File.readlines(ENV["BUNDLER_SETUP_LOG"], chomp: true)
+        end;
+        assert_equal [], output
+      end
+    end
+  end
+
+  def test_bundler_setup_loaded_only_in_main_box
+    with_bundler_setup_log do |env|
+      opts = [env, "--enable=gems", "--disable=error_highlight", "--disable=did_you_mean", "--disable=syntax_suggest"]
+      assert_in_out_err(opts, "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+        begin;
+          Ruby::Box.new
+          puts File.readlines(ENV["BUNDLER_SETUP_LOG"], chomp: true)
+        end;
+        assert_equal ["true"], output
+      end
+    end
+  end
+
+  # Runs a BUNDLER_SETUP script that records the box it was loaded in, after
+  # touching RubyGems through TOPLEVEL_BINDING as Bundler does for gemspecs.
+  def with_bundler_setup_log
+    Tempfile.create(["bundler_setup", ".rb"]) do |setup|
+      Tempfile.create(["bundler_setup_log", ".txt"]) do |log|
+        setup.puts 'eval("Gem::Specification", TOPLEVEL_BINDING.dup)'
+        setup.puts 'File.write(ENV["BUNDLER_SETUP_LOG"], "#{Ruby::Box.current.main?}\n", mode: "a")'
+        setup.close
+        log.close
+
+        yield ENV_ENABLE_BOX.merge("BUNDLER_SETUP" => setup.path, "BUNDLER_SETUP_LOG" => log.path)
+      end
+    end
+  end
+
   def test_require_list_loaded_only_in_main_box
     Tempfile.create(["req_a", ".rb"]) do |t1|
       Tempfile.create(["req_b", ".rb"]) do |t2|
