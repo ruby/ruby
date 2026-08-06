@@ -829,6 +829,12 @@ rb_yarv_str_eql_internal(VALUE str1, VALUE str2)
     return rb_str_eql_internal(str1, str2);
 }
 
+VALUE
+rb_jit_str_simple_append(VALUE str1, VALUE str2)
+{
+    return rb_str_cat(str1, RSTRING_PTR(str2), RSTRING_LEN(str2));
+}
+
 void rb_jit_str_concat_codepoint(VALUE str, VALUE codepoint);
 
 attr_index_t

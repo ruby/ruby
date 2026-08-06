@@ -6350,7 +6350,7 @@ fn jit_rb_str_concat(
     let recv = asm.stack_pop(1);
 
     // Test if string encodings differ. If different, use rb_str_append. If the same,
-    // use rb_yjit_str_simple_append, which calls rb_str_cat.
+    // use rb_jit_str_simple_append, which calls rb_str_cat.
     asm_comment!(asm, "<< on strings");
 
     // Take receiver's object flags XOR arg's flags. If any
@@ -6368,7 +6368,7 @@ fn jit_rb_str_concat(
     asm.jnz(enc_mismatch);
 
     // If encodings match, call the simple append function and jump to return
-    let ret_opnd = asm.ccall(rb_yjit_str_simple_append as *const u8, vec![recv, concat_arg]);
+    let ret_opnd = asm.ccall(rb_jit_str_simple_append as *const u8, vec![recv, concat_arg]);
     let ret_label = asm.new_label("func_return");
     let stack_ret = asm.stack_push(Type::TString);
     asm.mov(stack_ret, ret_opnd);

@@ -3582,6 +3582,67 @@ fn test_string_copy_chilled_gc_stress() {
 }
 
 #[test]
+fn test_string_append_same_encoding() {
+    eval(r#"
+        def test(s, x) = s << x
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_snapshot!(assert_compiles(r#"
+        s = +"abc"
+        test(s, "déf")
+        test(s, "ghé")
+        [s, s.encoding.name, s.valid_encoding?]
+    "#), @r#"["abcdéfghé", "UTF-8", true]"#);
+}
+
+#[test]
+fn test_string_append_encoding_mismatch() {
+    eval(r#"
+        def test(s, x) = s << x
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    // The first append takes the mismatched-encoding path and switches the
+    // empty BINARY receiver to UTF-8; later appends take the fast path.
+    assert_snapshot!(assert_compiles(r#"
+        s = String.new(encoding: Encoding::BINARY)
+        test(s, "é")
+        test(s, "é")
+        [s, s.encoding.name, s.valid_encoding?]
+    "#), @r#"["éé", "UTF-8", true]"#);
+}
+
+#[test]
+fn test_string_append_incompatible_encoding() {
+    eval(r#"
+        def test(s, x) = s << x
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_snapshot!(assert_compiles(r#"
+        s = "\xFF".b
+        begin
+          test(s, "é")
+          :no_error
+        rescue Encoding::CompatibilityError
+          :compatibility_error
+        end
+    "#), @":compatibility_error");
+}
+
+#[test]
+fn test_string_append_broken_coderange() {
+    eval(r#"
+        def test(s, x) = s << x
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    // Same encoding, but the appended bytes break the receiver's coderange.
+    assert_snapshot!(assert_compiles(r#"
+        s = +"abc"
+        test(s, "\xFF".dup.force_encoding(Encoding::UTF_8))
+        [s.bytesize, s.valid_encoding?]
+    "#), @"[4, false]");
+}
+
+#[test]
 fn test_new_hash_nonempty() {
     eval(r#"
         def test
