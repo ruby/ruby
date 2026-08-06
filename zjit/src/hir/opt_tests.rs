@@ -21595,7 +21595,7 @@ mod hir_opt_tests {
           v75:Fixnum = GuardType v37, Fixnum recompile
           v77:BoolExact = FixnumLe v75, v72
           v49:CBool = Test v77
-          CondBranch v49, bb5(), bb4(v11)
+          CondBranch v49, bb5(), bb4()
         bb5():
           PatchPoint NoSingletonClass(C@0x1070)
           PatchPoint MethodRedefined(C@0x1070, foo@0x1078, cme:0x1080)
@@ -21603,7 +21603,7 @@ mod hir_opt_tests {
           v81:Fixnum[4] = Const Value(4)
           CheckInterrupts
           Return v81
-        bb4(v60:HeapBasicObject):
+        bb4():
           v63:NilClass = Const Value(nil)
           CheckInterrupts
           Return v63
