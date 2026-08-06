@@ -944,9 +944,11 @@ class TestBox < Test::Unit::TestCase
       assert_in_out_err([env, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
         begin;
           Ruby::Box.new
-          puts File.readlines(ENV["BUNDLER_SETUP_LOG"], chomp: true)
+          autoloaded = %i[ErrorHighlight DidYouMean SyntaxSuggest].any? {|c| Object.autoload?(c) }
+          loaded = File.readlines(ENV["BUNDLER_SETUP_LOG"], chomp: true)
+          puts loaded == (autoloaded ? [] : ["true"]) ? "ok" : "loaded in #{loaded.inspect}"
         end;
-        assert_equal [], output
+        assert_equal ["ok"], output
       end
     end
   end
