@@ -621,7 +621,12 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
 
             if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
                 r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%d/%u (%u)",
-                             cr ? (int)rb_ractor_id(cr) : -1, vm->ractor.cnt, vm->ractor.sched.running_cnt);
+                             cr ? (int)rb_ractor_id(cr) : -1, vm->ractor.cnt,
+#ifdef RUBY_THREAD_PTHREAD_H
+                             vm->ractor.sched.running_cnt);
+#else
+                             vm->ractor.sync.barrier_cnt);
+#endif
 
                 if (r < 0) rb_bug("ruby_debug_log returns %d", r);
                 len += r;
@@ -630,6 +635,7 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
 
         // thread information
         if (th && r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+#ifdef RUBY_THREAD_PTHREAD_H
             rb_execution_context_t *rec = th->ractor ? th->ractor->threads.running_ec : NULL;
             const rb_thread_t *rth = rec ? rec->thread_ptr : NULL;
             const rb_thread_t *sth = th->ractor ? th->ractor->threads.sched.running : NULL;
@@ -641,6 +647,9 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
             else {
                 r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%u", rb_th_serial(th));
             }
+#else
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%u", rb_th_serial(th));
+#endif
             if (r < 0) rb_bug("ruby_debug_log returns %d", r);
             len += r;
         }

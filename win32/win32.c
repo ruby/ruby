@@ -85,6 +85,7 @@ static char *w32_getenv(const char *name, UINT cp);
 #define CharNext(p) CharNextExA(cp, (p), 0)
 #define dln_find_exe_r rb_w32_udln_find_exe_r
 #define dln_find_file_r rb_w32_udln_find_file_r
+#undef strdup
 #include "dln.h"
 #include "dln_find.c"
 #undef MAXPATHLEN
@@ -111,7 +112,6 @@ static char *w32_getenv(const char *name, UINT cp);
 #undef close
 #undef setsockopt
 #undef dup2
-#undef strdup
 
 #define _filbuf _fgetc_nolock
 #define _flsbuf _fputc_nolock
@@ -512,7 +512,7 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
 /*
   Return user's home directory using environment variables combinations.
   Memory allocated by this function should be manually freed
-  afterwards with xfree.
+  afterwards with free().
 
   Try:
   HOME, USERPROFILE, HOMEDRIVE + HOMEPATH environment variables
