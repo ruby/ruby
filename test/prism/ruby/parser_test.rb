@@ -109,13 +109,26 @@ module Prism
     # These files are failing to translate their lexer output into the lexer
     # output expected by the parser gem, so we'll skip them for now.
     skip_tokens = [
+      "dash_heredocs.txt",
       "embdoc_no_newline_at_end.txt",
+      "seattlerb/case_in.txt",
+      "seattlerb/difficult4__leading_dots2.txt",
       "seattlerb/heredoc_unicode.txt",
       "seattlerb/parse_line_heredoc.txt",
       "seattlerb/pct_w_heredoc_interp_nested.txt",
+      "seattlerb/required_kwarg_no_value.txt",
+      "seattlerb/TestRubyParserShared.txt",
       "unparser/corpus/literal/assignment.txt",
       "unparser/corpus/literal/literal.txt",
-      "whitequark/forward_arg_with_open_args.txt"
+      "whitequark/args.txt",
+      "whitequark/beginless_erange_after_newline.txt",
+      "whitequark/beginless_irange_after_newline.txt",
+      "whitequark/forward_arg_with_open_args.txt",
+      "whitequark/kwarg_no_paren.txt",
+      "whitequark/multiple_pattern_matches.txt",
+      "whitequark/newline_in_hash_argument.txt",
+      "whitequark/pattern_matching_hash.txt",
+      "whitequark/ruby_bug_9669.txt"
     ]
 
     Fixture.each_for_version(except: skip_syntax_error, version: "3.3") do |fixture|

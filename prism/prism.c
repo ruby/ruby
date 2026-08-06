@@ -10228,6 +10228,7 @@ parser_lex(pm_parser_t *parser) {
                     pm_comment_t *comment = parser_comment(parser, PM_COMMENT_INLINE);
                     pm_list_append(&parser->comment_list, (pm_list_node_t *) comment);
 
+                    if (ending) parser->current.end++;
                     parser->current.type = PM_TOKEN_COMMENT;
                     parser_lex_callback(parser);
 
@@ -10245,16 +10246,7 @@ parser_lex(pm_parser_t *parser) {
                         }
                     }
 
-                    /* The comment does not include its terminating newline,
-                     * which lexes through the newline handling below as its
-                     * own token. A comment that ends the file has no newline,
-                     * so the newline handling runs without one to emit. */
-                    if (ending == NULL) {
-                        lexed_comment = true;
-                    } else {
-                        parser->current.start = ending;
-                        parser->current.end = ending + 1;
-                    }
+                    lexed_comment = true;
                 }
                 PRISM_FALLTHROUGH
                 case '\r':
@@ -10292,11 +10284,7 @@ parser_lex(pm_parser_t *parser) {
                             break;
                         case PM_IGNORED_NEWLINE_PATTERN:
                             if (parser->pattern_matching_newlines || parser->in_keyword_arg) {
-                                if (!lexed_comment) {
-                                    parser->current.type = PM_TOKEN_NEWLINE_TERMINATOR;
-                                    parser_lex_callback(parser);
-                                }
-
+                                if (!lexed_comment) parser_lex_ignored_newline(parser);
                                 lex_state_set(parser, PM_LEX_STATE_BEG);
                                 parser->command_start = true;
                                 parser->current.type = PM_TOKEN_NEWLINE;
@@ -10393,15 +10381,11 @@ parser_lex(pm_parser_t *parser) {
                         // If we hit a . after a newline, then we're in a call chain and
                         // we need to return the call operator.
                         if (next_content[0] == '.') {
-                            /* A beginless range on the next line means this
-                             * newline terminates the statement rather than
-                             * continuing a method chain. */
+                            // To match ripper, we need to emit an ignored newline even though
+                            // it's a real newline in the case that we have a beginless range
+                            // on a subsequent line.
                             if (peek_at(parser, next_content + 1) == '.') {
-                                if (!lexed_comment) {
-                                    parser->current.type = PM_TOKEN_NEWLINE_TERMINATOR;
-                                    parser_lex_callback(parser);
-                                }
-
+                                if (!lexed_comment) parser_lex_ignored_newline(parser);
                                 lex_state_set(parser, PM_LEX_STATE_BEG);
                                 parser->command_start = true;
                                 parser->current.type = PM_TOKEN_NEWLINE;

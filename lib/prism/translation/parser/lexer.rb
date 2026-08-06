@@ -141,7 +141,6 @@ module Prism
           MINUS_EQUAL: :tOP_ASGN,
           MINUS_GREATER: :tLAMBDA,
           NEWLINE: :tNL,
-          NEWLINE_TERMINATOR: :tNL,
           NUMBERED_REFERENCE: :tNTH_REF,
           PARENTHESIS_LEFT: :tLPAREN2,
           PARENTHESIS_LEFT_GROUPING: :tLPAREN,
@@ -187,6 +186,11 @@ module Prism
           WORDS_SEP: :tSPACE,
           XSTRING_BEGIN: :tXSTRING_BEG
         }
+
+        # Types of tokens that are allowed to continue a method call with comments in-between.
+        # For these, the parser gem doesn't emit a newline token after the last comment.
+        COMMENT_CONTINUATION_TYPES = Set.new([:COMMENT, :AMPERSAND_DOT, :DOT])
+        private_constant :COMMENT_CONTINUATION_TYPES
 
         # Heredocs are complex and require us to keep track of a bit of info to refer to later
         HeredocData = Struct.new(:identifier, :common_whitespace, keyword_init: true)
@@ -238,13 +242,6 @@ module Prism
             value = token.value
             location = range(token.location.start_offset, token.location.end_offset)
 
-            # A newline deferred past a run of comments is emitted before the
-            # token that follows the last comment.
-            if comment_newline_location && type != :tCOMMENT
-              tokens << [:tNL, [nil, comment_newline_location]]
-              comment_newline_location = nil
-            end
-
             case type
             when :tCHARACTER
               value.delete_prefix!("?")
@@ -262,9 +259,27 @@ module Prism
                 location = range(token.location.start_offset, next_token.location.end_offset)
                 index += 1
               else
-                # A carriage return before the terminating newline is part of
-                # the comment token but not of the comment's value.
-                location = range(token.location.start_offset, token.location.end_offset - 1) if value.chomp!
+                is_at_eol = value.chomp!.nil?
+                location = range(token.location.start_offset, token.location.end_offset + (is_at_eol ? 0 : -1))
+
+                prev_token, _ = lexed[index - 2] if index - 2 >= 0
+                next_token, _ = lexed[index]
+
+                is_inline_comment = prev_token&.location&.start_line == token.location.start_line
+                if is_inline_comment && !is_at_eol && !COMMENT_CONTINUATION_TYPES.include?(next_token&.type)
+                  tokens << [:tCOMMENT, [value, location]]
+
+                  nl_location = range(token.location.end_offset - 1, token.location.end_offset)
+                  tokens << [:tNL, [nil, nl_location]]
+                  next
+                elsif is_inline_comment && next_token&.type == :COMMENT
+                  comment_newline_location = range(token.location.end_offset - 1, token.location.end_offset)
+                elsif comment_newline_location && !COMMENT_CONTINUATION_TYPES.include?(next_token&.type)
+                  tokens << [:tCOMMENT, [value, location]]
+                  tokens << [:tNL, [nil, comment_newline_location]]
+                  comment_newline_location = nil
+                  next
+                end
               end
             when :tNL
               next_token, _ = lexed[index]
@@ -484,10 +499,6 @@ module Prism
             if token.type == :REGEXP_END
               tokens << [:tREGEXP_OPT, [token.value[1..], range(token.location.start_offset + 1, token.location.end_offset)]]
             end
-          end
-
-          if comment_newline_location
-            tokens << [:tNL, [nil, comment_newline_location]]
           end
 
           tokens
