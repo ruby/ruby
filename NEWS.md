@@ -110,6 +110,11 @@ Note: We're only listing outstanding class updates.
     * `String#unpack` and `String#unpack1` accept new formats `x!` and
       `@!` to align the current offset to a byte boundary or to the ABI
       alignment of another directive. [[Feature #22185]]
+    * Basic bit operations are added. `String#bit_get`, `String#bit_set?`,
+      `String#bit_set`, `String#bit_clear`, `String#bit_flip` and
+      `String#bit_count` handle individual bits, and `String#bitwise_not`,
+      `String#bitwise_and`, `String#bitwise_or`, `String#bitwise_xor`
+      (with their `!` variants) handle whole strings. [[Feature #22118]]
 
 * Symbol
 
@@ -315,6 +320,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21951]: https://bugs.ruby-lang.org/issues/21951
 [Feature #21981]: https://bugs.ruby-lang.org/issues/21981
 [Feature #22097]: https://bugs.ruby-lang.org/issues/22097
+[Feature #22118]: https://bugs.ruby-lang.org/issues/22118
 [Feature #22135]: https://bugs.ruby-lang.org/issues/22135
 [Feature #22137]: https://bugs.ruby-lang.org/issues/22137
 [Feature #22139]: https://bugs.ruby-lang.org/issues/22139
