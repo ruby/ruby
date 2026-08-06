@@ -82,7 +82,7 @@ impl JITState {
 
     /// Retrieve the output of a given instruction that has been compiled
     fn get_opnd(&self, insn_id: InsnId) -> lir::Opnd {
-        self.opnds[insn_id.0].unwrap_or_else(|| panic!("Failed to get_opnd({insn_id})"))
+        self.opnds[insn_id.to_usize()].unwrap_or_else(|| panic!("Failed to get_opnd({insn_id})"))
     }
 
     /// Get the ISEQ for the version currently being compiled.
@@ -451,7 +451,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                 // Param does not have operands, so fake a ResolvedInsnId.
                 match crate::hir::ResolvedInsnId(insn_id).insn(function) {
                     Insn::Param => {
-                        jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx));
+                        jit.opnds[insn_id.to_usize()] = Some(gen_param(&mut asm, idx));
                     },
                     insn => unreachable!("Non-param insn found in block.params: {insn:?}"),
                 }
@@ -464,7 +464,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     let insn_id = function.find_id(insn_id);
                     // Param does not have operands, so fake a ResolvedInsnId.
                     if let &Insn::LoadArg { idx, .. } = crate::hir::ResolvedInsnId(insn_id).insn(function) {
-                        jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx as usize));
+                        jit.opnds[insn_id.to_usize()] = Some(gen_param(&mut asm, idx as usize));
                     }
                 }
             }
@@ -795,7 +795,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     assert!(insn.has_output(), "Cannot write LIR output of HIR instruction with no output: {insn}");
 
     // If the instruction has an output, remember it in jit.opnds
-    jit.opnds[insn_id.0] = Some(out_opnd);
+    jit.opnds[insn_id.to_usize()] = Some(out_opnd);
 
     Ok(())
 }
