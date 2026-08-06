@@ -12,14 +12,14 @@ ruby_version_is "4.1" do
     end
 
     it "returns a BINARY string" do
-      str = "\x00".dup.force_encoding("US-ASCII")
+      str = (+"\x00").force_encoding("US-ASCII")
       str.bitwise_not.encoding.should == Encoding::BINARY
     end
   end
 
   describe "String#bitwise_not!" do
     it "inverts every bit in self and returns self" do
-      str = "\x00\xAA".dup
+      str = +"\x00\xAA"
       str.bitwise_not!.should.equal?(str)
       str.should == "\xFF\x55"
     end

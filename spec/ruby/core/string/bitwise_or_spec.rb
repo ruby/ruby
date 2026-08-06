@@ -22,13 +22,13 @@ ruby_version_is "4.1" do
     end
 
     it "returns a BINARY string" do
-      "\xF0".dup.force_encoding("UTF-8").bitwise_or("\x0C").encoding.should == Encoding::BINARY
+      (+"\xF0").force_encoding("UTF-8").bitwise_or("\x0C").encoding.should == Encoding::BINARY
     end
   end
 
   describe "String#bitwise_or!" do
     it "replaces self with the byte-wise OR and returns self" do
-      str = "\xF0".dup
+      str = +"\xF0"
       str.bitwise_or!("\x0C").should.equal?(str)
       str.should == "\xFC"
     end

@@ -22,13 +22,13 @@ ruby_version_is "4.1" do
     end
 
     it "returns a BINARY string" do
-      "\xF0".dup.force_encoding("UTF-8").bitwise_and("\xCC").encoding.should == Encoding::BINARY
+      (+"\xF0").force_encoding("UTF-8").bitwise_and("\xCC").encoding.should == Encoding::BINARY
     end
   end
 
   describe "String#bitwise_and!" do
     it "replaces self with the byte-wise AND and returns self" do
-      str = "\xF0".dup
+      str = +"\xF0"
       str.bitwise_and!("\xCC").should.equal?(str)
       str.should == "\xC0"
     end

@@ -4,7 +4,7 @@ require_relative '../../spec_helper'
 ruby_version_is "4.1" do
   describe "String#bit_flip" do
     it "flips a bit in LSB-first order by default and returns self" do
-      str = "\x00".dup
+      str = +"\x00"
       str.bit_flip(1).should.equal?(str)
       str.should == "\x02"
       str.bit_flip(1)
@@ -12,13 +12,13 @@ ruby_version_is "4.1" do
     end
 
     it "flips a bit in MSB-first order" do
-      str = "\x00".dup
+      str = +"\x00"
       str.bit_flip(1, lsb_first: false)
       str.should == "\x40"
     end
 
     it "preserves byte order when using MSB-first order" do
-      str = "\x00\x00".dup
+      str = +"\x00\x00"
       str.bit_flip(8, lsb_first: false)
       str.should == "\x00\x80"
     end
