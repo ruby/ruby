@@ -167,6 +167,11 @@ impl Effect {
         Effect { read, write: abstract_heaps::Any }
     }
 
+    /// Whether this effect neither reads nor writes any abstract heap.
+    pub const fn is_empty(&self) -> bool {
+        self.read.bit_equal(abstract_heaps::Empty) && self.write.bit_equal(abstract_heaps::Empty)
+    }
+
     /// Method to access the private read field
     pub const fn read_bits(&self) -> AbstractHeap {
         self.read

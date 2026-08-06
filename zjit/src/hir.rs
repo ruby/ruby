@@ -6446,6 +6446,114 @@ impl Function {
         }
     }
 
+    /// Whether `insn` may stay between a PushInlineFrame/PopInlineFrame pair
+    /// that gets elided, i.e. whether it can neither side-exit nor observe the
+    /// frame:
+    /// * Its effects must be empty, so it doesn't read or write any abstract
+    ///   heap (in particular Frame and Control).
+    /// * It must not reference a FrameState `Snapshot` operand: a side exit
+    ///   materializes the enclosing inlined frame, and effects don't model
+    ///   deopt for otherwise pure instructions like `FixnumAdd`.
+    /// * `LoadSP` reads the frame-dependent SP register despite having empty
+    ///   effects, so it's excluded explicitly.
+    fn can_elide_enclosing_frame(&self, insn: &Insn) -> bool {
+        if matches!(insn, Insn::LoadSP { .. }) {
+            return false;
+        }
+        if !insn.effects_of().is_empty() {
+            return false;
+        }
+        let mut references_snapshot = false;
+        insn.for_each_operand(|opnd| {
+            let opnd = self.union_find.borrow().find_const(opnd);
+            if matches!(&self.insns[opnd.0], Insn::Snapshot { .. }) {
+                references_snapshot = true;
+            }
+        });
+        !references_snapshot
+    }
+
+    /// Remove PushInlineFrame/PopInlineFrame pairs whose inlined body has been
+    /// optimized away entirely.
+    ///
+    /// When an inlined callee folds to a constant (e.g. a method body guarded by a
+    /// constant that is false), earlier passes can leave a PushInlineFrame that is
+    /// immediately followed by its matching PopInlineFrame, with only instructions
+    /// that neither side-exit nor observe the frame in between (see
+    /// [`Function::can_elide_enclosing_frame`]). Such a frame is unobservable:
+    /// nothing between the push and the pop can side-exit, allocate, raise, or
+    /// walk the frame chain, so pushing and popping the frame is pure overhead.
+    /// This pass deletes both instructions of each such pair.
+    ///
+    /// Pairs are matched per basic block with a stack so that nested pairs are
+    /// handled: an inner elided pair doesn't prevent the outer pair from being
+    /// elided, while an inner pair that must be kept also keeps the outer one
+    /// (the kept push/pop observe and modify the frame chain). A PushInlineFrame
+    /// whose PopInlineFrame lives in another block is left untouched.
+    fn eliminate_empty_inline_frames(&mut self) {
+        /// A PushInlineFrame whose matching PopInlineFrame hasn't been seen yet.
+        struct PendingPush {
+            /// Index of the PushInlineFrame in `new_insns`.
+            push_idx: usize,
+            /// Whether an instruction that may side-exit or observe the frame
+            /// has been seen since the push. If so, the pair must be kept.
+            frame_observed: bool,
+        }
+
+        for block_id in self.reverse_post_order() {
+            let block_insns = &self.blocks[block_id.0].insns;
+
+            // Fast path: skip blocks without a PushInlineFrame.
+            if !block_insns.iter().any(|&insn_id| matches!(self.find(insn_id), Insn::PushInlineFrame { .. })) {
+                continue;
+            }
+
+            let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
+            let mut new_insns: Vec<InsnId> = Vec::with_capacity(insns.len());
+            let mut pending_pushes: Vec<PendingPush> = Vec::new();
+            for insn_id in insns {
+                let insn = self.find(insn_id);
+                match insn {
+                    Insn::PushInlineFrame { .. } => {
+                        pending_pushes.push(PendingPush { push_idx: new_insns.len(), frame_observed: false });
+                        new_insns.push(insn_id);
+                    }
+                    Insn::PopInlineFrame { .. } => {
+                        match pending_pushes.pop() {
+                            Some(PendingPush { push_idx, frame_observed: false }) => {
+                                // Empty pair: drop both the push and this pop.
+                                new_insns.remove(push_idx);
+                                continue;
+                            }
+                            Some(PendingPush { frame_observed: true, .. }) => {
+                                // Keep the pair. It observes the frame chain, so the
+                                // enclosing pair (if any) must be kept too.
+                                if let Some(outer) = pending_pushes.last_mut() {
+                                    outer.frame_observed = true;
+                                }
+                                new_insns.push(insn_id);
+                            }
+                            None => {
+                                // The matching push is in another block; leave it alone.
+                                new_insns.push(insn_id);
+                            }
+                        }
+                    }
+                    _ => {
+                        if !self.can_elide_enclosing_frame(&insn) {
+                            // The instruction may side-exit or observe the frame.
+                            for pending in pending_pushes.iter_mut() {
+                                pending.frame_observed = true;
+                            }
+                        }
+                        new_insns.push(insn_id);
+                    }
+                }
+            }
+            self.blocks[block_id.0].insns = new_insns;
+        }
+    }
+
     /// Return a list that has entry_block and then jit_entry_blocks
     fn entry_blocks(&self) -> Vec<BlockId> {
         let mut entry_blocks = self.jit_entry_blocks.clone();
@@ -6651,6 +6759,7 @@ impl Function {
             (clean_cfg) => { Counter::compile_hir_clean_cfg_time_ns };
             (remove_redundant_patch_points) => { Counter::compile_hir_remove_redundant_patch_points_time_ns };
             (remove_duplicate_check_interrupts) => { Counter::compile_hir_remove_duplicate_check_interrupts_time_ns };
+            (eliminate_empty_inline_frames) => { Counter::compile_hir_eliminate_empty_inline_frames_time_ns };
             (eliminate_dead_code) => { Counter::compile_hir_eliminate_dead_code_time_ns };
             ($name:ident) => { unimplemented!("Counter for pass {}", stringify!($name)) };
         }
@@ -6701,6 +6810,7 @@ impl Function {
             run_pass!(clean_cfg);
             run_pass!(remove_redundant_patch_points);
             run_pass!(remove_duplicate_check_interrupts);
+            run_pass!(eliminate_empty_inline_frames);
             run_pass!(eliminate_dead_code);
 
             if !did_inline {

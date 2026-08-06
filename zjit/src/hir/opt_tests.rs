@@ -1833,6 +1833,83 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_eliminate_empty_inline_frames() {
+        eval("
+            DEBUG = false
+            def log = nil
+            def foo
+              log if DEBUG
+            end
+            def test
+              foo
+              foo
+              foo
+            end
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:8:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v28:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame v28 (0x1038)
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1060, DEBUG)
+          v59:NilClass = Const Value(nil)
+          CheckInterrupts
+          PopInlineFrame
+          v123:NilClass = Const Value(nil)
+          Return v123
+        ");
+    }
+
+    #[test]
+    fn test_eliminate_empty_inline_frames_with_unused_block() {
+        eval("
+            CALL_BLOCK = false
+            def foo
+              yield if CALL_BLOCK
+            end
+            def test
+              foo {}
+              foo {}
+              foo {}
+            end
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v28:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame v28 (0x1038)
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1060, CALL_BLOCK)
+          v62:NilClass = Const Value(nil)
+          CheckInterrupts
+          PopInlineFrame
+          v132:NilClass = Const Value(nil)
+          Return v132
+        ");
+    }
+
+    #[test]
     fn test_call_with_correct_and_too_many_args_for_method() {
         eval("
             def target(a = 1, b = 2, c = 3, d = 4) = [a, b, c, d]
