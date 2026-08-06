@@ -229,9 +229,10 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
     * BSD/OS (BSDi)
 
 * Windows 10 1703 or later no longer needs the `LongPathsEnabled` registry
-  value to use paths longer than 260 characters.  Each path component is still
-  limited to 255 characters, and a child process still starts with the
-  `MAX_PATH` limited current directory. [[Bug #18947]]
+  value to use paths longer than 260 characters.  This applies to any process
+  running the interpreter, including a program which embeds libruby.  Each path
+  component is still limited to 255 characters, and a child process still
+  starts with the `MAX_PATH` limited current directory. [[Bug #18947]]
 
 ## Compatibility issues
 
