@@ -6751,7 +6751,12 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
     return value;
 }
 
-#define STR_BIT_LEN(byte_len) ((uint64_t)(byte_len) * CHAR_BIT)
+static inline bool
+str_bit_offset_out_of_range(long byte_len, uint64_t bit_offset)
+{
+    /* Compare byte indexes to avoid overflowing byte_len * CHAR_BIT. */
+    return bit_offset / CHAR_BIT >= (uint64_t)byte_len;
+}
 
 /*
  * Keep both the full bit offset and its long representation.  Most calls use a
@@ -6879,7 +6884,7 @@ str_bit_get(int argc, VALUE *argv, VALUE str)
     bool lsb_first = str_lsb_first(argc, argv, &index);
     struct str_bit_offset offset = str_bit_offset_from_index(index);
 
-    if (STR_BIT_LEN(RSTRING_LEN(str)) <= offset.value) {
+    if (str_bit_offset_out_of_range(RSTRING_LEN(str), offset.value)) {
         return -1;
     }
 
@@ -6936,7 +6941,7 @@ str_mutate_bit(int argc, VALUE *argv, VALUE str, enum str_bit_mutation mutation)
     unsigned char *ptr;
     unsigned char mask;
 
-    if (STR_BIT_LEN(RSTRING_LEN(str)) <= offset.value) {
+    if (str_bit_offset_out_of_range(RSTRING_LEN(str), offset.value)) {
         rb_raise(rb_eIndexError, "bit index out of range");
     }
 
