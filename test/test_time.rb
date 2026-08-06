@@ -123,10 +123,11 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     t = Time.utc(1996, 12, 20, 0, 39, 57)
     s = "1996-12-19T16:39:57-08:00"
     assert_equal(t, Time.__send__(method, s))
-    assert_equal(t, Time.__send__(method, s.sub(/:(?=00\z)/, '')))
     if method == :rfc3339
+      assert_raise(ArgumentError) { Time.rfc3339(s.sub(/:(?=00\z)/, '')) }
       assert_raise(ArgumentError) { Time.rfc3339(s.sub(/:00\z/, '')) }
     else
+      assert_equal(t, Time.__send__(method, s.sub(/:(?=00\z)/, '')))
       assert_equal(t, Time.__send__(method, s.sub(/:00\z/, '')))
     end
     # There is no way to generate time string with arbitrary timezone.
