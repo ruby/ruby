@@ -75,11 +75,23 @@ impl std::fmt::Display for InsnId {
 
 /// The index of a [`Block`], which effectively acts like a pointer.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
-pub struct BlockId(pub usize);
+pub struct BlockId(pub u32);
+
+impl IntoUsize for BlockId {
+    fn to_usize(self) -> usize {
+        self.0.to_usize()
+    }
+}
 
 impl From<BlockId> for usize {
     fn from(val: BlockId) -> Self {
-        val.0
+        val.to_usize()
+    }
+}
+
+impl From<usize> for BlockId {
+    fn from(val: usize) -> Self {
+        BlockId(val.try_into().expect("BlockId should fit in u32"))
     }
 }
 
@@ -2976,9 +2988,9 @@ impl Function {
         let is_param = matches!(insn, Insn::Param);
         let id = self.new_insn(insn);
         if is_param {
-            self.blocks[block.0].params.push(id);
+            self.blocks[block.to_usize()].params.push(id);
         } else {
-            self.blocks[block.0].insns.push(id);
+            self.blocks[block.to_usize()].insns.push(id);
         }
         id
     }
@@ -3054,7 +3066,7 @@ impl Function {
 
     // Add an instruction to an SSA block
     fn push_insn_id(&mut self, block: BlockId, insn_id: InsnId) -> InsnId {
-        self.blocks[block.0].insns.push(insn_id);
+        self.blocks[block.to_usize()].insns.push(insn_id);
         insn_id
     }
 
@@ -3104,7 +3116,7 @@ impl Function {
     }
 
     fn new_block(&mut self, insn_idx: u32) -> BlockId {
-        let id = BlockId(self.blocks.len());
+        let id = BlockId::from(self.blocks.len());
         let block = Block {
             insn_idx,
             .. Block::default()
@@ -3114,7 +3126,7 @@ impl Function {
     }
 
     fn remove_block(&mut self, block_id: BlockId) {
-        if BlockId(self.blocks.len() - 1) != block_id {
+        if BlockId::from(self.blocks.len() - 1) != block_id {
             panic!("Can only remove the last block");
         }
         self.blocks.pop();
@@ -3128,7 +3140,7 @@ impl Function {
         // produces no value, and `make_equal_to` asserts `has_output()`. So the instruction stored
         // at this id is always the terminator itself, and reading it by reference matches what
         // `find` would return.
-        let terminator = &self.insns[self.blocks[block.0].insns.last().unwrap().to_usize()];
+        let terminator = &self.insns[self.blocks[block.to_usize()].insns.last().unwrap().to_usize()];
 
         let (first, second, rest): (Option<BlockId>, Option<BlockId>, &[BlockId]) = match terminator {
             Insn::CondBranch { if_true, if_false, .. } => (Some(if_true.target), Some(if_false.target), &[]),
@@ -3149,12 +3161,12 @@ impl Function {
 
     /// Return a reference to the Block at the given index.
     pub fn block(&self, block_id: BlockId) -> &Block {
-        &self.blocks[block_id.0]
+        &self.blocks[block_id.to_usize()]
     }
 
     /// Return a reference to the entry block.
     pub fn entry_block(&self) -> &Block {
-        &self.blocks[self.entry_block.0]
+        &self.blocks[self.entry_block.to_usize()]
     }
 
     /// Return the number of blocks
@@ -3494,7 +3506,7 @@ impl Function {
     /// Copy self.param_types to the param types of jit_entry_blocks.
     fn copy_param_types(&mut self) {
         for jit_entry_block in self.jit_entry_blocks.iter() {
-            let entry_params = self.blocks[jit_entry_block.0].params.iter();
+            let entry_params = self.blocks[jit_entry_block.to_usize()].params.iter();
             let param_types = self.param_types.iter();
             assert!(
                 param_types.len() >= entry_params.len(),
@@ -3543,8 +3555,8 @@ impl Function {
             let mut num_instructions = 0;
             for &block in &rpo {
                 if !reachable.get(block) { continue; }
-                for i in 0..self.blocks[block.0].insns.len() {
-                    let insn_id = self.blocks[block.0].insns[i];
+                for i in 0..self.blocks[block.to_usize()].insns.len() {
+                    let insn_id = self.blocks[block.to_usize()].insns[i];
                     if self.insns[insn_id.to_usize()].counts_against_inlining_budget() {
                         num_instructions += 1;
                     }
@@ -3560,7 +3572,7 @@ impl Function {
                                 // params of `target` itself).
                                 let arg_types: Vec<Type> = if_true.args.iter().map(|a| self.type_of(*a)).collect();
                                 for (idx, arg_type) in arg_types.into_iter().enumerate() {
-                                    let param = self.blocks[if_true.target.0].params[idx];
+                                    let param = self.blocks[if_true.target.to_usize()].params[idx];
                                     changed |= set_type!(param, self.type_of(param).union(arg_type));
                                 }
                             }
@@ -3568,7 +3580,7 @@ impl Function {
                                 reachable.insert(if_false.target);
                                 let arg_types: Vec<Type> = if_false.args.iter().map(|a| self.type_of(*a)).collect();
                                 for (idx, arg_type) in arg_types.into_iter().enumerate() {
-                                    let param = self.blocks[if_false.target.0].params[idx];
+                                    let param = self.blocks[if_false.target.to_usize()].params[idx];
                                     changed |= set_type!(param, self.type_of(param).union(arg_type));
                                 }
                             }
@@ -3578,7 +3590,7 @@ impl Function {
                             reachable.insert(target);
                             let arg_types: Vec<Type> = args.iter().map(|a| self.type_of(*a)).collect();
                             for (idx, arg_type) in arg_types.into_iter().enumerate() {
-                                let param = self.blocks[target.0].params[idx];
+                                let param = self.blocks[target.to_usize()].params[idx];
                                 changed |= set_type!(param, self.type_of(param).union(arg_type));
                             }
                             continue;
@@ -4185,8 +4197,8 @@ impl Function {
         if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
             // Copy contents of tmp_block to block
             assert_ne!(block, tmp_block);
-            let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-            self.blocks[block.0].insns.extend(insns);
+            let insns = std::mem::take(&mut self.blocks[tmp_block.to_usize()].insns);
+            self.blocks[block.to_usize()].insns.extend(insns);
             self.count(block, Counter::inline_cfunc_optimized_send_count);
             if self.type_of(replacement).bit_equal(types::Any) {
                 // Not set yet; infer type
@@ -4254,8 +4266,8 @@ impl Function {
     /// Also try and inline constant caches, specialize object allocations, and more.
     fn type_specialize(&mut self) {
         for block in self.reverse_post_order() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
+            let old_insns = std::mem::take(&mut self.blocks[block.to_usize()].insns);
+            assert!(self.blocks[block.to_usize()].insns.is_empty());
             for insn_id in old_insns {
                 let resolved = self.resolve(insn_id);
                 match resolved.insn(self) {
@@ -4693,8 +4705,8 @@ impl Function {
                                             if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
                                                 // Copy contents of tmp_block to block
                                                 assert_ne!(block, tmp_block);
-                                                let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
-                                                fun.blocks[block.0].insns.extend(insns);
+                                                let insns = std::mem::take(&mut fun.blocks[tmp_block.to_usize()].insns);
+                                                fun.blocks[block.to_usize()].insns.extend(insns);
                                                 fun.count(block, Counter::inline_cfunc_optimized_send_count);
                                                 fun.make_equal_to(send_insn_id, replacement);
                                                 if fun.type_of(replacement).bit_equal(types::Any) {
@@ -4760,8 +4772,8 @@ impl Function {
                                             if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
                                                 // Copy contents of tmp_block to block
                                                 assert_ne!(block, tmp_block);
-                                                let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
-                                                fun.blocks[block.0].insns.extend(insns);
+                                                let insns = std::mem::take(&mut fun.blocks[tmp_block.to_usize()].insns);
+                                                fun.blocks[block.to_usize()].insns.extend(insns);
                                                 fun.count(block, Counter::inline_cfunc_optimized_send_count);
                                                 fun.make_equal_to(send_insn_id, replacement);
                                                 if fun.type_of(replacement).bit_equal(types::Any) {
@@ -5043,8 +5055,8 @@ impl Function {
                                     if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
                                         // Copy contents of tmp_block to block
                                         assert_ne!(block, tmp_block);
-                                        let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                                        self.blocks[block.0].insns.extend(insns);
+                                        let insns = std::mem::take(&mut self.blocks[tmp_block.to_usize()].insns);
+                                        self.blocks[block.to_usize()].insns.extend(insns);
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
                                         self.make_equal_to(insn_id, replacement);
                                         if self.type_of(replacement).bit_equal(types::Any) {
@@ -5093,8 +5105,8 @@ impl Function {
                                     if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
                                         // Copy contents of tmp_block to block
                                         assert_ne!(block, tmp_block);
-                                        let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                                        self.blocks[block.0].insns.extend(insns);
+                                        let insns = std::mem::take(&mut self.blocks[tmp_block.to_usize()].insns);
+                                        self.blocks[block.to_usize()].insns.extend(insns);
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
                                         self.make_equal_to(insn_id, replacement);
                                         if self.type_of(replacement).bit_equal(types::Any) {
@@ -5271,14 +5283,14 @@ impl Function {
             // inlinable SendDirect in the same block still gets a chance.
             let mut search_start = 0;
             loop {
-                let Some(offset) = self.blocks[block.0].insns[search_start..].iter()
+                let Some(offset) = self.blocks[block.to_usize()].insns[search_start..].iter()
                     .position(|&id| self.is_send_direct(id))
                 else {
                     break;
                 };
                 let send_pos = search_start + offset;
 
-                let send_insn_id = self.blocks[block.0].insns[send_pos];
+                let send_insn_id = self.blocks[block.to_usize()].insns[send_pos];
                 let send = self.resolve(send_insn_id);
                 let Insn::SendDirect(data) = send.insn(self)
                 else {
@@ -5393,7 +5405,7 @@ impl Function {
                 // constants land in `block` at the correct position (after the
                 // pre-Send body, before the PushLightweightFrame and Jump we add
                 // last).
-                let tail = self.blocks[block.0].insns.split_off(send_pos);
+                let tail = self.blocks[block.to_usize()].insns.split_off(send_pos);
                 debug_assert!(self.is_send_direct(tail[0]));
 
                 let omitted_opt_num = opt_num - passed_opt_num;
@@ -5428,7 +5440,7 @@ impl Function {
                 //     same value back to the runtime frame so a resuming interpreter sees
                 //     the correct bitmask.
                 //   * any remaining non-parameter locals are nil-initialized.
-                let callee_body_params: Vec<InsnId> = self.blocks[callee_entry_body_block.0].params.clone();
+                let callee_body_params: Vec<InsnId> = self.blocks[callee_entry_body_block.to_usize()].params.clone();
 
                 // First param is self.
                 if !callee_body_params.is_empty() {
@@ -5469,7 +5481,7 @@ impl Function {
                 // Clear the callee body entry block's params since we've aliased
                 // them via make_equal_to rather than passing them as branch
                 // arguments. This keeps validation happy (the Jump passes 0 args).
-                self.blocks[callee_entry_body_block.0].params.clear();
+                self.blocks[callee_entry_body_block.to_usize()].params.clear();
 
                 // Set up the continuation block: a single Param merges all return
                 // values jumped in from the callee's leaves, then PopLightweightFrame
@@ -5868,8 +5880,8 @@ impl Function {
             return;
         }
         for block in self.reverse_post_order() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
+            let old_insns = std::mem::take(&mut self.blocks[block.to_usize()].insns);
+            assert!(self.blocks[block.to_usize()].insns.is_empty());
             for insn_id in old_insns {
                 match self.resolve(insn_id).insn(self) {
                     &Insn::Send { state, reason: SendFallbackReason::SendNoProfiles, .. } => {
@@ -5888,7 +5900,7 @@ impl Function {
     fn optimize_load_store(&mut self) {
         for block in self.reverse_post_order() {
             let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            let old_insns = std::mem::take(&mut self.blocks[block.to_usize()].insns);
             let mut new_insns = Vec::with_capacity(old_insns.len());
             for insn_id in old_insns {
                 let replacement_insn: InsnId = match self.resolve(insn_id).insn(self) {
@@ -5955,7 +5967,7 @@ impl Function {
                 };
                 new_insns.push(replacement_insn);
             }
-            self.blocks[block.0].insns = new_insns;
+            self.blocks[block.to_usize()].insns = new_insns;
         }
     }
 
@@ -5996,8 +6008,8 @@ impl Function {
         let mut rewrite_map: HashMap<InsnId, InsnId> = HashMap::new();
         for block in self.reverse_post_order() {
             rewrite_map.clear();
-            for i in 0..self.blocks[block.0].insns.len() {
-                let insn_id = self.blocks[block.0].insns[i];
+            for i in 0..self.blocks[block.to_usize()].insns.len() {
+                let insn_id = self.blocks[block.to_usize()].insns[i];
                 let canonical_id = self.union_find.borrow().find_const(insn_id);
 
                 let union_find = &self.union_find;
@@ -6039,7 +6051,7 @@ impl Function {
         // This would require 1) fixpointing, 2) worklist, or 3) (slightly less powerful) calling a
         // function-level infer_types after each pruned branch.
         for block in self.reverse_post_order() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            let old_insns = std::mem::take(&mut self.blocks[block.to_usize()].insns);
             let mut new_insns = Vec::with_capacity(old_insns.len());
             for insn_id in old_insns {
                 let replacement_id = match self.resolve(insn_id).insn(self) {
@@ -6367,7 +6379,7 @@ impl Function {
                     break;
                 }
             }
-            self.blocks[block.0].insns = new_insns;
+            self.blocks[block.to_usize()].insns = new_insns;
         }
     }
 
@@ -6379,7 +6391,7 @@ impl Function {
         // Find all of the instructions that have side effects, are control instructions, or are
         // otherwise necessary to keep around
         for block_id in &rpo {
-            for insn_id in &self.blocks[block_id.0].insns {
+            for insn_id in &self.blocks[block_id.to_usize()].insns {
                 if !&self.insns[insn_id.to_usize()].is_elidable() {
                     worklist.push_back(*insn_id);
                 }
@@ -6397,12 +6409,12 @@ impl Function {
         }
         // Now remove all unnecessary instructions
         for block_id in &rpo {
-            self.blocks[block_id.0].insns.retain(|&insn_id| necessary.get(insn_id));
+            self.blocks[block_id.to_usize()].insns.retain(|&insn_id| necessary.get(insn_id));
         }
     }
 
     fn absorb_dst_block(&mut self, num_in_edges: &[u32], block: BlockId) -> bool {
-        let Some(&terminator_id) = self.blocks[block.0].insns.last()
+        let Some(&terminator_id) = self.blocks[block.to_usize()].insns.last()
             else { return false };
         let &mut Insn::Jump(ref mut edge) = self.resolve(terminator_id).insn_mut(self)
             else { return false };
@@ -6410,7 +6422,7 @@ impl Function {
             // Can't absorb self
             return false;
         }
-        if num_in_edges[edge.target.0] != 1 {
+        if num_in_edges[edge.target.to_usize()] != 1 {
             // Can't absorb block if it's the target of more than one branch
             return false;
         }
@@ -6420,16 +6432,16 @@ impl Function {
         // Drop the borrow of edge, which drops the borrow of self, which allows us to mutate self
         // again.
         let _ = edge;
-        let params = std::mem::take(&mut self.blocks[target.0].params);
+        let params = std::mem::take(&mut self.blocks[target.to_usize()].params);
         assert_eq!(args.len(), params.len());
         for (arg, param) in args.iter().zip(params) {
             self.make_equal_to(param, *arg);
         }
         // Remove branch instruction
-        self.blocks[block.0].insns.pop();
+        self.blocks[block.to_usize()].insns.pop();
         // Move target instructions into block
-        let target_insns = std::mem::take(&mut self.blocks[target.0].insns);
-        self.blocks[block.0].insns.extend(target_insns);
+        let target_insns = std::mem::take(&mut self.blocks[target.to_usize()].insns);
+        self.blocks[block.to_usize()].insns.extend(target_insns);
         true
     }
 
@@ -6442,7 +6454,7 @@ impl Function {
         let mut num_in_edges = vec![0; self.blocks.len()];
         for block in self.reverse_post_order() {
             for target in self.successors(block) {
-                num_in_edges[target.0] += 1;
+                num_in_edges[target.to_usize()] += 1;
             }
         }
         let mut changed = false;
@@ -6450,7 +6462,7 @@ impl Function {
             let mut iter_changed = false;
             for block in self.reverse_post_order() {
                 // Ignore transient empty blocks
-                if self.blocks[block.0].insns.is_empty() { continue; }
+                if self.blocks[block.to_usize()].insns.is_empty() { continue; }
                 loop {
                     let absorbed = self.absorb_dst_block(&num_in_edges, block);
                     if !absorbed { break; }
@@ -6471,7 +6483,7 @@ impl Function {
     fn remove_redundant_patch_points(&mut self) {
         for block_id in self.reverse_post_order() {
             let mut seen = HashSet::new();
-            let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
+            let insns = std::mem::take(&mut self.blocks[block_id.to_usize()].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
             for insn_id in insns {
                 // PatchPoint is never in union-find and it does not have operands, so fake a
@@ -6486,7 +6498,7 @@ impl Function {
                 }
                 new_insns.push(insn_id);
             }
-            self.blocks[block_id.0].insns = new_insns;
+            self.blocks[block_id.to_usize()].insns = new_insns;
         }
     }
 
@@ -6496,7 +6508,7 @@ impl Function {
     fn remove_duplicate_check_interrupts(&mut self) {
         for block_id in self.reverse_post_order() {
             let mut seen = false;
-            let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
+            let insns = std::mem::take(&mut self.blocks[block_id.to_usize()].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
             for insn_id in insns {
                 let insn = &self.insns[insn_id.to_usize()];
@@ -6508,7 +6520,7 @@ impl Function {
                 }
                 new_insns.push(insn_id);
             }
-            self.blocks[block_id.0].insns = new_insns;
+            self.blocks[block_id.to_usize()].insns = new_insns;
         }
     }
 
@@ -6594,8 +6606,8 @@ impl Function {
             .insert("id", id.0)
             .insert("loopDepth", loop_depth)
             .insert("attributes", Json::array(attributes))
-            .insert("predecessors", Json::array(predecessors.iter().map(|x| x.0).collect::<Vec<usize>>()))
-            .insert("successors", Json::array(successors.iter().map(|x| x.0).collect::<Vec<usize>>()))
+            .insert("predecessors", Json::array(predecessors.iter().map(|x| x.to_usize()).collect::<Vec<usize>>()))
+            .insert("successors", Json::array(successors.iter().map(|x| x.to_usize()).collect::<Vec<usize>>()))
             .insert("instructions", Json::array(instructions))
             .build()
     }
@@ -6631,7 +6643,7 @@ impl Function {
         // Push each block from the iteration in reverse post order to `hir_blocks`.
         for block_id in self.reverse_post_order() {
             // Create the block with instructions.
-            let block = &self.blocks[block_id.0];
+            let block = &self.blocks[block_id.to_usize()];
             let predecessors = cfi.predecessors(block_id).collect();
             let successors = cfi.successors(block_id).collect();
             let mut instructions = Vec::new();
@@ -6823,7 +6835,7 @@ impl Function {
     /// 3. Every block must have a terminator.
     fn validate_block_terminators_and_jumps(&self) -> Result<(), ValidationError> {
         let check_edge = |block_id: BlockId, edge: &BranchEdge| -> Result<(), ValidationError> {
-            let target_len = self.blocks[edge.target.0].params.len();
+            let target_len = self.blocks[edge.target.to_usize()].params.len();
             let args_len = edge.args.len();
             if target_len != args_len {
                 return Err(ValidationError::MismatchedBlockArity(block_id, target_len, args_len));
@@ -6832,7 +6844,7 @@ impl Function {
         };
 
         for block_id in self.reverse_post_order() {
-            let insns = &self.blocks[block_id.0].insns;
+            let insns = &self.blocks[block_id.to_usize()].insns;
             for (idx, insn_id) in insns.iter().enumerate() {
                 let insn = self.find(*insn_id);
                 // Validate arity for all branch edges
@@ -6877,25 +6889,25 @@ impl Function {
         // starts with nothing defined.
         for &block in &rpo {
             if block == self.entries_block {
-                assigned_in[block.0] = Some(InsnSet::with_capacity(self.insns.len()));
+                assigned_in[block.to_usize()] = Some(InsnSet::with_capacity(self.insns.len()));
             } else {
                 let mut all_ones = InsnSet::with_capacity(self.insns.len());
                 all_ones.insert_all();
-                assigned_in[block.0] = Some(all_ones);
+                assigned_in[block.to_usize()] = Some(all_ones);
             }
         }
         let mut worklist = VecDeque::with_capacity(self.num_blocks());
         worklist.push_back(self.entries_block);
         while let Some(block) = worklist.pop_front() {
-            let mut assigned = assigned_in[block.0].clone().unwrap();
-            for &param in &self.blocks[block.0].params {
+            let mut assigned = assigned_in[block.to_usize()].clone().unwrap();
+            for &param in &self.blocks[block.to_usize()].params {
                 assigned.insert(param);
             }
-            for &insn_id in &self.blocks[block.0].insns {
+            for &insn_id in &self.blocks[block.to_usize()].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
                 let insn = self.find(insn_id);
                 let mut propagate = |target: BlockId| -> Result<(), ValidationError> {
-                    let Some(block_in) = assigned_in[target.0].as_mut() else {
+                    let Some(block_in) = assigned_in[target.to_usize()].as_mut() else {
                         return Err(ValidationError::JumpTargetNotInRPO(target));
                     };
                     if block_in.intersect_with(&assigned) {
@@ -6923,11 +6935,11 @@ impl Function {
         }
         // Check that each instruction's operands are assigned
         for &block in &rpo {
-            let mut assigned = assigned_in[block.0].clone().unwrap();
-            for &param in &self.blocks[block.0].params {
+            let mut assigned = assigned_in[block.to_usize()].clone().unwrap();
+            for &param in &self.blocks[block.to_usize()].params {
                 assigned.insert(param);
             }
-            for &insn_id in &self.blocks[block.0].insns {
+            for &insn_id in &self.blocks[block.to_usize()].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
                 self.insns[insn_id.to_usize()].try_for_each_operand(|operand| {
                     let operand = self.union_find.borrow().find_const(operand);
@@ -6948,7 +6960,7 @@ impl Function {
     fn validate_insn_uniqueness(&self) -> Result<(), ValidationError> {
         let mut seen = InsnSet::with_capacity(self.insns.len());
         for block_id in self.reverse_post_order() {
-            for &insn_id in &self.blocks[block_id.0].insns {
+            for &insn_id in &self.blocks[block_id.to_usize()].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
                 if !seen.insert(insn_id) {
                     return Err(ValidationError::DuplicateInstruction(block_id, insn_id));
@@ -7308,7 +7320,7 @@ impl Function {
     /// Check that insn types match the expected types for each instruction.
     fn validate_types(&self) -> Result<(), ValidationError> {
         for block_id in self.reverse_post_order() {
-            for &insn_id in &self.blocks[block_id.0].insns {
+            for &insn_id in &self.blocks[block_id.to_usize()].insns {
                 self.validate_insn_type(insn_id)?;
             }
         }
@@ -7501,9 +7513,9 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                 continue;
             }
             write!(f, "{block_id}(")?;
-            if !fun.blocks[block_id.0].params.is_empty() {
+            if !fun.blocks[block_id.to_usize()].params.is_empty() {
                 let mut sep = "";
-                for param in &fun.blocks[block_id.0].params {
+                for param in &fun.blocks[block_id.to_usize()].params {
                     write!(f, "{sep}{param}")?;
                     let insn_type = fun.type_of(*param);
                     if !insn_type.is_subtype(types::Empty) {
@@ -7513,7 +7525,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                 }
             }
             writeln!(f, "):")?;
-            for insn_id in &fun.blocks[block_id.0].insns {
+            for insn_id in &fun.blocks[block_id.to_usize()].insns {
                 let insn = fun.find(*insn_id);
                 if !self.display_snapshot_and_tp_patchpoints &&
                     matches!(insn, Insn::Snapshot {..} | Insn::PatchPoint { invariant: Invariant::NoTracePoint, .. }) {
@@ -10312,7 +10324,7 @@ pub struct Dominators {
 }
 
 /// Sentinel value for "no idom computed yet".
-const IDOM_NONE: BlockId = BlockId(usize::MAX);
+const IDOM_NONE: BlockId = BlockId(u32::MAX);
 
 impl Dominators {
     pub fn new(f: &Function) -> Self {
@@ -10330,13 +10342,13 @@ impl Dominators {
         // Map BlockId -> RPO index for O(1) lookup in intersect.
         let mut rpo_order = vec![usize::MAX; num_blocks];
         for (idx, &block) in rpo.iter().enumerate() {
-            rpo_order[block.0] = idx;
+            rpo_order[block.to_usize()] = idx;
         }
 
         // Initialize idom: root's idom is itself, everything else is undefined.
         let mut idoms = vec![IDOM_NONE; num_blocks];
         let root = f.entries_block;
-        idoms[root.0] = root;
+        idoms[root.to_usize()] = root;
 
         let mut changed = true;
         while changed {
@@ -10348,7 +10360,7 @@ impl Dominators {
                 let preds: Vec<BlockId> = cfi.predecessors(block).collect();
                 let mut new_idom = IDOM_NONE;
                 for &p in &preds {
-                    if idoms[p.0] != IDOM_NONE {
+                    if idoms[p.to_usize()] != IDOM_NONE {
                         new_idom = p;
                         break;
                     }
@@ -10358,13 +10370,13 @@ impl Dominators {
                 // Intersect with remaining processed predecessors.
                 for &p in &preds {
                     if p == new_idom { continue; }
-                    if idoms[p.0] != IDOM_NONE {
+                    if idoms[p.to_usize()] != IDOM_NONE {
                         new_idom = Self::intersect(&idoms, &rpo_order, p, new_idom);
                     }
                 }
 
-                if idoms[block.0] != new_idom {
-                    idoms[block.0] = new_idom;
+                if idoms[block.to_usize()] != new_idom {
+                    idoms[block.to_usize()] = new_idom;
                     changed = true;
                 }
             }
@@ -10377,11 +10389,11 @@ impl Dominators {
     /// Uses RPO indices: a node with a *lower* RPO index is *higher* in the tree.
     fn intersect(idoms: &[BlockId], rpo_order: &[usize], mut b1: BlockId, mut b2: BlockId) -> BlockId {
         while b1 != b2 {
-            while rpo_order[b1.0] > rpo_order[b2.0] {
-                b1 = idoms[b1.0];
+            while rpo_order[b1.to_usize()] > rpo_order[b2.to_usize()] {
+                b1 = idoms[b1.to_usize()];
             }
-            while rpo_order[b2.0] > rpo_order[b1.0] {
-                b2 = idoms[b2.0];
+            while rpo_order[b2.to_usize()] > rpo_order[b1.to_usize()] {
+                b2 = idoms[b2.to_usize()];
             }
         }
         b1
@@ -10389,7 +10401,7 @@ impl Dominators {
 
     /// Return the immediate dominator of `block`.
     pub fn idom(&self, block: BlockId) -> BlockId {
-        self.idoms[block.0]
+        self.idoms[block.to_usize()]
     }
 
     /// Return true if `left` is dominated by `right`.

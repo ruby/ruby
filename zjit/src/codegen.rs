@@ -422,7 +422,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             // Skip the entries superblock -- it's an internal CFG artifact
             if block_id == function.entries_block { continue; }
             let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id), rpo_idx);
-            hir_to_lir[block_id.0] = Some(lir_block_id);
+            hir_to_lir[block_id.to_usize()] = Some(lir_block_id);
         }
 
         // Compile each basic block
@@ -431,7 +431,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             if block_id == function.entries_block { continue; }
             // Set the current block to the LIR block that corresponds to this
             // HIR block.
-            let lir_block_id = hir_to_lir[block_id.0].unwrap();
+            let lir_block_id = hir_to_lir[block_id.to_usize()].unwrap();
             asm.set_current_block(lir_block_id);
 
             // Write a label to jump to the basic block
@@ -477,8 +477,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                 let result = match &insn {
                     Insn::CondBranch { val, if_true, if_false } => {
                         let val_opnd = jit.get_opnd(*val);
-                        let true_target = hir_to_lir[if_true.target.0].unwrap();
-                        let false_target = hir_to_lir[if_false.target.0].unwrap();
+                        let true_target = hir_to_lir[if_true.target.to_usize()].unwrap();
+                        let false_target = hir_to_lir[if_false.target.to_usize()].unwrap();
 
                         let true_branch = lir::BranchEdge {
                             target: true_target,
@@ -498,7 +498,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                         Ok(())
                     }
                     Insn::Jump(target) => {
-                        let lir_target = hir_to_lir[target.target.0].unwrap();
+                        let lir_target = hir_to_lir[target.target.to_usize()].unwrap();
                         let branch_edge = lir::BranchEdge {
                             target: lir_target,
                             args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
