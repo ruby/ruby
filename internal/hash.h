@@ -203,7 +203,7 @@ RHASH_AR_TABLE_BOUND(VALUE h)
 {
     RUBY_ASSERT(RHASH_AR_TABLE_P(h));
     const unsigned int bound = RHASH_AR_TABLE_BOUND_RAW(h);
-    RUBY_ASSERT(bound <= RHASH_AR_TABLE_MAX_SIZE);
+    RBIMPL_ASSERT_OR_ASSUME(bound <= RHASH_AR_TABLE_MAX_SIZE);
     return bound;
 }
 
