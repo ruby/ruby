@@ -657,22 +657,34 @@ class Ractor
 
   #
   # call-seq:
-  #   Ractor.shareable_proc(self: nil){} -> shareable proc
+  #   Ractor.shareable_proc(self: nil) { ... } -> shareable proc
   #
   # Returns a shareable copy of the given block's Proc. The value of +self+
   # in the Proc will be replaced with the value passed via the `self:` keyword,
   # or +nil+ if not given.
   #
-  # In a shareable Proc, access to any outer variables is prohibited.
+  # The Proc may read outer variables whose values are shareable, provided
+  # Ruby's static analysis does not find that the variables may be reassigned.
+  # Their current values are captured in an environment isolated from the
+  # original.
   #
   #     a = 42
-  #     Ractor.shareable_proc{ p a }
-  #     #=> can not isolate a Proc because it accesses outer variables (a). (Ractor::IsolationError)
+  #     pr = Ractor.shareable_proc { a }
+  #     pr.call #=> 42
+  #
+  # A Ractor::IsolationError is raised if an outer variable may be reassigned
+  # or its value is unshareable.
+  #
+  #     a = []
+  #     Ractor.shareable_proc { a } # Raises Ractor::IsolationError
   #
   # The value of `self` in the Proc must be a shareable object.
   #
   #     Ractor.shareable_proc(self: self){}
   #     #=> self should be shareable: main (Ractor::IsolationError)
+  #
+  # To make a supported existing Proc shareable in place, use
+  # Ractor.make_shareable; that Proc's +self+ must already be shareable.
   #
   def self.shareable_proc self: nil
     Primitive.attr! :use_block
@@ -684,9 +696,11 @@ class Ractor
 
   #
   # call-seq:
-  #   Ractor.shareable_lambda(self: nil){} -> shareable lambda
+  #   Ractor.shareable_lambda(self: nil) { ... } -> shareable proc
   #
-  # Same as Ractor.shareable_proc, but returns a lambda Proc.
+  # Same as Ractor.shareable_proc, but a literal block produces a lambda Proc.
+  # When a supported existing Proc supplies the block, its lambda semantics are
+  # preserved.
   #
   def self.shareable_lambda self: nil
     Primitive.attr! :use_block
