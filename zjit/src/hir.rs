@@ -47,17 +47,23 @@ use crate::options::INLINE_BUDGET_UNLIMITED;
 /// type since this effectively acts as a pointer to an [`Insn`].
 /// See also: [`Function::find`].
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub struct InsnId(pub usize);
+pub struct InsnId(pub u32);
+
+impl IntoUsize for InsnId {
+    fn to_usize(self) -> usize {
+        self.0.to_usize()
+    }
+}
 
 impl From<InsnId> for usize {
     fn from(val: InsnId) -> Self {
-        val.0
+        val.to_usize()
     }
 }
 
 impl From<usize> for InsnId {
     fn from(val: usize) -> Self {
-        InsnId(val)
+        InsnId(val.try_into().expect("InsnId should fit in u32"))
     }
 }
 
@@ -2748,14 +2754,14 @@ impl ResolvedInsnId {
     /// union-find). Assumes the operands are resolved through union-find already. Use
     /// [`Function::resolve`] to resolve operands before calling this.
     pub fn insn_mut(self, fun: &mut Function) -> &mut Insn {
-        &mut fun.insns[self.0.0]
+        &mut fun.insns[self.0.to_usize()]
     }
 
     /// Return a reference to the instruction at `insn_id` (after resolving via union-find).
     /// Assumes the operands are resolved through union-find already. Use [`Function::resolve`] to
     /// resolve operands before calling this.
     pub fn insn(self, fun: &Function) -> &Insn {
-        &fun.insns[self.0.0]
+        &fun.insns[self.0.to_usize()]
     }
 }
 
@@ -2953,7 +2959,7 @@ impl Function {
 
     // Add an instruction to the function without adding it to any block
     fn new_insn(&mut self, insn: Insn) -> InsnId {
-        let id = InsnId(self.insns.len());
+        let id = InsnId::from(self.insns.len());
         if insn.has_output() {
             self.insn_types.push(types::Any);
         } else {
@@ -3082,7 +3088,7 @@ impl Function {
     /// and locals, the way [`Function::frame_state`] does.
     fn frame_depth(&self, insn_id: InsnId) -> InlineDepth {
         let insn_id = self.union_find.borrow().find_const(insn_id);
-        match &self.insns[insn_id.0] {
+        match &self.insns[insn_id.to_usize()] {
             Insn::Snapshot { state } => state.depth,
             insn => panic!("Unexpected non-Snapshot {insn} when looking up frame depth"),
         }
@@ -3092,7 +3098,7 @@ impl Function {
     /// cloning the instruction or resolving its operands.
     fn is_send_direct(&self, insn_id: InsnId) -> bool {
         let insn_id = self.union_find.borrow().find_const(insn_id);
-        matches!(&self.insns[insn_id.0], Insn::SendDirect(..))
+        matches!(&self.insns[insn_id.to_usize()], Insn::SendDirect(..))
     }
 
     fn new_block(&mut self, insn_idx: u32) -> BlockId {
@@ -3120,7 +3126,7 @@ impl Function {
         // produces no value, and `make_equal_to` asserts `has_output()`. So the instruction stored
         // at this id is always the terminator itself, and reading it by reference matches what
         // `find` would return.
-        let terminator = &self.insns[self.blocks[block.0].insns.last().unwrap().0];
+        let terminator = &self.insns[self.blocks[block.0].insns.last().unwrap().to_usize()];
 
         let (first, second, rest): (Option<BlockId>, Option<BlockId>, &[BlockId]) = match terminator {
             Insn::CondBranch { if_true, if_false, .. } => (Some(if_true.target), Some(if_false.target), &[]),
@@ -3254,7 +3260,7 @@ impl Function {
             };
         }
         let insn_id = find!(insn_id);
-        let mut result = self.insns[insn_id.0].clone();
+        let mut result = self.insns[insn_id.to_usize()].clone();
         result.for_each_operand_mut(&mut |operand: &mut InsnId| {
             *operand = find!(*operand);
         });
@@ -3274,7 +3280,7 @@ impl Function {
     pub fn resolve(&mut self, insn_id: InsnId) -> ResolvedInsnId {
         let union_find = self.union_find.borrow();
         let insn_id = union_find.find_const(insn_id);
-        self.insns[insn_id.0].for_each_operand_mut(&mut |operand: &mut InsnId| {
+        self.insns[insn_id.to_usize()].for_each_operand_mut(&mut |operand: &mut InsnId| {
             *operand = union_find.find_const(*operand);
         });
         ResolvedInsnId(insn_id)
@@ -3285,7 +3291,7 @@ impl Function {
         use Insn::*;
         // Always set the reason: convert_no_profile_sends depends on it to identify
         // sends that should be converted to side exits for exit-based recompilation.
-        match self.insns.get_mut(insn_id.0).unwrap() {
+        match self.insns.get_mut(insn_id.to_usize()).unwrap() {
             Send { reason, .. }
             | SendForward { reason, .. }
             | InvokeSuper { reason, .. }
@@ -3298,17 +3304,17 @@ impl Function {
 
     /// Replace `insn` with the new instruction `replacement`, which will get appended to `insns`.
     fn make_equal_to(&mut self, insn: InsnId, replacement: InsnId) {
-        assert!(self.insns[insn.0].has_output(),
+        assert!(self.insns[insn.to_usize()].has_output(),
                 "Don't use make_equal_to for instruction with no output");
-        assert!(self.insns[replacement.0].has_output(),
+        assert!(self.insns[replacement.to_usize()].has_output(),
                 "Can't replace instruction that has output with instruction that has no output");
         // Don't push it to the block
         self.union_find.borrow_mut().make_equal_to(insn, replacement);
     }
 
     pub fn type_of(&self, insn: InsnId) -> Type {
-        assert!(self.insns[insn.0].has_output());
-        self.insn_types[self.union_find.borrow_mut().find(insn).0]
+        assert!(self.insns[insn.to_usize()].has_output());
+        self.insn_types[self.union_find.borrow_mut().find(insn).to_usize()]
     }
 
     /// Check if the type of `insn` is a subtype of `ty`.
@@ -3317,8 +3323,8 @@ impl Function {
     }
 
     fn infer_type(&self, insn: InsnId) -> Type {
-        assert!(self.insns[insn.0].has_output());
-        match &self.insns[insn.0] {
+        assert!(self.insns[insn.to_usize()].has_output());
+        match &self.insns[insn.to_usize()] {
             Insn::Param => unimplemented!("params should not be present in block.insns"),
             Insn::LoadArg { val_type, .. } => *val_type,
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::EntryPoint { .. }
@@ -3330,7 +3336,7 @@ impl Function {
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. }
             | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. } =>
-                panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
+                panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.to_usize()]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
             Insn::Const { val: Const::CInt8(val) } => Type::from_cint(types::CInt8, *val as i64),
@@ -3494,7 +3500,7 @@ impl Function {
             );
             for (param, param_type) in std::iter::zip(entry_params, param_types) {
                 // We know that function parameters are BasicObject or some subclass
-                self.insn_types[param.0] = *param_type;
+                self.insn_types[param.to_usize()] = *param_type;
             }
         }
     }
@@ -3515,11 +3521,11 @@ impl Function {
             ($insn:expr, $new_type:expr) => {{
                 let insn = $insn;
                 let new_type = $new_type;
-                let old_type = self.insn_types[self.union_find.borrow_mut().find(insn).0];
+                let old_type = self.insn_types[self.union_find.borrow_mut().find(insn).to_usize()];
                 if old_type.bit_equal(new_type) {
                     false
                 } else {
-                    self.insn_types[insn.0] = new_type;
+                    self.insn_types[insn.to_usize()] = new_type;
                     true
                 }
             }};
@@ -3537,12 +3543,12 @@ impl Function {
                 if !reachable.get(block) { continue; }
                 for i in 0..self.blocks[block.0].insns.len() {
                     let insn_id = self.blocks[block.0].insns[i];
-                    if self.insns[insn_id.0].counts_against_inlining_budget() {
+                    if self.insns[insn_id.to_usize()].counts_against_inlining_budget() {
                         num_instructions += 1;
                     }
                     // Instructions without output, including branch instructions, can't be targets
                     // of make_equal_to, so we don't need find() here.
-                    let insn_type = match &self.insns[insn_id.0] {
+                    let insn_type = match &self.insns[insn_id.to_usize()] {
                         Insn::CondBranch { val, if_true, if_false } => {
                             assert!(!self.type_of(*val).bit_equal(types::Empty));
                             if self.type_of(*val).could_be(Type::from_cbool(true)) {
@@ -3596,7 +3602,7 @@ impl Function {
 
     fn chase_insn(&self, insn: InsnId) -> InsnId {
         let id = self.union_find.borrow().find_const(insn);
-        match self.insns[id.0] {
+        match self.insns[id.to_usize()] {
             Insn::GuardType { val, .. }
             | Insn::GuardBitEquals { val, .. }
             | Insn::GuardAnyBitSet { val, .. }
@@ -4012,7 +4018,7 @@ impl Function {
 
     pub fn guard_type_recompile(&mut self, block: BlockId, val: InsnId, guard_type: Type, state: InsnId, recompile: Recompile) -> InsnId {
         let result = self.push_insn(block, Insn::GuardType { val, guard_type, state, recompile: Some(recompile) });
-        self.insn_types[result.0] = self.infer_type(result);
+        self.insn_types[result.to_usize()] = self.infer_type(result);
         result
     }
 
@@ -4182,7 +4188,7 @@ impl Function {
             self.count(block, Counter::inline_cfunc_optimized_send_count);
             if self.type_of(replacement).bit_equal(types::Any) {
                 // Not set yet; infer type
-                self.insn_types[replacement.0] = self.infer_type(replacement);
+                self.insn_types[replacement.to_usize()] = self.infer_type(replacement);
             }
             self.remove_block(tmp_block);
             return replacement;
@@ -4400,7 +4406,7 @@ impl Function {
                             // Add GuardType for profiled receiver
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
-                                self.insn_types[recv.0] = self.infer_type(recv);
+                                self.insn_types[recv.to_usize()] = self.infer_type(recv);
                             }
 
                             let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, block: send_block })));
@@ -4691,7 +4697,7 @@ impl Function {
                                                 fun.make_equal_to(send_insn_id, replacement);
                                                 if fun.type_of(replacement).bit_equal(types::Any) {
                                                     // Not set yet; infer type
-                                                    fun.insn_types[replacement.0] = fun.infer_type(replacement);
+                                                    fun.insn_types[replacement.to_usize()] = fun.infer_type(replacement);
                                                 }
                                                 fun.remove_block(tmp_block);
                                                 return Ok(());
@@ -4702,7 +4708,7 @@ impl Function {
                                                 fun.count(block, Counter::inline_cfunc_optimized_send_count);
                                                 let owner = unsafe { (*cme).owner };
                                                 let ccall = fun.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable });
-                                                fun.insn_types[ccall.0] = fun.infer_type(ccall);
+                                                fun.insn_types[ccall.to_usize()] = fun.infer_type(ccall);
                                                 fun.make_equal_to(send_insn_id, ccall);
                                                 return Ok(());
                                             }
@@ -4724,7 +4730,7 @@ impl Function {
                                             elidable,
                                             block: blockiseq.map(BlockHandler::BlockIseq),
                                         })));
-                                        fun.insn_types[ccall.0] = fun.infer_type(ccall);
+                                        fun.insn_types[ccall.to_usize()] = fun.infer_type(ccall);
                                         fun.make_equal_to(send_insn_id, ccall);
                                         Ok(())
                                     }
@@ -4758,7 +4764,7 @@ impl Function {
                                                 fun.make_equal_to(send_insn_id, replacement);
                                                 if fun.type_of(replacement).bit_equal(types::Any) {
                                                     // Not set yet; infer type
-                                                    fun.insn_types[replacement.0] = fun.infer_type(replacement);
+                                                    fun.insn_types[replacement.to_usize()] = fun.infer_type(replacement);
                                                 }
                                                 fun.remove_block(tmp_block);
                                                 return Ok(());
@@ -4769,7 +4775,7 @@ impl Function {
                                                 fun.count(block, Counter::inline_cfunc_optimized_send_count);
                                                 let owner = unsafe { (*cme).owner };
                                                 let ccall = fun.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable });
-                                                fun.insn_types[ccall.0] = fun.infer_type(ccall);
+                                                fun.insn_types[ccall.to_usize()] = fun.infer_type(ccall);
                                                 fun.make_equal_to(send_insn_id, ccall);
                                                 return Ok(());
                                             }
@@ -4791,7 +4797,7 @@ impl Function {
                                             elidable,
                                             block: blockiseq.map(BlockHandler::BlockIseq),
                                         })));
-                                        fun.insn_types[ccall.0] = fun.infer_type(ccall);
+                                        fun.insn_types[ccall.to_usize()] = fun.infer_type(ccall);
                                         fun.make_equal_to(send_insn_id, ccall);
                                         Ok(())
                                     }
@@ -4821,12 +4827,12 @@ impl Function {
                         let method = unsafe { rb_vm_ci_mid((*cd).ci) };
                         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: class, method, cme }, state });
                         let replacement = self.push_insn(block, Insn::Const { val: Const::CBool(is_expected_cfunc) });
-                        self.insn_types[replacement.0] = self.infer_type(replacement);
+                        self.insn_types[replacement.to_usize()] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
                     &Insn::ObjectAlloc { val, state } => {
                         if let Some(replacement) = self.try_inline_object_alloc(block, val, state) {
-                            self.insn_types[replacement.0] = self.infer_type(replacement);
+                            self.insn_types[replacement.to_usize()] = self.infer_type(replacement);
                             self.make_equal_to(insn_id, replacement);
                         } else {
                             self.push_insn_id(block, insn_id);
@@ -4841,7 +4847,7 @@ impl Function {
                             let high_fix = self.coerce_to(block, high, types::Fixnum, state);
                             let replacement = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high: high_fix, flag, state });
                             self.make_equal_to(insn_id, replacement);
-                            self.insn_types[replacement.0] = self.infer_type(replacement);
+                            self.insn_types[replacement.to_usize()] = self.infer_type(replacement);
                         } else {
                             self.push_insn_id(block, insn_id);
                         };
@@ -5041,7 +5047,7 @@ impl Function {
                                         self.make_equal_to(insn_id, replacement);
                                         if self.type_of(replacement).bit_equal(types::Any) {
                                             // Not set yet; infer type
-                                            self.insn_types[replacement.0] = self.infer_type(replacement);
+                                            self.insn_types[replacement.to_usize()] = self.infer_type(replacement);
                                         }
                                         self.remove_block(tmp_block);
                                         continue;
@@ -5091,7 +5097,7 @@ impl Function {
                                         self.make_equal_to(insn_id, replacement);
                                         if self.type_of(replacement).bit_equal(types::Any) {
                                             // Not set yet; infer type
-                                            self.insn_types[replacement.0] = self.infer_type(replacement);
+                                            self.insn_types[replacement.to_usize()] = self.infer_type(replacement);
                                         }
                                         self.remove_block(tmp_block);
                                         continue;
@@ -5993,14 +5999,14 @@ impl Function {
                 let canonical_id = self.union_find.borrow().find_const(insn_id);
 
                 let union_find = &self.union_find;
-                self.insns[canonical_id.0].for_each_operand_mut(|operand| {
+                self.insns[canonical_id.to_usize()].for_each_operand_mut(|operand| {
                     let canon = union_find.borrow().find_const(*operand);
                     *operand = rewrite_map.get(&canon).copied().unwrap_or(canon);
                 });
 
                 // For the binary guards only `left` is registered because their infer_type is
                 // type_of(left).
-                match &self.insns[canonical_id.0] {
+                match &self.insns[canonical_id.to_usize()] {
                     Insn::GuardType      { val:  src, .. }
                     | Insn::GuardBitEquals { val:  src, .. }
                     | Insn::GuardAnyBitSet { val:  src, .. }
@@ -6201,11 +6207,11 @@ impl Function {
                             // quotient towards negative infinity, so this holds for all fixnums.
                             (None, Some(d)) if is_power_of_two(d) => {
                                 let shift = self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(d.trailing_zeros() as isize)) });
-                                self.insn_types[shift.0] = self.infer_type(shift);
+                                self.insn_types[shift.to_usize()] = self.infer_type(shift);
                                 new_insns.push(shift);
                                 let replacement = self.new_insn(Insn::FixnumRShift { left, right: shift });
                                 self.make_equal_to(insn_id, replacement);
-                                self.insn_types[replacement.0] = self.infer_type(replacement);
+                                self.insn_types[replacement.to_usize()] = self.infer_type(replacement);
                                 new_insns.push(replacement);
                                 continue;
                             }
@@ -6229,11 +6235,11 @@ impl Function {
                             // in [0, d), which matches two's complement AND for all fixnums.
                             (None, Some(d)) if is_power_of_two(d) => {
                                 let mask = self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize((d - 1) as isize)) });
-                                self.insn_types[mask.0] = self.infer_type(mask);
+                                self.insn_types[mask.to_usize()] = self.infer_type(mask);
                                 new_insns.push(mask);
                                 let replacement = self.new_insn(Insn::FixnumAnd { left, right: mask });
                                 self.make_equal_to(insn_id, replacement);
-                                self.insn_types[replacement.0] = self.infer_type(replacement);
+                                self.insn_types[replacement.to_usize()] = self.infer_type(replacement);
                                 new_insns.push(replacement);
                                 continue;
                             }
@@ -6348,14 +6354,14 @@ impl Function {
                 };
                 // If we're adding a new instruction, mark the two equivalent in the union-find and
                 // do an incremental flow typing of the new instruction.
-                if insn_id != replacement_id && self.insns[replacement_id.0].has_output() {
+                if insn_id != replacement_id && self.insns[replacement_id.to_usize()].has_output() {
                     self.make_equal_to(insn_id, replacement_id);
-                    self.insn_types[replacement_id.0] = self.infer_type(replacement_id);
+                    self.insn_types[replacement_id.to_usize()] = self.infer_type(replacement_id);
                 }
                 new_insns.push(replacement_id);
                 // If we've just folded an IfTrue into a Jump, for example, don't bother copying
                 // over unreachable instructions afterward.
-                if self.insns[replacement_id.0].is_terminator() {
+                if self.insns[replacement_id.to_usize()].is_terminator() {
                     break;
                 }
             }
@@ -6372,7 +6378,7 @@ impl Function {
         // otherwise necessary to keep around
         for block_id in &rpo {
             for insn_id in &self.blocks[block_id.0].insns {
-                if !&self.insns[insn_id.0].is_elidable() {
+                if !&self.insns[insn_id.to_usize()].is_elidable() {
                     worklist.push_back(*insn_id);
                 }
             }
@@ -6383,7 +6389,7 @@ impl Function {
             if necessary.get(insn_id) { continue; }
             necessary.insert(insn_id);
             let insn_id = self.union_find.borrow().find_const(insn_id);
-            self.insns[insn_id.0].for_each_operand(|operand| {
+            self.insns[insn_id.to_usize()].for_each_operand(|operand| {
                 worklist.push_back(self.union_find.borrow().find_const(operand));
             });
         }
@@ -6491,7 +6497,7 @@ impl Function {
             let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
             for insn_id in insns {
-                let insn = &self.insns[insn_id.0];
+                let insn = &self.insns[insn_id.to_usize()];
                 if matches!(insn, Insn::CheckInterrupts { .. }) {
                     if seen { continue; }
                     seen = true;
@@ -6921,14 +6927,14 @@ impl Function {
             }
             for &insn_id in &self.blocks[block.0].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
-                self.insns[insn_id.0].try_for_each_operand(|operand| {
+                self.insns[insn_id.to_usize()].try_for_each_operand(|operand| {
                     let operand = self.union_find.borrow().find_const(operand);
                     if !assigned.get(operand) {
                         return Err(ValidationError::OperandNotDefined(block, insn_id, operand));
                     }
                     Ok(())
                 })?;
-                if self.insns[insn_id.0].has_output() {
+                if self.insns[insn_id.to_usize()].has_output() {
                     assigned.insert(insn_id);
                 }
             }
@@ -8661,7 +8667,7 @@ fn add_iseq_to_hir(
                                 let zjit_module = VALUE(state::ZJIT_MODULE.load(Ordering::Relaxed));
                                 let lookedup_module = rb_const_lookup(rb_cRubyVM, ID!(ZJIT));
                                 if !lookedup_module.is_null() && (*lookedup_module).value == zjit_module {
-                                    fun.insn_types[result.0] = Type::from_value(zjit_module);
+                                    fun.insn_types[result.to_usize()] = Type::from_value(zjit_module);
                                 }
                             }
                         }
@@ -10775,7 +10781,7 @@ mod validation_tests {
         let entry = function.entry_block;
         // Create an instruction without making it belong to anything.
         let dangling = function.new_insn(Insn::Const{val: Const::CBool(true)});
-        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: dangling, state: InsnId(0usize) });
+        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: dangling, state: InsnId(0) });
         function.push_insn(function.entry_block, Insn::Unreachable);
         function.seal_entries();
         assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(entry, val, dangling));
@@ -10788,7 +10794,7 @@ mod validation_tests {
         let const_ = function.push_insn(function.entry_block, Insn::Const{val: Const::CBool(true)});
         // Ret is a non-output instruction.
         let ret = function.push_insn(function.entry_block, Insn::Return { val: const_ });
-        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: ret, state: InsnId(0usize) });
+        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: ret, state: InsnId(0) });
         function.push_insn(function.entry_block, Insn::Unreachable);
         function.seal_entries();
         assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(entry, val, ret));
@@ -11006,7 +11012,7 @@ mod infer_tests {
     fn newarray() {
         let mut function = Function::new(std::ptr::null());
         // Fake FrameState index of 0usize
-        let val = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0usize) });
+        let val = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0) });
         assert_bit_equal(function.infer_type(val), types::ArrayExact);
     }
 
@@ -11014,8 +11020,8 @@ mod infer_tests {
     fn arraydup() {
         let mut function = Function::new(std::ptr::null());
         // Fake FrameState index of 0usize
-        let arr = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0usize) });
-        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: arr, state: InsnId(0usize) });
+        let arr = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0) });
+        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: arr, state: InsnId(0) });
         assert_bit_equal(function.infer_type(val), types::ArrayExact);
     }
 
