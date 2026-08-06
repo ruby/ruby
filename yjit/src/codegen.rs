@@ -3224,7 +3224,7 @@ fn gen_set_ivar(
 
     // The current shape doesn't contain this iv, we need to transition to another shape.
     let mut new_shape_complex = false;
-    if !shape_complex && receiver_t_object && ivar_index.is_none() {
+    let new_shape = if !shape_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape_id = comptime_receiver.shape_id_of();
         // We don't need to check about imemo_fields here because we're definitely looking at a T_OBJECT.
         let klass = unsafe { rb_obj_class(comptime_receiver) };
@@ -3234,24 +3234,21 @@ fn gen_set_ivar(
         // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
         new_shape_complex = unsafe { rb_jit_shape_complex_p(next_shape_id) };
         if new_shape_complex {
-            Some((next_shape_id, None, 0_usize))
+            None
         } else {
             let current_capacity = unsafe { rb_yjit_shape_capacity(current_shape_id) };
             let next_capacity = unsafe { rb_yjit_shape_capacity(next_shape_id) };
 
-            // If the new shape has a different capacity, or is COMPLEX, we'll have to
-            // reallocate it.
-            let needs_extension = next_capacity != current_capacity;
-
-            // We can write to the object, but we need to transition the shape
-            let ivar_index = unsafe { rb_yjit_shape_index(next_shape_id) } as usize;
-
-            let needs_extension = if needs_extension {
-                Some((current_capacity, next_capacity))
-            } else {
+            // The transition can be inlined only when the receiver is embedded and the new
+            // shape fits its current capacity; reallocation is delegated to the C function.
+            // That is not supposed to happen after warmup given `max_iv_count` is recorded
+            // on classes, so future objects should be allocated large enough.
+            if next_capacity != current_capacity || !comptime_receiver.embedded_p() {
                 None
-            };
-            Some((next_shape_id, needs_extension, ivar_index))
+            } else {
+                let ivar_index = unsafe { rb_yjit_shape_index(next_shape_id) } as usize;
+                Some((next_shape_id, ivar_index))
+            }
         }
     } else {
         None
@@ -3259,7 +3256,7 @@ fn gen_set_ivar(
 
     // If the receiver isn't a T_OBJECT, then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || shape_complex || new_shape_complex || megamorphic || ivar_index.is_none() {
+    if !receiver_t_object || shape_complex || new_shape_complex || megamorphic || (ivar_index.is_none() && new_shape.is_none()) {
         // The function could raise FrozenError.
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_non_leaf_call(jit, asm);
@@ -3319,8 +3316,24 @@ fn gen_set_ivar(
         let write_val;
 
         match ivar_index {
+            // If we don't have an instance variable index, then we need to
+            // transition out of the current shape, which was pinned by the
+            // shape guard above.
             None => {
-                panic!("ivar_index None should have been delegated to rb_vm_set_ivar_id")
+                let (next_shape_id, ivar_index) = new_shape.unwrap();
+                write_val = asm.stack_opnd(0);
+                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false, true);
+
+                asm_comment!(asm, "write shape");
+                // `next_shape_id` was transitioned from the guarded shape id, so it carries
+                // the layout and capacity bits that RBASIC_SET_SHAPE_ID() would preserve.
+                asm.store(shape_opnd, Opnd::UImm(next_shape_id as u64));
+
+                // If we know the stack value is an immediate, there's no need to
+                // generate WB code.
+                if !stack_type.is_imm() {
+                    gen_trigger_wb(asm, recv, write_val);
+                }
             },
 
             Some(ivar_index) => {
