@@ -718,9 +718,9 @@ copy_ext_file(const char *src_path, const char *dst_path)
         goto done;
     }
 # endif
-# ifdef USE_SENDFILE
+# if defined(HAVE_SENDFILE) && defined(__linux__)
     for (;;) {
-        ssize_t written = sendfile(src_fd, dst_fd, NULL count_max);
+        ssize_t written = sendfile(dst_fd, src_fd, NULL, count_max);
         if (written == 0) goto done;
         if (written < 0) break;
     }
