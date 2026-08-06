@@ -55,6 +55,29 @@ End
     EOS
   end
 
+  def test_id2ref_geniv_liveness
+    assert_in_out_err(["-e", <<~'RUBY'], "", %w(:ok), [])
+      ObjectSpace._id2ref(Object.new.object_id)
+
+      strings1 = 10_000.times.map { String.new(capacity: 80) }
+      strings2 = 10_000.times.map { String.new(capacity: 80) }
+
+      object_ids1 = strings1.map(&:object_id)
+      strings1.clear
+      GC.start(immediate_sweep: false)
+
+      object_ids2 = strings2.map(&:object_id)
+
+      GC.start # finish previous sweep
+
+      strings2_round_trip = object_ids2.map { |id| ObjectSpace._id2ref(id) }
+      strings2.zip(strings2_round_trip).each do |str1, str2|
+        raise unless str1.equal?(str2)
+      end
+      p :ok
+    RUBY
+  end
+
   def test_id2ref_invalid_argument
     msg = /no implicit conversion/
     assert_raise_with_message(TypeError, msg) { EnvUtil.suppress_warning { ObjectSpace._id2ref(nil) } }
