@@ -13,11 +13,14 @@ static VALUE process_spec_rb_process_status_for(VALUE self, VALUE pid,
 #endif
 
 void Init_process_spec(void) {
-  VALUE cls = rb_define_class("CApiProcessSpecs", rb_cObject);
 
 #ifdef RUBY_VERSION_IS_4_1
+  VALUE cls = rb_define_class("CApiProcessSpecs", rb_cObject);
+
   rb_define_method(cls, "rb_process_status_for",
       process_spec_rb_process_status_for, 3);
+#else
+  rb_define_class("CApiProcessSpecs", rb_cObject);
 #endif
 }
 

@@ -8,12 +8,38 @@
 extern "C" {
 #endif
 
-static VALUE class_spec_call_super_method(VALUE self) {
-  return rb_call_super(0, 0);
+static VALUE class_spec_call_super_method(int argc, VALUE *argv, VALUE self) {
+  return rb_call_super(argc, argv);
 }
 
 static VALUE class_spec_define_call_super_method(VALUE self, VALUE obj, VALUE str_name) {
-  rb_define_method(obj, RSTRING_PTR(str_name), class_spec_call_super_method, 0);
+  rb_define_method(obj, RSTRING_PTR(str_name), class_spec_call_super_method, -1);
+  return Qnil;
+}
+
+static VALUE class_spec_call_super_kw_no_keywords(int argc, VALUE *argv, VALUE self) {
+  return rb_call_super_kw(argc, argv, RB_NO_KEYWORDS);
+}
+
+static VALUE class_spec_call_super_kw_pass_keywords(int argc, VALUE *argv, VALUE self) {
+  return rb_call_super_kw(argc, argv, RB_PASS_KEYWORDS);
+}
+
+static VALUE class_spec_call_super_kw_pass_called_keywords(int argc, VALUE *argv, VALUE self) {
+  return rb_call_super_kw(argc, argv, RB_PASS_CALLED_KEYWORDS);
+}
+
+static VALUE class_spec_define_call_super_kw_method(VALUE self, VALUE obj, VALUE str_name, VALUE kw_splat) {
+  ID id = rb_to_id(kw_splat);
+  if (id == rb_intern("RB_NO_KEYWORDS")) {
+    rb_define_method(obj, RSTRING_PTR(str_name), class_spec_call_super_kw_no_keywords, -1);
+  } else if (id == rb_intern("RB_PASS_KEYWORDS")) {
+    rb_define_method(obj, RSTRING_PTR(str_name), class_spec_call_super_kw_pass_keywords, -1);
+  } else if (id == rb_intern("RB_PASS_CALLED_KEYWORDS")) {
+    rb_define_method(obj, RSTRING_PTR(str_name), class_spec_call_super_kw_pass_called_keywords, -1);
+  } else {
+    rb_raise(rb_eArgError, "invalid kw_splat value");
+  }
   return Qnil;
 }
 
@@ -151,7 +177,9 @@ static VALUE class_spec_prepend_module(VALUE self, VALUE klass, VALUE module) {
 
 void Init_class_spec(void) {
   VALUE cls = rb_define_class("CApiClassSpecs", rb_cObject);
+  rb_define_const(cls, "CONST_DEFINED_IN_NATIVE_CODE", INT2NUM(42));
   rb_define_method(cls, "define_call_super_method", class_spec_define_call_super_method, 2);
+  rb_define_method(cls, "define_call_super_kw_method", class_spec_define_call_super_kw_method, 3);
   rb_define_method(cls, "rb_class_path", class_spec_rb_class_path, 1);
   rb_define_method(cls, "rb_class_name", class_spec_rb_class_name, 1);
   rb_define_method(cls, "rb_class2name", class_spec_rb_class2name, 1);

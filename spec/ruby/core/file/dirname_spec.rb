@@ -167,4 +167,9 @@ describe "File.dirname" do
       File.dirname("C:/foo/bar//").should == "C:/foo"
     end
   end
+
+  it "preserves the encoding of the path" do
+    path = "foo/bar".encode(Encoding::EUC_JP)
+    File.dirname(path).encoding.should == Encoding::EUC_JP
+  end
 end

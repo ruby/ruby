@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Process.egid" do
   it "returns the effective group ID for this process" do
@@ -33,11 +34,13 @@ describe "Process.egid=" do
 
     as_user do
       it "raises Errno::ERPERM if run by a non superuser trying to set the root group id" do
+        skip "Codex sandbox returns EINVAL instead of EPERM for uid/gid permission changes" if ProcessSpecs.codex_sandbox?
         -> { Process.egid = 0 }.should.raise(Errno::EPERM)
       end
 
       platform_is :linux do
         it "raises Errno::ERPERM if run by a non superuser trying to set the group id from group name" do
+          skip "Codex sandbox returns EINVAL instead of EPERM for uid/gid permission changes" if ProcessSpecs.codex_sandbox?
           -> { Process.egid = "root" }.should.raise(Errno::EPERM)
         end
       end

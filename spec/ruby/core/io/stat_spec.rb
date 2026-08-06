@@ -12,7 +12,7 @@ describe "IO#stat" do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.stat }.should.raise(IOError)
+    -> { IOSpecs.closed_io.stat }.should.raise(IOError, "closed stream")
   end
 
   it "returns a File::Stat object for the stream" do

@@ -132,10 +132,25 @@ describe "C-API Class function" do
       obj.kwargs.should == {}
     end
 
-    it "raises TypeError if the last argument is not a Hash" do
+    it "coerces the last argument to a hash by calling #to_hash" do
+      h = mock('to_hash')
+      h.should_receive(:to_hash).and_return(kw: 2)
+      obj = @s.rb_class_new_instance_kw([h], CApiClassSpecs::KeywordAlloc)
+      obj.kwargs.should == {kw: 2}
+    end
+
+    it "raises a TypeError if the last argument does not respond to #to_hash" do
       -> {
         @s.rb_class_new_instance_kw([42], CApiClassSpecs::KeywordAlloc)
-      }.should.raise(TypeError, 'no implicit conversion of Integer into Hash')
+      }.should raise_consistent_error(TypeError, 'no implicit conversion of Integer into Hash')
+    end
+
+    it "raises a TypeError if #to_hash does not return a hash" do
+      h = mock('to_hash')
+      h.should_receive(:to_hash).and_return(42)
+      -> {
+        @s.rb_class_new_instance_kw([h], CApiClassSpecs::KeywordAlloc)
+      }.should raise_consistent_error(TypeError, "can't convert MockObject into Hash (MockObject#to_hash gives Integer)")
     end
   end
 
@@ -204,6 +219,150 @@ describe "C-API Class function" do
       @s.define_call_super_method CApiClassSpecs::SubSub, "call_super_method"
       obj = CApiClassSpecs::SubSub.new
       obj.call_super_method.should == :super_method
+    end
+
+    it "passes block argument as is" do
+      @s.define_call_super_method CApiClassSpecs::Sub, "call_super_method_block"
+      obj = CApiClassSpecs::Sub.new
+      obj.call_super_method_block { :block_val }.should == :block_val
+    end
+
+    it "calls #method_missing if there is no super method and #method_missing is defined" do
+      @s.define_call_super_method CApiClassSpecs::Sub, "non_existent_method"
+      obj = CApiClassSpecs::Sub.new
+      def obj.method_missing(name, *args)
+        [name, args]
+      end
+      obj.non_existent_method(1, 2).should == [:non_existent_method, [1, 2]]
+    end
+
+    it "raises a NoMethodError if there is no super method and no #method_missing defined" do
+      @s.define_call_super_method CApiClassSpecs::Sub, "non_existent_method"
+      obj = CApiClassSpecs::Sub.new
+      -> { obj.non_existent_method }.should.raise(NoMethodError)
+    end
+  end
+
+  describe "rb_call_super_kw" do
+    it "calls the method in the superclass" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method", :RB_NO_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      obj.call_super_method.should == :super_method
+
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method", :RB_PASS_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      obj.call_super_method({a: 3}).should == :super_method
+    end
+
+    it "calls the method in the superclass with correct self" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method_self", :RB_NO_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      obj.call_super_method_self.should.equal? obj
+
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method_self", :RB_PASS_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      obj.call_super_method_self({a: 1}).should.equal? obj
+    end
+
+    it "passes the last argument as a positional parameter when called with RB_NO_KEYWORDS" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method_args", :RB_NO_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      obj.call_super_method_args(1, 2, {a: 3}).should == [[1, 2, {a: 3}], {}]
+    end
+
+    it "passes the last argument as keyword arguments when called with RB_PASS_KEYWORDS" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method_args", :RB_PASS_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      obj.call_super_method_args(1, 2, {a: 3}).should == [[1, 2], {a: 3}]
+    end
+
+    it "passes the last argument as keyword arguments when called with RB_PASS_CALLED_KEYWORDS and with keyword arguments" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method_args", :RB_PASS_CALLED_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      obj.call_super_method_args(1, 2, a: 3).should == [[1, 2], {a: 3}]
+    end
+
+    it "passes the last argument as a positional parameter when called with RB_PASS_CALLED_KEYWORDS and with a positional Hash" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method_args", :RB_PASS_CALLED_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      hash_obj = {a: 3}
+      obj.call_super_method_args(1, 2, hash_obj).should == [[1, 2, {a: 3}], {}]
+    end
+
+    it "passes block argument as is" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method_block", :RB_NO_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      obj.call_super_method_block { :block_val }.should == :block_val
+
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method_block", :RB_PASS_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      obj.call_super_method_block({a: 3}) { :block_val }.should == :block_val
+    end
+
+    it "calls #method_missing if there is no super method and #method_missing is defined" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "non_existent_method", :RB_NO_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      def obj.method_missing(name, *args)
+        [name, args]
+      end
+      obj.non_existent_method(1, 2).should == [:non_existent_method, [1, 2]]
+
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "non_existent_method", :RB_PASS_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      def obj.method_missing(name, *args)
+        [name, args]
+      end
+      obj.non_existent_method(1, 2, {a: 3}).should == [:non_existent_method, [1, 2, {a: 3}]]
+    end
+
+    it "raises a NoMethodError if there is no super method and no #method_missing defined" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "non_existent_method", :RB_NO_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      -> { obj.non_existent_method }.should.raise(NoMethodError)
+
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "non_existent_method", :RB_PASS_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      -> { obj.non_existent_method({a: 3}) }.should.raise(NoMethodError)
+    end
+
+    it "tolerates giving no positional or keyword arguments when called with RB_PASS_KEYWORDS" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method_args", :RB_PASS_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      obj.call_super_method_args.should == [[], {}]
+    end
+
+    it "tolerates giving {} as the last positional argument when called with RB_PASS_KEYWORDS" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method_args", :RB_PASS_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      obj.call_super_method_args({}).should == [[], {}]
+    end
+
+    it "coerces the last argument to a hash by calling #to_hash when called with RB_PASS_KEYWORDS" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method_args", :RB_PASS_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      h = mock('to_hash')
+      h.should_receive(:to_hash).and_return({a: 3})
+      obj.call_super_method_args(1, 2, h).should == [[1, 2], {a: 3}]
+    end
+
+    it "raises a TypeError if the last argument does not respond to #to_hash when called with RB_PASS_KEYWORDS" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method_args", :RB_PASS_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+
+      -> {
+        obj.call_super_method_args(1, 2, 3)
+      }.should raise_consistent_error(TypeError, 'no implicit conversion of Integer into Hash')
+    end
+
+    it "raises a TypeError if #to_hash does not return a hash when called with RB_PASS_KEYWORDS" do
+      @s.define_call_super_kw_method CApiClassSpecs::SubKw, "call_super_method_args", :RB_PASS_KEYWORDS
+      obj = CApiClassSpecs::SubKw.new
+      h = mock('to_hash')
+      h.should_receive(:to_hash).and_return(42)
+
+      -> {
+        obj.call_super_method_args(1, 2, h)
+      }.should raise_consistent_error(TypeError, "can't convert MockObject into Hash (MockObject#to_hash gives Integer)")
     end
   end
 
@@ -512,6 +671,14 @@ describe "C-API Class function" do
     it "returns false when there is no parent class" do
       @s.rb_class_get_superclass(BasicObject).should == false
       @s.rb_class_get_superclass(Module.new).should == false
+    end
+  end
+
+  describe "a constant defined in C" do
+    it "raises TypeError if constant given as class name exists and is a Number" do
+      -> {
+         class CApiClassSpecs::CONST_DEFINED_IN_NATIVE_CODE; end
+      }.should.raise(TypeError, /CONST_DEFINED_IN_NATIVE_CODE is not a class/)
     end
   end
 end

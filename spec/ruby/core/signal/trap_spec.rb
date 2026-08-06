@@ -240,6 +240,10 @@ describe "Signal.trap" do
       -> { Signal.trap obj, @proc }.should.raise(ArgumentError, /bad signal type/)
     end
 
+    it "raises ArgumentError when passed negative signal name" do
+      -> { Signal.trap("-HUP") { } }.should.raise(ArgumentError, "negative signal name: -HUP")
+    end
+
     it "raises ArgumentError when passed unknown signal" do
       -> { Signal.trap(300) { } }.should.raise(ArgumentError, "invalid signal number (300)")
       -> { Signal.trap("USR10") { } }.should.raise(ArgumentError, /\Aunsupported signal [`']SIGUSR10'\z/)

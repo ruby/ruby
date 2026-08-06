@@ -384,6 +384,12 @@ describe "Kernel#Float" do
     -> { Float(c) }.should.raise(RangeError)
   end
 
+  it "raises an ArgumentError if exception: is not true or false" do
+    -> { Float(1, exception: 0) }.should.raise ArgumentError, /expected true or false/
+    -> { Float(1, exception: nil) }.should.raise ArgumentError, /expected true or false/
+    -> { Float(1, exception: 'false') }.should.raise ArgumentError, /expected true or false/
+  end
+
   describe "when passed exception: false" do
     describe "and valid input" do
       it "returns a Float number" do

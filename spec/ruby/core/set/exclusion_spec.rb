@@ -14,4 +14,19 @@ describe "Set#^" do
     -> { @set ^ 3 }.should.raise(ArgumentError)
     -> { @set ^ Object.new }.should.raise(ArgumentError)
   end
+
+  ruby_version_is ""..."4.0" do
+    it "does not retain compare_by_identity flag" do
+      @set.compare_by_identity
+      (@set ^ Set[3, 4, 5]).compare_by_identity?.should == false
+      (@set ^ [3, 4, 5]).compare_by_identity?.should == false
+    end
+  end
+  ruby_version_is "4.0" do
+    it "retains compare_by_identity flag" do
+      @set.compare_by_identity
+      (@set ^ Set[3, 4, 5]).compare_by_identity?.should == true
+      (@set ^ [3, 4, 5]).compare_by_identity?.should == true
+    end
+  end
 end
