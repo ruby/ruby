@@ -20088,6 +20088,11 @@ mod hir_opt_tests {
 
     #[test]
     fn test_inline_method_with_multiple_returns() {
+        // TODO: remove_trivial_block_params affects the entire CFG and runs before canonicalize.
+        // This means that some optimizations from canonicalize that affect block params have regressed,
+        // such as test_inline_method_with_multiple_returns in opt_tests.
+        // If we make canonicalize global, we should be able to pass Fixnum instead of BasicObject to bb4
+
         // `clamp_nonneg` has two Return instructions (one from the early `return 0 if ...`,
         // one from the implicit trailing `x`). Inlining rewrites each Return to a Jump into
         // the continuation block, whose single Param merges the return values.
