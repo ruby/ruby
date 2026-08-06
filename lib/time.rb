@@ -634,7 +634,8 @@ class Time
           (\.\d+)?
           (Z|[+-]\d\d(?::?\d\d)?)?
           \s*\z/ix
-      _xmlschema(pattern, time)
+      _xmlschema(pattern, time) or
+        raise ArgumentError.new("invalid xmlschema format: #{time.inspect}")
     end
     alias iso8601 xmlschema
 
@@ -662,47 +663,42 @@ class Time
           (\.\d+)?
           (Z|[+-]\d\d:\d\d)
           \s*\z/ix
-      _xmlschema(pattern, time)
+      _xmlschema(pattern, time) or
+        raise ArgumentError.new("invalid rfc3339 format: #{time.inspect}")
     end
 
     private
 
     if RUBY_VERSION >= "3.2"
       def _xmlschema(pattern, time) # :nodoc:
-        if pattern.match?(time)
-          time = time.strip
-          time.upcase!
-          new(time)
-        else
-          raise ArgumentError.new("invalid xmlschema format: #{time.inspect}")
-        end
+        return unless pattern.match?(time)
+        time = time.strip
+        time.upcase!
+        new(time)
       end
     else
       def _xmlschema(pattern, time) # :nodoc:
-        if pattern =~ time
-          year = $1.to_i
-          mon = $2.to_i
-          day = $3.to_i
-          hour = $4.to_i
-          min = $5.to_i
-          sec = $6.to_i
-          usec = 0
-          if $7
-            usec = Rational($7) * 1000000
-          end
-          if $8
-            zone = $8
-            off = zone_offset(zone)
-            year, mon, day, hour, min, sec =
-              apply_offset(year, mon, day, hour, min, sec, off)
-            t = self.utc(year, mon, day, hour, min, sec, usec)
-            force_zone!(t, zone, off)
-            t
-          else
-            self.local(year, mon, day, hour, min, sec, usec)
-          end
+        return unless pattern =~ time
+        year = $1.to_i
+        mon = $2.to_i
+        day = $3.to_i
+        hour = $4.to_i
+        min = $5.to_i
+        sec = $6.to_i
+        usec = 0
+        if $7
+          usec = Rational($7) * 1000000
+        end
+        if $8
+          zone = $8
+          off = zone_offset(zone)
+          year, mon, day, hour, min, sec =
+            apply_offset(year, mon, day, hour, min, sec, off)
+          t = self.utc(year, mon, day, hour, min, sec, usec)
+          force_zone!(t, zone, off)
+          t
         else
-          raise ArgumentError.new("invalid xmlschema format: #{time.inspect}")
+          self.local(year, mon, day, hour, min, sec, usec)
         end
       end
     end
