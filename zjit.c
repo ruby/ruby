@@ -17,6 +17,7 @@
 #include "insns_info.inc"
 #include "zjit.h"
 #include "vm_insnhelper.h"
+#include "eval_intern.h"
 #include "probes.h"
 #include "probes_helper.h"
 #include "constant.h"
@@ -43,6 +44,18 @@ const zjit_jit_frame_t rb_zjit_c_frame = (zjit_jit_frame_t) {
     .iseq = 0,
     .materialize_block_code = false,
 };
+
+extern VALUE rb_vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj);
+
+NORETURN(void rb_zjit_throw(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj));
+void
+rb_zjit_throw(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj)
+{
+    rb_zjit_materialize_frames_for_longjmp(ec, ec->cfp);
+    VALUE throw_data = rb_vm_throw(ec, reg_cfp, throw_state, throwobj);
+    ec->errinfo = throw_data;
+    EC_JUMP_TAG(ec, ec->tag->state);
+}
 
 void rb_zjit_profile_disable(const rb_iseq_t *iseq);
 int rb_zjit_insn_to_bare_insn(int insn);
