@@ -5960,7 +5960,7 @@ impl Function {
                 // Match against the final instruction which terminates the basic block.
                 // If it has any non-empty edges, keep it.
                 match self.find(*self.blocks[block_id.0].insns().last().unwrap()) {
-                    Insn::CondBranch {if_true, if_false, ..} => !if_true.args.is_empty() || !if_false.args.is_empty(),
+                    Insn::CondBranch { if_true, if_false, .. } => !if_true.args.is_empty() || !if_false.args.is_empty(),
                     Insn::Jump(edge) => !edge.args.is_empty(),
                     _ => false
                 })
