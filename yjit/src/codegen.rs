@@ -1267,11 +1267,44 @@ fn gen_check_ints_inline(
 
     asm.ccall(rb_yjit_execute_interrupts as *const u8, vec![EC]);
 
-    // Restore the context, then clear local types. The interrupt handler can
-    // set local variables through Kernel#binding, rb_debug_inspector API, and
-    // other means, just like cfunc calls (see jit_prepare_non_leaf_call).
+    // Restore the context so code after the label compiles against the
+    // original stack layout (matching the fast path). Then clear local types
+    // because the interrupt handler can set locals through Kernel#binding,
+    // rb_debug_inspector API, etc. (same rationale as jit_prepare_non_leaf_call).
     asm.ctx = saved_ctx;
     asm.ctx.clear_local_types();
+
+    // Reload register temps from memory. The ccall clobbered the caller-saved
+    // temp registers, but spill_regs() (inside ccall) already stored them to
+    // memory. Reload them so both paths arrive at the label with values in
+    // registers, matching saved_ctx's reg_mapping.
+    let reg_mapping = asm.ctx.get_reg_mapping();
+    if reg_mapping != RegMapping::default() {
+        // Temporarily clear reg_mapping so that Opnd::Stack operands
+        // (from local_opnd) resolve to memory, not to the very registers
+        // we're trying to reload.
+        asm.ctx.set_reg_mapping(RegMapping::default());
+
+        let regs = Assembler::get_temp_regs();
+        for reg_opnd in reg_mapping.get_reg_opnds() {
+            let reg_idx = reg_mapping.get_reg(reg_opnd).unwrap();
+            match reg_opnd {
+                RegOpnd::Stack(stack_idx) => {
+                    let idx = (asm.ctx.get_stack_size() - 1 - stack_idx) as i32;
+                    let mem = Opnd::mem(64, SP, (asm.ctx.get_sp_offset() as i32 - idx - 1) * SIZEOF_VALUE_I32);
+                    asm.load_into(Opnd::Reg(regs[reg_idx]), mem);
+                }
+                RegOpnd::Local(local_idx) => {
+                    let num_locals = asm.get_num_locals().unwrap();
+                    let ep_offset = num_locals + VM_ENV_DATA_SIZE - 1 - local_idx as u32;
+                    let mem = asm.local_opnd(ep_offset);
+                    asm.load_into(Opnd::Reg(regs[reg_idx]), mem);
+                }
+            }
+        }
+
+        asm.ctx.set_reg_mapping(reg_mapping);
+    }
 
     asm.write_label(no_interrupt);
 }
