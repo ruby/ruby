@@ -461,6 +461,16 @@ class TestGemSafeMarshal < Gem::TestCase
     end
   end
 
+  def test_date_user_defined_rejected
+    # Provide string as the inner payload, Date._load passes it raw to rb_marshal_load.
+    inner = Marshal.dump("exploit")
+    payload = "\x04\bu:\tDate" + (inner.bytesize + 5).chr + inner
+    e = assert_raise(Gem::SafeMarshal::Visitors::ToRuby::UnsupportedError) do
+      Gem::SafeMarshal.safe_load(payload)
+    end
+    assert_equal "Unsupported user-defined class Date in marshal stream @ root", e.message
+  end
+
   def assert_safe_load_marshal(dumped, additional_methods: [], permitted_ivars: nil, equality: true, marshal_dump_equality: true,
     inspect: true, to_s: true)
     loaded = Marshal.load(dumped)
