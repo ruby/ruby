@@ -40,6 +40,26 @@ describe "The for expression" do
     end
   end
 
+  it "iterates over a list of arrays and destructures with a multi-assignment" do
+    for (i, j, k) in [[1,2,3]]
+      [i, j, k].should == [1, 2, 3]
+    end
+
+    for i, (j, k) in [[1,[2,3]]]
+      [i, j, k].should == [1, 2, 3]
+    end
+
+    # Prism-related bug
+    # https://github.com/ruby/prism/pull/4156
+    ruby_version_is "4.1" do
+      eval <<~RUBY
+      for (i, j), k in [[[1,2],3]]
+        [i, j, k].should == [1, 2, 3]
+      end
+      RUBY
+    end
+  end
+
   it "iterates over an Hash passing each key-value pair to the block" do
     k = 0
     l = 0

@@ -20,4 +20,10 @@ describe "Set#|" do
     -> { @set | 1 }.should.raise(ArgumentError)
     -> { @set | Object.new }.should.raise(ArgumentError)
   end
+
+  it "retains compare_by_identity flag" do
+    @set.compare_by_identity
+    (@set | Set[:b, :d, :e]).compare_by_identity?.should == true
+    (@set | [:b, :d, :e]).compare_by_identity?.should == true
+  end
 end

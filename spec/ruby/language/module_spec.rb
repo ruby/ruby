@@ -62,9 +62,15 @@ describe "The module keyword" do
   end
 
   it "raises a TypeError if the constant is a Class" do
+    class Klass; end
     -> do
-      module ModuleSpecs::Modules::Klass; end
-    end.should.raise(TypeError)
+      module Klass; end
+    end.should.raise(TypeError, <<~MSG.strip)
+      Klass is not a module
+      #{__FILE__}:#{__LINE__ - 5}: previous definition of Klass was here
+    MSG
+  ensure
+    Object.send(:remove_const, :Klass)
   end
 
   it "raises a TypeError if the constant is a String" do

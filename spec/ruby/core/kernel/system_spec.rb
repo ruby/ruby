@@ -37,6 +37,11 @@ describe "Kernel#system" do
     -> { system('feature_14386', exception: true) }.should.raise(Errno::ENOENT)
   end
 
+  it "raises an ArgumentError if :exception option is not a boolean or nil" do
+    -> { system("true", exception: 1) }.should.raise(ArgumentError, /expected true or false/)
+    -> { system("true", exception: "true") }.should.raise(ArgumentError, /expected true or false/)
+  end
+
   it "returns nil when command execution fails" do
     system("sad").should == nil
 

@@ -8,6 +8,14 @@ end
 
 class TestIO_Console < Test::Unit::TestCase
   HOST_OS = RbConfig::CONFIG['host_os']
+
+  def test_version
+    assert_kind_of(String, IO::Console::VERSION)
+    EnvUtil.suppress_warning do
+      assert_same(IO::Console::VERSION, IO::Console::Mode::VERSION)
+    end
+  end
+
   private def host_os?(os)
     HOST_OS =~ os
   end
@@ -274,7 +282,10 @@ class TestIO_Console
     helper {|m, s|
       begin
         original = s.console_mode
-        assert_kind_of(IO::ConsoleMode, original)
+        assert_kind_of(IO::Console::Mode, original)
+        EnvUtil.suppress_warning do
+          assert_same(IO::Console::Mode, IO.const_get(:ConsoleMode))
+        end
 
         noecho = original.dup
         noecho.echo = false

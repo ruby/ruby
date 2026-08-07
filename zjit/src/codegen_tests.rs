@@ -596,6 +596,110 @@ fn test_yield_iseq_guard_miss_recompiles() {
 }
 
 #[test]
+fn test_yield_polymorphic_blocks_dispatch_directly() {
+    // A yield site shared by two call sites recompiles with a polymorphic ISEQ dispatch
+    // chain after the monomorphic guard miss. Once the polymorphic version is installed,
+    // both blocks must dispatch directly with no side exits.
+    set_call_threshold(2);
+    eval("
+        def invoke = yield(10)
+        def add_one = invoke { |x| x + 1 }
+        def double = invoke { |x| x * 2 }
+        add_one; double
+        add_one; double
+    ");
+    // Drive the re-profile window so the invalidated monomorphic version is replaced.
+    let num_profiles = get_option!(num_profiles);
+    for _ in 0..num_profiles + 2 {
+        eval("add_one; double");
+    }
+    assert_snapshot!(assert_compiles("[add_one, double]"), @"[11, 20]");
+}
+
+#[test]
+fn test_yield_polymorphic_non_iseq_handler_falls_back() {
+    // A proc handler at a polymorphic yield site fails the ISEQ tag check and takes the
+    // generic InvokeBlock fallback in-line, without a side exit or another recompile.
+    set_call_threshold(2);
+    eval("
+        def invoke = yield(10)
+        def add_one = invoke { |x| x + 1 }
+        def double = invoke { |x| x * 2 }
+        def via_proc(l) = invoke(&l)
+        add_one; double
+        add_one; double
+    ");
+    let num_profiles = get_option!(num_profiles);
+    for _ in 0..num_profiles + 2 {
+        eval("add_one; double; via_proc(proc { |x| x * 3 })");
+    }
+    assert_snapshot!(assert_compiles("[add_one, double, via_proc(proc { |x| x * 3 })]"), @"[11, 20, 30]");
+}
+
+#[test]
+fn test_yield_polymorphic_symbol_handler_falls_back() {
+    // A symbol handler at a polymorphic yield site fails the ISEQ tag check and takes the
+    // generic InvokeBlock fallback in-line, without a side exit or another recompile.
+    set_call_threshold(2);
+    eval("
+        def invoke = yield(10)
+        def add_one = invoke { |x| x + 1 }
+        def double = invoke { |x| x * 2 }
+        def via_sym = invoke(&:to_s)
+        add_one; double
+        add_one; double
+    ");
+    let num_profiles = get_option!(num_profiles);
+    for _ in 0..num_profiles + 2 {
+        eval("add_one; double; via_sym");
+    }
+    assert_snapshot!(assert_compiles("[add_one, double, via_sym]"), @r#"[11, 20, "10"]"#);
+}
+
+#[test]
+fn test_yield_polymorphic_ifunc_handler_falls_back() {
+    // An ifunc handler (Enumerator#each yields to the enumerator's C block) at a polymorphic
+    // yield site fails the ISEQ tag check and takes the generic InvokeBlock fallback in-line.
+    // Threshold 4 keeps calls 1-3 in the profile window (num_profiles defaults to 5), so
+    // invoke's first compile already sees both blocks and installs the polymorphic dispatch;
+    // the standalone version matters here because the Enumerator calls invoke from C.
+    set_call_threshold(4);
+    eval("
+        def invoke = yield(10)
+        def add_one = invoke { |x| x + 1 }
+        def double = invoke { |x| x * 2 }
+        def via_enum = to_enum(:invoke).to_a
+        add_one; double
+        add_one; double
+    ");
+    assert_snapshot!(assert_compiles("[add_one, double, via_enum]"), @"[11, 20, [10]]");
+}
+
+#[test]
+fn test_yield_megamorphic_mixed_block_handlers() {
+    // A yield site that sees ISEQ, proc, symbol, and ifunc handlers mixed together goes
+    // megamorphic (each to_enum call profiles a distinct ifunc), so it compiles to the
+    // generic InvokeBlock and must return the right result for every handler kind.
+    set_call_threshold(2);
+    eval("
+        def invoke = yield(10)
+        def add_one = invoke { |x| x + 1 }
+        def double = invoke { |x| x * 2 }
+        def via_proc(l) = invoke(&l)
+        def via_sym = invoke(&:to_s)
+        def via_enum = to_enum(:invoke).to_a
+        PR = proc { |x| x * 3 }
+        add_one; double
+        add_one; double
+    ");
+    let num_profiles = get_option!(num_profiles);
+    for _ in 0..num_profiles + 2 {
+        eval("add_one; double; via_proc(PR); via_sym; via_enum");
+    }
+    assert_snapshot!(assert_compiles("[add_one, double, via_proc(PR), via_sym, via_enum]"), @r#"[11, 20, 30, "10", [10]]"#);
+}
+
+#[test]
 fn test_yield_inline_invocation_with_args() {
     // Plain yield with two args to a matching-arity block inlines and returns correctly.
     set_call_threshold(2);
@@ -3579,6 +3683,67 @@ fn test_string_copy_chilled_gc_stress() {
           GC.stress = false
         end
     "#), @r#"[String, "hello world!", false, "UTF-8", 12, "hello world"]"#);
+}
+
+#[test]
+fn test_string_append_same_encoding() {
+    eval(r#"
+        def test(s, x) = s << x
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_snapshot!(assert_compiles(r#"
+        s = +"abc"
+        test(s, "déf")
+        test(s, "ghé")
+        [s, s.encoding.name, s.valid_encoding?]
+    "#), @r#"["abcdéfghé", "UTF-8", true]"#);
+}
+
+#[test]
+fn test_string_append_encoding_mismatch() {
+    eval(r#"
+        def test(s, x) = s << x
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    // The first append takes the mismatched-encoding path and switches the
+    // empty BINARY receiver to UTF-8; later appends take the fast path.
+    assert_snapshot!(assert_compiles(r#"
+        s = String.new(encoding: Encoding::BINARY)
+        test(s, "é")
+        test(s, "é")
+        [s, s.encoding.name, s.valid_encoding?]
+    "#), @r#"["éé", "UTF-8", true]"#);
+}
+
+#[test]
+fn test_string_append_incompatible_encoding() {
+    eval(r#"
+        def test(s, x) = s << x
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_snapshot!(assert_compiles(r#"
+        s = "\xFF".b
+        begin
+          test(s, "é")
+          :no_error
+        rescue Encoding::CompatibilityError
+          :compatibility_error
+        end
+    "#), @":compatibility_error");
+}
+
+#[test]
+fn test_string_append_broken_coderange() {
+    eval(r#"
+        def test(s, x) = s << x
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    // Same encoding, but the appended bytes break the receiver's coderange.
+    assert_snapshot!(assert_compiles(r#"
+        s = +"abc"
+        test(s, "\xFF".dup.force_encoding(Encoding::UTF_8))
+        [s.bytesize, s.valid_encoding?]
+    "#), @"[4, false]");
 }
 
 #[test]

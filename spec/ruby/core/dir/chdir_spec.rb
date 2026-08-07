@@ -65,6 +65,26 @@ describe "Dir.chdir" do
     Dir.pwd.should == @original
   end
 
+  platform_is :darwin do
+    it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      dir = tmp("dir_chdir_\u{3042}")
+      non_utf8_dir = dir.encode(Encoding::Windows_31J)
+
+      begin
+        mkdir_p(dir)
+        original = Dir.pwd
+        begin
+          Dir.chdir(non_utf8_dir).should == 0
+          Dir.pwd.should == dir
+        ensure
+          Dir.chdir(original)
+        end
+      ensure
+        rm_r dir
+      end
+    end
+  end
+
   it "returns the value of the block when a block is given" do
     Dir.chdir(@original) { :block_value }.should == :block_value
   end
@@ -122,6 +142,23 @@ describe "Dir.chdir" do
     end
 
     Dir.pwd.should == @original
+  end
+
+  platform_is :darwin do
+    it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters when given a block" do
+      dir = tmp("dir_chdir_\u{3042}")
+      non_utf8_dir = dir.encode(Encoding::Windows_31J)
+
+      begin
+        mkdir_p(dir)
+        current_dir = nil
+        Dir.chdir(non_utf8_dir) { current_dir = Dir.pwd }
+        current_dir.should == dir
+        Dir.pwd.should == @original
+      ensure
+        rm_r dir
+      end
+    end
   end
 end
 

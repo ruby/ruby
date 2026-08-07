@@ -47,4 +47,21 @@ describe "IO.sysopen" do
     @fd = IO.sysopen(@filename, nil, nil)
     @fd.should_not.equal?(0)
   end
+
+  platform_is :darwin do
+    it "returns a file descriptor for a given path when a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      utf8_path = tmp("io_sysopen_utf8_path_\u{3042}.txt")
+      # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+      non_utf8_path = utf8_path.encode(Encoding::Windows_31J)
+
+      begin
+        @fd = IO.sysopen(non_utf8_path, "w")
+        @fd.should.is_a?(Integer)
+        File.should.exist?(utf8_path)
+      ensure
+        rm_r utf8_path
+        rm_r non_utf8_path
+      end
+    end
+  end
 end

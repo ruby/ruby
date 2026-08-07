@@ -976,7 +976,7 @@ class TestISeq < Test::Unit::TestCase
       obj
     RUBY
 
-    binary = iseq.to_binary # [Bug # 21370]
+    binary = iseq_to_binary(iseq) # [Bug # 21370]
     roundtripped_iseq = RubyVM::InstructionSequence.load_from_binary(binary)
     object = roundtripped_iseq.eval
     assert_equal 1, object.test

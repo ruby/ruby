@@ -129,8 +129,12 @@ update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_
     rb_execution_context_t *ec = rb_current_execution_context(false);
     unsigned int lev;
 
-    // Can't enter VM lock during freeing of ractor hook list on MMTK, where ec == NULL.
-    if (ec) {
+    // Lock only with a current Ractor.  ec is NULL in MMTk's hook-list free; a global
+    // GC's sweep frees dead Ractors' hook lists with GET_RACTOR() == NULL (locking =
+    // NULL deref, and the barrier already excludes); in VM destruct's free-at-exit walk
+    // the thread structs are freed first (GET_RACTOR() = UAF) and it is single-threaded.
+    const bool vm_locked_here = ec && !ruby_vm_during_cleanup && GET_RACTOR() != NULL;
+    if (vm_locked_here) {
         RB_VM_LOCK_ENTER_LEV(&lev);
         rb_vm_barrier();
     }
@@ -185,7 +189,7 @@ update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_
         rb_zjit_tracing_invalidate_all();
     }
 
-    if (ec) {
+    if (vm_locked_here) {
         RB_VM_LOCK_LEAVE_LEV(&lev);
     }
 }
@@ -2022,9 +2026,11 @@ rb_postponed_job_flush(rb_vm_t *vm)
         RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(GET_EC());
     }
     /* likewise with any remaining-to-be-executed bits of the preregistered postponed
-     * job table */
+     * job table.  A merged bit can carry a Ractor-directed job that must not run on another
+     * Ractor (rb_postponed_job_trigger_for_ractor), so re-post it to this Ractor's own mask
+     * rather than to the global bitset. */
     if (triggered_bits) {
-        RUBY_ATOMIC_OR(pjq->triggered_bitset, triggered_bits);
+        RUBY_ATOMIC_OR(rb_ec_ractor_ptr(ec)->postponed_job_triggered_bits, triggered_bits);
         RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(GET_EC());
     }
 }

@@ -82,5 +82,23 @@ describe "File.readlink" do
         File.readlink(@link).should == @file
       end
     end
+
+    platform_is :darwin do
+      it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+        utf8_file = tmp("file_readlink_file_utf8_path_\u{3042}.txt")
+        utf8_link = tmp("file_readlink_link_utf8_path_\u{3042}.txt")
+        # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+        non_utf8_file = utf8_file.encode(Encoding::Windows_31J)
+        non_utf8_link = utf8_link.encode(Encoding::Windows_31J)
+
+        begin
+          File.symlink(utf8_file, utf8_link)
+          File.readlink(non_utf8_link).should == utf8_file
+        ensure
+          rm_r utf8_file, utf8_link
+          rm_r non_utf8_file, non_utf8_link
+        end
+      end
+    end
   end
 end

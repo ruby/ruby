@@ -797,6 +797,9 @@ pub enum SendFallbackReason {
     SuperTargetComplexArgsPass,
     /// The `invokeblock` instruction is not yet optimized in `type_specialize`.
     InvokeBlockNotSpecialized,
+    /// The runtime block handler at a polymorphic `invokeblock` site did not match any
+    /// profiled ISEQ candidate, so the site dispatched through the generic fallback.
+    InvokeBlockPolymorphicMiss,
     /// The `sendforward` instruction (argument forwarding `...`) is not yet optimized in
     /// `type_specialize`.
     SendForwardNotSpecialized,
@@ -848,6 +851,7 @@ impl Display for SendFallbackReason {
             SuperTargetNotFound => write!(f, "super: profiled target method cannot be found"),
             SuperTargetComplexArgsPass => write!(f, "super: complex argument passing to `super` target call"),
             InvokeBlockNotSpecialized => write!(f, "InvokeBlock: not yet specialized"),
+            InvokeBlockPolymorphicMiss => write!(f, "InvokeBlock: polymorphic dispatch miss"),
             SendForwardNotSpecialized => write!(f, "SendForward: not yet specialized"),
             InvokeSuperForwardNotSpecialized => write!(f, "InvokeSuperForward: not yet specialized"),
             SingleRactorModeRequired => write!(f, "Single-ractor mode required"),
@@ -3016,6 +3020,12 @@ impl Function {
         self.load_field(block, str, FieldName::len, RUBY_OFFSET_RSTRING_LEN, types::CInt64)
     }
 
+    /// Load `captured->code.iseq` from a `struct rb_captured_block *`.
+    fn load_captured_code_iseq(&mut self, block: BlockId, captured: InsnId) -> InsnId {
+        let offset: i32 = std::mem::offset_of!(rb_captured_block, code).try_into().unwrap();
+        self.load_field(block, captured, FieldName::code_iseq, offset, types::CPtr)
+    }
+
     /// Emit the fast-path `yield` dispatch to a known ISEQ block.
     /// When `guarded`, the block handler is read from the runtime LEP and guarded (tag + iseq
     /// identity) because the profiled block can differ per caller. When the enclosing method is
@@ -3039,7 +3049,7 @@ impl Function {
         if guarded {
             // Guard captured->code.iseq is the comptime block iseq. Compare the raw imemo pointer:
             // type inference (from_value) can't type an iseq imemo, so guard it as a CPtr identity.
-            let captured_iseq = self.load_field(block, captured, FieldName::code_iseq, 2 * SIZEOF_VALUE_I32, types::CPtr);
+            let captured_iseq = self.load_captured_code_iseq(block, captured);
             self.push_insn(block, Insn::GuardBitEquals { val: captured_iseq, expected: Const::CPtr(block_iseq as *const u8), reason: Box::new(SideExitReason::InvokeBlockIseqChanged), state, recompile: Some(Recompile) });
         }
 
@@ -9528,12 +9538,17 @@ fn add_iseq_to_hir(
                     }
                     let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
 
-                    // The monomorphic block handler class the profile recorded, if any. Both the
-                    // IFUNC and inline-ISEQ specializations below key off this single distribution.
-                    let block_handler_types = payload.profile.get_operand_types(exit_state.insn_idx);
-                    let block_handler_class = block_handler_types.and_then(|types| {
-                        if types.len() != 1 { return None; }
-                        let summary = TypeDistributionSummary::new(&types[0]);
+                    // The profiled block handler distribution. All the specializations below
+                    // (IFUNC, inline-ISEQ, and polymorphic ISEQ dispatch) key off this summary.
+                    let block_handler_summary = payload.profile.get_operand_types(exit_state.insn_idx).and_then(|types| {
+                        if let [block_handler_distribution] = types {
+                            Some(TypeDistributionSummary::new(block_handler_distribution))
+                        } else {
+                            None
+                        }
+                    });
+                    // The monomorphic block handler class the profile recorded, if any.
+                    let block_handler_class = block_handler_summary.as_ref().and_then(|summary| {
                         if !summary.is_monomorphic() { return None; }
                         Some(summary.bucket(0).class())
                     });
@@ -9556,6 +9571,29 @@ fn add_iseq_to_hir(
                             None
                         })
                     } else { None };
+
+                    // For polymorphic yield sites, collect the profiled ISEQ blocks that can
+                    // dispatch directly. Iterators like Integer#times are typically called with a
+                    // different block per call site, so requiring a monomorphic profile would
+                    // leave every such shared yield site on the generic fallback. Buckets are
+                    // ordered by frequency, so the hottest block is compared first below.
+                    let mut polymorphic_iseqs: Vec<IseqPtr> = vec![];
+                    if let Some(summary) = block_handler_summary.as_ref() {
+                        if block_call_inlinable(flags) && (summary.is_polymorphic() || summary.is_skewed_polymorphic()) {
+                            for &profiled_type in summary.buckets() {
+                                if profiled_type.is_empty() {
+                                    break;
+                                }
+                                let obj = profiled_type.class();
+                                if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 } {
+                                    let iseq = obj.as_iseq();
+                                    if !polymorphic_iseqs.contains(&iseq) && block_call_inlinable_iseq(iseq, args.len()).is_ok() {
+                                        polymorphic_iseqs.push(iseq);
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     let inlined_known_block = if let AddIseqMode::Inlined { blockiseq: Some(bi), .. } = mode {
                         if block_call_inlinable(flags)
@@ -9581,6 +9619,61 @@ fn add_iseq_to_hir(
                     } else if let Some(block_iseq) = inline_iseq {
                         let level = get_lvar_level(exit_state.iseq);
                         fun.push_invoke_block_iseq_direct(block, block_iseq, level, args, exit_id, true)
+                    } else if !polymorphic_iseqs.is_empty() {
+                        // Dispatch on the runtime block ISEQ over the profiled candidates, joining
+                        // on the generic fallback for anything else. Unlike the monomorphic path
+                        // above, a miss must not side-exit: the site is known to see multiple
+                        // blocks, so a guard would keep failing and recompiling.
+                        let level = get_lvar_level(exit_state.iseq);
+                        let ep = fun.get_ep(block, level);
+                        let block_handler = fun.load_ep_env_field(block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
+
+                        let join_block = fun.new_block(insn_idx);
+                        let join_param = fun.push_insn(join_block, Insn::Param);
+                        let dispatch_block = fun.new_block(insn_idx);
+                        let fallback_block = fun.new_block(insn_idx);
+
+                        // The handler must be an ISEQ block: VM_BH_ISEQ_BLOCK_P is `& 0x3 == 0x1`.
+                        let tag_mask = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
+                        let tag = fun.push_insn(block, Insn::IntAnd { left: block_handler, right: tag_mask });
+                        let iseq_tag = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x1) });
+                        let tag_matches = fun.push_insn(block, Insn::IsBitEqual { left: tag, right: iseq_tag });
+                        fun.push_insn(block, Insn::CondBranch {
+                            val: tag_matches,
+                            if_true: BranchEdge { target: dispatch_block, args: vec![] },
+                            if_false: BranchEdge { target: fallback_block, args: vec![] },
+                        });
+
+                        // captured = block_handler & ~0x3 (struct rb_captured_block *)
+                        let untag_mask = fun.push_insn(dispatch_block, Insn::Const { val: Const::CInt64(!0x3) });
+                        let captured = fun.push_insn(dispatch_block, Insn::IntAnd { left: block_handler, right: untag_mask });
+                        let captured_iseq = fun.load_captured_code_iseq(dispatch_block, captured);
+
+                        let mut compare_block = dispatch_block;
+                        for &block_iseq in &polymorphic_iseqs {
+                            let expected = fun.push_insn(compare_block, Insn::Const { val: Const::CPtr(block_iseq as *const u8) });
+                            let iseq_matches = fun.push_insn(compare_block, Insn::IsBitEqual { left: captured_iseq, right: expected });
+                            let direct_block = fun.new_block(insn_idx);
+                            let miss_block = fun.new_block(insn_idx);
+                            fun.push_insn(compare_block, Insn::CondBranch {
+                                val: iseq_matches,
+                                if_true: BranchEdge { target: direct_block, args: vec![] },
+                                if_false: BranchEdge { target: miss_block, args: vec![] },
+                            });
+                            let direct_result = fun.push_insn(direct_block, Insn::InvokeBlockIseqDirect { iseq: block_iseq, captured, args: args.clone(), state: exit_id });
+                            fun.push_insn(direct_block, Insn::Jump(BranchEdge { target: join_block, args: vec![direct_result] }));
+                            compare_block = miss_block;
+                        }
+                        fun.push_insn(compare_block, Insn::Jump(BranchEdge { target: fallback_block, args: vec![] }));
+
+                        let fallback_result = fun.push_insn(fallback_block, Insn::InvokeBlock {
+                            cd, args, state: exit_id, reason: InvokeBlockPolymorphicMiss,
+                        });
+                        fun.push_insn(fallback_block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
+
+                        // Continue compilation from the join block
+                        block = join_block;
+                        join_param
                     } else if is_ifunc {
                         // Load the block handler from the current frame's LEP. In inlined
                         // code, the function ISEQ is the caller while `exit_state.iseq` is the

@@ -81,6 +81,20 @@ describe "Dir.mkdir" do
   it "raises Errno::EEXIST if the argument points to the existing file" do
     -> { Dir.mkdir("#{DirSpecs.mock_dir}/file_one.ext") }.should.raise(Errno::EEXIST)
   end
+
+  platform_is :darwin do
+    it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      dir = tmp("dir_mkdir_\u{3042}")
+      non_utf8_dir = dir.encode(Encoding::Windows_31J)
+
+      begin
+        Dir.mkdir(non_utf8_dir).should == 0
+        File.directory?(dir).should == true
+      ensure
+        rm_r dir
+      end
+    end
+  end
 end
 
 # The permissions flag are not supported on Windows as stated in documentation:

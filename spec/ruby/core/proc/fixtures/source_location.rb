@@ -11,7 +11,7 @@ module ProcSpecs
     end
 
     def self.my_block_lambda
-      lambda { 42 }
+      lambda { 42 } # rubocop:disable Style/Lambda
     end
 
     MY_PROC_NEW_LINE = __LINE__ + 2

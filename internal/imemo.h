@@ -160,6 +160,12 @@ void rb_imemo_free(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 const char *rb_imemo_name(enum imemo_type type);
+ID rb_imemo_callinfo_mid(VALUE obj);
+struct rb_imemo_callcache_data {
+    VALUE klass;
+    ID called_id;
+};
+bool rb_imemo_callcache_get_data(VALUE obj, struct rb_imemo_callcache_data *data);
 RUBY_SYMBOL_EXPORT_END
 
 static inline enum imemo_type

@@ -38,6 +38,11 @@ describe "Exception#full_message" do
     e.full_message(order: :bottom, highlight: false).should =~ /b.rb:2.*a.rb:1/m
   end
 
+  it "raises an ArgumentError if exception: is not true or false" do
+    -> { StandardError.new("").full_message(highlight: 0) }.should.raise ArgumentError, /expected true or false/
+    -> { StandardError.new("").full_message(highlight: 'false') }.should.raise ArgumentError, /expected true or false/
+  end
+
   it "shows the caller if the exception has no backtrace" do
     e = RuntimeError.new("Some runtime error")
     e.backtrace.should == nil

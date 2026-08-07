@@ -110,6 +110,11 @@ Note: We're only listing outstanding class updates.
     * `String#unpack` and `String#unpack1` accept new formats `x!` and
       `@!` to align the current offset to a byte boundary or to the ABI
       alignment of another directive. [[Feature #22185]]
+    * Basic bit operations are added. `String#bit_get`, `String#bit_set?`,
+      `String#bit_set`, `String#bit_clear`, `String#bit_flip` and
+      `String#bit_count` handle individual bits, and `String#bitwise_not`,
+      `String#bitwise_and`, `String#bitwise_or`, `String#bitwise_xor`
+      (with their `!` variants) handle whole strings. [[Feature #22118]]
 
 * Symbol
 
@@ -220,6 +225,7 @@ They are still available on rubygems.org and can be installed with
   * 1.9.2 to [v1.9.3][win32ole-v1.9.3]
 * irb 1.18.0
   * 1.16.0 to [v1.17.0][irb-v1.17.0], [v1.18.0][irb-v1.18.0]
+* reline 0.7.0
 
 ### RubyGems and Bundler
 
@@ -297,6 +303,25 @@ The following APIs, which have been deprecated for many years, are removed.
 
 A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractor implementation closer to leaving experimental status.
 
+* The default GC now runs **per Ractor**: each Ractor collects its own heap
+  on its own thread without stopping the others, and a stop-the-world
+  collection only runs when it is really needed (explicit full `GC.start`,
+  shareable-object growth, reclaiming dead Ractors' heaps).  Allocation-heavy
+  Ractor programs now scale like forked processes.
+
+  Visible behavior changes:
+
+  * `Ractor#value` returns the value only once; a second call raises
+    `Ractor::Error`.
+  * `GC.disable`/`GC.enable` act as per-Ractor holds on a process-wide
+    switch: one Ractor's `GC.enable` no longer overrides another Ractor's
+    `GC.disable`.
+  * `ObjectSpace.each_object` enumerates the calling Ractor's own objects
+    plus other Ractors' shareable objects (`ObjectSpace.dump_all` still
+    covers everything).
+  * `ObjectSpace.define_finalizer` on another Ractor's object raises
+    `Ractor::IsolationError`.
+
 ## JIT
 
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
@@ -315,6 +340,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21951]: https://bugs.ruby-lang.org/issues/21951
 [Feature #21981]: https://bugs.ruby-lang.org/issues/21981
 [Feature #22097]: https://bugs.ruby-lang.org/issues/22097
+[Feature #22118]: https://bugs.ruby-lang.org/issues/22118
 [Feature #22135]: https://bugs.ruby-lang.org/issues/22135
 [Feature #22137]: https://bugs.ruby-lang.org/issues/22137
 [Feature #22139]: https://bugs.ruby-lang.org/issues/22139

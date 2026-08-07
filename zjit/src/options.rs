@@ -238,7 +238,7 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     ("--zjit-stats-quiet",
                      "Collect ZJIT stats and suppress output."),
     ("--zjit-stats[=file]",
-                     "Collect ZJIT stats (=file to write to a file)."),
+                     "Collect ZJIT stats (=file to write; .json for JSON)."),
     ("--zjit-disable",
                      "Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable."),
     ("--zjit-perf[=iseq|hir]",

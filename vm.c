@@ -44,6 +44,7 @@
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "vm_debug.h"
+#include "ruby/debug.h"
 #include "vm_exec.h"
 #include "vm_insnhelper.h"
 #include "ractor_core.h"
@@ -337,7 +338,17 @@ vm_cref_new0(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_
     VM_ASSERT(singleton || klass);
 
     rb_cref_t *cref = SHAREABLE_IMEMO_NEW(rb_cref_t, imemo_cref, refinements);
-    cref->klass_or_self = klass;
+    /* A cref is born shareable, so possibly-unshareable children (a singleton cref's
+     * self, `using`'s refinements hash) go through the write barrier to record a shref;
+     * a plain store would let the owner's local GC collect the child under the pinned
+     * cref.  next is always a cref (shareable): plain store. */
+    if (!SPECIAL_CONST_P(refinements)) RB_OBJ_WRITTEN(cref, Qundef, refinements);
+    if (klass) {
+        RB_OBJ_WRITE(cref, &cref->klass_or_self, klass);
+    }
+    else {
+        cref->klass_or_self = 0;
+    }
     cref->next = use_prev_prev ? CREF_NEXT(prev_cref) : prev_cref;
     *((rb_scope_visibility_t *)&cref->scope_visi) = scope_visi;
 
@@ -3437,10 +3448,6 @@ rb_vm_mark(void *ptr)
             rb_gc_mark(rb_ractor_self(r));
         }
 
-        for (size_t index = 0; index < vm->global_object_list_size; index++) {
-            rb_gc_mark_maybe(*vm->global_object_list[index]);
-        }
-
         rb_gc_mark_movable(vm->self);
 
         if (vm->root_box) {
@@ -3450,21 +3457,11 @@ rb_vm_mark(void *ptr)
             rb_box_entry_mark(vm->main_box);
         }
 
-        /* The main Ractor's registered mark objects (rb_gc_register_mark_object)
-         * are process-lifetime pins.  Mark them here as well as from ractor_mark
-         * so they stay live before the main Ractor joins vm->ractor.set, e.g.
-         * during early boot under GC.stress. */
-        if (vm->ractor.main_ractor && vm->ractor.main_ractor->mark_object_ary) {
-            rb_gc_mark_movable(vm->ractor.main_ractor->mark_object_ary);
-        }
-
         rb_gc_mark_movable(vm->orig_progname);
         rb_gc_mark_movable(vm->coverages);
         rb_gc_mark_movable(vm->cme2counter);
         rb_gc_mark_movable(vm->me_set);
         rb_gc_mark_movable(vm->cc_refinement_set);
-
-        rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
 
         rb_hook_list_mark(&vm->global_hooks);
 
@@ -3513,6 +3510,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 
     RUBY_FREE_ENTER("vm");
     ruby_vm_during_cleanup = true;
+    rb_gc_stash_cleanup_objspace();
 
     if (vm) {
         rb_thread_t *th = vm->ractor.main_thread;
@@ -3551,14 +3549,12 @@ ruby_vm_destruct(rb_vm_t *vm)
             thread_free(th);
         }
 
-        struct rb_objspace *objspace = vm->gc.objspace;
+        void *objspace = vm->ractor.main_ractor ? vm->ractor.main_ractor->objspace : NULL;
 
         rb_vm_living_threads_init(vm);
         ruby_vm_run_at_exit_hooks(vm);
         st_free_embedded_table(&vm->ci_table);
         RB_ALTSTACK_FREE(vm->main_altstack);
-
-        SIZED_FREE_N(vm->global_object_list, vm->global_object_list_capa);
 
         if (objspace) {
             if (rb_free_at_exit) {
@@ -3645,7 +3641,6 @@ vm_memsize(const void *ptr)
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         (rb_id_table_memsize(&vm->negative_cme_table) - sizeof(struct rb_id_table)) +
         (rb_st_memsize(&vm->overloaded_cme_table) - sizeof(struct st_table)) +
-        (vm->global_object_list_capa * sizeof(*vm->global_object_list)) +
         vm_memsize_constant_cache()
     );
 
@@ -3901,6 +3896,23 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     rb_gc_mark(ec->local_storage_recursive_hash_for_trace);
     rb_gc_mark(ec->private_const_reference);
 
+    /* Snapshots of copy receives being materialized; off the queue, this is their only
+     * root.  A snapshot is sender-resident, skipped as foreign by our local GC; the
+     * global GC marks it and re-pins its shrefs (its clear pass dropped all).  Move
+     * couriers are covered by the in-flight registry instead (ractor.c). */
+    for (const struct ractor_materialize_frame *f = ec->materialize_frames; f != NULL; f = f->prev) {
+        rb_gc_mark(f->snapshot);
+        if (f->snapshot && !RB_SPECIAL_CONST_P(f->snapshot) && rb_gc_during_global_gc_p()) {
+            /* Every node, not just the root: if compaction moved a snapshot node,
+             * the address-keyed generic_fields entries and the dedup table would
+             * break. */
+            rb_gc_pin_in_flight_message(f->snapshot);
+            for (size_t i = 0; i < f->pinned_cnt; i++) {
+                rb_gc_pin_in_flight_message(f->pinned[i]);
+            }
+        }
+    }
+
     rb_gc_mark_movable(ec->storage);
 }
 
@@ -3918,17 +3930,12 @@ thread_compact(void *ptr)
     th->self = rb_gc_location(th->self);
 }
 
-static void
-thread_mark(void *ptr)
+/* Mark the heap objects a thread owns (the caller handles ec and fiber).  Split
+ * out of thread_mark so that a local GC can root them straight from the Ractor's
+ * local roots (rb_ractor_mark_local_roots). */
+void
+rb_thread_mark_owned_roots(rb_thread_t *th)
 {
-    rb_thread_t *th = ptr;
-    RUBY_MARK_ENTER("thread");
-
-    // ec is null when setting up the thread in rb_threadptr_root_fiber_setup
-    if (th->ec) {
-        rb_fiber_mark_self(th->ec->fiber_ptr);
-    }
-
     /* mark ruby objects */
     switch (th->invoke_type) {
       case thread_invoke_type_proc:
@@ -3943,23 +3950,40 @@ thread_mark(void *ptr)
         break;
     }
 
-    rb_gc_mark(rb_ractor_self(th->ractor));
     rb_gc_mark(th->thgroup);
     rb_gc_mark(th->value);
     rb_gc_mark(th->pending_interrupt_queue);
     rb_gc_mark(th->pending_interrupt_mask_stack);
     rb_gc_mark(th->top_self);
     rb_gc_mark(th->top_wrapper);
-    if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
-
-    RUBY_ASSERT(th->ec == NULL || th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
     rb_gc_mark(th->last_status);
     rb_gc_mark(th->locking_mutex);
     rb_gc_mark(th->name);
-
     rb_gc_mark(th->scheduler);
 
     rb_threadptr_interrupt_exec_task_mark(th);
+}
+
+static void
+thread_mark(void *ptr)
+{
+    rb_thread_t *th = ptr;
+    RUBY_MARK_ENTER("thread");
+
+    // ec is null when setting up the thread in rb_threadptr_root_fiber_setup
+    if (th->ec) {
+        rb_fiber_mark_self(th->ec->fiber_ptr);
+    }
+
+    /* A live thread wrapper keeps its Ractor object alive (and through its dfree the
+     * rb_ractor_t), so an inherited Thread keeps a dead Ractor alive just as it does
+     * upstream. */
+    if (th->ractor) rb_gc_mark(rb_ractor_self(th->ractor));
+    if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
+
+    RUBY_ASSERT(th->ec == NULL || th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
+
+    rb_thread_mark_owned_roots(th);
 
     RUBY_MARK_LEAVE("thread");
 }
@@ -4720,7 +4744,7 @@ Init_VM(void)
         rb_define_global_const("TOPLEVEL_BINDING", rb_binding_new());
 
 #ifdef _WIN32
-        rb_objspace_gc_enable(vm->gc.objspace);
+        rb_objspace_gc_enable(vm->ractor.main_ractor->objspace);
 #endif
     }
     vm_init_redefined_flag();
@@ -4768,7 +4792,11 @@ Init_BareVM(void)
     vm_init2(vm);
 
     ruby_current_vm_ptr = vm;
-    rb_objspace_alloc();
+    /* The boot objspace belongs to the main Ractor, so the main Ractor has to exist
+     * before rb_gc_init_objspaces allocates it. */
+    vm->ractor.main_ractor = rb_ractor_main_alloc();
+    rb_gc_init_objspaces();
+    vm->ractor.main_ractor->newobj_cache = rb_gc_ractor_cache_alloc(vm->ractor.main_ractor);
     rb_id_table_init(&vm->negative_cme_table, 16);
     st_init_existing_numtable_with_size(&vm->overloaded_cme_table, 0);
     st_init_existing_strtable_with_size(&vm->static_ext_inits, 0);
@@ -4777,7 +4805,7 @@ Init_BareVM(void)
 
     // setup main thread
     th->nt = ZALLOC(struct rb_native_thread);
-    th->ractor = vm->ractor.main_ractor = rb_ractor_main_alloc();
+    th->ractor = vm->ractor.main_ractor;
     Init_native_thread(th);
     rb_jit_cont_init();
     th_init(th, 0, vm);
@@ -4790,6 +4818,11 @@ Init_BareVM(void)
     // setup ractor system
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
+    rb_native_mutex_initialize(&vm->ractor.generic_fields_lock);
+    rb_native_mutex_initialize(&vm->ractor.move_courier_registry_lock);
+    ccan_list_head_init(&vm->ractor.move_courier_registry);
+    rb_native_mutex_initialize(&vm->gc.registered_globals.lock);
+    vm->gc.orphan_merge_pjob = POSTPONED_JOB_HANDLE_INVALID;
 
     vm_opt_method_def_table = st_init_numtable();
     vm_opt_mid_table = st_init_numtable();
@@ -4812,82 +4845,6 @@ ruby_init_stack(void *addr)
 #endif
 
 
-#ifndef MARK_OBJECT_ARY_BUCKET_SIZE
-#define MARK_OBJECT_ARY_BUCKET_SIZE 1024
-#endif
-
-struct pin_array_list {
-    VALUE next;
-    long len;
-    VALUE *array;
-};
-
-static void
-pin_array_list_mark(void *data)
-{
-    struct pin_array_list *array = (struct pin_array_list *)data;
-    rb_gc_mark_movable(array->next);
-
-    rb_gc_mark_vm_stack_values(array->len, array->array);
-}
-
-static void
-pin_array_list_free(void *data)
-{
-    struct pin_array_list *array = (struct pin_array_list *)data;
-    xfree(array->array);
-}
-
-static size_t
-pin_array_list_memsize(const void *data)
-{
-    return sizeof(struct pin_array_list) + (MARK_OBJECT_ARY_BUCKET_SIZE * sizeof(VALUE));
-}
-
-static void
-pin_array_list_update_references(void *data)
-{
-    struct pin_array_list *array = (struct pin_array_list *)data;
-    array->next = rb_gc_location(array->next);
-}
-
-static const rb_data_type_t pin_array_list_type = {
-    .wrap_struct_name = "VM/pin_array_list",
-    .function = {
-        .dmark = pin_array_list_mark,
-        .dfree = pin_array_list_free,
-        .dsize = pin_array_list_memsize,
-        .dcompact = pin_array_list_update_references,
-    },
-    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
-};
-
-static VALUE
-pin_array_list_new(VALUE next)
-{
-    struct pin_array_list *array_list;
-    VALUE obj = TypedData_Make_Struct(0, struct pin_array_list, &pin_array_list_type, array_list);
-    RB_OBJ_WRITE(obj, &array_list->next, next);
-    array_list->array = ALLOC_N(VALUE, MARK_OBJECT_ARY_BUCKET_SIZE);
-    return obj;
-}
-
-static VALUE
-pin_array_list_append(VALUE obj, VALUE item)
-{
-    struct pin_array_list *array_list;
-    TypedData_Get_Struct(obj, struct pin_array_list, &pin_array_list_type, array_list);
-
-    if (array_list->len >= MARK_OBJECT_ARY_BUCKET_SIZE) {
-        obj = pin_array_list_new(obj);
-        TypedData_Get_Struct(obj, struct pin_array_list, &pin_array_list_type, array_list);
-    }
-
-    RB_OBJ_WRITE(obj, &array_list->array[array_list->len], item);
-    array_list->len++;
-    return obj;
-}
-
 void
 rb_vm_register_global_object(VALUE obj)
 {
@@ -4907,36 +4864,19 @@ rb_vm_register_global_object(VALUE obj)
       default:
         break;
     }
-    RB_VM_LOCKING() {
-        rb_ractor_t *cr = GET_RACTOR();
-        if (!cr->mark_object_ary) cr->mark_object_ary = pin_array_list_new(Qnil);
-        VALUE list = cr->mark_object_ary;
-        VALUE head = pin_array_list_append(list, obj);
-        if (head != list) {
-            cr->mark_object_ary = head;
-        }
-        RB_GC_GUARD(obj);
+    /* Register in the current Ractor's own pin list (a raw array).  No lock: only the
+     * owner appends and only the owner's GC marks it; the merge that inherits a list
+     * runs stop-the-world. */
+    rb_ractor_t *cr = GET_RACTOR();
+    if (cr->registered_marks_cnt == cr->registered_marks_capa) {
+        size_t nc = cr->registered_marks_capa ? cr->registered_marks_capa * 2 : 64;
+        VALUE *p = realloc(cr->registered_marks, nc * sizeof(VALUE));
+        if (!p) rb_bug("rb_vm_register_global_object: out of memory");
+        cr->registered_marks = p;
+        cr->registered_marks_capa = nc;
     }
-}
-
-/* Hand src's registered mark objects to dst (used when a Ractor terminates:
- * these are process-lifetime pins, so the main Ractor keeps them alive). */
-void
-rb_vm_ractor_migrate_mark_objects(rb_ractor_t *dst, rb_ractor_t *src)
-{
-    ASSERT_vm_locking();
-    VALUE list = src->mark_object_ary;
-    while (!NIL_P(list) && list) {
-        struct pin_array_list *array_list;
-        TypedData_Get_Struct(list, struct pin_array_list, &pin_array_list_type, array_list);
-        for (long i = 0; i < array_list->len; i++) {
-            if (!dst->mark_object_ary) dst->mark_object_ary = pin_array_list_new(Qnil);
-            VALUE head = pin_array_list_append(dst->mark_object_ary, array_list->array[i]);
-            if (head != dst->mark_object_ary) dst->mark_object_ary = head;
-        }
-        list = array_list->next;
-    }
-    src->mark_object_ary = 0;
+    cr->registered_marks[cr->registered_marks_cnt++] = obj;
+    RB_GC_GUARD(obj);
 }
 
 VALUE rb_cc_refinement_set_create(void);
@@ -4945,9 +4885,6 @@ void
 Init_vm_objects(void)
 {
     rb_vm_t *vm = GET_VM();
-
-    /* mark object arrays are per-Ractor (rb_ractor_t.mark_object_ary),
-     * lazily created on first rb_gc_register_mark_object */
     st_init_existing_table_with_size(&vm->ci_table, &vm_ci_hashtype, 0);
     vm->cc_refinement_set = rb_cc_refinement_set_create();
 }

@@ -47,6 +47,14 @@ describe "Enumerator::Lazy#zip" do
     -> { @yieldsmixed.zip [], Object.new, [] }.should.raise(TypeError)
   end
 
+  describe "when the returned lazy enumerator is evaluated by .force" do
+    it "return same value when called twice" do
+      lazy = [0, 1].lazy.zip([2, 3])
+      lazy.force.should == [[0, 2], [1, 3]]
+      lazy.force.should == [[0, 2], [1, 3]]
+    end
+  end
+
   describe "on a nested Lazy" do
     it "keeps size" do
       Enumerator::Lazy.new(Object.new, 100) {}.map {}.zip([], []).size.should == 100

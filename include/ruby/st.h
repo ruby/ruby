@@ -78,13 +78,16 @@ struct st_table_entry; /* defined in st.c */
 
 struct st_table {
     /* Cached features of the table -- see st.c for more details.  */
-    unsigned char entry_power, bin_power, size_ind, entries_start;
+    unsigned char entry_power, bin_power, size_ind;
     /* How many times the table was rebuilt.  */
-    unsigned int rebuilds_num;
+    unsigned char rebuilds_num;
+    /* Start index of entries in array entries. */
+    unsigned int entries_start;
+
     const struct st_hash_type *type;
     /* Number of entries currently in the table.  */
     st_index_t num_entries;
-    /* Start and bound index of entries in array entries.
+    /* bound index of entries in array entries.
        entries_starts and entries_bound are in interval
        [0,allocated_entries].  */
     st_index_t entries_bound;

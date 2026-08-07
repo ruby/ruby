@@ -132,6 +132,37 @@ class JSONParserTest < Test::Unit::TestCase
     capture_output { assert_equal(Float::INFINITY, parse("23456789012E666")) }
   end
 
+  INTEGER_FAST_PATH_BOUNDARIES = [
+    "999999999999999999",    # 18 digits
+    "1000000000000000000",   # narrowest 19 digits
+    "9999999999999999999",   # widest 19 digits, still inside uint64_t
+    "-999999999999999999",
+    "-9223372036854775807",  # INT64_MAX, the widest negatable accumulator
+    "-9223372036854775808",  # INT64_MIN, one past what negating a uint64_t covers
+    "-9223372036854775809",
+    "-9999999999999999999",  # widest negative 19 digits
+    "10000000000000000000",  # narrowest 20 digits
+    "18446744073709551614",
+    "18446744073709551615",  # UINT64_MAX exactly, the last value the range check admits
+    "18446744073709551616",  # 2**64, first value it must reject
+    "18446744073709551617",
+    "19999999999999999999",
+    "99999999999999999999",  # widest 20 digits
+    "-18446744073709551615", # negatives never take the 20 digit path
+    "-18446744073709551616",
+    "-99999999999999999999",
+    "100000000000000000000", # 21 digits, always a bignum
+    "-100000000000000000000",
+  ].freeze
+
+  def test_parse_integer_boundaries
+    INTEGER_FAST_PATH_BOUNDARIES.each do |literal|
+      expected = Integer(literal, 10)
+
+      assert_equal(expected, parse(literal))
+    end
+  end
+
   def test_parse_bignum
     bignum = Integer('1234567890' * 10)
     assert_equal(bignum, JSON.parse(bignum.to_s))

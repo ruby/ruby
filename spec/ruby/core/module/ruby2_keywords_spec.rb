@@ -132,6 +132,21 @@ describe "Module#ruby2_keywords" do
     Hash.ruby2_keywords_hash?(marked).should == true
   end
 
+  it "does not copy or unmark the Hash when it is passed directly as a positional argument" do
+    obj = Object.new
+    def obj.single(arg)
+      arg
+    end
+
+    h = { a: 1 }
+    marked = mark(**h).last
+    Hash.ruby2_keywords_hash?(marked).should == true
+
+    after_usage = obj.single(marked)
+    after_usage.should.equal?(marked)
+    Hash.ruby2_keywords_hash?(after_usage).should == true
+  end
+
   it "applies to the underlying method and applies across aliasing" do
     obj = Object.new
 

@@ -4054,6 +4054,198 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_yield_polymorphic_blocks_dispatch_directly() {
+        // A yield site shared by multiple call sites (like Integer#times) profiles as
+        // polymorphic. Instead of falling back to the generic InvokeBlock, dispatch on
+        // the runtime block ISEQ over the profiled candidates, with the generic call
+        // only as the in-line miss path (no side exit).
+        let result = eval("
+            def invoke = yield(10)
+            def add_one = invoke { |x| x + 1 }
+            def double = invoke { |x| x * 2 }
+            add_one; double
+            add_one; double
+            add_one; double
+            add_one + double
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(31), result);
+        assert_snapshot!(hir_string("invoke"), @"
+        fn invoke@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[10] = Const Value(10)
+          v12:CPtr = GetEP 0
+          v13:CInt64 = LoadField v12, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
+          v15:CInt64[3] = Const CInt64(3)
+          v16:CInt64 = IntAnd v13, v15
+          v17:CInt64[1] = Const CInt64(1)
+          v18:CBool = IsBitEqual v16, v17
+          CondBranch v18, bb5(), bb6()
+        bb5():
+          v20:CInt64[-4] = Const CInt64(-4)
+          v21:CInt64 = IntAnd v13, v20
+          v22:CPtr = LoadField v21, :code_iseq@0x1001
+          v23:CPtr[CPtr(0x1002)] = Const CPtr(0x1002)
+          v24:CBool = IsBitEqual v22, v23
+          CondBranch v24, bb7(), bb8()
+        bb7():
+          v26:BasicObject = InvokeBlockIseqDirect (0x1002), v21, v10
+          Jump bb4(v26)
+        bb8():
+          v28:CPtr[CPtr(0x1003)] = Const CPtr(0x1003)
+          v29:CBool = IsBitEqual v22, v28
+          CondBranch v29, bb9(), bb10()
+        bb9():
+          v31:BasicObject = InvokeBlockIseqDirect (0x1003), v21, v10
+          Jump bb4(v31)
+        bb10():
+          Jump bb6()
+        bb6():
+          v34:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
+          Jump bb4(v34)
+        bb4(v14:BasicObject):
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_yield_mixed_iseq_proc_symbol_profile_dispatches_on_iseqs() {
+        // A yield site whose profile mixes ISEQ blocks with proc and symbol handlers still
+        // dispatches directly on the ISEQ candidates; the non-ISEQ handlers fail the tag
+        // check and take the generic fallback in-line.
+        let result = eval("
+            def invoke = yield(10)
+            def add_one = invoke { |x| x + 1 }
+            def double = invoke { |x| x * 2 }
+            def via_proc(l) = invoke(&l)
+            def via_sym = invoke(&:itself)
+            pr = proc { |x| x * 3 }
+            add_one; double; via_proc(pr); via_sym
+            add_one; double; via_proc(pr); via_sym
+            add_one; double; via_proc(pr); via_sym
+            add_one + double + via_proc(pr) + via_sym
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(71), result);
+        assert_snapshot!(hir_string("invoke"), @"
+        fn invoke@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[10] = Const Value(10)
+          v12:CPtr = GetEP 0
+          v13:CInt64 = LoadField v12, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
+          v15:CInt64[3] = Const CInt64(3)
+          v16:CInt64 = IntAnd v13, v15
+          v17:CInt64[1] = Const CInt64(1)
+          v18:CBool = IsBitEqual v16, v17
+          CondBranch v18, bb5(), bb6()
+        bb5():
+          v20:CInt64[-4] = Const CInt64(-4)
+          v21:CInt64 = IntAnd v13, v20
+          v22:CPtr = LoadField v21, :code_iseq@0x1001
+          v23:CPtr[CPtr(0x1002)] = Const CPtr(0x1002)
+          v24:CBool = IsBitEqual v22, v23
+          CondBranch v24, bb7(), bb8()
+        bb7():
+          v26:BasicObject = InvokeBlockIseqDirect (0x1002), v21, v10
+          Jump bb4(v26)
+        bb8():
+          v28:CPtr[CPtr(0x1003)] = Const CPtr(0x1003)
+          v29:CBool = IsBitEqual v22, v28
+          CondBranch v29, bb9(), bb10()
+        bb9():
+          v31:BasicObject = InvokeBlockIseqDirect (0x1003), v21, v10
+          Jump bb4(v31)
+        bb10():
+          Jump bb6()
+        bb6():
+          v34:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
+          Jump bb4(v34)
+        bb4(v14:BasicObject):
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_yield_mixed_iseq_ifunc_profile_dispatches_on_iseqs() {
+        // Like the above, but the non-ISEQ handler in the profile is an ifunc block
+        // (Enumerator#each yields to the enumerator's C block). The ifunc handler fails
+        // the ISEQ tag check and takes the generic fallback in-line.
+        let result = eval("
+            def invoke = yield(10)
+            def add_one = invoke { |x| x + 1 }
+            def double = invoke { |x| x * 2 }
+            def via_enum = to_enum(:invoke).to_a
+            add_one; double
+            add_one; double
+            add_one; double
+            via_enum
+            add_one + double
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(31), result);
+        assert_snapshot!(hir_string("invoke"), @"
+        fn invoke@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[10] = Const Value(10)
+          v12:CPtr = GetEP 0
+          v13:CInt64 = LoadField v12, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
+          v15:CInt64[3] = Const CInt64(3)
+          v16:CInt64 = IntAnd v13, v15
+          v17:CInt64[1] = Const CInt64(1)
+          v18:CBool = IsBitEqual v16, v17
+          CondBranch v18, bb5(), bb6()
+        bb5():
+          v20:CInt64[-4] = Const CInt64(-4)
+          v21:CInt64 = IntAnd v13, v20
+          v22:CPtr = LoadField v21, :code_iseq@0x1001
+          v23:CPtr[CPtr(0x1002)] = Const CPtr(0x1002)
+          v24:CBool = IsBitEqual v22, v23
+          CondBranch v24, bb7(), bb8()
+        bb7():
+          v26:BasicObject = InvokeBlockIseqDirect (0x1002), v21, v10
+          Jump bb4(v26)
+        bb8():
+          v28:CPtr[CPtr(0x1003)] = Const CPtr(0x1003)
+          v29:CBool = IsBitEqual v22, v28
+          CondBranch v29, bb9(), bb10()
+        bb9():
+          v31:BasicObject = InvokeBlockIseqDirect (0x1003), v21, v10
+          Jump bb4(v31)
+        bb10():
+          Jump bb6()
+        bb6():
+          v34:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
+          Jump bb4(v34)
+        bb4(v14:BasicObject):
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
     fn reload_local_across_send() {
         eval("
             def foo(&block) = 1

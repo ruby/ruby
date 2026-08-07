@@ -40,7 +40,7 @@ logger              1.7.0   https://github.com/ruby/logger
 rdoc                8.0.0   https://github.com/ruby/rdoc
 win32ole            1.9.3   https://github.com/ruby/win32ole
 irb                 1.18.0  https://github.com/ruby/irb ac42eaaa88e6399384c1a56cc948c4b2528a9cc2
-reline              0.6.3   https://github.com/ruby/reline
+reline              0.7.0   https://github.com/ruby/reline
 readline            0.0.4   https://github.com/ruby/readline
 fiddle              1.1.8   https://github.com/ruby/fiddle
 tsort               0.2.0   https://github.com/ruby/tsort

@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Process.uid" do
   platform_is_not :windows do
@@ -25,10 +26,12 @@ describe "Process.uid=" do
 
     as_user do
       it "raises Errno::ERPERM if run by a non privileged user trying to set the superuser id" do
+        skip "Codex sandbox returns EINVAL instead of EPERM for uid/gid permission changes" if ProcessSpecs.codex_sandbox?
         -> { (Process.uid = 0)}.should.raise(Errno::EPERM)
       end
 
       it "raises Errno::ERPERM if run by a non privileged user trying to set the superuser id from username" do
+        skip "Codex sandbox returns EINVAL instead of EPERM for uid/gid permission changes" if ProcessSpecs.codex_sandbox?
         -> { Process.uid = "root" }.should.raise(Errno::EPERM)
       end
     end

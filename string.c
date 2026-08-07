@@ -49,6 +49,7 @@
 #include "ruby/ractor.h"
 #include "ruby_assert.h"
 #include "shape.h"
+#include "vm_core.h"
 #include "vm_sync.h"
 #include "zjit.h"
 #include "ruby/internal/attr/nonstring.h"
@@ -3173,6 +3174,11 @@ rb_str_sublen(VALUE str, long pos)
     }
 }
 
+/* Substrings that need a slot larger than this are shared instead of copied.
+ * Larger slots hold fewer objects per page and trigger GC more often, which
+ * outweighs the copy they save; see [Feature #22186] for the benchmarks. */
+#define STR_SUBSEQ_MAX_EMBED_SIZE 256
+
 static VALUE
 str_subseq(VALUE str, long beg, long len)
 {
@@ -3192,12 +3198,19 @@ str_subseq(VALUE str, long beg, long len)
         return str2;
     }
 
-    str2 = str_alloc_heap(rb_cString);
-    if (str_embed_capa(str2) >= len + termlen) {
+    /* Sharing allocates a shared root as well unless str can be one itself, so
+     * a copy is worth a larger slot only when it saves that second object. */
+    const bool root_available = STR_SHARED_P(str) ||
+        RB_FL_TEST_RAW(str, FL_FREEZE | STR_CHILLED) == FL_FREEZE;
+    const size_t max_embed_size = root_available ?
+        rb_gc_size_slot_size(sizeof(struct RString)) : STR_SUBSEQ_MAX_EMBED_SIZE;
+    const size_t embed_size = rb_str_embed_size(len, termlen);
+
+    if (embed_size <= max_embed_size && rb_gc_size_allocatable_p(embed_size)) {
+        str2 = str_alloc_embed(rb_cString, len + termlen);
         char *ptr2 = RSTRING(str2)->as.embed.ary;
-        STR_SET_EMBED(str2);
         memcpy(ptr2, RSTRING_PTR(str) + beg, len);
-        TERM_FILL(ptr2+len, termlen);
+        TERM_FILL(ptr2 + len, termlen);
 
         STR_SET_LEN(str2, len);
         if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
@@ -3207,6 +3220,7 @@ str_subseq(VALUE str, long beg, long len)
         RB_GC_GUARD(str);
     }
     else {
+        str2 = str_alloc_heap(rb_cString);
         str_replace_shared(str2, str);
         RUBY_ASSERT(!STR_EMBED_P(str2));
         if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {

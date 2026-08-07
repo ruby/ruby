@@ -145,4 +145,10 @@ describe "File.join" do
       e.message.should == 'string contains null byte'
     }
   end
+
+  it "preserves the encoding of the path" do
+    path1 = "foo".encode(Encoding::EUC_JP)
+    path2 = "bar".encode(Encoding::EUC_JP)
+    File.join(path1, path2).encoding.should == Encoding::EUC_JP
+  end
 end

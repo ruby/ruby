@@ -2,8 +2,16 @@
 
 require_relative '../../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative '../../enumerable/shared/value_packing'
 
 describe "Enumerator::Lazy#reject" do
+  describe "value packing of source yields (matches Enumerable#reject)" do
+    before :each do
+      @take = -> e { e.lazy.reject { false } }
+    end
+    it_behaves_like :enumerable_value_packing, nil
+  end
+
   before :each do
     @yieldsmixed = EnumeratorLazySpecs::YieldsMixed.new.to_enum.lazy
     @eventsmixed = EnumeratorLazySpecs::EventsMixed.new.to_enum.lazy

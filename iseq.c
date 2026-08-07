@@ -25,6 +25,7 @@
 #include "internal/bits.h"
 #include "internal/class.h"
 #include "internal/compile.h"
+#include "internal/coverage.h"
 #include "internal/error.h"
 #include "internal/file.h"
 #include "internal/gc.h"
@@ -39,6 +40,7 @@
 #include "iseq.h"
 #include "ruby/util.h"
 #include "vm_core.h"
+#include "vm_sync.h"
 #include "ractor_core.h"
 #include "vm_callinfo.h"
 #include "yjit.h"
@@ -419,22 +421,68 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
             }
         }
 
-        if (reference_updating) {
-#if USE_YJIT
-            rb_yjit_iseq_update_references(iseq);
+#if USE_YJIT || USE_ZJIT
+        /* The JIT payload's critical section is the VM lock (racing other Ractors'
+         * compile/invalidate; yjit/zjit assert it).  A lock-free local GC also reaches
+         * here, so take it without joining a barrier.  mmtk marks on a GC worker with no
+         * EC, where the lock cannot be taken, nor needed: stop-the-world. */
+        const bool jit_payload_lock_p = rb_gc_multi_objspace_p();
+        bool jit_payload_p = false;
+# if USE_YJIT
+        if (body->yjit_payload != NULL) jit_payload_p = true;
+# endif
+# if USE_ZJIT
+        if (body->zjit_payload != NULL) jit_payload_p = true;
+# endif
 #endif
-#if USE_ZJIT
-            rb_zjit_iseq_update_references(body->zjit_payload);
+        if (reference_updating) {
+#if USE_YJIT || USE_ZJIT
+            if (jit_payload_p) {
+                if (jit_payload_lock_p) {
+                    RB_VM_LOCKING_NO_BARRIER() {
+# if USE_YJIT
+                        rb_yjit_iseq_update_references(iseq);
+# endif
+# if USE_ZJIT
+                        rb_zjit_iseq_update_references(body->zjit_payload);
+# endif
+                    }
+                }
+                else {
+# if USE_YJIT
+                    rb_yjit_iseq_update_references(iseq);
+# endif
+# if USE_ZJIT
+                    rb_zjit_iseq_update_references(body->zjit_payload);
+# endif
+                }
+            }
 #endif
         }
         else {
             // TODO: check jit payload
             if (!rb_gc_checking_shareable()) {
-#if USE_YJIT
-                rb_yjit_iseq_mark(body->yjit_payload);
-#endif
-#if USE_ZJIT
-                rb_zjit_iseq_mark(body->zjit_payload);
+#if USE_YJIT || USE_ZJIT
+                if (jit_payload_p) {
+                    if (jit_payload_lock_p) {
+                        RB_VM_LOCKING_NO_BARRIER() {
+# if USE_YJIT
+                            rb_yjit_iseq_mark(body->yjit_payload);
+# endif
+# if USE_ZJIT
+                            rb_zjit_iseq_mark(body->zjit_payload);
+# endif
+                        }
+                    }
+                    else {
+# if USE_YJIT
+                        rb_yjit_iseq_mark(body->yjit_payload);
+# endif
+# if USE_ZJIT
+                        rb_zjit_iseq_mark(body->zjit_payload);
+# endif
+                    }
+                }
 #endif
             }
         }
@@ -4551,6 +4599,24 @@ iseqw_script_lines(VALUE self)
     return ISEQ_BODY(iseq)->variable.script_lines;
 }
 
+/* Returns the hash of the source this iseq was compiled from, or nil if it
+ * is unavailable. */
+static VALUE
+iseqw_source_hash(VALUE self)
+{
+    const rb_iseq_t *iseq = iseqw_check(self);
+    if (!ISEQ_BODY(iseq)->has_source_hash) return Qnil;
+    return ULL2NUM(ISEQ_BODY(iseq)->source_hash);
+}
+
+/* Returns the node id of the AST node this iseq corresponds to. */
+static VALUE
+iseqw_node_id(VALUE self)
+{
+    const rb_iseq_t *iseq = iseqw_check(self);
+    return INT2NUM(ISEQ_BODY(iseq)->location.node_id);
+}
+
 /*
  *  Document-class: RubyVM::InstructionSequence
  *
@@ -4622,6 +4688,8 @@ Init_ISeq(void)
 
     // script lines
     rb_define_method(rb_cISeq, "script_lines", iseqw_script_lines, 0);
+    rb_define_method(rb_cISeq, "source_hash", iseqw_source_hash, 0);
+    rb_define_method(rb_cISeq, "node_id", iseqw_node_id, 0);
 
     rb_undef_method(CLASS_OF(rb_cISeq), "translate");
     rb_undef_method(CLASS_OF(rb_cISeq), "load_iseq");

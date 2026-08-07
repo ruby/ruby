@@ -82,6 +82,24 @@ class TestZJITCLI < Test::Unit::TestCase
       assert_equal("true\n", out)
       assert_equal stats_header, File.open(stats_file) {|f| f.gets(chomp: true)}, "should be overwritten"
     }
+
+    # With --zjit-stats=<path> ending in .json, stats should be dumped as JSON
+    Tempfile.create(["zjit-stats-", ".json"]) {|tmp|
+      stats_file = tmp.path
+      tmp.puts("Lorem ipsum dolor sit amet, consectetur adipiscing elit, ...")
+      tmp.close
+
+      out, err, status = eval_with_jit(script, stats: stats_file)
+      assert_success(out, err, status)
+      refute_includes(err, stats_header)
+      assert_equal("true\n", out)
+
+      require "json"
+      json = JSON.parse(File.read(stats_file))
+      assert_kind_of Hash, json, "should be JSON"
+      assert json.key?("compiled_iseq_count"), "should contain stats keys"
+      refute_includes File.read(stats_file), stats_header, "should not contain the text stats header"
+    }
   end
 
   def test_enable_through_env

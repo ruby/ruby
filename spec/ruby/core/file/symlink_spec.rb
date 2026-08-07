@@ -45,6 +45,24 @@ describe "File.symlink" do
       -> { File.symlink(@file, 1)   }.should.raise(TypeError)
       -> { File.symlink(1, 1)       }.should.raise(TypeError)
     end
+
+    platform_is :darwin do
+      it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+        utf8_file = tmp("file_symlink_file_utf8_path_\u{3042}.txt")
+        utf8_link = tmp("file_symlink_link_utf8_path_\u{3042}.txt")
+        # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+        non_utf8_file = utf8_file.encode(Encoding::Windows_31J)
+        non_utf8_link = utf8_link.encode(Encoding::Windows_31J)
+
+        begin
+          touch(utf8_file)
+          File.symlink(non_utf8_file, non_utf8_link).should == 0
+        ensure
+          rm_r utf8_file, utf8_link
+          rm_r non_utf8_file, non_utf8_link
+        end
+      end
+    end
   end
 end
 

@@ -327,6 +327,13 @@ Collect stats without printing (access via `RubyVM::ZJIT.stats` in Ruby):
 ./miniruby --zjit-stats=quiet script.rb
 ```
 
+Dump stats to a file. Name the file with a `.json` extension to write the
+stats as pretty-printed JSON instead of the human-readable text format:
+
+```bash
+ruby --zjit-stats=stats.json script.rb
+```
+
 ### Accessing Stats in Ruby
 
 ```ruby

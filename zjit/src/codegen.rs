@@ -4079,7 +4079,49 @@ fn gen_string_setbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd, val
 
 fn gen_string_append(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, val: Opnd, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, function, state);
-    asm_ccall!(asm, rb_str_buf_append, string, val)
+
+    // Test if string encodings differ. If different, use rb_str_buf_append. If the same,
+    // use rb_jit_str_simple_append, which calls rb_str_cat.
+    asm_comment!(asm, "<< on strings");
+
+    // Take receiver's object flags XOR arg's flags. If any
+    // string-encoding flags are different between the two,
+    // the encodings don't match.
+    let string_reg = asm.load_mem(string);
+    let val_reg = asm.load_mem(val);
+    let flags_xor = asm.xor(
+        Opnd::mem(VALUE_BITS, string_reg, RUBY_OFFSET_RBASIC_FLAGS),
+        Opnd::mem(VALUE_BITS, val_reg, RUBY_OFFSET_RBASIC_FLAGS)
+    );
+    asm.test(flags_xor, Opnd::UImm(RUBY_ENCODING_MASK as u64));
+
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let mismatch_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let mismatch_edge = Target::Block(Box::new(lir::BranchEdge { target: mismatch_block, args: vec![] }));
+    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let result_edge = Target::Block(Box::new(lir::BranchEdge { target: result_block, args: vec![] }));
+
+    asm.jnz(jit, mismatch_edge);
+
+    // If encodings match, call the simple append function
+    asm_ccall!(asm, rb_jit_str_simple_append, string, val);
+    asm.jmp(result_edge.clone());
+
+    // If encodings are different, use a slower encoding-aware concatenate
+    asm.set_current_block(mismatch_block);
+    let label = jit.get_label(asm, mismatch_block, hir_block_id);
+    asm.write_label(label);
+    asm_ccall!(asm, rb_str_buf_append, string, val);
+    asm.jmp(result_edge);
+
+    // Join block
+    asm.set_current_block(result_block);
+    let label = jit.get_label(asm, result_block, hir_block_id);
+    asm.write_label(label);
+
+    // Either append function returns the receiver
+    string
 }
 
 fn gen_string_append_codepoint(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, val: Opnd, state: &FrameState) -> Opnd {
