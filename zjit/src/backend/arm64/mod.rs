@@ -2908,6 +2908,142 @@ mod tests {
     }
 
     #[test]
+    fn test_ccall_eight_reg_args() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // 8 arguments all fit in AAPCS64 argument registers: the last two are
+        // passed in x6 and x7, and the native SP is not touched.
+        let args: Vec<Opnd> = (1..=8).map(|i| asm.load(Opnd::UImm(i))).collect();
+        asm.ccall(0 as _, args);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #1
+        0x4: mov x1, #2
+        0x8: mov x2, #3
+        0xc: mov x3, #4
+        0x10: mov x4, #5
+        0x14: mov x5, #6
+        0x18: mov x6, #7
+        0x1c: mov x7, #8
+        0x20: mov x16, #0
+        0x24: blr x16
+        ");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2a40080d2c50080d2e60080d2070180d2100080d200023fd6");
+    }
+
+    #[test]
+    fn test_ccall_stack_args() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // 9 arguments: 8 in registers, 1 on the stack. The outgoing-argument
+        // area is padded to 16 bytes to keep the SP aligned at the call.
+        let a0 = asm.load(Opnd::UImm(1));
+        let mut args: Vec<Opnd> = (2..=8).map(|i| asm.load(Opnd::UImm(i))).collect();
+        args.insert(0, a0);
+        args.push(a0);
+        asm.ccall(0 as _, args);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #1
+        0x4: mov x1, #2
+        0x8: mov x2, #3
+        0xc: mov x3, #4
+        0x10: mov x4, #5
+        0x14: mov x5, #6
+        0x18: mov x6, #7
+        0x1c: mov x7, #8
+        0x20: sub sp, sp, #0x10
+        0x24: stur x0, [sp]
+        0x28: mov x16, #0
+        0x2c: blr x16
+        0x30: add sp, sp, #0x10
+        ");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2a40080d2c50080d2e60080d2070180d2ff4300d1e00300f8100080d200023fd6ff430091");
+    }
+
+    #[test]
+    fn test_ccall_stack_args_spilled_source() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // 11 arguments with more live values than allocatable registers, so a
+        // stack argument's source is itself a frame-based spill slot.
+        let args: Vec<Opnd> = (1..=11).map(|i| asm.load(Opnd::UImm(i))).collect();
+        asm.ccall(0 as _, args);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #1
+        0x4: mov x1, #2
+        0x8: mov x2, #3
+        0xc: mov x3, #4
+        0x10: mov x4, #5
+        0x14: mov x5, #6
+        0x18: mov x6, #7
+        0x1c: mov x7, #8
+        0x20: mov x11, #9
+        0x24: mov x12, #0xa
+        0x28: mov x16, #0xb
+        0x2c: stur x16, [x29, #-8]
+        0x30: sub sp, sp, #0x20
+        0x34: stur x11, [sp]
+        0x38: stur x12, [sp, #8]
+        0x3c: ldur x16, [x29, #-8]
+        0x40: stur x16, [sp, #0x10]
+        0x44: mov x16, #0
+        0x48: blr x16
+        0x4c: add sp, sp, #0x20
+        ");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2a40080d2c50080d2e60080d2070180d22b0180d24c0180d2700180d2b0831ff8ff8300d1eb0300f8ec8300f8b0835ff8f00301f8100080d200023fd6ff830091");
+    }
+
+    #[test]
+    fn test_ccall_stack_args_with_survivor() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // 10 arguments (2 stack slots) with a value that survives the call.
+        // The survivor's push/pop must bracket the outgoing-argument area's
+        // sub/add: the bug that got GH-15312 reverted was stack-argument
+        // stores overlapping the survivor slots, so the pops restored the
+        // arguments instead of the saved registers.
+        let surv = asm.load(Opnd::UImm(0x42));
+        let a0 = asm.load(Opnd::UImm(1));
+        let a1 = asm.load(Opnd::UImm(2));
+        asm.ccall(0 as _, vec![a0, a1, a0, a1, a0, a1, a0, a1, a0, a1]);
+        _ = asm.add(surv, Opnd::UImm(1));
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #0x42
+        0x4: mov x1, #1
+        0x8: mov x2, #2
+        0xc: stp xzr, x0, [sp, #-0x10]!
+        0x10: sub sp, sp, #0x10
+        0x14: stur x1, [sp]
+        0x18: stur x2, [sp, #8]
+        0x1c: mov x7, x2
+        0x20: mov x2, x1
+        0x24: mov x1, x7
+        0x28: mov x6, x2
+        0x2c: mov x5, x7
+        0x30: mov x4, x2
+        0x34: mov x3, x7
+        0x38: mov x0, x2
+        0x3c: mov x16, #0
+        0x40: blr x16
+        0x44: add sp, sp, #0x10
+        0x48: ldp xzr, x0, [sp], #0x10
+        0x4c: adds x0, x0, #1
+        ");
+        assert_snapshot!(cb.hexdump(), @"400880d2210080d2420080d2ff03bfa9ff4300d1e10300f8e28300f8e70302aae20301aae10307aae60302aae50307aae40302aae30307aae00302aa100080d200023fd6ff430091ff03c1a8000400b1");
+    }
+
+    #[test]
     fn test_cpush_pair() {
         let (mut asm, mut cb) = setup_asm();
         let v0 = asm.load(1.into());

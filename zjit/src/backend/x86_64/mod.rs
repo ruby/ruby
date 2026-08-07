@@ -298,8 +298,7 @@ impl Assembler {
                     };
                     asm.push_insn(insn);
                 },
-                Insn::CCall { data } => {
-                    assert!(data.opnds.len() <= C_ARG_OPNDS.len());
+                Insn::CCall { .. } => {
                     // CCall argument setup is handled by handle_caller_saved_regs.
                     asm.push_insn(insn);
                 },
@@ -2058,6 +2057,108 @@ mod tests {
         0x3d: add rdi, r8
         ");
         assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005756525141506a00b800000000ffd041584158595a5e5f4801f74889d74801cf4889d74c01c7");
+    }
+
+    #[test]
+    fn test_ccall_stack_args() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // 7 arguments: 6 in registers, 1 on the stack. The outgoing-argument
+        // area is padded to 16 bytes to keep the SP aligned at the call.
+        let args: Vec<Opnd> = (1..=7).map(|i| asm.load(Opnd::UImm(i))).collect();
+        asm.ccall(0 as _, args);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: mov edx, 3
+        0xf: mov ecx, 4
+        0x14: mov r8d, 5
+        0x1a: mov r9d, 6
+        0x20: mov eax, 7
+        0x25: sub rsp, 0x10
+        0x29: mov qword ptr [rsp], rax
+        0x2d: mov eax, 0
+        0x32: call rax
+        0x34: add rsp, 0x10
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000041b906000000b8070000004883ec1048890424b800000000ffd04883c410");
+    }
+
+    #[test]
+    fn test_ccall_stack_args_spilled_source() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // 8 arguments with more live values than allocatable registers, so a
+        // stack argument's source is itself a frame-based spill slot.
+        let args: Vec<Opnd> = (1..=8).map(|i| asm.load(Opnd::UImm(i))).collect();
+        asm.ccall(0 as _, args);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: mov edx, 3
+        0xf: mov ecx, 4
+        0x14: mov r8d, 5
+        0x1a: mov r9d, 6
+        0x20: mov eax, 7
+        0x25: mov r11d, 8
+        0x2b: mov qword ptr [rbp - 8], r11
+        0x2f: sub rsp, 0x10
+        0x33: mov qword ptr [rsp], rax
+        0x37: mov r11, qword ptr [rbp - 8]
+        0x3b: mov qword ptr [rsp + 8], r11
+        0x40: mov eax, 0
+        0x45: call rax
+        0x47: add rsp, 0x10
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000041b906000000b80700000041bb080000004c895df84883ec10488904244c8b5df84c895c2408b800000000ffd04883c410");
+    }
+
+    #[test]
+    fn test_ccall_stack_args_with_survivor() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // 8 arguments (2 stack slots) with a value that survives the call.
+        // The survivor's push/pop must bracket the outgoing-argument area's
+        // sub/add: the bug that got GH-15312 reverted was stack-argument
+        // stores overlapping the survivor slots, so the pops restored the
+        // arguments instead of the saved registers.
+        let surv = asm.load(Opnd::UImm(0x42));
+        let a0 = asm.load(Opnd::UImm(1));
+        let a1 = asm.load(Opnd::UImm(2));
+        asm.ccall(0 as _, vec![a0, a1, a0, a1, a0, a1, a0, a1]);
+        _ = asm.add(surv, Opnd::UImm(1));
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 0x42
+        0x5: mov esi, 1
+        0xa: mov edx, 2
+        0xf: push rdi
+        0x10: push 0
+        0x12: sub rsp, 0x10
+        0x16: mov qword ptr [rsp], rsi
+        0x1a: mov qword ptr [rsp + 8], rdx
+        0x1f: mov r9, rdx
+        0x22: mov rdx, rsi
+        0x25: mov rsi, r9
+        0x28: mov r8, rdx
+        0x2b: mov rcx, r9
+        0x2e: mov rdi, rdx
+        0x31: mov eax, 0
+        0x36: call rax
+        0x38: add rsp, 0x10
+        0x3c: pop rdi
+        0x3d: pop rdi
+        0x3e: add rdi, 1
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf42000000be01000000ba02000000576a004883ec104889342448895424084989d14889f24c89ce4989d04c89c94889d7b800000000ffd04883c4105f5f4883c701");
     }
 
     #[test]

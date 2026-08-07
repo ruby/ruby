@@ -2596,6 +2596,14 @@ impl Assembler
     /// Handle caller-saved registers around CCall instructions.
     /// For each CCall, push live caller-saved registers, set up arguments
     /// in C calling convention registers, and pop saved registers after.
+    ///
+    /// Arguments that don't fit in `c_arg_regs` are passed on the native stack
+    /// as specified by the C ABI (SysV on x86_64, AAPCS64 on arm64): an
+    /// outgoing-argument area is reserved *below* the survivor pushes right
+    /// before the call and torn down right after it. Keeping the pushes above
+    /// that area matters for two reasons: stack maps locate pushed survivors
+    /// at fixed frame offsets (see [StackState::stack_idx_for_caller_saved_reg]),
+    /// and the pops after the call must read back the exact slots the pushes wrote.
     pub fn handle_caller_saved_regs(
         &mut self,
         intervals: &[Interval],
@@ -2603,7 +2611,7 @@ impl Assembler
         c_arg_regs: &[Reg],
     ) {
         use crate::backend::parcopy;
-        use crate::backend::current::{C_RET_OPND, SCRATCH_REG};
+        use crate::backend::current::{C_RET_OPND, SCRATCH_REG, NATIVE_STACK_PTR};
 
         for block_id in self.block_order() {
             let block = &mut self.basic_blocks[block_id.0];
@@ -2707,11 +2715,39 @@ impl Assembler
                         }
                     }
 
+                    // Reserve the outgoing-argument area for arguments that don't
+                    // fit in `c_arg_regs`. Round the area up to an even number of
+                    // slots to keep the native SP 16-byte aligned at the call: SP
+                    // is 16-byte aligned after FrameSetup and each survivor push
+                    // above writes a 16-byte pair.
+                    let num_stack_args = opnds.len().saturating_sub(c_arg_regs.len());
+                    let stack_arg_bytes = SIZEOF_VALUE_I32 * ((num_stack_args + 1) & !1) as i32;
+                    if num_stack_args > 0 {
+                        new_insns.push(Insn::Sub {
+                            left: NATIVE_STACK_PTR,
+                            right: (stack_arg_bytes as i64).into(),
+                            out: NATIVE_STACK_PTR,
+                        });
+                        new_ids.push(None);
+
+                        // Store the overflow arguments into the reserved area.
+                        // This must happen before the register-argument copies
+                        // below clobber `c_arg_regs`, which may hold some of the
+                        // source operands. Sources spilled by the register
+                        // allocator are frame-pointer-relative (MemBase::Stack),
+                        // so moving the native SP above doesn't invalidate them.
+                        for (idx, arg) in opnds.iter().skip(c_arg_regs.len()).enumerate() {
+                            let dest = Opnd::mem(64, NATIVE_STACK_PTR, idx as i32 * SIZEOF_VALUE_I32);
+                            let src = Self::rewritten_opnd(*arg, intervals, alloc_regs);
+                            new_insns.push(Insn::Store { dest, src });
+                            new_ids.push(None);
+                        }
+                    }
+
                     // Extract arguments from CCall, clear opnds
 
-                    assert!(opnds.len() <= c_arg_regs.len());
-
-                    // Sequentialize argument moves: each arg goes to c_arg_regs[i]
+                    // Sequentialize argument moves: each arg goes to c_arg_regs[i].
+                    // zip() drops the stack arguments handled above.
                     let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = opnds
                         .iter()
                         .zip(c_arg_regs.iter())
@@ -2759,6 +2795,18 @@ impl Assembler
                     // Emit end_marker PosMarker after the CCall
                     if let Some(marker) = end_marker {
                         new_insns.push(Insn::PosMarker(marker));
+                        new_ids.push(None);
+                    }
+
+                    // Tear down the outgoing-argument area before restoring
+                    // survivors, so that the pops below read back the exact
+                    // slots the pushes above wrote.
+                    if num_stack_args > 0 {
+                        new_insns.push(Insn::Add {
+                            left: NATIVE_STACK_PTR,
+                            right: (stack_arg_bytes as i64).into(),
+                            out: NATIVE_STACK_PTR,
+                        });
                         new_ids.push(None);
                     }
 

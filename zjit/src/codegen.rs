@@ -952,11 +952,6 @@ fn gen_fixnum_bit_check(asm: &mut Assembler, val: Opnd, index: u8) -> Opnd {
 }
 
 fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, function: &Function, state: &FrameState, bf: &rb_builtin_function, leaf: bool, args: Vec<Opnd>) -> lir::Opnd {
-    // +2 for ec, self
-    assert!(bf.argc + 2 <= C_ARG_OPNDS.len() as i32,
-            "gen_invokebuiltin should not be called for builtin function {} with too many arguments: {}",
-            unsafe { std::ffi::CStr::from_ptr(bf.name).to_str().unwrap() },
-            bf.argc);
     if leaf {
         gen_prepare_leaf_call_with_gc(asm, state);
     } else {
