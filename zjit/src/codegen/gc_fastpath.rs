@@ -1,50 +1,24 @@
-use std::ffi::c_void;
-
 use crate::backend::lir::{self, Assembler, EC, Opnd, Target, asm_comment};
 use crate::cruby::{
     RB_GC_ZJIT_FASTPATH_DEFAULT, RB_GC_ZJIT_FASTPATH_MMTK,
     RUBY_OFFSET_EC_THREAD_PTR, RUBY_OFFSET_RBASIC_FLAGS, RUBY_OFFSET_RBASIC_KLASS,
     RUBY_OFFSET_THREAD_RACTOR, VALUE, VALUE_BITS, rb_zjit_new_obj_shape,
     rb_zjit_runtime_offsets,
+    rb_gc_zjit_default_new_obj_fastpath as RbGcZjitDefaultNewObjFastpath,
+    rb_gc_zjit_mmtk_new_obj_fastpath as RbGcZjitMmtkNewObjFastpath,
 };
 use crate::hir::{FrameState, Function, Invariant};
 use super::{JITState, gen_patch_point};
 
-#[repr(C)]
-#[derive(Clone, Copy)]
-struct RbGcZjitDefaultNewObjFastpath {
-    cursor_offset: usize,
-    cursor_end_offset: usize,
-    slot_size: usize,
-    total_allocated_objects_offset: usize,
-    ractor_belonging_id_offset: usize,
-    flags: VALUE,
-    klass: VALUE,
+impl Clone for RbGcZjitDefaultNewObjFastpath {
+    fn clone(&self) -> Self { *self }
 }
+impl Copy for RbGcZjitDefaultNewObjFastpath {}
 
-#[repr(C)]
-#[derive(Clone, Copy)]
-struct RbGcZjitMmtkNewObjFastpath {
-    objspace: *const c_void,
-    objspace_total_allocated_objects_offset: usize,
-    ractor_cache_mutator_offset: usize,
-    ractor_cache_bump_pointer_offset: usize,
-    ractor_cache_obj_free_parallel_buf_offset: usize,
-    ractor_cache_obj_free_parallel_count_offset: usize,
-    bump_pointer_cursor_offset: usize,
-    bump_pointer_limit_offset: usize,
-    min_obj_align: usize,
-    payload_size: usize,
-    total_alloc_size: usize,
-    allocation_semantics_default: u32,
-    gc_stress_p_func: usize,
-    newobj_tracing_p_func: usize,
-    post_alloc_func: usize,
-    obj_free_buf_capacity_minus_one: usize,
-    value_size_shift: usize,
-    flags: VALUE,
-    klass: VALUE,
+impl Clone for RbGcZjitMmtkNewObjFastpath {
+    fn clone(&self) -> Self { *self }
 }
+impl Copy for RbGcZjitMmtkNewObjFastpath {}
 
 #[repr(C)]
 union RbGcZjitFastpathData {
@@ -91,17 +65,14 @@ pub(super) fn gc_fastpath_new_obj(
         return slow_path(asm);
     };
 
-    // The default GC's inline fast path bumps the ractor cache cursor in emitted
-    // code without calling rb_newobj, so it can't fire the NEWOBJ internal event.
-    // If such a hook is active, use the C path instead; otherwise assume none is
-    // active and install a patch point that discards this code if one is enabled
-    // later. (MMTk's fast path checks for the hook at run time, so it needs neither.)
-    if let PreparedNewObjFastpath::Default(_) = &fastpath {
-        if unsafe { rb_zjit_newobj_hook_enabled_p() } {
-            return slow_path(asm);
-        }
-        gen_patch_point(jit, asm, function, &Invariant::NoNewObjHook, state);
+    // Both inline fast paths bump an allocation cursor without calling rb_newobj,
+    // so neither fires the NEWOBJ internal event. If such a hook is active, use the
+    // C path; otherwise assume none is active and install a patch point that
+    // discards this code if one is enabled later.
+    if unsafe { rb_zjit_newobj_hook_enabled_p() } {
+        return slow_path(asm);
     }
+    gen_patch_point(jit, asm, function, &Invariant::NoNewObjHook, state);
 
     asm_comment!(asm, "GC inline allocation");
 
@@ -150,7 +121,6 @@ fn prepare_new_obj_fastpath(alloc_size: usize, flags: u64, klass: VALUE) -> Opti
             let fastpath = unsafe { fastpath.data.mmtk };
             if fastpath.objspace.is_null()
                 || fastpath.gc_stress_p_func == 0
-                || fastpath.newobj_tracing_p_func == 0
                 || fastpath.post_alloc_func == 0
                 || fastpath.min_obj_align == 0
                 || !fastpath.min_obj_align.is_power_of_two()
@@ -227,14 +197,6 @@ fn emit_default_new_obj_fastpath(
         fastpath.klass.into(),
     );
 
-    // only in debug mode
-    if fastpath.ractor_belonging_id_offset != 0 {
-        let belonging_offset: i32 = fastpath.ractor_belonging_id_offset.try_into().ok()?;
-        let pub_id_offset: i32 = unsafe { rb_zjit_offset_ractor_pub_id() }.try_into().ok()?;
-        let ractor_id = asm.load(Opnd::mem(32, ractor, pub_id_offset));
-        asm.store(Opnd::mem(32, cursor, belonging_offset), ractor_id);
-    }
-
     init(asm, cursor);
 
     Some(cursor)
@@ -276,16 +238,10 @@ fn emit_mmtk_new_obj_fastpath(
         .try_into()
         .ok()?;
     let value_size_shift: u64 = fastpath.value_size_shift.try_into().ok()?;
-    let newobj_tracing_p_func = (fastpath.newobj_tracing_p_func != 0)
-        .then_some(fastpath.newobj_tracing_p_func as *const u8)?;
     let gc_stress_p_func = (fastpath.gc_stress_p_func != 0)
         .then_some(fastpath.gc_stress_p_func as *const u8)?;
     let post_alloc_func = (fastpath.post_alloc_func != 0)
         .then_some(fastpath.post_alloc_func as *const u8)?;
-
-    let event_hook = asm.ccall(newobj_tracing_p_func, vec![]);
-    asm.test(event_hook, event_hook);
-    asm.jnz(jit, miss.clone());
 
     let objspace_const = Opnd::const_ptr(fastpath.objspace);
     let gc_stress = asm.ccall(gc_stress_p_func, vec![objspace_const]);
