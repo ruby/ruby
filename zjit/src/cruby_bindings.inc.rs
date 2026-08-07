@@ -2027,6 +2027,7 @@ pub struct rb_gc_zjit_default_new_obj_fastpath {
     pub cursor_offset: usize,
     pub cursor_end_offset: usize,
     pub slot_size: usize,
+    pub total_allocated_objects_offset: usize,
     pub flags: VALUE,
     pub klass: VALUE,
 }

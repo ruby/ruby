@@ -502,6 +502,13 @@ typedef struct mark_stack {
 
 typedef int (*gc_compact_compare_func)(const void *l, const void *r, void *d);
 
+typedef struct rb_heap_newobj {
+    uintptr_t alloc_cursor;
+    uintptr_t alloc_cursor_end;
+    struct free_region *alloc_next_region;
+    struct heap_page *alloc_using_page;
+} rb_heap_newobj_t;
+
 typedef struct rb_heap_struct {
     short slot_size;
 
@@ -518,12 +525,7 @@ typedef struct rb_heap_struct {
     size_t empty_slots;
 
     /* Bump-pointer allocation state; only this objspace's owner thread writes it. */
-    struct {
-        uintptr_t alloc_cursor;
-        uintptr_t alloc_cursor_end;
-        struct free_region *alloc_next_region;
-        struct heap_page *alloc_using_page;
-    } newobj;
+    rb_heap_newobj_t newobj;
 
     struct heap_page *free_pages;
     struct ccan_list_head pages;
@@ -2981,10 +2983,40 @@ bool
 rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass,
                                  struct rb_gc_zjit_fastpath *fastpath)
 {
-    /* Bump-pointer allocation state lives in the per-objspace heaps, but ZJIT's inline
-     * fastpath assumes a separate cache structure; report "no fastpath" (as gc/wbcheck
-     * does).  The heaps are single-writer, so one could be offered later. */
+#if USE_ZJIT
+    size_t heap_idx = 0;
+    size_t slot_size = 0;
+    for (; heap_idx < HEAP_COUNT; heap_idx++) {
+        if (alloc_size + RVALUE_OVERHEAD <= pool_slot_sizes[heap_idx]) {
+            slot_size = pool_slot_sizes[heap_idx];
+            break;
+        }
+    }
+    if (slot_size == 0) return false;
+
+#undef heaps
+    size_t base = offsetof(rb_objspace_t, heaps)
+                  + heap_idx * sizeof(rb_heap_t)
+                  + offsetof(rb_heap_t, newobj);
+#define heaps objspace->heaps
+
+    struct rb_gc_zjit_default_new_obj_fastpath default_fastpath = {
+        base + offsetof(rb_heap_newobj_t, alloc_cursor),
+        base + offsetof(rb_heap_newobj_t, alloc_cursor_end),
+        slot_size,
+        base - offsetof(rb_heap_t, newobj) + offsetof(rb_heap_t, total_allocated_objects),
+        flags,
+        klass
+    };
+
+    memset(fastpath, 0, sizeof(*fastpath));
+    fastpath->kind = RB_GC_ZJIT_FASTPATH_DEFAULT;
+    memcpy(fastpath->data.words, &default_fastpath, sizeof(default_fastpath));
+
+    return true;
+#else
     return false;
+#endif
 }
 
 NOINLINE(static VALUE newobj_refill(rb_objspace_t *objspace, size_t heap_idx));
@@ -3070,6 +3102,11 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, int wb_protec
 
     obj = newobj_alloc(objspace, heap_idx);
     newobj_init(klass, flags, wb_protected, objspace, obj);
+
+    if (RB_UNLIKELY(ruby_gc_stressful)) {
+        rb_heap_t *heap = &heaps[heap_idx];
+        heap->newobj.alloc_cursor_end = heap->newobj.alloc_cursor;
+    }
 
     return obj;
 }

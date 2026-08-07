@@ -168,10 +168,20 @@ rb_zjit_singleton_class_p(VALUE klass)
     return RCLASS_SINGLETON_P(klass);
 }
 
+/*
+ * These offsets differ between x68_64 and arm64, so we must generate them each
+ * time. We can't bake them into zjit_struct_offsets
+ */
 size_t
 rb_zjit_offset_ractor_newobj_cache(void)
 {
     return offsetof(rb_ractor_t, newobj_cache);
+}
+
+size_t
+rb_zjit_offset_ractor_objspace(void)
+{
+    return offsetof(rb_ractor_t, objspace);
 }
 
 VALUE
