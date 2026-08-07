@@ -1125,6 +1125,11 @@ VALUE
 rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape_id, bool wb_protected, size_t size)
 {
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
+#if RUBY_DEBUG
+    if (flags & FL_FREEZE) {
+        GC_ASSERT((shape_id & SHAPE_ID_FL_FROZEN) != 0);
+    }
+#endif
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     /* Use cr->objspace directly: rb_gc_get_objspace() would look cr up through TLS
      * on every allocation. */
