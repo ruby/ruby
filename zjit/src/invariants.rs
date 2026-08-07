@@ -224,10 +224,8 @@ pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
             compile_patch_points!(cb, patch_points, EP, "EP is escaped: {}", iseq_name(iseq));
 
             // Also invalidate the ISEQ version so the method falls back to the
-            // interpreter on the next call. NoEPEscape PatchPoint side exits use
-            // without_locals() and don't save locals to the frame. If a PatchPoint
-            // fires on a later call (where EP hasn't escaped), the interpreter would
-            // read stale locals (e.g., nil instead of [] for keyword defaults).
+            // interpreter on the next call and is later recompiled assuming EP
+            // has escaped (reading locals from EP memory instead of registers).
             //
             // We can't use invalidate_iseq_version() here because it skips when
             // at MAX_ISEQ_VERSIONS (to prevent unbounded recompilation). Instead,
