@@ -2034,6 +2034,7 @@ pub struct rb_gc_zjit_default_new_obj_fastpath {
     pub cursor_end_offset: usize,
     pub slot_size: usize,
     pub total_allocated_objects_offset: usize,
+    pub ractor_belonging_id_offset: usize,
     pub flags: VALUE,
     pub klass: VALUE,
 }
@@ -2305,6 +2306,7 @@ unsafe extern "C" {
         alloc_size_out: *mut usize,
         flags_out: *mut VALUE,
     );
+    pub fn rb_zjit_array_new_fastpath(alloc_size_out: *mut usize, flags_out: *mut VALUE);
     pub fn rb_profile_frames(
         start: ::std::os::raw::c_int,
         limit: ::std::os::raw::c_int,

@@ -99,6 +99,7 @@ bool rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, VAL
 bool rb_zjit_str_resurrect_fastpath(VALUE str, bool chilled, size_t *size_out, VALUE *flags_out, long *len_out, size_t *byte_size_out);
 bool rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_out, long *len_out);
 void rb_zjit_range_new_fastpath(bool exclude_end, size_t *alloc_size_out, VALUE *flags_out);
+void rb_zjit_array_new_fastpath(size_t *alloc_size_out, VALUE *flags_out);
 
 // Special value for cfp->jit_return that means "this is a C method frame, use
 // rb_zjit_c_frame as the JITFrame". We don't control the native stack layout

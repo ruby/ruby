@@ -187,7 +187,7 @@ rb_zjit_singleton_class_p(VALUE klass)
 }
 
 /* Sets all of the required shape flags for the object including the layout type,
- * the frozen status, and the slot size.
+ * the frozen status, and the slot size. Mimics `rb_newobj`.
  */
 VALUE
 rb_zjit_new_obj_shape(VALUE flags, size_t alloc_size)

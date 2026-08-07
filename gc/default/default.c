@@ -3005,6 +3005,7 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
         base + offsetof(rb_heap_newobj_t, alloc_cursor_end),
         slot_size,
         base - offsetof(rb_heap_t, newobj) + offsetof(rb_heap_t, total_allocated_objects),
+        RB_GC_OBJ_HAS_SUFFIX ? slot_size - RVALUE_OVERHEAD : 0,
         flags,
         klass
     };
