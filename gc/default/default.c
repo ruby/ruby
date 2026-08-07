@@ -5387,6 +5387,9 @@ rgengc_check_relation(rb_objspace_t *objspace, VALUE obj)
     if (objspace->rgengc.parent_object_old_p) {
         if (RVALUE_WB_UNPROTECTED(objspace, obj) || !RVALUE_OLD_P(objspace, obj)) {
             rgengc_remember(objspace, objspace->rgengc.parent_object);
+            /* It is in the rememberset now, so its remaining children have nothing left
+             * to ask for: stop testing them. */
+            objspace->rgengc.parent_object_old_p = false;
         }
     }
 }
