@@ -110,11 +110,14 @@ ruby_version_is "4.1" do
     end
 
     it "applies the refinements to operators and element access" do
-      refined = -> a, b { [a + b, a < b] }.refined(ProcRefinedSpecs::Operators)
-      refined.call(1, 2).should == ["plus(1,2)", "lt"]
-      -> a { a[0] }.refined(ProcRefinedSpecs::Operators).call([9]).should == "at0"
-      -> h { h["x"] }.refined(ProcRefinedSpecs::Operators).call({ "x" => 1 }).should == "aref(x)"
-      -> a, b { a + b }.call(1, 2).should == 3
+      file = fixture(__FILE__, "refined_basic_operations.rb")
+      ruby_exe(file).should == <<~EXPECTED
+      plus(1,2)
+      lt
+      at0
+      aref(x)
+      3
+      EXPECTED
     end
 
     it "keeps the refinements active when called via instance_eval, instance_exec and class_eval" do
