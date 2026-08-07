@@ -234,7 +234,7 @@ pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
             // directly mark the version as invalidated and reset jit_func so the
             // interpreter takes over permanently.
             let payload = crate::payload::get_or_create_iseq_payload(iseq);
-            if let Some(version) = payload.versions.last_mut() {
+            for version in payload.versions.last_mut().into_iter().chain(payload.exception_versions.last_mut()) {
                 use crate::payload::IseqStatus;
                 if unsafe { version.as_ref() }.status != IseqStatus::Invalidated {
                     unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
@@ -448,7 +448,7 @@ pub extern "C" fn rb_zjit_tracing_invalidate_all() {
         for_each_iseq(|iseq| {
             let payload = get_or_create_iseq_payload(iseq);
 
-            if let Some(version) = payload.versions.last_mut() {
+            for version in payload.versions.last_mut().into_iter().chain(payload.exception_versions.last_mut()) {
                 unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
             }
             unsafe { rb_iseq_reset_jit_func(iseq) };

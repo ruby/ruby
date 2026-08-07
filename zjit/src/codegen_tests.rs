@@ -7386,8 +7386,10 @@ fn test_inlined_method_with_rescue_caught_in_caller() {
 
 #[test]
 fn test_inlined_method_with_ensure_runs_on_propagation() {
+    // The ensure ISEQ is compiled as an exception handler entry, and its
+    // re-raising `throw` side-exits by design.
     with_inlining(|| {
-        assert_snapshot!(assert_inlines(r##"
+        assert_snapshot!(assert_inlines_allowing_exits(r##"
             $log = []
             def callee(x)
               begin
@@ -7417,8 +7419,10 @@ fn test_inlined_method_with_ensure_runs_on_propagation() {
 fn test_inlined_method_with_retry_resumes_begin_block() {
     // The begin/rescue/retry callee is larger than the default test inline budget,
     // so raise the threshold enough for it to be inlined.
+    // The rescue ISEQ is compiled as an exception handler entry, and its
+    // `retry` compiles to a `throw` instruction that side-exits by design.
     with_inlining_threshold(100, || {
-        assert_snapshot!(assert_inlines(r#"
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
             def callee(counter)
               begin
                 counter[0] += 1
@@ -7788,4 +7792,168 @@ fn test_forward_fallback_with_lightweight_frame_reads_cfp() {
       end
       :done
     "#), @":done");
+}
+
+/// Like inspect, but also asserts that at least one exception handler entry was
+/// compiled by jit_exec_exception() support while running the program.
+#[track_caller]
+fn assert_compiles_exception_entry(program: &str) -> String {
+    use crate::stats::{counter_ptr, Counter};
+    let compiled_before = with_rubyvm(|| unsafe { *counter_ptr(Counter::compiled_exception_iseq_count) });
+    let result = inspect(program);
+    let compiled_after = with_rubyvm(|| unsafe { *counter_ptr(Counter::compiled_exception_iseq_count) });
+    assert!(compiled_after > compiled_before, "No exception handler entry was compiled");
+    result
+}
+
+// break from a block invoked by a Ruby method re-enters the caller right after
+// the send instruction with the break value on the VM stack.
+#[test]
+fn test_exception_entry_yield_break() {
+    assert_snapshot!(assert_compiles_exception_entry(r#"
+        def use_block
+          yield 1
+          yield 2
+          nil
+        end
+        def entry(n)
+          prefix = "val"
+          x = use_block { |v| break v * 10 if v == n }
+          prefix + (x + 1).to_s
+        end
+        results = []
+        10.times { results << entry(2) }
+        results.uniq
+    "#), @r#"["val21"]"#);
+}
+
+// The exception handler entry can have multiple live VM stack values: the
+// intermediate operand of the additions and the pushed break value.
+#[test]
+fn test_exception_entry_stack_values() {
+    assert_snapshot!(assert_compiles_exception_entry(r#"
+        def use_block = yield
+        def entry
+          1 + (use_block { break 7 }) + 2
+        end
+        results = []
+        10.times { results << entry }
+        results.uniq
+    "#), @"[10]");
+}
+
+// A rescue ISEQ is entered at its beginning with the error as an argument.
+#[test]
+fn test_exception_entry_rescue_iseq() {
+    assert_snapshot!(assert_compiles_exception_entry(r#"
+        def entry(n)
+          begin
+            raise "err#{n}"
+          rescue => e
+            e.message
+          end
+        end
+        results = []
+        10.times { |i| results << entry(i % 2) }
+        results.uniq.sort
+    "#), @r#"["err0", "err1"]"#);
+}
+
+// An ensure ISEQ is entered via jit_exec_exception() when an exception
+// propagates through the method.
+#[test]
+fn test_exception_entry_ensure_iseq() {
+    assert_snapshot!(assert_compiles_exception_entry(r#"
+        $log = []
+        def inner
+          raise "x"
+        ensure
+          $log << :ensured
+        end
+        def outer
+          inner rescue :caught
+        end
+        results = []
+        10.times { results << outer }
+        [results.uniq, $log.size]
+    "#), @"[[:caught], 10]");
+}
+
+// retry re-enters the method frame at the beginning of the begin block.
+#[test]
+fn test_exception_entry_retry() {
+    assert_snapshot!(assert_compiles_exception_entry(r#"
+        def entry
+          tries = 0
+          begin
+            tries += 1
+            raise "e" if tries < 3
+            tries
+          rescue
+            retry
+          end
+        end
+        results = []
+        10.times { results << entry }
+        results.uniq
+    "#), @"[3]");
+}
+
+// retry in a proc called from C re-enters a frame that has VM_FRAME_FLAG_FINISH,
+// where the JIT code's return value should be returned to vm_exec() as is.
+#[test]
+fn test_exception_entry_finish_frame() {
+    assert_snapshot!(assert_compiles_exception_entry(r#"
+        pr = proc do
+          tries = 0
+          begin
+            tries += 1
+            raise "e" if tries < 3
+            tries
+          rescue
+            retry
+          end
+        end
+        results = []
+        10.times { results << pr.call }
+        results.uniq
+    "#), @"[3]");
+}
+
+// jit_exec_exception() may call the compiled entry at a different PC in the same
+// ISEQ. The entry code should guard the PC and fall back to the interpreter.
+#[test]
+fn test_exception_entry_pc_mismatch() {
+    assert_snapshot!(assert_compiles_exception_entry(r#"
+        def use_block = yield
+        def entry(flag)
+          if flag
+            use_block { break 1 } + 10
+          else
+            use_block { break 2 } + 20
+          end
+        end
+        results = []
+        10.times { results << entry(true) }
+        10.times { results << entry(false) }
+        results.uniq
+    "#), @"[11, 22]");
+}
+
+// Locals written before the exception handler entry should be visible in the
+// compiled exception handler code.
+#[test]
+fn test_exception_entry_locals() {
+    assert_snapshot!(assert_compiles_exception_entry(r#"
+        def use_block = yield
+        def entry(a, b)
+          c = a * 2
+          d = use_block { break b + 1 }
+          e = 100
+          a + b + c + d + e
+        end
+        results = []
+        10.times { results << entry(1, 2) }
+        results.uniq
+    "#), @"[108]");
 }

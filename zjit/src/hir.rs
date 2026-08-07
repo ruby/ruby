@@ -869,6 +869,8 @@ pub enum FieldName {
     thread_ptr,
     len,
     SelfParam,
+    /// A live VM stack slot loaded by an exception handler entry
+    Stack,
     Id(ID),
 }
 
@@ -2753,6 +2755,18 @@ impl ResolvedInsnId {
     }
 }
 
+/// Entry information for compiling an exception handler function, which is
+/// entered by jit_exec_exception() at an arbitrary PC with values already
+/// pushed on the VM stack, e.g. a `rescue` ISEQ pushed by the VM, or a method
+/// frame resumed right after a send instruction when a block did `break`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ExceptionEntry {
+    /// Instruction index this function is entered at
+    pub insn_idx: u32,
+    /// Number of VM stack slots that are live at the entry
+    pub stack_size: u32,
+}
+
 /// A [`Function`], which is analogous to a Ruby ISeq, is a control-flow graph of [`Block`]s
 /// containing instructions.
 #[derive(Debug)]
@@ -2784,6 +2798,10 @@ pub struct Function {
     /// Entry block for JIT-to-JIT calls. Length will be `opt_num+1`, for callers
     /// fulfilling `(0..=opt_num)` optional parameters.
     jit_entry_blocks: Vec<BlockId>,
+    /// When `Some`, this function is compiled for jit_exec_exception() and its
+    /// `entry_block` is an exception handler entry at `insn_idx` instead of an
+    /// interpreter entry at the beginning of the ISEQ.
+    exception_entry: Option<ExceptionEntry>,
     profiles: Option<ProfileOracle>,
     /// Rough estimate for the number of (actually executable) instructions in the function. Does
     /// not count Snapshot, PatchPoint, etc.
@@ -2935,6 +2953,7 @@ impl Function {
             entries_block: BlockId(0),
             entry_block: BlockId(1),
             jit_entry_blocks: vec![],
+            exception_entry: None,
             param_types: vec![],
             profiles: None,
             num_instructions: 0,
@@ -6467,6 +6486,12 @@ impl Function {
         self.entry_block == block_id || self.jit_entry_blocks.contains(&block_id)
     }
 
+    /// Return the exception handler entry information if this function is
+    /// compiled for jit_exec_exception().
+    pub fn exception_entry(&self) -> Option<ExceptionEntry> {
+        self.exception_entry
+    }
+
     /// Populate the entries superblock with an Entries instruction targeting all entry blocks.
     /// Must be called after all entry blocks have been created.
     fn seal_entries(&mut self) {
@@ -7943,11 +7968,23 @@ struct AddIseqResult {
 
 /// Compile ISEQ into High-level IR
 pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
+    iseq_to_hir_with_entry(iseq, None)
+}
+
+/// Like [iseq_to_hir], but compile a function for jit_exec_exception() that is
+/// entered at `exception_entry.insn_idx` with `exception_entry.stack_size` values
+/// already pushed on the VM stack. See jit_compile_exception() for details.
+pub fn iseq_to_hir_for_exception(iseq: *const rb_iseq_t, exception_entry: ExceptionEntry) -> Result<Function, ParseError> {
+    iseq_to_hir_with_entry(iseq, Some(exception_entry))
+}
+
+fn iseq_to_hir_with_entry(iseq: *const rb_iseq_t, exception_entry: Option<ExceptionEntry>) -> Result<Function, ParseError> {
     if !ZJITState::can_compile_iseq(iseq) {
         return Err(ParseError::NotAllowed);
     }
     let payload = get_or_create_iseq_payload(iseq);
     let mut fun = Function::new(iseq);
+    fun.exception_entry = exception_entry;
     fun.was_invalidated_for_singleton_class_creation = payload.was_invalidated_for_singleton_class_creation;
     fun.self_is_heap_object = payload.self_is_heap_object;
 
@@ -8011,13 +8048,25 @@ fn add_iseq_to_hir(
         AddIseqMode::Standalone => 0,
         AddIseqMode::Inlined { jit_entry_idx, .. } => jit_entry_idx,
     };
-    let jit_entry_insns = unsafe { iseq.params() }.opt_table_slice()
-        .get(jit_entry_start..)
-        .expect("JIT entry index must be within the callee opt table")
-        .iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
+    // `fun.exception_entry` describes the entry of the standalone function being
+    // compiled. It should not affect ISEQs inlined into it, which are entered
+    // normally through their call sites.
+    let exception_entry = match mode {
+        AddIseqMode::Standalone => fun.exception_entry,
+        AddIseqMode::Inlined { .. } => None,
+    };
+    // An exception handler function has a single entry at the insn_idx set up by
+    // vm_exec_handle_exception(), instead of opt-table entries.
+    let jit_entry_insns = match exception_entry {
+        Some(entry) => vec![entry.insn_idx],
+        None => unsafe { iseq.params() }.opt_table_slice()
+            .get(jit_entry_start..)
+            .expect("JIT entry index must be within the callee opt table")
+            .iter().copied().map(VALUE::as_u32).collect::<Vec<_>>(),
+    };
     let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
 
-    let compile_jit_entries = matches!(mode, AddIseqMode::Standalone) && iseq_supports_jit_entry(iseq);
+    let compile_jit_entries = matches!(mode, AddIseqMode::Standalone) && exception_entry.is_none() && iseq_supports_jit_entry(iseq);
 
     // Make all empty basic blocks. The ordering of the BBs matters for getting fallthrough jumps
     // in good places, but it's not necessary for correctness. TODO: Higher quality scheduling during lowering.
@@ -8053,18 +8102,31 @@ fn add_iseq_to_hir(
         AddIseqMode::Inlined { .. } => Some(insn_idx_to_block[&jit_entry_insns[0]]),
     };
 
-    if matches!(mode, AddIseqMode::Standalone) {
-        // Compile an entry_block for the interpreter
-        compile_entry_block(fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
+    // Entry state for an exception handler function, used to seed the
+    // translation queue with the right number of entry stack values.
+    let mut exception_entry_state: Option<FrameState> = None;
 
-        if compile_jit_entries {
-            // Compile all JIT-to-JIT entry blocks
-            for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
-                let target_block = insn_idx_to_block.get(insn_idx)
-                    .copied()
-                    .expect("we make a block for each jump target and \
-                             each entry in the ISEQ opt_table is a jump target");
-                compile_jit_entry_block(fun, jit_entry_idx, target_block);
+    if matches!(mode, AddIseqMode::Standalone) {
+        if let Some(entry) = exception_entry {
+            // Compile an entry_block for jit_exec_exception()
+            let target_block = insn_idx_to_block.get(&entry.insn_idx)
+                .copied()
+                .expect("we make a block for the exception entry insn_idx");
+            exception_entry_state = Some(compile_exception_entry_block(fun, entry, target_block));
+        }
+        else {
+            // Compile an entry_block for the interpreter
+            compile_entry_block(fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
+
+            if compile_jit_entries {
+                // Compile all JIT-to-JIT entry blocks
+                for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
+                    let target_block = insn_idx_to_block.get(insn_idx)
+                        .copied()
+                        .expect("we make a block for each jump target and \
+                                 each entry in the ISEQ opt_table is a jump target");
+                    compile_jit_entry_block(fun, jit_entry_idx, target_block);
+                }
             }
         }
     }
@@ -8081,7 +8143,13 @@ fn add_iseq_to_hir(
     // TODO(max): Basic block arguments at edges
     let mut queue = VecDeque::new();
     for &insn_idx in jit_entry_insns.iter() {
-        queue.push_back((new_frame_state(mode, iseq), insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx, /*local_inval=*/false));
+        // For an exception handler function, seed the target block with the entry
+        // state so that it gets a stack Param for each live VM stack value.
+        let incoming_state = match &exception_entry_state {
+            Some(entry_state) => entry_state.clone(),
+            None => new_frame_state(mode, iseq),
+        };
+        queue.push_back((incoming_state, insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx, /*local_inval=*/false));
     }
 
     // Keep compiling blocks until the queue becomes empty
@@ -10150,6 +10218,63 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
         }
     }
     (self_param, entry_state)
+}
+
+/// Compile an entry_block for jit_exec_exception(). Unlike the interpreter entry,
+/// the frame is already running: it's entered at `entry.insn_idx` with
+/// `entry.stack_size` values live on the VM stack, and all locals may have been
+/// written before the entry. So this loads every local and every live stack slot
+/// from the frame. Returns the entry FrameState used to seed the translation queue.
+fn compile_exception_entry_block(fun: &mut Function, entry: ExceptionEntry, target_block: BlockId) -> FrameState {
+    let entry_block = fun.entry_block;
+    fun.push_insn(entry_block, Insn::EntryPoint { jit_entry_idx: None });
+
+    let iseq = fun.iseq;
+    let self_param = fun.load_self(entry_block);
+    let mut entry_state = FrameState::new(iseq);
+    entry_state.insn_idx = entry.insn_idx as usize;
+    entry_state.pc = unsafe { rb_iseq_pc_at_idx(iseq, entry.insn_idx) };
+
+    // If the EP may have escaped to the heap, locals must be read through the EP.
+    // Otherwise, SP (adjusted to the stack base by gen_entry_point()) can be used,
+    // in which case a NoEPEscape patch point below protects FrameState locals from
+    // frames whose EP escapes after this compilation.
+    let ep_escaped = iseq_ep_starts_escaped(iseq) || iseq_seen_ep_escape(iseq);
+    let base = if ep_escaped { fun.get_ep(entry_block, 0) } else { fun.load_sp(entry_block) };
+    for local_idx in 0..num_locals(iseq) {
+        let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
+        let ep_offset_u32 = u32::try_from(ep_offset)
+            .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
+        let val = if ep_escaped {
+            fun.get_local_from_ep(entry_block, iseq, base, ep_offset_u32, 0, types::BasicObject)
+        } else {
+            fun.get_local_from_sp(entry_block, iseq, base, ep_offset_u32, types::BasicObject)
+        };
+        entry_state.locals.push(val);
+    }
+
+    // Load the VM stack values that are live at the entry, e.g. the value pushed
+    // by vm_exec_handle_exception() for a `break` caught by this frame.
+    let sp = fun.load_sp(entry_block);
+    for stack_idx in 0..entry.stack_size {
+        let offset = i32::try_from(stack_idx).unwrap() * SIZEOF_VALUE_I32;
+        let val = fun.load_field(entry_block, sp, FieldName::Stack, offset, types::BasicObject);
+        entry_state.stack.push(val);
+    }
+
+    if !ep_escaped {
+        // FrameState locals are used as the source of truth for this frame's locals.
+        // Invalidate this code when the EP of any frame of this ISEQ escapes, since
+        // an escaped frame could enter this code with locals moved to the heap.
+        // without_locals() avoids writing FrameState locals back on the exit, which
+        // would clobber the escaped environment's view of the frame.
+        let exit_id = fun.push_insn(entry_block, Insn::Snapshot { state: Box::new(entry_state.without_locals()) });
+        fun.push_insn(entry_block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
+    }
+
+    // Jump to target_block
+    fun.push_insn(entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
+    entry_state
 }
 
 /// Compile a jit_entry_block
