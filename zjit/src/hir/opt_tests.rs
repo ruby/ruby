@@ -543,6 +543,194 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_reduce_fixnum_mod_pow2() {
+        eval("
+            def test(n)
+              n % 8
+            end
+            test 1; test 2
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[8] = Const Value(8)
+          PatchPoint MethodRedefined(Integer@0x1008, %@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum recompile
+          v28:Fixnum[7] = Const Value(7)
+          v29:Fixnum = FixnumAnd v26, v28
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_dont_reduce_fixnum_mod_non_pow2() {
+        eval("
+            def test(n)
+              n % 6
+            end
+            test 1; test 2
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[6] = Const Value(6)
+          PatchPoint MethodRedefined(Integer@0x1008, %@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum recompile
+          v27:Fixnum = FixnumMod v26, v15
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_dont_reduce_fixnum_mod_negative_pow2() {
+        eval("
+            def test(n)
+              n % -8
+            end
+            test 1; test 2
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[-8] = Const Value(-8)
+          PatchPoint MethodRedefined(Integer@0x1008, %@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum recompile
+          v27:Fixnum = FixnumMod v26, v15
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_reduce_fixnum_div_pow2() {
+        eval("
+            def test(n)
+              n / 8
+            end
+            test 1; test 2
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[8] = Const Value(8)
+          PatchPoint MethodRedefined(Integer@0x1008, /@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum recompile
+          v28:Fixnum[3] = Const Value(3)
+          v29:Fixnum = FixnumRShift v26, v28
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_dont_reduce_fixnum_div_non_pow2() {
+        eval("
+            def test(n)
+              n / 6
+            end
+            test 1; test 2
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[6] = Const Value(6)
+          PatchPoint MethodRedefined(Integer@0x1008, /@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum recompile
+          v27:Integer = FixnumDiv v26, v15
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_dont_reduce_fixnum_div_negative_pow2() {
+        eval("
+            def test(n)
+              n / -8
+            end
+            test 1; test 2
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[-8] = Const Value(-8)
+          PatchPoint MethodRedefined(Integer@0x1008, /@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum recompile
+          v27:Integer = FixnumDiv v26, v15
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
     fn test_fold_fixnum_mod_zero_by_zero() {
         eval("
             def test

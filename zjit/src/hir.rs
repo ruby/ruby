@@ -6005,6 +6005,9 @@ impl Function {
     ///
     /// It can fold fixnum math, truthiness tests, and branches with constant conditionals.
     fn fold_constants(&mut self) {
+        fn is_power_of_two(d: i64) -> bool {
+            d > 0 && (d & (d - 1)) == 0
+        }
         // TODO(max): Determine if it's worth it for us to reflow types after each branch
         // simplification. This means that we can have nice cascading optimizations if what used to
         // be a union of two different basic block arguments now has a single value.
@@ -6177,6 +6180,19 @@ impl Function {
                     &Insn::FixnumDiv { left, right, .. } => {
                         match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
                             (_, Some(1)) => { self.make_equal_to(insn_id, left); continue; }
+                            // Strength-reduce division by a power of two to an arithmetic right
+                            // shift. Both Ruby's Integer#/ and a sign-extending shift round the
+                            // quotient towards negative infinity, so this holds for all fixnums.
+                            (None, Some(d)) if is_power_of_two(d) => {
+                                let shift = self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(d.trailing_zeros() as isize)) });
+                                self.insn_types[shift.0] = self.infer_type(shift);
+                                new_insns.push(shift);
+                                let replacement = self.new_insn(Insn::FixnumRShift { left, right: shift });
+                                self.make_equal_to(insn_id, replacement);
+                                self.insn_types[replacement.0] = self.infer_type(replacement);
+                                new_insns.push(replacement);
+                                continue;
+                            }
                             _ => {}
                         }
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
@@ -6191,6 +6207,22 @@ impl Function {
                         })
                     }
                     &Insn::FixnumMod { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            // Strength-reduce modulo by a power of two to a bitwise AND. The sign
+                            // of Ruby's Integer#% follows the (positive) divisor, so the result is
+                            // in [0, d), which matches two's complement AND for all fixnums.
+                            (None, Some(d)) if is_power_of_two(d) => {
+                                let mask = self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize((d - 1) as isize)) });
+                                self.insn_types[mask.0] = self.infer_type(mask);
+                                new_insns.push(mask);
+                                let replacement = self.new_insn(Insn::FixnumAnd { left, right: mask });
+                                self.make_equal_to(insn_id, replacement);
+                                self.insn_types[replacement.0] = self.infer_type(replacement);
+                                new_insns.push(replacement);
+                                continue;
+                            }
+                            _ => {}
+                        }
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) if r != 0 => {
                                 let l_obj = VALUE::fixnum_from_isize(l as isize);
