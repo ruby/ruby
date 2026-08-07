@@ -40,6 +40,15 @@ struct rb_classext_struct {
     VALUE super;
     VALUE fields_obj; // Fields are either ivar or other internal properties stored inline
     VALUE classpath;
+    /**
+     * The Ractor object (pub.self) of the Ractor that created this
+     * class/module; only that Ractor can modify the class. 0 means the main
+     * Ractor (so single-Ractor programs get no extra GC edges). Marked from
+     * the classext, so a terminated owner leaves a small object shell and
+     * its classes become permanently read-only. Internal only: never exposed
+     * to Ruby. Meaningful only in the prime classext; always 0 for T_ICLASS.
+     */
+    VALUE owner_ractor;
     struct rb_id_table *m_tbl;
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
@@ -114,6 +123,26 @@ static inline void RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE obj, bool writable);
 
 #define RCLASS_EXT_PRIME(c) (&((struct RClass_and_rb_classext_t*)(c))->classext)
 #define RCLASS_EXT_PRIME_P(ext, c) (&((struct RClass_and_rb_classext_t*)(c))->classext == ext)
+
+// Class ownership (the Ractor that created the class/module).
+// The owner is stored only in the prime classext. See the comment on
+// rb_classext_struct::owner_ractor.
+#define RCLASSEXT_OWNER_RACTOR(ext) (ext->owner_ractor)
+
+static inline VALUE
+RCLASS_OWNER_RACTOR(VALUE klass)
+{
+    return RCLASS_EXT_PRIME(klass)->owner_ractor;
+}
+
+static inline void
+RCLASS_SET_OWNER_RACTOR(VALUE klass, VALUE ractor)
+{
+    RB_OBJ_WRITE(klass, &RCLASS_EXT_PRIME(klass)->owner_ractor, ractor);
+}
+
+bool rb_class_owned_p(VALUE klass);          // true if the current Ractor created klass
+void rb_class_owner_check(VALUE klass);      // raise Ractor::IsolationError unless rb_class_owned_p(klass)
 
 static inline rb_classext_t * RCLASS_EXT_READABLE_IN_BOX(VALUE obj, const rb_box_t *box);
 static inline rb_classext_t * RCLASS_EXT_READABLE(VALUE obj);
