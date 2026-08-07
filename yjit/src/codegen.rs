@@ -3315,12 +3315,11 @@ fn gen_set_ivar(
 
         let write_val;
 
-        match ivar_index {
+        match (ivar_index, new_shape) {
             // If we don't have an instance variable index, then we need to
             // transition out of the current shape, which was pinned by the
             // shape guard above.
-            None => {
-                let (next_shape_id, ivar_index) = new_shape.unwrap();
+            (None, Some((next_shape_id, ivar_index))) => {
                 write_val = asm.stack_opnd(0);
                 gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false, true);
 
@@ -3336,7 +3335,7 @@ fn gen_set_ivar(
                 }
             },
 
-            Some(ivar_index) => {
+            (Some(ivar_index), _) => {
                 // If the iv index already exists, then we don't need to
                 // transition to a new shape.  The reason is because we find
                 // the iv index by searching up the shape tree.  If we've
@@ -3345,6 +3344,9 @@ fn gen_set_ivar(
                 write_val = asm.stack_opnd(0);
                 gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false, stack_type.is_imm());
             },
+
+            // The condition above delegates this case to the C fallback.
+            (None, None) => unreachable!("ivar_index and new_shape cannot both be None here"),
         }
     }
     let write_val = asm.stack_pop(1); // Keep write_val on stack during ccall for GC
