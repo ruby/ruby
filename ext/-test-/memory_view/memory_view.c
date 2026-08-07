@@ -1,4 +1,6 @@
 #include "ruby.h"
+#include "ruby/internal/encoding/encoding.h"
+#include "ruby/internal/encoding/string.h"
 
 #ifdef HAVE_RUBY_MEMORY_VIEW_H
 #include "ruby/memory_view.h"
@@ -282,6 +284,57 @@ memory_view_extract_item_members(VALUE mod, VALUE str, VALUE format)
 }
 
 static VALUE
+memory_view_get_data(VALUE mod, VALUE obj, VALUE location)
+{
+    rb_memory_view_t view;
+    long beg, len;
+    VALUE data;
+
+    if (!rb_memory_view_get(obj, &view, 0)) {
+        return Qnil;
+    }
+
+    if (RTEST(rb_range_beg_len(location, &beg, &len, view.byte_size, 0))) {
+        data = rb_enc_str_new(((const char *)(view.data)) + beg,
+                              len,
+                              rb_ascii8bit_encoding());
+    }
+    else {
+        data = rb_enc_str_new(((const char *)(view.data)) + NUM2LONG(location),
+                              1,
+                              rb_ascii8bit_encoding());
+    }
+
+    rb_memory_view_release(&view);
+
+    return data;
+}
+
+static VALUE
+memory_view_set_data(VALUE mod, VALUE obj, VALUE offset, VALUE data)
+{
+    rb_memory_view_t view;
+
+    if (!rb_memory_view_get(obj, &view, RUBY_MEMORY_VIEW_WRITABLE)) {
+        return Qnil;
+    }
+
+    if (FIXNUM_P(data)) {
+        ((char *)(view.data))[NUM2LONG(offset)] = NUM2LONG(data);
+    }
+    else {
+        StringValue(data);
+        memcpy(((char *)(view.data)) + NUM2LONG(offset),
+               RSTRING_PTR(data),
+               RSTRING_LEN(data));
+    }
+
+    rb_memory_view_release(&view);
+
+    return Qtrue;
+}
+
+static VALUE
 expstr_initialize(VALUE obj, VALUE s)
 {
     if (!NIL_P(s)) {
@@ -426,6 +479,8 @@ Init_memory_view(void)
     rb_define_module_function(mMemoryViewTestUtils, "fill_contiguous_strides", memory_view_fill_contiguous_strides, 4);
     rb_define_module_function(mMemoryViewTestUtils, "ref_count_while_exporting", memory_view_ref_count_while_exporting, 2);
     rb_define_module_function(mMemoryViewTestUtils, "extract_item_members", memory_view_extract_item_members, 2);
+    rb_define_module_function(mMemoryViewTestUtils, "get_data", memory_view_get_data, 2);
+    rb_define_module_function(mMemoryViewTestUtils, "set_data", memory_view_set_data, 3);
 
     VALUE cExportableString = rb_define_class_under(mMemoryViewTestUtils, "ExportableString", rb_cObject);
     rb_define_method(cExportableString, "initialize", expstr_initialize, 1);
