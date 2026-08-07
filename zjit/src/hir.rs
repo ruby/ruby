@@ -10245,13 +10245,6 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_invokebuiltin => {
                     let bf: *const rb_builtin_function = get_arg(pc, 0).as_ptr();
-                    // TODO: Support passing arguments on the stack in C calls
-                    // +2 for ec, self
-                    if (unsafe { (*bf).argc } + 2) as usize > C_ARG_OPNDS.len() {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::TooManyArgsForLir), recompile: None });
-                        break; // End the block
-                    }
-
                     let mut args = vec![];
                     for _ in 0..unsafe { (*bf).argc } {
                         args.push(state.stack_pop()?);
@@ -10279,14 +10272,7 @@ fn add_iseq_to_hir(
                 YARVINSN_opt_invokebuiltin_delegate |
                 YARVINSN_opt_invokebuiltin_delegate_leave => {
                     let bf: *const rb_builtin_function = get_arg(pc, 0).as_ptr();
-                    // TODO: Support passing arguments on the stack in C calls
-                    // +2 for ec, self
                     let argc = unsafe { (*bf).argc } as usize;
-                    if argc + 2 > C_ARG_OPNDS.len() {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::TooManyArgsForLir), recompile: None });
-                        break; // End the block
-                    }
-
                     let index = get_arg(pc, 1).as_usize();
 
                     let mut args = vec![self_param];

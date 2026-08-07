@@ -2557,6 +2557,18 @@ fn test_invokebuiltin_delegate() {
 }
 
 #[test]
+fn test_invokebuiltin_many_args() {
+    // Time#initialize calls the time_init_args builtin with 7 arguments
+    // (9 C arguments including ec and self), which don't fit in argument
+    // registers and exercise stack arguments in CCall.
+    assert_snapshot!(inspect("
+        def test = Time.new(1992, 9, 23, 23, 0, 0, 3600)
+        test
+        test
+    "), @"1992-09-23 23:00:00 +0100");
+}
+
+#[test]
 fn test_kernel_integer_exception_false_returns_nil() {
     with_inlining(|| {
         assert_snapshot!(assert_inlines_allowing_exits("
