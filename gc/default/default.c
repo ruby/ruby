@@ -5381,6 +5381,11 @@ init_mark_stack(mark_stack_t *stack)
 
 /* Marking */
 
+ALWAYS_INLINE(static int gc_mark_set(rb_objspace_t *objspace, VALUE obj));
+ALWAYS_INLINE(static void gc_mark_check_t_none(rb_objspace_t *objspace, VALUE obj));
+ALWAYS_INLINE(static void rgengc_check_relation(rb_objspace_t *objspace, VALUE obj));
+ALWAYS_INLINE(static void gc_aging(rb_objspace_t *objspace, VALUE obj));
+ALWAYS_INLINE(static void gc_grey(rb_objspace_t *objspace, VALUE obj));
 static void
 rgengc_check_relation(rb_objspace_t *objspace, VALUE obj)
 {
