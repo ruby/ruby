@@ -5,7 +5,7 @@ use crate::cruby::{
     RB_GC_ZJIT_FASTPATH_DEFAULT, RB_GC_ZJIT_FASTPATH_MMTK,
     RUBY_OFFSET_EC_THREAD_PTR, RUBY_OFFSET_RBASIC_FLAGS, RUBY_OFFSET_RBASIC_KLASS,
     RUBY_OFFSET_THREAD_RACTOR, VALUE, VALUE_BITS, rb_zjit_offset_ractor_newobj_cache,
-    rb_zjit_offset_ractor_objspace,
+    rb_zjit_offset_ractor_objspace, rb_zjit_new_obj_shape,
 };
 use super::JITState;
 
@@ -79,6 +79,8 @@ pub(super) fn gc_fastpath_new_obj(
     init: impl Fn(&mut Assembler, Opnd),
     slow_path: impl Fn(&mut Assembler) -> lir::Opnd,
 ) -> lir::Opnd {
+    let flags = unsafe { rb_zjit_new_obj_shape(VALUE(flags as usize), alloc_size) }.as_u64();
+
     let Some(fastpath) = prepare_new_obj_fastpath(alloc_size, flags, klass) else {
         return slow_path(asm);
     };

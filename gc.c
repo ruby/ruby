@@ -1252,7 +1252,7 @@ rb_class_allocate_instance(VALUE klass)
 
 #if USE_ZJIT
 bool
-rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, shape_id_t *shape_id_out)
+rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, VALUE *flags_out)
 {
     uint32_t index_tbl_num_entries = RCLASS_MAX_IV_COUNT(klass);
 
@@ -1261,10 +1261,9 @@ rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, shape_id
         return false;
     }
 
-    size_t size = robject_embedded_size(index_tbl_num_entries);
-    *size_out = size;
-    *shape_id_out = rb_shape_transition_slot_size(rb_shape_transition_robject(0),
-                                                  rb_gc_size_slot_size(size));
+    *size_out = robject_embedded_size(index_tbl_num_entries);
+    *flags_out = T_OBJECT | rb_shape_transition_robject(0);
+
     return true;
 }
 #endif
