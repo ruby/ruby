@@ -178,7 +178,7 @@
 VALUE rb_cEnumerator;
 static VALUE rb_cLazy;
 static ID id_rewind, id_to_enum, id_each_entry;
-static ID id_next, id_result, id_receiver, id_arguments, id_memo, id_method, id_force;
+static ID id_next, id_result, id_receiver, id_arguments, id_method, id_force;
 static VALUE sym_each, sym_yield;
 
 static VALUE lazy_use_super_method;
@@ -1624,6 +1624,7 @@ lazy_init_block_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 #define LAZY_MEMO_SET_VALUE(memo, value) MEMO_V2_SET(memo, value)
 #define LAZY_MEMO_SET_PACKED(memo) ((memo)->memo_flags |= LAZY_MEMO_PACKED)
 #define LAZY_MEMO_RESET_PACKED(memo) ((memo)->memo_flags &= ~LAZY_MEMO_PACKED)
+#define LAZY_MEMO_SET_FLAGS(memo, flags) ((memo)->memo_flags = (flags))
 
 #define LAZY_NEED_BLOCK(func) \
     if (!rb_block_given_p()) { \
@@ -1637,11 +1638,12 @@ lazy_init_yielder(RB_BLOCK_CALL_FUNC_ARGLIST(_, m))
 {
     VALUE yielder = RARRAY_AREF(m, 0);
     VALUE procs_array = RARRAY_AREF(m, 1);
-    VALUE memos = rb_attr_get(yielder, id_memo);
-    struct MEMO *result;
+    VALUE memos = RARRAY_AREF(m, 2);
+    /* the MEMO is shared by all elements of this iteration */
+    struct MEMO *result = MEMO_CAST(RARRAY_AREF(m, 3));
 
-    result = rb_imemo_memo_new(m, rb_enum_values_pack(argc, argv),
-                      argc > 1 ? LAZY_MEMO_PACKED : 0);
+    LAZY_MEMO_SET_VALUE(result, rb_enum_values_pack(argc, argv));
+    LAZY_MEMO_SET_FLAGS(result, argc > 1 ? LAZY_MEMO_PACKED : 0);
     return lazy_yielder_result(result, yielder, procs_array, memos, 0);
 }
 
@@ -1651,7 +1653,7 @@ lazy_yielder_yield(struct MEMO *result, long memo_index, int argc, const VALUE *
     VALUE m = result->v1;
     VALUE yielder = RARRAY_AREF(m, 0);
     VALUE procs_array = RARRAY_AREF(m, 1);
-    VALUE memos = rb_attr_get(yielder, id_memo);
+    VALUE memos = RARRAY_AREF(m, 2);
     LAZY_MEMO_SET_VALUE(result, rb_enum_values_pack(argc, argv));
     if (argc > 1)
         LAZY_MEMO_SET_PACKED(result);
@@ -1687,10 +1689,13 @@ static VALUE
 lazy_init_block(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 {
     VALUE procs = RARRAY_AREF(m, 1);
+    VALUE memos = rb_ary_new2(RARRAY_LEN(procs));
+    VALUE arg = rb_ary_new3(3, val, procs, memos);
+    struct MEMO *result = rb_imemo_memo_new(arg, Qnil, 0);
 
-    rb_ivar_set(val, id_memo, rb_ary_new2(RARRAY_LEN(procs)));
+    rb_ary_push(arg, (VALUE)result);
     rb_block_call(RARRAY_AREF(m, 0), id_each, 0, 0,
-                  lazy_init_yielder, rb_ary_new3(2, val, procs));
+                  lazy_init_yielder, arg);
     return Qnil;
 }
 
@@ -4789,7 +4794,6 @@ Init_Enumerator(void)
     id_result = rb_intern_const("result");
     id_receiver = rb_intern_const("receiver");
     id_arguments = rb_intern_const("arguments");
-    id_memo = rb_intern_const("memo");
     id_method = rb_intern_const("method");
     id_force = rb_intern_const("force");
     id_to_enum = rb_intern_const("to_enum");
