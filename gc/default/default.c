@@ -2855,6 +2855,14 @@ heap_advance_region(rb_heap_t *heap)
     return true;
 }
 
+/* The whole region is ours until the next refill, so charge it to the step now. */
+static inline void
+heap_charge_region(rb_objspace_t *objspace, const rb_heap_t *heap, size_t heap_idx)
+{
+    objspace->incremental_mark_step_allocated_slots +=
+        (heap->newobj.alloc_cursor_end - heap->newobj.alloc_cursor) / pool_slot_sizes[heap_idx];
+}
+
 static inline VALUE
 heap_alloc_slot(rb_objspace_t *objspace, size_t heap_idx)
 {
@@ -2862,19 +2870,12 @@ heap_alloc_slot(rb_objspace_t *objspace, size_t heap_idx)
 
     uintptr_t cursor = heap->newobj.alloc_cursor;
     if (RB_UNLIKELY(cursor >= heap->newobj.alloc_cursor_end)) {
-        if (heap_advance_region(heap) == false) {
+        /* Marking owes us a step before the next region, and newobj_refill runs it. */
+        if (RB_UNLIKELY(is_incremental_marking(objspace)) ||
+            heap_advance_region(heap) == false) {
             return Qfalse;
         }
         cursor = heap->newobj.alloc_cursor;
-    }
-
-    if (RB_UNLIKELY(is_incremental_marking(objspace))) {
-        // Not allowed to allocate without running an incremental marking step
-        if (objspace->incremental_mark_step_allocated_slots >= INCREMENTAL_MARK_STEP_ALLOCATIONS) {
-            return Qfalse;
-        }
-
-        objspace->incremental_mark_step_allocated_slots++;
     }
 
     VALUE obj = (VALUE)cursor;
@@ -2998,17 +2999,25 @@ newobj_refill(rb_objspace_t *objspace, size_t heap_idx)
      * the Ractor), the page pool has its own mutex, and a GC started from here takes
      * whatever gc_enter needs. */
     if (is_incremental_marking(objspace)) {
-        gc_continue(objspace, heap);
-        objspace->incremental_mark_step_allocated_slots = 0;
+        /* The fast path sends us here at every region, which is far more often than the
+         * step size, so step only once the regions add up to it. */
+        if (objspace->incremental_mark_step_allocated_slots >= INCREMENTAL_MARK_STEP_ALLOCATIONS) {
+            gc_continue(objspace, heap);
+            objspace->incremental_mark_step_allocated_slots = 0;
+        }
 
-        // Retry allocation after resetting incremental_mark_step_allocated_slots
-        obj = heap_alloc_slot(objspace, heap_idx);
+        // Move on to the region the fast path refused to take
+        if (heap_advance_region(heap)) {
+            heap_charge_region(objspace, heap, heap_idx);
+            obj = heap_alloc_slot(objspace, heap_idx);
+        }
     }
 
     if (obj == Qfalse) {
         // Get next free page (possibly running GC)
         struct heap_page *page = heap_next_free_page(objspace, heap);
         heap_set_alloc_page(objspace, heap_idx, page);
+        heap_charge_region(objspace, heap, heap_idx);
 
         // Retry allocation after moving to new page
         obj = heap_alloc_slot(objspace, heap_idx);
