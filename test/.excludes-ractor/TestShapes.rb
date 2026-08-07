@@ -1,0 +1,7 @@
+exclude(:test_class_too_complex_during_delete, "class ivars (anon)")
+exclude(:test_generic_too_complex_during_delete, "class ivars (anon)")
+exclude(:test_object_too_complex_during_delete, "class ivars (anon class)")
+exclude(:test_ordered_alloc_is_not_complex, "ObjectSpace.dump")
+exclude(:test_too_many_ivs_on_class, "class ivars")
+exclude(:test_removing_when_too_many_ivs_on_class, "class ivars")
+exclude(:test_removing_when_too_many_ivs_on_module, "class ivars")

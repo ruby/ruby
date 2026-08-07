@@ -1166,7 +1166,7 @@ Init_etc(void)
 
     /* Ractor-safe methods */
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
-    RB_EXT_RACTOR_SAFE(true);
+    rb_ext_ractor_safe(true);
 #endif
     rb_define_module_function(mEtc, "systmpdir", etc_systmpdir, 0);
     rb_define_module_function(mEtc, "uname", etc_uname, 0);
@@ -1177,7 +1177,7 @@ Init_etc(void)
 
     /* Non-Ractor-safe methods, see https://bugs.ruby-lang.org/issues/21115 */
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
-    RB_EXT_RACTOR_SAFE(false);
+    rb_ext_ractor_safe(false);
 #endif
     rb_define_module_function(mEtc, "getlogin", etc_getlogin, 0);
 

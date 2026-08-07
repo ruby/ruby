@@ -35,39 +35,40 @@ class TestRubyVM < Test::Unit::TestCase
   def test_keep_script_lines
     omit if ParserSupport.prism_enabled?
     pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
+    begin
+      prev_conf = RubyVM.keep_script_lines
 
-    prev_conf = RubyVM.keep_script_lines
+      # keep
+      RubyVM.keep_script_lines = true
 
-    # keep
-    RubyVM.keep_script_lines = true
+      ast, iseq = *parse_and_compile
 
-    ast, iseq = *parse_and_compile
+      lines = ast.script_lines
+      assert_equal Array, lines.class
 
-    lines = ast.script_lines
-    assert_equal Array, lines.class
+      lines = iseq.script_lines
+      assert_equal Array, lines.class
+      iseq.each_child{|child|
+        assert_equal lines, child.script_lines
+      }
+      assert lines.frozen?
 
-    lines = iseq.script_lines
-    assert_equal Array, lines.class
-    iseq.each_child{|child|
-      assert_equal lines, child.script_lines
-    }
-    assert lines.frozen?
+      # don't keep
+      RubyVM.keep_script_lines = false
 
-    # don't keep
-    RubyVM.keep_script_lines = false
+      ast, iseq = *parse_and_compile
 
-    ast, iseq = *parse_and_compile
+      lines = ast.script_lines
+      assert_equal nil, lines
 
-    lines = ast.script_lines
-    assert_equal nil, lines
+      lines = iseq.script_lines
+      assert_equal nil, lines
+      iseq.each_child{|child|
+        assert_equal lines, child.script_lines
+      }
 
-    lines = iseq.script_lines
-    assert_equal nil, lines
-    iseq.each_child{|child|
-      assert_equal lines, child.script_lines
-    }
-
-  ensure
-    RubyVM.keep_script_lines = prev_conf
+    ensure
+      RubyVM.keep_script_lines = prev_conf
+    end
   end
 end

@@ -25,7 +25,7 @@ class TestM17NComb < Test::Unit::TestCase
     assert_equal(b(bytes), b(actual), message)
   end
 
-  STRINGS = [
+  STRINGS = Ractor.make_shareable([
     b(""), e(""), s(""), u(""),
     b("a"), e("a"), s("a"), u("a"),
     b("."), e("."), s("."), u("."),
@@ -53,13 +53,13 @@ class TestM17NComb < Test::Unit::TestCase
     # for transitivity test
     u("\xe0\xa0\xa1"), e("\xe0\xa0\xa1"), s("\xe0\xa0\xa1"), # [ruby-dev:32693]
     e("\xa1\xa1"), b("\xa1\xa1"), s("\xa1\xa1"), # [ruby-dev:36484]
-  ]
+  ])
 
-  WSTRINGS = [
+  WSTRINGS = Ractor.make_shareable([
     "aa".force_encoding("utf-16be"),
     "aaaa".force_encoding("utf-32be"),
     "aaa".force_encoding("utf-32be"),
-  ]
+  ])
 
   def combination(*args, &b)
     AllPairs.each(*args, &b)
@@ -177,12 +177,12 @@ class TestM17NComb < Test::Unit::TestCase
     }
   end
 
-  ASCII_INCOMPATIBLE_ENCODINGS = %w[
+  ASCII_INCOMPATIBLE_ENCODINGS = Ractor.make_shareable(%w[
     UTF-16BE
     UTF-16LE
     UTF-32BE
     UTF-32LE
-  ]
+  ])
   def str_enc_compatible?(*strs)
     encs = []
     ascii_incompatible_encodings = {}

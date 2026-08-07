@@ -14,6 +14,7 @@ class TestObjectId < Test::Unit::TestCase
   end
 
   def test_dup_with_ivar_and_id
+    omit "class ivars" if @obj.is_a?(Module) && !main_ractor?
     id = @obj.object_id
     @obj.instance_variable_set(:@foo, 42)
 
@@ -23,6 +24,7 @@ class TestObjectId < Test::Unit::TestCase
   end
 
   def test_dup_with_id_and_ivar
+    omit "class ivars" if @obj.is_a?(Module) && !main_ractor?
     @obj.instance_variable_set(:@foo, 42)
     id = @obj.object_id
 
@@ -32,6 +34,7 @@ class TestObjectId < Test::Unit::TestCase
   end
 
   def test_dup_with_id_and_ivar_and_frozen
+    omit "class ivars" if @obj.is_a?(Module) && !main_ractor?
     @obj.instance_variable_set(:@foo, 42)
     @obj.freeze
     id = @obj.object_id
@@ -48,6 +51,7 @@ class TestObjectId < Test::Unit::TestCase
   end
 
   def test_clone_with_ivar_and_id
+    omit "class ivars" if @obj.is_a?(Module) && !main_ractor?
     id = @obj.object_id
     @obj.instance_variable_set(:@foo, 42)
 
@@ -57,6 +61,7 @@ class TestObjectId < Test::Unit::TestCase
   end
 
   def test_clone_with_id_and_ivar
+    omit "class ivars" if @obj.is_a?(Module) && !main_ractor?
     @obj.instance_variable_set(:@foo, 42)
     id = @obj.object_id
 
@@ -66,6 +71,7 @@ class TestObjectId < Test::Unit::TestCase
   end
 
   def test_clone_with_id_and_ivar_and_frozen
+    omit "class ivars" if @obj.is_a?(Module) && !main_ractor?
     @obj.instance_variable_set(:@foo, 42)
     @obj.freeze
     id = @obj.object_id
@@ -78,6 +84,7 @@ class TestObjectId < Test::Unit::TestCase
 
   def test_marshal_new_id
     return pass if @obj.is_a?(Module)
+    omit "class ivars" if @obj.is_a?(Module) && !main_ractor?
 
     id = @obj.object_id
     refute_equal id, Marshal.load(Marshal.dump(@obj)).object_id
@@ -119,6 +126,7 @@ class TestObjectId < Test::Unit::TestCase
   end
 
   def test_object_id_need_resize
+    omit "class ivars" if !main_ractor? && @obj.is_a?(Module)
     (3 - @obj.instance_variables.size).times do |i|
       @obj.instance_variable_set("@a_#{i}", "[Bug #21445]")
     end
@@ -167,6 +175,7 @@ class TestObjectIdTooComplexClass < TestObjectId
   end
 
   def setup
+    omit "class ivars" unless main_ractor?
     if defined?(RubyVM::Shape::SHAPE_MAX_VARIATIONS)
       assert_equal 8, RubyVM::Shape::SHAPE_MAX_VARIATIONS
     end

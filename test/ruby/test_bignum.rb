@@ -70,17 +70,17 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_bignum
-    $x = fact(40)
-    assert_equal($x, $x)
-    assert_equal($x, fact(40))
-    assert_operator($x, :<, $x+2)
-    assert_operator($x, :>, $x-2)
-    assert_equal(815915283247897734345611269596115894272000000000, $x)
-    assert_not_equal(815915283247897734345611269596115894272000000001, $x)
-    assert_equal(815915283247897734345611269596115894272000000001, $x+1)
-    assert_equal(335367096786357081410764800000, $x/fact(20))
-    $x = -$x
-    assert_equal(-815915283247897734345611269596115894272000000000, $x)
+    x = fact(40)
+    assert_equal(x, x)
+    assert_equal(x, fact(40))
+    assert_operator(x, :<, x+2)
+    assert_operator(x, :>, x-2)
+    assert_equal(815915283247897734345611269596115894272000000000, x)
+    assert_not_equal(815915283247897734345611269596115894272000000001, x)
+    assert_equal(815915283247897734345611269596115894272000000001, x+1)
+    assert_equal(335367096786357081410764800000, x/fact(20))
+    x = -x
+    assert_equal(-815915283247897734345611269596115894272000000000, x)
 
     b = 2*BIGNUM_MIN
     assert_equal(2-b, -(b-2))
@@ -655,8 +655,10 @@ class TestBignum < Test::Unit::TestCase
   def test_coerce
     assert_equal([T64P, T31P], T31P.coerce(T64P))
     assert_raise(TypeError) { T31P.coerce(nil) }
-    obj = eval("class C\u{1f5ff}; self; end").new
-    assert_raise_with_message(TypeError, /C\u{1f5ff}/) { T31P.coerce(obj) }
+    unless multiple_ractors?
+      obj = eval("class C\u{1f5ff}; self; end").new
+      assert_raise_with_message(TypeError, /C\u{1f5ff}/) { T31P.coerce(obj) }
+    end
   end
 
   def test_abs

@@ -739,8 +739,8 @@ class TestISeq < Test::Unit::TestCase
       class P
         def p; end
         def q; end
-        E = ""
-        N = "#{E}"
+        E = "".freeze
+        N = "#{E}".freeze
         attr_reader :i
       end
     end;

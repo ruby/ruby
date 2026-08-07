@@ -3,7 +3,7 @@ require 'test/unit'
 EnvUtil.suppress_warning {require 'continuation'}
 
 class TestBeginEndBlock < Test::Unit::TestCase
-  DIR = File.dirname(File.expand_path(__FILE__))
+  DIR = File.dirname(File.expand_path(__FILE__)).freeze
 
   def test_beginendblock
     target = File.join(DIR, 'beginmainend.rb')

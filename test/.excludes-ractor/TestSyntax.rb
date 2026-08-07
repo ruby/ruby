@@ -1,0 +1,5 @@
+exclude(:test_eval_return_toplevel, "Tempfile")
+exclude(:test_must_ascii_compatible, "Tempfile")
+exclude(:test_return_toplevel, "Tempfile")
+exclude(:test_script_lines, "Tempfile")
+exclude(:test_unassignable, "gvars")

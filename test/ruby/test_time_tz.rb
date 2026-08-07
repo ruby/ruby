@@ -16,6 +16,7 @@ class TestTimeTZ < Test::Unit::TestCase
   if force_tz_test
     module Util
       def with_tz(tz)
+        omit "global side effects" if multiple_ractors? && self.is_a?(TestTimeTZ)
         old = ENV["TZ"]
         begin
           ENV["TZ"] = tz
@@ -28,6 +29,7 @@ class TestTimeTZ < Test::Unit::TestCase
   else
     module Util
       def with_tz(tz)
+        omit "global side effects" if multiple_ractors? && self.is_a?(TestTimeTZ)
         if ENV["TZ"] == tz
           yield
         end
@@ -87,7 +89,7 @@ class TestTimeTZ < Test::Unit::TestCase
   CORRECT_TOKYO_DST_1951 = with_tz("Asia/Tokyo") {
     if Time.local(1951, 5, 6, 12, 0, 0).dst? # noon, DST
       if Time.local(1951, 5, 6, 1, 0, 0).dst? # DST with fixed tzdata
-        Time.local(1951, 9, 8, 23, 0, 0).dst? ? "2018f" : "2018e"
+        Time.local(1951, 9, 8, 23, 0, 0).dst? ? "2018f".freeze : "2018e".freeze
       end
     end
   }
@@ -95,7 +97,7 @@ class TestTimeTZ < Test::Unit::TestCase
     Time.local(1994, 12, 31, 0, 0, 0).year == 1995
   }
   CORRECT_SINGAPORE_1982 = with_tz("Asia/Singapore") {
-    "2022g" if Time.local(1981, 12, 31, 23, 59, 59).utc_offset == 8*3600
+    "2022g".freeze if Time.local(1981, 12, 31, 23, 59, 59).utc_offset == 8*3600
   }
 
   def time_to_s(t)
@@ -378,20 +380,23 @@ class TestTimeTZ < Test::Unit::TestCase
       expected = "%04d-%02d-%02d %02d:%02d:%02d %s" % (l+[format_gmtoff(gmtoff)])
       mesg_utc = "TZ=#{tz} Time.utc(#{u.map {|arg| arg.inspect }.join(', ')})"
       mesg = "#{mesg_utc}.localtime"
-      define_method(gen_test_name(tz)) {
-        with_tz(tz) {
-          t = nil
-          assert_nothing_raised(mesg) { t = Time.utc(*u) }
-          assert_equal(expected_utc, time_to_s(t), mesg_utc)
-          assert_nothing_raised(mesg) { t.localtime }
-          assert_equal(expected, time_to_s(t), mesg)
-          assert_equal(gmtoff, t.gmtoff)
-          assert_equal(format_gmtoff(gmtoff), t.strftime("%z"))
-          assert_equal(format_gmtoff(gmtoff, true), t.strftime("%:z"))
-          assert_equal(format_gmtoff2(gmtoff), t.strftime("%::z"))
-          assert_equal(Encoding::US_ASCII, t.zone.encoding)
-        }
-      }
+      class_eval <<-RUBY, __FILE__, __LINE__+1
+        def #{gen_test_name(tz).gsub(/[@\/]/, '_')}
+          tz = #{tz.inspect}
+          with_tz(tz) {
+            t = nil
+            assert_nothing_raised(#{mesg.inspect}) { t = Time.utc(*#{u.inspect}) }
+            assert_equal(#{expected_utc.inspect}, time_to_s(t), #{mesg_utc.inspect})
+            assert_nothing_raised(#{mesg.inspect}) { t.localtime }
+            assert_equal(#{expected.inspect}, time_to_s(t), #{mesg.inspect})
+            assert_equal(#{gmtoff.inspect}, t.gmtoff)
+            assert_equal(format_gmtoff(#{gmtoff.inspect}), t.strftime("%z"))
+            assert_equal(format_gmtoff(#{gmtoff.inspect}, true), t.strftime("%:z"))
+            assert_equal(format_gmtoff2(#{gmtoff.inspect}), t.strftime("%::z"))
+            assert_equal(Encoding::US_ASCII, t.zone.encoding)
+          }
+        end
+      RUBY
     }
 
     group_by(sample) {|tz, _, _, _| tz }.each {|tz, a|
@@ -400,7 +405,11 @@ class TestTimeTZ < Test::Unit::TestCase
         monotonic_to_past = i == 0 || (a[i-1][2] <=> l) < 0
         monotonic_to_future = i == a.length-1 || (l <=> a[i+1][2]) < 0
         if monotonic_to_past && monotonic_to_future
-          define_method(gen_test_name(tz)) {
+          class_eval <<-RUBY, __FILE__, __LINE__+1
+          def #{gen_test_name(tz).gsub(/[@\/]/, '_')}
+            expected = #{expected.inspect}
+            tz = #{tz.inspect}
+            l = #{l.inspect}
             with_tz(tz) {
               assert_time_constructor(tz, expected, :local, l)
               assert_time_constructor(tz, expected, :local, l.reverse+[nil, nil, false, nil])
@@ -409,25 +418,40 @@ class TestTimeTZ < Test::Unit::TestCase
               assert_time_constructor(tz, expected, :new, l+[:std])
               assert_time_constructor(tz, expected, :new, l+[:dst])
             }
-          }
+          end
+          RUBY
         elsif monotonic_to_past && !monotonic_to_future
-          define_method(gen_test_name(tz)) {
+          class_eval <<-RUBY, __FILE__, __LINE__+1
+          def #{gen_test_name(tz).gsub(/[@\/]/, '_')}
+            expected = #{expected.inspect}
+            tz = #{tz.inspect}
+            l = #{l.inspect}
             with_tz(tz) {
               assert_time_constructor(tz, expected, :local, l.reverse+[nil, nil, true, nil])
               assert_time_constructor(tz, expected, :new, l+[:dst])
             }
-          }
+          end
+          RUBY
         elsif !monotonic_to_past && monotonic_to_future
-          define_method(gen_test_name(tz)) {
+          class_eval <<-RUBY, __FILE__, __LINE__+1
+          def #{gen_test_name(tz).gsub(/[@\/]/, '_')}
+            expected = #{expected.inspect}
+            tz = #{tz.inspect}
+            l = #{l.inspect}
             with_tz(tz) {
               assert_time_constructor(tz, expected, :local, l.reverse+[nil, nil, false, nil])
               assert_time_constructor(tz, expected, :new, l+[:std])
             }
-          }
+          end
+          RUBY
         else
-          define_method(gen_test_name(tz)) {
-            flunk("time in reverse order: TZ=#{tz} #{expected}")
-          }
+          class_eval <<-RUBY, __FILE__, __LINE__+1
+          def #{gen_test_name(tz).gsub(/[@\/]/, '_')}
+            expected = #{expected.inspect}
+            tz = #{tz.inspect}
+            flunk("time in reverse order: TZ=\#{tz} \#{expected}")
+          end
+          RUBY
         end
       }
     }
@@ -547,13 +571,15 @@ End
     }
   end
 
-  # tzdata-2014g fixed the offset for lisbon from -0:36:32 to -0:36:45.
-  # [ruby-core:65058] [Bug #10245]
-  gen_variational_zdump_test "lisbon", <<'End' if has_lisbon_tz
+  if will_run_in_main_ractor?
+    # tzdata-2014g fixed the offset for lisbon from -0:36:32 to -0:36:45.
+    # [ruby-core:65058] [Bug #10245]
+    gen_variational_zdump_test "lisbon", <<'End' if has_lisbon_tz
 Europe/Lisbon  Mon Jan  1 00:36:31 1912 UTC = Sun Dec 31 23:59:59 1911 LMT isdst=0 gmtoff=-2192
 Europe/Lisbon  Mon Jan  1 00:36:44 1912 UT = Sun Dec 31 23:59:59 1911 LMT isdst=0 gmtoff=-2205
 Europe/Lisbon  Sun Dec 31 23:59:59 1911 UT = Sun Dec 31 23:23:14 1911 LMT isdst=0 gmtoff=-2205
 End
+  end
 
   class TZ
     attr_reader :name
@@ -721,12 +747,12 @@ module TestTimeTZ::WithTZ
     # t.zone may be a mere String or timezone object.
   end
 
-  ZONES = {
+  ZONES = Ractor.make_shareable({
     "Asia/Tokyo" => ["JST", +9*3600],
     "America/Los_Angeles" => ["PST", -8*3600, "PDT", -7*3600],
     "Africa/Ndjamena" => ["WAT", +1*3600],
     "Etc/UTC" => ["UTC", 0],
-  }
+  })
 
   def make_timezone(tzname, abbr, utc_offset, abbr2 = nil, utc_offset2 = nil)
     self.class::TIME_CLASS.find_timezone(tzname)
@@ -743,22 +769,36 @@ module TestTimeTZ::WithTZ
   instance_methods(false).grep(/\Asub(?=test_)/) do |subtest|
     test = $'
     ZONES.each_pair do |tzname, (abbr, utc_offset, abbr2, utc_offset2)|
-      define_method("#{test}@#{tzname}") do
+      class_eval <<-RUBY, __FILE__, __LINE__+1
+      def #{(test + '_' + tzname).gsub(/[^\w]/, '_')}
+        subtest = #{subtest.inspect}
+        tzname = #{tzname.inspect}
+        abbr = #{abbr.inspect}
+        utc_offset = #{utc_offset.inspect}
+        abbr2 = #{abbr2.inspect}
+        utc_offset2 = #{utc_offset2.inspect}
         tz = make_timezone(tzname, abbr, utc_offset, abbr2, utc_offset2)
         time_class = self.class::TIME_CLASS
         __send__(subtest, time_class, tz, tz, tzname, [abbr, abbr2], [utc_offset, utc_offset2])
         __send__(subtest, time_class, tz, tzname, tzname, [abbr, abbr2], [utc_offset, utc_offset2])
       end
+      RUBY
     end
   end
 
   instance_methods(false).grep(/\Aname(?=test_)/) do |subtest|
     test = $'
     ZONES.each_pair do |tzname, (abbr, utc_offset)|
-      define_method("#{test}@#{tzname}") do
+      class_eval <<-RUBY, __FILE__, __LINE__+1
+      def #{(test + '_' + tzname).gsub(/[^\w]/, '_')}
+        subtest = #{subtest.inspect}
+        tzname = #{tzname.inspect}
+        abbr = #{abbr.inspect}
+        utc_offset = #{utc_offset.inspect}
         time_class = self.class::TIME_CLASS
         __send__(subtest, time_class, tzname, abbr, utc_offset)
       end
+      RUBY
     end
   end
 end

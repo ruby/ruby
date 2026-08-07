@@ -1,0 +1,7 @@
+exclude(:test_AREF_fstring_key, "EnvUtil.without_gc")
+exclude(:test_iterlevel_in_ivar_bug19589, "stack level too deep with ractors")
+exclude(:test_memory_size_after_delete, "ObjectSpace.memsize_of not yet ractor safe")
+exclude(:test_to_s, "global variables")
+exclude(:test_inspect, "global side effects")
+exclude(:test_broken_hash_value, "too many objects")
+exclude(:test_replace_bug15358, "GC.start")
