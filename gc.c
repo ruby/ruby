@@ -1266,6 +1266,12 @@ rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, VALUE *f
 
     return true;
 }
+
+bool
+rb_zjit_newobj_hook_enabled_p(void)
+{
+    return rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_NEWOBJ);
+}
 #endif
 
 void
