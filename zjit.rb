@@ -285,7 +285,12 @@ class << RubyVM::ZJIT
   def print_stats_file
     filename = Primitive.rb_zjit_get_stats_file_path_p
     File.open(filename, "wb") do |file|
-      file.write stats_string
+      if filename.end_with?(".json")
+        require "json"
+        file.write(JSON.pretty_generate(stats))
+      else
+        file.write stats_string
+      end
     end
   end
 
