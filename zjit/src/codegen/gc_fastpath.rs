@@ -5,6 +5,7 @@ use crate::cruby::{
     RB_GC_ZJIT_FASTPATH_DEFAULT, RB_GC_ZJIT_FASTPATH_MMTK,
     RUBY_OFFSET_EC_THREAD_PTR, RUBY_OFFSET_RBASIC_FLAGS, RUBY_OFFSET_RBASIC_KLASS,
     RUBY_OFFSET_THREAD_RACTOR, VALUE, VALUE_BITS, rb_zjit_offset_ractor_newobj_cache,
+    rb_zjit_offset_ractor_objspace,
 };
 use super::JITState;
 
@@ -14,6 +15,7 @@ struct RbGcZjitDefaultNewObjFastpath {
     cursor_offset: usize,
     cursor_end_offset: usize,
     slot_size: usize,
+    total_allocated_objects_offset: usize,
     flags: VALUE,
     klass: VALUE,
 }
@@ -178,13 +180,14 @@ fn emit_default_new_obj_fastpath(
     let cursor_offset: i32 = fastpath.cursor_offset.try_into().ok()?;
     let cursor_end_offset: i32 = fastpath.cursor_end_offset.try_into().ok()?;
     let slot_size: u64 = fastpath.slot_size.try_into().ok()?;
+    let total_allocated_objects_offset: i32 = fastpath.total_allocated_objects_offset.try_into().ok()?;
 
     let thread = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR as i32));
     let ractor = asm.load(Opnd::mem(64, thread, RUBY_OFFSET_THREAD_RACTOR as i32));
-    let ractor_newobj_cache_offset: i32 = unsafe { rb_zjit_offset_ractor_newobj_cache() }
+    let ractor_objspace_offset: i32 = unsafe { rb_zjit_offset_ractor_objspace() }
         .try_into()
-        .expect("ractor newobj cache offset fits in i32");
-    let gc_cache = asm.load(Opnd::mem(64, ractor, ractor_newobj_cache_offset));
+        .expect("ractor objspace offset fits in i32");
+    let gc_cache = asm.load(Opnd::mem(64, ractor, ractor_objspace_offset));
 
     let cursor = asm.load(Opnd::mem(64, gc_cache, cursor_offset));
     let cursor_end = asm.load(Opnd::mem(64, gc_cache, cursor_end_offset));
@@ -194,6 +197,9 @@ fn emit_default_new_obj_fastpath(
     asm.jl(jit, miss.clone());
 
     asm.store(Opnd::mem(64, gc_cache, cursor_offset), new_cursor);
+    let total_allocated = asm.load(Opnd::mem(64, gc_cache, total_allocated_objects_offset));
+    let new_total = asm.add(total_allocated, Opnd::UImm(1));
+    asm.store(Opnd::mem(64, gc_cache, total_allocated_objects_offset), new_total);
     asm.store(
         Opnd::mem(VALUE_BITS, cursor, RUBY_OFFSET_RBASIC_FLAGS),
         fastpath.flags.as_u64().into(),
