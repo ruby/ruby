@@ -2784,20 +2784,16 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         }
         hide_obj(envtbl);
         if (envopts != Qfalse) {
-            st_table *stenv = RHASH_TBL_RAW(envtbl);
             long i;
             for (i = 0; i < RARRAY_LEN(envopts); i++) {
                 VALUE pair = RARRAY_AREF(envopts, i);
                 VALUE key = RARRAY_AREF(pair, 0);
                 VALUE val = RARRAY_AREF(pair, 1);
                 if (NIL_P(val)) {
-                    st_data_t stkey = (st_data_t)key;
-                    st_delete(stenv, &stkey, NULL);
+                    rb_hash_delete(envtbl, key);
                 }
                 else {
-                    st_insert(stenv, (st_data_t)key, (st_data_t)val);
-                    RB_OBJ_WRITTEN(envtbl, Qundef, key);
-                    RB_OBJ_WRITTEN(envtbl, Qundef, val);
+                    rb_hash_aset(envtbl, key, val);
                 }
             }
         }

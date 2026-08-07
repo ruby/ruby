@@ -86,14 +86,14 @@ void rb_zjit_iseq_update_references(void *payload);
 void rb_zjit_mark_all_writable(void);
 void rb_zjit_mark_all_executable(void);
 void rb_zjit_iseq_free(const rb_iseq_t *iseq);
-void rb_zjit_before_ractor_spawn(void);
+void rb_zjit_invalidate_single_ractor(void);
 void rb_zjit_tracing_invalidate_all(void);
 void rb_zjit_invalidate_no_singleton_class(VALUE klass);
 void rb_zjit_invalidate_root_box(void);
 void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_frame);
 void rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
 void rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
-size_t rb_zjit_hash_new_size(void);
+size_t rb_zjit_hash_new_size(VALUE *flags_out);
 bool rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, shape_id_t *shape_id_out);
 bool rb_zjit_str_resurrect_fastpath(VALUE str, bool chilled, size_t *size_out, VALUE *flags_out, long *len_out, size_t *byte_size_out);
 bool rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_out, long *len_out);
@@ -133,7 +133,7 @@ static inline void rb_zjit_bop_redefined(int redefined_flag, enum ruby_basic_ope
 static inline void rb_zjit_cme_invalidate(const rb_callable_method_entry_t *cme) {}
 static inline void rb_zjit_invalidate_no_ep_escape(const rb_iseq_t *iseq) {}
 static inline void rb_zjit_constant_state_changed(ID id) {}
-static inline void rb_zjit_before_ractor_spawn(void) {}
+static inline void rb_zjit_invalidate_single_ractor(void) {}
 static inline void rb_zjit_tracing_invalidate_all(void) {}
 static inline void rb_zjit_invalidate_no_singleton_class(VALUE klass) {}
 static inline void rb_zjit_invalidate_root_box(void) {}

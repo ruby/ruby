@@ -79,4 +79,9 @@ describe "File.path" do
     path.should_receive(:to_path).and_return("abc".encode(Encoding::UTF_32BE))
     -> { File.path(path) }.should.raise Encoding::CompatibilityError
   end
+
+  it "preserves the encoding of the path" do
+    path = "abc".encode(Encoding::EUC_JP)
+    File.path(path).encoding.should == Encoding::EUC_JP
+  end
 end

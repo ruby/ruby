@@ -227,11 +227,122 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
+  # Check that ruby can still be built with the older supported MSVC
+  # toolsets.  The runner images no longer preinstall VS 2017/2019, so
+  # install the v141/v142 toolset into the preinstalled VS 2022 and
+  # select it with -vcvars_ver.  This only builds up to ruby.exe;
+  # extensions and tests are not covered.
+  make-old-toolset:
+    strategy:
+      matrix:
+        include:
+          - vs: 2017
+            toolset: '14.16'
+            component: Microsoft.VisualStudio.Component.VC.v141.x86.x64
+            clver: '19.16'
+          - vs: 2019
+            toolset: '14.29'
+            component: Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64
+            clver: '19.29'
+      fail-fast: false
+
+    runs-on: windows-2022
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || github.event.pull_request.user.login == 'dependabot[bot]'
+      )}}
+
+    name: Windows 2022 (VS${{ matrix.vs }} toolset)
+
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+
+    steps:
+      - run: md build
+        working-directory:
+
+      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: '3.1'
+          bundler: none
+          windows-toolchain: none
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          make-command: nmake
+          clean: true
+
+      - name: Install MSVC v${{ matrix.toolset }} toolset
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $installPath = & $vswhere -products '*' -latest -property installationPath
+          $setup = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe"
+          $arguments = @('modify', '--installPath', "`"$installPath`"",
+                         '--add', '${{ matrix.component }}',
+                         '--quiet', '--norestart', '--nocache')
+          $proc = Start-Process -FilePath $setup -ArgumentList $arguments -Wait -PassThru
+          if ($proc.ExitCode -notin 0, 3010) { throw "VS installer exited with $($proc.ExitCode)" }
+        timeout-minutes: 20
+
+      - name: setup env
+        run: |
+          set > old.env
+          call ..\src\win32\vssetup.cmd -arch=amd64 -vcvars_ver=${{ matrix.toolset }}
+          nmake -f nul
+          set TMP=%RUNNER_TEMP%
+          set TEMP=%RUNNER_TEMP%
+          set MAKEFLAGS=l
+          set > new.env
+
+      - name: update env
+        shell: pwsh
+        run: |
+          $old = (Get-Content old.env); $new = (Get-Content new.env)
+          del *.env
+          Compare-Object $old $new |
+            Where-Object { $_.SideIndicator -eq '=>' } |
+            Select-Object -ExpandProperty InputObject |
+            Add-Content -Path $env:GITHUB_ENV
+
+      - name: baseruby version
+        run: ruby -v
+
+      - name: compiler version
+        run: cl 2>&1 | findstr /c:"Compiler Version ${{ matrix.clver }}"
+
+      - name: Configure
+        run: ../src/win32/configure.bat --disable-install-doc
+
+      - run: nmake ruby
+        timeout-minutes: 50
+
+      - name: ruby version
+        run: .\ruby.exe -v --disable-gems -e "puts :ok"
+
+      - uses: ./.github/actions/slack
+        with:
+          label: Windows 2022 / VS${{ matrix.vs }} toolset
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
+
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
     runs-on: windows-2025-vs2026
-    needs: [make]
+    needs: [make, make-old-toolset]
     steps:
       - run: exit 1
         working-directory:

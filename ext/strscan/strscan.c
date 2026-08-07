@@ -79,7 +79,7 @@ struct strscanner
 #define CURPTR(s) (S_PBEG(s) + (s)->curr)
 #define S_RESTLEN(s) (S_LEN(s) - (s)->curr)
 
-#define EOS_P(s) ((s)->curr >= RSTRING_LEN(p->str))
+#define EOS_P(s) ((s)->curr >= RSTRING_LEN((s)->str))
 
 #define GET_SCANNER(obj,var) do {\
     (var) = check_strscan(obj);\
@@ -573,10 +573,12 @@ static VALUE
 strscan_get_charpos(VALUE self)
 {
     struct strscanner *p;
+    const char *s;
 
     GET_SCANNER(self, p);
 
-    return LONG2NUM(rb_enc_strlen(S_PBEG(p), CURPTR(p), rb_enc_get(p->str)));
+    s = EOS_P(p) ? S_PEND(p) : CURPTR(p);
+    return LONG2NUM(rb_enc_strlen(S_PBEG(p), s, rb_enc_get(p->str)));
 }
 
 /*

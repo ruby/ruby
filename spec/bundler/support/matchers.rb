@@ -75,28 +75,6 @@ module Spec
       end
     end
 
-    RSpec::Matchers.define :be_sorted do
-      diffable
-      attr_reader :expected
-      match do |actual|
-        expected = block_arg ? actual.sort_by(&block_arg) : actual.sort
-        actual.==(expected).tap do
-          # HACK: since rspec won't show a diff when everything is a string
-          differ = RSpec::Support::Differ.new
-          @actual = differ.send(:object_to_string, actual)
-          @expected = differ.send(:object_to_string, expected)
-        end
-      end
-    end
-
-    RSpec::Matchers.define :be_well_formed do
-      match(&:empty?)
-
-      failure_message do |actual|
-        actual.join("\n")
-      end
-    end
-
     define_compound_matcher :read_as, [exist] do |file_contents|
       diffable
 

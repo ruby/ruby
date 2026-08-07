@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# Skip reloading when an identical copy (e.g. the one shipped inside the Bundler
+# gem) was already required from a different path, to avoid redefinition warnings.
+return if defined?(Gem::YAMLSerializer)
+
 unless defined?(Psych::VERSION)
   module Psych
     class Exception < ::RuntimeError; end

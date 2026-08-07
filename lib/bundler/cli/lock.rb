@@ -77,6 +77,8 @@ module Bundler
           puts "Writing lockfile to #{file}"
           definition.write_lock(file, false)
         end
+
+        Bundler::CLI::Common.output_cooldown_skipped_summary(definition)
       end
 
       Bundler.ui.output_stream = previous_output_stream

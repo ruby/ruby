@@ -131,6 +131,8 @@
 #define ATTRIBUTE_UNUSED
 #endif
 
+#define MAX_ENTRIES_START ((unsigned int)-1)
+
 /* The type of hashes.  */
 typedef st_index_t st_hash_t;
 
@@ -1187,12 +1189,13 @@ st_get_key(st_table *tab, st_data_t key, st_data_t *result)
 
 /* Check the table and rebuild it if it is necessary.  */
 static inline void
-rebuild_table_if_necessary (st_table *tab)
+rebuild_table_if_necessary(st_table *tab)
 {
     st_index_t bound = tab->entries_bound;
 
-    if (bound == get_allocated_entries(tab))
+    if (bound == get_allocated_entries(tab) || tab->entries_start == MAX_ENTRIES_START) {
         rebuild_table(tab);
+    }
 }
 
 /* Insert (KEY, VALUE) into table TAB and return zero.  If there is
@@ -1301,7 +1304,7 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
 
     hash_value = do_hash(key, tab);
  retry:
-    rebuild_table_if_necessary (tab);
+    rebuild_table_if_necessary(tab);
     if (!st_has_bins(tab)) {
         bin = find_entry(tab, hash_value, key);
         if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
@@ -1384,7 +1387,7 @@ update_range_for_deleted(st_table *tab, st_index_t n)
         st_index_t bound = tab->entries_bound;
         st_table_entry *entries = tab->entries;
         while (start < bound && DELETED_ENTRY_P(&entries[start])) start++;
-        tab->entries_start = start;
+        tab->entries_start = start > MAX_ENTRIES_START ? MAX_ENTRIES_START : (unsigned int)start;
     }
 }
 
@@ -2989,12 +2992,13 @@ set_table_lookup(set_table *tab, st_data_t key)
 
 /* Check the table and rebuild it if it is necessary.  */
 static inline void
-set_rebuild_table_if_necessary (set_table *tab)
+set_rebuild_table_if_necessary(set_table *tab)
 {
     st_index_t bound = tab->entries_bound;
 
-    if (bound == set_get_allocated_entries(tab))
+    if (bound == set_get_allocated_entries(tab) || tab->entries_start == MAX_ENTRIES_START) {
         set_rebuild_table(tab);
+    }
 }
 
 /* Insert KEY into table TAB and return zero.  If there is
@@ -3079,7 +3083,7 @@ set_update_range_for_deleted(set_table *tab, st_index_t n)
         st_index_t bound = tab->entries_bound;
         set_table_entry *entries = tab->entries;
         while (start < bound && DELETED_ENTRY_P(&entries[start])) start++;
-        tab->entries_start = start;
+        tab->entries_start = start > MAX_ENTRIES_START ? MAX_ENTRIES_START : (unsigned int)start;
     }
 }
 

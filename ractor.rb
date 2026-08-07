@@ -607,10 +607,12 @@ class Ractor
   #
   # Waits for +ractor+ to complete and returns its value or raises the exception
   # which terminated the Ractor. The termination value will be moved to the calling
-  # Ractor. Therefore, at most 1 Ractor can receive another ractor's termination value.
+  # Ractor. Therefore, at most 1 Ractor can receive another ractor's termination
+  # value, and it can be received only once.
   #
   #   r = Ractor.new{ [1, 2] }
   #   r.value #=> [1, 2] (unshareable object)
+  #   r.value #=> Ractor::Error
   #
   #   Ractor.new(r){|r| r.value} #=> Ractor::Error
   #

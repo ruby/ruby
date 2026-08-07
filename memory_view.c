@@ -9,6 +9,7 @@
 #include "internal.h"
 #include "internal/hash.h"
 #include "internal/variable.h"
+#include "internal/vm.h"
 #include "ruby/memory_view.h"
 #include "ruby/util.h"
 #include "vm_sync.h"

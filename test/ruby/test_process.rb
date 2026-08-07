@@ -1251,6 +1251,20 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
+  def test_argv_backslash_before_space
+    return unless windows?
+    [
+      ["AA\\ ", "BB"],
+      ["AA\\  ", "BB"],
+      ["AA\\\\ ", "BB"],
+      ["AA ", "BB"],           # control: no backslash
+      ["AA\\", "BB"],          # control: no space after the backslash
+    ].each do |args|
+      out = IO.popen([EnvUtil.rubybin, "-e", "STDOUT.binmode; print Marshal.dump(ARGV)", *args], "rb", &:read)
+      assert_equal(args, Marshal.load(out), "[Bug #22201] argv did not round-trip: #{args.inspect}")
+    end
+  end
+
   def test_exec_wordsplit
     with_tmpchdir {|d|
       File.write("script", <<-'End')
@@ -2212,7 +2226,6 @@ EOS
   end
 
   def test_clock_gettime_unit
-    t0 = Time.now.to_f
     [
       [:nanosecond,  1_000_000_000],
       [:microsecond, 1_000_000],
@@ -2228,6 +2241,7 @@ EOS
         assert_raise(ArgumentError){ Process.clock_gettime(Process::CLOCK_REALTIME, unit) }
         next
       end
+      t0 = Time.now.to_f
       t1 = Process.clock_gettime(Process::CLOCK_REALTIME, unit)
       assert_kind_of num.integer? ? Integer : num.class, t1, [unit, num].inspect
       assert_in_delta t0, t1/num, 1, [unit, num].inspect

@@ -533,9 +533,7 @@ In order to dynamically define a method with `Module#define_method` that can be 
 
 ```ruby
 class A
-  define_method :testing, &Ractor.shareable_proc do
-    p self
-  end
+  define_method(:testing, Ractor.shareable_proc { p self })
 end
 Ractor.new do
   a = A.new

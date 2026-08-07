@@ -10738,6 +10738,32 @@ pm_warning_emit_callback(const pm_diagnostic_t *diagnostic, void *data) {
  * It returns an error if one should be raised. It is assumed that the parse
  * result object is zeroed out.
  */
+/**
+ * Compute the hash of the source code that was parsed. The data section after
+ * an __END__ marker is not part of the code, so the hash covers the source
+ * only up to the end of the __END__ line, which also matches the range that
+ * parse.y hashes.
+ */
+static uint64_t
+pm_source_hash(const pm_parser_t *parser)
+{
+    const uint8_t *start = pm_parser_start(parser);
+    const uint8_t *end = pm_parser_end(parser);
+    const pm_location_t *data_loc = pm_parser_data_loc(parser);
+
+    if (data_loc->length != 0) {
+        const uint8_t *cursor = start + data_loc->start;
+        while (cursor < end && *cursor != '\n') cursor++;
+        if (cursor < end) cursor++;
+        end = cursor;
+    }
+
+    rb_source_hash_state_t state;
+    rb_source_hash_init(&state);
+    rb_source_hash_update(&state, start, (size_t) (end - start));
+    return rb_source_hash_finalize(&state);
+}
+
 static VALUE
 pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines)
 {
@@ -10793,6 +10819,7 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
     // Now set up the constant pool and intern all of the various constants into
     // their corresponding IDs.
     scope_node->parser = parser;
+    scope_node->source_hash = pm_source_hash(parser);
     scope_node->options = result->options;
     scope_node->line_offsets = pm_parser_line_offsets(parser);
     scope_node->start_line = pm_parser_start_line(parser);
@@ -11049,6 +11076,57 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
     RB_GC_GUARD(source);
     RB_GC_GUARD(filepath);
     return error;
+}
+
+typedef struct {
+    uint32_t node_id;
+    const pm_node_t *node;
+} pm_node_find_context_t;
+
+static bool
+pm_node_find(const pm_node_t *node, void *data)
+{
+    pm_node_find_context_t *context = data;
+
+    if (context->node == NULL && node->node_id == context->node_id) {
+        context->node = node;
+        return false;
+    }
+
+    return context->node == NULL;
+}
+
+bool
+pm_node_source_location(VALUE source, VALUE filepath, int start_line,
+                        int node_id, rb_code_location_t *location)
+{
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
+
+    pm_options_line_set(result.options, start_line);
+    VALUE error = pm_parse_string(&result, source, filepath, NULL);
+
+    if (!NIL_P(error)) {
+        pm_parse_result_free(&result);
+        rb_exc_raise(error);
+    }
+
+    pm_node_find_context_t context = {
+        .node_id = (uint32_t) node_id,
+        .node = NULL
+    };
+    pm_visit_node(result.node.ast_node, pm_node_find, &context);
+
+    bool found = context.node != NULL;
+    if (found) {
+        *location = pm_code_location(&result.node, context.node);
+    }
+
+    RB_GC_GUARD(source);
+    RB_GC_GUARD(filepath);
+
+    pm_parse_result_free(&result);
+    return found;
 }
 
 VALUE rb_io_gets_limit_internal(VALUE io, long limit);

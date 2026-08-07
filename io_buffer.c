@@ -1819,15 +1819,15 @@ io_buffer_slice(int argc, VALUE *argv, VALUE self)
  *  Transfers ownership of the underlying memory to a new buffer, causing the
  *  current buffer to become uninitialized.
  *
- *    buffer = IO::Buffer.new('test')
+ *    buffer = IO::Buffer.for('test')
  *    other = buffer.transfer
  *    other
  *    # =>
- *    # #<IO::Buffer 0x00007f136a15f7b0+4 SLICE>
+ *    # #<IO::Buffer 0x00007f136a15f7b0+4 EXTERNAL READONLY SLICE>
  *    # 0x00000000  74 65 73 74                                     test
  *    buffer
  *    # =>
- *    # #<IO::Buffer 0x0000000000000000+0 NULL>
+ *    # #<IO::Buffer 0x0000000000000000+0 NULL EXTERNAL READONLY>
  *    buffer.null?
  *    # => true
  */

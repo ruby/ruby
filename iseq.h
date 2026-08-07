@@ -10,6 +10,7 @@
   Copyright (C) 2004-2008 Koichi Sasada
 
 **********************************************************************/
+#include "internal/coverage.h"
 #include "internal/gc.h"
 #include "shape.h"
 #include "vm_core.h"
@@ -91,6 +92,8 @@ ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
 #define ISEQ_NOT_LOADED_YET   IMEMO_FL_USER1
 #define ISEQ_USE_COMPILE_DATA IMEMO_FL_USER2
 #define ISEQ_TRANSLATED       IMEMO_FL_USER3
+/* set on every iseq of a subtree copied for Proc#refined */
+#define ISEQ_REFINED_COPY     IMEMO_FL_USER4
 
 #define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW(((VALUE)iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
 

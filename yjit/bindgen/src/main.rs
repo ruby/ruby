@@ -262,7 +262,7 @@ fn main() {
         .allowlist_function("rb_iseq_reset_jit_func")
         .allowlist_function("rb_yjit_dump_iseq_loc")
         .allowlist_function("rb_yjit_obj_written")
-        .allowlist_function("rb_yjit_str_simple_append")
+        .allowlist_function("rb_jit_str_simple_append")
         .allowlist_function("rb_RSTRING_PTR")
         .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")

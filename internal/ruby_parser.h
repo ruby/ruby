@@ -40,6 +40,10 @@ VALUE rb_node_integer_literal_val(const NODE *);
 VALUE rb_node_float_literal_val(const NODE *);
 VALUE rb_node_rational_literal_val(const NODE *);
 VALUE rb_node_imaginary_literal_val(const NODE *);
+
+void rb_source_hash_init(rb_source_hash_state_t *state);
+void rb_source_hash_update(rb_source_hash_state_t *state, const uint8_t *ptr, size_t len);
+uint64_t rb_source_hash_finalize(const rb_source_hash_state_t *state);
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_parser_end_seen_p(VALUE);
@@ -56,6 +60,9 @@ VALUE rb_parser_compile_string(VALUE, const char*, VALUE, int);
 VALUE rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE input, int line);
 VALUE rb_parser_compile_generic(VALUE vparser, rb_parser_lex_gets_func *lex_gets, VALUE fname, VALUE input, int line);
 VALUE rb_parser_compile_array(VALUE vparser, VALUE fname, VALUE array, int start);
+bool rb_ast_node_source_location(VALUE source, VALUE path, int first_lineno,
+                                 int node_id, bool block_iseq, int iseq_node_id,
+                                 rb_code_location_t *location);
 
 enum lex_state_bits {
     EXPR_BEG_bit,		/* ignore newline, +/- is a sign. */

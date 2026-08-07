@@ -32,6 +32,7 @@
 #include "internal/class.h"
 #include "internal/cont.h"
 #include "internal/error.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/proc.h"
@@ -44,6 +45,7 @@
 #include "ruby/st.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
+#include "shape.h"
 #include "symbol.h"
 #include "ruby/thread_native.h"
 #include "ruby/ractor.h"
@@ -1463,9 +1465,14 @@ hash_alloc(VALUE klass)
 
 #if USE_ZJIT
 size_t
-rb_zjit_hash_new_size(void)
+rb_zjit_hash_new_size(VALUE *flags_out)
 {
-    return hash_slot_size(sizeof(st_table) > sizeof(ar_table));
+    size_t size = hash_slot_size(sizeof(st_table) > sizeof(ar_table));
+    // mimic rb_newobj()
+    shape_id_t shape_id = rb_shape_transition_slot_size(ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER,
+                                                        rb_gc_size_slot_size(size));
+    *flags_out = T_HASH | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
+    return size;
 }
 #endif
 
@@ -1760,7 +1767,7 @@ rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifn
 
     if (capa_value != INT2FIX(0)) {
         long capa = NUM2LONG(capa_value);
-        if (capa > 0 && RHASH_SIZE(hash) == 0 && RHASH_AR_TABLE_P(hash)) {
+        if (capa > RHASH_AR_TABLE_MAX_SIZE && RHASH_SIZE(hash) == 0 && RHASH_AR_TABLE_P(hash)) {
             hash_st_table_init(hash, &objhash, capa);
         }
     }
@@ -1917,6 +1924,10 @@ rb_hash_s_try_convert(VALUE dummy, VALUE hash)
  *  call-seq:
  *     Hash.ruby2_keywords_hash?(hash) -> true or false
  *
+ *  Deprecated: will be removed in Ruby 4.5, one version after the
+ *  removal of the ruby2_keywords mechanism.  See
+ *  https://bugs.ruby-lang.org/issues/22205 for the schedule.
+ *
  *  Checks if a given hash is flagged by Module#ruby2_keywords (or
  *  Proc#ruby2_keywords).
  *  This method is not for casual use; debugging, researching, and
@@ -1938,6 +1949,10 @@ rb_hash_s_ruby2_keywords_hash_p(VALUE dummy, VALUE hash)
 /*
  *  call-seq:
  *     Hash.ruby2_keywords_hash(hash) -> hash
+ *
+ *  Deprecated: will be removed in Ruby 4.5, one version after the
+ *  removal of the ruby2_keywords mechanism.  See
+ *  https://bugs.ruby-lang.org/issues/22205 for the schedule.
  *
  *  Duplicates a given hash and adds a ruby2_keywords flag.
  *  This method is not for casual use; debugging, researching, and
@@ -5087,20 +5102,7 @@ add_new_i(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 int
 rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val)
 {
-    st_table *tbl;
-    int ret = -1;
-
-    if (RHASH_AR_TABLE_P(hash)) {
-        ret = ar_update(hash, (st_data_t)key, add_new_i, (st_data_t)val);
-        if (ret == -1) {
-            ar_force_convert_table(hash, __FILE__, __LINE__);
-        }
-    }
-
-    if (ret == -1) {
-        tbl = RHASH_TBL_RAW(hash);
-        ret = st_update(tbl, (st_data_t)key, add_new_i, (st_data_t)val);
-    }
+    int ret = rb_hash_stlike_update(hash, key, add_new_i, val);
     if (!ret) {
         // Newly inserted
         RB_OBJ_WRITTEN(hash, Qundef, key);

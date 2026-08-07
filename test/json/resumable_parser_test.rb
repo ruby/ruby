@@ -192,6 +192,27 @@ class JSONResumageParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_integer_boundaries_split_across_feeds
+    [
+      '9999999999999999999',   # widest 19 digits
+      '-9223372036854775808',  # INT64_MIN
+      '18446744073709551615',  # UINT64_MAX exactly
+      '18446744073709551616',  # 2**64, wraps the accumulator to 0
+      '99999999999999999999',  # widest 20 digits
+      '-18446744073709551616',
+      '100000000000000000000', # 21 digits
+    ].each do |literal|
+      doc = "#{literal} "
+      parser = new_parser
+      value = nil
+      doc.each_char do |char|
+        parser << char
+        value = parser.value if parser.parse
+      end
+      assert_equal Integer(literal, 10), value, doc.inspect
+    end
+  end
+
   def test_nul_byte_is_a_syntax_error
     # A NUL byte in a structural position must raise, not stall forever waiting for more input
     # (peek() returns 0 both at EOS and for a literal NUL byte).
@@ -666,6 +687,19 @@ class JSONResumageParserTest < Test::Unit::TestCase
     error = assert_parse_error("\n\n[plop\nfoo", "unexpected character: 'plop'")
     assert_equal 0, error.line
     assert_equal 0, error.column
+  end
+
+  def test_duplicate_key_warning_message
+    parser = new_parser
+    parser << (%q({"a":1,"a":2,"pad":") + ("x" * (4 * 1024 * 1024)))
+    refute parser.parse
+
+    parser << %q(",)
+    refute parser.parse
+
+    assert_deprecated_warning(/duplicate key "a"/) do
+      parser.partial_value
+    end
   end
 
   private

@@ -514,10 +514,23 @@ NOINLINE(static void vm_env_write_slowpath(const VALUE *ep, int index, VALUE v))
 static void
 vm_env_write_slowpath(const VALUE *ep, int index, VALUE v)
 {
-    /* remember env value forcely */
-    rb_gc_writebarrier_remember(VM_ENV_ENVVAL(ep));
-    VM_FORCE_WRITE(&ep[index], v);
-    VM_ENV_FLAGS_UNSET(ep, VM_ENV_FLAG_WB_REQUIRED);
+    const VALUE envval = VM_ENV_ENVVAL(ep);
+
+    if (RB_FL_TEST_RAW(envval, RUBY_FL_SHAREABLE)) {
+        /* Writing to a SHAREABLE env (an isolated proc) can create a shareable ->
+         * unshareable edge; only a full barrier sets the shref bit keeping v alive
+         * through its owner's local GC.  WB_REQUIRED stays: later writes need it too. */
+        if (!SPECIAL_CONST_P(v)) {
+            rb_gc_writebarrier(envval, v);
+        }
+        VM_FORCE_WRITE(&ep[index], v);
+    }
+    else {
+        /* remember env value forcely */
+        rb_gc_writebarrier_remember(envval);
+        VM_FORCE_WRITE(&ep[index], v);
+        VM_ENV_FLAGS_UNSET(ep, VM_ENV_FLAG_WB_REQUIRED);
+    }
     RB_DEBUG_COUNTER_INC(lvar_set_slowpath);
 }
 
@@ -582,12 +595,32 @@ vm_svar_valid_p(VALUE svar)
 }
 #endif
 
+/* Should this frame's special variables live in the env's svar slot?  A SHAREABLE env
+ * (isolated proc) can run in several Ractors at once, making svar shared mutable state
+ * leaking $~/$_ across Ractors: keep them per-EC instead. */
+static inline bool
+lep_svar_in_env_p(const rb_execution_context_t *ec, const VALUE *lep)
+{
+    if (!lep) return false;
+    if (ec == NULL) return true;
+    if (ec->root_lep == lep) return false;
+    /* lep may be a stale on-stack ep of a frame whose env already escaped: lep[0]
+     * still holds the imemo_env, so flags is not a FIXNUM and VM_ENV_ESCAPED_P
+     * asserts.  That is not a live shareable proc's env, so fall back to in-env. */
+    if (FIXNUM_P(lep[VM_ENV_DATA_INDEX_FLAGS]) &&
+            VM_ENV_ESCAPED_P(lep) &&
+            RB_FL_TEST_RAW(VM_ENV_ENVVAL(lep), RUBY_FL_SHAREABLE)) {
+        return false;
+    }
+    return true;
+}
+
 static inline struct vm_svar *
 lep_svar(const rb_execution_context_t *ec, const VALUE *lep)
 {
     VALUE svar;
 
-    if (lep && (ec == NULL || ec->root_lep != lep)) {
+    if (lep_svar_in_env_p(ec, lep)) {
         svar = lep[VM_ENV_DATA_INDEX_ME_CREF];
     }
     else {
@@ -604,7 +637,7 @@ lep_svar_write(const rb_execution_context_t *ec, const VALUE *lep, const struct 
 {
     VM_ASSERT(vm_svar_valid_p((VALUE)svar));
 
-    if (lep && (ec == NULL || ec->root_lep != lep)) {
+    if (lep_svar_in_env_p(ec, lep)) {
         vm_env_write(lep, VM_ENV_DATA_INDEX_ME_CREF, (VALUE)svar);
     }
     else {
@@ -5427,7 +5460,7 @@ vm_invoke_proc_block_with_cref(rb_execution_context_t *ec, rb_control_frame_t *r
                                struct rb_calling_info *calling, const struct rb_callinfo *ci,
                                bool is_lambda, VALUE block_handler, VALUE refined_procval)
 {
-    const rb_cref_t *cref = rb_proc_refinements_cref(refined_procval);
+    const rb_cref_t *cref = rb_proc_refinements_cref_for_call(refined_procval);
     return vm_invoke_iseq_block_with_cref(ec, reg_cfp, calling, ci, is_lambda, block_handler, cref);
 }
 
@@ -6108,6 +6141,10 @@ enum method_explorer_type {
     mexp_search_super,
 };
 
+ALWAYS_INLINE(static VALUE vm_sendish(struct rb_execution_context_struct *ec,
+                                      struct rb_control_frame_struct *reg_cfp,
+                                      struct rb_call_data *cd, VALUE block_handler,
+                                      enum method_explorer_type method_explorer));
 static inline VALUE
 vm_sendish(
     struct rb_execution_context_struct *ec,
@@ -7266,8 +7303,13 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
     }
 }
 
+/* Re-fetch the iseq-local hook list before each event: a hook fired by an
+ * earlier event at this pc can disable the last targeted TracePoint on this
+ * iseq, which frees local_hooks. Reload from its stable source (the ractor's
+ * targeted-hooks table) so we never dereference a dangling pointer. */
 #define VM_TRACE_HOOK(target_event, val) do { \
     if ((pc_events & (target_event)) & enabled_flags) { \
+        if (local_hooks_cnt > 0) local_hooks = rb_iseq_local_hooks(iseq, r, false); \
         vm_trace_hook(ec, reg_cfp, pc, pc_events, (target_event), global_hooks, local_hooks, (val)); \
     } \
 } while (0)
@@ -7307,6 +7349,8 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 
         rb_hook_list_t *bmethod_local_hooks = NULL;
         rb_event_flag_t bmethod_local_events = 0;
+        unsigned int bmethod_hooks_cnt = 0;
+        rb_method_definition_t *bmethod_def = NULL;
         const bool bmethod_frame = VM_FRAME_BMETHOD_P(reg_cfp);
         enabled_flags |= iseq_local_events;
 
@@ -7315,7 +7359,8 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
         if (bmethod_frame) {
             const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
             VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
-            unsigned int bmethod_hooks_cnt = me->def->body.bmethod.local_hooks_cnt;
+            bmethod_def = me->def;
+            bmethod_hooks_cnt = me->def->body.bmethod.local_hooks_cnt;
             if (RB_UNLIKELY(bmethod_hooks_cnt > 0)) {
                 st_data_t val;
                 if (st_lookup(rb_ractor_targeted_hooks(r), (st_data_t)me->def, &val)) {
@@ -7375,6 +7420,9 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             VM_TRACE_HOOK(RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN, TOPN(0));
             if ((pc_events & RUBY_EVENT_B_RETURN) && bmethod_frame && (bmethod_events & RUBY_EVENT_RETURN)) {
                 /* b_return instruction running as a method. Fire return event. */
+                /* An earlier event's hook at this pc may have freed bmethod_local_hooks
+                 * (see VM_TRACE_HOOK); reload it from its stable source. */
+                if (bmethod_hooks_cnt > 0) bmethod_local_hooks = rb_method_def_local_hooks(bmethod_def, r, false);
                 vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, bmethod_local_hooks, TOPN(0));
             }
         }

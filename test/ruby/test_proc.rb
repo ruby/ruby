@@ -607,8 +607,12 @@ class TestProc < Test::Unit::TestCase
     assert_equal("Z!", refined.clone.call("z"))
   end
 
+  def test_refined_no_arguments
+    original = -> {}
+    assert_same(original, original.refined)
+  end
+
   def test_refined_errors
-    assert_raise(ArgumentError) { ->(s) { s }.refined }
     assert_raise(TypeError) { ->(s) { s }.refined(42) }
     # non-iseq Procs are not supported
     assert_raise(ArgumentError) { :upcase.to_proc.refined(RefinementsModule) }
@@ -649,6 +653,21 @@ class TestProc < Test::Unit::TestCase
     RUBY
   end
 
+  def test_refined_shareable_refined_proc_first_called_in_ractor
+    assert_separately([], <<~'RUBY')
+      Warning[:experimental] = false
+      module RefMod; refine(String) { def shout = upcase + "!" }; end
+      module RefHolder
+        REFINED = Ractor.make_shareable(->(s) { s.shout }.refined(RefMod))
+      end
+      refined = RefHolder::REFINED
+      # the first call, and so the deferred copy, happens in another Ractor
+      r = Ractor.new(refined) { |pr| pr.call("hi") }
+      assert_equal("HI!", r.value)
+      assert_equal("YO!", refined.call("yo"))
+    RUBY
+  end
+
   def test_refined_coverage
     assert_separately(%w[-rcoverage -rtempfile], <<~'RUBY')
       f = Tempfile.open(["refined_coverage", ".rb"])
@@ -672,18 +691,6 @@ class TestProc < Test::Unit::TestCase
       assert_equal(1, lines[6], "line 7 (a = s.length) must be counted when run through the refined copy")
       assert_equal(1, lines[7], "line 8 (s.shout * a) must be counted when run through the refined copy")
     RUBY
-  end
-
-  def test_refined_chain_rejected
-    # Chaining would need merge-or-replace semantics for the refinement sets;
-    # both are confusing, so a refined proc rejects further refined.
-    # Multiple modules can be activated by passing them in a single call.
-    refined = ->(s) { s.shout }.refined(RefinementsModule)
-    assert_raise(ArgumentError) { refined.refined(RefinementsModule2) }
-    # the refinement state survives dup, so the dup is rejected too
-    assert_raise(ArgumentError) { refined.dup.refined(RefinementsModule2) }
-    # the receiver remains usable
-    assert_equal("HI!", refined.call("hi"))
   end
 
   def test_refined_using_in_body_rejected
@@ -737,13 +744,7 @@ class TestProc < Test::Unit::TestCase
     end
   end
 
-  def test_refined_nested_proc_is_not_a_chain
-    # A Proc created lexically INSIDE a refined Proc is not itself "a
-    # Proc that already has refinements": it only inherits the enclosing
-    # refinements lexically.  refined (and define_method) must therefore
-    # be accepted on it, and the inner Proc must see both the enclosing
-    # refinement and the one it adds.  Only the Proc returned by refined
-    # is rejected for chaining.
+  def test_refined_nested_proc
     result = -> {
       inner = ->(s, n) { [s.shout, n.doubled] }
       inner.refined(RefinementsStringOnly).call("hi", 3)
@@ -757,6 +758,75 @@ class TestProc < Test::Unit::TestCase
     assert_nothing_raised do
       -> { Class.new { define_method(:m, ->(s) { s }) } }.refined(RefinementsIntegerOnly).call
     end
+  end
+
+  def test_refined_chain
+    refined = ->(s, n) { [s.shout, n.doubled] }.refined(RefinementsStringOnly).refined(RefinementsIntegerOnly)
+    assert_equal(["HI!", 6], refined.call("hi", 3))
+
+    refined2 = ->(s) { s.shout }.refined(RefinementsModule).refined(RefinementsModule2)
+    assert_equal("?", refined2.call("hi"))
+    refined3 = ->(s) { s.shout }.refined(RefinementsModule2).refined(RefinementsModule)
+    assert_equal("HI!", refined3.call("hi"))
+  end
+
+  def test_refined_chain_after_call
+    # The block of a Proc that has already run is the copy it is running, so
+    # chaining from it must not hand that copy to the new Proc: the two have
+    # different refinements for the same method.
+    pr = ->(s) { s.shout }
+    p1 = pr.refined(RefinementsModule)
+    assert_equal("HI!", p1.call("hi"))
+    p2 = p1.refined(RefinementsModule2)
+    assert_equal("?", p2.call("hi"))
+    assert_equal("HI!", p1.call("hi"))
+  end
+
+  def test_refined_inner_proc_after_call
+    # Likewise for a Proc created inside a refined Proc: its block is part of
+    # the enclosing copy.
+    outer = -> {
+      inner = ->(s) { s.shout }
+      [inner.refined(RefinementsModule2).call("hi"), inner.call("hi")]
+    }.refined(RefinementsModule)
+    assert_equal(["?", "HI!"], outer.call)
+  end
+
+  def test_refined_eq_and_hash
+    # Equality and hash come from what the Proc was built from (block, captured
+    # cref, modules), so they do not depend on whether the deferred copy has
+    # been made yet, and never alias a refined Proc with its source.
+    prc = ->(s) { s.shout }
+    rp = prc.refined(RefinementsModule)
+    rq = prc.refined(RefinementsModule2)
+    rr = prc.refined(RefinementsModule)
+    assert_not_equal(prc, rp)
+    assert_not_equal(rp, rq)
+    assert_equal(rp, rr)
+    assert_equal(rp.hash, rr.hash)
+    hash_before = rp.hash
+    rp.call("hi")
+    assert_equal(hash_before, rp.hash, "hash must not change on the first call")
+    assert_equal(rp, rr, "equality must not change on the first call")
+    assert_not_equal(prc, rp)
+    h = { prc => 1, rp => 2 }
+    assert_equal(2, h.size)
+    assert_equal(2, h[rr])
+  end
+
+  def test_refined_first_call_error_in_fiber
+    # The deferred copy runs inside the fiber's tag: an exception raised there
+    # (here from a Warning.warn override) must come out of Fiber#resume.
+    assert_separately([], <<~'RUBY')
+      module M1; refine(String) { def shout = "1" }; end
+      module M2; refine(String) { def shout = "2" }; end
+      Warning[:performance] = true
+      def Warning.warn(msg, category: nil) = raise "boom"
+      pr = ->(s) { s.shout }
+      pr.refined(M1).call("hi")
+      q = pr.refined(M2) # the first call will warn about the memo miss
+      assert_raise_with_message(RuntimeError, "boom") { Fiber.new(&q).resume("hi") }
+    RUBY
   end
 
   def test_refined_gc
@@ -822,12 +892,24 @@ class TestProc < Test::Unit::TestCase
     assert_equal("HI!", orig.refined(RefinementsModule).call("hi"))
   end
 
+  def test_refined_memo_replaced_before_first_call
+    # The copy of the block is made on the first call, out of the memo entry
+    # that produced the proc's refinements.  A proc whose entry has since been
+    # replaced by another module set makes its own copy instead.
+    orig = ->(s) { s.shout }
+    q1 = orig.refined(RefinementsModule)
+    q2 = orig.refined(RefinementsModule2) # replaces the memo entry
+    assert_equal("?", q2.call("hi"))
+    assert_equal("HI!", q1.call("hi"))
+  end
+
   def test_refined_ruby2_keywords_memo
     # Proc#ruby2_keywords marks the shared block iseq, possibly after a copy
     # was memoized.  The stale memo is rebuilt (with a warning naming the
     # cause) rather than reused or mutated: the new proc delegates keywords
-    # like its source, while procs built before the mark keep their
-    # creation-time behavior.
+    # like its source, while a proc already running a copy keeps it.  A proc
+    # that has not been called yet has no copy of its own, so it picks the mark
+    # up like any other proc made from the same block.
     assert_separately([], <<~'RUBY')
       module M; refine(String) { def shout = upcase + "!" }; end
       Warning[:performance] = true
@@ -835,17 +917,48 @@ class TestProc < Test::Unit::TestCase
       def Warning.warn(msg, category: nil) = $warned << msg
       target = ->(a, k: nil) { [a, k] }
       pr = proc { |*args| target.call(*args) }
-      q1 = pr.refined(M) # memoize a copy before the mark
+      q1 = pr.refined(M)
+      assert_raise(ArgumentError) { q1.call(1, k: 2) } # memoizes a copy before the mark
       pr.ruby2_keywords
       assert_equal([1, 2], pr.call(1, k: 2))
       q2 = pr.refined(M)
       assert_equal([1, 2], q2.call(1, k: 2))
       assert_equal(1, $warned.grep(/ruby2_keywords/).size)
-      # the copy made before the mark is not retroactively changed
+      # the copy q1 is running is not retroactively changed
       assert_raise(ArgumentError) { q1.call(1, k: 2) }
       # the rebuilt memo is hit from now on; no further warnings
       assert_equal([1, 2], pr.refined(M).call(1, k: 2))
       assert_equal(1, $warned.grep(/ruby2_keywords/).size)
+    RUBY
+  end
+
+  def test_refined_ruby2_keywords_does_not_leak_to_siblings
+    # Proc#ruby2_keywords on a refined Proc marks a copy of its own, since its
+    # block may be the memoized copy shared with sibling Procs, or, before the
+    # first call, the source block itself.
+    assert_separately([], <<~'RUBY')
+      module M; refine(String) { def shout = upcase + "!" }; end
+      Warning[:performance] = true
+      $warned = []
+      def Warning.warn(msg, category: nil) = $warned << msg
+      target = ->(a, k: nil) { [a, k] }
+      pr = proc { |*args| target.call(*args) }
+      q1 = pr.refined(M)
+      q2 = pr.refined(M)
+      q1.call(1); q2.call(1) # both run the memoized copy
+      q1.ruby2_keywords
+      assert_equal([1, 2], q1.call(1, k: 2))
+      assert_raise(ArgumentError) { q2.call(1, k: 2) }
+      assert_raise(ArgumentError) { pr.call(1, k: 2) }
+      # the memoized copy is untouched, so new procs neither warn nor delegate
+      $warned.clear
+      assert_raise(ArgumentError) { pr.refined(M).call(1, k: 2) }
+      assert_equal([], $warned)
+      # likewise before the first call: the mark must not reach the source
+      r1 = pr.refined(M)
+      r1.ruby2_keywords
+      assert_equal([1, 2], r1.call(1, k: 2))
+      assert_raise(ArgumentError) { pr.call(1, k: 2) }
     RUBY
   end
 
@@ -866,16 +979,16 @@ class TestProc < Test::Unit::TestCase
 
   def test_refined_memo_avoids_recopy
     orig = ->(s) { s.shout }
-    orig.refined(RefinementsModule) # warm the memo
+    orig.refined(RefinementsModule).call("hi") # warm the memo
     GC.disable
     begin
       before = GC.stat(:total_allocated_objects)
-      100.times { orig.refined(RefinementsModule) }
+      100.times { orig.refined(RefinementsModule).call("hi") }
       hits = GC.stat(:total_allocated_objects) - before
 
       before = GC.stat(:total_allocated_objects)
       100.times do |i|
-        orig.refined(i.even? ? RefinementsModule : RefinementsModule2)
+        orig.refined(i.even? ? RefinementsModule : RefinementsModule2).call("hi")
       end
       misses = GC.stat(:total_allocated_objects) - before
     ensure
@@ -894,9 +1007,66 @@ class TestProc < Test::Unit::TestCase
       $warned = []
       def Warning.warn(msg, category: nil) = $warned << msg
       pr = ->(s) { s.shout }
-      pr.refined(M1)
-      pr.refined(M2) # evicts the M1 entry
+      pr.refined(M1).call("hi")
+      pr.refined(M2).call("hi") # evicts the M1 entry
       assert_equal(1, $warned.grep(/different modules/).size)
+      # nothing is memoized until the copy is made, so creating the procs
+      # without calling them warns about nothing
+      $warned.clear
+      pr.refined(M1)
+      pr.refined(M2)
+      assert_equal([], $warned)
+    RUBY
+  end
+
+  def test_refined_memo_shared_by_procs_built_before_first_call
+    # Procs built before any of them ran hold equal but distinct recipes; the
+    # first call must still share one copy among them, without the
+    # different-modules warning.
+    assert_separately([], <<~'RUBY')
+      module M1; refine(String) { def shout = "1" }; end
+      Warning[:performance] = true
+      $warned = []
+      def Warning.warn(msg, category: nil) = $warned << msg
+      pr = ->(s) { s.shout }
+      procs = 5.times.map { pr.refined(M1) }
+      procs.each { |q| assert_equal("1", q.call("hi")) }
+      assert_equal([], $warned)
+    RUBY
+  end
+
+  def test_refined_chain_memoized
+    # A chain is memoized as a whole: the recipe of the last link carries the
+    # modules of all of them, so it shares its memo entry with a single call of
+    # the same modules, and repeating the chain hits it.
+    assert_separately([], <<~'RUBY')
+      module M1; refine(String) { def shout = upcase }; end
+      module M2; refine(Integer) { def dbl = self * 2 }; end
+      Warning[:performance] = true
+      $warned = []
+      def Warning.warn(msg, category: nil) = $warned << msg
+      pr = ->(s, i) { [s.shout, i.dbl] }
+      3.times { assert_equal(["A", 2], pr.refined(M1).refined(M2).call("a", 1)) }
+      assert_equal(["A", 2], pr.refined(M1, M2).call("a", 1))
+      assert_equal([], $warned)
+    RUBY
+  end
+
+  def test_refined_chain_warning
+    # Only a block that is already a copy is left out of the memo.
+    assert_separately([], <<~'RUBY')
+      module M1; refine(String) { def shout = "1" }; end
+      module M2; refine(String) { def shout = "2" }; end
+      Warning[:performance] = true
+      $warned = []
+      def Warning.warn(msg, category: nil) = $warned << msg
+      pr = ->(s) { s.shout }
+      p1 = pr.refined(M1)
+      p1.refined(M2)
+      assert_equal([], $warned)
+      p1.call("hi") # p1 now runs its copy
+      assert_equal("2", p1.refined(M2).call("hi"))
+      assert_equal(1, $warned.grep(/already copied/).size)
     RUBY
   end
 
@@ -1061,8 +1231,6 @@ class TestProc < Test::Unit::TestCase
   def test_refined_preserved_by_clone
     refined = ->(s) { s.shout }.refined(RefinementsModule)
     assert_equal("Z!", refined.clone.call("z"))
-    # the refinement state survives clone, so chaining on the clone is rejected too
-    assert_raise(ArgumentError) { refined.clone.refined(RefinementsModule2) }
   end
 
   def test_refined_module_precedence

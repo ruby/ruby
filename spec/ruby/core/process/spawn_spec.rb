@@ -773,6 +773,23 @@ describe "Process.spawn" do
     -> { Process.spawn("echo", nonesuch: :foo) }.should.raise(ArgumentError)
   end
 
+  it "raises an ArgumentError if :unsetenv_others option is not a boolean or nil" do
+    -> { Process.spawn("true", unsetenv_others: 1) }.should.raise(ArgumentError, /expected true or false/)
+    -> { Process.spawn("true", unsetenv_others: "true") }.should.raise(ArgumentError, /expected true or false/)
+  end
+
+  it "raises an ArgumentError if :close_others option is not a boolean or nil" do
+    -> { Process.spawn("true", close_others: 1) }.should.raise(ArgumentError, /expected true or false/)
+    -> { Process.spawn("true", close_others: "true") }.should.raise(ArgumentError, /expected true or false/)
+  end
+
+  platform_is :windows do
+    it "raises an ArgumentError if :new_pgroup option is not a boolean or nil" do
+      -> { Process.spawn("true", new_pgroup: 1) }.should.raise(ArgumentError, /expected true or false/)
+      -> { Process.spawn("true", new_pgroup: "true") }.should.raise(ArgumentError, /expected true or false/)
+    end
+  end
+
   platform_is_not :windows, :aix do
     describe "with Integer option keys" do
       before :each do

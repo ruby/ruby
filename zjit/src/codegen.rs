@@ -23,14 +23,14 @@ use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_fo
 use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
-use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
+use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, InlineDepth, PerfMap, DEFAULT_MAX_VERSIONS};
 use crate::cast::IntoUsize;
 
 /// Maximum number of compiled versions per ISEQ.
-/// Configurable via --zjit-max-versions (default: 2).
+/// Configurable via --zjit-max-versions.
 pub fn max_iseq_versions() -> usize {
     unsafe { crate::options::OPTIONS.as_ref() }
         .map_or(DEFAULT_MAX_VERSIONS, |opts| opts.max_versions)
@@ -447,7 +447,9 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
             // Compile all parameters
             for (idx, &insn_id) in block.params().enumerate() {
-                match function.find(insn_id) {
+                let insn_id = function.find_id(insn_id);
+                // Param does not have operands, so fake a ResolvedInsnId.
+                match crate::hir::ResolvedInsnId(insn_id).insn(function) {
                     Insn::Param => {
                         jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx));
                     },
@@ -459,7 +461,9 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             // so that calling convention registers are reserved early, like Param.
             if function.is_entry_block(block_id) {
                 for &insn_id in block.insns() {
-                    if let Insn::LoadArg { idx, .. } = function.find(insn_id) {
+                    let insn_id = function.find_id(insn_id);
+                    // Param does not have operands, so fake a ResolvedInsnId.
+                    if let &Insn::LoadArg { idx, .. } = crate::hir::ResolvedInsnId(insn_id).insn(function) {
                         jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx as usize));
                     }
                 }
@@ -976,7 +980,7 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, function: &Function,
     asm.patch_point(Target::SideExit(Box::new(SideExitTarget { exit, reason: PatchPoint(invariant) })), invariant, jit.version);
 }
 
-/// This is used by scratch_split to lower PatchPoint into PadPatchPoint and PosMarker.
+/// This is used by scratch_split to lower PatchPoint into PatchPointPad and PosMarker.
 /// It's called at scratch_split so that we can use the Label after side-exit deduplication in compile_exits.
 pub fn split_patch_point(asm: &mut Assembler, target: &Target, invariant: Invariant, version: IseqVersionRef) {
     let Target::Label(exit_label) = *target else {
@@ -984,7 +988,7 @@ pub fn split_patch_point(asm: &mut Assembler, target: &Target, invariant: Invari
     };
 
     // Fill nop instructions if the last patch point is too close.
-    asm.pad_patch_point();
+    asm.patch_point_pad();
 
     // Remember the current address as a patch point
     asm.pos_marker(move |code_ptr, cb| {
@@ -2471,11 +2475,11 @@ fn gen_new_hash(
     if elements.is_empty() {
         gen_prepare_leaf_call_with_gc(asm, state);
 
-        let alloc_size = unsafe { rb_zjit_hash_new_size() };
-        let flags = RUBY_T_HASH as u64;
+        let mut flags = VALUE(0);
+        let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags) };
         let klass = unsafe { rb_cHash };
 
-        gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass,
+        gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.into(), klass,
             |asm, hash| {
                 asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
             },
@@ -2490,11 +2494,11 @@ fn gen_new_hash(
 
         let num_pairs = elements.len() / 2;
         let hash = if num_pairs <= RUBY_RHASH_AR_TABLE_MAX_SIZE as usize {
-            let alloc_size = unsafe { rb_zjit_hash_new_size() };
-            let flags = RUBY_T_HASH as u64;
+            let mut flags = VALUE(0);
+            let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags) };
             let klass = unsafe { rb_cHash };
 
-            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass,
+            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.into(), klass,
                 |asm, hash| {
                     asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
                 },
@@ -3103,15 +3107,15 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
 }
 
 /// Compile an identity check with a side exit
-fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, expected: crate::hir::Const, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
+fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, expected: hir::Const, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
     if matches!(reason, SideExitReason::GuardShape(_) ) {
         gen_incr_counter(asm, Counter::guard_shape_count);
     }
     let expected_opnd: Opnd = match expected {
-        crate::hir::Const::Value(v) => { Opnd::Value(v) }
-        crate::hir::Const::CInt64(v) => { v.into() }
-        crate::hir::Const::CPtr(v) => { Opnd::const_ptr(v) }
-        crate::hir::Const::CShape(v) => { Opnd::UImm(v.0 as u64) }
+        hir::Const::Value(v) => { Opnd::Value(v) }
+        hir::Const::CInt64(v) => { v.into() }
+        hir::Const::CPtr(v) => { Opnd::const_ptr(v) }
+        hir::Const::CShape(v) => { Opnd::UImm(v.0 as u64) }
         _ => panic!("gen_guard_bit_equals: unexpected hir::Const {expected:?}"),
     };
     asm.cmp(val, expected_opnd);
@@ -3119,18 +3123,18 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, function: &Func
     val
 }
 
-fn mask_to_opnd(mask: crate::hir::Const) -> Option<Opnd> {
+fn mask_to_opnd(mask: hir::Const) -> Option<Opnd> {
     match mask {
-        crate::hir::Const::CUInt8(v) => Some(Opnd::UImm(v as u64)),
-        crate::hir::Const::CUInt16(v) => Some(Opnd::UImm(v as u64)),
-        crate::hir::Const::CUInt32(v) => Some(Opnd::UImm(v as u64)),
-        crate::hir::Const::CUInt64(v) => Some(Opnd::UImm(v)),
+        hir::Const::CUInt8(v) => Some(Opnd::UImm(v as u64)),
+        hir::Const::CUInt16(v) => Some(Opnd::UImm(v as u64)),
+        hir::Const::CUInt32(v) => Some(Opnd::UImm(v as u64)),
+        hir::Const::CUInt64(v) => Some(Opnd::UImm(v)),
         _ => None
     }
 }
 
 /// Compile a bitmask check with a side exit if none of the masked bits are not set
-fn gen_guard_any_bit_set(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, mask: crate::hir::Const, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
+fn gen_guard_any_bit_set(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, mask: hir::Const, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
     let mask_opnd = mask_to_opnd(mask).unwrap_or_else(|| panic!("gen_guard_any_bit_set: unexpected hir::Const {mask:?}"));
     asm.test(val, mask_opnd);
     asm.jz(jit, side_exit_with_recompile(jit, function, state, reason, recompile));
@@ -3138,7 +3142,7 @@ fn gen_guard_any_bit_set(jit: &mut JITState, asm: &mut Assembler, function: &Fun
 }
 
 /// Compile a bitmask check with a side exit if any of the masked bits are set
-fn gen_guard_no_bits_set(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, mask: crate::hir::Const, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
+fn gen_guard_no_bits_set(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, mask: hir::Const, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
     let mask_opnd = mask_to_opnd(mask).unwrap_or_else(|| panic!("gen_guard_no_bits_set: unexpected hir::Const {mask:?}"));
     asm.test(val, mask_opnd);
     asm.jnz(jit, side_exit(jit, function, state, reason));
@@ -3521,10 +3525,10 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
         return Err(CompileError::IseqStackTooLarge);
     }
 
-    let hir = trace_compile_phase("build_hir", ||
+    let function = trace_compile_phase("build_hir", ||
         crate::stats::with_time_stat(Counter::compile_hir_build_time_ns, || iseq_to_hir(iseq))
     );
-    let mut function = match hir {
+    let mut function = match function {
         Ok(function) => function,
         Err(err) => {
             debug!("ZJIT: iseq_to_hir: {err:?}: {}", iseq_get_location(iseq, 0));
@@ -3553,6 +3557,7 @@ fn side_exit_with_recompile(jit: &JITState, function: &Function, state: &FrameSt
     let mut exit = build_side_exit(jit, function, state);
     exit.recompile = recompile.map(|_| SideExitRecompile {
         compiled_iseq: Opnd::Value(VALUE::from(jit.iseq())),
+        frame_iseq: Opnd::Value(VALUE::from(state.iseq)),
         insn_idx: state.insn_idx() as u32,
     });
     Target::SideExit(Box::new(SideExitTarget { exit, reason }))
@@ -3619,7 +3624,14 @@ c_callable! {
     /// of inlined code, the inliner folds the callee's body into the outer ISEQ, so
     /// the outer ISEQ's version holds the failing guard and must be invalidated to
     /// force a recompile. For non-inlined code, it is the same as the frame ISEQ.
-    pub(crate) fn exit_recompile(ec: EcPtr, compiled_iseq_raw: VALUE) {
+    ///
+    /// `frame_iseq_raw` and `insn_idx` identify the instruction this exit came from,
+    /// whose re-profiling gates the recompile. Both are baked in at compile time,
+    /// where the exit already knows them, rather than read back out of the control
+    /// frame: the control frame describes the exiting frame only because the exit
+    /// wrote its ISEQ and PC there moments earlier, and an exit path that does not
+    /// write them would silently gate the recompile on an unrelated instruction.
+    pub(crate) fn exit_recompile(compiled_iseq_raw: VALUE, frame_iseq_raw: VALUE, insn_idx: u32) {
         // Fast check before taking the VM lock: skip if the compiled unit is already
         // invalidated or at the version limit. This avoids expensive lock acquisition
         // on every shape guard exit after the recompile has already been triggered.
@@ -3639,7 +3651,8 @@ c_callable! {
             let compiled_iseq: IseqPtr = compiled_iseq_raw.as_iseq();
 
             let should_recompile = with_time_stat(Counter::profile_time_ns, || {
-                crate::profile::profile_recompile_insn(ec)
+                get_or_create_iseq_payload(frame_iseq_raw.as_iseq())
+                    .profile.done_profiling_at(insn_idx as YarvInsnIdx)
             });
 
             // Once we have enough profiles, invalidate the compiled unit so it
@@ -3964,6 +3977,10 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
 
     asm_comment!(asm, "clear JITFrame materialized by exit code");
     asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+    // Clear cfp->block_code since it may have been left uninitialized by JITFrame mechanisms.
+    // Zero is the right value because we're dealing with the top most frame.
+    // Non-zero values are only set before pushing a frame.
+    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
 
     asm_comment!(asm, "materialize ZJIT frames");
     asm_ccall!(asm, rb_zjit_materialize_frames, EC, CFP);
@@ -4062,7 +4079,49 @@ fn gen_string_setbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd, val
 
 fn gen_string_append(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, val: Opnd, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, function, state);
-    asm_ccall!(asm, rb_str_buf_append, string, val)
+
+    // Test if string encodings differ. If different, use rb_str_buf_append. If the same,
+    // use rb_jit_str_simple_append, which calls rb_str_cat.
+    asm_comment!(asm, "<< on strings");
+
+    // Take receiver's object flags XOR arg's flags. If any
+    // string-encoding flags are different between the two,
+    // the encodings don't match.
+    let string_reg = asm.load_mem(string);
+    let val_reg = asm.load_mem(val);
+    let flags_xor = asm.xor(
+        Opnd::mem(VALUE_BITS, string_reg, RUBY_OFFSET_RBASIC_FLAGS),
+        Opnd::mem(VALUE_BITS, val_reg, RUBY_OFFSET_RBASIC_FLAGS)
+    );
+    asm.test(flags_xor, Opnd::UImm(RUBY_ENCODING_MASK as u64));
+
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let mismatch_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let mismatch_edge = Target::Block(Box::new(lir::BranchEdge { target: mismatch_block, args: vec![] }));
+    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let result_edge = Target::Block(Box::new(lir::BranchEdge { target: result_block, args: vec![] }));
+
+    asm.jnz(jit, mismatch_edge);
+
+    // If encodings match, call the simple append function
+    asm_ccall!(asm, rb_jit_str_simple_append, string, val);
+    asm.jmp(result_edge.clone());
+
+    // If encodings are different, use a slower encoding-aware concatenate
+    asm.set_current_block(mismatch_block);
+    let label = jit.get_label(asm, mismatch_block, hir_block_id);
+    asm.write_label(label);
+    asm_ccall!(asm, rb_str_buf_append, string, val);
+    asm.jmp(result_edge);
+
+    // Join block
+    asm.set_current_block(result_block);
+    let label = jit.get_label(asm, result_block, hir_block_id);
+    asm.write_label(label);
+
+    // Either append function returns the receiver
+    string
 }
 
 fn gen_string_append_codepoint(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, val: Opnd, state: &FrameState) -> Opnd {

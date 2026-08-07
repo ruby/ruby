@@ -13,20 +13,16 @@
 **********************************************************************/
 
 #include "internal.h"
-#include "internal/class.h"
-#include "internal/compilers.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
+#include "internal/objspace.h"
 #include "internal/sanitizers.h"
 #include "ruby/io.h"
 #include "ruby/re.h"
 #include "ruby/st.h"
 #include "symbol.h"
-
-#undef rb_funcall
-
-#include "ruby/ruby.h"
+#include "objspace.h"
 
 /*
  *  call-seq:

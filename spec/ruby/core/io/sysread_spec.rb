@@ -52,7 +52,9 @@ describe "IO#sysread on a file" do
 
   it "raises an error when called after buffered reads" do
     @file.readline
-    -> { @file.sysread(5) }.should.raise(IOError)
+    -> do
+      @file.sysread(5)
+    end.should.raise(IOError, "sysread for buffered IO")
   end
 
   it "reads normally even when called immediately after a buffered IO#read" do

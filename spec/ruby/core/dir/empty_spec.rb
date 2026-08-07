@@ -28,4 +28,18 @@ describe "Dir.empty?" do
   it "raises ENOENT for nonexistent directories" do
     -> { Dir.empty? tmp("nonexistent") }.should.raise(Errno::ENOENT)
   end
+
+  platform_is :darwin do
+    it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      dir = tmp("dir_empty_\u{3042}")
+      non_utf8_dir = dir.encode(Encoding::Windows_31J)
+
+      begin
+        mkdir_p(dir)
+        Dir.empty?(non_utf8_dir).should == true
+      ensure
+        rm_r dir
+      end
+    end
+  end
 end

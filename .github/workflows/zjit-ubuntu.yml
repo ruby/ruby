@@ -53,6 +53,17 @@ jobs:
       - run: cargo clippy --all-targets --all-features
         working-directory: zjit
 
+  doc-test:
+    name: cargo test --doc
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - run: cargo test --doc
+        working-directory: zjit
+
   make:
     strategy:
       fail-fast: false
@@ -141,7 +152,7 @@ jobs:
           ruby-version: '3.1'
           bundler: none
 
-      - uses: taiki-e/install-action@18b1216eba7f8039b0f8d131d5473787f0edce68 # v2.85.3
+      - uses: taiki-e/install-action@cb33e69fad06166ca28a42b2575e4dadabf62ee8 # v2.85.8
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}

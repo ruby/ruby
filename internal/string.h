@@ -93,6 +93,7 @@ void rb_str_make_embedded(VALUE);
 VALUE rb_str_upto_each(VALUE, VALUE, int, int (*each)(VALUE, VALUE), VALUE);
 size_t rb_str_size_as_embedded(VALUE);
 bool rb_str_reembeddable_p(VALUE);
+bool rb_str_embedded_shared_root_p(VALUE);
 VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
 VALUE rb_str_with_debug_created_info(VALUE, VALUE, int);
 VALUE rb_str_frozen_bare_string(VALUE);

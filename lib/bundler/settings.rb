@@ -504,12 +504,10 @@ module Bundler
     end
 
     def serializer_class
+      # The Bundler gem ships its own copy of Gem::YAMLSerializer, so this
+      # resolves even on RubyGems versions that predate it.
       require "rubygems/yaml_serializer"
       Gem::YAMLSerializer
-    rescue LoadError
-      # TODO: Remove this when RubyGems 3.4 is EOL
-      require_relative "yaml_serializer"
-      YAMLSerializer
     end
 
     FALLBACK_TIMEOUT_URI_OPTION = "fallback_timeout"

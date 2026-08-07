@@ -14,10 +14,13 @@
 #include "internal/class.h"
 #include "internal/error.h"
 #include "internal/object.h"
+#include "internal/proc.h"
+#include "internal/ruby_parser.h"
 #include "internal/vm.h"
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "ruby/encoding.h"
+#include "ruby/internal/intern/io.h"
 #include "vm_core.h"
 #include "zjit.h"
 
@@ -289,18 +292,47 @@ location_cfunc_p(rb_backtrace_location_t *loc)
     }
 }
 
+/* Return the module where the running method body was actually defined.
+ *
+ * For an alias or a method installed via define_method(UnboundMethod), the CME's
+ * owner points at the site where the alias/copy was installed, not where the body
+ * was originally defined. Combined with the method name (taken from the original
+ * definition) that yields a "Class#method" pair which never existed -- e.g. an
+ * alias in a subclass reported as Child#original instead of Parent#original, or
+ * define_method(Original.instance_method(:m)) reported as A#m instead of
+ * Original#m ([Bug #22197]).
+ *
+ * The definition module is recorded once on the (reference-counted, shared)
+ * method definition when the body is first created, so every alias/define_method
+ * copy keeps pointing at the original module.
+ *
+ * The exception is module_function, which installs the instance method's *shared*
+ * def onto the module's singleton class as well: that copy must be labeled as a
+ * class method of the module (M.f), i.e. by its owner. Such a copy is exactly the
+ * one whose owner is the singleton class of the definition module. */
+static VALUE
+location_original_module(const rb_callable_method_entry_t *cme)
+{
+    if (!cme || !cme->def) return Qnil;
+    VALUE owner = cme->owner;
+    VALUE defined_in = cme->def->original_module;
+    if (!defined_in) return owner;
+    if (defined_in != owner &&
+            RB_TYPE_P(owner, T_CLASS) && RCLASS_SINGLETON_P(owner) &&
+            RCLASS_ATTACHED_OBJECT(owner) == defined_in) {
+        return owner;
+    }
+    return defined_in;
+}
+
 static VALUE
 location_label(rb_backtrace_location_t *loc)
 {
     if (location_cfunc_p(loc)) {
-        return rb_gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
+        return rb_gen_method_name(location_original_module(loc->cme), rb_id2str(loc->cme->def->original_id));
     }
     else {
-        VALUE owner = Qnil;
-        if (loc->cme) {
-            owner = loc->cme->owner;
-        }
-        return calculate_iseq_label(owner, loc->iseq);
+        return calculate_iseq_label(location_original_module(loc->cme), loc->iseq);
     }
 }
 /*
@@ -407,7 +439,235 @@ location_node_id(rb_backtrace_location_t *loc)
     }
     return -1;
 }
+
+extern VALUE rb_e_script;
+
+static bool
+location_source_end_marker_p(const uint8_t *line, size_t length)
+{
+    return (length == 7 && memcmp(line, "__END__", 7) == 0) ||
+        (length == 8 && memcmp(line, "__END__\n", 8) == 0) ||
+        (length == 9 && memcmp(line, "__END__\r\n", 9) == 0);
+}
+
+static bool
+location_source_hash_matches(VALUE source, uint64_t source_hash)
+{
+    StringValue(source);
+    const uint8_t *bytes = (const uint8_t *)RSTRING_PTR(source);
+    size_t length = (size_t)RSTRING_LEN(source);
+    size_t line_start = 0;
+    rb_source_hash_state_t state;
+    rb_source_hash_init(&state);
+
+    for (size_t index = 0; index < length; index++) {
+        if (bytes[index] != '\n') continue;
+
+        size_t line_length = index + 1 - line_start;
+        rb_source_hash_update(&state, bytes + line_start, line_length);
+        if (location_source_end_marker_p(bytes + line_start, line_length) &&
+            rb_source_hash_finalize(&state) == source_hash) {
+            return true;
+        }
+        line_start = index + 1;
+    }
+
+    if (line_start < length) {
+        size_t line_length = length - line_start;
+        rb_source_hash_update(&state, bytes + line_start, line_length);
+        if (location_source_end_marker_p(bytes + line_start, line_length) &&
+            rb_source_hash_finalize(&state) == source_hash) {
+            return true;
+        }
+    }
+
+    return rb_source_hash_finalize(&state) == source_hash;
+}
+
+static VALUE
+location_source_read(VALUE io)
+{
+    VALUE source = rb_str_buf_new(0);
+    VALUE line;
+
+    while (!NIL_P(line = rb_io_gets(io))) {
+        rb_str_buf_append(source, line);
+    }
+    return source;
+}
+
+static VALUE
+location_source_read_file(VALUE path)
+{
+    VALUE file = rb_file_open_str(path, "rb");
+    return rb_ensure(location_source_read, file, rb_io_close, file);
+}
+
+static bool
+location_code_location_equal(const rb_code_location_t *left, const rb_code_location_t *right)
+{
+    return left->beg_pos.lineno == right->beg_pos.lineno &&
+        left->beg_pos.column == right->beg_pos.column &&
+        left->end_pos.lineno == right->end_pos.lineno &&
+        left->end_pos.column == right->end_pos.column;
+}
+
+static bool
+iseq_from_e_script_p(const rb_iseq_t *iseq, VALUE path, uint64_t source_hash)
+{
+    if (!RB_TYPE_P(path, T_STRING) ||
+        RSTRING_LEN(path) != 2 ||
+        memcmp(RSTRING_PTR(path), "-e", 2) != 0 ||
+        !RTEST(rb_e_script)) {
+        return false;
+    }
+    if (!location_source_hash_matches(rb_e_script, source_hash)) return false;
+
+    const rb_iseq_t *source_iseq = iseq;
+    for (; source_iseq; source_iseq = ISEQ_BODY(source_iseq)->parent_iseq) {
+        if (ISEQ_BODY(source_iseq)->type == ISEQ_TYPE_EVAL) return false;
+        if (ISEQ_BODY(source_iseq)->type == ISEQ_TYPE_MAIN) return true;
+    }
+
+    int node_id = ISEQ_BODY(iseq)->location.node_id;
+    if (node_id == -1) return false;
+
+    rb_code_location_t source_location;
+    bool found;
+    if (ISEQ_BODY(iseq)->prism) {
+        found = pm_node_source_location(rb_e_script, path, 1, node_id, &source_location);
+    }
+    else {
+        found = rb_ast_node_source_location(
+            rb_e_script,
+            path,
+            1,
+            node_id,
+            ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK,
+            node_id,
+            &source_location
+        );
+    }
+
+    return found && location_code_location_equal(
+        &source_location, &ISEQ_BODY(iseq)->location.code_location);
+}
+
+static int
+location_source_first_lineno(const rb_iseq_t *iseq, VALUE script_lines)
+{
+    const rb_iseq_t *source_iseq = iseq;
+
+    while (ISEQ_BODY(source_iseq)->parent_iseq) {
+        const rb_iseq_t *parent = ISEQ_BODY(source_iseq)->parent_iseq;
+        if (ISEQ_BODY(parent)->variable.script_lines != script_lines) break;
+        source_iseq = parent;
+    }
+
+    return ISEQ_BODY(source_iseq)->location.first_lineno;
+}
 #endif
+
+/*
+ * call-seq:
+ *    location.source_range  -> Ruby::SourceRange
+ *
+ * Returns the Ruby::SourceRange for the Ruby expression associated with this
+ * backtrace location.
+ *
+ * On CRuby, this method re-reads and re-parses the source file to determine
+ * the range. File errors encountered while reading the source are propagated.
+ * RuntimeError is raised if required source location information is
+ * unavailable, or if the source has changed.
+ *
+ * RubyVM.keep_script_lines = true can be used to retain source files in
+ * memory and avoid re-reading them from the filesystem.
+ *
+ * Locations from eval'd code are only available with
+ * RubyVM.keep_script_lines = true.
+ */
+static VALUE
+location_source_range_m(VALUE self)
+{
+#ifdef USE_ISEQ_NODE_ID
+    rb_backtrace_location_t *backtrace_location = location_ptr(self);
+    const rb_iseq_t *iseq = location_iseq(backtrace_location);
+    if (!iseq) {
+        rb_raise(rb_eRuntimeError, "cannot get source range for location without Ruby bytecode");
+    }
+
+    rb_iseq_check(iseq);
+    int node_id = location_node_id(backtrace_location);
+    if (node_id == -1) {
+        rb_raise(rb_eRuntimeError, "cannot get source range for location without a node ID");
+    }
+    if (!ISEQ_BODY(iseq)->has_source_hash) {
+        rb_raise(rb_eRuntimeError, "cannot get source range because the source hash is unavailable");
+    }
+    uint64_t source_hash = ISEQ_BODY(iseq)->source_hash;
+
+    VALUE path = rb_iseq_path(iseq);
+    VALUE absolute_path = rb_iseq_realpath(iseq);
+    VALUE script_lines = ISEQ_BODY(iseq)->variable.script_lines;
+    VALUE source;
+    VALUE parser_path = path;
+    int first_lineno = 1;
+
+    if (!NIL_P(script_lines)) {
+        source = rb_ary_join(script_lines, Qnil);
+        first_lineno = location_source_first_lineno(iseq, script_lines);
+    }
+    else if (iseq_from_e_script_p(iseq, path, source_hash)) {
+        source = rb_e_script;
+    }
+    else if (!NIL_P(absolute_path)) {
+        source = location_source_read_file(absolute_path);
+        parser_path = absolute_path;
+    }
+    else {
+        rb_raise(rb_eArgError, "cannot get source range for location in eval");
+    }
+
+    if (NIL_P(parser_path)) {
+        parser_path = rb_str_new_cstr("(eval)");
+    }
+    if (!location_source_hash_matches(source, source_hash)) {
+        rb_raise(rb_eRuntimeError, "source has been modified");
+    }
+
+    rb_code_location_t code_location;
+    bool found;
+
+    if (ISEQ_BODY(iseq)->prism) {
+        found = pm_node_source_location(
+            source,
+            parser_path,
+            first_lineno,
+            node_id,
+            &code_location
+        );
+    }
+    else {
+        found = rb_ast_node_source_location(
+            source,
+            parser_path,
+            first_lineno,
+            node_id,
+            ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK,
+            ISEQ_BODY(iseq)->location.node_id,
+            &code_location
+        );
+    }
+
+    if (!found) {
+        rb_raise(rb_eRuntimeError, "cannot find node ID %d in parsed source", node_id);
+    }
+
+    return rb_source_range_new(path, absolute_path, &code_location);
+#else
+    rb_raise(rb_eRuntimeError, "cannot get source range because node IDs are disabled");
+#endif
+}
 
 int
 rb_get_node_id_from_frame_info(VALUE obj)
@@ -482,13 +742,13 @@ location_to_str(rb_backtrace_location_t *loc)
             file = GET_VM()->progname;
             lineno = 0;
         }
-        name = rb_gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
+        name = rb_gen_method_name(location_original_module(loc->cme), rb_id2str(loc->cme->def->original_id));
     }
     else {
         file = rb_iseq_path(loc->iseq);
         lineno = calc_lineno(loc->iseq, loc->pc);
         if (loc->cme) {
-            owner = loc->cme->owner;
+            owner = location_original_module(loc->cme);
         }
         name = calculate_iseq_label(owner, loc->iseq);
     }
@@ -584,6 +844,26 @@ backtrace_alloc_capa(long num_frames, rb_backtrace_t **backtrace)
     VALUE btobj = rb_data_typed_object_zalloc(rb_cBacktrace, memsize, &backtrace_data_type);
     TypedData_Get_Struct(btobj, rb_backtrace_t, &backtrace_data_type, *backtrace);
     return btobj;
+}
+
+/* Duplicate the backtrace so an exception copy carries no raw pointer to the sender's.
+ * A frame only references shareable iseq / method-entry imemos, so duplicating is safe;
+ * the lazily built strings and location array are regenerated on the receiving side. */
+VALUE
+rb_backtrace_dup(VALUE btobj)
+{
+    rb_backtrace_t *src, *dst;
+    TypedData_Get_Struct(btobj, rb_backtrace_t, &backtrace_data_type, src);
+
+    VALUE dupobj = backtrace_alloc_capa(src->backtrace_size, &dst);
+    dst->backtrace_size = src->backtrace_size;
+    MEMCPY(dst->backtrace, src->backtrace, rb_backtrace_location_t, src->backtrace_size);
+    for (int i = 0; i < dst->backtrace_size; i++) {
+        const rb_backtrace_location_t *fi = &dst->backtrace[i];
+        if (fi->cme) RB_OBJ_WRITTEN(dupobj, Qundef, (VALUE)fi->cme);
+        if (fi->iseq) RB_OBJ_WRITTEN(dupobj, Qundef, (VALUE)fi->iseq);
+    }
+    return dupobj;
 }
 
 
@@ -1530,6 +1810,7 @@ Init_vm_backtrace(void)
     rb_define_method(rb_cBacktraceLocation, "base_label", location_base_label_m, 0);
     rb_define_method(rb_cBacktraceLocation, "path", location_path_m, 0);
     rb_define_method(rb_cBacktraceLocation, "absolute_path", location_absolute_path_m, 0);
+    rb_define_method(rb_cBacktraceLocation, "source_range", location_source_range_m, 0);
     rb_define_method(rb_cBacktraceLocation, "to_s", location_to_str_m, 0);
     rb_define_method(rb_cBacktraceLocation, "inspect", location_inspect_m, 0);
 

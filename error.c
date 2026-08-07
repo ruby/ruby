@@ -1587,7 +1587,7 @@ exc_to_s(VALUE exc)
 /* FIXME: Include eval_error.c */
 void rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VALUE highlight, VALUE reverse);
 
-VALUE
+static VALUE
 rb_get_message(VALUE exc)
 {
     VALUE e = rb_check_funcall(exc, id_message, 0, 0);

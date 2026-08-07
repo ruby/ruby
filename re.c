@@ -1080,6 +1080,70 @@ match_set_regs(VALUE match, int num_regs, const OnigPosition *beg, const OnigPos
     rm->num_regs = num_regs;
 }
 
+/* Helpers for carrying a MatchData to another objspace via Ractor#send(move:).  The match's
+ * registers are written out to an onig-independent blob so the original malloc'd area can be
+ * freed, leaving an empty shell behind, and rebuilt from the blob on the receiving side. */
+void *
+rb_match_move_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs_out)
+{
+    struct RMatch *rm = RMATCH(match);
+    int n = rm->num_regs;
+    *regexp_out = rm->regexp;
+    *str_out = rm->str;
+    *num_regs_out = n;
+
+    OnigPosition *blob = ALLOC_N(OnigPosition, n ? 2 * n : 1);
+    const OnigPosition *beg = RMATCH_BEG_PTR(match);
+    const OnigPosition *end = RMATCH_END_PTR(match);
+    for (int i = 0; i < n; i++) {
+        blob[2 * i] = beg[i];
+        blob[2 * i + 1] = end[i];
+    }
+
+    if (FL_TEST_RAW(match, RMATCH_ONIG)) {
+        onig_region_free(&rm->as.onig, 0);
+        memset(&rm->as.onig, 0, sizeof(rm->as.onig));
+        FL_UNSET_RAW(match, RMATCH_ONIG);
+    }
+    if (rm->char_offset) {
+        ruby_xfree(rm->char_offset);
+        rm->char_offset = NULL;
+        rm->char_offset_num_allocated = 0;
+    }
+    return blob;
+}
+
+VALUE
+rb_match_move_alloc(VALUE klass, int num_regs)
+{
+    return match_alloc_n(klass, num_regs);
+}
+
+void
+rb_match_move_load(VALUE match, VALUE regexp, VALUE str, int num_regs, const void *blob_)
+{
+    const OnigPosition *blob = blob_;
+    struct RMatch *rm = RMATCH(match);
+    RB_OBJ_WRITE(match, &rm->str, str);
+    RB_OBJ_WRITE(match, &rm->regexp, regexp);
+
+    OnigPosition *beg = ALLOC_N(OnigPosition, num_regs ? num_regs : 1);
+    OnigPosition *end = ALLOC_N(OnigPosition, num_regs ? num_regs : 1);
+    for (int i = 0; i < num_regs; i++) {
+        beg[i] = blob[2 * i];
+        end[i] = blob[2 * i + 1];
+    }
+    match_set_regs(match, num_regs, beg, end);
+    ruby_xfree(beg);
+    ruby_xfree(end);
+}
+
+void
+rb_match_move_free(void *blob)
+{
+    ruby_xfree(blob);
+}
+
 typedef struct {
     long byte_pos;
     long char_pos;
@@ -1176,8 +1240,8 @@ match_check(VALUE match)
 }
 
 /* :nodoc: */
-static VALUE
-match_init_copy(VALUE obj, VALUE orig)
+VALUE
+rb_match_init_copy(VALUE obj, VALUE orig)
 {
     struct RMatch *rm = RMATCH(obj);
 
@@ -1582,7 +1646,12 @@ rb_match_count(VALUE match)
 static VALUE
 match_alloc_or_reuse(VALUE existing, int num_regs)
 {
+    /* $~ can hold a Ractor::MovedObject: Ractor#send(move: true) hollows the
+     * MatchData out in place and the husk keeps the old RMatch body, so its capa
+     * still reads as reusable.  Reusing it would write RMatch fields into a frozen
+     * T_OBJECT, so check the type before trusting the body. */
     if (!NIL_P(existing) &&
+        RB_TYPE_P(existing, T_MATCH) &&
         !FL_TEST(existing, MATCH_BUSY) &&
         RMATCH(existing)->capa >= num_regs * 2) {
         return existing;
@@ -3830,6 +3899,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
             VALUE l = rb_str_length(str);
             pos += NUM2INT(l);
             if (pos < 0) {
+                rb_backref_set(Qnil);
                 return pos;
             }
         }
@@ -4024,7 +4094,6 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 
     pos = reg_match_pos(re, &str, pos, &result);
     if (pos < 0) {
-        rb_backref_set(Qnil);
         return Qnil;
     }
     rb_match_busy(result);
@@ -5082,7 +5151,7 @@ Init_Regexp(void)
     rb_undef_method(CLASS_OF(rb_cMatch), "new");
     rb_undef_method(CLASS_OF(rb_cMatch), "allocate");
 
-    rb_define_method(rb_cMatch, "initialize_copy", match_init_copy, 1);
+    rb_define_method(rb_cMatch, "initialize_copy", rb_match_init_copy, 1);
     rb_define_method(rb_cMatch, "regexp", match_regexp, 0);
     rb_define_method(rb_cMatch, "names", match_names, 0);
     rb_define_method(rb_cMatch, "size", match_size, 0);
