@@ -714,16 +714,17 @@ fn test_yield_inline_invocation_with_args() {
 
 #[test]
 fn test_yield_with_too_many_args_for_lir() {
-    // `self` + six yield args don't fit in C argument registers, so the direct
-    // block invocation must be rejected instead of emitting an uncompilable CCall.
+    // `self` + eight yield args don't fit in C argument registers (6 on x86_64, 8 on
+    // arm64), so the direct block invocation must be rejected instead of emitting an
+    // uncompilable CCall.
     set_call_threshold(2);
     eval("
-        def foo = yield(1, 2, 3, 4, 5, 6)
-        def test = foo { |a, b, c, d, e, f| a + b + c + d + e + f }
+        def foo = yield(1, 2, 3, 4, 5, 6, 7, 8)
+        def test = foo { |a, b, c, d, e, f, g, h| a + b + c + d + e + f + g + h }
         test
         test
     ");
-    assert_snapshot!(assert_compiles("test"), @"21");
+    assert_snapshot!(assert_compiles("test"), @"36");
 }
 
 #[test]
@@ -1495,12 +1496,14 @@ fn test_send_unexpected_keyword() {
 
 #[test]
 fn test_pos_optional_with_maybe_too_many_args() {
+    // The last call passes 8 args, which together with self exceed the C argument
+    // registers (6 on x86_64, 8 on arm64), so it runs through the dynamic send path.
     assert_snapshot!(inspect("
-        def target(a = 1, b = 2, c = 3, d = 4, e = 5, f:) = [a, b, c, d, e, f]
-        def test = [target(f: 6), target(10, 20, 30, f: 6), target(10, 20, 30, 40, 50, f: 60)]
+        def target(a = 1, b = 2, c = 3, d = 4, e = 5, f = 6, g = 7, h:) = [a, b, c, d, e, f, g, h]
+        def test = [target(h: 8), target(10, 20, 30, h: 8), target(10, 20, 30, 40, 50, 60, 70, h: 80)]
         test
         test
-    "), @"[[1, 2, 3, 4, 5, 6], [10, 20, 30, 4, 5, 6], [10, 20, 30, 40, 50, 60]]");
+    "), @"[[1, 2, 3, 4, 5, 6, 7, 8], [10, 20, 30, 4, 5, 6, 7, 8], [10, 20, 30, 40, 50, 60, 70, 80]]");
 }
 
 #[test]
@@ -1817,69 +1820,9 @@ fn test_invokesuper_to_cfunc_varargs() {
 
 #[test]
 fn test_invokesuper_to_cfunc_with_too_many_args_exits() {
-    unsafe extern "C" fn test_six_args(
-        _self: VALUE,
-        a: VALUE,
-        b: VALUE,
-        c: VALUE,
-        d: VALUE,
-        e: VALUE,
-        f: VALUE,
-    ) -> VALUE {
-        unsafe { rb_ary_new_from_args(6, a, b, c, d, e, f) }
-    }
-
-    with_rubyvm(|| {
-        let superclass = define_class("ZJITSixArgs", unsafe { rb_cObject });
-        unsafe {
-            rb_define_method(
-                superclass,
-                c"six".as_ptr(),
-                Some(std::mem::transmute::<
-                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
-                    unsafe extern "C" fn(VALUE) -> VALUE,
-                >(test_six_args)),
-                6,
-            );
-        }
-    });
-
-    assert_snapshot!(assert_compiles_allowing_exits(r#"
-        class ZJITSixArgsSubclass < ZJITSixArgs
-          def six(a, b, c, d, e, f)
-            super
-          end
-        end
-
-        def test
-          ZJITSixArgsSubclass.new.six(1, 2, 3, 4, 5, 6)
-        end
-
-        test
-        test
-        test
-    "#), @"[1, 2, 3, 4, 5, 6]");
-}
-
-// Repro for the production "Failed to get_opnd(vN)" panic
-// (PriceRs::PricingService#build_rust_adjustment_from_row, introduced by #17186).
-//
-// A regular send to a C method with 7 fixed args is reduced to a CCallWithFrame
-// with recv + 7 = 8 operands, which exceeds C_ARG_OPNDS.len() (6). gen_insn bails
-// with `return Err(*state)`; the caller emits a side exit and `break`s out of the
-// block. But the call's *result* is stored in a local and used in a *later* basic
-// block (the `if` arm here). Because codegen bailed before assigning a LIR operand
-// to the result, compiling that later block calls get_opnd(result) on a None entry
-// and panics. The existing `test_invokesuper_to_cfunc_with_too_many_args_exits` does
-// not catch this because there the call result is the method's tail value and is not
-// referenced past the bailed block.
-//
-// NOTE: This currently ABORTS with `Failed to get_opnd(vN)` (the bug). The snapshot
-// below is the expected behavior once the backend exits cleanly: `flag` is true so
-// `test` returns the cfunc's result, the array [1, 2, 3, 4, 5, 6, 7].
-#[test]
-fn test_ccall_with_frame_too_many_args_result_used_in_later_block() {
-    unsafe extern "C" fn test_seven_args(
+    // `self` + eight args don't fit in C argument registers (6 on x86_64, 8 on arm64),
+    // so the invokesuper to the cfunc must side-exit instead of emitting a CCall.
+    unsafe extern "C" fn test_super_eight_args(
         _self: VALUE,
         a: VALUE,
         b: VALUE,
@@ -1888,28 +1831,93 @@ fn test_ccall_with_frame_too_many_args_result_used_in_later_block() {
         e: VALUE,
         f: VALUE,
         g: VALUE,
+        h: VALUE,
     ) -> VALUE {
-        unsafe { rb_ary_new_from_args(7, a, b, c, d, e, f, g) }
+        unsafe { rb_ary_new_from_args(8, a, b, c, d, e, f, g, h) }
     }
 
     with_rubyvm(|| {
-        let klass = define_class("ZJITSevenArgs", unsafe { rb_cObject });
+        let superclass = define_class("ZJITSuperEightArgs", unsafe { rb_cObject });
+        unsafe {
+            rb_define_method(
+                superclass,
+                c"eight".as_ptr(),
+                Some(std::mem::transmute::<
+                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                    unsafe extern "C" fn(VALUE) -> VALUE,
+                >(test_super_eight_args)),
+                8,
+            );
+        }
+    });
+
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        class ZJITSuperEightArgsSubclass < ZJITSuperEightArgs
+          def eight(a, b, c, d, e, f, g, h)
+            super
+          end
+        end
+
+        def test
+          ZJITSuperEightArgsSubclass.new.eight(1, 2, 3, 4, 5, 6, 7, 8)
+        end
+
+        test
+        test
+        test
+    "#), @"[1, 2, 3, 4, 5, 6, 7, 8]");
+}
+
+// Repro for the production "Failed to get_opnd(vN)" panic
+// (PriceRs::PricingService#build_rust_adjustment_from_row, introduced by #17186).
+//
+// A regular send to a C method with 8 fixed args is reduced to a CCallWithFrame
+// with recv + 8 = 9 operands, which exceeds C_ARG_OPNDS.len() (6 on x86_64, 8 on
+// arm64). gen_insn bails with `return Err(*state)`; the caller emits a side exit and
+// `break`s out of the block. But the call's *result* is stored in a local and used in
+// a *later* basic block (the `if` arm here). Because codegen bailed before assigning
+// a LIR operand to the result, compiling that later block calls get_opnd(result) on a
+// None entry and panics. The existing `test_invokesuper_to_cfunc_with_too_many_args_exits`
+// does not catch this because there the call result is the method's tail value and is
+// not referenced past the bailed block.
+//
+// NOTE: This currently ABORTS with `Failed to get_opnd(vN)` (the bug). The snapshot
+// below is the expected behavior once the backend exits cleanly: `flag` is true so
+// `test` returns the cfunc's result, the array [1, 2, 3, 4, 5, 6, 7, 8].
+#[test]
+fn test_ccall_with_frame_too_many_args_result_used_in_later_block() {
+    unsafe extern "C" fn test_eight_args(
+        _self: VALUE,
+        a: VALUE,
+        b: VALUE,
+        c: VALUE,
+        d: VALUE,
+        e: VALUE,
+        f: VALUE,
+        g: VALUE,
+        h: VALUE,
+    ) -> VALUE {
+        unsafe { rb_ary_new_from_args(8, a, b, c, d, e, f, g, h) }
+    }
+
+    with_rubyvm(|| {
+        let klass = define_class("ZJITEightArgs", unsafe { rb_cObject });
         unsafe {
             rb_define_method(
                 klass,
-                c"seven".as_ptr(),
+                c"eight".as_ptr(),
                 Some(std::mem::transmute::<
-                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
                     unsafe extern "C" fn(VALUE) -> VALUE,
-                >(test_seven_args)),
-                7,
+                >(test_eight_args)),
+                8,
             );
         }
     });
 
     assert_snapshot!(assert_compiles_allowing_exits(r#"
         def test(obj, flag)
-          priceable = obj.seven(1, 2, 3, 4, 5, 6, 7)
+          priceable = obj.eight(1, 2, 3, 4, 5, 6, 7, 8)
           if flag
             priceable
           else
@@ -1917,11 +1925,11 @@ fn test_ccall_with_frame_too_many_args_result_used_in_later_block() {
           end
         end
 
-        obj = ZJITSevenArgs.new
+        obj = ZJITEightArgs.new
         test(obj, true)  # profile receiver class
         test(obj, true)  # compile -> currently panics: Failed to get_opnd(vN)
         test(obj, true)
-    "#), @"[1, 2, 3, 4, 5, 6, 7]");
+    "#), @"[1, 2, 3, 4, 5, 6, 7, 8]");
 }
 
 #[test]
