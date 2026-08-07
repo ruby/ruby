@@ -2107,10 +2107,6 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
                 // may leave it uninitialized for speed. JIT code must update the PC
                 // before entering a non-leaf method (so that `caller` will work),
                 // so only the topmost frame could possibly have an out-of-date PC.
-                // ZJIT doesn't set `cfp->jit_return`, so it's not a reliable signal.
-                // TODO(zjit): lightweight frames potentially makes more than
-                //             the top most frame invalid.
-                //
                 // Avoid passing invalid PC to calc_lineno() to avoid crashing.
                 if (cfp == top && (pc < iseq_encoded || pc > pc_end)) {
                     lines[i] = 0;
