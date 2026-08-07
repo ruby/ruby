@@ -563,7 +563,16 @@ fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
     if fun.likely_a(recv, types::StringExact, state) && fun.likely_a(other, types::String, state) {
         let recv = fun.coerce_to(block, recv, types::StringExact, state);
         let other = fun.coerce_to(block, other, types::String, state);
-        let _ = fun.push_insn(block, hir::Insn::StringAppend { recv, other, state });
+        // Compute whether the two strings' encodings match in HIR, so that optimizer
+        // passes can see the flag loads and fold the check when encodings are known.
+        // StringAppend picks the append function off the result at run time.
+        let mask = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CUInt64(RUBY_ENCODING_MASK as u64) });
+        let recv_flags = fun.load_rbasic_flags(block, recv);
+        let recv_enc = fun.push_insn(block, hir::Insn::IntAnd { left: recv_flags, right: mask });
+        let other_flags = fun.load_rbasic_flags(block, other);
+        let other_enc = fun.push_insn(block, hir::Insn::IntAnd { left: other_flags, right: mask });
+        let encodings_match = fun.push_insn(block, hir::Insn::IsBitEqual { left: recv_enc, right: other_enc });
+        let _ = fun.push_insn(block, hir::Insn::StringAppend { recv, other, encodings_match, state });
         return Some(recv);
     }
     if fun.likely_a(recv, types::StringExact, state) && fun.likely_a(other, types::Fixnum, state) {

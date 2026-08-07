@@ -13148,7 +13148,13 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
           v29:StringExact = GuardType v12, StringExact recompile
           v30:String = GuardType v13, String
-          v31:StringExact = StringAppend v29, v30
+          v31:CUInt64[532676608] = Const CUInt64(532676608)
+          v32:CUInt64 = LoadField v29, :RBASIC_FLAGS@0x1040
+          v33:CInt64 = IntAnd v32, v31
+          v34:CUInt64 = LoadField v30, :RBASIC_FLAGS@0x1040
+          v35:CInt64 = IntAnd v34, v31
+          v36:CBool = IsBitEqual v33, v35
+          v37:StringExact = StringAppend v29, v30, encodings_match: v36
           CheckInterrupts
           Return v29
         ");
@@ -13214,7 +13220,13 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
           v29:StringExact = GuardType v12, StringExact recompile
           v30:String = GuardType v13, String
-          v31:StringExact = StringAppend v29, v30
+          v31:CUInt64[532676608] = Const CUInt64(532676608)
+          v32:CUInt64 = LoadField v29, :RBASIC_FLAGS@0x1040
+          v33:CInt64 = IntAnd v32, v31
+          v34:CUInt64 = LoadField v30, :RBASIC_FLAGS@0x1040
+          v35:CInt64 = IntAnd v34, v31
+          v36:CBool = IsBitEqual v33, v35
+          v37:StringExact = StringAppend v29, v30, encodings_match: v36
           CheckInterrupts
           Return v29
         ");
@@ -15043,13 +15055,19 @@ mod hir_opt_tests {
           v28:StringExact = StringCopy v27
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
-          v50:StringExact = StringAppend v17, v28
+          v50:CUInt64[532676608] = Const CUInt64(532676608)
+          v51:CUInt64 = LoadField v17, :RBASIC_FLAGS@0x1040
+          v52:CInt64 = IntAnd v51, v50
+          v53:CUInt64 = LoadField v28, :RBASIC_FLAGS@0x1040
+          v54:CInt64 = IntAnd v53, v50
+          v55:CBool = IsBitEqual v52, v54
+          v56:StringExact = StringAppend v17, v28, encodings_match: v55
           PatchPoint NoEPEscape(test)
           PatchPoint NoSingletonClass(String@0x1008)
-          PatchPoint MethodRedefined(String@0x1008, ==@0x1040, cme:0x1048)
-          v55:BoolExact = StringEqual v17, v22
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1041, cme:0x1048)
+          v61:BoolExact = StringEqual v17, v22
           CheckInterrupts
-          Return v55
+          Return v61
         ");
     }
 
