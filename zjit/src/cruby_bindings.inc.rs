@@ -1259,6 +1259,7 @@ pub struct rb_iseq_constant_body__bindgen_ty_1 {
     pub script_lines: VALUE,
     pub coverage: VALUE,
     pub pc2branchindex: VALUE,
+    pub pc2branchindex_cache: VALUE,
     pub original_iseq: *mut VALUE,
 }
 #[repr(C)]

@@ -802,6 +802,7 @@ get_event_id(rb_event_flag_t event)
         C(fiber_switch, FIBER_SWITCH);
         C(script_compiled, SCRIPT_COMPILED);
         C(rescue, RESCUE);
+        C(branch, COVERAGE_BRANCH);
 #undef C
       default:
         return 0;
@@ -944,6 +945,7 @@ symbol2event_flag(VALUE v)
     C(fiber_switch, FIBER_SWITCH);
     C(script_compiled, SCRIPT_COMPILED);
     C(rescue, RESCUE);
+    C(branch, COVERAGE_BRANCH);
 
     /* joke */
     C(a_call, A_CALL);
@@ -1276,6 +1278,61 @@ tracepoint_attr_instruction_sequence(rb_execution_context_t *ec, VALUE tpval)
     return rb_tracearg_instruction_sequence(get_trace_arg());
 }
 
+static VALUE
+get_branch_info_pair(rb_trace_arg_t *trace_arg)
+{
+    if (!(trace_arg->event & RUBY_EVENT_COVERAGE_BRANCH)) {
+        rb_raise(rb_eRuntimeError, "not available for this event");
+    }
+
+    const rb_control_frame_t *cfp = trace_arg->cfp;
+    const rb_iseq_t *iseq = cfp->iseq;
+    if (!iseq) return Qnil;
+
+    VALUE pc2bi = ISEQ_PC2BRANCHINDEX(iseq);
+    if (!pc2bi) return Qnil;
+
+    long pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded - 1;
+    if (pc < 0 || pc >= RARRAY_LEN(pc2bi)) return Qnil;
+
+    VALUE idx_val = RARRAY_AREF(pc2bi, pc);
+    if (NIL_P(idx_val)) return Qnil;
+    long counter_idx = FIX2LONG(idx_val);
+
+    VALUE cache = ISEQ_PC2BRANCHINFO(iseq);
+    if (!RB_TYPE_P(cache, T_ARRAY) || counter_idx >= RARRAY_LEN(cache)) return Qnil;
+
+    return RARRAY_AREF(cache, counter_idx);
+}
+
+VALUE
+rb_tracearg_branch_src(rb_trace_arg_t *trace_arg)
+{
+    VALUE pair = get_branch_info_pair(trace_arg);
+    if (NIL_P(pair)) return Qnil;
+    return RARRAY_AREF(pair, 0);
+}
+
+VALUE
+rb_tracearg_branch_dst(rb_trace_arg_t *trace_arg)
+{
+    VALUE pair = get_branch_info_pair(trace_arg);
+    if (NIL_P(pair)) return Qnil;
+    return RARRAY_AREF(pair, 1);
+}
+
+static VALUE
+tracepoint_attr_branch_src(rb_execution_context_t *ec, VALUE tpval)
+{
+    return rb_tracearg_branch_src(get_trace_arg());
+}
+
+static VALUE
+tracepoint_attr_branch_dst(rb_execution_context_t *ec, VALUE tpval)
+{
+    return rb_tracearg_branch_dst(get_trace_arg());
+}
+
 static void
 tp_call_trace(VALUE tpval, rb_trace_arg_t *trace_arg)
 {
@@ -1533,6 +1590,10 @@ tracepoint_enable_m(rb_execution_context_t *ec, VALUE tpval, VALUE target, VALUE
     rb_tp_t *tp = tpptr(tpval);
     int previous_tracing = tp->tracing;
 
+    if (tp->events & RUBY_EVENT_COVERAGE_BRANCH) {
+        rb_enable_branch_coverage();
+    }
+
     if (target_thread == sym_default) {
         if (rb_block_given_p() && NIL_P(target) && NIL_P(target_line)) {
             target_thread = rb_thread_current();
@@ -1594,6 +1655,9 @@ tracepoint_disable_m(rb_execution_context_t *ec, VALUE tpval)
     }
     else {
         rb_tracepoint_disable(tpval);
+        if (tp->events & RUBY_EVENT_COVERAGE_BRANCH) {
+            rb_disable_branch_coverage();
+        }
         return RBOOL(previous_tracing);
     }
 }
@@ -1762,6 +1826,44 @@ tracepoint_allow_reentry(rb_execution_context_t *ec, VALUE self)
     if (arg == NULL) rb_raise(rb_eRuntimeError, "No need to allow reentrance.");
     ec->trace_arg = NULL;
     return rb_ensure(rb_yield, Qnil, disallow_reentry, (VALUE)arg);
+}
+
+void
+rb_enable_branch_coverage(void)
+{
+    rb_vm_t *vm = GET_VM();
+    VALUE coverages = rb_get_coverages();
+
+    if (!RTEST(coverages)) {
+        coverages = rb_hash_new();
+        rb_obj_hide(coverages);
+        rb_set_coverages(coverages, COVERAGE_TARGET_BRANCHES, Qnil);
+    }
+    else {
+        int mode = rb_get_coverage_mode();
+        if (!(mode & COVERAGE_TARGET_BRANCHES)) {
+            rb_set_coverages(coverages, mode | COVERAGE_TARGET_BRANCHES, vm->me2counter);
+        }
+    }
+
+    vm->branch_coverage_enabled = 1;
+}
+
+void
+rb_disable_branch_coverage(void)
+{
+    rb_vm_t *vm = GET_VM();
+
+    if (!vm->branch_coverage_enabled) return;
+
+    vm->branch_coverage_enabled = 0;
+
+    // Only tear down coverage state if Coverage module isn't also using it
+    int mode = rb_get_coverage_mode();
+    if (mode == COVERAGE_TARGET_BRANCHES) {
+        // We were the only user of coverage state
+        rb_reset_coverages();
+    }
 }
 
 #include "trace_point.rbinc"

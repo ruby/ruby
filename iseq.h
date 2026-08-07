@@ -45,6 +45,9 @@ extern const ID rb_iseq_shared_exc_local_tbl[];
 #define ISEQ_PC2BRANCHINDEX(iseq)         ISEQ_BODY(iseq)->variable.pc2branchindex
 #define ISEQ_PC2BRANCHINDEX_SET(iseq, h)  RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->variable.pc2branchindex, h)
 
+#define ISEQ_PC2BRANCHINFO(iseq)          ISEQ_BODY(iseq)->variable.pc2branchindex_cache
+#define ISEQ_PC2BRANCHINFO_SET(iseq, h)   RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->variable.pc2branchindex_cache, h)
+
 #define ISEQ_FLIP_CNT(iseq) ISEQ_BODY(iseq)->variable.flip_count
 
 #define ISEQ_FROZEN_STRING_LITERAL_ENABLED 1

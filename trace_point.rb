@@ -417,4 +417,32 @@ class TracePoint
   def instruction_sequence
     Primitive.tracepoint_attr_instruction_sequence
   end
+
+  # Returns the branch source (decision point) for +:branch+ events as an Array:
+  #   [type_symbol, lineno, column, end_lineno, end_column]
+  #
+  # For example, for an +if+ statement on line 5:
+  #   [:if, 5, 0, 10, 3]
+  #
+  # Returns +nil+ if the target code was loaded before the +:branch+
+  # TracePoint was enabled.
+  #
+  # Raises RuntimeError if called for non-branch events.
+  def branch_src
+    Primitive.tracepoint_attr_branch_src
+  end
+
+  # Returns the branch destination (taken path) for +:branch+ events as an Array:
+  #   [type_symbol, lineno, column, end_lineno, end_column]
+  #
+  # For example, for the +then+ branch of an +if+ statement:
+  #   [:then, 6, 2, 7, 5]
+  #
+  # Returns +nil+ if the target code was loaded before the +:branch+
+  # TracePoint was enabled.
+  #
+  # Raises RuntimeError if called for non-branch events.
+  def branch_dst
+    Primitive.tracepoint_attr_branch_dst
+  end
 end

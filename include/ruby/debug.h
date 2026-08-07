@@ -635,6 +635,47 @@ VALUE rb_tracearg_instruction_sequence(rb_trace_arg_t *trace_arg);
 
 RBIMPL_ATTR_NONNULL((1))
 /**
+ * Queries the branch source (decision point) on a coverage branch event.
+ * Returns an Array of [type, lineno, column, end_lineno, end_column],
+ * or Qnil if branch coverage data is not available.
+ *
+ * @param[in]  trace_arg         A trace instance.
+ * @exception  rb_eRuntimeError  The tracing event is not a branch event.
+ * @return     Branch source location array, or Qnil.
+ */
+VALUE rb_tracearg_branch_src(rb_trace_arg_t *trace_arg);
+
+RBIMPL_ATTR_NONNULL((1))
+/**
+ * Queries the branch destination (taken path) on a coverage branch event.
+ * Returns an Array of [type, lineno, column, end_lineno, end_column],
+ * or Qnil if branch coverage data is not available.
+ *
+ * @param[in]  trace_arg         A trace instance.
+ * @exception  rb_eRuntimeError  The tracing event is not a branch event.
+ * @return     Branch destination location array, or Qnil.
+ */
+VALUE rb_tracearg_branch_dst(rb_trace_arg_t *trace_arg);
+
+/**
+ * Enables branch coverage tracking for subsequently loaded code.
+ * Must be called before loading target code. Automatically called by
+ * TracePoint when enabling a :branch trace.
+ *
+ * C extensions that use rb_add_event_hook2 with RUBY_EVENT_COVERAGE_BRANCH
+ * directly should call this function to initialize coverage state.
+ */
+void rb_enable_branch_coverage(void);
+
+/**
+ * Disables branch coverage tracking previously enabled by
+ * rb_enable_branch_coverage. Only tears down coverage state if the
+ * Coverage module is not also using it.
+ */
+void rb_disable_branch_coverage(void);
+
+RBIMPL_ATTR_NONNULL((1))
+/**
  * Queries the allocated/deallocated object that the trace represents.
  *
  * @param[in]  trace_arg         A trace instance.
