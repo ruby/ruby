@@ -2102,8 +2102,21 @@ InitVM_console(void)
     }
     {
 	/* :nodoc: */
-        cConmode = rb_define_class_under(rb_cIO, "ConsoleMode", rb_cObject);
-        rb_define_const(cConmode, "VERSION", rb_obj_freeze(rb_str_new_cstr(IO_CONSOLE_VERSION)));
+	VALUE mConsole = rb_define_module_under(rb_cIO, "Console");
+	VALUE version = rb_obj_freeze(rb_str_new_cstr(IO_CONSOLE_VERSION));
+	ID cid, deprecate_constant = rb_intern_const("deprecate_constant");
+	rb_define_const(mConsole, "VERSION", version);
+	/* :nodoc: */
+	cConmode = rb_define_class_under(mConsole, "Mode", rb_cObject);
+
+	/* old internal names; do not use */
+	cid = rb_intern_const("ConsoleMode");
+	rb_const_set(rb_cIO, cid, cConmode);
+	rb_funcall(rb_cIO, deprecate_constant, 1, ID2SYM(cid));
+	cid = rb_intern_const("VERSION");
+	rb_const_set(cConmode, cid, version);
+	rb_funcall(cConmode, deprecate_constant, 1, ID2SYM(cid));
+
         rb_define_alloc_func(cConmode, conmode_alloc);
         rb_undef_method(cConmode, "initialize");
         rb_define_method(cConmode, "initialize_copy", conmode_init_copy, 1);
