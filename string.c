@@ -278,6 +278,12 @@ STR_EMBEDDABLE_P(long len, long termlen)
     return rb_gc_size_allocatable_p(rb_str_embed_size(len, termlen));
 }
 
+/* Substrings and duplicated strings that need a slot larger than this are shared
+ * instead of copied. Larger slots hold fewer objects per page and trigger GC
+ * more often, which outweighs the copy they save; see [Feature #22186] for the
+ * benchmarks. */
+#define STR_COPY_MAX_EMBED_SIZE 256
+
 static VALUE str_replace_shared_without_enc(VALUE str2, VALUE str);
 static VALUE str_new_frozen(VALUE klass, VALUE orig);
 static VALUE str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding);
@@ -1977,16 +1983,11 @@ str_duplicate_setup_heap(VALUE klass, VALUE str, VALUE dup)
     str_duplicate_setup_encoding(str, dup, flags);
 }
 
-/* Force duplicated strings above 256 bytes to be views rather than copies since
- * copying will use memory and have significant overhead.
- * Calculated as: 256 - header size - NUL terminator size */
-#define STR_DUPLICATE_MAX_EMBED_LEN ((long)(256 - offsetof(struct RString, as.embed) - 1))
-
 static inline VALUE
 str_duplicate(VALUE klass, VALUE str)
 {
     VALUE dup;
-    if (STR_EMBED_P(str) && RSTRING_LEN(str) <= STR_DUPLICATE_MAX_EMBED_LEN) {
+    if (STR_EMBED_P(str) && rb_str_embed_size(RSTRING_LEN(str), 1) <= STR_COPY_MAX_EMBED_SIZE) {
         dup = str_alloc_embed(klass, RSTRING_LEN(str) + TERM_LEN(str));
 
         str_duplicate_setup_embed(klass, str, dup);
@@ -3174,11 +3175,6 @@ rb_str_sublen(VALUE str, long pos)
     }
 }
 
-/* Substrings that need a slot larger than this are shared instead of copied.
- * Larger slots hold fewer objects per page and trigger GC more often, which
- * outweighs the copy they save; see [Feature #22186] for the benchmarks. */
-#define STR_SUBSEQ_MAX_EMBED_SIZE 256
-
 static VALUE
 str_subseq(VALUE str, long beg, long len)
 {
@@ -3203,7 +3199,7 @@ str_subseq(VALUE str, long beg, long len)
     const bool root_available = STR_SHARED_P(str) ||
         RB_FL_TEST_RAW(str, FL_FREEZE | STR_CHILLED) == FL_FREEZE;
     const size_t max_embed_size = root_available ?
-        rb_gc_size_slot_size(sizeof(struct RString)) : STR_SUBSEQ_MAX_EMBED_SIZE;
+        rb_gc_size_slot_size(sizeof(struct RString)) : STR_COPY_MAX_EMBED_SIZE;
     const size_t embed_size = rb_str_embed_size(len, termlen);
 
     if (embed_size <= max_embed_size && rb_gc_size_allocatable_p(embed_size)) {

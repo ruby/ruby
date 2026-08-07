@@ -3644,7 +3644,7 @@ CODE
 
     require 'objspace'
 
-    # 128 and 320 sit either side of STR_SUBSEQ_MAX_EMBED_SIZE in string.c, which
+    # 128 and 320 sit either side of STR_COPY_MAX_EMBED_SIZE in string.c, which
     # the copy has to fit in along with the header and the terminator
     substr = str.byteslice(320, 128)
     assert_equal "a" * 128, substr
