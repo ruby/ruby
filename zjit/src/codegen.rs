@@ -2181,9 +2181,9 @@ fn gen_new_array(
         return asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv);
     }
 
-    let alloc_size = std::mem::size_of::<RArray>();
-
-    let flags = (RUBY_T_ARRAY as u64) | (RARRAY_EMBED_FLAG as u64);
+    let mut alloc_size: usize = 0;
+    let mut flags: VALUE = VALUE(0);
+    unsafe { rb_zjit_array_new_fastpath(&mut alloc_size, &mut flags) };
     let klass = unsafe { rb_cArray };
 
     gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, klass, |_asm, _obj| {}, |asm| {

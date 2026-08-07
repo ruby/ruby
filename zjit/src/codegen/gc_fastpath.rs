@@ -16,6 +16,7 @@ struct RbGcZjitDefaultNewObjFastpath {
     cursor_end_offset: usize,
     slot_size: usize,
     total_allocated_objects_offset: usize,
+    ractor_belonging_id_offset: usize,
     flags: VALUE,
     klass: VALUE,
 }
@@ -208,6 +209,14 @@ fn emit_default_new_obj_fastpath(
         Opnd::mem(VALUE_BITS, cursor, RUBY_OFFSET_RBASIC_KLASS),
         fastpath.klass.into(),
     );
+
+    // only in debug mode
+    if fastpath.ractor_belonging_id_offset != 0 {
+        let belonging_offset: i32 = fastpath.ractor_belonging_id_offset.try_into().ok()?;
+        let pub_id_offset: i32 = unsafe { rb_zjit_offset_ractor_pub_id() }.try_into().ok()?;
+        let ractor_id = asm.load(Opnd::mem(32, ractor, pub_id_offset));
+        asm.store(Opnd::mem(32, cursor, belonging_offset), ractor_id);
+    }
 
     init(asm, cursor);
 
