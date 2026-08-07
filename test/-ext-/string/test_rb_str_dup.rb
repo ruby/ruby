@@ -2,7 +2,7 @@ require 'test/unit'
 require '-test-/string'
 
 class Test_RbStrDup < Test::Unit::TestCase
-  STR_DUPLICATE_MAX_EMBED_LEN = 999 # From macro defined in string.c
+  STR_DUPLICATE_MAX_EMBED_LEN = 256 - (RbConfig::SIZEOF["void*"] * 3) - 1 # From macro defined in string.c
 
   def test_nested_shared_non_frozen
     orig_str = "a" * (STR_DUPLICATE_MAX_EMBED_LEN + 1)
