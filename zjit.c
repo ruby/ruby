@@ -24,6 +24,7 @@
 #include "ruby/debug.h"
 #include "internal/cont.h"
 #include "ractor_core.h"
+#include "shape.h"
 
 // This build config impacts the pointer tagging scheme and we only want to
 // support one scheme for simplicity.
@@ -183,6 +184,37 @@ bool
 rb_zjit_singleton_class_p(VALUE klass)
 {
     return RCLASS_SINGLETON_P(klass);
+}
+
+/* Sets all of the required shape flags for the object including the layout type,
+ * the frozen status, and the slot size.
+ */
+VALUE
+rb_zjit_new_obj_shape(VALUE flags, size_t alloc_size)
+{
+    shape_id_t shape_id;
+    switch (flags & T_MASK) {
+      case T_OBJECT:
+        shape_id = ROOT_SHAPE_ID;
+        break;
+      case T_STRUCT:
+        shape_id = ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_EXTENDED;
+        break;
+      case T_DATA:
+        shape_id = ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_RDATA;
+        break;
+      default:
+        shape_id = ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER;
+        break;
+    }
+
+    if (flags & FL_FREEZE) {
+        shape_id = rb_shape_transition_frozen(shape_id);
+    }
+
+    shape_id = rb_shape_transition_slot_size(shape_id, rb_gc_size_slot_size(alloc_size));
+
+    return (flags & SHAPE_FLAG_MASK) | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
 }
 
 VALUE

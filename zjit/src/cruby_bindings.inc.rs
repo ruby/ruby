@@ -2280,10 +2280,11 @@ unsafe extern "C" {
     pub fn rb_iseq_defined_string(type_: defined_type) -> VALUE;
     pub fn rb_zjit_profile_enable(iseq: *const rb_iseq_t);
     pub fn rb_zjit_hash_new_size(flags_out: *mut VALUE) -> usize;
+    pub fn rb_zjit_new_obj_shape(flags: VALUE, alloc_size: usize) -> VALUE;
     pub fn rb_zjit_class_allocate_instance_fastpath(
         klass: VALUE,
         size_out: *mut usize,
-        shape_id_out: *mut shape_id_t,
+        flags_out: *mut VALUE,
     ) -> bool;
     pub fn rb_zjit_str_resurrect_fastpath(
         str_: VALUE,
