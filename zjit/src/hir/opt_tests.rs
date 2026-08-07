@@ -4083,10 +4083,10 @@ mod hir_opt_tests {
           v10:Fixnum[10] = Const Value(10)
           v12:CPtr = GetEP 0
           v13:CInt64 = LoadField v12, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
-          v15:CInt64[3] = Const CInt64(3)
-          v16:CInt64 = IntAnd v13, v15
+          v14:CInt64[3] = Const CInt64(3)
+          v15:CInt64 = IntAnd v13, v14
           v17:CInt64[1] = Const CInt64(1)
-          v18:CBool = IsBitEqual v16, v17
+          v18:CBool = IsBitEqual v15, v17
           CondBranch v18, bb5(), bb6()
         bb5():
           v20:CInt64[-4] = Const CInt64(-4)
@@ -4110,9 +4110,9 @@ mod hir_opt_tests {
         bb6():
           v34:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
           Jump bb4(v34)
-        bb4(v14:BasicObject):
+        bb4(v16:BasicObject):
           CheckInterrupts
-          Return v14
+          Return v16
         ");
     }
 
@@ -4148,10 +4148,10 @@ mod hir_opt_tests {
           v10:Fixnum[10] = Const Value(10)
           v12:CPtr = GetEP 0
           v13:CInt64 = LoadField v12, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
-          v15:CInt64[3] = Const CInt64(3)
-          v16:CInt64 = IntAnd v13, v15
+          v14:CInt64[3] = Const CInt64(3)
+          v15:CInt64 = IntAnd v13, v14
           v17:CInt64[1] = Const CInt64(1)
-          v18:CBool = IsBitEqual v16, v17
+          v18:CBool = IsBitEqual v15, v17
           CondBranch v18, bb5(), bb6()
         bb5():
           v20:CInt64[-4] = Const CInt64(-4)
@@ -4175,9 +4175,9 @@ mod hir_opt_tests {
         bb6():
           v34:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
           Jump bb4(v34)
-        bb4(v14:BasicObject):
+        bb4(v16:BasicObject):
           CheckInterrupts
-          Return v14
+          Return v16
         ");
     }
 
@@ -4212,10 +4212,10 @@ mod hir_opt_tests {
           v10:Fixnum[10] = Const Value(10)
           v12:CPtr = GetEP 0
           v13:CInt64 = LoadField v12, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
-          v15:CInt64[3] = Const CInt64(3)
-          v16:CInt64 = IntAnd v13, v15
+          v14:CInt64[3] = Const CInt64(3)
+          v15:CInt64 = IntAnd v13, v14
           v17:CInt64[1] = Const CInt64(1)
-          v18:CBool = IsBitEqual v16, v17
+          v18:CBool = IsBitEqual v15, v17
           CondBranch v18, bb5(), bb6()
         bb5():
           v20:CInt64[-4] = Const CInt64(-4)
@@ -4239,9 +4239,67 @@ mod hir_opt_tests {
         bb6():
           v34:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
           Jump bb4(v34)
-        bb4(v14:BasicObject):
+        bb4(v16:BasicObject):
           CheckInterrupts
-          Return v14
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn test_specialize_monomorphic_invokeblock_on_final_version() {
+        // A monomorphic yield site compiled under the no-side-exits policy (the final
+        // version after an invalidation) must not guard, so instead of the in-place
+        // guarded dispatch it gets the same compare-plus-fallback chain as a polymorphic
+        // site, with a single ISEQ arm. The constant reassignment invalidates the first
+        // version through its constant cache patchpoint without a second block ever
+        // reaching the yield site, keeping its profile monomorphic.
+        set_max_versions(2);
+        set_inline_threshold(0);
+        eval("
+            X = 10
+            def invoke = yield(X)
+            def add_one = invoke { |x| x + 1 }
+            add_one; add_one
+            Object.send(:remove_const, :X)
+            X = 11
+        ");
+        assert_snapshot!(hir_string("invoke"), @"
+        fn invoke@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:BasicObject = GetConstantPath 0x1000
+          v12:CPtr = GetEP 0
+          v13:CInt64 = LoadField v12, :VM_ENV_DATA_INDEX_SPECVAL@0x1010
+          v14:CInt64[3] = Const CInt64(3)
+          v15:CInt64 = IntAnd v13, v14
+          v17:CInt64[1] = Const CInt64(1)
+          v18:CBool = IsBitEqual v15, v17
+          CondBranch v18, bb5(), bb6()
+        bb5():
+          v20:CInt64[-4] = Const CInt64(-4)
+          v21:CInt64 = IntAnd v13, v20
+          v22:CPtr = LoadField v21, :code_iseq@0x1011
+          v23:CPtr[CPtr(0x1012)] = Const CPtr(0x1012)
+          v24:CBool = IsBitEqual v22, v23
+          CondBranch v24, bb7(), bb8()
+        bb7():
+          v26:BasicObject = InvokeBlockIseqDirect (0x1012), v21, v10
+          Jump bb4(v26)
+        bb8():
+          Jump bb6()
+        bb6():
+          v29:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
+          Jump bb4(v29)
+        bb4(v16:BasicObject):
+          CheckInterrupts
+          Return v16
         ");
     }
 
