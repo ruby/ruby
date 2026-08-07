@@ -1230,6 +1230,52 @@ fn gen_check_ints(
     asm.jnz(Target::side_exit(counter));
 }
 
+// Generate code to check for interrupts and handle them inline, without
+// taking a side exit. This is used at backward branches (loops) so that
+// YJIT can continue running compiled code after handling interrupts such
+// as those from signal-based profilers using rb_postponed_job_trigger.
+fn gen_check_ints_inline(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) {
+    asm_comment!(asm, "RUBY_VM_CHECK_INTS(ec) - inline");
+
+    let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG as i32));
+    asm.test(interrupt_flag, interrupt_flag);
+
+    let no_interrupt = asm.new_label("no_interrupt");
+    asm.jz(no_interrupt);
+
+    // Save the compile-time context before the slow path. Instructions below
+    // (jit_save_pc, lea/mov, and especially ccall which spills register temps)
+    // modify asm.ctx at compile time. Since the fast path (jz taken) skips
+    // these instructions at runtime, we must restore ctx after the slow path
+    // so that code after the no_interrupt label compiles against the original
+    // context that matches the fast-path runtime state.
+    let saved_ctx = asm.ctx;
+
+    // Like jit_prepare_non_leaf_call(), save PC and SP to CFP for backtraces
+    // and GC safety, but without record_boundary_patch_point (backward branches
+    // return EndBlock so the assertion in gen_single_block would fire;
+    // invalidation is handled by the normal block invalidation mechanism).
+    // We write SP to CFP directly instead of gen_save_sp() to avoid modifying
+    // the SP register, which is callee-saved across the ccall and must keep
+    // its original value for code after the no_interrupt label.
+    jit_save_pc(jit, asm);
+    let sp_addr = asm.lea(asm.ctx.sp_opnd(0));
+    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), sp_addr);
+
+    asm.ccall(rb_yjit_execute_interrupts as *const u8, vec![EC]);
+
+    // Restore the context, then clear local types. The interrupt handler can
+    // set local variables through Kernel#binding, rb_debug_inspector API, and
+    // other means, just like cfunc calls (see jit_prepare_non_leaf_call).
+    asm.ctx = saved_ctx;
+    asm.ctx.clear_local_types();
+
+    asm.write_label(no_interrupt);
+}
+
 // Generate a stubbed unconditional jump to the next bytecode instruction.
 // Blocks that are part of a guard chain can use this to share the same successor.
 fn jump_to_next_insn(
@@ -4685,7 +4731,7 @@ fn gen_branchif(
 
     // Check for interrupts, but only on backward branches that may create loops
     if jump_offset < 0 && jit.get_opcode() != YARVINSN_branchif_without_ints as usize {
-        gen_check_ints(asm, Counter::branchif_interrupted);
+        gen_check_ints_inline(jit, asm);
     }
 
     // Get the branch target instruction offsets
@@ -4737,7 +4783,7 @@ fn gen_branchunless(
 
     // Check for interrupts, but only on backward branches that may create loops
     if jump_offset < 0 && jit.get_opcode() != YARVINSN_branchunless_without_ints as usize {
-        gen_check_ints(asm, Counter::branchunless_interrupted);
+        gen_check_ints_inline(jit, asm);
     }
 
     // Get the branch target instruction offsets
@@ -4790,7 +4836,7 @@ fn gen_branchnil(
 
     // Check for interrupts, but only on backward branches that may create loops
     if jump_offset < 0 && jit.get_opcode() != YARVINSN_branchnil_without_ints as usize {
-        gen_check_ints(asm, Counter::branchnil_interrupted);
+        gen_check_ints_inline(jit, asm);
     }
 
     // Get the branch target instruction offsets
@@ -4945,7 +4991,7 @@ fn gen_jump(
 
     // Check for interrupts, but only on backward branches that may create loops
     if jump_offset < 0 && jit.get_opcode() != YARVINSN_jump_without_ints as usize {
-        gen_check_ints(asm, Counter::jump_interrupted);
+        gen_check_ints_inline(jit, asm);
     }
 
     // Get the branch target instruction offsets
