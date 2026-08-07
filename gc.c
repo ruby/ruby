@@ -2239,6 +2239,12 @@ rb_objspace_garbage_object_p(VALUE obj)
     return !SPECIAL_CONST_P(obj) && rb_gc_impl_garbage_object_p(rb_gc_get_objspace(), obj);
 }
 
+int
+rb_objspace_foreign_object_p(VALUE obj)
+{
+    return !SPECIAL_CONST_P(obj) && rb_gc_obj_foreign_p(obj);
+}
+
 #define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
 #define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
 
