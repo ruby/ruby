@@ -6141,6 +6141,10 @@ enum method_explorer_type {
     mexp_search_super,
 };
 
+ALWAYS_INLINE(static VALUE vm_sendish(struct rb_execution_context_struct *ec,
+                                      struct rb_control_frame_struct *reg_cfp,
+                                      struct rb_call_data *cd, VALUE block_handler,
+                                      enum method_explorer_type method_explorer));
 static inline VALUE
 vm_sendish(
     struct rb_execution_context_struct *ec,
