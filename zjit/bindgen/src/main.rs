@@ -339,6 +339,7 @@ fn main() {
         .allowlist_function("rb_zjit_insn_leaf")
         .allowlist_type("jit_bindgen_constants")
         .allowlist_type("zjit_struct_offsets")
+        .allowlist_var("rb_zjit_runtime_offsets")
         .allowlist_var("ZJIT_STACK_MAP_SHIFT")
         .allowlist_var("ZJIT_STACK_MAP_VREG_TAG")
         .allowlist_var("ZJIT_STACK_MAP_SKIP_TAG")

@@ -36,6 +36,23 @@ enum zjit_struct_offsets {
     RUBY_OFFSET_THREAD_RACTOR = offsetof(rb_thread_t, ractor),
 };
 
+// Struct offsets that cannot be constants in the checked-in bindgen output
+// (zjit/src/cruby_bindings.inc.rs) because they vary with the build target
+// and configuration. For example, offsetof(rb_ractor_t, newobj_cache) depends
+// on the sizes of pthread types embedded in rb_ractor_t, which differ across
+// architectures and OSes, as well as on VM_CHECK_MODE and RACTOR_CHECK_MODE.
+// This table is filled out at C compile time and read by Rust at JIT compile
+// time. Offsets that are identical on all supported builds should be added to
+// enum zjit_struct_offsets above instead.
+struct rb_zjit_runtime_offsets {
+    int32_t ractor_newobj_cache;
+    int32_t ractor_objspace;
+};
+const struct rb_zjit_runtime_offsets rb_zjit_runtime_offsets = {
+    .ractor_newobj_cache = offsetof(rb_ractor_t, newobj_cache),
+    .ractor_objspace = offsetof(rb_ractor_t, objspace),
+};
+
 // Special JITFrame used by all C method calls. We don't control the native
 // stack layout for C frames, so cfp->jit_return points at this static frame
 // via the ZJIT_JIT_RETURN_C_FRAME sentinel instead of a per-call allocation.
@@ -167,22 +184,6 @@ bool
 rb_zjit_singleton_class_p(VALUE klass)
 {
     return RCLASS_SINGLETON_P(klass);
-}
-
-/*
- * These offsets differ between x68_64 and arm64, so we must generate them each
- * time. We can't bake them into zjit_struct_offsets
- */
-size_t
-rb_zjit_offset_ractor_newobj_cache(void)
-{
-    return offsetof(rb_ractor_t, newobj_cache);
-}
-
-size_t
-rb_zjit_offset_ractor_objspace(void)
-{
-    return offsetof(rb_ractor_t, objspace);
 }
 
 /* Sets all of the required shape flags for the object including the layout type,

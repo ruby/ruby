@@ -4,8 +4,8 @@ use crate::backend::lir::{self, Assembler, EC, Opnd, Target, asm_comment};
 use crate::cruby::{
     RB_GC_ZJIT_FASTPATH_DEFAULT, RB_GC_ZJIT_FASTPATH_MMTK,
     RUBY_OFFSET_EC_THREAD_PTR, RUBY_OFFSET_RBASIC_FLAGS, RUBY_OFFSET_RBASIC_KLASS,
-    RUBY_OFFSET_THREAD_RACTOR, VALUE, VALUE_BITS, rb_zjit_offset_ractor_newobj_cache,
-    rb_zjit_offset_ractor_objspace, rb_zjit_new_obj_shape,
+    RUBY_OFFSET_THREAD_RACTOR, VALUE, VALUE_BITS, rb_zjit_new_obj_shape,
+    rb_zjit_runtime_offsets,
 };
 use super::JITState;
 
@@ -186,9 +186,7 @@ fn emit_default_new_obj_fastpath(
 
     let thread = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR as i32));
     let ractor = asm.load(Opnd::mem(64, thread, RUBY_OFFSET_THREAD_RACTOR as i32));
-    let ractor_objspace_offset: i32 = unsafe { rb_zjit_offset_ractor_objspace() }
-        .try_into()
-        .expect("ractor objspace offset fits in i32");
+    let ractor_objspace_offset = unsafe { rb_zjit_runtime_offsets.ractor_objspace };
     let gc_cache = asm.load(Opnd::mem(64, ractor, ractor_objspace_offset));
 
     let cursor = asm.load(Opnd::mem(64, gc_cache, cursor_offset));
@@ -271,9 +269,7 @@ fn emit_mmtk_new_obj_fastpath(
     let objspace = asm.load(objspace_const);
     let thread = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR as i32));
     let ractor = asm.load(Opnd::mem(64, thread, RUBY_OFFSET_THREAD_RACTOR as i32));
-    let ractor_newobj_cache_offset: i32 = unsafe { rb_zjit_offset_ractor_newobj_cache() }
-        .try_into()
-        .expect("ractor newobj cache offset fits in i32");
+    let ractor_newobj_cache_offset = unsafe { rb_zjit_runtime_offsets.ractor_newobj_cache };
     let ractor_cache = asm.load(Opnd::mem(64, ractor, ractor_newobj_cache_offset));
 
     let bump_pointer = asm.load(Opnd::mem(
