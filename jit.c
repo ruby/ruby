@@ -244,6 +244,20 @@ rb_jit_iseq_builtin_attrs(const rb_iseq_t *iseq)
     return iseq->body->builtin_attrs;
 }
 
+// Relaxed memory ordering, but called by the JIT with VM lock and barrier.
+void
+rb_jit_iseq_mark_ep_escape_recorded(const rb_iseq_t *iseq)
+{
+    rbimpl_atomic_store(&iseq->body->jit_ep_escape_recorded, 1, RBIMPL_ATOMIC_RELAXED);
+}
+
+// Whether an EP escape of this iseq has been reported to the enabled JIT.
+bool
+rb_jit_iseq_ep_escape_recorded_p(const rb_iseq_t *iseq)
+{
+    return rbimpl_atomic_load(&iseq->body->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED) != 0;
+}
+
 int
 rb_get_mct_argc(const rb_method_cfunc_t *mct)
 {

@@ -1136,7 +1136,10 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     // Invalidate JIT code that assumes cfp->ep == vm_base_ptr(cfp).
     // This is done before creating the imemo_env because VM_STACK_ENV_WRITE
     // below leaves the on-stack ep in a state that is unsafe to GC.
-    if (VM_FRAME_RUBYFRAME_P(cfp)) {
+    // Once the enabled JIT has recorded this iseq's escape, the invalidations
+    // are no longer useful and can slow down Ractors.
+    if (VM_FRAME_RUBYFRAME_P(cfp) &&
+        !rbimpl_atomic_load(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED)) {
         rb_yjit_invalidate_ep_is_bp(iseq);
         rb_zjit_invalidate_no_ep_escape(iseq);
     }

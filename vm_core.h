@@ -543,6 +543,9 @@ struct rb_iseq_constant_body {
 
     bool prism; // ISEQ was generated from prism compiler
 
+    // Set once an EP escape of this iseq has been reported to the enabled JIT.
+    rb_atomic_t jit_ep_escape_recorded;
+
     union {
         iseq_bits_t * list; /* Find references for GC */
         iseq_bits_t single;
