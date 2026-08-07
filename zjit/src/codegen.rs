@@ -2150,7 +2150,7 @@ fn gen_array_dup(
         let mut len: std::os::raw::c_long = 0;
         if unsafe { rb_zjit_array_dup_can_fastpath(src, &mut alloc_size, &mut flags, &mut len) } {
             let klass = unsafe { rb_cArray };
-            return gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags, klass, |asm, obj| {
+            return gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.into(), klass, |asm, obj| {
                 for i in 0..len {
                     let elem = unsafe { rb_ary_entry(src, i) };
                     let offset = RUBY_OFFSET_RARRAY_AS_ARY + (i as i32) * SIZEOF_VALUE_I32;
@@ -2190,7 +2190,7 @@ fn gen_new_array(
     unsafe { rb_zjit_array_new_fastpath(&mut alloc_size, &mut flags) };
     let klass = unsafe { rb_cArray };
 
-    gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags, klass, |_asm, _obj| {}, |asm| {
+    gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.into(), klass, |_asm, _obj| {}, |asm| {
         asm_ccall!(asm, rb_ec_ary_new_from_values, EC, 0i64.into(), Opnd::UImm(0))
     })
 }
@@ -2560,7 +2560,7 @@ fn gen_new_range(
     asm.set_current_block(fast_block);
     let label = jit.get_label(asm, fast_block, hir_block_id);
     asm.write_label(label);
-    let range = gen_new_range_fixnum(jit, asm, low, high, flag, state);
+    let range = gen_new_range_fixnum(jit, asm, function, low, high, flag, state);
     asm.jmp(result_edge(range));
 
     asm.set_current_block(slow_block);
@@ -2596,7 +2596,7 @@ fn gen_new_range_fixnum(
     };
 
     let klass = unsafe { rb_cRange };
-    gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags, klass,
+    gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.into(), klass,
         |asm, range| {
             asm.store(Opnd::mem(VALUE_BITS, range, RUBY_OFFSET_RSTRUCT_FIELDS_OBJ), Opnd::UImm(0));
             asm.store(Opnd::mem(VALUE_BITS, range, RUBY_OFFSET_RSTRUCT_AS_ARY), low);
@@ -2626,7 +2626,7 @@ fn gen_object_alloc_class(jit: &mut JITState, asm: &mut Assembler, function: &Fu
             rb_zjit_class_allocate_instance_fastpath(class, &mut alloc_size, &mut flags)
         };
         if has_fastpath {
-            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), class, |_asm, _obj| {}, |asm| {
+            gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.as_u64(), class, |_asm, _obj| {}, |asm| {
                 asm_ccall!(asm, rb_class_allocate_instance, class.into())
             })
         } else {
