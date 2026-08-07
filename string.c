@@ -2070,11 +2070,8 @@ rb_zjit_str_resurrect_fastpath(VALUE str, bool chilled, size_t *size_out,
     flags |= T_STRING;
     if (chilled) flags |= STR_CHILLED;
 
-    shape_id_t shape_id = rb_shape_transition_slot_size(ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER,
-                                                        rb_gc_size_slot_size(size));
-
     *size_out = size;
-    *flags_out = flags | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
+    *flags_out = flags;
     *len_out = len;
     *byte_size_out = (size_t)(len + termlen);
     return true;

@@ -2616,13 +2616,12 @@ fn gen_object_alloc_class(jit: &mut JITState, asm: &mut Assembler, class: VALUE,
     gen_prepare_leaf_call_with_gc(asm, state);
     if unsafe { rb_zjit_class_has_default_allocator(class) } {
         let mut alloc_size: usize = 0;
-        let mut shape_id: shape_id_t = 0;
+        let mut flags = VALUE(0);
         let has_fastpath = unsafe {
-            rb_zjit_class_allocate_instance_fastpath(class, &mut alloc_size, &mut shape_id)
+            rb_zjit_class_allocate_instance_fastpath(class, &mut alloc_size, &mut flags)
         };
         if has_fastpath {
-            let flags = (RUBY_T_OBJECT as u64) | ((shape_id as u64) << RB_SHAPE_FLAG_SHIFT as u64);
-            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags, class, |_asm, _obj| {}, |asm| {
+            gc_fastpath::gc_fastpath_new_obj(jit, asm, alloc_size, flags.as_u64(), class, |_asm, _obj| {}, |asm| {
                 asm_ccall!(asm, rb_class_allocate_instance, class.into())
             })
         } else {
