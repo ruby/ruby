@@ -619,7 +619,8 @@ class TestRactor < Test::Unit::TestCase
       sibling = +"hello"
       m = "foo".match(Class.new(Regexp).new("o"))
       r = Ractor.new { Ractor.receive }
-      r.send([sibling, m], move: true) rescue Ractor::Error # expected: the Regexp subclass is unshareable
+      refute Ractor.shareable?(m.regexp), "the Regexp subclass must be unshareable for this test"
+      r.send([sibling, m], move: true) rescue Ractor::Error # the Regexp subclass is unshareable
       assert_equal "hello", sibling
     RUBY
   end
