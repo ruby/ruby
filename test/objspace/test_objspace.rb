@@ -173,6 +173,34 @@ class TestObjSpace < Test::Unit::TestCase
     end;
   end
 
+  def test_reachable_objects_from_doesnt_break_ractor_containment
+    assert_ractor("#{<<-"begin;"}#{<<-'end;'}")
+    begin;
+      require "objspace"
+      port = Ractor::Port.new
+      ch = Ractor.new(port) do |port|
+        o = Object.new
+        def o.inspect = "unshareable!"
+        sc = o.singleton_class
+        port << [sc] # TODO: singleton classes of unshareables should not be shareable
+        Ractor.receive # wait
+      end
+
+      sc_ary = port.receive
+
+      found = false
+      ObjectSpace.reachable_objects_from(sc_ary).each do |obj|
+        if obj.inspect == "unshareable!"
+          found = true
+        end
+      end
+
+      ch.send(:go)
+      ch.join
+      refute found, "ObjectSpace.reachable_objects_from breaks ractor containment"
+    end;
+  end
+
   def test_trace_object_allocations_stop_first
     assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
