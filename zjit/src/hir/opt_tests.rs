@@ -3951,15 +3951,16 @@ mod hir_opt_tests {
 
     #[test]
     fn test_yield_with_too_many_args_for_lir_falls_back() {
-        // Captured self plus six args don't fit in C argument registers, so the profiled
-        // invokeblock specialization must not emit InvokeBlockIseqDirect.
+        // Captured self plus eight args don't fit in C argument registers (6 on x86_64,
+        // 8 on arm64), so the profiled invokeblock specialization must not emit
+        // InvokeBlockIseqDirect.
         let result = eval("
-            def foo = yield(1, 2, 3, 4, 5, 6)
-            def test = foo { |a, b, c, d, e, f| a + b + c + d + e + f }
+            def foo = yield(1, 2, 3, 4, 5, 6, 7, 8)
+            def test = foo { |a, b, c, d, e, f, g, h| a + b + c + d + e + f + g + h }
             test
             test
         ");
-        assert_eq!(VALUE::fixnum_from_usize(21), result);
+        assert_eq!(VALUE::fixnum_from_usize(36), result);
         assert_snapshot!(hir_string("foo"), @"
         fn foo@<compiled>:2:
         bb1():
@@ -3977,9 +3978,11 @@ mod hir_opt_tests {
           v16:Fixnum[4] = Const Value(4)
           v18:Fixnum[5] = Const Value(5)
           v20:Fixnum[6] = Const Value(6)
-          v22:BasicObject = InvokeBlock v10, v12, v14, v16, v18, v20 # SendFallbackReason: Too many arguments for LIR
+          v22:Fixnum[7] = Const Value(7)
+          v24:Fixnum[8] = Const Value(8)
+          v26:BasicObject = InvokeBlock v10, v12, v14, v16, v18, v20, v22, v24 # SendFallbackReason: Too many arguments for LIR
           CheckInterrupts
-          Return v22
+          Return v26
         ");
     }
 
@@ -3988,12 +3991,12 @@ mod hir_opt_tests {
         // Same as test_yield_with_too_many_args_for_lir_falls_back, but for the guard-free
         // yield dispatch inside an inlined callee whose caller passes a literal block.
         let result = eval("
-            def foo = yield(1, 2, 3, 4, 5, 6)
-            def test = foo { |a, b, c, d, e, f| a + b + c + d + e + f }
+            def foo = yield(1, 2, 3, 4, 5, 6, 7, 8)
+            def test = foo { |a, b, c, d, e, f, g, h| a + b + c + d + e + f + g + h }
             test
             test
         ");
-        assert_eq!(VALUE::fixnum_from_usize(21), result);
+        assert_eq!(VALUE::fixnum_from_usize(36), result);
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
@@ -4014,10 +4017,12 @@ mod hir_opt_tests {
           v31:Fixnum[4] = Const Value(4)
           v33:Fixnum[5] = Const Value(5)
           v35:Fixnum[6] = Const Value(6)
-          v37:BasicObject = InvokeBlock v25, v27, v29, v31, v33, v35 # SendFallbackReason: Too many arguments for LIR
+          v37:Fixnum[7] = Const Value(7)
+          v39:Fixnum[8] = Const Value(8)
+          v41:BasicObject = InvokeBlock v25, v27, v29, v31, v33, v35, v37, v39 # SendFallbackReason: Too many arguments for LIR
           CheckInterrupts
           PopInlineFrame
-          Return v37
+          Return v41
         ");
     }
 
@@ -4927,9 +4932,12 @@ mod hir_opt_tests {
 
     #[test]
     fn test_call_with_pos_optional_and_maybe_too_many_args() {
+        // The last call passes 8 args (7 positional + 1 keyword), which together with
+        // self exceed the C argument registers (6 on x86_64, 8 on arm64), so only that
+        // call must fall back to a dynamic send.
         eval("
-            def target(a = 1, b = 2, c = 3, d = 4, e = 5, f:) = [a, b, c, d, e, f]
-            def test = [target(f: 6), target(10, 20, 30, f: 6), target(10, 20, 30, 40, 50, f: 60)]
+            def target(a = 1, b = 2, c = 3, d = 4, e = 5, f = 6, g = 7, h:) = [a, b, c, d, e, f, g, h]
+            def test = [target(h: 8), target(10, 20, 30, h: 8), target(10, 20, 30, 40, 50, 60, 70, h: 80)]
             test
             test
         ");
@@ -4944,26 +4952,28 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v11:Fixnum[6] = Const Value(6)
+          v11:Fixnum[8] = Const Value(8)
           PatchPoint MethodRedefined(Object@0x1000, target@0x1008, cme:0x1010)
-          v48:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          v49:BasicObject = SendDirect v48, 0x0, :target (0x1038), v11
+          v52:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v53:BasicObject = SendDirect v52, 0x0, :target (0x1038), v11
           v16:Fixnum[10] = Const Value(10)
           v18:Fixnum[20] = Const Value(20)
           v20:Fixnum[30] = Const Value(30)
-          v22:Fixnum[6] = Const Value(6)
+          v22:Fixnum[8] = Const Value(8)
           PatchPoint MethodRedefined(Object@0x1000, target@0x1008, cme:0x1010)
-          v52:BasicObject = SendDirect v48, 0x0, :target (0x1038), jit_entry_idx=3, v16, v18, v20, v22
+          v56:BasicObject = SendDirect v52, 0x0, :target (0x1038), jit_entry_idx=3, v16, v18, v20, v22
           v27:Fixnum[10] = Const Value(10)
           v29:Fixnum[20] = Const Value(20)
           v31:Fixnum[30] = Const Value(30)
           v33:Fixnum[40] = Const Value(40)
           v35:Fixnum[50] = Const Value(50)
           v37:Fixnum[60] = Const Value(60)
-          v39:BasicObject = Send v48, :target, v27, v29, v31, v33, v35, v37 # SendFallbackReason: Too many arguments for LIR
-          v41:ArrayExact = NewArray v49, v52, v39
+          v39:Fixnum[70] = Const Value(70)
+          v41:Fixnum[80] = Const Value(80)
+          v43:BasicObject = Send v52, :target, v27, v29, v31, v33, v35, v37, v39, v41 # SendFallbackReason: Too many arguments for LIR
+          v45:ArrayExact = NewArray v53, v56, v43
           CheckInterrupts
-          Return v41
+          Return v45
         ");
     }
 
@@ -21259,7 +21269,7 @@ mod hir_opt_tests {
 
     #[test]
     fn test_ccall_with_frame_too_many_args_result_used_in_later_block() {
-        unsafe extern "C" fn test_seven_args(
+        unsafe extern "C" fn test_eight_args(
             _self: VALUE,
             a: VALUE,
             b: VALUE,
@@ -21268,28 +21278,29 @@ mod hir_opt_tests {
             e: VALUE,
             f: VALUE,
             g: VALUE,
+            h: VALUE,
         ) -> VALUE {
-            unsafe { rb_ary_new_from_args(7, a, b, c, d, e, f, g) }
+            unsafe { rb_ary_new_from_args(8, a, b, c, d, e, f, g, h) }
         }
 
         with_rubyvm(|| {
-            let klass = define_class("ZJITSevenArgs", unsafe { rb_cObject });
+            let klass = define_class("ZJITEightArgs", unsafe { rb_cObject });
             unsafe {
                 rb_define_method(
                     klass,
-                    c"seven".as_ptr(),
+                    c"eight".as_ptr(),
                     Some(std::mem::transmute::<
-                        unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                        unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
                         unsafe extern "C" fn(VALUE) -> VALUE,
-                    >(test_seven_args)),
-                    7,
+                    >(test_eight_args)),
+                    8,
                 );
             }
         });
 
         eval(r#"
             def test(obj, flag)
-              priceable = obj.seven(1, 2, 3, 4, 5, 6, 7)
+              priceable = obj.eight(1, 2, 3, 4, 5, 6, 7, 8)
               if flag
                 priceable
               else
@@ -21297,7 +21308,7 @@ mod hir_opt_tests {
               end
             end
 
-            obj = ZJITSevenArgs.new
+            obj = ZJITEightArgs.new
             test(obj, true)  # profile receiver class
         "#);
         assert_snapshot!(hir_string("test"), @"
@@ -21325,19 +21336,20 @@ mod hir_opt_tests {
           v29:Fixnum[5] = Const Value(5)
           v31:Fixnum[6] = Const Value(6)
           v33:Fixnum[7] = Const Value(7)
-          v35:BasicObject = Send v14, :seven, v21, v23, v25, v27, v29, v31, v33 # SendFallbackReason: Too many arguments for LIR
+          v35:Fixnum[8] = Const Value(8)
+          v37:BasicObject = Send v14, :eight, v21, v23, v25, v27, v29, v31, v33, v35 # SendFallbackReason: Too many arguments for LIR
           PatchPoint NoEPEscape(test)
-          v42:CBool = Test v15
-          v43:Falsy = RefineType v15, Falsy
-          CondBranch v42, bb5(), bb4(v13, v14, v43, v35)
+          v44:CBool = Test v15
+          v45:Falsy = RefineType v15, Falsy
+          CondBranch v44, bb5(), bb4(v13, v14, v45, v37)
         bb5():
-          v45:Truthy = RefineType v15, Truthy
+          v47:Truthy = RefineType v15, Truthy
           CheckInterrupts
-          Return v35
-        bb4(v52:BasicObject, v53:BasicObject, v54:Falsy, v55:BasicObject):
-          v59:NilClass = Const Value(nil)
+          Return v37
+        bb4(v54:BasicObject, v55:BasicObject, v56:Falsy, v57:BasicObject):
+          v61:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v59
+          Return v61
         ");
     }
 
