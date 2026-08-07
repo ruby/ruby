@@ -1634,7 +1634,7 @@ static inline int
 VM_FRAME_CFRAME_P(const rb_control_frame_t *cfp)
 {
     int cframe_p = VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_CFRAME) != 0;
-    // With ZJIT lightweight frames, cfp->_iseq may be stale (not yet materialized),
+    // With zjit_jit_frame, cfp->_iseq may be stale (not yet materialized),
     // so skip this assertion when jit_return is set (zjit.h is not available here).
     VM_ASSERT(cfp->jit_return ||
               RUBY_VM_NORMAL_ISEQ_P(cfp->_iseq) != cframe_p ||

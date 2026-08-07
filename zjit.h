@@ -120,7 +120,7 @@ CFP_ZJIT_FRAME(const rb_control_frame_t *cfp)
         // the slot reserved for this frame's inlining depth, so distinct frames in
         // the same JIT function read distinct slots. An initial frame describing
         // the entry PC + iseq is written by gen_entry_point() for the top-level
-        // frame and by gen_push_lightweight_frame() for inlined frames. That entry
+        // frame and by gen_push_inline_frame() for inlined frames. That entry
         // PC is correct only at the frame's start; because the PC this frame reports
         // must track where execution currently is, later gen_save_pc_for_gc() calls
         // rewrite the slot with the live PC as execution advances through the frame,
