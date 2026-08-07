@@ -2142,6 +2142,17 @@ module_descendants_add(VALUE klass, struct descendants_traverse_data *data)
     rb_class_foreach_subclass(klass, module_descendants_recursive, (VALUE)data);
 }
 
+// an include done in another box is not in the ancestors here if the includer
+// has a classext per box, e.g. a module included into a builtin class
+static bool
+iclass_in_ancestors_p(VALUE iclass, VALUE includer)
+{
+    for (VALUE p = includer; p; p = RCLASS_SUPER(p)) {
+        if (p == iclass) return true;
+    }
+    return false;
+}
+
 static void
 module_descendants_recursive(VALUE entry, VALUE v)
 {
@@ -2159,6 +2170,7 @@ module_descendants_recursive(VALUE entry, VALUE v)
         if (!includer || UNDEF_P(includer)) return;
         if (rb_objspace_garbage_object_p(includer)) return;
         if (RCLASS_SINGLETON_P(includer)) return; // e.g. Object#extend
+        if (!iclass_in_ancestors_p(entry, includer)) return;
         module_descendants_add(includer, data);
     }
     else {
