@@ -225,6 +225,7 @@ They are still available on rubygems.org and can be installed with
   * 1.9.2 to [v1.9.3][win32ole-v1.9.3]
 * irb 1.18.0
   * 1.16.0 to [v1.17.0][irb-v1.17.0], [v1.18.0][irb-v1.18.0]
+* reline 0.7.0
 
 ### RubyGems and Bundler
 
