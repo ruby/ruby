@@ -131,7 +131,7 @@
 #define ATTRIBUTE_UNUSED
 #endif
 
-#define MAX_ENTRIES_START ((unsigned char)-1)
+#define MAX_ENTRIES_START ((unsigned int)-1)
 
 /* The type of hashes.  */
 typedef st_index_t st_hash_t;
@@ -1387,10 +1387,7 @@ update_range_for_deleted(st_table *tab, st_index_t n)
         st_index_t bound = tab->entries_bound;
         st_table_entry *entries = tab->entries;
         while (start < bound && DELETED_ENTRY_P(&entries[start])) start++;
-        if (start > MAX_ENTRIES_START) {
-            start = MAX_ENTRIES_START;
-        }
-        tab->entries_start = start;
+        tab->entries_start = start > MAX_ENTRIES_START ? MAX_ENTRIES_START : (unsigned int)start;
     }
 }
 
@@ -3086,10 +3083,7 @@ set_update_range_for_deleted(set_table *tab, st_index_t n)
         st_index_t bound = tab->entries_bound;
         set_table_entry *entries = tab->entries;
         while (start < bound && DELETED_ENTRY_P(&entries[start])) start++;
-        if (start > MAX_ENTRIES_START) {
-            start = MAX_ENTRIES_START;
-        }
-        tab->entries_start = start;
+        tab->entries_start = start > MAX_ENTRIES_START ? MAX_ENTRIES_START : (unsigned int)start;
     }
 }
 
