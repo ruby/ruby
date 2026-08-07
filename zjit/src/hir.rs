@@ -5940,13 +5940,6 @@ impl Function {
             })
         }
 
-        // Remove arguments of the edge at selected indices
-        fn prune_branch_edge(edge: BranchEdge, indices: &Vec<usize>) -> BranchEdge {
-            let mut args = edge.args.clone();
-            prune_vec_by_indices(&mut args, indices);
-            BranchEdge { target: edge.target, args }
-        }
-
         // Instantiate the domain for abstract interpretation.
         // We store possible param values for each block
         let mut predecessor_domain: Vec<Vec<ParamValue>> = vec![Vec::new(); self.blocks.len()];
@@ -5991,8 +5984,10 @@ impl Function {
             for block_id in &predecessor_blocks {
                 let insn_id = *self.blocks[block_id.0].insns.last().unwrap();
 
+                // TODO: Add a function to flatten edges into an iterator for jumps and condbranches.
+                // TODO: Make sure to use this when we update edges in the block later
                 // Extract edges into a tuple for processing
-                let (first, second) = match self.find(insn_id) {
+                let (first, second) = match self.resolve(insn_id).insn(self) {
                     Insn::Jump(edge) => (Some(edge), None),
                     Insn::CondBranch { if_true, if_false, ..} => (Some(if_true), Some(if_false)),
                     _ => (None, None)
@@ -6004,7 +5999,7 @@ impl Function {
                 // Use the results of abstract interpretation to update the states
                 // Perform abstract interpretation
                 for BranchEdge { target: block_id, args: params } in edges {
-                    for (i, param) in params.iter().enumerate().rev() {
+                    for (i, param) in params.iter().enumerate() {
                         let param = self.find_id(*param);
                         // If the param is the same as passed into the block, it is a self loop and provides no new predecessor information.
                         if param == self.find_id(self.blocks[block_id.0].params[i]) {
@@ -6042,25 +6037,19 @@ impl Function {
                 for jump_block_id in &predecessor_blocks {
                     let index = self.blocks[jump_block_id.0].insns.len() - 1;
                     let cond_insn_id = self.blocks[jump_block_id.0].insns[index];
-                    match self.find(cond_insn_id) {
+                    match self.resolve(cond_insn_id).insn_mut(self) {
                         Insn::Jump(edge) => {
                             if edge.target == *block_id {
-                                let edge = prune_branch_edge(edge, &trivial_indices);
-                                self.insns[cond_insn_id.0] = Insn::Jump(edge);
+                                prune_vec_by_indices(&mut edge.args, &trivial_indices);
                             }
                         }
-                        Insn::CondBranch { val, if_true, if_false } => {
-                            let if_true = if if_true.target == *block_id {
-                                prune_branch_edge(if_true, &trivial_indices)
-                            } else {
-                                if_true
-                            };
-                            let if_false = if if_false.target == *block_id {
-                                prune_branch_edge(if_false, &trivial_indices)
-                            } else {
-                                if_false
-                            };
-                            self.insns[cond_insn_id.0] = Insn::CondBranch{ val, if_true, if_false };
+                        Insn::CondBranch { if_true, if_false, .. } => {
+                            if if_true.target == *block_id {
+                                prune_vec_by_indices(&mut if_true.args, &trivial_indices);
+                            }
+                            if if_false.target == *block_id {
+                                prune_vec_by_indices(&mut if_false.args, &trivial_indices);
+                            }
                         }
                         _ => {}
                     }
