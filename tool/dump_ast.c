@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-#include "revision.h"
 
 /*
  * When prism is compiled as part of CRuby, the xmalloc/xfree/etc. macros are
@@ -28,25 +27,12 @@ print_error(const pm_diagnostic_t *diagnostic, void *data)
     fprintf(stderr, "%" PRIi32 ":%" PRIu32 ":%s\n", line_column.line, line_column.column, pm_diagnostic_message(diagnostic));
 }
 
-#if defined(RUBY_RELEASE_DATETIME) && defined(RUBY_RELEASE_DATETIME)
-# define SHOW_PROGRAM_VERSION 2
-#elif defined(RUBY_RELEASE_DATETIME) || defined(RUBY_RELEASE_DATETIME)
-# define SHOW_PROGRAM_VERSION 1
-#else
-# define SHOW_PROGRAM_VERSION 0
-#endif
-#if SHOW_PROGRAM_VERSION
-# define usage_versions "and program versions"
-#else
-# define usage_versions "version"
-#endif
-
 static void
 usage(const char *prog)
 {
     fprintf(stderr, "Usage: %s [options]... <filename>\n"
             "Options:\n"
-            "  -v, --version: show Prism " usage_versions "\n"
+            "  -v, --version: show Prism version\n"
             "  -h, --help: show this message\n"
             "", prog);
 }
@@ -69,21 +55,7 @@ main(int argc, const char *argv[])
             if (!arg[2]) break;
             if (strcmp(arg + 2, "version") == 0) {
               version:
-                fputs("Prism " PRISM_VERSION
-#if SHOW_PROGRAM_VERSION
-                      " ["
-# ifdef RUBY_RELEASE_DATETIME
-                      RUBY_RELEASE_DATETIME
-# endif
-# if SHOW_PROGRAM_VERSION > 1
-                      " "
-# endif
-# ifdef RUBY_REVISION
-                      RUBY_REVISION
-# endif
-                      "]"
-#endif
-                      "\n", stdout);
+                fputs("Prism " PRISM_VERSION "\n", stdout);
                 return EXIT_SUCCESS;
             }
             if (strcmp(arg + 2, "help") == 0) {
