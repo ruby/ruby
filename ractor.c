@@ -268,10 +268,6 @@ ractor_mark_unshareable_parts(rb_ractor_t *r)
         ccan_list_for_each(&r->threads.set, th, lt_node) {
             VM_ASSERT(th != NULL);
             rb_gc_mark(th->self);
-            /* Mark the EC directly: the stack must stay alive even in windows where
-             * the Thread wrapper's own mark has not been traversed yet (mid-creation,
-             * teardown). */
-            if (th->ec) rb_execution_context_mark(th->ec);
 
             /* A thread's ec lives inside the root fiber struct and is freed with that
              * fiber's wrapper object, so keep the fiber wrappers alive from here too. */
@@ -279,9 +275,15 @@ ractor_mark_unshareable_parts(rb_ractor_t *r)
                 VALUE root_fiber_self = rb_fiberptr_self(th->root_fiber);
                 if (root_fiber_self) rb_gc_mark(root_fiber_self);
             }
-            if (th->ec && th->ec->fiber_ptr) {
-                VALUE fiber_self = rb_fiberptr_self(th->ec->fiber_ptr);
-                if (fiber_self) rb_gc_mark(fiber_self);
+            /* The ec sits inside its fiber, so marking that fiber's wrapper scans the ec
+             * as well.  Only when there is no wrapper yet (mid-creation, teardown) does
+             * the ec need marking of its own. */
+            VALUE ec_fiber_self = (th->ec && th->ec->fiber_ptr) ? rb_fiberptr_self(th->ec->fiber_ptr) : 0;
+            if (ec_fiber_self) {
+                rb_gc_mark(ec_fiber_self);
+            }
+            else if (th->ec) {
+                rb_execution_context_mark(th->ec);
             }
 
             /* Root the thread's remaining possessions directly as well; thgroup in
