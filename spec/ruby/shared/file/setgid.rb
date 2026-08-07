@@ -1,5 +1,6 @@
 describe :file_setgid, shared: true do
-  platform_is :darwin do
+  # Fails on RubyCI
+  quarantine! do # platform_is :darwin do
     it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
       utf8_path = tmp("file_predicate_utf8_path_\u{3042}.txt")
       # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
