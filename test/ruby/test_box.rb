@@ -352,6 +352,29 @@ class TestBox < Test::Unit::TestCase
 
     assert_equal "foo 1", @box::OpenClassWithInclude.refer_foo
   end
+
+  def test_descendants_follow_ancestors_of_the_current_box
+    setup_box
+
+    @box.require_relative('box/descendants')
+
+    assert_include @box::Descendants.ext_descendants, String
+    assert_include @box::Descendants.string_descendants, @box::BoxedString
+
+    # a builtin class has its own classext per box, so the include is invisible here
+    assert_not_include String.ancestors, @box::DescendantsExt
+    assert_not_include @box::DescendantsExt.descendants, String
+
+    # a class defined outside the box shares its classext, so the include is visible here
+    assert_include TestBoxDescendantsMain.ancestors, @box::DescendantsExt
+    assert_include @box::DescendantsExt.descendants, TestBoxDescendantsMain
+
+    assert_include @box::BoxedString.ancestors, String
+    assert_include String.descendants, @box::BoxedString
+  end
+end
+
+class TestBoxDescendantsMain
 end
 
 module ProcLookupTestA
