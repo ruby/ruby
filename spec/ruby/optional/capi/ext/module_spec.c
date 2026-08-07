@@ -36,6 +36,7 @@ static VALUE module_specs_const_set(VALUE self, VALUE klass, VALUE name, VALUE v
 
 static VALUE module_specs_rb_deprecate_constant(VALUE self, VALUE cls, VALUE str_name) {
   rb_deprecate_constant(cls, RSTRING_PTR(str_name));
+  return Qnil;
 }
 
 static VALUE module_specs_rb_define_alias(VALUE self, VALUE obj,

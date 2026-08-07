@@ -899,7 +899,7 @@ describe "Pattern matching" do
         case kwargs
         in {b: 2}
         end
-      end.should raise_error(NoMatchingPatternKeyError, message: "key not found: :b")
+      end.should.raise(NoMatchingPatternKeyError, message: "key not found: :b")
 
       NoMatchingPatternKeyError.superclass.should == NoMatchingPatternError
     end
