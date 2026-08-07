@@ -3076,6 +3076,60 @@ fn test_fixnum_mod_negative() {
 }
 
 #[test]
+fn test_fixnum_mod_pow2_constant() {
+    // Modulo by a positive power-of-two constant is strength-reduced to FixnumAnd
+    eval("
+        def test(a) = a % 8
+        test(13) # profile opt_mod
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_mod);
+    assert_snapshot!(assert_compiles("[test(13), test(8), test(0), test(-1), test(-8), test(4611686018427387903), test(-4611686018427387904)]"), @"[5, 0, 0, 7, 0, 7, 0]");
+}
+
+#[test]
+fn test_fixnum_mod_one_constant() {
+    eval("
+        def test(a) = a % 1
+        test(13) # profile opt_mod
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_mod);
+    assert_snapshot!(assert_compiles("[test(13), test(-13)]"), @"[0, 0]");
+}
+
+#[test]
+fn test_fixnum_mod_negative_pow2_constant() {
+    // Only positive power-of-two divisors are strength-reduced
+    eval("
+        def test(a) = a % -8
+        test(13) # profile opt_mod
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_mod);
+    assert_snapshot!(assert_compiles("[test(13), test(-13)]"), @"[-3, -5]");
+}
+
+#[test]
+fn test_fixnum_div_pow2_constant() {
+    // Division by a positive power-of-two constant is strength-reduced to FixnumRShift
+    eval("
+        def test(a) = a / 8
+        test(13) # profile opt_div
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_div);
+    assert_snapshot!(assert_compiles("[test(13), test(-13), test(0), test(-1), test(4611686018427387903), test(-4611686018427387904)]"), @"[1, -2, 0, -1, 576460752303423487, -576460752303423488]");
+}
+
+#[test]
+fn test_fixnum_div_negative_pow2_constant() {
+    // Only positive power-of-two divisors are strength-reduced
+    eval("
+        def test(a) = a / -8
+        test(13) # profile opt_div
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_div);
+    assert_snapshot!(assert_compiles("[test(13), test(-13)]"), @"[-2, 1]");
+}
+
+#[test]
 fn test_fixnum_aref_constant_index() {
     eval("
         def test(a) = a[12]
