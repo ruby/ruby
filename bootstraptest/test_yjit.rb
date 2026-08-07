@@ -3816,13 +3816,16 @@ assert_equal 'ok', %q{
 # struct aset on a frozen struct raises FrozenError (non-embedded)
 assert_equal 'ok', %q{
   def foo(s)
-    s.a = 1
+    s.m1 = 1
   end
 
-  S = Struct.new(:a, :b, :c, :d, :e)
+  max_embedded_members = (GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
+                          GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
+                          GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]) / 8
+  S = Struct.new(*(1..(max_embedded_members + 1)).map { |i| :"m#{i}" })
   foo(S.new) # compile the inline store on a non-frozen receiver
   foo(S.new)
-  frozen = S.new(7, 7, 7, 7, 7).freeze
+  frozen = S.new.freeze
   begin
     foo(frozen)
     :bad
@@ -3847,24 +3850,27 @@ assert_equal '[nil, false, true]', %q{
   [s.a, s.b, s.c]
 }
 
-# struct aset writing heap objects exercises the write barrier and survives GC
+# struct aset writing heap objects exercises the write barrier and survives GC (non-embedded)
 assert_equal '["foo", [1, 2], {k: :v}, "bar", "baz"]', %q{
   def foo(s, a, b, c, d, e)
-    s.a = a
-    s.b = b
-    s.c = c
-    s.d = d
-    s.e = e
+    s.m1 = a
+    s.m2 = b
+    s.m3 = c
+    s.m4 = d
+    s.m5 = e
   end
 
-  S = Struct.new(:a, :b, :c, :d, :e) # non-embedded
+  max_embedded_members = (GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
+                          GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
+                          GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]) / 8
+  S = Struct.new(*(1..(max_embedded_members + 1)).map { |i| :"m#{i}" })
   s = S.new
   foo(s, "f", [], {}, "b", "z") # compile
   GC.start
   GC.start # promote s to the old generation
   foo(s, "fo" + "o", [1, 2], { k: :v }, "ba" + "r", "ba" + "z")
   GC.start # a missing write barrier would lose the young objects here
-  [s.a, s.b, s.c, s.d, s.e]
+  [s.m1, s.m2, s.m3, s.m4, s.m5]
 }
 
 # struct aset via .send (VM_CALL_OPT_SEND)

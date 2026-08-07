@@ -9052,6 +9052,7 @@ fn gen_struct_aset(
     {
         let native_off = (off as i64) * (SIZEOF_VALUE as i64);
         if native_off > (i32::MAX as i64) {
+            gen_counter_incr(jit, asm, Counter::send_struct_aset_offset_too_large);
             return None;
         }
     }
@@ -9086,8 +9087,7 @@ fn gen_struct_aset(
         let rstruct_ptr = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR));
         Opnd::mem(64, rstruct_ptr, SIZEOF_VALUE_I32 * off)
     };
-    let store_val = asm.load(val);
-    asm.mov(slot, store_val);
+    asm.mov(slot, val);
 
     // Conditional write barrier: skipped entirely when the value is a known immediate,
     // otherwise skipped at runtime for immediate/nil/false.
