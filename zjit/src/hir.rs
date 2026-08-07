@@ -5538,11 +5538,11 @@ impl Function {
         self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::HeapBasicObject, state, recompile: None })
     }
 
-    /// Describe the code `load_ivar` will emit for `shape`: `None` when the ivar is undefined
-    /// for the shape (a constant nil), otherwise the ivar index and layout that together
-    /// determine the access path and field offset. Shapes with equal outcomes generate
-    /// identical code.
-    fn load_ivar_outcome(shape: ShapeId, id: ID) -> Option<(attr_index_t, ShapeLayout)> {
+    /// Describe where `shape` stores the ivar `id`: `None` when the ivar is undefined for the
+    /// shape (`load_ivar` emits a constant nil), otherwise the ivar index and layout that
+    /// together determine the access path and field offset. Shapes with equal storage keys
+    /// generate identical code in `load_ivar`.
+    fn ivar_storage_key(shape: ShapeId, id: ID) -> Option<(attr_index_t, ShapeLayout)> {
         let mut ivar_index: attr_index_t = 0;
         if unsafe { rb_shape_get_iv_index(shape.0, id, &mut ivar_index) } {
             Some((ivar_index, shape.layout()))
@@ -5555,7 +5555,7 @@ impl Function {
         // Too-complex shapes use hash tables; rb_shape_get_iv_index doesn't support them.
         // Callers must filter these out before calling load_ivar.
         assert!(!recv_type.shape().is_complex(), "load_ivar called with too-complex shape");
-        let Some((ivar_index, layout)) = Self::load_ivar_outcome(recv_type.shape(), id) else {
+        let Some((ivar_index, layout)) = Self::ivar_storage_key(recv_type.shape(), id) else {
             // If there is no IVAR index, then the ivar was undefined when we
             // entered the compiler.  That means we can just return nil for this
             // shape + iv name
@@ -7271,7 +7271,7 @@ impl Function {
     /// Dispatch an ivar access to profiled shapes. Callbacks generate the optimized access and
     /// generic fallback, optionally returning a value to pass through the join block.
     ///
-    /// Profiles whose optimized code would be identical (equal `outcome_key`, e.g. two shapes
+    /// Profiles whose optimized code would be identical (equal `storage_key`, e.g. two shapes
     /// that store the ivar at the same offset) share a single optimized block.
     fn dispatch_ivar<T: Copy, K: PartialEq>(
         &mut self,
@@ -7284,7 +7284,7 @@ impl Function {
         fallback_counter: Counter,
         has_result: bool,
         profile_shape: impl Fn(T) -> ShapeId,
-        outcome_key: impl Fn(T) -> K,
+        storage_key: impl Fn(T) -> K,
         mut emit_optimized: impl FnMut(&mut Function, BlockId, T) -> Option<InsnId>,
         mut emit_fallback: impl FnMut(&mut Function, BlockId) -> Option<InsnId>,
     ) -> Option<(BlockId, Option<InsnId>)> {
@@ -7322,7 +7322,7 @@ impl Function {
         let result = has_result.then(|| self.push_insn(join_block, Insn::Param));
         let mut optimized_blocks: Vec<(K, BlockId)> = Vec::with_capacity(profiles.len());
         for (i, &profile) in profiles.iter().enumerate() {
-            let key = outcome_key(profile);
+            let key = storage_key(profile);
             let existing = optimized_blocks.iter().find(|(k, _)| *k == key).map(|&(_, block)| block);
             let optimized_block = existing.unwrap_or_else(|| self.new_block(insn_idx));
             if i == last_shape_index {
@@ -7380,7 +7380,7 @@ impl Function {
             Counter::getivar_fallback_no_side_exits,
             true,
             |profiled_type| profiled_type.shape(),
-            |profiled_type| Self::load_ivar_outcome(profiled_type.shape(), id),
+            |profiled_type| Self::ivar_storage_key(profiled_type.shape(), id),
             |fun, block, profiled_type| Some(fun.load_ivar(block, self_param, profiled_type, id)),
             |fun, block| Some(fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id })),
         )?;
