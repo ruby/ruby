@@ -582,6 +582,166 @@ vm_svar_valid_p(VALUE svar)
 }
 #endif
 
+/* Table mapping an escaped env to the svar this thread uses for it, so that
+ * svars are not shared between the threads running a block. The keys are weak,
+ * the values are strong. */
+
+struct svar_table {
+    st_table *table;
+};
+
+static int
+svar_table_mark_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    rb_gc_mark_movable((VALUE)val);
+
+    return ST_CONTINUE;
+}
+
+static void
+svar_table_mark(void *ptr)
+{
+    struct svar_table *t = ptr;
+
+    /* The keys are weak references, so only the values are marked. */
+    st_foreach(t->table, svar_table_mark_i, (st_data_t)0);
+}
+
+static void
+svar_table_free(void *ptr)
+{
+    struct svar_table *t = ptr;
+
+    st_free_table(t->table);
+}
+
+static size_t
+svar_table_memsize(const void *ptr)
+{
+    const struct svar_table *t = ptr;
+
+    return st_memsize(t->table);
+}
+
+static int
+svar_table_compact_i(st_data_t key, st_data_t val, st_data_t arg, int error)
+{
+    /* The keys are hashed by address, so a moved key must be reinserted. */
+    if ((VALUE)key != rb_gc_location((VALUE)key)) {
+        st_insert((st_table *)arg, (st_data_t)rb_gc_location((VALUE)key), (st_data_t)rb_gc_location((VALUE)val));
+
+        return ST_DELETE;
+    }
+    else if ((VALUE)val != rb_gc_location((VALUE)val)) {
+        return ST_REPLACE;
+    }
+    else {
+        return ST_CONTINUE;
+    }
+}
+
+static int
+svar_table_compact_replace_i(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+{
+    *val = (st_data_t)rb_gc_location((VALUE)*val);
+
+    return ST_CONTINUE;
+}
+
+static void
+svar_table_compact(void *ptr)
+{
+    struct svar_table *t = ptr;
+
+    DURING_GC_COULD_MALLOC_REGION_START();
+    {
+        st_foreach_with_replace(t->table, svar_table_compact_i, svar_table_compact_replace_i, (st_data_t)t->table);
+    }
+    DURING_GC_COULD_MALLOC_REGION_END();
+}
+
+static int
+svar_table_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    return rb_gc_handle_weak_references_alive_p((VALUE)key) ? ST_CONTINUE : ST_DELETE;
+}
+
+static void
+svar_table_handle_weak_references(void *ptr)
+{
+    struct svar_table *t = ptr;
+
+    st_foreach(t->table, svar_table_handle_weak_references_i, (st_data_t)0);
+}
+
+static const rb_data_type_t svar_table_data_type = {
+    "VM/svar_table",
+    {
+        svar_table_mark,
+        svar_table_free,
+        svar_table_memsize,
+        svar_table_compact,
+        svar_table_handle_weak_references,
+    },
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+};
+
+static VALUE
+svar_table_new(void)
+{
+    struct svar_table *t;
+    VALUE obj = TypedData_Make_Struct(0, struct svar_table, &svar_table_data_type, t);
+
+    t->table = st_init_numtable();
+
+    rb_gc_declare_weak_references(obj);
+
+    return obj;
+}
+
+static inline struct vm_svar *
+th_svar_table_lookup(const rb_thread_t *th, const VALUE *lep)
+{
+    if (!RTEST(th->svar_table)) return NULL;
+
+    struct svar_table *t = RTYPEDDATA_GET_DATA(th->svar_table);
+    st_data_t svar;
+
+    if (!st_lookup(t->table, (st_data_t)VM_ENV_ENVVAL(lep), &svar)) return NULL;
+
+    return (struct vm_svar *)svar;
+}
+
+static inline void
+th_svar_table_insert(rb_thread_t *th, const VALUE *lep, const struct vm_svar *svar)
+{
+    if (!RTEST(th->svar_table)) {
+        RB_OBJ_WRITE(th->self, &th->svar_table, svar_table_new());
+    }
+
+    struct svar_table *t = RTYPEDDATA_GET_DATA(th->svar_table);
+    VALUE env = VM_ENV_ENVVAL(lep);
+
+    st_insert(t->table, (st_data_t)env, (st_data_t)svar);
+
+    /* The key is remembered as well, not to keep the env alive, but so that a
+     * minor GC which could collect it also runs the weak reference handler. */
+    RB_OBJ_WRITTEN(th->svar_table, Qundef, env);
+    RB_OBJ_WRITTEN(th->svar_table, Qundef, (VALUE)svar);
+}
+
+static inline struct vm_svar *
+lep_svar_owned(const rb_thread_t *th, VALUE svar_val)
+{
+    if (svar_val != Qfalse && imemo_type_p(svar_val, imemo_svar)) {
+        struct vm_svar *sv = (struct vm_svar *)svar_val;
+        if (sv->owner_thread == th->self) {
+            return sv;
+        }
+    }
+    return NULL;
+}
+
 static inline struct vm_svar *
 lep_svar(const rb_execution_context_t *ec, const VALUE *lep)
 {
@@ -615,9 +775,22 @@ lep_svar_write(const rb_execution_context_t *ec, const VALUE *lep, const struct 
 static VALUE
 lep_svar_get(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key)
 {
-    const struct vm_svar *svar = lep_svar(ec, lep);
+    const struct vm_svar *svar;
 
-    if ((VALUE)svar == Qfalse || imemo_type((VALUE)svar) != imemo_svar) return Qnil;
+    if (lep && ec && ec->root_lep != lep && VM_ENV_ESCAPED_P(lep)) {
+        const rb_thread_t *th = rb_ec_thread_ptr(ec);
+
+        VALUE ep_val = lep[VM_ENV_DATA_INDEX_ME_CREF];
+        svar = lep_svar_owned(th, ep_val);
+        if (ep_val != Qfalse && !svar) {
+            svar = th_svar_table_lookup(th, lep);
+        }
+        if (!svar) return Qnil;
+    }
+    else {
+        svar = lep_svar(ec, lep);
+        if ((VALUE)svar == Qfalse || imemo_type((VALUE)svar) != imemo_svar) return Qnil;
+    }
 
     switch (key) {
       case VM_SVAR_LASTLINE:
@@ -638,23 +811,60 @@ lep_svar_get(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key)
 }
 
 static struct vm_svar *
-svar_new(VALUE obj)
+svar_new(VALUE obj, VALUE owner_thread)
 {
     struct vm_svar *svar = IMEMO_NEW(struct vm_svar, imemo_svar, obj);
     *((VALUE *)&svar->lastline) = Qnil;
     *((VALUE *)&svar->backref) = Qnil;
     *((VALUE *)&svar->others) = Qnil;
+    *((VALUE *)&svar->owner_thread) = owner_thread;
 
     return svar;
+}
+/* Construct a bare, immutable Ractor-shareable svar that wraps +cref_or_me+ and owns no
+ * thread. Installed at ep[-2] of an isolated/shareable env so that every Ractor
+ * uses its own svar in th->svar_table */
+VALUE
+rb_svar_new_bare_shareable(VALUE cref_or_me)
+{
+    struct vm_svar *svar = svar_new(cref_or_me, Qnil);
+    RB_OBJ_SET_SHAREABLE((VALUE)svar);
+    return (VALUE)svar;
 }
 
 static void
 lep_svar_set(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, VALUE val)
 {
-    struct vm_svar *svar = lep_svar(ec, lep);
+    struct vm_svar *svar;
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
 
-    if ((VALUE)svar == Qfalse || imemo_type((VALUE)svar) != imemo_svar) {
-        lep_svar_write(ec, lep, svar = svar_new((VALUE)svar));
+    if (lep && ec && ec->root_lep != lep && VM_ENV_ESCAPED_P(lep)) {
+        VALUE ep_val = lep[VM_ENV_DATA_INDEX_ME_CREF];
+
+        svar = lep_svar_owned(th, ep_val);
+        if (ep_val != Qfalse && !svar) svar = th_svar_table_lookup(th, lep);
+
+        if (svar) {
+            rb_ractor_confirm_belonging((VALUE)svar);
+        }
+        else {
+            if (ep_val != Qfalse && imemo_type_p(ep_val, imemo_svar)) {
+                /* Another thread owns the svar in the env, so keep ours in the
+                 * table of this thread. */
+                svar = svar_new(((struct vm_svar *)ep_val)->cref_or_me, th->self);
+                th_svar_table_insert(th, lep, svar);
+            }
+            else {
+                svar = svar_new(ep_val, th->self);
+                lep_svar_write(ec, lep, svar);
+            }
+        }
+    }
+    else {
+        svar = lep_svar(ec, lep);
+        if ((VALUE)svar == Qfalse || imemo_type((VALUE)svar) != imemo_svar) {
+            lep_svar_write(ec, lep, svar = svar_new((VALUE)svar, th->self));
+        }
     }
 
     switch (key) {

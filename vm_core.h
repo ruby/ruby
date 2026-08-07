@@ -1179,6 +1179,10 @@ typedef struct rb_thread_struct {
 
     VALUE last_status; /* $? */
 
+    /* Weak-keyed table of escaped env -> the svar this thread uses for it, so
+     * that svars are not shared between threads. Qnil until needed. */
+    VALUE svar_table;
+
     /* for cfunc */
     struct rb_calling_info *calling;
 
