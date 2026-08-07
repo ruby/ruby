@@ -5538,19 +5538,29 @@ impl Function {
         self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::HeapBasicObject, state, recompile: None })
     }
 
+    /// Describe the code `load_ivar` will emit for `shape`: `None` when the ivar is undefined
+    /// for the shape (a constant nil), otherwise the ivar index and layout that together
+    /// determine the access path and field offset. Shapes with equal outcomes generate
+    /// identical code.
+    fn load_ivar_outcome(shape: ShapeId, id: ID) -> Option<(attr_index_t, ShapeLayout)> {
+        let mut ivar_index: attr_index_t = 0;
+        if unsafe { rb_shape_get_iv_index(shape.0, id, &mut ivar_index) } {
+            Some((ivar_index, shape.layout()))
+        } else {
+            None
+        }
+    }
+
     fn load_ivar(&mut self, block: BlockId, self_val: InsnId, recv_type: ProfiledType, id: ID) -> InsnId {
         // Too-complex shapes use hash tables; rb_shape_get_iv_index doesn't support them.
         // Callers must filter these out before calling load_ivar.
         assert!(!recv_type.shape().is_complex(), "load_ivar called with too-complex shape");
-        let mut ivar_index: attr_index_t = 0;
-        if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
+        let Some((ivar_index, layout)) = Self::load_ivar_outcome(recv_type.shape(), id) else {
             // If there is no IVAR index, then the ivar was undefined when we
             // entered the compiler.  That means we can just return nil for this
             // shape + iv name
             return self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
-        }
-
-        let layout = recv_type.shape().layout();
+        };
 
         match layout {
             ShapeLayout::RClass | ShapeLayout::Extended => {
@@ -7260,7 +7270,10 @@ impl Function {
 
     /// Dispatch an ivar access to profiled shapes. Callbacks generate the optimized access and
     /// generic fallback, optionally returning a value to pass through the join block.
-    fn dispatch_ivar<T: Copy>(
+    ///
+    /// Profiles whose optimized code would be identical (equal `outcome_key`, e.g. two shapes
+    /// that store the ivar at the same offset) share a single optimized block.
+    fn dispatch_ivar<T: Copy, K: PartialEq>(
         &mut self,
         profiles: &[T],
         mut block: BlockId,
@@ -7271,6 +7284,7 @@ impl Function {
         fallback_counter: Counter,
         has_result: bool,
         profile_shape: impl Fn(T) -> ShapeId,
+        outcome_key: impl Fn(T) -> K,
         mut emit_optimized: impl FnMut(&mut Function, BlockId, T) -> Option<InsnId>,
         mut emit_fallback: impl FnMut(&mut Function, BlockId) -> Option<InsnId>,
     ) -> Option<(BlockId, Option<InsnId>)> {
@@ -7306,8 +7320,11 @@ impl Function {
         let last_shape_index = profiles.len() - 1;
         let join_block = self.new_block(insn_idx);
         let result = has_result.then(|| self.push_insn(join_block, Insn::Param));
+        let mut optimized_blocks: Vec<(K, BlockId)> = Vec::with_capacity(profiles.len());
         for (i, &profile) in profiles.iter().enumerate() {
-            let optimized_block = self.new_block(insn_idx);
+            let key = outcome_key(profile);
+            let existing = optimized_blocks.iter().find(|(k, _)| *k == key).map(|&(_, block)| block);
+            let optimized_block = existing.unwrap_or_else(|| self.new_block(insn_idx));
             if i == last_shape_index {
                 if self.policy.no_side_exits {
                     // If the policy doesn't allow exits, make a fallback block and jump to it if the shape doesn't match.
@@ -7332,8 +7349,11 @@ impl Function {
                 self.push_insn(block, branch(matches, optimized_block, next_block));
                 block = next_block;
             }
-            let optimized_result = emit_optimized(self, optimized_block, profile);
-            self.push_insn(optimized_block, Insn::Jump(result_edge(join_block, optimized_result)));
+            if existing.is_none() {
+                let optimized_result = emit_optimized(self, optimized_block, profile);
+                self.push_insn(optimized_block, Insn::Jump(result_edge(join_block, optimized_result)));
+                optimized_blocks.push((key, optimized_block));
+            }
         }
         Some((join_block, result))
     }
@@ -7360,6 +7380,7 @@ impl Function {
             Counter::getivar_fallback_no_side_exits,
             true,
             |profiled_type| profiled_type.shape(),
+            |profiled_type| Self::load_ivar_outcome(profiled_type.shape(), id),
             |fun, block, profiled_type| Some(fun.load_ivar(block, self_param, profiled_type, id)),
             |fun, block| Some(fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id })),
         )?;
@@ -7397,6 +7418,13 @@ impl Function {
             Counter::setivar_fallback_no_side_exits,
             false,
             |spec| spec.profiled_type.shape(),
+            // The emitted code is determined by the field offset, the storage layout, and the
+            // shape transition (if any); see emit_optimized_setivar.
+            |spec| (
+                spec.ivar_index,
+                spec.profiled_type.shape().layout(),
+                (spec.next_shape != spec.profiled_type.shape()).then_some(spec.next_shape),
+            ),
             |fun, block, spec| {
                 fun.emit_optimized_setivar(block, self_param, id, val, spec);
                 None
