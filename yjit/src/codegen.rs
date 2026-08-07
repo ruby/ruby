@@ -3326,7 +3326,7 @@ fn gen_set_ivar(
                 asm_comment!(asm, "write shape");
                 // `next_shape_id` was transitioned from the guarded shape id, so it carries
                 // the layout and capacity bits that RBASIC_SET_SHAPE_ID() would preserve.
-                asm.store(shape_opnd, Opnd::UImm(next_shape_id as u64));
+                asm.store(shape_opnd, next_shape_id.into());
 
                 // If we know the stack value is an immediate, there's no need to
                 // generate WB code.
