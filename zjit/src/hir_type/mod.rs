@@ -442,6 +442,26 @@ impl Type {
         }
     }
 
+    /// Return the only Ruby object this type can describe, if there is exactly one.
+    ///
+    /// This is broader than [`Self::ruby_object`]: the singleton classes pin a value
+    /// through their type bits alone, so `Type::from_value(Qnil)` normalizes to a bare
+    /// `types::NilClass` with no specialization (see [`Self::from_value`]) and
+    /// `ruby_object()` returns `None` for it.
+    pub fn exact_ruby_value(&self) -> Option<VALUE> {
+        if let Some(val) = self.ruby_object() {
+            return Some(val);
+        }
+        // Empty is a subtype of every type, but describes no value at all.
+        if self.bit_equal(types::Empty) {
+            return None;
+        }
+        if self.is_subtype(types::NilClass) { return Some(Qnil); }
+        if self.is_subtype(types::TrueClass) { return Some(Qtrue); }
+        if self.is_subtype(types::FalseClass) { return Some(Qfalse); }
+        None
+    }
+
     pub fn unspecialized(&self) -> Self {
         Type::new(self.type_bits(), Specialization::Any)
     }
