@@ -3994,6 +3994,21 @@ static void
 thread_free(void *ptr)
 {
     rb_thread_t *th = ptr;
+
+    /* The final self collection sweeps the wrapper of the very thread running it; the
+     * struct is still under that thread's feet (GET_EC resolves through it), so the
+     * thread frees the struct itself at its last step (rb_ractor_postmortem_free). */
+    if (th->ec != NULL && th->ec == rb_current_execution_context(false)) {
+        th->self = 0;
+        return;
+    }
+    rb_thread_free_body(ptr);
+}
+
+void
+rb_thread_free_body(void *ptr)
+{
+    rb_thread_t *th = ptr;
     RUBY_FREE_ENTER("thread");
 
     rb_threadptr_sched_free(th);

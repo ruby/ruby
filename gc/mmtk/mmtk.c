@@ -1816,6 +1816,13 @@ rb_gc_impl_during_global_gc_p(void *objspace_ptr)
 }
 
 bool
+rb_gc_impl_during_postmortem_p(void *objspace_ptr)
+{
+    /* mmtk has a single objspace and no per-Ractor retire collection. */
+    return false;
+}
+
+bool
 rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj)
 {
     /* With a single objspace every object is our own. */

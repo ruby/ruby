@@ -44,6 +44,12 @@ rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
     return false;
 }
 
+bool
+rb_thread_event_hooks_registered_p(void)
+{
+    return false; // hooks are not implemented on this platform
+}
+
 RBIMPL_ATTR_NORETURN()
 static void
 w32_error(const char *func)

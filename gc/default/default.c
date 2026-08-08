@@ -605,6 +605,7 @@ typedef struct rb_objspace {
         unsigned int during_reference_updating : 1;
         unsigned int during_minor_gc : 1;
         unsigned int during_incremental_marking : 1;
+        unsigned int during_postmortem : 1;
         unsigned int measure_gc : 1;
     } flags;
 
@@ -7805,12 +7806,25 @@ rb_gc_impl_objspace_retire_gc(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
+    /* The dying thread's stack is already torn down here, so the root scan must skip
+     * its machine context (rb_gc_mark_roots). */
+    objspace->flags.during_postmortem = 1;
+
     gc_rest(objspace);
     gc_start_body(objspace, GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP,
                   false);
 
     heap_pages_freeable_pages = objspace->empty_pages_count;
     heap_pages_free_unused_pages(objspace);
+
+    objspace->flags.during_postmortem = 0;
+}
+
+bool
+rb_gc_impl_during_postmortem_p(void *objspace_ptr)
+{
+    rb_objspace_t *objspace = objspace_ptr;
+    return objspace->flags.during_postmortem != 0;
 }
 
 static void

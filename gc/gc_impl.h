@@ -137,6 +137,9 @@ GC_IMPL_FN void rb_gc_impl_each_objects_foreign(void *objspace_ptr, int (*callba
  * objspace and passes the per-Ractor objspace machinery (retire, absorb, ...) straight through. */
 GC_IMPL_FN bool rb_gc_impl_multi_objspace_p(void);
 GC_IMPL_FN bool rb_gc_impl_during_global_gc_p(void *objspace_ptr);
+/* Whether the current collection is a dying thread's final collection of its own
+ * objspace, whose torn-down machine context must not be scanned. */
+GC_IMPL_FN bool rb_gc_impl_during_postmortem_p(void *objspace_ptr);
 /* Whether obj is owned by an objspace other than objspace_ptr.  Always false for a single
  * objspace impl. */
 GC_IMPL_FN bool rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj);

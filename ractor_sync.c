@@ -675,12 +675,6 @@ ractor_notify_exit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE legacy, bo
     VM_ASSERT(!UNDEF_P(legacy));
     VM_ASSERT(cr->sync.legacy == Qundef);
 
-    /* Last local GC before termination, in ordinary execution context: collect here
-     * what the joiner would otherwise inherit, and return empty pages to the pool. */
-    if (cr != GET_VM()->ractor.main_ractor) {
-        rb_gc_objspace_retire_gc();
-    }
-
     RACTOR_LOCK_SELF(cr);
     {
         ractor_free_all_ports(cr);
