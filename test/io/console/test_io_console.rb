@@ -796,6 +796,7 @@ TestIO_Console.class_eval do
       end
     end
   rescue LoadError
+    pend $!
   end
 
   def test_cursor_visibility
@@ -827,6 +828,7 @@ TestIO_Console.class_eval do
       end
     end
   rescue LoadError
+    pend $!
   end
 
   def test_console_input_events
@@ -915,6 +917,7 @@ TestIO_Console.class_eval do
     thread.raise(Interrupt)
     assert_raise(Interrupt) {thread.value}
   rescue LoadError
+    pend $!
   end
 
   def test_check_winsize_changed_deprecated
