@@ -787,7 +787,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::IsA { val, class } => gen_is_a(jit, asm, opnd!(val), opnd!(class)),
         &Insn::ArrayMax { ref elements, state } => gen_array_max(jit, asm, function, opnds!(elements), &function.frame_state(state)),
         &Insn::ArrayMin { ref elements, state } => gen_array_min(jit, asm, function, opnds!(elements), &function.frame_state(state)),
-        &Insn::Throw { state, .. } => no_output!(gen_throw(jit, asm, function, &function.frame_state(state))),
+        &Insn::Throw { throw_state, val, state } => no_output!(gen_throw(jit, asm, function, throw_state, opnd!(val), &function.frame_state(state))),
         &Insn::CondBranch { .. }
         | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
     };
@@ -2697,10 +2697,16 @@ fn gen_return(asm: &mut Assembler, val: lir::Opnd) {
     asm.cret(C_RET_OPND);
 }
 
-fn gen_throw(jit: &mut JITState, asm: &mut Assembler, function: &Function, state: &FrameState) {
-    // TODO: Consider calling rb_vm_throw and propagating ec->tag->state to the interpreter.
-    // Also consider making it a jump on method inlining.
-    gen_side_exit(jit, asm, function, &SideExitReason::Throw, None, state);
+/// Compile throw (non-local break/return)
+fn gen_throw(jit: &mut JITState, asm: &mut Assembler, function: &Function, throw_state: u32, throwobj: lir::Opnd, state: &FrameState) {
+    // TODO: Consider making it a jump on method inlining (under restrictions like no ensure)
+    gen_prepare_non_leaf_call(jit, asm, function, state);
+
+    unsafe extern "C" {
+        fn rb_zjit_throw(ec: EcPtr, reg_cfp: CfpPtr, throw_state: u64, throwobj: VALUE) -> !;
+    }
+    asm_ccall!(asm, rb_zjit_throw, EC, CFP, Opnd::UImm(throw_state as u64), throwobj);
+    asm.jmp(ZJITState::get_exit_trampoline().into()); // dead but gives block a valid terminator
 }
 
 /// Compile Fixnum + Fixnum
@@ -3210,28 +3216,6 @@ pub(crate) fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
                 return true;
             }
             _ => {}
-        }
-
-        insn_idx = insn_idx.saturating_add(unsafe { rb_insn_len(VALUE(opcode as usize)) }.try_into().unwrap());
-    }
-
-    false
-}
-
-/// True if the block ISEQ contains a `throw` opcode (break, non-local return). ZJIT can't
-/// compile `throw`, so inlining such a block's frame would side-exit + deopt on every call.
-/// These blocks fall back to `vm_yield`, which handles the non-local exit in C.
-/// (`next`/`redo` lower to `leave`/`jump`, not `throw`, so they stay inlinable.)
-pub(crate) fn block_iseq_may_throw(iseq: IseqPtr) -> bool {
-    let encoded_size = unsafe { rb_iseq_encoded_size(iseq) };
-    let mut insn_idx: u32 = 0;
-
-    while insn_idx < encoded_size {
-        let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
-        let opcode = unsafe { rb_iseq_bare_opcode_at_pc(iseq, pc) } as u32;
-
-        if opcode == YARVINSN_throw {
-            return true;
         }
 
         insn_idx = insn_idx.saturating_add(unsafe { rb_insn_len(VALUE(opcode as usize)) }.try_into().unwrap());

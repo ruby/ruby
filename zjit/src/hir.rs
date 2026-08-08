@@ -2898,11 +2898,10 @@ fn block_call_inlinable(flags: u32) -> bool {
     (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG | VM_CALL_ARGS_BLOCKARG)) == 0
 }
 
-/// Ok if `yield` with `argc` positional args can dispatch by inlining the block ISEQ
-/// frame. The block must take the simple callee-setup path (`rb_simple_iseq_p`)
-/// with an exact arity match, avoid arg0 auto-splat, and contain no `throw` (break /
-/// non-local return). Anything else falls back to the generic `invokeblock` dispatch,
-/// with the returned reason attached to the fallback instruction.
+/// Ok if `yield` with `argc` positional args can dispatch by inlining the block ISEQ frame.
+/// The block must take the simple callee-setup path (`rb_simple_iseq_p`) with an exact arity
+/// match and avoid arg0 auto-splat. Anything else falls back to the generic `invokeblock`
+/// dispatch, with the returned reason attached to the fallback instruction.
 fn block_call_inlinable_iseq(iseq: IseqPtr, argc: usize) -> Result<(), SendFallbackReason> {
     if !unsafe { rb_simple_iseq_p(iseq) } {
         return Err(InvokeBlockNotSpecialized);
@@ -2919,9 +2918,6 @@ fn block_call_inlinable_iseq(iseq: IseqPtr, argc: usize) -> Result<(), SendFallb
     // TODO: Support passing arguments on the stack in C calls
     if 1 + argc > C_ARG_OPNDS.len() {
         return Err(TooManyArgsForLir);
-    }
-    if crate::codegen::block_iseq_may_throw(iseq) {
-        return Err(InvokeBlockNotSpecialized);
     }
     Ok(())
 }
