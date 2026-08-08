@@ -637,6 +637,8 @@ class TestGc < Test::Unit::TestCase
       # A global collection stops the world for its whole duration, so its pause time is
       # recorded like a local one's -- and the phases it measures fit inside it.
       assert_operator record[:GC_PAUSE_TIME], :>, 0.0
+      assert_operator record[:GC_MARK_WALL_TIME], :>, 0.0
+      assert_operator record[:GC_SWEEP_WALL_TIME], :>, 0.0
       assert_in_delta record[:GC_PAUSE_TIME], record[:GC_STOP_TIME] + record[:GC_STW_TIME], 0.001
       assert_operator record[:GC_MARK_WALL_TIME] + record[:GC_SWEEP_WALL_TIME], :<=, record[:GC_PAUSE_TIME]
     RUBY
