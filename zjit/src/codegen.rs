@@ -1669,7 +1669,7 @@ fn gen_push_inline_frame(
     // `FixnumBitCheck` rather than a memory load. On a side exit out of the
     // inlined body, FrameState materialization writes the local back to the
     // callee frame from that constant, and on the no-side-exit path nothing
-    // reads the slot before `gen_pop_lightweight_frame` tears down the frame.
+    // reads the slot before `gen_pop_inline_frame` tears down the frame.
     // (The non-inlined `gen_send_iseq_direct` path still emits its own store
     // because the callee's separate JIT entry reads it from memory.)
 
@@ -2668,7 +2668,7 @@ fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Optio
 
     // Publish a valid entry JITFrame before setting cfp->jit_return. The entry point is
     // always the top-level frame (depth 0). Inlined frames get their own deeper
-    // slots in gen_push_lightweight_frame().
+    // slots in gen_push_inline_frame().
     let jit_frame = JITFrame::new_iseq(entry_pc(jit.iseq(), jit_entry_idx), jit.iseq(), 0);
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(jit_frame));
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), NATIVE_BASE_PTR);

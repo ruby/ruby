@@ -3016,7 +3016,7 @@ impl Function {
     /// Emit the fast-path `yield` dispatch to a known ISEQ block.
     /// When `guarded`, the block handler is read from the runtime LEP and guarded (tag + iseq
     /// identity) because the profiled block can differ per caller. When the enclosing method is
-    /// inlined and the caller passed a literal block, `gen_push_inline_frame` wrote that exact
+    /// inlined and the caller passed a literal block, [`Insn::PushInlineFrame`] wrote that exact
     /// block into this frame's EP from a compile-time constant, so both guards are unnecessary.
     fn push_invoke_block_iseq_direct(&mut self, block: BlockId, block_iseq: IseqPtr, level: u32, args: Vec<InsnId>, state: InsnId, guarded: bool) -> InsnId {
         let ep = self.get_ep(block, level);
