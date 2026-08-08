@@ -244,13 +244,12 @@ rb_gc_stash_cleanup_objspace(void)
     GET_VM()->gc.cleanup_objspace = rb_gc_get_objspace();
 }
 
-void *
-rb_gc_get_objspace(void)
+static inline void *
+gc_current_objspace_of(rb_ractor_t *const cr)
 {
     if (RB_UNLIKELY(ruby_vm_during_cleanup) && GET_VM()->gc.cleanup_objspace) {
         return GET_VM()->gc.cleanup_objspace;
     }
-    rb_ractor_t *cr = rb_current_ractor_raw(false);
     if (cr == NULL) {
         /* A thread with no current Ractor (a GVL-less native thread freeing in
          * thread_sched_reclaim, say) uses the main Ractor's objspace. */
@@ -259,6 +258,12 @@ rb_gc_get_objspace(void)
     /* A live current Ractor always has an objspace. */
     RUBY_ASSERT(cr->objspace != NULL);
     return cr->objspace;
+}
+
+void *
+rb_gc_get_objspace(void)
+{
+    return gc_current_objspace_of(rb_current_ractor_raw(false));
 }
 
 void
@@ -1121,8 +1126,13 @@ gc_newobj_hook(VALUE obj)
     RB_GC_VM_UNLOCK_NO_BARRIER(lev);
 }
 
-VALUE
-rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape_id, bool wb_protected, size_t size)
+ALWAYS_INLINE(static VALUE newobj_body(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape_id, bool wb_protected, size_t size));
+
+/* The allocation body shared by rb_newobj and rb_ec_newobj_of, forced inline into
+ * both: left to this big translation unit's inline budget, gcc drops it from one
+ * entry point or the other and that allocation path grows a call. */
+static VALUE
+newobj_body(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape_id, bool wb_protected, size_t size)
 {
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
@@ -1162,6 +1172,12 @@ rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape
 }
 
 VALUE
+rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape_id, bool wb_protected, size_t size)
+{
+    return newobj_body(ec, klass, flags, shape_id, wb_protected, size);
+}
+
+VALUE
 rb_ec_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, size_t size)
 {
     VALUE type = flags & T_MASK;
@@ -1172,7 +1188,7 @@ rb_ec_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, size_t siz
     RUBY_ASSERT(type != T_ICLASS);
     (void)type;
 
-    return rb_newobj(ec, klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, true, size);
+    return newobj_body(ec, klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, true, size);
 }
 
 static VALUE
@@ -2803,23 +2819,26 @@ ruby_stack_check(void)
  * concurrent GC mark into obj_traverse recursion). Only threads with no
  * current Ractor (modular GC's marking worker threads) fall back to the VM
  * slot, which no setter writes, so they always take the real mark path. */
-#if USE_MODULAR_GC
 static inline struct gc_mark_func_data_struct **
-gc_mark_func_data_slotp(void)
+gc_mark_func_data_slotp_of(rb_ractor_t *const cr)
 {
-    rb_ractor_t *const cr = rb_current_ractor_raw(false);
+#if USE_MODULAR_GC
     return cr != NULL ? &cr->mark_func_data : &GET_VM()->gc.mark_func_data;
-}
-#  define GC_MARK_FUNC_DATA_SLOTP()  gc_mark_func_data_slotp()
 #else
-#  define GC_MARK_FUNC_DATA_SLOTP()  (&GET_RACTOR()->mark_func_data)
+    RUBY_ASSERT(cr != NULL);
+    return &cr->mark_func_data;
 #endif
+}
+#define GC_MARK_FUNC_DATA_SLOTP()  gc_mark_func_data_slotp_of(rb_current_ractor_raw(false))
 
+/* Marking pays this block per marked reference, so the current Ractor is
+ * resolved once and both the redirect slot and the objspace derive from it. */
 #define RB_GC_MARK_OR_TRAVERSE(func, obj_or_ptr, obj, check_obj) do { \
     if (!RB_SPECIAL_CONST_P(obj)) { \
-        struct gc_mark_func_data_struct **mfdp = GC_MARK_FUNC_DATA_SLOTP(); \
+        rb_ractor_t *const mark_cr = rb_current_ractor_raw(false); \
+        struct gc_mark_func_data_struct **mfdp = gc_mark_func_data_slotp_of(mark_cr); \
         struct gc_mark_func_data_struct *mark_func_data = *mfdp; \
-        void *objspace = rb_gc_get_objspace(); \
+        void *objspace = gc_current_objspace_of(mark_cr); \
         if (LIKELY(mark_func_data == NULL)) { \
             GC_ASSERT(rb_gc_impl_during_gc_p(objspace)); \
             (func)(objspace, (obj_or_ptr)); \
