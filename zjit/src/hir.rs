@@ -5866,6 +5866,165 @@ impl Function {
         }
     }
 
+    /// ZJIT uses block parameters in HIR SSA representation.
+    /// Sometimes, we can prove that a block param is only called with a single value.
+    /// This pass identifies such trivial block params and replaces them with the concretized value.
+    /// This produces a minimal SSA representation amenable to further optimizations.
+    /// The implementation is inspired from algorithm 2 in <https://c9x.me/compile/bib/braun13cc.pdf>.
+    fn remove_trivial_block_params(&mut self) {
+        // Each block param is lifted to an abstract domain of ParamValues.
+        // The lattice is simple. None is Bottom, Multiple is Top, and One is between both.
+        // During analysis, all block params start with None.
+        // New values passed to the block transition up the lattice.
+        // Trivial block params have one unique value. This is the case we optimize away.
+        // Lattice structure taken from cranelift: <https://github.com/bytecodealliance/wasmtime/blob/main/cranelift/codegen/src/remove_constant_phis.rs>
+        #[derive(Clone, Copy)]
+        enum ParamValue {
+            None,
+            One(InsnId),
+            Many
+        }
+
+        impl ParamValue {
+            fn update(&mut self, value: InsnId) {
+                *self = match *self {
+                    ParamValue::None => ParamValue::One(value),
+                    ParamValue::One(original) if original != value => ParamValue::Many,
+                    other => other
+                };
+            }
+        }
+
+        // Helper function to remove selected indices from a vec in place
+        fn prune_vec_by_indices<T>(v: &mut Vec<T>, indices: &[usize]) {
+            let mut i: usize = 0;
+            v.retain(|_| {
+                let valid_id = !indices.contains(&i);
+                i += 1;
+                valid_id
+            })
+        }
+
+        // Instantiate the domain for abstract interpretation.
+        // We store possible param values for each block
+        let mut predecessor_domain: Vec<Vec<ParamValue>> = vec![Vec::new(); self.blocks.len()];
+
+        let blocks = self.reverse_post_order();
+
+        // Find blocks that terminate with Jump or CondBranch instructions that pass block params along.
+        // These terminators are later analyzed for trivial block params.
+        let predecessor_blocks: Vec<BlockId> = blocks.iter().copied()
+            .filter(|&block_id|
+                // Match against the final instruction which terminates the basic block.
+                // If it has any non-empty edges, keep it.
+                match self.find(*self.blocks[block_id.0].insns().last().unwrap()) {
+                    Insn::CondBranch { if_true, if_false, .. } => !if_true.args.is_empty() || !if_false.args.is_empty(),
+                    Insn::Jump(edge) => !edge.args.is_empty(),
+                    _ => false
+                })
+            .collect();
+
+        // We only need to update blocks that have params. (Blocks without params cannot be improved)
+        let param_blocks: Vec<BlockId> = blocks.into_iter()
+            .filter(|&block_id|
+                self.blocks[block_id.0].params().len() != 0)
+            .collect();
+
+        // NOTE: It is possible that once some block_params are removed, there will be no params.
+        // This means that predecessor_blocks or param_blocks could be pruned. This minor optimization can be added if desired.
+        // Importantly, we do not keep track of exactly which edges correspond to which blocks. While doing so
+        // would allow us to replace our "loop until fixpoint" with a "iterate through the worklist, only checking relevant edges",
+        // the construction of the mapping from predecessor edges to blocks seems expensive.
+
+        let mut changed = true;
+
+        while changed {
+            changed = false;
+
+            for (row, block) in predecessor_domain.iter_mut().zip(&self.blocks) {
+                row.resize(block.params.len(), ParamValue::None);
+            }
+
+            // Scan through each jump, collecting edges with params to analyze from CondBranch and Jump insns.
+            for block_id in &predecessor_blocks {
+                let insn_id = *self.blocks[block_id.0].insns.last().unwrap();
+
+                // TODO: Add a function to flatten edges into an iterator for jumps and condbranches.
+                // TODO: Make sure to use this when we update edges in the block later
+                // Extract edges into a tuple for processing
+                let (first, second) = match self.resolve(insn_id).insn(self) {
+                    Insn::Jump(edge) => (Some(edge), None),
+                    Insn::CondBranch { if_true, if_false, ..} => (Some(if_true), Some(if_false)),
+                    _ => (None, None)
+                };
+
+                // Keep all edges that pass params
+                let edges = first.into_iter().chain(second).filter(|edge| edge.args.len() > 0);
+
+                // Use the results of abstract interpretation to update the states
+                // Perform abstract interpretation
+                for BranchEdge { target: block_id, args: params } in edges {
+                    for (i, param) in params.iter().enumerate() {
+                        let param = self.find_id(*param);
+                        // If the param is the same as passed into the block, it is a self loop and provides no new predecessor information.
+                        if param == self.find_id(self.blocks[block_id.0].params[i]) {
+                            continue
+                        }
+                        predecessor_domain[block_id.0][i].update(param);
+                    }
+                }
+            }
+
+            // Remove the trivial block params and fix up our SSA representation
+            // This is done by as follows.
+            // 1. Replace uses of the trivial params with the concretized value
+            // 2. Remove trivial params from the basic block definition
+            // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
+            for block_id in &param_blocks {
+                let block_preds = &predecessor_domain[block_id.0];
+                let trivial_indices: Vec<usize> = block_preds.iter().enumerate()
+                    .filter_map(|(idx, state)|
+                        matches!(state, ParamValue::One(_)).then_some(idx)
+                    ).collect();
+
+                // Replace uses of the trivial params with the concretized value
+                for param_index in &trivial_indices {
+                    if let ParamValue::One(insn_id) = block_preds[*param_index] {
+                        self.make_equal_to(self.blocks[block_id.0].params[*param_index], insn_id);
+                        changed = true;
+                    }
+                }
+
+                // Update the block
+                prune_vec_by_indices(&mut self.blocks[block_id.0].params, &trivial_indices);
+
+                // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
+                for jump_block_id in &predecessor_blocks {
+                    let index = self.blocks[jump_block_id.0].insns.len() - 1;
+                    let cond_insn_id = self.blocks[jump_block_id.0].insns[index];
+                    match self.resolve(cond_insn_id).insn_mut(self) {
+                        Insn::Jump(edge) => {
+                            if edge.target == *block_id {
+                                prune_vec_by_indices(&mut edge.args, &trivial_indices);
+                            }
+                        }
+                        Insn::CondBranch { if_true, if_false, .. } => {
+                            if if_true.target == *block_id {
+                                prune_vec_by_indices(&mut if_true.args, &trivial_indices);
+                            }
+                            if if_false.target == *block_id {
+                                prune_vec_by_indices(&mut if_false.args, &trivial_indices);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+    }
+
+
     fn optimize_load_store(&mut self) {
         for block in self.reverse_post_order() {
             let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
@@ -6692,6 +6851,7 @@ impl Function {
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
             (inline_methods) => { Counter::compile_hir_inline_methods_time_ns };
+            (remove_trivial_block_params) => { Counter::compile_hir_remove_trivial_block_params_time_ns };
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
             (canonicalize) => { Counter::compile_hir_canonicalize_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
@@ -6741,6 +6901,7 @@ impl Function {
             } else {
                 false
             };
+            run_pass!(remove_trivial_block_params);
             run_pass!(convert_no_profile_sends);
             run_pass!(optimize_load_store);
             run_pass!(canonicalize);
