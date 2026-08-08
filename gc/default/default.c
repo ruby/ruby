@@ -8782,7 +8782,11 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact)
     }
 
     /* steps 6-7: every Ractor's roots (gc.c walks them all and re-pins in-flight payloads),
-     * then one unified precise mark. */
+     * then one unified precise mark.  A global GC does not go through gc_marks, so the marking
+     * phase is opened here instead; it closes after rb_ractor_finish_marking below, which is
+     * where gc_marks_finish ends for a local collection. */
+    gc_marking_enter(driver);
+
     mark_roots(driver, NULL);
     gc_mark_stacked_objects_all(driver);
 
@@ -8800,6 +8804,8 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact)
      * each storage.  Free the key structs while still inside the barrier (a local GC never
      * can; see rb_ractor_finish_marking). */
     rb_ractor_finish_marking();
+
+    gc_marking_exit(driver);
 
     /* Clean the VM-global weak tables once, before sweeping any objspace (gc_sweep_start
      * skips it during a global GC; the decision comes from the objspace-independent unified
