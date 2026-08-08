@@ -189,6 +189,7 @@ fn main() {
         .allowlist_var("rb_cNumeric")
         .allowlist_var("rb_cRange")
         .allowlist_var("rb_cString")
+        .allowlist_var("rb_cProc")
         .allowlist_var("rb_cThread")
         .allowlist_var("rb_cArray")
         .allowlist_var("rb_cHash")
