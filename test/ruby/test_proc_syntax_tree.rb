@@ -85,7 +85,12 @@ class TestProcSyntaxTree < Test::Unit::TestCase
   def test_source_hash_survives_binary_round_trip
     with_loaded_file("def proc_ast_test_binary = :ok\n") do |path|
       iseq = RubyVM::InstructionSequence.compile_file(path)
-      loaded = RubyVM::InstructionSequence.load_from_binary(iseq.to_binary)
+      loaded = begin
+        RubyVM::InstructionSequence.load_from_binary(iseq.to_binary)
+      rescue RuntimeError => e
+        omit e.message if /compile with coverage/ =~ e.message
+        raise
+      end
 
       assert_equal iseq.source_hash, loaded.source_hash
       assert_equal (PRISM ? :program_node : :SCOPE), loaded.syntax_tree.type
