@@ -155,6 +155,7 @@ make_counters! {
     // Default counters that are available without --zjit-stats
     default {
         compiled_iseq_count,
+        compiled_exception_iseq_count,
         failed_iseq_count,
         skipped_native_stack_full,
 
@@ -355,6 +356,7 @@ make_counters! {
     compile_error_native_stack_too_large,
     compile_error_out_of_memory,
     compile_error_label_linking_failure,
+    compile_error_exception_entry_out_of_range,
     compile_error_jit_to_jit_optional,
     compile_error_register_spill_on_ccall,
     compile_error_register_spill_on_alloc,
@@ -539,6 +541,9 @@ pub enum CompileError {
     /// offsets that don't fit in one instruction. We error in
     /// error that case.
     LabelLinkingFailure,
+    /// The exception handler entry's instruction index or the number of live
+    /// stack values doesn't fit in the supported range.
+    ExceptionEntryOutOfRange,
 }
 
 /// Return a raw pointer to the exit counter for a given CompileError
@@ -553,6 +558,7 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
         NativeStackTooLarge     => compile_error_native_stack_too_large,
         OutOfMemory             => compile_error_out_of_memory,
         LabelLinkingFailure     => compile_error_label_linking_failure,
+        ExceptionEntryOutOfRange => compile_error_exception_entry_out_of_range,
         ParseError(parse_error) => match parse_error {
             StackUnderflow(_)       => compile_error_parse_stack_underflow,
             MalformedIseq(_)        => compile_error_parse_malformed_iseq,
