@@ -18,7 +18,7 @@ class TestYJIT < Test::Unit::TestCase
   running_with_yjit = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 
   def test_yjit_in_ruby_description
-    assert_includes(RUBY_DESCRIPTION, '+YJIT')
+    assert_include(RUBY_DESCRIPTION, '+YJIT')
   end if running_with_yjit
 
   # Check that YJIT is in the version string
@@ -63,7 +63,7 @@ class TestYJIT < Test::Unit::TestCase
       RubyVM::YJIT.enable
 
       assert_predicate RubyVM::YJIT, :enabled?
-      assert_includes RUBY_DESCRIPTION, "+YJIT"
+      assert_include RUBY_DESCRIPTION, "+YJIT"
     RUBY
   end
 
@@ -75,7 +75,7 @@ class TestYJIT < Test::Unit::TestCase
       RubyVM::YJIT.enable
 
       assert_predicate RubyVM::YJIT, :enabled?
-      assert_includes RUBY_DESCRIPTION, "+YJIT"
+      assert_include RUBY_DESCRIPTION, "+YJIT"
     RUBY
   end
 

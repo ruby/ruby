@@ -687,18 +687,18 @@ class TestObjSpace < Test::Unit::TestCase
       end;
       assert_empty error
       assert(output.count > 1)
-      assert_includes output.grep(/"imemo_type":"callinfo"/).join("\n"), '"mid":"baz"'
+      assert_include output.grep(/"imemo_type":"callinfo"/).join("\n"), '"mid":"baz"'
     end
   end
 
   def test_dump_string_coderange
-    assert_includes ObjectSpace.dump("TEST STRING"), '"coderange":"7bit"'
+    assert_include ObjectSpace.dump("TEST STRING"), '"coderange":"7bit"'
     unknown = "TEST STRING".dup.force_encoding(Encoding::UTF_16BE)
     2.times do # ensure that dumping the string doesn't mutate it
-      assert_includes ObjectSpace.dump(unknown), '"coderange":"unknown"'
+      assert_include ObjectSpace.dump(unknown), '"coderange":"unknown"'
     end
-    assert_includes ObjectSpace.dump("Fée"), '"coderange":"valid"'
-    assert_includes ObjectSpace.dump("\xFF"), '"coderange":"broken"'
+    assert_include ObjectSpace.dump("Fée"), '"coderange":"valid"'
+    assert_include ObjectSpace.dump("\xFF"), '"coderange":"broken"'
   end
 
   def test_dump_escapes_method_name
@@ -711,7 +711,7 @@ class TestObjSpace < Test::Unit::TestCase
     obj = klass.new.send(method_name)
 
     dump = ObjectSpace.dump(obj)
-    assert_includes dump, '"method":"foo\"bar"'
+    assert_include dump, '"method":"foo\"bar"'
 
     parsed = JSON.parse(dump)
     assert_equal "foo\"bar", parsed["method"]

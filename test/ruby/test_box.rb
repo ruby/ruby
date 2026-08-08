@@ -891,10 +891,10 @@ class TestBox < Test::Unit::TestCase
       assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[0], error[0]
       assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[1], error[1]
 
-      assert_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
+      assert_include output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
       refute_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
-      assert_includes output.grep(/^after:/).join("\n"), '/bundled_gems.rb'
-      assert_includes output.grep(/^after:/).join("\n"), '/error_highlight.rb'
+      assert_include output.grep(/^after:/).join("\n"), '/bundled_gems.rb'
+      assert_include output.grep(/^after:/).join("\n"), '/error_highlight.rb'
     end
   end
 
@@ -917,7 +917,7 @@ class TestBox < Test::Unit::TestCase
       refute_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
       refute_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
       refute_includes output.grep(/^after:/).join("\n"), '/bundled_gems.rb'
-      assert_includes output.grep(/^after:/).join("\n"), '/error_highlight.rb'
+      assert_include output.grep(/^after:/).join("\n"), '/error_highlight.rb'
     end
   end
 

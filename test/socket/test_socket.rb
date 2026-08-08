@@ -127,7 +127,7 @@ class TestSocket < Test::Unit::TestCase
     rescue NotImplementedError
       return
     end
-    assert_includes list.map(&:ip_address), Addrinfo.tcp("localhost", 0).ip_address
+    assert_include list.map(&:ip_address), Addrinfo.tcp("localhost", 0).ip_address
   end
 
   def test_tcp

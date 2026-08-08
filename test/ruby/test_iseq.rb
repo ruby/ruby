@@ -177,7 +177,7 @@ class TestISeq < Test::Unit::TestCase
       # shareable_constant_value: literal
       REGEX = /#{}/ # [Bug #20569]
     RUBY
-    assert_includes iseq_to_binary(iseq), "REGEX".b
+    assert_include iseq_to_binary(iseq), "REGEX".b
   end
 
   def test_disasm_encoding
