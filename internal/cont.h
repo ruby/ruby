@@ -31,4 +31,5 @@ VALUE rb_fiber_inherit_storage(struct rb_execution_context_struct *ec, struct rb
 VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber);
 unsigned int rb_fiberptr_blocking(struct rb_fiber_struct *fiber);
 struct rb_execution_context_struct * rb_fiberptr_get_ec(struct rb_fiber_struct *fiber);
+void rb_fiber_free_body(void *fiber);  /* cont.c */
 #endif /* INTERNAL_CONT_H */

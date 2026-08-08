@@ -644,6 +644,7 @@ typedef struct gc_function_map {
     bool (*user_gc_disabled_p)(void *objspace_ptr);
     bool (*multi_objspace_p)(void);
     bool (*during_global_gc_p)(void *objspace_ptr);
+    bool (*during_postmortem_p)(void *objspace_ptr);
     bool (*obj_foreign_p)(void *objspace_ptr, VALUE obj);
     bool (*shref_marked_p)(void *objspace_ptr, VALUE obj);
     size_t (*heap_page_count)(void *objspace_ptr);
@@ -838,6 +839,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(user_gc_disabled_p);
     load_modular_gc_func(multi_objspace_p);
     load_modular_gc_func(during_global_gc_p);
+    load_modular_gc_func(during_postmortem_p);
     load_modular_gc_func(obj_foreign_p);
     load_modular_gc_func(shref_marked_p);
     load_modular_gc_func(heap_page_count);
@@ -941,6 +943,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_user_gc_disabled_p rb_gc_functions.user_gc_disabled_p
 # define rb_gc_impl_multi_objspace_p rb_gc_functions.multi_objspace_p
 # define rb_gc_impl_during_global_gc_p rb_gc_functions.during_global_gc_p
+# define rb_gc_impl_during_postmortem_p rb_gc_functions.during_postmortem_p
 # define rb_gc_impl_obj_foreign_p rb_gc_functions.obj_foreign_p
 # define rb_gc_impl_shref_marked_p rb_gc_functions.shref_marked_p
 # define rb_gc_impl_heap_page_count rb_gc_functions.heap_page_count
@@ -3369,8 +3372,14 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
         rb_sym_global_symbols_mark_and_move();
     }
 
-    MARK_CHECKPOINT("machine_context");
-    mark_current_machine_context(ec);
+    /* The dying thread's final collection of its own objspace runs after its stack
+     * has been torn down (thread_cleanup_func), so there is no live machine context
+     * to scan -- the join value and the pins are rooted explicitly.  Scanning the
+     * half-dead stack is not only useless but faults on some platforms. */
+    if (!rb_gc_impl_during_postmortem_p(objspace)) {
+        MARK_CHECKPOINT("machine_context");
+        mark_current_machine_context(ec);
+    }
 
     MARK_CHECKPOINT("finish");
 
@@ -4201,6 +4210,17 @@ objspace_absorb_merge(void *dst, void *src)
     ASSERT_vm_locking();
     rb_gc_impl_objspace_absorb(dst, src);
     gc_absorbed_since_global_gc = true;
+}
+
+/* The dying thread's last collection of its own objspace, GVL still held; with
+ * r->postmortem set, rb_ractor_mark_local_roots roots only the join value and the
+ * registered_marks pins, so the scaffolding nobody needs any more dies here. */
+void
+rb_gc_objspace_postmortem_self(void)
+{
+    if (!rb_gc_impl_multi_objspace_p()) return;
+
+    rb_gc_impl_objspace_retire_gc(rb_gc_get_objspace());
 }
 
 void

@@ -603,8 +603,9 @@ native_thread_create_shared(rb_thread_t *th)
     RUBY_DEBUG_LOG("th:%u vm_stack:%p machine_stack:%p", rb_th_serial(th), vm_stack, machine_stack);
     thread_sched_to_ready(TH_SCHED(th), th);
 
-    // setup nt
-    return native_thread_check_and_create_shared(th->vm);
+    // setup nt.  th is runnable now and a Ractor's thread that runs to its end frees
+    // its own rb_thread_t (rb_ractor_postmortem_free), so th must not be read again.
+    return native_thread_check_and_create_shared(vm);
 }
 
 #else // USE_MN_THREADS
