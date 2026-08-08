@@ -2740,6 +2740,7 @@ impl CompilePolicy {
 }
 
 /// A wrapper around [`InsnId`] that indicates the instruction's operands have been resolved.
+#[derive(Debug, Clone, Copy)]
 pub struct ResolvedInsnId(pub InsnId);
 
 impl ResolvedInsnId {
@@ -4248,15 +4249,13 @@ impl Function {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
-                match self.resolve(insn_id).insn(self) {
+                let resolved = self.resolve(insn_id);
+                match resolved.insn(self) {
                     &Insn::Send { recv, block: None, ref args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
                         self.try_rewrite_freeze(block, insn_id, recv, state),
                     &Insn::Send { recv, block: None, ref args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
                         self.try_rewrite_uminus(block, insn_id, recv, state),
-                    Insn::Send { .. } => {
-                        let ref send@Insn::Send { mut recv, cd, state, block: send_block, ref args, .. } = self.find(insn_id) else {
-                            panic!("Expected Send instruction");
-                        };
+                    &Insn::Send { mut recv, cd, state, block: send_block, .. } => {
                         let mut has_block = send_block.is_some();
                         let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), state) {
                             ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
@@ -4317,7 +4316,10 @@ impl Function {
                         // block arg stripped from the stack.
                         let mut send_block = send_block;
                         let mut send_frame_state = state;
-                        let mut args = args.to_vec();
+                        let mut args = match resolved.insn(self) {
+                            Insn::Send { args, .. } => args.to_vec(),
+                            _ => panic!("Expected Send instruction"),
+                        };
                         let mut stripped_nil_block = false;
                         if send_block == Some(BlockHandler::BlockArg) && def_type == VM_METHOD_TYPE_ISEQ {
                             // The block arg is the last element in args
@@ -4596,16 +4598,16 @@ impl Function {
                             fn reduce_send_to_ccall(
                                 fun: &mut Function,
                                 block: BlockId,
-                                send: Insn,
                                 send_insn_id: InsnId,
+                                mut recv: InsnId,
+                                cd: *const rb_call_data,
+                                send_block: Option<BlockHandler>,
+                                args: Vec<InsnId>,
+                                state: InsnId,
                                 recv_class: VALUE,
                                 profiled_type: Option<ProfiledType>,
                                 cme: *const rb_callable_method_entry_struct,
                             ) -> Result<(), ()> {
-                                let Insn::Send { mut recv, cd, block: send_block, args, state, .. } = send else {
-                                    return Err(());
-                                };
-
                                 let call_info = unsafe { (*cd).ci };
                                 let argc = unsafe { vm_ci_argc(call_info) };
                                 let method_id = unsafe { rb_vm_ci_mid(call_info) };
@@ -4802,7 +4804,7 @@ impl Function {
                                 }
                             }
 
-                            if reduce_send_to_ccall(self, block, send.clone(), insn_id, klass, profiled_type, cme).is_ok() {
+                            if reduce_send_to_ccall(self, block, insn_id, recv, cd, send_block, args, state, klass, profiled_type, cme).is_ok() {
                                 continue;
                             }
 
@@ -4844,10 +4846,7 @@ impl Function {
                             self.push_insn_id(block, insn_id);
                         };
                     }
-                    &Insn::InvokeSuper { .. } => {
-                        let Insn::InvokeSuper { recv, cd, blockiseq, args, state, .. } = self.find(insn_id) else {
-                            unreachable!("expected InvokeSuper insn");
-                        };
+                    &Insn::InvokeSuper { recv, cd, blockiseq, state, .. } => {
                         // Helper to emit common guards for super call optimization.
                         fn emit_super_call_guards(
                             fun: &mut Function,
@@ -4963,6 +4962,11 @@ impl Function {
                             def_type = unsafe { get_cme_def_type(super_cme) };
                         }
 
+                        let args = match resolved.insn(self) {
+                            Insn::InvokeSuper { args, .. } => args.to_vec(),
+                            _ => unreachable!("expected InvokeSuper insn"),
+                        };
+
                         if def_type == VM_METHOD_TYPE_ISEQ {
                             // Check if the super method's parameters support direct send.
                             // If not, we can't do direct dispatch.
@@ -5060,7 +5064,7 @@ impl Function {
                                             cd,
                                             cfunc: cfunc_ptr,
                                             recv,
-                                            args: args.clone(),
+                                            args,
                                             cme: super_cme,
                                             name,
                                             state,
@@ -5109,7 +5113,7 @@ impl Function {
                                         self.push_insn(block, Insn::CCallVariadic(Box::new(CCallVariadicData {
                                             cfunc: cfunc_ptr,
                                             recv,
-                                            args: args.clone(),
+                                            args,
                                             cme: super_cme,
                                             name,
                                             state,
@@ -5267,11 +5271,13 @@ impl Function {
                 let send_pos = search_start + offset;
 
                 let send_insn_id = self.blocks[block.0].insns[send_pos];
-                let Insn::SendDirect(data) = self.find(send_insn_id)
+                let send = self.resolve(send_insn_id);
+                let Insn::SendDirect(data) = send.insn(self)
                 else {
                     unreachable!("position {send_insn_id} is not a SendDirect");
                 };
-                let SendDirectData { recv, cme, iseq, args, kw_bits, jit_entry_idx, block: call_block, state, .. } = *data;
+                let &SendDirectData { recv, cme, iseq, kw_bits, jit_entry_idx, block: call_block, state, .. } = &**data;
+                let args_len = data.args.len();
                 // SendDirect invariant: block is either None or BlockIseq.
                 // BlockArg is rejected upstream during type specialization.
                 // TODO(max): If we accept BlockArg here, we need to change the folding of Defined
@@ -5337,7 +5343,7 @@ impl Function {
                 let caller_depth = self.frame_depth(state);
 
                 // The callee's perspective of the stack is with the receiver and arguments popped off.
-                let caller_stack_size = call_state.stack_size() - args.len() - 1; // -1 for receiver
+                let caller_stack_size = call_state.stack_size() - args_len - 1; // -1 for receiver
                 let post_send_caller = self.new_insn(Insn::Snapshot { state: Box::new(call_state.with_stack_size(caller_stack_size)) });
                 let mode = AddIseqMode::Inlined {
                     return_block: continuation,
@@ -5364,6 +5370,11 @@ impl Function {
                 // Past the point of no return: commit the inlining.
                 incr_counter!(inline_method_count);
                 did_inline = true;
+
+                let args = match send.insn(self) {
+                    Insn::SendDirect(data) => data.args.to_vec(),
+                    _ => unreachable!("position {send_insn_id} is not a SendDirect"),
+                };
 
                 // Split the original block at the SendDirect's position. Pre-Send
                 // instructions stay in `block`; the SendDirect itself is consumed
