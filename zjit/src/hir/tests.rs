@@ -7,7 +7,7 @@ mod size_tests {
 
     #[test]
     fn test_size_of_insn() {
-        assert_eq!(std::mem::size_of::<Insn>(), 80);
+        assert_eq!(std::mem::size_of::<Insn>(), 72);
     }
 
     #[test]
@@ -6363,7 +6363,7 @@ pub(crate) mod hir_build_tests {
      fn assert_dominators_contains_self(function: &Function, dominators: &Dominators) {
          for (i, _) in function.blocks.iter().enumerate() {
              // Ensure that each dominating set contains the block itself.
-             assert!(dominators.is_dominated_by(BlockId(i), BlockId(i)));
+             assert!(dominators.is_dominated_by(BlockId::from(i), BlockId::from(i)));
          }
      }
 
