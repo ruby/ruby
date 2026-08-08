@@ -308,6 +308,22 @@ class TestIO_Console
     }
   end
 
+  def test_stty_redirect_stdout
+    omit unless IO.private_method_defined?(:_io_console_stty)
+
+    helper do |_, s|
+      stdout = STDOUT.dup
+      begin
+        STDOUT.reopen(s)
+        mode = STDOUT.__send__(:_io_console_stty, "-g")
+      ensure
+        STDOUT.reopen(stdout)
+        stdout.close
+      end
+      assert_not_empty(mode)
+    end
+  end
+
   def test_tty_on_pty
     pend "not supported" unless TTY_ENHANCED
 
