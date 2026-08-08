@@ -8326,10 +8326,14 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
           case gc_enter_event_start:
           case gc_enter_event_continue:
           case gc_enter_event_rest:
+          case gc_enter_event_global:
+            /* A global GC is the longest pause the process takes, so it is the last thing
+             * the profiler may leave unmeasured.  The switch below stops the world for it,
+             * which is exactly the interval gc_stop_time is meant to name, so start the
+             * clock here like a local collection does. */
             objspace->profile.gc_pause_start_time = rb_hrtime_now();
             break;
           case gc_enter_event_finalizer:
-          case gc_enter_event_global:
             break;
         }
     }
