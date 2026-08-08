@@ -619,6 +619,25 @@ class TestGc < Test::Unit::TestCase
     RUBY
   end
 
+  def test_profiler_raw_data_with_another_ractor
+    # A second objspace sends GC.start through the global collector, which has to record
+    # a profile entry the same way a local collection does.
+    assert_separately([], <<~RUBY)
+      Warning[:experimental] = false
+      Ractor.new {}.value
+
+      GC::Profiler.enable
+      GC::Profiler.clear
+      GC.start
+
+      record = GC::Profiler.raw_data.last
+      assert_not_nil record
+      assert_kind_of Float, record[:GC_WALL_TIME]
+    RUBY
+  ensure
+    GC::Profiler.disable
+  end
+
   def test_profiler_raw_data_includes_wall_time
     auto_compact = GC.auto_compact if GC.respond_to?(:auto_compact)
     GC.auto_compact = false if GC.respond_to?(:auto_compact=)

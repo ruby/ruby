@@ -7913,7 +7913,21 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
 #endif
 }
 
-static void gc_start_global(rb_objspace_t *driver, bool compact);
+/* What a collection records about itself before it runs.  A global collection reports the
+ * driver's objspace, so it comes through here too. */
+static void
+gc_start_record(rb_objspace_t *objspace, unsigned int reason, bool full_mark)
+{
+    objspace->profile.latest_gc_info = reason;
+    objspace->profile.total_allocated_objects_at_gc_start = total_allocated_objects(objspace);
+    objspace->profile.heap_used_at_gc_start = rb_darray_size(objspace->heap_pages.sorted);
+    objspace->profile.heap_total_slots_at_gc_start = objspace_available_slots(objspace);
+    objspace->profile.weak_references_count = 0;
+    gc_prof_setup_new_record(objspace, reason);
+    gc_reset_malloc_info(objspace, full_mark);
+}
+
+static void gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact);
 
 /* Decide whether this collection has to be global.  A local GC can reclaim neither
  * shareable objects nor zombie objspaces, so once those grow past their limits only a
@@ -7967,7 +7981,7 @@ gc_start_body(rb_objspace_t *objspace, unsigned int reason, bool allow_global)
      * (only a global cycle reclaims dead shareable objects and zombie pages).  The
      * exception is the retire GC, which never promotes: a Ractor's death must not STW. */
     if (allow_global && gc_need_global_p(objspace)) {
-        gc_start_global(objspace, false);
+        gc_start_global(objspace, reason, false);
         return TRUE;
     }
 
@@ -8072,13 +8086,7 @@ gc_start_body(rb_objspace_t *objspace, unsigned int reason, bool allow_global)
     }
 
     objspace->profile.count++;
-    objspace->profile.latest_gc_info = reason;
-    objspace->profile.total_allocated_objects_at_gc_start = total_allocated_objects(objspace);
-    objspace->profile.heap_used_at_gc_start = rb_darray_size(objspace->heap_pages.sorted);
-    objspace->profile.heap_total_slots_at_gc_start = objspace_available_slots(objspace);
-    objspace->profile.weak_references_count = 0;
-    gc_prof_setup_new_record(objspace, reason);
-    gc_reset_malloc_info(objspace, do_full_mark);
+    gc_start_record(objspace, reason, do_full_mark);
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START);
 
@@ -8683,15 +8691,18 @@ gc_global_mark_generic_fields(rb_objspace_t *driver)
 /* Two Ractors choosing a global GC at once are serialized by the barrier in gc_enter and
  * simply run two cycles back to back.  The second is wasted work, not an error. */
 static void
-gc_start_global(rb_objspace_t *driver, bool compact)
+gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact)
 {
     unsigned int lock_lev;
     gc_enter(driver, gc_enter_event_global, &lock_lev);
 
     /* A global GC is a collection of the driver's objspace too, and its profile.count
      * below says so, so report it like a local one.  The driver is the objspace whose
-     * count moves, which is the one a hook reading GC.stat would compare against. */
+     * count moves, which is the one a hook reading GC.stat would compare against.  For
+     * the same reason it records a profile entry and reports what triggered it. */
+    gc_start_record(driver, reason, true);
     gc_event_hook(driver, RUBY_INTERNAL_EVENT_GC_START);
+    gc_prof_timer_start(driver);
 
     GC_ASSERT(is_mark_stack_empty(&driver->mark_stack));
 
@@ -8915,6 +8926,7 @@ gc_start_global(rb_objspace_t *driver, bool compact)
      * zombie_objspaces entry and posted the merge to main as a postponed job; the objspace
      * stays enumerable until main absorbs it at its next safepoint. */
 
+    gc_prof_timer_stop(driver);
     gc_exit(driver, gc_enter_event_global, &lock_lev);
 }
 
@@ -9182,7 +9194,7 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
      * collector that reclaims shareable and cross-objspace garbage.  It stops the world,
      * so auto_compact is honoured here too (mirroring full mark x autocompact locally). */
     if (!rb_gc_single_objspace_p() && (reason & GPR_FLAG_FULL_MARK)) {
-        gc_start_global(objspace, compact || ruby_enable_autocompact);
+        gc_start_global(objspace, reason, compact || ruby_enable_autocompact);
     }
     else {
         garbage_collect(objspace, reason);
