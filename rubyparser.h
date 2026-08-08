@@ -649,6 +649,7 @@ typedef struct RNode_MATCH2 {
     struct RNode *nd_recv;
     struct RNode *nd_value;
     struct RNode *nd_args;
+    rb_code_location_t message_loc;
 } rb_node_match2_t;
 
 typedef struct RNode_MATCH3 {
