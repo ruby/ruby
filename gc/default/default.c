@@ -697,9 +697,10 @@ typedef struct rb_objspace {
         rb_hrtime_t gc_stop_time;
         rb_hrtime_t gc_mark_phase_wall_start_time;
         rb_hrtime_t gc_sweep_phase_wall_start_time;
+#if GC_PROFILE_MORE_DETAIL
         size_t total_allocated_objects_at_gc_start;
         size_t heap_used_at_gc_start;
-        size_t heap_total_slots_at_gc_start;
+#endif
 
         /* basic statistics */
         size_t count;
@@ -7919,9 +7920,10 @@ static void
 gc_start_record(rb_objspace_t *objspace, unsigned int reason, bool full_mark)
 {
     objspace->profile.latest_gc_info = reason;
+#if GC_PROFILE_MORE_DETAIL
     objspace->profile.total_allocated_objects_at_gc_start = total_allocated_objects(objspace);
     objspace->profile.heap_used_at_gc_start = rb_darray_size(objspace->heap_pages.sorted);
-    objspace->profile.heap_total_slots_at_gc_start = objspace_available_slots(objspace);
+#endif
     objspace->profile.weak_references_count = 0;
     gc_prof_setup_new_record(objspace, reason);
     gc_reset_malloc_info(objspace, full_mark);
