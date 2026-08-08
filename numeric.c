@@ -4471,7 +4471,8 @@ fix_div(VALUE x, VALUE y)
  *
  * Returns the quotient of +self+ and +other+.
  *
- * For integer +other+, truncates the result to an integer:
+ * For integer +other+, returns the largest integer less than or equal to
+ * the mathematical quotient:
  *
  *   4 / 3              # => 1
  *   4 / -3             # => -2
