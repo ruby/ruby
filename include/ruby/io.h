@@ -119,6 +119,9 @@ struct rb_io_internal_buffer {
 
     /** Designed capacity of the buffer. */
     int capa;
+
+    /** Offset of boundary between unget'ed data and data read from IO. */
+    int off_unget;
 } RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
 
 /** @alias{rb_io_buffer_t} */
