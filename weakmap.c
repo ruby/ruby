@@ -132,7 +132,7 @@ wmap_handle_weak_references(void *ptr)
     st_foreach(w->table, rb_wmap_handle_weak_references_i, (st_data_t)0);
 }
 
-const rb_data_type_t rb_weakmap_type = {
+static const rb_data_type_t rb_weakmap_type = {
     "weakmap",
     {
         NULL,
