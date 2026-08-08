@@ -4203,6 +4203,17 @@ objspace_absorb_merge(void *dst, void *src)
     gc_absorbed_since_global_gc = true;
 }
 
+/* The dying thread's last collection of its own objspace, GVL still held; with
+ * r->postmortem set, rb_ractor_mark_local_roots roots only the join value and the
+ * registered_marks pins, so the scaffolding nobody needs any more dies here. */
+void
+rb_gc_objspace_postmortem_self(void)
+{
+    if (!rb_gc_impl_multi_objspace_p()) return;
+
+    rb_gc_impl_objspace_retire_gc(rb_gc_get_objspace());
+}
+
 void
 rb_gc_objspace_absorb_into_current(void **objspace_slot)
 {

@@ -827,12 +827,20 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     thread_cleanup_func(th, FALSE);
     VM_ASSERT(th->ec->vm_stack == NULL);
 
+    // A dying Ractor collects its own objspace here, before the scheduler handoff
+    // below, and captures the structs it must free at its last step.
+    struct rb_ractor_postmortem_frees pf = { NULL, NULL };
+    if (th->invoke_type == thread_invoke_type_ractor_proc) {
+        rb_ractor_postmortem_collect(th, &pf);
+    }
+
 #if defined(USE_MN_THREADS) && USE_MN_THREADS
     if (th_has_coroutine(th)) {
         // Run the coroutine thread's epilogue here, while th is still valid;
         // co_start then only makes the final transfer (see
         // coroutine_thread_terminated in thread_pthread_mn.c).
         coroutine_thread_terminated(th);
+        rb_ractor_postmortem_free(&pf);
         return 0;
     }
 #endif
@@ -843,6 +851,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         // So gvl_release() should be before it.
         thread_sched_to_dead(TH_SCHED(th), th);
         rb_ractor_living_threads_remove(th->ractor, th);
+        rb_ractor_postmortem_free(&pf);
     }
     else {
         rb_ractor_living_threads_remove(th->ractor, th);
