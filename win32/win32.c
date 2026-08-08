@@ -843,6 +843,52 @@ static int w32_cmdvector(const WCHAR *, char ***, UINT, rb_encoding *);
 //
 // Initialization stuff
 //
+
+/* License: Ruby's */
+/* Enable long path names for this process, whatever the registry value
+ * HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled is.  The
+ * loader sets the same PEB bit for longPathAware in the manifest, but only
+ * when that registry value is set, so the manifest alone is not enough on a
+ * stock machine.  Undocumented, and taken from initLongPathSupport in Go's
+ * runtime <https://go.dev/src/runtime/os_windows.go>, whose maintainers have
+ * proposed to drop it <https://github.com/golang/go/issues/66560>.
+ *
+ * Called from rb_w32_sysinit, which runs before the VM exists, and from
+ * ruby_setup, so that a program which embeds libruby without calling
+ * ruby_sysinit gets it as well. */
+void
+rb_w32_init_long_paths(void)
+{
+    /* PEB.BitField, and the IsLongPathAwareProcess bit in it */
+    enum {peb_bit_field_offset = 3, is_long_path_aware_process = 0x80};
+    typedef long (WINAPI version_func)(OSVERSIONINFOW *);
+    typedef void *(WINAPI peb_func)(void);
+    static int done = 0;
+    version_func *pRtlGetVersion;
+    peb_func *pRtlGetCurrentPeb;
+    OSVERSIONINFOW osvi;
+    BYTE *bit_field;
+
+    if (done) return;
+    done = 1;
+
+    pRtlGetVersion = (version_func *)get_proc_address("ntdll.dll", "RtlGetVersion", NULL);
+    if (!pRtlGetVersion) return;
+    memset(&osvi, 0, sizeof(osvi));
+    osvi.dwOSVersionInfoSize = sizeof(osvi);
+    if (pRtlGetVersion(&osvi)) return;
+
+    /* the PEB bit is honored since Windows 10 1703 (10.0.15063) */
+    if (osvi.dwMajorVersion < 10) return;
+    if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 &&
+        osvi.dwBuildNumber < 15063) return;
+
+    pRtlGetCurrentPeb = (peb_func *)get_proc_address("ntdll.dll", "RtlGetCurrentPeb", NULL);
+    if (!pRtlGetCurrentPeb) return;
+    bit_field = (BYTE *)pRtlGetCurrentPeb() + peb_bit_field_offset;
+    *bit_field |= is_long_path_aware_process;
+}
+
 /* License: Ruby's */
 void
 rb_w32_sysinit(int *argc, char ***argv)
@@ -854,6 +900,7 @@ rb_w32_sysinit(int *argc, char ***argv)
     SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX);
 
     get_version();
+    rb_w32_init_long_paths();
 
     //
     // subvert cmd.exe's feeble attempt at command line parsing
