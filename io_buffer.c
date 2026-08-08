@@ -48,6 +48,9 @@ enum {
     // This is used to validate the flags given by the user.
     RB_IO_BUFFER_FLAGS_MASK = RB_IO_BUFFER_EXTERNAL | RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED | RB_IO_BUFFER_SHARED | RB_IO_BUFFER_LOCKED | RB_IO_BUFFER_PRIVATE | RB_IO_BUFFER_READONLY,
 
+    // The buffer was released and cannot be accessed until it is re-allocated.
+    RB_IO_BUFFER_FREED = 16,
+
     RB_IO_BUFFER_DEBUG = 0,
 };
 
@@ -1045,6 +1048,10 @@ io_buffer_get_bytes_for_writing(struct rb_io_buffer *buffer, void **base, size_t
 {
     io_buffer_validate_for_writing(buffer);
 
+    if (buffer->flags & RB_IO_BUFFER_FREED) {
+        rb_raise(rb_eIOBufferAllocationError, "The buffer is not allocated!");
+    }
+
     if (buffer->base) {
         *base = buffer->base;
         *size = buffer->size;
@@ -1074,6 +1081,10 @@ static void
 io_buffer_get_bytes_for_reading(struct rb_io_buffer *buffer, const void **base, size_t *size)
 {
     io_buffer_validate_for_reading(buffer);
+
+    if (buffer->flags & RB_IO_BUFFER_FREED) {
+        rb_raise(rb_eIOBufferAllocationError, "The buffer is not allocated!");
+    }
 
     if (buffer->base) {
         *base = buffer->base;
@@ -1113,6 +1124,10 @@ rb_io_buffer_to_s(VALUE self)
 
     if (buffer->base == NULL) {
         rb_str_cat2(result, " NULL");
+    }
+
+    if (buffer->flags & RB_IO_BUFFER_FREED) {
+        rb_str_cat2(result, " FREED");
     }
 
     if (buffer->flags & RB_IO_BUFFER_EXTERNAL) {
@@ -1629,7 +1644,7 @@ rb_io_buffer_locked(VALUE self)
  *
  *    buffer = IO::Buffer.for('test')
  *    buffer.free
- *    # => #<IO::Buffer 0x0000000000000000+0 NULL>
+ *    # => #<IO::Buffer 0x0000000000000000+0 NULL FREED>
  *
  *    buffer.get_value(:U8, 0)
  *    # in `get_value': The buffer is not allocated! (IO::Buffer::AllocationError)
@@ -1650,6 +1665,7 @@ rb_io_buffer_free(VALUE self)
     }
 
     io_buffer_free(buffer);
+    buffer->flags = RB_IO_BUFFER_FREED;
 
     return self;
 }
@@ -1660,6 +1676,7 @@ VALUE rb_io_buffer_free_locked(VALUE self)
 
     io_buffer_unlock(buffer);
     io_buffer_free(buffer);
+    buffer->flags = RB_IO_BUFFER_FREED;
 
     return self;
 }
@@ -1890,6 +1907,8 @@ rb_io_buffer_resize(VALUE self, size_t size)
 
     if (buffer->base == NULL) {
         io_buffer_initialize(self, buffer, NULL, size, io_flags_for_size(size), Qnil);
+        // A re-allocated buffer is no longer freed:
+        buffer->flags &= ~RB_IO_BUFFER_FREED;
         return;
     }
 
