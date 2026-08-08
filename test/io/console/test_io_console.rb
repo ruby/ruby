@@ -779,7 +779,6 @@ TestIO_Console.class_eval do
         kernel32.CloseHandle(handle)
       end
     end
-  rescue LoadError
   end
 
   def test_cursor_visibility
@@ -810,7 +809,6 @@ TestIO_Console.class_eval do
         kernel32.CloseHandle(handle)
       end
     end
-  rescue LoadError
   end
 
   def test_console_input_events
@@ -898,7 +896,6 @@ TestIO_Console.class_eval do
     sleep 0.1
     thread.raise(Interrupt)
     assert_raise(Interrupt) {thread.value}
-  rescue LoadError
   end
 
   def test_check_winsize_changed_deprecated
