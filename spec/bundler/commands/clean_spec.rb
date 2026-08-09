@@ -46,6 +46,38 @@ RSpec.describe "bundle clean" do
     expect(vendored_gems("bin/myrackup")).to exist
   end
 
+  it "reports an error when an unused gem directory cannot be removed", :permissions do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "foo"
+      gem "myrack"
+    G
+
+    bundle_config "path vendor/bundle"
+    bundle_config "clean false"
+    bundle "install"
+
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack"
+    G
+    bundle "install"
+
+    stale_gem_path = vendored_gems("gems/foo-1.0")
+    FileUtils.chmod(0o500, stale_gem_path)
+
+    bundle :clean, raise_on_error: false
+
+    expect(exitstatus).to eq(23)
+    expect(err).to include(stale_gem_path.to_s)
+    expect(err).to include("grant write permissions")
+    expect(stale_gem_path).to exist
+  ensure
+    FileUtils.chmod(0o755, stale_gem_path) if stale_gem_path&.exist?
+  end
+
   it "removes unused gems when the bundle path contains glob metacharacters" do
     gemfile <<-G
       source "https://gem.repo1"

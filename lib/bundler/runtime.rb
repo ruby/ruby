@@ -371,7 +371,9 @@ module Bundler
         Bundler.ui.info "Would have removed #{output}"
       else
         Bundler.ui.info "Removing #{output}"
-        FileUtils.rm_rf(dir)
+        SharedHelpers.filesystem_access(dir) do |path|
+          FileUtils.rm_r(path)
+        end
       end
 
       output
