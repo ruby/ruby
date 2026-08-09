@@ -621,6 +621,16 @@ class TestSocket < Test::Unit::TestCase
     sock.close if sock && ! sock.closed?
   end
 
+  def test_connect_timeout_connection_refused
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+    server.close
+
+    assert_raise(Errno::ECONNREFUSED) do
+      Socket.tcp("127.0.0.1", port, connect_timeout: 5)
+    end
+  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_getifaddrs
     begin
       list = Socket.getifaddrs
