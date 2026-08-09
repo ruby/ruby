@@ -39,10 +39,10 @@ Gem::Specification.new do |s|
     s.require_paths.unshift('jruby/lib')
     s.files.concat(%w[
       jruby/lib/io/console.rb
-      jruby/lib/io/console/backend/ffi.rb
+      jruby/lib/io/console/backend/ffi/termios.rb
+      jruby/lib/io/console/backend/ffi/windows.rb
       jruby/lib/io/console/backend/stty.rb
       jruby/lib/io/console/backend/stub.rb
-      jruby/lib/io/console/backend/windows.rb
       jruby/lib/io/console/common.rb
       jruby/lib/io/console/constants/bsd.rb
       jruby/lib/io/console/constants/linux.rb
