@@ -36,18 +36,18 @@ Gem::Specification.new do |s|
   if Gem::Platform === s.platform and s.platform =~ 'java'
     s.files.delete_if {|f| f.start_with?("ext/")}
     s.extensions.clear
-    s.require_paths.unshift('lib/ffi')
+    s.require_paths.unshift('jruby/lib')
     s.files.concat(%w[
-      lib/ffi/io/console.rb
-      lib/ffi/io/console/bsd_console.rb
-      lib/ffi/io/console/common.rb
-      lib/ffi/io/console/linux_console.rb
-      lib/ffi/io/console/native_console.rb
-      lib/ffi/io/console/stty_console.rb
-      lib/ffi/io/console/stub_console.rb
-      lib/ffi/io/console/windows_constants.rb
-      lib/ffi/io/console/windows_console.rb
-      lib/ffi/io/console/version.rb
+      jruby/lib/io/console.rb
+      jruby/lib/io/console/bsd_console.rb
+      jruby/lib/io/console/common.rb
+      jruby/lib/io/console/linux_console.rb
+      jruby/lib/io/console/native_console.rb
+      jruby/lib/io/console/stty_console.rb
+      jruby/lib/io/console/stub_console.rb
+      jruby/lib/io/console/windows_constants.rb
+      jruby/lib/io/console/windows_console.rb
+      jruby/lib/io/console/version.rb
     ])
   end
 
