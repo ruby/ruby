@@ -1383,6 +1383,9 @@ rb_ractor_stdin(void)
     }
     else {
         rb_ractor_t *cr = GET_RACTOR();
+        if (UNLIKELY(cr->r_stdin == 0)) {
+            cr->r_stdin = rb_io_prep_stdin();
+        }
         return cr->r_stdin;
     }
 }
@@ -1395,6 +1398,9 @@ rb_ractor_stdout(void)
     }
     else {
         rb_ractor_t *cr = GET_RACTOR();
+        if (UNLIKELY(cr->r_stdout == 0)) {
+            cr->r_stdout = rb_io_prep_stdout();
+        }
         return cr->r_stdout;
     }
 }
@@ -1407,6 +1413,9 @@ rb_ractor_stderr(void)
     }
     else {
         rb_ractor_t *cr = GET_RACTOR();
+        if (UNLIKELY(cr->r_stderr == 0)) {
+            cr->r_stderr = rb_io_prep_stderr();
+        }
         return cr->r_stderr;
     }
 }
