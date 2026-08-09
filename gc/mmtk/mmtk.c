@@ -839,6 +839,12 @@ rb_gc_impl_user_gc_disabled_set(void *objspace_ptr, bool disable)
     struct objspace *objspace = objspace_ptr;
     const bool was = objspace->user_gc_disabled;
     objspace->user_gc_disabled = disable;
+
+    if (was != disable) {
+        mmtk_set_gc_enabled(!disable);
+        objspace->user_gc_disabled = disable;
+    }
+
     return was;
 }
 
