@@ -7800,6 +7800,37 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache)
  * mark is tiny, and it reclaims what the joining side would otherwise inherit.  Never
  * promotes to a global GC (that would STW on every Ractor death); empty pages go
  * straight back to the page pool. */
+/* Finalize the zombies whose cleanup is pure C (a dfree, no Ruby-level finalizer);
+ * the caller has no Ruby execution context any more, so zombies with a Ruby
+ * finalizer stay deferred and travel to the inheritor as before.  Returns whether
+ * anything was finalized (those pages then need one more sweep to detach). */
+static bool
+finalize_deferred_dfree_only(rb_objspace_t *objspace)
+{
+    VALUE dfree_only = 0;
+    VALUE zombie = RUBY_ATOMIC_VALUE_EXCHANGE(heap_pages_deferred_final, 0);
+    while (zombie) {
+        rb_asan_unpoison_object(zombie, false);
+        VALUE next = RZOMBIE(zombie)->next;
+        if (FL_TEST_RAW(zombie, FL_FINALIZE)) {
+            /* re-defer, with the same push as rb_gc_impl_make_zombie */
+            VALUE prev2, next2 = heap_pages_deferred_final;
+            do {
+                RZOMBIE(zombie)->next = prev2 = next2;
+                next2 = RUBY_ATOMIC_VALUE_CAS(heap_pages_deferred_final, prev2, zombie);
+            } while (next2 != prev2);
+            rb_asan_poison_object(zombie);
+        }
+        else {
+            RZOMBIE(zombie)->next = dfree_only;
+            dfree_only = zombie;
+        }
+        zombie = next;
+    }
+    if (dfree_only) finalize_list(objspace, dfree_only);
+    return dfree_only != 0;
+}
+
 void
 rb_gc_impl_objspace_retire_gc(void *objspace_ptr)
 {
@@ -7808,6 +7839,14 @@ rb_gc_impl_objspace_retire_gc(void *objspace_ptr)
     gc_rest(objspace);
     gc_start_body(objspace, GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP,
                   false);
+
+    /* The sweep above turned this heap's dead IO and the like into deferred zombies
+     * (the per-Ractor stdio holds a page per Ractor otherwise); finalize the C-only
+     * ones here and re-sweep the nearly-empty heap so their pages detach as empty. */
+    if (finalize_deferred_dfree_only(objspace)) {
+        gc_start_body(objspace, GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP,
+                      false);
+    }
 
     heap_pages_freeable_pages = objspace->empty_pages_count;
     heap_pages_free_unused_pages(objspace);
