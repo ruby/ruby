@@ -826,6 +826,43 @@ end.join
     end;
   end
 
+  def test_multiple_error_handle
+    errs = [
+      /.*END3 \(RuntimeError\).*\n/,
+      /.*END2 \(RuntimeError\).*\n/,
+      /.*END1 \(RuntimeError\).*\n/,
+      /.*EXIT \(RuntimeError\).*\n/,
+    ]
+    assert_in_out_err([], <<-'end;', [], errs, success: false)
+      Signal.trap(:EXIT) {raise "EXIT"}
+      END{raise "END1"};
+      END{raise "END2"};
+      END{raise "END3"};
+    end;
+  end
+
+  def test_cause_in_exit_handler
+    errs = [
+      /.*outer \(RuntimeError\).*\n/,
+      /.*inner \(RuntimeError\).*\n/,
+    ]
+    assert_in_out_err([], <<-'end;', [], errs, success: false)
+      END{begin; raise "inner"; rescue; raise "outer"; end}
+    end;
+    assert_in_out_err([], <<-'end;', [], errs, success: false)
+      Signal.trap(:EXIT) {begin; raise "inner"; rescue; raise "outer"; end}
+    end;
+    errs = [
+      /.*previous \(RuntimeError\).*\n/,
+      /.*outer \(RuntimeError\).*\n/,
+      /.*middle \(RuntimeError\).*\n/,
+    ]
+    assert_in_out_err([], <<-'end;', [], errs, success: false)
+      END{begin; raise "middle"; rescue => e; raise "outer", cause: e; end}
+      END{raise "previous"}
+    end;
+  end
+
   def test_raise_with_cause
     msg = "[Feature #8257]"
     cause = ArgumentError.new("foobar")
