@@ -696,10 +696,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         RB_VM_LOCK();
         {
             rb_vm_ractor_blocking_cnt_dec(th->vm, th->ractor, __FILE__, __LINE__);
-            rb_ractor_t *r = th->ractor;
-            r->r_stdin = rb_io_prep_stdin();
-            r->r_stdout = rb_io_prep_stdout();
-            r->r_stderr = rb_io_prep_stderr();
 
             /* Left 0 at creation (building them then would put them in the parent's
              * objspace), so build them here out of objects this Ractor owns.  The mask

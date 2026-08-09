@@ -138,6 +138,9 @@ struct rb_ractor_struct {
     struct rb_id_table *idkey_local_storage;
     VALUE local_storage_store_lock;
 
+    /* 0 until first use: rb_ractor_stdin and friends build them lazily, with plain
+     * stores (rooted via ractor_mark_unshareable_parts; a write barrier on the
+     * shareable wrapper would shref-pin them). */
     VALUE r_stdin;
     VALUE r_stdout;
     VALUE r_stderr;
