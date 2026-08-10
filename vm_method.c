@@ -3000,7 +3000,10 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
 {
     int i;
 
+    // Not rb_class_modify_check: that also marks a module initialized, which this
+    // path has never done.
     rb_check_frozen(self);
+    rb_class_owner_check(self);
     if (argc == 0) {
         rb_warning("%"PRIsVALUE" with no argument is just ignored",
                    QUOTE_ID(rb_frame_callee()));
