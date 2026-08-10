@@ -388,21 +388,23 @@ eom
         assert(!abort, FailDesc[status, nil, stderr])
         res.scan(/^<error id="#{token_re}" assertions=(\d+)>\n(.*?)\n(?=<\/error id="#{token_re}">$)/m) do
           self._assertions += $1.to_i
-          res = Marshal.load($2.unpack1("m")) or next
-        rescue => marshal_error
-          ignore_stderr = nil
-          res = nil
-        else
-          next if SystemExit === res
-          if bt = res.backtrace
-            bt.each do |l|
-              l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
-            end
-            bt.concat(caller)
+          begin
+            res = Marshal.load($2.unpack1("m")) or next
+          rescue => marshal_error
+            ignore_stderr = nil
+            res = nil
           else
-            res.set_backtrace(caller)
+            next if SystemExit === res
+            if bt = res.backtrace
+              bt.each do |l|
+                l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
+              end
+              bt.concat(caller)
+            else
+              res.set_backtrace(caller)
+            end
+            raise res
           end
-          raise res
         end
 
         # really did it succeed?
