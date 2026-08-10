@@ -600,11 +600,11 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
 
     memset(RCLASS_EXT_PRIME(obj), 0, sizeof(rb_classext_t));
 
-    // The creating Ractor owns the new class/module (owner_ractor == 0 means
+    // The creating Ractor owns the new class/module (owner_ractor_id == 0 means
     // the main Ractor; iclasses have no meaningful owner). Singleton classes
     // of classes/modules override this to inherit the attached object's owner.
     if (type != T_ICLASS && UNLIKELY(!rb_ractor_main_p())) {
-        RCLASS_SET_OWNER_RACTOR((VALUE)obj, GET_RACTOR()->pub.self);
+        RCLASS_SET_OWNER_RACTOR_ID((VALUE)obj, rb_ractor_id(GET_RACTOR()));
     }
 
     /* ZALLOC
@@ -639,15 +639,16 @@ class_alloc(enum ruby_value_type type, VALUE klass)
 bool
 rb_class_owned_p(VALUE klass)
 {
-    // The owner Ractor object is marked from the classext, so the comparison
-    // is never against a dangling/reused reference. Classes whose owner
-    // Ractor has terminated are permanently read-only for everybody.
-    VALUE owner = RCLASS_OWNER_RACTOR(klass);
-    if (LIKELY(!owner)) {
+    // Ractor ids are never reused, so this compares against an owner that is
+    // either alive or gone for good, never against a recycled identity. Once
+    // the owner has terminated no live Ractor carries its id, which leaves the
+    // class permanently read-only for everybody.
+    uint32_t owner_id = RCLASS_OWNER_RACTOR_ID(klass);
+    if (LIKELY(!owner_id)) {
         return rb_ractor_main_p();
     }
     else {
-        return owner == GET_RACTOR()->pub.self;
+        return owner_id == rb_ractor_id(GET_RACTOR());
     }
 }
 
@@ -1261,7 +1262,7 @@ make_metaclass(VALUE klass)
     FL_SET(metaclass, FL_SINGLETON);
     // A metaclass is owned by the owner of the class it is attached to,
     // not by the Ractor which happened to trigger its lazy creation.
-    RCLASS_SET_OWNER_RACTOR(metaclass, RCLASS_OWNER_RACTOR(klass));
+    RCLASS_SET_OWNER_RACTOR_ID(metaclass, RCLASS_OWNER_RACTOR_ID(klass));
     rb_singleton_class_attached(metaclass, klass);
 
     if (META_CLASS_OF_CLASS_CLASS_P(klass)) {
@@ -1300,7 +1301,7 @@ make_singleton_class(VALUE obj)
     if (RB_TYPE_P(obj, T_MODULE)) {
         // The singleton class of a module is owned by the module's owner,
         // not by the Ractor which happened to trigger its lazy creation.
-        RCLASS_SET_OWNER_RACTOR(klass, RCLASS_OWNER_RACTOR(obj));
+        RCLASS_SET_OWNER_RACTOR_ID(klass, RCLASS_OWNER_RACTOR_ID(obj));
     }
     class_initialize_method_table(klass);
     class_associate_super(klass, orig_class, true);
