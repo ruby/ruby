@@ -14,6 +14,10 @@ pub struct IseqPayload {
     pub profile: IseqProfile,
     /// JIT code versions. Different versions should have different assumptions.
     pub versions: Vec<IseqVersionRef>,
+    /// JIT code versions for exception handler entries used by jit_exec_exception().
+    /// They are kept separate from `versions` because they are entered at an
+    /// arbitrary instruction index instead of the beginning of the ISEQ.
+    pub exception_versions: Vec<IseqVersionRef>,
     /// Whether a previous compilation of this ISEQ was invalidated due to
     /// singleton class creation (violation of [`crate::hir::Invariant::NoSingletonClass`]).
     pub was_invalidated_for_singleton_class_creation: bool,
@@ -32,6 +36,7 @@ impl IseqPayload {
         Self {
             profile: IseqProfile::new(),
             versions: vec![],
+            exception_versions: vec![],
             was_invalidated_for_singleton_class_creation: false,
             self_is_heap_object: false,
         }

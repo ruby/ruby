@@ -641,6 +641,14 @@ jit_exec_exception(rb_execution_context_t *ec)
 {
     rb_jit_func_t func = jit_compile_exception(ec);
     if (func) {
+#if USE_ZJIT
+        if (rb_zjit_enabled_p) {
+            // Call the JIT code through a trampoline that pushes the return value
+            // onto the caller's stack and returns Qundef when the compiled function
+            // returns from a non-FINISH frame. See gen_exception_trampoline().
+            return ((rb_zjit_func_t)rb_zjit_exception_entry)(ec, ec->cfp, func);
+        }
+#endif
         // Call the JIT code
         return func(ec, ec->cfp);
     }

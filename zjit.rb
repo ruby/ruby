@@ -142,6 +142,7 @@ class << RubyVM::ZJIT
       :dynamic_definedivar_count,
 
       :compiled_iseq_count,
+      :compiled_exception_iseq_count,
       :compiled_side_exit_count,
       :failed_iseq_count,
 
