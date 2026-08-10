@@ -651,7 +651,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     #
     data = [ "/\u2028\u2029" ]
     json = '["\/\u2028\u2029"]'
-    assert_equal json, generate(data, :escape_slash => true)
+    assert_equal json, generate(data, :script_safe => true)
     #
     data = ['"']
     json = '["\""]'
