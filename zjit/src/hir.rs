@@ -2171,7 +2171,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::PushInlineFrame { recv, iseq, cme, num_args, .. } => {
-                write!(f, "PushInlineFrame {recv} ({:?})", self.ptr_map.map_ptr(*iseq))?;
+                let method_name = unsafe { (**cme).called_id };
+                write!(f, "PushInlineFrame :{method_name}, {recv} ({:?})", self.ptr_map.map_ptr(*iseq))?;
                 write!(f, ", num_args={num_args}")?;
                 Ok(())
             }
