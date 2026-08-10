@@ -1219,6 +1219,49 @@ assert_equal 'can not set class variable @@cv of C, which was created by another
   end
 }
 
+# Changing method visibility on a class created by another Ractor is not allowed
+assert_equal 'can not modify C because it is created by another Ractor', %q{
+  class C
+    def m; end
+  end
+
+  r = Ractor.new do
+    C.send(:private, :m)
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# ... and neither is module_function with a method name
+assert_equal 'can not modify M because it is created by another Ractor', %q{
+  module M
+    def m; end
+  end
+
+  r = Ractor.new do
+    M.send(:module_function, :m)
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# Visibility changes on a class the Ractor created itself are allowed
+assert_equal 'true', %q{
+  Ractor.new do
+    k = Class.new { def m; end }
+    k.send(:private, :m)
+    k.private_method_defined?(:m).to_s
+  end.value
+}
+
 # Freezing a class created by another Ractor is not allowed
 assert_equal 'can not modify String because it is created by another Ractor', %q{
   r = Ractor.new do
