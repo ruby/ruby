@@ -1219,6 +1219,39 @@ assert_equal 'can not set class variable @@cv of C, which was created by another
   end
 }
 
+# A moved object takes its singleton class's ownership with it, so the receiver
+# can keep defining singleton methods on it
+assert_equal '[:from_main, :from_ractor]', %q{
+  o = Object.new
+  def o.foo = :from_main   # materializes the singleton class here, in the main Ractor
+
+  r = Ractor.new do
+    x = Ractor.receive
+    def x.bar = :from_ractor
+    [x.foo, x.bar]
+  end
+  r.send(o, move: true)
+  r.value.inspect
+}
+
+# ... and it comes back when the object is moved back
+assert_equal '[:from_main, :from_ractor, :from_main_again]', %q{
+  o = Object.new
+  def o.foo = :from_main
+
+  port = Ractor::Port.new
+  r = Ractor.new(port) do |port|
+    x = Ractor.receive
+    def x.bar = :from_ractor
+    port.send(x, move: true)
+  end
+  r.send(o, move: true)
+
+  back = port.receive
+  def back.baz = :from_main_again
+  [back.foo, back.bar, back.baz].inspect
+}
+
 # Changing method visibility on a class created by another Ractor is not allowed
 assert_equal 'can not modify C because it is created by another Ractor', %q{
   class C

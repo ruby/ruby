@@ -147,6 +147,7 @@ RCLASS_SET_OWNER_RACTOR_ID(VALUE klass, uint32_t ractor_id)
 
 bool rb_class_owned_p(VALUE klass);          // true if the current Ractor created klass
 void rb_class_owner_check(VALUE klass);      // raise Ractor::IsolationError unless rb_class_owned_p(klass)
+void rb_class_take_ownership(VALUE klass);   // make the current Ractor the owner (moved singleton classes only)
 
 static inline rb_classext_t * RCLASS_EXT_READABLE_IN_BOX(VALUE obj, const rb_box_t *box);
 static inline rb_classext_t * RCLASS_EXT_READABLE(VALUE obj);

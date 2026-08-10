@@ -652,6 +652,20 @@ rb_class_owned_p(VALUE klass)
     }
 }
 
+/* Make the current Ractor the owner of klass.
+ *
+ * Only for a singleton class whose attached object has just changed hands: a
+ * singleton class belongs to the owner of the object it is attached to, and
+ * Ractor#send(move: true) hands that object over. There is deliberately no way to
+ * reach this from Ruby. */
+void
+rb_class_take_ownership(VALUE klass)
+{
+    // Keep the "0 means main" encoding class_alloc0 uses, so a program that moves
+    // an object back to main stores nothing again.
+    RCLASS_SET_OWNER_RACTOR_ID(klass, rb_ractor_main_p() ? 0 : rb_ractor_id(GET_RACTOR()));
+}
+
 void
 rb_class_owner_check(VALUE klass)
 {
