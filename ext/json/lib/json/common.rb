@@ -5,17 +5,10 @@ require 'json/version'
 module JSON
   module ParserOptions # :nodoc:
     class << self
-      def prepare(opts)
-        if opts[:object_class] || opts[:array_class]
-          opts = opts.dup
-          on_load = opts[:on_load]
-
-          on_load = object_class_proc(opts[:object_class], on_load) if opts[:object_class]
-          on_load = array_class_proc(opts[:array_class], on_load) if opts[:array_class]
-          opts[:on_load] = on_load
-        end
-
-        opts
+      def on_load(on_load, object_class, array_class)
+        on_load = object_class_proc(object_class, on_load) if object_class
+        on_load = array_class_proc(array_class, on_load) if array_class
+        on_load
       end
 
       private
@@ -44,6 +37,8 @@ module JSON
     end
   end
 
+  private_constant :ParserOptions
+
   class << self
     # :call-seq:
     #   JSON[object] -> new_array or new_string
@@ -57,12 +52,14 @@ module JSON
     #   ruby = [0, 1, nil]
     #   JSON[ruby] # => '[0,1,null]'
     def [](object, opts = nil)
+      opts ||= {}.freeze
+
       if object.is_a?(String)
-        return JSON.parse(object, opts)
+        return JSON.parse(object, **opts)
       elsif object.respond_to?(:to_str)
         str = object.to_str
         if str.is_a?(String)
-          return JSON.parse(str, opts)
+          return JSON.parse(str, **opts)
         end
       end
 
@@ -247,16 +244,14 @@ module JSON
   #   # Raises JSON::ParserError (783: unexpected token at ''):
   #   JSON.parse('')
   #
-  def parse(source, opts = nil)
-    opts = ParserOptions.prepare(opts) unless opts.nil?
-    Parser.parse(source, opts)
-  end
+  def parse(source, on_load: nil, object_class: nil, array_class: nil, **options)
+    if object_class || array_class
+      on_load = ParserOptions.on_load(on_load, object_class, array_class)
+    end
 
-  PARSE_L_OPTIONS = {
-    max_nesting: false,
-    allow_nan: true,
-  }.freeze
-  private_constant :PARSE_L_OPTIONS
+    options[:on_load] = on_load if on_load
+    Parser.parse(source, options)
+  end
 
   # :call-seq:
   #   JSON.parse!(source, opts) -> object
@@ -269,34 +264,30 @@ module JSON
   # - Option +max_nesting+, if not provided, defaults to +false+,
   #   which disables checking for nesting depth.
   # - Option +allow_nan+, if not provided, defaults to +true+.
-  def parse!(source, opts = nil)
-    if opts.nil?
-      parse(source, PARSE_L_OPTIONS)
-    else
-      parse(source, PARSE_L_OPTIONS.merge(opts))
-    end
+  def parse!(source, **options)
+    parse(source, max_nesting: false, allow_nan: true, **options)
   end
 
   # :call-seq:
-  #   JSON.load_file(path, opts={}) -> object
+  #   JSON.load_file(path, **) -> object
   #
   # Calls:
-  #   parse(File.read(path), opts)
+  #   parse(File.read(path), **)
   #
   # See method #parse.
-  def load_file(filespec, opts = nil)
-    parse(File.read(filespec, encoding: Encoding::UTF_8), opts)
+  def load_file(filespec, ...)
+    parse(File.read(filespec, encoding: Encoding::UTF_8), ...)
   end
 
   # :call-seq:
-  #   JSON.load_file!(path, opts = {})
+  #   JSON.load_file!(path, **)
   #
   # Calls:
-  #   JSON.parse!(File.read(path, opts))
+  #   JSON.parse!(File.read(path), **)
   #
   # See method #parse!
-  def load_file!(filespec, opts = nil)
-    parse!(File.read(filespec, encoding: Encoding::UTF_8), opts)
+  def load_file!(filespec, ...)
+    parse!(File.read(filespec, encoding: Encoding::UTF_8), ...)
   end
 
   # :call-seq:
@@ -532,38 +523,8 @@ module JSON
   #      #<Admin:0x00000000064c41f8
   #      @attributes={"type"=>"Admin", "password"=>"0wn3d"}>}
   #
-  def unsafe_load(source, proc = nil, options = nil)
-    opts = {
-      max_nesting: false,
-      allow_nan: true,
-      allow_blank: true,
-    }
-    if options.nil? && proc && proc.is_a?(Hash)
-      options, proc = proc, nil
-    end
-
-    opts.merge!(options) unless options.nil?
-
-    unless source.is_a?(String)
-      if source.respond_to? :to_str
-        source = source.to_str
-      elsif source.respond_to? :to_io
-        source = source.to_io.read
-      elsif source.respond_to?(:read)
-        source = source.read
-      end
-    end
-
-    if opts[:allow_blank] && (source.nil? || source.empty?)
-      source = 'null'
-    end
-
-    if proc
-      opts = opts.dup
-      opts[:on_load] = proc.to_proc
-    end
-
-    parse(source, opts)
+  def unsafe_load(source, proc = nil, **options)
+    load(source, proc, max_nesting: false, **options)
   end
 
   # :call-seq:
@@ -692,19 +653,7 @@ module JSON
   #      #<Admin:0x00000000064c41f8
   #      @attributes={"type"=>"Admin", "password"=>"0wn3d"}>}
   #
-  def load(source, proc = nil, options = nil)
-    if proc && options.nil? && proc.is_a?(Hash)
-      options = proc
-      proc = nil
-    end
-
-    opts = {
-      allow_nan: true,
-      allow_blank: true,
-    }
-
-    opts.merge!(options) unless options.nil?
-
+  def load(source, proc = nil, allow_blank: true, **options)
     unless source.is_a?(String)
       if source.respond_to? :to_str
         source = source.to_str
@@ -715,16 +664,15 @@ module JSON
       end
     end
 
-    if opts[:allow_blank] && (source.nil? || (String === source && source.empty?))
+    if allow_blank && (source.nil? || (String === source && source.empty?))
       source = 'null'
     end
 
     if proc
-      opts = opts.dup
-      opts[:on_load] = proc.to_proc
+      parse(source, allow_nan: true, on_load: proc.to_proc, **options)
+    else
+      parse(source, allow_nan: true, **options)
     end
-
-    parse(source, opts)
   end
 
   # :call-seq:
@@ -784,6 +732,20 @@ module JSON
   #   MyApp::JSONC_CODER.load(document)
   #
   class Coder
+    PARSER_OPTIONS = %i(
+      max_nesting
+      allow_nan
+      allow_trailing_comma
+      allow_comments
+      allow_control_characters
+      allow_invalid_escape
+      symbolize_names
+      freeze
+      allow_duplicate_key
+      decimal_class
+    ).freeze
+    private_constant :PARSER_OPTIONS
+
     # :call-seq:
     #   JSON.new(options = nil, &block)
     #
@@ -808,17 +770,19 @@ module JSON
     #
     #  puts MyApp::API_JSON_CODER.dump(Time.now.utc) # => "2025-01-21T08:41:44.286Z"
     #
-    def initialize(options = nil, &as_json)
-      if options.nil?
-        options = { strict: true }
-      else
-        options = options.dup
-        options[:strict] = true
+    def initialize(object_class: nil, array_class: nil, on_load: nil, **options, &as_json)
+      if object_class || array_class
+        on_load = ParserOptions.on_load(on_load, object_class, array_class)
       end
-      options[:as_json] = as_json if as_json
+      parser_options = options.slice(*PARSER_OPTIONS)
+      parser_options[:on_load] = on_load if on_load
+      @parser_config = Ext::Parser::Config.new(parser_options).freeze
 
-      @state = State.new(options).freeze
-      @parser_config = Ext::Parser::Config.new(ParserOptions.prepare(options)).freeze
+      @state = State.new(
+        **options,
+        strict: true,
+        as_json: as_json,
+      ).freeze
     end
 
     # call-seq:

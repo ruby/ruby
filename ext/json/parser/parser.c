@@ -2015,7 +2015,7 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
             }
         }
     }
-    else if (args->strict) {
+    else {
         if (!args->unknown_keywords) {
             args->unknown_keywords = rb_obj_hide(rb_ary_new());
         }

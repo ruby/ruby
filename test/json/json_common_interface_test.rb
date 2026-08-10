@@ -58,6 +58,13 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     assert_equal [ 1, 2, 3, ], JSON.parse('[ 1, 2, 3 ]')
   end
 
+  def test_parse_unknown_option
+    error = assert_raise(ArgumentError) do
+      JSON.parse('[]', quirks_mode: true)
+    end
+    assert_match "quirks_mode", error.message
+  end
+
   def test_parse_bang
     assert_equal [ 1, Infinity, 3, ], JSON.parse!('[ 1, Infinity, 3 ]')
   end
