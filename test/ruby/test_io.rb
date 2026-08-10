@@ -2834,6 +2834,29 @@ class TestIO < Test::Unit::TestCase
     f1.close
   end
 
+  def test_reopen_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(__FILE__, "rt") {|f|
+        f.ungetc(f.getc)
+        f.reopen(t.path, "rt")
+        assert_equal("foo\n", f.gets, bug22239)
+      }
+
+      open(__FILE__, "rt") {|f|
+        f.ungetc('a')
+        f.reopen(t.path, "rt")
+        assert_equal("foo\n", f.gets, bug22239)
+      }
+
+      open(__FILE__, "rt") {|f|
+        f.ungetc(f.getc)
+        f.reopen(t.path, "rt")
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
   def test_reopen_io_with_pending_byte
     bug22239 = '[Bug #22239]'
     mkcdtmpdir {

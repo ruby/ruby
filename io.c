@@ -8538,6 +8538,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
             rb_sys_fail_on_write(fptr);
     }
     fptr->rbuf.off = fptr->rbuf.len = 0;
+    clear_codeconv(fptr);
 
     if (fptr->stdio_file) {
         int e = rb_freopen(rb_str_encode_ospath(fptr->pathv),
