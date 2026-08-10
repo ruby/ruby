@@ -21534,19 +21534,13 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(test)
           v44:CBool = Test v15
           v45:Falsy = RefineType v15, Falsy
-          CondBranch v44, bb5(), bb4(v13, v14, v45, v37)
-          v42:CBool = Test v15
-          v43:Falsy = RefineType v15, Falsy
-          CondBranch v42, bb5(), bb4()
+          CondBranch v44, bb5(), bb4()
         bb5():
           v47:Truthy = RefineType v15, Truthy
           CheckInterrupts
           Return v37
-        bb4(v54:BasicObject, v55:BasicObject, v56:Falsy, v57:BasicObject):
-          v61:NilClass = Const Value(nil)
-          Return v35
         bb4():
-          v59:NilClass = Const Value(nil)
+          v61:NilClass = Const Value(nil)
           CheckInterrupts
           Return v61
         ");

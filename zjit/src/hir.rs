@@ -5941,7 +5941,7 @@ impl Function {
         }
 
         fn block_terminator(fun: &Function, block_id: BlockId) -> InsnId {
-            *fun.blocks[block_id.0].insns().last().unwrap()
+            *fun.blocks[block_id.to_usize() as usize].insns().last().unwrap()
         }
 
         macro_rules! edges_of {
@@ -5956,12 +5956,12 @@ impl Function {
 
         fn outgoing_edges(fun: &Function, block_id: BlockId) -> impl Iterator<Item = &BranchEdge> {
             let insn_id = block_terminator(fun, block_id);
-            edges_of!(&fun.insns[insn_id.0])
+            edges_of!(&fun.insns[insn_id.to_usize()])
         }
 
         fn outgoing_edges_mut(fun: &mut Function, block_id: BlockId) -> impl Iterator<Item = &mut BranchEdge> {
             let insn_id = block_terminator(fun, block_id);
-            edges_of!(&mut fun.insns[insn_id.0])
+            edges_of!(&mut fun.insns[insn_id.to_usize()])
         }
 
         // Instantiate the domain for abstract interpretation.
@@ -5979,7 +5979,7 @@ impl Function {
         // We only need to update blocks that have params. (Blocks without params cannot be improved)
         let blocks_receiving_params: Vec<BlockId> = blocks.into_iter()
             .filter(|&block_id|
-                self.blocks[block_id.0].params().len() != 0)
+                self.blocks[block_id.to_usize()].params().len() != 0)
             .collect();
 
         // NOTE: It is possible that once some block_params are removed, there will be no params.
@@ -6005,10 +6005,10 @@ impl Function {
                     for (i, param) in params.iter().enumerate() {
                         let param = self.find_id(*param);
                         // If the param is the same as passed into the block, it is a self loop and provides no new predecessor information.
-                        if param == self.find_id(self.blocks[block_id.0].params[i]) {
+                        if param == self.find_id(self.blocks[block_id.to_usize()].params[i]) {
                             continue
                         }
-                        param_values[block_id.0][i].update(param);
+                        param_values[block_id.to_usize()][i].update(param);
                     }
                 }
             }
@@ -6019,7 +6019,7 @@ impl Function {
             // 2. Remove trivial params from the basic block definition
             // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
             for block_id in &blocks_receiving_params {
-                let block_preds = &param_values[block_id.0];
+                let block_preds = &param_values[block_id.to_usize()];
                 let trivial_indices: Vec<usize> = block_preds.iter().enumerate()
                     .filter_map(|(idx, state)|
                         matches!(state, ParamValue::One(_)).then_some(idx)
@@ -6028,13 +6028,13 @@ impl Function {
                 // Replace uses of the trivial params with the concretized value
                 for param_index in &trivial_indices {
                     if let ParamValue::One(insn_id) = block_preds[*param_index] {
-                        self.make_equal_to(self.blocks[block_id.0].params[*param_index], insn_id);
+                        self.make_equal_to(self.blocks[block_id.to_usize()].params[*param_index], insn_id);
                         changed = true;
                     }
                 }
 
                 // Update the block
-                prune_vec_by_indices(&mut self.blocks[block_id.0].params, &trivial_indices);
+                prune_vec_by_indices(&mut self.blocks[block_id.to_usize()].params, &trivial_indices);
 
                 // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
                 for jump_block_id in &blocks_sending_params {
