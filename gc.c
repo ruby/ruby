@@ -641,6 +641,7 @@ typedef struct gc_function_map {
     void (*remove_weak)(void *objspace_ptr, VALUE parent_obj, VALUE *ptr);
     // Compaction
     bool (*object_moved_p)(void *objspace_ptr, VALUE obj);
+    bool (*pinned_p)(void *objspace_ptr, VALUE obj);
     VALUE (*location)(void *objspace_ptr, VALUE value);
     // Write barriers
     void (*writebarrier)(void *objspace_ptr, VALUE a, VALUE b);
@@ -815,6 +816,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(remove_weak);
     // Compaction
     load_modular_gc_func(object_moved_p);
+    load_modular_gc_func(pinned_p);
     load_modular_gc_func(location);
     // Write barriers
     load_modular_gc_func(writebarrier);
@@ -895,6 +897,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_remove_weak rb_gc_functions.remove_weak
 // Compaction
 # define rb_gc_impl_object_moved_p rb_gc_functions.object_moved_p
+# define rb_gc_impl_pinned_p rb_gc_functions.pinned_p
 # define rb_gc_impl_location rb_gc_functions.location
 // Write barriers
 # define rb_gc_impl_writebarrier rb_gc_functions.writebarrier
@@ -3569,7 +3572,10 @@ gc_ref_update_array(void *objspace, VALUE v)
         }
 
         if (rb_gc_obj_slot_size(v) >= rb_ary_size_as_embedded(v)) {
-            if (rb_ary_embeddable_p(v)) {
+            /* Skip pinned arrays: a pinned array may be referenced from a
+             * conservative root holding RARRAY_PTR across this compaction, so
+             * freeing its heap buffer here would dangle that pointer. */
+            if (rb_ary_embeddable_p(v) && !rb_gc_impl_pinned_p(objspace, v)) {
                 rb_ary_make_embedded(v);
             }
         }
@@ -4146,9 +4152,12 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
             }
 
             /* If, after move the string is not embedded, and can fit in the
-             * slot it's been placed in, then re-embed it. */
+             * slot it's been placed in, then re-embed it. Skip pinned objects:
+             * a local holding RSTRING_PTR across this compaction could otherwise
+             * point to freed memory even if the String is marked and pinned. */
             if (rb_gc_obj_slot_size(obj) >= rb_str_size_as_embedded(obj)) {
-                if (!STR_EMBED_P(obj) && rb_str_reembeddable_p(obj)) {
+                if (!STR_EMBED_P(obj) && rb_str_reembeddable_p(obj)
+                        && !rb_gc_impl_pinned_p(objspace, obj)) {
                     rb_str_make_embedded(obj);
                 }
             }
