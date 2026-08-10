@@ -2256,12 +2256,10 @@ impl Assembler
         let mut inactive: Vec<&Interval> = Vec::new(); // intervals with lifetime holes
         let mut num_stack_slots: usize = 0;
 
-        let mut sorted_intervals: Vec<&Interval> = intervals.iter()
+        let mut unhandled: VecDeque<&Interval> = intervals.iter()
             .filter(|it| it.has_bounds())
             .collect();
-        sorted_intervals.sort_by_key(|it| it.start());
-
-        let mut unhandled: VecDeque<&Interval> = sorted_intervals.into();
+        unhandled.make_contiguous().sort_by_key(|it| it.start());
 
         while let Some(cur) = unhandled.pop_front() {
             let position = cur.start();
@@ -2401,11 +2399,13 @@ impl Assembler
             }
         }
 
-        // Drain active and inactive and mark everything as handled.
+        // Drain active and inactive and mark everything as handled. `state` is
+        // only ever read by the debug_asserts above, so this bookkeeping is
+        // is not necessary once assertions are compiled out.
+        #[cfg(debug_assertions)]
         for it in active.drain(..).chain(inactive.drain(..)) {
             it.state.set(IntervalState::Handled);
         }
-        debug_assert!(active.is_empty() && inactive.is_empty());
 
         num_stack_slots
     }
