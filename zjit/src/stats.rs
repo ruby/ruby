@@ -292,7 +292,6 @@ make_counters! {
         send_fallback_super_not_optimized_method_type,
         send_fallback_super_polymorphic,
         send_fallback_super_target_not_found,
-        send_fallback_super_target_complex_args_pass,
         send_fallback_cannot_send_direct,
         send_fallback_invokeblock_not_specialized,
         send_fallback_invokeblock_polymorphic_miss,
@@ -444,6 +443,11 @@ make_counters! {
     caller_splat_profile_skewed_polymorphic,
     caller_splat_profile_megamorphic,
     caller_splat_profile_skewed_megamorphic,
+
+    // Contexts in which SendDirect argument planning failed. These are kept
+    // outside dynamic_send because the detailed fallback reason is also counted.
+    send_direct_fallback_context_send,
+    send_direct_fallback_context_super,
 
     // Writes to the VM frame
     vm_write_jit_frame_count,
@@ -708,7 +712,6 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SuperNotOptimizedMethodType(_)            => send_fallback_super_not_optimized_method_type,
         SuperPolymorphic                          => send_fallback_super_polymorphic,
         SuperTargetNotFound                       => send_fallback_super_target_not_found,
-        SuperTargetComplexArgsPass                => send_fallback_super_target_complex_args_pass,
         InvokeBlockNotSpecialized                 => send_fallback_invokeblock_not_specialized,
         InvokeBlockPolymorphicMiss                => send_fallback_invokeblock_polymorphic_miss,
         SendForwardNotSpecialized                 => send_fallback_sendforward_not_specialized,
