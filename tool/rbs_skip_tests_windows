@@ -17,6 +17,15 @@ test_confstr(EtcSingletonTest)
 # NameError: uninitialized constant Etc::SC_ARG_MAX
 test_sysconf(EtcSingletonTest)
 
+# NameError: uninitialized constant Etc::Group
+test_each(EtcGroupSingletonTest)
+
+# `Etc::Passwd.each` returns `Etc::Passwd` instead of `Enumerator`
+test_each(EtcPasswdSingletonTest)
+
+# NameError: uninitialized constant Etc::PC_PIPE_BUF
+test_pathconf(IOInstanceTest)
+
 # Errno::EACCES: Permission denied @ apply2files - C:/a/_temp/d20250813-10156-udw6rx/chmod
 test_chmod(FileInstanceTest)
 test_chmod(FileInstanceTest)
