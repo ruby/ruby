@@ -1307,6 +1307,76 @@ assert_equal 'true', %q{
   end.value
 }
 
+# A moved object takes its singleton class's ownership with it, so the receiver
+# can keep defining singleton methods on it
+assert_equal '[:from_main, :from_ractor]', %q{
+  o = Object.new
+  def o.foo = :from_main   # materializes the singleton class here, in the main Ractor
+
+  r = Ractor.new do
+    x = Ractor.receive
+    def x.bar = :from_ractor
+    [x.foo, x.bar]
+  end
+  r.send(o, move: true)
+  r.value.inspect
+}
+
+# ... the whole eigenclass chain goes with it, so `class << obj.singleton_class`
+# keeps working for the receiver
+assert_equal 'true', %q{
+  o = Object.new
+  def o.foo = :main
+  o.singleton_class.singleton_class    # materialize it here, in the main Ractor
+
+  port = Ractor::Port.new
+  r = Ractor.new(port) do |port|
+    x = Ractor.receive
+    x.singleton_class.singleton_class.define_method(:mm) { :sub }
+    port << x.singleton_class.mm
+  end
+  r.send(o, move: true)
+  res = port.receive
+  r.join
+  (res == :sub).to_s
+}
+
+# ... but the move is refused when that singleton class holds unshareable values,
+# which the sender would keep while the receiver became their owner
+assert_equal 'can not move an object whose singleton class has variable @iv referring to an unshareable object', <<~'RUBY', frozen_string_literal: false
+  o = Object.new
+  o.singleton_class.instance_variable_set(:@iv, 'sender')
+
+  r = Ractor.new { Ractor.receive }
+  msg = begin
+    r.send(o, move: true)
+    'no error'
+  rescue Ractor::IsolationError => e
+    e.message
+  end
+  r.send(1)
+  r.join
+  msg
+  RUBY
+
+# ... and it comes back when the object is moved back
+assert_equal '[:from_main, :from_ractor, :from_main_again]', %q{
+  o = Object.new
+  def o.foo = :from_main
+
+  port = Ractor::Port.new
+  r = Ractor.new(port) do |port|
+    x = Ractor.receive
+    def x.bar = :from_ractor
+    port.send(x, move: true)
+  end
+  r.send(o, move: true)
+
+  back = port.receive
+  def back.baz = :from_main_again
+  [back.foo, back.bar, back.baz].inspect
+}
+
 # Getting non-shareable objects via constants by other Ractors is not allowed
 assert_equal 'can not access non-shareable objects in constant C::CONST of a class/module created by another Ractor.', <<~'RUBY', frozen_string_literal: false
   class C

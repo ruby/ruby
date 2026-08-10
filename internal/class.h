@@ -139,6 +139,8 @@ RCLASS_SET_OWNER_RACTOR_ID(VALUE klass, rb_serial_t ractor_id)
 
 bool rb_class_owned_by_ractor_p(rb_serial_t owner_id); // rb_class_owned_p's slow half
 void rb_class_owner_check(VALUE klass);      // raise Ractor::IsolationError unless rb_class_owned_p(klass)
+void rb_class_take_ownership(VALUE klass);   // for a moved object's singleton class only
+void rb_class_check_singleton_movable(VALUE klass); // raise if it holds unshareable values
 
 // true if the current Ractor created klass.  Inline because the class ivar and
 // constant read paths take it on every access.
