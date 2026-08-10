@@ -8379,6 +8379,8 @@ io_reopen(VALUE io, VALUE nfile)
         }
     }
     flush_before_seek(fptr, true);
+    /* in flush_before_seek, clear_codeconv called only if rbuf is filled */
+    clear_codeconv(fptr);
     if (orig->mode & FMODE_READABLE) {
         pos = io_tell(orig);
     }
