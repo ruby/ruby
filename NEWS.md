@@ -167,7 +167,7 @@ They are still available on rubygems.org and can be installed with
 * erb 6.0.7
   * 6.0.1 to [v6.0.1.1][erb-v6.0.1.1], [v6.0.2][erb-v6.0.2], [v6.0.3][erb-v6.0.3], [v6.0.4][erb-v6.0.4], [v6.0.5][erb-v6.0.5], [v6.0.6][erb-v6.0.6], [v6.0.7][erb-v6.0.7]
 * error_highlight 0.7.2
-* io-console 0.9.1
+* io-console 0.9.2
   * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1]
 * ipaddr 1.2.9
   * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
