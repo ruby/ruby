@@ -3115,8 +3115,7 @@ impl Function {
     /// Return whether the representative of `insn_id` is a `SendDirect` without
     /// cloning the instruction or resolving its operands.
     fn is_send_direct(&self, insn_id: InsnId) -> bool {
-        let insn_id = self.union_find.borrow().find_const(insn_id);
-        matches!(&self.insns[insn_id.to_usize()], Insn::SendDirect(..))
+        matches!(self.find_ref(insn_id), Insn::SendDirect(..))
     }
 
     fn new_block(&mut self, insn_idx: u32) -> BlockId {
@@ -3283,6 +3282,14 @@ impl Function {
             *operand = find!(*operand);
         });
         result
+    }
+
+    /// Return a reference to the instruction at `insn_id` (after resolving via union-find)
+    /// without cloning it. Unlike [`ResolvedInsnId::insn`], this does not require the operands
+    /// to have been resolved first, so the returned instruction's operands may be stale. Use it
+    /// when the caller only inspects the opcode, or resolves the operands itself.
+    pub fn find_ref(&self, insn_id: InsnId) -> &Insn {
+        &self.insns[self.find_id(insn_id).to_usize()]
     }
 
     /// Make the operands of the instruction at `find(insn_id)` point to the current representative
@@ -6744,7 +6751,7 @@ impl Function {
             let block_insns = &self.blocks[block_id.to_usize()].insns;
 
             // Fast path: skip blocks without a PushInlineFrame.
-            if !block_insns.iter().any(|&insn_id| matches!(self.find(insn_id), Insn::PushInlineFrame { .. })) {
+            if !block_insns.iter().any(|&insn_id| matches!(self.find_ref(insn_id), Insn::PushInlineFrame { .. })) {
                 continue;
             }
 
@@ -6752,8 +6759,7 @@ impl Function {
             let mut new_insns: Vec<InsnId> = Vec::with_capacity(insns.len());
             let mut pending_pushes: Vec<PendingPush> = Vec::new();
             for insn_id in insns {
-                let insn = self.find(insn_id);
-                match insn {
+                match self.find_ref(insn_id) {
                     Insn::PushInlineFrame { .. } => {
                         pending_pushes.push(PendingPush { push_idx: new_insns.len(), frame_observed: false });
                         new_insns.push(insn_id);
@@ -6785,8 +6791,8 @@ impl Function {
                             }
                         }
                     }
-                    _ => {
-                        if !self.can_elide_enclosing_frame(&insn) {
+                    insn => {
+                        if !self.can_elide_enclosing_frame(insn) {
                             // The instruction may take a side exit or observe the frame.
                             for pending in pending_pushes.iter_mut() {
                                 pending.frame_observed = true;
