@@ -312,6 +312,8 @@ set_sub_temporary_name(VALUE mod, VALUE name)
 VALUE
 rb_mod_set_temporary_name(VALUE mod, VALUE name)
 {
+    rb_class_owner_check(mod);
+
     // We don't allow setting the name if the classpath is already permanent:
     if (RCLASS_PERMANENT_CLASSPATH_P(mod)) {
         rb_raise(rb_eRuntimeError, "can't change permanent name");
