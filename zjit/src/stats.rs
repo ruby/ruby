@@ -474,6 +474,7 @@ make_counters! {
     // be incremented only once, rather than once per SendDirect, if the caller
     // already exceeds the budget before scanning for its SendDirects.
     inline_method_count,
+    empty_inline_frame_count,
     inline_reject_too_large,
     inline_reject_complex_params,
     inline_reject_ep_escapes,

@@ -6692,6 +6692,13 @@ impl Function {
         if matches!(insn, Insn::LoadSP) {
             return false;
         }
+        // Stats counters only bump a global counter: they can't side-exit and
+        // don't observe frames, but their effects aren't empty (they write the
+        // Other heap). Without this, --zjit-stats would disable this pass by
+        // inserting IncrCounter between every PushInlineFrame/PopInlineFrame.
+        if matches!(insn, Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }) {
+            return true;
+        }
         if !insn.effects_of().is_empty() {
             return false;
         }
@@ -6754,7 +6761,13 @@ impl Function {
                         match pending_pushes.pop() {
                             Some(PendingPush { push_idx, frame_observed: false }) => {
                                 // Empty pair: drop both the push and this pop.
-                                new_insns.remove(push_idx);
+                                // With --zjit-stats, count each time execution
+                                // passes an elided pair at run-time instead.
+                                if get_option!(stats) {
+                                    new_insns[push_idx] = self.new_insn(Insn::IncrCounter(Counter::empty_inline_frame_count));
+                                } else {
+                                    new_insns.remove(push_idx);
+                                }
                                 continue;
                             }
                             Some(PendingPush { frame_observed: true, .. }) => {
