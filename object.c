@@ -1856,6 +1856,10 @@ rb_mod_to_s(VALUE klass)
 static VALUE
 rb_mod_freeze(VALUE mod)
 {
+    // a permanent modification; already frozen changes no state, so stays a no-op
+    if (!OBJ_FROZEN(mod)) {
+        rb_class_owner_check(mod);
+    }
     rb_class_name(mod);
     return rb_obj_freeze(mod);
 }
