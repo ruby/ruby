@@ -369,6 +369,8 @@ class TestIO_Console
   end
 
   def test_iflush
+    pend "stty cannot flush terminal queues" if IO.private_method_defined?(:_io_console_stty)
+
     helper {|m, s|
       m.print "a"
       s.iflush
@@ -390,6 +392,8 @@ class TestIO_Console
   end
 
   def test_ioflush
+    pend "stty cannot flush terminal queues" if IO.private_method_defined?(:_io_console_stty)
+
     helper {|m, s|
       m.print "a"
       s.ioflush
