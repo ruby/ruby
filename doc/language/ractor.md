@@ -353,6 +353,8 @@ Every class/module records the Ractor that created it as its *owner*. Only the o
 * `include`/`prepend` into the class/module, and refining it with `Module#refine`
 * defining or removing constants, and registering `autoload`
 * setting instance variables of the class/module object
+* setting and removing class variables stored in the class/module
+* `Module#freeze` and `Module#set_temporary_name`
 
 Reading (calling methods, instantiating, reading constants and instance variables, subclassing, and so on) is allowed from any Ractor as before.
 
@@ -471,25 +473,33 @@ end
 
 ### Class variables
 
-Class variables are shared across the whole inheritance chain (and the class they are actually stored in can even change over time), so no single owner Ractor can be defined for them. Therefore they are not covered by the ownership relaxation above: only the main Ractor can write class variables, and only into classes/modules it owns. Non-shareable class variable values can only be read by the main Ractor.
+A class variable is shared across the whole inheritance chain, and the class it is actually stored in can change over time (a subclass's definition can be taken over by an ancestor). The Ractor that decides access is therefore the owner of the class the variable is *stored in*, not of the receiver it was looked up through. Only that Ractor can write the variable, and only that Ractor can read a value which is not shareable.
 
 ```ruby
 class C
-  @@cv = 'str'
+  @@cv = 'str' # unshareable object
 end
 
-r = Ractor.new do
+Ractor.new do
   class C
-    p @@cv
+    begin
+      p @@cv # stored in C, which is owned by the main Ractor
+    rescue Ractor::IsolationError
+      p $!.message
+      #=> "can not read non-shareable class variable @@cv of C, which was created by another Ractor"
+    end
   end
-end
+end.join
+```
 
+A Ractor has full use of the class variables of the classes it created itself:
 
-begin
-  r.join
-rescue => e
-  e.class #=> Ractor::IsolationError
-end
+```ruby
+Ractor.new do
+  k = Class.new
+  k.class_variable_set(:@@count, 'not shareable')
+  k.class_variable_get(:@@count)
+end.value #=> "not shareable"
 ```
 
 ### Constants

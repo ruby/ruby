@@ -1046,7 +1046,7 @@ assert_equal '1234', %q{
 }
 
 # Reading non-shareable cvar from non-main Ractor is not allowed
-assert_equal 'can not read non-shareable class variable @@cv from non-main Ractors (C)', %q{
+assert_equal 'can not read non-shareable class variable @@cv of C, which was created by another Ractor', %q{
   class C
     @@cv = 'str'
   end
@@ -1065,7 +1065,7 @@ assert_equal 'can not read non-shareable class variable @@cv from non-main Racto
 }
 
 # also cached non-shareable cvar read from non-main Ractor is not allowed
-assert_equal 'can not read non-shareable class variable @@cv from non-main Ractors (C)', %q{
+assert_equal 'can not read non-shareable class variable @@cv of C, which was created by another Ractor', %q{
   class C
     @@cv = 'str'
     def self.cv
@@ -1130,7 +1130,7 @@ assert_equal 'hello', %q{
 }
 
 # Writing cvar from non-main Ractor is not allowed
-assert_equal 'can not set class variables from non-main Ractors (@@cv from C)', %q{
+assert_equal 'can not set class variable @@cv of C, which was created by another Ractor', %q{
   class C
     @@cv = 'str'
     def self.cv=(v)
@@ -1173,6 +1173,97 @@ assert_equal 'true', %q{
 
   r = Ractor.new { C.cv? ? 'true' : 'false' }
   r.value
+}
+
+# A Ractor has full use of the cvars of a class it created, unshareable values included
+assert_equal 'not shareable', %q{
+  Ractor.new do
+    k = Class.new
+    k.class_variable_set(:@@cv, +'not shareable')
+    k.class_variable_get(:@@cv)
+  end.value
+}
+
+# The owner is the owner of the class the cvar is stored in, not of the receiver
+assert_equal 'can not set class variable @@cv of C, which was created by another Ractor', %q{
+  class C
+    @@cv = 1
+  end
+
+  r = Ractor.new do
+    # a subclass created by this Ractor, but @@cv lives in C
+    Class.new(C).class_variable_set(:@@cv, 2)
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# Removing a cvar of a class created by another Ractor is not allowed
+assert_equal 'can not set class variable @@cv of C, which was created by another Ractor', %q{
+  class C
+    @@cv = 1
+  end
+
+  r = Ractor.new do
+    C.send(:remove_class_variable, :@@cv)
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# Freezing a class created by another Ractor is not allowed
+assert_equal 'can not modify String because it is created by another Ractor', %q{
+  r = Ractor.new do
+    String.freeze
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# Freezing a class the Ractor created itself is allowed, and freezing an
+# already frozen class stays a no-op for everybody
+assert_equal 'true true', %q{
+  FROZEN = Class.new.freeze
+
+  Ractor.new do
+    own = Class.new
+    own.freeze
+    "#{own.frozen?} #{FROZEN.freeze.frozen?}"
+  end.value
+}
+
+# set_temporary_name on a class created by another Ractor is not allowed
+assert_equal 'can not modify C because it is created by another Ractor', %q{
+  class C; end
+
+  r = Ractor.new do
+    C.set_temporary_name('other')
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# set_temporary_name on a module the Ractor created itself is allowed
+assert_equal 'mine', %q{
+  Ractor.new do
+    Module.new.set_temporary_name('mine').name
+  end.value
 }
 
 # Getting non-shareable objects via constants by other Ractors is not allowed
