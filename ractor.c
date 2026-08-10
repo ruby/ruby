@@ -9,6 +9,7 @@
 #include "vm_sync.h"
 #include "ractor_core.h"
 #include "internal/array.h"
+#include "internal/class.h"
 #include "internal/complex.h"
 #include "internal/cont.h"
 #include "internal/error.h"
@@ -2887,6 +2888,13 @@ move_preflight(VALUE obj, struct move_preflight_ctx *ctx)
     st_insert(seen, (st_data_t)obj, 0);
     ctx->nodes++;
 
+    /* The receiver takes over a materialized singleton class, so its contents have to
+     * be movable too. */
+    VALUE klass = RBASIC_CLASS(obj);
+    if (RB_UNLIKELY(klass && FL_TEST_RAW(klass, FL_SINGLETON))) {
+        rb_class_check_singleton_movable(klass);
+    }
+
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
       case T_OBJECT:
@@ -3123,6 +3131,8 @@ courier_apply_klass(VALUE shell, VALUE klass)
     }
     if (RB_UNLIKELY(FL_TEST_RAW(klass, FL_SINGLETON))) {
         rb_singleton_class_attached(klass, shell);
+        /* the singleton class follows its object, which is now this Ractor's */
+        rb_class_take_ownership(klass);
     }
 }
 

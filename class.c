@@ -655,6 +655,28 @@ class_owner_name(VALUE klass)
     return (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) ? rb_class_path(obj) : rb_any_to_s(obj);
 }
 
+/* The eigenclass of klass, if it has one of its own, else 0. */
+static VALUE
+class_own_metaclass(VALUE klass)
+{
+    VALUE meta = METACLASS_OF(klass);
+    return (RCLASS_SINGLETON_P(meta) && RCLASS_ATTACHED_OBJECT(meta) == klass) ? meta : 0;
+}
+
+/* Only for a singleton class whose attached object has just changed hands through
+ * Ractor#send(move: true).  Deliberately unreachable from Ruby. */
+void
+rb_class_take_ownership(VALUE klass)
+{
+    // keep class_alloc0's "0 means main" encoding
+    rb_serial_t id = rb_ractor_main_p() ? 0 : rb_ractor_id(GET_RACTOR());
+
+    // and up the eigenclass chain: each one belongs to the class below it
+    do {
+        RCLASS_SET_OWNER_RACTOR_ID(klass, id);
+    } while ((klass = class_own_metaclass(klass)) != 0);
+}
+
 void
 rb_class_owner_check(VALUE klass)
 {
@@ -1002,6 +1024,42 @@ init_copy_check_field_i(ID id, VALUE val, st_data_t arg)
 
 // The copy belongs to the copying Ractor, so it must not carry over unshareable
 // objects owned by the source's Ractor.
+static enum rb_id_table_iterator_result
+move_check_const_i(ID id, VALUE v, void *data)
+{
+    const rb_const_entry_t *ce = (const rb_const_entry_t *)v;
+    if (!UNDEF_P(ce->value) && !rb_ractor_shareable_p(ce->value)) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not move an object whose singleton class has constant %"PRIsVALUE
+                 " referring to an unshareable object", rb_id2str(id));
+    }
+    return ID_TABLE_CONTINUE;
+}
+
+static int
+move_check_field_i(ID id, VALUE val, st_data_t arg)
+{
+    if ((rb_is_instance_id(id) || rb_is_class_id(id)) && !rb_ractor_shareable_p(val)) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not move an object whose singleton class has variable %"PRIsVALUE
+                 " referring to an unshareable object", rb_id2str(id));
+    }
+    return ST_CONTINUE;
+}
+
+/* The receiver of a moved object becomes the owner of its singleton class
+ * (rb_class_take_ownership), so nothing the sender keeps may stay readable there. */
+void
+rb_class_check_singleton_movable(VALUE klass)
+{
+    do {
+        if (RCLASS_CONST_TBL(klass)) {
+            rb_id_table_foreach(RCLASS_CONST_TBL(klass), move_check_const_i, NULL);
+        }
+        rb_ivar_foreach_buffered(klass, move_check_field_i, 0);
+    } while ((klass = class_own_metaclass(klass)) != 0);
+}
+
 static void
 init_copy_check_tables(VALUE klass)
 {
