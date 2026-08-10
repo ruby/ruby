@@ -6740,7 +6740,7 @@ impl Function {
     fn eliminate_empty_inline_frames(&mut self) {
         /// A PushInlineFrame whose matching PopInlineFrame hasn't been seen yet.
         struct PendingPush {
-            /// Index of the PushInlineFrame in `new_insns`.
+            /// Index of the PushInlineFrame in `insns`, below the write cursor.
             push_idx: usize,
             /// Whether an instruction that may take a side exit or observe the
             /// frame has been seen since the push. If so, the pair must be kept.
@@ -6748,34 +6748,36 @@ impl Function {
         }
 
         for block_id in self.reverse_post_order() {
-            let block_insns = &self.blocks[block_id.to_usize()].insns;
-
-            // Fast path: skip blocks without a PushInlineFrame.
-            if !block_insns.iter().any(|&insn_id| matches!(self.find_ref(insn_id), Insn::PushInlineFrame { .. })) {
-                continue;
-            }
-
-            let insns = std::mem::take(&mut self.blocks[block_id.to_usize()].insns);
-            let mut new_insns: Vec<InsnId> = Vec::with_capacity(insns.len());
+            // Take the instruction list to satisfy the borrow checker; this
+            // moves the buffer, not its contents. The list is edited in place:
+            // kept instructions are written back at `write_idx`, which trails
+            // the read cursor once a pair has been elided, and blocks with
+            // nothing to elide are left as they are.
+            let mut insns = std::mem::take(&mut self.blocks[block_id.to_usize()].insns);
+            let mut write_idx = 0;
             let mut pending_pushes: Vec<PendingPush> = Vec::new();
-            for insn_id in insns {
+            for read_idx in 0..insns.len() {
+                let insn_id = insns[read_idx];
                 match self.find_ref(insn_id) {
                     Insn::PushInlineFrame { .. } => {
-                        pending_pushes.push(PendingPush { push_idx: new_insns.len(), frame_observed: false });
-                        new_insns.push(insn_id);
+                        pending_pushes.push(PendingPush { push_idx: write_idx, frame_observed: false });
+                        insns[write_idx] = insn_id;
+                        write_idx += 1;
                     }
                     Insn::PopInlineFrame { .. } => {
                         match pending_pushes.pop() {
                             Some(PendingPush { push_idx, frame_observed: false }) => {
-                                // Empty pair: drop both the push and this pop.
+                                // Empty pair: drop both the push and this pop
+                                // (by not writing the pop back).
                                 // With --zjit-stats, count each time execution
                                 // passes an elided pair at run-time instead.
                                 if get_option!(stats) {
-                                    new_insns[push_idx] = self.new_insn(Insn::IncrCounter(Counter::empty_inline_frame_count));
+                                    insns[push_idx] = self.new_insn(Insn::IncrCounter(Counter::empty_inline_frame_count));
                                 } else {
-                                    new_insns.remove(push_idx);
+                                    // Shift the instructions kept since the push down over it.
+                                    insns.copy_within(push_idx + 1..write_idx, push_idx);
+                                    write_idx -= 1;
                                 }
-                                continue;
                             }
                             Some(PendingPush { frame_observed: true, .. }) => {
                                 // Keep the pair. It observes the frame chain, so the
@@ -6783,26 +6785,30 @@ impl Function {
                                 if let Some(outer) = pending_pushes.last_mut() {
                                     outer.frame_observed = true;
                                 }
-                                new_insns.push(insn_id);
+                                insns[write_idx] = insn_id;
+                                write_idx += 1;
                             }
                             None => {
                                 // The matching push is in another block; leave it alone.
-                                new_insns.push(insn_id);
+                                insns[write_idx] = insn_id;
+                                write_idx += 1;
                             }
                         }
                     }
                     insn => {
-                        if !self.can_elide_enclosing_frame(insn) {
+                        if !pending_pushes.is_empty() && !self.can_elide_enclosing_frame(insn) {
                             // The instruction may take a side exit or observe the frame.
                             for pending in pending_pushes.iter_mut() {
                                 pending.frame_observed = true;
                             }
                         }
-                        new_insns.push(insn_id);
+                        insns[write_idx] = insn_id;
+                        write_idx += 1;
                     }
                 }
             }
-            self.blocks[block_id.to_usize()].insns = new_insns;
+            insns.truncate(write_idx);
+            self.blocks[block_id.to_usize()].insns = insns;
         }
     }
 
