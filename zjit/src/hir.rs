@@ -1053,7 +1053,7 @@ pub enum Insn {
     // TODO(max): In iseq body types that are not ISEQ_TYPE_METHOD, rewrite to Constant false.
     // `lep_level` is the lexical distance from this insn's iseq up to its local_iseq, used only
     // for the DEFINED_YIELD op_type to materialize the local EP inline. Zero for other op_types.
-    Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, lep_level: u32, state: InsnId },
+    Defined { op_type: defined_type, obj: VALUE, pushval: VALUE, v: InsnId, lep_level: u32, state: InsnId },
     GetConstant { klass: InsnId, id: ID, allow_nil: InsnId, state: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
     /// Kernel#block_given? but without pushing a frame. Similar to [`Insn::Defined`] with
@@ -8487,12 +8487,12 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_defined => {
                     // (rb_num_t op_type, VALUE obj, VALUE pushval)
-                    let op_type = get_arg(pc, 0).as_usize();
+                    let op_type: defined_type = get_arg(pc, 0).as_usize().try_into().unwrap();
                     let obj = get_arg(pc, 1);
                     let pushval = get_arg(pc, 2);
                     let v = state.stack_pop()?;
                     let local_iseq = unsafe { rb_get_iseq_body_local_iseq(iseq) };
-                    let insn = if op_type == DEFINED_YIELD as usize && unsafe { rb_get_iseq_body_type(local_iseq) } != ISEQ_TYPE_METHOD {
+                    let insn = if op_type == DEFINED_YIELD && unsafe { rb_get_iseq_body_type(local_iseq) } != ISEQ_TYPE_METHOD {
                         // `yield` goes to the block handler stowed in the "local" iseq which is
                         // the current iseq or a parent. Only the "method" iseq type can be passed a
                         // block handler. (e.g. `yield` in the top level script is a syntax error.)
@@ -8500,7 +8500,7 @@ fn add_iseq_to_hir(
                         // Similar to gen_is_block_given
                         Insn::Const { val: Const::Value(Qnil) }
                     } else {
-                        if op_type == DEFINED_YIELD as usize && matches!(mode, AddIseqMode::Inlined { .. }) {
+                        if op_type == DEFINED_YIELD && matches!(mode, AddIseqMode::Inlined { .. }) {
                             // If we are inlining a method that has a blockiseq handler, we can fold Defined(DEFINED_YIELD).
                             // TODO(max): If we handle non-blockiseq block arguments such as
                             // &:symbol or just &block forwarding, we need to revisit this and
@@ -8518,7 +8518,7 @@ fn add_iseq_to_hir(
                             // walk the parent chain. Any DEFINED_YIELD reaching this branch has a
                             // method local_iseq by construction -- the above branch has already
                             // diverted the non-method case to Qnil.
-                            let lep_level = if op_type == DEFINED_YIELD as usize {
+                            let lep_level = if op_type == DEFINED_YIELD {
                                 get_lvar_level(iseq)
                             } else {
                                 0
