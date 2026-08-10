@@ -3320,19 +3320,13 @@ fn gen_set_ivar(
             // transition out of the current shape, which was pinned by the
             // shape guard above.
             (None, Some((next_shape_id, ivar_index))) => {
-                write_val = asm.stack_opnd(0);
-                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false, true);
-
                 asm_comment!(asm, "write shape");
                 // `next_shape_id` was transitioned from the guarded shape id, so it carries
                 // the layout and capacity bits that RBASIC_SET_SHAPE_ID() would preserve.
                 asm.store(shape_opnd, next_shape_id.into());
 
-                // If we know the stack value is an immediate, there's no need to
-                // generate WB code.
-                if !stack_type.is_imm() {
-                    gen_trigger_wb(asm, recv, write_val);
-                }
+                write_val = asm.stack_opnd(0);
+                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false, stack_type.is_imm());
             },
 
             (Some(ivar_index), _) => {
