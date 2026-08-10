@@ -1431,6 +1431,8 @@ macro_rules! for_each_operand_impl {
             Insn::Snapshot { state } => {
                 $visit_many!(state.stack);
                 $visit_many!(state.locals);
+                // Option iterates like a 0/1-element slice, so visit_many works here.
+                $visit_many!(state.caller);
             }
             Insn::FixnumAdd { left, right, state }
             | Insn::FixnumSub { left, right, state }
