@@ -51,18 +51,6 @@ test_new(RegexpSingletonTest)
 test_collection_install__pathname_set(RBS::CliTest)
 test_collection_install__set_pathname__manifest(RBS::CliTest)
 
-# RBS 4.0.3's RDoc plugin is incompatible with the RDoc 7.2.0 development revision
-test_attr_decl_1(RDocPluginParserTest)
-test_attr_decl_2(RDocPluginParserTest)
-test_instance_method_1(RDocPluginParserTest)
-test_instance_method_comment_and_tokens(RDocPluginParserTest)
-test_instance_method_generic(RDocPluginParserTest)
-test_instance_method_with_block(RDocPluginParserTest)
-test_method_alias_decl_1(RDocPluginParserTest)
-test_method_alias_decl_2(RDocPluginParserTest)
+## Excessive memory usage in the test itself (not yet fixed in ruby/rbs)
 
-## Restore-state bug in the test itself (fixed in ruby/rbs after 4.0.3)
-
-test_enable(GCSingletonTest) leaves GC disabled for the rest of the process (GC.enable return value misread); every later stdlib test then runs with GC off and the process peaks multi-GB (NoMemoryError on Windows CI)
-test_stress_and_stress=(GCSingletonTest) runs assert_send_type with GC.stress enabled; the type check allocates heavily and cannot finish in CI time (was hidden while test_enable left GC disabled)
 test_reachable_objects_from_root(ObjectSpaceTest) assert_send_type eagerly builds trace.inspect of the whole roots hash; with per-Ractor GC roots the inspect is huge and the process peaks multi-GB (NoMemoryError on Windows CI)
