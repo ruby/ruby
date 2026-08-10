@@ -1221,28 +1221,28 @@ class_ivar_set_ractor_check(VALUE klass, ID id)
     }
 }
 
-// Class variables are shared across the whole inheritance chain (and their
-// storage location can even migrate over time), so no single owner Ractor can
-// be defined for them. They are not covered by the class ownership
-// relaxation: only the main Ractor can set them, and non-shareable values can
-// only be read from the main Ractor, as before. Note that the ownership
-// *restriction* still applies on top of this: rb_cvar_set() additionally
-// checks that the class the variable is actually written into is owned, so
-// class fields keep a single writer Ractor.
+// A class variable is stored in one class of the inheritance chain, and which
+// one it is can migrate over time (cvar_overtaken), so the owner that decides
+// access is the owner of the class the variable is actually stored in -- not of
+// the receiver it was looked up through.  That keeps a cvar under the same
+// single writer as the rest of that class's fields, and gives a Ractor full use
+// of the class variables of the classes it created.
 static void
 cvar_set_ractor_check(VALUE klass, ID id)
 {
-    if (UNLIKELY(!rb_ractor_main_p())) {
-        rb_raise(rb_eRactorIsolationError, "can not set class variables from non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")", rb_id2str(id), klass);
+    if (UNLIKELY(!rb_class_owned_p(klass))) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not set class variable %"PRIsVALUE" of %"PRIsVALUE", which was created by another Ractor",
+                 rb_id2str(id), klass);
     }
 }
 
 static void
 cvar_read_ractor_check(VALUE klass, ID id, VALUE val)
 {
-    if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
+    if (UNLIKELY(!rb_class_owned_p(klass)) && !rb_ractor_shareable_p(val)) {
         rb_raise(rb_eRactorIsolationError,
-                 "can not read non-shareable class variable %"PRIsVALUE" from non-main Ractors (%"PRIsVALUE")",
+                 "can not read non-shareable class variable %"PRIsVALUE" of %"PRIsVALUE", which was created by another Ractor",
                  rb_id2str(id), klass);
     }
 }
@@ -4212,8 +4212,6 @@ find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
 void
 rb_cvar_set(VALUE klass, ID id, VALUE val)
 {
-    cvar_set_ractor_check(klass, id);
-
     VALUE tmp, front = 0, target = 0;
 
     tmp = klass;
@@ -4228,10 +4226,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     if (RB_TYPE_P(target, T_ICLASS)) {
         target = RBASIC(target)->klass;
     }
-    // cvars are outside the ownership relaxation, but a write still must not
-    // cross the ownership boundary (e.g. main writing into another Ractor's
-    // class), so that class fields keep a single writer Ractor.
-    rb_class_owner_check(target);
+    cvar_set_ractor_check(target, id);
     check_before_mod_set(target, id, val, "class variable");
 
     bool new_cvar = rb_class_ivar_set(target, id, val);
@@ -4286,7 +4281,10 @@ rb_cvar_find(VALUE klass, ID id, VALUE *front)
                           klass, ID2SYM(id));
     }
     cvar_overtaken(*front, target, id);
-    cvar_read_ractor_check(klass, id, value);
+    if (RB_TYPE_P(target, T_ICLASS)) {
+        target = RBASIC(target)->klass;
+    }
+    cvar_read_ractor_check(target, id, value);
     return (VALUE)value;
 }
 
@@ -4465,6 +4463,7 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
         goto not_defined;
     }
     rb_check_frozen(mod);
+    cvar_set_ractor_check(mod, id);
     val = rb_ivar_delete(mod, id, Qundef);
     if (!UNDEF_P(val)) {
         return (VALUE)val;
