@@ -206,7 +206,7 @@ mod snapshot_tests {
           v25:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v44:Fixnum[0] = Const Value(0)
           v27:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
-          PushInlineFrame v25 (0x1048), v13, v15, v11
+          PushInlineFrame v25 (0x1048), num_args=3
           v38:Any = Snapshot FrameState { pc: 0x1070, stack: [v13, v15, v11], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
           v39:ArrayExact = NewArray v13, v15, v11
           v40:Any = Snapshot FrameState { pc: 0x1078, stack: [v39], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
@@ -246,7 +246,7 @@ mod snapshot_tests {
           v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v39:Fixnum[0] = Const Value(0)
           v24:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
-          PushInlineFrame v22 (0x1048), v11, v13
+          PushInlineFrame v22 (0x1048), num_args=2
           v33:Any = Snapshot FrameState { pc: 0x1070, stack: [v11, v13], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
           v34:ArrayExact = NewArray v11, v13
           v35:Any = Snapshot FrameState { pc: 0x1078, stack: [v34], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
