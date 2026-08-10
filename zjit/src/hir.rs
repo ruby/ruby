@@ -5222,7 +5222,7 @@ impl Function {
                 else {
                     unreachable!("position {send_insn_id} is not a SendDirect");
                 };
-                let &SendDirectData { recv, cme, iseq, kw_bits, jit_entry_idx, block: call_block, state, .. } = &**data;
+                let SendDirectData { recv, cme, iseq, kw_bits, jit_entry_idx, block: call_block, state, .. } = **data;
                 let args_len = data.args.len();
                 // SendDirect invariant: block is either None or BlockIseq.
                 // BlockArg is rejected upstream during type specialization.
