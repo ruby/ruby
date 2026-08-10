@@ -8378,13 +8378,7 @@ io_reopen(VALUE io, VALUE nfile)
                      rb_io_fmode_modestr(orig->mode));
         }
     }
-    if (fptr->mode & FMODE_WRITABLE) {
-        if (io_fflush(fptr) < 0)
-            rb_sys_fail_on_write(fptr);
-    }
-    else {
-        flush_before_seek(fptr, true);
-    }
+    flush_before_seek(fptr, true);
     if (orig->mode & FMODE_READABLE) {
         pos = io_tell(orig);
     }
