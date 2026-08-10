@@ -5944,16 +5944,24 @@ impl Function {
             *fun.blocks[block_id.0].insns().last().unwrap()
         }
 
-        fn outgoing_edges(fun: &mut Function, block_id: BlockId) -> impl Iterator<Item = &mut BranchEdge> {
-            let insn_id = block_terminator(fun, block_id);
-            let (first, second) = match fun.resolve(insn_id).insn_mut(fun) {
-                Insn::Jump(edge) => (Some(edge), None),
-                Insn::CondBranch { if_true, if_false, ..} => (Some(if_true), Some(if_false)),
-                _ => (None, None)
+        macro_rules! edges_of {
+            ($insn:expr) => {
+                match $insn {
+                    Insn::Jump(edge) => [Some(edge), None],
+                    Insn::CondBranch { if_true, if_false, .. } => [Some(if_true), Some(if_false)],
+                    _ => [None, None],
+                }.into_iter().flatten()
             };
+        }
 
-            // Keep all edges that pass params
-            first.into_iter().chain(second).filter(|edge| edge.args.len() > 0)
+        fn outgoing_edges(fun: &Function, block_id: BlockId) -> impl Iterator<Item = &BranchEdge> {
+            let insn_id = block_terminator(fun, block_id);
+            edges_of!(&fun.insns[insn_id.0])
+        }
+
+        fn outgoing_edges_mut(fun: &mut Function, block_id: BlockId) -> impl Iterator<Item = &mut BranchEdge> {
+            let insn_id = block_terminator(fun, block_id);
+            edges_of!(&mut fun.insns[insn_id.0])
         }
 
         // Instantiate the domain for abstract interpretation.
@@ -5962,21 +5970,14 @@ impl Function {
 
         let blocks = self.reverse_post_order();
 
-        // Find blocks that terminate with Jump or CondBranch instructions that pass block params along.
-        // These terminators are later analyzed for trivial block params.
-        let predecessor_blocks: Vec<BlockId> = blocks.iter().copied()
+        // Collect blocks that terminate with Jump or CondBranch instructions that pass at least one block param along.
+        let blocks_sending_params: Vec<BlockId> = blocks.iter().copied()
             .filter(|&block_id|
-                // Match against the final instruction which terminates the basic block.
-                // If it has any non-empty edges, keep it.
-                match self.find(block_terminator(self, block_id)) {
-                    Insn::CondBranch { if_true, if_false, .. } => !if_true.args.is_empty() || !if_false.args.is_empty(),
-                    Insn::Jump(edge) => !edge.args.is_empty(),
-                    _ => false
-                })
+                outgoing_edges(self, block_id).any(|edge| !edge.args.is_empty()))
             .collect();
 
         // We only need to update blocks that have params. (Blocks without params cannot be improved)
-        let param_blocks: Vec<BlockId> = blocks.into_iter()
+        let blocks_receiving_params: Vec<BlockId> = blocks.into_iter()
             .filter(|&block_id|
                 self.blocks[block_id.0].params().len() != 0)
             .collect();
@@ -5997,21 +5998,10 @@ impl Function {
             }
 
             // Scan through each jump, collecting edges with params to analyze from CondBranch and Jump insns.
-            for block_id in &predecessor_blocks {
-                let insn_id = block_terminator(self, *block_id);
-
-                let (first, second) = match self.resolve(insn_id).insn(self) {
-                    Insn::Jump(edge) => (Some(edge), None),
-                    Insn::CondBranch { if_true, if_false, ..} => (Some(if_true), Some(if_false)),
-                    _ => (None, None)
-                };
-
-                // Keep all edges that pass params
-                let edges = first.into_iter().chain(second).filter(|edge| edge.args.len() > 0);
-
+            for block_id in &blocks_sending_params {
                 // Use the results of abstract interpretation to update the states
                 // Perform abstract interpretation
-                for BranchEdge { target: block_id, args: params } in edges {
+                for BranchEdge { target: block_id, args: params } in outgoing_edges(self, *block_id) {
                     for (i, param) in params.iter().enumerate() {
                         let param = self.find_id(*param);
                         // If the param is the same as passed into the block, it is a self loop and provides no new predecessor information.
@@ -6028,7 +6018,7 @@ impl Function {
             // 1. Replace uses of the trivial params with the concretized value
             // 2. Remove trivial params from the basic block definition
             // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
-            for block_id in &param_blocks {
+            for block_id in &blocks_receiving_params {
                 let block_preds = &predecessor_domain[block_id.0];
                 let trivial_indices: Vec<usize> = block_preds.iter().enumerate()
                     .filter_map(|(idx, state)|
@@ -6047,24 +6037,11 @@ impl Function {
                 prune_vec_by_indices(&mut self.blocks[block_id.0].params, &trivial_indices);
 
                 // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
-                for jump_block_id in &predecessor_blocks {
-                    let index = self.blocks[jump_block_id.0].insns.len() - 1;
-                    let cond_insn_id = self.blocks[jump_block_id.0].insns[index];
-                    match self.resolve(cond_insn_id).insn_mut(self) {
-                        Insn::Jump(edge) => {
-                            if edge.target == *block_id {
-                                prune_vec_by_indices(&mut edge.args, &trivial_indices);
-                            }
+                for jump_block_id in &blocks_sending_params {
+                    for edge in outgoing_edges_mut(self, *jump_block_id) {
+                        if edge.target == *block_id {
+                            prune_vec_by_indices(&mut edge.args, &trivial_indices);
                         }
-                        Insn::CondBranch { if_true, if_false, .. } => {
-                            if if_true.target == *block_id {
-                                prune_vec_by_indices(&mut if_true.args, &trivial_indices);
-                            }
-                            if if_false.target == *block_id {
-                                prune_vec_by_indices(&mut if_false.args, &trivial_indices);
-                            }
-                        }
-                        _ => {}
                     }
                 }
             }
