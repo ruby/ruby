@@ -4505,10 +4505,15 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
     if (sweep_page->flags.has_shareable_objects || sweep_page->flags.has_shref_objects) {
         bits_t *shareable_bits = sweep_page->shareable_bits;
         bits_t *shref_bits = sweep_page->shref_bits;
+        bits_t sh = 0, sr = 0;
         for (int i = 0; i < bitmap_plane_count; i++) {
             shareable_bits[i] &= bits[i];
             shref_bits[i] &= bits[i];
+            sh |= shareable_bits[i];
+            sr |= shref_bits[i];
         }
+        if (!sh) sweep_page->flags.has_shareable_objects = FALSE;
+        if (!sr) sweep_page->flags.has_shref_objects = FALSE;
     }
 
     asan_unlock_freelist(sweep_page);
