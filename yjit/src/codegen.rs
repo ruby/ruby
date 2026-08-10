@@ -772,10 +772,24 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
                 let local_val = jit.peek_at_local(local_idx.into());
                 if local_val != stack_val {
                     panic!(
-                        "verify_ctx: stack value was mapped to local, but values did not match\n  stack: {}\n  local {}: {}",
+                        "verify_ctx: stack value was mapped to local, but values did not match\n  stack: {}\n  local {}: {}\n  insn_idx: {}\n  iseq: {:?}\n  stack_size: {}\n  sp_offset: {}\n  stack_idx: {}\n  reg_mapping: {:?}\n  local_types: [{:?}, {:?}, {:?}, {:?}]\n  mappings: [{:?}, {:?}, {:?}, {:?}]",
                         obj_info_str(stack_val),
                         local_idx,
-                        obj_info_str(local_val)
+                        obj_info_str(local_val),
+                        jit.get_insn_idx(),
+                        jit.iseq,
+                        ctx.get_stack_size(),
+                        ctx.get_sp_offset(),
+                        i,
+                        ctx.get_reg_mapping(),
+                        ctx.get_local_type(0),
+                        ctx.get_local_type(1),
+                        ctx.get_local_type(2),
+                        ctx.get_local_type(3),
+                        ctx.get_opnd_mapping(StackOpnd(0)),
+                        if ctx.get_stack_size() > 1 { ctx.get_opnd_mapping(StackOpnd(1)) } else { TempMapping::MapToStack(Type::Unknown) },
+                        if ctx.get_stack_size() > 2 { ctx.get_opnd_mapping(StackOpnd(2)) } else { TempMapping::MapToStack(Type::Unknown) },
+                        if ctx.get_stack_size() > 3 { ctx.get_opnd_mapping(StackOpnd(3)) } else { TempMapping::MapToStack(Type::Unknown) },
                     );
                 }
             }
