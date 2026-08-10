@@ -330,7 +330,7 @@ module JSON
     if State === opts
       opts.generate(obj)
     else
-      State.generate(obj, opts, nil)
+      State.generate(obj, opts.frozen? ? opts : opts.dup, nil)
     end
   end
 
@@ -387,6 +387,7 @@ module JSON
           raise TypeError, "can't convert #{opts.class} into Hash"
         end
       end
+
       options = options.merge(opts)
     end
 
@@ -746,6 +747,13 @@ module JSON
     ).freeze
     private_constant :PARSER_OPTIONS
 
+    EXCLUDED_GENERATOR_OPTIONS = (PARSER_OPTIONS - %i(
+      max_nesting
+      allow_nan
+      allow_duplicate_key
+    )).freeze
+    private_constant :EXCLUDED_GENERATOR_OPTIONS
+
     # :call-seq:
     #   JSON.new(options = nil, &block)
     #
@@ -778,8 +786,9 @@ module JSON
       parser_options[:on_load] = on_load if on_load
       @parser_config = Ext::Parser::Config.new(parser_options).freeze
 
+      generator_options = options.reject { |k, _| EXCLUDED_GENERATOR_OPTIONS.include?(k) }
       @state = State.new(
-        **options,
+        **generator_options,
         strict: true,
         as_json: as_json,
       ).freeze

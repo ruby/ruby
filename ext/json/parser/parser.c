@@ -2043,15 +2043,7 @@ static void parser_config_init(JSON_ParserConfig *config, VALUE opts, VALUE self
     // the provided keys than to check all possible keys.
     rb_hash_foreach(opts, parser_config_init_i, (VALUE)&args);
 
-    if (RB_UNLIKELY(args.unknown_keywords)) {
-        if (RARRAY_LEN(args.unknown_keywords) == 1) {
-            rb_raise(rb_eArgError, "unknown keyword: %" PRIsVALUE, RARRAY_AREF(args.unknown_keywords, 0));
-        }
-        else {
-            VALUE keywords = rb_ary_join(args.unknown_keywords, rb_utf8_str_new_cstr(", "));
-            rb_raise(rb_eArgError, "unknown keywords: %" PRIsVALUE, keywords);
-        }
-    }
+    raise_argument_error_on_unknown_keywords(args.unknown_keywords);
 }
 
 /*

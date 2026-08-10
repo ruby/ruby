@@ -1841,6 +1841,7 @@ static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_l
 struct configure_state_data {
     JSON_Generator_State *state;
     VALUE vstate;  // Ruby object that owns the state, or Qfalse if stack-allocated
+    VALUE unknown_keywords;
 };
 
 static inline void state_write_value(struct configure_state_data *data, VALUE *field, VALUE value)
@@ -1878,6 +1879,12 @@ static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
     else if (key == sym_sort_keys)             {
         state_write_value(data, &state->sort_keys, normalize_sort_keys(val));
     }
+    else {
+        if (!data->unknown_keywords) {
+            data->unknown_keywords = rb_obj_hide(rb_ary_new());
+        }
+        rb_ary_push(data->unknown_keywords, key);
+    }
     return ST_CONTINUE;
 }
 
@@ -1891,12 +1898,15 @@ static void configure_state(JSON_Generator_State *state, VALUE vstate, VALUE con
 
     struct configure_state_data data = {
         .state = state,
-        .vstate = vstate
+        .vstate = vstate,
+        .unknown_keywords = Qfalse,
     };
 
     // We assume in most cases few keys are set so it's faster to go over
     // the provided keys than to check all possible keys.
     rb_hash_foreach(config, configure_state_i, (VALUE)&data);
+
+    raise_argument_error_on_unknown_keywords(data.unknown_keywords);
 }
 
 static VALUE cState_configure(VALUE self, VALUE opts)

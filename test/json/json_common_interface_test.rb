@@ -63,6 +63,11 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
       JSON.parse('[]', quirks_mode: true)
     end
     assert_match "quirks_mode", error.message
+
+    error = assert_raise(ArgumentError) do
+      JSON.parse('[]', a: 1, b: 2)
+    end
+    assert_match "a, b", error.message
   end
 
   def test_parse_bang
@@ -71,6 +76,18 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
 
   def test_generate
     assert_equal '[1,2,3]', JSON.generate([ 1, 2, 3 ])
+  end
+
+  def test_generate_unknown_option
+    error = assert_raise(ArgumentError) do
+      JSON.generate([], quirks_mode: true)
+    end
+    assert_match "quirks_mode", error.message
+
+    error = assert_raise(ArgumentError) do
+      JSON.generate([], a: 1, b: 2)
+    end
+    assert_match(/unknown keywords: :?a, :?b/, error.message)
   end
 
   def test_fast_generate

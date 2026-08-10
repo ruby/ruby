@@ -322,7 +322,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
       :space                 => "",
       :space_before          => "",
       :sort_keys             => false,
-    }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
+    }.sort_by { |n,| n.to_s }.to_h, state.to_h.sort_by { |n,| n.to_s }.to_h)
 
     state = JSON::State.new(allow_duplicate_key: true)
     assert_equal({
