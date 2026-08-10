@@ -6679,8 +6679,8 @@ impl Function {
     }
 
     /// Whether `insn` may stay between a PushInlineFrame/PopInlineFrame pair
-    /// that gets elided, i.e. whether it can neither side-exit nor observe the
-    /// frame:
+    /// that gets elided, i.e. whether it can neither take a side exit nor
+    /// observe the frame:
     /// * Its effects must be empty, so it doesn't read or write any abstract
     ///   heap (in particular Frame and Control).
     /// * It must not reference a FrameState `Snapshot` operand: a side exit
@@ -6692,8 +6692,8 @@ impl Function {
         if matches!(insn, Insn::LoadSP) {
             return false;
         }
-        // Stats counters only bump a global counter: they can't side-exit and
-        // don't observe frames, but their effects aren't empty (they write the
+        // Stats counters only bump a global counter: they can't take a side exit
+        // and don't observe frames, but their effects aren't empty (they write the
         // Other heap). Without this, --zjit-stats would disable this pass by
         // inserting IncrCounter between every PushInlineFrame/PopInlineFrame.
         if matches!(insn, Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }) {
@@ -6718,9 +6718,10 @@ impl Function {
     /// When an inlined callee folds to a constant (e.g. a method body guarded by a
     /// constant that is false), earlier passes can leave a PushInlineFrame that is
     /// immediately followed by its matching PopInlineFrame, with only instructions
-    /// that neither side-exit nor observe the frame in between (see
+    /// that neither take a side exit nor observe the frame in between (see
     /// [`Function::can_elide_enclosing_frame`]). Such a frame is unobservable:
-    /// nothing between the push and the pop can side-exit, allocate, raise, or
+    /// nothing between the push and the pop can take a side exit, allocate, raise,
+    /// or
     /// walk the frame chain, so pushing and popping the frame is pure overhead.
     /// This pass deletes both instructions of each such pair.
     ///
@@ -6734,8 +6735,8 @@ impl Function {
         struct PendingPush {
             /// Index of the PushInlineFrame in `new_insns`.
             push_idx: usize,
-            /// Whether an instruction that may side-exit or observe the frame
-            /// has been seen since the push. If so, the pair must be kept.
+            /// Whether an instruction that may take a side exit or observe the
+            /// frame has been seen since the push. If so, the pair must be kept.
             frame_observed: bool,
         }
 
@@ -6786,7 +6787,7 @@ impl Function {
                     }
                     _ => {
                         if !self.can_elide_enclosing_frame(&insn) {
-                            // The instruction may side-exit or observe the frame.
+                            // The instruction may take a side exit or observe the frame.
                             for pending in pending_pushes.iter_mut() {
                                 pending.frame_observed = true;
                             }
