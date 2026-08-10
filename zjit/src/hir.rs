@@ -1211,7 +1211,7 @@ pub enum Insn {
         iseq: IseqPtr,
         cme: *const rb_callable_method_entry_t,
         recv: InsnId,
-        args: Vec<InsnId>,
+        num_args: u16,
         blockiseq: Option<IseqPtr>,
         state: InsnId,
     },
@@ -1539,13 +1539,16 @@ macro_rules! for_each_operand_impl {
             }
             Insn::Send { recv, args, state, .. }
             | Insn::SendForward { recv, args, state, .. }
-            | Insn::PushInlineFrame { recv, args, state, .. }
             | Insn::InvokeBuiltin { recv, args, state, .. }
             | Insn::InvokeSuper { recv, args, state, .. }
             | Insn::InvokeSuperForward { recv, args, state, .. }
             | Insn::InvokeProc { recv, args, state, .. } => {
                 $visit_one!(*recv);
                 $visit_many!(args);
+                $visit_one!(*state);
+            }
+            Insn::PushInlineFrame { recv, state, .. } => {
+                $visit_one!(*recv);
                 $visit_one!(*state);
             }
             // SendDirect/CCallWithFrame/CCallVariadic carry their operands behind a Box,
@@ -2167,9 +2170,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
-            Insn::PushInlineFrame { recv, iseq, args, .. } => {
+            Insn::PushInlineFrame { recv, iseq, cme, num_args, .. } => {
                 write!(f, "PushInlineFrame {recv} ({:?})", self.ptr_map.map_ptr(*iseq))?;
-                write_separated!(f, ", ", ", ", args);
+                write!(f, ", num_args={num_args}")?;
                 Ok(())
             }
             Insn::PopInlineFrame { .. } => {
@@ -5510,7 +5513,7 @@ impl Function {
 
                 // Insert PushLightweightFrame and jump to callee body entry.
                 self.push_insn(block, Insn::PushInlineFrame {
-                    iseq, cme, recv, args, blockiseq, state,
+                    iseq, cme, recv, num_args: args.len().try_into().unwrap(), blockiseq, state,
                 });
                 self.count(block, Counter::inline_iseq_optimized_send_count);
                 self.push_insn(block, Insn::Jump(BranchEdge {
@@ -7049,8 +7052,10 @@ impl Function {
             Insn::AnyToString { val, .. } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)
             }
+            Insn::PushInlineFrame { recv, .. } => {
+                self.assert_subtype(insn_id, recv, types::BasicObject)
+            }
             // Instructions with recv and a Vec of Ruby objects
-            Insn::PushInlineFrame { recv, ref args, .. }
             | Insn::Send { recv, ref args, .. }
             | Insn::SendForward { recv, ref args, .. }
             | Insn::InvokeSuper { recv, ref args, .. }

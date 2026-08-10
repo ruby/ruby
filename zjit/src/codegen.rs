@@ -659,8 +659,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
                 *kw_bits, *jit_entry_idx, &function.frame_state(*state), *block,
             )
         }
-        Insn::PushInlineFrame { cme, iseq, recv, args, blockiseq, state, .. } => {
-            no_output!(gen_push_inline_frame(jit, asm, function, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state), *blockiseq))
+        Insn::PushInlineFrame { cme, iseq, recv, num_args, blockiseq, state, .. } => {
+            no_output!(gen_push_inline_frame(jit, asm, function, *cme, *iseq, opnd!(recv), *num_args, &function.frame_state(*state), *blockiseq))
         },
         Insn::PopInlineFrame { iseq, argc, state } => {
             no_output!(gen_pop_inline_frame(asm, *iseq, *argc, &function.frame_state(*state)))
@@ -1579,7 +1579,7 @@ fn gen_push_inline_frame(
     cme: *const rb_callable_method_entry_t,
     iseq: IseqPtr,
     recv: Opnd,
-    args: Vec<Opnd>,
+    num_args: u16,
     state: &FrameState,
     blockiseq: Option<IseqPtr>,
 ) {
@@ -1589,7 +1589,7 @@ fn gen_push_inline_frame(
 
     // Save cfp->pc and cfp->sp for the caller frame.
     // Cannot use gen_prepare_non_leaf_call because we need special SP math.
-    let stack_size = state.stack().len() - args.len() - 1; // -1 for receiver
+    let stack_size = state.stack().len() - num_args.to_usize() - 1; // -1 for receiver
     gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, stack_size);
 
@@ -1618,7 +1618,7 @@ fn gen_push_inline_frame(
         (VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, specval)
     };
 
-    gen_push_frame(asm, args.len(), state, ControlFrame {
+    gen_push_frame(asm, num_args.to_usize(), state, ControlFrame {
         recv,
         iseq: Some(iseq),
         cme,
@@ -1673,7 +1673,7 @@ fn gen_push_inline_frame(
     // (The non-inlined `gen_send_iseq_direct` path still emits its own store
     // because the callee's separate JIT entry reads it from memory.)
 
-    let sp_offset = (state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
+    let sp_offset = (state.stack().len() + local_size - num_args.to_usize() + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
     asm_comment!(asm, "switch to inlined callee SP");
     let new_sp = asm.add(SP, sp_offset.into());
     asm.mov(SP, new_sp);
