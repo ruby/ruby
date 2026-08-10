@@ -545,6 +545,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 
 static int io_fflush(rb_io_t *);
 static rb_io_t *flush_before_seek(rb_io_t *fptr, bool discard_rbuf);
+static void clear_readconv(rb_io_t *fptr);
 static void clear_codeconv(rb_io_t *fptr);
 
 #define FMODE_SIGNAL_ON_EPIPE (1<<17)
@@ -2482,6 +2483,7 @@ rb_io_seek(VALUE io, VALUE offset, int whence)
     GetOpenFile(io, fptr);
     pos = io_seek(fptr, pos, whence);
     if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
+    if (fptr->readconv) clear_readconv(fptr);
 
     return INT2FIX(0);
 }
@@ -2593,11 +2595,10 @@ rb_io_set_pos(VALUE io, VALUE offset)
     GetOpenFile(io, fptr);
     pos = io_seek(fptr, pos, SEEK_SET);
     if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
+    if (fptr->readconv) clear_readconv(fptr);
 
     return OFFT2NUM(pos);
 }
-
-static void clear_readconv(rb_io_t *fptr);
 
 /*
  *  call-seq:
