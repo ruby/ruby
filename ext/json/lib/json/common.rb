@@ -728,7 +728,7 @@ module JSON
   end
 
   # :call-seq:
-  #   JSON.dump(obj, io = nil, limit = nil)
+  #   JSON.dump(obj, io = nil, options = nil)
   #
   # Dumps +obj+ as a \JSON string, i.e. calls generate on the object and returns the result.
   #
@@ -737,7 +737,6 @@ module JSON
   # - Argument +io+, if given, should respond to method +write+;
   #   the \JSON \String is written to +io+, and +io+ is returned.
   #   If +io+ is not given, the \JSON \String is returned.
-  # - Argument +limit+, if given, is passed to JSON.generate as option +max_nesting+.
   #
   # ---
   #
@@ -754,38 +753,24 @@ module JSON
   #   puts File.read(path)
   # Output:
   #   {"foo":[0,1],"bar":{"baz":2,"bat":3},"bam":"bad"}
-  def dump(obj, anIO = nil, limit = nil, kwargs = nil)
+  def dump(obj, anIO = nil, kwargs = nil)
     if kwargs.nil?
-      if limit.nil?
-        if anIO.is_a?(Hash)
-          kwargs = anIO
-          anIO = nil
-        end
-      elsif limit.is_a?(Hash)
-        kwargs = limit
-        limit = nil
+      if anIO.is_a?(Hash)
+        kwargs = anIO
+        anIO = nil
       end
     end
 
-    unless anIO.nil?
-      if anIO.respond_to?(:to_io)
-        anIO = anIO.to_io
-      elsif limit.nil? && !anIO.respond_to?(:write)
-        anIO, limit = nil, anIO
-      end
+    if anIO&.respond_to?(:to_io)
+      anIO = anIO.to_io
     end
 
     opts = {
       allow_nan: true,
-      max_nesting: limit,
     }
     opts.merge!(kwargs) if kwargs
 
-    begin
-      State.generate(obj, opts, anIO)
-    rescue JSON::NestingError
-      raise ArgumentError, "exceed depth limit"
-    end
+    State.generate(obj, opts, anIO)
   end
 
   # JSON::Coder holds a parser and generator configuration.
