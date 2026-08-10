@@ -5966,7 +5966,7 @@ impl Function {
 
         // Instantiate the domain for abstract interpretation.
         // We store possible param values for each block
-        let mut predecessor_domain: Vec<Vec<ParamValue>> = vec![Vec::new(); self.blocks.len()];
+        let mut param_values: Vec<Vec<ParamValue>> = vec![Vec::new(); self.blocks.len()];
 
         let blocks = self.reverse_post_order();
 
@@ -5993,7 +5993,7 @@ impl Function {
         while changed {
             changed = false;
 
-            for (row, block) in predecessor_domain.iter_mut().zip(&self.blocks) {
+            for (row, block) in param_values.iter_mut().zip(&self.blocks) {
                 row.resize(block.params.len(), ParamValue::None);
             }
 
@@ -6008,7 +6008,7 @@ impl Function {
                         if param == self.find_id(self.blocks[block_id.0].params[i]) {
                             continue
                         }
-                        predecessor_domain[block_id.0][i].update(param);
+                        param_values[block_id.0][i].update(param);
                     }
                 }
             }
@@ -6019,7 +6019,7 @@ impl Function {
             // 2. Remove trivial params from the basic block definition
             // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
             for block_id in &blocks_receiving_params {
-                let block_preds = &predecessor_domain[block_id.0];
+                let block_preds = &param_values[block_id.0];
                 let trivial_indices: Vec<usize> = block_preds.iter().enumerate()
                     .filter_map(|(idx, state)|
                         matches!(state, ParamValue::One(_)).then_some(idx)
