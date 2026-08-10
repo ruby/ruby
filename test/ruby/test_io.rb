@@ -363,6 +363,103 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_eof_after_seek_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.seek(0, IO::SEEK_END)
+        assert_predicate(f, :eof?, bug22239)
+        assert_nil(f.getc, bug22239)
+      }
+    }
+  end
+
+  def test_sysseek_after_rewind_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.rewind
+        assert_nothing_raised(IOError, bug22239) {f.sysseek(0)}
+      }
+    }
+  end
+
+  def test_getbyte_after_rewind_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.rewind
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_seek_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.seek(0, :SET)
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_pos_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.pos = 0
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_flush_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.flush
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_binmode_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.binmode
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_tell_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.tell
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
   def test_ungetbyte
     make_tempfile {|t|
       t.open
