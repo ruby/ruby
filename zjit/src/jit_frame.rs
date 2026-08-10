@@ -292,6 +292,55 @@ mod tests {
         "#), @r#""no bar""#);
     }
 
+    // A C function that calls back into Ruby (rb_const_missing here) pushes
+    // recv + args onto *this* frame's VM stack via vm_call0_body(). A wrong
+    // arity makes vm_callee_setup_arg() raise before vm_call_iseq_setup_normal()
+    // restores cfp->sp, so cfp->sp is left 1 + argc slots high while this frame
+    // is materialized for the rescue. The stack map has to be decoded from the
+    // JIT's saved SP instead, or the live `1` operand lands above its slot and
+    // the array comes back as [false, 2].
+    #[test]
+    fn test_stack_map_anchor_after_callee_arity_error() {
+        assert_snapshot!(inspect(r#"
+            class Holder
+              def self.const_missing(a, b) = nil # wrong arity: called with 1 arg
+            end
+            def jit_entry
+              [1, (begin      # the 1 is live across the const_missing call
+                     Holder::NOPE
+                   rescue ArgumentError
+                     2
+                   end)]
+            end
+            jit_entry
+            jit_entry
+        "#), @"[1, 2]");
+    }
+
+    // Same displaced cfp->sp, but reaching across an inlined frame: `defined?`
+    // calls respond_to_missing? with 2 args, which raises on arity. The map for
+    // the inlined `inner` frame keeps going past its frame gap into `outer`'s
+    // operand stack, so a displaced anchor writes `outer`'s live 1 above its
+    // slot and leaves the real one holding garbage. Giving `inner` a local
+    // pushes that garbage into env data instead, which crashes rather than
+    // returning a wrong answer.
+    #[test]
+    fn test_stack_map_anchor_with_inlined_frame() {
+        assert_snapshot!(inspect(r#"
+            class BadResponder
+              def respond_to_missing?(name) = true # wrong arity: called with 2
+            end
+            class Test
+              def initialize = @o = BadResponder.new
+              def inner = defined?(@o.nope) # must have 0 locals
+              def outer = [1, inner] # the 1 is live across the inlined call
+            end
+            test = Test.new
+            test.outer
+            test.outer
+        "#), @"[1, nil]");
+    }
+
     // Proc.new inside a block passed via invokeblock captures the caller's
     // block_code. When the JIT compiles the caller, block_code must be
     // correctly available for the proc to work.

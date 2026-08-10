@@ -61,9 +61,10 @@ struct JITState {
     iseq_calls: Vec<IseqCallRef>,
 
     /// The number of native stack slots reserved for JITFrame, one per
-    /// simultaneously live frame (`inlining_depth() + 1`). gen_write_jit_frame()
-    /// and the inlined frame push write a JITFrame into the slot selected by the
-    /// current frame's depth.
+    /// simultaneously live frame (`inlining_depth() + 1`), plus one shared slot
+    /// for the saved SP register at the bottom. gen_write_jit_frame() and the
+    /// inlined frame push write a JITFrame into the slot selected by the current
+    /// frame's depth; gen_prepare_non_leaf_call() writes the SP slot.
     jit_frame_size: usize,
 }
 
@@ -107,6 +108,18 @@ impl JITState {
         }
     }
 
+    /// Byte offset from [NATIVE_BASE_PTR] to the slot holding the SP VM stack base pointer.
+    fn base_ptr_slot_native_base_ptr_offset(&self) -> i32 {
+        -(i32::try_from(SIZEOF_VALUE * self.jit_frame_size).expect("base_ptr_slot_index overflow"))
+    }
+
+    /// The VALUE index a frame at `depth` uses to read the saved SP register as
+    /// `((VALUE **)cfp->jit_return)[-index]`. Distance between this inline frame's
+    /// `jit_return` and first slot past all `jit_frame` slots.
+    /// Encoded into [`StackMapEntry::BasePtr`]. See [crate::backend::lir::StackState].
+    fn base_ptr_slot_index(&self, depth: InlineDepth) -> u32 {
+        (self.jit_frame_size - depth).try_into().expect("base_ptr slot index overflow")
+    }
 }
 
 impl Assembler {
@@ -406,7 +419,10 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
         // frame push select among these slots by the frame's depth, keeping each
         // frame's `cfp->jit_return` pointed at its own slot rather than a shared
         // one.
-        let jit_frame_size = function.inlining_depth() + 1;
+        //
+        // One more slot below those holds the saved SP register that stack maps
+        // are anchored on (see base_ptr_slot_offset()).
+        let jit_frame_size = function.inlining_depth() + 2;
         let mut jit = JITState::new(version, function.num_insns(), function.num_blocks(), jit_frame_size);
         let mut asm = Assembler::new_with_stack_slots(jit_frame_size);
 
@@ -3243,8 +3259,9 @@ pub(crate) fn block_iseq_may_throw(iseq: IseqPtr) -> bool {
 /// Byte offset from NATIVE_BASE_PTR of the JITFrame storage slot for a frame at
 /// the given inlining depth. Depth 0 (the top-level frame) lives at
 /// `[NATIVE_BASE_PTR - 8]`; each deeper inlined frame gets the next slot below.
-/// gen_function() reserves `inlining_depth() + 1` slots, so every live frame's
-/// depth maps to a distinct slot inside that reserved region.
+/// gen_function() reserves `inlining_depth() + 1` of these, so every live
+/// frame's depth maps to a distinct slot, followed by the single saved-SP slot
+/// of base_ptr_slot_offset().
 fn jit_frame_slot_offset(depth: InlineDepth) -> i32 {
     -(SIZEOF_VALUE_I32 * (depth as i32 + 1))
 }
@@ -3365,6 +3382,8 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
             StackMapEntry::Skip(skip) => {
                 offset -= skip as i32;
             }
+            // Only gen_prepare_non_leaf_call() prepends this, and it doesn't spill.
+            StackMapEntry::BasePtr { .. } => unreachable!("build_stack_map() does not emit BasePtr"),
         }
     }
 }
@@ -3416,11 +3435,20 @@ fn inline_frame_stack_gap(iseq: IseqPtr) -> usize {
 /// Prepare for calling a C function that may call an arbitrary method.
 /// Use gen_prepare_leaf_call_with_gc() if the method is leaf but allocates objects.
 fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, function: &Function, state: &FrameState) {
-    // TODO: Lazily materialize caller frames when needed
-    // Save PC for backtraces and allocation tracing
-    // and SP to avoid marking uninitialized stack slots
-    let stack_map = build_stack_map(jit, function, state);
+    // Anchor the stack map on a private copy of SP rather than on cfp->sp. The callee is free to
+    // use the stack map after pushing through and moving cfp->sp (e.g. rb_funcall() + a raise in
+    // vm_callee_setup_arg()).
+    let mut stack_map = vec![StackMapEntry::BasePtr {
+        slot_index: jit.base_ptr_slot_index(state.depth),
+        stack_size: state.stack_size().try_into().expect("stack size overflow"),
+    }];
+    stack_map.extend(build_stack_map(jit, function, state));
     let jit_frame = gen_prepare_call_with_gc(asm, state, false, stack_map.len());
+
+    // NOTE(alan): This store can be done once per CFP switch, but analysis is required
+    //             to avoid the store in functions that make no non-leaf call.
+    asm_comment!(asm, "save SP as the stack map anchor");
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit.base_ptr_slot_native_base_ptr_offset()), SP);
 
     // Remember the stack map in case it raises an exception
     // and the interpreter uses the stack for handling the exception

@@ -2943,6 +2943,11 @@ zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cf
                     else if (ZJIT_STACK_MAP_SKIP_P(entry)) {
                         stack -= ZJIT_STACK_MAP_SKIP_SIZE(entry);
                     }
+                    else if (ZJIT_STACK_MAP_BASE_PTR_P(entry)) {
+                        RUBY_ASSERT_ALWAYS(0 == i, "base_ptr stack map code only makes sense at 0");
+                        VALUE *base_ptr = (VALUE *)((VALUE *)cfp->jit_return)[-(ssize_t)ZJIT_STACK_MAP_BASE_PTR_SLOT_INDEX(entry)];
+                        stack = base_ptr + ZJIT_STACK_MAP_BASE_PTR_STACK_SIZE(entry);
+                    }
                     else {
                         stack--;
                         *stack = entry;
