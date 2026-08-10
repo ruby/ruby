@@ -5944,11 +5944,48 @@ impl Function {
             *fun.blocks[block_id.0].insns().last().unwrap()
         }
 
+        fn outgoing_edges(fun: &mut Function, block_id: BlockId) -> impl Iterator<Item = &mut BranchEdge> {
+            let insn_id = block_terminator(fun, block_id);
+            let (first, second) = match fun.resolve(insn_id).insn_mut(fun) {
+                Insn::Jump(edge) => (Some(edge), None),
+                Insn::CondBranch { if_true, if_false, ..} => (Some(if_true), Some(if_false)),
+                _ => (None, None)
+            };
+
+            // Keep all edges that pass params
+            first.into_iter().chain(second).filter(|edge| edge.args.len() > 0)
+        }
+
         // Instantiate the domain for abstract interpretation.
         // We store possible param values for each block
         let mut predecessor_domain: Vec<Vec<ParamValue>> = vec![Vec::new(); self.blocks.len()];
 
         let blocks = self.reverse_post_order();
+
+        // Find blocks that terminate with Jump or CondBranch instructions that pass block params along.
+        // These terminators are later analyzed for trivial block params.
+        let predecessor_blocks: Vec<BlockId> = blocks.iter().copied()
+            .filter(|&block_id|
+                // Match against the final instruction which terminates the basic block.
+                // If it has any non-empty edges, keep it.
+                match self.find(block_terminator(self, block_id)) {
+                    Insn::CondBranch { if_true, if_false, .. } => !if_true.args.is_empty() || !if_false.args.is_empty(),
+                    Insn::Jump(edge) => !edge.args.is_empty(),
+                    _ => false
+                })
+            .collect();
+
+        // We only need to update blocks that have params. (Blocks without params cannot be improved)
+        let param_blocks: Vec<BlockId> = blocks.into_iter()
+            .filter(|&block_id|
+                self.blocks[block_id.0].params().len() != 0)
+            .collect();
+
+        // NOTE: It is possible that once some block_params are removed, there will be no params.
+        // This means that predecessor_blocks or param_blocks could be pruned. This minor optimization can be added if desired.
+        // Importantly, we do not keep track of exactly which edges correspond to which blocks. While doing so
+        // would allow us to replace our "loop until fixpoint" with a "iterate through the worklist, only checking relevant edges",
+        // the construction of the mapping from predecessor edges to blocks seems expensive.
 
         let mut changed = true;
 
@@ -5960,7 +5997,7 @@ impl Function {
             }
 
             // Scan through each jump, collecting edges with params to analyze from CondBranch and Jump insns.
-            for block_id in &blocks {
+            for block_id in &predecessor_blocks {
                 let insn_id = block_terminator(self, *block_id);
 
                 let (first, second) = match self.resolve(insn_id).insn(self) {
@@ -5991,11 +6028,7 @@ impl Function {
             // 1. Replace uses of the trivial params with the concretized value
             // 2. Remove trivial params from the basic block definition
             // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
-            // TODO: Repalce RPO with blocks
-            for block_id in &blocks {
-                // TODO: Add a note about why we can skip these
-                if self.blocks[block_id.0].params().len() == 0 { continue }
-
+            for block_id in &param_blocks {
                 let block_preds = &predecessor_domain[block_id.0];
                 let trivial_indices: Vec<usize> = block_preds.iter().enumerate()
                     .filter_map(|(idx, state)|
@@ -6014,15 +6047,9 @@ impl Function {
                 prune_vec_by_indices(&mut self.blocks[block_id.0].params, &trivial_indices);
 
                 // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
-                for jump_block_id in &blocks {
-                    let optimizable = match self.find(block_terminator(self, *jump_block_id)) {
-                        Insn::CondBranch { if_true, if_false, .. } => !if_true.args.is_empty() || !if_false.args.is_empty(),
-                        Insn::Jump(edge) => !edge.args.is_empty(),
-                        _ => false
-                    };
-                    if !optimizable { continue }
-
-                    let cond_insn_id = block_terminator(self, *jump_block_id);
+                for jump_block_id in &predecessor_blocks {
+                    let index = self.blocks[jump_block_id.0].insns.len() - 1;
+                    let cond_insn_id = self.blocks[jump_block_id.0].insns[index];
                     match self.resolve(cond_insn_id).insn_mut(self) {
                         Insn::Jump(edge) => {
                             if edge.target == *block_id {
