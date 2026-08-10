@@ -2443,10 +2443,25 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :a@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          v16:ArrayExact = ToArray v10
-          v18:BasicObject = Send v9, :foo, v16 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v17:CBool = HasType v10, NilClass
+          CondBranch v17, bb4(), bb5()
+        bb4():
+          v19:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb8(v19)
+        bb5():
+          v21:NotNil = RefineType v10, NotNil
+          v22:CBool = HasType v21, ArrayExact
+          CondBranch v22, bb6(), bb7()
+        bb6():
+          v24:ArrayExact = RefineType v21, ArrayExact
+          Jump bb8(v24)
+        bb7():
+          v26:ArrayExact = ToArray v21
+          Jump bb8(v26)
+        bb8(v16:ArrayExact):
+          v29:BasicObject = Send v9, :foo, v16 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v18
+          Return v29
         ");
     }
 
@@ -2776,14 +2791,30 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :*@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          v16:ArrayExact = ToNewArray v10
-          v18:Fixnum[1] = Const Value(1)
-          v20:CUInt64 = LoadField v16, :RBASIC_FLAGS@0x1001
-          v21:CUInt64 = GuardNoBitsSet v20, RUBY_FL_FREEZE=CUInt64(2048)
-          ArrayPush v16, v18
-          v24:BasicObject = Send v9, :foo, v16 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v17:CBool = HasType v10, NilClass
+          CondBranch v17, bb4(), bb5()
+        bb4():
+          v19:ArrayExact = NewArray
+          Jump bb8(v19)
+        bb5():
+          v21:NotNil = RefineType v10, NotNil
+          v22:CBool = HasType v21, ArrayExact
+          CondBranch v22, bb6(), bb7()
+        bb6():
+          v24:ArrayExact = RefineType v21, ArrayExact
+          v25:ArrayExact = ArrayDup v24
+          Jump bb8(v25)
+        bb7():
+          v27:ArrayExact = ToNewArray v21
+          Jump bb8(v27)
+        bb8(v16:ArrayExact):
+          v30:Fixnum[1] = Const Value(1)
+          v32:CUInt64 = LoadField v16, :RBASIC_FLAGS@0x1001
+          v33:CUInt64 = GuardNoBitsSet v32, RUBY_FL_FREEZE=CUInt64(2048)
+          ArrayPush v16, v30
+          v36:BasicObject = Send v9, :foo, v16 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v24
+          Return v36
         ");
     }
 
@@ -2839,21 +2870,36 @@ pub(crate) mod hir_build_tests {
           v15:NilClass = Const Value(nil)
           Jump bb3(v10, v11, v12, v13, v14, v15)
         bb3(v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:BasicObject, v22:NilClass):
-          v29:ArrayExact = ToArray v19
-          PatchPoint NoEPEscape(test)
-          v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
-          v38:CBool = IsBlockParamModified v37
-          CondBranch v38, bb4(), bb5()
+          v30:CBool = HasType v19, NilClass
+          CondBranch v30, bb4(), bb5()
         bb4():
-          v40:BasicObject = LoadField v36, :&@0x1005
-          Jump bb6(v40, v40)
+          v32:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb8(v32)
         bb5():
-          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64 = GuardAnyBitSet v42, CUInt64(1) recompile
-          v44:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v44, v21)
-        bb6(v34:BasicObject, v35:BasicObject):
+          v34:NotNil = RefineType v19, NotNil
+          v35:CBool = HasType v34, ArrayExact
+          CondBranch v35, bb6(), bb7()
+        bb6():
+          v37:ArrayExact = RefineType v34, ArrayExact
+          Jump bb8(v37)
+        bb7():
+          v39:ArrayExact = ToArray v34
+          Jump bb8(v39)
+        bb8(v29:ArrayExact):
+          PatchPoint NoEPEscape(test)
+          v47:CPtr = GetEP 0
+          v48:CUInt64 = LoadField v47, :VM_ENV_DATA_INDEX_FLAGS@0x1010
+          v49:CBool = IsBlockParamModified v48
+          CondBranch v49, bb9(), bb10()
+        bb9():
+          v51:BasicObject = LoadField v47, :&@0x1011
+          Jump bb11(v51, v51)
+        bb10():
+          v53:CInt64 = LoadField v47, :VM_ENV_DATA_INDEX_SPECVAL@0x1012
+          v54:CInt64 = GuardAnyBitSet v53, CUInt64(1) recompile
+          v55:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1018))
+          Jump bb11(v55, v21)
+        bb11(v45:BasicObject, v46:BasicObject):
           SideExit SplatKwNotProfiled
         ");
     }
@@ -4277,25 +4323,40 @@ pub(crate) mod hir_build_tests {
           v15:NilClass = Const Value(nil)
           Jump bb3(v10, v11, v12, v13, v14, v15)
         bb3(v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:BasicObject, v22:NilClass):
-          v29:ArrayExact = ToArray v19
-          PatchPoint NoEPEscape(test)
-          v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
-          v38:CBool = IsBlockParamModified v37
-          CondBranch v38, bb4(), bb5()
+          v30:CBool = HasType v19, NilClass
+          CondBranch v30, bb4(), bb5()
         bb4():
-          v40:BasicObject = LoadField v36, :&@0x1005
-          Jump bb6(v40, v40)
+          v32:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb8(v32)
         bb5():
-          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64[0] = GuardBitEquals v42, CInt64(0) recompile
-          v44:NilClass = Const Value(nil)
-          Jump bb6(v44, v21)
-        bb6(v34:BasicObject, v35:BasicObject):
-          v47:NilClass = GuardType v20, NilClass
-          v49:BasicObject = Send v17, &block, :foo, v18, v29, v47, v34 # SendFallbackReason: Uncategorized(send)
+          v34:NotNil = RefineType v19, NotNil
+          v35:CBool = HasType v34, ArrayExact
+          CondBranch v35, bb6(), bb7()
+        bb6():
+          v37:ArrayExact = RefineType v34, ArrayExact
+          Jump bb8(v37)
+        bb7():
+          v39:ArrayExact = ToArray v34
+          Jump bb8(v39)
+        bb8(v29:ArrayExact):
+          PatchPoint NoEPEscape(test)
+          v47:CPtr = GetEP 0
+          v48:CUInt64 = LoadField v47, :VM_ENV_DATA_INDEX_FLAGS@0x1010
+          v49:CBool = IsBlockParamModified v48
+          CondBranch v49, bb9(), bb10()
+        bb9():
+          v51:BasicObject = LoadField v47, :&@0x1011
+          Jump bb11(v51, v51)
+        bb10():
+          v53:CInt64 = LoadField v47, :VM_ENV_DATA_INDEX_SPECVAL@0x1012
+          v54:CInt64[0] = GuardBitEquals v53, CInt64(0) recompile
+          v55:NilClass = Const Value(nil)
+          Jump bb11(v55, v21)
+        bb11(v45:BasicObject, v46:BasicObject):
+          v58:NilClass = GuardType v20, NilClass
+          v60:BasicObject = Send v17, &block, :foo, v18, v29, v58, v45 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v49
+          Return v60
         ");
     }
 
@@ -4419,21 +4480,36 @@ pub(crate) mod hir_build_tests {
           v15:NilClass = Const Value(nil)
           Jump bb3(v10, v11, v12, v13, v14, v15)
         bb3(v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:BasicObject, v22:NilClass):
-          v29:ArrayExact = ToArray v19
-          PatchPoint NoEPEscape(test)
-          v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
-          v38:CBool = IsBlockParamModified v37
-          CondBranch v38, bb4(), bb5()
+          v30:CBool = HasType v19, NilClass
+          CondBranch v30, bb4(), bb5()
         bb4():
-          v40:BasicObject = LoadField v36, :&@0x1005
-          Jump bb6(v40, v40)
+          v32:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb8(v32)
         bb5():
-          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64[0] = GuardBitEquals v42, CInt64(0) recompile
-          v44:NilClass = Const Value(nil)
-          Jump bb6(v44, v21)
-        bb6(v34:BasicObject, v35:BasicObject):
+          v34:NotNil = RefineType v19, NotNil
+          v35:CBool = HasType v34, ArrayExact
+          CondBranch v35, bb6(), bb7()
+        bb6():
+          v37:ArrayExact = RefineType v34, ArrayExact
+          Jump bb8(v37)
+        bb7():
+          v39:ArrayExact = ToArray v34
+          Jump bb8(v39)
+        bb8(v29:ArrayExact):
+          PatchPoint NoEPEscape(test)
+          v47:CPtr = GetEP 0
+          v48:CUInt64 = LoadField v47, :VM_ENV_DATA_INDEX_FLAGS@0x1010
+          v49:CBool = IsBlockParamModified v48
+          CondBranch v49, bb9(), bb10()
+        bb9():
+          v51:BasicObject = LoadField v47, :&@0x1011
+          Jump bb11(v51, v51)
+        bb10():
+          v53:CInt64 = LoadField v47, :VM_ENV_DATA_INDEX_SPECVAL@0x1012
+          v54:CInt64[0] = GuardBitEquals v53, CInt64(0) recompile
+          v55:NilClass = Const Value(nil)
+          Jump bb11(v55, v21)
+        bb11(v45:BasicObject, v46:BasicObject):
           SideExit SplatKwPolymorphic
         ");
     }
@@ -4501,7 +4577,23 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :a@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          v15:ArrayExact = ToNewArray v10
+          v16:CBool = HasType v10, NilClass
+          CondBranch v16, bb4(), bb5()
+        bb4():
+          v18:ArrayExact = NewArray
+          Jump bb8(v18)
+        bb5():
+          v20:NotNil = RefineType v10, NotNil
+          v21:CBool = HasType v20, ArrayExact
+          CondBranch v21, bb6(), bb7()
+        bb6():
+          v23:ArrayExact = RefineType v20, ArrayExact
+          v24:ArrayExact = ArrayDup v23
+          Jump bb8(v24)
+        bb7():
+          v26:ArrayExact = ToNewArray v20
+          Jump bb8(v26)
+        bb8(v15:ArrayExact):
           CheckInterrupts
           Return v15
         ");
@@ -4556,11 +4648,27 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :a@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          v15:ArrayExact = ToNewArray v10
-          v17:Fixnum[1] = Const Value(1)
-          v19:CUInt64 = LoadField v15, :RBASIC_FLAGS@0x1001
-          v20:CUInt64 = GuardNoBitsSet v19, RUBY_FL_FREEZE=CUInt64(2048)
-          ArrayPush v15, v17
+          v16:CBool = HasType v10, NilClass
+          CondBranch v16, bb4(), bb5()
+        bb4():
+          v18:ArrayExact = NewArray
+          Jump bb8(v18)
+        bb5():
+          v20:NotNil = RefineType v10, NotNil
+          v21:CBool = HasType v20, ArrayExact
+          CondBranch v21, bb6(), bb7()
+        bb6():
+          v23:ArrayExact = RefineType v20, ArrayExact
+          v24:ArrayExact = ArrayDup v23
+          Jump bb8(v24)
+        bb7():
+          v26:ArrayExact = ToNewArray v20
+          Jump bb8(v26)
+        bb8(v15:ArrayExact):
+          v29:Fixnum[1] = Const Value(1)
+          v31:CUInt64 = LoadField v15, :RBASIC_FLAGS@0x1001
+          v32:CUInt64 = GuardNoBitsSet v31, RUBY_FL_FREEZE=CUInt64(2048)
+          ArrayPush v15, v29
           CheckInterrupts
           Return v15
         ");
@@ -4586,15 +4694,31 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :a@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          v15:ArrayExact = ToNewArray v10
-          v17:Fixnum[1] = Const Value(1)
-          v19:Fixnum[2] = Const Value(2)
-          v21:Fixnum[3] = Const Value(3)
-          v23:CUInt64 = LoadField v15, :RBASIC_FLAGS@0x1001
-          v24:CUInt64 = GuardNoBitsSet v23, RUBY_FL_FREEZE=CUInt64(2048)
-          ArrayPush v15, v17
-          ArrayPush v15, v19
-          ArrayPush v15, v21
+          v16:CBool = HasType v10, NilClass
+          CondBranch v16, bb4(), bb5()
+        bb4():
+          v18:ArrayExact = NewArray
+          Jump bb8(v18)
+        bb5():
+          v20:NotNil = RefineType v10, NotNil
+          v21:CBool = HasType v20, ArrayExact
+          CondBranch v21, bb6(), bb7()
+        bb6():
+          v23:ArrayExact = RefineType v20, ArrayExact
+          v24:ArrayExact = ArrayDup v23
+          Jump bb8(v24)
+        bb7():
+          v26:ArrayExact = ToNewArray v20
+          Jump bb8(v26)
+        bb8(v15:ArrayExact):
+          v29:Fixnum[1] = Const Value(1)
+          v31:Fixnum[2] = Const Value(2)
+          v33:Fixnum[3] = Const Value(3)
+          v35:CUInt64 = LoadField v15, :RBASIC_FLAGS@0x1001
+          v36:CUInt64 = GuardNoBitsSet v35, RUBY_FL_FREEZE=CUInt64(2048)
+          ArrayPush v15, v29
+          ArrayPush v15, v31
+          ArrayPush v15, v33
           CheckInterrupts
           Return v15
         ");
