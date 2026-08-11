@@ -9,7 +9,7 @@ use crate::options::OPTIONS;
 #[path = "../../jit/src/lib.rs"]
 mod jit;
 
-use crate::{cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, ZJITState}};
+use crate::{cast::IntoUsize as _, cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, ZJITState}};
 
 macro_rules! make_counters {
     (
@@ -522,9 +522,9 @@ pub fn exit_counter_ptr_for_opcode(opcode: u32) -> *mut u64 {
 }
 
 /// Return a raw pointer to the fallback counter for a given YARV opcode
-pub fn send_fallback_counter_ptr_for_opcode(opcode: u32) -> *mut u64 {
+pub fn send_fallback_counter_ptr_for_opcode(opcode: VmInsnType) -> *mut u64 {
     let fallback_counters = ZJITState::get_send_fallback_counters();
-    unsafe { fallback_counters.get_unchecked_mut(opcode as usize) }
+    unsafe { fallback_counters.get_unchecked_mut(opcode.to_usize()) }
 }
 
 /// Reason why ZJIT failed to produce any JIT code

@@ -14,6 +14,11 @@ mod size_tests {
     fn test_size_of_type() {
         assert_eq!(std::mem::size_of::<Type>(), 16);
     }
+
+    #[test]
+    fn test_size_of_send_fallback_reason() {
+        assert_eq!(std::mem::size_of::<SendFallbackReason>(), 4);
+    }
 }
 
 #[cfg(test)]
