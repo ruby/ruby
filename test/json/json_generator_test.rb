@@ -256,20 +256,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
     JSON
   end
 
-  def test_fast_generate
-    assert_deprecated_warning(/fast_generate/) do
-      json = fast_generate(@hash)
-      assert_equal(parse(@json2), parse(json))
-      parsed_json = parse(json)
-      assert_equal(@hash, parsed_json)
-      json = fast_generate({1=>2})
-      assert_equal('{"1":2}', json)
-      parsed_json = parse(json)
-      assert_equal({"1"=>2}, parsed_json)
-      assert_equal '666', fast_generate(666)
-    end
-  end
-
   def test_own_state
     state = State.new
     json = generate(@hash, state)
@@ -287,10 +273,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
     json = generate({1=>2}, nil)
     assert_equal('{"1":2}', json)
     s = JSON.state.new
-    assert s.check_circular?
-    assert_deprecated_warning(/JSON::State/) do
-      assert s[:check_circular?]
-    end
     h = { 1=>2 }
     h[3] = h
     assert_raise(JSON::NestingError) {  generate(h) }
@@ -299,10 +281,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
     a = [ 1, 2 ]
     a << a
     assert_raise(JSON::NestingError) {  generate(a, s) }
-    assert s.check_circular?
-    assert_deprecated_warning(/JSON::State/) do
-      assert s[:check_circular?]
-    end
   end
 
   def test_falsy_state
@@ -329,6 +307,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_state_defaults
     state = JSON::State.new
     assert_equal({
+      :allow_duplicate_key   => false,
       :allow_nan             => false,
       :array_nl              => "",
       :as_json               => false,
@@ -343,7 +322,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
       :space                 => "",
       :space_before          => "",
       :sort_keys             => false,
-    }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
+    }.sort_by { |n,| n.to_s }.to_h, state.to_h.sort_by { |n,| n.to_s }.to_h)
 
     state = JSON::State.new(allow_duplicate_key: true)
     assert_equal({
@@ -366,26 +345,24 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_allow_nan
-    assert_deprecated_warning(/fast_generate/) do
-      error = assert_raise(GeneratorError) { generate([JSON::NaN]) }
-      assert_same JSON::NaN, error.invalid_object
-      assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
-      assert_raise(GeneratorError) { fast_generate([JSON::NaN]) }
-      assert_raise(GeneratorError) { pretty_generate([JSON::NaN]) }
-      assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], :allow_nan => true)
-      error = assert_raise(GeneratorError) { generate([JSON::Infinity]) }
-      assert_same JSON::Infinity, error.invalid_object
-      assert_equal '[Infinity]', generate([JSON::Infinity], :allow_nan => true)
-      assert_raise(GeneratorError) { fast_generate([JSON::Infinity]) }
-      assert_raise(GeneratorError) { pretty_generate([JSON::Infinity]) }
-      assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], :allow_nan => true)
-      error = assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
-      assert_same JSON::MinusInfinity, error.invalid_object
-      assert_equal '[-Infinity]', generate([JSON::MinusInfinity], :allow_nan => true)
-      assert_raise(GeneratorError) { fast_generate([JSON::MinusInfinity]) }
-      assert_raise(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
-      assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], :allow_nan => true)
-    end
+    error = assert_raise(GeneratorError) { generate([JSON::NaN]) }
+    assert_same JSON::NaN, error.invalid_object
+    assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
+    assert_raise(GeneratorError) { generate([JSON::NaN]) }
+    assert_raise(GeneratorError) { pretty_generate([JSON::NaN]) }
+    assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], :allow_nan => true)
+    error = assert_raise(GeneratorError) { generate([JSON::Infinity]) }
+    assert_same JSON::Infinity, error.invalid_object
+    assert_equal '[Infinity]', generate([JSON::Infinity], :allow_nan => true)
+    assert_raise(GeneratorError) { generate([JSON::Infinity]) }
+    assert_raise(GeneratorError) { pretty_generate([JSON::Infinity]) }
+    assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], :allow_nan => true)
+    error = assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
+    assert_same JSON::MinusInfinity, error.invalid_object
+    assert_equal '[-Infinity]', generate([JSON::MinusInfinity], :allow_nan => true)
+    assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
+    assert_raise(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
+    assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], :allow_nan => true)
   end
 
   # An object that changes state.depth when it receives to_json(state)
@@ -577,35 +554,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
     bignum.class.define_method(:to_s, original_to_s) if original_to_s
   end
 
-  def test_hash_likeness_set_symbol
-    assert_deprecated_warning(/JSON::State/) do
-      state = JSON.state.new
-      assert_equal nil, state[:foo]
-      assert_equal nil.class, state[:foo].class
-      assert_equal nil, state['foo']
-      state[:foo] = :bar
-      assert_equal :bar, state[:foo]
-      assert_equal :bar, state['foo']
-      state_hash = state.to_hash
-      assert_kind_of Hash, state_hash
-      assert_equal :bar, state_hash[:foo]
-    end
-  end
-
-  def test_hash_likeness_set_string
-    assert_deprecated_warning(/JSON::State/) do
-      state = JSON.state.new
-      assert_equal nil, state[:foo]
-      assert_equal nil, state['foo']
-      state['foo'] = :bar
-      assert_equal :bar, state[:foo]
-      assert_equal :bar, state['foo']
-      state_hash = state.to_hash
-      assert_kind_of Hash, state_hash
-      assert_equal :bar, state_hash[:foo]
-    end
-  end
-
   def test_json_state_to_h_roundtrip
     state = JSON.state.new
     assert_equal state.to_h, JSON.state.new(state.to_h).to_h
@@ -703,7 +651,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     #
     data = [ "/\u2028\u2029" ]
     json = '["\/\u2028\u2029"]'
-    assert_equal json, generate(data, :escape_slash => true)
+    assert_equal json, generate(data, :script_safe => true)
     #
     data = ['"']
     json = '["\""]'
@@ -1088,13 +1036,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_generate_duplicate_keys_allowed
     hash = { foo: 1, "foo" => 2 }
     assert_equal %({"foo":1,"foo":2}), JSON.generate(hash, allow_duplicate_key: true)
-  end
-
-  def test_generate_duplicate_keys_deprecated
-    hash = { foo: 1, "foo" => 2 }
-    assert_deprecated_warning(/allow_duplicate_key/) do
-      assert_equal %({"foo":1,"foo":2}), JSON.generate(hash)
-    end
   end
 
   def test_generate_duplicate_keys_disallowed

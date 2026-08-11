@@ -359,6 +359,8 @@ tokens:
     comment: "when"
   - name: NEWLINE
     comment: "a newline character outside of other tokens"
+  - name: NEWLINE_TERMINATOR
+    comment: "a newline that terminates a construct where a newline is otherwise insignificant"
   - name: PARENTHESIS_RIGHT
     comment: ")"
   - name: PIPE

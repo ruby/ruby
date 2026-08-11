@@ -3,10 +3,6 @@ require_relative 'test_helper'
 require 'stringio'
 require 'tempfile'
 begin
-  require 'ostruct'
-rescue LoadError
-end
-begin
   require 'bigdecimal'
 rescue LoadError
 end
@@ -436,34 +432,15 @@ class JSONParserTest < Test::Unit::TestCase
 
   def test_parse_duplicate_key
     expected = {"a" => 2}
-    expected_sym = {a: 2}
 
     assert_equal expected, parse('{"a": 1, "a": 2}', allow_duplicate_key: true)
     assert_raise(ParserError) { parse('{"a": 1, "a": 2}', allow_duplicate_key: false) }
     assert_raise(ParserError) { parse('{"a": 1, "a": 2}', allow_duplicate_key: false, symbolize_names: true) }
 
-    assert_deprecated_warning(/duplicate key "a"/) do
-      assert_equal expected, parse('{"a": 1, "a": 2}')
-    end
-    assert_deprecated_warning(/duplicate key "a"/) do
-      assert_equal expected_sym, parse('{"a": 1, "a": 2}', symbolize_names: true)
-    end
-
-    if RUBY_ENGINE == 'ruby'
-      assert_deprecated_warning(/#{File.basename(__FILE__)}\:#{__LINE__ + 1}/) do
-        assert_equal expected, parse('{"a": 1, "a": 2}')
-      end
-    end
-
     unless RUBY_ENGINE == 'jruby'
       assert_raise(ParserError) do
         fake_key = Object.new
         JSON.load('{"a": 1, "a": 2}', -> (obj) { obj == "a" ? fake_key : obj }, allow_duplicate_key: false)
-      end
-
-      assert_deprecated_warning(/duplicate key #<Object:0x/) do
-        fake_key = Object.new
-        JSON.load('{"a": 1, "a": 2}', -> (obj) { obj == "a" ? fake_key : obj })
       end
     end
   end
@@ -496,9 +473,6 @@ class JSONParserTest < Test::Unit::TestCase
       parse('{"foo":"bar", "baz":"quux"}'))
     assert_equal({ :foo => "bar", :baz => "quux" },
       parse('{"foo":"bar", "baz":"quux"}', :symbolize_names => true))
-    assert_raise(ArgumentError) do
-      parse('{}', :symbolize_names => true, :create_additions => true)
-    end
   end
 
   def test_freeze
@@ -562,16 +536,8 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(ParserError) { parse('{} /*/', allow_comments: true) }
     assert_raise(ParserError) { parse('{} /x wrong comment', allow_comments: true) }
     assert_raise(ParserError) { parse('{} /', allow_comments: true) }
-  end
-
-  def test_parse_comments_deprecation
     assert_equal({}, parse('/**/ {}', allow_comments: true))
     assert_raise(ParserError) { parse('/**/ {}', allow_comments: false) }
-    if RUBY_ENGINE == 'ruby'
-      assert_deprecated_warning(/Encountered comment in JSON/) do
-        parse('/**/ {}')
-      end
-    end
   end
 
   def test_nesting
@@ -714,20 +680,6 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
-  class SubArray2 < Array
-    def to_json(*a)
-      {
-        JSON.create_id => self.class.name,
-        'ary'          => to_a,
-      }.to_json(*a)
-    end
-
-    def self.json_create(o)
-      o.delete JSON.create_id
-      o['ary']
-    end
-  end
-
   class SubArrayWrapper
     def initialize
       @data = []
@@ -802,54 +754,31 @@ class JSONParserTest < Test::Unit::TestCase
     assert res.item_set?
   end
 
-  if defined?(::OpenStruct)
-    class SubOpenStruct < OpenStruct
-      def [](k)
-        __send__(k)
-      end
-
-      def []=(k, v)
-        @item_set = true
-        __send__("#{k}=", v)
-      end
-
-      def item_set?
-        @item_set
-      end
+  class OpenStructLike
+    def initialize
+      @attrs = {}
     end
 
-    def test_parse_object_custom_non_hash_derived_class
-      res = parse('{"foo":"bar"}', :object_class => SubOpenStruct)
-      assert_equal "bar", res.foo
-      assert_equal "bar", res[:foo]
-      assert_equal(SubOpenStruct, res.class)
-      assert res.item_set?
+    def [](k)
+      @attrs[k.to_sym]
     end
 
-    def test_parse_generic_object
-      res = parse(
-        '{"foo":"bar", "baz":{}}',
-        :object_class => JSON::GenericObject
-      )
-      assert_equal(JSON::GenericObject, res.class)
-      assert_equal "bar", res.foo
-      assert_equal "bar", res["foo"]
-      assert_equal "bar", res[:foo]
-      assert_equal "bar", res.to_hash[:foo]
-      assert_equal(JSON::GenericObject, res.baz.class)
+    def []=(k, v)
+      @attrs[k.to_sym] = v
+    end
+
+    def method_missing(name, ...)
+      @attrs.fetch(name) do
+        super
+      end
     end
   end
 
-  def test_generate_core_subclasses_with_new_to_json
-    obj = SubHash2["foo" => SubHash2["bar" => true]]
-    obj_json = JSON(obj)
-    obj_again = parse(obj_json, :create_additions => true)
-    assert_kind_of SubHash2, obj_again
-    assert_kind_of SubHash2, obj_again['foo']
-    assert obj_again['foo']['bar']
-    assert_equal obj, obj_again
-    assert_equal ["foo"],
-      JSON(JSON(SubArray2["foo"]), :create_additions => true)
+  def test_parse_object_custom_non_hash_derived_class
+    res = parse('{"foo":"bar"}', :object_class => OpenStructLike)
+    assert_equal "bar", res.foo
+    assert_equal "bar", res[:foo]
+    assert_equal(OpenStructLike, res.class)
   end
 
   def test_generate_core_subclasses_with_default_to_json
