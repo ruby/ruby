@@ -6300,7 +6300,7 @@ pub(crate) mod hir_build_tests {
 
         assert!(cfi.is_preceded_by(bb1, bb2));
         assert!(cfi.is_succeeded_by(bb2, bb1));
-        assert!(cfi.predecessors(bb3).eq([bb2]));
+        assert!(cfi.predecessors(bb3).eq(&[bb2]));
      }
 
      #[test]
@@ -6347,8 +6347,8 @@ pub(crate) mod hir_build_tests {
          function.seal_entries();
          let cfi = ControlFlowInfo::new(&function);
 
-         assert_eq!(cfi.predecessors(bb1).collect::<Vec<_>>().len(), 1);
-         assert_eq!(cfi.successors(bb0).collect::<Vec<_>>().len(), 1);
+         assert_eq!(cfi.predecessors(bb1).len(), 1);
+         assert_eq!(cfi.successors(bb0).len(), 1);
      }
  }
 
