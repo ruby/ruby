@@ -629,7 +629,7 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
          * cnt==1-no-zombie window where a GC skips shareable pinning and collects
          * objects (a cc, say) reachable only through this objspace. */
         if (cr->objspace) {
-            /* The final self collection already ran (rb_ractor_postmortem_collect),
+            /* The final self collection already ran (ractor_postmortem_collect),
              * so the entry measures exactly the pages the joiner will inherit. */
             rb_gc_objspace_retire(&cr->objspace);
         }
@@ -643,8 +643,8 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
 /* The dying thread's final collection of its own objspace, and the capture of what it
  * must free itself.  Called with the GVL still held: a concurrent global GC waits for
  * this thread's safepoint, so the collection is lock-free like any local GC. */
-void
-rb_ractor_postmortem_collect(rb_thread_t *th, struct rb_ractor_postmortem_frees *pf)
+static void
+ractor_postmortem_collect(rb_thread_t *th, struct rb_ractor_postmortem_frees *pf)
 {
     rb_ractor_t *const cr = th->ractor;
     VM_ASSERT(cr != GET_VM()->ractor.main_ractor);
@@ -855,6 +855,15 @@ static void
 ractor_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE result, bool exc)
 {
     ractor_notify_exit(ec, cr, result, exc);
+}
+
+/* The dying thread's last work inside its Ractor.  The order is the point: a joiner woken
+ * before the collection spins in ractor_value for the whole of it. */
+void
+rb_ractor_postmortem(rb_thread_t *th, struct rb_ractor_postmortem_frees *pf)
+{
+    ractor_postmortem_collect(th, pf);
+    ractor_send_exit_tokens(th->ec, th->ractor);
 }
 
 void
