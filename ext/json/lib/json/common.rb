@@ -241,8 +241,8 @@ module JSON
   # ---
   #
   # Raises an exception if +source+ is not valid JSON:
-  #   # Raises JSON::ParserError (783: unexpected token at ''):
-  #   JSON.parse('')
+  #   # Raises JSON::ParserError unexpected character: 'invalid' at line 1 column 1 :
+  #   JSON.parse('invalid')
   #
   def parse(source, on_load: nil, object_class: nil, array_class: nil, **options)
     if object_class || array_class

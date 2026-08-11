@@ -374,8 +374,9 @@ require 'json/common'
 #   # Raises  SystemStackError: stack level too deep
 #   JSON.generate(obj, max_nesting: false)
 #
-# Setting +max_nesting+ to +false+ can lead to a stackoverflow and may leave the program
-# in an unrecoverable state. It is discouraged.
+# Setting +max_nesting+ to +false+ or a very large number can lead to a stack overflow
+# which may leave the process in an unrecoverable state.
+# It is highly discouraged.
 #
 # ====== Escaping Options
 #
