@@ -1681,7 +1681,7 @@ Also, a list:
     end
   end
 
-  include Gem::PemUtilities
+  include Gem::PEMUtilities
 end
 
 # https://github.com/seattlerb/minitest/blob/13c48a03d84a2a87855a4de0c959f96800100357/lib/minitest/mock.rb#L192

@@ -5,7 +5,7 @@
 
 require "rubygems/openssl"
 
-module Gem::PemUtilities
+module Gem::PEMUtilities
   ##
   # Loads certificate named +cert_name+ from <tt>test/rubygems/</tt>.
 

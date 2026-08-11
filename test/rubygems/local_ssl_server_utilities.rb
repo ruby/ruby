@@ -8,7 +8,8 @@ require "openssl"
 require_relative "pem_utilities"
 
 module Gem::LocalSSLServerUtilities
-  include Gem::PemUtilities
+  include Gem::PEMUtilities
+
   def initialize_ssl_server
     @ssl_server_thread = nil
     @ssl_server = nil
