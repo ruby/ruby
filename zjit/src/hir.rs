@@ -5901,6 +5901,154 @@ impl Function {
         }
     }
 
+    /// ZJIT uses block parameters in HIR SSA representation.
+    /// Sometimes, we can prove that a block param is only called with a single value.
+    /// This pass identifies such trivial block params and replaces them with the concretized value.
+    /// This produces a minimal SSA representation amenable to further optimizations.
+    /// The implementation is inspired from algorithm 2 in <https://c9x.me/compile/bib/braun13cc.pdf>.
+    fn remove_trivial_block_params(&mut self) {
+        // Each block param is lifted to an abstract domain of ParamValues.
+        // The lattice is simple. None is Bottom, Multiple is Top, and One is between both.
+        // During analysis, all block params start with None.
+        // New values passed to the block transition up the lattice.
+        // Trivial block params have one unique value. This is the case we optimize away.
+        // Lattice structure taken from cranelift: <https://github.com/bytecodealliance/wasmtime/blob/main/cranelift/codegen/src/remove_constant_phis.rs>
+        #[derive(Clone, Copy)]
+        enum ParamValue {
+            None,
+            One(InsnId),
+            Many
+        }
+
+        impl ParamValue {
+            fn update(&mut self, value: InsnId) {
+                *self = match *self {
+                    ParamValue::None => ParamValue::One(value),
+                    ParamValue::One(original) if original != value => ParamValue::Many,
+                    other => other
+                };
+            }
+        }
+
+        // Helper function to remove selected indices from a vec in place
+        fn prune_vec_by_indices<T>(v: &mut Vec<T>, indices: &[usize]) {
+            let mut i: usize = 0;
+            v.retain(|_| {
+                let valid_id = !indices.contains(&i);
+                i += 1;
+                valid_id
+            })
+        }
+
+        fn block_terminator(fun: &Function, block_id: BlockId) -> InsnId {
+            *fun.blocks[block_id.to_usize() as usize].insns().last().unwrap()
+        }
+
+        macro_rules! edges_of {
+            ($insn:expr) => {
+                match $insn {
+                    Insn::Jump(edge) => [Some(edge), None],
+                    Insn::CondBranch { if_true, if_false, .. } => [Some(if_true), Some(if_false)],
+                    _ => [None, None],
+                }.into_iter().flatten()
+            };
+        }
+
+        fn outgoing_edges(fun: &Function, block_id: BlockId) -> impl Iterator<Item = &BranchEdge> {
+            let insn_id = block_terminator(fun, block_id);
+            edges_of!(&fun.insns[insn_id.to_usize()])
+        }
+
+        fn outgoing_edges_mut(fun: &mut Function, block_id: BlockId) -> impl Iterator<Item = &mut BranchEdge> {
+            let insn_id = block_terminator(fun, block_id);
+            edges_of!(&mut fun.insns[insn_id.to_usize()])
+        }
+
+        // Instantiate the domain for abstract interpretation.
+        // We store possible param values for each block
+        let mut param_values: Vec<Vec<ParamValue>> = vec![Vec::new(); self.blocks.len()];
+
+        let blocks = self.reverse_post_order();
+
+        // Collect blocks that terminate with Jump or CondBranch instructions that pass at least one block param along.
+        let blocks_sending_params: Vec<BlockId> = blocks.iter().copied()
+            .filter(|&block_id|
+                outgoing_edges(self, block_id).any(|edge| !edge.args.is_empty()))
+            .collect();
+
+        // We only need to update blocks that have params. (Blocks without params cannot be improved)
+        let blocks_receiving_params: Vec<BlockId> = blocks.iter().copied()
+            .filter(|&block_id|
+                self.blocks[block_id.to_usize()].params().len() != 0)
+            .collect();
+
+        // Create a vec to represent trivial indices
+        let max_params = blocks.iter().copied().map(|id| self.blocks[id.to_usize()].params.len()).max().unwrap_or(0);
+        let mut trivial_indices: Vec<usize> = Vec::with_capacity(max_params);
+
+        let mut changed = true;
+
+        while changed {
+            changed = false;
+
+            for (row, block) in param_values.iter_mut().zip(&self.blocks) {
+                row.resize(block.params.len(), ParamValue::None);
+            }
+
+            // Scan through each jump, collecting edges with params to analyze from CondBranch and Jump insns.
+            for block_id in &blocks_sending_params {
+                // Use the results of abstract interpretation to update the states
+                // Perform abstract interpretation
+                for BranchEdge { target: block_id, args: params } in outgoing_edges(self, *block_id) {
+                    for (i, param) in params.iter().enumerate() {
+                        let param = self.find_id(*param);
+                        // If the param is the same as passed into the block, it is a self loop and provides no new predecessor information.
+                        if param == self.find_id(self.blocks[block_id.to_usize()].params[i]) {
+                            continue
+                        }
+                        param_values[block_id.to_usize()][i].update(param);
+                    }
+                }
+            }
+
+            // Remove the trivial block params and fix up our SSA representation
+            // This is done by as follows.
+            // 1. Replace uses of the trivial params with the concretized value
+            // 2. Remove trivial params from the basic block definition
+            // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
+            for block_id in &blocks_receiving_params {
+                let block_preds = &param_values[block_id.to_usize()];
+                trivial_indices.clear();
+                for (idx, state) in block_preds.iter().enumerate() {
+                    if let ParamValue::One(_) = state {
+                        trivial_indices.push(idx);
+                    }
+                }
+
+                // Replace uses of the trivial params with the concretized value
+                for param_index in &trivial_indices {
+                    if let ParamValue::One(insn_id) = block_preds[*param_index] {
+                        self.make_equal_to(self.blocks[block_id.to_usize()].params[*param_index], insn_id);
+                        changed = true;
+                    }
+                }
+
+                // Update the block
+                prune_vec_by_indices(&mut self.blocks[block_id.to_usize()].params, &trivial_indices);
+
+                // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
+                for jump_block_id in &blocks_sending_params {
+                    for edge in outgoing_edges_mut(self, *jump_block_id) {
+                        if edge.target == *block_id {
+                            prune_vec_by_indices(&mut edge.args, &trivial_indices);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
     fn optimize_load_store(&mut self) {
         for block in self.reverse_post_order() {
             let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
@@ -6727,6 +6875,7 @@ impl Function {
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
             (inline_methods) => { Counter::compile_hir_inline_methods_time_ns };
+            (remove_trivial_block_params) => { Counter::compile_hir_remove_trivial_block_params_time_ns };
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
             (canonicalize) => { Counter::compile_hir_canonicalize_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
@@ -6776,6 +6925,7 @@ impl Function {
             } else {
                 false
             };
+            run_pass!(remove_trivial_block_params);
             run_pass!(convert_no_profile_sends);
             run_pass!(optimize_load_store);
             run_pass!(canonicalize);
