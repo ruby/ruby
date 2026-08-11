@@ -4164,7 +4164,9 @@ rb_gc_vm_refresh_zombie_pages(void)
 void
 rb_gc_finish_in_flight_gc(void)
 {
-    rb_gc_impl_gc_rest(rb_gc_get_objspace());
+    RB_VM_LOCKING() { // keep assertions happy
+        rb_gc_impl_gc_rest(rb_gc_get_objspace());
+    }
 }
 
 /* True while a zombie is being absorbed.  The zombie's count is decremented before the
