@@ -6664,9 +6664,8 @@ mod loop_info_tests {
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
 
         function.seal_entries();
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
@@ -6730,9 +6729,8 @@ mod loop_info_tests {
         let _ = function.push_insn(bb4, Insn::Return { val: retval });
 
         function.seal_entries();
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
@@ -6812,9 +6810,8 @@ mod loop_info_tests {
         let _ = function.push_insn(bb6, Insn::Return { val: retval });
 
         function.seal_entries();
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
@@ -6883,9 +6880,8 @@ mod loop_info_tests {
         let _ = function.push_insn(bb2, Insn::Return { val: retval });
 
         function.seal_entries();
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
@@ -6975,9 +6971,8 @@ mod loop_info_tests {
           Unreachable
         ");
 
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert!(!loop_info.is_back_edge_source(bb0));
         assert!(!loop_info.is_back_edge_source(bb1));
