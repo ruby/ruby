@@ -211,7 +211,8 @@ class TestIO_Console
       s.noecho {
 	assert_not_send([s, :echo?])
 	m.print "a"
-	sleep 0.1
+	m.flush
+	assert_equal("a", s.getch)
       }
       m.print "b"
       assert_equal("b", m.readpartial(10))
