@@ -21608,4 +21608,50 @@ mod hir_opt_tests {
           Return v63
         ");
     }
+
+    #[test]
+    fn test_while_loop() {
+        eval(r#"
+            def test
+              i = 0
+              while i < 10
+                i += 1
+              end
+              i
+            end
+
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          Jump bb3(v5, v6)
+        bb3(v8:BasicObject, v9:NilClass):
+          v13:Fixnum[0] = Const Value(0)
+          Jump bb5(v8, v13)
+        bb5(v18:BasicObject, v19:Fixnum):
+          v23:Fixnum[10] = Const Value(10)
+          PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
+          v58:BoolExact = FixnumLt v19, v23
+          CheckInterrupts
+          v29:CBool = Test v58
+          CondBranch v29, bb4(), bb6()
+        bb4():
+          v48:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1000, +@0x1038, cme:0x1040)
+          v62:Fixnum = FixnumAdd v19, v48
+          Jump bb5(v18, v62)
+        bb6():
+          CheckInterrupts
+          Return v19
+        ");
+    }
 }
