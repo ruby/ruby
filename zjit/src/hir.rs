@@ -5977,16 +5977,14 @@ impl Function {
             .collect();
 
         // We only need to update blocks that have params. (Blocks without params cannot be improved)
-        let blocks_receiving_params: Vec<BlockId> = blocks.into_iter()
+        let blocks_receiving_params: Vec<BlockId> = blocks.iter().copied()
             .filter(|&block_id|
                 self.blocks[block_id.to_usize()].params().len() != 0)
             .collect();
 
-        // NOTE: It is possible that once some block_params are removed, there will be no params.
-        // This means that predecessor_blocks or param_blocks could be pruned. This minor optimization can be added if desired.
-        // Importantly, we do not keep track of exactly which edges correspond to which blocks. While doing so
-        // would allow us to replace our "loop until fixpoint" with a "iterate through the worklist, only checking relevant edges",
-        // the construction of the mapping from predecessor edges to blocks seems expensive.
+        // Create a vec to represent trivial indices
+        let max_params = blocks.iter().copied().map(|id| self.blocks[id.to_usize()].params.len()).max().unwrap_or(0);
+        let mut trivial_indices: Vec<usize> = Vec::with_capacity(max_params);
 
         let mut changed = true;
 
@@ -6020,10 +6018,12 @@ impl Function {
             // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
             for block_id in &blocks_receiving_params {
                 let block_preds = &param_values[block_id.to_usize()];
-                let trivial_indices: Vec<usize> = block_preds.iter().enumerate()
-                    .filter_map(|(idx, state)|
-                        matches!(state, ParamValue::One(_)).then_some(idx)
-                    ).collect();
+                trivial_indices.clear();
+                for (idx, state) in block_preds.iter().enumerate() {
+                    if let ParamValue::One(_) = state {
+                        trivial_indices.push(idx);
+                    }
+                }
 
                 // Replace uses of the trivial params with the concretized value
                 for param_index in &trivial_indices {
