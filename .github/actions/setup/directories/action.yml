@@ -114,10 +114,20 @@ runs:
         fetch-depth: ${{ inputs.fetch-depth }}
         persist-credentials: false
 
+    - id: gems-key
+      shell: bash
+      run: |
+        echo "hash=$hash" >> "$GITHUB_OUTPUT"
+      env:
+        hash: ${{ hashFiles(format('{0}/gems/bundled_gems', inputs.srcdir)) }}
+
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ inputs.srcdir }}/.downloaded-cache
-        key: ${{ runner.os }}-${{ runner.arch }}-downloaded-cache
+        key: downloaded-cache-${{ steps.gems-key.outputs.hash }}
+        restore-keys: |
+          downloaded-cache-
+          ${{ runner.os }}-${{ runner.arch }}-downloaded-cache
 
     # Cache cloned bundled gem sources so a transient DNS/network failure
     # while cloning from github.com (e.g. "Could not resolve host") does not
@@ -130,8 +140,9 @@ runs:
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ inputs.srcdir }}/gems/src
-        key: ${{ runner.os }}-${{ runner.arch }}-bundled-gems-src-${{ hashFiles(format('{0}/gems/bundled_gems', inputs.srcdir)) }}
+        key: bundled-gems-src-${{ steps.gems-key.outputs.hash }}
         restore-keys: |
+          bundled-gems-src-
           ${{ runner.os }}-${{ runner.arch }}-bundled-gems-src-
 
     - if: steps.which.outputs.autoreconf
