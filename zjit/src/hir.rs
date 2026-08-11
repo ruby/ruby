@@ -6159,7 +6159,7 @@ impl Function {
         // information for dominator tree.
         let mut rewrite_maps: Vec<HashMap<InsnId, InsnId>> = vec![HashMap::new(); self.blocks.len()];
         let dominators = Dominators::new(self);
-        for block in self.reverse_post_order() {
+        for &block in dominators.cfi.reverse_post_order() {
             let mut rewrite_map = rewrite_maps[dominators.idom(block).to_usize()].clone();
             for i in 0..self.blocks[block.to_usize()].insns.len() {
                 let insn_id = self.blocks[block.to_usize()].insns[i];
@@ -6790,9 +6790,9 @@ impl Function {
         }
 
         let mut hir_blocks = Vec::new();
-        let cfi = ControlFlowInfo::new(self);
         let dominators = Dominators::new(self);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let cfi = &dominators.cfi;
+        let loop_info = LoopInfo::new(&dominators);
 
         // Push each block from the iteration in reverse post order to `hir_blocks`.
         for block_id in self.reverse_post_order() {
@@ -10479,6 +10479,7 @@ pub struct Dominators {
     /// Immediate dominator for each block, indexed by BlockId.
     /// idom(root) = root (self-loop is sentinel), idom[unreachable] == IDOM_NONE.
     idoms: Vec<BlockId>,
+    cfi: ControlFlowInfo,
 }
 
 /// Sentinel value for "no idom computed yet".
@@ -10486,14 +10487,14 @@ const IDOM_NONE: BlockId = BlockId(u32::MAX);
 
 impl Dominators {
     pub fn new(f: &Function) -> Self {
-        let mut cfi = ControlFlowInfo::new(f);
-        Self::with_cfi(f, &mut cfi)
+        let cfi = ControlFlowInfo::new(f);
+        Self::with_cfi(f, cfi)
     }
 
     /// Compute immediate dominators using the "engineered algorithm" from
     /// Cooper, Harvey & Kennedy, "A Simple, Fast Dominance Algorithm" (2001),
     /// Figure 3: <https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom14.pdf>
-    pub fn with_cfi(f: &Function, cfi: &mut ControlFlowInfo) -> Self {
+    pub fn with_cfi(f: &Function, cfi: ControlFlowInfo) -> Self {
         let rpo = cfi.reverse_post_order();
         let num_blocks = f.blocks.len();
 
@@ -10540,7 +10541,7 @@ impl Dominators {
             }
         }
 
-        Self { idoms }
+        Self { idoms, cfi }
     }
 
     /// Walk up the dominator tree from two fingers until they meet.
@@ -10662,7 +10663,8 @@ pub struct LoopInfo<'a> {
 }
 
 impl<'a> LoopInfo<'a> {
-    pub fn new(cfi: &'a ControlFlowInfo, dominators: &'a Dominators) -> Self {
+    pub fn new(dominators: &'a Dominators) -> Self {
+        let cfi = &dominators.cfi;
         let mut loop_headers: BlockSet = BlockSet::with_capacity(cfi.num_blocks());
         let mut loop_depths: HashMap<BlockId, u32> = HashMap::new();
         let mut back_edge_sources: BlockSet = BlockSet::with_capacity(cfi.num_blocks());
