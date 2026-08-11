@@ -827,7 +827,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     // below, and captures the structs it must free at its last step.
     struct rb_ractor_postmortem_frees pf = { NULL, NULL };
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
-        rb_ractor_postmortem_collect(th, &pf);
+        rb_ractor_postmortem(th, &pf);
     }
 
 #if defined(USE_MN_THREADS) && USE_MN_THREADS

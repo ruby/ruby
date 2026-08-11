@@ -15,7 +15,8 @@ static VALUE rb_cRactorPort;
 
 static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp);
 static VALUE ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
-static VALUE ractor_try_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
+static struct ractor_basket *ractor_basket_new_ref(VALUE shareable);
+static void ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, struct ractor_basket *b, bool raise_on_error);
 static void ractor_add_port(rb_ractor_t *r, st_data_t id);
 
 // The off-heap courier used for moves.  It is defined in ractor.c.
@@ -684,16 +685,21 @@ ractor_notify_exit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE legacy, bo
     }
     RACTOR_UNLOCK_SELF(cr);
 
-    // send token
+}
 
-    VALUE token = ractor_exit_token(exc);
+/* Sent after the dying thread's post-mortem collection: waking a joiner any earlier makes
+ * ractor_value spin for the whole of that collection. */
+static void
+ractor_send_exit_tokens(rb_execution_context_t *ec, rb_ractor_t *cr)
+{
+    VALUE token = ractor_exit_token(cr->sync.legacy_exc);
     struct ractor_monitor *rm, *nxt;
 
     ccan_list_for_each_safe(&cr->sync.monitors, rm, nxt, node)
     {
         RUBY_DEBUG_LOG("port:%u@r%u", (unsigned int)ractor_port_id(&rm->port), (unsigned int)rb_ractor_id(rm->port.r));
 
-        ractor_try_send(ec, &rm->port, token, false);
+        ractor_send_basket(ec, &rm->port, ractor_basket_new_ref(token), false);
 
         ccan_list_del(&rm->node);
         SIZED_FREE(rm);
@@ -1602,6 +1608,26 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
     }
 }
 
+/* A shareable payload needs no preparation, so this skips the tag ractor_basket_new
+ * pushes.  The exit tokens travel this way: they are sent from a thread whose EC has
+ * already lost its VM stack, and EC_PUSH_TAG reads ec->cfp under ZJIT. */
+static struct ractor_basket *
+ractor_basket_new_ref(VALUE shareable)
+{
+    struct ractor_basket *b = ractor_basket_alloc();
+
+    b->type = basket_type_ref;
+    b->sender = Qnil;
+    b->p.v = shareable;
+    b->p.exception = false;
+    b->p.marshaled = false;
+    b->p.move_courier = NULL;
+    b->p.pinned = NULL;
+    b->p.pinned_cnt = 0;
+
+    return b;
+}
+
 static VALUE
 ractor_send0(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move, bool raise_on_error)
 {
@@ -1615,12 +1641,6 @@ static VALUE
 ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move)
 {
     return ractor_send0(ec, rp, obj, move, true);
-}
-
-static VALUE
-ractor_try_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move)
-{
-    return ractor_send0(ec, rp, obj, move, false);
 }
 
 // Ractor::Selector
