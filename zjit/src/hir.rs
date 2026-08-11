@@ -10494,7 +10494,7 @@ impl Dominators {
     /// Cooper, Harvey & Kennedy, "A Simple, Fast Dominance Algorithm" (2001),
     /// Figure 3: <https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom14.pdf>
     pub fn with_cfi(f: &Function, cfi: &mut ControlFlowInfo) -> Self {
-        let rpo = f.reverse_post_order();
+        let rpo = cfi.reverse_post_order();
         let num_blocks = f.blocks.len();
 
         // Map BlockId -> RPO index for O(1) lookup in intersect.
@@ -10511,7 +10511,7 @@ impl Dominators {
         let mut changed = true;
         while changed {
             changed = false;
-            for &block in &rpo {
+            for &block in rpo {
                 if block == root { continue; }
 
                 // Find the first predecessor that already has an idom computed.
@@ -10591,18 +10591,20 @@ impl Dominators {
     }
 }
 
-pub struct ControlFlowInfo<'a> {
-    function: &'a Function,
+pub struct ControlFlowInfo {
+    num_blocks: usize,
+    reverse_post_order: Vec<BlockId>,
     successor_map: HashMap<BlockId, Vec<BlockId>>,
     predecessor_map: HashMap<BlockId, Vec<BlockId>>,
 }
 
-impl<'a> ControlFlowInfo<'a> {
-    pub fn new(function: &'a Function) -> Self {
+impl ControlFlowInfo {
+    pub fn new(function: &Function) -> Self {
         let mut successor_map: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
         let mut predecessor_map: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
 
-        for block_id in function.reverse_post_order() {
+        let reverse_post_order = function.reverse_post_order();
+        for &block_id in &reverse_post_order {
             let mut successors: Vec<BlockId> = function.successors(block_id).collect();
             successors.dedup();
 
@@ -10619,7 +10621,8 @@ impl<'a> ControlFlowInfo<'a> {
         }
 
         Self {
-            function,
+            num_blocks: function.num_blocks(),
+            reverse_post_order,
             successor_map,
             predecessor_map,
         }
@@ -10640,10 +10643,18 @@ impl<'a> ControlFlowInfo<'a> {
     pub fn successors(&self, block: BlockId) -> impl Iterator<Item = BlockId> {
         self.successor_map.get(&block).into_iter().flatten().copied()
     }
+
+    pub fn num_blocks(&self) -> usize {
+        self.num_blocks
+    }
+
+    pub fn reverse_post_order(&self) -> &[BlockId] {
+        &self.reverse_post_order
+    }
 }
 
 pub struct LoopInfo<'a> {
-    cfi: &'a ControlFlowInfo<'a>,
+    cfi: &'a ControlFlowInfo,
     dominators: &'a Dominators,
     loop_depths: HashMap<BlockId, u32>,
     loop_headers: BlockSet,
@@ -10651,18 +10662,18 @@ pub struct LoopInfo<'a> {
 }
 
 impl<'a> LoopInfo<'a> {
-    pub fn new(cfi: &'a ControlFlowInfo<'a>, dominators: &'a Dominators) -> Self {
-        let mut loop_headers: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
+    pub fn new(cfi: &'a ControlFlowInfo, dominators: &'a Dominators) -> Self {
+        let mut loop_headers: BlockSet = BlockSet::with_capacity(cfi.num_blocks());
         let mut loop_depths: HashMap<BlockId, u32> = HashMap::new();
-        let mut back_edge_sources: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
-        let rpo = cfi.function.reverse_post_order();
+        let mut back_edge_sources: BlockSet = BlockSet::with_capacity(cfi.num_blocks());
+        let rpo = cfi.reverse_post_order();
 
-        for &block in &rpo {
+        for &block in rpo {
             loop_depths.insert(block, 0);
         }
 
         // Collect loop headers.
-        for &block in &rpo {
+        for &block in rpo {
             // Initialize the loop depths.
             for predecessor in cfi.predecessors(block) {
                 if dominators.is_dominated_by(predecessor, block) {
