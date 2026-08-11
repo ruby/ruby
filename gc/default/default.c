@@ -1442,9 +1442,10 @@ enum gc_enter_event {
     gc_enter_event_rest,
     gc_enter_event_finalizer,
     gc_enter_event_global,
+    gc_enter_event_global_auto,
 };
 
-static inline void gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev);
+static inline bool gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev);
 static inline void gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev);
 static void gc_marking_enter(rb_objspace_t *objspace);
 static void gc_marking_exit(rb_objspace_t *objspace);
@@ -7993,7 +7994,7 @@ gc_start_record(rb_objspace_t *objspace, unsigned int reason, bool full_mark)
     gc_reset_malloc_info(objspace, full_mark);
 }
 
-static void gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact);
+static bool gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool allow_skip);
 
 /* Decide whether this collection has to be global.  A local GC can reclaim neither
  * shareable objects nor zombie objspaces, so once those grow past their limits only a
@@ -8047,8 +8048,10 @@ gc_start_body(rb_objspace_t *objspace, unsigned int reason, bool allow_global)
      * (only a global cycle reclaims dead shareable objects and zombie pages).  The
      * exception is the retire GC, which never promotes: a Ractor's death must not STW. */
     if (allow_global && gc_need_global_p(objspace)) {
-        gc_start_global(objspace, reason, false);
-        return TRUE;
+        if (gc_start_global(objspace, reason, false, true)) {
+            return TRUE;
+        }
+        // Fall through to a local GC
     }
 
     rb_gc_initialize_vm_context(&objspace->vm_context);
@@ -8298,6 +8301,7 @@ gc_enter_event_cstr(enum gc_enter_event event)
       case gc_enter_event_rest: return "rest";
       case gc_enter_event_finalizer: return "finalizer";
       case gc_enter_event_global: return "global";
+      case gc_enter_event_global_auto: return "global_auto";
     }
     return NULL;
 }
@@ -8311,6 +8315,7 @@ gc_enter_count(enum gc_enter_event event)
       case gc_enter_event_rest:           RB_DEBUG_COUNTER_INC(gc_enter_rest); break;
       case gc_enter_event_finalizer:      RB_DEBUG_COUNTER_INC(gc_enter_finalizer); break;
       case gc_enter_event_global:         RB_DEBUG_COUNTER_INC(gc_enter_start); break;
+      case gc_enter_event_global_auto:    RB_DEBUG_COUNTER_INC(gc_enter_start); break;
     }
 }
 
@@ -8355,7 +8360,7 @@ gc_local_gc_holds_vm_lock(const rb_objspace_t *objspace)
            (objspace->flags.during_compacting || rb_yjit_enabled_p || rb_zjit_enabled_p);
 }
 
-static inline void
+static inline bool
 gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
     /* A local GC runs on its owner thread and takes neither the VM lock nor a barrier:
@@ -8391,6 +8396,7 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
           case gc_enter_event_continue:
           case gc_enter_event_rest:
           case gc_enter_event_global:
+          case gc_enter_event_global_auto:
             /* A global GC is the longest pause the process takes, so it is the last thing
              * the profiler may leave unmeasured.  The switch below stops the world for it,
              * which is exactly the interval gc_stop_time is meant to name, so start the
@@ -8405,6 +8411,16 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
       case gc_enter_event_global:
         *lock_lev = RB_GC_VM_LOCK();
         // stop other ractors
+        rb_gc_vm_barrier();
+        break;
+      case gc_enter_event_global_auto:
+        *lock_lev = RB_GC_VM_LOCK();
+        if (!gc_need_global_p(objspace)) {
+            RB_GC_VM_UNLOCK(*lock_lev);
+            *lock_lev = 0;
+            objspace->profile.gc_pause_start_time = 0;
+            return false;
+        }
         rb_gc_vm_barrier();
         break;
       case gc_enter_event_finalizer:
@@ -8446,6 +8462,7 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
     gc_record(objspace, 0, gc_enter_event_cstr(event));
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_ENTER);
+    return true;
 }
 
 static inline void
@@ -8480,6 +8497,7 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
 
     switch (event) {
       case gc_enter_event_global:
+      case gc_enter_event_global_auto:
         RB_GC_VM_UNLOCK(*lock_lev);
         break;
       case gc_enter_event_finalizer:
@@ -8758,13 +8776,17 @@ gc_global_mark_generic_fields(rb_objspace_t *driver)
     rb_gc_vm_generic_fields_drain_dead(genfields_dead_p);
 }
 
-/* Two Ractors choosing a global GC at once are serialized by the barrier in gc_enter and
- * simply run two cycles back to back.  The second is wasted work, not an error. */
-static void
-gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact)
+/* Two Ractors choosing a global GC at once are serialized by the VM lock in gc_enter. If two
+ * globals start concurrently, only one global will run and the other will run a local GC after
+ * the barrier ends. */
+static bool
+gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool allow_skip)
 {
     unsigned int lock_lev;
-    gc_enter(driver, gc_enter_event_global, &lock_lev);
+    enum gc_enter_event event = allow_skip ? gc_enter_event_global_auto : gc_enter_event_global;
+    if (!gc_enter(driver, event, &lock_lev)) {
+        return false;
+    }
 
     /* A global GC is a collection of the driver's objspace too, and its profile.count
      * below says so, so report it like a local one.  The driver is the objspace whose
@@ -9038,7 +9060,8 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact)
      * stays enumerable until main absorbs it at its next safepoint. */
 
     gc_prof_timer_stop(driver);
-    gc_exit(driver, gc_enter_event_global, &lock_lev);
+    gc_exit(driver, event, &lock_lev);
+    return true;
 }
 
 static int
@@ -9305,7 +9328,7 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
      * collector that reclaims shareable and cross-objspace garbage.  It stops the world,
      * so auto_compact is honoured here too (mirroring full mark x autocompact locally). */
     if (!rb_gc_single_objspace_p() && (reason & GPR_FLAG_FULL_MARK)) {
-        gc_start_global(objspace, reason, compact || ruby_enable_autocompact);
+        gc_start_global(objspace, reason, compact || ruby_enable_autocompact, false);
     }
     else {
         garbage_collect(objspace, reason);
