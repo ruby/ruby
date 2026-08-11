@@ -54,6 +54,19 @@ test_collection_install__set_pathname__manifest(RBS::CliTest)
 # json-schema passes the obsolete `quirks_mode` parameter, but json gem v3 rejects it
 RBS::SchemaTest
 
+# RBS 4.0.3's JSON tests use APIs removed or changed in json gem v3
+test_dump(JSONInstanceTest)
+test_parse(JSONInstanceTest)
+test_parse!(JSONInstanceTest)
+test_create_id(JSONSingletonTest)
+test_create_id_eq(JSONSingletonTest)
+test_dump(JSONSingletonTest)
+test_load(JSONSingletonTest)
+test_load_file(JSONSingletonTest)
+test_load_file!(JSONSingletonTest)
+test_parse(JSONSingletonTest)
+test_parse!(JSONSingletonTest)
+
 # RBS 4.0.3's RDoc plugin is incompatible with the RDoc 7.2.0 development revision
 test_attr_decl_1(RDocPluginParserTest)
 test_attr_decl_2(RDocPluginParserTest)
