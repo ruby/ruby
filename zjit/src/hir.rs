@@ -6798,10 +6798,12 @@ impl Function {
                     }
                     insn => {
                         if !pending_pushes.is_empty() && !self.can_elide_enclosing_frame(insn) {
-                            // The instruction may take a side exit or observe the frame.
-                            for pending in pending_pushes.iter_mut() {
-                                pending.frame_observed = true;
-                            }
+                            // The instruction may take a side exit or observe the frame,
+                            // so the innermost pending pair must be kept. Enclosing pairs
+                            // don't need to be marked here: a kept pair marks its
+                            // enclosing pair when its PopInlineFrame is reached, so the
+                            // flag propagates outward one pop at a time.
+                            pending_pushes.last_mut().unwrap().frame_observed = true;
                         }
                         insns[write_idx] = insn_id;
                         write_idx += 1;
