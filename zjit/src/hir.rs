@@ -2302,7 +2302,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
             &Insn::GetBlockParam { level, ep_offset, state, .. } => {
-                let iseq = self.fun.map(|fun| fun.frame_state(state).iseq);
+                let iseq = self.fun.map(|fun| fun.frame_state_iseq(state));
                 let name = get_local_var_name_for_printer(iseq, level, ep_offset)
                     .map_or(String::new(), |x| format!("{x}, "));
                 write!(f, "GetBlockParam {name}l{level}, EP@{ep_offset}")
@@ -2393,7 +2393,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, "IsBlockParamModified {flags}")
             },
             &Insn::SetLocal { val, level, ep_offset, state } => {
-                let iseq = self.fun.map(|fun| fun.frame_state(state).iseq);
+                let iseq = self.fun.map(|fun| fun.frame_state_iseq(state));
                 let name = get_local_var_name_for_printer(iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
                 write!(f, "SetLocal {name}l{level}, EP@{ep_offset}, {val}")
             },
@@ -3092,12 +3092,30 @@ impl Function {
         }).max().unwrap_or(0)
     }
 
-    /// Return a FrameState at the given instruction index.
+    /// Return a resolved, freshly allocated FrameState at the given instruction index.
     pub fn frame_state(&self, insn_id: InsnId) -> FrameState {
         match self.find(insn_id) {
             Insn::Snapshot { state } => *state,
             insn => panic!("Unexpected non-Snapshot {insn} when looking up FrameState"),
         }
+    }
+
+    /// Return an unresolved FrameState reference at the given instruction index.
+    pub fn frame_state_ref(&self, insn_id: InsnId) -> &FrameState {
+        match self.find_ref(insn_id) {
+            Insn::Snapshot { state } => state,
+            insn => panic!("Unexpected non-Snapshot {insn} when looking up FrameState"),
+        }
+    }
+
+    /// Return a FrameState's iseq at the given instruction index.
+    pub fn frame_state_iseq(&self, insn_id: InsnId) -> *const rb_iseq_t {
+        self.frame_state_ref(insn_id).iseq
+    }
+
+    /// Return a FrameState's interpreter instruction index.
+    pub fn frame_state_insn_idx(&self, insn_id: InsnId) -> YarvInsnIdx {
+        self.frame_state_ref(insn_id).insn_idx
     }
 
     /// Return the inlining depth recorded on the `Snapshot` at the given
@@ -4063,8 +4081,11 @@ impl Function {
     }
 
     fn count_caller_splat_profile(&mut self, block: BlockId, state: InsnId) {
-        let state = self.frame_state(state);
-        let summary = get_or_create_iseq_payload(state.iseq).profile.get_splat_length_summary(state.insn_idx);
+        let (iseq, insn_idx) = {
+            let frame_state = self.frame_state_ref(state);
+            (frame_state.iseq, frame_state.insn_idx)
+        };
+        let summary = get_or_create_iseq_payload(iseq).profile.get_splat_length_summary(insn_idx);
         let counter = match summary {
             None => Counter::caller_splat_profile_no_profiles,
             Some(summary) if summary.is_monomorphic() => Counter::caller_splat_profile_monomorphic,
@@ -4925,10 +4946,13 @@ impl Function {
                             continue;
                         }
 
-                        let frame_state = self.frame_state(state);
+                        let (frame_state_iseq, frame_state_insn_idx) = {
+                            let frame_state = self.frame_state_ref(state);
+                            (frame_state.iseq, frame_state.insn_idx)
+                        };
 
                         // Don't handle super in a block since that needs a loop to find the running CME.
-                        if frame_state.iseq != unsafe { rb_get_iseq_body_local_iseq(frame_state.iseq) } {
+                        if frame_state_iseq != unsafe { rb_get_iseq_body_local_iseq(frame_state_iseq) } {
                             self.push_insn_id(block, insn_id);
                             self.set_dynamic_send_reason(insn_id, SuperFromBlock);
                             continue;
@@ -4952,12 +4976,12 @@ impl Function {
                             continue;
                         }
 
-                        // Use frame_state.iseq so that an inlined super call looks up its
+                        // Use frame_state_iseq so that an inlined super call looks up its
                         // profiled CME against the callee's payload rather than the outer
                         // compilation's. The runtime guard walks from the live CFP, which is
                         // the callee's CFP for inlined code, so the profile lookup must agree.
-                        let local_payload = get_or_create_iseq_payload(frame_state.iseq);
-                        let Some(current_cme) = local_payload.profile.get_super_method_entry(frame_state.insn_idx) else {
+                        let local_payload = get_or_create_iseq_payload(frame_state_iseq);
+                        let Some(current_cme) = local_payload.profile.get_super_method_entry(frame_state_insn_idx) else {
                             self.push_insn_id(block, insn_id);
 
                             // The absence of the super CME could be due to a missing profile, but
@@ -5015,7 +5039,7 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             };
 
-                            emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state.iseq);
+                            emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state_iseq);
 
                             // Use SendDirect with the super method's CME and ISEQ.
                             let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData {
@@ -5059,7 +5083,7 @@ impl Function {
                                         continue;
                                     }
 
-                                    emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state.iseq);
+                                    emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state_iseq);
 
                                     // Try inlining the cfunc into HIR
                                     let tmp_block = self.new_block(u32::MAX);
@@ -5109,7 +5133,7 @@ impl Function {
 
                                 // Variadic C function: func(int argc, VALUE *argv, VALUE recv)
                                 -1 => {
-                                    emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state.iseq);
+                                    emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state_iseq);
 
                                     // Try inlining the cfunc into HIR
                                     let tmp_block = self.new_block(u32::MAX);
