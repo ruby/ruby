@@ -12235,6 +12235,7 @@ rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
         heap_alloc_state_clear(objspace);
         /* The forking Ractor becomes the child process's main Ractor. */
         global_objspace->main_objspace = objspace;
+        rb_native_mutex_initialize(&rb_global_objspace_instance.page_pool.lock);
     }
 }
 
