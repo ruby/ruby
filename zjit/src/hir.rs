@@ -603,7 +603,6 @@ pub enum SideExitReason {
     UnhandledBlockArg,
     BlockArgNotNil,
     TooManyKeywordParameters,
-    TooManyArgsForLir,
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
