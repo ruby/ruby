@@ -2384,7 +2384,6 @@ Init_strscan(void)
 #endif
 
 #undef rb_intern
-    ID id_scanerr = rb_intern("ScanError");
     VALUE tmp;
 
     usascii_encindex = rb_usascii_encindex();
@@ -2393,17 +2392,9 @@ Init_strscan(void)
 
     StringScanner = rb_define_class("StringScanner", rb_cObject);
     ScanError = rb_define_class_under(StringScanner, "Error", rb_eStandardError);
-    if (!rb_const_defined(rb_cObject, id_scanerr)) {
-	rb_const_set(rb_cObject, id_scanerr, ScanError);
-	rb_deprecate_constant(rb_cObject, "ScanError");
-    }
     tmp = rb_str_new2(STRSCAN_VERSION);
     rb_obj_freeze(tmp);
     rb_const_set(StringScanner, rb_intern("Version"), tmp);
-    tmp = rb_str_new2("$Id$");
-    rb_obj_freeze(tmp);
-    rb_const_set(StringScanner, rb_intern("Id"), tmp);
-    rb_deprecate_constant(StringScanner, "Id");
 
     rb_define_alloc_func(StringScanner, strscan_s_allocate);
     rb_define_private_method(StringScanner, "initialize", strscan_initialize, -1);
