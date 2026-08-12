@@ -2067,8 +2067,11 @@ enum io_wait_result {
 };
 
 // Wait for `fd` on the MN scheduler, if it can take this wait at all.
+// `known_not_ready`: the caller just saw EAGAIN, so probing the fd would only
+// repeat an answer we have.  Callers with no preceding operation need the probe.
 static enum io_wait_result
-thread_io_wait_events(rb_thread_t *th, int fd, int events, const struct timeval *timeout)
+thread_io_wait_events(rb_thread_t *th, int fd, int events, const struct timeval *timeout,
+                      bool known_not_ready)
 {
 #if defined(USE_MN_THREADS) && USE_MN_THREADS
     if (thread_io_mn_schedulable(th, events, timeout)) {
@@ -2084,7 +2087,10 @@ thread_io_wait_events(rb_thread_t *th, int fd, int events, const struct timeval 
 
         VM_ASSERT(prel || (events & (RB_WAITFD_IN | RB_WAITFD_OUT)));
 
-        switch (thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), prel)) {
+        enum thread_sched_waiting_flag flags = waitfd_to_waiting_flag(events);
+        if (known_not_ready) flags |= thread_sched_waiting_io_force;
+
+        switch (thread_sched_wait_events(TH_SCHED(th), th, fd, flags, prel)) {
           case thread_sched_wait_event:
             return io_wait_ready;
           case thread_sched_wait_timeout:
@@ -2163,7 +2169,8 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
 
             RUBY_ASSERT(th == rb_ec_thread_ptr(ec));
             if (events && blocking_call_retryable_p((int)val, saved_errno)) {
-                if (thread_io_wait_events(th, fd, events, NULL) == io_wait_ready) {
+                // `func` just returned EAGAIN, so the fd is known not to be ready.
+                if (thread_io_wait_events(th, fd, events, NULL, true) == io_wait_ready) {
                     RUBY_VM_CHECK_INTS_BLOCKING(ec);
                     goto retry;
                 }
@@ -4849,7 +4856,7 @@ thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct tim
         rb_io_blocking_operation_enter(io, &blocking_operation);
     }
 
-    if (timeout == NULL && thread_io_wait_events(th, fd, events, NULL) == io_wait_ready) {
+    if (timeout == NULL && thread_io_wait_events(th, fd, events, NULL, false) == io_wait_ready) {
         // fd is readable
         state = 0;
         fds[0].revents = events;
