@@ -3382,8 +3382,10 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
         }
 #endif
 
-        MARK_CHECKPOINT("global_symbols");
-        rb_sym_global_symbols_mark_and_move();
+        if (global_gc || rb_gc_single_objspace_p()) {
+            MARK_CHECKPOINT("global_symbols");
+            rb_sym_global_symbols_mark_and_move();
+        }
     }
 
     /* The dying thread's final collection of its own objspace runs after its stack

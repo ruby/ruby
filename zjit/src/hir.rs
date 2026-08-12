@@ -7140,9 +7140,10 @@ impl Function {
         for block_id in self.reverse_post_order() {
             let insns = &self.blocks[block_id.to_usize()].insns;
             for (idx, insn_id) in insns.iter().enumerate() {
-                let insn = self.find(*insn_id);
+                // No need for resolve(): we only look at edge targets/arity and terminators.
+                let insn = self.find_ref(*insn_id);
                 // Validate arity for all branch edges
-                match &insn {
+                match insn {
                     Insn::Jump(edge) => {
                         check_edge(block_id, edge)?;
                     }
@@ -7199,7 +7200,9 @@ impl Function {
             }
             for &insn_id in &self.blocks[block.to_usize()].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
-                let insn = self.find(insn_id);
+                // No need for resolve(): we only look at jump targets here, and the
+                // operand check below resolves each operand itself.
+                let insn = self.find_ref(insn_id);
                 let mut propagate = |target: BlockId| -> Result<(), ValidationError> {
                     let Some(block_in) = assigned_in[target.to_usize()].as_mut() else {
                         return Err(ValidationError::JumpTargetNotInRPO(target));
@@ -7215,7 +7218,7 @@ impl Function {
                         propagate(if_true.target)?;
                         propagate(if_false.target)?;
                     }
-                    Insn::Entries { ref targets } => {
+                    Insn::Entries { targets } => {
                         for &target in targets {
                             propagate(target)?;
                         }
@@ -7274,8 +7277,8 @@ impl Function {
 
     fn validate_insn_type(&self, insn_id: InsnId) -> Result<(), ValidationError> {
         let insn_id = self.union_find.borrow().find_const(insn_id);
-        let insn = self.find(insn_id);
-        match insn {
+        // No need for resolve(): type_of() resolves operands for us.
+        match *self.find_ref(insn_id) {
             // Instructions with no InsnId operands (except state) or nothing to assert
             Insn::Const { .. }
             | Insn::Comment { .. }
@@ -7360,21 +7363,21 @@ impl Function {
                 }
                 Ok(())
             }
-            Insn::SendDirect(insn) => {
+            Insn::SendDirect(ref insn) => {
                 self.assert_subtype(insn_id, insn.recv, types::BasicObject)?;
                 for &arg in &insn.args {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())
             }
-            Insn::CCallWithFrame(insn) => {
+            Insn::CCallWithFrame(ref insn) => {
                 self.assert_subtype(insn_id, insn.recv, types::BasicObject)?;
                 for &arg in &insn.args {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())
             }
-            Insn::CCallVariadic(insn) => {
+            Insn::CCallVariadic(ref insn) => {
                 self.assert_subtype(insn_id, insn.recv, types::BasicObject)?;
                 for &arg in &insn.args {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
