@@ -6741,44 +6741,27 @@ impl Function {
     fn eliminate_empty_inline_frames(&mut self) {
         /// A PushInlineFrame whose matching PopInlineFrame hasn't been seen yet.
         struct PendingPush {
-            /// Index of the PushInlineFrame in `insns`, below the write cursor.
-            push_idx: usize,
+            /// The PushInlineFrame's instruction ID.
+            push_id: InsnId,
             /// Whether an instruction that may take a side exit or observe the
             /// frame has been seen since the push. If so, the pair must be kept.
             frame_observed: bool,
         }
 
         for block_id in self.reverse_post_order() {
-            // Take the instruction list to satisfy the borrow checker; this
-            // moves the buffer, not its contents. The list is edited in place:
-            // kept instructions are written back at `write_idx`, which trails
-            // the read cursor once a pair has been elided, and blocks with
-            // nothing to elide are left as they are.
-            let mut insns = std::mem::take(&mut self.blocks[block_id.to_usize()].insns);
-            let mut write_idx = 0;
+            // First, find the (PushInlineFrame, PopInlineFrame) pairs to elide.
+            let mut elided_pairs: Vec<(InsnId, InsnId)> = Vec::new();
             let mut pending_pushes: Vec<PendingPush> = Vec::new();
-            for read_idx in 0..insns.len() {
-                let insn_id = insns[read_idx];
+            for &insn_id in &self.blocks[block_id.to_usize()].insns {
                 match self.find_ref(insn_id) {
                     Insn::PushInlineFrame { .. } => {
-                        pending_pushes.push(PendingPush { push_idx: write_idx, frame_observed: false });
-                        insns[write_idx] = insn_id;
-                        write_idx += 1;
+                        pending_pushes.push(PendingPush { push_id: insn_id, frame_observed: false });
                     }
                     Insn::PopInlineFrame { .. } => {
                         match pending_pushes.pop() {
-                            Some(PendingPush { push_idx, frame_observed: false }) => {
-                                // Empty pair: drop both the push and this pop
-                                // (by not writing the pop back).
-                                // With --zjit-stats, count each time execution
-                                // passes an elided pair at run-time instead.
-                                if get_option!(stats) {
-                                    insns[push_idx] = self.new_insn(Insn::IncrCounter(Counter::empty_inline_frame_count));
-                                } else {
-                                    // Shift the instructions kept since the push down over it.
-                                    insns.copy_within(push_idx + 1..write_idx, push_idx);
-                                    write_idx -= 1;
-                                }
+                            Some(PendingPush { push_id, frame_observed: false }) => {
+                                // Empty pair: elide both the push and this pop.
+                                elided_pairs.push((push_id, insn_id));
                             }
                             Some(PendingPush { frame_observed: true, .. }) => {
                                 // Keep the pair. It observes the frame chain, so the
@@ -6786,13 +6769,9 @@ impl Function {
                                 if let Some(outer) = pending_pushes.last_mut() {
                                     outer.frame_observed = true;
                                 }
-                                insns[write_idx] = insn_id;
-                                write_idx += 1;
                             }
                             None => {
                                 // The matching push is in another block; leave it alone.
-                                insns[write_idx] = insn_id;
-                                write_idx += 1;
                             }
                         }
                     }
@@ -6805,13 +6784,33 @@ impl Function {
                             // flag propagates outward one pop at a time.
                             pending_pushes.last_mut().unwrap().frame_observed = true;
                         }
-                        insns[write_idx] = insn_id;
-                        write_idx += 1;
                     }
                 }
             }
-            insns.truncate(write_idx);
-            self.blocks[block_id.to_usize()].insns = insns;
+            if elided_pairs.is_empty() {
+                continue;
+            }
+
+            // Elide each pair: drop the pop, and drop the push as well, except
+            // that with --zjit-stats it's replaced with a counter of how many
+            // times execution passes an elided pair at run-time.
+            let mut rewrites: HashMap<InsnId, Option<InsnId>> = HashMap::new();
+            for (push_id, pop_id) in elided_pairs {
+                let replacement = get_option!(stats)
+                    .then(|| self.new_insn(Insn::IncrCounter(Counter::empty_inline_frame_count)));
+                rewrites.insert(push_id, replacement);
+                rewrites.insert(pop_id, None);
+            }
+            self.blocks[block_id.to_usize()].insns.retain_mut(|insn_id| {
+                match rewrites.get(insn_id) {
+                    Some(Some(replacement)) => {
+                        *insn_id = *replacement;
+                        true
+                    }
+                    Some(None) => false,
+                    None => true,
+                }
+            });
         }
     }
 
