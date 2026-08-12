@@ -6443,12 +6443,12 @@ impl Function {
         // TODO(max): Don't make so many maps. Instead, use either undo-redo or dominator numbering
         // information for dominator tree.
         let mut rewrite_maps: Vec<Option<HashMap<InsnId, InsnId>>> = vec![None; self.blocks.len()];
-        let mut value_numbers: Vec<HashMap<Insn, InsnId>> = vec![HashMap::new(); self.blocks.len()];
+        let mut value_numbers: Vec<Option<HashMap<Insn, InsnId>>> = vec![None; self.blocks.len()];
         let dominators = Dominators::new(self);
         for &block in dominators.cfi.reverse_post_order() {
-            let mut rewrite_map = rewrite_maps[dominators.idom(block).to_usize()].clone().unwrap_or_else(|| HashMap::new());
-            value_numbers[block.to_usize()] = value_numbers[dominators.idom(block).to_usize()].clone();
-            let value_numbers = &mut value_numbers[block.to_usize()];
+            let idom = dominators.idom(block);
+            let mut rewrite_map = rewrite_maps[idom.to_usize()].clone().unwrap_or_else(|| HashMap::new());
+            let mut value_number = value_numbers[idom.to_usize()].clone().unwrap_or_else(|| HashMap::new());
             self.blocks[block.to_usize()].insns.retain(|&insn_id| {
                 let canonical_id = self.union_find.borrow().find_const(insn_id);
 
@@ -6471,7 +6471,7 @@ impl Function {
                     }
                     _ => {
                         if self.insns[canonical_id.to_usize()].is_numberable() {
-                            match value_numbers.entry(self.insns[canonical_id.to_usize()].clone()) {
+                            match value_number.entry(self.insns[canonical_id.to_usize()].clone()) {
                                 std::collections::hash_map::Entry::Occupied(entry) => {
                                     rewrite_map.insert(canonical_id, *entry.get());
                                     self.union_find.borrow_mut().make_equal_to(canonical_id, *entry.get());
@@ -6487,6 +6487,7 @@ impl Function {
                 true
             });
             rewrite_maps[block.to_usize()] = Some(rewrite_map);
+            value_numbers[block.to_usize()] = Some(value_number);
         }
 
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
