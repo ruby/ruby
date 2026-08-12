@@ -1,0 +1,195 @@
+name: ZJIT Lobsters Stats
+
+# Runs the lobsters benchmark on the PR's merge base and on the PR tip, then
+# diffs the two `--zjit-stats` dumps. Only counters whose change clears both a
+# relative and an absolute threshold are reported (see `env` below).
+#
+# Only runs on pull requests whose title starts with "ZJIT:" -- there is no way
+# to filter on the title in `on:`, so the check lives in each job's `if:`.
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited # so retitling a PR to "ZJIT: ..." starts the run
+  workflow_dispatch:
+    inputs:
+      before_ref:
+        description: 'Baseline git ref'
+        required: false
+        default: 'master'
+      after_ref:
+        description: 'Git ref to compare against the baseline'
+        required: false
+        default: ''
+      threshold:
+        description: 'Minimum relative change to report, in percent'
+        required: false
+        default: '5'
+      min_diff:
+        description: 'Minimum absolute change to report'
+        required: false
+        default: '100'
+      itrs:
+        description: 'Benchmark iterations per configuration'
+        required: false
+        default: '2'
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+env:
+  # Defaults for pull_request runs, where `inputs` is not available. Aggregate
+  # counters on lobsters were measured to drift < 1% between runs of the same
+  # build, so 5% is comfortably above the noise floor.
+  THRESHOLD: ${{ inputs.threshold || '5' }}
+  MIN_DIFF: ${{ inputs.min_diff || '100' }}
+  ITRS: ${{ inputs.itrs || '2' }}
+  CARGO_NET_RETRY: 10
+  CARGO_HTTP_MULTIPLEXING: false
+
+jobs:
+  bench:
+    name: lobsters (${{ matrix.name }})
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.pull_request.title, 'ZJIT:') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    env:
+      RUBY_BIN: ${{ github.workspace }}/build/install/bin
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: before
+            ref: ${{ inputs.before_ref || github.event.pull_request.base.sha || 'master' }}
+          - name: after
+            ref: ${{ inputs.after_ref || github.event.pull_request.head.sha || github.sha }}
+
+    steps:
+      # The composite actions below are referenced as `./.github/...`, so the
+      # workspace root needs a checkout before `src` exists.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+          persist-credentials: false
+
+      - name: Checkout ${{ matrix.name }} (${{ matrix.ref }})
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ matrix.ref }}
+          path: src
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup/ubuntu
+
+      # `checkout: ''` (falsy) keeps this from overwriting the checkout above
+      # with the default ref; we still want its autogen.sh / `make up` steps.
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+          checkout: ''
+
+      # `stats` is a release build plus the extended counters that
+      # `--zjit-stats` reports. A dev build would be too slow to benchmark.
+      - name: Run configure
+        working-directory: build
+        run: ../src/configure -C --disable-install-doc --prefix="$(pwd)/install" --enable-zjit=stats
+
+      # The install prefix is part of the gem paths that end up in per-iseq
+      # counter names, so both jobs must install to the same absolute path
+      # (they do: $GITHUB_WORKSPACE is identical across runners).
+      - name: Build and install
+        working-directory: build
+        run: make install
+
+      - name: Check ZJIT stats enabled
+        working-directory: build
+        run: ./install/bin/ruby --zjit -v | grep -F '+ZJIT stats'
+
+      - name: Checkout ruby-bench
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ruby/ruby-bench
+          path: ruby-bench
+          persist-credentials: false
+
+      # The harness would otherwise install gems inside the measured process,
+      # and bundler's own execution shows up in the stats as hundreds of
+      # spurious counter changes. Install them up front so that the
+      # `bundle check` the harness runs is a no-op. This has to be the built
+      # ruby's bundler, since the harness shells out to whatever `bundle` is on
+      # PATH.
+      - name: Install lobsters gems
+        working-directory: ruby-bench/benchmarks/lobsters
+        run: |
+          export PATH="${RUBY_BIN}:${PATH}"
+          bundle check || bundle install --jobs=4
+
+      - name: Run lobsters
+        working-directory: ruby-bench
+        run: |
+          export PATH="${RUBY_BIN}:${PATH}"
+          WARMUP_ITRS=0 MIN_BENCH_ITRS="${ITRS}" MIN_BENCH_TIME=0 \
+            ruby --zjit --zjit-stats="${GITHUB_WORKSPACE}/stats-${MATRIX_NAME}.json" \
+            benchmarks/lobsters/benchmark.rb
+        env:
+          MATRIX_NAME: ${{ matrix.name }}
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zjit-stats-${{ matrix.name }}
+          path: stats-${{ matrix.name }}.json
+          if-no-files-found: error
+
+  compare:
+    name: compare stats
+    needs: [bench]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /tool/zjit_stats_diff.rb
+          persist-credentials: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: zjit-stats-*
+          merge-multiple: true
+
+      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: '3.4'
+          bundler: none
+
+      - name: Diff stats
+        run: |
+          args=(
+            --threshold="${THRESHOLD}"
+            --min-diff="${MIN_DIFF}"
+            --before-label="${BEFORE_LABEL}"
+            --after-label="${AFTER_LABEL}"
+          )
+          # Readable in the job log, and again as Markdown in the run summary.
+          ruby tool/zjit_stats_diff.rb "${args[@]}" stats-before.json stats-after.json
+          {
+            ruby tool/zjit_stats_diff.rb "${args[@]}" --markdown stats-before.json stats-after.json
+            echo
+            echo "Built with \`--enable-zjit=stats\` and run for ${ITRS} iteration(s)."
+            echo "Wall-clock timings from a stats build are not comparable to a release build."
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          BEFORE_LABEL: ${{ inputs.before_ref || github.event.pull_request.base.sha || 'master' }}
+          AFTER_LABEL: ${{ inputs.after_ref || github.event.pull_request.head.sha || github.sha }}
