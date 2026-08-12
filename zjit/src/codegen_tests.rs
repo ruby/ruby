@@ -1932,6 +1932,95 @@ fn test_ccall_with_frame_too_many_args_result_used_in_later_block() {
     "#), @"[1, 2, 3, 4, 5, 6, 7, 8]");
 }
 
+// Assert that a C method defined with rb_define_method() observes exactly the
+// argument values that were passed at the Ruby level. The 7-arg method plus
+// the receiver fills all 8 AAPCS64 argument registers on arm64 (x86_64 falls
+// back to a dynamic send); the 10-arg method exceeds the argument registers
+// on both platforms.
+#[test]
+fn test_cfunc_asserts_argument_values() {
+    unsafe extern "C" fn assert_seven_args(
+        _self: VALUE,
+        a: VALUE,
+        b: VALUE,
+        c: VALUE,
+        d: VALUE,
+        e: VALUE,
+        f: VALUE,
+        g: VALUE,
+    ) -> VALUE {
+        assert_eq!(a, VALUE::fixnum_from_usize(1));
+        assert_eq!(b, VALUE::fixnum_from_usize(2));
+        assert_eq!(c, VALUE::fixnum_from_usize(3));
+        assert_eq!(d, VALUE::fixnum_from_usize(4));
+        assert_eq!(e, VALUE::fixnum_from_usize(5));
+        assert_eq!(f, VALUE::fixnum_from_usize(6));
+        assert_eq!(g, VALUE::fixnum_from_usize(7));
+        Qtrue
+    }
+
+    unsafe extern "C" fn assert_ten_args(
+        _self: VALUE,
+        a: VALUE,
+        b: VALUE,
+        c: VALUE,
+        d: VALUE,
+        e: VALUE,
+        f: VALUE,
+        g: VALUE,
+        h: VALUE,
+        i: VALUE,
+        j: VALUE,
+    ) -> VALUE {
+        assert_eq!(a, VALUE::fixnum_from_usize(1));
+        assert_eq!(b, VALUE::fixnum_from_usize(2));
+        assert_eq!(c, VALUE::fixnum_from_usize(3));
+        assert_eq!(d, VALUE::fixnum_from_usize(4));
+        assert_eq!(e, VALUE::fixnum_from_usize(5));
+        assert_eq!(f, VALUE::fixnum_from_usize(6));
+        assert_eq!(g, VALUE::fixnum_from_usize(7));
+        assert_eq!(h, VALUE::fixnum_from_usize(8));
+        assert_eq!(i, VALUE::fixnum_from_usize(9));
+        assert_eq!(j, VALUE::fixnum_from_usize(10));
+        Qtrue
+    }
+
+    with_rubyvm(|| {
+        let klass = define_class("ZJITArgValues", unsafe { rb_cObject });
+        unsafe {
+            rb_define_method(
+                klass,
+                c"seven".as_ptr(),
+                Some(std::mem::transmute::<
+                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                    unsafe extern "C" fn(VALUE) -> VALUE,
+                >(assert_seven_args)),
+                7,
+            );
+            rb_define_method(
+                klass,
+                c"ten".as_ptr(),
+                Some(std::mem::transmute::<
+                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                    unsafe extern "C" fn(VALUE) -> VALUE,
+                >(assert_ten_args)),
+                10,
+            );
+        }
+    });
+
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        def test(obj)
+          [obj.seven(1, 2, 3, 4, 5, 6, 7), obj.ten(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
+        end
+
+        obj = ZJITArgValues.new
+        test(obj)
+        test(obj)
+        test(obj)
+    "#), @"[true, true]");
+}
+
 #[test]
 fn test_string_new_preserves_string_arg() {
     assert_snapshot!(inspect(r#"
