@@ -2035,6 +2035,13 @@ mod hir_opt_tests {
             end
             test
         ");
+        // All three calls to foo are inlined, each with its own
+        // PushInlineFrame/PopInlineFrame pair, but only the last two pairs get
+        // eliminated: remove_redundant_patch_points and
+        // remove_duplicate_check_interrupts keep just the first copy of foo's
+        // PatchPoints and CheckInterrupts, and those may take side exits that
+        // materialize the enclosing frame, so the first pair must be kept
+        // while the second and third pairs become empty.
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:8:
         bb1():
@@ -2073,6 +2080,9 @@ mod hir_opt_tests {
             end
             test
         ");
+        // Like test_eliminate_empty_inline_frames, only the last two of the
+        // three inlined pairs get eliminated; the first pair keeps the sole
+        // surviving copy of foo's PatchPoints and CheckInterrupts.
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:7:
         bb1():
