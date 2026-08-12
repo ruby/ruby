@@ -1973,6 +1973,28 @@ build_id2ref_i(VALUE obj, void *data)
     }
 }
 
+static bool
+object_id_matches_p(VALUE obj, VALUE object_id)
+{
+    VALUE id;
+
+    switch (BUILTIN_TYPE(obj)) {
+      case T_CLASS:
+      case T_MODULE:
+        // Classes and modules do not store their object id in fields.
+        id = RCLASS(obj)->object_id;
+        break;
+      default:
+        {
+            shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+            id = rb_shape_has_object_id(shape_id) ? object_id_get(obj, shape_id) : 0;
+        }
+        break;
+    }
+
+    return id && object_id_cmp((st_data_t)id, (st_data_t)object_id) == 0;
+}
+
 static VALUE
 object_id_to_ref(void *objspace_ptr, VALUE object_id)
 {
@@ -2003,7 +2025,14 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
     }
 
     VALUE obj;
-    bool found = st_lookup(id2ref_tbl, object_id, &obj) && !rb_gc_impl_garbage_object_p(objspace, obj);
+    // The entry may be stale and point to a slot which was freed since. That
+    // slot's page may even have been reused by another size pool, in which case
+    // the address might no longer be on a slot boundary. rb_gc_pointer_to_heap_p()
+    // rejects that, so the remaining checks only ever look at a valid slot.
+    bool found = st_lookup(id2ref_tbl, object_id, &obj) &&
+        rb_gc_pointer_to_heap_p(obj) &&
+        !rb_gc_impl_garbage_object_p(objspace, obj) &&
+        object_id_matches_p(obj, object_id);
 
     RB_GC_VM_UNLOCK(lev);
 

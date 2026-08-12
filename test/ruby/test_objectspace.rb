@@ -78,6 +78,33 @@ End
     RUBY
   end
 
+  def test_id2ref_no_wrong_object_for_generic_fields # [Bug #22200]
+    assert_separately([], <<-'End')
+      Warning[:deprecated] = false
+
+      # Ensure the id2ref table exists
+      anchor = Object.new
+      ObjectSpace._id2ref(anchor.object_id)
+
+      ids = Array.new(10_000) { |i| +"str-#{i}" }.map(&:object_id)
+      GC.start(full_mark: true, immediate_sweep: false)
+
+      recyclers = []
+      5.times do
+        recyclers.concat(Array.new(1_000) { +"recycler" })
+        ids.each do |id|
+          begin
+            obj = ObjectSpace._id2ref(id)
+            assert_equal(id, obj.object_id,
+              "_id2ref returned wrong object")
+          rescue RangeError
+            # expected for recycled objects
+          end
+        end
+      end
+    End
+  end
+
   def test_id2ref_invalid_argument
     msg = /no implicit conversion/
     assert_raise_with_message(TypeError, msg) { EnvUtil.suppress_warning { ObjectSpace._id2ref(nil) } }
