@@ -8353,14 +8353,7 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
      * Hence a GC must never take the VM lock from inside itself: the waiter would join a
      * pending barrier mid-collection and expose its half-collected heap to the global GC.
      * Shared structures the GC paths touch use their own native mutexes (registered
-     * globals, generic fields) or the page-pool lock.
-     *
-     * Under RGENGC_CHECK_MODE a non-main local GC also takes the no-barrier VM lock
-     * (gc_local_gc_holds_vm_lock): mid-collection verification iterates every objspace
-     * (rb_gc_vm_each_objspace needs the lock), and holding it for the whole GC keeps a global
-     * GC from interrupting and clearing this objspace's during_gc mid-mark.  The lock is
-     * taken at a safepoint rather than mid-collection, so it cannot join a pending barrier
-     * halfway.  Production (CHECK_MODE off) stays lock-free. */
+     * globals, generic fields) or the page-pool lock. */
     *lock_lev = 0;
 
     RUBY_DTRACE_GC_HOOK(ENTER, event);
