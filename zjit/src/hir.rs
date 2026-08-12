@@ -1893,8 +1893,8 @@ impl Insn {
             Insn::GuardLess { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
             Insn::PatchPoint { .. } => Effect::read_write(abstract_heaps::PatchPoint, abstract_heaps::Control),
             Insn::SideExit { .. } => effects::Any,
-            Insn::IncrCounter(_) => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
-            Insn::IncrCounterPtr { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
+            Insn::IncrCounter(_) => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Stats),
+            Insn::IncrCounterPtr { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Stats),
             Insn::CheckInterrupts { .. } => Effect::read_write(abstract_heaps::InterruptFlag, abstract_heaps::Control),
             Insn::InvokeProc { .. } => effects::Any,
             Insn::InvokeBlockIseqDirect { .. } => effects::Any,
@@ -6688,8 +6688,11 @@ impl Function {
     /// Whether `insn` may stay between a PushInlineFrame/PopInlineFrame pair
     /// that gets elided, i.e. whether it can neither take a side exit nor
     /// observe the frame:
-    /// * Its effects must be empty, so it doesn't read or write any abstract
-    ///   heap (in particular Frame and Control).
+    /// * Its effects must be confined to the Stats heap, so it doesn't read
+    ///   or write anything observable (in particular Frame and Control).
+    ///   Stats counters only bump a global counter, so allowing them keeps
+    ///   this pass enabled when --zjit-stats inserts IncrCounter between
+    ///   every PushInlineFrame/PopInlineFrame.
     /// * It must not reference a FrameState `Snapshot` operand: a side exit
     ///   materializes the enclosing inlined frame, and effects don't model
     ///   deopt for otherwise pure instructions like `FixnumAdd`.
@@ -6701,14 +6704,8 @@ impl Function {
         if matches!(insn, Insn::LoadSP) {
             return false;
         }
-        // Stats counters only bump a global counter: they can't take a side exit
-        // and don't observe frames, but their effects aren't empty (they write the
-        // Other heap). Without this, --zjit-stats would disable this pass by
-        // inserting IncrCounter between every PushInlineFrame/PopInlineFrame.
-        if matches!(insn, Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }) {
-            return true;
-        }
-        if !insn.effects_of().is_empty() {
+        let effects = insn.effects_of();
+        if !(abstract_heaps::Stats.includes(effects.read_bits()) && abstract_heaps::Stats.includes(effects.write_bits())) {
             return false;
         }
         // TODO: Model the possibility of taking a side exit as a subeffect of
