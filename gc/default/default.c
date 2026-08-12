@@ -8898,12 +8898,24 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact)
          * reads a freed T_MOVED).  The read barrier is installed once for all passes. */
         install_handlers();
 
+        /* Only the driver records a profile entry for a global GC (gc_start_record), so time
+         * only the driver's compaction work.  The move/update/free below runs inside the
+         * driver's sweep phase (gc_sweeping_enter/exit); attribute it to GC_COMPACT_WALL_TIME
+         * and exclude it from the driver's sweep wall time so the two do not double-count,
+         * mirroring the compacting branch of the local gc_sweep(). */
+        const bool driver_prof = gc_prof_enabled(driver);
+        rb_hrtime_t driver_compact_wall_time = 0;
+
         /* pass 1 (move): relocate every objspace and leave T_MOVED forwarding behind. */
         for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
             rb_objspace_t *os = global_objspace->global_gc.objspaces[i];
             gc_sweeping_enter(os);
             gc_sweep_start(os);        /* mode -> sweeping, order the heap for compaction */
+            rb_hrtime_t t0 = (os == driver && driver_prof) ? rb_hrtime_now() : 0;
             gc_compact_relocate(os);   /* mode -> compacting, move */
+            if (os == driver && driver_prof) {
+                driver_compact_wall_time = rb_hrtime_add(driver_compact_wall_time, elapsed_hrtime_from(t0));
+            }
         }
 
         /* pass 2 (update): all forwarding now exists, so update every objspace's
@@ -8915,11 +8927,22 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact)
         }
         rb_gc_before_updating_jit_code();
         for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
-            gc_compact_finish(global_objspace->global_gc.objspaces[i]);
+            rb_objspace_t *os = global_objspace->global_gc.objspaces[i];
+            rb_hrtime_t t0 = (os == driver && driver_prof) ? rb_hrtime_now() : 0;
+            gc_compact_finish(os);
+            if (os == driver && driver_prof) {
+                driver_compact_wall_time = rb_hrtime_add(driver_compact_wall_time, elapsed_hrtime_from(t0));
+            }
         }
         /* The VM-global / weak-table side of the reference update runs once (each objspace's
          * heap side already ran in gc_compact_finish above). */
-        gc_update_references_global(driver);
+        {
+            rb_hrtime_t t0 = driver_prof ? rb_hrtime_now() : 0;
+            gc_update_references_global(driver);
+            if (driver_prof) {
+                driver_compact_wall_time = rb_hrtime_add(driver_compact_wall_time, elapsed_hrtime_from(t0));
+            }
+        }
         rb_gc_after_updating_jit_code();
         for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
             global_objspace->global_gc.objspaces[i]->flags.during_reference_updating = FALSE;
@@ -8927,6 +8950,18 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact)
         }
         global_objspace->global_gc.compacting = false;
         uninstall_handlers();
+
+        /* Record the driver's compaction time and exclude it from the driver's sweep phase.
+         * gc_sweeping_exit(driver) in pass 3 subtracts gc_sweep_excluded_wall_time from the
+         * sweep wall time, so this must be set before it runs.  The excluded value is a sum
+         * of sub-intervals of the driver's sweep phase, so the subtraction cannot underflow. */
+        if (driver_prof) {
+            gc_profile_record *const record = gc_prof_record(driver);
+            record->gc_compact_wall_time = rb_hrtime_add(record->gc_compact_wall_time,
+                    driver_compact_wall_time);
+            driver->profile.gc_sweep_excluded_wall_time = rb_hrtime_add(
+                    driver->profile.gc_sweep_excluded_wall_time, driver_compact_wall_time);
+        }
 
         /* pass 3 (free): page-sweep every objspace, freeing dead objects and the source pages
          * that are now empty.  during_compacting is already cleared, so the sweep treats
