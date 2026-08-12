@@ -779,9 +779,11 @@ pub enum Insn {
     /// Push a register onto the C stack
     CPush(Opnd),
 
-    /// Push a pair of registers onto the C stack.
-    /// The registers are pushed from left to right.
-    CPushPair(Opnd, Opnd),
+    /// Push a pair of operands onto the C stack, moving the native SP by 16
+    /// bytes. The operands are pushed from left to right, so the second one
+    /// ends up at the lower stack address. With no first operand, only the
+    /// lower slot's value is specified; the 16 bytes are still reserved.
+    CPushPair(Option<Opnd>, Opnd),
 
     // C function call with N arguments (variadic)
     // All fields are boxed (see `CCallData`) to keep `Insn` small.
@@ -1035,9 +1037,14 @@ macro_rules! for_each_operand_impl {
             Insn::Not { opnd, .. } => {
                 visit_one!(opnd);
             }
+            Insn::CPushPair(opnd0, opnd1) => {
+                if let Some(opnd0) = opnd0 {
+                    visit_one!(opnd0);
+                }
+                visit_one!(opnd1);
+            }
             Insn::Add { left: opnd0, right: opnd1, .. } |
             Insn::And { left: opnd0, right: opnd1, .. } |
-            Insn::CPushPair(opnd0, opnd1) |
             Insn::CPopPairInto(opnd0, opnd1) |
             Insn::Cmp { left: opnd0, right: opnd1 } |
             Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
@@ -2665,8 +2672,8 @@ impl Assembler
                     // Push all survivors on the stack, pairing adjacent pushes when possible.
                     for group in survivor_regs.chunks(2) {
                         match group {
-                            &[left, right] => new_insns.push(Insn::CPushPair(left, right)),
-                            &[reg]         => new_insns.push(Insn::CPushPair(reg, 0.into())),
+                            &[left, right] => new_insns.push(Insn::CPushPair(Some(left), right)),
+                            &[reg]         => new_insns.push(Insn::CPushPair(Some(reg), 0.into())),
                             _ => unreachable!(),
                         }
                         new_ids.push(None);
@@ -2715,33 +2722,29 @@ impl Assembler
                         }
                     }
 
-                    // Reserve the outgoing-argument area for arguments that don't
-                    // fit in `c_arg_regs`. Round the area up to an even number of
-                    // slots to keep the native SP 16-byte aligned at the call: SP
-                    // is 16-byte aligned after FrameSetup and each survivor push
-                    // above writes a 16-byte pair.
+                    // Push arguments that don't fit in `c_arg_regs` onto the
+                    // native stack, as specified by the C ABI (SysV/AAPCS64).
+                    // Pairs are pushed from the last argument to the first so
+                    // that lower-numbered arguments end up at lower addresses,
+                    // with an odd argument count padded to a full pair to keep
+                    // the native SP 16-byte aligned at the call. This must
+                    // happen before the register-argument copies below clobber
+                    // `c_arg_regs`, which may hold some of the source operands.
+                    // Sources spilled by the register allocator are
+                    // frame-pointer-relative (MemBase::Stack), so moving the
+                    // native SP doesn't invalidate them.
                     let num_stack_args = opnds.len().saturating_sub(c_arg_regs.len());
                     let stack_arg_bytes = SIZEOF_VALUE_I32 * ((num_stack_args + 1) & !1) as i32;
-                    if num_stack_args > 0 {
-                        new_insns.push(Insn::Sub {
-                            left: NATIVE_STACK_PTR,
-                            right: (stack_arg_bytes as i64).into(),
-                            out: NATIVE_STACK_PTR,
-                        });
-                        new_ids.push(None);
-
-                        // Store the overflow arguments into the reserved area.
-                        // This must happen before the register-argument copies
-                        // below clobber `c_arg_regs`, which may hold some of the
-                        // source operands. Sources spilled by the register
-                        // allocator are frame-pointer-relative (MemBase::Stack),
-                        // so moving the native SP above doesn't invalidate them.
-                        for (idx, arg) in opnds.iter().skip(c_arg_regs.len()).enumerate() {
-                            let dest = Opnd::mem(64, NATIVE_STACK_PTR, idx as i32 * SIZEOF_VALUE_I32);
-                            let src = Self::rewritten_opnd(*arg, intervals, alloc_regs);
-                            new_insns.push(Insn::Store { dest, src });
-                            new_ids.push(None);
+                    let stack_args: Vec<Opnd> = opnds.iter().skip(c_arg_regs.len())
+                        .map(|arg| Self::rewritten_opnd(*arg, intervals, alloc_regs))
+                        .collect();
+                    for chunk in stack_args.chunks(2).rev() {
+                        match *chunk {
+                            [low, high] => new_insns.push(Insn::CPushPair(Some(high), low)),
+                            [top]       => new_insns.push(Insn::CPushPair(None, top)),
+                            _ => unreachable!("chunks(2)"),
                         }
+                        new_ids.push(None);
                     }
 
                     // Extract arguments from CCall, clear opnds
@@ -4011,7 +4014,7 @@ impl Assembler {
     pub fn cpush_pair(&mut self, opnd0: Opnd, opnd1: Opnd) {
         assert!(matches!(opnd0, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpush_pair must be a register, got: {opnd0:?}");
         assert!(matches!(opnd1, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpush_pair must be a register, got: {opnd1:?}");
-        self.push_insn(Insn::CPushPair(opnd0, opnd1));
+        self.push_insn(Insn::CPushPair(Some(opnd0), opnd1));
     }
 
     pub fn cret(&mut self, opnd: Opnd) {
@@ -5305,7 +5308,7 @@ mod tests {
 
         // The survivor register should match v1's allocation
         let v1_reg = Opnd::Reg(intervals[v1.vreg_idx()].assigned.get().unwrap().assigned_reg(&regs).unwrap());
-        let pushed_v1 = pushes.iter().any(|insn| matches!(**insn, Insn::CPushPair(first, second) if first == v1_reg || second == v1_reg));
+        let pushed_v1 = pushes.iter().any(|insn| matches!(**insn, Insn::CPushPair(first, second) if first == Some(v1_reg) || second == v1_reg));
         let popped_v1 = pops.iter().any(|insn| matches!(**insn, Insn::CPopPairInto(first, second) if first == v1_reg || second == v1_reg));
         assert!(pushed_v1, "CPushPair should save v1's register");
         assert!(popped_v1, "CPopPairInto should restore v1's register");

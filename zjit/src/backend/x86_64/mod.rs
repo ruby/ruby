@@ -386,6 +386,20 @@ impl Assembler {
             }
         }
 
+        /// Lower a CPushPair operand into something push can encode: a register,
+        /// a register-based memory operand, or a zero immediate. Anything else
+        /// is loaded into scratch_opnd.
+        fn split_push_operand(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd) -> Opnd {
+            match opnd {
+                Opnd::Reg(_) | Opnd::UImm(0) | Opnd::Imm(0) => opnd,
+                Opnd::Mem(_) => split_stack_membase(asm, opnd, scratch_opnd),
+                _ => {
+                    asm.load_into(scratch_opnd, opnd);
+                    scratch_opnd
+                }
+            }
+        }
+
         /// If opnd is Opnd::Mem, set scratch_reg to *opnd. Return Some(Opnd::Mem) if it needs to be written back from scratch_reg.
         fn split_memory_write(opnd: &mut Opnd, scratch_opnd: Opnd) -> Option<Opnd> {
             if let Opnd::Mem(_) = opnd {
@@ -657,6 +671,13 @@ impl Assembler {
                     };
                     asm.store(dest, src);
                 }
+                Insn::CPushPair(opnd0, opnd1) => {
+                    if let Some(opnd0) = opnd0 {
+                        *opnd0 = split_push_operand(asm, *opnd0, SCRATCH0_OPND);
+                    }
+                    *opnd1 = split_push_operand(asm, *opnd1, SCRATCH1_OPND);
+                    asm.push_insn(insn);
+                }
                 &mut Insn::PatchPoint(ref data) => {
                     split_patch_point(asm, &data.target, data.invariant, data.version);
                 }
@@ -914,7 +935,12 @@ impl Assembler {
                     push(cb, opnd.into());
                 },
                 Insn::CPushPair(opnd0, opnd1) => {
-                    push(cb, opnd0.into());
+                    match opnd0 {
+                        Some(opnd0) => push(cb, opnd0.into()),
+                        // With no first operand, push 0 to keep the pair-sized
+                        // area, consistent with survivor padding.
+                        None => push(cb, uimm_opnd(0)),
+                    }
                     push(cb, opnd1.into());
                 },
                 Insn::CPop { out } => {
@@ -2078,13 +2104,13 @@ mod tests {
         0x14: mov r8d, 5
         0x1a: mov r9d, 6
         0x20: mov eax, 7
-        0x25: sub rsp, 0x10
-        0x29: mov qword ptr [rsp], rax
-        0x2d: mov eax, 0
-        0x32: call rax
-        0x34: add rsp, 0x10
+        0x25: push 0
+        0x27: push rax
+        0x28: mov eax, 0
+        0x2d: call rax
+        0x2f: add rsp, 0x10
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000041b906000000b8070000004883ec1048890424b800000000ffd04883c410");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000041b906000000b8070000006a0050b800000000ffd04883c410");
     }
 
     #[test]
@@ -2108,15 +2134,13 @@ mod tests {
         0x20: mov eax, 7
         0x25: mov r11d, 8
         0x2b: mov qword ptr [rbp - 8], r11
-        0x2f: sub rsp, 0x10
-        0x33: mov qword ptr [rsp], rax
-        0x37: mov r11, qword ptr [rbp - 8]
-        0x3b: mov qword ptr [rsp + 8], r11
-        0x40: mov eax, 0
-        0x45: call rax
-        0x47: add rsp, 0x10
+        0x2f: push qword ptr [rbp - 8]
+        0x32: push rax
+        0x33: mov eax, 0
+        0x38: call rax
+        0x3a: add rsp, 0x10
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000041b906000000b80700000041bb080000004c895df84883ec10488904244c8b5df84c895c2408b800000000ffd04883c410");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000041b906000000b80700000041bb080000004c895df8ff75f850b800000000ffd04883c410");
     }
 
     #[test]
@@ -2142,23 +2166,22 @@ mod tests {
         0xa: mov edx, 2
         0xf: push rdi
         0x10: push 0
-        0x12: sub rsp, 0x10
-        0x16: mov qword ptr [rsp], rsi
-        0x1a: mov qword ptr [rsp + 8], rdx
-        0x1f: mov r9, rdx
-        0x22: mov rdx, rsi
-        0x25: mov rsi, r9
-        0x28: mov r8, rdx
-        0x2b: mov rcx, r9
-        0x2e: mov rdi, rdx
-        0x31: mov eax, 0
-        0x36: call rax
-        0x38: add rsp, 0x10
-        0x3c: pop rdi
-        0x3d: pop rdi
-        0x3e: add rdi, 1
+        0x12: push rdx
+        0x13: push rsi
+        0x14: mov r9, rdx
+        0x17: mov rdx, rsi
+        0x1a: mov rsi, r9
+        0x1d: mov r8, rdx
+        0x20: mov rcx, r9
+        0x23: mov rdi, rdx
+        0x26: mov eax, 0
+        0x2b: call rax
+        0x2d: add rsp, 0x10
+        0x31: pop rdi
+        0x32: pop rdi
+        0x33: add rdi, 1
         ");
-        assert_snapshot!(cb.hexdump(), @"bf42000000be01000000ba02000000576a004883ec104889342448895424084989d14889f24c89ce4989d04c89c94889d7b800000000ffd04883c4105f5f4883c701");
+        assert_snapshot!(cb.hexdump(), @"bf42000000be01000000ba02000000576a0052564989d14889f24c89ce4989d04c89c94889d7b800000000ffd04883c4105f5f4883c701");
     }
 
     #[test]
