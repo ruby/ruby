@@ -2830,7 +2830,6 @@ struct SendDirectArgs {
 }
 
 /// One SendDirect argument before its HIR value is materialized.
-#[derive(Clone)]
 enum SendDirectArg {
     /// A HIR value already present in the original Send argument vector.
     Existing(InsnId),
@@ -3800,14 +3799,15 @@ impl Function {
             // become one final positional Hash before regular parameter setup.
             let caller_kw_count = unsafe { get_cikw_keyword_len(kwarg) } as usize;
             let kw_args_start = args.len() - caller_kw_count;
+            let mut processed_args = args;
+            let keyword_values = processed_args.split_off(kw_args_start);
             let mut elements = Vec::with_capacity(caller_kw_count * 2);
-            for i in 0..caller_kw_count {
+            for (i, value) in keyword_values.into_iter().enumerate() {
                 let keyword = unsafe { get_cikw_keywords_idx(kwarg, i as i32) };
                 elements.push(SendDirectArg::Constant(keyword));
-                elements.push(args[kw_args_start + i].clone());
+                elements.push(value);
             }
 
-            let mut processed_args = args[..kw_args_start].to_vec();
             processed_args.push(SendDirectArg::KeywordHash(elements));
             return Ok((processed_args, 0));
         }
@@ -3862,6 +3862,12 @@ impl Function {
             }
         }
 
+        // Move caller keyword values out of the positional prefix. Wrap them in
+        // Option so reordering can take each value without cloning it.
+        let mut processed_args = args;
+        let keyword_values = processed_args.split_off(kw_args_start);
+        let mut keyword_values: Vec<_> = keyword_values.into_iter().map(Some).collect();
+
         // Reorder keyword arguments to match callee expectation.
         // Track which optional keywords were not provided via kw_bits.
         let mut kw_bits: u32 = 0;
@@ -3873,7 +3879,7 @@ impl Function {
             let mut found = false;
             for (j, &caller_id) in caller_kw_order.iter().enumerate() {
                 if caller_id == expected_id {
-                    reordered_kw_args.push(args[kw_args_start + j].clone());
+                    reordered_kw_args.push(keyword_values[j].take().unwrap());
                     found = true;
                     break;
                 }
@@ -3904,7 +3910,6 @@ impl Function {
         }
 
         // Replace the keyword arguments with the reordered ones.
-        let mut processed_args = args[..kw_args_start].to_vec();
         processed_args.extend(reordered_kw_args);
         Ok((processed_args, kw_bits))
     }
@@ -3955,13 +3960,11 @@ impl Function {
         // [lead, filled opts, rest array, post, kw...].
         let rest_start = lead_num + passed_opt_num;
         let rest_end = positional_argc - post_num;
-        let (prefix, rest_and_suffix) = args.split_at(rest_start);
-        let (rest_elements, suffix) = rest_and_suffix.split_at(rest_end - rest_start);
-
-        let mut packed_args = Vec::with_capacity(prefix.len() + 1 + suffix.len());
-        packed_args.extend_from_slice(prefix);
-        packed_args.push(SendDirectArg::RestArray(rest_elements.to_vec()));
-        packed_args.extend_from_slice(suffix);
+        let mut packed_args = args;
+        let mut rest_elements = packed_args.split_off(rest_start);
+        let suffix = rest_elements.split_off(rest_end - rest_start);
+        packed_args.push(SendDirectArg::RestArray(rest_elements));
+        packed_args.extend(suffix);
 
         Ok((packed_args, jit_entry_idx))
     }
