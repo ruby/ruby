@@ -138,6 +138,10 @@ struct rb_native_thread {
     struct coroutine_context *nt_context;
     int dedicated;
 
+    // set when this thread came back from a blocking region with no room left
+    // in the shared pool; it ends when it next asks for work
+    bool retiring;
+
     // A terminating coroutine records its context here before its final
     // transfer; this nt's loop reclaims it. (Not via coroutine_transfer()'s
     // return value: its meaning differs between the amd64 asm and ucontext.)
