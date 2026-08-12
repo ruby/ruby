@@ -1413,10 +1413,24 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 #define MINIMUM_SNT 0
 #endif
 
+/* A shared thread woken with nothing to run is one whose turn another thread
+ * took first.  After this many in a row it gives itself back: the queue keeps
+ * running dry, so the pool is wider than the work.  0 retires on the first one
+ * and is too eager to be useful; a negative value keeps every thread. */
+#ifndef SNT_IDLE_RETIRE
+#define SNT_IDLE_RETIRE 3
+#endif
+
+/* Never give the last shared thread back.  With none left an enqueue has nobody
+ * to signal, and the only code that makes one runs on the timer thread's
+ * timeout branch, which is reached only once it has seen a backlog. */
+#define SNT_KEEP_MINIMUM (MINIMUM_SNT > 1 ? MINIMUM_SNT : 1)
+
 static rb_ractor_t *
 ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
 {
     rb_ractor_t *r;
+    int idle_streak = 0;   // consecutive pops that found the queue empty
 
     ractor_sched_lock(vm, cr);
     {
@@ -1428,6 +1442,13 @@ ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
 
         while ((r = ccan_list_pop(&vm->ractor.sched.grq, rb_ractor_t, threads.sched.grq_node)) == NULL) {
             RUBY_DEBUG_LOG("wait grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
+
+            if (SNT_IDLE_RETIRE >= 0 && ++idle_streak > SNT_IDLE_RETIRE &&
+                (int)vm->ractor.sched.snt_cnt > SNT_KEEP_MINIMUM) {
+                vm->ractor.sched.snt_cnt--;
+                RUBY_DEBUG_LOG("retire, snt_cnt:%d", (int)vm->ractor.sched.snt_cnt);
+                break;   // returning NULL ends this nt; see the caller
+            }
 
             ractor_sched_set_unlocked(vm, cr);
             rb_native_cond_wait(&vm->ractor.sched.cond, &vm->ractor.sched.lock);
@@ -1443,6 +1464,10 @@ ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
             VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
             vm->ractor.sched.grq_cnt--;
             RUBY_DEBUG_LOG("r:%d grq_cnt:%u", (int)rb_ractor_id(r), vm->ractor.sched.grq_cnt);
+        }
+        else {
+            // the retire branch is the only way out of the loop without a ractor
+            VM_ASSERT(idle_streak > SNT_IDLE_RETIRE);
         }
     }
     ractor_sched_unlock(vm, cr);
@@ -2458,7 +2483,7 @@ nt_start(void *ptr)
                 }
             }
             else {
-                // timeout -> deleted.
+                // retired: this nt is done.
                 break;
             }
 
