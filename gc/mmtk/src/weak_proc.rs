@@ -118,7 +118,7 @@ impl WeakProcessor {
 
         worker.add_work(WorkBucketStage::VMRefClosure, ProcessWeakReferences);
 
-        worker.add_work(WorkBucketStage::Prepare, UpdateFinalizerObjIdTables);
+        worker.add_work(WorkBucketStage::Prepare, UpdateFinalizerTable);
 
         let global_tables_count = (crate::upcalls().global_tables_count)();
         let work_packets = (0..global_tables_count)
@@ -260,13 +260,13 @@ trait GlobalTableProcessingWork {
     }
 }
 
-struct UpdateFinalizerObjIdTables;
-impl GlobalTableProcessingWork for UpdateFinalizerObjIdTables {
+struct UpdateFinalizerTable;
+impl GlobalTableProcessingWork for UpdateFinalizerTable {
     fn process_table(&mut self) {
         (crate::upcalls().update_finalizer_table)();
     }
 }
-impl GCWork<Ruby> for UpdateFinalizerObjIdTables {
+impl GCWork<Ruby> for UpdateFinalizerTable {
     fn do_work(&mut self, worker: &mut GCWorker<Ruby>, mmtk: &'static mmtk::MMTK<Ruby>) {
         GlobalTableProcessingWork::do_work(self, worker, mmtk);
     }

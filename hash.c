@@ -1467,12 +1467,8 @@ hash_alloc(VALUE klass)
 size_t
 rb_zjit_hash_new_size(VALUE *flags_out)
 {
-    size_t size = hash_slot_size(sizeof(st_table) > sizeof(ar_table));
-    // mimic rb_newobj()
-    shape_id_t shape_id = rb_shape_transition_slot_size(ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER,
-                                                        rb_gc_size_slot_size(size));
-    *flags_out = T_HASH | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
-    return size;
+    *flags_out = T_HASH;
+    return hash_slot_size(sizeof(st_table) > sizeof(ar_table));
 }
 #endif
 

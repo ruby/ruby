@@ -1302,6 +1302,22 @@ static void
 fiber_free(void *ptr)
 {
     rb_fiber_t *fiber = ptr;
+
+    /* Root fiber of the thread running the final self collection: saved_ec is the ec
+     * that thread still executes on, so the thread frees the struct itself at its
+     * last step (rb_ractor_postmortem_free).  cont.self == 0 already means "no
+     * wrapper" (rb_threadptr_root_fiber_release). */
+    if (&fiber->cont.saved_ec == rb_current_execution_context(false)) {
+        fiber->cont.self = 0;
+        return;
+    }
+    rb_fiber_free_body(ptr);
+}
+
+void
+rb_fiber_free_body(void *ptr)
+{
+    rb_fiber_t *fiber = ptr;
     RUBY_FREE_ENTER("fiber");
 
     if (DEBUG) fprintf(stderr, "fiber_free: %p[%p]\n", (void *)fiber, fiber->stack.base);

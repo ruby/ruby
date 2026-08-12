@@ -118,6 +118,7 @@ fn main() {
         .allowlist_function("rb_zjit_str_resurrect_fastpath")
         .allowlist_function("rb_zjit_array_dup_can_fastpath")
         .allowlist_function("rb_zjit_range_new_fastpath")
+        .allowlist_function("rb_zjit_array_new_fastpath")
 
         // For crashing
         .allowlist_function("rb_bug")
@@ -172,6 +173,7 @@ fn main() {
         .allowlist_function("rb_gc_writebarrier")
         .allowlist_function("rb_gc_writebarrier_remember")
         .allowlist_function("rb_gc_register_mark_object")
+        .allowlist_function("rb_zjit_new_obj_shape")
 
         // VALUE variables for Ruby class objects
         .allowlist_var("rb_cBasicObject")
@@ -338,6 +340,7 @@ fn main() {
         .allowlist_function("rb_zjit_insn_leaf")
         .allowlist_type("jit_bindgen_constants")
         .allowlist_type("zjit_struct_offsets")
+        .allowlist_var("rb_zjit_runtime_offsets")
         .allowlist_var("ZJIT_STACK_MAP_SHIFT")
         .allowlist_var("ZJIT_STACK_MAP_VREG_TAG")
         .allowlist_var("ZJIT_STACK_MAP_SKIP_TAG")

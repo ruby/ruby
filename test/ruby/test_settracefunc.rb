@@ -2866,8 +2866,8 @@ CODE
       end
     }
 
-    assert_includes lines, while_line
-    assert_includes lines, body_line
+    assert_include lines, while_line
+    assert_include lines, body_line
     assert_operator lines.index(while_line), :<, lines.index(body_line)
   end
 
@@ -2903,7 +2903,7 @@ CODE
       child.new.read
     }
 
-    assert_includes lines, while_line
+    assert_include lines, while_line
   end
 
   def test_allow_reentry

@@ -478,6 +478,50 @@
 #ifndef VK_OEM_CLEAR
 # define VK_OEM_CLEAR UNDEFINED_VK
 #endif
+#define EACH_VK(x,z) \
+     x(VK_LBUTTON)z x(VK_RBUTTON)z x(VK_CANCEL)z x(VK_MBUTTON)z \
+     x(VK_XBUTTON1)z x(VK_XBUTTON2)z x(VK_BACK)z x(VK_TAB)z \
+     x(VK_CLEAR)z x(VK_RETURN)z x(VK_SHIFT)z x(VK_CONTROL)z \
+     x(VK_MENU)z x(VK_PAUSE)z x(VK_CAPITAL)z x(VK_KANA)z \
+     x(VK_HANGEUL)z x(VK_HANGUL)z x(VK_JUNJA)z x(VK_FINAL)z \
+     x(VK_HANJA)z x(VK_KANJI)z x(VK_ESCAPE)z x(VK_CONVERT)z \
+     x(VK_NONCONVERT)z x(VK_ACCEPT)z x(VK_MODECHANGE)z x(VK_SPACE)z \
+     x(VK_PRIOR)z x(VK_NEXT)z x(VK_END)z x(VK_HOME)z x(VK_LEFT)z \
+     x(VK_UP)z x(VK_RIGHT)z x(VK_DOWN)z x(VK_SELECT)z x(VK_PRINT)z \
+     x(VK_EXECUTE)z x(VK_SNAPSHOT)z x(VK_INSERT)z x(VK_DELETE)z \
+     x(VK_HELP)z x(VK_LWIN)z x(VK_RWIN)z x(VK_APPS)z x(VK_SLEEP)z \
+     x(VK_NUMPAD0)z x(VK_NUMPAD1)z x(VK_NUMPAD2)z x(VK_NUMPAD3)z \
+     x(VK_NUMPAD4)z x(VK_NUMPAD5)z x(VK_NUMPAD6)z x(VK_NUMPAD7)z \
+     x(VK_NUMPAD8)z x(VK_NUMPAD9)z x(VK_MULTIPLY)z x(VK_ADD)z \
+     x(VK_SEPARATOR)z x(VK_SUBTRACT)z x(VK_DECIMAL)z x(VK_DIVIDE)z \
+     x(VK_F1)z x(VK_F2)z x(VK_F3)z x(VK_F4)z x(VK_F5)z x(VK_F6)z \
+     x(VK_F7)z x(VK_F8)z x(VK_F9)z x(VK_F10)z x(VK_F11)z x(VK_F12)z \
+     x(VK_F13)z x(VK_F14)z x(VK_F15)z x(VK_F16)z x(VK_F17)z \
+     x(VK_F18)z x(VK_F19)z x(VK_F20)z x(VK_F21)z x(VK_F22)z \
+     x(VK_F23)z x(VK_F24)z x(VK_NUMLOCK)z x(VK_SCROLL)z \
+     x(VK_OEM_NEC_EQUAL)z x(VK_OEM_FJ_JISHO)z x(VK_OEM_FJ_MASSHOU)z \
+     x(VK_OEM_FJ_TOUROKU)z x(VK_OEM_FJ_LOYA)z x(VK_OEM_FJ_ROYA)z \
+     x(VK_LSHIFT)z x(VK_RSHIFT)z x(VK_LCONTROL)z x(VK_RCONTROL)z \
+     x(VK_LMENU)z x(VK_RMENU)z x(VK_BROWSER_BACK)z \
+     x(VK_BROWSER_FORWARD)z x(VK_BROWSER_REFRESH)z \
+     x(VK_BROWSER_STOP)z x(VK_BROWSER_SEARCH)z \
+     x(VK_BROWSER_FAVORITES)z x(VK_BROWSER_HOME)z x(VK_VOLUME_MUTE)z \
+     x(VK_VOLUME_DOWN)z x(VK_VOLUME_UP)z x(VK_MEDIA_NEXT_TRACK)z \
+     x(VK_MEDIA_PREV_TRACK)z x(VK_MEDIA_STOP)z \
+     x(VK_MEDIA_PLAY_PAUSE)z x(VK_LAUNCH_MAIL)z \
+     x(VK_LAUNCH_MEDIA_SELECT)z x(VK_LAUNCH_APP1)z x(VK_LAUNCH_APP2)z \
+     x(VK_OEM_1)z x(VK_OEM_PLUS)z x(VK_OEM_COMMA)z x(VK_OEM_MINUS)z \
+     x(VK_OEM_PERIOD)z x(VK_OEM_2)z x(VK_OEM_3)z x(VK_OEM_4)z \
+     x(VK_OEM_5)z x(VK_OEM_6)z x(VK_OEM_7)z x(VK_OEM_8)z \
+     x(VK_OEM_AX)z x(VK_OEM_102)z x(VK_ICO_HELP)z x(VK_ICO_00)z \
+     x(VK_PROCESSKEY)z x(VK_ICO_CLEAR)z x(VK_PACKET)z \
+     x(VK_OEM_RESET)z x(VK_OEM_JUMP)z x(VK_OEM_PA1)z x(VK_OEM_PA2)z \
+     x(VK_OEM_PA3)z x(VK_OEM_WSCTRL)z x(VK_OEM_CUSEL)z \
+     x(VK_OEM_ATTN)z x(VK_OEM_FINISH)z x(VK_OEM_COPY)z \
+     x(VK_OEM_AUTO)z x(VK_OEM_ENLW)z x(VK_OEM_BACKTAB)z x(VK_ATTN)z \
+     x(VK_CRSEL)z x(VK_EXSEL)z x(VK_EREOF)z x(VK_PLAY)z x(VK_ZOOM)z \
+     x(VK_NONAME)z x(VK_PA1)z x(VK_OEM_CLEAR)z
+
 /* ANSI-C code produced by gperf version 3.3 */
 /* Command-line: gperf --ignore-case -L ANSI-C -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k'*' win32_vk.list  */
 

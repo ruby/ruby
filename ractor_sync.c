@@ -15,7 +15,8 @@ static VALUE rb_cRactorPort;
 
 static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp);
 static VALUE ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
-static VALUE ractor_try_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
+static struct ractor_basket *ractor_basket_new_ref(VALUE shareable);
+static void ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, struct ractor_basket *b, bool raise_on_error);
 static void ractor_add_port(rb_ractor_t *r, st_data_t id);
 
 // The off-heap courier used for moves.  It is defined in ractor.c.
@@ -446,11 +447,33 @@ ractor_add_port(rb_ractor_t *r, st_data_t id)
 
     RUBY_DEBUG_LOG("id:%u", (unsigned int)id);
 
+    // Rebuilding the table on insertion can run GC by the allocation and the
+    // GC acquires the VM lock, which is prohibited under the ractor lock.
+    st_table *const old_tab = r->sync.ports;
+    bool inserted;
+
     RACTOR_LOCK(r);
     {
-        st_insert(r->sync.ports, id, (st_data_t)rq);
+        inserted = st_insert_no_rebuild(old_tab, id, (st_data_t)rq) >= 0;
     }
     RACTOR_UNLOCK(r);
+
+    if (!inserted) {
+        // The table is full. Rebuild it outside of the ractor lock (mutators
+        // are serialized by the per-ractor GVL) and swap it under the lock
+        // to exclude the readers (other ractors).
+        st_table *const new_tab = st_copy(old_tab);
+        st_insert(new_tab, id, (st_data_t)rq);
+
+        RACTOR_LOCK(r);
+        {
+            VM_ASSERT(r->sync.ports == old_tab);
+            r->sync.ports = new_tab;
+        }
+        RACTOR_UNLOCK(r);
+
+        st_free_table(old_tab);
+    }
 }
 
 static void
@@ -652,7 +675,7 @@ ractor_unmonitor(rb_execution_context_t *ec, VALUE self, VALUE port)
             struct ractor_monitor *rm, *nxt;
 
             ccan_list_for_each_safe(&r->sync.monitors, rm, nxt, node) {
-                if (ractor_port_id(&rm->port) == ractor_port_id(rp)) {
+                if (rm->port.r == rp->r && ractor_port_id(&rm->port) == ractor_port_id(rp)) {
                     RUBY_DEBUG_LOG("r:%u -> port:%u@r%u",
                                    (unsigned int)rb_ractor_id(r),
                                    (unsigned int)ractor_port_id(&rm->port),
@@ -675,12 +698,6 @@ ractor_notify_exit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE legacy, bo
     VM_ASSERT(!UNDEF_P(legacy));
     VM_ASSERT(cr->sync.legacy == Qundef);
 
-    /* Last local GC before termination, in ordinary execution context: collect here
-     * what the joiner would otherwise inherit, and return empty pages to the pool. */
-    if (cr != GET_VM()->ractor.main_ractor) {
-        rb_gc_objspace_retire_gc();
-    }
-
     RACTOR_LOCK_SELF(cr);
     {
         ractor_free_all_ports(cr);
@@ -690,16 +707,21 @@ ractor_notify_exit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE legacy, bo
     }
     RACTOR_UNLOCK_SELF(cr);
 
-    // send token
+}
 
-    VALUE token = ractor_exit_token(exc);
+/* Sent after the dying thread's post-mortem collection: waking a joiner any earlier makes
+ * ractor_value spin for the whole of that collection. */
+static void
+ractor_send_exit_tokens(rb_execution_context_t *ec, rb_ractor_t *cr)
+{
+    VALUE token = ractor_exit_token(cr->sync.legacy_exc);
     struct ractor_monitor *rm, *nxt;
 
     ccan_list_for_each_safe(&cr->sync.monitors, rm, nxt, node)
     {
         RUBY_DEBUG_LOG("port:%u@r%u", (unsigned int)ractor_port_id(&rm->port), (unsigned int)rb_ractor_id(rm->port.r));
 
-        ractor_try_send(ec, &rm->port, token, false);
+        ractor_send_basket(ec, &rm->port, ractor_basket_new_ref(token), false);
 
         ccan_list_del(&rm->node);
         SIZED_FREE(rm);
@@ -1608,6 +1630,26 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
     }
 }
 
+/* A shareable payload needs no preparation, so this skips the tag ractor_basket_new
+ * pushes.  The exit tokens travel this way: they are sent from a thread whose EC has
+ * already lost its VM stack, and EC_PUSH_TAG reads ec->cfp under ZJIT. */
+static struct ractor_basket *
+ractor_basket_new_ref(VALUE shareable)
+{
+    struct ractor_basket *b = ractor_basket_alloc();
+
+    b->type = basket_type_ref;
+    b->sender = Qnil;
+    b->p.v = shareable;
+    b->p.exception = false;
+    b->p.marshaled = false;
+    b->p.move_courier = NULL;
+    b->p.pinned = NULL;
+    b->p.pinned_cnt = 0;
+
+    return b;
+}
+
 static VALUE
 ractor_send0(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move, bool raise_on_error)
 {
@@ -1621,12 +1663,6 @@ static VALUE
 ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move)
 {
     return ractor_send0(ec, rp, obj, move, true);
-}
-
-static VALUE
-ractor_try_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move)
-{
-    return ractor_send0(ec, rp, obj, move, false);
 }
 
 // Ractor::Selector

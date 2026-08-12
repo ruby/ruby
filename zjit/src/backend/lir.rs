@@ -1,5 +1,5 @@
-use std::cell::RefCell;
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::cell::{Cell, RefCell};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
 use std::mem::take;
 use std::rc::Rc;
@@ -81,7 +81,7 @@ impl std::fmt::Display for VRegId {
 }
 
 /// Dummy HIR block ID used when creating test or invalid LIR blocks
-const DUMMY_HIR_BLOCK_ID: usize = usize::MAX;
+const DUMMY_HIR_BLOCK_ID: u32 = u32::MAX;
 /// Dummy RPO index used when creating test or invalid LIR blocks
 const DUMMY_RPO_INDEX: usize = usize::MAX;
 
@@ -1375,67 +1375,117 @@ impl fmt::Debug for Insn {
 }
 
 /// Live range of a VReg
-/// TODO: Consider supporting lifetime holes
 #[derive(Clone, Debug, PartialEq)]
 pub struct LiveRange {
     /// Index of the first instruction that used the VReg
-    pub start: Option<usize>,
+    pub from: usize,
     /// Index of the last instruction that used the VReg
-    pub end: Option<usize>,
+    pub to: usize,
 }
 
-impl LiveRange {
-    /// Shorthand for self.start.unwrap()
-    pub fn start(&self) -> usize {
-        self.start.unwrap()
-    }
-
-    /// Shorthand for self.end.unwrap()
-    pub fn end(&self) -> usize {
-        self.end.unwrap()
-    }
+/// Possible states for an Interval.  During linear scan, intervals
+/// start as unhandled, then transition to:
+/// * Active: we are currently handling this interval
+/// * Inactive: this interval has a hole in it, so it's not "active" for the current range
+/// * Handled: we're done dealing with this interval
+///
+/// Intervals can transition back and forth between active and inactive, but
+/// once an interval is handled, it is "done" and cannot transition out of
+/// that state.
+#[derive(Clone, Copy, PartialEq)]
+pub enum IntervalState {
+    Unhandled,
+    /// Currently being handled; occupies its assigned allocation.
+    Active,
+    /// In a lifetime hole — allocation is free for others right now.
+    Inactive,
+    Handled,
 }
 
 /// Live Interval of a VReg
-#[derive(Clone)]
 pub struct Interval {
-    pub range: LiveRange,
-    pub id: VRegId,
+    pub ranges: Vec<LiveRange>,
+    pub vreg_id: VRegId,
+
+    /// Where this interval is in the linear scan lifecycle.
+    /// Transitions Unhandled -> Active <-> Inactive -> Handled.
+    pub state: Cell<IntervalState>,
+
+    pub assigned: Cell<Option<Allocation>>,
+    pub preferred: Option<Allocation>,
 }
 
 impl Interval {
     /// Create a new Interval with no range
     pub fn new(i: VRegId) -> Self {
         Self {
-            range: LiveRange {
-                start: None,
-                end: None,
-            },
-            id: i,
+            ranges: vec![],
+            vreg_id: i,
+            state: Cell::new(IntervalState::Unhandled),
+            assigned: Cell::new(None),
+            preferred: None,
         }
     }
 
-    /// Check if the interval is alive at position x
+    pub fn start(&self) -> usize {
+        self.ranges[0].from
+    }
+
+    pub fn end(&self) -> usize {
+        self.ranges.last().unwrap().to
+    }
+
+    pub fn next_intersection(&self, other: &Interval) -> Option<usize> {
+        let (mut i, mut j) = (0, 0);
+
+        // Both range lists are sorted and disjoint, so advancing whichever
+        // range ends first can never skip past an overlap. That makes the
+        // first overlap found the earliest one.
+        while let (Some(a), Some(b)) = (self.ranges.get(i), other.ranges.get(j)) {
+            let lo = a.from.max(b.from);
+            if lo < a.to.min(b.to) {
+                return Some(lo);
+            }
+            if a.to < b.to { i += 1; } else { j += 1; }
+        }
+
+        None
+    }
+
+    pub fn ends_before(&self, pos: usize) -> bool {
+        self.end() <= pos
+    }
+
+    /// Check if the interval is alive at position
     /// Panics if the range is not set
-    pub fn survives(&self, x: usize) -> bool {
-        assert!(self.range.start.is_some() && self.range.end.is_some(), "survives called on interval with no range");
-        let start = self.range.start.unwrap();
-        let end = self.range.end.unwrap();
-        start < x && end > x
+    pub fn survives(&self, position: usize) -> bool {
+        assert!(self.ranges.len() > 0, "survives called on interval with no range");
+        self.ranges.iter().any(|range| range.from < position && position < range.to)
     }
 
-    pub fn born_at(&self, x:usize) -> bool {
-        let start = self.range.start.unwrap();
-        start == x
+    /// Returns true if position falls inside one of the ranges in this
+    /// interval.
+    pub fn covers(&self, position: usize) -> bool {
+        self.ranges.iter().any(|range| range.from <= position && position < range.to)
     }
 
-    pub fn dies_at(&self, x:usize) -> bool {
-        let end = self.range.end.unwrap();
-        end == x
+    pub fn born_at(&self, x: usize) -> bool {
+        self.start() == x
+    }
+
+    pub fn dies_at(&self, x: usize) -> bool {
+        self.end() == x
     }
 
     pub fn has_bounds(&self) -> bool {
-        self.range.start.is_some() && self.range.end.is_some()
+        self.ranges.len() > 0
+    }
+
+    pub fn ranges_string(&self) -> String {
+        self.ranges.iter()
+            .map(|range| format!("{}..{}", range.from, range.to))
+            .collect::<Vec<_>>()
+            .join(", ")
     }
 
     /// Add a range to the interval, extending it if necessary
@@ -1444,56 +1494,111 @@ impl Interval {
             panic!("Invalid range: {} to {}", from, to);
         }
 
-        if self.range.start.is_none() {
-            self.range.start = Some(from);
-            self.range.end = Some(to);
-            return;
+        // Blocks are visited in ascending order, so only the last range can
+        // overlap or abut the new one. Anything earlier is separated by a
+        // lifetime hole and must stay a distinct range.
+        if let Some(last) = self.ranges.last_mut() {
+            if from <= last.to {
+                last.from = last.from.min(from);
+                last.to = last.to.max(to);
+                return;
+            }
         }
 
-        // Extend the range to cover both the existing range and the new range
-        self.range.start = Some(self.range.start.unwrap().min(from));
-        self.range.end = Some(self.range.end.unwrap().max(to));
+        self.ranges.push(LiveRange { from, to });
     }
 
-    /// Set the start of the range
+    /// Narrow the range covering `from` so that it begins at the def.
     pub fn set_from(&mut self, from: usize) {
-        let end = self.range.end.unwrap_or(from);
-        self.range.start = Some(from);
-        self.range.end = Some(end);
+        match self.ranges.last_mut() {
+            // If there was no existing range, it means that we have a
+            // def with no use.  Instructions are evenly numbered, so we add
+            // 1 to indicate this is a dead interval
+            None => self.ranges.push(LiveRange { from, to: from + 1 }),
+            Some(range) => range.from = from
+        }
+    }
+
+    /// Returns true if this interval represents a def with no use.
+    pub fn is_dead(&self) -> bool {
+        self.end() <= self.start() + 1
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Allocation {
     Reg(usize),
-    Fixed(Reg),
     Stack(usize),
 }
 
 impl Allocation {
-    fn assigned_reg(self) -> Option<Reg> {
-        use crate::backend::current::ALLOC_REGS;
-
+    fn assigned_reg(self, regs: &RegPool) -> Option<Reg> {
         match self {
-            Allocation::Reg(n) => Some(ALLOC_REGS[n]),
-            Allocation::Fixed(reg) => Some(reg),
+            Allocation::Reg(n) => Some(regs.reg_at(n)),
             Allocation::Stack(_) => None,
         }
     }
 
-    fn alloc_pool_index(self, num_registers: usize) -> Option<usize> {
+    fn alloc_pool_index(self, regs: &RegPool) -> Option<usize> {
         match self {
-            Allocation::Reg(n) => Some(n),
-            Allocation::Fixed(reg) => {
-                use crate::backend::current::ALLOC_REGS;
-
-                ALLOC_REGS
-                    .iter()
-                    .take(num_registers)
-                    .position(|candidate| candidate.reg_no == reg.reg_no)
-            }
+            Allocation::Reg(n) => (n < regs.num_allocatable()).then_some(n),
             Allocation::Stack(_) => None,
         }
+    }
+}
+
+/// The physical registers the register allocator hands out, partitioned by
+/// allocatability. The registers at indexes `0..num_allocatable()` are the ones
+/// linear_scan() is free to assign to any interval. The rest are pinned
+/// registers (NATIVE_STACK_PTR, for example) that an interval can only end up
+/// in through its `preferred` allocation.
+///
+/// The list and the boundary travel together so that consumers can't disagree
+/// about where the partition is, and so pinning a register can't move it.
+#[derive(Debug)]
+pub struct RegPool {
+    regs: Vec<Reg>,
+    allocatable: usize,
+}
+
+impl RegPool {
+    /// Build a pool in which every register is allocatable.
+    pub fn new(regs: Vec<Reg>) -> Self {
+        let allocatable = regs.len();
+        Self { regs, allocatable }
+    }
+
+    #[cfg(test)]
+    pub fn with_allocatable(regs: Vec<Reg>, allocatable: usize) -> Self {
+        assert!(allocatable <= regs.len());
+        Self { regs, allocatable }
+    }
+
+    /// The number of registers linear_scan() is free to allocate.
+    pub fn num_allocatable(&self) -> usize {
+        self.allocatable
+    }
+
+    /// The total number of registers in the pool.
+    pub fn len(&self) -> usize {
+        self.regs.len()
+    }
+
+    /// The register at `index`, in either partition.
+    pub fn reg_at(&self, index: usize) -> Reg {
+        self.regs[index]
+    }
+
+    /// Find the index of `reg` in the pool.  If the pool doesn't have the
+    /// reg, add it to the pool, but place it outside of the "allocatable"
+    /// register range.
+    pub fn find_or_add_index(&mut self, reg: Reg) -> usize {
+        self.regs.iter()
+            .position(|candidate| candidate.reg_no == reg.reg_no)
+            .unwrap_or_else(|| {
+                self.regs.push(reg);
+                self.regs.len() - 1
+            })
     }
 }
 
@@ -2091,11 +2196,9 @@ impl Assembler
         Some(new_moves)
     }
 
-    /// Discover vregs that should preferentially reuse a physical register,
-    /// such as a newborn vreg immediately moved into a preg in the next instruction.
-    pub fn preferred_register_assignments(&self, intervals: &[Interval]) -> Vec<Option<Reg>> {
-        let mut preferred = vec![None; self.num_vregs];
-
+    /// Record a preferred physical register on vregs that should reuse one, such as a
+    /// newborn vreg immediately moved into a preg in the next instruction.
+    pub fn preferred_register_assignments(&self, intervals: &mut [Interval], regs: &mut RegPool) {
         for block in &self.basic_blocks {
             let mut prev_insn: Option<(InsnId, &Insn)> = None;
 
@@ -2116,7 +2219,9 @@ impl Assembler
                                 && intervals[*idx].born_at(prev_id.0)
                                 && intervals[*idx].dies_at(insn_id.0)
                             {
-                                preferred[*idx].get_or_insert(*dest_reg);
+                                let regno = regs.find_or_add_index(*dest_reg);
+                                debug_assert!(intervals[*idx].preferred.is_none());
+                                intervals[*idx].preferred = Some(Allocation::Reg(regno));
                             }
                         }
                     }
@@ -2125,135 +2230,190 @@ impl Assembler
                 }
             }
         }
-
-        preferred
     }
 
     // TODO: We want to make the following refactoring so that we DON'T have
     // to parcopy in to entry blocks
     //
-    // * Move Allocation to Interval
     // * Pre-allocate pinned regs
     // * Update linear scan to handle pinned LRs
     //
-    pub fn linear_scan(
-        &self,
-        intervals: Vec<Interval>,
-        num_registers: usize,
-        preferred_registers: &[Option<Reg>],
-    ) -> (Vec<Option<Allocation>>, usize) {
-        assert_eq!(preferred_registers.len(), intervals.len());
+    // `regs` is the pool of _all_ registers, partitioned by allocatability.
+    // The registers below `regs.num_allocatable()` are allocatable here, the
+    // rest are only reachable via "preferred" register support.
+    //
+    // Allocations are written back in to `intervals` as each interval's
+    // `assigned` field.  The return value is the number of stack slots needed
+    // for the spills.
+    pub fn linear_scan(&self, intervals: &[Interval], regs: &RegPool) -> usize {
+        let num_registers = regs.num_allocatable();
 
-        let mut free_registers: BTreeSet<usize> = (0..num_registers).collect();
-        let mut active: Vec<&Interval> = Vec::new(); // vreg indices sorted by increasing end point
-        let mut assignment: Vec<Option<Allocation>> = vec![None; intervals.len()];
+        // `active`, `inactive`, and `unhandled` borrow the intervals they hold.
+        // Allocation results are written through the Cell fields, so a shared
+        // reference is all the identity and access this needs.
+        let mut free_registers: Vec<usize> = vec![0; regs.len()];
+        let mut active: Vec<&Interval> = Vec::new(); // sorted by increasing end point
+        let mut inactive: Vec<&Interval> = Vec::new(); // intervals with lifetime holes
         let mut num_stack_slots: usize = 0;
 
-        // Collect vreg indices that have valid ranges, sorted by start point
-        let mut sorted_intervals: Vec<Interval> = intervals.iter()
-            .filter(|i| i.range.start.is_some() && i.range.end.is_some())
-            .cloned()
+        let mut unhandled: VecDeque<&Interval> = intervals.iter()
+            .filter(|it| it.has_bounds())
             .collect();
-        sorted_intervals.sort_by_key(|i| i.range.start.unwrap());
+        unhandled.make_contiguous().sort_by_key(|it| it.start());
 
-        for interval in &sorted_intervals {
-            // Expire old intervals
-            active.retain(|&active_interval| {
-                if active_interval.range.end.unwrap() > interval.range.start.unwrap() {
-                    true
-                } else {
-                    if let Some(allocation) = assignment[active_interval.id] {
-                        if let Some(reg) = allocation.alloc_pool_index(num_registers) {
-                            let was_not_there_before = free_registers.insert(reg);
-                            assert!(
-                                was_not_there_before,
-                                "attempted to return allocator register {:?} to the free pool more than once",
-                                allocation.assigned_reg().unwrap(),
-                            );
-                        } else {
-                            assert!(
-                                allocation.assigned_reg().is_none_or(|reg| {
-                                    crate::backend::current::ALLOC_REGS
-                                        .iter()
-                                        .take(num_registers)
-                                        .all(|candidate| candidate.reg_no != reg.reg_no)
-                                }),
-                                "attempted to return non-allocatable register {:?} to the allocator pool",
-                                allocation.assigned_reg().unwrap(),
-                            );
-                        }
-                    }
+        while let Some(cur) = unhandled.pop_front() {
+            let position = cur.start();
+            let cur_end = cur.end();
+
+            // Expire old intervals.
+            active.retain(|&it| {
+                debug_assert!(it.state.get() == IntervalState::Active);
+                // If the interval ends before the current position, then we're
+                // done with it and can mark it handled.
+                if it.ends_before(position) {
+                    it.state.set(IntervalState::Handled);
                     false
+                } else if !it.covers(position) {
+                    // If it doesn't cover the current position (there's a hole
+                    // in the ranges), then move it to inactive
+                    it.state.set(IntervalState::Inactive);
+                    inactive.push(it);
+                    false
+                } else {
+                    // Otherwise it's still live here and stays active.
+                    true
                 }
             });
 
-            let preferred_reg = preferred_registers[interval.id];
-            let preferred_taken = preferred_reg.is_some_and(|reg| {
-                active.iter().any(|active_interval| {
-                    assignment[active_interval.id]
-                        .and_then(|alloc| alloc.assigned_reg())
-                        .is_some_and(|active_reg| active_reg.reg_no == reg.reg_no)
-                })
+            // Check for intervals in inactive that are handled or active
+            inactive.retain(|&it| {
+                debug_assert!(it.state.get() == IntervalState::Inactive);
+                // If the inactive interval ends before the current position
+                if it.ends_before(position) {
+                    // Move it to handled
+                    it.state.set(IntervalState::Handled);
+                    false
+                } else if it.covers(position) {
+                    // If the current position falls inside one of the
+                    // interval's ranges, then make it active
+                    it.state.set(IntervalState::Active);
+                    active.push(it);
+                    false
+                } else {
+                    // It's still inactive
+                    true
+                }
             });
 
-            if let Some(preferred_reg) = preferred_reg.filter(|_| !preferred_taken) {
-                if let Some(reg_idx) = Allocation::Fixed(preferred_reg).alloc_pool_index(num_registers) {
-                    if free_registers.remove(&reg_idx) {
-                        assignment[interval.id] = Some(Allocation::Fixed(preferred_reg));
-                        let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
-                        active.insert(insert_idx, &interval);
-                        continue;
-                    }
-                } else {
-                    assignment[interval.id] = Some(Allocation::Fixed(preferred_reg));
-                    let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
-                    active.insert(insert_idx, &interval);
+            // Mark all registers as "free".  Intervals that end before usize::MAX
+            // (at this point that would be all registers) are allowed to use
+            // any index from this list.
+            free_registers.fill(usize::MAX);
+
+            // Mark all active intervals with assignments as "unavailable".
+            // Intervals that want a register must find an index in the free_registers
+            // list where the value is greater than the intervals "end" (or
+            // the interval's end is _less than_ the value in the free_register list)
+            // All registers have an end that is greater than 0, so they will
+            // not pick any registers used by intervals in the active list.
+            for it in &active {
+                debug_assert!(it.state.get() == IntervalState::Active);
+                match it.assigned.get().expect("should have assignment") {
+                    Allocation::Reg(idx) => free_registers[idx] = 0,
+                    _ => {},
+                }
+            }
+
+            // Inactive intervals are intervals that have gaps in them, and
+            // we're currently inside one of those gaps.  We'll mark in the
+            // "free_registers" list when each interval will want to use its
+            // assigned reg again.
+            for it in &inactive {
+                debug_assert!(it.state.get() == IntervalState::Inactive);
+                let Some(pos) = it.next_intersection(cur) else { continue };
+                match it.assigned.get().expect("should have assignment") {
+                    Allocation::Reg(idx) => free_registers[idx] = free_registers[idx].min(pos),
+                    _ => {},
+                }
+            }
+
+            // If the current interval has a preferred allocation, use it if
+            // that register is available until the interval end.
+            if let Some(Allocation::Reg(idx)) = cur.preferred {
+                if free_registers[idx] >= cur_end {
+                    cur.assigned.set(Some(Allocation::Reg(idx)));
+                    cur.state.set(IntervalState::Active);
+                    let insert_idx = active.partition_point(|it| it.end() < cur_end);
+                    active.insert(insert_idx, cur);
                     continue;
                 }
             }
 
-            if free_registers.is_empty() {
-                // Spill: pick the longest-lived active interval (last in sorted active)
-                // but only from the allocatable register pool. Fixed register
-                // assignments represent preferred/pinned physical registers
-                // (for example SP) and should not be selected as spill victims.
-                let spill = active.iter().rev().copied().find(|active_interval| {
-                    matches!(assignment[active_interval.id], Some(Allocation::Reg(_)))
-                });
-                let slot = Allocation::Stack(num_stack_slots);
-                num_stack_slots += 1;
+            // Find a reg with the highest "free until use" point, then check if that "free until
+            // use" point is greater than or eq to than the current interval's end.  If it is, then
+            // we know the current interval can fit in the window this register is available.
+            let best_reg = (0..num_registers).rev()
+                .max_by_key(|&reg| free_registers[reg])
+                .filter(|&reg| free_registers[reg] >= cur_end);
 
-                if let Some(spill) = spill.filter(|spill| spill.range.end.unwrap() > interval.range.end.unwrap()) {
-                    // Spill the last active interval; give its register to current
-                    assignment[interval.id] = assignment[spill.id];
-                    assignment[spill.id] = Some(slot);
-                    let spill_idx = active.iter().position(|active_interval| active_interval.id == spill.id).unwrap();
-                    active.remove(spill_idx);
-                    // Insert current into sorted active
-                    let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
-                    active.insert(insert_idx, &interval);
-                } else {
-                    // Spill the current interval
-                    assignment[interval.id] = Some(slot);
+            match best_reg {
+                // We couldn't find a best register, so we need to spill
+                None => {
+                    // Spill: pick the longest-lived active interval (last in sorted active)
+                    // but only from the allocatable partition of the pool. An index
+                    // at or past the pool's allocatable boundary is a pinned physical
+                    // register (for example SP), which is not ours to hand to someone else.
+                    let spill_idx = active.iter().rposition(|it| {
+                        it.assigned.get()
+                            .is_some_and(|alloc| alloc.alloc_pool_index(regs).is_some())
+                    });
+                    let slot = Allocation::Stack(num_stack_slots);
+                    num_stack_slots += 1;
+
+                    match spill_idx.filter(|&idx| active[idx].end() > cur_end) {
+                        Some(spill_idx) => {
+                            // Spill the last active interval; give its register to current
+                            let spilled = active.remove(spill_idx);
+                            cur.assigned.set(spilled.assigned.get());
+                            cur.state.set(IntervalState::Active);
+                            spilled.assigned.set(Some(slot));
+                            spilled.state.set(IntervalState::Handled);
+                            // Insert current into sorted active
+                            let insert_idx = active.partition_point(|it| it.end() < cur_end);
+                            active.insert(insert_idx, cur);
+                        }
+                        None => {
+                            // Spill the current interval
+                            cur.assigned.set(Some(slot));
+                            cur.state.set(IntervalState::Handled);
+                        }
+                    }
                 }
-            } else {
-                // Allocate lowest free register
-                let reg = *free_registers.iter().min().unwrap();
-                free_registers.remove(&reg);
-                assignment[interval.id] = Some(Allocation::Reg(reg));
-                // Insert into sorted active
-                let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
-                active.insert(insert_idx, &interval);
+                Some(reg) => {
+                    cur.assigned.set(Some(Allocation::Reg(reg)));
+                    cur.state.set(IntervalState::Active);
+                    // Insert into sorted active
+                    let insert_idx = active.partition_point(|it| it.end() < cur_end);
+                    active.insert(insert_idx, cur);
+                }
             }
         }
 
-        (assignment, num_stack_slots)
+        // Drain active and inactive and mark everything as handled. `state` is
+        // only ever read by the debug_asserts above, so this bookkeeping is
+        // is not necessary once assertions are compiled out.
+        #[cfg(debug_assertions)]
+        for it in active.drain(..).chain(inactive.drain(..)) {
+            it.state.set(IntervalState::Handled);
+        }
+
+        num_stack_slots
     }
 
     /// Resolve SSA block parameters by inserting sequentialized move instructions
     /// at block boundaries. This is SSA deconstruction: after linear_scan assigns
     /// registers/stack slots, we lower block parameter passing to explicit moves.
-    pub fn resolve_ssa(&mut self, _intervals: &[Interval], assignments: &[Option<Allocation>]) {
+    pub fn resolve_ssa(&mut self, intervals: &[Interval], regs: &RegPool) {
         use crate::backend::parcopy;
         use crate::backend::current::SCRATCH_REG;
 
@@ -2288,10 +2448,10 @@ impl Assembler
                 let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = edge.args
                     .iter()
                     .zip(params.iter())
-                    .filter(|(_arg, param)| assignments[param.vreg_idx()].is_some() )
+                    .filter(|(_arg, param)| intervals[param.vreg_idx()].assigned.get().is_some() )
                     .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> {
-                        destination: Self::rewritten_opnd(*param, assignments),
-                        source: Self::rewritten_opnd(*arg, assignments),
+                        destination: Self::rewritten_opnd(*param, intervals, regs),
+                        source: Self::rewritten_opnd(*arg, intervals, regs),
                     })
                     .filter(|copy| copy.source != copy.destination)
                     .collect();
@@ -2385,7 +2545,7 @@ impl Assembler
             let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
                 .map(|(i, param)| parcopy::RegisterCopy::<Opnd> {
                     source: C_ARG_OPNDS[i],
-                    destination: Self::rewritten_opnd(*param, assignments),
+                    destination: Self::rewritten_opnd(*param, intervals, regs),
                 })
                 .filter(|copy| copy.source != copy.destination)
                 .collect();
@@ -2430,7 +2590,7 @@ impl Assembler
             }
         }
 
-        self.rewrite_instructions(assignments);
+        self.rewrite_instructions(intervals, regs);
     }
 
     /// Handle caller-saved registers around CCall instructions.
@@ -2439,11 +2599,11 @@ impl Assembler
     pub fn handle_caller_saved_regs(
         &mut self,
         intervals: &[Interval],
-        assignments: &[Option<Allocation>],
-        regs: &[Reg],
+        alloc_regs: &RegPool,
+        c_arg_regs: &[Reg],
     ) {
         use crate::backend::parcopy;
-        use crate::backend::current::{C_RET_OPND, SCRATCH_REG, ALLOC_REGS};
+        use crate::backend::current::{C_RET_OPND, SCRATCH_REG};
 
         for block_id in self.block_order() {
             let block = &mut self.basic_blocks[block_id.0];
@@ -2460,10 +2620,8 @@ impl Assembler
                     // Do we have a case where a ccall is emitted, but nobody
                     // uses the result?
                     let call_result_live = out.is_vreg()
-                        && intervals[out.vreg_idx()]
-                            .range
-                            .end
-                            .is_some_and(|end| end > insn_number);
+                        && intervals[out.vreg_idx()].has_bounds()
+                        && !intervals[out.vreg_idx()].is_dead();
 
                     // Build a set of VRegIds that can be referenced by JITFrame for materializing the VM stack
                     let stack_vreg_ids: HashSet<VRegId> = if let Some(StackMap { stack, .. }) = &stack_map {
@@ -2485,19 +2643,15 @@ impl Assembler
                             // 1) The VReg is referenced in an instruction after the CCall
                             let survives_call = interval.has_bounds() && interval.survives(insn_number);
                             // 2) The VReg is referenced by the stack map for the CCall
-                            let stack_map_reg = stack_vreg_ids.contains(&interval.id);
-                            let is_register = assignments[interval.id].and_then(|alloc| alloc.alloc_pool_index(ALLOC_REGS.len())).is_some();
+                            let stack_map_reg = stack_vreg_ids.contains(&interval.vreg_id);
+                            let is_register = interval.assigned.get().and_then(|alloc| alloc.alloc_pool_index(alloc_regs)).is_some();
                             is_register && (survives_call || stack_map_reg)
                         })
-                        .map(|interval| interval.id)
+                        .map(|interval| interval.vreg_id)
                         .collect();
 
                     let survivor_regs: Vec<Opnd> = survivors.iter()
-                        .map(|&s| match assignments[s].unwrap() {
-                            Allocation::Reg(n) => Opnd::Reg(ALLOC_REGS[n]),
-                            Allocation::Fixed(reg) => Opnd::Reg(reg),
-                            _ => unreachable!(),
-                        })
+                        .map(|&s| Opnd::Reg(intervals[s].assigned.get().unwrap().assigned_reg(alloc_regs).unwrap()))
                         .collect();
 
                     // Push all survivors on the stack, pairing adjacent pushes when possible.
@@ -2531,8 +2685,8 @@ impl Assembler
                                     VALUE(encoded)
                                 }
                                 StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) => {
-                                    let vreg_stack_index = match assignments[vreg].expect("StackMap VReg should have an allocation") {
-                                        Allocation::Reg(_) | Allocation::Fixed(_) => {
+                                    let vreg_stack_index = match intervals[vreg].assigned.get().expect("StackMap VReg should have an allocation") {
+                                        Allocation::Reg(_) => {
                                             let caller_saved_reg_idx = survivors.iter().position(|&survivor_id| survivor_id == vreg).unwrap();
                                             let stack_idx = self.stack_state.stack_idx_for_caller_saved_reg(caller_saved_reg_idx);
                                             self.stack_state.stack_map_index_for_spill(stack_idx, frame_depth)
@@ -2555,15 +2709,15 @@ impl Assembler
 
                     // Extract arguments from CCall, clear opnds
 
-                    assert!(opnds.len() <= regs.len());
+                    assert!(opnds.len() <= c_arg_regs.len());
 
-                    // Sequentialize argument moves: each arg goes to regs[i]
+                    // Sequentialize argument moves: each arg goes to c_arg_regs[i]
                     let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = opnds
                         .iter()
-                        .zip(regs.iter())
+                        .zip(c_arg_regs.iter())
                         .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> {
                             destination: Opnd::Reg(*param),
-                            source: Self::rewritten_opnd(*arg, assignments),
+                            source: Self::rewritten_opnd(*arg, intervals, alloc_regs),
                         })
                         .filter(|copy| copy.source != copy.destination)
                         .collect();
@@ -2611,7 +2765,7 @@ impl Assembler
                     if survivors.is_empty() {
                         if call_result_live {
                             // No survivors to restore -- move result directly to output.
-                            let out = Self::rewritten_opnd(out, assignments);
+                            let out = Self::rewritten_opnd(out, intervals, alloc_regs);
                             new_insns.push(Insn::Mov { dest: out, src: C_RET_OPND });
                             new_ids.push(None);
                         }
@@ -2635,7 +2789,7 @@ impl Assembler
 
                         if call_result_live {
                             // Move result from scratch to output AFTER all pops.
-                            let out = Self::rewritten_opnd(out, assignments);
+                            let out = Self::rewritten_opnd(out, intervals, alloc_regs);
                             new_insns.push(Insn::Mov { dest: out, src: Opnd::Reg(SCRATCH_REG) });
                             new_ids.push(None);
                         }
@@ -2654,17 +2808,17 @@ impl Assembler
 
     /// Return the maximum number of stack-map entries that any side exit needs
     /// to copy into reserved native stack slots.
-    pub fn side_exit_stack_map_slots(&self, assignments: &[Option<Allocation>]) -> usize {
+    pub fn side_exit_stack_map_slots(&self, intervals: &[Interval]) -> usize {
         self.block_order().into_iter().fold(0, |max_slots, block_id| {
             let block = &self.basic_blocks[block_id.0];
             block.insns.iter().fold(max_slots, |max_slots, insn| {
-                let slots = insn.target().map(|target| Self::side_exit_target_stack_map_slots(target, assignments)).unwrap_or(0);
+                let slots = insn.target().map(|target| Self::side_exit_target_stack_map_slots(target, intervals)).unwrap_or(0);
                 max_slots.max(slots)
             })
         })
     }
 
-    fn side_exit_target_stack_map_slots(target: &Target, assignments: &[Option<Allocation>]) -> usize {
+    fn side_exit_target_stack_map_slots(target: &Target, intervals: &[Interval]) -> usize {
         let Target::SideExit(data) = target else {
             return 0;
         };
@@ -2677,8 +2831,8 @@ impl Assembler
             StackMapEntry::Opnd(Opnd::UImm(value)) => !VALUE(*value as usize).special_const_p(),
             StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => {
                 matches!(
-                    assignments[idx.to_usize()].expect("StackMap VReg should have an allocation"),
-                    Allocation::Reg(_) | Allocation::Fixed(_)
+                    intervals[idx.to_usize()].assigned.get().expect("StackMap VReg should have an allocation"),
+                    Allocation::Reg(_)
                 )
             }
             StackMapEntry::Opnd(Opnd::Reg(_)) => true,
@@ -2687,39 +2841,32 @@ impl Assembler
     }
 
     /// Walk every instruction and replace VReg operands with the physical
-    /// register (or stack slot) from the allocation assignments.
-    fn rewrite_instructions(&mut self, assignments: &[Option<Allocation>]) {
+    /// register (or stack slot) assigned to the VReg's interval.
+    fn rewrite_instructions(&mut self, intervals: &[Interval], regs: &RegPool) {
         for block_id in self.block_order() {
             for insn in self.basic_blocks[block_id.0].insns.iter_mut() {
                 insn.for_each_operand_mut(|opnd| {
-                    Self::rewrite_opnd(opnd, assignments);
+                    Self::rewrite_opnd(opnd, intervals, regs);
                 });
                 if let Some(out) = insn.out_opnd_mut() {
-                    Self::rewrite_opnd(out, assignments);
+                    Self::rewrite_opnd(out, intervals, regs);
                 }
             }
         }
     }
 
-    fn rewritten_opnd(mut opnd: Opnd, assignments: &[Option<Allocation>]) -> Opnd {
-        Self::rewrite_opnd(&mut opnd, assignments);
+    fn rewritten_opnd(mut opnd: Opnd, intervals: &[Interval], regs: &RegPool) -> Opnd {
+        Self::rewrite_opnd(&mut opnd, intervals, regs);
         opnd
     }
 
-    fn rewrite_opnd(opnd: &mut Opnd, assignments: &[Option<Allocation>]) {
-        use crate::backend::current::ALLOC_REGS;
-        let regs = &ALLOC_REGS;
-
+    fn rewrite_opnd(opnd: &mut Opnd, intervals: &[Interval], regs: &RegPool) {
         match opnd {
             Opnd::VReg { idx, num_bits } => {
-                if let Some(assignment) = assignments[*idx] {
+                if let Some(assignment) = intervals[*idx].assigned.get() {
                     match assignment {
                         Allocation::Reg(n) => {
-                            let mut reg = regs[n];
-                            reg.num_bits = *num_bits;
-                            *opnd = Opnd::Reg(reg);
-                        }
-                        Allocation::Fixed(mut reg) => {
+                            let mut reg = regs.reg_at(n);
                             reg.num_bits = *num_bits;
                             *opnd = Opnd::Reg(reg);
                         }
@@ -2737,15 +2884,10 @@ impl Assembler
                 }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
-                match assignments[*idx].unwrap() {
+                match intervals[*idx].assigned.get().unwrap() {
                     Allocation::Reg(n) => {
                         if let Opnd::Mem(mem) = opnd {
-                            mem.base = MemBase::Reg(regs[n].reg_no);
-                        }
-                    }
-                    Allocation::Fixed(reg) => {
-                        if let Opnd::Mem(mem) = opnd {
-                            mem.base = MemBase::Reg(reg.reg_no);
+                            mem.base = MemBase::Reg(regs.reg_at(n).reg_no);
                         }
                     }
                     Allocation::Stack(n) => {
@@ -3352,7 +3494,7 @@ pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
                 }
                 output.push_str(&format!("{param}"));
             }
-            output.push_str("):\n");
+            output.push_str("):\n"); // :)
         }
 
         for (insn, insn_id) in block.insns.iter().zip(&block.insn_ids) {
@@ -3362,19 +3504,20 @@ pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
             // Print instruction ID
             output.push_str(&format!("i{:<6}: ", insn_id.0));
 
-            // For each VReg, check if it's alive at this position
+            // For each VReg, check if it's alive at this position. Each range is
+            // marked independently so lifetime holes show up as gaps.
             for vreg_idx in 0..num_vregs {
-                let is_alive = intervals[vreg_idx].range.start.is_some() &&
-                               intervals[vreg_idx].range.end.is_some() &&
-                               intervals[vreg_idx].survives(insn_id.0);
-
-                let has_range = intervals[vreg_idx].range.start.is_some();
-                if has_range && intervals[vreg_idx].born_at(insn_id.0) {
-                    output.push_str("  v ");
-                } else if has_range && intervals[vreg_idx].dies_at(insn_id.0) {
-                    output.push_str("  ^ ");
-                } else if is_alive {
-                    output.push_str("  █ ");
+                let interval = &intervals[vreg_idx];
+                if interval.has_bounds() {
+                    if interval.born_at(insn_id.0) {
+                        output.push_str("  v ");
+                    } else if interval.dies_at(insn_id.0) {
+                        output.push_str("  ^ ");
+                    } else if interval.covers(insn_id.0) {
+                        output.push_str("  █ ");
+                    } else {
+                        output.push_str("  . ");
+                    }
                 } else {
                     output.push_str("  . ");
                 }
@@ -4163,6 +4306,12 @@ mod tests {
         Assembler::new_with_scratch_reg().1
     }
 
+    fn alloc_reg_pool(num_allocatable: usize) -> RegPool {
+        let regs = crate::backend::current::ALLOC_REGS.to_vec();
+        let num_allocatable = num_allocatable.min(regs.len());
+        RegPool::with_allocatable(regs, num_allocatable)
+    }
+
     #[test]
     fn test_size_of_insn() {
         // PatchPoint (PatchPointData), CCall (CCallData), and Target (Block/SideExit
@@ -4490,18 +4639,62 @@ mod tests {
 
         // Add range to empty interval
         interval.add_range(5, 10);
-        assert_eq!(interval.range.start, Some(5));
-        assert_eq!(interval.range.end, Some(10));
+        assert_eq!(interval.ranges, vec![LiveRange { from: 5, to: 10 }]);
 
         // Extend range backward
         interval.add_range(3, 7);
-        assert_eq!(interval.range.start, Some(3));
-        assert_eq!(interval.range.end, Some(10));
+        assert_eq!(interval.ranges, vec![LiveRange { from: 3, to: 10 }]);
 
         // Extend range forward
         interval.add_range(8, 15);
-        assert_eq!(interval.range.start, Some(3));
-        assert_eq!(interval.range.end, Some(15));
+        assert_eq!(interval.ranges, vec![LiveRange { from: 3, to: 15 }]);
+    }
+
+    #[test]
+    fn test_interval_add_range_hole() {
+        let mut interval = Interval::new(VRegId(1));
+
+        // A range that does not reach the previous one stays separate: the gap
+        // between them is a lifetime hole.
+        interval.add_range(5, 10);
+        interval.add_range(20, 25);
+        assert_eq!(interval.ranges, vec![
+            LiveRange { from: 5, to: 10 },
+            LiveRange { from: 20, to: 25 },
+        ]);
+        // start()/end() still span the whole thing, hole included.
+        assert_eq!(interval.start(), 5);
+        assert_eq!(interval.end(), 25);
+
+        // The vreg is not live inside the hole ...
+        assert!(!interval.survives(10));
+        assert!(!interval.survives(15));
+        // ... but the interval is not over, so it must keep its register.
+        assert!(interval.end() > 15);
+        // ... and it is live again on the far side.
+        assert!(interval.survives(22));
+
+        // A range that abuts the last one merges into it.
+        interval.add_range(25, 30);
+        assert_eq!(interval.ranges, vec![
+            LiveRange { from: 5, to: 10 },
+            LiveRange { from: 20, to: 30 },
+        ]);
+    }
+
+    #[test]
+    fn test_interval_dies_at_last_range() {
+        let mut interval = Interval::new(VRegId(1));
+        interval.add_range(5, 10);
+        interval.add_range(20, 25);
+
+        // The end of the first range is only the start of a lifetime hole, not
+        // the death of the interval. Reporting otherwise lets
+        // preferred_register_assignments hand the register to something else
+        // while the vreg is still live after the hole.
+        assert!(interval.born_at(5));
+        assert!(!interval.dies_at(10));
+        assert!(interval.dies_at(25));
     }
 
     #[test]
@@ -4520,16 +4713,36 @@ mod tests {
     fn test_interval_set_from() {
         let mut interval = Interval::new(VRegId(1));
 
-        // With no range, sets both start and end
+        // With no range, records Wimmer's vacuous interval: the def occupies a
+        // register but nothing reads the value. Instructions are numbered by two,
+        // so position 11 belongs to no instruction.
         interval.set_from(10);
-        assert_eq!(interval.range.start, Some(10));
-        assert_eq!(interval.range.end, Some(10));
+        assert_eq!(interval.ranges, vec![LiveRange { from: 10, to: 11 }]);
+        assert!(!interval.survives(10));
+        assert!(interval.is_dead());
 
         // With existing range, updates start but keeps end
         interval.add_range(5, 20);
         interval.set_from(3);
-        assert_eq!(interval.range.start, Some(3));
-        assert_eq!(interval.range.end, Some(20));
+        assert_eq!(interval.ranges, vec![LiveRange { from: 3, to: 20 }]);
+        assert!(!interval.is_dead());
+    }
+
+    #[test]
+    fn test_interval_is_dead() {
+        // A def whose value is read by the next instruction is not dead.
+        let mut used = Interval::new(VRegId(1));
+        used.add_range(10, 12);
+        used.set_from(10);
+        assert!(!used.is_dead());
+
+        // A def with a lifetime hole is not dead either, even though its first
+        // range is only one position long.
+        let mut holed = Interval::new(VRegId(2));
+        holed.add_range(10, 11);
+        holed.add_range(20, 22);
+        holed.set_from(10);
+        assert!(!holed.is_dead());
     }
 
     #[test]
@@ -4569,23 +4782,26 @@ mod tests {
 
         // Assert expected ranges
         // Note: Rust CFG differs from Ruby due to conditional branches requiring two instructions (Jl + Jmp)
-        assert_eq!(intervals[r10_idx].range.start, Some(16));
-        assert_eq!(intervals[r10_idx].range.end, Some(38));
+        assert_eq!(intervals[r10_idx].ranges, vec![LiveRange { from: 16, to: 38 }]);
 
-        assert_eq!(intervals[r11_idx].range.start, Some(16));
-        assert_eq!(intervals[r11_idx].range.end, Some(20));
+        assert_eq!(intervals[r11_idx].ranges, vec![LiveRange { from: 16, to: 20 }]);
 
-        assert_eq!(intervals[r12_idx].range.start, Some(20));
-        assert_eq!(intervals[r12_idx].range.end, Some(38));
+        // r12 is live out of the first block and used again at the join, but is
+        // dead across the middle of the diamond, so 30..36 is a lifetime hole.
+        // start()/end() alone cannot see this: they still report 20..38.
+        assert_eq!(intervals[r12_idx].ranges, vec![
+            LiveRange { from: 20, to: 30 },
+            LiveRange { from: 36, to: 38 },
+        ]);
+        assert_eq!(intervals[r12_idx].start(), 20);
+        assert_eq!(intervals[r12_idx].end(), 38);
+        assert!(!intervals[r12_idx].survives(32));
 
-        assert_eq!(intervals[r13_idx].range.start, Some(20));
-        assert_eq!(intervals[r13_idx].range.end, Some(32));
+        assert_eq!(intervals[r13_idx].ranges, vec![LiveRange { from: 20, to: 32 }]);
 
-        assert_eq!(intervals[r14_idx].range.start, Some(30));
-        assert_eq!(intervals[r14_idx].range.end, Some(36));
+        assert_eq!(intervals[r14_idx].ranges, vec![LiveRange { from: 30, to: 36 }]);
 
-        assert_eq!(intervals[r15_idx].range.start, Some(32));
-        assert_eq!(intervals[r15_idx].range.end, Some(36));
+        assert_eq!(intervals[r15_idx].ranges, vec![LiveRange { from: 32, to: 36 }]);
     }
 
     #[test]
@@ -4599,12 +4815,13 @@ mod tests {
         asm.number_instructions(16);
 
         // Build intervals
-        let intervals = asm.build_intervals(live_in);
+        let mut intervals = asm.build_intervals(live_in);
 
         println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
 
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 5, &preferred_registers);
+        let mut regs = alloc_reg_pool(5);
+        asm.preferred_register_assignments(&mut intervals, &mut regs);
+        let num_stack_slots = asm.linear_scan(&intervals, &regs);
 
         // Extract vreg indices
         let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
@@ -4624,12 +4841,12 @@ mod tests {
         // r13: [20,38) gets Reg(2)
         // r14: [36,42) gets Reg(1) (r12 expired, reuses its register)
         // r15: [38,42) gets Reg(2) (r13 expired, reuses its register)
-        assert_eq!(assignments[r10_idx], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r11_idx], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r12_idx], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r13_idx], Some(Allocation::Reg(2)));
-        assert_eq!(assignments[r14_idx], Some(Allocation::Reg(3)));
-        assert_eq!(assignments[r15_idx], Some(Allocation::Reg(2)));
+        assert_eq!(intervals[r10_idx].assigned.get(), Some(Allocation::Reg(0)));
+        assert_eq!(intervals[r11_idx].assigned.get(), Some(Allocation::Reg(1)));
+        assert_eq!(intervals[r12_idx].assigned.get(), Some(Allocation::Reg(1)));
+        assert_eq!(intervals[r13_idx].assigned.get(), Some(Allocation::Reg(2)));
+        assert_eq!(intervals[r14_idx].assigned.get(), Some(Allocation::Reg(1)));
+        assert_eq!(intervals[r15_idx].assigned.get(), Some(Allocation::Reg(2)));
     }
 
     #[test]
@@ -4638,11 +4855,12 @@ mod tests {
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(16);
-        let intervals = asm.build_intervals(live_in);
+        let mut intervals = asm.build_intervals(live_in);
 
-        // 3 registers -- only r10 needs to spill
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 3, &preferred_registers);
+        // 3 registers -- enough for every interval once holes are reused
+        let mut regs = alloc_reg_pool(3);
+        asm.preferred_register_assignments(&mut intervals, &mut regs);
+        let num_stack_slots = asm.linear_scan(&intervals, &regs);
 
         let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
         let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
@@ -4651,13 +4869,15 @@ mod tests {
         let r14_idx = if let Opnd::VReg { idx, .. } = r14 { idx } else { panic!() };
         let r15_idx = if let Opnd::VReg { idx, .. } = r15 { idx } else { panic!() };
 
-        assert_eq!(num_stack_slots, 1);
-        assert_eq!(assignments[r10_idx], Some(Allocation::Stack(0)));
-        assert_eq!(assignments[r11_idx], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r12_idx], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r13_idx], Some(Allocation::Reg(2)));
-        assert_eq!(assignments[r14_idx], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r15_idx], Some(Allocation::Reg(2)));
+        // Lifetime holes make three registers enough: nothing spills, and the
+        // assignment is the same one five registers produce.
+        assert_eq!(num_stack_slots, 0);
+        assert_eq!(intervals[r10_idx].assigned.get(), Some(Allocation::Reg(0)));
+        assert_eq!(intervals[r11_idx].assigned.get(), Some(Allocation::Reg(1)));
+        assert_eq!(intervals[r12_idx].assigned.get(), Some(Allocation::Reg(1)));
+        assert_eq!(intervals[r13_idx].assigned.get(), Some(Allocation::Reg(2)));
+        assert_eq!(intervals[r14_idx].assigned.get(), Some(Allocation::Reg(1)));
+        assert_eq!(intervals[r15_idx].assigned.get(), Some(Allocation::Reg(2)));
     }
 
     #[test]
@@ -4666,11 +4886,12 @@ mod tests {
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(16);
-        let intervals = asm.build_intervals(live_in);
+        let mut intervals = asm.build_intervals(live_in);
 
         // Only 1 register available -- forces spills
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 1, &preferred_registers);
+        let mut regs = alloc_reg_pool(1);
+        asm.preferred_register_assignments(&mut intervals, &mut regs);
+        let num_stack_slots = asm.linear_scan(&intervals, &regs);
 
         let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
         let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
@@ -4680,12 +4901,12 @@ mod tests {
         let r15_idx = if let Opnd::VReg { idx, .. } = r15 { idx } else { panic!() };
 
         assert_eq!(num_stack_slots, 3);
-        assert_eq!(assignments[r10_idx], Some(Allocation::Stack(0)));
-        assert_eq!(assignments[r11_idx], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r12_idx], Some(Allocation::Stack(1)));
-        assert_eq!(assignments[r13_idx], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r14_idx], Some(Allocation::Stack(2)));
-        assert_eq!(assignments[r15_idx], Some(Allocation::Reg(0)));
+        assert_eq!(intervals[r10_idx].assigned.get(), Some(Allocation::Stack(0)));
+        assert_eq!(intervals[r11_idx].assigned.get(), Some(Allocation::Reg(0)));
+        assert_eq!(intervals[r12_idx].assigned.get(), Some(Allocation::Stack(1)));
+        assert_eq!(intervals[r13_idx].assigned.get(), Some(Allocation::Reg(0)));
+        assert_eq!(intervals[r14_idx].assigned.get(), Some(Allocation::Stack(2)));
+        assert_eq!(intervals[r15_idx].assigned.get(), Some(Allocation::Reg(0)));
     }
 
     #[test]
@@ -4703,15 +4924,23 @@ mod tests {
 
         asm.number_instructions(0);
         let live_in = asm.analyze_liveness();
-        let intervals = asm.build_intervals(live_in);
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
+        let mut intervals = asm.build_intervals(live_in);
+        // Zero allocatable registers: the only register this interval can get
+        // is the pinned one appended to the pool, so the preference is what
+        // makes this succeed rather than spill.
+        let mut regs = alloc_reg_pool(0);
+        asm.preferred_register_assignments(&mut intervals, &mut regs);
 
         let vreg_idx = new_sp.vreg_idx();
-        assert_eq!(preferred_registers[vreg_idx], Some(sp.unwrap_reg()));
+        let Some(Allocation::Reg(regno)) = intervals[vreg_idx].preferred else {
+            panic!("expected a preferred register for v{vreg_idx}");
+        };
+        assert_eq!(regs.reg_at(regno), sp.unwrap_reg());
 
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 0, &preferred_registers);
+        let num_stack_slots = asm.linear_scan(&intervals, &regs);
         assert_eq!(num_stack_slots, 0);
-        assert_eq!(assignments[vreg_idx], Some(Allocation::Fixed(sp.unwrap_reg())));
+        assert_eq!(intervals[vreg_idx].assigned.get(), Some(Allocation::Reg(regno)));
+        assert_eq!(intervals[vreg_idx].assigned.get().unwrap().assigned_reg(&regs), Some(sp.unwrap_reg()));
     }
 
     #[test]
@@ -4739,11 +4968,12 @@ mod tests {
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(16);
-        let intervals = asm.build_intervals(live_in);
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, _) = asm.linear_scan(intervals.clone(), 5, &preferred_registers);
+        let mut intervals = asm.build_intervals(live_in);
+        let mut regs = alloc_reg_pool(5);
+        asm.preferred_register_assignments(&mut intervals, &mut regs);
+        asm.linear_scan(&intervals, &regs);
 
-        asm.resolve_ssa(&intervals, &assignments);
+        asm.resolve_ssa(&intervals, &regs);
 
         use crate::backend::current::ALLOC_REGS;
         let regs = &ALLOC_REGS[..5];
@@ -4761,20 +4991,18 @@ mod tests {
             if *dest == Opnd::Reg(regs[1]) && *src == Opnd::UImm(1)));
 
         // Edge b3->b2 (single succ): args=[v4, v5], params=[v2, v3]
-        // v4->Reg(3), v5->Reg(2), v2->Reg(1), v3->Reg(2)
-        // Reg copy: Reg(3)->Reg(1) -> Mov(regs[1], regs[3])
-        // Reg(2)->Reg(2) is self-move, filtered
-        // Inserted in b3 before Jmp: [Label, Mul, Sub, Mov, Jmp]
+        // v4->Reg(1), v5->Reg(2), v2->Reg(1), v3->Reg(2)
+        // Reg(1)->Reg(1) and Reg(2)->Reg(2) are both self-moves, filtered, so
+        // this edge needs no moves at all: [Label, Mul, Sub, Jmp]
         let b3_insns = &asm.basic_blocks[b3.0].insns;
-        assert_eq!(b3_insns.len(), 5);
-        assert!(matches!(&b3_insns[3], Insn::Mov { dest, src }
-            if *dest == Opnd::Reg(regs[1]) && *src == Opnd::Reg(regs[3])));
+        assert_eq!(b3_insns.len(), 4);
+        assert!(matches!(&b3_insns[3], Insn::Jmp(..)));
 
         // Verify original instructions in b3 are rewritten to physical registers.
         // b3: Mul { left: r12, right: r13, out: r14 }, Sub { left: r13, right: UImm(1), out: r15 }
-        // r12->Reg(1), r13->Reg(2), r14->Reg(3), r15->Reg(2)
+        // r12->Reg(1), r13->Reg(2), r14->Reg(1), r15->Reg(2)
         assert!(matches!(&b3_insns[1], Insn::Mul { left, right, out }
-            if *left == Opnd::Reg(regs[1]) && *right == Opnd::Reg(regs[2]) && *out == Opnd::Reg(regs[3])));
+            if *left == Opnd::Reg(regs[1]) && *right == Opnd::Reg(regs[2]) && *out == Opnd::Reg(regs[1])));
         assert!(matches!(&b3_insns[2], Insn::Sub { left, right, out }
             if *left == Opnd::Reg(regs[2]) && *right == Opnd::UImm(1) && *out == Opnd::Reg(regs[2])));
     }
@@ -4785,9 +5013,10 @@ mod tests {
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(16);
-        let intervals = asm.build_intervals(live_in);
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, _) = asm.linear_scan(intervals.clone(), 5, &preferred_registers);
+        let mut intervals = asm.build_intervals(live_in);
+        let mut regs = alloc_reg_pool(5);
+        asm.preferred_register_assignments(&mut intervals, &mut regs);
+        asm.linear_scan(&intervals, &regs);
 
         // Entry block b1 has parameters [v0, v1].
         // With 5 registers: v0 -> Reg(0) = regs[0], arrival = C_ARG_OPNDS[0] = regs[0] -> self-move, filtered
@@ -4795,7 +5024,7 @@ mod tests {
         // Before resolve_ssa, b1 has: [Label, Jmp] = 2 insns
         assert_eq!(asm.basic_blocks[b1.0].insns.len(), 2);
 
-        asm.resolve_ssa(&intervals, &assignments);
+        asm.resolve_ssa(&intervals, &regs);
 
         // After resolve_ssa, b1 should still have the same number of insns
         // (plus any edge moves, but no entry param moves since they're all self-moves).
@@ -4832,11 +5061,12 @@ mod tests {
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(0);
-        let intervals = asm.build_intervals(live_in);
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, _) = asm.linear_scan(intervals.clone(), 5, &preferred_registers);
+        let mut intervals = asm.build_intervals(live_in);
+        let mut regs = alloc_reg_pool(5);
+        asm.preferred_register_assignments(&mut intervals, &mut regs);
+        asm.linear_scan(&intervals, &regs);
 
-        asm.resolve_ssa(&intervals, &assignments);
+        asm.resolve_ssa(&intervals, &regs);
 
         assert!(matches!(asm.basic_blocks[block.0].insns[1], Insn::Abort));
     }
@@ -4890,19 +5120,19 @@ mod tests {
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(16);
-        let intervals = asm.build_intervals(live_in);
-        let num_regs = 5;
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, _) = asm.linear_scan(intervals.clone(), num_regs, &preferred_registers);
+        let mut intervals = asm.build_intervals(live_in);
+        let mut regs = alloc_reg_pool(5);
+        asm.preferred_register_assignments(&mut intervals, &mut regs);
+        asm.linear_scan(&intervals, &regs);
 
         assert_eq!(asm.basic_blocks.len(), 3);
 
         // Verify v1 and v4 have different allocations (so moves are needed)
-        let v1_alloc = assignments[v1.vreg_idx()].unwrap();
-        let v4_alloc = assignments[v4.vreg_idx()].unwrap();
+        let v1_alloc = intervals[v1.vreg_idx()].assigned.get().unwrap();
+        let v4_alloc = intervals[v4.vreg_idx()].assigned.get().unwrap();
         assert_ne!(v1_alloc, v4_alloc, "Test setup: v1 and v4 should have different allocations");
 
-        asm.resolve_ssa(&intervals, &assignments);
+        asm.resolve_ssa(&intervals, &regs);
 
         // A new interstitial block should have been created for the critical edge b1->b3
         // b1->b3 is critical because b1 has 2 successors and b3 has 2 predecessors
@@ -4934,7 +5164,7 @@ mod tests {
         assert!(has_mov, "Expected Mov in split block for v1->v4");
 
         // b2->b3 is not a critical edge (b2 has single succ), so moves go before Jmp in b2
-        let v3_alloc = assignments[v3.vreg_idx()].unwrap();
+        let v3_alloc = intervals[v3.vreg_idx()].assigned.get().unwrap();
         let b2_insns = &asm.basic_blocks[b2.0].insns;
         if v3_alloc != v4_alloc {
             // Check that a Mov was inserted before the Jmp in b2
@@ -4994,24 +5224,28 @@ mod tests {
         // Run liveness + numbering + intervals + linear scan with 2 registers
         let live_in = asm.analyze_liveness();
         asm.number_instructions(0);
-        let intervals = asm.build_intervals(live_in);
+        let mut intervals = asm.build_intervals(live_in);
         let num_regs = 2;
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals.clone(), num_regs, &preferred_registers);
+        let mut regs = alloc_reg_pool(num_regs);
+        asm.preferred_register_assignments(&mut intervals, &mut regs);
+        let num_stack_slots = asm.linear_scan(&intervals, &regs);
         asm.stack_state.num_spill_slots = num_stack_slots;
 
-        let regs = &ALLOC_REGS[..num_regs];
+        // Stand in for the C calling convention's argument registers. These
+        // deliberately overlap the allocatable pool so that arguments clobber
+        // registers the allocator handed out.
+        let c_arg_regs = &ALLOC_REGS[..num_regs];
 
         // v0 should be spilled (long-lived, only 2 regs)
-        assert!(matches!(assignments[v0.vreg_idx()], Some(Allocation::Stack(_))),
+        assert!(matches!(intervals[v0.vreg_idx()].assigned.get(), Some(Allocation::Stack(_))),
             "v0 should be spilled to stack");
         // v1 should be in a register
-        assert!(matches!(assignments[v1.vreg_idx()], Some(Allocation::Reg(_))),
+        assert!(matches!(intervals[v1.vreg_idx()].assigned.get(), Some(Allocation::Reg(_))),
             "v1 should be in a register");
 
         // Run the pipeline: handle_caller_saved_regs then resolve_ssa
-        asm.handle_caller_saved_regs(&intervals, &assignments, regs);
-        asm.resolve_ssa(&intervals, &assignments);
+        asm.handle_caller_saved_regs(&intervals, &regs, c_arg_regs);
+        asm.resolve_ssa(&intervals, &regs);
 
         let insns = &asm.basic_blocks[b1.0].insns;
 
@@ -5022,11 +5256,7 @@ mod tests {
         assert!(!pushes.is_empty(), "Expected at least one saved register across CCall");
 
         // The survivor register should match v1's allocation
-        let v1_reg = match assignments[v1.vreg_idx()].unwrap() {
-            Allocation::Reg(n) => Opnd::Reg(regs[n]),
-            Allocation::Fixed(reg) => Opnd::Reg(reg),
-            _ => unreachable!(),
-        };
+        let v1_reg = Opnd::Reg(intervals[v1.vreg_idx()].assigned.get().unwrap().assigned_reg(&regs).unwrap());
         let pushed_v1 = pushes.iter().any(|insn| matches!(**insn, Insn::CPushPair(first, second) if first == v1_reg || second == v1_reg));
         let popped_v1 = pops.iter().any(|insn| matches!(**insn, Insn::CPopPairInto(first, second) if first == v1_reg || second == v1_reg));
         assert!(pushed_v1, "CPushPair should save v1's register");

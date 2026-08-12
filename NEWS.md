@@ -167,10 +167,12 @@ They are still available on rubygems.org and can be installed with
 * erb 6.0.7
   * 6.0.1 to [v6.0.1.1][erb-v6.0.1.1], [v6.0.2][erb-v6.0.2], [v6.0.3][erb-v6.0.3], [v6.0.4][erb-v6.0.4], [v6.0.5][erb-v6.0.5], [v6.0.6][erb-v6.0.6], [v6.0.7][erb-v6.0.7]
 * error_highlight 0.7.2
+* io-console 0.9.2
+  * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2]
 * ipaddr 1.2.9
   * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
-* json 2.21.2
-  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0], [v2.21.0][json-v2.21.0], [v2.21.2][json-v2.21.2]
+* json 3.0.0.rc1
+  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0], [v2.21.0][json-v2.21.0], [v2.21.2][json-v2.21.2], [v3.0.0.rc1][json-v3.0.0.rc1]
 * openssl 4.0.2
   * 4.0.0 to [v4.0.1][openssl-v4.0.1], [v4.0.2][openssl-v4.0.2]
 * pp 0.6.4
@@ -385,6 +387,9 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [erb-v6.0.5]: https://github.com/ruby/erb/releases/tag/v6.0.5
 [erb-v6.0.6]: https://github.com/ruby/erb/releases/tag/v6.0.6
 [erb-v6.0.7]: https://github.com/ruby/erb/releases/tag/v6.0.7
+[io-console-v0.9.0]: https://github.com/ruby/io-console/releases/tag/v0.9.0
+[io-console-v0.9.1]: https://github.com/ruby/io-console/releases/tag/v0.9.1
+[io-console-v0.9.2]: https://github.com/ruby/io-console/releases/tag/v0.9.2
 [ipaddr-v1.2.9]: https://github.com/ruby/ipaddr/releases/tag/v1.2.9
 [json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
 [json-v2.19.0]: https://github.com/ruby/json/releases/tag/v2.19.0
@@ -400,6 +405,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [json-v2.20.0]: https://github.com/ruby/json/releases/tag/v2.20.0
 [json-v2.21.0]: https://github.com/ruby/json/releases/tag/v2.21.0
 [json-v2.21.2]: https://github.com/ruby/json/releases/tag/v2.21.2
+[json-v3.0.0.rc1]: https://github.com/ruby/json/releases/tag/v3.0.0.rc1
 [openssl-v4.0.1]: https://github.com/ruby/openssl/releases/tag/v4.0.1
 [openssl-v4.0.2]: https://github.com/ruby/openssl/releases/tag/v4.0.2
 [pp-v0.6.4]: https://github.com/ruby/pp/releases/tag/v0.6.4

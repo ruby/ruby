@@ -4,7 +4,7 @@
  */
 
 static const char *const
-IO_CONSOLE_VERSION = "0.8.2";
+IO_CONSOLE_VERSION = "0.9.2";
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -56,6 +56,13 @@ typedef struct sgttyb conmode;
 #include <conio.h>
 typedef DWORD conmode;
 
+#ifndef ENABLE_WRAP_AT_EOL_OUTPUT
+# define ENABLE_WRAP_AT_EOL_OUTPUT 0x0002
+#endif
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+# define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#endif
+
 #define LAST_ERROR rb_w32_map_errno(GetLastError())
 #define SET_LAST_ERROR (errno = LAST_ERROR, 0)
 
@@ -81,12 +88,16 @@ getattr(int fd, conmode *t)
 
 #define CSI "\x1b\x5b"
 
-static ID id_getc, id_close;
+static ID id_getc, id_close, id_timeout;
 static ID id_gets, id_flush, id_chomp_bang;
 
 #ifndef HAVE_RB_INTERNED_STR_CSTR
 # define rb_str_to_interned_str(str) rb_str_freeze(str)
 # define rb_interned_str_cstr(str) rb_str_freeze(rb_usascii_str_new_cstr(str))
+#endif
+
+#if !defined(HAVE_RB_CATEGORY_WARN) || !defined(HAVE_CONST_RB_WARN_CATEGORY_DEPRECATED)
+# define rb_category_warn(category, ...) rb_warn(__VA_ARGS__)
 #endif
 
 #if defined HAVE_RUBY_FIBER_SCHEDULER_H
@@ -621,6 +632,43 @@ console_getch(int argc, VALUE *argv, VALUE io)
 
 /*
  * call-seq:
+ *   io.input_pending?          -> true or false
+ *
+ * Returns whether input can be read without blocking.
+ *
+ * You must require 'io/console' to use this method.
+ */
+static VALUE
+console_input_pending_p(VALUE io)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
+    if (rb_io_read_pending(fptr)) return Qtrue;
+#ifdef _WIN32
+    {
+	DWORD mode;
+	HANDLE h = (HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
+
+	if (GetConsoleMode(h, &mode)) return _kbhit() ? Qtrue : Qfalse;
+    }
+#endif
+#if defined HAVE_RB_IO_WAIT
+    return RTEST(rb_io_wait(io, RB_INT2NUM(RUBY_IO_READABLE), INT2FIX(0))) ? Qtrue : Qfalse;
+#else
+    {
+	struct timeval timeout = {0, 0};
+	int result;
+
+	result = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, &timeout);
+	if (result < 0) sys_fail(io);
+	return (result & RB_WAITFD_IN) ? Qtrue : Qfalse;
+    }
+#endif
+}
+
+/*
+ * call-seq:
  *   io.noecho {|io| }
  *
  * Yields +self+ with disabling echo back.
@@ -745,6 +793,70 @@ conmode_raw_new(int argc, VALUE *argv, VALUE obj)
     set_rawmode(&t, optp);
     return conmode_new(rb_obj_class(obj), &t);
 }
+
+#ifdef _WIN32
+/*
+ * call-seq:
+ *   mode.virtual_terminal_processing? -> true or false
+ *
+ * Returns whether virtual terminal sequences are processed on output.
+ */
+static VALUE
+conmode_virtual_terminal_processing_p(VALUE obj)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    return (*t & ENABLE_VIRTUAL_TERMINAL_PROCESSING) ? Qtrue : Qfalse;
+}
+
+/*
+ * call-seq:
+ *   mode.virtual_terminal_processing = enabled
+ *
+ * Enables or disables virtual terminal sequence processing in +mode+.
+ * Assign +mode+ to IO#console_mode= to apply the change.
+ */
+static VALUE
+conmode_set_virtual_terminal_processing(VALUE obj, VALUE enabled)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    if (RTEST(enabled))
+	*t |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    else
+	*t &= ~ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    return obj;
+}
+
+/*
+ * call-seq:
+ *   mode.wrap_at_eol_output? -> true or false
+ *
+ * Returns whether output wraps at the end of a line.
+ */
+static VALUE
+conmode_wrap_at_eol_output_p(VALUE obj)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    return (*t & ENABLE_WRAP_AT_EOL_OUTPUT) ? Qtrue : Qfalse;
+}
+
+/*
+ * call-seq:
+ *   mode.wrap_at_eol_output = enabled
+ *
+ * Enables or disables wrapping at the end of a line in +mode+.
+ * Assign +mode+ to IO#console_mode= to apply the change.
+ */
+static VALUE
+conmode_set_wrap_at_eol_output(VALUE obj, VALUE enabled)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    if (RTEST(enabled))
+	*t |= ENABLE_WRAP_AT_EOL_OUTPUT;
+    else
+	*t &= ~ENABLE_WRAP_AT_EOL_OUTPUT;
+    return obj;
+}
+#endif
 
 /*
  * call-seq:
@@ -946,11 +1058,206 @@ console_set_winsize(VALUE io, VALUE size)
 #endif
 
 #ifdef _WIN32
+enum console_input_handle_index {
+    console_input_handle,
+    console_input_wakeup,
+    console_input_handle_count
+};
+
+typedef struct {
+    HANDLE handles[console_input_handle_count];
+    INPUT_RECORD *records;
+    DWORD length;
+    DWORD count;
+    DWORD timeout;
+    DWORD wait_result;
+    DWORD error;
+    BOOL result;
+} read_console_input_args_t;
+
+static void *
+nogvl_read_console_input(void *ptr)
+{
+    read_console_input_args_t *args = ptr;
+
+    args->wait_result = WaitForMultipleObjects(console_input_handle_count,
+					       args->handles, FALSE, args->timeout);
+    if (args->wait_result == WAIT_OBJECT_0 + console_input_handle) {
+	args->result = ReadConsoleInputW(args->handles[console_input_handle],
+					 args->records, args->length, &args->count);
+	if (!args->result) args->error = GetLastError();
+    }
+    else if (args->wait_result == WAIT_FAILED) {
+	args->error = GetLastError();
+    }
+    return 0;
+}
+
+static void
+ubf_console_input(void *ptr)
+{
+    read_console_input_args_t *args = ptr;
+    SetEvent(args->handles[console_input_wakeup]);
+}
+
+static void
+console_input_event_set(VALUE event, const char *name, VALUE value)
+{
+    rb_hash_aset(event, ID2SYM(rb_intern(name)), value);
+}
+
+static VALUE
+console_input_event(const INPUT_RECORD *record)
+{
+    VALUE event = rb_hash_new();
+
+    switch (record->EventType) {
+      case KEY_EVENT:
+	console_input_event_set(event, "type", ID2SYM(rb_intern("key")));
+	console_input_event_set(event, "key_down", record->Event.KeyEvent.bKeyDown ? Qtrue : Qfalse);
+	console_input_event_set(event, "repeat_count", UINT2NUM(record->Event.KeyEvent.wRepeatCount));
+	console_input_event_set(event, "virtual_key_code", UINT2NUM(record->Event.KeyEvent.wVirtualKeyCode));
+	console_input_event_set(event, "virtual_scan_code", UINT2NUM(record->Event.KeyEvent.wVirtualScanCode));
+	console_input_event_set(event, "unicode_char", UINT2NUM(record->Event.KeyEvent.uChar.UnicodeChar));
+	console_input_event_set(event, "control_key_state", UINT2NUM(record->Event.KeyEvent.dwControlKeyState));
+	break;
+      case MOUSE_EVENT:
+	console_input_event_set(event, "type", ID2SYM(rb_intern("mouse")));
+	console_input_event_set(event, "position", rb_assoc_new(
+	    INT2NUM(record->Event.MouseEvent.dwMousePosition.Y),
+	    INT2NUM(record->Event.MouseEvent.dwMousePosition.X)));
+	console_input_event_set(event, "button_state", UINT2NUM(record->Event.MouseEvent.dwButtonState));
+	console_input_event_set(event, "control_key_state", UINT2NUM(record->Event.MouseEvent.dwControlKeyState));
+	console_input_event_set(event, "event_flags", UINT2NUM(record->Event.MouseEvent.dwEventFlags));
+	break;
+      case WINDOW_BUFFER_SIZE_EVENT:
+	console_input_event_set(event, "type", ID2SYM(rb_intern("window_buffer_size")));
+	console_input_event_set(event, "size", rb_assoc_new(
+	    INT2NUM(record->Event.WindowBufferSizeEvent.dwSize.Y),
+	    INT2NUM(record->Event.WindowBufferSizeEvent.dwSize.X)));
+	break;
+      case MENU_EVENT:
+	console_input_event_set(event, "type", ID2SYM(rb_intern("menu")));
+	console_input_event_set(event, "command_id", UINT2NUM(record->Event.MenuEvent.dwCommandId));
+	break;
+      case FOCUS_EVENT:
+	console_input_event_set(event, "type", ID2SYM(rb_intern("focus")));
+	console_input_event_set(event, "set_focus", record->Event.FocusEvent.bSetFocus ? Qtrue : Qfalse);
+	break;
+      default:
+	console_input_event_set(event, "type", UINT2NUM(record->EventType));
+	break;
+    }
+
+    return event;
+}
+
+static VALUE
+console_input_events_read(VALUE vargs)
+{
+    read_console_input_args_t *args = (read_console_input_args_t *)vargs;
+    VALUE events;
+    DWORD i;
+
+    rb_thread_call_without_gvl(nogvl_read_console_input, args,
+			       ubf_console_input, args);
+    if (args->wait_result == WAIT_TIMEOUT) return rb_ary_new();
+    if (args->wait_result != WAIT_OBJECT_0 + console_input_handle ||
+	!args->result) {
+	rb_syserr_fail(rb_w32_map_errno(args->error), 0);
+    }
+
+    events = rb_ary_new_capa(args->count);
+    for (i = 0; i < args->count; ++i) {
+	rb_ary_push(events, console_input_event(&args->records[i]));
+    }
+    return events;
+}
+
+static VALUE
+console_input_events_ensure(VALUE vargs)
+{
+    read_console_input_args_t *args = (read_console_input_args_t *)vargs;
+
+    CloseHandle(args->handles[console_input_wakeup]);
+    xfree(args->records);
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *   io.console_input_events([max_events], timeout: nil)   -> array
+ *
+ * Reads up to +max_events+ console input events, preserving their order.
+ * The default is one event.  Blocks until at least one event is available,
+ * or for +timeout+ seconds if specified.  Returns an empty Array on timeout.
+ *
+ * Each event is returned as a Hash.  The +:type+ and remaining keys are:
+ *
+ * - +:key+ : +:key_down+, +:repeat_count+, +:virtual_key_code+,
+ *   +:virtual_scan_code+, +:unicode_char+, and +:control_key_state+.
+ * - +:mouse+ : +:position+ ([row, column]), +:button_state+,
+ *   +:control_key_state+, and +:event_flags+.
+ * - +:window_buffer_size+ : +:size+ ([rows, columns]).
+ * - +:menu+ : +:command_id+.
+ * - +:focus+ : +:set_focus+.
+ *
+ * This method is Windows only.
+ *
+ * You must require 'io/console' to use this method.
+ */
+static VALUE
+console_input_events(int argc, VALUE *argv, VALUE io)
+{
+    VALUE vmax = Qnil, vopts = Qnil, vtimeout = Qundef;
+    VALUE values[1];
+    ID keywords[1] = {id_timeout};
+    DWORD max_events = 1;
+    read_console_input_args_t args;
+
+    rb_scan_args(argc, argv, "01:", &vmax, &vopts);
+    if (rb_get_kwargs(vopts, keywords, 0, 1, values)) {
+	vtimeout = values[0];
+    }
+    if (!NIL_P(vmax)) {
+	max_events = NUM2UINT(vmax);
+	if (max_events == 0) rb_raise(rb_eArgError, "max_events must be positive");
+    }
+
+    args.timeout = INFINITE;
+    if (!NIL_OR_UNDEF_P(vtimeout)) {
+	struct timeval timeout = rb_time_interval(vtimeout);
+	uint64_t milliseconds = (uint64_t)timeout.tv_sec * 1000;
+	milliseconds += ((uint64_t)timeout.tv_usec + 999) / 1000;
+	args.timeout = milliseconds < INFINITE ? (DWORD)milliseconds : INFINITE - 1;
+    }
+
+    args.handles[console_input_handle] =
+	(HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
+    args.records = ALLOC_N(INPUT_RECORD, max_events);
+    args.handles[console_input_wakeup] = CreateEvent(NULL, FALSE, FALSE, NULL);
+    if (!args.handles[console_input_wakeup]) {
+	int error = LAST_ERROR;
+	xfree(args.records);
+	rb_syserr_fail(error, 0);
+    }
+    args.length = max_events;
+    args.count = 0;
+    args.wait_result = WAIT_FAILED;
+    args.error = ERROR_SUCCESS;
+    args.result = FALSE;
+    return rb_ensure(console_input_events_read, (VALUE)&args,
+		     console_input_events_ensure, (VALUE)&args);
+}
+
 /*
  * call-seq:
  *   io.check_winsize_changed { ... }   -> io
  *
  * Yields while console input events are queued.
+ *
+ * Deprecated because it discards queued input events other than window buffer
+ * size changes.  Use IO#console_input_events instead to preserve all events.
  *
  * This method is Windows only.
  *
@@ -962,6 +1269,9 @@ console_check_winsize_changed(VALUE io)
     HANDLE h;
     DWORD num;
 
+    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
+		     "IO#check_winsize_changed is deprecated; "
+		     "use IO#console_input_events instead");
     h = (HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
     while (GetNumberOfConsoleInputEvents(h, &num) && num > 0) {
 	INPUT_RECORD rec;
@@ -974,6 +1284,7 @@ console_check_winsize_changed(VALUE io)
     return io;
 }
 #else
+#define console_input_events rb_f_notimplement
 #define console_check_winsize_changed rb_f_notimplement
 #endif
 
@@ -1272,6 +1583,54 @@ console_cursor_pos(VALUE io)
     RARRAY_ASET(resp, 1, INT2NUM(c));
     return resp;
 #endif
+}
+
+static VALUE
+console_cursor_visibility(VALUE io, int visible)
+{
+#ifdef _WIN32
+    HANDLE h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(io));
+    CONSOLE_CURSOR_INFO info;
+
+    if (!GetConsoleCursorInfo(h, &info)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    info.bVisible = visible;
+    if (!SetConsoleCursorInfo(h, &info)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+#else
+    rb_io_write(io, rb_str_new_cstr(visible ? CSI "?25h" : CSI "?25l"));
+#endif
+    return io;
+}
+
+/*
+ * call-seq:
+ *   io.hide_cursor             -> io
+ *
+ * Hides the cursor.
+ *
+ * You must require 'io/console' to use this method.
+ */
+static VALUE
+console_hide_cursor(VALUE io)
+{
+    return console_cursor_visibility(io, 0);
+}
+
+/*
+ * call-seq:
+ *   io.show_cursor             -> io
+ *
+ * Shows the cursor.
+ *
+ * You must require 'io/console' to use this method.
+ */
+static VALUE
+console_show_cursor(VALUE io)
+{
+    return console_cursor_visibility(io, 1);
 }
 
 /*
@@ -2032,6 +2391,7 @@ Init_console(void)
     id_flush = rb_intern("flush");
     id_chomp_bang = rb_intern("chomp!");
     id_close = rb_intern("close");
+    id_timeout = rb_intern("timeout");
 #define init_rawmode_opt_id(name) \
     rawmode_opt_ids[kwd_##name] = rb_intern(#name)
     init_rawmode_opt_id(min);
@@ -2046,11 +2406,31 @@ Init_console(void)
 void
 InitVM_console(void)
 {
+    /* :nodoc: */
+    VALUE mConsole = rb_define_module_under(rb_cIO, "Console");
+#ifdef _WIN32
+    /* :nodoc: */
+    VALUE mWindows = rb_define_module_under(mConsole, "Windows");
+#define define_win32_const(name) rb_define_const(mWindows, #name, UINT2NUM(name))
+    EACH_VK(define_win32_const,;);
+    define_win32_const(RIGHT_ALT_PRESSED);
+    define_win32_const(LEFT_ALT_PRESSED);
+    define_win32_const(RIGHT_CTRL_PRESSED);
+    define_win32_const(LEFT_CTRL_PRESSED);
+    define_win32_const(SHIFT_PRESSED);
+    define_win32_const(NUMLOCK_ON);
+    define_win32_const(SCROLLLOCK_ON);
+    define_win32_const(CAPSLOCK_ON);
+    define_win32_const(ENHANCED_KEY);
+#undef define_win32_const
+#endif
+
     rb_define_method(rb_cIO, "raw", console_raw, -1);
     rb_define_method(rb_cIO, "raw!", console_set_raw, -1);
     rb_define_method(rb_cIO, "cooked", console_cooked, 0);
     rb_define_method(rb_cIO, "cooked!", console_set_cooked, 0);
     rb_define_method(rb_cIO, "getch", console_getch, -1);
+    rb_define_method(rb_cIO, "input_pending?", console_input_pending_p, 0);
     rb_define_method(rb_cIO, "echo=", console_set_echo, 1);
     rb_define_method(rb_cIO, "echo?", console_echo_p, 0);
     rb_define_method(rb_cIO, "console_mode", console_conmode_get, 0);
@@ -2065,6 +2445,8 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "goto", console_goto, 2);
     rb_define_method(rb_cIO, "cursor", console_cursor_pos, 0);
     rb_define_method(rb_cIO, "cursor=", console_cursor_set, 1);
+    rb_define_method(rb_cIO, "hide_cursor", console_hide_cursor, 0);
+    rb_define_method(rb_cIO, "show_cursor", console_show_cursor, 0);
     rb_define_method(rb_cIO, "cursor_up", console_cursor_up, 1);
     rb_define_method(rb_cIO, "cursor_down", console_cursor_down, 1);
     rb_define_method(rb_cIO, "cursor_left", console_cursor_left, 1);
@@ -2076,6 +2458,7 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "scroll_backward", console_scroll_backward, 1);
     rb_define_method(rb_cIO, "clear_screen", console_clear_screen, 0);
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
+    rb_define_method(rb_cIO, "console_input_events", console_input_events, -1);
     rb_define_method(rb_cIO, "check_winsize_changed", console_check_winsize_changed, 0);
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
     rb_define_method(rb_cIO, "ttyname", console_ttyname, 0);
@@ -2102,7 +2485,6 @@ InitVM_console(void)
     }
     {
 	/* :nodoc: */
-	VALUE mConsole = rb_define_module_under(rb_cIO, "Console");
 	VALUE version = rb_obj_freeze(rb_str_new_cstr(IO_CONSOLE_VERSION));
 	ID cid, deprecate_constant = rb_intern_const("deprecate_constant");
 	rb_define_const(mConsole, "VERSION", version);
@@ -2123,5 +2505,11 @@ InitVM_console(void)
         rb_define_method(cConmode, "echo=", conmode_set_echo, 1);
         rb_define_method(cConmode, "raw!", conmode_set_raw, -1);
         rb_define_method(cConmode, "raw", conmode_raw_new, -1);
+#ifdef _WIN32
+        rb_define_method(cConmode, "virtual_terminal_processing?", conmode_virtual_terminal_processing_p, 0);
+        rb_define_method(cConmode, "virtual_terminal_processing=", conmode_set_virtual_terminal_processing, 1);
+        rb_define_method(cConmode, "wrap_at_eol_output?", conmode_wrap_at_eol_output_p, 0);
+        rb_define_method(cConmode, "wrap_at_eol_output=", conmode_set_wrap_at_eol_output, 1);
+#endif
     }
 }

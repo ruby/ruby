@@ -22,13 +22,15 @@ pub const EC: Opnd = Opnd::Reg(X20_REG);
 pub const SP: Opnd = Opnd::Reg(X21_REG);
 
 // C argument registers on this platform
-pub const C_ARG_OPNDS: [Opnd; 6] = [
+pub const C_ARG_OPNDS: [Opnd; 8] = [
     Opnd::Reg(X0_REG),
     Opnd::Reg(X1_REG),
     Opnd::Reg(X2_REG),
     Opnd::Reg(X3_REG),
     Opnd::Reg(X4_REG),
-    Opnd::Reg(X5_REG)
+    Opnd::Reg(X5_REG),
+    Opnd::Reg(X6_REG),
+    Opnd::Reg(X7_REG)
 ];
 
 // Make sure we're using the same c args everywhere
@@ -168,7 +170,6 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
 }
 
 /// List of registers that can be used for register allocation.
-/// This has the same number of registers for x86_64 and arm64.
 /// SCRATCH_OPND, SCRATCH1_OPND, and EMIT_OPND are excluded.
 pub const ALLOC_REGS: &[Reg] = &[
     X0_REG,
@@ -177,6 +178,8 @@ pub const ALLOC_REGS: &[Reg] = &[
     X3_REG,
     X4_REG,
     X5_REG,
+    X6_REG,
+    X7_REG,
     X11_REG,
     X12_REG,
 ];
@@ -1612,6 +1615,7 @@ impl Assembler {
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
         let use_scratch_reg = !self.accept_scratch_reg;
+        let mut regs = RegPool::new(regs);
         asm_dump!(self, init);
 
         let mut asm = trace_compile_phase("split", || self.arm64_split());
@@ -1622,7 +1626,7 @@ impl Assembler {
             trace_compile_phase("number_instructions", || asm.number_instructions(0));
 
             let live_in = trace_compile_phase("analyze_liveness", || asm.analyze_liveness());
-            let intervals = trace_compile_phase("build_intervals", || asm.build_intervals(live_in));
+            let mut intervals = trace_compile_phase("build_intervals", || asm.build_intervals(live_in));
 
             // Dump live intervals if requested
             if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
@@ -1631,11 +1635,11 @@ impl Assembler {
                 }
             }
 
-            let preferred_registers = trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&intervals));
-            let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(intervals.clone(), regs.len(), &preferred_registers));
+            trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&mut intervals, &mut regs));
+            let num_stack_slots = trace_compile_phase("linear_scan", || asm.linear_scan(&intervals, &regs));
 
             asm.stack_state.num_spill_slots = num_stack_slots;
-            asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&assignments);
+            asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&intervals);
             let stack_slot_count = asm.stack_state.stack_slot_count();
 
             // Dump vreg-to-physical-register mapping if requested
@@ -1644,15 +1648,13 @@ impl Assembler {
                     println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
 
                     println!("VReg assignments:");
-                    for (i, alloc) in assignments.iter().enumerate() {
-                        if let Some(alloc) = alloc {
-                            let range = &intervals[i].range;
+                    for (i, interval) in intervals.iter().enumerate() {
+                        if let Some(alloc) = interval.assigned.get() {
                             let alloc_str = match alloc {
-                                Allocation::Reg(n) => format!("{}", regs[*n]),
-                                Allocation::Fixed(reg) => format!("{}", reg),
+                                Allocation::Reg(n) => format!("{}", regs.reg_at(n)),
                                 Allocation::Stack(n) => format!("Stack[{}]", n),
                             };
-                            println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, range.start, range.end);
+                            println!("  v{} => {} (ranges: {})", i, alloc_str, interval.ranges_string());
                         }
                     }
                 }
@@ -1671,8 +1673,8 @@ impl Assembler {
             });
 
             trace_compile_phase("resolve_ssa", || {
-                asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
-                asm.resolve_ssa(&intervals, &assignments);
+                asm.handle_caller_saved_regs(&intervals, &regs, &C_ARG_REGREGS);
+                asm.resolve_ssa(&intervals, &regs);
             });
 
             Ok(())
@@ -1979,10 +1981,10 @@ mod tests {
 
         // Assert that only 2 instructions were written.
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: adds x0, x0, x1
-        0x4: stur x0, [x2]
+        0x0: adds x3, x0, x1
+        0x4: stur x3, [x2]
         ");
-        assert_snapshot!(cb.hexdump(), @"000001ab400000f8");
+        assert_snapshot!(cb.hexdump(), @"030001ab430000f8");
     }
 
     #[test]

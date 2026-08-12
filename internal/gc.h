@@ -236,6 +236,7 @@ void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), v
 void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *data);
 int rb_objspace_internal_object_p(VALUE obj);
 int rb_objspace_garbage_object_p(VALUE obj);
+int rb_objspace_foreign_object_p(VALUE obj);
 void rb_gc_declare_weak_references(VALUE obj);
 bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 
@@ -304,6 +305,7 @@ bool rb_gc_obj_foreign_p(VALUE obj);
 void *rb_gc_objspace_alloc(void);
 void rb_gc_objspace_retire_gc(void);
 void rb_gc_objspace_retire(void **objspace_slot);
+void rb_gc_objspace_postmortem_self(void);
 void rb_gc_objspace_absorb_into_current(void **objspace_slot);
 void rb_gc_objspace_absorb_all_zombies(void);
 void rb_gc_objspace_disown(void *objspace);

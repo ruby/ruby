@@ -373,7 +373,7 @@ class TestObject < Test::Unit::TestCase
 
       # All embed_cap ivars fit - should be embedded
       embed_cap.times { |i| o1.instance_variable_set(:"@v#{i}", i) }
-      assert_includes ObjectSpace.dump(o1), '"embedded":true'
+      assert_include ObjectSpace.dump(o1), '"embedded":true'
 
       # One more ivar overflows embed capacity
       o1.instance_variable_set(:@overflow, 99)
@@ -381,11 +381,11 @@ class TestObject < Test::Unit::TestCase
 
       # Remove the overflow ivar - should re-embed
       o1.remove_instance_variable(:@overflow)
-      assert_includes ObjectSpace.dump(o1), '"embedded":true'
+      assert_include ObjectSpace.dump(o1), '"embedded":true'
 
       # An object that never overflowed is also embedded
       embed_cap.times { |i| o2.instance_variable_set(:"@v#{i}", i) }
-      assert_includes ObjectSpace.dump(o2), '"embedded":true'
+      assert_include ObjectSpace.dump(o2), '"embedded":true'
 
       # Verify values survived re-embedding
       embed_cap.times do |i|

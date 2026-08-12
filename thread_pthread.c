@@ -494,6 +494,7 @@ ractor_sched_set_unlocked(rb_vm_t *vm, rb_ractor_t *cr)
 #endif
 }
 
+
 static void
 ractor_sched_lock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 {
@@ -3014,6 +3015,13 @@ static struct {
     // waiting threads list
     struct ccan_list_head waiting; // waiting threads in ractors
     pthread_mutex_t waiting_lock;
+
+#if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
+    // fd -> struct rb_fd_waiters, in chunks so entries never move.
+    // Protected by waiting_lock.
+    struct rb_fd_waiters **fdmap_chunks;
+    unsigned int fdmap_nchunks;
+#endif
 } timer_th = {
     .created_fork_gen = 0,
 };
@@ -3023,6 +3031,7 @@ static struct {
 static void timer_thread_check_timeslice(rb_vm_t *vm);
 static int timer_thread_set_timeout(rb_vm_t *vm);
 static void timer_thread_wakeup_thread(rb_thread_t *th, uint32_t event_serial);
+static rb_thread_t *thread_sched_waiting_thread(struct rb_thread_sched_waiting *w);
 
 #include "thread_pthread_mn.c"
 
@@ -3558,6 +3567,24 @@ struct rb_internal_thread_event_hook {
 
 static pthread_rwlock_t rb_internal_thread_event_hooks_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
 
+/* For the GC: whether any thread-event hook is registered right now.  The rwlock
+ * makes the answer happen-after any completed registration; a hook registered
+ * after this read gets no event from the asking thread (rb_thread_execute_hooks
+ * skips a swept thread), so it never sees the objects the caller may collect. */
+bool
+rb_thread_event_hooks_registered_p(void)
+{
+    int r;
+    if ((r = pthread_rwlock_rdlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_rdlock", r);
+    }
+    const bool registered = (rb_internal_thread_event_hooks != NULL);
+    if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_unlock", r);
+    }
+    return registered;
+}
+
 #if defined(HAVE_WORKING_FORK)
 static void
 rb_internal_thread_event_hooks_rw_lock_atfork(void)
@@ -3636,6 +3663,10 @@ static void
 rb_thread_execute_hooks(rb_event_flag_t event, rb_thread_t *th)
 {
     int r;
+
+    /* th->self == 0: the dying thread's final collection swept its Thread wrapper, so
+     * no hook existed then; one registered since has no ordering claim to this event. */
+    if (th->self == 0) return;
     if ((r = pthread_rwlock_rdlock(&rb_internal_thread_event_hooks_rw_lock))) {
         rb_bug_errno("pthread_rwlock_rdlock", r);
     }

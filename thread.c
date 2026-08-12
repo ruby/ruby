@@ -696,10 +696,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         RB_VM_LOCK();
         {
             rb_vm_ractor_blocking_cnt_dec(th->vm, th->ractor, __FILE__, __LINE__);
-            rb_ractor_t *r = th->ractor;
-            r->r_stdin = rb_io_prep_stdin();
-            r->r_stdout = rb_io_prep_stdout();
-            r->r_stderr = rb_io_prep_stderr();
 
             /* Left 0 at creation (building them then would put them in the parent's
              * objspace), so build them here out of objects this Ractor owns.  The mask
@@ -827,12 +823,20 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     thread_cleanup_func(th, FALSE);
     VM_ASSERT(th->ec->vm_stack == NULL);
 
+    // A dying Ractor collects its own objspace here, before the scheduler handoff
+    // below, and captures the structs it must free at its last step.
+    struct rb_ractor_postmortem_frees pf = { NULL, NULL };
+    if (th->invoke_type == thread_invoke_type_ractor_proc) {
+        rb_ractor_postmortem(th, &pf);
+    }
+
 #if defined(USE_MN_THREADS) && USE_MN_THREADS
     if (th_has_coroutine(th)) {
         // Run the coroutine thread's epilogue here, while th is still valid;
         // co_start then only makes the final transfer (see
         // coroutine_thread_terminated in thread_pthread_mn.c).
         coroutine_thread_terminated(th);
+        rb_ractor_postmortem_free(&pf);
         return 0;
     }
 #endif
@@ -843,6 +847,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         // So gvl_release() should be before it.
         thread_sched_to_dead(TH_SCHED(th), th);
         rb_ractor_living_threads_remove(th->ractor, th);
+        rb_ractor_postmortem_free(&pf);
     }
     else {
         rb_ractor_living_threads_remove(th->ractor, th);
@@ -2056,9 +2061,17 @@ thread_io_mn_schedulable(rb_thread_t *th, int events, const struct timeval *time
 #endif
 }
 
-// true if need retry
-static bool
-thread_io_wait_events(rb_thread_t *th, int fd, int events, const struct timeval *timeout)
+enum io_wait_result {
+    io_wait_ready,     // the MN scheduler waited and the fd is ready
+    io_wait_unhandled, // the MN scheduler did not wait; use the blocking path
+};
+
+// Wait for `fd` on the MN scheduler, if it can take this wait at all.
+// `known_not_ready`: the caller just saw EAGAIN, so probing the fd would only
+// repeat an answer we have.  Callers with no preceding operation need the probe.
+static enum io_wait_result
+thread_io_wait_events(rb_thread_t *th, int fd, int events, const struct timeval *timeout,
+                      bool known_not_ready)
 {
 #if defined(USE_MN_THREADS) && USE_MN_THREADS
     if (thread_io_mn_schedulable(th, events, timeout)) {
@@ -2074,16 +2087,23 @@ thread_io_wait_events(rb_thread_t *th, int fd, int events, const struct timeval 
 
         VM_ASSERT(prel || (events & (RB_WAITFD_IN | RB_WAITFD_OUT)));
 
-        if (thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), prel)) {
-            // timeout
-            return false;
-        }
-        else {
-            return true;
+        enum thread_sched_waiting_flag flags = waitfd_to_waiting_flag(events);
+        if (known_not_ready) flags |= thread_sched_waiting_io_force;
+
+        switch (thread_sched_wait_events(TH_SCHED(th), th, fd, flags, prel)) {
+          case thread_sched_wait_event:
+            return io_wait_ready;
+          case thread_sched_wait_timeout:
+            // Let the caller re-examine the fd through the blocking path.
+            return io_wait_unhandled;
+          case thread_sched_wait_unavailable:
+            // Never waited: reporting "ready" here would fabricate readiness and
+            // spin, so hand the wait back to the caller's blocking path.
+            return io_wait_unhandled;
         }
     }
 #endif // defined(USE_MN_THREADS) && USE_MN_THREADS
-    return false;
+    return io_wait_unhandled;
 }
 
 // assume read/write
@@ -2148,11 +2168,19 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
             }, ubf_select, th, FALSE);
 
             RUBY_ASSERT(th == rb_ec_thread_ptr(ec));
-            if (events &&
-                blocking_call_retryable_p((int)val, saved_errno) &&
-                thread_io_wait_events(th, fd, events, NULL)) {
-                RUBY_VM_CHECK_INTS_BLOCKING(ec);
-                goto retry;
+            if (events && blocking_call_retryable_p((int)val, saved_errno)) {
+                // `func` just returned EAGAIN, so the fd is known not to be ready.
+                if (thread_io_wait_events(th, fd, events, NULL, true) == io_wait_ready) {
+                    RUBY_VM_CHECK_INTS_BLOCKING(ec);
+                    goto retry;
+                }
+                else if (th->mn_schedulable) {
+                    // Retrying now would spin and returning would leak EAGAIN to
+                    // Ruby, so wait the ordinary blocking way, then retry.
+                    rb_thread_wait_for_single_fd(th, fd, events, NULL);
+                    RUBY_VM_CHECK_INTS_BLOCKING(ec);
+                    goto retry;
+                }
             }
 
             RUBY_VM_CHECK_INTS_BLOCKING(ec);
@@ -4828,7 +4856,7 @@ thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct tim
         rb_io_blocking_operation_enter(io, &blocking_operation);
     }
 
-    if (timeout == NULL && thread_io_wait_events(th, fd, events, NULL)) {
+    if (timeout == NULL && thread_io_wait_events(th, fd, events, NULL, false) == io_wait_ready) {
         // fd is readable
         state = 0;
         fds[0].revents = events;

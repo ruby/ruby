@@ -839,6 +839,12 @@ rb_gc_impl_user_gc_disabled_set(void *objspace_ptr, bool disable)
     struct objspace *objspace = objspace_ptr;
     const bool was = objspace->user_gc_disabled;
     objspace->user_gc_disabled = disable;
+
+    if (was != disable) {
+        mmtk_set_gc_enabled(!disable);
+        objspace->user_gc_disabled = disable;
+    }
+
     return was;
 }
 
@@ -1206,6 +1212,13 @@ bool
 rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj)
 {
     return rb_mmtk_call_object_closure(obj, false) != obj;
+}
+
+bool
+rb_gc_impl_pinned_p(void *objspace_ptr, VALUE obj)
+{
+    /* MMTk tracks pinning separately */
+    return false;
 }
 
 VALUE
@@ -1807,6 +1820,13 @@ rb_gc_impl_during_global_gc_p(void *objspace_ptr)
      * stopped. */
     struct objspace *objspace = objspace_ptr;
     return objspace->world_stopped;
+}
+
+bool
+rb_gc_impl_during_postmortem_p(void *objspace_ptr)
+{
+    /* mmtk has a single objspace and no per-Ractor retire collection. */
+    return false;
 }
 
 bool

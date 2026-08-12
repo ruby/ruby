@@ -1143,6 +1143,7 @@ impl Assembler {
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
         let use_scratch_regs = !self.accept_scratch_reg;
+        let mut regs = RegPool::new(regs);
         asm_dump!(self, init);
 
         let mut asm = trace_compile_phase("split", || self.x86_split());
@@ -1153,7 +1154,7 @@ impl Assembler {
             trace_compile_phase("number_instructions", || asm.number_instructions(0));
 
             let live_in = trace_compile_phase("analyze_liveness", || asm.analyze_liveness());
-            let intervals = trace_compile_phase("build_intervals", || asm.build_intervals(live_in));
+            let mut intervals = trace_compile_phase("build_intervals", || asm.build_intervals(live_in));
 
             // Dump live intervals if requested
             if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
@@ -1162,11 +1163,11 @@ impl Assembler {
                 }
             }
 
-            let preferred_registers = trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&intervals));
-            let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(intervals.clone(), regs.len(), &preferred_registers));
+            trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&mut intervals, &mut regs));
+            let num_stack_slots = trace_compile_phase("linear_scan", || asm.linear_scan(&intervals, &regs));
 
             asm.stack_state.num_spill_slots = num_stack_slots;
-            asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&assignments);
+            asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&intervals);
             let stack_slot_count = asm.stack_state.stack_slot_count();
             if stack_slot_count > Self::MAX_FRAME_STACK_SLOTS {
                 return Err(CompileError::NativeStackTooLarge);
@@ -1178,15 +1179,13 @@ impl Assembler {
                     println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
 
                     println!("VReg assignments:");
-                    for (i, alloc) in assignments.iter().enumerate() {
-                        if let Some(alloc) = alloc {
-                            let range = &intervals[i].range;
+                    for (i, interval) in intervals.iter().enumerate() {
+                        if let Some(alloc) = interval.assigned.get() {
                             let alloc_str = match alloc {
-                                Allocation::Reg(n) => format!("{}", regs[*n]),
-                                Allocation::Fixed(reg) => format!("{}", reg),
+                                Allocation::Reg(n) => format!("{}", regs.reg_at(n)),
                                 Allocation::Stack(n) => format!("Stack[{}]", n),
                             };
-                            println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, range.start, range.end);
+                            println!("  v{} => {} (ranges: {})", i, alloc_str, interval.ranges_string());
                         }
                     }
                 }
@@ -1205,8 +1204,8 @@ impl Assembler {
             });
 
             trace_compile_phase("resolve_ssa", || {
-                asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
-                asm.resolve_ssa(&intervals, &assignments);
+                asm.handle_caller_saved_regs(&intervals, &regs, &C_ARG_REGREGS);
+                asm.resolve_ssa(&intervals, &regs);
             });
 
             Ok(())

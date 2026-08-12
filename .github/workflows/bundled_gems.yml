@@ -136,7 +136,7 @@ jobs:
               line = head[/\A\h+ \d+ \K\d+/].to_i
               level = if d < days; 'warning'; else old += 1; 'error'; end
               d += days
-              puts "::#{level} file=#{file},line=#{line},title=Older than #{d} days::#{gem[0]} #{gem[3]}"
+              puts "::#{level} file=#{file},line=#{line},title=Older than #{d} days::#{gem[0]} #{gem[3]} #{gem[2]}/commit/#{gem[3]}"
             end
           end
           abort "::error title=Too long-standing gems::The release comes soon." if december and old.nonzero?

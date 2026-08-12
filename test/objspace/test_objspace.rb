@@ -28,10 +28,10 @@ class TestObjSpace < Test::Unit::TestCase
                     ObjectSpace.memsize_of(//.match("")))
   end
 
-  STR_DUPLICATE_MAX_EMBED_LEN = 256 - (RbConfig::SIZEOF["void*"] * 3) - 1 # From macro defined in string.c
+  STR_COPY_MAX_EMBED_SIZE = 256 - (RbConfig::SIZEOF["void*"] * 3) - 1 # From macro defined in string.c
 
   def test_memsize_of_root_shared_string
-    a = "a" * (STR_DUPLICATE_MAX_EMBED_LEN + 1)
+    a = "a" * (STR_COPY_MAX_EMBED_SIZE + 1)
     b = a.dup
     c = nil
     ObjectSpace.each_object(String) {|x| break c = x if a == x and x.frozen?}
@@ -170,6 +170,34 @@ class TestObjSpace < Test::Unit::TestCase
           assert_operator(size, :>=, 0)
         }
       }
+    end;
+  end
+
+  def test_reachable_objects_from_doesnt_break_ractor_containment
+    assert_ractor("#{<<-"begin;"}#{<<-'end;'}")
+    begin;
+      require "objspace"
+      port = Ractor::Port.new
+      ch = Ractor.new(port) do |port|
+        o = Object.new
+        def o.inspect = "unshareable!"
+        sc = o.singleton_class
+        port << [sc] # TODO: singleton classes of unshareables should not be shareable
+        Ractor.receive # wait
+      end
+
+      sc_ary = port.receive
+
+      found = false
+      ObjectSpace.reachable_objects_from(sc_ary).each do |obj|
+        if obj.inspect == "unshareable!"
+          found = true
+        end
+      end
+
+      ch.send(:go)
+      ch.join
+      refute found, "ObjectSpace.reachable_objects_from breaks ractor containment"
     end;
   end
 
@@ -687,18 +715,18 @@ class TestObjSpace < Test::Unit::TestCase
       end;
       assert_empty error
       assert(output.count > 1)
-      assert_includes output.grep(/"imemo_type":"callinfo"/).join("\n"), '"mid":"baz"'
+      assert_include output.grep(/"imemo_type":"callinfo"/).join("\n"), '"mid":"baz"'
     end
   end
 
   def test_dump_string_coderange
-    assert_includes ObjectSpace.dump("TEST STRING"), '"coderange":"7bit"'
+    assert_include ObjectSpace.dump("TEST STRING"), '"coderange":"7bit"'
     unknown = "TEST STRING".dup.force_encoding(Encoding::UTF_16BE)
     2.times do # ensure that dumping the string doesn't mutate it
-      assert_includes ObjectSpace.dump(unknown), '"coderange":"unknown"'
+      assert_include ObjectSpace.dump(unknown), '"coderange":"unknown"'
     end
-    assert_includes ObjectSpace.dump("Fée"), '"coderange":"valid"'
-    assert_includes ObjectSpace.dump("\xFF"), '"coderange":"broken"'
+    assert_include ObjectSpace.dump("Fée"), '"coderange":"valid"'
+    assert_include ObjectSpace.dump("\xFF"), '"coderange":"broken"'
   end
 
   def test_dump_escapes_method_name
@@ -711,7 +739,7 @@ class TestObjSpace < Test::Unit::TestCase
     obj = klass.new.send(method_name)
 
     dump = ObjectSpace.dump(obj)
-    assert_includes dump, '"method":"foo\"bar"'
+    assert_include dump, '"method":"foo\"bar"'
 
     parsed = JSON.parse(dump)
     assert_equal "foo\"bar", parsed["method"]

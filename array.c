@@ -2944,13 +2944,20 @@ rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_o
 
     if (len > embed_capa) return false;
 
+    *alloc_size_out = sizeof(struct RArray);
+    *flags_out = T_ARRAY | RARRAY_EMBED_FLAG | ((VALUE)len << RARRAY_EMBED_LEN_SHIFT);
+    *len_out = len;
+    return true;
+}
+
+void
+rb_zjit_array_new_fastpath(size_t *alloc_size_out, VALUE *flags_out)
+{
     size_t size = sizeof(struct RArray);
     shape_id_t shape_id = rb_shape_transition_slot_size(ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER,
                                                         rb_gc_size_slot_size(size));
     *alloc_size_out = size;
-    *flags_out = T_ARRAY | RARRAY_EMBED_FLAG | ((VALUE)len << RARRAY_EMBED_LEN_SHIFT) | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
-    *len_out = len;
-    return true;
+    *flags_out = T_ARRAY | RARRAY_EMBED_FLAG | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
 }
 #endif
 

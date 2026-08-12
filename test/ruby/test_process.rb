@@ -2822,7 +2822,7 @@ EOS
       assert_empty($LOADED_FEATURES.grep(/\/(#{features.join("|")})\.rb\z/))
       Process.warmup
       features.each do |feature|
-        assert_includes($LOADED_FEATURES.map { File.basename(it, ".rb") }, feature)
+        assert_include($LOADED_FEATURES.map { File.basename(it, ".rb") }, feature)
       end
     end;
   end

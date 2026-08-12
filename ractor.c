@@ -268,10 +268,6 @@ ractor_mark_unshareable_parts(rb_ractor_t *r)
         ccan_list_for_each(&r->threads.set, th, lt_node) {
             VM_ASSERT(th != NULL);
             rb_gc_mark(th->self);
-            /* Mark the EC directly: the stack must stay alive even in windows where
-             * the Thread wrapper's own mark has not been traversed yet (mid-creation,
-             * teardown). */
-            if (th->ec) rb_execution_context_mark(th->ec);
 
             /* A thread's ec lives inside the root fiber struct and is freed with that
              * fiber's wrapper object, so keep the fiber wrappers alive from here too. */
@@ -279,9 +275,15 @@ ractor_mark_unshareable_parts(rb_ractor_t *r)
                 VALUE root_fiber_self = rb_fiberptr_self(th->root_fiber);
                 if (root_fiber_self) rb_gc_mark(root_fiber_self);
             }
-            if (th->ec && th->ec->fiber_ptr) {
-                VALUE fiber_self = rb_fiberptr_self(th->ec->fiber_ptr);
-                if (fiber_self) rb_gc_mark(fiber_self);
+            /* The ec sits inside its fiber, so marking that fiber's wrapper scans the ec
+             * as well.  Only when there is no wrapper yet (mid-creation, teardown) does
+             * the ec need marking of its own. */
+            VALUE ec_fiber_self = (th->ec && th->ec->fiber_ptr) ? rb_fiberptr_self(th->ec->fiber_ptr) : 0;
+            if (ec_fiber_self) {
+                rb_gc_mark(ec_fiber_self);
+            }
+            else if (th->ec) {
+                rb_execution_context_mark(th->ec);
             }
 
             /* Root the thread's remaining possessions directly as well; thgroup in
@@ -322,6 +324,14 @@ ractor_mark(void *ptr)
 void
 rb_ractor_mark_local_roots(rb_ractor_t *r)
 {
+    if (r->postmortem) {
+        /* The final self collection: everything else -- the Thread and Fiber
+         * wrappers, stdio, stack leftovers -- is what it exists to reclaim. */
+        rb_ractor_mark_terminated_join_value(r);
+        rb_gc_mark_vm_stack_values((long)r->registered_marks_cnt, r->registered_marks);
+        return;
+    }
+
     rb_gc_mark(r->loc);
     rb_gc_mark(r->name);
     ractor_mark_unshareable_parts(r);
@@ -619,6 +629,8 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
          * cnt==1-no-zombie window where a GC skips shareable pinning and collects
          * objects (a cc, say) reachable only through this objspace. */
         if (cr->objspace) {
+            /* The final self collection already ran (ractor_postmortem_collect),
+             * so the entry measures exactly the pages the joiner will inherit. */
             rb_gc_objspace_retire(&cr->objspace);
         }
         vm->ractor.cnt--;
@@ -626,6 +638,50 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
         ractor_status_set(cr, ractor_terminated);
     }
     RB_VM_UNLOCK();
+}
+
+/* The dying thread's final collection of its own objspace, and the capture of what it
+ * must free itself.  Called with the GVL still held: a concurrent global GC waits for
+ * this thread's safepoint, so the collection is lock-free like any local GC. */
+static void
+ractor_postmortem_collect(rb_thread_t *th, struct rb_ractor_postmortem_frees *pf)
+{
+    rb_ractor_t *const cr = th->ractor;
+    VM_ASSERT(cr != GET_VM()->ractor.main_ractor);
+    VM_ASSERT(th->ec != NULL);
+
+    struct rb_fiber_struct *const fiber = th->ec->fiber_ptr;
+    const bool fiber_wrapped = fiber && rb_fiberptr_self(fiber) != 0;
+
+    /* With a thread-event hook registered the callbacks may retain any Ractor's Thread
+     * object (rb_internal_thread_event_hook_t), and such references are invisible to
+     * the reduced roots: keep the ordinary retire roots, wrappers survive to absorb. */
+    cr->postmortem = rb_gc_multi_objspace_p() && !rb_thread_event_hooks_registered_p();
+    rb_gc_objspace_postmortem_self();
+
+    /* Only what this collection provably swept (wrapper gone, struct deferred with an
+     * in-band mark) may be touched after vm_remove_ractor unlinks the Ractor. */
+    pf->th = (th->self == 0) ? th : NULL;
+    pf->fiber = (fiber_wrapped && rb_fiberptr_self(fiber) == 0) ? fiber : NULL;
+}
+
+void
+rb_ractor_postmortem_free(const struct rb_ractor_postmortem_frees *pf)
+{
+    if (pf->fiber == NULL && pf->th == NULL) return;
+
+    /* The frees below resolve their objspace through the TLS ec, which sits inside
+     * pf->fiber and leads to the retired Ractor: cut the resolution off so they fall
+     * back to the main objspace.  (The MN epilogue has already done this.) */
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+    rb_current_ec_set(NULL);
+#else
+    native_tls_set(ruby_current_ec_key, NULL);
+#endif
+
+    /* the fiber struct embeds the thread's final ec, so free it first */
+    if (pf->fiber) rb_fiber_free_body(pf->fiber);
+    if (pf->th) rb_thread_free_body(pf->th);
 }
 
 static VALUE
@@ -799,6 +855,15 @@ static void
 ractor_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE result, bool exc)
 {
     ractor_notify_exit(ec, cr, result, exc);
+}
+
+/* The dying thread's last work inside its Ractor.  The order is the point: a joiner woken
+ * before the collection spins in ractor_value for the whole of it. */
+void
+rb_ractor_postmortem(rb_thread_t *th, struct rb_ractor_postmortem_frees *pf)
+{
+    ractor_postmortem_collect(th, pf);
+    ractor_send_exit_tokens(th->ec, th->ractor);
 }
 
 void
@@ -1327,6 +1392,9 @@ rb_ractor_stdin(void)
     }
     else {
         rb_ractor_t *cr = GET_RACTOR();
+        if (UNLIKELY(cr->r_stdin == 0)) {
+            cr->r_stdin = rb_io_prep_stdin();
+        }
         return cr->r_stdin;
     }
 }
@@ -1339,6 +1407,9 @@ rb_ractor_stdout(void)
     }
     else {
         rb_ractor_t *cr = GET_RACTOR();
+        if (UNLIKELY(cr->r_stdout == 0)) {
+            cr->r_stdout = rb_io_prep_stdout();
+        }
         return cr->r_stdout;
     }
 }
@@ -1351,6 +1422,9 @@ rb_ractor_stderr(void)
     }
     else {
         rb_ractor_t *cr = GET_RACTOR();
+        if (UNLIKELY(cr->r_stderr == 0)) {
+            cr->r_stderr = rb_io_prep_stderr();
+        }
         return cr->r_stderr;
     }
 }
@@ -2724,8 +2798,12 @@ move_preflight(VALUE obj, st_table *seen)
       case T_STRING:
       case T_OBJECT:
         break;                       /* children are ivars only (below) */
-      case T_MATCH:
-        break;                       /* child = Regexp (shareable) + String */
+      case T_MATCH: {
+        struct RMatch *rm = RMATCH(obj);
+        move_preflight(rm->regexp, seen);
+        move_preflight(rm->str, seen);
+        break;
+      }
       case T_ARRAY:
         for (long i = 0; i < RARRAY_LEN(obj); i++) {
             move_preflight(RARRAY_AREF(obj, i), seen);

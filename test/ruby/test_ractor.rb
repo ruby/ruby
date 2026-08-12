@@ -231,6 +231,24 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_create_many_ports_with_gc_stress
+    # Rebuilding the ports table on insertion can run GC under the ractor lock.
+    # It is a prohibited lock ordering, asserted in vm_lock_enter() on RUBY_DEBUG builds.
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive } # enter multi-ractor mode and keep it
+      begin
+        GC.stress = true
+        ports = 40.times.map { Ractor::Port.new }
+      ensure
+        GC.stress = false
+      end
+      assert_equal 40, ports.count
+      ports.each(&:close)
+      r.send(nil)
+      r.join
+    RUBY
+  end
+
   def test_fork_raise_isolation_error
     assert_ractor(<<~'RUBY')
       ractor = Ractor.new do
@@ -597,6 +615,34 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # Port IDs are per-Ractor, so two monitoring Ractors can have the same port ID.
+  # Ractor#unmonitor must match both the owning Ractor and the port ID, otherwise
+  # it can remove a different Ractor's monitor entry.
+  def test_unmonitor_does_not_remove_other_ractors_monitor
+    assert_ractor(<<~'RUBY', timeout: 15)
+      target = Ractor.new { Ractor.receive }
+
+      b = Ractor.new(target) do |t|
+        t.monitor(p = Ractor::Port.new)
+        Ractor.main << :ready
+        p.receive
+      end
+
+      Ractor.receive  # b's monitor is registered
+
+      a = Ractor.new(target) do |t|
+        t.monitor(p = Ractor::Port.new)
+        t.unmonitor(p)
+        t << :terminate
+        p.close
+        begin; p.receive; rescue Ractor::ClosedError; :ok; end
+      end
+
+      assert_equal :ok, a.value
+      assert_equal :exited, b.value
+    RUBY
+  end
+
   # move must preserve the class of a String/Array/Hash subclass.
   def test_move_preserves_subclass
     assert_ractor(<<~'RUBY', timeout: 60)
@@ -611,6 +657,17 @@ class TestRactor < Test::Unit::TestCase
       assert_equal "hello", rs
       assert_equal [1, 2], ra
       assert_equal 1, rh[:k]
+    RUBY
+  end
+
+  def test_move_preflight_matchdata_leaves_graph_intact
+    assert_ractor(<<~'RUBY', timeout: 60)
+      sibling = +"hello"
+      m = "foo".match(Class.new(Regexp).new("o"))
+      r = Ractor.new { Ractor.receive }
+      refute Ractor.shareable?(m.regexp), "the Regexp subclass must be unshareable for this test"
+      r.send([sibling, m], move: true) rescue Ractor::Error # the Regexp subclass is unshareable
+      assert_equal "hello", sibling
     RUBY
   end
 

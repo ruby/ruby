@@ -3627,7 +3627,7 @@ CODE
 
     substr = str.byteslice(0, hundred.bytesize)
     assert_equal hundred, substr
-    assert_includes ObjectSpace.dump(substr), ' "shared":true,'
+    assert_include ObjectSpace.dump(substr), ' "shared":true,'
 
     # Larger terminator
     substr.force_encoding(Encoding::UTF_16BE)
@@ -3644,20 +3644,20 @@ CODE
 
     require 'objspace'
 
-    # 128 and 320 sit either side of STR_SUBSEQ_MAX_EMBED_SIZE in string.c, which
+    # 128 and 320 sit either side of STR_COPY_MAX_EMBED_SIZE in string.c, which
     # the copy has to fit in along with the header and the terminator
     substr = str.byteslice(320, 128)
     assert_equal "a" * 128, substr
-    assert_includes ObjectSpace.dump(substr), ' "embedded":true,'
+    assert_include ObjectSpace.dump(substr), ' "embedded":true,'
 
     substr = str.byteslice(128, 320)
     assert_equal "a" * 320, substr
-    assert_includes ObjectSpace.dump(substr), ' "shared":true,'
+    assert_include ObjectSpace.dump(substr), ' "shared":true,'
 
     # A frozen source is a shared root itself, so the same substring is shared
     substr = str.freeze.byteslice(320, 128)
     assert_equal "a" * 128, substr
-    assert_includes ObjectSpace.dump(substr), ' "shared":true,'
+    assert_include ObjectSpace.dump(substr), ' "shared":true,'
   end
 
   def test_unknown_string_option
@@ -3725,7 +3725,7 @@ CODE
     require 'objspace'
 
     str = "test_uplus_minus_str".freeze
-    assert_includes ObjectSpace.dump(str), '"fstring":true'
+    assert_include ObjectSpace.dump(str), '"fstring":true'
 
     assert_predicate(str, :frozen?)
     assert_not_predicate(+str, :frozen?)

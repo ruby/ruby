@@ -48,6 +48,8 @@ when true
   elsif have_func("rb_scheduler_timeout") # Ruby 3.0 (internal)
     have_func("rb_io_wait") # Ruby 3.0
   end
+  have_func("rb_category_warn")
+  have_const("RB_WARN_CATEGORY_DEPRECATED")
   win32 or have_func("ttyname_r") or have_func("ttyname")
   have_func("rb_prepend_module") # not exported by TruffleRuby
   create_makefile("io/console") {|conf|

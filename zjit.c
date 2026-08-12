@@ -24,6 +24,7 @@
 #include "ruby/debug.h"
 #include "internal/cont.h"
 #include "ractor_core.h"
+#include "shape.h"
 
 // This build config impacts the pointer tagging scheme and we only want to
 // support one scheme for simplicity.
@@ -33,6 +34,23 @@ enum zjit_struct_offsets {
     ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param),
     ISEQ_BODY_OFFSET_OUTER_VARIABLES = offsetof(struct rb_iseq_constant_body, outer_variables),
     RUBY_OFFSET_THREAD_RACTOR = offsetof(rb_thread_t, ractor),
+};
+
+// Struct offsets that cannot be constants in the checked-in bindgen output
+// (zjit/src/cruby_bindings.inc.rs) because they vary with the build target
+// and configuration. For example, offsetof(rb_ractor_t, newobj_cache) depends
+// on the sizes of pthread types embedded in rb_ractor_t, which differ across
+// architectures and OSes, as well as on VM_CHECK_MODE and RACTOR_CHECK_MODE.
+// This table is filled out at C compile time and read by Rust at JIT compile
+// time. Offsets that are identical on all supported builds should be added to
+// enum zjit_struct_offsets above instead.
+struct rb_zjit_runtime_offsets {
+    int32_t ractor_newobj_cache;
+    int32_t ractor_objspace;
+};
+const struct rb_zjit_runtime_offsets rb_zjit_runtime_offsets = {
+    .ractor_newobj_cache = offsetof(rb_ractor_t, newobj_cache),
+    .ractor_objspace = offsetof(rb_ractor_t, objspace),
 };
 
 // Special JITFrame used by all C method calls. We don't control the native
@@ -168,20 +186,35 @@ rb_zjit_singleton_class_p(VALUE klass)
     return RCLASS_SINGLETON_P(klass);
 }
 
-/*
- * These offsets differ between x68_64 and arm64, so we must generate them each
- * time. We can't bake them into zjit_struct_offsets
+/* Sets all of the required shape flags for the object including the layout type,
+ * the frozen status, and the slot size. Mimics `rb_newobj`.
  */
-size_t
-rb_zjit_offset_ractor_newobj_cache(void)
+VALUE
+rb_zjit_new_obj_shape(VALUE flags, size_t alloc_size)
 {
-    return offsetof(rb_ractor_t, newobj_cache);
-}
+    shape_id_t shape_id;
+    switch (flags & T_MASK) {
+      case T_OBJECT:
+        shape_id = ROOT_SHAPE_ID;
+        break;
+      case T_STRUCT:
+        shape_id = ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_EXTENDED;
+        break;
+      case T_DATA:
+        shape_id = ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_RDATA;
+        break;
+      default:
+        shape_id = ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER;
+        break;
+    }
 
-size_t
-rb_zjit_offset_ractor_objspace(void)
-{
-    return offsetof(rb_ractor_t, objspace);
+    if (flags & FL_FREEZE) {
+        shape_id = rb_shape_transition_frozen(shape_id);
+    }
+
+    shape_id = rb_shape_transition_slot_size(shape_id, rb_gc_size_slot_size(alloc_size));
+
+    return (flags & SHAPE_FLAG_MASK) | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
 }
 
 VALUE

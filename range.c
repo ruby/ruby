@@ -87,20 +87,13 @@ void
 rb_zjit_range_new_fastpath(bool exclude_end, size_t *alloc_size_out, VALUE *flags_out)
 {
     const long len = 2;
-    size_t size = offsetof(struct RStruct, as.ary) + (sizeof(VALUE) * len);
+    *alloc_size_out = offsetof(struct RStruct, as.ary) + (sizeof(VALUE) * len);
     if (RCLASS_MAX_IV_COUNT(rb_cRange) > 0) {
-        size += sizeof(VALUE);
+        *alloc_size_out += sizeof(VALUE);
     }
 
-    VALUE flags = T_STRUCT | (len << RSTRUCT_EMBED_LEN_SHIFT) | RANGE_FL_INIT | FL_FREEZE;
-    if (exclude_end) flags |= RANGE_FL_EXCL;
-
-    shape_id_t shape_id = rb_shape_transition_slot_size(ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_EXTENDED,
-                                                         rb_gc_size_slot_size(size));
-    shape_id = rb_shape_transition_frozen(shape_id);
-
-    *alloc_size_out = size;
-    *flags_out = flags | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
+    *flags_out = T_STRUCT | (len << RSTRUCT_EMBED_LEN_SHIFT) | RANGE_FL_INIT | FL_FREEZE;
+    if (exclude_end) *flags_out |= RANGE_FL_EXCL;
 }
 #endif
 

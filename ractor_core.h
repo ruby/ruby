@@ -125,6 +125,10 @@ struct rb_ractor_struct {
 
     struct ccan_list_node vmlr_node;
     bool in_terminated_set;  /* vmlr_node is on vm->ractor.terminated_set */
+    /* The final self collection ran (ractor_postmortem_collect): from then on
+     * rb_ractor_mark_local_roots roots only the join value and the registered_marks
+     * pins, so the dying thread's own scaffolding can be collected. */
+    bool postmortem;
 
     // ractor local data
 
@@ -134,6 +138,9 @@ struct rb_ractor_struct {
     struct rb_id_table *idkey_local_storage;
     VALUE local_storage_store_lock;
 
+    /* 0 until first use: rb_ractor_stdin and friends build them lazily, with plain
+     * stores (rooted via ractor_mark_unshareable_parts; a write barrier on the
+     * shareable wrapper would shref-pin them). */
     VALUE r_stdin;
     VALUE r_stdout;
     VALUE r_stderr;
@@ -221,6 +228,15 @@ bool rb_ractor_p(VALUE rv);
 void rb_ractor_living_threads_init(rb_ractor_t *r);
 void rb_ractor_living_threads_insert(rb_ractor_t *r, rb_thread_t *th);
 void rb_ractor_living_threads_remove(rb_ractor_t *r, rb_thread_t *th);
+
+/* The structs the final self collection swept while the dying thread still stood on
+ * them; that thread frees them at its very last step (rb_ractor_postmortem_free). */
+struct rb_ractor_postmortem_frees {
+    struct rb_thread_struct *th;
+    struct rb_fiber_struct *fiber;
+};
+void rb_ractor_postmortem(rb_thread_t *th, struct rb_ractor_postmortem_frees *pf);
+void rb_ractor_postmortem_free(const struct rb_ractor_postmortem_frees *pf);
 void rb_ractor_cancel_creation(rb_ractor_t *r, rb_thread_t *th);
 void rb_ractor_blocking_threads_inc(rb_ractor_t *r, const char *file, int line); // TODO: file, line only for RUBY_DEBUG_LOG
 void rb_ractor_blocking_threads_dec(rb_ractor_t *r, const char *file, int line); // TODO: file, line only for RUBY_DEBUG_LOG

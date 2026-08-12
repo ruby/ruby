@@ -846,12 +846,7 @@ clean-spec: PHONY
 
 check: main $(DOT_WAIT) test $(DOT_WAIT) test-tool $(DOT_WAIT) test-all
 	$(ECHO) check succeeded
-	-$(Q) : : "run only on sh"; \
-	if [ x"$(GIT)" != x ] && $(CHDIR) "$(srcdir)" && \
-	    b=`$(GIT) symbolic-ref --short HEAD 2>&1` && \
-	    u=`$(GIT) branch --list --format='%(upstream:short)' $$b`; then \
-	  set -x; $(GIT) --no-pager log --format=oneline -G '^ *# *include *("|<ruby)' $$u..HEAD --; \
-	fi
+
 check-ruby: test test-ruby
 
 fake: $(CROSS_COMPILING)-fake
