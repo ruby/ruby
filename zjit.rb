@@ -133,6 +133,7 @@ class << RubyVM::ZJIT
       :inline_cfunc_optimized_send_count,
       :inline_iseq_optimized_send_count,
       :inline_method_count,
+      :empty_inline_frame_count,
       :non_variadic_cfunc_optimized_send_count,
       :variadic_cfunc_optimized_send_count,
     ], buf:, stats:, right_align: true, base: :send_count)
