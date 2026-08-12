@@ -10841,9 +10841,6 @@ pub struct Dominators {
     /// idom(root) = root (self-loop is sentinel), idom[unreachable] == IDOM_NONE.
     idoms: Vec<BlockId>,
     cfi: ControlFlowInfo,
-    /// Map of block to dominator tree children, sorted by increasing BlockId. Computed lazily and
-    /// cached.
-    tree: Option<HashMap<BlockId, Vec<BlockId>>>,
 }
 
 /// Sentinel value for "no idom computed yet".
@@ -10905,7 +10902,7 @@ impl Dominators {
             }
         }
 
-        Self { idoms, cfi, tree: None }
+        Self { idoms, cfi }
     }
 
     /// Walk up the dominator tree from two fingers until they meet.
@@ -10953,22 +10950,6 @@ impl Dominators {
         }
         doms.sort();
         doms
-    }
-
-    pub fn children(&mut self, block: BlockId) -> &[BlockId] {
-        if self.tree.is_some() {
-            return &self.tree.as_ref().unwrap()[&block];
-        }
-        let mut result: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
-        for &rpo_block in self.cfi.reverse_post_order() {
-            result.entry(self.idom(rpo_block)).or_default().push(rpo_block);
-        }
-        // Ensure deterministic order for e.g. tests
-        for (_, v) in &mut result {
-            v.sort()
-        }
-        self.tree = Some(result);
-        &self.tree.as_ref().unwrap()[&block]
     }
 }
 
