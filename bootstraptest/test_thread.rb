@@ -509,3 +509,65 @@ assert_normal_exit %q{
   }
   sleep 0.1
 }, timeout: 5
+
+# M:N threads waiting on one fd.  These run inside a Ractor because M:N threads
+# are enabled by default only outside the main Ractor.
+
+# A second waiter on an fd must not be told it is ready.  Registering it used to
+# fail with EEXIST, which was reported to the caller as "the event fired".
+assert_equal 'ok', %q{
+  Ractor.new do
+    r, _w = IO.pipe
+    first = Thread.new { r.wait_readable }
+    sleep 0.5
+    second = Thread.new { r.wait_readable }
+    still_waiting = second.join(0.5).nil?
+    first.kill
+    second.kill
+    still_waiting ? 'ok' : 'reported readable with nothing written'
+  end.value
+}
+
+# ... and a blocking read behind another waiter must sleep rather than spin.
+assert_equal 'ok', %q{
+  Ractor.new do
+    r, _w = IO.pipe
+    waiter = Thread.new { r.wait_readable }
+    sleep 0.5
+    reader = Thread.new { r.read(1) }
+    before = Process.clock_gettime(Process::CLOCK_PROCESS_CPUTIME_ID)
+    sleep 1.0
+    burned = Process.clock_gettime(Process::CLOCK_PROCESS_CPUTIME_ID) - before
+    waiter.kill
+    reader.kill
+    burned < 0.3 ? 'ok' : "burned %.2fs of CPU while idle" % burned
+  end.value
+}
+
+# Every waiter on the fd is woken, not just the one that registered it.
+assert_equal 'ok', %q{
+  Ractor.new do
+    r, w = IO.pipe
+    waiters = 3.times.map { Thread.new { r.wait_readable } }
+    sleep 0.5
+    w.write('x')
+    woken = waiters.count { |t| t.join(5) }
+    waiters.each(&:kill)
+    woken == 3 ? 'ok' : "only #{woken} of 3 waiters were woken"
+  end.value
+}
+
+# A read waiting behind another waiter still gets its data.
+assert_equal 'ok', %q{
+  Ractor.new do
+    r, w = IO.pipe
+    waiter = Thread.new { r.wait_readable }
+    sleep 0.5
+    reader = Thread.new { r.read(1) }
+    sleep 0.5
+    w.write('x')
+    got = reader.join(5) ? reader.value : :timeout
+    waiter.kill
+    got == 'x' ? 'ok' : got.inspect
+  end.value
+}
