@@ -6696,6 +6696,8 @@ impl Function {
     /// * `LoadSP` reads the frame-dependent SP register despite having empty
     ///   effects, so it's excluded explicitly.
     fn can_elide_enclosing_frame(&self, insn: &Insn) -> bool {
+        // TODO: Model LoadSP as reading from the control frame and drop this
+        // special case.
         if matches!(insn, Insn::LoadSP) {
             return false;
         }
@@ -6709,6 +6711,8 @@ impl Function {
         if !insn.effects_of().is_empty() {
             return false;
         }
+        // TODO: Model the possibility of taking a side exit as a subeffect of
+        // Control so that the effect check above subsumes this operand scan.
         let mut references_snapshot = false;
         insn.for_each_operand(|opnd| {
             let opnd = self.union_find.borrow().find_const(opnd);
