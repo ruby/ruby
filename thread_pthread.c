@@ -1954,8 +1954,17 @@ native_thread_dedicated_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_threa
     if (nt->dedicated == 0) {
         ractor_sched_lock(vm, cr);
         {
-            nt->vm->ractor.sched.snt_cnt++;
-            nt->vm->ractor.sched.dnt_cnt--;
+            /* max_cpu bounds the shared threads and this is where one rejoins
+             * them, so this is where the cap has to hold.  A thread with no room
+             * to come back to belongs to neither count until it ends. */
+            if (vm->ractor.sched.snt_cnt < vm->ractor.sched.max_cpu ||
+                (int)vm->ractor.sched.snt_cnt <= MINIMUM_SNT) {
+                vm->ractor.sched.snt_cnt++;
+            }
+            else {
+                nt->retiring = true;
+            }
+            vm->ractor.sched.dnt_cnt--;
         }
         ractor_sched_unlock(vm, cr);
     }
@@ -2430,6 +2439,8 @@ nt_start(void *ptr)
         }
         else {
             RUBY_DEBUG_LOG("check next");
+            if (nt->retiring) break;   // came back with no room in the shared pool
+
             rb_ractor_t *r = ractor_sched_deq(vm, NULL);
 
             if (r) {
