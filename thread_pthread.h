@@ -22,6 +22,14 @@
 # define RB_THREAD_CURRENT_EC_NOINLINE
 #endif
 
+// How a thread_sched_wait_events() wait ended.  "unavailable" (could not be
+// registered) is not "the event fired": the caller must fall back, not proceed.
+enum thread_sched_wait_result {
+    thread_sched_wait_event,       // an event the caller asked for fired
+    thread_sched_wait_timeout,     // the timeout expired before any event
+    thread_sched_wait_unavailable, // not registered; the caller must fall back
+};
+
 // this data should be protected by timer_th.waiting_lock
 struct rb_thread_sched_waiting {
     enum thread_sched_waiting_flag {
@@ -44,8 +52,25 @@ struct rb_thread_sched_waiting {
         int result;
     } data;
 
-    // connected to timer_th.waiting
+    // connected to timer_th.waiting (ordered by timeout)
     struct ccan_list_node node;
+
+    // connected to rb_fd_waiters.waiters of data.fd
+    struct ccan_list_node fd_node;
+};
+
+// One entry per fd with waiters; fds stay dense, so a table indexed by fd fits.
+// Entries live in fixed chunks: growing must not move a live list head.
+struct rb_fd_waiters {
+    struct ccan_list_head waiters; // rb_thread_sched_waiting.fd_node
+
+    // The io flags currently armed in epoll/kqueue for this fd: the union of
+    // what its waiters asked for.
+    uint32_t armed_flags;
+
+    // Bumped on full disarm.  Events carry the generation they were armed with,
+    // so one queued before the fd was disarmed (and reused) is recognised.
+    uint32_t generation;
 };
 
 // per-Thread scheduler helper data
