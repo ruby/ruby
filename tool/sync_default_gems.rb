@@ -305,6 +305,10 @@ module SyncDefaultGems
       ["test/zlib", "test/zlib"],
       ["zlib.gemspec", "ext/zlib/zlib.gemspec"],
     ]),
+    "test-unit-ruby-core":repo("ruby/test-unit-ruby-core", [
+      ["lib", "tool/lib"],
+      ["test", "tool/test"],
+    ]),
   }.transform_keys(&:to_s)
 
   def REPOSITORIES.[](gem)
