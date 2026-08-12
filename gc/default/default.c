@@ -4751,15 +4751,6 @@ gc_sweep_freeobj_hooks(rb_objspace_t *objspace)
     }
 }
 
-static int
-gc_sweep_weak_table_i(VALUE val, void *data)
-{
-    rb_objspace_t *objspace = data;
-    if (RB_SPECIAL_CONST_P(val)) return ST_CONTINUE;
-    if (RVALUE_MARKED(objspace, val)) return ST_CONTINUE;
-    return ST_DELETE;
-}
-
 static void
 gc_sweep_start(rb_objspace_t *objspace)
 {
@@ -4772,22 +4763,6 @@ gc_sweep_start(rb_objspace_t *objspace)
          * cannot fire during a non-main Ractor's lock-free local sweep. */
         GC_ASSERT(objspace == global_objspace->main_objspace);
         gc_sweep_freeobj_hooks(objspace);
-    }
-
-    /* Clean the VM-global tables.  Under a global GC every objspace's sweep passes here,
-     * but there is one table per VM and the decision is a (page-relative) mark bit, so
-     * repeating it is idempotent waste: gc_start_global does it once before sweeping. */
-    if (!objspace->flags.during_global_gc) {
-        for (int table = 0; table < RB_GC_VM_WEAK_TABLE_COUNT; table++) {
-            if (!rb_gc_vm_weak_table_essential_p(table)) continue;
-            rb_gc_vm_weak_table_foreach(
-                gc_sweep_weak_table_i,
-                NULL,
-                objspace,
-                true,
-                table
-            );
-        }
     }
 
 #if GC_CAN_COMPILE_COMPACTION
@@ -8892,14 +8867,6 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
     rb_ractor_finish_marking();
 
     gc_marking_exit(driver);
-
-    /* Clean the VM-global weak tables once, before sweeping any objspace (gc_sweep_start
-     * skips it during a global GC; the decision comes from the objspace-independent unified
-     * mark). */
-    for (int table = 0; table < RB_GC_VM_WEAK_TABLE_COUNT; table++) {
-        if (!rb_gc_vm_weak_table_essential_p(table)) continue;
-        rb_gc_vm_weak_table_foreach(gc_sweep_weak_table_i, NULL, driver, true, table);
-    }
 
     /* step 9: sweep every objspace inside the barrier, not lazily.  Dead shareable objects
      * are reclaimed here and emptied pages go back to the pool. */

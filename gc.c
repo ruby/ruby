@@ -4805,20 +4805,6 @@ vm_weak_table_frozen_strings_foreach(VALUE *str, void *data)
 
 void rb_fstring_foreach_with_replace(int (*callback)(VALUE *str, void *data), void *data);
 
-// Whether this table must be cleaned every GC after marking.
-// Other tables may be skipped cleaned up per-object via rb_gc_obj_free_vm_weak_references.
-bool
-rb_gc_vm_weak_table_essential_p(enum rb_gc_vm_weak_tables table)
-{
-    /* No bulk cleanup: the generic_fields table is process-wide, so a local GC must not
-     * wipe other Ractors' live entries.  They are dropped per freed object instead
-     * (rb_gc_obj_free_vm_weak_references), and dead keys drain in the global GC's weak pass. */
-    switch (table) {
-      default:
-        return false;
-    }
-}
-
 /* Callback of rb_generic_fields_tables_foreach: walk one generic_fields table with the
  * gen_fields foreach used by compaction, recording the current table in foreach_data so
  * a moved key is re-inserted into the right one. */

@@ -85,7 +85,6 @@ bool rb_gc_single_objspace_p(void);
 void rb_gc_reset_absorbed_since_global_gc(void);
 MODULAR_GC_FN size_t rb_gc_obj_optimal_size(VALUE obj);
 MODULAR_GC_FN void rb_gc_mark_children(void *objspace, VALUE obj);
-MODULAR_GC_FN bool rb_gc_vm_weak_table_essential_p(enum rb_gc_vm_weak_tables table);
 MODULAR_GC_FN void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback, vm_table_update_callback_func update_callback, void *data, bool weak_only, enum rb_gc_vm_weak_tables table);
 /* The global GC's weak pass over generic_fields (called from a gc-impl). */
 MODULAR_GC_FN void rb_gc_vm_generic_fields_mark_foreach(int (*cb)(VALUE key, VALUE val, void *arg), void *arg);
