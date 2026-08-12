@@ -22394,4 +22394,163 @@ mod hir_opt_tests {
           Return v33
         ");
     }
+
+    #[test]
+    fn test_deduplicate_30k_ifelse() {
+        set_call_threshold(3);
+        eval(r#"
+            @count = 0
+            def inc(x) = @count += 1
+            def d(x)
+              if x < 1
+                inc(x)
+              else
+                inc(x)
+              end
+            end
+            def c(x)
+              if x < 1
+                d(x)
+              else
+                d(x)
+              end
+            end
+            def b(x)
+              if x < 1
+                c(x)
+              else
+                c(x)
+              end
+            end
+            def a(x)
+              if x < 1
+                b(x)
+              else
+                b(x)
+              end
+            end
+            a(0)
+            a(1)
+        "#);
+        // Deduplicate FixnumLt, Test
+        // TODO(max): Mark condition true in one branch and false in the other branch and fold
+        // nested CondBranch
+        assert_snapshot!(hir_string("a"), @"
+        fn a@<compiled>:26:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          v48:Fixnum = GuardType v10, Fixnum recompile
+          v49:BoolExact = FixnumLt v48, v15
+          v20:CBool = Test v49
+          CondBranch v20, bb5(), bb4()
+        bb5():
+          PatchPoint MethodRedefined(Object@0x1040, b@0x1048, cme:0x1050)
+          v51:ObjectSubclass[class_exact*:Object@VALUE(0x1040)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1040)] recompile
+          PushInlineFrame :b, v51 (0x1078), num_args=1
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          CondBranch v20, bb9(), bb8()
+        bb9():
+          PatchPoint MethodRedefined(Object@0x1040, c@0x10a0, cme:0x10a8)
+          PushInlineFrame :c, v51 (0x10d0), num_args=1
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          CondBranch v20, bb17(), bb16()
+        bb17():
+          PatchPoint MethodRedefined(Object@0x1040, d@0x10f8, cme:0x1100)
+          v328:BasicObject = SendDirect v51, 0x0, :d (0x1128), v48
+          CheckInterrupts
+          Jump bb14(v328)
+        bb16():
+          PatchPoint MethodRedefined(Object@0x1040, d@0x10f8, cme:0x1100)
+          v331:BasicObject = SendDirect v51, 0x0, :d (0x1128), v48
+          CheckInterrupts
+          Jump bb14(v331)
+        bb14(v195:BasicObject):
+          PopInlineFrame
+          CheckInterrupts
+          Jump bb6(v195)
+        bb8():
+          PatchPoint MethodRedefined(Object@0x1040, c@0x10a0, cme:0x10a8)
+          PushInlineFrame :c, v51 (0x10d0), num_args=1
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          CondBranch v20, bb21(), bb20()
+        bb21():
+          PatchPoint MethodRedefined(Object@0x1040, d@0x10f8, cme:0x1100)
+          v338:BasicObject = SendDirect v51, 0x0, :d (0x1128), v48
+          CheckInterrupts
+          Jump bb18(v338)
+        bb20():
+          PatchPoint MethodRedefined(Object@0x1040, d@0x10f8, cme:0x1100)
+          v341:BasicObject = SendDirect v51, 0x0, :d (0x1128), v48
+          CheckInterrupts
+          Jump bb18(v341)
+        bb18(v236:BasicObject):
+          PopInlineFrame
+          CheckInterrupts
+          Jump bb6(v236)
+        bb6(v93:BasicObject):
+          PopInlineFrame
+          CheckInterrupts
+          Return v93
+        bb4():
+          PatchPoint MethodRedefined(Object@0x1040, b@0x1048, cme:0x1050)
+          v54:ObjectSubclass[class_exact*:Object@VALUE(0x1040)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1040)] recompile
+          PushInlineFrame :b, v54 (0x1078), num_args=1
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          CondBranch v20, bb13(), bb12()
+        bb13():
+          PatchPoint MethodRedefined(Object@0x1040, c@0x10a0, cme:0x10a8)
+          PushInlineFrame :c, v54 (0x10d0), num_args=1
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          CondBranch v20, bb25(), bb24()
+        bb25():
+          PatchPoint MethodRedefined(Object@0x1040, d@0x10f8, cme:0x1100)
+          v348:BasicObject = SendDirect v54, 0x0, :d (0x1128), v48
+          CheckInterrupts
+          Jump bb22(v348)
+        bb24():
+          PatchPoint MethodRedefined(Object@0x1040, d@0x10f8, cme:0x1100)
+          v351:BasicObject = SendDirect v54, 0x0, :d (0x1128), v48
+          CheckInterrupts
+          Jump bb22(v351)
+        bb22(v277:BasicObject):
+          PopInlineFrame
+          CheckInterrupts
+          Jump bb10(v277)
+        bb12():
+          PatchPoint MethodRedefined(Object@0x1040, c@0x10a0, cme:0x10a8)
+          PushInlineFrame :c, v54 (0x10d0), num_args=1
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          CondBranch v20, bb29(), bb28()
+        bb29():
+          PatchPoint MethodRedefined(Object@0x1040, d@0x10f8, cme:0x1100)
+          v358:BasicObject = SendDirect v54, 0x0, :d (0x1128), v48
+          CheckInterrupts
+          Jump bb26(v358)
+        bb28():
+          PatchPoint MethodRedefined(Object@0x1040, d@0x10f8, cme:0x1100)
+          v361:BasicObject = SendDirect v54, 0x0, :d (0x1128), v48
+          CheckInterrupts
+          Jump bb26(v361)
+        bb26(v318:BasicObject):
+          PopInlineFrame
+          CheckInterrupts
+          Jump bb10(v318)
+        bb10(v134:BasicObject):
+          PopInlineFrame
+          CheckInterrupts
+          Return v134
+        ");
+    }
 }
