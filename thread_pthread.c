@@ -494,6 +494,7 @@ ractor_sched_set_unlocked(rb_vm_t *vm, rb_ractor_t *cr)
 #endif
 }
 
+
 static void
 ractor_sched_lock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 {
@@ -3014,6 +3015,13 @@ static struct {
     // waiting threads list
     struct ccan_list_head waiting; // waiting threads in ractors
     pthread_mutex_t waiting_lock;
+
+#if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
+    // fd -> struct rb_fd_waiters, in chunks so entries never move.
+    // Protected by waiting_lock.
+    struct rb_fd_waiters **fdmap_chunks;
+    unsigned int fdmap_nchunks;
+#endif
 } timer_th = {
     .created_fork_gen = 0,
 };
@@ -3023,6 +3031,7 @@ static struct {
 static void timer_thread_check_timeslice(rb_vm_t *vm);
 static int timer_thread_set_timeout(rb_vm_t *vm);
 static void timer_thread_wakeup_thread(rb_thread_t *th, uint32_t event_serial);
+static rb_thread_t *thread_sched_waiting_thread(struct rb_thread_sched_waiting *w);
 
 #include "thread_pthread_mn.c"
 
