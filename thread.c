@@ -1780,10 +1780,13 @@ rb_nogvl(void *(*func)(void *), void *data1,
     bool is_main_thread = vm->ractor.main_thread == th;
     int saved_errno = 0;
 
-    rb_thread_resolve_unblock_function(&ubf, &data2, th);
+    bool sentinel_ubf = rb_thread_resolve_unblock_function(&ubf, &data2, th);
 
     if (ubf && rb_ractor_living_thread_num(th->ractor) == 1 && is_main_thread) {
-        if (flags & RB_NOGVL_UBF_ASYNC_SAFE) {
+        // ubf_select, which the sentinel ubfs resolve to, takes ubf_list_lock
+        // and the ractor scheduler lock: not async-signal-safe, whatever the
+        // caller claims.
+        if ((flags & RB_NOGVL_UBF_ASYNC_SAFE) && !sentinel_ubf) {
             vm->ubf_async_safe = 1;
         }
     }
