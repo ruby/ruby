@@ -1607,6 +1607,25 @@ rb_hash_resurrect(VALUE hash)
     return ret;
 }
 
+#if USE_ZJIT
+bool
+rb_zjit_hash_dup_can_fastpath(VALUE hash, size_t *alloc_size_out, VALUE *flags_out, VALUE *ifnone_out, long *bound_out)
+{
+    if (!RHASH_AR_TABLE_P(hash)) return false;
+    if (rb_hash_compare_by_id_p(hash)) return false;
+
+    const unsigned int bound = RHASH_AR_TABLE_BOUND(hash);
+
+    *alloc_size_out = hash_slot_size(false);
+    *flags_out = T_HASH
+        | ((VALUE)RHASH_AR_TABLE_SIZE(hash) << RHASH_AR_TABLE_SIZE_SHIFT)
+        | ((VALUE)bound << RHASH_AR_TABLE_BOUND_SHIFT);
+    *ifnone_out = RHASH_IFNONE(hash);
+    *bound_out = (long)bound;
+    return true;
+}
+#endif
+
 static void
 rb_hash_modify_check(VALUE hash)
 {

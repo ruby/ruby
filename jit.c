@@ -41,6 +41,10 @@ enum jit_bindgen_constants {
     // Field offset for the RHash struct
     RUBY_OFFSET_RHASH_IFNONE = offsetof(struct RHash, ifnone),
 
+    // Field offsets for the embedded ar_table in a hash
+    RUBY_OFFSET_RHASH_AR_HINT = sizeof(struct RHash) + offsetof(ar_table, ar_hint),
+    RUBY_OFFSET_RHASH_AR_PAIRS = sizeof(struct RHash) + offsetof(ar_table, pairs),
+
     // Max pairs an embedded ar_table hash holds before it converts to an st_table
     RUBY_RHASH_AR_TABLE_MAX_SIZE = RHASH_AR_TABLE_MAX_SIZE,
 
