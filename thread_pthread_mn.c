@@ -108,9 +108,16 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
             else {
                 RUBY_DEBUG_LOG("sleep");
 
-                th->status = THREAD_STOPPED_FOREVER;
+                // A sleeper's status belongs to the caller: sleep_hrtime
+                // re-sleeps while it stays THREAD_STOPPED and only a waker may
+                // change it, as with native_cond_sleep on a dedicated nt.  An
+                // io wait enters as THREAD_RUNNABLE and shows "sleep" while
+                // parked, as a dedicated nt's blocking region does.
+                enum rb_thread_status prev_status = th->status;
+                if (prev_status == THREAD_RUNNABLE) th->status = THREAD_STOPPED_FOREVER;
                 thread_sched_wakeup_next_thread(sched, th, true);
                 thread_sched_wait_running_turn(sched, th, true);
+                if (prev_status == THREAD_RUNNABLE) th->status = THREAD_RUNNABLE;
 
                 RUBY_DEBUG_LOG("wakeup");
             }
@@ -120,8 +127,6 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
             if (need_cancel) {
                 timer_thread_cancel_waiting(th);
             }
-
-            th->status = THREAD_RUNNABLE;
         }
         else {
             // Ready right now, or not registerable at all -- only the former may

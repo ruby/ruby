@@ -660,3 +660,29 @@ assert_equal 'ok', %q{
   end
 }
 
+# An M:N thread's sleep must survive a spurious wakeup: an interrupt that
+# handle_interrupt defers wakes the sleeper, whose status must stay
+# THREAD_STOPPED so that sleep_hrtime sleeps the remaining time, as it does
+# on a dedicated native thread.
+assert_equal 'ok', %q{
+  Ractor.new do
+    elapsed = nil
+    th = Thread.new do
+      Thread.handle_interrupt(RuntimeError => :never) do
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        sleep 1.0
+        elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0
+      end
+    end
+    sleep 0.3
+    begin th.raise(RuntimeError, "deferred"); rescue RuntimeError; end
+    begin th.join; rescue RuntimeError; end
+    if elapsed.nil?
+      'the sleeper died inside handle_interrupt :never'
+    elsif elapsed >= 0.9
+      'ok'
+    else
+      "slept only %.2fs of 1.0s" % elapsed
+    end
+  end.value
+}
