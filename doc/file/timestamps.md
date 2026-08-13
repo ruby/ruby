@@ -9,12 +9,12 @@ the returned times may vary among filesystems, even on the same machine.
 
 Each of these methods returns a Time object:
 
-|               Name               | Meaning                                | Changes                   |
-|:--------------------------------:|----------------------------------------|---------------------------|
-|    [`birthtime`](#birth-time)    | Create time.                           | Never.                    |
-|  [`mtime`](#modification-time)   | Modification time.                     | When written; see Note 1. |
-|     [`atime`](#access-time)      | Access time.                           | When read; see Note 2.    |
-| [`ctime`](#metadata-change-time) | Metadata-change time (or create time). | See below.                |
+|               Name               | Meaning                                | Changes                               |
+|:--------------------------------:|----------------------------------------|---------------------------------------|
+|    [`birthtime`](#birth-time)    | Create time.                           | Never.                                |
+|  [`mtime`](#modification-time)   | Modification time.                     | When written; see Note 1.             |
+|     [`atime`](#access-time)      | Access time.                           | When read; see Note 2.                |
+| [`ctime`](#metadata-change-time) | Metadata-change time (or create time). | See [`ctime`](#metadata-change-time). |
 
 Notes:
 
@@ -33,10 +33,10 @@ Each of these methods updates the access time and modification time for an entry
 |       Create       |      **Yes**       |     **Yes**      |     **Yes**      |          **Yes**           |
 |   Write content    |         No         |        No        |       **Yes**    |             No             |
 |    Read content    |         No         |        No        |        No        | *Filesystem-<br>dependent* |
-|       Rename       |         No         |        No        |        No        |             No             |
-|        Move        |         No         |        No        |        No        |             No             |
-| Change permissions |         No         |        No        |        No        |             No             |
-|  Change ownership  |         No         |        No        |        No        |             No             |
+|       Rename       |         No         |     **Yes**      |        No        |             No             |
+|        Move        |         No         |     **Yes**      |        No        |             No             |
+| Change permissions |         No         |     **Yes**      |        No        |             No             |
+|  Change ownership  |         No         |     **Yes**      |        No        |             No             |
 
 
 ## Directory Timestamps
