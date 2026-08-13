@@ -648,12 +648,23 @@ vm_ccs_p(const struct rb_class_cc_entries *ccs)
 }
 
 static inline bool
+vm_cc_check_cme_unlocked(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme)
+{
+    return vm_cc_cme(cc) == cme ||
+        (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme));
+}
+
+static inline bool
 vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme)
 {
     bool valid;
-    RB_VM_LOCKING_NO_BARRIER() {
-        valid = vm_cc_cme(cc) == cme ||
-            (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme));
+    if (rb_current_execution_context(false) == NULL) {
+        valid = vm_cc_check_cme_unlocked(cc, cme);
+    }
+    else {
+        RB_VM_LOCKING_NO_BARRIER() {
+            valid = vm_cc_check_cme_unlocked(cc, cme);
+        }
     }
     if (valid) {
         return true;
