@@ -1849,7 +1849,7 @@ bool
 rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
 {
     /* With a single objspace there is no cross-objspace pinning to track. */
-    return false;
+    return true;
 }
 
 size_t
