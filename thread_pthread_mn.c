@@ -458,7 +458,16 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
     if (need_to_make) {
         struct rb_native_thread *nt = native_thread_alloc();
         nt->vm = vm;
-        return native_thread_create0(nt);
+        int err = native_thread_create0(nt);
+        if (err) {
+            // Roll back, or this function would conclude forever that the
+            // pool is wide enough and never try again.
+            rb_native_mutex_lock(&vm->ractor.sched.lock);
+            vm->ractor.sched.snt_cnt--;
+            rb_native_mutex_unlock(&vm->ractor.sched.lock);
+            native_thread_destroy(nt);
+        }
+        return err;
     }
     else {
         return 0;
@@ -619,11 +628,15 @@ native_thread_create_shared(rb_thread_t *th)
     tctx->co.argument = th;
 
     RUBY_DEBUG_LOG("th:%u vm_stack:%p machine_stack:%p", rb_th_serial(th), vm_stack, machine_stack);
-    thread_sched_to_ready(TH_SCHED(th), th);
 
-    // setup nt.  th is runnable now and a Ractor's thread that runs to its end frees
-    // its own rb_thread_t (rb_ractor_postmortem_free), so th must not be read again.
-    return native_thread_check_and_create_shared(vm);
+    // Widen the pool before publishing th.  Once ready, a Ractor's thread that
+    // runs to its end frees its own rb_thread_t (rb_ractor_postmortem_free),
+    // and the caller's create-failure path assumes th never became runnable.
+    int create_err = native_thread_check_and_create_shared(vm);
+    if (create_err) return create_err;
+
+    thread_sched_to_ready(TH_SCHED(th), th);
+    return 0;
 }
 
 #else // USE_MN_THREADS
