@@ -1408,10 +1408,6 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 }
 
 
-#ifndef SNT_KEEP_SECONDS
-#define SNT_KEEP_SECONDS 0
-#endif
-
 #ifndef MINIMUM_SNT
 // make at least MINIMUM_SNT snts for debug.
 #define MINIMUM_SNT 0
@@ -1433,25 +1429,11 @@ ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
         while ((r = ccan_list_pop(&vm->ractor.sched.grq, rb_ractor_t, threads.sched.grq_node)) == NULL) {
             RUBY_DEBUG_LOG("wait grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
 
-#if SNT_KEEP_SECONDS > 0
-            rb_hrtime_t abs = rb_hrtime_add(rb_hrtime_now(), RB_HRTIME_PER_SEC * SNT_KEEP_SECONDS);
-            if (native_cond_timedwait(&vm->ractor.sched.cond, &vm->ractor.sched.lock, &abs) == ETIMEDOUT) {
-                RUBY_DEBUG_LOG("timeout, grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
-                VM_ASSERT(r == NULL);
-                vm->ractor.sched.snt_cnt--;
-                vm->ractor.sched.running_cnt--;
-                break;
-            }
-            else {
-                RUBY_DEBUG_LOG("wakeup grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
-            }
-#else
             ractor_sched_set_unlocked(vm, cr);
             rb_native_cond_wait(&vm->ractor.sched.cond, &vm->ractor.sched.lock);
             ractor_sched_set_locked(vm, cr);
 
             RUBY_DEBUG_LOG("wakeup grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
-#endif
         }
 
         VM_ASSERT(rb_current_execution_context(false) == NULL);
@@ -1461,10 +1443,6 @@ ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
             VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
             vm->ractor.sched.grq_cnt--;
             RUBY_DEBUG_LOG("r:%d grq_cnt:%u", (int)rb_ractor_id(r), vm->ractor.sched.grq_cnt);
-        }
-        else {
-            VM_ASSERT(SNT_KEEP_SECONDS > 0);
-            // timeout
         }
     }
     ractor_sched_unlock(vm, cr);
