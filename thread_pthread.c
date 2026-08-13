@@ -2055,6 +2055,20 @@ native_thread_destroy(struct rb_native_thread *nt)
     }
 }
 
+// A retiring snt frees its own rb_native_thread as it exits.  Disarm the
+// altstack registration first: a signal between the free and the thread's
+// end must not run on the freed block.
+static void
+native_thread_destroy_self(struct rb_native_thread *nt)
+{
+#ifdef USE_SIGALTSTACK
+    stack_t disable = {0};
+    disable.ss_flags = SS_DISABLE;
+    sigaltstack(&disable, NULL);
+#endif
+    native_thread_destroy(nt);
+}
+
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
 #define STACKADDR_AVAILABLE 1
 #elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP
@@ -2440,6 +2454,8 @@ nt_start(void *ptr)
         coroutine_initialize_main(nt->nt_context);
     }
 
+    bool retired = false;
+
     while (1) {
         if (nt->dedicated) {
             // wait running turn
@@ -2464,7 +2480,10 @@ nt_start(void *ptr)
         }
         else {
             RUBY_DEBUG_LOG("check next");
-            if (nt->retiring) break;   // came back with no room in the shared pool
+            if (nt->retiring) {   // came back with no room in the shared pool
+                retired = true;
+                break;
+            }
 
             rb_ractor_t *r = ractor_sched_deq(vm, NULL);
 
@@ -2505,7 +2524,8 @@ nt_start(void *ptr)
                 }
             }
             else {
-                // retired: this nt is done.
+                // ractor_sched_deq retired this nt.
+                retired = true;
                 break;
             }
 
@@ -2514,6 +2534,12 @@ nt_start(void *ptr)
                 break;
             }
         }
+    }
+
+    if (retired) {
+        // The counts dropped this nt already; nothing can reference it now.
+        RUBY_DEBUG_LOG("retired nt:%u", nt->serial);
+        native_thread_destroy_self(nt);
     }
 
     return NULL;
