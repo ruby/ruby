@@ -3150,8 +3150,10 @@ timer_thread_set_timeout(rb_vm_t *vm)
 
             RUBY_DEBUG_LOG("th:%u now:%lu rel:%lu", rb_th_serial(th), (unsigned long)now, (unsigned long)hrrel);
 
-            // TODO: overflow?
-            int thread_timeout = (int)((hrrel + RB_HRTIME_PER_MSEC - 1) / RB_HRTIME_PER_MSEC); // ms
+            rb_hrtime_t msec = (hrrel + RB_HRTIME_PER_MSEC - 1) / RB_HRTIME_PER_MSEC;
+            // A deadline further away than INT_MAX ms must clamp, not truncate:
+            // a negative timeout would be an untimed epoll_wait.
+            int thread_timeout = msec > INT_MAX ? INT_MAX : (int)msec; // ms
 
             // Use minimum of scheduler timeout and thread sleep timeout
             if (timeout < 0 || thread_timeout < timeout) {
@@ -3405,7 +3407,12 @@ rb_thread_create_timer_thread(void)
         timer_thread_setup_mn();
     }
 
-    pthread_create(&timer_th.pthread_id, NULL, timer_thread_func, GET_VM());
+    int err = pthread_create(&timer_th.pthread_id, NULL, timer_thread_func, GET_VM());
+    if (err != 0) {
+        // The timer thread delivers signals and drives the M:N scheduler;
+        // running without one only defers the failure to stranger places.
+        rb_bug_errno("pthread_create (timer thread)", err);
+    }
 }
 
 static int
@@ -3445,7 +3452,8 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 #ifdef STACKADDR_AVAILABLE
     else if (get_stack(&base, &size) == 0) {
 # ifdef __APPLE__
-        if (pthread_equal(th->nt->thread_id, native_main_thread.id)) {
+        // th is NULL in this branch; ask about the calling thread itself.
+        if (pthread_equal(pthread_self(), native_main_thread.id)) {
             struct rlimit rlim;
             if (getrlimit(RLIMIT_STACK, &rlim) == 0 && rlim.rlim_cur > size) {
                 size = (size_t)rlim.rlim_cur;

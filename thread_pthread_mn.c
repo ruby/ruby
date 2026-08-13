@@ -179,6 +179,9 @@ get_sysconf_page_size(void)
 static struct nt_stack_chunk_header {
     struct nt_stack_chunk_header *prev_chunk;
     struct nt_stack_chunk_header *prev_free_chunk;
+    // prev_free_chunk == NULL cannot double as the membership test: the free
+    // list's tail also has it NULL, and re-pushing the tail self-cycles it.
+    bool on_free_list;
 
     uint16_t start_page;
     uint16_t stack_count;
@@ -205,7 +208,23 @@ nt_machine_stack_atfork(void)
 
 #include <sys/mman.h>
 
-// vm_stack_size + machine_stack_size + 1 * (guard page size)
+// Page-align the configured sizes: the layout puts a guard page and a
+// MAP_FIXED machine stack behind the VM stack, and both must land on page
+// boundaries whatever RUBY_THREAD_VM_STACK_SIZE and
+// RUBY_THREAD_MACHINE_STACK_SIZE hold (those align only to 4KB).
+static inline size_t
+nt_vm_stack_area(const rb_vm_t *vm)
+{
+    return (size_t)roomof(vm->default_params.thread_vm_stack_size, MSTACK_PAGE_SIZE) * MSTACK_PAGE_SIZE;
+}
+
+static inline size_t
+nt_machine_stack_area(const rb_vm_t *vm)
+{
+    return (size_t)roomof(vm->default_params.thread_machine_stack_size, MSTACK_PAGE_SIZE) * MSTACK_PAGE_SIZE;
+}
+
+// vm stack area + guard page + machine stack area
 static inline size_t
 nt_thread_stack_size(void)
 {
@@ -213,9 +232,7 @@ nt_thread_stack_size(void)
     if (LIKELY(msz > 0)) return msz;
 
     rb_vm_t *vm = GET_VM();
-    int sz = (int)(vm->default_params.thread_vm_stack_size + vm->default_params.thread_machine_stack_size + MSTACK_PAGE_SIZE);
-    int page_num = roomof(sz, MSTACK_PAGE_SIZE);
-    msz = (size_t)page_num * MSTACK_PAGE_SIZE;
+    msz = nt_vm_stack_area(vm) + MSTACK_PAGE_SIZE + nt_machine_stack_area(vm);
     return msz;
 }
 
@@ -252,6 +269,7 @@ nt_alloc_thread_stack_chunk(void)
     ch->start_page = header_page_cnt;
     ch->prev_chunk = nt_stack_chunks;
     ch->prev_free_chunk = nt_free_stack_chunks;
+    ch->on_free_list = true; // the caller makes it the free-list head
     ch->uninitialized_stack_count = ch->stack_count = (uint16_t)stack_count;
     ch->free_stack_pos = 0;
 
@@ -284,7 +302,7 @@ nt_stack_chunk_get_stack(const rb_vm_t *vm, struct nt_stack_chunk_header *ch, si
     const char *vstack, *mstack;
     const char *guard_page;
     vstack = nt_stack_chunk_get_stack_start(ch, idx);
-    guard_page = vstack + vm->default_params.thread_vm_stack_size;
+    guard_page = vstack + nt_vm_stack_area(vm);
     mstack = guard_page + MSTACK_PAGE_SIZE;
 
     struct nt_machine_stack_footer *msf = nt_stack_chunk_get_msf(vm, mstack);
@@ -344,18 +362,19 @@ nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
                 // The chunk was mapped PROT_NONE; enable the VM stack and
                 // machine stack pages, leaving the guard page as PROT_NONE.
                 char *stack_start = nt_stack_chunk_get_stack_start(ch, idx);
-                size_t vm_stack_size = vm->default_params.thread_vm_stack_size;
-                size_t mstack_size = nt_thread_stack_size() - vm_stack_size - MSTACK_PAGE_SIZE;
-                char *mstack_start = stack_start + vm_stack_size + MSTACK_PAGE_SIZE;
+                size_t vm_stack_area = nt_vm_stack_area(vm);
+                size_t mstack_size = nt_thread_stack_size() - vm_stack_area - MSTACK_PAGE_SIZE;
+                char *mstack_start = stack_start + vm_stack_area + MSTACK_PAGE_SIZE;
 
                 int mstack_flags = MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE;
 #if defined(MAP_STACK) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
                 mstack_flags |= MAP_STACK;
 #endif
 
-                if (mprotect(stack_start, vm_stack_size, PROT_READ | PROT_WRITE) != 0 ||
+                if (mprotect(stack_start, vm_stack_area, PROT_READ | PROT_WRITE) != 0 ||
                     mmap(mstack_start, mstack_size, PROT_READ | PROT_WRITE, mstack_flags, -1, 0) == MAP_FAILED) {
                     err = errno;
+                    ch->uninitialized_stack_count++; // the slot was not consumed
                 }
                 else {
                     nt_stack_chunk_get_stack(vm, ch, idx, vm_stack, machine_stack);
@@ -364,6 +383,7 @@ nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
             else {
                 nt_free_stack_chunks = ch->prev_free_chunk;
                 ch->prev_free_chunk = NULL;
+                ch->on_free_list = false;
                 goto retry;
             }
         }
@@ -421,7 +441,8 @@ nt_free_stack(void *mstack)
 
         RUBY_DEBUG_LOG("stack:%p mstack:%p ch:%p index:%d", stack, mstack, ch, idx);
 
-        if (ch->prev_free_chunk == NULL) {
+        if (!ch->on_free_list) {
+            ch->on_free_list = true;
             ch->prev_free_chunk = nt_free_stack_chunks;
             nt_free_stack_chunks = ch;
         }
