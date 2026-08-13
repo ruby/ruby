@@ -333,6 +333,8 @@ static void timer_thread_wakeup_force(void);
 static void thread_sched_switch(rb_thread_t *cth, rb_thread_t *next_th);
 static void ractor_sched_cancel_enq(rb_vm_t *vm, struct rb_thread_sched *sched);
 #if USE_MN_THREADS
+static void nt_machine_stack_atfork(void);
+
 // A coroutine thread's execution context: the coroutine_context (first, so
 // th->sched.context points at the whole block) plus what is needed to free
 // it without the rb_thread_t. Owned by the execution: the dying thread marks
@@ -1738,9 +1740,11 @@ thread_sched_atfork(struct rb_thread_sched *sched)
 
     if (th_has_dedicated_nt(th)) {
         vm->ractor.sched.snt_cnt = 0;
+        vm->ractor.sched.dnt_cnt = 1;
     }
     else {
         vm->ractor.sched.snt_cnt = 1;
+        vm->ractor.sched.dnt_cnt = 0;
     }
     vm->ractor.sched.running_cnt = 0;
 
@@ -1770,6 +1774,9 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     ccan_list_head_init(&vm->ractor.sched.timeslice_threads);
     ccan_list_head_init(&vm->ractor.sched.running_threads);
 
+#if USE_MN_THREADS
+    nt_machine_stack_atfork();
+#endif
     rb_internal_thread_event_hooks_rw_lock_atfork();
 
     VM_ASSERT(sched->is_running);
@@ -3351,8 +3358,15 @@ rb_thread_create_timer_thread(void)
             CLOSE_INVALIDATE_PAIR(timer_th.comm_fds);
 #if HAVE_SYS_EPOLL_H && USE_MN_THREADS
             close_invalidate(&timer_th.event_fd, "close event_fd");
+#elif HAVE_SYS_EVENT_H && USE_MN_THREADS
+            // A kqueue is not inherited across fork: the number names a closed
+            // fd in the child, and closing it could hit a reused one.
+            timer_th.event_fd = -1;
 #endif
-            rb_native_mutex_destroy(&timer_th.waiting_lock);
+            // No mutex_destroy for waiting_lock: glibc returns EBUSY (and
+            // rb_native_mutex_destroy rb_bugs) for a mutex another ractor's
+            // M:N thread held at the fork moment.  The initialize below
+            // starts over.
         }
 
         ccan_list_head_init(&timer_th.waiting);
