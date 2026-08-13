@@ -196,6 +196,13 @@ struct nt_machine_stack_footer {
 
 static rb_nativethread_lock_t nt_machine_stack_lock = RB_NATIVETHREAD_LOCK_INIT;
 
+// The holder at the fork moment does not exist in the child; start over.
+static void
+nt_machine_stack_atfork(void)
+{
+    rb_native_mutex_initialize(&nt_machine_stack_lock);
+}
+
 #include <sys/mman.h>
 
 // vm_stack_size + machine_stack_size + 1 * (guard page size)
