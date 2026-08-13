@@ -2841,8 +2841,8 @@ enum SendDirectArg {
     RestArray(Vec<SendDirectArg>),
 }
 
-/// Side-effect-free description of the argument setup for one SendDirect path.
-struct SendDirectPlan {
+/// Side-effect-free SendDirect argument setup before HIR emission.
+struct SendDirectCall {
     /// Argument slots in the shape expected by SendDirect.
     args: Vec<SendDirectArg>,
     /// Optional keyword slots omitted by the caller.
@@ -2851,7 +2851,7 @@ struct SendDirectPlan {
     jit_entry_idx: u16,
 }
 
-/// Why a SendDirect plan could not be built, including feature counters that
+/// Why a SendDirect call could not be built, including feature counters that
 /// should only be recorded when the caller keeps the dynamic fallback.
 struct SendDirectFailure {
     reason: SendFallbackReason,
@@ -3696,7 +3696,7 @@ impl Function {
     }
 
     /// Validate and normalize SendDirect arguments without emitting HIR.
-    fn plan_send_direct_args(&self, args: &[InsnId], ci: *const rb_callinfo, iseq: IseqPtr, has_block: bool) -> Result<SendDirectPlan, SendDirectFailure> {
+    fn build_send_direct_args(&self, args: &[InsnId], ci: *const rb_callinfo, iseq: IseqPtr, has_block: bool) -> Result<SendDirectCall, SendDirectFailure> {
         can_direct_send(iseq, ci, args, has_block)?;
         let args = args.iter().copied().map(SendDirectArg::Existing).collect();
         let (args, kw_bits) = Self::plan_send_direct_keyword_arguments(args, ci, iseq)
@@ -3704,16 +3704,16 @@ impl Function {
         let (args, jit_entry_idx) = Self::plan_send_direct_rest_parameter(args, iseq)
             .map_err(SendDirectFailure::new)?;
 
-        Ok(SendDirectPlan {
+        Ok(SendDirectCall {
             args,
             kw_bits,
             jit_entry_idx,
         })
     }
 
-    /// Materialize a validated SendDirect plan in the selected runtime path.
-    fn emit_send_direct_args(&mut self, block: BlockId, plan: SendDirectPlan, original_args: &[InsnId], state: InsnId) -> SendDirectArgs {
-        let args: Vec<_> = plan
+    /// Materialize a validated SendDirect call in the selected runtime path.
+    fn emit_send_direct_args(&mut self, block: BlockId, call: SendDirectCall, original_args: &[InsnId], state: InsnId) -> SendDirectArgs {
+        let args: Vec<_> = call
             .args
             .into_iter()
             .map(|arg| self.emit_send_direct_arg(block, arg, state))
@@ -3730,8 +3730,8 @@ impl Function {
         SendDirectArgs {
             state: send_state,
             args,
-            kw_bits: plan.kw_bits,
-            jit_entry_idx: plan.jit_entry_idx,
+            kw_bits: call.kw_bits,
+            jit_entry_idx: call.jit_entry_idx,
         }
     }
 
@@ -4474,7 +4474,7 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            let Ok(plan) = self.plan_send_direct_args(&args, ci, iseq, has_block)
+                            let Ok(call) = self.build_send_direct_args(&args, ci, iseq, has_block)
                                 .inspect_err(|failure| failure.record(self, block, insn_id, SendDirectFallbackContext::Send)) else {
                                 self.push_insn_id(block, insn_id); continue;
                             };
@@ -4495,7 +4495,7 @@ impl Function {
                             }
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
-                                self.emit_send_direct_args(block, plan, &args, send_frame_state);
+                                self.emit_send_direct_args(block, call, &args, send_frame_state);
                             let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, block: send_block })));
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
@@ -4511,7 +4511,7 @@ impl Function {
                             let capture = unsafe { proc_block.as_.captured.as_ref() };
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-                            let Ok(plan) = self.plan_send_direct_args(&args, ci, iseq, has_block)
+                            let Ok(call) = self.build_send_direct_args(&args, ci, iseq, has_block)
                                 .inspect_err(|failure| failure.record(self, block, insn_id, SendDirectFallbackContext::Send)) else {
                                 self.push_insn_id(block, insn_id); continue;
                             };
@@ -4535,7 +4535,7 @@ impl Function {
                             }
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
-                                self.emit_send_direct_args(block, plan, &args, send_frame_state);
+                                self.emit_send_direct_args(block, call, &args, send_frame_state);
                             let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, block: None })));
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
@@ -5061,8 +5061,8 @@ impl Function {
                             // Check if the super method's parameters support direct send.
                             // If not, we can't do direct dispatch.
                             let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
-                            // TODO: pass Option<blockiseq> to plan_send_direct_args when we start specializing `super { ... }`.
-                            let Ok(plan) = self.plan_send_direct_args(&args, ci, super_iseq, false)
+                            // TODO: pass Option<blockiseq> to build_send_direct_args when we start specializing `super { ... }`.
+                            let Ok(call) = self.build_send_direct_args(&args, ci, super_iseq, false)
                                 .inspect_err(|failure| failure.record(self, block, insn_id, SendDirectFallbackContext::Super)) else {
                                 self.push_insn_id(block, insn_id); continue;
                             };
@@ -5070,7 +5070,7 @@ impl Function {
                             emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state.iseq);
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
-                                self.emit_send_direct_args(block, plan, &args, state);
+                                self.emit_send_direct_args(block, call, &args, state);
                             // Use SendDirect with the super method's CME and ISEQ.
                             let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData {
                                 recv,
