@@ -1621,7 +1621,73 @@ fn test_sendforward() {
         test(1, 2)
     ");
     assert_contains_opcode("test", YARVINSN_sendforward);
-    assert_snapshot!(assert_compiles("test(1, 2)"), @"[1, 2]");
+    assert_snapshot!(assert_compiles(r#"test(:a, "b")"#), @r#"[:a, "b"]"#);
+}
+
+#[test]
+fn test_sendforward_with_keywords() {
+    eval("
+        def callee(k:) = k
+        def test(...) = callee(...)
+        test(k: 1)
+    ");
+    assert_contains_opcode("test", YARVINSN_sendforward);
+    assert_snapshot!(assert_compiles("test(k: 2)"), @"2");
+}
+
+#[test]
+fn test_sendforward_with_block() {
+    eval("
+        def callee = yield
+        def test(...) = callee(...)
+        test { :warmup }
+    ");
+    assert_contains_opcode("test", YARVINSN_sendforward);
+    assert_snapshot!(assert_compiles_allowing_exits("test { :ok }"), @":ok");
+}
+
+#[test]
+fn test_sendforward_with_polymorphic_caller_ci_and_monomorphic_receiver() {
+    set_call_threshold(4);
+    eval("
+        class C
+          def g(*args) = args
+        end
+
+        @target = C.new
+        def test(...) = @target.g(...)
+
+        test(1)
+        test(1, 2)
+        test(1, 2, 3)
+    ");
+    assert_contains_opcode("test", YARVINSN_sendforward);
+    assert_snapshot!(assert_compiles("test(:x, :y)"), @"[:x, :y]");
+}
+
+#[test]
+fn test_sendforward_with_monomorphic_caller_ci_and_polymorphic_receiver() {
+    set_call_threshold(4);
+    eval("
+        class C
+          def g(a) = [:a, a]
+        end
+
+        class D
+          def g(a) = [:b, a]
+        end
+
+        def test(...) = @target.g(...)
+
+        @target = C.new
+        test(1)
+        @target = D.new
+        test(1)
+        @target = C.new
+        test(1)
+    ");
+    assert_contains_opcode("test", YARVINSN_sendforward);
+    assert_snapshot!(assert_compiles("@target = D.new; test(:ok)"), @"[:b, :ok]");
 }
 
 #[test]
