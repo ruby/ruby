@@ -1402,6 +1402,15 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 
         rb_native_cond_signal(&vm->ractor.sched.cond);
 
+        // The signal reaches a parked snt, and a running one revisits the
+        // queue in ractor_sched_deq before it can wait (same lock as here).
+        // With every snt dedicated or retired, only the timer thread's
+        // timeout branch can serve the entry or widen the pool: wake it
+        // (a no-op unless it sleeps untimed).
+        if (vm->ractor.sched.snt_cnt == 0) {
+            timer_thread_wakeup_locked(vm);
+        }
+
         // ractor_sched_dump(vm);
     }
     ractor_sched_unlock(vm, cr);
@@ -1940,6 +1949,12 @@ native_thread_dedicated_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_threa
         {
             vm->ractor.sched.snt_cnt--;
             vm->ractor.sched.dnt_cnt++;
+
+            // This may have dedicated the last snt away from a pending
+            // entry whose enqueue saw snt_cnt > 0 (see ractor_sched_enq).
+            if (vm->ractor.sched.snt_cnt == 0 && vm->ractor.sched.grq_cnt > 0) {
+                timer_thread_wakeup_locked(vm);
+            }
         }
         ractor_sched_unlock(vm, cr);
     }
