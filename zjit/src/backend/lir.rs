@@ -5,7 +5,7 @@ use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
 use crate::codegen::{perf_symbol_range_start, perf_symbol_range_end, register_with_perf};
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, PerfMap, get_option};
@@ -1641,7 +1641,10 @@ const JIT_FRAME_OFFSET_FROM_JIT_RETURN: usize = 1;
 ///                                | +-------------------------+ |
 ///                                | |          ...            | | JITState::jit_frame_size
 ///                 stack_base_idx | +-------------------------+ |
-///                                | | JITFrame slot depth X   | v
+///                                | | JITFrame slot depth X   | |
+///                                | +-------------------------+ |
+///                                | | saved SP (stack map     | | <-- one per function, not per depth.
+///                                | | anchor, base_ptr)       | v     see base_ptr_slot_offset()
 ///                                | +-------------------------+
 ///                                | | opnds.last()            | ^
 ///                                | +-------------------------+ |
@@ -1768,13 +1771,52 @@ impl StackMap {
     }
 }
 
-/// Entry in a JITFrame stack map.
+/// Entry in a JITFrame stack map. These are opcodes for zjit_materialize_frames(),
+/// which walks them in order moving a write cursor down the VM stack.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum StackMapEntry {
     /// Immediate Ruby VALUE or VReg to materialize.
     Opnd(Opnd),
     /// Number of VM stack slots to skip when materializing across inlined frames.
     Skip(usize),
+    /// Anchor the write cursor on the SP register saved on the native stack
+    /// at `cfp->jit_return[-slot_index]`, plus `stack_size` VM slots. Emitted as
+    /// the first entry by gen_prepare_non_leaf_call(); see zjit.h.
+    BasePtr { slot_index: u32, stack_size: u32 },
+}
+
+/// The base_ptr payload splits in two above the tag byte, so the slot index has
+/// to occupy exactly the bits between the tag and the stack size field.
+const _: () = assert!(
+    ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK as u64
+        == (1u64 << (ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT - ZJIT_STACK_MAP_SHIFT)) - 1,
+    "BASE_PTR index mask must cover the bits between the tag byte and the stack size field",
+);
+
+/// The stack size field runs from its shift to the top of the VALUE, so a u32
+/// always fits and StackMapEntry::BasePtr needs no runtime check for it.
+const _: () = assert!(
+    ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT + u32::BITS <= usize::BITS,
+    "BASE_PTR stack size field must be at least 32 bits wide",
+);
+
+impl StackMapEntry {
+    /// Encode a [`StackMapEntry::BasePtr`] into its tagged VALUE form.
+    /// `stack_size` is bound by [`CompileError::IseqStackTooLarge`]
+    /// `slot_index` by the max inline iteration.
+    // TODO(alan): bounds check max inline iteration as it's user-controlled.
+    fn encode_base_ptr(slot_index: u32, stack_size: u32) -> VALUE {
+        const INDEX_BITS: u32 = ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT - ZJIT_STACK_MAP_SHIFT;
+        assert!(
+            slot_index <= ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK,
+            "StackMap base_ptr slot index {slot_index} does not fit in {INDEX_BITS} bits",
+        );
+        let encoded = ((stack_size as usize) << ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT)
+            | ((slot_index as usize) << ZJIT_STACK_MAP_SHIFT)
+            | ZJIT_STACK_MAP_BASE_PTR_TAG as usize;
+        debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap base_ptr should not look like an immediate VALUE");
+        VALUE(encoded)
+    }
 }
 
 /// Initial capacity for asm.insns vector
@@ -2698,6 +2740,10 @@ impl Assembler
                                     let encoded = (size << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_SKIP_TAG as usize;
                                     debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap skip should not look like an immediate VALUE");
                                     VALUE(encoded)
+                                }
+                                StackMapEntry::BasePtr { slot_index, stack_size } => {
+                                    debug_assert_eq!(idx, 0, "base_ptr must be the first StackMap entry so later entries decode from it");
+                                    StackMapEntry::encode_base_ptr(slot_index, stack_size)
                                 }
                                 StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) => {
                                     let vreg_stack_index = match intervals[vreg].assigned.get().expect("StackMap VReg should have an allocation") {
