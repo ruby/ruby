@@ -2055,7 +2055,11 @@ static bool
 thread_io_mn_schedulable(rb_thread_t *th, int events, const struct timeval *timeout)
 {
 #if defined(USE_MN_THREADS) && USE_MN_THREADS
-    return !th_has_dedicated_nt(th) && (events || timeout) && th->blocking;
+    // RB_WAITFD_PRI has no thread_sched_waiting_* event: the scheduler would
+    // register nothing and park the thread forever.  POLLPRI works on the
+    // blocking path.
+    return !th_has_dedicated_nt(th) && (events || timeout) && th->blocking &&
+        !(events & ~(RB_WAITFD_IN | RB_WAITFD_OUT));
 #else
     return false;
 #endif
