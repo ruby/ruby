@@ -19,7 +19,7 @@ Each of these methods returns a Time object:
 Notes:
 
 1. Modification time update may be delayed by the filesystem.
-2. Access time may occur immediately, later, or never, depending on filesysem settings.
+2. Access time may occur immediately, later, or never, depending on filesystem settings.
 
 Each of these methods updates the access time and modification time for an entry:
 
