@@ -252,11 +252,7 @@ ractor_mark_unshareable_parts(rb_ractor_t *r)
     // mark the received messages (the structures the owner mutates guard themselves)
     ractor_sync_mark(r);
 
-    /* Structures the owner mutates while running follow.  Only the root scan calls
-     * this: a local GC for itself, a global GC for the whole set under the barrier.  A
-     * terminated Ractor has left the set; zombie_objspaces covers it instead. */
-    VM_ASSERT(r == rb_current_ractor_raw(false) || rb_gc_during_global_gc_p());
-    VM_ASSERT(!rb_ractor_status_p(r, ractor_terminated));
+    /* Structures the owner mutates while running follow. */
 
     rb_hook_list_mark(&r->pub.hooks);
     if (r->pub.targeted_hooks.num_entries) {
@@ -334,6 +330,11 @@ rb_ractor_mark_local_roots(rb_ractor_t *r)
 
     rb_gc_mark(r->loc);
     rb_gc_mark(r->name);
+    /* Only the root scan calls this: a local GC for itself, a global GC for the whole
+     * set under the barrier.  A terminated Ractor has left the set; zombie_objspaces
+     * covers it instead. */
+    VM_ASSERT(r == rb_current_ractor_raw(false) || rb_gc_during_global_gc_p());
+    VM_ASSERT(!rb_ractor_status_p(r, ractor_terminated));
     ractor_mark_unshareable_parts(r);
 
     /* This Ractor's rb_gc_register_mark_object pins, treated conservatively: a local GC
