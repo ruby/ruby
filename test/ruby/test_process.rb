@@ -210,7 +210,8 @@ class TestProcess < Test::Unit::TestCase
     # the ASAN runtime library sets RLIMIT_CORE to 0, "to avoid dumping a 16T+ core file", and
     # that inteferes with this test.
     asan_options = ENV['ASAN_OPTIONS'] || ''
-    asan_options  << ':' unless asan_options.empty?
+    # NOTE: ENV['ASAN_OPTIONS'] returns a frozen String, so append non-destructively.
+    asan_options += ':' unless asan_options.empty?
     env = {
       'ASAN_OPTIONS' => "#{asan_options}disable_coredump=0"
     }
