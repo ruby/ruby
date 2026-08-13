@@ -9169,12 +9169,19 @@ objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src)
         VALUE src_deferred = RUBY_ATOMIC_VALUE_EXCHANGE(src->heap_pages.deferred_final, 0);
         if (src_deferred) {
             VALUE tail_obj = src_deferred;
-            while (RZOMBIE(tail_obj)->next) tail_obj = RZOMBIE(tail_obj)->next;
+            rb_asan_unpoison_object(tail_obj, false);
+            while (RZOMBIE(tail_obj)->next) {
+                VALUE next_obj = RZOMBIE(tail_obj)->next;
+                rb_asan_poison_object(tail_obj);
+                tail_obj = next_obj;
+                rb_asan_unpoison_object(tail_obj, false);
+            }
             VALUE prev;
             do {
                 prev = dst->heap_pages.deferred_final;
                 RZOMBIE(tail_obj)->next = prev;
             } while (RUBY_ATOMIC_VALUE_CAS(dst->heap_pages.deferred_final, prev, src_deferred) != prev);
+            rb_asan_poison_object(tail_obj);
             /* No owner was left to run these zombies (register's owner walk misses a dead
              * Ractor).  dst runs this merge, so schedule dst's job here; otherwise they wait
              * until dst's next GC. */
