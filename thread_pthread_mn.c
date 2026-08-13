@@ -167,7 +167,7 @@ get_sysconf_page_size(void)
 
 // 512MB chunk
 // 131,072 pages (> 65,536)
-// 0th page is Redzone. Start from 1st page.
+// Head pages hold the chunk header (see start_page); stacks follow.
 
 /*
  *            <--> machine stack + vm stack
@@ -460,7 +460,7 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
 {
     bool need_to_make = false;
 
-    rb_native_mutex_lock(&vm->ractor.sched.lock);
+    ractor_sched_lock(vm, NULL); // NULL: the timer thread also calls this
     {
         unsigned int schedulable_ractor_cnt = vm->ractor.cnt;
         RUBY_ASSERT(schedulable_ractor_cnt >= 1);
@@ -486,7 +486,7 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
             RUBY_DEBUG_LOG("snt:%d ractor_cnt:%d", (int)vm->ractor.sched.snt_cnt, (int)vm->ractor.cnt);
         }
     }
-    rb_native_mutex_unlock(&vm->ractor.sched.lock);
+    ractor_sched_unlock(vm, NULL);
 
     if (need_to_make) {
         struct rb_native_thread *nt = native_thread_alloc();
@@ -495,9 +495,9 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
         if (err) {
             // Roll back, or this function would conclude forever that the
             // pool is wide enough and never try again.
-            rb_native_mutex_lock(&vm->ractor.sched.lock);
+            ractor_sched_lock(vm, NULL);
             vm->ractor.sched.snt_cnt--;
-            rb_native_mutex_unlock(&vm->ractor.sched.lock);
+            ractor_sched_unlock(vm, NULL);
             native_thread_destroy(nt);
         }
         return err;
@@ -899,7 +899,7 @@ verify_waiting_list(void)
         // fprintf(stderr, "verify_waiting_list th:%u abs:%lu\n", rb_th_serial(wth), (unsigned long)wth->sched.waiting_reason.data.timeout);
         if (prev_w) {
             rb_hrtime_t timeout = w->data.timeout;
-            rb_hrtime_t prev_timeout = w->data.timeout;
+            rb_hrtime_t prev_timeout = prev_w->data.timeout;
             VM_ASSERT(timeout == 0 || prev_timeout <= timeout);
         }
         prev_w = w;
@@ -981,10 +981,6 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
         else {
             return timer_thread_already_ready; // zero timeout: nothing to wait for
         }
-    }
-
-    if (rel && *rel > 0) {
-        flags |= thread_sched_waiting_timeout;
     }
 
     if (flags & thread_sched_waiting_timeout) {
