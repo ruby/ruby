@@ -222,26 +222,50 @@ pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
         if let Some(patch_points) = invariants.no_ep_escape_iseq_patch_points.remove(&iseq) {
             debug!("EP is escaped: {}", iseq_name(iseq));
 
+            // Collect the versions that contain these patch points before the macro
+            // consumes them. A NoEPEscape(iseq) patch point may live in another
+            // ISEQ's version when `iseq` was inlined into a caller.
+            let mut patched_versions: Vec<IseqVersionRef> = patch_points.iter().map(|patch_point| patch_point.version).collect();
+
             // Invalidate the patch points for this ISEQ
             let cb = ZJITState::get_code_block();
             compile_patch_points!(cb, patch_points, EP, "EP is escaped: {}", iseq_name(iseq));
 
-            // Also invalidate the ISEQ version so the method falls back to the
-            // interpreter on the next call. NoEPEscape PatchPoint side exits use
-            // without_locals() and don't save locals to the frame. If a PatchPoint
-            // fires on a later call (where EP hasn't escaped), the interpreter would
-            // read stale locals (e.g., nil instead of [] for keyword defaults).
+            // Also invalidate every version that contains one of the patched points,
+            // and this ISEQ's latest version, so that no new call runs the patched code.
+            // NoEPEscape PatchPoint side exits use without_locals() and don't save
+            // locals to the frame. If a PatchPoint fires on a later call (where EP
+            // hasn't escaped), the interpreter would read stale locals (e.g., nil
+            // instead of [] for keyword defaults).
             //
-            // We can't use invalidate_iseq_version() here because it skips when
-            // at MAX_ISEQ_VERSIONS (to prevent unbounded recompilation). Instead,
-            // directly mark the version as invalidated and reset jit_func so the
-            // interpreter takes over permanently.
-            let payload = crate::payload::get_or_create_iseq_payload(iseq);
-            if let Some(version) = payload.versions.last_mut() {
+            // We can't rely on the invalidate_iseq_version() calls made by
+            // compile_patch_points! because it skips when at MAX_ISEQ_VERSIONS
+            // (to prevent unbounded recompilation). Instead, directly mark the
+            // versions as invalidated, reset jit_func, and re-stub incoming
+            // JIT-to-JIT calls so the interpreter takes over permanently.
+            let payload = get_or_create_iseq_payload(iseq);
+            patched_versions.extend(payload.versions.last());
+            for mut version in patched_versions {
                 use crate::payload::IseqStatus;
+                let owner_iseq = unsafe { version.as_ref() }.iseq;
+                if owner_iseq.is_null() {
+                    continue;
+                }
                 if unsafe { version.as_ref() }.status != IseqStatus::Invalidated {
                     unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
-                    unsafe { rb_iseq_reset_jit_func(iseq) };
+                    unsafe { rb_iseq_reset_jit_func(owner_iseq) };
+
+                    // Re-stub incoming JIT-to-JIT calls. Resetting jit_func is not
+                    // enough: SendDirect callers jump straight into the invalidated
+                    // code, whose NoEPEscape patch points now side-exit with
+                    // without_locals() frame states. A frame entered through a
+                    // JIT-to-JIT call does not write locals to the stack, so resuming
+                    // the interpreter through such an exit would read garbage locals.
+                    for incoming in unsafe { version.as_ref() }.incoming.iter() {
+                        if let Err(err) = crate::codegen::gen_iseq_call(cb, incoming) {
+                            debug!("{err:?}: gen_iseq_call failed during EP escape invalidation: {}", iseq_name(owner_iseq));
+                        }
+                    }
                 }
             }
 

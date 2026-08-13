@@ -7872,6 +7872,45 @@ fn test_keep_jit_frame_for_caught_jump() {
     assert_snapshot!(result, @":ok");
 }
 
+// A NoEPEscape patch point can be reached without the frame's locals ever being
+// written to the stack: JIT-to-JIT calls don't write locals, and the code before
+// the patch point may be leaf. When an EP escape fires while the version limit
+// prevents invalidate_iseq_version() from running, every version containing a
+// patched point must still stop receiving calls. Otherwise a fresh call would
+// side-exit through the patched point's without_locals() frame state and the
+// interpreter would read garbage locals.
+#[test]
+fn test_no_ep_escape_invalidation_at_max_versions() {
+    rb_zjit_prepare_options();
+    let old_call_threshold = unsafe { crate::options::rb_zjit_call_threshold };
+    let old_max_versions = get_option!(max_versions);
+    set_call_threshold(2);
+    set_max_versions(1);
+    let result = inspect(r#"
+        def ep_escape_callee(a = "expected")
+          binding if @ep_escape
+          a
+        end
+
+        def ep_escape_caller = ep_escape_callee
+
+        def ep_escape_dirty(x) = x
+        def ep_escape_dirty_caller = ep_escape_dirty(:garbage)
+
+        @ep_escape = nil
+        ep_escape_callee; ep_escape_callee    # profile + compile callee
+        ep_escape_caller; ep_escape_caller    # profile + compile caller
+        @ep_escape = true
+        ep_escape_caller                      # binding escapes callee's EP -> invalidation
+        @ep_escape = nil
+        ep_escape_dirty_caller                # dirty the stale local's stack slot
+        ep_escape_caller
+    "#);
+    set_max_versions(old_max_versions);
+    set_call_threshold(old_call_threshold);
+    assert_snapshot!(result, @r#""expected""#);
+}
+
 #[test]
 fn test_float_arithmetic() {
     set_call_threshold(1);
