@@ -612,3 +612,51 @@ assert_equal 'ok', %q{
     File.unlink(flagpath) rescue nil
   end
 }
+
+# Creating a thread when no native thread can be spawned must fail cleanly:
+# the thread must not be published to the scheduler before its native thread
+# exists, or an existing shared thread runs it to death concurrently with the
+# creator's failure path (living-set removal races its own).
+assert_equal 'ok', %q{
+  can_limit = begin
+    Process.setrlimit(:NPROC, Process.getrlimit(:NPROC)[0])
+    true
+  rescue StandardError, NotImplementedError
+    false
+  end
+  if !can_limit
+    'ok'   # cannot make thread creation fail on this platform; nothing to test
+  else
+    warm = 2.times.map { Ractor.new { nil until Ractor.receive == :quit } }
+    sleep 0.3   # the pool now has shared native threads parked for the warm ractors
+    Process.setrlimit(:NPROC, 1)
+    # RLIMIT_NPROC binds neither root (CI containers) nor macOS threads;
+    # probe that thread creation actually fails before asserting on it.
+    limited = begin
+      Thread.new {}.join
+      false
+    rescue ThreadError
+      true
+    end
+    result =
+      if !limited
+        'ok'
+      else
+        errs = 0
+        20.times do
+          begin
+            Ractor.new { :born }
+          rescue ThreadError
+            errs += 1
+          end
+        end
+        sleep 0.5   # a wrongly-published thread would be served and die about now
+        errs == 20 ? 'ok' : "#{errs} of 20 raised"
+      end
+    warm.each { |r| r.send(:quit) }
+    warm.each(&:value)
+    GC.start
+    result
+  end
+}
+
