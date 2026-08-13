@@ -215,6 +215,7 @@ pub const ONIG_OPTION_EXTEND: u32 = 2;
 pub const ONIG_OPTION_MULTILINE: u32 = 4;
 pub const ARG_ENCODING_FIXED: u32 = 16;
 pub const ARG_ENCODING_NONE: u32 = 32;
+pub const SHAPE_ID_NUM_BITS: u32 = 32;
 pub const INTEGER_REDEFINED_OP_FLAG: u32 = 1;
 pub const FLOAT_REDEFINED_OP_FLAG: u32 = 2;
 pub const STRING_REDEFINED_OP_FLAG: u32 = 4;
@@ -233,10 +234,12 @@ pub const VM_ENV_DATA_INDEX_ME_CREF: i32 = -2;
 pub const VM_ENV_DATA_INDEX_SPECVAL: i32 = -1;
 pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
-pub const SHAPE_ID_NUM_BITS: u32 = 32;
 pub const ZJIT_STACK_MAP_VREG_TAG: u32 = 8;
 pub const ZJIT_STACK_MAP_SKIP_TAG: u32 = 16;
+pub const ZJIT_STACK_MAP_BASE_PTR_TAG: u32 = 24;
 pub const ZJIT_STACK_MAP_SHIFT: u32 = 8;
+pub const ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT: u32 = 32;
+pub const ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK: u32 = 16777215;
 pub const ZJIT_JIT_RETURN_C_FRAME: u32 = 1;
 pub const RB_GC_ZJIT_FASTPATH_DATA_WORDS: u32 = 19;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;
@@ -403,6 +406,60 @@ pub const RUBY_ENCINDEX_EUC_JP: ruby_preserved_encindex = 10;
 pub const RUBY_ENCINDEX_Windows_31J: ruby_preserved_encindex = 11;
 pub const RUBY_ENCINDEX_BUILTIN_MAX: ruby_preserved_encindex = 12;
 pub type ruby_preserved_encindex = u32;
+pub type rb_atomic_t = ::std::os::raw::c_uint;
+#[repr(C)]
+#[repr(align(8))]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_id_table {
+    pub _bindgen_opaque_blob: [u64; 3usize],
+}
+pub const imemo_env: imemo_type = 0;
+pub const imemo_cref: imemo_type = 1;
+pub const imemo_svar: imemo_type = 2;
+pub const imemo_throw_data: imemo_type = 3;
+pub const imemo_ifunc: imemo_type = 4;
+pub const imemo_memo: imemo_type = 5;
+pub const imemo_ment: imemo_type = 6;
+pub const imemo_iseq: imemo_type = 7;
+pub const imemo_tmpbuf: imemo_type = 8;
+pub const imemo_cvar_entry: imemo_type = 9;
+pub const imemo_callinfo: imemo_type = 10;
+pub const imemo_callcache: imemo_type = 11;
+pub const imemo_constcache: imemo_type = 12;
+pub const imemo_fields: imemo_type = 13;
+pub const imemo_subclasses: imemo_type = 14;
+pub const imemo_cdhash: imemo_type = 15;
+pub type imemo_type = u32;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vm_ifunc_argc {
+    pub min: ::std::os::raw::c_int,
+    pub max: ::std::os::raw::c_int,
+}
+#[repr(C)]
+pub struct vm_ifunc {
+    pub flags: VALUE,
+    pub svar_lep: *mut VALUE,
+    pub func: rb_block_call_func_t,
+    pub data: *const ::std::os::raw::c_void,
+    pub argc: vm_ifunc_argc,
+}
+pub type attr_index_t = u8;
+pub type shape_id_t = u32;
+pub const SHAPE_ID_CAPACITY_MASK: shape_id_fl_type = 66584576;
+pub const SHAPE_ID_FL_COMPLEX: shape_id_fl_type = 67108864;
+pub const SHAPE_ID_FL_FROZEN: shape_id_fl_type = 134217728;
+pub const SHAPE_ID_FL_HAS_OBJECT_ID: shape_id_fl_type = 268435456;
+pub const SHAPE_ID_LAYOUT_ROBJECT: shape_id_fl_type = 0;
+pub const SHAPE_ID_LAYOUT_RCLASS: shape_id_fl_type = 536870912;
+pub const SHAPE_ID_LAYOUT_EXTENDED: shape_id_fl_type = 1073741824;
+pub const SHAPE_ID_LAYOUT_RDATA: shape_id_fl_type = 1073741824;
+pub const SHAPE_ID_LAYOUT_OTHER: shape_id_fl_type = 1610612736;
+pub const SHAPE_ID_LAYOUT_MASK: shape_id_fl_type = 1610612736;
+pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 402653184;
+pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 2146959360;
+pub const SHAPE_ID_FL_PRIVATE_MASK: shape_id_fl_type = 1677197312;
+pub type shape_id_fl_type = u32;
 pub const BOP_PLUS: ruby_basic_operators = 0;
 pub const BOP_MINUS: ruby_basic_operators = 1;
 pub const BOP_MULT: ruby_basic_operators = 2;
@@ -442,44 +499,6 @@ pub const BOP_YIELD: ruby_basic_operators = 35;
 pub const BOP_LAST_: ruby_basic_operators = 36;
 pub type ruby_basic_operators = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
-#[repr(C)]
-#[repr(align(8))]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_id_table {
-    pub _bindgen_opaque_blob: [u64; 3usize],
-}
-pub const imemo_env: imemo_type = 0;
-pub const imemo_cref: imemo_type = 1;
-pub const imemo_svar: imemo_type = 2;
-pub const imemo_throw_data: imemo_type = 3;
-pub const imemo_ifunc: imemo_type = 4;
-pub const imemo_memo: imemo_type = 5;
-pub const imemo_ment: imemo_type = 6;
-pub const imemo_iseq: imemo_type = 7;
-pub const imemo_tmpbuf: imemo_type = 8;
-pub const imemo_cvar_entry: imemo_type = 9;
-pub const imemo_callinfo: imemo_type = 10;
-pub const imemo_callcache: imemo_type = 11;
-pub const imemo_constcache: imemo_type = 12;
-pub const imemo_fields: imemo_type = 13;
-pub const imemo_subclasses: imemo_type = 14;
-pub const imemo_cdhash: imemo_type = 15;
-pub type imemo_type = u32;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct vm_ifunc_argc {
-    pub min: ::std::os::raw::c_int,
-    pub max: ::std::os::raw::c_int,
-}
-#[repr(C)]
-pub struct vm_ifunc {
-    pub flags: VALUE,
-    pub svar_lep: *mut VALUE,
-    pub func: rb_block_call_func_t,
-    pub data: *const ::std::os::raw::c_void,
-    pub argc: vm_ifunc_argc,
-}
-pub type rb_atomic_t = ::std::os::raw::c_uint;
 pub const METHOD_VISI_UNDEF: rb_method_visibility_t = 0;
 pub const METHOD_VISI_PUBLIC: rb_method_visibility_t = 1;
 pub const METHOD_VISI_PRIVATE: rb_method_visibility_t = 2;
@@ -1541,22 +1560,6 @@ pub const VM_ENV_FLAG_ESCAPED: vm_frame_env_flags = 4;
 pub const VM_ENV_FLAG_WB_REQUIRED: vm_frame_env_flags = 8;
 pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
-pub type attr_index_t = u8;
-pub type shape_id_t = u32;
-pub const SHAPE_ID_CAPACITY_MASK: shape_id_fl_type = 66584576;
-pub const SHAPE_ID_FL_COMPLEX: shape_id_fl_type = 67108864;
-pub const SHAPE_ID_FL_FROZEN: shape_id_fl_type = 134217728;
-pub const SHAPE_ID_FL_HAS_OBJECT_ID: shape_id_fl_type = 268435456;
-pub const SHAPE_ID_LAYOUT_ROBJECT: shape_id_fl_type = 0;
-pub const SHAPE_ID_LAYOUT_RCLASS: shape_id_fl_type = 536870912;
-pub const SHAPE_ID_LAYOUT_EXTENDED: shape_id_fl_type = 1073741824;
-pub const SHAPE_ID_LAYOUT_RDATA: shape_id_fl_type = 1073741824;
-pub const SHAPE_ID_LAYOUT_OTHER: shape_id_fl_type = 1610612736;
-pub const SHAPE_ID_LAYOUT_MASK: shape_id_fl_type = 1610612736;
-pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 402653184;
-pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 2146959360;
-pub const SHAPE_ID_FL_PRIVATE_MASK: shape_id_fl_type = 1677197312;
-pub type shape_id_fl_type = u32;
 pub const CONST_DEPRECATED: rb_const_flag_t = 256;
 pub const CONST_VISIBILITY_MASK: rb_const_flag_t = 255;
 pub const CONST_PUBLIC: rb_const_flag_t = 0;
@@ -1991,6 +1994,12 @@ pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
 pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 288;
 pub const RUBY_OFFSET_THREAD_RACTOR: zjit_struct_offsets = 24;
 pub type zjit_struct_offsets = u32;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_zjit_runtime_offsets {
+    pub ractor_newobj_cache: i32,
+    pub ractor_objspace: i32,
+}
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
 pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
 pub const RCLASS_OFFSET_PRIME_FIELDS_OBJ: jit_bindgen_constants = 40;
@@ -2027,6 +2036,7 @@ pub struct rb_gc_zjit_default_new_obj_fastpath {
     pub cursor_offset: usize,
     pub cursor_end_offset: usize,
     pub slot_size: usize,
+    pub total_allocated_objects_offset: usize,
     pub flags: VALUE,
     pub klass: VALUE,
 }
@@ -2176,6 +2186,19 @@ unsafe extern "C" {
         elements: *const VALUE,
         opt: ::std::os::raw::c_int,
     ) -> VALUE;
+    pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
+    pub fn rb_raw_obj_info(
+        buff: *mut ::std::os::raw::c_char,
+        buff_size: usize,
+        obj: VALUE,
+    ) -> *const ::std::os::raw::c_char;
+    pub fn rb_ec_stack_check(ec: *mut rb_execution_context_struct) -> ::std::os::raw::c_int;
+    pub fn rb_gc_writebarrier_remember(obj: VALUE);
+    pub fn rb_id_table_lookup(
+        tbl: *mut rb_id_table,
+        id: ID,
+        valp: *mut VALUE,
+    ) -> ::std::os::raw::c_int;
     pub fn rb_ary_tmp_new_from_values(
         arg1: VALUE,
         arg2: ::std::os::raw::c_long,
@@ -2186,13 +2209,16 @@ unsafe extern "C" {
         n: ::std::os::raw::c_long,
         elts: *const VALUE,
     ) -> VALUE;
+    pub fn rb_shape_id_offset() -> i32;
+    pub fn rb_obj_shape_id(obj: VALUE) -> shape_id_t;
+    pub fn rb_shape_get_iv_index(shape_id: shape_id_t, id: ID, value: *mut attr_index_t) -> bool;
+    pub fn rb_shape_transition_add_ivar_no_warnings(
+        shape_id: shape_id_t,
+        id: ID,
+        klass: VALUE,
+    ) -> shape_id_t;
     pub fn rb_vm_top_self() -> VALUE;
     pub static mut rb_vm_insn_count: u64;
-    pub fn rb_id_table_lookup(
-        tbl: *mut rb_id_table,
-        id: ID,
-        valp: *mut VALUE,
-    ) -> ::std::os::raw::c_int;
     pub fn rb_method_entry_at(obj: VALUE, id: ID) -> *const rb_method_entry_t;
     pub fn rb_callable_method_entry(klass: VALUE, id: ID) -> *const rb_callable_method_entry_t;
     pub fn rb_callable_method_entry_or_negative(
@@ -2210,22 +2236,6 @@ unsafe extern "C" {
     pub fn rb_vm_frame_method_entry(
         cfp: *const rb_control_frame_t,
     ) -> *const rb_callable_method_entry_t;
-    pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
-    pub fn rb_raw_obj_info(
-        buff: *mut ::std::os::raw::c_char,
-        buff_size: usize,
-        obj: VALUE,
-    ) -> *const ::std::os::raw::c_char;
-    pub fn rb_ec_stack_check(ec: *mut rb_execution_context_struct) -> ::std::os::raw::c_int;
-    pub fn rb_gc_writebarrier_remember(obj: VALUE);
-    pub fn rb_shape_id_offset() -> i32;
-    pub fn rb_obj_shape_id(obj: VALUE) -> shape_id_t;
-    pub fn rb_shape_get_iv_index(shape_id: shape_id_t, id: ID, value: *mut attr_index_t) -> bool;
-    pub fn rb_shape_transition_add_ivar_no_warnings(
-        shape_id: shape_id_t,
-        id: ID,
-        klass: VALUE,
-    ) -> shape_id_t;
     pub fn rb_const_lookup(klass: VALUE, id: ID) -> *mut rb_const_entry_t;
     pub fn rb_ivar_get_at_no_ractor_check(obj: VALUE, index: attr_index_t) -> VALUE;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
@@ -2272,11 +2282,12 @@ unsafe extern "C" {
     pub fn rb_iseq_label(iseq: *const rb_iseq_t) -> VALUE;
     pub fn rb_iseq_defined_string(type_: defined_type) -> VALUE;
     pub fn rb_zjit_profile_enable(iseq: *const rb_iseq_t);
-    pub fn rb_zjit_hash_new_size() -> usize;
+    pub fn rb_zjit_hash_new_size(flags_out: *mut VALUE) -> usize;
+    pub fn rb_zjit_new_obj_shape(flags: VALUE, alloc_size: usize) -> VALUE;
     pub fn rb_zjit_class_allocate_instance_fastpath(
         klass: VALUE,
         size_out: *mut usize,
-        shape_id_out: *mut shape_id_t,
+        flags_out: *mut VALUE,
     ) -> bool;
     pub fn rb_zjit_str_resurrect_fastpath(
         str_: VALUE,
@@ -2292,6 +2303,12 @@ unsafe extern "C" {
         flags_out: *mut VALUE,
         len_out: *mut ::std::os::raw::c_long,
     ) -> bool;
+    pub fn rb_zjit_range_new_fastpath(
+        exclude_end: bool,
+        alloc_size_out: *mut usize,
+        flags_out: *mut VALUE,
+    );
+    pub fn rb_zjit_array_new_fastpath(alloc_size_out: *mut usize, flags_out: *mut VALUE);
     pub fn rb_profile_frames(
         start: ::std::os::raw::c_int,
         limit: ::std::os::raw::c_int,
@@ -2302,6 +2319,7 @@ unsafe extern "C" {
     pub fn rb_profile_frame_absolute_path(frame: VALUE) -> VALUE;
     pub fn rb_profile_frame_full_label(frame: VALUE) -> VALUE;
     pub fn rb_jit_cont_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
+    pub static rb_zjit_runtime_offsets: rb_zjit_runtime_offsets;
     pub fn rb_zjit_profile_disable(iseq: *const rb_iseq_t);
     pub fn rb_zjit_insn_to_bare_insn(insn: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
@@ -2452,6 +2470,7 @@ unsafe extern "C" {
     );
     pub fn rb_jit_fix_div_fix(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
+    pub fn rb_jit_str_simple_append(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_jit_str_concat_codepoint(str_: VALUE, codepoint: VALUE);
     pub fn rb_jit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
 }

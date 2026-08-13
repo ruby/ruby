@@ -257,6 +257,58 @@ RSpec.describe "bundle check" do
 
     bundle :check, raise_on_error: false
     expect(last_command).to be_failure
+    expect(err).to include("Frozen mode is set, but there's no lockfile")
+  end
+
+  it "fails when frozen is set and the lockfile is missing a CHECKSUMS entry" do
+    system_gems "myrack-1.0.0", path: default_bundle_path
+
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
+    G
+
+    lockfile <<-L
+      GEM
+        remote: https://gem.repo1/
+        specs:
+          myrack (1.0.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack
+
+      CHECKSUMS
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+
+    bundle :check, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+    expect(exitstatus).to eq(16)
+    expect(err).to include("Your lockfile is missing a CHECKSUMS entry for \"myrack\", but can't be updated because frozen mode is set")
+    expect(out).not_to include("The Gemfile's dependencies are satisfied")
+  end
+
+  it "fails when frozen is set and the Gemfile has changed" do
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
+    G
+
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
+      gem "rails"
+    G
+
+    bundle :check, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+    expect(exitstatus).to eq(16)
+    expect(err).to include("frozen mode is set")
+    expect(err).to include("* rails")
+    expect(out).not_to include("The Gemfile's dependencies are satisfied")
   end
 
   describe "when locked" do

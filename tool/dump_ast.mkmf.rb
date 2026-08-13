@@ -14,6 +14,10 @@ prismdir= "$(srcdir)/#{dirs.first}"
 $VPATH = ["$(srcdir)", "$(srcdir)/#{tooldir.basename}", prismdir, tooldir]
 $INCFLAGS << " -I#{prismdir}"
 $CPPFLAGS = $CFLAGS = $INCFLAGS
+if $objext && $OBJEXT && $objext != $OBJEXT
+  ext1, ext2 = ".#{$objext}", ".#{$OBJEXT}"
+  objs.each {|obj| obj.chomp!(ext1) << ext2}
+end
 
 include FileUtils::Verbose
 mkpath(workdir)
@@ -22,16 +26,18 @@ Dir.chdir(workdir) {
   File.write('Makefile', [MakeMakefile.configuration(srcdir.to_s), <<~MAKEFILE].join(""))
     target = #{target}#{$EXEEXT}
     objs = #{objs.join(' ')}
+    Q =
+    .SUFFIXES: .c .#{$OBJEXT}
 
     $(target): $(objs)
-    \t#{link} $(objs)
+    \t$(Q) #{link} $(objs)
 
     objs: $(objs)
     .c.#{$OBJEXT}:
-    \t#{MakeMakefile::COMPILE_C}
+    \t$(Q) #{MakeMakefile::COMPILE_C}
 
     clean:
-    \t$(RM) $(target) $(objs) Makefile
-    \t$(RMDIRS) #{dirs.join(' ')}
+    \t$(Q) $(RM) $(target) $(objs) Makefile
+    \t$(Q) $(RMDIRS) #{dirs.join(' ')}
   MAKEFILE
 }

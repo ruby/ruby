@@ -284,4 +284,23 @@ describe "IO.popen" do
       end
     end
   end
+
+  describe "options validation" do
+    it "raises an ArgumentError if :unsetenv_others option is not a boolean or nil" do
+      -> { IO.popen(["true", unsetenv_others: 1]) }.should.raise(ArgumentError, /expected true or false/)
+      -> { IO.popen(["true", unsetenv_others: "true"]) }.should.raise(ArgumentError, /expected true or false/)
+    end
+
+    it "raises an ArgumentError if :close_others option is not a boolean or nil" do
+      -> { IO.popen(["true", close_others: 1]) }.should.raise(ArgumentError, /expected true or false/)
+      -> { IO.popen(["true", close_others: "true"]) }.should.raise(ArgumentError, /expected true or false/)
+    end
+
+    platform_is :windows do
+      it "raises an ArgumentError if :new_pgroup option is not a boolean or nil" do
+        -> { IO.popen(["true", new_pgroup: 1]) }.should.raise(ArgumentError, /expected true or false/)
+        -> { IO.popen(["true", new_pgroup: "true"]) }.should.raise(ArgumentError, /expected true or false/)
+      end
+    end
+  end
 end

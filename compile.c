@@ -21,6 +21,7 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/compile.h"
+#include "internal/coverage.h"
 #include "internal/complex.h"
 #include "internal/encoding.h"
 #include "internal/error.h"
@@ -1502,6 +1503,14 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
 {
     rb_iseq_t *ret_iseq;
     VALUE ast_value = rb_ruby_ast_new(node);
+
+    // The child AST wrapper does not carry the source hash, so copy it from
+    // the enclosing iseq before compiling, for grandchildren to inherit it.
+    if (ISEQ_BODY(iseq)->has_source_hash) {
+        rb_ast_t *child_ast = rb_ruby_ast_data_get(ast_value);
+        child_ast->body.source_hash = ISEQ_BODY(iseq)->source_hash;
+        child_ast->body.has_source_hash = 1;
+    }
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
     int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
@@ -3166,32 +3175,13 @@ find_destination(INSN *i)
 static int
 remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
-    LINK_ELEMENT *first = i, *end, *scan;
+    LINK_ELEMENT *first = i, *end, *scan, *pending_end = 0;
+    LABEL *pending = 0;
     int *unref_counts = 0, nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
 
     if (!i) return 0;
     unref_counts = ALLOCA_N(int, nlabels);
     MEMZERO(unref_counts, int, nlabels);
-
-    scan = i;
-    do {
-        LABEL *lab;
-        if (IS_INSN(scan)) {
-            if (IS_INSN_ID(scan, leave)) {
-                break;
-            }
-            else if ((lab = find_destination((INSN *)scan)) != 0) {
-                unref_counts[lab->label_no]++;
-            }
-        }
-        else if (IS_LABEL(scan)) {
-            lab = (LABEL *)scan;
-            if (lab->unremovable) return 0;
-        }
-        else if (IS_ADJUST(scan)) {
-            return 0;
-        }
-    } while ((scan = scan->next) != 0);
 
     end = i;
     scan = i;
@@ -3199,23 +3189,41 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
         LABEL *lab;
         if (IS_INSN(scan)) {
             if (IS_INSN_ID(scan, leave)) {
+                if (pending) break;
                 end = scan;
                 break;
+            }
+            else if ((lab = find_destination((INSN *)scan)) != 0) {
+                unref_counts[lab->label_no]++;
+                if (lab == pending && lab->refcnt <= unref_counts[lab->label_no]) {
+                    pending = 0;
+                }
             }
         }
         else if (IS_LABEL(scan)) {
             lab = (LABEL *)scan;
+            if (lab->unremovable) {
+                if (pending) break;
+                return 0;
+            }
             if (lab->refcnt > unref_counts[lab->label_no]) {
-                if (scan == first) return 0;
-                break;
+                if (pending) break;
+                pending = lab;
+                pending_end = (scan == first) ? 0 : end;
             }
             continue;
         }
         else if (IS_ADJUST(scan)) {
+            if (pending) break;
             return 0;
         }
-        end = scan;
+        if (!pending) end = scan;
     } while ((scan = scan->next) != 0);
+
+    if (pending) {
+        if (!pending_end) return 0;
+        end = pending_end;
+    }
     i = first;
     do {
         if (IS_INSN(i)) {
@@ -3677,30 +3685,22 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
          */
         INSN *nobj = (INSN *)get_destination_insn(iobj);
 
-        /* This is super nasty hack!!!
-         *
-         * This jump-jump optimization may ignore event flags of the jump
-         * instruction being skipped.  Actually, Line 2 TracePoint event
-         * is never fired in the following code:
+        /* This jump-jump optimization may ignore line events on the jump
+         * instruction being skipped.  For example, the Line 2 TracePoint
+         * event would otherwise never fire in the following code:
          *
          *   1: raise if 1 == 2
          *   2: while true
          *   3:   break
          *   4: end
          *
-         * This is critical for coverage measurement.  [Bug #15980]
-         *
-         * This is a stopgap measure: stop the jump-jump optimization if
-         * coverage measurement is enabled and if the skipped instruction
-         * has any event flag.
-         *
-         * Note that, still, TracePoint Line event does not occur on Line 2.
-         * This should be fixed in future.
+         * Do not skip a jump that carries a line event.  This applies even
+         * when coverage is disabled because TracePoint consumes the same
+         * event.  [Bug #15980]
          */
         int stop_optimization =
-            ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq) &&
             nobj->link.type == ISEQ_ELEMENT_INSN &&
-            nobj->insn_info.events;
+            (nobj->insn_info.events & (RUBY_EVENT_LINE | RUBY_EVENT_COVERAGE_LINE));
         if (!stop_optimization) {
             INSN *pobj = (INSN *)iobj->link.prev;
             int prev_dup = 0;
@@ -5565,7 +5565,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
     return 1;
 }
 
-VALUE
+static VALUE
 rb_node_case_when_optimizable_literal(const NODE *const node)
 {
     switch (nd_type(node)) {
@@ -5865,7 +5865,7 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const 
                 ci = ci_flag_set(iseq, ci, VM_CALL_ARGS_SPLAT_MUT);
             }
             OPERAND_AT(iobj, 0) = (VALUE)ci;
-            RB_OBJ_WRITTEN(iseq, Qundef, iobj);
+            RB_OBJ_WRITTEN(iseq, Qundef, ci);
 
             /* Given: h[*a], h[*b, 1] = ary
              *  h[*a] uses splatarray false and does not set VM_CALL_ARGS_SPLAT_MUT,
@@ -12484,6 +12484,12 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 #undef INT_PARAM
     }
 
+    VALUE source_hash = rb_hash_aref(misc, ID2SYM(rb_intern("source_hash")));
+    if (!NIL_P(source_hash)) {
+        ISEQ_BODY(iseq)->source_hash = NUM2ULL(source_hash);
+        ISEQ_BODY(iseq)->has_source_hash = true;
+    }
+
     VALUE node_ids = Qfalse;
 #ifdef USE_ISEQ_NODE_ID
     node_ids = rb_hash_aref(misc, ID2SYM(rb_intern("node_ids")));
@@ -12610,7 +12616,7 @@ typedef uint32_t ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #ifdef RUBY_DEVEL
-#define IBF_DEVEL_VERSION 5
+#define IBF_DEVEL_VERSION 6
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -12703,7 +12709,7 @@ pinned_list_fetch(VALUE list, long offset)
 
     TypedData_Get_Struct(list, struct pinned_list, &pinned_list_type, ptr);
 
-    if (offset >= ptr->size) {
+    if (offset < 0 || offset >= ptr->size) {
         rb_raise(rb_eIndexError, "object index out of range: %ld", offset);
     }
 
@@ -12717,7 +12723,7 @@ pinned_list_store(VALUE list, long offset, VALUE object)
 
     TypedData_Get_Struct(list, struct pinned_list, &pinned_list_type, ptr);
 
-    if (offset >= ptr->size) {
+    if (offset < 0 || offset >= ptr->size) {
         rb_raise(rb_eIndexError, "object index out of range: %ld", offset);
     }
 
@@ -13790,6 +13796,12 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, location_label_index);
     ibf_dump_write_small_value(dump, body->location.first_lineno);
     ibf_dump_write_small_value(dump, body->location.node_id);
+    /* Dump the source hash in two 32-bit halves, because VALUE may be
+     * 32 bits wide. */
+    uint64_t source_hash = body->has_source_hash ? body->source_hash : 0;
+    ibf_dump_write_small_value(dump, (VALUE)(uint32_t)(source_hash >> 32));
+    ibf_dump_write_small_value(dump, (VALUE)(uint32_t)source_hash);
+    ibf_dump_write_small_value(dump, body->has_source_hash ? 1 : 0);
     ibf_dump_write_small_value(dump, body->location.code_location.beg_pos.lineno);
     ibf_dump_write_small_value(dump, body->location.code_location.beg_pos.column);
     ibf_dump_write_small_value(dump, body->location.code_location.end_pos.lineno);
@@ -13902,6 +13914,10 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const VALUE location_label_index = ibf_load_small_value(load, &reading_pos);
     const int location_first_lineno = (int)ibf_load_small_value(load, &reading_pos);
     const int location_node_id = (int)ibf_load_small_value(load, &reading_pos);
+    const uint64_t source_hash_hi = (uint64_t)ibf_load_small_value(load, &reading_pos);
+    const uint64_t source_hash_lo = (uint64_t)ibf_load_small_value(load, &reading_pos);
+    const uint64_t source_hash = (source_hash_hi << 32) | (uint32_t)source_hash_lo;
+    const bool has_source_hash = ibf_load_small_value(load, &reading_pos) != 0;
     const int location_code_location_beg_pos_lineno = (int)ibf_load_small_value(load, &reading_pos);
     const int location_code_location_beg_pos_column = (int)ibf_load_small_value(load, &reading_pos);
     const int location_code_location_end_pos_lineno = (int)ibf_load_small_value(load, &reading_pos);
@@ -14002,6 +14018,8 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
 
     load_body->location.first_lineno = location_first_lineno;
     load_body->location.node_id = location_node_id;
+    load_body->source_hash = source_hash;
+    load_body->has_source_hash = has_source_hash;
     load_body->location.code_location.beg_pos.lineno = location_code_location_beg_pos_lineno;
     load_body->location.code_location.beg_pos.column = location_code_location_beg_pos_column;
     load_body->location.code_location.end_pos.lineno = location_code_location_end_pos_lineno;
@@ -15217,6 +15235,8 @@ rb_iseq_dup_with_independent_caches(const rb_iseq_t *src_root)
             rb_ibf_load_iseq_complete(copy);
         }
 
+        FL_SET((VALUE)copy, ISEQ_REFINED_COPY);
+
         struct rb_iseq_constant_body *cb = ISEQ_BODY(copy);
         if (!cb->local_iseq) RB_OBJ_WRITE(copy, &cb->local_iseq, sb->local_iseq);
         RB_OBJ_WRITE(copy, &cb->location.pathobj, sb->location.pathobj);
@@ -15227,6 +15247,10 @@ rb_iseq_dup_with_independent_caches(const rb_iseq_t *src_root)
             RB_OBJ_WRITE(copy, &cb->parent_iseq, sb->parent_iseq);
             result = copy;
         }
+
+        /* Shared across Ractors through the Proc#refined memo; the duplicated
+         * subtree is self-contained, so mark each copy shareable. */
+        RB_OBJ_SET_SHAREABLE((VALUE)copy);
     }
 
     if (ISEQ_PC2BRANCHINDEX(src_root) != Qnil) {

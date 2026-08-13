@@ -102,6 +102,23 @@ class TestGemDeprecate < Gem::TestCase
     deprecate :foo_kwarg, :bar_kwarg, 2099, 3
   end
 
+  class ThingWithFormat
+    extend Gem::Deprecate
+    attr_accessor :message
+    def foo
+      @message = "foo"
+    end
+
+    def bar
+      @message = "bar"
+    end
+    deprecate :foo, :bar, 2099, 3
+
+    def format
+      raise "ThingWithFormat#format should not be called"
+    end
+  end
+
   def test_deprecated_method_calls_the_old_method
     capture_output do
       thing = Thing.new
@@ -159,6 +176,18 @@ class TestGemDeprecate < Gem::TestCase
     assert_match(/OtherThing#foo is deprecated; use bar instead\./, err)
     assert_match(/OtherThing#foo_arg is deprecated; use bar_arg instead\./, err)
     assert_match(/OtherThing#foo_kwarg is deprecated; use bar_kwarg instead\./, err)
+    assert_match(/on or after 2099-03/, err)
+  end
+
+  def test_deprecated_method_when_class_overrides_format
+    out, err = capture_output do
+      thing = ThingWithFormat.new
+      thing.foo
+      assert_equal "foo", thing.message
+    end
+
+    assert_equal "", out
+    assert_match(/ThingWithFormat#foo is deprecated; use bar instead\./, err)
     assert_match(/on or after 2099-03/, err)
   end
 end

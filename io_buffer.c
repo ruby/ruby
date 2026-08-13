@@ -1490,7 +1490,8 @@ rb_io_buffer_readonly_p(VALUE self)
  *  If the buffer is <i>read only</i>, meaning the buffer cannot be modified using
  *  #set_value, #set_string or #copy and similar.
  *
- *  Frozen strings and read-only files create read-only buffers.
+ *  A buffer created by IO::Buffer.for without a block is read-only, as is one
+ *  backed by a frozen string or a read-only file.
  */
 static VALUE
 io_buffer_readonly_p(VALUE self)
@@ -1683,10 +1684,13 @@ io_buffer_validate_range(struct rb_io_buffer *buffer, size_t offset, size_t leng
 }
 
 /*
- *  call-seq: hexdump([offset, [length, [width]]]) -> string
+ *  call-seq: hexdump([offset, [length, [width]]]) -> string or nil
  *
  *  Returns a human-readable string representation of the buffer. The exact
  *  format is subject to change.
+ *
+ *  Returns +nil+ if the buffer does not reference any memory, that is, if
+ *  #null? returns +true+ (for example after #free or #transfer).
  *
  *    buffer = IO::Buffer.for("Hello World")
  *    puts buffer.hexdump
@@ -1815,15 +1819,15 @@ io_buffer_slice(int argc, VALUE *argv, VALUE self)
  *  Transfers ownership of the underlying memory to a new buffer, causing the
  *  current buffer to become uninitialized.
  *
- *    buffer = IO::Buffer.new('test')
+ *    buffer = IO::Buffer.for('test')
  *    other = buffer.transfer
  *    other
  *    # =>
- *    # #<IO::Buffer 0x00007f136a15f7b0+4 SLICE>
+ *    # #<IO::Buffer 0x00007f136a15f7b0+4 EXTERNAL READONLY SLICE>
  *    # 0x00000000  74 65 73 74                                     test
  *    buffer
  *    # =>
- *    # #<IO::Buffer 0x0000000000000000+0 NULL>
+ *    # #<IO::Buffer 0x0000000000000000+0 NULL EXTERNAL READONLY>
  *    buffer.null?
  *    # => true
  */
@@ -1960,10 +1964,18 @@ io_buffer_resize(VALUE self, VALUE size)
 }
 
 /*
- * call-seq: <=>(other) -> true or false
+ * call-seq: <=>(other) -> integer
  *
- * Buffers are compared by size and exact contents of the memory they are
- * referencing using +memcmp+.
+ * Returns a negative integer, zero, or a positive integer if the receiver is
+ * less than, equal to, or greater than +other+, respectively.
+ *
+ * Buffers are compared by size first, and if the sizes are equal, by the exact
+ * contents of the memory they are referencing using +memcmp+. Only the sign of
+ * the returned integer is meaningful; the result of +memcmp+ is returned as is.
+ *
+ *   IO::Buffer.for("abc") <=> IO::Buffer.for("abc") # => 0
+ *   IO::Buffer.for("abc") <=> IO::Buffer.for("ab")  # => 1
+ *   IO::Buffer.for("abc") <=> IO::Buffer.for("abd") # => -1
  */
 static VALUE
 rb_io_buffer_compare(VALUE self, VALUE other)
@@ -2536,7 +2548,8 @@ struct io_buffer_set_value_arguments {
  *  call-seq: set_value(type, offset, value) -> offset
  *
  *  Write to a buffer a +value+ of +type+ at +offset+. +type+ should be one of
- *  symbols described in #get_value.
+ *  symbols described in #get_value. Returns the offset just after the written
+ *  value.
  *
  *    buffer = IO::Buffer.new(8)
  *    # =>
@@ -2544,7 +2557,7 @@ struct io_buffer_set_value_arguments {
  *    # 0x00000000  00 00 00 00 00 00 00 00
  *
  *    buffer.set_value(:U8, 1, 111)
- *    # => 1
+ *    # => 2
  *
  *    buffer
  *    # =>
@@ -2576,10 +2589,12 @@ io_buffer_set_value(VALUE self, VALUE type, VALUE _offset, VALUE value)
  *
  *  Write +values+ of +buffer_types+ at +offset+ to the buffer. +buffer_types+
  *  should be an array of symbols as described in #get_value. +values+ should
- *  be an array of values to write.
+ *  be an array of values to write. Returns the offset just after the last
+ *  written value.
  *
  *    buffer = IO::Buffer.new(8)
  *    buffer.set_values([:U8, :U16], 0, [1, 2])
+ *    # => 3
  *    buffer
  *    # =>
  *    # #<IO::Buffer 0x696f717561746978+8 INTERNAL>
@@ -3536,7 +3551,7 @@ memory_and(unsigned char * restrict output, const unsigned char * restrict base,
  *
  *    IO::Buffer.for("1234567890") & IO::Buffer.for("\xFF\x00\x00\xFF")
  *    # =>
- *    # #<IO::Buffer 0x00005589b2758480+4 INTERNAL>
+ *    # #<IO::Buffer 0x00005589b2758480+10 INTERNAL>
  *    # 0x00000000  31 00 00 34 35 00 00 38 39 00                   1..45..89.
  */
 static VALUE

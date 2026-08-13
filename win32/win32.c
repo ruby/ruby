@@ -1080,7 +1080,7 @@ rb_w32_get_osfhandle(int fh)
 
 /* License: Ruby's */
 static int
-join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash)
+join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash, BOOL quote_bs)
 {
     const char *p, *s;
     char *q, *const *t;
@@ -1131,7 +1131,7 @@ join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash)
             }
         }
         len += (n = p - s) + 1;
-        if (quote) len++;
+        if (quote) len += (quote_bs ? bs : 0) + 1;
         if (q) {
             memcpy(q, s, n);
             if (backslash > 0) {
@@ -1140,7 +1140,14 @@ join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash)
                 translate_char(q, '/', '\\', cp);
             }
             q += n;
-            if (quote) *q++ = '"';
+            if (quote) {
+                // See [Bug #22199]
+                if (quote_bs && bs) {
+                    memset(q, '\\', bs);
+                    q += bs;
+                }
+                *q++ = '"';
+            }
             *q++ = ' ';
         }
     }
@@ -1483,20 +1490,20 @@ w32_spawn_process(int mode, const char *prog, char *const *argv,
         char *progs[2];
         progs[0] = (char *)prog;
         progs[1] = NULL;
-        len = join_argv(NULL, progs, ntcmd, cp, 1);
+        len = join_argv(NULL, progs, ntcmd, cp, 1, FALSE);
         if (c_switch) len += 3;
         else ++argv;
-        if (argv[0]) len += join_argv(NULL, argv, ntcmd, cp, 0);
+        if (argv[0]) len += join_argv(NULL, argv, ntcmd, cp, 0, FALSE);
         cmd = ALLOCV(v, len);
-        join_argv(cmd, progs, ntcmd, cp, 1);
+        join_argv(cmd, progs, ntcmd, cp, 1, FALSE);
         if (c_switch) strlcat(cmd, " /c", len);
-        if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd, cp, 0);
+        if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd, cp, 0, FALSE);
         prog = c_switch ? shell : 0;
     }
     else {
-        len = join_argv(NULL, argv, FALSE, cp, 1);
+        len = join_argv(NULL, argv, FALSE, cp, 1, TRUE);
         cmd = ALLOCV(v, len);
-        join_argv(cmd, argv, FALSE, cp, 1);
+        join_argv(cmd, argv, FALSE, cp, 1, TRUE);
     }
 
     if (!e && cmd && !(wcmd = mbstr_to_wstr(cp, cmd, -1, NULL))) e = E2BIG;
@@ -1739,6 +1746,7 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
                     *ptr = 0;
                     done = 1;
                 }
+                slashes = 0;
                 break;
 
               case L'*':
@@ -1955,7 +1963,10 @@ get_handle_pathname(HANDLE fh, WCHAR **pathptr, DWORD add)
     WCHAR *path = malloc((len + add + 1) * sizeof(WCHAR));
     if (!(*pathptr = path)) return 0;
     len = GetFinalPathNameByHandleW(fh, path, len + 1, 0);
-    if (!len) free(path);
+    if (!len) {
+        free(path);
+        *pathptr = NULL;
+    }
     return len;
 }
 
@@ -4012,6 +4023,13 @@ socketpair_unix_path(struct sockaddr_un *sock_un)
         case 0:
             /* user temp dir from TMP or TEMP env var, it ends with a backslash */
             path_len = GetTempPathW(maxpath, wpath);
+            if (path_len == 0 || path_len > maxpath) {
+                /* The env var path did not fit in wpath (GetTempPathW then
+                 * returns the required length and leaves wpath unfilled), or
+                 * the call failed.  Skip to the next candidate directory
+                 * instead of reading past wpath in WideCharToMultiByte. */
+                continue;
+            }
             break;
         case 1:
             wcsncpy(wpath, L"C:/Temp/", maxpath);
@@ -5800,6 +5818,132 @@ path_drive(const WCHAR *path)
     return _getdrive() - 1;
 }
 
+#if !defined(NTDDI_WIN11_ZN) || NTDDI_VERSION < NTDDI_WIN11_ZN
+/* FileStatBasicByNameInfo in FILE_INFO_BY_NAME_CLASS and
+ * FILE_STAT_BASIC_INFORMATION, in SDKs since Windows 11 24H2 */
+#define FileStatBasicByNameInfo 3
+
+typedef struct {
+    LARGE_INTEGER FileId;
+    LARGE_INTEGER CreationTime;
+    LARGE_INTEGER LastAccessTime;
+    LARGE_INTEGER LastWriteTime;
+    LARGE_INTEGER ChangeTime;
+    LARGE_INTEGER AllocationSize;
+    LARGE_INTEGER EndOfFile;
+    DWORD FileAttributes;
+    DWORD ReparseTag;
+    DWORD NumberOfLinks;
+    DWORD DeviceType;
+    DWORD DeviceCharacteristics;
+    DWORD Reserved;
+    LARGE_INTEGER VolumeSerialNumber;
+    FILE_ID_128 FileId128;
+} FILE_STAT_BASIC_INFORMATION;
+#endif
+
+#ifndef FILE_DEVICE_DISK
+#define FILE_DEVICE_DISK 7
+#endif
+
+typedef BOOL (WINAPI *get_file_information_by_name_func)
+    (PCWSTR, int /* FILE_INFO_BY_NAME_CLASS */, PVOID, ULONG);
+static get_file_information_by_name_func get_file_information_by_name =
+    (get_file_information_by_name_func)-1;
+
+/* License: Ruby's */
+static time_t
+large_integer_to_unixtime(const LARGE_INTEGER *at, long *nsecp)
+{
+    FILETIME ft;
+
+    ft.dwLowDateTime = at->LowPart;
+    ft.dwHighDateTime = at->HighPart;
+    *nsecp = filetime_to_nsec(&ft);
+    return filetime_to_unixtime(&ft);
+}
+
+/* License: Ruby's */
+static LONG_LONG
+path_drive_serial(const WCHAR *path)
+{
+    static LONG_LONG serials[26];
+    int drive;
+
+    if (path[0] && path[1] == L':') {
+        if (!iswalpha(path[0])) return 0;
+        drive = towupper(path[0]) - L'A';
+    }
+    else {
+        drive = _getdrive() - 1;
+    }
+    if (drive < 0 || (int)numberof(serials) <= drive) return 0;
+    if (!serials[drive]) {
+        FILE_STAT_BASIC_INFORMATION info;
+        WCHAR root[] = L"_:\\";
+        root[0] = L'A' + drive;
+        if (get_file_information_by_name(root, FileStatBasicByNameInfo,
+                                         &info, sizeof(info)))
+            serials[drive] = info.VolumeSerialNumber.QuadPart;
+    }
+    return serials[drive];
+}
+
+/* License: Ruby's */
+static int
+stat_by_name(const WCHAR *path, struct stati128 *st)
+{
+    /* Fill the stat result from a single metadata syscall, without
+     * opening a file handle.  Returns 1 to fall back to the
+     * handle-based path. */
+    FILE_STAT_BASIC_INFORMATION info;
+    unsigned __int64 ino;
+    __int64 inohigh;
+
+    if (get_file_information_by_name == (get_file_information_by_name_func)-1) {
+        /* Since Windows 11 24H2 */
+        get_file_information_by_name = (get_file_information_by_name_func)
+            get_proc_address("kernel32", "GetFileInformationByName", NULL);
+    }
+    if (!get_file_information_by_name) return 1;
+    if (!get_file_information_by_name(path, FileStatBasicByNameInfo,
+                                      &info, sizeof(info))) {
+        DWORD e = GetLastError();
+        switch (e) {
+          case ERROR_FILE_NOT_FOUND:
+          case ERROR_INVALID_NAME:
+          case ERROR_PATH_NOT_FOUND:
+          case ERROR_BAD_NETPATH:
+            errno = map_errno(e);
+            return -1;
+        }
+        return 1;               /* devices, UNC paths, unusual errors */
+    }
+    if (info.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+        return 1;               /* symlinks, junctions, AF_UNIX sockets */
+    if (info.DeviceType != FILE_DEVICE_DISK)
+        return 1;
+    if (info.VolumeSerialNumber.QuadPart != path_drive_serial(path))
+        return 1;               /* reparse point in intermediate components */
+    ino = *((unsigned __int64 *)&info.FileId128);
+    inohigh = *((__int64 *)&info.FileId128 + 1);
+    if (!ino && !inohigh)
+        return 1;               /* file ID is not available */
+    if (info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+        if (check_valid_dir(path)) return -1;
+    }
+    st->st_ino = ino;
+    st->st_inohigh = inohigh;
+    st->st_size = info.EndOfFile.QuadPart;
+    st->st_atime = large_integer_to_unixtime(&info.LastAccessTime, &st->st_atimensec);
+    st->st_mtime = large_integer_to_unixtime(&info.LastWriteTime, &st->st_mtimensec);
+    st->st_ctime = large_integer_to_unixtime(&info.CreationTime, &st->st_ctimensec);
+    st->st_nlink = info.NumberOfLinks;
+    st->st_mode = fileattr_to_unixmode(info.FileAttributes, path, 0);
+    st->st_dev = st->st_rdev = path_drive(path);
+    return 0;
+}
+
 /* License: Ruby's */
 static int
 winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
@@ -5810,6 +5954,12 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
     int open_error;
 
     memset(st, 0, sizeof(*st));
+    switch (stat_by_name(path, st)) {
+      case 0:
+        return 0;
+      case -1:
+        return -1;
+    }
     f = open_special(path, 0, flags);
     open_error = GetLastError();
     if (f == INVALID_HANDLE_VALUE && !lstat) {

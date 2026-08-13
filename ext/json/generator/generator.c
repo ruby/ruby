@@ -9,12 +9,6 @@
 
 /* ruby api and some helpers */
 
-enum duplicate_key_action {
-    JSON_DEPRECATED = 0,
-    JSON_IGNORE,
-    JSON_RAISE,
-};
-
 typedef struct JSON_Generator_StateStruct {
     VALUE indent;
     VALUE space;
@@ -27,8 +21,7 @@ typedef struct JSON_Generator_StateStruct {
     long depth;
     long buffer_initial_length;
 
-    enum duplicate_key_action on_duplicate_key;
-
+    bool allow_duplicate_key;
     bool as_json_single_arg;
     bool allow_nan;
     bool ascii_only;
@@ -41,7 +34,7 @@ static VALUE mJSON, cState, cFragment, eGeneratorError, eNestingError, Encoding_
 
 static ID i_to_s, i_to_json, i_new, i_encode;
 static VALUE sym_indent, sym_space, sym_space_before, sym_object_nl, sym_array_nl, sym_max_nesting, sym_allow_nan, sym_allow_duplicate_key,
-             sym_ascii_only, sym_depth, sym_buffer_initial_length, sym_script_safe, sym_escape_slash, sym_strict, sym_as_json, sym_sort_keys;
+             sym_ascii_only, sym_depth, sym_buffer_initial_length, sym_script_safe, sym_strict, sym_as_json, sym_sort_keys;
 
 
 #define GET_STATE_TO(self, state) \
@@ -956,9 +949,8 @@ json_inspect_hash_with_mixed_keys(struct hash_foreach_arg *arg)
     arg->mixed_keys_encountered = true;
 
     JSON_Generator_State *state = arg->data->state;
-    if (state->on_duplicate_key != JSON_IGNORE) {
-        VALUE do_raise = state->on_duplicate_key == JSON_RAISE ? Qtrue : Qfalse;
-        rb_funcall(mJSON, rb_intern("on_mixed_keys_hash"), 2, arg->hash, do_raise);
+    if (!state->allow_duplicate_key) {
+        rb_funcall(mJSON, rb_intern("on_mixed_keys_hash"), 1, arg->hash);
     }
 }
 
@@ -1784,14 +1776,7 @@ static VALUE cState_sort_keys_set(VALUE self, VALUE value)
 static VALUE cState_allow_duplicate_key_p(VALUE self)
 {
     GET_STATE(self);
-    switch (state->on_duplicate_key) {
-        case JSON_IGNORE:
-            return Qtrue;
-        case JSON_DEPRECATED:
-            return Qnil;
-        default:
-            return Qfalse;
-    }
+    return state->allow_duplicate_key ? Qtrue : Qfalse;
 }
 
 /*
@@ -1856,6 +1841,7 @@ static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_l
 struct configure_state_data {
     JSON_Generator_State *state;
     VALUE vstate;  // Ruby object that owns the state, or Qfalse if stack-allocated
+    VALUE unknown_keywords;
 };
 
 static inline void state_write_value(struct configure_state_data *data, VALUE *field, VALUE value)
@@ -1883,9 +1869,8 @@ static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
     else if (key == sym_depth)                 { state->depth = depth_config(val); }
     else if (key == sym_buffer_initial_length) { buffer_initial_length_set(state, val); }
     else if (key == sym_script_safe)           { state->script_safe = RTEST(val); }
-    else if (key == sym_escape_slash)          { state->script_safe = RTEST(val); }
     else if (key == sym_strict)                { state->strict = RTEST(val); }
-    else if (key == sym_allow_duplicate_key)   { state->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
+    else if (key == sym_allow_duplicate_key)   { state->allow_duplicate_key = RTEST(val); }
     else if (key == sym_as_json)               {
         VALUE proc = RTEST(val) ? rb_convert_type(val, T_DATA, "Proc", "to_proc") : Qfalse;
         state->as_json_single_arg = proc && rb_proc_arity(proc) == 1;
@@ -1893,6 +1878,12 @@ static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
     }
     else if (key == sym_sort_keys)             {
         state_write_value(data, &state->sort_keys, normalize_sort_keys(val));
+    }
+    else {
+        if (!data->unknown_keywords) {
+            data->unknown_keywords = rb_obj_hide(rb_ary_new());
+        }
+        rb_ary_push(data->unknown_keywords, key);
     }
     return ST_CONTINUE;
 }
@@ -1907,12 +1898,15 @@ static void configure_state(JSON_Generator_State *state, VALUE vstate, VALUE con
 
     struct configure_state_data data = {
         .state = state,
-        .vstate = vstate
+        .vstate = vstate,
+        .unknown_keywords = Qfalse,
     };
 
     // We assume in most cases few keys are set so it's faster to go over
     // the provided keys than to check all possible keys.
     rb_hash_foreach(config, configure_state_i, (VALUE)&data);
+
+    raise_argument_error_on_unknown_keywords(data.unknown_keywords);
 }
 
 static VALUE cState_configure(VALUE self, VALUE opts)
@@ -2006,9 +2000,6 @@ void Init_generator(void)
     rb_define_method(cState, "script_safe", cState_script_safe, 0);
     rb_define_method(cState, "script_safe?", cState_script_safe, 0);
     rb_define_method(cState, "script_safe=", cState_script_safe_set, 1);
-    rb_define_alias(cState, "escape_slash", "script_safe");
-    rb_define_alias(cState, "escape_slash?", "script_safe?");
-    rb_define_alias(cState, "escape_slash=", "script_safe=");
     rb_define_method(cState, "strict", cState_strict, 0);
     rb_define_method(cState, "strict?", cState_strict, 0);
     rb_define_method(cState, "strict=", cState_strict_set, 1);
@@ -2050,7 +2041,6 @@ void Init_generator(void)
     sym_depth = ID2SYM(rb_intern("depth"));
     sym_buffer_initial_length = ID2SYM(rb_intern("buffer_initial_length"));
     sym_script_safe = ID2SYM(rb_intern("script_safe"));
-    sym_escape_slash = ID2SYM(rb_intern("escape_slash"));
     sym_strict = ID2SYM(rb_intern("strict"));
     sym_as_json = ID2SYM(rb_intern("as_json"));
     sym_allow_duplicate_key = ID2SYM(rb_intern("allow_duplicate_key"));

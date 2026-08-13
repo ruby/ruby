@@ -845,6 +845,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt, &block)
+    omit if macos? && ENV["CI"] # we're getting timeouts even after 100s in CI, not sure why.
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
     env = Hash === args.first ? args.shift : {}

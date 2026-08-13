@@ -37,6 +37,24 @@ describe "File.new" do
     File.should.exist?(@file)
   end
 
+  platform_is :darwin do
+    it "returns a new File when given a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      utf8_path = tmp("file_new_utf8_path_\u{3042}.txt")
+      # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+      non_utf8_path = utf8_path.encode(Encoding::Windows_31J)
+
+      begin
+        @fh = File.new(non_utf8_path, "w")
+        @fh.should.is_a?(File)
+        File.should.exist?(utf8_path)
+      ensure
+        @fh.close if @fh and not @fh.closed?
+        rm_r utf8_path
+        rm_r non_utf8_path
+      end
+    end
+  end
+
   it "creates the file and returns writable descriptor when called with 'w' mode and r-o permissions" do
     # it should be possible to write to such a file via returned descriptor,
     # even though the file permissions are r-r-r.

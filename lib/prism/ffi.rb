@@ -93,6 +93,7 @@ module Prism # :nodoc:
     pm_source_init_result_values = %i[PM_SOURCE_INIT_SUCCESS PM_SOURCE_INIT_ERROR_GENERIC PM_SOURCE_INIT_ERROR_DIRECTORY PM_SOURCE_INIT_ERROR_NON_REGULAR]
     enum :pm_source_init_result_t, pm_source_init_result_values
     enum :pm_string_query_t, [:PM_STRING_QUERY_ERROR, -1, :PM_STRING_QUERY_FALSE, :PM_STRING_QUERY_TRUE]
+    enum :pm_errors_format_type_t, [:PM_ERRORS_FORMAT_PLAIN, 1, :PM_ERRORS_FORMAT_STYLE, :PM_ERRORS_FORMAT_COLOR]
 
     # Ractor-safe lookup table for pm_source_init_result_t, since FFI's
     # enum_type accesses module instance variables that are not shareable.
@@ -112,6 +113,7 @@ module Prism # :nodoc:
       "pm_serialize_lex",
       "pm_serialize_parse_lex",
       "pm_serialize_parse_success_p",
+      "pm_serialize_parse_errors_format",
       []
     )
 
@@ -293,6 +295,8 @@ module Prism # :nodoc:
 
     # Mirror the Prism.parse_stream API by using the serialization API.
     def parse_stream(stream, **options)
+      format_type = raise_error_format_type(options)
+
       LibRubyParser::PrismBuffer.with do |buffer|
         # The largest number of bytes a single character can occupy in any
         # encoding Ruby supports. IO#gets(limit) may return up to
@@ -321,7 +325,15 @@ module Prism # :nodoc:
         pm_source = LibRubyParser.pm_source_stream_new(nil, callback, eof_callback)
         begin
           LibRubyParser.pm_serialize_parse_stream(buffer.pointer, pm_source, dump_options(options))
-          Prism.load(source, buffer.read, options.fetch(:freeze, false))
+          result = Prism.load(source, buffer.read, options.fetch(:freeze, false))
+
+          if format_type && result.failure?
+            LibRubyParser::PrismSource.with_string(source) do |string|
+              raise_error(string, options, format_type)
+            end
+          end
+
+          result
         ensure
           LibRubyParser.pm_source_free(pm_source) if pm_source && !pm_source.null?
         end
@@ -376,6 +388,10 @@ module Prism # :nodoc:
     # Mirror the Prism.profile API by using the serialization API.
     def profile(source, **options)
       LibRubyParser::PrismSource.with_string(source) do |string|
+        if (format_type = raise_error_format_type(options))
+          raise_error(string, options, format_type)
+        end
+
         LibRubyParser::PrismBuffer.with do |buffer|
           LibRubyParser.pm_serialize_parse(buffer.pointer, string.pointer, string.length, dump_options(options))
           nil
@@ -386,8 +402,13 @@ module Prism # :nodoc:
     # Mirror the Prism.profile_file API by using the serialization API.
     def profile_file(filepath, **options)
       LibRubyParser::PrismSource.with_file(filepath) do |string|
+        options[:filepath] = filepath
+
+        if (format_type = raise_error_format_type(options))
+          raise_error(string, options, format_type)
+        end
+
         LibRubyParser::PrismBuffer.with do |buffer|
-          options[:filepath] = filepath
           LibRubyParser.pm_serialize_parse(buffer.pointer, string.pointer, string.length, dump_options(options))
           nil
         end
@@ -397,6 +418,10 @@ module Prism # :nodoc:
     private
 
     def dump_common(string, options) # :nodoc:
+      if (format_type = raise_error_format_type(options))
+        raise_error(string, options, format_type)
+      end
+
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse(buffer.pointer, string.pointer, string.length, dump_options(options))
 
@@ -408,18 +433,31 @@ module Prism # :nodoc:
     end
 
     def lex_common(string, code, options) # :nodoc:
+      format_type = raise_error_format_type(options)
+
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
-        Serialize.load_lex(code, buffer.read, options.fetch(:freeze, false))
+        result = Serialize.load_lex(code, buffer.read, options.fetch(:freeze, false))
+
+        raise_error(string, options, format_type) if format_type && result.failure?
+        result
       end
     end
 
     def parse_common(string, code, options) # :nodoc:
+      format_type = raise_error_format_type(options)
       serialized = dump_common(string, options)
-      Serialize.load_parse(code, serialized, options.fetch(:freeze, false))
+      result = Serialize.load_parse(code, serialized, options.fetch(:freeze, false))
+
+      raise_error(string, options, format_type) if format_type && result.failure?
+      result
     end
 
     def parse_comments_common(string, code, options) # :nodoc:
+      if (format_type = raise_error_format_type(options))
+        raise_error(string, options, format_type)
+      end
+
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse_comments(buffer.pointer, string.pointer, string.length, dump_options(options))
         Serialize.load_parse_comments(code, buffer.read, options.fetch(:freeze, false))
@@ -427,14 +465,82 @@ module Prism # :nodoc:
     end
 
     def parse_lex_common(string, code, options) # :nodoc:
+      format_type = raise_error_format_type(options)
+
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
-        Serialize.load_parse_lex(code, buffer.read, options.fetch(:freeze, false))
+        result = Serialize.load_parse_lex(code, buffer.read, options.fetch(:freeze, false))
+
+        raise_error(string, options, format_type) if format_type && result.failure?
+        result
       end
     end
 
     def parse_file_success_common(string, options) # :nodoc:
-      LibRubyParser.pm_serialize_parse_success_p(string.pointer, string.length, dump_options(options))
+      format_type = raise_error_format_type(options)
+      success = LibRubyParser.pm_serialize_parse_success_p(string.pointer, string.length, dump_options(options))
+
+      raise_error(string, options, format_type) if format_type && !success
+      success
+    end
+
+    # Extract the raise_error option from the given options hash and convert
+    # it into the format type that should be used when formatting errors, or
+    # nil if raising is disabled.
+    def raise_error_format_type(options) # :nodoc:
+      case (value = options.delete(:raise_error))
+      when nil, false
+        nil
+      when true
+        # When given true, mirror the behavior of CRuby itself: color when
+        # $stderr is a terminal (unless NO_COLOR is set), bold styling when
+        # NO_COLOR is set, plain otherwise. This policy is duplicated in
+        # ext/prism/extension.c (build_options_i) and the two must stay in
+        # sync.
+        if $stderr.respond_to?(:tty?) && $stderr.tty?
+          no_color = ENV["NO_COLOR"]
+          (no_color.nil? || no_color.empty?) ? :PM_ERRORS_FORMAT_COLOR : :PM_ERRORS_FORMAT_STYLE
+        else
+          :PM_ERRORS_FORMAT_PLAIN
+        end
+      when :plain
+        :PM_ERRORS_FORMAT_PLAIN
+      when :style
+        :PM_ERRORS_FORMAT_STYLE
+      when :color
+        :PM_ERRORS_FORMAT_COLOR
+      when Symbol
+        raise ArgumentError, "invalid raise_error value: #{value}"
+      else
+        raise TypeError, "wrong argument type #{value.class} (expected Symbol)"
+      end
+    end
+
+    # Parse the given source and format any errors that are encountered into
+    # an appropriate exception, then raise it. If the source parses without
+    # any errors, then return nil.
+    def raise_error(string, options, format_type) # :nodoc:
+      LibRubyParser::PrismBuffer.with do |buffer|
+        level = LibRubyParser.pm_serialize_parse_errors_format(buffer.pointer, string.pointer, string.length, dump_options(options), format_type)
+        return if level == -1
+
+        encoding_name, _, message = buffer.read.partition("\0")
+
+        case level
+        when 0 # syntax
+          error = SyntaxError.new(message.force_encoding(encoding_name))
+          error.instance_variable_set(:@path, options.fetch(:filepath, ""))
+          raise error
+        when 1 # argument
+          raise ArgumentError, message.force_encoding(encoding_name)
+        when 2 # load
+          error = LoadError.new(message.force_encoding(Encoding.find("locale")))
+          error.instance_variable_set(:@path, nil)
+          raise error
+        else
+          raise "Unknown error level: #{level}"
+        end
+      end
     end
 
     # Return the value that should be dumped for the command_line option.
@@ -490,8 +596,17 @@ module Prism # :nodoc:
       end
     end
 
+    # The set of options that are understood by the parsing APIs. Note that
+    # raise_error is not listed here because it is deleted from the options
+    # hash by raise_error_format_type before the options are dumped.
+    DUMP_OPTIONS_KEYS = [:command_line, :encoding, :filepath, :freeze, :frozen_string_literal, :line, :main_script, :partial_script, :scopes, :version].freeze
+    private_constant :DUMP_OPTIONS_KEYS
+
     # Convert the given options into a serialized options string.
     def dump_options(options)
+      unknown_keys = options.keys - DUMP_OPTIONS_KEYS
+      raise ArgumentError, "unknown keyword: #{unknown_keys.first}" unless unknown_keys.empty?
+
       template = +""
       values = []
 

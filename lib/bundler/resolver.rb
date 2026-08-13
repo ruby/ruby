@@ -14,11 +14,15 @@ module Bundler
     require_relative "resolver/root"
     require_relative "resolver/strategy"
 
+    attr_reader :cooldown_skipped
+
     def initialize(base, gem_version_promoter, most_specific_locked_platform = nil)
       @source_requirements = base.source_requirements
       @base = base
       @gem_version_promoter = gem_version_promoter
       @most_specific_locked_platform = most_specific_locked_platform
+      @cooldown_skipped = []
+      @cooldown_skipped_specs = {}
     end
 
     def start
@@ -35,6 +39,8 @@ module Bundler
     def setup_solver
       root = Resolver::Root.new(name_for_explicit_dependency_source)
       root_version = Resolver::Candidate.new(0)
+
+      @cooldown_skipped_specs = {}
 
       @all_specs = Hash.new do |specs, name|
         source = source_for(name)
@@ -79,12 +85,14 @@ module Bundler
     end
 
     def solve_versions(root:, logger:)
-      solver = PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
+      solver = Gem::PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
       result = solver.solve
       resolved_specs = result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
       Override.attach(resolved_specs, @base.overrides)
-      SpecSet.new(resolved_specs).specs_with_additional_variants_from(@base.locked_specs)
-    rescue PubGrub::SolveFailure => e
+      spec_set = SpecSet.new(resolved_specs).specs_with_additional_variants_from(@base.locked_specs)
+      @cooldown_skipped = cooldown_skipped_summary(spec_set)
+      spec_set
+    rescue Gem::PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
 
       names_to_unlock, names_to_allow_prereleases_for, names_to_allow_remote_specs_for, extended_explanation = find_names_to_relax(incompatibility)
@@ -164,7 +172,7 @@ module Bundler
             names_to_allow_remote_specs_for << name
           end
 
-          no_versions_incompat = [cause.incompatibility, cause.satisfier].find {|incompat| incompat.cause.is_a?(PubGrub::Incompatibility::NoVersions) }
+          no_versions_incompat = [cause.incompatibility, cause.satisfier].find {|incompat| incompat.cause.is_a?(Gem::PubGrub::Incompatibility::NoVersions) }
           next unless no_versions_incompat
 
           extended_explanation = no_versions_incompat.extended_explanation
@@ -176,12 +184,12 @@ module Bundler
 
     def parse_dependency(package, dependency)
       range = if repository_for(package).is_a?(Source::Gemspec)
-        PubGrub::VersionRange.any
+        Gem::PubGrub::VersionRange.any
       else
         requirement_to_range(dependency)
       end
 
-      PubGrub::VersionConstraint.new(package, range: range)
+      Gem::PubGrub::VersionConstraint.new(package, range: range)
     end
 
     def versions_for(package, range = VersionRange.any)
@@ -189,7 +197,7 @@ module Bundler
     end
 
     def no_versions_incompatibility_for(package, unsatisfied_term)
-      cause = PubGrub::Incompatibility::NoVersions.new(unsatisfied_term)
+      cause = Gem::PubGrub::Incompatibility::NoVersions.new(unsatisfied_term)
       name = package.name
       constraint = unsatisfied_term.constraint
       constraint_string = constraint.constraint_string
@@ -250,18 +258,18 @@ module Bundler
             sorted_versions[high]
           end
 
-        range = PubGrub::VersionRange.new(min: low, max: high, include_min: !low.nil?)
+        range = Gem::PubGrub::VersionRange.new(min: low, max: high, include_min: !low.nil?)
 
-        self_constraint = PubGrub::VersionConstraint.new(package, range: range)
+        self_constraint = Gem::PubGrub::VersionConstraint.new(package, range: range)
 
-        dep_term = PubGrub::Term.new(dep_constraint, false)
-        self_term = PubGrub::Term.new(self_constraint, true)
+        dep_term = Gem::PubGrub::Term.new(dep_constraint, false)
+        self_term = Gem::PubGrub::Term.new(self_constraint, true)
 
         custom_explanation = if dep_package.meta? && package.root?
           "current #{dep_package} version is #{dep_constraint.constraint_string}"
         end
 
-        PubGrub::Incompatibility.new([self_term, dep_term], cause: :dependency, custom_explanation: custom_explanation)
+        Gem::PubGrub::Incompatibility.new([self_term, dep_term], cause: :dependency, custom_explanation: custom_explanation)
       end
     end
 
@@ -447,6 +455,7 @@ module Bundler
       specs.each do |spec|
         next unless cooldown_excluded?(spec)
         excluded[[spec.name, spec.version]] = true
+        (@cooldown_skipped_specs ||= {})[[spec.name, spec.version]] ||= spec
       end
       excluded
     end
@@ -487,6 +496,50 @@ module Bundler
 
     def cooldown_now
       @cooldown_now ||= Time.now
+    end
+
+    # Reports, per gem, the newest version that cooldown kept out of a
+    # successful resolution. A skipped version is only worth reporting when it
+    # is newer than the resolved version and satisfies every requirement the
+    # final resolution places on that gem, so we don't claim a version the
+    # resolver could never have picked anyway.
+    def cooldown_skipped_summary(spec_set)
+      return [] if @cooldown_skipped_specs.empty?
+
+      requirements = Hash.new {|h, name| h[name] = [] }
+      @requirements.each {|dep| requirements[dep.name] << dep.requirement }
+      spec_set.each do |spec|
+        spec.dependencies.each {|dep| requirements[dep.name] << dep.requirement }
+      end
+
+      resolved_versions = {}
+      spec_set.each do |spec|
+        version = resolved_versions[spec.name]
+        resolved_versions[spec.name] = spec.version if version.nil? || spec.version > version
+      end
+
+      newest_skipped = {}
+      @cooldown_skipped_specs.each do |(name, version), spec|
+        resolved = resolved_versions[name]
+        next unless resolved && version > resolved
+        next unless requirements[name].all? {|req| req.satisfied_by?(version) }
+        newest = newest_skipped[name]
+        newest_skipped[name] = spec if newest.nil? || version > newest.version
+      end
+
+      newest_skipped.values.sort_by(&:name).map do |spec|
+        {
+          name: spec.name,
+          version: spec.version,
+          resolved: resolved_versions[spec.name],
+          available_in_days: remaining_cooldown_days(spec),
+        }
+      end
+    end
+
+    def remaining_cooldown_days(spec)
+      remaining = (spec.remote.effective_cooldown * 86_400) - (cooldown_now - spec.created_at)
+      [(remaining / 86_400.0).ceil, 1].max
     end
 
     def filter_remote_specs(specs, package)
@@ -572,19 +625,19 @@ module Bundler
         when "~>"
           name = "~> #{ver}"
           bump = Resolver::Candidate.new(version.bump.to_s + ".A")
-          PubGrub::VersionRange.new(name: name, min: ver, max: bump, include_min: true)
+          Gem::PubGrub::VersionRange.new(name: name, min: ver, max: bump, include_min: true)
         when ">"
-          PubGrub::VersionRange.new(min: platform_ver)
+          Gem::PubGrub::VersionRange.new(min: platform_ver)
         when ">="
-          PubGrub::VersionRange.new(min: ver, include_min: true)
+          Gem::PubGrub::VersionRange.new(min: ver, include_min: true)
         when "<"
-          PubGrub::VersionRange.new(max: ver)
+          Gem::PubGrub::VersionRange.new(max: ver)
         when "<="
-          PubGrub::VersionRange.new(max: platform_ver, include_max: true)
+          Gem::PubGrub::VersionRange.new(max: platform_ver, include_max: true)
         when "="
-          PubGrub::VersionRange.new(min: ver, max: platform_ver, include_min: true, include_max: true)
+          Gem::PubGrub::VersionRange.new(min: ver, max: platform_ver, include_min: true, include_max: true)
         when "!="
-          PubGrub::VersionRange.new(min: ver, max: platform_ver, include_min: true, include_max: true).invert
+          Gem::PubGrub::VersionRange.new(min: ver, max: platform_ver, include_min: true, include_max: true).invert
         else
           raise "bad version specifier: #{op}"
         end

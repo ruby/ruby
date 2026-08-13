@@ -44,6 +44,12 @@ HAVE_BASERUBY = no
 HAVE_BASERUBY = yes
 !endif
 
+!if "$(HAVE_BASERUBY)" == "yes"
+DEPENDENCIES_DIR = .deps
+!else
+DEPENDENCIES_DIR = $(srcdir)
+!endif
+
 !ifndef REVISION_FORCE
 !if "$(HAVE_BASERUBY)" == "yes"
 REVISION_FORCE = PHONY
@@ -322,7 +328,7 @@ LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
 MISSING = $(MISSING) explicit_bzero.obj memrchr.obj
 !endif
-DLNOBJ = dln.obj
+DLNOBJS = dln.obj
 
 !if "$(ARCH)" == "x64"
 COROUTINE_OBJ = coroutine/win64/Context.obj
@@ -561,6 +567,12 @@ ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 
 !if defined(DUMP_AST)
 DUMP_AST_TARGET = $(empty)
+!else if defined(RUBY_DUMP_AST)
+DUMP_AST = $(RUBY_DUMP_AST)
+DUMP_AST_TARGET = $(empty)
+!else if "$(CROSS_COMPILING)" == "yes"
+DUMP_AST = ruby-dump_ast$(BUILD_EXEEXT)
+DUMP_AST_TARGET = $(DUMP_AST)
 !else
 DUMP_AST = dump_ast$(BUILD_EXEEXT)
 DUMP_AST_TARGET = $(DUMP_AST)
@@ -644,6 +656,10 @@ CONFIG_H = ./.config.h.time
 config: config.status
 
 config.status: $(CONFIG_H)
+
+# {$(VPATH)}config.h prerequisites in common.mk resolve to this bare
+# name until $(RUBY_CONFIG_H) is generated.
+config.h: $(CONFIG_H)
 
 BANG = !
 
@@ -940,6 +956,7 @@ s,@SHELL@,$$(COMSPEC),;t t
 s,@BUILD_FILE_SEPARATOR@,\,;t t
 s,@PATH_SEPARATOR@,;,;t t
 s,@CFLAGS@,$(CFLAGS),;t t
+s,@warnflags@,$(WARNFLAGS),;t t
 s,@WERRORFLAG@,$(WERRORFLAG),;t t
 s,@DEFS@,$(DEFS),;t t
 s,@CPPFLAGS@,$(CPPFLAGS),;t t
@@ -1110,9 +1127,9 @@ s,@ruby_pc@,$(ruby_pc),;t t
 s,@PKG_CONFIG@,$(PKG_CONFIG),;t t
 <<KEEP
 
-!if "$(HAVE_BASERUBY)" != "yes" || "$(CROSS_COMPILING)" == "yes"
+# BOOTSTRAPRUBY is $(MINIRUBY) here even with BASERUBY, so rbconfig.rb
+# generation always needs $(PREP).
 $(RBCONFIG): $(PREP)
-!endif
 
 miniruby: miniruby$(EXEEXT)
 

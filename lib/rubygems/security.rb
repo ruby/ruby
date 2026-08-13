@@ -562,7 +562,12 @@ module Gem::Security
     signed = create_cert signee_subject, signee_key, age, extensions, serial
     signed.issuer = signing_cert.subject
 
-    signed.sign signing_key, Gem::Security::DIGEST_NAME
+    begin
+      signed.sign signing_key, Gem::Security::DIGEST_NAME
+    rescue OpenSSL::PKey::PKeyError, ArgumentError
+      raise Gem::Security::Exception,
+        "incorrect signing key for signing"
+    end
   end
 
   ##
@@ -585,19 +590,31 @@ module Gem::Security
   end
 
   ##
-  # Writes +pemmable+, which must respond to +to_pem+ to +path+ with the given
-  # +permissions+. If passed +cipher+ and +passphrase+ those arguments will be
-  # passed to +to_pem+.
+  # Writes the private +key+ to +path+ with the given +permissions+.
+  # If passed +passphrase+ and +cipher+, the key is encrypted.
 
-  def self.write(pemmable, path, permissions = 0o600, passphrase = nil, cipher = KEY_CIPHER)
+  def self.write_private_key(key, path, permissions = 0o600, passphrase = nil, cipher = KEY_CIPHER)
     path = File.expand_path path
 
     File.open path, "wb", permissions do |io|
       if passphrase && cipher
-        io.write pemmable.to_pem cipher, passphrase
+        io.write key.private_to_pem cipher, passphrase
       else
-        io.write pemmable.to_pem
+        io.write key.private_to_pem
       end
+    end
+
+    path
+  end
+
+  ##
+  # Writes the +certificate+ to +path+ with the given +permissions+.
+
+  def self.write_certificate(certificate, path, permissions = 0o600)
+    path = File.expand_path path
+
+    File.open path, "wb", permissions do |io|
+      io.write certificate.to_pem
     end
 
     path

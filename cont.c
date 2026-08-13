@@ -889,6 +889,19 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
 
     if (DEBUG) fprintf(stderr, "fiber_pool_stack_release: %p used=%"PRIuSIZE"\n", stack->base, stack->pool->used);
 
+    /* Serialize pool access against other Ractors' acquires: a per-Ractor GC sweep can
+     * free a fiber without the VM lock.  Releases are rare, so take it NO_BARRIER,
+     * never joining a forming global barrier.
+     *
+     * Two callers must not take it.  VM destruct's free-at-exit walk is single-threaded
+     * and its thread structs are already freed, so looking the current Ractor up would
+     * read freed memory.  A single objspace impl (mmtk) frees on its own GC thread,
+     * which has no execution context to look one up from at all -- and it stops the
+     * world, so nothing races us there. */
+    unsigned int lev = 0;
+    const bool lock_here = !ruby_vm_during_cleanup && rb_current_execution_context(false) != NULL;
+    if (lock_here) RB_VM_LOCK_ENTER_LEV_NB(&lev);
+
     // Copy the stack details into the vacancy area:
     vacancy->stack = *stack;
     // After this point, be careful about updating/using state in stack, since it's copied to the vacancy area.
@@ -919,6 +932,8 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
         fiber_pool_stack_free(&vacancy->stack);
     }
 #endif
+
+    if (lock_here) RB_VM_LOCK_LEAVE_LEV_NB(&lev);
 }
 
 static inline void
@@ -1034,11 +1049,9 @@ fiber_stack_release(rb_fiber_t * fiber)
 static void
 fiber_stack_release_locked(rb_fiber_t *fiber)
 {
-    if (!ruby_vm_during_cleanup) {
-        // We can't try to acquire the VM lock here because MMTK calls free in its own native thread which has no ec.
-        // This assertion will fail on MMTK but we currently don't have CI for debug releases of MMTK, so we can assert for now.
-        ASSERT_vm_locking_with_barrier();
-    }
+    /* Called from GC finalization.  With per-Ractor objspaces the sweep runs with
+     * no barrier and no VM lock, so the side that returns stacks to the pool
+     * (fiber_pool_stack_release) takes the lock.  Do not assert the VM lock here. */
     fiber_stack_release(fiber);
 }
 
@@ -1289,6 +1302,22 @@ static void
 fiber_free(void *ptr)
 {
     rb_fiber_t *fiber = ptr;
+
+    /* Root fiber of the thread running the final self collection: saved_ec is the ec
+     * that thread still executes on, so the thread frees the struct itself at its
+     * last step (rb_ractor_postmortem_free).  cont.self == 0 already means "no
+     * wrapper" (rb_threadptr_root_fiber_release). */
+    if (&fiber->cont.saved_ec == rb_current_execution_context(false)) {
+        fiber->cont.self = 0;
+        return;
+    }
+    rb_fiber_free_body(ptr);
+}
+
+void
+rb_fiber_free_body(void *ptr)
+{
+    rb_fiber_t *fiber = ptr;
     RUBY_FREE_ENTER("fiber");
 
     if (DEBUG) fprintf(stderr, "fiber_free: %p[%p]\n", (void *)fiber, fiber->stack.base);
@@ -1307,12 +1336,11 @@ fiber_memsize(const void *ptr)
     const rb_fiber_t *fiber = ptr;
     size_t size = sizeof(*fiber);
     const rb_execution_context_t *saved_ec = &fiber->cont.saved_ec;
-    const rb_thread_t *th = rb_ec_thread_ptr(saved_ec);
 
-    /*
-     * vm.c::thread_memsize already counts th->ec->local_storage
-     */
-    if (saved_ec->local_storage && fiber != th->root_fiber) {
+    /* thread_memsize in vm.c already accounts for a root fiber's local_storage.
+     * first_proc != 0 picks the non-root fibers without dereferencing the thread
+     * (equivalent to fiber != th->root_fiber). */
+    if (saved_ec->local_storage && fiber->first_proc != 0) {
         size += rb_id_table_memsize(saved_ec->local_storage);
         size += rb_obj_memsize_of(saved_ec->storage);
     }
@@ -2632,11 +2660,11 @@ rb_fiber_set_scheduler(VALUE klass, VALUE scheduler)
 NORETURN(static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt, VALUE err));
 
 void
-rb_fiber_start(rb_fiber_t *fiber)
+rb_fiber_start(rb_fiber_t *fiber_arg)
 {
+    rb_fiber_t * volatile fiber = fiber_arg;
     rb_thread_t * volatile th = fiber->cont.saved_ec.thread_ptr;
 
-    rb_proc_t *proc;
     enum ruby_tag_type state;
 
     VM_ASSERT(th->ec == GET_EC());
@@ -2646,12 +2674,10 @@ rb_fiber_start(rb_fiber_t *fiber)
         th->blocking += 1;
     }
 
-    /* resolved before EC_PUSH_TAG to keep the setjmp region minimal */
-    const rb_cref_t *cref = rb_proc_refinements_cref(fiber->first_proc);
-
     EC_PUSH_TAG(th->ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        rb_context_t *cont = &VAR_FROM_MEMORY(fiber)->cont;
+        rb_context_t *cont = &fiber->cont;
+        rb_proc_t *proc;
         int argc;
         const VALUE *argv, args = cont->value;
         GetProcPtr(fiber->first_proc, proc);
@@ -2662,6 +2688,7 @@ rb_fiber_start(rb_fiber_t *fiber)
         th->ec->root_svar = Qfalse;
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
+        const rb_cref_t *cref = rb_proc_refinements_cref_for_call(fiber->first_proc);
         cont->value = rb_vm_invoke_proc(th->ec, proc, argc, argv, cont->kw_splat, VM_BLOCK_HANDLER_NONE, cref);
     }
     EC_POP_TAG();

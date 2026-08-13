@@ -27,7 +27,7 @@ the browser when you edit source files:
 make html-server
 ```
 
-Then visit http://localhost:4000 in your browser.
+Then visit `http://localhost:4000` in your browser.
 To use a different port: `make html-server RDOC_SERVER_PORT=8080`.
 
 If you don't have a build directory, follow the [quick start
@@ -165,7 +165,7 @@ For a method name in text:
 ### Embedded Code and Commands
 
 Code or commands embedded in running text (i.e., not in a code block)
-should marked up as
+should be marked up as
 [monofont].
 
 Code that is a simple string should include the quote marks.
@@ -612,7 +612,7 @@ For corner cases of methods, such as atypical usage, briefly mention
 the behavior, but do not provide any examples.
 
 Only document exceptions raised if they are not obvious.  For example,
-if you have stated earlier than an argument type must be an integer,
+if you have stated earlier that an argument type must be an integer,
 you do not need to document that a `TypeError` is raised if a non-integer
 is passed.  Do not provide examples of exceptions being raised unless
 that is a common case, such as `Hash#fetch` raising a `KeyError`.

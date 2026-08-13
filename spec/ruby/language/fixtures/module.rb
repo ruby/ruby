@@ -1,8 +1,5 @@
 module ModuleSpecs
   module Modules
-    class Klass
-    end
-
     A = "Module"
     B = 1
     C = nil

@@ -20,6 +20,17 @@ module Bundler
       Bundler.ui.info msg
     end
 
+    def self.output_cooldown_skipped_summary(definition = Bundler.definition)
+      skipped = definition.cooldown_skipped
+      return if skipped.empty?
+
+      Bundler.ui.info "The following gem versions were skipped by the cooldown setting:"
+      skipped.each do |entry|
+        days = entry[:available_in_days]
+        Bundler.ui.info "  * #{entry[:name]} #{entry[:version]} (available in #{days} #{days == 1 ? "day" : "days"}), resolved #{entry[:resolved]} instead"
+      end
+    end
+
     def self.output_fund_metadata_summary
       return if Bundler.settings["ignore_funding_requests"]
       definition = Bundler.definition

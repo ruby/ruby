@@ -706,8 +706,14 @@ anc_inspect_passcred_credentials(int level, int type, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(SCM_CREDS)
-#define INSPECT_SCM_CREDS
+#if !defined(SCM_CREDS)
+#elif defined(HAVE_TYPE_STRUCT_CMSGCRED) /* FreeBSD */
+# define INSPECT_SCM_CREDS
+#elif defined(HAVE_TYPE_STRUCT_SOCKCRED) /* FreeBSD, NetBSD */
+# define INSPECT_SCM_CREDS
+#endif
+
+#ifdef INSPECT_SCM_CREDS
 static int
 anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
 {

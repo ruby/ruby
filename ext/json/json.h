@@ -180,4 +180,17 @@ static inline VALUE json_rb_catch_obj(VALUE tag, VALUE (*func)(VALUE args), VALU
 
 #endif // JSON_TRUFFLERUBY_RB_CATCH_BUG
 
+static inline void raise_argument_error_on_unknown_keywords(VALUE unknown_keywords)
+{
+    if (RB_UNLIKELY(unknown_keywords)) {
+        if (RARRAY_LEN(unknown_keywords) == 1) {
+            rb_raise(rb_eArgError, "unknown keyword: %" PRIsVALUE, RARRAY_AREF(unknown_keywords, 0));
+        }
+        else {
+            VALUE keywords = rb_ary_join(unknown_keywords, rb_utf8_str_new_cstr(", "));
+            rb_raise(rb_eArgError, "unknown keywords: %" PRIsVALUE, keywords);
+        }
+    }
+}
+
 #endif // _JSON_H_

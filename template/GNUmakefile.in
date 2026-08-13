@@ -29,6 +29,12 @@ override UNICODE_TABLES_DEPENDENTS = \
 
 # extract NMake-style include list
 $(eval common_mk_includes := $(shell sed -n 's/^!include  *//p' $(srcdir)/common.mk))
+ifeq ($(DEPENDENCIES_DIR),.deps)
+$(eval common_mk_includes := $(filter-out $(DEPENDENCIES_DIR)/depend,$(common_mk_includes)))
+endif
 
 -include uncommon.mk
+ifeq ($(DEPENDENCIES_DIR),.deps)
+include $(DEPENDENCIES_DIR)/depend
+endif
 include $(srcdir)/defs/gmake.mk

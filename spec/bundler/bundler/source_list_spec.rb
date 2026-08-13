@@ -161,6 +161,56 @@ RSpec.describe Bundler::SourceList do
     end
   end
 
+  describe "cooldown conflicts between duplicate source declarations" do
+    it "warns when a block source duplicates the global source with a different cooldown" do
+      source_list.add_global_rubygems_remote("https://rubygems.org", cooldown: 7)
+      expect(Bundler.ui).to receive(:warn).with(/declared more than once with different cooldown values \(`cooldown: 0` here, `cooldown: 7` previously\)/)
+      source_list.add_rubygems_source("remotes" => ["https://rubygems.org"], "cooldown" => 0)
+    end
+
+    it "warns when a global source duplicates a block source with a different cooldown" do
+      source_list.add_rubygems_source("remotes" => ["https://rubygems.org"], "cooldown" => 0)
+      expect(Bundler.ui).to receive(:warn).with(/declared more than once with different cooldown values \(`cooldown: 7` here, `cooldown: 0` previously\)/)
+      source_list.add_global_rubygems_remote("https://rubygems.org", cooldown: 7)
+    end
+
+    it "warns when a block source duplicates another block source with a different cooldown" do
+      source_list.add_rubygems_source("remotes" => ["https://rubygems.org"], "cooldown" => 7)
+      expect(Bundler.ui).to receive(:warn).with(/declared more than once with different cooldown values/)
+      source_list.add_rubygems_source("remotes" => ["https://rubygems.org"], "cooldown" => 0)
+    end
+
+    it "warns when a global remote is declared again with a different cooldown" do
+      source_list.add_global_rubygems_remote("https://rubygems.org", cooldown: 7)
+      expect(Bundler.ui).to receive(:warn).with(/declared more than once with different cooldown values/)
+      source_list.add_global_rubygems_remote("https://rubygems.org", cooldown: 0)
+    end
+
+    it "warns when a duplicate declaration adds a cooldown to a source declared without one" do
+      source_list.add_global_rubygems_remote("https://rubygems.org")
+      expect(Bundler.ui).to receive(:warn).with(/declared more than once with different cooldown values \(`cooldown: 7` here, no cooldown previously\)/)
+      source_list.add_rubygems_source("remotes" => ["https://rubygems.org"], "cooldown" => 7)
+    end
+
+    it "does not warn when the duplicate declaration uses the same cooldown" do
+      source_list.add_global_rubygems_remote("https://rubygems.org", cooldown: 7)
+      expect(Bundler.ui).not_to receive(:warn)
+      source_list.add_rubygems_source("remotes" => ["https://rubygems.org"], "cooldown" => 7)
+    end
+
+    it "does not warn when the duplicate declaration has no cooldown" do
+      source_list.add_global_rubygems_remote("https://rubygems.org", cooldown: 7)
+      expect(Bundler.ui).not_to receive(:warn)
+      source_list.add_rubygems_source("remotes" => ["https://rubygems.org"])
+    end
+
+    it "does not warn when different sources declare different cooldowns" do
+      source_list.add_global_rubygems_remote("https://rubygems.org", cooldown: 7)
+      expect(Bundler.ui).not_to receive(:warn)
+      source_list.add_rubygems_source("remotes" => ["https://other-rubygems.org"], "cooldown" => 0)
+    end
+  end
+
   describe "#all_sources" do
     it "includes the global rubygems source when rubygems sources have been added" do
       source_list.add_git_source("uri" => "git://host/path.git")

@@ -1,0 +1,7 @@
+Returns a new string whose bytes are the bitwise XOR of +self+ and +other+:
+
+  "\xF0".bitwise_xor("\xCC") # => "\x3C"
+
++other+ is converted to a string using +to_str+.
+Raises +ArgumentError+ if the two strings have different byte sizes.
+The returned string has BINARY encoding.

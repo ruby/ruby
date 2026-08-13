@@ -1,4 +1,9 @@
 module ProcessSpecs
+  # See https://github.com/openai/codex/issues/34617
+  def self.codex_sandbox?
+    ENV["CODEX_CI"] == "1"
+  end
+
   def self.use_system_ruby(context)
     if defined?(MSpecScript::SYSTEM_RUBY)
       context.send(:before, :all) do

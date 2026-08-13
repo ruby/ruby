@@ -55,15 +55,25 @@ ubf_event_waiting(void *ptr)
     thread_sched_unlock(sched, th);
 }
 
-static bool timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags, rb_hrtime_t *rel, uint32_t event_serial);
+// Why timer_thread_register_waiting() did or did not take over the wait.  Both
+// "not registered" cases used to share one value; only the first means ready.
+enum timer_thread_register_result {
+    timer_thread_registered,    // the timer thread owns this wait now
+    timer_thread_already_ready, // no wait needed: the fd is ready, or no timeout
+    timer_thread_unavailable,   // cannot be registered; the caller must fall back
+};
 
-// return true if timed out
-static bool
+static enum timer_thread_register_result
+timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags, rb_hrtime_t *rel, uint32_t event_serial);
+
+// return how the wait ended; see enum thread_sched_wait_result
+static enum thread_sched_wait_result
 thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd, enum thread_sched_waiting_flag events, rb_hrtime_t *rel)
 {
     VM_ASSERT(!th_has_dedicated_nt(th));  // on SNT
 
     volatile bool timedout = false, need_cancel = false;
+    volatile enum timer_thread_register_result reg = timer_thread_unavailable;
 
     uint32_t event_serial = ++th->sched.event_serial; // overflow is okay
 
@@ -72,11 +82,15 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
     {
         // NOTE: there's a lock ordering inversion here with the ubf call, but it's benign.
         if (ubf_set(th, ubf_event_waiting, (void *)th, NULL)) {
+            // Already interrupted: report an event so the caller retries and then
+            // processes the interrupt, as it always has.
             thread_sched_unlock(sched, th);
-            return false;
+            return thread_sched_wait_event;
         }
 
-        if (timer_thread_register_waiting(th, fd, events, rel, event_serial)) {
+        reg = timer_thread_register_waiting(th, fd, events, rel, event_serial);
+
+        if (reg == timer_thread_registered) {
             RUBY_DEBUG_LOG("wait fd:%d", fd);
 
             RB_VM_SAVE_MACHINE_CONTEXT(th);
@@ -110,8 +124,9 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
             th->status = THREAD_RUNNABLE;
         }
         else {
-            RUBY_DEBUG_LOG("can not wait fd:%d", fd);
-            timedout = false;
+            // Ready right now, or not registerable at all -- only the former may
+            // be reported as readiness.
+            RUBY_DEBUG_LOG("did not wait fd:%d reg:%d", fd, (int)reg);
         }
     }
     thread_sched_unlock(sched, th);
@@ -121,7 +136,10 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
 
     VM_ASSERT(sched->running == th);
 
-    return timedout;
+    if (reg == timer_thread_unavailable) return thread_sched_wait_unavailable;
+    // A ready fd never registered, so it never timed out either.
+    if (reg == timer_thread_already_ready) return thread_sched_wait_event;
+    return timedout ? thread_sched_wait_timeout : thread_sched_wait_event;
 }
 
 /// stack management
@@ -603,8 +621,9 @@ native_thread_create_shared(rb_thread_t *th)
     RUBY_DEBUG_LOG("th:%u vm_stack:%p machine_stack:%p", rb_th_serial(th), vm_stack, machine_stack);
     thread_sched_to_ready(TH_SCHED(th), th);
 
-    // setup nt
-    return native_thread_check_and_create_shared(th->vm);
+    // setup nt.  th is runnable now and a Ractor's thread that runs to its end frees
+    // its own rb_thread_t (rb_ractor_postmortem_free), so th must not be read again.
+    return native_thread_check_and_create_shared(vm);
 }
 
 #else // USE_MN_THREADS
@@ -615,7 +634,7 @@ native_thread_create_shared(rb_thread_t *th)
     rb_bug("unreachable");
 }
 
-static bool
+static enum thread_sched_wait_result
 thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd, enum thread_sched_waiting_flag events, rb_hrtime_t *rel)
 {
     rb_bug("unreachable");
@@ -625,6 +644,182 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
 
 /// EPOLL/KQUEUE specific code
 #if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
+
+/// Per-fd waiter table (struct rb_fd_waiters).  One fd may have several waiters
+/// -- a reader and a writer on one socket -- so the backend is armed with their
+/// union, and an event is dispatched to every waiter it concerns.
+
+#define FD_WAIT_IO_MASK (thread_sched_waiting_io_read | thread_sched_waiting_io_write)
+
+#define FDMAP_CHUNK_BITS 10
+#define FDMAP_CHUNK_SIZE (1u << FDMAP_CHUNK_BITS)
+#define FDMAP_CHUNK_MASK (FDMAP_CHUNK_SIZE - 1)
+
+// timer_th.waiting_lock must be held.
+static struct rb_fd_waiters *
+fd_waiters_lookup(int fd, bool create)
+{
+    if (fd < 0) return NULL;
+
+    unsigned int ci = (unsigned int)fd >> FDMAP_CHUNK_BITS;
+
+    if (ci >= timer_th.fdmap_nchunks) {
+        if (!create) return NULL;
+
+        unsigned int n = timer_th.fdmap_nchunks ? timer_th.fdmap_nchunks : 8;
+        while (n <= ci) n *= 2;
+
+        // Only the chunk pointers are reallocated; the entries themselves never
+        // move, so the list heads inside them stay valid.
+        struct rb_fd_waiters **chunks = realloc(timer_th.fdmap_chunks, sizeof(*chunks) * n);
+        if (chunks == NULL) rb_bug("fd_waiters_lookup: realloc failed");
+
+        for (unsigned int i = timer_th.fdmap_nchunks; i < n; i++) chunks[i] = NULL;
+        timer_th.fdmap_chunks = chunks;
+        timer_th.fdmap_nchunks = n;
+    }
+
+    if (timer_th.fdmap_chunks[ci] == NULL) {
+        if (!create) return NULL;
+
+        struct rb_fd_waiters *chunk = calloc(FDMAP_CHUNK_SIZE, sizeof(*chunk));
+        if (chunk == NULL) rb_bug("fd_waiters_lookup: calloc failed");
+
+        for (unsigned int i = 0; i < FDMAP_CHUNK_SIZE; i++) {
+            ccan_list_head_init(&chunk[i].waiters);
+        }
+        timer_th.fdmap_chunks[ci] = chunk;
+    }
+
+    return &timer_th.fdmap_chunks[ci][(unsigned int)fd & FDMAP_CHUNK_MASK];
+}
+
+// timer_th.waiting_lock must be held.
+static uint32_t
+fd_waiters_union(struct rb_fd_waiters *e)
+{
+    uint32_t want = 0;
+    struct rb_thread_sched_waiting *w;
+
+    ccan_list_for_each(&e->waiters, w, fd_node) {
+        want |= (uint32_t)(w->flags & FD_WAIT_IO_MASK);
+    }
+    return want;
+}
+
+// Events name an fd and the generation it was armed with, never a thread: a
+// stale event then resolves to a table lookup instead of a freed thread.
+static inline uint64_t
+fd_event_tag(int fd, uint32_t generation)
+{
+    return ((uint64_t)generation << 32) | (uint32_t)fd;
+}
+
+#define FD_EVENT_TAG_FD(tag)  ((int)((tag) & 0xffffffffu))
+#define FD_EVENT_TAG_GEN(tag) ((uint32_t)((tag) >> 32))
+
+// Make the backend match `want`.  Returns false if the fd cannot be registered
+// at all (closed, or unsupported by the backend), leaving the entry untouched.
+// timer_th.waiting_lock must be held.
+static bool
+fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
+{
+    if (want == e->armed_flags) return true;
+
+#if HAVE_SYS_EVENT_H
+    struct kevent ke[2];
+    int n = 0;
+    uint32_t add = want & ~e->armed_flags;
+    uint32_t del = e->armed_flags & ~want;
+    void *tag = (void *)(uintptr_t)fd_event_tag(fd, e->generation);
+
+    if (del & thread_sched_waiting_io_read)  { EV_SET(&ke[n], fd, EVFILT_READ,  EV_DELETE, 0, 0, NULL); n++; }
+    if (del & thread_sched_waiting_io_write) { EV_SET(&ke[n], fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL); n++; }
+
+    if (n > 0 && kevent(timer_th.event_fd, ke, n, NULL, 0, NULL) == -1) {
+        // The fd may already be gone; that is not an error for a removal.
+        if (errno != ENOENT && errno != EBADF) {
+            perror("kevent");
+            rb_bug("fd_waiters_arm/kevent delete failed (fd:%d errno:%d)", fd, errno);
+        }
+    }
+
+    n = 0;
+    if (add & thread_sched_waiting_io_read)  { EV_SET(&ke[n], fd, EVFILT_READ,  EV_ADD, 0, 0, tag); n++; }
+    if (add & thread_sched_waiting_io_write) { EV_SET(&ke[n], fd, EVFILT_WRITE, EV_ADD, 0, 0, tag); n++; }
+
+    if (n > 0 && kevent(timer_th.event_fd, ke, n, NULL, 0, NULL) == -1) {
+        switch (errno) {
+          case EBADF:
+          case EINVAL:
+            return false;
+          default:
+            perror("kevent");
+            rb_bug("fd_waiters_arm/kevent add failed (fd:%d errno:%d)", fd, errno);
+        }
+    }
+#elif HAVE_SYS_EPOLL_H
+    if (want == 0) {
+        if (epoll_ctl(timer_th.event_fd, EPOLL_CTL_DEL, fd, NULL) == -1) {
+            switch (errno) {
+              case EBADF:
+              case ENOENT:
+                // the fd is already closed or gone from the set
+                break;
+              default:
+                perror("epoll_ctl");
+                rb_bug("fd_waiters_arm/epoll_ctl del failed (fd:%d errno:%d)", fd, errno);
+            }
+        }
+        // Anything epoll_wait already queued for the old arming is stale now.
+        e->generation++;
+        e->armed_flags = 0;
+        return true;
+    }
+
+    uint32_t epoll_events = 0;
+    if (want & thread_sched_waiting_io_read)  epoll_events |= EPOLLIN;
+    if (want & thread_sched_waiting_io_write) epoll_events |= EPOLLOUT;
+
+    struct epoll_event event = {
+        .events = epoll_events,
+        .data = { .u64 = fd_event_tag(fd, e->generation) },
+    };
+
+    int op = e->armed_flags ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
+
+    if (epoll_ctl(timer_th.event_fd, op, fd, &event) == -1) {
+        switch (errno) {
+          case ENOENT:
+            // Not registered after all: the fd was closed and reopened. Add it.
+            if (op == EPOLL_CTL_MOD &&
+                epoll_ctl(timer_th.event_fd, EPOLL_CTL_ADD, fd, &event) == 0) {
+                break;
+            }
+            return false;
+          case EEXIST:
+            // Likewise in the other direction.
+            if (op == EPOLL_CTL_ADD &&
+                epoll_ctl(timer_th.event_fd, EPOLL_CTL_MOD, fd, &event) == 0) {
+                break;
+            }
+            return false;
+          case EBADF:
+          case EPERM:
+            // closed, or the fd does not support epoll
+            return false;
+          default:
+            perror("epoll_ctl");
+            rb_bug("fd_waiters_arm/epoll_ctl failed (fd:%d op:%d errno:%d)", fd, op, errno);
+        }
+    }
+#else
+# error "neither kqueue nor epoll"
+#endif
+
+    e->armed_flags = want;
+    return true;
+}
 
 static bool
 fd_readable_nonblock(int fd)
@@ -720,48 +915,10 @@ kqueue_create(void)
     }
 }
 
-static void
-kqueue_unregister_waiting(int fd, enum thread_sched_waiting_flag flags)
-{
-    if (flags) {
-        struct kevent ke[2];
-        int num_events = 0;
-
-        if (flags & thread_sched_waiting_io_read) {
-            EV_SET(&ke[num_events], fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-            num_events++;
-        }
-        if (flags & thread_sched_waiting_io_write) {
-            EV_SET(&ke[num_events], fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-            num_events++;
-        }
-        if (kevent(timer_th.event_fd, ke, num_events, NULL, 0, NULL) == -1) {
-            perror("kevent");
-            rb_bug("unregister/kevent fails. errno:%d", errno);
-        }
-    }
-}
-
-static bool
-kqueue_already_registered(int fd)
-{
-    struct rb_thread_sched_waiting *w, *found_w = NULL;
-
-    ccan_list_for_each(&timer_th.waiting, w, node) {
-        // Similar to EEXIST in epoll_ctl, but more strict because it checks fd rather than flags
-        //   for simplicity
-        if (w->flags && w->data.fd == fd) {
-            found_w = w;
-            break;
-        }
-    }
-    return found_w != NULL;
-}
-
 #endif // HAVE_SYS_EVENT_H
 
 // return false if the fd is not waitable or not need to wait.
-static bool
+static enum timer_thread_register_result
 timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags, rb_hrtime_t *rel, uint32_t event_serial)
 {
     RUBY_DEBUG_LOG("th:%u fd:%d flag:%d rel:%lu", rb_th_serial(th), fd, flags, rel ? (unsigned long)*rel : 0);
@@ -776,7 +933,7 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
             flags |= thread_sched_waiting_timeout;
         }
         else {
-            return false;
+            return timer_thread_already_ready; // zero timeout: nothing to wait for
         }
     }
 
@@ -784,12 +941,6 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
         flags |= thread_sched_waiting_timeout;
     }
 
-#if HAVE_SYS_EVENT_H
-    struct kevent ke[2];
-    int num_events = 0;
-#else
-    uint32_t epoll_events = 0;
-#endif
     if (flags & thread_sched_waiting_timeout) {
         VM_ASSERT(rel != NULL);
         abs = rb_hrtime_add(rb_hrtime_now(), *rel);
@@ -798,87 +949,36 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
     if (flags & thread_sched_waiting_io_read) {
         if (!(flags & thread_sched_waiting_io_force) && fd_readable_nonblock(fd)) {
             RUBY_DEBUG_LOG("fd_readable_nonblock");
-            return false;
+            return timer_thread_already_ready;
         }
-        else {
-            VM_ASSERT(fd >= 0);
-#if HAVE_SYS_EVENT_H
-            EV_SET(&ke[num_events], fd, EVFILT_READ, EV_ADD, 0, 0, (void *)th);
-            num_events++;
-#else
-            epoll_events |= EPOLLIN;
-#endif
-        }
+        VM_ASSERT(fd >= 0);
     }
 
     if (flags & thread_sched_waiting_io_write) {
         if (!(flags & thread_sched_waiting_io_force) && fd_writable_nonblock(fd)) {
             RUBY_DEBUG_LOG("fd_writable_nonblock");
-            return false;
+            return timer_thread_already_ready;
         }
-        else {
-            VM_ASSERT(fd >= 0);
-#if HAVE_SYS_EVENT_H
-            EV_SET(&ke[num_events], fd, EVFILT_WRITE, EV_ADD, 0, 0, (void *)th);
-            num_events++;
-#else
-            epoll_events |= EPOLLOUT;
-#endif
-        }
+        VM_ASSERT(fd >= 0);
     }
 
     rb_native_mutex_lock(&timer_th.waiting_lock);
     {
-#if HAVE_SYS_EVENT_H
-        if (num_events > 0) {
-            if (kqueue_already_registered(fd)) {
+        if (flags & FD_WAIT_IO_MASK) {
+            VM_ASSERT(th != NULL);
+
+            struct rb_fd_waiters *e = fd_waiters_lookup(fd, true);
+
+            // Arm the union of what this fd's waiters want, so a second waiter
+            // on the same fd extends the arming instead of colliding with it.
+            if (!fd_waiters_arm(fd, e, fd_waiters_union(e) | (uint32_t)(flags & FD_WAIT_IO_MASK))) {
                 rb_native_mutex_unlock(&timer_th.waiting_lock);
-                return false;
+                return timer_thread_unavailable;
             }
 
-            if (kevent(timer_th.event_fd, ke, num_events, NULL, 0, NULL) == -1) {
-                RUBY_DEBUG_LOG("failed (%d)", errno);
-
-                switch (errno) {
-                  case EBADF:
-                    // the fd is closed?
-                  case EINTR:
-                    // signal received? is there a sensible way to handle this?
-                  default:
-                    perror("kevent");
-                    rb_bug("register/kevent failed(fd:%d, errno:%d)", fd, errno);
-                }
-            }
-            RUBY_DEBUG_LOG("kevent(add, fd:%d) success", fd);
+            ccan_list_add_tail(&e->waiters, &th->sched.waiting_reason.fd_node);
+            RUBY_DEBUG_LOG("armed fd:%d want:%u", fd, e->armed_flags);
         }
-#else
-        if (epoll_events) {
-            struct epoll_event event = {
-                .events = epoll_events,
-                .data = {
-                    .ptr = (void *)th,
-                },
-            };
-            if (epoll_ctl(timer_th.event_fd, EPOLL_CTL_ADD, fd, &event) == -1) {
-                RUBY_DEBUG_LOG("failed (%d)", errno);
-
-                switch (errno) {
-                  case EBADF:
-                    // the fd is closed?
-                  case EPERM:
-                    // the fd doesn't support epoll
-                  case EEXIST:
-                    // the fd is already registered by another thread
-                    rb_native_mutex_unlock(&timer_th.waiting_lock);
-                    return false;
-                  default:
-                    perror("epoll_ctl");
-                    rb_bug("register/epoll_ctl failed(fd:%d, errno:%d)", fd, errno);
-                }
-            }
-            RUBY_DEBUG_LOG("epoll_ctl(add, fd:%d, events:%d) success", fd, epoll_events);
-        }
-#endif
 
         if (th) {
             VM_ASSERT(th->sched.waiting_reason.flags == thread_sched_waiting_none);
@@ -932,31 +1032,51 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
     }
     rb_native_mutex_unlock(&timer_th.waiting_lock);
 
-    return true;
+    return timer_thread_registered;
 }
 
+// Drop `th` from its fd's waiter list and re-arm the backend for whoever is
+// left.  timer_th.waiting_lock must be held.
 static void
 timer_thread_unregister_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags)
 {
-    if (!(th->sched.waiting_reason.flags & (thread_sched_waiting_io_read | thread_sched_waiting_io_write))) {
+    if (!(th->sched.waiting_reason.flags & FD_WAIT_IO_MASK)) {
         return;
     }
 
     RUBY_DEBUG_LOG("th:%u fd:%d", rb_th_serial(th), fd);
-#if HAVE_SYS_EVENT_H
-    kqueue_unregister_waiting(fd, flags);
-#else
-    // Linux 2.6.9 or later is needed to pass NULL as data.
-    if (epoll_ctl(timer_th.event_fd, EPOLL_CTL_DEL, fd, NULL) == -1) {
-        switch (errno) {
-          case EBADF:
-            // just ignore. maybe fd is closed.
-            break;
-          default:
-            perror("epoll_ctl");
-            rb_bug("unregister/epoll_ctl fails. errno:%d", errno);
-        }
+
+    ccan_list_del_init(&th->sched.waiting_reason.fd_node);
+
+    struct rb_fd_waiters *e = fd_waiters_lookup(fd, false);
+    if (e) {
+        fd_waiters_arm(fd, e, fd_waiters_union(e));
     }
+}
+
+// The timer thread's own wakeup pipe has no waiter: it stays armed forever and
+// is recognised by its fd when an event arrives.
+static void
+timer_thread_arm_comm_pipe(void)
+{
+    int fd = timer_th.comm_fds[0];
+
+#if HAVE_SYS_EVENT_H
+    struct kevent ke;
+    EV_SET(&ke, fd, EVFILT_READ, EV_ADD, 0, 0, (void *)(uintptr_t)fd_event_tag(fd, 0));
+    if (kevent(timer_th.event_fd, &ke, 1, NULL, 0, NULL) == -1) {
+        rb_bug("timer_thread_arm_comm_pipe/kevent failed (errno:%d)", errno);
+    }
+#elif HAVE_SYS_EPOLL_H
+    struct epoll_event event = {
+        .events = EPOLLIN,
+        .data = { .u64 = fd_event_tag(fd, 0) },
+    };
+    if (epoll_ctl(timer_th.event_fd, EPOLL_CTL_ADD, fd, &event) == -1) {
+        rb_bug("timer_thread_arm_comm_pipe/epoll_ctl failed (errno:%d)", errno);
+    }
+#else
+# error "neither kqueue nor epoll"
 #endif
 }
 
@@ -972,7 +1092,7 @@ timer_thread_setup_mn(void)
 #endif
     RUBY_DEBUG_LOG("comm_fds:%d/%d", timer_th.comm_fds[0], timer_th.comm_fds[1]);
 
-    timer_thread_register_waiting(NULL, timer_th.comm_fds[0], thread_sched_waiting_io_read | thread_sched_waiting_io_force, NULL, 0);
+    timer_thread_arm_comm_pipe();
 }
 
 static int
@@ -984,6 +1104,68 @@ event_wait(rb_vm_t *vm)
     int r = epoll_wait(timer_th.event_fd, timer_th.finished_events, EPOLL_EVENTS_MAX, timer_thread_set_timeout(vm));
 #endif
     return r;
+}
+
+// How many waiters one pass may unlink before it stops holding waiting_lock.
+#define FD_WAKE_BATCH 16
+
+
+// Deliver an fd event to every thread waiting for it.  Waiters are unlinked
+// under waiting_lock but woken after releasing it (the scheduler lock is taken
+// before it, never after); event_serial, captured under the lock, guards them.
+static void
+timer_thread_wake_fd_waiters(int fd, uint32_t generation, uint32_t wake_flags, int result)
+{
+    struct { rb_thread_t *th; uint32_t serial; } batch[FD_WAKE_BATCH];
+
+    if (wake_flags == 0) return;
+
+    for (;;) {
+        int n = 0;
+        bool more = false;
+
+        rb_native_mutex_lock(&timer_th.waiting_lock);
+        {
+            struct rb_fd_waiters *e = fd_waiters_lookup(fd, false);
+
+            // A newer generation means the fd was disarmed after this event was
+            // queued, and the number may name a different file by now.
+            if (e != NULL && e->generation == generation) {
+                struct rb_thread_sched_waiting *w, *nxt;
+
+                ccan_list_for_each_safe(&e->waiters, w, nxt, fd_node) {
+                    if (!(w->flags & wake_flags)) continue;
+
+                    if (n == FD_WAKE_BATCH) {
+                        more = true;
+                        break;
+                    }
+
+                    ccan_list_del_init(&w->fd_node);
+                    ccan_list_del_init(&w->node); // also leaves the timeout list
+
+                    w->flags = thread_sched_waiting_none;
+                    w->data.fd = -1;
+                    w->data.result = result;
+
+                    batch[n].th = thread_sched_waiting_thread(w);
+                    batch[n].serial = w->data.event_serial;
+                    n++;
+                }
+
+                // Re-arm for whoever is still waiting on this fd (nothing, if
+                // they all just woke up).
+                fd_waiters_arm(fd, e, fd_waiters_union(e));
+            }
+        }
+        rb_native_mutex_unlock(&timer_th.waiting_lock);
+
+        for (int i = 0; i < n; i++) {
+            timer_thread_wakeup_thread(batch[i].th, batch[i].serial);
+        }
+
+        if (!more) break;
+    }
 }
 
 /*
@@ -1045,92 +1227,53 @@ timer_thread_polling(rb_vm_t *vm)
 
 #if HAVE_SYS_EVENT_H
         for (int i=0; i<r; i++) {
-            rb_thread_t *th = (rb_thread_t *)timer_th.finished_events[i].udata;
+            uint64_t tag = (uint64_t)(uintptr_t)timer_th.finished_events[i].udata;
             int fd = (int)timer_th.finished_events[i].ident;
             int16_t filter = timer_th.finished_events[i].filter;
 
-            if (th == NULL) {
-                // wakeup timerthread
+            if (fd == timer_th.comm_fds[0]) {
                 RUBY_DEBUG_LOG("comm from fd:%d", timer_th.comm_fds[1]);
                 consume_communication_pipe(timer_th.comm_fds[0]);
+                continue;
             }
-            else {
-                // wakeup specific thread by IO
-                RUBY_DEBUG_LOG("io event. wakeup_th:%u event:%s%s",
-                                rb_th_serial(th),
-                                (filter == EVFILT_READ) ? "read/" : "",
-                                (filter == EVFILT_WRITE) ? "write/" : "");
 
-                struct rb_thread_sched *sched = TH_SCHED(th);
-                thread_sched_lock(sched, th);
-                rb_native_mutex_lock(&timer_th.waiting_lock);
-                {
-                    if (th->sched.waiting_reason.flags) {
-                        // delete from chain
-                        ccan_list_del_init(&th->sched.waiting_reason.node);
-                        timer_thread_unregister_waiting(th, fd, kqueue_translate_filter_to_flags(filter));
-
-                        th->sched.waiting_reason.flags = thread_sched_waiting_none;
-                        th->sched.waiting_reason.data.fd = -1;
-                        th->sched.waiting_reason.data.result = filter;
-                        uint32_t event_serial = th->sched.waiting_reason.data.event_serial;
-
-                        timer_thread_wakeup_thread_locked(sched, th, event_serial);
-                    }
-                    else {
-                        // already released
-                    }
-                }
-                rb_native_mutex_unlock(&timer_th.waiting_lock);
-                thread_sched_unlock(sched, th);
+            uint32_t wake_flags = kqueue_translate_filter_to_flags(filter) & FD_WAIT_IO_MASK;
+            if (timer_th.finished_events[i].flags & (EV_EOF | EV_ERROR)) {
+                wake_flags = FD_WAIT_IO_MASK; // end of file or error concerns everyone
             }
+
+            timer_thread_wake_fd_waiters(fd, FD_EVENT_TAG_GEN(tag), wake_flags, filter);
+        }
+#elif HAVE_SYS_EPOLL_H
+        for (int i=0; i<r; i++) {
+            uint64_t tag = timer_th.finished_events[i].data.u64;
+            int fd = FD_EVENT_TAG_FD(tag);
+            uint32_t events = timer_th.finished_events[i].events;
+
+            if (fd == timer_th.comm_fds[0]) {
+                RUBY_DEBUG_LOG("comm from fd:%d", timer_th.comm_fds[1]);
+                consume_communication_pipe(timer_th.comm_fds[0]);
+                continue;
+            }
+
+            RUBY_DEBUG_LOG("io event. fd:%d event:%s%s%s%s%s%s", fd,
+                           (events & EPOLLIN)    ? "in/" : "",
+                           (events & EPOLLOUT)   ? "out/" : "",
+                           (events & EPOLLRDHUP) ? "RDHUP/" : "",
+                           (events & EPOLLPRI)   ? "pri/" : "",
+                           (events & EPOLLERR)   ? "err/" : "",
+                           (events & EPOLLHUP)   ? "hup/" : "");
+
+            uint32_t wake_flags = 0;
+            if (events & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) wake_flags |= thread_sched_waiting_io_read;
+            if (events & EPOLLOUT)                          wake_flags |= thread_sched_waiting_io_write;
+            // An error or hangup ends every wait on this fd, in either direction.
+            if (events & (EPOLLERR | EPOLLHUP))             wake_flags |= FD_WAIT_IO_MASK;
+
+            timer_thread_wake_fd_waiters(fd, FD_EVENT_TAG_GEN(tag), wake_flags, (int)events);
         }
 #else
-        for (int i=0; i<r; i++) {
-            rb_thread_t *th = (rb_thread_t *)timer_th.finished_events[i].data.ptr;
-
-            if (th == NULL) {
-                // wakeup timerthread
-                RUBY_DEBUG_LOG("comm from fd:%d", timer_th.comm_fds[1]);
-                consume_communication_pipe(timer_th.comm_fds[0]);
-            }
-            else {
-                // wakeup specific thread by IO
-                uint32_t events = timer_th.finished_events[i].events;
-
-                RUBY_DEBUG_LOG("io event. wakeup_th:%u event:%s%s%s%s%s%s",
-                               rb_th_serial(th),
-                               (events & EPOLLIN)    ? "in/" : "",
-                               (events & EPOLLOUT)   ? "out/" : "",
-                               (events & EPOLLRDHUP) ? "RDHUP/" : "",
-                               (events & EPOLLPRI)   ? "pri/" : "",
-                               (events & EPOLLERR)   ? "err/" : "",
-                               (events & EPOLLHUP)   ? "hup/" : "");
-
-                struct rb_thread_sched *sched = TH_SCHED(th);
-                thread_sched_lock(sched, th);
-                rb_native_mutex_lock(&timer_th.waiting_lock);
-                {
-                    if (th->sched.waiting_reason.flags) {
-                        // delete from chain
-                        ccan_list_del_init(&th->sched.waiting_reason.node);
-                        timer_thread_unregister_waiting(th, th->sched.waiting_reason.data.fd, th->sched.waiting_reason.flags);
-
-                        th->sched.waiting_reason.flags = thread_sched_waiting_none;
-                        th->sched.waiting_reason.data.fd = -1;
-                        th->sched.waiting_reason.data.result = (int)events;
-                        uint32_t event_serial = th->sched.waiting_reason.data.event_serial;
-
-                        timer_thread_wakeup_thread_locked(sched, th, event_serial);
-                    }
-                    else {
-                        // already released
-                    }
-                }
-                rb_native_mutex_unlock(&timer_th.waiting_lock);
-                thread_sched_unlock(sched, th);
-            }
-        }
+# error "neither kqueue nor epoll"
 #endif
     }
 }

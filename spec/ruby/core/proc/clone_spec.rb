@@ -5,6 +5,15 @@ require_relative 'shared/dup'
 describe "Proc#clone" do
   it_behaves_like :proc_dup, :clone
 
+  it "copies the singleton class" do
+    obj = proc { }
+    def obj.tag; :tag; end
+
+    clone = obj.clone
+    clone.should.respond_to?(:tag)
+    clone.tag.should == :tag
+  end
+
   ruby_bug "cloning a frozen proc is broken on Ruby 3.3", ""..."3.4" do
     it "preserves frozen status" do
       proc = Proc.new { }

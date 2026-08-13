@@ -93,7 +93,7 @@ struct parser_st_table {
        [0,allocated_entries].  */
     parser_st_index_t entries_start, entries_bound;
     /* Array of size 2^entry_power.
-       Optionnally followed by an array of bins used for access by keys.  */
+       Optionally followed by an array of bins used for access by keys.  */
     parser_st_table_entry *entries;
 };
 

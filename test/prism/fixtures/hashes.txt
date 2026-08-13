@@ -26,3 +26,9 @@ tap do
 end
 
 { a: -1 }
+
+{ "": nil}
+
+{ "foo
+bar": nil}
+

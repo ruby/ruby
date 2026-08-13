@@ -272,10 +272,10 @@ class TestGemPackage < Gem::Package::TarTestCase
     FileUtils.mkdir_p File.join(Gem.user_home, ".gem")
 
     private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
-    Gem::Security.write PRIVATE_KEY, private_key_path
+    Gem::Security.write_private_key PRIVATE_KEY, private_key_path
 
     public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
-    FileUtils.cp PUBLIC_CERT_PATH, public_cert_path
+    FileUtils.cp PUBLIC_CERT_FILE, public_cert_path
 
     spec = Gem::Specification.new "build", "1"
     spec.summary = "build"
@@ -315,10 +315,10 @@ class TestGemPackage < Gem::Package::TarTestCase
     FileUtils.mkdir_p File.join(Gem.user_home, ".gem")
 
     private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
-    FileUtils.cp ENCRYPTED_PRIVATE_KEY_PATH, private_key_path
+    FileUtils.cp ENCRYPTED_PRIVATE_KEY_FILE, private_key_path
 
     public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
-    Gem::Security.write PUBLIC_CERT, public_cert_path
+    Gem::Security.write_certificate PUBLIC_CERT, public_cert_path
 
     spec = Gem::Specification.new "build", "1"
     spec.summary = "build"

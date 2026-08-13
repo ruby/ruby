@@ -123,8 +123,13 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     t = Time.utc(1996, 12, 20, 0, 39, 57)
     s = "1996-12-19T16:39:57-08:00"
     assert_equal(t, Time.__send__(method, s))
-    assert_equal(t, Time.__send__(method, s.sub(/:(?=00\z)/, '')))
-    assert_equal(t, Time.__send__(method, s.sub(/:00\z/, '')))
+    if method == :rfc3339
+      assert_raise(ArgumentError) { Time.rfc3339(s.sub(/:(?=00\z)/, '')) }
+      assert_raise(ArgumentError) { Time.rfc3339(s.sub(/:00\z/, '')) }
+    else
+      assert_equal(t, Time.__send__(method, s.sub(/:(?=00\z)/, '')))
+      assert_equal(t, Time.__send__(method, s.sub(/:00\z/, '')))
+    end
     # There is no way to generate time string with arbitrary timezone.
     s = "1996-12-20T00:39:57Z"
     assert_equal(t, Time.__send__(method, s))
@@ -152,8 +157,6 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
   def subtest_xmlschema(method)
     assert_equal(Time.utc(1999, 5, 31, 13, 20, 0) + 5 * 3600,
                  Time.__send__(method, "1999-05-31T13:20:00-05:00"))
-    assert_equal(Time.local(2000, 1, 20, 12, 0, 0),
-                 Time.__send__(method, "2000-01-20T12:00:00"))
     assert_equal(Time.utc(2000, 1, 20, 12, 0, 0),
                  Time.__send__(method, "2000-01-20T12:00:00Z"))
     assert_equal(Time.utc(2000, 1, 20, 12, 0, 0) - 12 * 3600,
@@ -164,22 +167,12 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
                  Time.__send__(method, "2000-03-04T23:00:00+03:00"))
     assert_equal(Time.utc(2000, 3, 4, 20, 0, 0),
                  Time.__send__(method, "2000-03-04T20:00:00Z"))
-    assert_equal(Time.local(2000, 1, 15, 0, 0, 0),
-                 Time.__send__(method, "2000-01-15T00:00:00"))
-    assert_equal(Time.local(2000, 2, 15, 0, 0, 0),
-                 Time.__send__(method, "2000-02-15T00:00:00"))
-    assert_equal(Time.local(2000, 1, 15, 12, 0, 0),
-                 Time.__send__(method, "2000-01-15T12:00:00"))
+    assert_equal(Time.utc(2000, 3, 4, 20, 0, 0),
+                 Time.__send__(method, "2000-03-04t20:00:00z"))
     assert_equal(Time.utc(2000, 1, 16, 12, 0, 0),
                  Time.__send__(method, "2000-01-16T12:00:00Z"))
-    assert_equal(Time.local(2000, 1, 1, 12, 0, 0),
-                 Time.__send__(method, "2000-01-01T12:00:00"))
     assert_equal(Time.utc(1999, 12, 31, 23, 0, 0),
                  Time.__send__(method, "1999-12-31T23:00:00Z"))
-    assert_equal(Time.local(2000, 1, 16, 12, 0, 0),
-                 Time.__send__(method, "2000-01-16T12:00:00"))
-    assert_equal(Time.local(2000, 1, 16, 0, 0, 0),
-                 Time.__send__(method, "2000-01-16T00:00:00"))
     assert_equal(Time.utc(2000, 1, 12, 12, 13, 14),
                  Time.__send__(method, "2000-01-12T12:13:14Z"))
     assert_equal(Time.utc(2001, 4, 17, 19, 23, 17, 300000),
@@ -187,6 +180,24 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(Time.utc(2000, 1, 2, 0, 0, 0),
                  Time.__send__(method, "2000-01-01T24:00:00Z"))
     assert_raise(ArgumentError) { Time.__send__(method, "2000-01-01T00:00:00.+00:00") }
+
+    local_times = [
+      [Time.local(2000, 1, 20, 12, 0, 0), "2000-01-20T12:00:00"],
+      [Time.local(2000, 1, 15, 0, 0, 0), "2000-01-15T00:00:00"],
+      [Time.local(2000, 2, 15, 0, 0, 0), "2000-02-15T00:00:00"],
+      [Time.local(2000, 1, 15, 12, 0, 0), "2000-01-15T12:00:00"],
+      [Time.local(2000, 1, 1, 12, 0, 0), "2000-01-01T12:00:00"],
+      [Time.local(2000, 1, 16, 12, 0, 0), "2000-01-16T12:00:00"],
+      [Time.local(2000, 1, 16, 0, 0, 0), "2000-01-16T00:00:00"],
+      [Time.utc(2000, 1, 16, 0, 0, 0), "2000-01-16T00:00:00+00"],
+    ]
+    local_times.each do |expected, time|
+      if method == :rfc3339
+        assert_raise(ArgumentError) { Time.rfc3339(time) }
+      else
+        assert_equal(expected, Time.__send__(method, time))
+      end
+    end
   end
 
   def subtest_xmlschema_encode(method)
@@ -243,6 +254,16 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal("-0004-01-01T00:00:00Z", Time.utc(-4).__send__(method)) # 5 BC
     assert_equal("-9999-01-01T00:00:00Z", Time.utc(-9999).__send__(method))
     assert_equal("-10000-01-01T00:00:00Z", Time.utc(-10000).__send__(method))
+  end
+
+  def subtest_xmlschema_whitespaces(method)
+    t = Time.utc(1985, 4, 12, 23, 20, 50, 520000)
+    s = "  \t  1985-04-12T23:20:50.52Z"
+    assert_equal(t, Time.__send__(method, s))
+
+    t = Time.utc(1985, 4, 12, 23, 20, 50, 520000)
+    s = "1985-04-12T23:20:50.52Z  \t "
+    assert_equal(t, Time.__send__(method, s))
   end
 
   def test_completion
@@ -368,6 +389,15 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(t, Time.parse("1200-02-15 BC 14:13:20-00"))
     assert_equal(t, Time.parse("1200-02-15 BC 14:13:20-00:00"))
     assert_equal(t, Time.parse("1200-02-15 BC 14:13:20-00:00:00"))
+  end
+
+  def test_parse_custom_offset
+    t = Time.at(-100000000000).utc
+    assert_equal(t, Time.parse("1200-02-15 BC 14:13:20", zone: "UTC"))
+    assert_equal(t, Time.parse("1200-02-15 BC 15:13:20", zone: "+01:00").utc)
+
+    assert_equal(t, Time.parse("1200-02-15 BC 15:13:20+01:00", zone: "UTC").utc)
+    assert_equal(t, Time.parse("1200-02-15 BC 15:13:20+01:00", zone: "+02:00").utc)
   end
 
   def test_parse_leap_second
@@ -574,6 +604,7 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     test = $1
     define_method(test) {__send__(sub, :xmlschema)}
     define_method(test.sub(/xmlschema/, 'iso8601')) {__send__(sub, :iso8601)}
+    define_method(test.sub(/xmlschema/, 'rfc3339')) {__send__(sub, :rfc3339)}
   end
 
   def test_parse_with_various_object

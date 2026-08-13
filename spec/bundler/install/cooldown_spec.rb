@@ -115,6 +115,19 @@ RSpec.describe "bundle install with the cooldown setting" do
         build_gem "fresh_gem", "0.3.2" do |s|
           s.date = now - (1 * 86_400)
         end
+
+        # the generic build is outside the window, but a platform-specific
+        # build of the same version was pushed inside it
+        build_gem "late_platform", "1.0.0" do |s|
+          s.date = now - (30 * 86_400)
+        end
+        build_gem "late_platform", "2.0.0" do |s|
+          s.date = now - (30 * 86_400)
+        end
+        build_gem "late_platform", "2.0.0" do |s|
+          s.platform = "x86_64-linux"
+          s.date = now - (1 * 86_400)
+        end
       end
     end
 
@@ -173,6 +186,84 @@ RSpec.describe "bundle install with the cooldown setting" do
       bundle "install --cooldown 0", artifice: "compact_index_cooldown"
 
       expect(the_bundle).to include_gems("ripe_gem 2.0.0")
+    end
+
+    it "summarizes skipped versions at the end of bundle install" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      bundle "install --cooldown 7", artifice: "compact_index_cooldown"
+
+      expect(out).to include("The following gem versions were skipped by the cooldown setting:")
+      expect(out).to include("* ripe_gem 2.0.0 (available in 6 days), resolved 1.0.0 instead")
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "summarizes skipped versions at the end of bundle update" do
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update ripe_gem", artifice: "compact_index_cooldown"
+
+      expect(out).to include("The following gem versions were skipped by the cooldown setting:")
+      expect(out).to include("* ripe_gem 2.0.0 (available in 6 days), resolved 1.0.0 instead")
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "does not print a skip summary when cooldown is disabled" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      bundle "install --cooldown 0", artifice: "compact_index_cooldown"
+
+      expect(out).not_to include("skipped by the cooldown setting")
+    end
+
+    it "does not print a skip summary for versions the Gemfile requirement rejects anyway" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem", "~> 1.0"
+      G
+
+      bundle "install --cooldown 7", artifice: "compact_index_cooldown"
+
+      expect(out).not_to include("skipped by the cooldown setting")
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "does not print a skip summary when installing from an up-to-date lockfile" do
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      bundle "install", artifice: "compact_index_cooldown"
+      expect(out).to include("skipped by the cooldown setting")
+
+      bundle "install", artifice: "compact_index_cooldown"
+      expect(out).not_to include("skipped by the cooldown setting")
     end
 
     it "applies cooldown declared per-source in the Gemfile" do
@@ -242,6 +333,45 @@ RSpec.describe "bundle install with the cooldown setting" do
       bundle "install", artifice: "compact_index_cooldown"
 
       expect(the_bundle).to include_gems("ripe_gem 1.0.0", "child 1.0.0")
+    end
+
+    it "warns when the same source is declared again with a different cooldown and keeps the first value" do
+      # https://github.com/rubygems/rubygems/issues/9723: a second declaration
+      # of the same URL is deduped into the first one, so its cooldown cannot
+      # act as a per-gem exemption.
+      install_gemfile <<-G, artifice: "compact_index_cooldown"
+        source "https://gem.repo3", cooldown: 7
+        source "https://gem.repo3", cooldown: 0 do
+          gem "ripe_gem"
+        end
+      G
+
+      expect(err).to include("The source https://gem.repo3/ is declared more than once with different cooldown values (`cooldown: 0` here, `cooldown: 7` previously).")
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "does not warn when the same source is declared again without a cooldown" do
+      install_gemfile <<-G, artifice: "compact_index_cooldown"
+        source "https://gem.repo3", cooldown: 7
+        source "https://gem.repo3" do
+          gem "ripe_gem"
+        end
+      G
+
+      expect(err).not_to include("cooldown")
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "does not warn when the same source is declared again with the same cooldown" do
+      install_gemfile <<-G, artifice: "compact_index_cooldown"
+        source "https://gem.repo3", cooldown: 7
+        source "https://gem.repo3", cooldown: 7 do
+          gem "ripe_gem"
+        end
+      G
+
+      expect(err).not_to include("cooldown")
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
     end
 
     it "is overridden by CLI --cooldown when Gemfile sets a different per-source value" do
@@ -710,6 +840,85 @@ RSpec.describe "bundle install with the cooldown setting" do
 
       expect(lockfile).to include("ripe_gem (1.0.0)")
       expect(lockfile).not_to include("ripe_gem (2.0.0)")
+    end
+
+    it "excludes a version on every platform when a platform-specific build of it is inside the window" do
+      # Exclusion is keyed on [name, version] and deliberately ignores
+      # platform: otherwise pushing a fresh platform-specific build under an
+      # already-ripe version number would slip new code past the cooldown.
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "late_platform"
+      G
+
+      bundle "install --cooldown 7", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("late_platform 1.0.0")
+    end
+
+    it "selects the version with a late platform-specific build when --cooldown 0 bypasses the filter" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "late_platform"
+      G
+
+      bundle "install --cooldown 0", artifice: "compact_index_cooldown"
+
+      # On x86_64-linux hosts this resolves to the platform-specific build, so
+      # assert on the lockfile instead of the installed platform.
+      expect(lockfile).to include("late_platform (2.0.0")
+      expect(lockfile).not_to include("late_platform (1.0.0)")
+    end
+
+    it "applies CLI --cooldown on bundle lock --update" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "lock --update --cooldown 7", artifice: "compact_index_cooldown"
+
+      expect(lockfile).to include("ripe_gem (1.0.0)")
+      expect(lockfile).not_to include("ripe_gem (2.0.0)")
+    end
+
+    it "rejects a negative --cooldown value on bundle lock" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      bundle "lock --cooldown=-7", artifice: "compact_index_cooldown", raise_on_error: false
+
+      expect(err).to match(/non-negative integer/)
+    end
+
+    it "applies CLI --cooldown on bundle cache" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      bundle "cache --cooldown 7", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+      expect(bundled_app("vendor/cache/ripe_gem-1.0.0.gem")).to exist
     end
 
     it "ignores cooldown and installs the locked version when frozen" do

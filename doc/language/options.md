@@ -293,7 +293,7 @@ $ popd
 
 This option and [option `-C`][-C] will
 be applied in the order in the command line; expansion of `-I` options
-are affected by preceeding `-C` options.
+are affected by preceding `-C` options.
 
 ```console
 $ ruby -C / -Ilib -C usr -Ilib -e 'puts $:[0, 2]'

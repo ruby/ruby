@@ -82,6 +82,22 @@ static const rb_data_type_t source_range_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING
 };
 
+VALUE
+rb_source_range_new(VALUE path, VALUE absolute_path, const rb_code_location_t *location)
+{
+    struct source_range_data *data;
+    VALUE obj = TypedData_Make_Struct(
+        rb_cSourceRange, struct source_range_data, &source_range_data_type, data);
+    RB_OBJ_WRITE(obj, &data->path, path);
+    RB_OBJ_WRITE(obj, &data->absolute_path, absolute_path);
+    data->start_line = location->beg_pos.lineno;
+    data->start_column = location->beg_pos.column;
+    data->end_line = location->end_pos.lineno;
+    data->end_column = location->end_pos.column;
+
+    return obj;
+}
+
 static VALUE
 source_range_new(const rb_iseq_t *iseq)
 {
@@ -96,19 +112,7 @@ source_range_new(const rb_iseq_t *iseq)
         return Qnil;
     }
 
-    int start_line, start_column, end_line, end_column;
-    rb_iseq_code_location(iseq, &start_line, &start_column, &end_line, &end_column);
-
-    struct source_range_data *data;
-    VALUE obj = TypedData_Make_Struct(rb_cSourceRange, struct source_range_data, &source_range_data_type, data);
-    RB_OBJ_WRITE(obj, &data->path, path);
-    RB_OBJ_WRITE(obj, &data->absolute_path, absolute_path);
-    data->start_line = start_line;
-    data->start_column = start_column;
-    data->end_line = end_line;
-    data->end_column = end_column;
-
-    return obj;
+    return rb_source_range_new(path, absolute_path, &ISEQ_BODY(iseq)->location.code_location);
 }
 
 static struct source_range_data *
@@ -268,8 +272,7 @@ block_mark_and_move(struct rb_block *block)
     }
 }
 
-/* hidden ivar holding a refined proc's cref; see Proc#refined */
-static ID id_refinements_cref;
+static ID id_refinements_recipe;
 
 static void
 proc_mark_and_move(void *ptr)
@@ -278,21 +281,44 @@ proc_mark_and_move(void *ptr)
     block_mark_and_move((struct rb_block *)&proc->block);
 }
 
-const rb_cref_t *
-rb_proc_refinements_cref(VALUE procval)
+enum refinement_recipe_index {
+    REFINEMENT_RECIPE_BASE_CREF, /* key: cref the modules are activated on */
+    REFINEMENT_RECIPE_CREF,      /* value: cref with the refinements activated */
+    REFINEMENT_RECIPE_SRC_ISEQ,  /* key: iseq of the block the Proc came from */
+    REFINEMENT_RECIPE_MODS       /* key: modules, in the order given */
+};
+
+static bool
+refinement_recipe_eq(VALUE r1, VALUE r2)
+{
+    if (r1 == r2) return true;
+    long len = RARRAY_LEN(r1);
+    if (RARRAY_LEN(r2) != len) return false;
+    if (RARRAY_AREF(r1, REFINEMENT_RECIPE_BASE_CREF) !=
+        RARRAY_AREF(r2, REFINEMENT_RECIPE_BASE_CREF)) return false;
+    if (RARRAY_AREF(r1, REFINEMENT_RECIPE_SRC_ISEQ) !=
+        RARRAY_AREF(r2, REFINEMENT_RECIPE_SRC_ISEQ)) return false;
+    for (long i = REFINEMENT_RECIPE_MODS; i < len; i++) {
+        if (RARRAY_AREF(r1, i) != RARRAY_AREF(r2, i)) return false;
+    }
+    return true;
+}
+
+VALUE
+rb_proc_refinements_recipe(VALUE procval)
 {
     rb_proc_t *proc;
     GetProcPtr(procval, proc);
-    if (!proc->is_refined) return NULL;
-    return (const rb_cref_t *)rb_ivar_get(procval, id_refinements_cref);
+    if (!proc->is_refined) return Qnil;
+    return rb_ivar_get(procval, id_refinements_recipe);
 }
 
 void
-rb_proc_set_refinements_cref(VALUE procval, const rb_cref_t *cref)
+rb_proc_set_refinements_recipe(VALUE procval, VALUE recipe)
 {
     rb_proc_t *proc;
     GetProcPtr(procval, proc);
-    rb_ivar_set(procval, id_refinements_cref, (VALUE)cref);
+    rb_ivar_set(procval, id_refinements_recipe, recipe);
     proc->is_refined = 1;
 }
 
@@ -353,89 +379,54 @@ proc_dup(VALUE self)
 }
 
 rb_cref_t *rb_vm_get_cref(const VALUE *ep);
-VALUE rb_proc_dup_with_iseq_and_cref(VALUE self, const rb_iseq_t *iseq, const rb_cref_t *cref);
+VALUE rb_proc_dup_with_iseq_and_recipe(VALUE self, const rb_iseq_t *iseq, VALUE recipe);
 
-/* Proc#refined memoizes the most recent {copied iseq, cref} pair per
- * source iseq, since rb_iseq_dup_with_independent_caches is expensive.
- * The memo lives in a hidden identity Hash (source iseq -> frozen Array):
+/* Proc#refined memoizes the most recent recipe copied for a source iseq, with
+ * its copy.  The memo lives in a hidden identity Hash:
  *
- *   [base_cref, copied_iseq, cref, mod1, mod2, ...]
+ *   source iseq -> [recipe, copied_iseq]
  *
- * keyed by (base_cref, modules).
- * An entry is retained for the VM's lifetime */
+ * An entry is written when the copy is made, that is on the first call of a
+ * Proc built from the recipe, not when Proc#refined is called: a chain of
+ * calls then memoizes the chain as a whole, since the recipe of the last link
+ * carries all of the modules.  It also means one entry per source iseq is
+ * enough for prc.refined(a).refined(b), which shares its entry with
+ * prc.refined(a, b).
+ *
+ * An entry is retained for the VM's lifetime, so a block that is itself a copy
+ * is never used as a key; such a Proc is copied by Proc#refined instead. */
 
 enum refinement_memo_index {
-    REFINEMENT_MEMO_BASE_CREF,   /* key: captured cref of the source proc */
-    REFINEMENT_MEMO_COPIED_ISEQ, /* value: copied iseq with independent caches */
-    REFINEMENT_MEMO_CREF,        /* value: cref with refinements activated */
-    REFINEMENT_MEMO_MODS         /* key: modules, in argument order */
+    REFINEMENT_MEMO_RECIPE,
+    REFINEMENT_MEMO_COPIED_ISEQ
 };
 
 static VALUE refinement_memo_map; /* set once under the VM lock */
 
-static bool
-refinement_memo_key_match(VALUE memo, VALUE base_cref, long argc, const VALUE *mods)
+static VALUE
+refinement_memo_get(const rb_iseq_t *src_iseq)
 {
-    const VALUE *p = RARRAY_CONST_PTR(memo);
-    if (p[REFINEMENT_MEMO_BASE_CREF] != base_cref) return false;
-    if (RARRAY_LEN(memo) - REFINEMENT_MEMO_MODS != argc) return false;
-    for (long i = 0; i < argc; i++) {
-        if (p[REFINEMENT_MEMO_MODS + i] != mods[i]) return false;
-    }
-    return true;
-}
-
-static bool
-refinement_memo_lookup(const rb_iseq_t *src_iseq, VALUE base_cref,
-                       long argc, const VALUE *mods,
-                       const rb_iseq_t **iseq_out, const rb_cref_t **cref_out)
-{
-    VM_ASSERT(ISEQ_BODY(src_iseq)->type == ISEQ_TYPE_BLOCK);
     VALUE memo = Qnil;
     RB_VM_LOCKING() {
         if (refinement_memo_map) {
             memo = rb_hash_lookup(refinement_memo_map, (VALUE)src_iseq);
         }
     }
-    if (!NIL_P(memo)) {
-        const VALUE *p = RARRAY_CONST_PTR(memo);
-        if (refinement_memo_key_match(memo, base_cref, argc, mods)) {
-            const rb_iseq_t *copied_iseq = (const rb_iseq_t *)p[REFINEMENT_MEMO_COPIED_ISEQ];
-            if (ISEQ_BODY(copied_iseq)->param.flags.ruby2_keywords ==
-                ISEQ_BODY(src_iseq)->param.flags.ruby2_keywords) {
-                *iseq_out = copied_iseq;
-                *cref_out = (const rb_cref_t *)p[REFINEMENT_MEMO_CREF];
-                return true;
-            }
-            rb_category_warn(
-                RB_WARN_CATEGORY_PERFORMANCE,
-                "Proc#refined re-copies the block because the ruby2_keywords flag changed after the copy was memoized"
-            );
-            return false;
-        }
-        rb_category_warn(
-            RB_WARN_CATEGORY_PERFORMANCE,
-            "Proc#refined called with different modules for the same block disables memoization"
-        );
-    }
-    return false;
+    return memo;
 }
 
 static void
-refinement_memo_store(const rb_iseq_t *src_iseq, VALUE base_cref,
-                      long argc, const VALUE *mods,
-                      const rb_iseq_t *copied_iseq, const rb_cref_t *cref)
+refinement_memo_set(const rb_iseq_t *src_iseq, VALUE recipe, const rb_iseq_t *copied_iseq)
 {
     VM_ASSERT(ISEQ_BODY(src_iseq)->type == ISEQ_TYPE_BLOCK);
 
-    VALUE memo = rb_ary_hidden_new(REFINEMENT_MEMO_MODS + argc);
-    rb_ary_push(memo, base_cref);
+    VALUE memo = rb_ary_hidden_new(2);
+    rb_ary_push(memo, recipe);
     rb_ary_push(memo, (VALUE)copied_iseq);
-    rb_ary_push(memo, (VALUE)cref);
-    for (long i = 0; i < argc; i++) {
-        rb_ary_push(memo, mods[i]);
-    }
     OBJ_FREEZE(memo);
+    /* Every element is shareable, so mark the memo array shareable too for
+     * reuse from any Ractor. */
+    RB_OBJ_SET_SHAREABLE(memo);
 
     /* create the map outside the lock; losing the race just discards it */
     VALUE new_map = 0;
@@ -452,9 +443,132 @@ refinement_memo_store(const rb_iseq_t *src_iseq, VALUE base_cref,
     }
 }
 
+static long
+refinement_recipe_modc(VALUE recipe)
+{
+    return NIL_P(recipe) ? 0 : RARRAY_LEN(recipe) - REFINEMENT_RECIPE_MODS;
+}
+
+static bool
+refinement_recipe_match(VALUE recipe, const rb_cref_t *base_cref, VALUE src_recipe,
+                        long argc, const VALUE *mods)
+{
+    long inherited = refinement_recipe_modc(src_recipe);
+    if (RARRAY_AREF(recipe, REFINEMENT_RECIPE_BASE_CREF) != (VALUE)base_cref) return false;
+    if (refinement_recipe_modc(recipe) != inherited + argc) return false;
+    for (long i = 0; i < inherited; i++) {
+        if (RARRAY_AREF(recipe, REFINEMENT_RECIPE_MODS + i) !=
+            RARRAY_AREF(src_recipe, REFINEMENT_RECIPE_MODS + i)) return false;
+    }
+    for (long i = 0; i < argc; i++) {
+        if (RARRAY_AREF(recipe, REFINEMENT_RECIPE_MODS + inherited + i) != mods[i]) return false;
+    }
+    return true;
+}
+
+static VALUE
+refinement_recipe_new(const rb_cref_t *base_cref, const rb_cref_t *cref,
+                      const rb_iseq_t *src_iseq, VALUE src_recipe,
+                      long argc, const VALUE *mods)
+{
+    long inherited = refinement_recipe_modc(src_recipe);
+    VALUE recipe = rb_ary_hidden_new(REFINEMENT_RECIPE_MODS + inherited + argc);
+    rb_ary_push(recipe, (VALUE)base_cref);
+    rb_ary_push(recipe, (VALUE)cref);
+    rb_ary_push(recipe, (VALUE)src_iseq);
+    for (long i = 0; i < inherited; i++) {
+        rb_ary_push(recipe, RARRAY_AREF(src_recipe, REFINEMENT_RECIPE_MODS + i));
+    }
+    for (long i = 0; i < argc; i++) {
+        rb_ary_push(recipe, mods[i]);
+    }
+    OBJ_FREEZE(recipe);
+    RB_OBJ_SET_SHAREABLE(recipe);
+    return recipe;
+}
+
+static VALUE
+refinement_memo_lookup(const rb_iseq_t *src_iseq, const rb_cref_t *base_cref, VALUE src_recipe,
+                       long argc, const VALUE *mods)
+{
+    VM_ASSERT(ISEQ_BODY(src_iseq)->type == ISEQ_TYPE_BLOCK);
+    VALUE memo = refinement_memo_get(src_iseq);
+    if (NIL_P(memo)) return Qnil;
+    VALUE recipe = RARRAY_AREF(memo, REFINEMENT_MEMO_RECIPE);
+    if (!refinement_recipe_match(recipe, base_cref, src_recipe, argc, mods)) return Qnil;
+    return recipe;
+}
+
+static const rb_iseq_t *
+refinement_iseq_copy(VALUE recipe)
+{
+    const rb_iseq_t *src_iseq =
+        (const rb_iseq_t *)RARRAY_AREF(recipe, REFINEMENT_RECIPE_SRC_ISEQ);
+    VALUE memo = refinement_memo_get(src_iseq);
+    if (!NIL_P(memo)) {
+        if (refinement_recipe_eq(RARRAY_AREF(memo, REFINEMENT_MEMO_RECIPE), recipe)) {
+            const rb_iseq_t *copied_iseq =
+                (const rb_iseq_t *)RARRAY_AREF(memo, REFINEMENT_MEMO_COPIED_ISEQ);
+            if (ISEQ_BODY(copied_iseq)->param.flags.ruby2_keywords ==
+                ISEQ_BODY(src_iseq)->param.flags.ruby2_keywords) {
+                return copied_iseq;
+            }
+            rb_category_warn(
+                RB_WARN_CATEGORY_PERFORMANCE,
+                "Proc#refined re-copies the block because the ruby2_keywords flag changed after the copy was memoized"
+            );
+        }
+        else {
+            rb_category_warn(
+                RB_WARN_CATEGORY_PERFORMANCE,
+                "Proc#refined called with different modules for the same block disables memoization"
+            );
+        }
+    }
+
+    /* copy outside the lock; losing a race just discards the extra copy */
+    const rb_iseq_t *copied_iseq = rb_iseq_dup_with_independent_caches(src_iseq);
+    refinement_memo_set(src_iseq, recipe, copied_iseq);
+    return copied_iseq;
+}
+
+NOINLINE(static void refinement_iseq_install(VALUE procval, rb_proc_t *proc));
+static void
+refinement_iseq_install(VALUE procval, rb_proc_t *proc)
+{
+    VALUE recipe = rb_ivar_get(procval, id_refinements_recipe);
+    const rb_iseq_t *copied_iseq = refinement_iseq_copy(recipe);
+
+    RB_VM_LOCKING() {
+        if (!FL_TEST_RAW((VALUE)proc->block.as.captured.code.iseq, ISEQ_REFINED_COPY)) {
+            RB_OBJ_WRITE(procval, &proc->block.as.captured.code.val, (VALUE)copied_iseq);
+        }
+    }
+}
+
+static inline void
+refinement_iseq_ensure(VALUE procval, rb_proc_t *proc)
+{
+    if (UNLIKELY(!FL_TEST_RAW((VALUE)proc->block.as.captured.code.iseq, ISEQ_REFINED_COPY))) {
+        refinement_iseq_install(procval, proc);
+    }
+}
+
+const rb_cref_t *
+rb_proc_refinements_cref_for_call(VALUE procval)
+{
+    rb_proc_t *proc;
+    GetProcPtr(procval, proc);
+    if (!proc->is_refined) return NULL;
+
+    refinement_iseq_ensure(procval, proc);
+    VALUE recipe = rb_ivar_get(procval, id_refinements_recipe);
+    return (const rb_cref_t *)RARRAY_AREF(recipe, REFINEMENT_RECIPE_CREF);
+}
+
 /*
  * call-seq:
- *   prc.refined(mod, ...) -> a_proc
+ *   prc.refined(*modules) -> a_proc
  *
  * Returns a new Proc that behaves like the receiver but with the refinements
  * activated by the given modules in effect inside its body.  The receiver is
@@ -471,14 +585,13 @@ refinement_memo_store(const rb_iseq_t *src_iseq, VALUE base_cref,
  *   refined_proc.call("hi")  #=> "HI!"
  *   original.call("hi")      #=> NoMethodError
  *
- * Only Procs created from a Ruby block are supported; calling this on a Proc
- * backed by a C function, a Symbol, or a method raises ArgumentError.
+ * If no modules are given, returns the receiver.
+ * Otherwise, only Procs created from a Ruby block are supported; calling this
+ * on a Proc backed by a C function, a Symbol, or a method raises ArgumentError.
  *
- * Calling this method on a Proc that already has refinements applied by this
- * method also raises ArgumentError.  To activate the refinements of multiple
- * modules, pass them all in a single call:
- *
- *   refined_proc = original.refined(StringRefinement, OtherRefinement)
+ * When calls of this method are chained, all the given modules are activated
+ * in the order they are given, so refinements activated by a later call take
+ * precedence.
  *
  * The refinement set of the returned Proc is fixed when it is created:
  * calling +using+ inside its body raises RuntimeError.
@@ -497,11 +610,14 @@ refinement_memo_store(const rb_iseq_t *src_iseq, VALUE base_cref,
  *     obj.shout_hi                   #=> "HI!"
  *   }.refined(StringRefinement)
  *
- * This method copies the instruction sequence of the block and of all of its
- * nested blocks so that the copy can resolve methods through the refinements
- * without affecting the original Proc.  Applying refinements therefore
- * increases memory use roughly in proportion to the size of the block.  The
- * copy is cached and reused for the same receiver and the same modules.
+ * Running the returned Proc requires a copy of the instruction sequence of the
+ * block and of all of its nested blocks, so that the copy can resolve methods
+ * through the refinements without affecting the original Proc.  The copy is
+ * made when the Proc is first called, and is cached and reused for the same
+ * block and the same modules, whether they were given in one call or in a
+ * chain of calls; a Proc that is never called is never copied.  Applying
+ * refinements therefore increases memory use roughly in proportion to the size
+ * of the block, once the Proc runs.
  */
 static VALUE
 proc_refined(int argc, VALUE *argv, VALUE self)
@@ -509,28 +625,46 @@ proc_refined(int argc, VALUE *argv, VALUE self)
     rb_proc_t *src;
     GetProcPtr(self, src);
 
-    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    if (argc == 0) {
+        return self;
+    }
 
     if (vm_block_type(&src->block) != block_type_iseq || src->is_from_method) {
         rb_raise(rb_eArgError, "can't apply refinements to a Proc without a Ruby block");
-    }
-
-    if (src->is_refined) {
-        rb_raise(rb_eArgError, "can't apply refinements to a Proc that already has refinements");
     }
 
     for (int i = 0; i < argc; i++) {
         Check_Type(argv[i], T_MODULE);
     }
 
-    VALUE base_cref = (VALUE)rb_vm_get_cref(src->block.as.captured.ep);
     const rb_iseq_t *src_iseq = src->block.as.captured.code.iseq;
+    VALUE src_recipe = rb_proc_refinements_recipe(self);
+    const rb_cref_t *src_cref, *base_cref;
+    if (NIL_P(src_recipe)) {
+        src_cref = base_cref = rb_vm_get_cref(src->block.as.captured.ep);
+    }
+    else {
+        /* keep asking for the modules of the whole chain, so that a chained
+         * call ends up with the recipe of a single call of all of them */
+        src_cref = (const rb_cref_t *)RARRAY_AREF(src_recipe, REFINEMENT_RECIPE_CREF);
+        base_cref = (const rb_cref_t *)RARRAY_AREF(src_recipe, REFINEMENT_RECIPE_BASE_CREF);
+    }
 
-    const rb_iseq_t *new_iseq;
-    const rb_cref_t *new_cref;
-    if (!refinement_memo_lookup(src_iseq, base_cref, argc, argv, &new_iseq, &new_cref)) {
-        new_iseq = rb_iseq_dup_with_independent_caches(src_iseq);
-        rb_cref_t *cref = rb_vm_cref_dup((const rb_cref_t *)base_cref);
+    /* A block that is itself a copy is short-lived, so it is not memoized, and
+     * it has to be copied here: ISEQ_REFINED_COPY has to keep meaning "the
+     * copy of this Proc". */
+    bool copied_src = FL_TEST_RAW((VALUE)src_iseq, ISEQ_REFINED_COPY);
+    if (copied_src) {
+        rb_category_warn(
+            RB_WARN_CATEGORY_PERFORMANCE,
+            "Proc#refined on a Proc whose block was already copied by Proc#refined is not memoized"
+        );
+    }
+
+    VALUE recipe = copied_src ? Qnil :
+        refinement_memo_lookup(src_iseq, base_cref, src_recipe, argc, argv);
+    if (NIL_P(recipe)) {
+        rb_cref_t *cref = rb_vm_cref_dup(src_cref);
         /* rb_using_module_recursive modifies shared subclass lists */
         RB_VM_LOCKING() {
             for (int i = 0; i < argc; i++) {
@@ -546,11 +680,13 @@ proc_refined(int argc, VALUE *argv, VALUE self)
         }
         CREF_OMOD_SHARED_SET(cref);
         CREF_REFINED_PROC_SET(cref);
-        new_cref = cref;
-        refinement_memo_store(src_iseq, base_cref, argc, argv, new_iseq, new_cref);
+        recipe = refinement_recipe_new(base_cref, cref, src_iseq, src_recipe, argc, argv);
     }
 
-    return rb_proc_dup_with_iseq_and_cref(self, new_iseq, new_cref);
+    const rb_iseq_t *new_iseq = copied_src ?
+        rb_iseq_dup_with_independent_caches(src_iseq) : src_iseq;
+
+    return rb_proc_dup_with_iseq_and_recipe(self, new_iseq, recipe);
 }
 
 /*
@@ -1566,7 +1702,7 @@ rb_proc_call_kw(VALUE self, VALUE args, int kw_splat)
     GetProcPtr(self, proc);
     vret = rb_vm_invoke_proc(GET_EC(), proc, argc, argv,
                              kw_splat, VM_BLOCK_HANDLER_NONE,
-                             rb_proc_refinements_cref(self));
+                             rb_proc_refinements_cref_for_call(self));
     RB_GC_GUARD(self);
     RB_GC_GUARD(args);
     return vret;
@@ -1592,7 +1728,7 @@ rb_proc_call_with_block_kw(VALUE self, int argc, const VALUE *argv, VALUE passed
     rb_proc_t *proc;
     GetProcPtr(self, proc);
     vret = rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, proc_to_block_handler(passed_procval),
-                             rb_proc_refinements_cref(self));
+                             rb_proc_refinements_cref_for_call(self));
     RB_GC_GUARD(self);
     return vret;
 }
@@ -1896,7 +2032,8 @@ proc_eq(VALUE self, VALUE other)
     GetProcPtr(other, other_proc);
 
     if (self_proc->is_from_method != other_proc->is_from_method ||
-            self_proc->is_lambda != other_proc->is_lambda) {
+            self_proc->is_lambda != other_proc->is_lambda ||
+            self_proc->is_refined != other_proc->is_refined) {
         return Qfalse;
     }
 
@@ -1910,8 +2047,18 @@ proc_eq(VALUE self, VALUE other)
     switch (vm_block_type(self_block)) {
       case block_type_iseq:
         if (self_block->as.captured.ep != \
-                other_block->as.captured.ep ||
-                self_block->as.captured.code.iseq != \
+                other_block->as.captured.ep) {
+            return Qfalse;
+        }
+        /* a refined Proc's block iseq flips from the source to the copy on
+         * the first call; compare what the Procs were built from instead */
+        if (self_proc->is_refined) {
+            if (!refinement_recipe_eq(rb_proc_refinements_recipe(self),
+                                      rb_proc_refinements_recipe(other))) {
+                return Qfalse;
+            }
+        }
+        else if (self_block->as.captured.code.iseq != \
                 other_block->as.captured.code.iseq) {
             return Qfalse;
         }
@@ -2071,7 +2218,20 @@ rb_hash_proc(st_index_t hash, VALUE prc)
 
     switch (vm_block_type(&proc->block)) {
       case block_type_iseq:
-        hash = rb_st_hash_uint(hash, (st_index_t)proc->block.as.captured.code.iseq->body);
+        if (proc->is_refined) {
+            /* from the recipe, not the block iseq: the latter flips from the
+             * source to the copy on the first call, and the hash must not */
+            VALUE recipe = rb_proc_refinements_recipe(prc);
+            long len = RARRAY_LEN(recipe);
+            hash = rb_st_hash_uint(hash, (st_index_t)RARRAY_AREF(recipe, REFINEMENT_RECIPE_BASE_CREF));
+            hash = rb_st_hash_uint(hash, (st_index_t)((const rb_iseq_t *)RARRAY_AREF(recipe, REFINEMENT_RECIPE_SRC_ISEQ))->body);
+            for (long i = REFINEMENT_RECIPE_MODS; i < len; i++) {
+                hash = rb_st_hash_uint(hash, (st_index_t)RARRAY_AREF(recipe, i));
+            }
+        }
+        else {
+            hash = rb_st_hash_uint(hash, (st_index_t)proc->block.as.captured.code.iseq->body);
+        }
         break;
       case block_type_ifunc:
         hash = rb_st_hash_uint(hash, (st_index_t)proc->block.as.captured.code.ifunc->func);
@@ -4641,6 +4801,11 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *  call-seq:
  *     proc.ruby2_keywords -> proc
  *
+ *  Deprecated: will be removed in Ruby 4.4.  Use explicit delegation
+ *  (<tt>*args, **kwargs</tt>) instead; it works correctly on Ruby 3.0
+ *  and later.  See https://bugs.ruby-lang.org/issues/22205 for the
+ *  schedule.
+ *
  *  Marks the proc as passing keywords through a normal argument splat.
  *  This should only be called on procs that accept an argument splat
  *  (<tt>*args</tt>) but not explicit keywords or a keyword splat.  It
@@ -4654,19 +4819,6 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *  This should only be used for procs that delegate keywords to another
  *  method, and only for backwards compatibility with Ruby versions before
  *  2.7.
- *
- *  This method will probably be removed at some point, as it exists only
- *  for backwards compatibility. As it does not exist in Ruby versions
- *  before 2.7, check that the proc responds to this method before calling
- *  it. Also, be aware that if this method is removed, the behavior of the
- *  proc will change so that it does not pass through keywords.
- *
- *    module Mod
- *      foo = ->(meth, *args, &block) do
- *        send(:"do_#{meth}", *args, &block)
- *      end
- *      foo.ruby2_keywords if foo.respond_to?(:ruby2_keywords)
- *    end
  */
 
 static VALUE
@@ -4688,7 +4840,20 @@ proc_ruby2_keywords(VALUE procval)
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_post &&
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_kw &&
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_kwrest) {
-            ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.ruby2_keywords = 1;
+            if (proc->is_refined) {
+                /* on a copy of this Proc's own: the block is shared with the
+                 * source Proc until the first call, and the copy installed by
+                 * it may be memoized and shared with sibling Procs */
+                const rb_iseq_t *copy =
+                    rb_iseq_dup_with_independent_caches(proc->block.as.captured.code.iseq);
+                ISEQ_BODY(copy)->param.flags.ruby2_keywords = 1;
+                RB_VM_LOCKING() {
+                    RB_OBJ_WRITE(procval, &proc->block.as.captured.code.val, (VALUE)copy);
+                }
+            }
+            else {
+                ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.ruby2_keywords = 1;
+            }
         }
         else {
             rb_warn("Skipping set of ruby2_keywords flag for proc (proc accepts keywords or post arguments or proc does not accept argument splat)");
@@ -4748,11 +4913,12 @@ proc_ruby2_keywords(VALUE procval)
 /*
  *  Document-class: Ruby::SourceRange
  *
- *  An object representing the source-code range for a Ruby callable.
+ *  An object representing a range of Ruby source code.
  *
  *  Source ranges are returned by Proc#source_range, Method#source_range, and
- *  UnboundMethod#source_range. They include the source path, absolute path when
- *  available, start line, start byte column, end line, and end byte column.
+ *  UnboundMethod#source_range, as well as Thread::Backtrace::Location#source_range.
+ *  They include the source path, absolute path when available,
+ *  start line, start byte column, end line, and end byte column.
  *
  *  The primary purpose of this class is to implement `Prism.find` precisely and cleanly on all Ruby implementations,
  *  in a way which does not depend on implementation details like `node_id`.
@@ -5134,7 +5300,7 @@ void
 Init_Proc(void)
 {
 #undef rb_intern
-    id_refinements_cref = rb_make_internal_id();
+    id_refinements_recipe = rb_make_internal_id();
 
     VALUE mRuby = rb_define_module("Ruby");
 

@@ -147,6 +147,7 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
 
   def attest!(name)
     require "open3"
+    require "shellwords"
     require "tempfile"
 
     tempfile = Tempfile.new([File.basename(name, ".*"), ".sigstore.json"])
@@ -154,9 +155,11 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
     tempfile.close(false)
 
     env = defined?(Bundler.unbundled_env) ? Bundler.unbundled_env : ENV.to_h
+    # Gem.ruby is quoted if it contains whitespace, so split it into argv
+    # elements to keep the quotes out of the spawned command.
     out, st = Open3.capture2e(
       env,
-      Gem.ruby, "-S", "gem", "exec", "--conservative",
+      *Shellwords.split(Gem.ruby), "-S", "gem", "exec", "--conservative",
       "sigstore-cli", "sign", name, "--bundle", bundle,
       unsetenv_others: true
     )

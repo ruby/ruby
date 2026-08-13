@@ -25,6 +25,7 @@
 #include "internal/compilers.h"
 #include "internal/error.h"
 #include "internal/eval.h"
+#include "eval_intern.h"
 #include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/gc.h"
@@ -66,8 +67,21 @@ static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t)
 static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility, VALUE *found_in);
 static st_table *generic_fields_tbl_;
 
+/* Mutex guarding the single global generic_fields table (all hosts, every Ractor).  A
+ * dedicated mutex (vm->ractor.generic_fields_lock) because a local GC's marking reads
+ * the table and must not wait for the VM lock: joining a barrier mid-mark would expose
+ * a half-collected heap.  The global GC's weak pass cleans the table under the barrier,
+ * lock-free.  Sections that may allocate disable GC first: no self-re-entry. */
+
 typedef int rb_ivar_foreach_callback_func(ID key, VALUE val, st_data_t arg);
 static void rb_field_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, bool ivar_only);
+
+void
+rb_generic_fields_lock_atfork(void)
+{
+    /* Another thread may have held it at fork time, so rebuild it in the child. */
+    rb_native_mutex_initialize(&GET_VM()->ractor.generic_fields_lock);
+}
 
 void
 Init_var_tables(void)
@@ -1238,38 +1252,67 @@ ivar_ractor_check(VALUE obj, ID id)
     }
 }
 
-static inline struct st_table *
-generic_fields_tbl_no_ractor_check(void)
-{
-    ASSERT_vm_locking();
-
-    return generic_fields_tbl_;
-}
-
 struct st_table *
 rb_generic_fields_tbl_get(void)
 {
     return generic_fields_tbl_;
 }
 
+/* generic_fields is one global table.  Leaf lock discipline: under gf_lock, take no
+ * other lock, do not allocate, and create no safepoint.  In single-Ractor mode the
+ * GVL already serializes everything, so no lock is taken. */
+static inline void
+gf_lock(void)
+{
+    if (rb_multi_ractor_p()) {
+        rb_native_mutex_lock(&GET_VM()->ractor.generic_fields_lock);
+    }
+}
+
+static inline void
+gf_unlock(void)
+{
+    if (rb_multi_ractor_p()) {
+        rb_native_mutex_unlock(&GET_VM()->ractor.generic_fields_lock);
+    }
+}
+
 void
 rb_mark_generic_ivar(VALUE obj)
 {
-    VALUE data;
-    // Bypass ASSERT_vm_locking() check because marking may happen concurrently with mmtk
-    if (st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&data)) {
+    /* Under a multi-objspace global GC (stop-the-world) there is no per-object
+     * lookup: after marking, rb_gc_vm_generic_fields_mark_foreach marks the values of
+     * the live keys.  A single-objspace impl (mmtk) has no such pass, so mark here. */
+    if (rb_gc_during_global_gc_p() && rb_gc_multi_objspace_p()) {
+        return;
+    }
+
+    /* Per-object marking for a local GC or for compaction (single objspace).  gf_lock
+     * excludes writers in other Ractors. */
+    VALUE data = 0;
+    gf_lock();
+    st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&data);
+    gf_unlock();
+    if (data) {
         rb_gc_mark_movable(data);
     }
 }
 
+/* Look up obj's generic fields in the single global table.  A snapshot host being
+ * materialized (which lives in the sender's objspace) is in the same table, so the
+ * receiving side can look it up directly. */
 VALUE
 rb_obj_fields_generic_uncached(VALUE obj)
 {
     VALUE fields_obj = 0;
-    RB_VM_LOCKING() {
-        if (!st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&fields_obj)) {
-            rb_bug("Object is missing entry in generic_fields_tbl");
-        }
+    int found = 0;
+
+    gf_lock();
+    found = st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&fields_obj);
+    gf_unlock();
+
+    if (!found) {
+        rb_bug("Object is missing entry in generic_fields_tbl");
     }
     return fields_obj;
 }
@@ -1281,10 +1324,9 @@ obj_use_generic_fields_tbl_p(VALUE obj)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+      case T_STRUCT:
       case T_DATA:
         return false;
-      case T_STRUCT:
-        return !FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS);
       default:
         return true;
     }
@@ -1311,12 +1353,9 @@ rb_obj_fields(VALUE obj, ID field_name)
         return RTYPEDDATA(obj)->fields_obj;
 
       case T_STRUCT:
-        if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
-            return RSTRUCT_FIELDS_OBJ(obj);
-        }
-        goto generic_fields;
+        return RSTRUCT_FIELDS_OBJ(obj);
+
       default:
-      generic_fields:
         {
             VALUE fields_obj = 0;
 
@@ -1348,13 +1387,10 @@ rb_free_generic_ivar(VALUE obj)
             RB_OBJ_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, 0);
             break;
           case T_STRUCT:
-            if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
-                RSTRUCT_SET_FIELDS_OBJ(obj, 0);
-                break;
-            }
-            goto generic_fields;
+            RSTRUCT_SET_FIELDS_OBJ(obj, 0);
+            break;
+
           default:
-          generic_fields:
             {
                 // Other EC may have stale caches, so fields_obj should be
                 // invalidated and the GC will replace with Qundef
@@ -1363,10 +1399,21 @@ rb_free_generic_ivar(VALUE obj)
                     ec->gen_fields_cache.obj = Qundef;
                     ec->gen_fields_cache.fields_obj = Qundef;
                 }
-                RB_VM_LOCKING() {
-                    if (!st_delete(generic_fields_tbl_no_ractor_check(), &key, &value)) {
-                        rb_bug("Object is missing entry in generic_fields_tbl");
-                    }
+                /* A write from the mutator or from a local GC sweep (the host's
+                 * obj_free), taking the table's mutex; never from a global GC sweep
+                 * (the during_global_gc guard below). */
+                if (rb_gc_during_global_gc_p() || ruby_vm_during_cleanup) {
+                    /* Leave dead keys to the weak pass's drain (same reasoning as the
+                     * skip in rb_mark_generic_ivar); VM destruct's free-at-exit walk
+                     * discards the whole table, needing no per-entry removal either. */
+                    break;
+                }
+                int deleted = 0;
+                gf_lock();
+                deleted = st_delete(generic_fields_tbl_, &key, &value);
+                gf_unlock();
+                if (!deleted) {
+                    rb_bug("Object is missing entry in generic_fields_tbl");
                 }
             }
         }
@@ -1400,17 +1447,27 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
             RB_OBJ_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, fields_obj);
             break;
           case T_STRUCT:
-            if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
-                RSTRUCT_SET_FIELDS_OBJ(obj, fields_obj);
-                break;
-            }
-            goto generic_fields;
+            RSTRUCT_SET_FIELDS_OBJ(obj, fields_obj);
+            break;
+
           default:
-          generic_fields:
             {
-                RB_VM_LOCKING() {
+                /* st_insert may malloc: disable this Ractor's GC first, or our own
+                 * local GC's marking takes gf_lock again and self-deadlocks.  Growing
+                 * can still raise NoMemoryError, and leaking gf_lock hangs every later
+                 * generic-fields access: unwind through a tag. */
+                bool gc_disabled = RTEST(rb_gc_local_disable_no_rest());
+                rb_execution_context_t *insert_ec = GET_EC();
+                enum ruby_tag_type state;
+                gf_lock();
+                EC_PUSH_TAG(insert_ec);
+                if ((state = EC_EXEC_TAG()) == TAG_NONE) {
                     st_insert(generic_fields_tbl_, (st_data_t)obj, (st_data_t)fields_obj);
                 }
+                EC_POP_TAG();
+                gf_unlock();
+                if (!gc_disabled) rb_gc_local_enable();
+                if (state != TAG_NONE) EC_JUMP_TAG(insert_ec, state);
                 RB_OBJ_WRITTEN(obj, original_fields_obj, fields_obj);
 
                 rb_execution_context_t *ec = GET_EC();
@@ -1712,6 +1769,27 @@ imemo_fields_complex_from_obj_i(ID key, VALUE val, st_data_t arg)
     RB_OBJ_WRITTEN(fields, Qundef, val);
 
     return ST_CONTINUE;
+}
+
+static int
+imemo_fields_shref_i(ID key, VALUE val, st_data_t arg)
+{
+    VALUE fields_obj = (VALUE)arg;
+    /* The fields_obj became shareable while this field value stayed unshareable (a
+     * hidden [path, line] ivar, say, which make_shareable's traversal never reaches):
+     * record a shref so the shareable -> unshareable edge is tracked. */
+    if (!SPECIAL_CONST_P(val) && !RB_OBJ_SHAREABLE_P(val)) {
+        rb_gc_writebarrier(fields_obj, val);
+    }
+    return ST_CONTINUE;
+}
+
+/* Record shrefs for the values that are still unshareable in a fields imemo that has
+ * just been promoted to shareable. */
+void
+rb_imemo_fields_record_shrefs(VALUE fields_obj)
+{
+    rb_field_foreach(fields_obj, imemo_fields_shref_i, (st_data_t)fields_obj, false);
 }
 
 static VALUE
@@ -2214,18 +2292,27 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
     }
 }
 
+/* Reference updating for compaction: walk the generic_fields table under the lock,
+ * from a local GC's update phase, because moving a host in our own objspace leaves the
+ * table's keys and values stale.  This only updates; it never decides liveness. */
 void
-rb_replace_generic_ivar(VALUE clone, VALUE obj)
+rb_generic_fields_shared_table_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg)
 {
-    RB_VM_LOCKING() {
-        st_data_t fields_tbl, obj_data = (st_data_t)obj;
-        if (st_delete(generic_fields_tbl_, &obj_data, &fields_tbl)) {
-            st_insert(generic_fields_tbl_, (st_data_t)clone, fields_tbl);
-            RB_OBJ_WRITTEN(clone, Qundef, fields_tbl);
-        }
-        else {
-            rb_bug("unreachable");
-        }
+    rb_native_mutex_lock(&GET_VM()->ractor.generic_fields_lock);
+    if (generic_fields_tbl_ != NULL) {
+        cb(generic_fields_tbl_, arg);
+    }
+    rb_native_mutex_unlock(&GET_VM()->ractor.generic_fields_lock);
+}
+
+/* Call cb(tbl, arg) for the single global generic_fields table.  Used by the global
+ * GC's weak pass and by compaction's reference update; both run under the barrier, so
+ * the walk needs no lock. */
+void
+rb_generic_fields_tables_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg)
+{
+    if (generic_fields_tbl_ != NULL) {
+        cb(generic_fields_tbl_, arg);
     }
 }
 
@@ -2695,70 +2782,6 @@ get_autoload_data(VALUE autoload_const_value, struct autoload_const **autoload_c
     if (autoload_const_pointer) *autoload_const_pointer = autoload_const;
 
     return autoload_data;
-}
-
-struct autoload_copy_table_data {
-    VALUE dst_tbl_value;
-    struct st_table *dst_tbl;
-    const rb_box_t *box;
-};
-
-static int
-autoload_copy_table_for_box_i(st_data_t key, st_data_t value, st_data_t arg)
-{
-    struct autoload_const *autoload_const;
-    struct autoload_copy_table_data *data = (struct autoload_copy_table_data *)arg;
-    struct st_table *tbl = data->dst_tbl;
-    VALUE tbl_value = data->dst_tbl_value;
-    const rb_box_t *box = data->box;
-
-    VALUE src_value = (VALUE)value;
-    struct autoload_const *src_const = rb_check_typeddata(src_value, &autoload_const_type);
-    // autoload_data can be shared between copies because the feature is equal between copies.
-    VALUE autoload_data_value = src_const->autoload_data_value;
-    struct autoload_data *autoload_data = rb_check_typeddata(autoload_data_value, &autoload_data_type);
-
-    VALUE new_value = TypedData_Make_Struct(0, struct autoload_const, &autoload_const_type, autoload_const);
-    RB_OBJ_WRITE(new_value, &autoload_const->box_value, rb_get_box_object((rb_box_t *)box));
-    RB_OBJ_WRITE(new_value, &autoload_const->module, src_const->module);
-    autoload_const->name = src_const->name;
-    RB_OBJ_WRITE(new_value, &autoload_const->value, src_const->value);
-    autoload_const->flag = src_const->flag;
-    RB_OBJ_WRITE(new_value, &autoload_const->autoload_data_value, autoload_data_value);
-    ccan_list_add_tail(&autoload_data->constants, &autoload_const->cnode);
-
-    st_insert(tbl, (st_data_t)autoload_const->name, (st_data_t)new_value);
-    RB_OBJ_WRITTEN(tbl_value, Qundef, new_value);
-
-    return ST_CONTINUE;
-}
-
-void
-rb_autoload_copy_table_for_box(st_table *iv_ptr, const rb_box_t *box)
-{
-    struct st_table *src_tbl, *dst_tbl;
-    VALUE src_tbl_value, dst_tbl_value;
-    if (!rb_st_lookup(iv_ptr, (st_data_t)autoload, (st_data_t *)&src_tbl_value)) {
-        // the class has no autoload table yet.
-        return;
-    }
-    if (!RTEST(src_tbl_value) || !(src_tbl = check_autoload_table(src_tbl_value))) {
-        // the __autoload__ ivar value isn't autoload table value.
-        return;
-    }
-    src_tbl = check_autoload_table(src_tbl_value);
-
-    dst_tbl_value = TypedData_Wrap_Struct(0, &autoload_table_type, NULL);
-    RTYPEDDATA_DATA(dst_tbl_value) = dst_tbl = st_init_numtable();
-
-    struct autoload_copy_table_data data = {
-        .dst_tbl_value = dst_tbl_value,
-        .dst_tbl = dst_tbl,
-        .box = box,
-    };
-
-    st_foreach(src_tbl, autoload_copy_table_for_box_i, (st_data_t)&data);
-    st_insert(iv_ptr, (st_data_t)autoload, (st_data_t)dst_tbl_value);
 }
 
 void

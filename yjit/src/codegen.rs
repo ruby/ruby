@@ -3224,7 +3224,7 @@ fn gen_set_ivar(
 
     // The current shape doesn't contain this iv, we need to transition to another shape.
     let mut new_shape_complex = false;
-    if !shape_complex && receiver_t_object && ivar_index.is_none() {
+    let new_shape = if !shape_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape_id = comptime_receiver.shape_id_of();
         // We don't need to check about imemo_fields here because we're definitely looking at a T_OBJECT.
         let klass = unsafe { rb_obj_class(comptime_receiver) };
@@ -3234,24 +3234,21 @@ fn gen_set_ivar(
         // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
         new_shape_complex = unsafe { rb_jit_shape_complex_p(next_shape_id) };
         if new_shape_complex {
-            Some((next_shape_id, None, 0_usize))
+            None
         } else {
             let current_capacity = unsafe { rb_yjit_shape_capacity(current_shape_id) };
             let next_capacity = unsafe { rb_yjit_shape_capacity(next_shape_id) };
 
-            // If the new shape has a different capacity, or is COMPLEX, we'll have to
-            // reallocate it.
-            let needs_extension = next_capacity != current_capacity;
-
-            // We can write to the object, but we need to transition the shape
-            let ivar_index = unsafe { rb_yjit_shape_index(next_shape_id) } as usize;
-
-            let needs_extension = if needs_extension {
-                Some((current_capacity, next_capacity))
-            } else {
+            // The transition can be inlined only when the receiver is embedded and the new
+            // shape fits its current capacity; reallocation is delegated to the C function.
+            // That is not supposed to happen after warmup given `max_iv_count` is recorded
+            // on classes, so future objects should be allocated large enough.
+            if next_capacity != current_capacity || !comptime_receiver.embedded_p() {
                 None
-            };
-            Some((next_shape_id, needs_extension, ivar_index))
+            } else {
+                let ivar_index = unsafe { rb_yjit_shape_index(next_shape_id) } as usize;
+                Some((next_shape_id, ivar_index))
+            }
         }
     } else {
         None
@@ -3259,7 +3256,7 @@ fn gen_set_ivar(
 
     // If the receiver isn't a T_OBJECT, then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || shape_complex || new_shape_complex || megamorphic || ivar_index.is_none() {
+    if !receiver_t_object || shape_complex || new_shape_complex || megamorphic || (ivar_index.is_none() && new_shape.is_none()) {
         // The function could raise FrozenError.
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_non_leaf_call(jit, asm);
@@ -3318,12 +3315,21 @@ fn gen_set_ivar(
 
         let write_val;
 
-        match ivar_index {
-            None => {
-                panic!("ivar_index None should have been delegated to rb_vm_set_ivar_id")
+        match (ivar_index, new_shape) {
+            // If we don't have an instance variable index, then we need to
+            // transition out of the current shape, which was pinned by the
+            // shape guard above.
+            (None, Some((next_shape_id, ivar_index))) => {
+                asm_comment!(asm, "write shape");
+                // `next_shape_id` was transitioned from the guarded shape id, so it carries
+                // the layout and capacity bits that RBASIC_SET_SHAPE_ID() would preserve.
+                asm.store(shape_opnd, next_shape_id.into());
+
+                write_val = asm.stack_opnd(0);
+                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false, stack_type.is_imm());
             },
 
-            Some(ivar_index) => {
+            (Some(ivar_index), _) => {
                 // If the iv index already exists, then we don't need to
                 // transition to a new shape.  The reason is because we find
                 // the iv index by searching up the shape tree.  If we've
@@ -3332,6 +3338,9 @@ fn gen_set_ivar(
                 write_val = asm.stack_opnd(0);
                 gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false, stack_type.is_imm());
             },
+
+            // The condition above delegates this case to the C fallback.
+            (None, None) => unreachable!("ivar_index and new_shape cannot both be None here"),
         }
     }
     let write_val = asm.stack_pop(1); // Keep write_val on stack during ccall for GC
@@ -6350,7 +6359,7 @@ fn jit_rb_str_concat(
     let recv = asm.stack_pop(1);
 
     // Test if string encodings differ. If different, use rb_str_append. If the same,
-    // use rb_yjit_str_simple_append, which calls rb_str_cat.
+    // use rb_jit_str_simple_append, which calls rb_str_cat.
     asm_comment!(asm, "<< on strings");
 
     // Take receiver's object flags XOR arg's flags. If any
@@ -6368,7 +6377,7 @@ fn jit_rb_str_concat(
     asm.jnz(enc_mismatch);
 
     // If encodings match, call the simple append function and jump to return
-    let ret_opnd = asm.ccall(rb_yjit_str_simple_append as *const u8, vec![recv, concat_arg]);
+    let ret_opnd = asm.ccall(rb_jit_str_simple_append as *const u8, vec![recv, concat_arg]);
     let ret_label = asm.new_label("func_return");
     let stack_ret = asm.stack_push(Type::TString);
     asm.mov(stack_ret, ret_opnd);
@@ -8290,17 +8299,14 @@ fn gen_send_iseq(
         callee_ctx.set_inline_block(iseq);
     }
 
-    // Set the argument types in the callee's context
-    for arg_idx in 0..argc {
-        let stack_offs: u8 = (argc - arg_idx - 1).try_into().unwrap();
-        let arg_type = asm.ctx.get_opnd_type(StackOpnd(stack_offs));
-        callee_ctx.set_local_type(arg_idx.try_into().unwrap(), arg_type);
-    }
-
-    // If we're in a forwarding callee, there will be one unknown type
-    // written in to the local table (the caller's CI object)
-    if forwarding {
-        callee_ctx.set_local_type(0, Type::Unknown)
+    // Forwarding callees store a callinfo object rather than arguments in
+    // their local table, so their argument types do not map to local types.
+    if !forwarding {
+        for arg_idx in 0..argc {
+            let stack_offs: u8 = (argc - arg_idx - 1).try_into().unwrap();
+            let arg_type = asm.ctx.get_opnd_type(StackOpnd(stack_offs));
+            callee_ctx.set_local_type(arg_idx.try_into().unwrap(), arg_type);
+        }
     }
 
     // Set the receiver type in the callee's context

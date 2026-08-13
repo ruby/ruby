@@ -66,6 +66,4 @@ module JSON
       end
     end
   end
-
-  JSON_LOADED = true unless defined?(JSON::JSON_LOADED)
 end

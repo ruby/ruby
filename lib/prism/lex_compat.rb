@@ -78,6 +78,8 @@ module Prism
       BANG_EQUAL: :on_op,
       BANG_TILDE: :on_op,
       BRACE_LEFT: :on_lbrace,
+      BRACE_LEFT_ARGUMENT: :on_lbrace,
+      BRACE_LEFT_HASH: :on_lbrace,
       BRACE_RIGHT: :on_rbrace,
       BRACKET_LEFT: :on_lbracket,
       BRACKET_LEFT_ARRAY: :on_lbracket,
@@ -189,8 +191,10 @@ module Prism
       MINUS_EQUAL: :on_op,
       MINUS_GREATER: :on_tlambda,
       NEWLINE: :on_nl,
+      NEWLINE_TERMINATOR: :on_ignored_nl,
       NUMBERED_REFERENCE: :on_backref,
       PARENTHESIS_LEFT: :on_lparen,
+      PARENTHESIS_LEFT_GROUPING: :on_lparen,
       PARENTHESIS_LEFT_PARENTHESES: :on_lparen,
       PARENTHESIS_RIGHT: :on_rparen,
       PERCENT: :on_op,
@@ -233,6 +237,7 @@ module Prism
       USTAR: :on_op,
       USTAR_STAR: :on_op,
       WORDS_SEP: :on_words_sep,
+      XSTRING_BEGIN: :on_backtick,
       "__END__": :on___end__
     }.freeze
 
@@ -613,6 +618,9 @@ module Prism
 
       bom = source.slice(0, 3) == "\xEF\xBB\xBF"
 
+      last_comment_token = nil #: lex_compat_token?
+      last_comment_end = nil #: Integer?
+
       result_value.each_with_index do |(prism_token, prism_state), index|
         lineno = prism_token.location.start_line
         column = prism_token.location.start_column
@@ -620,6 +628,16 @@ module Prism
         event = RIPPER.fetch(prism_token.type)
         value = prism_token.value
         lex_state = Translation::Ripper::Lexer::State[prism_state]
+
+        # A comment token does not include its terminating newline, but
+        # ripper's comment value does, so the newline token that directly
+        # follows a comment is folded back into it.
+        if last_comment_token && last_comment_end == prism_token.location.start_offset && (event == :on_nl || event == :on_ignored_nl)
+          last_comment_token[2] += value
+          last_comment_token = nil
+          last_comment_end = nil
+          next
+        end
 
         # If there's a UTF-8 byte-order mark as the start of the file, then for
         # certain tokens ripper sets the first token back by 3 bytes. It also
@@ -710,11 +728,16 @@ module Prism
             eof_token = prism_token
             previous_token = result_value[index - 1][0]
 
+            # A newline that was folded back into a comment still marks the
+            # comment boundary for the check below.
+            comment_boundary = previous_token.type == :COMMENT ||
+              (index >= 2 && %i[NEWLINE NEWLINE_TERMINATOR IGNORED_NEWLINE].include?(previous_token.type) && result_value[index - 2][0].type == :COMMENT && result_value[index - 2][0].location.end_offset == previous_token.location.start_offset)
+
             # If we're at the end of the file and the previous token was a
             # comment and there is still whitespace after the comment, then
             # Ripper will append a on_nl token (even though there isn't
             # necessarily a newline). We mirror that here.
-            if previous_token.type == :COMMENT
+            if comment_boundary
               # If the comment is at the start of a heredoc: <<HEREDOC # comment
               # then the comment's end_offset is up near the heredoc_beg.
               # This is not the correct offset to use for figuring out if
@@ -740,6 +763,11 @@ module Prism
           end #: lex_compat_token
 
         previous_state = lex_state
+
+        if event == :on_comment
+          last_comment_token = lex_compat_token
+          last_comment_end = prism_token.location.end_offset
+        end
 
         # The order in which tokens appear in our lexer is different from the
         # order that they appear in Ripper. When we hit the declaration of a

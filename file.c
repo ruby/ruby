@@ -4743,16 +4743,40 @@ rb_file_s_absolute_path(int argc, const VALUE *argv)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.absolute_path(file_name [, dir_string] )  ->  abs_file_name
+ *    File.absolute_path(path, dirpath = '.') -> absolute_path
  *
- *  Converts a pathname to an absolute pathname. Relative paths are
- *  referenced from the current working directory of the process unless
- *  <i>dir_string</i> is given, in which case it will be used as the
- *  starting point. If the given pathname starts with a ``<code>~</code>''
- *  it is NOT expanded, it is treated as a normal directory name.
+ *  Returns the string absolute path for the given `path`.
  *
- *     File.absolute_path("~oracle/bin")       #=> "<relative_path>/~oracle/bin"
+ *  Evaluates a relative path with respect to the directory given by `dirpath`:
+ *
+ *  ```ruby
+ *  Dir.chdir('/snap')
+ *  # Default dirpath.
+ *  File.absolute_path('README')                  # => "/snap/README"
+ *  File.absolute_path('bin')                     # => "/snap/bin"
+ *  File.absolute_path('bin/../var')              # => "/snap/var"
+ *  # Other dirpath.
+ *  File.absolute_path('../zip', '/usr/bin/ruby') # => "/usr/bin/zip"
+ *  ```
+ *
+ *  For an absolute path, argument `dirpath` is ignored:
+ *
+ *  ```ruby
+ *  File.absolute_path('/snap', '/usr/bin')       # => "/snap"
+ *  File.absolute_path('/snap', 'nosuch')         # => "/snap"
+ *  ```
+ *
+ *  A leading tilde character (`'~'`), is not expanded:
+ *
+ *  ```ruby
+ *  Dir.chdir('/usr/bin')
+ *  File.absolute_path("~")                       # => "/usr/bin/~"
+ *  File.absolute_path("~/Documents")             # => "/usr/bin/~/Documents"
+ *  ```
+ *
  */
 
 static VALUE
@@ -4762,13 +4786,25 @@ s_absolute_path(int c, const VALUE * v, VALUE _)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.absolute_path?(file_name)  ->  true or false
+ *    File.absolute_path?(path) -> true or false
  *
- *  Returns <code>true</code> if +file_name+ is an absolute path, and
- *  <code>false</code> otherwise.
+ *  Returns whether the given `path` is an absolute path:
  *
- *     File.absolute_path?("c:/foo")     #=> false (on Linux), true (on Windows)
+ *  ```ruby
+ *  File.absolute_path?('/home') # => true
+ *  File.absolute_path?('lib')   # => false
+ *  ```
+ *
+ *  The result is OS-dependent for some paths:
+ *
+ *  ```ruby
+ *  File.absolute_path?('C:/')   # => true   # On Windows.
+ *  File.absolute_path?('C:/')   # => false  # Elsewhere.
+ *  ```
+ *
  */
 
 static VALUE
@@ -5822,16 +5858,22 @@ nogvl_truncate(void *ptr)
 
 /*
  *  call-seq:
- *     File.truncate(file_name, integer)  -> 0
+ *     File.truncate(filepath, size) -> 0
  *
- *  Truncates the file <i>file_name</i> to be at most <i>integer</i>
- *  bytes long. Not available on all platforms.
+ *  Adjusts the size of file +filepath+ to the given size; returns 0:
  *
- *     f = File.new("out", "w")
- *     f.write("1234567890")     #=> 10
- *     f.close                   #=> nil
- *     File.truncate("out", 5)   #=> 0
- *     File.size("out")          #=> 5
+ *    file = File.new('t.tmp', 'w+')
+ *    file.write('0123456789')
+ *    file.truncate(5)
+ *    file.rewind
+ *    file.read # => "01234"
+ *
+ *  Pads on the right with null characters if necessary:
+ *
+ *    file.truncate(10)
+ *    file.rewind
+ *    file.read # => "01234\u0000\u0000\u0000\u0000\u0000"
+ *    file.close
  *
  */
 
@@ -7162,7 +7204,7 @@ expand_feature(VALUE fname, VALUE dname, VALUE buffer, bool need_expansion)
     else {
         rb_str_set_len(buffer, 0);
         rb_str_append(buffer, dname);
-        if (!isdirsep(dname_ptr[dname_len])) {
+        if (!isdirsep(dname_ptr[dname_len - 1])) {
             rb_str_cat(buffer, "/", 1);
         }
         rb_str_append(buffer, fname);

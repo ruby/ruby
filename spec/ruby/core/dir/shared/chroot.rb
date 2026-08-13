@@ -41,4 +41,18 @@ describe :dir_chroot_as_root, shared: true do
     p.should_receive(:to_path).and_return(@real_root)
     Dir.send(@method, p)
   end
+
+  platform_is :darwin do
+    it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      dir = tmp("dir_chroot_\u{3042}")
+      non_utf8_dir = dir.encode(Encoding::Windows_31J)
+
+      begin
+        mkdir_p(dir)
+        Dir.chroot(non_utf8_dir).should == 0
+      ensure
+        rm_r dir
+      end
+    end
+  end
 end

@@ -7,12 +7,17 @@ mod size_tests {
 
     #[test]
     fn test_size_of_insn() {
-        assert_eq!(std::mem::size_of::<Insn>(), 80);
+        assert_eq!(std::mem::size_of::<Insn>(), 72);
     }
 
     #[test]
     fn test_size_of_type() {
         assert_eq!(std::mem::size_of::<Type>(), 16);
+    }
+
+    #[test]
+    fn test_size_of_send_fallback_reason() {
+        assert_eq!(std::mem::size_of::<SendFallbackReason>(), 4);
     }
 }
 
@@ -205,10 +210,11 @@ mod snapshot_tests {
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v25:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v44:Fixnum[0] = Const Value(0)
-          PushInlineFrame v25 (0x1048), v13, v15, v11
-          v38:Any = Snapshot FrameState { pc: 0x1050, stack: [v13, v15, v11], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
+          v27:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
+          PushInlineFrame :foo, v25 (0x1048), num_args=3
+          v38:Any = Snapshot FrameState { pc: 0x1070, stack: [v13, v15, v11], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
           v39:ArrayExact = NewArray v13, v15, v11
-          v40:Any = Snapshot FrameState { pc: 0x1058, stack: [v39], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
+          v40:Any = Snapshot FrameState { pc: 0x1078, stack: [v39], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
           CheckInterrupts
           PopInlineFrame
           Return v39
@@ -244,10 +250,11 @@ mod snapshot_tests {
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v39:Fixnum[0] = Const Value(0)
-          PushInlineFrame v22 (0x1048), v11, v13
-          v33:Any = Snapshot FrameState { pc: 0x1050, stack: [v11, v13], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
+          v24:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
+          PushInlineFrame :foo, v22 (0x1048), num_args=2
+          v33:Any = Snapshot FrameState { pc: 0x1070, stack: [v11, v13], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
           v34:ArrayExact = NewArray v11, v13
-          v35:Any = Snapshot FrameState { pc: 0x1058, stack: [v34], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
+          v35:Any = Snapshot FrameState { pc: 0x1078, stack: [v34], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
           CheckInterrupts
           PopInlineFrame
           Return v34
@@ -6087,7 +6094,7 @@ pub(crate) mod hir_build_tests {
         bb3(v6:BasicObject):
           v10:BasicObject = GetConstantPath 0x1000
           v12:BasicObject = Send v10, :induce_side_exit! # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v16:BasicObject = GetConstantPath 0x1000
+          v16:BasicObject = GetConstantPath 0x1010
           SideExit DirectiveInduced
         ");
     }
@@ -6298,7 +6305,7 @@ pub(crate) mod hir_build_tests {
 
         assert!(cfi.is_preceded_by(bb1, bb2));
         assert!(cfi.is_succeeded_by(bb2, bb1));
-        assert!(cfi.predecessors(bb3).eq([bb2]));
+        assert!(cfi.predecessors(bb3).eq(&[bb2]));
      }
 
      #[test]
@@ -6345,8 +6352,8 @@ pub(crate) mod hir_build_tests {
          function.seal_entries();
          let cfi = ControlFlowInfo::new(&function);
 
-         assert_eq!(cfi.predecessors(bb1).collect::<Vec<_>>().len(), 1);
-         assert_eq!(cfi.successors(bb0).collect::<Vec<_>>().len(), 1);
+         assert_eq!(cfi.predecessors(bb1).len(), 1);
+         assert_eq!(cfi.successors(bb0).len(), 1);
      }
  }
 
@@ -6363,7 +6370,7 @@ pub(crate) mod hir_build_tests {
      fn assert_dominators_contains_self(function: &Function, dominators: &Dominators) {
          for (i, _) in function.blocks.iter().enumerate() {
              // Ensure that each dominating set contains the block itself.
-             assert!(dominators.is_dominated_by(BlockId(i), BlockId(i)));
+             assert!(dominators.is_dominated_by(BlockId::from(i), BlockId::from(i)));
          }
      }
 
@@ -6657,9 +6664,8 @@ mod loop_info_tests {
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
 
         function.seal_entries();
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
@@ -6723,9 +6729,8 @@ mod loop_info_tests {
         let _ = function.push_insn(bb4, Insn::Return { val: retval });
 
         function.seal_entries();
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
@@ -6805,9 +6810,8 @@ mod loop_info_tests {
         let _ = function.push_insn(bb6, Insn::Return { val: retval });
 
         function.seal_entries();
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
@@ -6876,9 +6880,8 @@ mod loop_info_tests {
         let _ = function.push_insn(bb2, Insn::Return { val: retval });
 
         function.seal_entries();
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
@@ -6968,9 +6971,8 @@ mod loop_info_tests {
           Unreachable
         ");
 
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert!(!loop_info.is_back_edge_source(bb0));
         assert!(!loop_info.is_back_edge_source(bb1));

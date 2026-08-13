@@ -1067,12 +1067,14 @@ rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
 
 VALUE
 rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
-            VALUE (* r_proc) (VALUE, VALUE), VALUE data2,
+            VALUE (* r_proc_arg) (VALUE, VALUE), VALUE data2_arg,
             va_list args)
 {
     enum ruby_tag_type state;
     rb_execution_context_t * volatile ec = GET_EC();
     rb_control_frame_t *volatile cfp = ec->cfp;
+    VALUE (* volatile r_proc)(VALUE, VALUE) = r_proc_arg;
+    volatile VALUE data2 = data2_arg;
     volatile VALUE result = Qfalse;
     volatile VALUE e_info = ec->errinfo;
 
@@ -1134,12 +1136,13 @@ rb_rescue(VALUE (* b_proc)(VALUE), VALUE data1,
 }
 
 VALUE
-rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
+rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate_arg)
 {
     volatile VALUE result = Qnil;
     volatile enum ruby_tag_type state;
     rb_execution_context_t * volatile ec = GET_EC();
     rb_control_frame_t *volatile cfp = ec->cfp;
+    int * volatile pstate = pstate_arg;
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
@@ -1155,9 +1158,12 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 }
 
 VALUE
-rb_ec_ensure(rb_execution_context_t *ec, VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
+rb_ec_ensure(rb_execution_context_t *ec_arg, VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc_arg)(VALUE), VALUE data2_arg)
 {
     enum ruby_tag_type state;
+    rb_execution_context_t * volatile ec = ec_arg;
+    VALUE (* volatile e_proc)(VALUE) = e_proc_arg;
+    volatile VALUE data2 = data2_arg;
     volatile VALUE result = Qnil;
     VALUE errinfo;
     EC_PUSH_TAG(ec);

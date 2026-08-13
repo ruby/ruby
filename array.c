@@ -228,6 +228,15 @@ rb_ary_embeddable_p(VALUE ary)
     return !(ARY_SHARED_ROOT_P(ary) || OBJ_FROZEN(ary) || ARY_SHARED_P(ary));
 }
 
+/* True when other arrays may read this array's elements out of its own slot, so the
+ * slot contents must stay valid for as long as the object does.  A frozen array is
+ * handed out as a shared root as it is, without the shared root flag. */
+bool
+rb_ary_embedded_shared_root_p(VALUE ary)
+{
+    return ARY_EMBED_P(ary) && OBJ_FROZEN(ary);
+}
+
 size_t
 rb_ary_size_as_embedded(VALUE ary)
 {
@@ -2711,27 +2720,27 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
 
 // Return true if the index is at or past the end of the array.
 VALUE
-rb_jit_ary_at_end(rb_execution_context_t *ec, VALUE self, VALUE index)
+rb_builtin_ary_at_end(rb_execution_context_t *ec, VALUE self, VALUE index)
 {
     return FIX2LONG(index) >= RARRAY_LEN(self) ? Qtrue : Qfalse;
 }
 
 // Return the element at the given fixnum index.
 VALUE
-rb_jit_ary_at(rb_execution_context_t *ec, VALUE self, VALUE index)
+rb_builtin_ary_at(rb_execution_context_t *ec, VALUE self, VALUE index)
 {
     return RARRAY_AREF(self, FIX2LONG(index));
 }
 
 // Increment a fixnum by 1.
 VALUE
-rb_jit_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
+rb_builtin_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
 {
     return LONG2FIX(FIX2LONG(num) + 1);
 }
 
 // Push a value onto an array and return the value.
-VALUE
+static VALUE
 rb_jit_ary_push(rb_execution_context_t *ec, VALUE self, VALUE ary, VALUE val)
 {
     rb_ary_push(ary, val);
@@ -2935,13 +2944,20 @@ rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_o
 
     if (len > embed_capa) return false;
 
+    *alloc_size_out = sizeof(struct RArray);
+    *flags_out = T_ARRAY | RARRAY_EMBED_FLAG | ((VALUE)len << RARRAY_EMBED_LEN_SHIFT);
+    *len_out = len;
+    return true;
+}
+
+void
+rb_zjit_array_new_fastpath(size_t *alloc_size_out, VALUE *flags_out)
+{
     size_t size = sizeof(struct RArray);
     shape_id_t shape_id = rb_shape_transition_slot_size(ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER,
                                                         rb_gc_size_slot_size(size));
     *alloc_size_out = size;
-    *flags_out = T_ARRAY | RARRAY_EMBED_FLAG | ((VALUE)len << RARRAY_EMBED_LEN_SHIFT) | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
-    *len_out = len;
-    return true;
+    *flags_out = T_ARRAY | RARRAY_EMBED_FLAG | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
 }
 #endif
 
@@ -3387,6 +3403,7 @@ rb_ary_reverse_m(VALUE ary)
         const VALUE *p1 = RARRAY_CONST_PTR(ary);
         VALUE *p2 = (VALUE *)RARRAY_CONST_PTR(dup) + len - 1;
         do *p2-- = *p1++; while (--len > 0);
+        rb_gc_writebarrier_remember(dup);
     }
     ARY_SET_LEN(dup, RARRAY_LEN(ary));
     return dup;

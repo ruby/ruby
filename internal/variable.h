@@ -22,7 +22,6 @@ VALUE rb_search_class_path(VALUE);
 VALUE rb_attr_delete(VALUE, ID);
 void rb_autoload_str(VALUE mod, ID id, VALUE file);
 VALUE rb_autoload_at_p(VALUE, ID, int);
-void rb_autoload_copy_table_for_box(st_table *, const rb_box_t *);
 NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
 rb_gvar_getter_t *rb_gvar_getter_function_of(ID);
 rb_gvar_setter_t *rb_gvar_setter_function_of(ID);
@@ -56,6 +55,13 @@ attr_index_t rb_ivar_set_index(VALUE obj, ID id, VALUE val);
 attr_index_t rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val);
 VALUE rb_ivar_get_at(VALUE obj, attr_index_t index, ID id);
 VALUE rb_ivar_get_at_no_ractor_check(VALUE obj, attr_index_t index);
+void rb_generic_fields_lock_atfork(void);
+void rb_imemo_fields_record_shrefs(VALUE fields_obj);
+
+/* Call cb(tbl, arg) for the single global generic_fields table.  Used by the global GC's weak
+ * pass and by compaction's reference update (gc.c). */
+void rb_generic_fields_tables_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg);
+void rb_generic_fields_shared_table_foreach(void (*cb)(struct st_table *tbl, void *arg), void *arg);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* variable.c (export) */

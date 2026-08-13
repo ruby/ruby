@@ -359,6 +359,8 @@ tokens:
     comment: "when"
   - name: NEWLINE
     comment: "a newline character outside of other tokens"
+  - name: NEWLINE_TERMINATOR
+    comment: "a newline that terminates a construct where a newline is otherwise insignificant"
   - name: PARENTHESIS_RIGHT
     comment: ")"
   - name: PIPE
@@ -377,7 +379,7 @@ tokens:
   - name: AMPERSAND_EQUAL
     comment: "&="
   - name: BACKTICK
-    comment: "`"
+    comment: "` as a method name"
   - name: BACK_REFERENCE
     comment: "a back reference"
   - name: BANG
@@ -388,6 +390,10 @@ tokens:
     comment: "!~"
   - name: BRACE_LEFT
     comment: "{"
+  - name: BRACE_LEFT_ARGUMENT
+    comment: "{ for a block following a parenthesized argument"
+  - name: BRACE_LEFT_HASH
+    comment: "{ for a hash literal"
   - name: BRACKET_LEFT
     comment: "["
   - name: BRACKET_LEFT_ARRAY
@@ -584,6 +590,8 @@ tokens:
     comment: "a numbered reference to a capture group in the previous regular expression match"
   - name: PARENTHESIS_LEFT
     comment: "("
+  - name: PARENTHESIS_LEFT_GROUPING
+    comment: "( scanned at the beginning of an expression"
   - name: PARENTHESIS_LEFT_PARENTHESES
     comment: "( for a parentheses node"
   - name: PERCENT
@@ -658,6 +666,8 @@ tokens:
     comment: "unary **"
   - name: WORDS_SEP
     comment: "a separator between words in a list"
+  - name: XSTRING_BEGIN
+    comment: "the beginning of an execution string"
   - name: __END__
     comment: "marker for the point in the file at which the parser should stop"
 flags:
@@ -3018,9 +3028,9 @@ nodes:
       - name: statements
         type: node?
         kind: StatementsNode
-      - name: in_loc
+      - name: in_keyword_loc
         type: location
-      - name: then_loc
+      - name: then_keyword_loc
         type: location?
     comment: |
       Represents the use of the `in` keyword in a case statement.
@@ -3605,7 +3615,7 @@ nodes:
       - name: pattern
         type: node
         kind: pattern expression
-      - name: operator_loc
+      - name: keyword_loc
         type: location
     comment: |
       Represents the use of the modifier `in` operator.
@@ -4578,7 +4588,7 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^^^
   - name: UnlessNode
     fields:
-      - name: keyword_loc
+      - name: unless_keyword_loc
         type: location
         comment: |
           The Location of the `unless` keyword.
@@ -4642,11 +4652,11 @@ nodes:
   - name: UntilNode
     flags: LoopFlags
     fields:
-      - name: keyword_loc
+      - name: until_keyword_loc
         type: location
       - name: do_keyword_loc
         type: location?
-      - name: closing_loc
+      - name: end_keyword_loc
         type: location?
       - name: predicate
         type: node
@@ -4665,7 +4675,7 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^
   - name: WhenNode
     fields:
-      - name: keyword_loc
+      - name: when_keyword_loc
         type: location
       - name: conditions
         type: node[]
@@ -4685,11 +4695,11 @@ nodes:
   - name: WhileNode
     flags: LoopFlags
     fields:
-      - name: keyword_loc
+      - name: while_keyword_loc
         type: location
       - name: do_keyword_loc
         type: location?
-      - name: closing_loc
+      - name: end_keyword_loc
         type: location?
       - name: predicate
         type: node

@@ -43,6 +43,7 @@
 .time
 .ruby-version
 Makefile
+/.deps/
 cygruby*.def
 extconf.h
 y.output

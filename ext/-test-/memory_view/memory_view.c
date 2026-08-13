@@ -160,6 +160,38 @@ memory_view_get_memory_view_info(VALUE mod, VALUE obj)
 }
 
 static VALUE
+memory_view_is_row_major_contiguous(VALUE mod, VALUE obj)
+{
+    rb_memory_view_t view;
+    VALUE result;
+
+    if (!rb_memory_view_get(obj, &view, 0)) {
+        rb_raise(rb_eArgError, "Unable to get MemoryView");
+    }
+
+    result = rb_memory_view_is_row_major_contiguous(&view) ? Qtrue : Qfalse;
+    rb_memory_view_release(&view);
+
+    return result;
+}
+
+static VALUE
+memory_view_is_column_major_contiguous(VALUE mod, VALUE obj)
+{
+    rb_memory_view_t view;
+    VALUE result;
+
+    if (!rb_memory_view_get(obj, &view, 0)) {
+        rb_raise(rb_eArgError, "Unable to get MemoryView");
+    }
+
+    result = rb_memory_view_is_column_major_contiguous(&view) ? Qtrue : Qfalse;
+    rb_memory_view_release(&view);
+
+    return result;
+}
+
+static VALUE
 memory_view_fill_contiguous_strides(VALUE mod, VALUE ndim_v, VALUE item_size_v, VALUE shape_v, VALUE row_major_p)
 {
     ssize_t i, ndim = NUM2SSIZET(ndim_v);
@@ -389,6 +421,8 @@ Init_memory_view(void)
     rb_define_module_function(mMemoryViewTestUtils, "item_size_from_format", memory_view_item_size_from_format, 1);
     rb_define_module_function(mMemoryViewTestUtils, "parse_item_format", memory_view_parse_item_format, 1);
     rb_define_module_function(mMemoryViewTestUtils, "get_memory_view_info", memory_view_get_memory_view_info, 1);
+    rb_define_module_function(mMemoryViewTestUtils, "is_row_major_contiguous", memory_view_is_row_major_contiguous, 1);
+    rb_define_module_function(mMemoryViewTestUtils, "is_column_major_contiguous", memory_view_is_column_major_contiguous, 1);
     rb_define_module_function(mMemoryViewTestUtils, "fill_contiguous_strides", memory_view_fill_contiguous_strides, 4);
     rb_define_module_function(mMemoryViewTestUtils, "ref_count_while_exporting", memory_view_ref_count_while_exporting, 2);
     rb_define_module_function(mMemoryViewTestUtils, "extract_item_members", memory_view_extract_item_members, 2);

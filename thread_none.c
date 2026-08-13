@@ -331,6 +331,12 @@ rb_thread_malloc_stack_set(rb_thread_t *th, void *stack, size_t stack_size)
     // no-op
 }
 
+bool
+rb_thread_event_hooks_registered_p(void)
+{
+    return false; // hooks are not implemented on this platform
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
 
 void

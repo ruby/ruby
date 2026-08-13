@@ -16,9 +16,9 @@ use crate::hir::{self, FieldName};
 
 // Array iteration builtin functions (defined in array.c)
 unsafe extern "C" {
-    fn rb_jit_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
-    fn rb_jit_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
-    fn rb_jit_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
+    fn rb_builtin_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
+    fn rb_builtin_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
+    fn rb_builtin_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
     fn rb_str_equal(str1: VALUE, str2: VALUE) -> VALUE;
 }
 
@@ -297,9 +297,9 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_cSymbol, "empty?", types::BoolExact);
 
     // Array iteration builtins (used in with_jit Array#each, map, select, find)
-    builtin_funcs.insert(rb_jit_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
-    builtin_funcs.insert(rb_jit_ary_at as *mut c_void, FnProperties { inline: inline_ary_at, ..Default::default() });
-    builtin_funcs.insert(rb_jit_ary_at_end as *mut c_void, FnProperties { inline: inline_ary_at_end, return_type: types::BoolExact, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_ary_at as *mut c_void, FnProperties { inline: inline_ary_at, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_ary_at_end as *mut c_void, FnProperties { inline: inline_ary_at_end, return_type: types::BoolExact, ..Default::default() });
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
@@ -800,6 +800,24 @@ fn inline_integer_rshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir
 
 fn inline_integer_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[index] = args else { return None; };
+
+    // Optimize a compile-time constant index that fits in the Fixnum payload as a bit test.
+    // A Fixnum payload is VALUE_BITS - 1 bits wide (one bit is the tag), so its highest
+    // (sign) bit is at index VALUE_BITS - 2.
+    const FIXNUM_SIGN_BIT_INDEX: i64 = VALUE_BITS as i64 - 2;
+    if fun.likely_a(recv, types::Fixnum, state) {
+        if let Some(index_value) = fun.type_of(index).fixnum_value() {
+            if (0..=FIXNUM_SIGN_BIT_INDEX).contains(&index_value) {
+                // Optimize `recv[i]` into `(recv >> i) & 1`.
+                let recv = fun.coerce_to(block, recv, types::Fixnum, state);
+                let shift = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(index_value as usize)) });
+                let shifted = fun.push_insn(block, hir::Insn::FixnumRShift { left: recv, right: shift });
+                let mask = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
+                return Some(fun.push_insn(block, hir::Insn::FixnumAnd { left: shifted, right: mask }));
+            }
+        }
+    }
+    // Use a C call (FixnumAref) for any other (e.g. non-constant) index.
     if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(index, types::Fixnum, state) {
         let recv = fun.coerce_to(block, recv, types::Fixnum, state);
         let index = fun.coerce_to(block, index, types::Fixnum, state);

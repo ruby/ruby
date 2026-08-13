@@ -1219,19 +1219,24 @@ rb_shape_expected_layout(VALUE obj)
       case T_OBJECT: {
           return SHAPE_ID_LAYOUT_ROBJECT;
       }
+
       case T_CLASS:
       case T_MODULE:
         if (FL_TEST_RAW(obj, RCLASS_BOXABLE)) {
             return SHAPE_ID_LAYOUT_OTHER;
         }
         return SHAPE_ID_LAYOUT_RCLASS;
+
+      case T_STRUCT:
       case T_DATA:
         return SHAPE_ID_LAYOUT_EXTENDED;
+
       case T_IMEMO:
         if (IMEMO_TYPE_P(obj, imemo_fields)) {
             return SHAPE_ID_LAYOUT_ROBJECT;
         }
         return SHAPE_ID_LAYOUT_OTHER;
+
       default:
         return SHAPE_ID_LAYOUT_OTHER;
     }
@@ -1343,8 +1348,15 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         size_t shape_id_slot_size = shape_id_capacity * sizeof(VALUE) + sizeof(struct RBasic);
         size_t actual_slot_size = rb_gc_obj_slot_size(obj);
 
-        if (shape_id_slot_size != actual_slot_size) {
-            rb_bug("shape_id capacity flags mismatch: shape_id_slot_size=%zu, gc_slot_size=%zu\n", shape_id_slot_size, actual_slot_size);
+        if (shape_id_capacity == SHAPE_ID_CAPACITY_MAX) {
+            if (actual_slot_size < SHAPE_ID_CAPACITY_MAX) {
+                rb_bug("shape_id_capacity is SHAPE_ID_CAPACITY_MAX, but actual slot size is only %zu", actual_slot_size);
+            }
+        }
+        else {
+            if (shape_id_slot_size != actual_slot_size) {
+                rb_bug("shape_id capacity flags mismatch: shape_id_slot_size=%zu, gc_slot_size=%zu\n", shape_id_slot_size, actual_slot_size);
+            }
         }
     }
 

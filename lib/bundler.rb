@@ -26,7 +26,7 @@ require_relative "bundler/build_metadata"
 # or Bundler.setup to setup environment where only specified gems and their
 # specified versions could be used.
 #
-# See {Bundler website}[https://bundler.io/docs.html] for extensive documentation
+# See {Bundler documentation}[https://guides.rubygems.org/command-reference/bundle/] for extensive documentation
 # on gemfiles creation and Bundler usage.
 #
 # As a standard library inside project, Bundler could be used for introspection
@@ -41,7 +41,6 @@ module Bundler
   autoload :Checksum,               File.expand_path("bundler/checksum", __dir__)
   autoload :CLI,                    File.expand_path("bundler/cli", __dir__)
   autoload :CIDetector,             File.expand_path("bundler/ci_detector", __dir__)
-  autoload :CompactIndexClient,     File.expand_path("bundler/compact_index_client", __dir__)
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
   autoload :Deprecate,              File.expand_path("bundler/deprecate", __dir__)

@@ -235,13 +235,27 @@ rb_optimized_call(VALUE recv, rb_execution_context_t *ec, int argc, VALUE *argv,
     rb_proc_t *proc;
     GetProcPtr(recv, proc);
     return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler,
-                             rb_proc_refinements_cref(recv));
+                             rb_proc_refinements_cref_for_call(recv));
 }
 
 unsigned int
 rb_jit_iseq_builtin_attrs(const rb_iseq_t *iseq)
 {
     return iseq->body->builtin_attrs;
+}
+
+// Relaxed memory ordering, but called by the JIT with VM lock and barrier.
+void
+rb_jit_iseq_mark_ep_escape_recorded(const rb_iseq_t *iseq)
+{
+    rbimpl_atomic_store(&iseq->body->jit_ep_escape_recorded, 1, RBIMPL_ATOMIC_RELAXED);
+}
+
+// Whether an EP escape of this iseq has been reported to the enabled JIT.
+bool
+rb_jit_iseq_ep_escape_recorded_p(const rb_iseq_t *iseq)
+{
+    return rbimpl_atomic_load(&iseq->body->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED) != 0;
 }
 
 int
@@ -827,6 +841,12 @@ rb_yarv_str_eql_internal(VALUE str1, VALUE str2)
 {
     // We wrap this since it's static inline
     return rb_str_eql_internal(str1, str2);
+}
+
+VALUE
+rb_jit_str_simple_append(VALUE str1, VALUE str2)
+{
+    return rb_str_cat(str1, RSTRING_PTR(str2), RSTRING_LEN(str2));
 }
 
 void rb_jit_str_concat_codepoint(VALUE str, VALUE codepoint);

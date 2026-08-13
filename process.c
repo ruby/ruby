@@ -351,6 +351,9 @@ static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
 # define RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC ID2SYM(id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
 #endif
 static ID id_hertz;
+#ifdef HAVE_WORKING_FORK
+static ID id__fork;
+#endif
 
 static rb_pid_t cached_pid;
 
@@ -648,7 +651,7 @@ rb_process_status_for(rb_pid_t pid, int status, int error)
 static VALUE
 process_status_dump(VALUE status)
 {
-    VALUE dump = rb_class_new_instance(0, 0, rb_cObject);
+    VALUE dump = rb_class_allocate_instance_capa(rb_cObject, 2);
     struct rb_process_status *data;
     TypedData_Get_Struct(status, struct rb_process_status, &rb_process_status_type, data);
     if (data->pid) {
@@ -1116,20 +1119,19 @@ rb_process_status_wait(rb_pid_t pid, int flags)
  *
  *  If there are child processes,
  *  waits for a child process to exit and returns a Process::Status object
- *  containing information on that process;
- *  sets thread-local variable <tt>$?</tt>:
+ *  containing information on that process.
+ *  Unlike Process.wait, this method does not set thread-local variable
+ *  <tt>$?</tt>:
  *
  *    Process.spawn('cat /nop') # => 1155880
  *    Process::Status.wait      # => #<Process::Status: pid 1155880 exit 1>
- *    $?                        # => #<Process::Status: pid 1155508 exit 1>
+ *    $?                        # => nil # Not set.
  *
  *  If there is no child process,
  *  returns an "empty" Process::Status object
- *  that does not represent an actual process;
- *  does not set thread-local variable <tt>$?</tt>:
+ *  that does not represent an actual process:
  *
  *    Process::Status.wait # => #<Process::Status: pid -1 exit 0>
- *    $?                   # => #<Process::Status: pid 1155508 exit 1> # Unchanged.
  *
  *  May invoke the scheduler hook Fiber::Scheduler#process_wait.
  *
@@ -2785,20 +2787,16 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         }
         hide_obj(envtbl);
         if (envopts != Qfalse) {
-            st_table *stenv = RHASH_TBL_RAW(envtbl);
             long i;
             for (i = 0; i < RARRAY_LEN(envopts); i++) {
                 VALUE pair = RARRAY_AREF(envopts, i);
                 VALUE key = RARRAY_AREF(pair, 0);
                 VALUE val = RARRAY_AREF(pair, 1);
                 if (NIL_P(val)) {
-                    st_data_t stkey = (st_data_t)key;
-                    st_delete(stenv, &stkey, NULL);
+                    rb_hash_delete(envtbl, key);
                 }
                 else {
-                    st_insert(stenv, (st_data_t)key, (st_data_t)val);
-                    RB_OBJ_WRITTEN(envtbl, Qundef, key);
-                    RB_OBJ_WRITTEN(envtbl, Qundef, val);
+                    rb_hash_aset(envtbl, key, val);
                 }
             }
         }
@@ -4164,17 +4162,32 @@ proc_fork_pid(void)
     return pid;
 }
 
+static VALUE
+call_proc__fork_protected(VALUE arg)
+{
+    VALUE ret = rb_funcall(rb_mProcess, id__fork, 0);
+    *(rb_pid_t *)arg = NUM2PIDT(ret);
+    /* discard the returned object itself */
+    return Qtrue;
+}
+
 rb_pid_t
 rb_call_proc__fork(void)
 {
-    ID id__fork;
-    CONST_ID(id__fork, "_fork");
     if (rb_method_basic_definition_p(CLASS_OF(rb_mProcess), id__fork)) {
         return proc_fork_pid();
     }
     else {
-        VALUE pid = rb_funcall(rb_mProcess, id__fork, 0);
-        return NUM2PIDT(pid);
+        rb_pid_t parent = getpid(), pid;
+        int state;
+
+        if (NIL_P(rb_protect(call_proc__fork_protected, (VALUE)&pid, &state))) {
+            if (getpid() != parent) {
+                ruby_stop(state);
+            }
+            rb_jump_tag(state);
+        }
+        return pid;
     }
 }
 #endif
@@ -4688,8 +4701,6 @@ rb_spawn(int argc, const VALUE *argv)
  *
  *  See {Execution Shell}[rdoc-ref:Process@Execution+Shell] for details about the shell.
  *
- *  Raises an exception if the new process could not execute.
- *
  *  <b>Argument +exe_path+</b>
  *
  *  Argument +exe_path+ is one of the following:
@@ -4731,7 +4742,6 @@ rb_spawn(int argc, const VALUE *argv)
  *    C*
  *    hello world
  *
- *  Raises an exception if the new process could not execute.
  */
 
 static VALUE
@@ -8713,11 +8723,18 @@ static VALUE rb_mProcID_Syscall;
  *  * Frees all empty heap pages and increments the allocatable pages counter
  *    by the number of pages freed.
  *  * Invoke +malloc_trim+ if available to free empty malloc pages.
+ *  * Eagerly loads the +error_highlight+, +did_you_mean+, and +syntax_suggest+
+ *    gems, which are otherwise loaded lazily on the first error display.
  */
 
 static VALUE
 proc_warmup(VALUE _)
 {
+    // Load the error decoration gems now so that their detailed_message
+    // decorators land in shared memory before a pre-forking server forks,
+    // instead of being loaded lazily on the first error at runtime.
+    rb_eager_load_detailed_message_extension();
+
     RB_VM_LOCKING() {
         rb_gc_prepare_heap();
     }
@@ -9664,6 +9681,9 @@ Init_process(void)
     define_id(MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
 #endif
     define_id(hertz);
+#ifdef HAVE_WORKING_FORK
+    define_id(_fork);
+#endif
 
     InitVM(process);
 }

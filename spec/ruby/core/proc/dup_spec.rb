@@ -5,6 +5,13 @@ require_relative 'shared/dup'
 describe "Proc#dup" do
   it_behaves_like :proc_dup, :dup
 
+  it "does not copy the singleton class" do
+    obj = proc { }
+    def obj.tag; end
+
+    obj.dup.should_not.respond_to?(:tag)
+  end
+
   it "resets frozen status" do
     proc = Proc.new { }
     proc.freeze

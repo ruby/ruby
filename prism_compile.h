@@ -15,6 +15,7 @@ typedef struct pm_local_index_struct {
 
 // A declaration for the struct that lives in compile.c.
 struct iseq_link_anchor;
+struct rb_code_location_struct;
 
 /**
  * A direct-indexed lookup table mapping constant IDs to local variable indices.
@@ -103,6 +104,9 @@ typedef struct pm_scope_node {
     pm_constant_id_list_t locals;
 
     const pm_parser_t *parser;
+
+    /** The source hash of the parsed source, propagated to every iseq. */
+    uint64_t source_hash;
     const pm_options_t *options;
     const pm_line_offset_list_t *line_offsets;
     int32_t start_line;
@@ -187,6 +191,8 @@ VALUE pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, V
 VALUE pm_parse_stdin(pm_parse_result_t *result);
 void pm_options_version_for_current_ruby_set(pm_options_t *options);
 void pm_parse_result_free(pm_parse_result_t *result);
+bool pm_node_source_location(VALUE source, VALUE filepath, int start_line,
+                             int node_id, struct rb_code_location_struct *location);
 
 rb_iseq_t *pm_iseq_new(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, enum rb_iseq_type, int *error_state);
 rb_iseq_t *pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, int *error_state);

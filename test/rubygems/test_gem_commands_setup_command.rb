@@ -241,17 +241,44 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   def test_install_default_bundler_gem_with_default_gems_not_installed_at_default_dir
     @cmd.extend FileUtils
 
+    # Simulate Homebrew's layout, where Gem.default_dir is moved to a
+    # different root, while Gem.default_specifications_dir stays inside the
+    # ruby install tree.
     gemhome2 = File.join(@tempdir, "gemhome2")
     Gem.instance_variable_set(:@default_dir, gemhome2)
 
     FileUtils.mkdir_p gemhome2
     bin_dir = File.join(gemhome2, "bin")
 
+    previous_default_gem_dir = File.join(@gemhome, "gems", "bundler-1.15.4")
+    write_file File.join(previous_default_gem_dir, "exe", "bundle")
+
+    # A regular gem of the same version installed at the default dir, which is
+    # promoted to the default gem and must be removed. Its files live under
+    # default_dir, not under the default gemspec root.
+    normal_gem_dir = File.join(gemhome2, "gems", "bundler-#{bundler_version}")
+    write_file File.join(normal_gem_dir, "lib", "bundler.rb")
+
     @cmd.install_default_bundler_gem bin_dir
 
     # expect to remove other versions of bundler gemspecs on default specification directory.
     assert_path_not_exist previous_bundler_specification_path
     assert_path_exist new_bundler_specification_path
+
+    # expect to remove the previous default version executables, which live
+    # next to the removed gemspec, not under the new default dir.
+    assert_path_not_exist previous_default_gem_dir
+
+    # expect to remove the promoted regular gem's files under default_dir.
+    assert_path_not_exist normal_gem_dir
+
+    # expect executables to be installed under the same root as the default
+    # gemspec, since that's where activation of the default gem looks for them.
+    spec = Gem::Specification.load(new_bundler_specification_path)
+    spec.executables.each do |e|
+      assert_path_exist File.join(@gemhome, "gems", spec.full_name, spec.bindir, e)
+    end
+    assert_path_not_exist File.join(gemhome2, "gems", spec.full_name)
   end
 
   def test_install_default_bundler_gem_with_force_flag

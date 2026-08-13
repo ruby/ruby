@@ -177,7 +177,7 @@ class TestISeq < Test::Unit::TestCase
       # shareable_constant_value: literal
       REGEX = /#{}/ # [Bug #20569]
     RUBY
-    assert_includes iseq_to_binary(iseq), "REGEX".b
+    assert_include iseq_to_binary(iseq), "REGEX".b
   end
 
   def test_disasm_encoding
@@ -522,6 +522,12 @@ class TestISeq < Test::Unit::TestCase
     iseq = RubyVM::InstructionSequence.of(method(:anon_block))
     param_names = iseq.to_a[iseq.to_a.index(:method) + 1]
     assert_equal [:&], param_names
+  end
+
+  def test_disasm_mandatory_only_overloaded
+    disasm = RubyVM::InstructionSequence.disasm(Time.method(:at))
+    assert_include disasm, "<builtin!time_s_at1/1>"
+    assert_include disasm, "<builtin!time_s_at/4>"
   end
 
   def strip_lineno(source)
@@ -970,7 +976,7 @@ class TestISeq < Test::Unit::TestCase
       obj
     RUBY
 
-    binary = iseq.to_binary # [Bug # 21370]
+    binary = iseq_to_binary(iseq) # [Bug # 21370]
     roundtripped_iseq = RubyVM::InstructionSequence.load_from_binary(binary)
     object = roundtripped_iseq.eval
     assert_equal 1, object.test

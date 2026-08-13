@@ -49,6 +49,9 @@ allocator = any.subeffect 'Allocator'
 control = any.subeffect 'Control'
 memory = any.subeffect 'Memory'
 patch_point = any.subeffect 'PatchPoint'
+# Stats counters live outside the managed heap; instructions that only bump
+# them (e.g. IncrCounter) don't interfere with reads or writes of Memory.
+stats = any.subeffect 'Stats'
 interrupt_flag = memory.subeffect 'InterruptFlag'
 other = memory.subeffect 'Other'
 frame = memory.subeffect 'Frame'
@@ -58,7 +61,7 @@ stack = frame.subeffect 'Stack'
 
 # Use the smallest unsigned value needed to describe all effect bits
 # If it becomes an issue, this can be generated but for now we do it manually
-$int_label = 'u8'
+$int_label = 'u16'
 
 # Assign individual bits to effect leaves and union bit patterns to nodes with subeffects
 num_bits = 0

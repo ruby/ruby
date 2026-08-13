@@ -153,8 +153,13 @@ module Bundler
         next unless v
         case k.to_s
         when "checksum"
+          # Some registries send empty checksum values, treat them as if the
+          # checksum was not included at all
+          checksum = v.last
+          next unless checksum
+
           begin
-            @checksum = Checksum.from_api(v.last, @spec_fetcher.uri)
+            @checksum = Checksum.from_api(checksum, @spec_fetcher.uri)
           rescue ArgumentError => e
             raise ArgumentError, "Invalid checksum for #{full_name}: #{e.message}"
           end

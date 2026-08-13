@@ -18,12 +18,22 @@ module Bundler
         Bundler.ui.info "Unable to open #{name} because it's a default gem, so the directory it would normally be installed to does not exist."
       else
         root_path = spec.full_gem_path
-        require "shellwords"
-        command = Shellwords.split(editor) << File.join([root_path, path].compact)
+        command = editor_command(editor) << File.join([root_path, path].compact)
         Bundler.with_original_env do
           system(*command, { chdir: root_path })
         end || Bundler.ui.info("Could not run '#{command.join(" ")}'")
       end
+    end
+
+    def editor_command(editor)
+      # On Windows an editor is often configured with a full path such as
+      # C:\Program Files\Microsoft VS Code\Code.exe, which shell splitting
+      # would corrupt. Take a value that names an existing file as a
+      # single word.
+      return [editor] if Gem.win_platform? && File.file?(editor)
+
+      require "shellwords"
+      Shellwords.split(editor)
     end
   end
 end

@@ -119,12 +119,16 @@ AC_SUBST(X_BUILD_EXEEXT)
 AC_ARG_WITH(dump-ast,
 	AS_HELP_STRING([--with-dump-ast=DUMP_AST], [use DUMP_AST as dump_ast; for cross-compiling with a host-built dump_ast]),
 	[DUMP_AST=$withval DUMP_AST_TARGET='$(empty)'],
-	[AS_IF([test "$cross_compiling" = yes], [
+	[AS_IF([test ${RUBY_DUMP_AST+set}], [
+	    DUMP_AST="${RUBY_DUMP_AST}"
+	    DUMP_AST_TARGET='$(empty)'
+	], [test "$cross_compiling" = yes], [
 	    DUMP_AST='build-tool/dump_ast$(BUILD_EXEEXT)'
+	    DUMP_AST_TARGET='$(DUMP_AST)'
 	], [
 	    DUMP_AST='./dump_ast$(BUILD_EXEEXT)'
-	])
-	DUMP_AST_TARGET='$(DUMP_AST)'])
+	    DUMP_AST_TARGET='$(DUMP_AST)'
+	])])
 dnl Without baseruby, .rbinc files cannot be regenerated, so clear the
 dnl dependency on dump_ast to avoid rebuilding pre-generated .rbinc files.
 AS_IF([test "$HAVE_BASERUBY" = no], [DUMP_AST_TARGET='$(empty)'])
@@ -4127,7 +4131,7 @@ AS_IF([test -n "$RUST_LIB"], [
     ])
 
     # absolute path to stop the "target" dir in src dir from interfering through VPATH
-    RUST_LIB="$(pwd)/${RUST_LIB}"
+    RUST_LIB='$(TOP_BUILD_DIR)'/"${RUST_LIB}"
 ])
 
 dnl These variables end up in ::RbConfig::CONFIG
@@ -4137,14 +4141,14 @@ AC_SUBST(RUSTC_FLAGS)dnl user-configurable rustc compiler flags
 AC_SUBST(CARGO)dnl Cargo command for Rust builds
 AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
 AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
-AC_SUBST(YJIT_LIBS)dnl the .a library of YJIT
-AC_SUBST(YJIT_OBJ)dnl for optionally building the C parts of YJIT
+AC_SUBST(X_YJIT_LIBS, [$YJIT_LIBS])dnl the .a library of YJIT
+AC_SUBST(X_YJIT_OBJ, [$YJIT_OBJ])dnl for optionally building the C parts of YJIT
 AC_SUBST(ZJIT_SUPPORT)dnl what flavor of ZJIT the Ruby build includes
-AC_SUBST(ZJIT_LIBS)dnl path to the .a library of ZJIT
-AC_SUBST(ZJIT_OBJ)dnl for optionally building the C parts of ZJIT
-AC_SUBST(JIT_OBJ)dnl for optionally building C glue code for Rust FFI
-AC_SUBST(RUST_LIB)dnl path to the rust .a library that contains either or both JITs
-AC_SUBST(RLIB_DIR)dnl subpath of build directory for .rlib files
+AC_SUBST(X_ZJIT_LIBS, [$ZJIT_LIBS])dnl path to the .a library of ZJIT
+AC_SUBST(X_ZJIT_OBJ, [$ZJIT_OBJ])dnl for optionally building the C parts of ZJIT
+AC_SUBST(X_JIT_OBJ, [$JIT_OBJ])dnl for optionally building C glue code for Rust FFI
+AC_SUBST(X_RUST_LIB, [$RUST_LIB])dnl path to the rust .a library that contains either or both JITs
+AC_SUBST(X_RLIB_DIR, [$RLIB_DIR])dnl subpath of build directory for .rlib files
 AC_SUBST(JIT_CARGO_SUPPORT)dnl "no" or the cargo profile of the rust code
 }
 
@@ -4178,11 +4182,11 @@ AS_IF([test x"$SOEXT" = xdll], [
 ])
 AC_SUBST(XSYMBOLS_IN_EMPTYLIB, "${rb_cv_symbols_in_emptylib}")
 
-DLNOBJ=dln.o
+DLNOBJS=dln.o
 AC_ARG_ENABLE(dln,
 	      AS_HELP_STRING([--disable-dln], [disable dynamic link feature]),
-	      [test "$enableval" = yes || DLNOBJ=dmydln.o])
-AC_SUBST(DLNOBJ)
+	      [test "$enableval" = yes || DLNOBJS=dmydln.o])
+AC_SUBST(DLNOBJS)
 MINIDLNOBJ=dmydln.o
 
 AS_CASE(["$target_os"],
@@ -4750,6 +4754,19 @@ AS_IF([test ! -f "$srcdir/revision.h"], [
     ])
 ])
 
+AS_IF([test "x$HAVE_BASERUBY" = xyes], [
+    X_DEPENDENCIES_DIR=.deps
+    AC_MSG_NOTICE([generating build dependencies])
+    rm -rf "$ac_pwd/.deps"
+    AS_MKDIR_P([.deps])
+    RUBYOPT=- $BASERUBY "$srcdir/tool/mkdepend.rb" \
+        --root="$srcdir" --scope=core --output="$ac_pwd/.deps" ||
+        AC_MSG_ERROR([failed to generate build dependencies])
+], [
+    X_DEPENDENCIES_DIR='$(srcdir)'
+])
+AC_SUBST(X_DEPENDENCIES_DIR)
+
 AS_IF([test x"$firstmf" != x], [
     AC_CONFIG_FILES($firstmf:$firsttmpl, [], [firstmf="$firstmf" firsttmpl="$firsttmpl"])
 ])
@@ -4780,9 +4797,16 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	AS_IF([test "$gnumake" != yes], [
 	    # extract NMake-style include list
 	    set = `sed -n 's/^!include  *//p' ${srcdir}/common.mk`
+	    AS_IF([test "x$X_DEPENDENCIES_DIR" = x.deps], [
+		dependency_dir="$ac_pwd/.deps"
+	    ], [
+		dependency_dir=.
+	    ])
 	    echo common_mk_includes "@S|@*" # generate the macro assignment
 	    shift
-	    common_mk_includes="`echo \"@S|@*\" | sed 's|\$(srcdir)|.|g'`"
+	    common_mk_includes="`echo \"@S|@*\" | sed \
+	        -e "s|\\\$(DEPENDENCIES_DIR)|$dependency_dir|g" \
+	        -e 's|\$(srcdir)|.|g'`"
 	    (PWD= cd ${srcdir} && sed -f tool/prereq.status common.mk ${common_mk_includes})
             AS_IF([test "$YJIT_SUPPORT" = yes], [
                 cat ${srcdir}/yjit/not_gmake.mk
@@ -4795,7 +4819,7 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	echo; echo '$(srcdir)/$(CONFIGURE):RUBY_M4_INCLUDED \
 	$(empty)'
     } > $tmpmk && mv -f $tmpmk Makefile],
-[EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT'])
+[EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT' X_DEPENDENCIES_DIR='$X_DEPENDENCIES_DIR'])
 
 AC_ARG_WITH([ruby-pc],
 	    AS_HELP_STRING([--with-ruby-pc=FILENAME], [pc file basename]),

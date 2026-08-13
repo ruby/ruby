@@ -16,7 +16,7 @@ With no arguments:
     s.bytes                   # => [82, 117, 98, 121, 153]
     t = s.encode              # => "Ruby\x99"
     t.encoding                # => #<Encoding:Windows-1252>
-    t.bytes                   # => [82, 117, 98, 121, 226, 132, 162]
+    t.bytes                   # => [82, 117, 98, 121, 153]
 
 - Otherwise, uses the encoding <tt>Encoding.default_internal</tt>:
 

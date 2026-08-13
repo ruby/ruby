@@ -28,11 +28,13 @@ module Prism
           AMPERSAND_DOT: :tANDDOT,
           AMPERSAND_EQUAL: :tOP_ASGN,
           BACK_REFERENCE: :tBACK_REF,
-          BACKTICK: :tXSTRING_BEG,
+          BACKTICK: :tBACK_REF2,
           BANG: :tBANG,
           BANG_EQUAL: :tNEQ,
           BANG_TILDE: :tNMATCH,
           BRACE_LEFT: :tLCURLY,
+          BRACE_LEFT_ARGUMENT: :tLBRACE_ARG,
+          BRACE_LEFT_HASH: :tLBRACE,
           BRACE_RIGHT: :tRCURLY,
           BRACKET_LEFT: :tLBRACK2,
           BRACKET_LEFT_ARRAY: :tLBRACK,
@@ -139,8 +141,10 @@ module Prism
           MINUS_EQUAL: :tOP_ASGN,
           MINUS_GREATER: :tLAMBDA,
           NEWLINE: :tNL,
+          NEWLINE_TERMINATOR: :tNL,
           NUMBERED_REFERENCE: :tNTH_REF,
           PARENTHESIS_LEFT: :tLPAREN2,
+          PARENTHESIS_LEFT_GROUPING: :tLPAREN,
           PARENTHESIS_LEFT_PARENTHESES: :tLPAREN_ARG,
           PARENTHESIS_RIGHT: :tRPAREN,
           PERCENT: :tPERCENT,
@@ -180,41 +184,14 @@ module Prism
           UPLUS: :tUPLUS,
           USTAR: :tSTAR,
           USTAR_STAR: :tDSTAR,
-          WORDS_SEP: :tSPACE
+          WORDS_SEP: :tSPACE,
+          XSTRING_BEGIN: :tXSTRING_BEG
         }
-
-        # These constants represent flags in our lex state. We really, really
-        # don't want to be using them and we really, really don't want to be
-        # exposing them as part of our public API. Unfortunately, we don't have
-        # another way of matching the exact tokens that the parser gem expects
-        # without them. We should find another way to do this, but in the
-        # meantime we'll hide them from the documentation and mark them as
-        # private constants.
-        EXPR_BEG = 0x1
-        EXPR_LABEL = 0x400
-
-        # The `PARENTHESIS_LEFT` token in Prism is classified as either
-        # `tLPAREN` or `tLPAREN2` in the Parser gem. The following token types
-        # are listed as those classified as `tLPAREN`.
-        LPAREN_CONVERSION_TOKEN_TYPES = Set.new([
-          :kAND, :kBEGIN, :kBREAK, :kCASE, :kDO_COND, :kDO_LAMBDA, :kDO, :kELSE,
-          :kELSIF, :kENSURE, :kFOR, :kIF_MOD, :kIF, :kIN, :kNEXT, :kOR,
-          :kRESCUE_MOD, :kRESCUE, :kRETURN, :kTHEN, :kUNLESS_MOD, :kUNLESS,
-          :kUNTIL_MOD, :kUNTIL, :kWHEN, :kWHILE_MOD, :kWHILE,
-          :tAMPER, :tANDOP, :tBANG, :tCARET, :tCOMMA, :tDIVIDE, :tDOT2, :tDOT3,
-          :tEQL, :tLCURLY, :tLPAREN_ARG, :tLPAREN, :tLPAREN2, :tLSHFT, :tNL,
-          :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS
-        ])
-
-        # Types of tokens that are allowed to continue a method call with comments in-between.
-        # For these, the parser gem doesn't emit a newline token after the last comment.
-        COMMENT_CONTINUATION_TYPES = Set.new([:COMMENT, :AMPERSAND_DOT, :DOT])
-        private_constant :COMMENT_CONTINUATION_TYPES
 
         # Heredocs are complex and require us to keep track of a bit of info to refer to later
         HeredocData = Struct.new(:identifier, :common_whitespace, keyword_init: true)
 
-        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL, :LPAREN_CONVERSION_TOKEN_TYPES, :HeredocData
+        private_constant :TYPES, :HeredocData
 
         # The Parser::Source::Buffer that the tokens were lexed from.
         attr_reader :source_buffer
@@ -253,13 +230,20 @@ module Prism
           comment_newline_location = nil
 
           while index < length
-            token, state = lexed[index]
+            token, _ = lexed[index]
             index += 1
             next if TYPES_ALWAYS_SKIP.include?(token.type)
 
             type = TYPES.fetch(token.type)
             value = token.value
             location = range(token.location.start_offset, token.location.end_offset)
+
+            # A newline deferred past a run of comments is emitted before the
+            # token that follows the last comment.
+            if comment_newline_location && type != :tCOMMENT
+              tokens << [:tNL, [nil, comment_newline_location]]
+              comment_newline_location = nil
+            end
 
             case type
             when :tCHARACTER
@@ -278,27 +262,9 @@ module Prism
                 location = range(token.location.start_offset, next_token.location.end_offset)
                 index += 1
               else
-                is_at_eol = value.chomp!.nil?
-                location = range(token.location.start_offset, token.location.end_offset + (is_at_eol ? 0 : -1))
-
-                prev_token, _ = lexed[index - 2] if index - 2 >= 0
-                next_token, _ = lexed[index]
-
-                is_inline_comment = prev_token&.location&.start_line == token.location.start_line
-                if is_inline_comment && !is_at_eol && !COMMENT_CONTINUATION_TYPES.include?(next_token&.type)
-                  tokens << [:tCOMMENT, [value, location]]
-
-                  nl_location = range(token.location.end_offset - 1, token.location.end_offset)
-                  tokens << [:tNL, [nil, nl_location]]
-                  next
-                elsif is_inline_comment && next_token&.type == :COMMENT
-                  comment_newline_location = range(token.location.end_offset - 1, token.location.end_offset)
-                elsif comment_newline_location && !COMMENT_CONTINUATION_TYPES.include?(next_token&.type)
-                  tokens << [:tCOMMENT, [value, location]]
-                  tokens << [:tNL, [nil, comment_newline_location]]
-                  comment_newline_location = nil
-                  next
-                end
+                # A carriage return before the terminating newline is part of
+                # the comment token but not of the comment's value.
+                location = range(token.location.start_offset, token.location.end_offset - 1) if value.chomp!
               end
             when :tNL
               next_token, _ = lexed[index]
@@ -324,10 +290,6 @@ module Prism
               value.chomp!(":")
             when :tLABEL_END
               value.chomp!(":")
-            when :tLCURLY
-              type = :tLBRACE if state == EXPR_BEG | EXPR_LABEL
-            when :tLPAREN2
-              type = :tLPAREN if tokens.empty? || LPAREN_CONVERSION_TOKEN_TYPES.include?(tokens.dig(-1, 0))
             when :tNTH_REF
               value = parse_integer(value.delete_prefix("$"))
             when :tOP_ASGN
@@ -506,10 +468,6 @@ module Prism
                 type = :tIDENTIFIER
               end
             when :tXSTRING_BEG
-              if (next_token = lexed[index]&.first) && !%i[STRING_CONTENT STRING_END EMBEXPR_BEGIN].include?(next_token.type)
-                # self.`()
-                type = :tBACK_REF2
-              end
               quote_stack.push(value)
             when :tSYMBOLS_BEG, :tQSYMBOLS_BEG, :tWORDS_BEG, :tQWORDS_BEG
               if (next_token = lexed[index]&.first) && next_token.type == :WORDS_SEP
@@ -526,6 +484,10 @@ module Prism
             if token.type == :REGEXP_END
               tokens << [:tREGEXP_OPT, [token.value[1..], range(token.location.start_offset + 1, token.location.end_offset)]]
             end
+          end
+
+          if comment_newline_location
+            tokens << [:tNL, [nil, comment_newline_location]]
           end
 
           tokens

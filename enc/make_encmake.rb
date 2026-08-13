@@ -123,7 +123,9 @@ MODULE_TYPE = module_type
 ENCS, ENC_DEPS = target_encodings
 ATRANS, TRANS = target_transcoders
 
-if File.exist?(depend = File.join($srcdir, "depend"))
+depend = File.join(Dir.pwd, ".deps/enc/depend")
+depend = File.join($srcdir, "depend") unless File.file?(depend)
+if File.exist?(depend)
   erb = ERB.new(File.read(depend), trim_mode: '%')
   erb.filename = depend
   tmp = erb.result(binding)

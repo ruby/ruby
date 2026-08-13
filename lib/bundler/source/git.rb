@@ -325,7 +325,7 @@ module Bundler
 
       def serialize_gemspecs_in(destination)
         destination = destination.expand_path(Bundler.root) if destination.relative?
-        Dir["#{destination}/#{@glob}"].each do |spec_path|
+        Gem::Util.glob_files_in_dir(@glob, destination.to_s).each do |spec_path|
           # Evaluate gemspecs and cache the result. Gemspecs
           # in git might require git or other dependencies.
           # The gemspecs we cache should already be evaluated.
@@ -408,10 +408,6 @@ module Bundler
 
       def locked_revision
         options["revision"]
-      end
-
-      def cached?
-        cache_path.exist?
       end
 
       def git_proxy

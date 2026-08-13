@@ -13,20 +13,17 @@
 **********************************************************************/
 
 #include "internal.h"
-#include "internal/class.h"
-#include "internal/compilers.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
+#include "internal/objspace.h"
 #include "internal/sanitizers.h"
 #include "ruby/io.h"
+#include "ruby/ractor.h"
 #include "ruby/re.h"
 #include "ruby/st.h"
 #include "symbol.h"
-
-#undef rb_funcall
-
-#include "ruby/ruby.h"
+#include "objspace.h"
 
 /*
  *  call-seq:
@@ -575,7 +572,7 @@ reachable_object_from_i(VALUE obj, void *data_ptr)
     VALUE key = obj;
     VALUE val = obj;
 
-    if (!rb_objspace_garbage_object_p(obj)) {
+    if ((!rb_objspace_foreign_object_p(obj) || RB_OBJ_SHAREABLE_P(obj)) && !rb_objspace_garbage_object_p(obj)) {
         if (NIL_P(rb_hash_lookup(data->refs, key))) {
             rb_hash_aset(data->refs, key, Qtrue);
 
@@ -683,7 +680,7 @@ reachable_object_from_root_i(const char *category, VALUE obj, void *ptr)
         rb_hash_aset(data->categories, category_str, category_objects);
     }
 
-    if (!rb_objspace_garbage_object_p(obj) &&
+    if ((!rb_objspace_foreign_object_p(obj) || RB_OBJ_SHAREABLE_P(obj)) && !rb_objspace_garbage_object_p(obj) &&
         obj != data->categories &&
         obj != data->last_category_objects) {
         if (rb_objspace_internal_object_p(obj)) {

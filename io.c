@@ -545,6 +545,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 
 static int io_fflush(rb_io_t *);
 static rb_io_t *flush_before_seek(rb_io_t *fptr, bool discard_rbuf);
+static void clear_readconv(rb_io_t *fptr);
 static void clear_codeconv(rb_io_t *fptr);
 
 #define FMODE_SIGNAL_ON_EPIPE (1<<17)
@@ -2482,6 +2483,7 @@ rb_io_seek(VALUE io, VALUE offset, int whence)
     GetOpenFile(io, fptr);
     pos = io_seek(fptr, pos, whence);
     if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
+    if (fptr->readconv) clear_readconv(fptr);
 
     return INT2FIX(0);
 }
@@ -2593,11 +2595,10 @@ rb_io_set_pos(VALUE io, VALUE offset)
     GetOpenFile(io, fptr);
     pos = io_seek(fptr, pos, SEEK_SET);
     if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
+    if (fptr->readconv) clear_readconv(fptr);
 
     return OFFT2NUM(pos);
 }
-
-static void clear_readconv(rb_io_t *fptr);
 
 /*
  *  call-seq:
@@ -3572,7 +3573,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
  *
  *  - Contains +maxlen+ bytes from the stream, if available.
  *  - Otherwise contains all available bytes, if any available.
- *  - Otherwise is an empty string.
+ *  - Is an empty string if +maxlen+ is zero.
  *
  *  With the single non-negative integer argument +maxlen+ given,
  *  returns a new string:
@@ -5667,6 +5668,7 @@ free_io_buffer(rb_io_buffer_t *buf)
         ruby_xfree_sized(buf->ptr, (size_t)buf->capa);
         buf->ptr = NULL;
     }
+    buf->off = buf->len = buf->capa = 0;
 }
 
 static void
@@ -8377,13 +8379,9 @@ io_reopen(VALUE io, VALUE nfile)
                      rb_io_fmode_modestr(orig->mode));
         }
     }
-    if (fptr->mode & FMODE_WRITABLE) {
-        if (io_fflush(fptr) < 0)
-            rb_sys_fail_on_write(fptr);
-    }
-    else {
-        flush_before_seek(fptr, true);
-    }
+    flush_before_seek(fptr, true);
+    /* in flush_before_seek, clear_codeconv called only if rbuf is filled */
+    clear_codeconv(fptr);
     if (orig->mode & FMODE_READABLE) {
         pos = io_tell(orig);
     }
@@ -8543,6 +8541,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
             rb_sys_fail_on_write(fptr);
     }
     fptr->rbuf.off = fptr->rbuf.len = 0;
+    clear_codeconv(fptr);
 
     if (fptr->stdio_file) {
         int e = rb_freopen(rb_str_encode_ospath(fptr->pathv),

@@ -101,6 +101,7 @@ LIBPRISM_OBJS = \
 		prism/constant_pool.$(OBJEXT) \
 		prism/diagnostic.$(OBJEXT) \
 		prism/encoding.$(OBJEXT) \
+		prism/errors_format.$(OBJEXT) \
 		prism/integer.$(OBJEXT) \
 		prism/json.$(OBJEXT) \
 		prism/line_offset_list.$(OBJEXT) \
@@ -226,7 +227,7 @@ $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/util/.time:
 	$(Q) $(MAKEDIRS) $(@D)
 	@$(NULLCMD) > $@
 
-EXPORTOBJS    = $(DLNOBJ) \
+EXPORTOBJS    = $(DLNOBJS) \
 		localeinit.$(OBJEXT) \
 		loadpath.$(OBJEXT) \
 		$(COMMONOBJS)
@@ -354,6 +355,7 @@ ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY) \
 	$(Q)$(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ -c \
 	    $(srcdir)/template/$(@F).tmpl --srcdir="$(srcdir)" \
 	    --miniruby="$(MINIRUBY)" --script-args='$(SCRIPT_ARGS)' \
+	    --thread-model="$(THREAD_MODEL)" --gnumake=$(gnumake) \
 	    $(yes_cross_compiling:yes=--without-ext=-test-)
 
 configure-ext: $(EXTS_MK)
@@ -724,6 +726,7 @@ clean-rubyspec: clean-spec
 
 distclean: distclean-ext distclean-enc distclean-golf distclean-docs distclean-extout distclean-modular-gc distclean-local distclean-platform distclean-spec
 distclean-local:: clean-local
+	-$(Q)$(RMALL) .deps
 	$(Q)$(RM) $(MKFILES) *.inc $(PRELUDES) *.rbinc *.rbbin
 	$(Q)$(RM) config.cache config.status config.status.lineno
 	$(Q)$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
@@ -843,12 +846,7 @@ clean-spec: PHONY
 
 check: main $(DOT_WAIT) test $(DOT_WAIT) test-tool $(DOT_WAIT) test-all
 	$(ECHO) check succeeded
-	-$(Q) : : "run only on sh"; \
-	if [ x"$(GIT)" != x ] && $(CHDIR) "$(srcdir)" && \
-	    b=`$(GIT) symbolic-ref --short HEAD 2>&1` && \
-	    u=`$(GIT) branch --list --format='%(upstream:short)' $$b`; then \
-	  set -x; $(GIT) --no-pager log --format=oneline -G '^ *# *include *("|<ruby)' $$u..HEAD --; \
-	fi
+
 check-ruby: test test-ruby
 
 fake: $(CROSS_COMPILING)-fake
@@ -1223,12 +1221,13 @@ missing-srcs: $(srcdir)/missing/des_tables.c
 
 srcs: common-srcs missing-srcs srcs-enc srcs-doc
 
-RIPPER_SRCS = $(srcdir)/ext/ripper/ripper.c \
-	      $(srcdir)/ext/ripper/ripper_init.c \
-	      $(srcdir)/ext/ripper/eventids1.h \
-	      $(srcdir)/ext/ripper/eventids1.c \
-	      $(srcdir)/ext/ripper/eventids2table.c \
-	      # RIPPER_SRCS
+RIPPER_SRCS1 = $(srcdir)/ext/ripper/ripper.c
+RIPPER_SRCS2 = $(srcdir)/ext/ripper/ripper_init.c \
+	       $(srcdir)/ext/ripper/eventids1.h \
+	       $(srcdir)/ext/ripper/eventids1.c \
+	       $(srcdir)/ext/ripper/eventids2table.c \
+	       # RIPPER_SRCS2
+RIPPER_SRCS = $(RIPPER_SRCS1) $(RIPPER_SRCS2)
 
 EXT_SRCS = ripper_srcs \
 	   $(srcdir)/ext/rbconfig/sizeof/sizes.c \
@@ -1345,10 +1344,12 @@ dump_ast$(BUILD_EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
 	$(Q) $(CC) $(CFLAGS) $(OUTFLAG)$@ $(INCFLAGS) $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
 
 build-tool/Makefile: $(tooldir)/dump_ast.mkmf.rb prism-srcs prism-incs
-	+$(BASERUBY) -s $(tooldir)/dump_ast.mkmf.rb "-INCFLAGS=$(INCFLAGS)" "-make=$(MAKE)" build-tool $(tooldir)/dump_ast.c dump_ast.$(OBJEXT) $(LIBPRISM_OBJS)
+	+$(BASERUBY) -s $(tooldir)/dump_ast.mkmf.rb \
+	    "-INCFLAGS=$(INCFLAGS)" "-make=$(MAKE)" "-objext=$(OBJEXT)" \
+	    build-tool $(tooldir)/dump_ast.c dump_ast.$(OBJEXT) $(LIBPRISM_OBJS)
 
 build-tool/dump_ast$(BUILD_EXEEXT): build-tool/Makefile
-	cd build-tool && MAKEFLAGS= MFLAGS= && unset MAKEFLAGS MFLAGS && $(MAKE)
+	cd build-tool && MAKEFLAGS= MFLAGS= && unset MAKEFLAGS MFLAGS && $(MAKE) Q=$(Q)
 
 clean-local:: clean-build-tool
 clean-build-tool:
@@ -1376,6 +1377,8 @@ $(RIPPER_SRCS): $(srcdir)/parse.y $(srcdir)/defs/id.def
 $(RIPPER_SRCS): $(srcdir)/ext/ripper/depend $(srcdir)/ext/ripper/extconf.rb
 $(RIPPER_SRCS): $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/ext/ripper/tools/dsl.rb
 $(RIPPER_SRCS): $(srcdir)/ext/ripper/ripper_init.c.tmpl $(srcdir)/ext/ripper/eventids2.c
+$(RIPPER_SRCS2): $(RIPPER_SRCS1)
+$(RIPPER_SRCS1):
 	$(ECHO) generating $@
 	$(Q) $(CHDIR) $(@D) && \
 	$(CAT_DEPEND) depend | \
@@ -1469,8 +1472,9 @@ run.gdb:
 	echo '# handle SIGINT nostop'         >> run.gdb
 	echo '# handle SIGPIPE nostop'        >> run.gdb
 	echo '# b rb_longjmp'                 >> run.gdb
-	echo source $(srcdir)/breakpoints.gdb >> run.gdb
-	echo source $(srcdir)/.gdbinit        >> run.gdb
+	echo directory $(srcdir)              >> run.gdb
+	echo source -s breakpoints.gdb        >> run.gdb
+	echo source -s .gdbinit               >> run.gdb
 	echo 'set $$_exitcode = -999'         >> run.gdb
 	echo run                              >> run.gdb
 	echo 'if $$_exitcode != -999'         >> run.gdb
@@ -2003,6 +2007,15 @@ rewindable:
 
 HELP_EXTRA_TASKS = ""
 
+MKDEPEND_FILES = --scope=all
+MKDEPEND_OPTIONS = --sources
+
+fix-depends: PHONY
+	$(BASERUBY) -C $(srcdir) tool/mkdepend.rb $(MKDEPEND_FILES) $(MKDEPEND_OPTIONS) --inplace
+
+check-depends: PHONY
+	$(BASERUBY) -C $(srcdir) tool/mkdepend.rb --scope=all --sources --check
+
 gc/Makefile:
 	$(MAKEDIRS) $(@D)
 	$(MESSAGE_BEGIN) \
@@ -2082,4 +2095,4 @@ $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}mini_builtin.c
 $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}miniprelude.c
 
 !include $(srcdir)/prism/srcs.mk
-!include $(srcdir)/depend
+!include $(DEPENDENCIES_DIR)/depend

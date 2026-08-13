@@ -66,18 +66,5 @@ module SyntaxSuggest
       # Output code
       @io.puts(document)
     end
-
-    private def code_with_context
-      lines = CaptureCodeContext.new(
-        blocks: @blocks,
-        code_lines: @code_lines
-      ).call
-
-      DisplayCodeWithLineNumbers.new(
-        lines: lines,
-        terminal: @terminal,
-        highlight_lines: @invalid_lines
-      ).call
-    end
   end
 end

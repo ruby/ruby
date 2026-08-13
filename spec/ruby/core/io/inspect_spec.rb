@@ -1,20 +1,40 @@
 require_relative '../../spec_helper'
 
 describe "IO#inspect" do
+  before :each do
+    @path = tmp("foo")
+  end
+
   after :each do
-    @r.close if @r && !@r.closed?
-    @w.close if @w && !@w.closed?
+    File.delete(@path) if File.exist?(@path)
   end
 
-  it "contains the file descriptor number" do
-    @r, @w = IO.pipe
-    @r.inspect.should.include?("fd #{@r.fileno}")
+  it "contains the file descriptor number if no path is given" do
+    fd = new_fd(@path)
+    io = IO.open(fd)
+    io.inspect.should == "#<IO:fd #{fd}>"
+
+    io.close
+    io.inspect.should == "#<IO:(closed)>"
+  ensure
+    io&.close
   end
 
-  it "contains \"(closed)\" if the stream is closed" do
-    @r, @w = IO.pipe
-    @r.close
-    @r.inspect.should.include?("(closed)")
+  it "contains the path if a path is given" do
+    fd = new_fd(@path)
+    io = IO.open(fd, path: @path)
+    io.inspect.should == "#<IO:#{@path}>"
+
+    io.close
+    io.inspect.should == "#<IO:#{@path} (closed)>"
+  ensure
+    io&.close
+  end
+
+  it "contains the subclass in its result" do
+    File.open(@path, "w") do |file|
+      file.inspect.should == "#<File:#{@path}>"
+    end
   end
 
   it "reports IO as its Method object's owner" do

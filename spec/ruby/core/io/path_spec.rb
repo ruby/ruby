@@ -9,4 +9,16 @@ describe "IO#path" do
   ensure
     File.unlink(path)
   end
+
+  it "is set for STDIN" do
+    STDIN.path.should == "<STDIN>"
+  end
+
+  it "is set for STDOUT" do
+    STDOUT.path.should == "<STDOUT>"
+  end
+
+  it "is set for STDERR" do
+    STDERR.path.should == "<STDERR>"
+  end
 end

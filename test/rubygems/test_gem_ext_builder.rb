@@ -106,6 +106,78 @@ install:
     assert_match(/install: OK/, results)
   end
 
+  def test_class_shellsplit_command_windows_path
+    win_platform = Gem.win_platform?
+
+    make = if win_platform
+      FileUtils.mkdir_p File.join(@tempdir, "make dir")
+      File.join(@tempdir, "make dir", "nmake.exe").tr("/", "\\")
+    else
+      # backslashes and spaces are plain filename characters on POSIX
+      File.join(@tempdir, 'C:\make dir\nmake.exe')
+    end
+    FileUtils.touch make
+
+    Gem.win_platform = true
+
+    assert_equal [make], Gem::Ext::Builder.shellsplit_command(make)
+  ensure
+    Gem.win_platform = win_platform
+  end
+
+  def test_class_shellsplit_command_quoted_path
+    assert_equal ['C:\make dir\nmake.exe'],
+                 Gem::Ext::Builder.shellsplit_command('"C:\make dir\nmake.exe"')
+  end
+
+  def test_class_shellsplit_command_with_arguments
+    win_platform = Gem.win_platform?
+
+    Gem.win_platform = true
+
+    assert_equal %w[make -j4], Gem::Ext::Builder.shellsplit_command("make -j4")
+
+    Gem.win_platform = false
+
+    assert_equal %w[make -j4], Gem::Ext::Builder.shellsplit_command("make -j4")
+  ensure
+    Gem.win_platform = win_platform
+  end
+
+  def test_class_shellsplit_command_existing_path_on_posix
+    win_platform = Gem.win_platform?
+
+    FileUtils.mkdir_p File.join(@tempdir, "make dir")
+    make = File.join(@tempdir, "make dir", "make")
+    FileUtils.touch make
+
+    Gem.win_platform = false
+
+    assert_equal make.split(" "), Gem::Ext::Builder.shellsplit_command(make)
+  ensure
+    Gem.win_platform = win_platform
+  end
+
+  def test_class_run_single_element_command_with_spaces
+    dir = File.join @tempdir, "cmd dir"
+    FileUtils.mkdir_p dir
+
+    if Gem.win_platform?
+      command = File.join dir, "say.cmd"
+      File.write command, "@echo spaces-ok\r\n"
+    else
+      command = File.join dir, "say"
+      File.write command, "#!/bin/sh\necho spaces-ok\n"
+      FileUtils.chmod 0o755, command
+    end
+
+    results = []
+
+    Gem::Ext::Builder.run([command], results)
+
+    assert_match(/spaces-ok/, results.join)
+  end
+
   def test_class_run_closes_stdin
     results = []
     check_stdin_script = <<~'RUBY'

@@ -203,8 +203,15 @@ class Gem::Requirement
   def marshal_load(array) # :nodoc:
     @requirements = array[0]
 
-    raise TypeError, "wrong @requirements" unless Array === @requirements &&
-                                                  @requirements.all? {|r| r.size == 2 && (r.first.is_a?(String) || r[0] = "=") && r.last.is_a?(Gem::Version) }
+    if Array === @requirements
+      return if @requirements.all? do |r|
+        next false unless r.size == 2
+        r[0] = "=" unless r.first.is_a?(String)
+        r.last.is_a?(Gem::Version)
+      end
+    end
+
+    raise TypeError, "wrong @requirements"
   end
 
   def yaml_initialize(tag, vals) # :nodoc:

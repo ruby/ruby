@@ -98,6 +98,8 @@ pub const X2_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 2 };
 pub const X3_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 3 };
 pub const X4_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 4 };
 pub const X5_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 5 };
+pub const X6_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 6 };
+pub const X7_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 7 };
 
 // caller-save registers
 pub const X9_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 9 };
@@ -132,8 +134,8 @@ pub const X2: A64Opnd = A64Opnd::Reg(X2_REG);
 pub const X3: A64Opnd = A64Opnd::Reg(X3_REG);
 pub const X4: A64Opnd = A64Opnd::Reg(X4_REG);
 pub const X5: A64Opnd = A64Opnd::Reg(X5_REG);
-pub const X6: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 6 });
-pub const X7: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 7 });
+pub const X6: A64Opnd = A64Opnd::Reg(X6_REG);
+pub const X7: A64Opnd = A64Opnd::Reg(X7_REG);
 pub const X8: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 8 });
 pub const X9: A64Opnd = A64Opnd::Reg(X9_REG);
 pub const X10: A64Opnd = A64Opnd::Reg(X10_REG);
@@ -194,8 +196,8 @@ pub const W30: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 32, reg_no: 30 });
 pub const W31: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 32, reg_no: 31 });
 
 // C argument registers
-pub const C_ARG_REGS: [A64Opnd; 6] = [X0, X1, X2, X3, X4, X5];
-pub const C_ARG_REGREGS: [A64Reg; 6] = [X0_REG, X1_REG, X2_REG, X3_REG, X4_REG, X5_REG];
+pub const C_ARG_REGS: [A64Opnd; 8] = [X0, X1, X2, X3, X4, X5, X6, X7];
+pub const C_ARG_REGREGS: [A64Reg; 8] = [X0_REG, X1_REG, X2_REG, X3_REG, X4_REG, X5_REG, X6_REG, X7_REG];
 
 impl fmt::Display for A64Reg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

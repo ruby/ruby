@@ -619,6 +619,33 @@ class TestGc < Test::Unit::TestCase
     RUBY
   end
 
+  def test_profiler_raw_data_with_another_ractor
+    # A second objspace sends GC.start through the global collector, which has to record
+    # a profile entry the same way a local collection does.
+    assert_separately([], <<~RUBY)
+      Warning[:experimental] = false
+      Ractor.new {}.value
+
+      GC::Profiler.enable
+      GC::Profiler.clear
+      GC.start
+
+      record = GC::Profiler.raw_data.last
+      assert_not_nil record
+      assert_kind_of Float, record[:GC_WALL_TIME]
+
+      # A global collection stops the world for its whole duration, so its pause time is
+      # recorded like a local one's -- and the phases it measures fit inside it.
+      assert_operator record[:GC_PAUSE_TIME], :>, 0.0
+      assert_operator record[:GC_MARK_WALL_TIME], :>, 0.0
+      assert_operator record[:GC_SWEEP_WALL_TIME], :>, 0.0
+      assert_in_delta record[:GC_PAUSE_TIME], record[:GC_STOP_TIME] + record[:GC_STW_TIME], 0.001
+      assert_operator record[:GC_MARK_WALL_TIME] + record[:GC_SWEEP_WALL_TIME], :<=, record[:GC_PAUSE_TIME]
+    RUBY
+  ensure
+    GC::Profiler.disable
+  end
+
   def test_profiler_raw_data_includes_wall_time
     auto_compact = GC.auto_compact if GC.respond_to?(:auto_compact)
     GC.auto_compact = false if GC.respond_to?(:auto_compact=)
@@ -849,6 +876,17 @@ class TestGc < Test::Unit::TestCase
 
   def test_verify_internal_consistency
     assert_nil(GC.verify_internal_consistency)
+  end
+
+  def test_gc_stress_on_obj_allocation
+    EnvUtil.under_gc_stress do
+      count = GC.count
+      iters = 100
+      iters.times do
+        Object.new
+      end
+      assert_operator(GC.count - count, :>=, iters)
+    end
   end
 
   def test_gc_stress_on_realloc

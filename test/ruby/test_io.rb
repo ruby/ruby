@@ -363,6 +363,139 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_ungetc_with_seek_textmode
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.ungetc('a')
+        f.seek(2, :SET)
+        assert_equal('o', f.getc, bug22239)
+      }
+
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.seek(2, :SET)
+        assert_equal('o', f.getc, bug22239)
+      }
+    }
+  end
+
+  def test_ungetc_with_pos_textmode
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.ungetc('a')
+        f.pos = 2
+        assert_equal('o', f.getc, bug22239)
+      }
+
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.pos = 2
+        assert_equal('o', f.getc, bug22239)
+      }
+    }
+  end
+
+  def test_eof_after_seek_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.seek(0, IO::SEEK_END)
+        assert_predicate(f, :eof?, bug22239)
+        assert_nil(f.getc, bug22239)
+      }
+    }
+  end
+
+  def test_sysseek_after_rewind_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.rewind
+        assert_nothing_raised(IOError, bug22239) {f.sysseek(0)}
+      }
+    }
+  end
+
+  def test_getbyte_after_rewind_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.rewind
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_seek_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.seek(0, :SET)
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_pos_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.pos = 0
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_flush_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.flush
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_binmode_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.binmode
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_tell_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.tell
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
   def test_ungetbyte
     make_tempfile {|t|
       t.open
@@ -2735,6 +2868,93 @@ class TestIO < Test::Unit::TestCase
   ensure
     f2.close
     f1.close
+  end
+
+  def test_reopen_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(__FILE__, "rt") {|f|
+        f.ungetc(f.getc)
+        f.reopen(t.path, "rt")
+        assert_equal("foo\n", f.gets, bug22239)
+      }
+
+      open(__FILE__, "rt") {|f|
+        f.ungetc('a')
+        f.reopen(t.path, "rt")
+        assert_equal("foo\n", f.gets, bug22239)
+      }
+
+      open(__FILE__, "rt") {|f|
+        f.ungetc(f.getc)
+        f.reopen(t.path, "rt")
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_reopen_io_with_pending_byte
+    bug22239 = '[Bug #22239]'
+    mkcdtmpdir {
+      File.binwrite("src", "0123456789")
+
+      ["rb", "r+b"].each {|mode|
+        open("src", mode) {|f|
+          f.getbyte
+          IO.pipe {|r, w|
+            w.binmode
+            w.write("ABC")
+            w.close
+            f.reopen(r)
+            assert_equal("ABC", f.read, "reopen a #{mode} IO #{bug22239}")
+          }
+        }
+      }
+    }
+  end
+
+  def test_reopen_io_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(__FILE__, "rt") {|f|
+        f.ungetc(f.getc)
+        open(t.path, "rt") {|f2| f.reopen(f2)}
+        assert_equal("foo\n", f.gets, bug22239)
+      }
+
+      open(__FILE__, "rt") {|f|
+        f.ungetc('a')
+        open(t.path, "rt") {|f2| f.reopen(f2)}
+        assert_equal("foo\n", f.gets, bug22239)
+      }
+
+      open(__FILE__, "rt") {|f|
+        f.ungetc(f.getc)
+        open(t.path, "rt") {|f2| f.reopen(f2)}
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_reopen_io_with_pending_byte_then_write
+    bug22239 = '[Bug #22239]'
+    mkcdtmpdir {
+      File.binwrite("src", "abc")
+
+      ["rb", "r+b"].each_with_index {|mode, i|
+        dst = "dst#{i}"
+        open("src", mode) {|f|
+          f.getbyte
+          open(dst, "wb") {|f2|
+            f2.write("XXXXXXXX")
+            f.reopen(f2)
+            f.write("Y")
+            f.flush
+          }
+        }
+        assert_equal("XXXXXXXXY", File.binread(dst), "reopen a #{mode} IO #{bug22239}")
+      }
+    }
   end
 
   def make_tempfile_for_encoding

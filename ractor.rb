@@ -607,10 +607,12 @@ class Ractor
   #
   # Waits for +ractor+ to complete and returns its value or raises the exception
   # which terminated the Ractor. The termination value will be moved to the calling
-  # Ractor. Therefore, at most 1 Ractor can receive another ractor's termination value.
+  # Ractor. Therefore, at most 1 Ractor can receive another ractor's termination
+  # value, and it can be received only once.
   #
   #   r = Ractor.new{ [1, 2] }
   #   r.value #=> [1, 2] (unshareable object)
+  #   r.value #=> Ractor::Error
   #
   #   Ractor.new(r){|r| r.value} #=> Ractor::Error
   #
@@ -825,7 +827,6 @@ class Ractor
     #
     # Returns whether or not the port is closed.
     def closed?
-      Primitive.attr! :leaf
       __builtin_cexpr! %q{
         ractor_port_closed_p(ec, self);
       }
@@ -836,7 +837,7 @@ class Ractor
     #    port.inspect -> string
     def inspect
       "#<Ractor::Port to:\##{
-        __builtin_cexpr! "SIZET2NUM(rb_ractor_id((RACTOR_PORT_PTR(self)->r)))"
+        __builtin_cexpr! "SIZET2NUM(rb_ractor_id(ractor_port_ptr_check(self)->r))"
       } id:#{
         __builtin_cexpr! "SIZET2NUM(ractor_port_id(RACTOR_PORT_PTR(self)))"
       }>"

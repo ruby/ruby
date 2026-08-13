@@ -16,6 +16,9 @@ module Bundler
 
       check_for_conflicting_options
 
+      Bundler::CLI::Common.validate_cooldown!(options[:cooldown])
+      Bundler.settings.set_command_option_if_given :cooldown, options[:cooldown]
+
       print = options[:print]
       previous_output_stream = Bundler.ui.output_stream
       Bundler.ui.output_stream = :stderr if print
@@ -74,6 +77,8 @@ module Bundler
           puts "Writing lockfile to #{file}"
           definition.write_lock(file, false)
         end
+
+        Bundler::CLI::Common.output_cooldown_skipped_summary(definition)
       end
 
       Bundler.ui.output_stream = previous_output_stream

@@ -680,8 +680,8 @@ rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
     int saved_errno = errno;
 
     // We must prevent interrupts while invoking the unblock method, because otherwise fibers can be left permanently blocked if an interrupt occurs during the execution of user code. See also `rb_fiber_scheduler_fiber_interrupt`.
-    rb_execution_context_t *ec = GET_EC();
-    int saved_interrupt_mask = ec->interrupt_mask;
+    rb_execution_context_t * volatile ec = GET_EC();
+    volatile int saved_interrupt_mask = ec->interrupt_mask;
     ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
 
     rb_control_frame_t *volatile cfp = ec->cfp;
@@ -1149,8 +1149,8 @@ VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exc
     enum ruby_tag_type state;
 
     // We must prevent interrupts while invoking the fiber_interrupt method, because otherwise fibers can be left permanently blocked if an interrupt occurs during the execution of user code. See also `rb_fiber_scheduler_unblock`.
-    rb_execution_context_t *ec = GET_EC();
-    int saved_interrupt_mask = ec->interrupt_mask;
+    rb_execution_context_t * volatile ec = GET_EC();
+    volatile int saved_interrupt_mask = ec->interrupt_mask;
     ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
 
     rb_control_frame_t *volatile cfp = ec->cfp;

@@ -210,7 +210,8 @@ class TestProcess < Test::Unit::TestCase
     # the ASAN runtime library sets RLIMIT_CORE to 0, "to avoid dumping a 16T+ core file", and
     # that inteferes with this test.
     asan_options = ENV['ASAN_OPTIONS'] || ''
-    asan_options  << ':' unless asan_options.empty?
+    # NOTE: ENV['ASAN_OPTIONS'] returns a frozen String, so append non-destructively.
+    asan_options += ':' unless asan_options.empty?
     env = {
       'ASAN_OPTIONS' => "#{asan_options}disable_coredump=0"
     }
@@ -1236,6 +1237,35 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_spawn_trailing_backslash
+    return unless windows?
+    [
+      ["AA BB\\"],
+      ["AA BB\\", "CC"],
+      ["AA BB\\\\", "CC"],
+      ["C:\\Program Files\\Foo\\", "--verbose"],
+      ["AA BB", "CC"],          # control: no trailing backslash
+      ["AA\\", "CC"],           # control: no space, so it is not quoted
+    ].each do |args|
+      out = IO.popen([EnvUtil.rubybin, "-e", "STDOUT.binmode; print Marshal.dump(ARGV)", *args], "rb", &:read)
+      assert_equal(args, Marshal.load(out), "[Bug #22199] argv did not round-trip: #{args.inspect}")
+    end
+  end
+
+  def test_argv_backslash_before_space
+    return unless windows?
+    [
+      ["AA\\ ", "BB"],
+      ["AA\\  ", "BB"],
+      ["AA\\\\ ", "BB"],
+      ["AA ", "BB"],           # control: no backslash
+      ["AA\\", "BB"],          # control: no space after the backslash
+    ].each do |args|
+      out = IO.popen([EnvUtil.rubybin, "-e", "STDOUT.binmode; print Marshal.dump(ARGV)", *args], "rb", &:read)
+      assert_equal(args, Marshal.load(out), "[Bug #22201] argv did not round-trip: #{args.inspect}")
+    end
+  end
+
   def test_exec_wordsplit
     with_tmpchdir {|d|
       File.write("script", <<-'End')
@@ -2197,7 +2227,6 @@ EOS
   end
 
   def test_clock_gettime_unit
-    t0 = Time.now.to_f
     [
       [:nanosecond,  1_000_000_000],
       [:microsecond, 1_000_000],
@@ -2213,6 +2242,7 @@ EOS
         assert_raise(ArgumentError){ Process.clock_gettime(Process::CLOCK_REALTIME, unit) }
         next
       end
+      t0 = Time.now.to_f
       t1 = Process.clock_gettime(Process::CLOCK_REALTIME, unit)
       assert_kind_of num.integer? ? Integer : num.class, t1, [unit, num].inspect
       assert_in_delta t0, t1/num, 1, [unit, num].inspect
@@ -2719,6 +2749,31 @@ EOS
     end;
   end if Process.respond_to?(:_fork)
 
+  def test__fork_raisig_after_fork
+    assert_in_out_err([], "#{<<~"{#"}\n#{<<~'};'}", [], [/.*: exception during fork in child/, :*])
+    {#
+      module BadForkTracker
+        def _fork
+          pid = super
+          if pid == 0
+            raise "exception during fork in child"
+          end
+          pid
+        end
+      end
+
+      Process.singleton_class.prepend(BadForkTracker)
+
+      begin
+        fork do
+          puts "I'm child #{Process.pid} and I'm exiting"
+        end
+      rescue StandardError
+        puts "#{Process.pid} Received Error, Ignoring"
+      end
+    };
+  end if Process.respond_to?(:_fork)
+
   def test_warmup_promote_all_objects_to_oldgen
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     require 'objspace'
@@ -2783,6 +2838,18 @@ EOS
 
       assert_equal(0, GC.stat(:heap_empty_pages))
       assert_operator(GC.stat(:total_freed_pages), :>, 0)
+    end;
+  end
+
+  def test_warmup_eager_loads_error_decoration_gems
+    assert_separately(["--enable=gems"], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      features = ["error_highlight", "did_you_mean", "syntax_suggest"]
+      assert_empty($LOADED_FEATURES.grep(/\/(#{features.join("|")})\.rb\z/))
+      Process.warmup
+      features.each do |feature|
+        assert_include($LOADED_FEATURES.map { File.basename(it, ".rb") }, feature)
+      end
     end;
   end
 

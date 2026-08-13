@@ -3,6 +3,7 @@
       ^ expected a `do` keyword or a `{` to open the lambda block
         ^ unexpected ')', expecting end-of-input
         ^ unexpected ')', ignoring it
-           ^ unexpected end-of-input, assuming it is closing the parent top level context
+         ^ unexpected '{', ignoring it
+          ^ unexpected '}', ignoring it
 ^~ expected a lambda block beginning with `do` to end with `end`
 

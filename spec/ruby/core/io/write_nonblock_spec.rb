@@ -77,6 +77,12 @@ describe 'IO#write_nonblock' do
     }
   end
 
+  it "raises an ArgumentError if exception: is not true or false" do
+    -> { @write.write_nonblock("a", exception: 0) }.should.raise ArgumentError, /expected true or false/
+    -> { @write.write_nonblock("a", exception: nil) }.should.raise ArgumentError, /expected true or false/
+    -> { @write.write_nonblock("a", exception: 'false') }.should.raise ArgumentError, /expected true or false/
+  end
+
   context "when exception option is set to false" do
     it "returns :wait_writable when the operation would block" do
       loop {

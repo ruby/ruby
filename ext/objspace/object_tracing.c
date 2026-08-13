@@ -13,7 +13,6 @@
 
 **********************************************************************/
 
-#include "internal.h"
 #include "internal/gc.h"
 #include "ruby/debug.h"
 #include "objspace.h"
@@ -95,11 +94,10 @@ newobj_i(VALUE tpval, void *data)
     st_data_t v;
 
     if (st_lookup(arg->object_table, (st_data_t)obj, &v)) {
-        /* keep_remains kept this slot's entry after its object was freed. The
-         * allocator has now reused that address, so recycle the dead entry's
-         * info. A living entry here would mean two live objects at one address. */
+        /* The allocator reused this address: recycle the stale entry.  It can still
+         * be marked living -- an object in a non-main objspace dies without a
+         * FREEOBJ hook (they are restricted to the main objspace). */
         info = (struct allocation_info *)v;
-        assert(!info->living);
         delete_unique_str(arg->str_table, info->path);
         delete_unique_str(arg->str_table, info->class_path);
     }
