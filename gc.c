@@ -4723,7 +4723,9 @@ vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
         // set the shape on it so that the GC finalizer won't try to remove
         // it again.  A "root shape" indicates to the GC that this object
         // has no fields on it, hence it won't be in the gen fields table.
-        RBASIC_SET_SHAPE_ID((VALUE)key, ROOT_SHAPE_ID);
+        if (BUILTIN_TYPE((VALUE)key) != T_NONE) {
+            RBASIC_SET_SHAPE_ID((VALUE)key, ROOT_SHAPE_ID);
+        }
         return ST_DELETE;
 
       case ST_REPLACE: {
