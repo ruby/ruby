@@ -771,4 +771,27 @@ class TestRactor < Test::Unit::TestCase
       end
     RUBY
   end
+
+  def test_io_priority_wait_on_mn_thread
+    omit 'POLLPRI/MSG_OOB semantics differ on windows' if RUBY_PLATFORM =~ /mswin|mingw/
+    # A timeout-less IO#wait(IO::PRIORITY) on an M:N thread must take the
+    # blocking path: the M:N scheduler has no event for POLLPRI and used to
+    # register nothing yet park the thread forever.
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      require 'socket'
+      r = Ractor.new do
+        serv = TCPServer.new("127.0.0.1", 0)
+        c = TCPSocket.new("127.0.0.1", serv.addr[1])
+        s = serv.accept
+        t = Thread.new { c.wait(IO::PRIORITY, nil) }
+        sleep 0.5
+        s.send("!", Socket::MSG_OOB)
+        woken = t.join(5)
+        [serv, c, s].each(&:close)
+        woken ? :ok : :timeout
+      end
+      assert_equal :ok, r.value
+    RUBY
+  end
 end
