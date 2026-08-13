@@ -571,3 +571,44 @@ assert_equal 'ok', %q{
     got == 'x' ? 'ok' : got.inspect
   end.value
 }
+
+# A ractor made runnable while every shared native thread is dedicated to a
+# blocking region must still be served: ractor_sched_enq has to wake the timer
+# thread, whose untimed sleep otherwise never ends.  [Bug #21504]
+assert_equal 'ok', %q{
+  lockpath = "mn_enq_wake_#{$$}.lock"
+  flagpath = "mn_enq_wake_#{$$}.flag"
+  begin
+    File.write(lockpath, "")
+    lock = File.open(lockpath, "r+")
+    lock.flock(File::LOCK_EX)
+    r = Ractor.new(lockpath, flagpath) do |lockpath, flagpath|
+      f = File.open(lockpath, "r+")
+      t = Thread.new do
+        sleep 0.2   # let the Ractor.receive below park first
+        # Stay off the scheduler until the timer thread is in its untimed sleep;
+        # blocking right away would be repaired by the pending 10ms timeout.
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        nil while Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0 < 0.05
+        f.flock(File::LOCK_EX)   # the last shared native thread goes dedicated
+      end
+      msg = Ractor.receive
+      File.write(flagpath, "")
+      t.join
+      msg
+    end
+    sleep 1   # r is parked, its flock thread is dedicated, the timer sleeps untimed
+    r.send(:ok)
+    served = false
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
+    until served || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+      served = File.exist?(flagpath)
+      sleep 0.05
+    end
+    lock.flock(File::LOCK_UN)
+    served ? r.value.to_s : 'the enqueued ractor was never served'
+  ensure
+    File.unlink(lockpath) rescue nil
+    File.unlink(flagpath) rescue nil
+  end
+}
