@@ -343,6 +343,8 @@ usage(const char *name, int help, int highlight, int columns)
         M("-rlibrary",	   "",			   "Require the given library."),
         M("-s",		   "",			   "Define global variables using switches following program path."),
         M("-S",		   "",			   "Search directories found in the PATH environment variable."),
+        M("-U",		   "",			   "Set default internal encoding to UTF-8. "
+          "Use twice to set external."),
         M("-v",		   "",			   "Print version; set $VERBOSE to true."),
         M("-w",		   "",			   "Synonym for -W1."),
         M("-W[level=2|:category]", "",             "Set warning flag ($-W):\n"
@@ -1728,7 +1730,10 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
             break;
 
           case 'U':
-            set_internal_encoding_once(opt, "UTF-8", 0);
+            if (RTEST(opt->intern.enc.name)) // handle second -U
+                set_external_encoding_once(opt, "UTF-8", 0);
+            else
+                set_internal_encoding_once(opt, "UTF-8", 0);
             ++s;
             goto reswitch;
 
