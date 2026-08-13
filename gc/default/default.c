@@ -563,7 +563,9 @@ struct gc_malloc_bytes {
     gc_counter_t malloc;
     gc_counter_t free;
 
-    /* Snapshots of `malloc` / `free` taken at the end of the last GC */
+    /* Baselines the increase is measured from: malloc snapshotted at GC start
+     * (gc_reset_malloc_info), free re-snapshotted at gc_sweep_finish so the
+     * sweep's own frees never count. */
     gc_counter_t malloc_at_last_gc;
     gc_counter_t free_at_last_gc;
 };
@@ -1259,6 +1261,17 @@ gc_malloc_counters_increase_unsigned(rb_objspace_t *objspace, const struct gc_ma
     if ((uint64_t)inc > SIZE_MAX) return SIZE_MAX;
 #endif
     return (size_t)inc;
+}
+
+/* Frees done while sweeping are the GC's own work, not the mutator's: advance
+ * free_at_last_gc past them so they cannot pay for the next cycle's allocation.
+ * malloc_at_last_gc stays at gc_reset_malloc_info's snapshot (GC start). */
+static inline void
+gc_malloc_counters_snapshot_free_at_last_gc(rb_objspace_t *objspace, struct gc_malloc_bytes *c)
+{
+    MALLOC_COUNTERS_LOCK(objspace);
+    gc_counter_store_release(&c->free_at_last_gc, gc_counter_load_relaxed(&c->free));
+    MALLOC_COUNTERS_UNLOCK(objspace);
 }
 
 static inline void
@@ -4885,6 +4898,13 @@ gc_sweep_finish(rb_objspace_t *objspace)
         }
     }
 
+    /* Not before: while sweeping is in progress its frees must keep reducing
+     * malloc_increase (objspace_malloc_increase_body sweeps and retries on it). */
+    gc_malloc_counters_snapshot_free_at_last_gc(objspace, &objspace->malloc_counters.counters);
+#if RGENGC_ESTIMATE_OLDMALLOC
+    gc_malloc_counters_snapshot_free_at_last_gc(objspace, &objspace->malloc_counters.oldcounters);
+#endif
+
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_SWEEP);
     gc_mode_transition(objspace, gc_mode_none);
 }
@@ -7944,8 +7964,9 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
     /* reset oldmalloc info */
 #if RGENGC_ESTIMATE_OLDMALLOC
     if (!full_mark) {
-        /* Don't snapshot on minor GC: oldmalloc_increase is meant to
-         * accumulate across minor GCs and only reset at major GC. */
+        /* No full snapshot on minor GC: oldmalloc_increase accumulates across
+         * minors and resets at major GC.  (gc_sweep_finish still advances the
+         * free baseline after every sweep.) */
         int64_t oldmalloc_increase = gc_malloc_counters_increase(objspace, &objspace->malloc_counters.oldcounters);
         if (oldmalloc_increase > 0 &&
             (uint64_t)oldmalloc_increase > objspace->rgengc.oldmalloc_increase_limit) {
@@ -8806,6 +8827,17 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
      * removal to the weak-pass drain. */
     for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
         global_objspace->global_gc.objspaces[i]->flags.during_global_gc = TRUE;
+    }
+
+    /* A global GC collects every objspace, so each needs the malloc-counter reset the
+     * driver got in gc_start_record; without it, gc_sweep_finish advancing free_at_last_gc
+     * (step 9) would leave their malloc_increase overstated by everything swept here. */
+    for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
+        rb_objspace_t *const os = global_objspace->global_gc.objspaces[i];
+        if (os != driver) {
+            os->profile.latest_gc_info = reason;
+            gc_reset_malloc_info(os, true);
+        }
     }
 
     /* step 3: settle every lazy sweep so the mark bits' meaning is fixed before the clear
