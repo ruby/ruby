@@ -24,6 +24,10 @@ objs = %w[blake3init blake3 blake3_dispatch blake3_portable]
 # Extra per-object compiler flags, keyed by object basename.
 simd_cflags = {}
 
+def blake3_disable(macro)
+  $CPPFLAGS << " -D#{macro}"
+end
+
 # Probe used to confirm the compiler both accepts +flag+ and can compile the
 # intrinsics the backend relies on.
 def blake3_have_isa?(name, flag, snippet)
@@ -55,7 +59,7 @@ when /\A(x86_64|amd64|x64)\z/i
       objs << obj
       simd_cflags[obj] = flag
     else
-      $defs << "-D#{no_macro}"
+      blake3_disable(no_macro)
     end
   end
 when /\A(aarch64|arm64)\z/i
@@ -67,11 +71,11 @@ else
   # No optimized backend wired up for this architecture (e.g. 32-bit x86,
   # ppc): build portable-only.  Disabling every x86 ISA keeps the dispatcher
   # from referencing backends we didn't compile, and NEON is forced off.
-  $defs << "-DBLAKE3_NO_SSE2"
-  $defs << "-DBLAKE3_NO_SSE41"
-  $defs << "-DBLAKE3_NO_AVX2"
-  $defs << "-DBLAKE3_NO_AVX512"
-  $defs << "-DBLAKE3_USE_NEON=0"
+  blake3_disable("BLAKE3_NO_SSE2")
+  blake3_disable("BLAKE3_NO_SSE41")
+  blake3_disable("BLAKE3_NO_AVX2")
+  blake3_disable("BLAKE3_NO_AVX512")
+  blake3_disable("BLAKE3_USE_NEON=0")
 end
 
 $objs = objs.map { |o| "#{o}.#{$OBJEXT}" }
