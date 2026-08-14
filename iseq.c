@@ -218,6 +218,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
         }
 
         ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
+        if (body->variable) xfree(body->variable);
 
         struct rb_iseq_param_keyword *pkw = (struct rb_iseq_param_keyword *)body->param.keyword;
         if (pkw != NULL) {
@@ -239,6 +240,51 @@ rb_iseq_free(const rb_iseq_t *iseq)
     }
 
     RUBY_FREE_LEAVE("iseq");
+}
+
+/* CAS-publish the out-of-lined variable struct: concurrent callers (e.g. two
+ * dumpers hitting rb_iseq_original_iseq on a shared iseq) can each build a
+ * copy, mirroring the original_iseq CAS in compile.c. */
+struct rb_iseq_variable *
+rb_iseq_variable_ensure(rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY(iseq)->variable;
+    if (v) return v;
+    v = ALLOC(struct rb_iseq_variable);
+    v->flip_count = 0;
+    v->script_lines = Qnil;
+    v->coverage = Qnil;
+    v->pc2branchindex = Qnil;
+    v->original_iseq = NULL;
+    struct rb_iseq_variable *prev = ATOMIC_PTR_CAS(ISEQ_BODY(iseq)->variable, NULL, v);
+    if (prev) {
+        xfree(v);
+        v = prev;
+    }
+    return v;
+}
+
+void
+rb_iseq_coverage_set(rb_iseq_t *iseq, VALUE cov)
+{
+    struct rb_iseq_variable *v = rb_iseq_variable_ensure(iseq);
+    RB_OBJ_WRITE(iseq, &v->coverage, cov);
+}
+
+void
+rb_iseq_pc2branchindex_set(rb_iseq_t *iseq, VALUE h)
+{
+    struct rb_iseq_variable *v = rb_iseq_variable_ensure(iseq);
+    RB_OBJ_WRITE(iseq, &v->pc2branchindex, h);
+}
+
+rb_snum_t
+rb_iseq_flip_cnt_increment(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = rb_iseq_variable_ensure((rb_iseq_t *)iseq);
+    rb_snum_t cnt = v->flip_count;
+    v->flip_count += 1;
+    return cnt;
 }
 
 typedef VALUE iseq_value_itr_t(void *ctx, VALUE obj);
@@ -376,7 +422,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 
         rb_iseq_mark_and_move_each_body_value(iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
 
-        rb_gc_mark_and_move(&body->variable.script_lines);
+        if (body->variable) rb_gc_mark_and_move(&body->variable->script_lines);
         rb_gc_mark_and_move(&body->location.label);
         rb_gc_mark_and_move(&body->location.base_label);
         rb_gc_mark_and_move(&body->location.pathobj);
@@ -488,8 +534,10 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 
         // TODO: ractor aware coverage
         if (!rb_gc_checking_shareable()) {
-            rb_gc_mark_and_move(&body->variable.coverage);
-            rb_gc_mark_and_move(&body->variable.pc2branchindex);
+            if (body->variable) {
+                rb_gc_mark_and_move(&body->variable->coverage);
+                rb_gc_mark_and_move(&body->variable->pc2branchindex);
+            }
         }
     }
 
@@ -541,6 +589,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
 
     if (ISEQ_EXECUTABLE_P(iseq) && body) {
         size += sizeof(struct rb_iseq_constant_body);
+        if (body->variable) size += sizeof(struct rb_iseq_variable);
         size += body->iseq_size * sizeof(VALUE);
         size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
         size += body->local_table_size * sizeof(ID);
@@ -755,15 +804,19 @@ prepare_iseq_build(rb_iseq_t *iseq,
     if (iseq != body->local_iseq) {
         RB_OBJ_WRITE(iseq, &body->location.base_label, ISEQ_BODY(body->local_iseq)->location.label);
     }
-    ISEQ_COVERAGE_SET(iseq, Qnil);
+    // variable is NULL from ZALLOC; accessors return the correct defaults
+    // (coverage=Qnil, flip_count=0, script_lines=Qnil, original_iseq=NULL).
+    // Only reset fields on an already-allocated variable (re-compilation).
     ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
-    body->variable.flip_count = 0;
-
-    if (NIL_P(script_lines)) {
-        RB_OBJ_WRITE(iseq, &body->variable.script_lines, Qnil);
+    if (body->variable) {
+        body->variable->flip_count = 0;
+        RB_OBJ_WRITE(iseq, &body->variable->script_lines, Qnil);
+        RB_OBJ_WRITE(iseq, &body->variable->coverage, Qnil);
     }
-    else {
-        RB_OBJ_WRITE(iseq, &body->variable.script_lines, rb_ractor_make_shareable(script_lines));
+
+    if (!NIL_P(script_lines)) {
+        struct rb_iseq_variable *v = rb_iseq_variable_ensure(iseq);
+        RB_OBJ_WRITE(iseq, &v->script_lines, rb_ractor_make_shareable(script_lines));
     }
 
     ISEQ_COMPILE_DATA_ALLOC(iseq);
@@ -1129,7 +1182,7 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
         script_lines = rb_parser_build_script_lines_from(body->script_lines);
     }
     else if (parent) {
-        script_lines = ISEQ_BODY(parent)->variable.script_lines;
+        script_lines = ISEQ_BODY(parent)->variable ? ISEQ_BODY(parent)->variable->script_lines : Qnil;
     }
 
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_loc : NULL, prepare_node_id(node),
@@ -4595,7 +4648,7 @@ static VALUE
 iseqw_script_lines(VALUE self)
 {
     const rb_iseq_t *iseq = iseqw_check(self);
-    return ISEQ_BODY(iseq)->variable.script_lines;
+    return ISEQ_BODY(iseq)->variable ? ISEQ_BODY(iseq)->variable->script_lines : Qnil;
 }
 
 /* Returns the hash of the source this iseq was compiled from, or nil if it

@@ -560,7 +560,7 @@ location_source_first_lineno(const rb_iseq_t *iseq, VALUE script_lines)
 
     while (ISEQ_BODY(source_iseq)->parent_iseq) {
         const rb_iseq_t *parent = ISEQ_BODY(source_iseq)->parent_iseq;
-        if (ISEQ_BODY(parent)->variable.script_lines != script_lines) break;
+        if ((ISEQ_BODY(parent)->variable ? ISEQ_BODY(parent)->variable->script_lines : Qnil) != script_lines) break;
         source_iseq = parent;
     }
 
@@ -608,7 +608,7 @@ location_source_range_m(VALUE self)
 
     VALUE path = rb_iseq_path(iseq);
     VALUE absolute_path = rb_iseq_realpath(iseq);
-    VALUE script_lines = ISEQ_BODY(iseq)->variable.script_lines;
+    VALUE script_lines = ISEQ_BODY(iseq)->variable ? ISEQ_BODY(iseq)->variable->script_lines : Qnil;
     VALUE source;
     VALUE parser_path = path;
     int first_lineno = 1;
