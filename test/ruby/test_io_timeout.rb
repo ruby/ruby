@@ -42,11 +42,14 @@ class TestIOTimeout < Test::Unit::TestCase
   def test_timeout_read_preserves_buffered_data
     with_pipe do |i, o|
       data = "Hello" * 4_000
-      o.write(data)
+      o.write(data.byteslice(0, 1024))
+      writer = Thread.new { o.write(data.byteslice(1024, data.bytesize - 1024)) }
       i.timeout = 0.0001
 
       assert_raise(IO::TimeoutError) {i.read}
-      assert_equal data, i.read_nonblock(data.bytesize)
+      i.timeout = 1
+      assert_equal data, i.read(data.bytesize)
+      writer.join
     end
   end
 
@@ -63,12 +66,15 @@ class TestIOTimeout < Test::Unit::TestCase
   def test_timeout_read_preserves_existing_read_buffer
     with_pipe do |i, o|
       data = "Hello" * 3_276 + "Hell"
-      o.write("header\n" + data)
+      o.write("header\n" + data.byteslice(0, 1024))
+      writer = Thread.new { o.write(data.byteslice(1024, data.bytesize - 1024)) }
       assert_equal "header\n", i.gets
       i.timeout = 0.0001
 
       assert_raise(IO::TimeoutError) {i.read(data.bytesize + 1)}
-      assert_equal data, i.read_nonblock(data.bytesize)
+      i.timeout = 1
+      assert_equal data, i.read(data.bytesize)
+      writer.join
     end
   end
 
