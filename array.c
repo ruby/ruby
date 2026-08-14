@@ -5874,6 +5874,48 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
 }
 
 
+static VALUE
+ary_and_hash_self(VALUE ary1, VALUE ary2)
+{
+    long i, j, capa = RARRAY_LEN(ary1);
+    volatile VALUE seen_buf;
+    bool *seen = ALLOCV_N(bool, seen_buf, capa);
+    VALUE hash = ary_tmp_hash_new(ary1);
+    VALUE ary3 = rb_ary_new_capa(capa);
+
+    for (i=0; i<RARRAY_LEN(ary1) && i<capa; i++) {
+        VALUE v = RARRAY_AREF(ary1, i);
+        long idx = RARRAY_LEN(ary3);
+
+        if (!rb_hash_add_new_element(hash, v, LONG2FIX(idx))) {
+            /* ary3 has room for every element from the initial ary1. */
+            RARRAY_PTR_USE(ary3, ptr, {
+                RB_OBJ_WRITE(ary3, &ptr[idx], v);
+            });
+            ARY_SET_LEN(ary3, idx + 1);
+            seen[idx] = false;
+        }
+    }
+
+    for (i=0; i<RARRAY_LEN(ary2); i++) {
+        st_data_t idx;
+        st_data_t key = (st_data_t)RARRAY_AREF(ary2, i);
+
+        if (rb_hash_stlike_delete(hash, &key, &idx)) {
+            seen[FIX2LONG((VALUE)idx)] = true;
+        }
+    }
+
+    RARRAY_PTR_USE(ary3, ptr, {
+        for (i=j=0; i<RARRAY_LEN(ary3); i++) {
+            if (seen[i]) ptr[j++] = ptr[i];
+        }
+    }); /* WB: no new reference */
+    ary_resize_smaller(ary3, j);
+    ALLOCV_END(seen_buf);
+    return ary3;
+}
+
 /*
  *  call-seq:
  *    self & other_array -> new_array
@@ -5891,8 +5933,8 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
  *
  *    [0, 1, 2] & [3, 2, 1, 0] # => [0, 1, 2]
  *
- *  Identifies common elements using method <tt>#eql?</tt>
- *  (as defined in each element of +self+).
+ *  Uses methods <tt>#hash</tt> and <tt>#eql?</tt> to identify common elements.
+ *  Which array's elements receive <tt>#eql?</tt> is not specified.
  *
  *  Related: see {Methods for Combining}[rdoc-ref:Array@Methods+for+Combining].
  */
@@ -5906,10 +5948,10 @@ rb_ary_and(VALUE ary1, VALUE ary2)
     long i;
 
     ary2 = to_ary(ary2);
-    ary3 = rb_ary_new();
-    if (RARRAY_LEN(ary1) == 0 || RARRAY_LEN(ary2) == 0) return ary3;
+    if (RARRAY_LEN(ary1) == 0 || RARRAY_LEN(ary2) == 0) return rb_ary_new();
 
     if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN && RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
+        ary3 = rb_ary_new();
         for (i=0; i<RARRAY_LEN(ary1); i++) {
             v = RARRAY_AREF(ary1, i);
             if (!rb_ary_includes_by_eql(ary2, v)) continue;
@@ -5919,6 +5961,13 @@ rb_ary_and(VALUE ary1, VALUE ary2)
         return ary3;
     }
 
+    if (RARRAY_LEN(ary1) <= RARRAY_LEN(ary2) / 2) {
+        /* Hash ary1 only when it is at most half as long as ary2.  Benchmarks
+         * show no consistent win for comparable lengths. */
+        return ary_and_hash_self(ary1, ary2);
+    }
+
+    ary3 = rb_ary_new();
     hash = ary_make_hash(ary2);
 
     for (i=0; i<RARRAY_LEN(ary1); i++) {
@@ -5936,13 +5985,14 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *  call-seq:
  *    intersection(*other_arrays) -> new_array
  *
- *  Returns a new array containing each element in +self+ that is +#eql?+
- *  to at least one element in each of the given +other_arrays+;
- *  duplicates are omitted:
+ *  Returns a new array containing the _intersection_ of +self+ and all given
+ *  +other_arrays+; that is, containing those elements found in +self+ and in
+ *  every given array. Duplicates are omitted:
  *
  *    [0, 0, 1, 1, 2, 3].intersection([0, 1, 2], [0, 1, 3]) # => [0, 1]
  *
  *  Each element must correctly implement method <tt>#hash</tt>.
+ *  Which array's elements receive <tt>#eql?</tt> is not specified.
  *
  *  Order from +self+ is preserved:
  *
