@@ -13,6 +13,7 @@
 
 #include <ctype.h>
 
+#include "constant.h"
 #include "encindex.h"
 #include "internal.h"
 #include "internal/enc.h"
@@ -698,24 +699,23 @@ enc_dup_name(st_data_t name)
     return (st_data_t)strdup((const char *)name);
 }
 
-/*
- * Returns copied alias name when the key is added for st_table,
- * else returns NULL.
- */
-static int
+static void
 enc_alias_internal(struct enc_table *enc_table, const char *alias, int idx)
 {
     ASSERT_vm_locking();
-    return st_insert2(enc_table->names, (st_data_t)alias, (st_data_t)idx,
-                      enc_dup_name);
+    st_insert2(enc_table->names, (st_data_t)alias, (st_data_t)idx,
+               enc_dup_name);
 }
 
+/*
+ * Registers alias to enc_table.
+ */
 static int
 enc_alias(struct enc_table *enc_table, const char *alias, int idx)
 {
     if (!valid_encoding_name_p(alias)) return -1;
-    if (!enc_alias_internal(enc_table, alias, idx))
-        set_encoding_const(alias, enc_from_index(enc_table, idx));
+    enc_alias_internal(enc_table, alias, idx);
+    set_encoding_const(alias, enc_from_index(enc_table, idx));
     return idx;
 }
 
@@ -754,13 +754,134 @@ rb_encdb_alias(const char *alias, const char *orig)
     return r;
 }
 
+static inline bool
+char_in_range(unsigned int c, unsigned int low, unsigned int up)
+{
+    return (c - low) <= (up - low);
+}
+
+static inline bool
+char_in_alphabet(unsigned int c)
+{
+    return char_in_range(c | ('a' ^ 'A'), 'a' | 'A', 'z' | 'Z');
+}
+
+static inline bool
+char_in_digit(unsigned int c)
+{
+    return char_in_range(c, '0', '9');
+}
+
+static inline unsigned char
+skipping(unsigned int c, const char *string)
+{
+    size_t i = 0;
+    if (c != '_' && c != '-') return c;
+    if (!(c = *string)) {
+        return '\0';
+    }
+    else if (char_in_digit(c)) {
+#if 0
+        while (char_in_alphabet(c = string[++i]));
+        if (!char_in_digit(c)) return '\0';
+#else
+        return '\0'; /* ISO-8859 => ISO8859 */
+#endif
+    }
+    else if (char_in_alphabet(c)) {
+        while (char_in_alphabet(c = string[++i]));
+        if (!char_in_digit(c)) return '\0';
+    }
+    return '-';
+}
+
+static int
+enc_name_cmp(st_data_t a1, st_data_t a2)
+{
+    const char *s1 = (const char *)a1, *s2 = (const char *)a2;
+    char c1, c2;
+    bool alpha = false;
+
+    while (1) {
+        c1 = *s1++;
+        c2 = *s2++;
+        if (c1 == '\0' || c2 == '\0') {
+            if (c1 != '\0') return 1;
+            if (c2 != '\0') return -1;
+            return 0;
+        }
+        if (char_in_range(c1, 'A', 'Z')) c1 += 'a' - 'A';
+        if (char_in_range(c2, 'A', 'Z')) c2 += 'a' - 'A';
+        if (c1 != c2) {
+            if (alpha) {
+                alpha = false;
+                if ((c1 = skipping(c1, s1)) == '\0' ||
+                    (c2 = skipping(c2, s2)) == '\0') {
+                    if (c1 != '\0' || c2 != '\0') {
+                        s1 -= c1 != '\0';
+                        s2 -= c2 != '\0';
+                    }
+                    continue;
+                }
+            }
+            if (c1 > c2)
+                return 1;
+            else
+                return -1;
+        }
+        else {
+            alpha = char_in_range(c1, 'a', 'z');
+        }
+    }
+}
+
+static st_index_t
+enc_name_hash(st_data_t arg)
+ {
+    const st_index_t FNV1_32A_INIT = 0x811c9dc5;
+    const st_index_t FNV_32_PRIME = 0x01000193;
+
+    const char *string = (const char *)arg;
+    st_index_t hval = FNV1_32A_INIT;
+    bool alpha = false;
+
+    /*
+     * FNV-1a hash each octet in the buffer
+     */
+    while (*string) {
+        unsigned int c = (unsigned char)*string++;
+        if (char_in_range(c, 'A', 'Z')) {
+            c += 'a' - 'A';
+            alpha = true;
+        }
+        else if (char_in_range(c, 'a', 'z')) {
+            alpha = true;
+        }
+        else if (alpha) {
+            alpha = false;
+            c = skipping(c, string);
+            if (c == '\0') continue;
+        }
+        hval ^= c;
+
+        /* multiply by the 32 bit FNV magic prime mod 2^32 */
+        hval *= FNV_32_PRIME;
+    }
+    return hval;
+}
+
+static const struct st_hash_type type_enc_name = {
+    enc_name_cmp,
+    enc_name_hash,
+};
+
 static void
 rb_enc_init(struct enc_table *enc_table)
 {
     ASSERT_vm_locking();
     enc_table_expand(enc_table, ENCODING_COUNT + 1);
     if (!enc_table->names) {
-        enc_table->names = st_init_strcasetable_with_size(ENCODING_LIST_CAPA);
+        enc_table->names = st_init_table_with_size(&type_enc_name, ENCODING_LIST_CAPA);
     }
 #define OnigEncodingASCII_8BIT OnigEncodingASCII
 #define ENC_REGISTER(enc) enc_register_at(enc_table, ENCINDEX_##enc, rb_enc_name(&OnigEncoding##enc), &OnigEncoding##enc)
@@ -1796,7 +1917,7 @@ void
 rb_enc_set_default_internal(VALUE encoding)
 {
     enc_set_default_encoding(&default_internal, encoding,
-                            "internal");
+                             "internal");
 }
 
 /*
@@ -1821,6 +1942,16 @@ set_default_internal(VALUE klass, VALUE encoding)
 }
 
 static void
+define_encoding_const(const char *name, VALUE encoding)
+{
+    ID cid = rb_intern(name);
+    rb_const_entry_t *entry = rb_const_lookup(rb_cEncoding, cid);
+    if (!entry || entry->value != encoding) {
+        rb_const_set(rb_cEncoding, cid, encoding);
+    }
+}
+
+static void
 set_encoding_const(const char *name, rb_encoding *enc)
 {
     VALUE encoding = rb_enc_from_encoding(enc);
@@ -1837,7 +1968,7 @@ set_encoding_const(const char *name, rb_encoding *enc)
     if (!*s) {
         if (s - name > ENCODING_NAMELEN_MAX) return;
         valid = 1;
-        rb_define_const(rb_cEncoding, name, encoding);
+        define_encoding_const(name, encoding);
     }
     if (!valid || haslower) {
         size_t len = s - name;
@@ -1859,14 +1990,14 @@ set_encoding_const(const char *name, rb_encoding *enc)
                 if (!ISALNUM(*s)) *s = '_';
             }
             if (hasupper) {
-                rb_define_const(rb_cEncoding, name, encoding);
+                define_encoding_const(name, encoding);
             }
         }
         if (haslower) {
             for (s = (char *)name; *s; ++s) {
                 if (ISLOWER(*s)) *s = ONIGENC_ASCII_CODE_TO_UPPER_CASE((int)*s);
             }
-            rb_define_const(rb_cEncoding, name, encoding);
+            define_encoding_const(name, encoding);
         }
     }
 }
