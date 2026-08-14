@@ -1108,28 +1108,45 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
 
 /*
  *  call-seq:
- *    atime -> new_time
+ *    atime -> time
  *
  * Returns a new Time object containing the access time
  * of the object represented by +self+
  * at the time +self+ was created;
- * see {Snapshot}[rdoc-ref:File::Stat@Snapshot]:
+ * see {Snapshot}[rdoc-ref:File::Stat@Snapshot].
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ *
+ * Access time for a file is established when it is created,
+ * and is updated when the file content is read:
  *
  *   filepath = 't.tmp'
- *   File.write(filepath, 'foo')
- *   file = File.new(filepath, 'w')
- *   stat = File::Stat.new(filepath)
- *   file.atime     # => 2026-03-31 16:26:39.5913207 -0500
- *   stat.atime     # => 2026-03-31 16:26:39.5913207 -0500
- *   File.write(filepath, 'bar')
- *   file.atime     # => 2026-03-31 16:27:01.4981624 -0500  # Changed by access.
- *   stat.atime     # => 2026-03-31 16:26:39.5913207 -0500  # Unchanged by access.
- *   stat = File::Stat.new(filepath)
- *   stat.atime     # => 2026-03-31 16:27:01.4981624 -0500  # New access time.
+ *   File.exist?(filepath)            # => false
+ *   file = File.open(filepath, 'w+') # Create by writing; establishes access time.
+ *   file.atime                       # => 2026-08-14 11:55:55.436283939 -0500
+ *   stat = File::Stat.new(filepath)  # Take snapshot.
+ *   stat.atime                       # => 2026-08-14 11:55:55.436283939 -0500
+ *   file.read                        # Read file content; updates file access time.
+ *   file.atime                       # => 2026-08-14 11:56:22.74241085 -0500
+ *   stat.atime                       # => 2026-08-14 11:55:55.436283939 -0500  # Not updated.
+ *   stat = File::Stat.new(filepath)  # Take new snapshot.
+ *   stat.atime                       # => 2026-08-14 11:56:22.74241085 -0500   # Updated.
+ *   # Clean up.
  *   file.close
  *   File.delete(filepath)
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ * Access time for a directory is established when it is created,
+ * and is updated when its entries are read:
+ *
+ *   dirpath = 'foo'
+     File.exist?(dirpath)     # => false
+     FileUtils.cp_r('doc', 'foo')
+     File.atime(dirpath)     # => 2026-08-14 12:05:01.476741081 -0500
+     stat = File::Stat.new(dirpath)
+     stat.atime     # => 2026-08-14 12:05:01.476741081 -0500
+
+
+ *
+ *
  */
 
 static VALUE
