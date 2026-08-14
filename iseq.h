@@ -41,40 +41,80 @@ extern const ID rb_iseq_shared_exc_local_tbl[];
 /* Ensure body->variable is allocated, returning the struct. */
 struct rb_iseq_variable *rb_iseq_variable_ensure(rb_iseq_t *iseq);
 
-#define ISEQ_COVERAGE(iseq) \
-    (ISEQ_BODY(iseq)->variable ? ISEQ_BODY(iseq)->variable->coverage : Qnil)
+static inline struct rb_iseq_variable *
+ISEQ_BODY_VARIABLE(const rb_iseq_t *iseq)
+{
+    return ISEQ_BODY(iseq)->variable;
+}
+
+/* NULL-safe read accessors for body->variable fields. */
+static inline VALUE
+ISEQ_BODY_VARIABLE_SCRIPT_LINES(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->script_lines : Qnil;
+}
+
+static inline VALUE
+ISEQ_BODY_VARIABLE_COVERAGE(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->coverage : Qfalse;
+}
+
+static inline VALUE
+ISEQ_BODY_VARIABLE_PC2BRANCHINDEX(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->pc2branchindex : Qfalse;
+}
+
+static inline rb_snum_t
+ISEQ_BODY_VARIABLE_FLIP_CNT(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->flip_count : 0;
+}
+
+static inline VALUE *
+ISEQ_BODY_VARIABLE_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->original_iseq : NULL;
+}
+
+/* Write accessors (lazily allocate variable as needed). */
 void rb_iseq_coverage_set(rb_iseq_t *iseq, VALUE cov);
-#define ISEQ_COVERAGE_SET(iseq, cov) rb_iseq_coverage_set(iseq, cov)
+void rb_iseq_pc2branchindex_set(rb_iseq_t *iseq, VALUE h);
+rb_snum_t rb_iseq_flip_cnt_increment(const rb_iseq_t *iseq);
+
+/* Short macros for reading variable fields. */
+#define ISEQ_VARIABLE(iseq)           ISEQ_BODY_VARIABLE(iseq)
+#define ISEQ_SCRIPT_LINES(iseq)       ISEQ_BODY_VARIABLE_SCRIPT_LINES(iseq)
+#define ISEQ_COVERAGE(iseq)           ISEQ_BODY_VARIABLE_COVERAGE(iseq)
+#define ISEQ_COVERAGE_SET(iseq, cov)  rb_iseq_coverage_set(iseq, cov)
 #define ISEQ_LINE_COVERAGE(iseq)      RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_LINES)
 #define ISEQ_BRANCH_COVERAGE(iseq)    RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_BRANCHES)
 
-#define ISEQ_PC2BRANCHINDEX(iseq) \
-    (ISEQ_BODY(iseq)->variable ? ISEQ_BODY(iseq)->variable->pc2branchindex : Qnil)
-void rb_iseq_pc2branchindex_set(rb_iseq_t *iseq, VALUE h);
-#define ISEQ_PC2BRANCHINDEX_SET(iseq, h) rb_iseq_pc2branchindex_set(iseq, h)
+#define ISEQ_PC2BRANCHINDEX(iseq)       ISEQ_BODY_VARIABLE_PC2BRANCHINDEX(iseq)
+#define ISEQ_PC2BRANCHINDEX_SET(iseq,h) rb_iseq_pc2branchindex_set(iseq, h)
 
-#define ISEQ_FLIP_CNT(iseq) \
-    (ISEQ_BODY(iseq)->variable ? ISEQ_BODY(iseq)->variable->flip_count : 0)
-rb_snum_t rb_iseq_flip_cnt_increment(const rb_iseq_t *iseq);
-#define ISEQ_FLIP_CNT_INCREMENT(iseq) rb_iseq_flip_cnt_increment(iseq)
+#define ISEQ_FLIP_CNT(iseq)             ISEQ_BODY_VARIABLE_FLIP_CNT(iseq)
+#define ISEQ_FLIP_CNT_INCREMENT(iseq)   rb_iseq_flip_cnt_increment(iseq)
+#define ISEQ_ORIGINAL_ISEQ(iseq)        ISEQ_BODY_VARIABLE_ORIGINAL_ISEQ(iseq)
 
 #define ISEQ_FROZEN_STRING_LITERAL_ENABLED 1
 #define ISEQ_FROZEN_STRING_LITERAL_DISABLED 0
 #define ISEQ_FROZEN_STRING_LITERAL_UNSET -1
 
-static inline VALUE *
-ISEQ_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
-{
-    return ISEQ_BODY(iseq)->variable ? ISEQ_BODY(iseq)->variable->original_iseq : NULL;
-}
-
 static inline void
 ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
 {
-    if (ISEQ_BODY(iseq)->variable) {
-        VALUE *ptr = ISEQ_BODY(iseq)->variable->original_iseq;
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    if (v) {
+        VALUE *ptr = v->original_iseq;
         if (ptr) {
-            ISEQ_BODY(iseq)->variable->original_iseq = NULL;
+            v->original_iseq = NULL;
             SIZED_FREE_N(ptr, ISEQ_BODY(iseq)->iseq_size);
         }
     }
