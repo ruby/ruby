@@ -92,7 +92,12 @@ end
 
 $preload = %w[digest]
 
-create_makefile("digest/blake3")
+create_makefile("digest/blake3") do |mk|
+  mk.grep(/^CPPFLAGS *=/) {|m|
+    m.sub!(/(?=-DRUBY_EXTCONF_H)/) {[$defs, ''].join(' ')}
+  }
+  mk
+end
 
 # Emit one explicit compile rule per SIMD backend so each gets its own
 # instruction-set flag.  mkmf's implicit .c.o rule compiles every object with
