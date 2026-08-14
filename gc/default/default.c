@@ -2578,8 +2578,14 @@ page_pool_reclaim(rb_global_objspace_t *g)
 
     rb_native_mutex_lock(&g->page_pool.lock);
 
+    /* Advising spares the first OS page of a body (it holds the in-body freelist link
+     * and the arena tag), so it needs sub-page granularity: when the OS page size is
+     * >= HEAP_PAGE_SIZE (e.g. 64KiB pages on aarch64) no body is ever advised, and
+     * advised_count must not be adjusted anywhere either. */
+    const bool can_advise = os_page_size < HEAP_PAGE_SIZE;
+
     /* Step A — advise cold bodies (immediate release: drop RSS now if the platform allows). */
-    if (os_page_size < HEAP_PAGE_SIZE) {
+    if (can_advise) {
         for (struct page_arena *a = g->page_pool.arenas; a; a = a->next) {
             for (struct heap_page_body *body = a->cold_freelist; body; ) {
                 asan_unpoison_memory_region(body, PAGE_POOL_SCRATCH_SIZE, false);
@@ -2657,7 +2663,12 @@ page_pool_reclaim(rb_global_objspace_t *g)
             rb_bug("page_pool_reclaim: munmap failed");
         }
         total_free -= PAGE_POOL_ARENA_BODIES;
-        g->page_pool.advised_count -= PAGE_POOL_ARENA_BODIES;
+        /* Every body of this arena is on its cold freelist, so Step A above has just
+         * advised all of them -- but only if this platform can advise at all. */
+        if (can_advise) {
+            g->page_pool.advised_count -= PAGE_POOL_ARENA_BODIES;
+            GC_ASSERT(g->page_pool.advised_count >= 0);
+        }
         g->page_pool.arena_count--;
         g->page_pool.arenas_unmapped++;
         if (a == g->page_pool.arena_current) {

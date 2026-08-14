@@ -304,6 +304,26 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat[:total_freed_objects], stat_heap_sum[:total_freed_objects]
   end
 
+  def test_page_pool_stat_consistency
+    omit 'no page pool' unless GC.stat.key?(:page_pool_total_pages)
+
+    # Freeing arenas back to the OS must keep page_pool_discarded_pages in range.
+    # An underflowed counter wraps to a huge value, which also makes GC.stat
+    # allocate a Bignum and perturb the object counts it reports.
+    assert_separately([], __FILE__, __LINE__, <<~RUBY, timeout: 60)
+      3.times do
+        ary = 200_000.times.map { "x" * 40 }
+        ary.clear
+        GC.start(full_mark: true, immediate_sweep: true)
+        GC.start(full_mark: true, immediate_sweep: true)
+      end
+
+      stat = GC.stat
+      assert_operator stat[:page_pool_discarded_pages], :<=, stat[:page_pool_total_pages]
+      assert_operator stat[:page_pool_arenas], :>=, 0 # arenas is always 0 if doesn't have mmap
+    RUBY
+  end
+
   def test_measure_total_time
     assert_separately([], __FILE__, __LINE__, <<~RUBY, timeout: 60)
       GC.measure_total_time = false
