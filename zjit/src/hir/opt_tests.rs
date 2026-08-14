@@ -4225,10 +4225,10 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_yield_with_too_many_args_for_lir_falls_back() {
+    fn test_yield_with_stack_args_specializes() {
         // Captured self plus eight args don't fit in C argument registers (6 on x86_64,
-        // 8 on arm64), so the profiled invokeblock specialization must not emit
-        // InvokeBlockIseqDirect.
+        // 8 on arm64); the profiled invokeblock specialization still emits
+        // InvokeBlockIseqDirect, passing the overflow arguments on the stack.
         let result = eval("
             def foo = yield(1, 2, 3, 4, 5, 6, 7, 8)
             def test = foo { |a, b, c, d, e, f, g, h| a + b + c + d + e + f + g + h }
@@ -4255,15 +4255,24 @@ mod hir_opt_tests {
           v20:Fixnum[6] = Const Value(6)
           v22:Fixnum[7] = Const Value(7)
           v24:Fixnum[8] = Const Value(8)
-          v26:BasicObject = InvokeBlock v10, v12, v14, v16, v18, v20, v22, v24 # SendFallbackReason: Too many arguments for LIR
+          v26:CPtr = GetEP 0
+          v27:CInt64 = LoadField v26, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
+          v28:CInt64[3] = Const CInt64(3)
+          v29:CInt64 = IntAnd v27, v28
+          v30:CInt64[1] = GuardBitEquals v29, CInt64(1) recompile
+          v31:CInt64[-4] = Const CInt64(-4)
+          v32:CInt64 = IntAnd v27, v31
+          v33:CPtr = LoadField v32, :code_iseq@0x1001
+          v34:CPtr[CPtr(0x1002)] = GuardBitEquals v33, CPtr(0x1002) recompile
+          v35:BasicObject = InvokeBlockIseqDirect (0x1002), v32, v10, v12, v14, v16, v18, v20, v22, v24
           CheckInterrupts
-          Return v26
+          Return v35
         ");
     }
 
     #[test]
-    fn test_inlined_yield_with_too_many_args_for_lir_falls_back() {
-        // Same as test_yield_with_too_many_args_for_lir_falls_back, but for the guard-free
+    fn test_inlined_yield_with_stack_args_specializes() {
+        // Same as test_yield_with_stack_args_specializes, but for the guard-free
         // yield dispatch inside an inlined callee whose caller passes a literal block.
         let result = eval("
             def foo = yield(1, 2, 3, 4, 5, 6, 7, 8)
@@ -4294,10 +4303,14 @@ mod hir_opt_tests {
           v35:Fixnum[6] = Const Value(6)
           v37:Fixnum[7] = Const Value(7)
           v39:Fixnum[8] = Const Value(8)
-          v41:BasicObject = InvokeBlock v25, v27, v29, v31, v33, v35, v37, v39 # SendFallbackReason: Too many arguments for LIR
+          v41:CPtr = GetEP 0
+          v42:CInt64 = LoadField v41, :VM_ENV_DATA_INDEX_SPECVAL@0x1060
+          v43:CInt64[-4] = Const CInt64(-4)
+          v44:CInt64 = IntAnd v42, v43
+          v45:BasicObject = InvokeBlockIseqDirect (0x1068), v44, v25, v27, v29, v31, v33, v35, v37, v39
           CheckInterrupts
           PopInlineFrame
-          Return v41
+          Return v45
         ");
     }
 
@@ -5245,8 +5258,9 @@ mod hir_opt_tests {
           v37:Fixnum[60] = Const Value(60)
           v39:Fixnum[70] = Const Value(70)
           v41:Fixnum[80] = Const Value(80)
-          v43:BasicObject = Send v52, :target, v27, v29, v31, v33, v35, v37, v39, v41 # SendFallbackReason: Too many arguments for LIR
-          v45:ArrayExact = NewArray v53, v56, v43
+          PatchPoint MethodRedefined(Object@0x1000, target@0x1008, cme:0x1010)
+          v59:BasicObject = SendDirect v52, 0x0, :target (0x1038), jit_entry_idx=7, v27, v29, v31, v33, v35, v37, v39, v41
+          v45:ArrayExact = NewArray v53, v56, v59
           CheckInterrupts
           Return v45
         ");

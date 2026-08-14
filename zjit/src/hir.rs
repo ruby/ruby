@@ -2690,14 +2690,8 @@ fn can_direct_send(iseq: *const rb_iseq_t, ci: *const rb_callinfo, args: &[InsnI
         return Err(SendDirectFailure::new(ArgcParamMismatch));
     }
 
-    // asm.ccall() doesn't support 6+ args. Compute the final argc after keyword setup
-    // and rest packing:
+    // Compute the final argc after keyword setup and rest packing:
     // send_argc = packed positional args + callee's total keywords (all kw slots are filled).
-    // c_argc = self + send_argc + synthetic block handler arg.
-    // Right now, the JIT entrypoint accepts the block as an param
-    // We may remove it, remove the block_arg addition to match
-    // See: https://github.com/ruby/ruby/pull/15911#discussion_r2710544982
-    let block_arg = if 0 != params.flags.has_block() { 1 } else { 0 };
     // With *rest, SendDirect receives one rest-array slot instead of each rest
     // element, so cap positional argc at required/post + filled opts + rest slot.
     let passed_opt_num = (caller_positional_i32 - min_positional).min(opt_num) as usize;
@@ -2705,12 +2699,6 @@ fn can_direct_send(iseq: *const rb_iseq_t, ci: *const rb_callinfo, args: &[InsnI
     // keyword Hash is included in the SendDirect argument count.
     let send_positional_argc = if has_rest { min_positional as usize + passed_opt_num + 1 } else { effective_positional };
     let send_argc = send_positional_argc + kw_total_num as usize;
-    let c_argc = 1 + send_argc + block_arg; // +1 for self
-
-    // TODO: Support passing arguments on the stack in C calls
-    if c_argc > C_ARG_OPNDS.len() {
-        return Err(SendDirectFailure::new(TooManyArgsForLir));
-    }
 
     // IseqCall stores the JIT entry index and argc as u16.
     if u16::try_from(send_argc).is_err() {
@@ -2991,12 +2979,6 @@ fn block_call_inlinable_iseq(iseq: IseqPtr, argc: usize) -> Result<(), SendFallb
     }
     if argc == 1 && !unsafe { rb_get_iseq_flags_ambiguous_param0(iseq) } {
         return Err(InvokeBlockNotSpecialized);
-    }
-    // The JIT-to-JIT call in gen_invoke_block_iseq_direct passes captured self plus
-    // each argument in C argument registers.
-    // TODO: Support passing arguments on the stack in C calls
-    if 1 + argc > C_ARG_OPNDS.len() {
-        return Err(TooManyArgsForLir);
     }
     if crate::codegen::block_iseq_may_throw(iseq) {
         return Err(InvokeBlockNotSpecialized);

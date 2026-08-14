@@ -22,7 +22,7 @@ use crate::state::ZJITState;
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
+use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
 use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
@@ -3937,15 +3937,26 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
 
     // If the stubbed ISEQ fails to compile, function_stub_hit exits to the
     // interpreter with this callee frame. Direct JIT-to-JIT calls pass arguments
-    // in C argument registers, so spill the packed argument locals first. The
-    // fallback path will reshape these around any optional positional gaps.
+    // in C argument registers and the rest on the native stack, so spill the
+    // packed argument locals first. The fallback path will reshape these around
+    // any optional positional gaps.
     let argc = iseq_call.argc.to_usize();
-    assert!(argc < C_ARG_OPNDS.len(), "SendDirect must fit receiver plus arguments in C argument registers");
     let local_size = unsafe { get_iseq_body_local_table_size(iseq_call.iseq.get()) }.to_usize();
     for arg_idx in 0..argc {
+        let src = if arg_idx + 1 < C_ARG_OPNDS.len() {
+            C_ARG_OPNDS[arg_idx + 1]
+        } else {
+            // The stub runs before any frame setup, so stack-passed arguments
+            // sit right above the return address (x86_64) or right at the
+            // native SP (arm64, where the return address is in a register).
+            let ret_addr_bytes = if cfg!(target_arch = "x86_64") { SIZEOF_VALUE_I32 } else { 0 };
+            let stack_arg_idx = (arg_idx + 1 - C_ARG_OPNDS.len()) as i32;
+            asm.load_into(scratch_reg, Opnd::mem(64, NATIVE_STACK_PTR, ret_addr_bytes + stack_arg_idx * SIZEOF_VALUE_I32));
+            scratch_reg
+        };
         asm.store(
             Opnd::mem(64, SP, -local_size_and_idx_to_bp_offset(local_size, arg_idx) * SIZEOF_VALUE_I32),
-            C_ARG_OPNDS[arg_idx + 1],
+            src,
         );
     }
 
