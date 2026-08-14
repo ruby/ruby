@@ -171,7 +171,10 @@ class << RubyVM::ZJIT
       :vm_write_sp_count,
       :vm_write_locals_count,
       :vm_write_stack_count,
+      :vm_read_from_parent_iseq_local_count,
       :vm_write_to_parent_iseq_local_count,
+      :vm_read_from_local_in_block_count,
+      :vm_write_to_local_in_block_count,
 
       :guard_type_count,
       :guard_type_exit_ratio,
