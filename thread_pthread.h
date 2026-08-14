@@ -52,8 +52,13 @@ struct rb_thread_sched_waiting {
         int result;
     } data;
 
-    // connected to timer_th.waiting (ordered by timeout)
+    // connected to a timer_th wheel slot (timed) or timer_th.waiting_untimed
     struct ccan_list_node node;
+
+    /* which wheel slot `node` is on; meaningful only while flags has
+     * thread_sched_waiting_timeout */
+    uint8_t wheel_lvl;
+    uint8_t wheel_slot;
 
     // connected to rb_fd_waiters.waiters of data.fd
     struct ccan_list_node fd_node;
