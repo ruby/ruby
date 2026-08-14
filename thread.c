@@ -2070,6 +2070,7 @@ thread_io_mn_schedulable(rb_thread_t *th, int events, const struct timeval *time
 
 enum io_wait_result {
     io_wait_ready,     // the MN scheduler waited and the fd is ready
+    io_wait_timed_out, // the MN scheduler waited until the timeout expired
     io_wait_unhandled, // the MN scheduler did not wait; use the blocking path
 };
 
@@ -2101,8 +2102,7 @@ thread_io_wait_events(rb_thread_t *th, int fd, int events, const struct timeval 
           case thread_sched_wait_event:
             return io_wait_ready;
           case thread_sched_wait_timeout:
-            // Let the caller re-examine the fd through the blocking path.
-            return io_wait_unhandled;
+            return io_wait_timed_out;
           case thread_sched_wait_unavailable:
             // Never waited: reporting "ready" here would fabricate readiness and
             // spin, so hand the wait back to the caller's blocking path.
@@ -4852,7 +4852,7 @@ thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct tim
     volatile int result = 0;
     nfds_t nfds;
     struct rb_io_blocking_operation blocking_operation;
-    enum ruby_tag_type state;
+    enum ruby_tag_type state = TAG_NONE;
     volatile int lerrno;
 
     RUBY_ASSERT(th);
@@ -4860,16 +4860,28 @@ thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct tim
 
     if (io) {
         blocking_operation.ec = ec;
+COMPILER_WARNING_PUSH
+#if RBIMPL_COMPILER_IS(GCC)
+COMPILER_WARNING_IGNORED(-Wdangling-pointer)
+#endif
+        // rb_io_blocking_operation_exit() below unlinks it on every path.
         rb_io_blocking_operation_enter(io, &blocking_operation);
+COMPILER_WARNING_POP
     }
 
-    if (timeout == NULL && thread_io_wait_events(th, fd, events, NULL, false) == io_wait_ready) {
-        // fd is readable
-        state = 0;
+    // A zero timeout is a plain probe; ppoll answers it without parking.
+    bool mn_wait = timeout == NULL || timeout->tv_sec != 0 || timeout->tv_usec != 0;
+
+    switch (mn_wait ? thread_io_wait_events(th, fd, events, timeout, false) : io_wait_unhandled) {
+      case io_wait_ready:
         fds[0].revents = events;
         errno = 0;
-    }
-    else {
+        break;
+      case io_wait_timed_out:
+        // revents stays 0, so the result below becomes 0 as with ppoll's timeout.
+        errno = 0;
+        break;
+      case io_wait_unhandled:
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
             rb_hrtime_t *to, rel, end = 0;

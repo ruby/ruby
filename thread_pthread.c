@@ -3202,11 +3202,17 @@ timer_thread_deq_wakeup(rb_vm_t *vm, rb_hrtime_t now, uint32_t *event_serial)
         // delete from waiting list
         ccan_list_del_init(&w->node);
 
+        rb_thread_t *th = thread_sched_waiting_thread(w);
+
+#if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
+        // An fd+timeout waiter is also on its fd's waiter list; leave it there too.
+        timer_thread_unregister_waiting(th, w->data.fd, w->flags);
+#endif
+
         // setup result
         w->flags = thread_sched_waiting_none;
         w->data.result = 0;
 
-        rb_thread_t *th = thread_sched_waiting_thread(w);
         *event_serial = w->data.event_serial;
         return th;
     }
