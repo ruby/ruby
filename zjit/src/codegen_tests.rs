@@ -713,10 +713,10 @@ fn test_yield_inline_invocation_with_args() {
 }
 
 #[test]
-fn test_yield_with_too_many_args_for_lir() {
+fn test_yield_with_stack_args() {
     // `self` + eight yield args don't fit in C argument registers (6 on x86_64, 8 on
-    // arm64), so the direct block invocation must be rejected instead of emitting an
-    // uncompilable CCall.
+    // arm64), so the direct block invocation passes the overflow arguments on the
+    // native stack.
     set_call_threshold(2);
     eval("
         def foo = yield(1, 2, 3, 4, 5, 6, 7, 8)
@@ -725,6 +725,21 @@ fn test_yield_with_too_many_args_for_lir() {
         test
     ");
     assert_snapshot!(assert_compiles("test"), @"36");
+}
+
+#[test]
+fn test_send_direct_with_stack_args() {
+    // `self` + ten args don't fit in C argument registers (6 on x86_64, 8 on arm64),
+    // so the JIT-to-JIT call passes the overflow arguments on the native stack, and
+    // the callee's JIT entry loads them from above its frame.
+    set_call_threshold(2);
+    eval("
+        def callee(a, b, c, d, e, f, g, h, i, j) = [a, b, c, d, e, f, g, h, i, j]
+        def test = callee(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]");
 }
 
 #[test]

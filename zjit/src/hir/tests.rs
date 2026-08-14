@@ -293,11 +293,18 @@ mod snapshot_tests {
           v23:Fixnum[7] = Const Value(7)
           v25:Fixnum[8] = Const Value(8)
           v26:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15, v17, v19, v21, v23, v25], locals: [] }
-          v27:BasicObject = Send v6, :foo, v11, v13, v15, v17, v19, v21, v23, v25 # SendFallbackReason: Too many arguments for LIR
-          v28:Any = Snapshot FrameState { pc: 0x1010, stack: [v27], locals: [] }
-          PatchPoint NoTracePoint
+          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
+          v34:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          v35:Any = Snapshot FrameState { pc: 0x1008, stack: [v34, v11, v13, v19, v21, v17, v15, v23, v25], locals: [] }
+          v64:Fixnum[0] = Const Value(0)
+          v37:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
+          PushInlineFrame :foo, v34 (0x1048), num_args=8
+          v58:Any = Snapshot FrameState { pc: 0x1070, stack: [v19, v21, v17, v15, v11, v13, v23, v25], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v64], caller: v37 }
+          v59:ArrayExact = NewArray v19, v21, v17, v15, v11, v13, v23, v25
+          v60:Any = Snapshot FrameState { pc: 0x1078, stack: [v59], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v64], caller: v37 }
           CheckInterrupts
-          Return v27
+          PopInlineFrame
+          Return v59
         ");
     }
 }

@@ -250,7 +250,7 @@ pub use crate::backend::current::{
     mem_base_reg,
     Reg,
     EC, CFP, SP,
-    NATIVE_BASE_PTR,
+    NATIVE_BASE_PTR, NATIVE_STACK_PTR,
     C_ARG_OPNDS, C_RET_OPND,
 };
 
@@ -2575,23 +2575,9 @@ impl Assembler
             if self.basic_blocks[block_id.0].is_dummy() { continue; }
             let params = self.basic_blocks[block_id.0].parameters.clone();
 
-            // JIT-to-JIT entries that would need more argument registers should
-            // be unreachable because can_direct_send() refuses to call them.
-            // Keep compiling the function body, but make the unsupported entry
-            // abort if control ever reaches it. TODO: Remove this (Shopify/ruby#916)
-            if params.len() > C_ARG_OPNDS.len() {
-                let insert_pos = self.basic_blocks[block_id.0].insns.iter()
-                    .position(|insn| matches!(insn, Insn::FrameSetup { .. }))
-                    .or_else(|| self.basic_blocks[block_id.0].insns.iter().position(|insn| matches!(insn, Insn::Label(_))).map(|idx| idx + 1))
-                    .unwrap_or(0);
-                self.basic_blocks[block_id.0].insns.insert(insert_pos, Insn::Abort);
-                self.basic_blocks[block_id.0].insn_ids.insert(insert_pos, None);
-                continue;
-            }
-
             // Rewrite VRegs to physical registers before sequentialization
             // so the parcopy algorithm can detect physical register conflicts.
-            let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
+            let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().take(C_ARG_OPNDS.len()).enumerate()
                 .map(|(i, param)| parcopy::RegisterCopy::<Opnd> {
                     source: C_ARG_OPNDS[i],
                     destination: Self::rewritten_opnd(*param, intervals, regs),
@@ -2602,7 +2588,7 @@ impl Assembler
             debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
                 "parcopy must operate on physical registers, not VRegs");
             let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
-            let moves: Vec<Insn> = sequentialized
+            let mut moves: Vec<Insn> = sequentialized
                 .iter()
                 .map(|copy| match copy.source {
                     Opnd::Value(_) => Insn::LoadInto {
@@ -2616,9 +2602,26 @@ impl Assembler
                 })
                 .collect();
 
-            // Find the position after FrameSetup to insert moves
+            // Parameters beyond the argument registers are passed on the native
+            // stack, as specified by the C ABI: handle_caller_saved_regs() in the
+            // caller pushes them right below its frame, so with the return
+            // address and the saved frame pointer in between ([Self::frame_size]
+            // bytes on both platforms), they sit right above this frame's
+            // NATIVE_BASE_PTR. Load them after the register moves above so that
+            // no argument register is clobbered before its copy is done.
+            for (stack_idx, param) in params.iter().enumerate().skip(C_ARG_OPNDS.len())
+                .map(|(i, param)| (i - C_ARG_OPNDS.len(), param)) {
+                let src = Opnd::mem(64, NATIVE_BASE_PTR, Self::frame_size() + stack_idx as i32 * SIZEOF_VALUE_I32);
+                moves.push(Insn::Mov { dest: Self::rewritten_opnd(*param, intervals, regs), src });
+            }
+
+            // Find the position after FrameSetup to insert moves. They must come
+            // after FrameSetup (not before) because spilled destinations and
+            // stack-passed parameter sources are NATIVE_BASE_PTR-relative, and
+            // NATIVE_BASE_PTR points at the caller's frame until FrameSetup.
             let insert_pos = self.basic_blocks[block_id.0].insns.iter()
                 .position(|insn| matches!(insn, Insn::FrameSetup { .. }))
+                .map(|idx| idx + 1)
                 .or_else(|| self.basic_blocks[block_id.0].insns.iter().position(|insn| matches!(insn, Insn::Label(_))).map(|idx| idx + 1))
                 .unwrap_or(0);
 
@@ -5143,18 +5146,26 @@ mod tests {
     }
 
     #[test]
-    fn test_resolve_ssa_entry_params_too_many_abort() {
+    fn test_resolve_ssa_entry_params_beyond_arg_regs_use_stack() {
         let mut asm = Assembler::new();
         let block = asm.new_block(hir::BlockId(0), true, 0);
         asm.set_current_block(block);
         let label = asm.new_label("bb0");
         asm.write_label(label);
 
-        for _ in 0..=C_ARG_OPNDS.len() {
+        let params: Vec<Opnd> = (0..=C_ARG_OPNDS.len()).map(|_| {
             let param = asm.new_vreg(64);
             asm.basic_blocks[block.0].add_parameter(param);
+            param
+        }).collect();
+        // Use every parameter so they are all live and get allocations.
+        let mut acc = params[0];
+        for &param in &params[1..] {
+            let out = asm.new_vreg(64);
+            asm.basic_blocks[block.0].push_insn(Insn::Add { left: acc, right: param, out });
+            acc = out;
         }
-        asm.basic_blocks[block.0].push_insn(Insn::CRet(Opnd::UImm(0)));
+        asm.basic_blocks[block.0].push_insn(Insn::CRet(acc));
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(0);
@@ -5165,7 +5176,16 @@ mod tests {
 
         asm.resolve_ssa(&intervals, &regs);
 
-        assert!(matches!(asm.basic_blocks[block.0].insns[1], Insn::Abort));
+        // The parameter that doesn't fit in argument registers is loaded from
+        // the caller's outgoing-argument area, right above this frame's
+        // return address and saved frame pointer.
+        let insns = &asm.basic_blocks[block.0].insns;
+        assert!(!insns.iter().any(|insn| matches!(insn, Insn::Abort)), "no entry should abort");
+        let expected_src = Opnd::mem(64, NATIVE_BASE_PTR, Assembler::frame_size());
+        assert!(
+            insns.iter().any(|insn| matches!(insn, Insn::Mov { src, .. } if *src == expected_src)),
+            "expected a load from {expected_src:?}, got: {insns:?}"
+        );
     }
 
     fn build_critical_edge() -> (Assembler, Opnd, Opnd, Opnd, Opnd, Opnd, BlockId, BlockId, BlockId) {
