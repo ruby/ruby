@@ -2524,25 +2524,42 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *    File.atime(object) -> new_time
+ *    File.atime(object) -> time
  *
  * Returns a new Time object containing the time of the most recent
- * access (read or write) to the object,
- * which may be a string filepath or dirpath, or a File or Dir object:
+ * access to the given +object+.
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ *
+ * Access time for a file is established when it is created,
+ * and is updated when the file content is read:
  *
  *   filepath = 't.tmp'
- *   File.exist?(filepath)             # => false
- *   File.atime(filepath)              # Raises Errno::ENOENT.
- *   File.write(filepath, 'foo')
- *   File.atime(filepath)              # => 2026-03-31 16:39:37.9290772 -0500
- *   File.write(filepath, 'bar')
- *   File.atime(filepath)              # => 2026-03-31 16:39:57.7710876 -0500
+ *   File.exist?(filepath)       # => false
+ *   File.atime(filepath)        # Raises Errno::ENOENT.
+ *   File.write(filepath, 'foo') # Create by writing; establishes access time.
+ *   File.atime(filepath)        # => 2026-08-14 10:02:39.721407762 -0500
+ *   File.read(filepath)         # Read file content; updates access time.
+ *   File.atime(filepath)        # => 2026-08-14 10:03:02.520494995 -0500
+ *   File.delete(filepath)       # Clean up.
  *
- *   File.atime('.')                   # => 2026-03-31 16:47:49.0970483 -0500
+ * Access time for a directory is established when it is created,
+ * and is updated when its entries are read:
+ *
+ *   dirpath = 'foo'
+ *   File.exist?(dirpath)         # => false
+ *   File.atime(dirpath)          # Raises Errno::ENOENT.
+ *   FileUtils.cp_r('doc', 'foo') # Create by copying; establishes access time.
+ *   File.atime(dirpath)          # => 2026-08-14 10:32:59.229951125 -0500
+ *   Dir.entries(dirpath)         # Read directory entries; updates access time.
+ *   File.atime(dirpath)          # => 2026-08-14 10:33:05.679978581 -0500
+ *   FileUtils.rm_rf(dirpath)     # Clean up.
+ *
+ * Argument +object+ may be a string path (as above),
+ * a File object, or a Dir object:
+ *
  *   File.atime(File.new('README.md')) # => 2026-03-31 11:15:27.8215934 -0500
  *   File.atime(Dir.new('.'))          # => 2026-03-31 12:39:45.5910591 -0500
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
