@@ -4497,17 +4497,11 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         }
     }
 
-    /* main's local GC is lock-free, but freeing a shareable object referenced from a
-     * VM-global weak table (rb_gc_obj_free_vm_weak_references: ci_table, fstring, symbol,
-     * cme) mutates that table, so wrap the page's free loop in a no-barrier VM lock.
-     * Under a global GC the barrier already protects those tables, and a compacting
-     * local GC holds the barrier VM lock from gc_enter, so this nests harmlessly.  A
-     * non-main Ractor's local GC never frees such objects and does not take it. */
-    const bool sweep_needs_vm_lock =
-        objspace == global_objspace->main_objspace && rb_gc_multi_ractor_p() && !objspace->flags.during_global_gc;
-    unsigned int sweep_lock_lev = 0;
-    if (sweep_needs_vm_lock) sweep_lock_lev = RB_GC_VM_LOCK_NO_BARRIER();
-
+    /* pinned_roots_mark pins every shareable object each local cycle, so a local GC
+     * only ever frees non-shareable objects.  VM-global weak tables hold only shareable
+     * entries, so their per-object cleanup is unreachable here; the one reachable path
+     * (rb_free_generic_ivar) uses its own mutex. This is the same reason a non-main ractor's
+     * sweep is already lock-free. Compacting and global GCs hold the barrier lock already. */
     for (int i = 0; i < bitmap_plane_count; i++) {
         bitset = ~bits[i];
         if (bitset) {
@@ -4515,8 +4509,6 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         }
         p += BITS_BITLENGTH * slot_size;
     }
-
-    if (sweep_needs_vm_lock) RB_GC_VM_UNLOCK_NO_BARRIER(sweep_lock_lev);
 
     /* Bulk-clear the freed slots' shareable and shref bits before the freelist is
      * published, so a reused slot is clean.  Freed slots are exactly the unmarked ones,
