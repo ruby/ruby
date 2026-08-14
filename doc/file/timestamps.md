@@ -28,7 +28,7 @@ Each of these methods updates the access time and modification time for an entry
 
 ## \File Timestamps
 
-|     Operation      |  Affects<br>btime  | Affects<br>ctime | Affects<br>mtime |      Affects<br>atime      |
+|     Operation      |  Affects<br>birthtime  | Affects<br>ctime | Affects<br>mtime |      Affects<br>atime      |
 |:------------------:|:------------------:|:----------------:|:----------------:|:--------------------------:|
 |       Create       |      **Yes**       |     **Yes**      |     **Yes**      |          **Yes**           |
 |   Write content    |         No         |        No        |       **Yes**    |             No             |
@@ -40,7 +40,7 @@ Each of these methods updates the access time and modification time for an entry
 
 ## Directory Timestamps
 
-|     Operation      | Affects<br>btime | Affects<br>ctime | Affects<br>mtime |      Affects<br>atime      |
+|     Operation      | Affects<br>birthtime | Affects<br>ctime | Affects<br>mtime |      Affects<br>atime      |
 |:------------------:|:----------------:|:----------------:|:----------------:|:--------------------------:|
 |       Create       |     **Yes**      |     **Yes**      |   **Yes**        |          **Yes**           |
 |   Write entries    |        No        |        No        |     **Yes**      |             No             |
