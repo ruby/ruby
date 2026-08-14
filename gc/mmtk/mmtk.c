@@ -704,15 +704,6 @@ rb_mmtk_align_obj_size(size_t object_size)
     return (object_size + MMTk_MIN_OBJ_ALIGN - 1) & ~((size_t)MMTk_MIN_OBJ_ALIGN - 1);
 }
 
-static inline size_t
-rb_mmtk_total_obj_size(size_t payload_size)
-{
-    if (payload_size < sizeof(struct RBasic) + sizeof(VALUE)) {
-        payload_size = sizeof(struct RBasic) + sizeof(VALUE);
-    }
-    return rb_mmtk_align_obj_size(payload_size + sizeof(VALUE));
-}
-
 bool
 rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass,
                                  struct rb_gc_zjit_fastpath *fastpath)
@@ -720,7 +711,7 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
 #if USE_ZJIT
     struct objspace *objspace = objspace_ptr;
 
-    size_t total_size = rb_mmtk_total_obj_size(alloc_size);
+    size_t total_size = rb_mmtk_align_obj_size(alloc_size + sizeof(VALUE));
     size_t object_size = total_size - sizeof(VALUE);
     size_t value_size_shift = sizeof(VALUE) == 8 ? 3 : 2;
 
@@ -1035,7 +1026,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     }
 
     // Layout: [hidden size header (sizeof(VALUE))][payload (alloc_size)]
-    size_t total_size = rb_mmtk_total_obj_size(alloc_size);
+    size_t total_size = rb_mmtk_align_obj_size(alloc_size + sizeof(VALUE));
     size_t object_size = total_size - sizeof(VALUE);
     MMTk_AllocationSemantics semantics = total_size > objspace->max_non_los_default_alloc_bytes
         ? MMTK_ALLOCATION_SEMANTICS_LOS
@@ -1093,7 +1084,7 @@ rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
         rb_bug("rb_gc_impl_size_slot_size: size too large (size=%"PRIuSIZE")", size);
     }
 
-    return rb_mmtk_total_obj_size(size) - sizeof(VALUE);
+    return rb_mmtk_align_obj_size(size + sizeof(VALUE)) - sizeof(VALUE);
 }
 
 bool
