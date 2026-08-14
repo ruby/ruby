@@ -3333,20 +3333,18 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
      * live there.  A non-main Ractor's local GC skips them; a global GC walks all. */
     if (global_gc || objspace == vm->ractor.main_ractor->objspace) {
         /* Only the main Ractor can register at_exit/END procs (a non-main one gets an
-         * IsolationError), and end_procs is a lock-free linked list, so only main --
-         * the thread that registers, or a stop-the-world global GC, walks it. */
+         * IsolationError) so end_procs is a lock-free linked list */
         MARK_CHECKPOINT("end_proc");
         rb_mark_end_proc();
 
         MARK_CHECKPOINT("vm");
-        /* rb_vm_mark walks VM-global weak tables that other Ractors rewrite under the
-         * VM lock, so main's otherwise lock-free local GC takes a no-barrier VM lock
-         * for this stretch; under a global GC the barrier already protects it. */
+        /* rb_vm_mark and the JIT root marks walk VM-global weak tables and shared singleton
+         * JIT state that other Ractors rewrite under the VM lock, so main's otherwise
+         * lock-free local GC takes the VM lock for this stretch */
         const bool vm_mark_needs_lock = rb_multi_ractor_p() && !global_gc;
         unsigned int vm_mark_lock_lev = 0;
         if (vm_mark_needs_lock) vm_mark_lock_lev = RB_GC_VM_LOCK_NO_BARRIER();
         rb_vm_mark(vm);
-        if (vm_mark_needs_lock) RB_GC_VM_UNLOCK_NO_BARRIER(vm_mark_lock_lev);
 
         if (global_gc) {
             /* Mark and pin the shareable REFs of in-flight (off-heap) move couriers,
@@ -3376,6 +3374,7 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
             rb_zjit_root_mark();
         }
 #endif
+        if (vm_mark_needs_lock) RB_GC_VM_UNLOCK_NO_BARRIER(vm_mark_lock_lev);
 
         if (global_gc || rb_gc_single_objspace_p()) {
             MARK_CHECKPOINT("global_symbols");

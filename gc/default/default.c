@@ -4693,12 +4693,11 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         }
     }
 
-    /* main's local GC is lock-free, but freeing a shareable object referenced from a
-     * VM-global weak table (rb_gc_obj_free_vm_weak_references: ci_table, fstring, symbol,
-     * cme) mutates that table, so wrap the page's free loop in a no-barrier VM lock.
-     * Under a global GC the barrier already protects those tables, and a compacting
-     * local GC holds the barrier VM lock from gc_enter, so this nests harmlessly.  A
-     * non-main Ractor's local GC never frees such objects and does not take it. */
+    /* main's local GC is lock-free, but freeing a dead object can mutate VM-global state
+     * that other Ractors rewrite under the VM lock: weak tables (rb_gc_obj_free_vm_weak_
+     * references: ci_table, fstring, symbol, cme). (JIT iseq frees are not reached here:
+     * iseqs are born shareable and a local GC never frees shareable objects.) Wrap the
+     * page's free loop in a no-barrier VM lock (FIXME). */
     const bool sweep_needs_vm_lock =
         objspace == global_objspace->main_objspace && rb_gc_multi_ractor_p() && !objspace->flags.during_global_gc;
     unsigned int sweep_lock_lev = 0;
@@ -8543,18 +8542,18 @@ gc_clock_end(struct timespec *ts)
 }
 
 /* Whether a non-global local GC holds the no-barrier VM lock for its whole run.  Main's
- * ordinary local GC is lock-free; only its compaction or an enabled JIT holds it (see the
- * comment in the function body). */
+ * ordinary local GC is lock-free; only compaction holds it (see the comment in the
+ * function body). */
 static inline bool
 gc_local_gc_holds_vm_lock(const rb_objspace_t *objspace)
 {
-    /* Main's local GC is lock-free at the gc_enter level (bounded no-barrier windows
-     * cover the VM-global weak tables; compaction takes its barrier lock separately).
-     * What DOES hold the lock for the whole GC is an enabled JIT: marking reaches
-     * rb_yjit_iseq_mark / rb_zjit_iseq_mark through shareable iseq payloads, which must
-     * exclude another Ractor's concurrent compile (rb_iseq_mark_and_move asserts it). */
+    /* Main's local GC is lock-free at the gc_enter level.  The VM-global roots and JIT
+     * root marks that need the VM lock take a bounded no-barrier window in rb_gc_mark_roots.
+     * (JIT iseq payload marks and frees are not reached during a local GC: iseqs are born
+     * shareable and a local GC never traverses or frees them.)  Compaction takes its
+     * barrier lock separately (gc_enter handles it before this function runs). */
     return objspace == global_objspace->main_objspace &&
-           (objspace->flags.during_compacting || rb_yjit_enabled_p || rb_zjit_enabled_p);
+           objspace->flags.during_compacting;
 }
 
 static inline bool
@@ -8562,20 +8561,15 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
 {
     /* A local GC runs on its owner thread and takes neither the VM lock nor a barrier:
      * containment makes the heap single-writer (only a stop-the-world global GC writes pages
-     * across objspaces).  There are two exceptions.
+     * across objspaces).
      *
-     * - A global GC stops the world (VM lock + barrier).  A GC has no safepoints and a
-     *   thread only joins after gc_exit, so the barrier implicitly waits for every in-flight
-     *   local GC.
-     * - Main objspace's local GC also walks VM-global roots (rb_vm_mark) that change under
-     *   the VM lock, so it takes the lock without raising a barrier.  Non-main objspaces run
-     *   as they are.  A thread waiting for the VM lock here joins a pending global barrier
-     *   *before* starting its own GC, never in the middle of one.
+     * Main's local GC walks VM-global roots (rb_vm_mark) and JIT root marks that change under
+     * the VM lock but takes the lock in rb_gc_mark_roots rather than holding it for the full GC.
      *
-     * Hence a GC must never take the VM lock from inside itself: the waiter would join a
-     * pending barrier mid-collection and expose its half-collected heap to the global GC.
-     * Shared structures the GC paths touch use their own native mutexes (registered
-     * globals, generic fields) or the page-pool lock. */
+     * NOTE: The GC must never take the barrier VM lock from inside itself: the waiter could
+     * join a pending barrier mid-collection and expose its half-collected heap to the global
+     * GC. A no-barrier lock is safe. Other shared structures the GC paths touch use their own
+     * native mutexes or the page-pool lock. */
     *lock_lev = 0;
 
     RUBY_DTRACE_GC_HOOK(ENTER, event);
