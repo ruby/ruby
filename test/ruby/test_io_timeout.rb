@@ -44,7 +44,7 @@ class TestIOTimeout < Test::Unit::TestCase
       data = "Hello" * 4_000
       o.write(data.byteslice(0, 1024))
       writer = Thread.new { o.write(data.byteslice(1024, data.bytesize - 1024)) }
-      i.timeout = 0.0001
+      i.timeout = 0.1
 
       assert_raise(IO::TimeoutError) {i.read}
       i.timeout = 1
@@ -69,7 +69,7 @@ class TestIOTimeout < Test::Unit::TestCase
       o.write("header\n" + data.byteslice(0, 1024))
       writer = Thread.new { o.write(data.byteslice(1024, data.bytesize - 1024)) }
       assert_equal "header\n", i.gets
-      i.timeout = 0.0001
+      i.timeout = 0.1
 
       assert_raise(IO::TimeoutError) {i.read(data.bytesize + 1)}
       i.timeout = 1
