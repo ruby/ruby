@@ -423,9 +423,8 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 
 #if USE_YJIT || USE_ZJIT
         /* The JIT payload's critical section is the VM lock (racing other Ractors'
-         * compile/invalidate; yjit/zjit assert it).  A lock-free local GC also reaches
-         * here, so take it without joining a barrier.  mmtk marks on a GC worker with no
-         * EC, where the lock cannot be taken, nor needed: stop-the-world. */
+         * compile/invalidate). Iseqs are born shareable, so a multi-Ractor local GC
+         * never traverses them. */
         const bool jit_payload_lock_p = rb_gc_multi_objspace_p();
         bool jit_payload_p = false;
 # if USE_YJIT
