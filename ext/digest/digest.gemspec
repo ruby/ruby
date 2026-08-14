@@ -37,9 +37,6 @@ Gem::Specification.new do |spec|
     spec.extensions = Dir["ext/digest/**/extconf.rb"]
 
     spec.files += Dir["ext/digest/**/{*.{rb,c,h,sh},depend}"]
-    # Vendored third-party license files (e.g. BLAKE3's LICENSE_*), which
-    # carry no filename extension and are missed by the glob above.
-    spec.files += Dir["ext/digest/**/LICENSE*"]
     spec.require_paths = %w[lib]
   end
 
