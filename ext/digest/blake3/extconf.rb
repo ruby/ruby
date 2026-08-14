@@ -78,6 +78,18 @@ $objs = objs.map { |o| "#{o}.#{$OBJEXT}" }
 
 have_header("sys/cdefs.h")
 
+checking_for("C11 atomics") do
+  ok = try_compile(<<~C)
+    static _Atomic int atomic_int = 0;
+    static int t(void) {return atomic_int;}
+    #{MAIN_DOES_NOTHING 't'}
+  C
+  unless ok
+    $defs << "-DBLAKE3_ATOMICS=0"
+  end
+  ok
+end
+
 $preload = %w[digest]
 
 create_makefile("digest/blake3")
