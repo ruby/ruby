@@ -3091,9 +3091,22 @@ static struct {
     struct kevent finished_events[KQUEUE_EVENTS_MAX];
 #endif
 
-    // waiting threads list
-    struct ccan_list_head waiting; // waiting threads in ractors
+#if USE_MN_THREADS
+    /* Timed waiters, bucketed by deadline into a hierarchical timer wheel;
+     * untimed (fd-only) waiters keep a plain list.  Both under waiting_lock.
+     * The wheel operations all live in thread_pthread_mn.c (timer_wheel_*). */
+#define TIMER_WHEEL_LEVELS 4
+#define TIMER_WHEEL_SLOT_BITS 6
+#define TIMER_WHEEL_SLOTS (1 << TIMER_WHEEL_SLOT_BITS)
+    struct timer_wheel_level {
+        uint64_t occupied; // bit s: slots[s] is non-empty
+        struct ccan_list_head slots[TIMER_WHEEL_SLOTS];
+    } wheel[TIMER_WHEEL_LEVELS];
+    uint64_t wheel_cursor_tick; // slots for ticks <= this are drained
+    rb_hrtime_t next_expiry;   // never later than the earliest deadline
+    struct ccan_list_head waiting_untimed;
     pthread_mutex_t waiting_lock;
+#endif
 
 #if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
     // fd -> struct rb_fd_waiters, in chunks so entries never move.
@@ -3109,21 +3122,8 @@ static struct {
 
 static void timer_thread_check_timeslice(rb_vm_t *vm);
 static int timer_thread_set_timeout(rb_vm_t *vm);
-static void timer_thread_wakeup_thread(rb_thread_t *th, uint32_t event_serial);
-static rb_thread_t *thread_sched_waiting_thread(struct rb_thread_sched_waiting *w);
 
 #include "thread_pthread_mn.c"
-
-static rb_thread_t *
-thread_sched_waiting_thread(struct rb_thread_sched_waiting *w)
-{
-    if (w) {
-        return (rb_thread_t *)((size_t)w - offsetof(rb_thread_t, sched.waiting_reason));
-    }
-    else {
-        return NULL;
-    }
-}
 
 static int
 timer_thread_set_timeout(rb_vm_t *vm)
@@ -3154,31 +3154,7 @@ timer_thread_set_timeout(rb_vm_t *vm)
     }
     ractor_sched_unlock(vm, NULL);
 
-    // Always check waiting threads to find minimum timeout
-    // even when scheduler has work (grq_cnt > 0)
-    rb_native_mutex_lock(&timer_th.waiting_lock);
-    {
-        struct rb_thread_sched_waiting *w = ccan_list_top(&timer_th.waiting, struct rb_thread_sched_waiting, node);
-        rb_thread_t *th = thread_sched_waiting_thread(w);
-
-        if (th && (th->sched.waiting_reason.flags & thread_sched_waiting_timeout)) {
-            rb_hrtime_t now = rb_hrtime_now();
-            rb_hrtime_t hrrel = rb_hrtime_sub(th->sched.waiting_reason.data.timeout, now);
-
-            RUBY_DEBUG_LOG("th:%u now:%lu rel:%lu", rb_th_serial(th), (unsigned long)now, (unsigned long)hrrel);
-
-            rb_hrtime_t msec = (hrrel + RB_HRTIME_PER_MSEC - 1) / RB_HRTIME_PER_MSEC;
-            // A deadline further away than INT_MAX ms must clamp, not truncate:
-            // a negative timeout would be an untimed epoll_wait.
-            int thread_timeout = msec > INT_MAX ? INT_MAX : (int)msec; // ms
-
-            // Use minimum of scheduler timeout and thread sleep timeout
-            if (timeout < 0 || thread_timeout < timeout) {
-                timeout = thread_timeout;
-            }
-        }
-    }
-    rb_native_mutex_unlock(&timer_th.waiting_lock);
+    timeout = timer_wheel_timeout(timeout);
 
     RUBY_DEBUG_LOG("timeout:%d inf:%d", timeout, (int)vm->ractor.sched.timeslice_wait_inf);
 
@@ -3197,83 +3173,6 @@ timer_thread_check_signal(rb_vm_t *vm)
         RUBY_DEBUG_LOG("signum:%d", signum);
         threadptr_trap_interrupt(vm->ractor.main_thread);
     }
-}
-
-static bool
-timer_thread_check_exceed(rb_hrtime_t abs, rb_hrtime_t now)
-{
-    return abs <= now;
-}
-
-static rb_thread_t *
-timer_thread_deq_wakeup(rb_vm_t *vm, rb_hrtime_t now, uint32_t *event_serial)
-{
-    struct rb_thread_sched_waiting *w = ccan_list_top(&timer_th.waiting, struct rb_thread_sched_waiting, node);
-
-    if (w != NULL &&
-        (w->flags & thread_sched_waiting_timeout) &&
-        timer_thread_check_exceed(w->data.timeout, now)) {
-
-        RUBY_DEBUG_LOG("wakeup th:%u", rb_th_serial(thread_sched_waiting_thread(w)));
-
-        // delete from waiting list
-        ccan_list_del_init(&w->node);
-
-        rb_thread_t *th = thread_sched_waiting_thread(w);
-
-#if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
-        // An fd+timeout waiter is also on its fd's waiter list; leave it there too.
-        timer_thread_unregister_waiting(th, w->data.fd, w->flags);
-#endif
-
-        // setup result
-        w->flags = thread_sched_waiting_none;
-        w->data.result = 0;
-
-        *event_serial = w->data.event_serial;
-        return th;
-    }
-
-    return NULL;
-}
-
-static void
-timer_thread_wakeup_thread_locked(struct rb_thread_sched *sched, rb_thread_t *th, uint32_t event_serial)
-{
-    if (sched->running != th && th->sched.event_serial == event_serial) {
-        thread_sched_to_ready_common(sched, th, true, false);
-    }
-}
-
-static void
-timer_thread_wakeup_thread(rb_thread_t *th, uint32_t event_serial)
-{
-    RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
-    struct rb_thread_sched *sched = TH_SCHED(th);
-
-    thread_sched_lock(sched, th);
-    {
-        timer_thread_wakeup_thread_locked(sched, th, event_serial);
-    }
-    thread_sched_unlock(sched, th);
-}
-
-static void
-timer_thread_check_timeout(rb_vm_t *vm)
-{
-    rb_hrtime_t now = rb_hrtime_now();
-    rb_thread_t *th;
-    uint32_t event_serial;
-
-    rb_native_mutex_lock(&timer_th.waiting_lock);
-    {
-        while ((th = timer_thread_deq_wakeup(vm, now, &event_serial)) != NULL) {
-            rb_native_mutex_unlock(&timer_th.waiting_lock);
-            timer_thread_wakeup_thread(th, event_serial);
-            rb_native_mutex_lock(&timer_th.waiting_lock);
-        }
-    }
-    rb_native_mutex_unlock(&timer_th.waiting_lock);
 }
 
 static void
@@ -3420,8 +3319,18 @@ rb_thread_create_timer_thread(void)
             // starts over.
         }
 
-        ccan_list_head_init(&timer_th.waiting);
+#if USE_MN_THREADS
+        for (int lvl = 0; lvl < TIMER_WHEEL_LEVELS; lvl++) {
+            timer_th.wheel[lvl].occupied = 0;
+            for (int slot = 0; slot < TIMER_WHEEL_SLOTS; slot++) {
+                ccan_list_head_init(&timer_th.wheel[lvl].slots[slot]);
+            }
+        }
+        timer_th.wheel_cursor_tick = timer_wheel_tick(rb_hrtime_now());
+        timer_th.next_expiry = TIMER_WHEEL_NO_EXPIRY;
+        ccan_list_head_init(&timer_th.waiting_untimed);
         rb_native_mutex_initialize(&timer_th.waiting_lock);
+#endif
 
         // open communication channel
         setup_communication_pipe_internal(timer_th.comm_fds);
