@@ -33,8 +33,7 @@ Each of these methods updates the access time and modification time for an entry
 |       Create       |      **Yes**       |     **Yes**      |     **Yes**      |          **Yes**           |
 |   Write content    |         No         |        No        |       **Yes**    |             No             |
 |    Read content    |         No         |        No        |        No        | *Filesystem-<br>dependent* |
-|       Rename       |         No         |     **Yes**      |        No        |             No             |
-|        Move        |         No         |     **Yes**      |        No        |             No             |
+|      Rename/Move   |         No         |     **Yes**      |        No        |             No             |
 | Change permissions |         No         |     **Yes**      |        No        |             No             |
 |  Change ownership  |         No         |     **Yes**      |        No        |             No             |
 
@@ -43,13 +42,12 @@ Each of these methods updates the access time and modification time for an entry
 
 |     Operation      | Affects<br>btime | Affects<br>ctime | Affects<br>mtime |      Affects<br>atime      |
 |:------------------:|:----------------:|:----------------:|:----------------:|:--------------------------:|
-|       Create       |     **Yes**      |   **Yes**        |   **Yes**        |          **Yes**           |
+|       Create       |     **Yes**      |     **Yes**      |   **Yes**        |          **Yes**           |
 |   Write entries    |        No        |        No        |     **Yes**      |             No             |
 |    Read entries    |        No        |        No        |        No        | *Filesystem-<br>dependent* |
-|       Rename       |        No        |        No        |        No        |             No             |
-|        Move        |        No        |        No        |        No        |             No             |
-| Change permissions |        No        |        No        |        No        |             No             |
-|  Change ownership  |        No        |        No        |        No        |             No             |
+|     Rename/Move    |        No        |     **Yes**      |        No        |             No             |
+| Change permissions |        No        |     **Yes**      |        No        |             No             |
+|  Change ownership  |        No        |     **Yes**      |        No        |             No             |
 
 
 
