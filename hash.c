@@ -102,10 +102,15 @@ static VALUE rb_hash_s_try_convert(VALUE, VALUE);
  *  2. Insert WBs
  */
 
+static int ar_compact_table(VALUE hash);
+
 /* :nodoc: */
 VALUE
 rb_hash_freeze(VALUE hash)
 {
+    if (!OBJ_FROZEN(hash) && RHASH_AR_TABLE_P(hash)) {
+        ar_compact_table(hash);
+    }
     return rb_obj_freeze(hash);
 }
 
