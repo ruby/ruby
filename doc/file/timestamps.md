@@ -28,26 +28,26 @@ Each of these methods updates the access time and modification time for an entry
 
 ## \File Timestamps
 
-|     Operation      |  Affects<br>birthtime  | Affects<br>ctime | Affects<br>mtime |      Affects<br>atime      |
-|:------------------:|:------------------:|:----------------:|:----------------:|:--------------------------:|
-|       Create       |      **Yes**       |     **Yes**      |     **Yes**      |          **Yes**           |
-|   Write content    |         No         |        No        |       **Yes**    |             No             |
-|    Read content    |         No         |        No        |        No        | *Filesystem-<br>dependent* |
-|      Rename/Move   |         No         |     **Yes**      |        No        |             No             |
-| Change permissions |         No         |     **Yes**      |        No        |             No             |
-|  Change ownership  |         No         |     **Yes**      |        No        |             No             |
+|     Operation      | Affects<br>birthtime  | Affects<br>ctime | Affects<br>mtime |      Affects<br>atime      |
+|:------------------:|:---------------------:|:----------------:|:----------------:|:--------------------------:|
+|       Create       |        **Yes**        |     **Yes**      |     **Yes**      |          **Yes**           |
+|   Write content    |          No           |        No        |       **Yes**    |             No             |
+|    Read content    |          No           |        No        |        No        | *Filesystem-<br>dependent* |
+|      Rename/Move   |          No           |     **Yes**      |        No        |             No             |
+| Change permissions |          No           |     **Yes**      |        No        |             No             |
+|  Change ownership  |          No           |     **Yes**      |        No        |             No             |
 
 
 ## Directory Timestamps
 
 |     Operation      | Affects<br>birthtime | Affects<br>ctime | Affects<br>mtime |      Affects<br>atime      |
-|:------------------:|:----------------:|:----------------:|:----------------:|:--------------------------:|
-|       Create       |     **Yes**      |     **Yes**      |   **Yes**        |          **Yes**           |
-|   Write entries    |        No        |        No        |     **Yes**      |             No             |
-|    Read entries    |        No        |        No        |        No        | *Filesystem-<br>dependent* |
-|     Rename/Move    |        No        |     **Yes**      |        No        |             No             |
-| Change permissions |        No        |     **Yes**      |        No        |             No             |
-|  Change ownership  |        No        |     **Yes**      |        No        |             No             |
+|:------------------:|:--------------------:|:----------------:|:----------------:|:--------------------------:|
+|       Create       |       **Yes**        |     **Yes**      |   **Yes**        |          **Yes**           |
+|   Write entries    |          No          |        No        |     **Yes**      |             No             |
+|    Read entries    |          No          |        No        |        No        | *Filesystem-<br>dependent* |
+|     Rename/Move    |          No          |     **Yes**      |        No        |             No             |
+| Change permissions |          No          |     **Yes**      |        No        |             No             |
+|  Change ownership  |          No          |     **Yes**      |        No        |             No             |
 
 
 
