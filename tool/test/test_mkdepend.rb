@@ -209,6 +209,46 @@ class TestMkdepend < Test::Unit::TestCase
     end
   end
 
+  def test_scanners_share_source_file_cache
+    Dir.mktmpdir('mkdepend-scanner') do |dir|
+      %w[first.c second.c].each do |source|
+        File.write(File.join(dir, source), "#include \"common.h\"\n")
+      end
+      header = File.join(dir, 'common.h')
+      File.write(header, "#include \"nested.h\"\n")
+      File.write(File.join(dir, 'nested.h'), "")
+
+      cache = {}
+      opened = Hash.new(0)
+      original_open = File.method(:open)
+      File.define_singleton_method(:open) do |path, *args, **kwargs, &block|
+        opened[File.expand_path(path)] += 1
+        original_open.call(path, *args, **kwargs, &block)
+      end
+
+      %w[first.c second.c].each do |source|
+        scanner = Scanner.new(root: dir, include_dirs: [dir], cache: cache)
+        assert_include(scanner.scan(source), 'common.h')
+      end
+      assert_equal(1, opened[header])
+    ensure
+      File.define_singleton_method(:open, original_open) if original_open
+    end
+  end
+
+  def test_scanner_joins_continued_directives
+    Dir.mktmpdir('mkdepend-scanner') do |dir|
+      File.write(File.join(dir, 'main.c'), <<~'C')
+        #include \
+          "continued.h"
+      C
+      File.write(File.join(dir, 'continued.h'), "")
+
+      scanner = Scanner.new(root: dir, include_dirs: [dir])
+      assert_include(scanner.scan('main.c'), 'continued.h')
+    end
+  end
+
   def test_project_internal_headers_precede_public_headers
     Dir.mktmpdir('mkdepend-scanner') do |root|
       %w[ext/example internal include/ruby/internal].each do |dir|

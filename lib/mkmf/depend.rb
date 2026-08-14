@@ -74,7 +74,7 @@ class MakeMakefile::Depend
 
     def initialize(root:, include_dirs:, quote_dirs: [], macros: {},
                    targets: [], aliases: {}, dependencies: {}, defined: [],
-                   undefined: [])
+                   undefined: [], cache: {})
       @root = File.expand_path(root)
       @include_dirs = include_dirs.map {|dir| File.expand_path(dir, @root)}
       @quote_dirs = quote_dirs.map {|dir| File.expand_path(dir, @root)}
@@ -85,6 +85,7 @@ class MakeMakefile::Depend
       @defined = defined.to_set
       @undefined = undefined.to_set
       @unresolved = Set.new
+      @cache = cache
     end
 
     def scan(source)
@@ -97,46 +98,68 @@ class MakeMakefile::Depend
 
     def visit(path, dependencies, visited, record: true)
       path = File.expand_path(path)
-      return unless File.file?(path)
       return if visited.include?(path)
+      directives = source_directives(path)
+      return unless directives
       visited.add(path)
       dependencies.add(relative(path)) if record
 
       conditions = []
-      File.open(path, "rb") do |file|
-        file.each_line do |line|
-          directive = line[/\A\s*#\s*(.*)/, 1]
-          next unless directive
-
-          case directive
-          when /\Aifdef\s+(\w+)/
-            conditions << symbol_condition($1)
-          when /\Aifndef\s+(\w+)/
-            condition = symbol_condition($1)
-            conditions << (condition == :all ? :all : !condition)
-          when /\Aif\s+(.+)/
-            conditions << expression_condition($1)
-          when /\Aelif\s+(.+)/
-            conditions[-1] = if conditions[-1] == true
-              false
-            elsif conditions[-1] == false
-              expression_condition($1)
-            else
-              :all
-            end
-          when /\Aelse\b/
-            conditions[-1] = !conditions[-1] if [true, false].include?(conditions[-1])
-          when /\Aendif\b/
-            conditions.pop
+      directives.each do |directive|
+        case directive
+        when /\Aifdef\s+(\w+)/
+          conditions << symbol_condition($1)
+        when /\Aifndef\s+(\w+)/
+          condition = symbol_condition($1)
+          conditions << (condition == :all ? :all : !condition)
+        when /\Aif\s+(.+)/
+          conditions << expression_condition($1)
+        when /\Aelif\s+(.+)/
+          conditions[-1] = if conditions[-1] == true
+            false
+          elsif conditions[-1] == false
+            expression_condition($1)
           else
-            next if conditions.include?(false)
-            case directive
-            when /\A(?:line\s+)?\d+\s+"([^"<>]+)"/
-              dependencies.add($1.delete_prefix("./"))
-            when /\Ainclude(?:_next)?\s+(.+)/
-              scan_include($1, path, dependencies, visited)
+            :all
+          end
+        when /\Aelse\b/
+          conditions[-1] = !conditions[-1] if [true, false].include?(conditions[-1])
+        when /\Aendif\b/
+          conditions.pop
+        else
+          next if conditions.include?(false)
+          case directive
+          when /\A(?:line\s+)?\d+\s+"([^"<>]+)"/
+            dependencies.add($1.delete_prefix("./"))
+          when /\Ainclude(?:_next)?\s+(.+)/
+            scan_include($1, path, dependencies, visited)
+          end
+        end
+      end
+    end
+
+    def source_directives(path)
+      return @cache[path] if @cache.key?(path)
+
+      @cache[path] = if File.file?(path)
+        File.open(path, "rb") do |file|
+          directives = []
+          logical_line = "".b
+          file.each_line do |line|
+            logical_line << line
+            next if logical_line.sub!(/\\\r?\n\z/, "")
+
+            if directive = logical_line[/\A\s*#\s*\K.*/]
+              directives << directive
+            end
+            logical_line.clear
+          end
+          unless logical_line.empty?
+            if directive = logical_line[/\A\s*#\s*\K.*/]
+              directives << directive
             end
           end
+          directives
         end
       end
     end
@@ -210,7 +233,7 @@ class MakeMakefile::Depend
       dirs.concat(@include_dirs)
       dirs.each do |dir|
         path = File.expand_path(name, dir)
-        return path if File.file?(path)
+        return path if source_directives(path)
       end
       nil
     end
@@ -337,6 +360,7 @@ class MakeMakefile::Depend
     @dependency_declarations = {}
     @dependency_targets = {}
     @dependency_contents = {}
+    @source_cache = {}
   end
 
   private
@@ -708,6 +732,7 @@ class MakeMakefile::Depend
       dependencies: declarations.dependencies,
       defined: defined,
       undefined: undefined,
+      cache: @source_cache,
     )
   end
 
