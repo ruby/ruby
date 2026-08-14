@@ -2577,22 +2577,25 @@ rb_file_s_atime(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *    atime -> new_time
+ *    atime -> time
  *
  * Returns a new Time object containing the time of the most recent
- * access (read or write) to the file represented by +self+:
+ * access to +self+.
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ *
+ * Access time for a file is established when it is created,
+ * and is updated when the file content is read:
  *
  *   filepath = 't.tmp'
- *   file = File.new(filepath, 'a+')
- *   file.atime # => 2026-03-31 17:11:27.7285397 -0500
- *   file.write('foo')
- *   file.atime # => 2026-03-31 17:11:27.7285397 -0500  # Unchanged; not yet written.
- *   file.flush
- *   file.atime # => 2026-03-31 17:12:11.3408054 -0500  # Changed; now written.
+ *   File.exist?(filepath)            # => false
+ *   file = File.open(filepath, 'w+') # Create by opening; establishes access time.
+ *   file.atime                       # => 2026-08-14 11:15:48.422773736 -0500
+ *   file.read                        # Read file content; updates access time.
+ *   file.atime                       # => 2026-08-14 11:16:10.697861103 -0500
+ *   # Clean up.
  *   file.close
- *   File.delete(filename)
+ *   File.delete(filepath)
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
