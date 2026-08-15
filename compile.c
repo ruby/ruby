@@ -5406,7 +5406,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
      * - It contains key-value pairs.  So we need to take every two elements.
      *   We can assume that the length is always even.
      *
-     * - Merging is done by a method call (id_core_hash_merge_ptr).
+     * - Merging is done by a method call (id_core_hash_merge_bang_ptr).
      *   Sometimes we need to insert the receiver, so "anchor" is needed.
      *   In addition, a method call is much slower than concatarray.
      *   So it pays only when the subsequence is really long.
@@ -5436,7 +5436,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
             ADD_INSN1(ret, line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));  \
             ADD_INSN(ret, line_node, swap);                                                  \
             APPEND_LIST(ret, anchor);                                                   \
-            ADD_SEND(ret, line_node, id_core_hash_merge_ptr, INT2FIX(stack_len + 1));        \
+            ADD_SEND(ret, line_node, id_core_hash_merge_bang_ptr, INT2FIX(stack_len + 1));        \
         }                                                                               \
         INIT_ANCHOR(anchor);                                                            \
         first_chunk = stack_len = 0;                                                    \
@@ -5482,7 +5482,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
 
                     ADD_INSN1(ret, line_node, putobject, hash);
 
-                    ADD_SEND(ret, line_node, id_core_hash_merge_kwd, INT2FIX(2));
+                    ADD_SEND(ret, line_node, id_core_hash_merge_bang_kwd, INT2FIX(2));
                 }
                 RB_OBJ_WRITTEN(iseq, Qundef, hash);
             }
@@ -5556,7 +5556,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
 
                         NO_CHECK(COMPILE(ret, "keyword splat", kw));
 
-                        ADD_SEND(ret, line_node, id_core_hash_merge_kwd, INT2FIX(2));
+                        ADD_SEND(ret, line_node, id_core_hash_merge_bang_kwd, INT2FIX(2));
                     }
                 }
 
@@ -10217,7 +10217,7 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
                 ADD_INSN1(args, node, putobject, ID2SYM(id));
                 ADD_GETLOCAL(args, node, idx, lvar_level);
             }
-            ADD_SEND(args, node, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
+            ADD_SEND(args, node, id_core_hash_merge_bang_ptr, INT2FIX(i * 2 + 1));
             flag |= VM_CALL_KW_SPLAT| VM_CALL_KW_SPLAT_MUT;
         }
         else if (local_body->param.flags.has_kwrest) {

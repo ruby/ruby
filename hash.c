@@ -1641,6 +1641,17 @@ hash_dup(VALUE hash, VALUE klass, VALUE flags)
     return hash_copy(dup, hash);
 }
 
+static VALUE
+hash_dup_capa(VALUE hash, size_t capa)
+{
+    VALUE ret = hash_alloc_capa(rb_cHash, 0, Qnil, capa, false);
+    if (capa > RHASH_AR_TABLE_MAX_SIZE) {
+        RHASH_SET_ST_FLAG(ret);
+    }
+    hash_copy(ret, hash);
+    return ret;
+}
+
 VALUE
 rb_hash_dup(VALUE hash)
 {
@@ -5218,6 +5229,32 @@ rb_hash_new_with_bulk_insert(long argc, const VALUE *argv)
 {
     VALUE val = rb_hash_new_capa(argc / 2);
     rb_hash_bulk_insert(argc, argv, val);
+    return val;
+}
+
+VALUE
+rb_hash_merge2_bulk(VALUE hash, long argc, const VALUE *argv, bool dup)
+{
+    VALUE val = hash;
+    if (dup) {
+        // This is used to build literal hashes and keyword arguments,
+        // we can assume duplicate keys are very rare.
+        val = hash_dup_capa(val, RHASH_SIZE(val) + argc / 2);
+    }
+    rb_hash_bulk_insert(argc, argv, val);
+    return val;
+}
+
+VALUE
+rb_hash_merge2(VALUE h1, VALUE h2, bool dup)
+{
+    VALUE val = h1;
+    if (dup) {
+        // This is used to build literal hashes and keyword arguments,
+        // we can assume duplicate keys are very rare.
+        val = hash_dup_capa(val, RHASH_SIZE(val) + RHASH_SIZE(h2));
+    }
+    rb_hash_foreach(h2, rb_hash_update_i, val);
     return val;
 }
 

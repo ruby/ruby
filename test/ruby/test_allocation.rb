@@ -70,7 +70,11 @@ class TestAllocation < Test::Unit::TestCase
 
       #{checks}
 
-      assert_empty(failures)
+      if failures.empty?
+        assert true
+      else
+        assert false, failures.join("\\n")
+      end
     RUBY
   end
 

@@ -1494,6 +1494,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 
     int stack_length = 0;
     bool first_chunk = true;
+    bool owned_hash = false;
 
     // This is an optimization wherein we keep track of whether or not the
     // previous element was a static literal. If it was, then we do not attempt
@@ -1504,21 +1505,27 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
     DECL_ANCHOR(anchor);
 
     // Convert pushed elements to a hash, and merge if needed.
-#define FLUSH_CHUNK                                                                         \
-    if (stack_length) {                                                                     \
-        if (first_chunk) {                                                                  \
-            PUSH_SEQ(ret, anchor);                                                          \
-            PUSH_INSN1(ret, location, newhash, INT2FIX(stack_length));                      \
-            first_chunk = false;                                                            \
-        }                                                                                   \
-        else {                                                                              \
-            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE)); \
-            PUSH_INSN(ret, location, swap);                                                 \
-            PUSH_SEQ(ret, anchor);                                                          \
-            PUSH_SEND(ret, location, id_core_hash_merge_ptr, INT2FIX(stack_length + 1));    \
-        }                                                                                   \
-        INIT_ANCHOR(anchor);                                                                \
-        stack_length = 0;                                                                   \
+#define FLUSH_CHUNK                                                                               \
+    if (stack_length) {                                                                           \
+        if (first_chunk) {                                                                        \
+            PUSH_SEQ(ret, anchor);                                                                \
+            PUSH_INSN1(ret, location, newhash, INT2FIX(stack_length));                            \
+            first_chunk = false;                                                                  \
+        }                                                                                         \
+        else {                                                                                    \
+            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));       \
+            PUSH_INSN(ret, location, swap);                                                       \
+            PUSH_SEQ(ret, anchor);                                                                \
+            if (owned_hash) {                                                                     \
+                PUSH_SEND(ret, location, id_core_hash_merge_bang_ptr, INT2FIX(stack_length + 1)); \
+            }                                                                                     \
+            else {                                                                                \
+                PUSH_SEND(ret, location, id_core_hash_merge_ptr, INT2FIX(stack_length + 1));      \
+                owned_hash = true;                                                                \
+            }                                                                                     \
+        }                                                                                         \
+        INIT_ANCHOR(anchor);                                                                      \
+        stack_length = 0;                                                                         \
     }
 
     for (size_t index = 0; index < elements->size; index++) {
@@ -1538,7 +1545,9 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                 size_t count = 1;
                 while (index + count < elements->size && PM_NODE_FLAG_P(elements->nodes[index + count], PM_NODE_FLAG_STATIC_LITERAL)) count++;
 
-                if ((first_chunk && stack_length == 0) || count >= min_tmp_hash_length) {
+                bool first_element = first_chunk && stack_length == 0;
+
+                if (first_element || count >= min_tmp_hash_length) {
                     // The subsequence of elements in this hash is long enough
                     // to merit its own hash.
                     VALUE ary = rb_ary_hidden_new(count);
@@ -1564,7 +1573,14 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                     // Emit optimized code.
                     FLUSH_CHUNK;
                     if (first_chunk) {
-                        PUSH_INSN1(ret, location, duphash, hash);
+                        if (count == elements->size) {
+                            // A fully literal hash.
+                            PUSH_INSN1(ret, location, duphash, hash);
+                        }
+                        else {
+                            // Partial hash that will be merged with a newly built one, no need to dup
+                            PUSH_INSN1(ret, location, putobject, rb_obj_reveal(hash, rb_cHash));
+                        }
                         first_chunk = false;
                     }
                     else {
@@ -1611,61 +1627,60 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
             bool last_element = index == elements->size - 1;
             bool only_element = first_element && last_element;
 
-            if (empty_hash) {
-                if (only_element && argument) {
-                    // **{} appears at the only keyword argument in method call,
-                    // so it won't be modified.
-                    //
-                    // This is only done for method calls and not for literal
-                    // hashes, because literal hashes should always result in a
-                    // new hash.
-                    PUSH_INSN(ret, location, putnil);
-                }
-                else if (first_element) {
-                    // **{} appears as the first keyword argument, so it may be
-                    // modified. We need to create a fresh hash object.
-                    PUSH_INSN1(ret, location, newhash, INT2FIX(0));
-                }
-                // Any empty keyword splats that are not the first can be
-                // ignored since merging an empty hash into the existing hash is
-                // the same as not merging it.
-            }
-            else {
-                if (only_element && argument) {
-                    // ** is only keyword argument in the method call. Use it
-                    // directly. This will be not be flagged as mutable. This is
-                    // only done for method calls and not for literal hashes,
-                    // because literal hashes should always result in a new
-                    // hash.
-                    if (shareability == 0) {
-                        PM_COMPILE_NOT_POPPED(element);
+            if (only_element) {
+                if (argument) {
+                    if (empty_hash) {
+                        // **{} appears at the only keyword argument in method call
+                        // We can substitute it for `**nil`.
+                        PUSH_INSN(ret, location, putnil);
                     }
                     else {
-                        pm_compile_shareable_constant_value(iseq, element, shareability, path, ret, scope_node, false);
+                        // ** is the only element.
+                        // Since we're in a method call, we can use it directly.
+                        // This will be not be flagged as mutable.
+                        if (shareability == 0) {
+                            PM_COMPILE_NOT_POPPED(element);
+                        }
+                        else {
+                            pm_compile_shareable_constant_value(iseq, element, shareability, path, ret, scope_node, false);
+                        }
                     }
                 }
                 else {
-                    // There is more than one keyword argument, or this is not a
-                    // method call. In that case, we need to add an empty hash
-                    // (if first keyword), or merge the hash to the accumulated
-                    // hash (if not the first keyword).
+                    // {**something}
+                    // We can simply call `core_hash_coerce(something)` to ensure it is coerced
+                    // into a mutable Hash.
                     PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-
-                    if (first_element) {
-                        PUSH_INSN1(ret, location, newhash, INT2FIX(0));
-                    }
-                    else {
-                        PUSH_INSN(ret, location, swap);
-                    }
-
                     if (shareability == 0) {
                         PM_COMPILE_NOT_POPPED(element);
                     }
                     else {
                         pm_compile_shareable_constant_value(iseq, element, shareability, path, ret, scope_node, false);
                     }
+                    PUSH_SEND(ret, location, id_core_hash_coerce, INT2FIX(1));
+                }
+            }
+            else {
+                if (!first_element) {
+                    PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                    PUSH_INSN(ret, location, swap);
+                }
 
-                    PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
+                if (shareability == 0) {
+                    PM_COMPILE_NOT_POPPED(element);
+                }
+                else {
+                    pm_compile_shareable_constant_value(iseq, element, shareability, path, ret, scope_node, false);
+                }
+
+                if (!first_element) {
+                    if (owned_hash) {
+                        PUSH_SEND(ret, location, id_core_hash_merge_bang_kwd, INT2FIX(2));
+                    }
+                    else {
+                        PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
+                        owned_hash = true;
+                    }
                 }
             }
 
