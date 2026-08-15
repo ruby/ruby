@@ -27,6 +27,7 @@
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/inits.h"
+#include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/struct.h"
@@ -611,7 +612,16 @@ rb_obj_dup(VALUE obj)
     if (special_object_p(obj)) {
         return obj;
     }
-    dup = rb_obj_alloc(rb_obj_class(obj));
+
+    switch (OBJ_BUILTIN_TYPE(obj)) {
+      case T_HASH:
+        dup = rb_hash_alloc_copy(rb_obj_class(obj), obj);
+        break;
+      default:
+        dup = rb_obj_alloc(rb_obj_class(obj));
+        break;
+    }
+
     return rb_obj_dup_setup(obj, dup);
 }
 

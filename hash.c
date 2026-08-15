@@ -1557,6 +1557,12 @@ hash_alloc_capa(VALUE klass, VALUE flags, VALUE ifnone, size_t size, bool frozen
     return hash;
 }
 
+VALUE
+rb_hash_alloc_copy(VALUE klass, VALUE src)
+{
+    return hash_alloc_capa(klass, 0, Qnil, RHASH_SIZE(src), false);
+}
+
 static VALUE
 hash_alloc(VALUE klass)
 {
