@@ -1099,22 +1099,13 @@ rb_thread_create(VALUE (*fn)(void *), void *arg)
     return thread_create_core(rb_thread_alloc(rb_cThread), &params);
 }
 
-VALUE
-rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
+static VALUE
+create_ractor_alloc_thread(rb_ractor_t *r, rb_ractor_t *cr, rb_execution_context_t *ec)
 {
-    struct thread_create_params params = {
-        .type = thread_invoke_type_ractor_proc,
-        .g = r,
-        .args = args,
-        .proc = proc,
-    };
-
     /* Allocate the child's main Thread and root Fiber wrappers directly in the child's
      * objspace, so the thread is built of objects it owns.  Whole-VM walks read
      * cr->objspace: swap it under the VM lock, unobservable to others. */
     volatile VALUE thval = Qundef;
-    rb_ractor_t *cr = GET_RACTOR();
-    rb_execution_context_t *ec = GET_EC();
     const bool multi_objspace = rb_gc_multi_objspace_p();
     enum ruby_tag_type alloc_state = TAG_NONE;
     RB_VM_LOCKING() {
@@ -1154,6 +1145,23 @@ rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
         }
         EC_JUMP_TAG(ec, alloc_state);
     }
+    return thval;
+}
+
+VALUE
+rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
+{
+    struct thread_create_params params = {
+        .type = thread_invoke_type_ractor_proc,
+        .g = r,
+        .args = args,
+        .proc = proc,
+    };
+
+    rb_ractor_t *cr = GET_RACTOR();
+    rb_execution_context_t *ec = GET_EC();
+
+    VALUE thval = create_ractor_alloc_thread(r, cr, ec);
 
     /* Creation can still fail before vm_insert_ractor (an IsolationError, say), and a
      * left-over cover would enumerate the dead child's objspace twice and dangle after
