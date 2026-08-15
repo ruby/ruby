@@ -228,6 +228,7 @@ They are still available on rubygems.org and can be installed with
 * irb 1.18.0
   * 1.16.0 to [v1.17.0][irb-v1.17.0], [v1.18.0][irb-v1.18.0]
 * reline 0.7.0
+  * 0.6.3 to [v0.7.0][reline-v0.7.0]
 
 ### RubyGems and Bundler
 
@@ -464,3 +465,4 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [win32ole-v1.9.3]: https://github.com/ruby/win32ole/releases/tag/v1.9.3
 [irb-v1.17.0]: https://github.com/ruby/irb/releases/tag/v1.17.0
 [irb-v1.18.0]: https://github.com/ruby/irb/releases/tag/v1.18.0
+[reline-v0.7.0]: https://github.com/ruby/reline/releases/tag/v0.7.0
