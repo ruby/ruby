@@ -70,6 +70,8 @@ void
 Init_blake3(void)
 {
     VALUE mDigest, cDigest_Base, cDigest_BLAKE3;
+    VALUE version;
+    const char *v;
 
 #if 0
     mDigest = rb_define_module("Digest"); /* let rdoc know */
@@ -79,4 +81,13 @@ Init_blake3(void)
 
     cDigest_BLAKE3 = rb_define_class_under(mDigest, "BLAKE3", cDigest_Base);
     rb_iv_set(cDigest_BLAKE3, "metadata", rb_digest_make_metadata(&blake3));
+
+    version = rb_str_freeze(rb_str_new_lit(BLAKE3_VERSION_STRING));
+    /* The version of BLAKE3 */
+    rb_define_const(cDigest_BLAKE3, "VERSION", version);
+    if (strcmp(v = blake3_version(), BLAKE3_VERSION_STRING)) {
+        version = rb_str_freeze(rb_str_new_cstr(v));
+    }
+    /* The version of BLAKE3 library */
+    rb_define_const(cDigest_BLAKE3, "LIBRARY_VERSION", version);
 }
