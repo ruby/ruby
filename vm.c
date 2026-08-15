@@ -4236,40 +4236,113 @@ m_core_set_postexe(VALUE self)
     return Qnil;
 }
 
-static VALUE core_hash_merge_kwd(VALUE hash, VALUE kw);
-
 static VALUE
-core_hash_merge(VALUE hash, long argc, const VALUE *argv)
+core_hash_merge(VALUE hash, long argc, const VALUE *argv, bool dup)
 {
-    Check_Type(hash, T_HASH);
-    VM_ASSERT(argc % 2 == 0);
-    rb_hash_bulk_insert(argc, argv, hash);
-    return hash;
+    if (NIL_P(hash)) {
+        hash = rb_cHash_empty_frozen;
+    }
+    else {
+        hash = rb_to_hash_type(hash);
+        Check_Type(hash, T_HASH);
+    }
+
+    return rb_hash_merge2_bulk(hash, argc, argv, dup);
 }
 
 static VALUE
 m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
 {
     VALUE hash = argv[0];
+    VM_ASSERT(argc % 2 == 1);
 
-    REWIND_CFP(hash = core_hash_merge(hash, argc-1, argv+1));
+    REWIND_CFP(hash = core_hash_merge(hash, argc - 1, argv + 1, true));
 
     return hash;
 }
 
-static int
-kwmerge_i(VALUE key, VALUE value, VALUE hash)
+static VALUE
+m_core_hash_merge_bang_ptr(int argc, VALUE *argv, VALUE recv)
 {
-    rb_hash_aset(hash, key, value);
-    return ST_CONTINUE;
+    VALUE hash = argv[0];
+    VM_ASSERT(argc % 2 == 1);
+
+    REWIND_CFP(hash = core_hash_merge(hash, argc - 1, argv + 1, false));
+
+    return hash;
+}
+
+static VALUE
+core_hash_merge_kwd(VALUE hash, VALUE kw, bool dup)
+{
+    kw = rb_to_hash_type(kw);
+    if (NIL_P(hash)) {
+        return dup ? rb_hash_resurrect(kw) : kw;
+    }
+    else {
+        hash = rb_to_hash_type(hash);
+        Check_Type(hash, T_HASH);
+        return rb_hash_merge2(hash, kw, dup);
+    }
 }
 
 static VALUE
 m_core_hash_merge_kwd(VALUE recv, VALUE hash, VALUE kw)
 {
-    if (!NIL_P(kw)) {
-        REWIND_CFP(hash = core_hash_merge_kwd(hash, kw));
+    // We don't own `hash` so we can't mutate it, nor just return it.
+    if (NIL_P(kw)) {
+        if (NIL_P(hash)) {
+            // If we knew that we're dealing with keyword arguments, and not a hash literal,
+            // we could return nil here.
+            return rb_hash_new();
+        }
+
+        hash = rb_hash_resurrect(hash);
     }
+    else {
+        REWIND_CFP(hash = core_hash_merge_kwd(hash, kw, true));
+    }
+    VM_ASSERT(CLASS_OF(hash));
+    return hash;
+}
+
+static VALUE
+m_core_hash_merge_bang_kwd(VALUE recv, VALUE hash, VALUE kw)
+{
+    // We own `hash` we should mutate it in place if possible.
+    if (NIL_P(kw)) {
+        if (NIL_P(hash)) {
+            hash = rb_hash_new();
+        }
+        else {
+            hash = rb_hash_resurrect(hash);
+        }
+    }
+    else {
+        REWIND_CFP(hash = core_hash_merge_kwd(hash, kw, false));
+    }
+    VM_ASSERT(CLASS_OF(hash));
+    return hash;
+}
+
+static VALUE
+core_hash_coerce(VALUE hash)
+{
+    if (NIL_P(hash)) {
+        return rb_hash_new();
+    }
+    VALUE new_hash = rb_to_hash_type(hash);
+    if (new_hash == hash) {
+        new_hash = rb_hash_dup(new_hash);
+    }
+    return new_hash;
+}
+
+static VALUE
+m_core_hash_coerce(VALUE recv, VALUE hash)
+{
+    REWIND_CFP(hash = core_hash_coerce(hash));
+    VM_ASSERT(CLASS_OF(hash));
     return hash;
 }
 
@@ -4289,13 +4362,6 @@ static VALUE
 m_core_ensure_shareable(VALUE recv, VALUE obj, VALUE name)
 {
     return rb_ractor_ensure_shareable(obj, name);
-}
-
-static VALUE
-core_hash_merge_kwd(VALUE hash, VALUE kw)
-{
-    rb_hash_foreach(rb_to_hash_type(kw), kwmerge_i, hash);
-    return hash;
 }
 
 extern VALUE *rb_gc_stack_start;
@@ -4466,7 +4532,10 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_undef_method, m_core_undef_method, 2);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
+    rb_define_method_id(klass, id_core_hash_merge_bang_ptr, m_core_hash_merge_bang_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
+    rb_define_method_id(klass, id_core_hash_merge_bang_kwd, m_core_hash_merge_bang_kwd, 2);
+    rb_define_method_id(klass, id_core_hash_coerce, m_core_hash_coerce, 1);
     rb_define_method_id(klass, id_core_raise, f_raise, -1);
     rb_define_method_id(klass, id_core_sprintf, f_sprintf, -1);
     rb_define_method_id(klass, idProc, f_proc, 0);
