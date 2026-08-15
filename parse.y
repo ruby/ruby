@@ -412,6 +412,7 @@ enum cmdarg_effect_type {
 
 static inline void parser_cmdarg_push(struct parser_params *p, int n);
 static inline void parser_cmdarg_pop(struct parser_params *p);
+static inline void parser_cmdarg_effect_before_shift(struct parser_params *p, int recovery);
 static inline void parser_cmdarg_effect_commit(struct parser_params *p);
 static inline void parser_cmdarg_effect_discard(struct parser_params *p);
 
@@ -599,6 +600,7 @@ struct parser_params {
     unsigned int error_p: 1;
     unsigned int cr_seen: 1;
     unsigned int cmdarg_lexing: 1;
+    unsigned int cmdarg_effect_recovery: 1;
 
     /* Streaming hash state of the source bytes read so far. */
     rb_source_hash_state_t source_hash;
@@ -672,8 +674,18 @@ parser_cmdarg_pop(struct parser_params *p)
 }
 
 static inline void
+parser_cmdarg_effect_before_shift(struct parser_params *p, int recovery)
+{
+    p->cmdarg_effect_recovery = recovery != 0;
+}
+
+static inline void
 parser_cmdarg_effect_commit(struct parser_params *p)
 {
+    if (p->cmdarg_effect_recovery) {
+        p->cmdarg_effect_recovery = FALSE;
+        return;
+    }
     parser_cmdarg_effect_set(p, p->cmdarg_effect.type, p->cmdarg_effect.value);
     p->cmdarg_effect.type = CMDARG_EFFECT_NONE;
 }
@@ -682,7 +694,12 @@ static inline void
 parser_cmdarg_effect_discard(struct parser_params *p)
 {
     p->cmdarg_effect.type = CMDARG_EFFECT_NONE;
+    p->cmdarg_effect_recovery = FALSE;
 }
+
+/* Lrama calls this immediately before after_shift.  Recovery tokens must
+ * not commit the effect belonging to the backed-up lookahead token. */
+#define YY_BEFORE_SHIFT(p, recovery) parser_cmdarg_effect_before_shift((p), (recovery))
 
 #define NUMPARAM_ID_P(id) numparam_id_p(p, id)
 #define NUMPARAM_ID_TO_IDX(id) (unsigned int)(((id) >> ID_SCOPE_SHIFT) - (tNUMPARAM_1 - 1))
