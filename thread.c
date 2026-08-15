@@ -1112,7 +1112,7 @@ rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
     /* Allocate the child's main Thread and root Fiber wrappers directly in the child's
      * objspace, so the thread is built of objects it owns.  Whole-VM walks read
      * cr->objspace: swap it under the VM lock, unobservable to others. */
-    VALUE thval = Qundef;
+    volatile VALUE thval = Qundef;
     rb_ractor_t *cr = GET_RACTOR();
     rb_execution_context_t *ec = GET_EC();
     const bool multi_objspace = rb_gc_multi_objspace_p();
