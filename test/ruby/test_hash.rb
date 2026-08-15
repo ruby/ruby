@@ -1958,10 +1958,23 @@ class TestHashOnly < Test::Unit::TestCase
       end
     end
     obj.hash_calls = 0
-    hash = {obj => 42}
+
+    ar_hash = {obj => 42}
     assert_equal(1, obj.hash_calls)
-    yield hash
+    yield ar_hash
     assert_equal(1, obj.hash_calls)
+
+    st_hash = {a:1, b:2, c:3, d:4, e:5, f:6, g:7, h:8, obj => 42}
+    assert_equal(2, obj.hash_calls)
+    yield st_hash
+    assert_equal(2, obj.hash_calls)
+
+    st_hash.keys.first(8).each do |key|
+      st_hash.delete(key)
+    end
+    assert_equal(2, obj.hash_calls)
+    yield st_hash
+    assert_equal(2, obj.hash_calls)
   end
 
   def test_select_reject_will_not_rehash

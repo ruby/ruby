@@ -3699,10 +3699,17 @@ rb_gc_obj_optimal_size(VALUE obj)
 
       case T_HASH:
         {
-            if (RB_OBJ_FROZEN(obj) && RHASH_AR_TABLE_P(obj)) {
-                return sizeof(struct RHash) + offsetof(ar_table, pairs) + RHASH_AR_TABLE_BOUND(obj) * sizeof(ar_table_pair);
+            const size_t st_size = sizeof(struct RHash) + sizeof(st_table);
+            if (RHASH_ST_TABLE_P(obj)) {
+                return st_size;
             }
-            return sizeof(struct RHash) + (RHASH_ST_TABLE_P(obj) ? sizeof(st_table) : sizeof(ar_table));
+
+            const size_t ar_size = sizeof(struct RHash) + offsetof(ar_table, pairs) + RHASH_AR_TABLE_BOUND(obj) * sizeof(ar_table_pair);
+            if (OBJ_FROZEN(obj) || ar_size > st_size) {
+                return ar_size;
+            }
+
+            return st_size;
         }
 
       default:
