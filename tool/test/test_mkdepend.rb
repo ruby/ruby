@@ -249,6 +249,17 @@ class TestMkdepend < Test::Unit::TestCase
     end
   end
 
+  def test_scanner_ignores_template_include
+    Dir.mktmpdir('mkdepend-scanner') do |dir|
+      File.write(File.join(dir, 'main.c'), "#include <<%= header %>>\n")
+
+      scanner = Scanner.new(root: dir, include_dirs: [dir])
+
+      assert_equal(%w[main.c], scanner.scan('main.c'))
+      assert_empty(scanner.unresolved)
+    end
+  end
+
   def test_project_internal_headers_precede_public_headers
     Dir.mktmpdir('mkdepend-scanner') do |root|
       %w[ext/example internal include/ruby/internal].each do |dir|
@@ -991,6 +1002,85 @@ class TestMkdepend < Test::Unit::TestCase
       assert_match(/date_core\.o.*: \$\(hdrdir\)\/ruby\/ruby\.h/, generated)
       assert_not_include(generated, '{$(VPATH)}')
       assert_equal(original, File.read(source))
+    end
+  end
+
+  def test_run_reuses_unchanged_output_dependencies
+    Dir.mktmpdir('mkdepend-input') do |root|
+      File.write(File.join(root, 'one.c'), "#include \"common.h\"\n")
+      header = File.join(root, 'common.h')
+      File.write(header, "")
+      input = File.join(root, 'depend')
+      File.write(input, <<~DEPEND)
+        #{MARK_START}
+        one.$(OBJEXT): one.c
+        #{MARK_END}
+      DEPEND
+      output = File.join(root, '.deps')
+      destination = File.join(output, 'depend')
+
+      updater = TestDepend.new(root: root)
+      assert_true(updater.run([input], mode: :output, output: output))
+      assert_path_exist(destination + '.mkdepend')
+
+      opened = []
+      original_open = File.method(:open)
+      File.define_singleton_method(:open) do |path, *args, **kwargs, &block|
+        opened << File.expand_path(path)
+        original_open.call(path, *args, **kwargs, &block)
+      end
+      updater = TestDepend.new(root: root)
+      assert_true(updater.run([input], mode: :output, output: output))
+      assert_empty(opened & [File.join(root, 'one.c'), header])
+
+      future = Time.now + 2
+      File.utime(future, future, header)
+      updater = TestDepend.new(root: root)
+      assert_true(updater.run([input], mode: :output, output: output))
+      assert_include(opened, header)
+    ensure
+      File.define_singleton_method(:open, original_open) if original_open
+    end
+  end
+
+  def test_run_invalidates_output_when_missing_header_appears
+    Dir.mktmpdir('mkdepend-input') do |root|
+      File.write(File.join(root, 'one.c'), "#include \"appeared.h\"\n")
+      input = File.join(root, 'depend')
+      File.write(input, <<~DEPEND)
+        #{MARK_START}
+        one.$(OBJEXT): one.c
+        #{MARK_END}
+      DEPEND
+      output = File.join(root, '.deps')
+      destination = File.join(output, 'depend')
+      updater = TestDepend.new(root: root)
+
+      assert_true(updater.run([input], mode: :output, output: output))
+      assert_not_include(File.read(destination), 'appeared.h')
+
+      File.write(File.join(root, 'appeared.h'), "")
+      assert_true(updater.run([input], mode: :output, output: output))
+      assert_include(File.read(destination), 'one.$(OBJEXT): appeared.h')
+    end
+  end
+
+  def test_run_reuses_output_with_non_directory_include_prefix
+    Dir.mktmpdir('mkdepend-input') do |root|
+      File.write(File.join(root, 'ruby'), "")
+      File.write(File.join(root, 'one.c'), "#include \"ruby/assert.h\"\n")
+      input = File.join(root, 'depend')
+      File.write(input, <<~DEPEND)
+        #{MARK_START}
+        one.$(OBJEXT): one.c
+        #{MARK_END}
+      DEPEND
+      output = File.join(root, '.deps')
+      updater = TestDepend.new(root: root)
+
+      assert_true(updater.run([input], mode: :output, output: output))
+      updater = TestDepend.new(root: root)
+      assert_true(updater.run([input], mode: :output, output: output))
     end
   end
 

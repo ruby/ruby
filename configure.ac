@@ -4790,9 +4790,8 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
 	AS_IF([test "x$X_DEPENDENCIES_DIR" = x.deps -a "x$HAVE_BASERUBY" = xyes], [
 	    AC_MSG_NOTICE([generating build dependencies])
-	    rm -rf .deps
 	    ${MAKE-make} -f "$srcdir/depend" BASERUBY="$BASERUBY" \
-		srcdir="$srcdir" >&AS_MESSAGE_FD ||
+		srcdir="$srcdir" update-dependencies >&AS_MESSAGE_FD ||
 		AC_MSG_ERROR([failed to generate build dependencies])
 	    dependency_dir="$ac_pwd/.deps"
 	], [

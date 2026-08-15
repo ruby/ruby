@@ -57,8 +57,8 @@ prefix = $(prefix:\=/)
 
 -dependencies-: -baseruby-
 !if "$(HAVE_BASERUBY)" != "no"
-	@if exist .deps (rd /s /q .deps)
-	$(MAKE) -f $(srcdir)/depend BASERUBY=$(BASERUBY) srcdir=$(srcdir) nmake=yes
+	@$(BASERUBY:/=\) $(srcdir)/tool/mkdepend.rb --root=$(srcdir) \
+	    --scope=core --nmake --output=.deps
 !endif
 
 -gmp-:
