@@ -1357,35 +1357,38 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   atime -> new_time
+  #   atime -> time
   #
-  # Returns a Time object containing the access time
+  # Returns a new Time object containing the access time
   # of the entry represented by `self`, as reported by the filesystem;
-  # see {File System Access Time}[rdoc-ref:file/timestamps.md@Access+Time]:
+  # see {File System Access Time}[rdoc-ref:file/timestamps.md@Access+Time].
+  #
+  # For a file, the access time is established when the file is created,
+  # and may be updated with the file content is read:
   #
   # ```ruby
-  # # Pathname for a (non-existent) directory.
-  # dir_pn = Pathname('doc/foo')   # => #<Pathname:doc/foo>
-  # # Create directory; establishes atime for directory.
-  # dir_pn.mkdir
-  # dir_pn.atime                   # => 2026-06-17 10:10:20.801115774 -0500
-  # # Pathname for a (non-existent) file in the directory.
-  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
-  # # Create file; establishes atime for file, updates atime for directory.
-  # file_pn.write('foo')
-  # file_pn.atime                  # => 2026-06-17 10:11:40.987171568 -0500
-  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
-  # # Write file; updates atime for file,but not directory.
-  # file_pn.write('bar')
-  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
-  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
-  # # Read file; may update atime for file, but not directory.
-  # file_pn.read
-  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
-  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
-  # # Clean up.
-  # file_pn.delete
-  # dir_pn.rmdir
+  # filepath = 't.tmp'
+  # pn = Pathname(filepath)
+  # pn.exist? # => false
+  # pn.write('foo')
+  # pn.atime # => 2026-08-15 14:30:28.624455747 -0500
+  # pn.read
+  # pn.atime # => 2026-08-15 14:30:28.624455747 -0500
+  # pn.delete
+  # ```
+  #
+  # For a directory, the access time is established when the directory is created,
+  # and may be updated when its entries are read:
+  #
+  # ```ruby
+  # dirpath = 'foo'
+  # pn = Pathname(dirpath)
+  # pn.exist?          # => false
+  # FileUtils.cp_r('doc', 'foo')
+  # pn.atime           # => 2026-08-15 14:36:20.139756073 -0500
+  # pn.entries.take(3) # => [#<Pathname:syntax>, #<Pathname:contributing>, #<Pathname:strscan>]
+  # pn.atime           # => 2026-08-15 14:36:32.262779081 -0500
+  # pn.rmtree          # Clean up.
   # ```
   #
   def atime() File.atime(@path) end

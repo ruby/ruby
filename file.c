@@ -1117,35 +1117,41 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  *
  * Access time for a file is established when it is created,
- * and is updated when the file content is read:
+ * and may be updated when the file content is read:
  *
  *   filepath = 't.tmp'
  *   File.exist?(filepath)            # => false
  *   file = File.open(filepath, 'w+') # Create by writing; establishes access time.
  *   file.atime                       # => 2026-08-14 11:55:55.436283939 -0500
- *   stat = File::Stat.new(filepath)  # Take snapshot.
- *   stat.atime                       # => 2026-08-14 11:55:55.436283939 -0500
+ *   stat0 = File::Stat.new(filepath) # Take snapshot.
+ *   stat0.atime                      # => 2026-08-14 11:55:55.436283939 -0500
  *   file.read                        # Read file content; updates file access time.
  *   file.atime                       # => 2026-08-14 11:56:22.74241085 -0500
- *   stat.atime                       # => 2026-08-14 11:55:55.436283939 -0500  # Not updated.
- *   stat = File::Stat.new(filepath)  # Take new snapshot.
- *   stat.atime                       # => 2026-08-14 11:56:22.74241085 -0500   # Updated.
+ *   stat0.atime                      # => 2026-08-14 11:55:55.436283939 -0500  # Not updated.
+ *   stat1 = File::Stat.new(filepath) # Take new snapshot.
+ *   stat1.atime                      # => 2026-08-14 11:56:22.74241085 -0500   # Updated.
  *   # Clean up.
  *   file.close
  *   File.delete(filepath)
  *
  * Access time for a directory is established when it is created,
- * and is updated when its entries are read:
+ * and may be updated when its entries are read:
  *
  *   dirpath = 'foo'
-     File.exist?(dirpath)     # => false
-     FileUtils.cp_r('doc', 'foo')
-     File.atime(dirpath)     # => 2026-08-14 12:05:01.476741081 -0500
-     stat = File::Stat.new(dirpath)
-     stat.atime     # => 2026-08-14 12:05:01.476741081 -0500
-
-
- *
+ *   File.exist?(dirpath)         # => false
+ *   FileUtils.cp_r('doc', 'foo') # Create directory by copying.
+ *   File.atime(dirpath)          # => 2026-08-15 14:10:04.832180372 -0500
+ *   stat0 = File::Stat.new(dirpath)
+ *   stat0.atime                  # => 2026-08-15 14:10:04.832180372 -0500
+ *   # Read directory entries (may update atime).
+ *   dir = Dir.new(dirpath)
+ *   dir.entries.take(3)          # => ["syntax", "contributing", "strscan"]
+ *   File.atime(dirpath)          # => 2026-08-15 14:10:04.832180372 -0500  # Not updated.
+ *   stat1 = File::Stat.new(dirpath)
+ *   stat1.atime                  # => 2026-08-15 14:10:04.832180372 -0500
+ *   # Clean up.
+ *   FileUtils.rm_rf(dirpath)
+ *   dir.close
  *
  */
 
@@ -2548,7 +2554,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  *
  * Access time for a file is established when it is created,
- * and is updated when the file content is read:
+ * and may be updated when the file content is read:
  *
  *   filepath = 't.tmp'
  *   File.exist?(filepath)       # => false
@@ -2560,7 +2566,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
  *   File.delete(filepath)       # Clean up.
  *
  * Access time for a directory is established when it is created,
- * and is updated when its entries are read:
+ * and may updated when its entries are read:
  *
  *   dirpath = 'foo'
  *   File.exist?(dirpath)         # => false
@@ -2601,7 +2607,7 @@ rb_file_s_atime(VALUE klass, VALUE fname)
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  *
  * Access time for a file is established when it is created,
- * and is updated when the file content is read:
+ * and may be updated when the file content is read:
  *
  *   filepath = 't.tmp'
  *   File.exist?(filepath)            # => false
