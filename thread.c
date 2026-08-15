@@ -4861,7 +4861,7 @@ thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct tim
     if (io) {
         blocking_operation.ec = ec;
 COMPILER_WARNING_PUSH
-#if RBIMPL_COMPILER_IS(GCC)
+#if RBIMPL_COMPILER_SINCE(GCC, 12, 0, 0)
 COMPILER_WARNING_IGNORED(-Wdangling-pointer)
 #endif
         // rb_io_blocking_operation_exit() below unlinks it on every path.
@@ -5057,7 +5057,7 @@ rb_gc_set_stack_end(VALUE **stack_end_p)
 {
     VALUE stack_end;
 COMPILER_WARNING_PUSH
-#if RBIMPL_COMPILER_IS(GCC)
+#if RBIMPL_COMPILER_SINCE(GCC, 12, 0, 0)
 COMPILER_WARNING_IGNORED(-Wdangling-pointer);
 #endif
     *stack_end_p = &stack_end;
