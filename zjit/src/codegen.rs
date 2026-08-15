@@ -2529,7 +2529,7 @@ fn gen_new_hash(
         gen_prepare_leaf_call_with_gc(asm, state);
 
         let mut flags = VALUE(0);
-        let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags) };
+        let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags, 0) };
         let klass = unsafe { rb_cHash };
 
         gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.into(), klass,
@@ -2548,7 +2548,7 @@ fn gen_new_hash(
         let num_pairs = elements.len() / 2;
         let hash = if num_pairs <= RUBY_RHASH_AR_TABLE_MAX_SIZE as usize {
             let mut flags = VALUE(0);
-            let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags) };
+            let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags, num_pairs) };
             let klass = unsafe { rb_cHash };
 
             gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.into(), klass,

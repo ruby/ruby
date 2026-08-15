@@ -1563,15 +1563,6 @@ hash_alloc(VALUE klass)
     return hash_alloc_capa(klass, 0, Qnil, 0, false);
 }
 
-#if USE_ZJIT
-size_t
-rb_zjit_hash_new_size(VALUE *flags_out)
-{
-    *flags_out = T_HASH;
-    return hash_slot_size(0, false);
-}
-#endif
-
 static VALUE
 empty_hash_alloc(VALUE klass)
 {
@@ -1685,6 +1676,14 @@ rb_hash_resurrect(VALUE hash)
 }
 
 #if USE_ZJIT
+size_t
+rb_zjit_hash_new_size(VALUE *flags_out, size_t size)
+{
+    RUBY_ASSERT(size <= RHASH_AR_TABLE_MAX_SIZE);
+    *flags_out = T_HASH;
+    return hash_slot_size(size, false);
+}
+
 bool
 rb_zjit_hash_dup_can_fastpath(VALUE hash, size_t *alloc_size_out, VALUE *flags_out, VALUE *ifnone_out, long *bound_out)
 {
@@ -1693,7 +1692,7 @@ rb_zjit_hash_dup_can_fastpath(VALUE hash, size_t *alloc_size_out, VALUE *flags_o
 
     const unsigned int bound = RHASH_AR_TABLE_BOUND(hash);
 
-    *alloc_size_out = hash_slot_size(0, false);
+    *alloc_size_out = hash_slot_size(bound, false);
     *flags_out = T_HASH
         | ((VALUE)RHASH_AR_TABLE_SIZE(hash) << RHASH_AR_TABLE_SIZE_SHIFT)
         | ((VALUE)bound << RHASH_AR_TABLE_BOUND_SHIFT);
