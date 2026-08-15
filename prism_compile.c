@@ -1564,7 +1564,14 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                     // Emit optimized code.
                     FLUSH_CHUNK;
                     if (first_chunk) {
-                        PUSH_INSN1(ret, location, duphash, hash);
+                        if (count == elements->size || argument) {
+                            // A fully literal hash.
+                            PUSH_INSN1(ret, location, duphash, hash);
+                        }
+                        else {
+                            // Partial hash that will be merged with a newly built one, no need to dup
+                            PUSH_INSN1(ret, location, putobject, rb_obj_reveal(hash, rb_cHash));
+                        }
                         first_chunk = false;
                     }
                     else {
@@ -1652,7 +1659,8 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                     PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 
                     if (first_element) {
-                        PUSH_INSN1(ret, location, newhash, INT2FIX(0));
+                         // TODO: we could entirely elude this core_hash_merge_kwd call
+                        PUSH_INSN(ret, location, putnil);
                     }
                     else {
                         PUSH_INSN(ret, location, swap);

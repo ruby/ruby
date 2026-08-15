@@ -5202,6 +5202,31 @@ rb_hash_new_with_bulk_insert(long argc, const VALUE *argv)
     return val;
 }
 
+VALUE
+rb_hash_new_with_bulk_merge(VALUE hash, long argc, const VALUE *argv)
+{
+    // This is used to build dynamic literal hashes, we can assume
+    // all keys are unique.
+    VALUE val = rb_hash_new_capa(RHASH_SIZE(hash) + argc / 2);
+    hash_copy(val, hash);
+    rb_hash_bulk_insert(argc, argv, val);
+    return val;
+}
+
+VALUE
+rb_hash_new_merge2(VALUE h1, VALUE h2)
+{
+    // This is used to build keyword hashes, we can assume
+    // duplicate keys are rare
+    VALUE val = h1;
+    if (OBJ_FROZEN(h1)) {
+        val = rb_hash_new_capa(RHASH_SIZE(h1) + RHASH_SIZE(h2));
+        hash_copy(val, h1);
+    }
+    rb_hash_foreach(h2, rb_hash_update_i, val);
+    return val;
+}
+
 #undef USE_ORIGENVIRON
 #if !defined(_WIN32) && !(defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
 # define USE_ORIGENVIRON 1

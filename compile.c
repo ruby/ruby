@@ -5546,8 +5546,13 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
                          * or merge the hash to the accumulated hash (if not the first keyword).
                          */
                         ADD_INSN1(ret, line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                        if (first_kw) ADD_INSN1(ret, line_node, newhash, INT2FIX(0));
-                        else ADD_INSN(ret, line_node, swap);
+                        if (first_kw) {
+                            // core_hash_merge_kwd accept nil as a standoff for an empty hash.
+                            ADD_INSN(ret, line_node, putnil);
+                        }
+                        else {
+                            ADD_INSN(ret, line_node, swap);
+                        }
 
                         NO_CHECK(COMPILE(ret, "keyword splat", kw));
 
