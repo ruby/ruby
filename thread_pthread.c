@@ -62,6 +62,10 @@ static pthread_condattr_t *condattr_monotonic = &condattr_mono;
 static const void *const condattr_monotonic = NULL;
 #endif
 
+/* A retiring shared native thread frees its own context while the threads it
+ * parked are still suspended with that context as their target. */
+#define COROUTINE_TARGET_MAY_BE_FREED 1
+
 #include COROUTINE_H
 
 #ifndef HAVE_SYS_EVENT_H
