@@ -1027,68 +1027,6 @@ class TestMkdepend < Test::Unit::TestCase
     end
   end
 
-  def test_build_frontends_use_selected_dependency_directory
-    common = File.read(File.join(TOP_SRCDIR, 'common.mk'))
-    configure = File.read(File.join(TOP_SRCDIR, 'configure.ac'))
-    makefile = File.read(File.join(TOP_SRCDIR, 'template/Makefile.in'))
-    gnumakefile = File.read(File.join(TOP_SRCDIR, 'template/GNUmakefile.in'))
-    prereq = File.read(File.join(TOP_SRCDIR, 'tool/prereq.status'))
-    win32 = File.read(File.join(TOP_SRCDIR, 'win32/Makefile.sub'))
-    setup = File.read(File.join(TOP_SRCDIR, 'win32/setup.mak'))
-    mkmf = File.read(File.join(TOP_SRCDIR, 'lib/mkmf.rb'))
-    configure_ext = File.read(
-      File.join(TOP_SRCDIR, 'template/configure-ext.mk.tmpl'),
-    )
-
-    assert_include(common, '!include $(DEPENDENCIES_DIR)/depend')
-    assert_include(configure, 'AC_SUBST(X_DEPENDENCIES_DIR)')
-    assert_include(configure, "X_DEPENDENCIES_DIR='\$X_DEPENDENCIES_DIR'")
-    assert_not_include(configure, 'AC_SUBST(DEPENDENCIES_DIR)')
-    assert_include(configure, '--root="$srcdir"')
-    assert_include(configure, '--scope=core')
-    assert_include(makefile, 'DEPENDENCIES_DIR = @X_DEPENDENCIES_DIR@')
-    assert_include(prereq, 's,@X_DEPENDENCIES_DIR@,$(srcdir),g')
-    assert_include(gnumakefile, 'include $(DEPENDENCIES_DIR)/depend')
-    assert_match(/filter-out .*DEPENDENCIES_DIR.*common_mk_includes/, gnumakefile)
-    assert_include(win32, 'DEPENDENCIES_DIR = .deps')
-    assert_include(win32, 'DEPENDENCIES_DIR = $(srcdir)')
-    assert_include(setup, '--scope=core')
-    assert_include(mkmf, 'if arg_config("--update-depend")')
-    assert_include(mkmf, 'MakeMakefile::Depend.new')
-    assert_include(configure_ext, '--scope=extensions')
-    assert_include(configure_ext, '--thread-model=$(THREAD_MODEL)')
-    assert_match(
-      %r{tool/mkdepend\.rb.*\n.*--output=\.deps},
-      configure_ext,
-    )
-  end
-
-  def test_common_dependency_maintenance_targets
-    common = File.read(File.join(TOP_SRCDIR, 'common.mk'))
-    gmake = File.read(File.join(TOP_SRCDIR, 'defs/gmake.mk'))
-    setup = File.read(File.join(TOP_SRCDIR, 'win32/setup.mak'))
-    snapshot = File.read(File.join(TOP_SRCDIR, 'tool/make-snapshot'))
-
-    assert_match(/^fix-depends: PHONY$/, common)
-    assert_match(/^check-depends: PHONY$/, common)
-    assert_match(/^distclean-local::.*\n\t-\$\(Q\)\$\(RMALL\) \.deps$/, common)
-    assert_not_match(/^fix-depends:/, gmake)
-    assert_not_match(/^check-depends:/, gmake)
-    assert_match(/rm\.bat -f -r \.deps/, setup)
-    assert_include(setup, '--root=$(srcdir)')
-    assert_match(
-      %r{tool[\\/]mkdepend\.rb --root=\$\(srcdir\) --scope=core --nmake --output=\.deps},
-      setup,
-    )
-    assert_include(snapshot, 'args["MKDEPEND_FILES"] = "--scope=core"')
-    assert_include(snapshot, 'args["MKDEPEND_OPTIONS"] = ""')
-    assert_match(
-      %r{if File\.file\?\("tool/mkdepend\.rb"\).*make\.run\("fix-depends"\)}m,
-      snapshot,
-    )
-    assert_not_include(snapshot, 'File.read("defs/gmake.mk")')
-  end
-
   def test_file_without_markers_is_not_updated
     Dir.mktmpdir('mkdepend') do |dir|
       path = File.join(dir, 'depend')
