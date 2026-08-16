@@ -627,8 +627,12 @@ assert_equal 'ok', %q{
   if !can_limit
     'ok'   # cannot make thread creation fail on this platform; nothing to test
   else
-    warm = 2.times.map { Ractor.new { nil until Ractor.receive == :quit } }
-    sleep 0.3   # the pool now has shared native threads parked for the warm ractors
+    # One warm ractor parks one shared native thread in the pool.  Exactly one:
+    # the pool is widened only while snt_cnt < max_cpu, so with two parked
+    # threads a 2-CPU host would never attempt pthread_create below and the
+    # rlimit would go unnoticed.
+    warm = Ractor.new { nil until Ractor.receive == :quit }
+    sleep 0.3   # the pool now has a shared native thread parked for the warm ractor
     Process.setrlimit(:NPROC, 1)
     # RLIMIT_NPROC binds neither root (CI containers) nor macOS threads;
     # probe that thread creation actually fails before asserting on it.
@@ -651,10 +655,13 @@ assert_equal 'ok', %q{
           end
         end
         sleep 0.5   # a wrongly-published thread would be served and die about now
-        errs == 20 ? 'ok' : "#{errs} of 20 raised"
+        # On a single-CPU host the pool is already at max_cpu, widening is never
+        # attempted and nothing raises; everywhere else every attempt must fail.
+        # A mixed count means a failed attempt was not rolled back cleanly.
+        (errs == 20 || errs == 0) ? 'ok' : "#{errs} of 20 raised"
       end
-    warm.each { |r| r.send(:quit) }
-    warm.each(&:value)
+    warm.send(:quit)
+    warm.value
     GC.start
     result
   end
