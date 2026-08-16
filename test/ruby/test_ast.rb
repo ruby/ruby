@@ -801,7 +801,7 @@ class TestAst < Test::Unit::TestCase
                 kw: nil
                 kwrest: nil
                 block: nil)
-             body: (RETURN@2:2-2:10 (LVAR@2:9-2:10 :a)))))
+             body: (RETURN@2:2-2:10 (LIST@2:9-2:10 (LVAR@2:9-2:10 :a) nil)))))
     EXP
   end
 
