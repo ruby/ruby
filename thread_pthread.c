@@ -1340,6 +1340,23 @@ grq_size(rb_vm_t *vm, rb_ractor_t *cr)
 }
 #endif
 
+// A native thread enters/leaves an epilogue that outlives its Ractor: from
+// the increment until the decrement, ruby_vm_destruct waits for it below.
+// The increment must happen while the VM still counts the thread's Ractor,
+// so that the two never look absent at the same time.
+void
+rb_thread_sched_winding_begin(rb_vm_t *vm)
+{
+    RUBY_ATOMIC_INC(vm->ractor.sched.winding_cnt);
+}
+
+void
+rb_thread_sched_winding_end(rb_vm_t *vm)
+{
+    VM_ASSERT(RUBY_ATOMIC_LOAD(vm->ractor.sched.winding_cnt) > 0);
+    RUBY_ATOMIC_DEC(vm->ractor.sched.winding_cnt);
+}
+
 // ruby_vm_destruct: wait until no native thread is between a coroutine
 // epilogue and its reclaim -- past that point the reclaim frees through the
 // (about to be destroyed) objspace and reads the (about to be unset) VM.
