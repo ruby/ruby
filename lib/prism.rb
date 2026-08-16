@@ -90,9 +90,9 @@ module Prism
   # an exact match. On other implementations, it falls back to best-effort
   # matching by source location line number.
   #--
-  #: (Method | UnboundMethod | Proc | Thread::Backtrace::Location callable, ?rubyvm: bool) -> Node?
-  def self.find(callable, rubyvm: !!defined?(RubyVM))
-    NodeFind.find(callable, rubyvm)
+  #: (Method | UnboundMethod | Proc | Thread::Backtrace::Location callable) -> Node?
+  def self.find(callable)
+    NodeFind.find(callable)
   end
 
   # @rbs!
