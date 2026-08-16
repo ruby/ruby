@@ -751,9 +751,7 @@ class Ractor
     #     port.receive #=> raise Ractor::ClosedError
     #
     def receive
-      __builtin_cexpr! %q{
-        ractor_port_receive(ec, self)
-      }
+      __builtin.ractor_port_receive()
     end
 
     #
@@ -794,9 +792,7 @@ class Ractor
     # If the object is shareable, a reference to the object will be sent to the receiving ractor.
     #
     def send obj, move: false
-      __builtin_cexpr! %q{
-        ractor_port_send(ec, self, obj, move)
-      }
+      __builtin.ractor_port_send(obj, move)
     end
 
     alias << send
@@ -816,9 +812,7 @@ class Ractor
     #     end.join
     #
     def close
-      __builtin_cexpr! %q{
-        ractor_port_close(ec, self)
-      }
+      __builtin.ractor_port_close()
     end
 
     #
@@ -827,9 +821,7 @@ class Ractor
     #
     # Returns whether or not the port is closed.
     def closed?
-      __builtin_cexpr! %q{
-        ractor_port_closed_p(ec, self);
-      }
+      __builtin.ractor_port_closed_p()
     end
 
     #
