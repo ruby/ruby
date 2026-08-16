@@ -393,6 +393,10 @@ void rb_gc_adjust_memory_usage(ssize_t diff);
  * Because this  registration itself has  a possibility  to trigger a  GC, this
  * function  must be  called  before any  GC-able objects  is  assigned to  the
  * address pointed by `valptr`.
+ *
+ * One and the same address can be registered multiple times. It then has to be
+ * unregistered  equally often, to allow garbage collection of the Ruby object.
+ * This can be used like reference counting, if an object has several owners.
  */
 void rb_gc_register_address(VALUE *valptr);
 
