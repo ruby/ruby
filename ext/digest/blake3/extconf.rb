@@ -99,7 +99,7 @@ unless simd_cflags.empty?
     simd_cflags.each do |obj, flag|
       target = "#{obj}.#{$OBJEXT}"
       mf.puts "#{target}: $(srcdir)/#{obj}.c"
-      mf.puts "\t$(ECHO) compiling $(<)"
+      mf.puts "\t$(ECHO) compiling #{obj}.c"
       mf.puts "\t$(Q) $(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) #{flag} $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/#{obj}.c"
     end
   end
