@@ -842,12 +842,25 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 #endif
 
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
+        // The postmortem epilogue below runs after this Ractor is unlinked and no
+        // longer counted, with the GVL already released, and it frees through
+        // VM-global state (the jit_cont list and its mutex, the fiber pool, the
+        // main objspace's malloc accounting).  Nothing else holds the main Ractor
+        // back at that point, so count it like a coroutine epilogue: then
+        // ruby_vm_destruct waits for it (rb_thread_sched_wait_winding) instead of
+        // tearing that state down underneath.  th is freed by the epilogue, so
+        // keep the VM pointer.
+        rb_vm_t *const vm = th->vm;
+        rb_thread_sched_winding_begin(vm);
+
         // after rb_ractor_living_threads_remove()
         // GC will happen anytime and this ractor can be collected (and destroy GVL).
         // So gvl_release() should be before it.
         thread_sched_to_dead(TH_SCHED(th), th);
         rb_ractor_living_threads_remove(th->ractor, th);
         rb_ractor_postmortem_free(&pf);
+
+        rb_thread_sched_winding_end(vm);
     }
     else {
         rb_ractor_living_threads_remove(th->ractor, th);
