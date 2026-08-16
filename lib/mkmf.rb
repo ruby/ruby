@@ -515,6 +515,17 @@ EOM
 
   # :stopdoc:
 
+  # Try to stabilize temporary filenames as far as compilers (such as
+  # GCC or Clang) support it.  Without this, object files generated
+  # from conftest.c during feature checks may have randomized names
+  # (e.g. /tmp/ccXXXXXX.o), making the content of mkmf.log
+  # non-deterministic.
+  def stabilize_filenames
+    defined? @stabilized_filenames and return
+    @stabilized_filenames = true
+    append_cflags('-save-temps')
+  end
+
   def have_devel?
     unless defined? $have_devel
       $have_devel = true
@@ -524,6 +535,7 @@ EOM
   end
 
   def try_do(src, command, **opts, &b)
+    stabilize_filenames
     unless have_devel?
       raise <<MSG
 The compiler failed to generate an executable file.
