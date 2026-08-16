@@ -1,0 +1,3 @@
+for x in [1] then break end
+                  ^~~~~ Invalid break in for-comprehension
+
