@@ -3303,7 +3303,7 @@ static VALUE
 rb_ary_to_h(VALUE ary)
 {
     long i;
-    VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary));
+    VALUE hash = rb_hash_new_capa(RARRAY_LEN(ary));
     int block_given = rb_block_given_p();
 
     for (i=0; i<RARRAY_LEN(ary); i++) {
@@ -5739,7 +5739,7 @@ static inline VALUE
 ary_tmp_hash_new(VALUE ary)
 {
     long size = RARRAY_LEN(ary);
-    VALUE hash = rb_hash_new_with_size(size);
+    VALUE hash = rb_hash_new_capa(size);
 
     RBASIC_CLEAR_CLASS(hash);
     return hash;

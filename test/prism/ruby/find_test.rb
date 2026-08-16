@@ -143,42 +143,42 @@ module Prism
       assert_def_node Prism.find(Fixtures::MultipleOnLine.method(:second)), :second
     end
 
-    # === Fallback (line-based) tests via rubyvm: false ===
+    # === Fallback (line-based) tests ===
 
     def test_fallback_simple_method
-      assert_def_node Prism.find(Fixtures::Methods.instance_method(:simple_method), rubyvm: false), :simple_method
+      assert_def_node NodeFind::LineMethodFind.new.find(Fixtures::Methods.instance_method(:simple_method)), :simple_method
     end
 
     def test_fallback_singleton_method
-      assert_def_node Prism.find(Fixtures::Methods.method(:singleton_method_fixture), rubyvm: false), :singleton_method_fixture
+      assert_def_node NodeFind::LineMethodFind.new.find(Fixtures::Methods.method(:singleton_method_fixture)), :singleton_method_fixture
     end
 
     def test_fallback_lambda
-      node = Prism.find(Fixtures::Procs::SIMPLE_LAMBDA, rubyvm: false)
+      node = NodeFind::LineLambdaFind.new.find(Fixtures::Procs::SIMPLE_LAMBDA)
       assert_instance_of LambdaNode, node
     end
 
     def test_fallback_proc
-      node = Prism.find(Fixtures::Procs::SIMPLE_PROC, rubyvm: false)
+      node = NodeFind::LineProcFind.new.find(Fixtures::Procs::SIMPLE_PROC)
       assert_instance_of CallNode, node
       assert node.block.is_a?(BlockNode)
     end
 
     def test_fallback_define_method
-      node = Prism.find(Fixtures::DefineMethod.instance_method(:dynamic), rubyvm: false)
+      node = NodeFind::LineMethodFind.new.find(Fixtures::DefineMethod.instance_method(:dynamic))
       assert_instance_of CallNode, node
       assert node.block.is_a?(BlockNode)
     end
 
     def test_fallback_for_loop
-      node = Prism.find(Fixtures::ForLoop::FOR_PROC, rubyvm: false)
+      node = NodeFind::LineProcFind.new.find(Fixtures::ForLoop::FOR_PROC)
       assert_instance_of ForNode, node
     end
 
     def test_fallback_backtrace_location
       location = zero_division_location
       assert_not_nil location
-      node = Prism.find(location, rubyvm: false)
+      node = NodeFind::LineBacktraceLocationFind.new.find(location)
       assert_not_nil node
       assert_equal location.lineno, node.location.start_line
     end

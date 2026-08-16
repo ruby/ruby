@@ -1021,6 +1021,19 @@ rb_thread_malloc_stack_set(rb_thread_t *th, void *stack, size_t stack_size)
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
 
 void
+rb_thread_sched_winding_begin(rb_vm_t *vm)
+{
+    // nothing to count: rb_thread_sched_wait_winding below never waits
+    (void)vm;
+}
+
+void
+rb_thread_sched_winding_end(rb_vm_t *vm)
+{
+    (void)vm;
+}
+
+void
 rb_thread_sched_wait_winding(rb_vm_t *vm)
 {
     // no coroutine (M:N) threads on this implementation: nothing winds down

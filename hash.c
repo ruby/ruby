@@ -102,10 +102,15 @@ static VALUE rb_hash_s_try_convert(VALUE, VALUE);
  *  2. Insert WBs
  */
 
+static int ar_compact_table(VALUE hash);
+
 /* :nodoc: */
 VALUE
 rb_hash_freeze(VALUE hash)
 {
+    if (!OBJ_FROZEN(hash) && RHASH_AR_TABLE_P(hash)) {
+        ar_compact_table(hash);
+    }
     return rb_obj_freeze(hash);
 }
 
@@ -607,49 +612,83 @@ ar_equal(VALUE x, VALUE y)
     return rb_any_cmp(x, y) == 0;
 }
 
+
+#if SIZEOF_VALUE == 8
+#define AR_HINT_BASE_MASK 0x101010101010101
+#define AR_HINT_NORMALIZE_MASK 0x7F7F7F7F7F7F7F7F
+#ifdef WORDS_BIGENDIAN
+#define AR_HINT_FIND_FIRST_ZERO_BYTE(x) (nlz_int64(x) / CHAR_BIT)
+#else
+#define AR_HINT_FIND_FIRST_ZERO_BYTE(x) (ntz_int64(x) / CHAR_BIT)
+#endif
+#else
+#define AR_HINT_BASE_MASK 0x1010101
+#define AR_HINT_NORMALIZE_MASK 0x7F7F7F7F
+#ifdef WORDS_BIGENDIAN
+#define AR_HINT_FIND_FIRST_ZERO_BYTE(x) (nlz_int32(x) / CHAR_BIT)
+#else
+#define AR_HINT_FIND_FIRST_ZERO_BYTE(x) (ntz_int32(x) / CHAR_BIT)
+#endif
+#endif
+
+static inline unsigned int
+ar_hint_first_match(ar_hint_t needle, VALUE haystack)
+{
+    // Common SWAR technique.
+    // First XOR all bytes so that matching ones are set to 0x00.
+    VALUE search_mask = AR_HINT_BASE_MASK * needle;
+    VALUE matches = haystack ^ search_mask;
+
+    // Then turns 0x00 into 0x80, and any other bytes into 0x00.
+    matches = ~((((matches & AR_HINT_NORMALIZE_MASK) + AR_HINT_NORMALIZE_MASK) | matches) | AR_HINT_NORMALIZE_MASK);
+    unsigned index = AR_HINT_FIND_FIRST_ZERO_BYTE(matches);
+    RBIMPL_ASSERT_OR_ASSUME(index <= RHASH_AR_TABLE_MAX_SIZE);
+    return index;
+}
+
 // Returns the bin index if found, RHASH_AR_TABLE_MAX_BOUND if not found,
 // or RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE if #eql? or a Thread converted the hash to st_table.
 static unsigned
 ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
 {
-    /* if table is NULL, then bound also should be 0 */
+    unsigned first_match = ar_hint_first_match(hint, RHASH_AR_TABLE(hash)->ar_hint.word);
 
-    for (unsigned i = 0; i < RHASH_AR_TABLE_BOUND(hash); i++) {
-        const ar_hint_t *hints = RHASH_AR_TABLE(hash)->ar_hint.ary;
-        if (hints[i] == hint) {
-            ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
-            int eq = ar_equal(key, pair->key);
-            if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
-                return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
-            }
-            if (eq) {
-                RB_DEBUG_COUNTER_INC(artable_hint_hit);
-                return i;
-            }
-            else {
-#if 0
-                static int pid;
-                static char fname[256];
-                static FILE *fp;
+    if (LIKELY(first_match >= RHASH_AR_TABLE_BOUND(hash))) {
+        RB_DEBUG_COUNTER_INC(artable_hint_notfound);
+        return RHASH_AR_TABLE_MAX_BOUND;
+    }
 
-                if (pid != getpid()) {
-                    snprintf(fname, sizeof(fname), "/tmp/ruby-armiss.%d", pid = getpid());
-                    if ((fp = fopen(fname, "w")) == NULL) rb_bug("fopen");
+    RUBY_ASSERT(RHASH_AR_TABLE(hash)->ar_hint.ary[first_match] == hint);
+    int eq = ar_equal(key, RHASH_AR_TABLE_REF(hash, first_match)->key);
+    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+        return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
+    }
+    if (LIKELY(eq)) {
+        RB_DEBUG_COUNTER_INC(artable_hint_hit);
+        return first_match;
+    }
+    else {
+        // In theory we could extract all the matching indexes in `ar_hint_first_match`,
+        // and avoid this loop, but sine `ar_equal` may call back into arbitrary code,
+        // the `ar_hint` may have changed.
+        for (unsigned i = first_match + 1; i < RHASH_AR_TABLE_BOUND(hash); i++) {
+            const ar_hint_t *hints = RHASH_AR_TABLE(hash)->ar_hint.ary;
+            if (UNLIKELY(hints[i] == hint)) {
+                eq = ar_equal(key, RHASH_AR_TABLE_REF(hash, i)->key);
+                if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+                    return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
                 }
-
-                st_hash_t h1 = ar_do_hash(key);
-                st_hash_t h2 = ar_do_hash(pair->key);
-
-                fprintf(fp, "miss: hash_eq:%d hints[%d]:%02x hint:%02x\n"
-                            "      key      :%016lx %s\n"
-                            "      pair->key:%016lx %s\n",
-                        h1 == h2, i, hints[i], hint,
-                        h1, rb_obj_info(key), h2, rb_obj_info(pair->key));
-#endif
-                RB_DEBUG_COUNTER_INC(artable_hint_miss);
+                if (eq) {
+                    RB_DEBUG_COUNTER_INC(artable_hint_hit);
+                    return i;
+                }
+                else {
+                    RB_DEBUG_COUNTER_INC(artable_hint_miss);
+                }
             }
         }
     }
+
     RB_DEBUG_COUNTER_INC(artable_hint_notfound);
     return RHASH_AR_TABLE_MAX_BOUND;
 }
@@ -1443,24 +1482,35 @@ compact_after_delete(VALUE hash)
 }
 
 static inline size_t
-hash_slot_size(bool st)
+hash_slot_size(size_t capa, bool frozen)
 {
-    return sizeof(struct RHash) + (st ? sizeof(st_table) : sizeof(ar_table));
+    if (capa > RHASH_AR_TABLE_MAX_SIZE) {
+        return sizeof(struct RHash) + sizeof(st_table);
+    }
+
+    // If the hash is immutable, we can allocate a slot with exactly as much space as needed.
+    if (frozen) {
+        return sizeof(struct RHash) + offsetof(ar_table, pairs) + capa * sizeof(ar_table_pair);
+    }
+
+    return sizeof(struct RHash) + sizeof(ar_table);
 }
 
 static VALUE
-hash_alloc_flags(VALUE klass, VALUE flags, VALUE ifnone, bool st)
+hash_alloc_capa(VALUE klass, VALUE flags, VALUE ifnone, size_t size, bool frozen)
 {
-    const size_t size = hash_slot_size(st);
-    VALUE hash = rb_newobj_of(klass, T_HASH | flags, size);
-    return rb_hash_set_ifnone(hash, ifnone);
+    VALUE hash = rb_newobj_of(klass, T_HASH | flags, hash_slot_size(size, frozen));
+    rb_hash_set_ifnone(hash, ifnone);
+    if (size > RHASH_AR_TABLE_MAX_SIZE) {
+        hash_st_table_init(hash, &objhash, size);
+    }
+    return hash;
 }
 
 static VALUE
 hash_alloc(VALUE klass)
 {
-    /* Allocate to be able to fit both st_table and ar_table. */
-    return hash_alloc_flags(klass, 0, Qnil, sizeof(st_table) > sizeof(ar_table));
+    return hash_alloc_capa(klass, 0, Qnil, 0, false);
 }
 
 #if USE_ZJIT
@@ -1468,7 +1518,7 @@ size_t
 rb_zjit_hash_new_size(VALUE *flags_out)
 {
     *flags_out = T_HASH;
-    return hash_slot_size(sizeof(st_table) > sizeof(ar_table));
+    return hash_slot_size(0, false);
 }
 #endif
 
@@ -1496,39 +1546,15 @@ copy_compare_by_id(VALUE hash, VALUE basis)
 }
 
 VALUE
-rb_hash_new_with_size(st_index_t size)
-{
-    bool st = size > RHASH_AR_TABLE_MAX_SIZE;
-    VALUE ret = hash_alloc_flags(rb_cHash, 0, Qnil, st);
-
-    if (st) {
-        hash_st_table_init(ret, &objhash, size);
-    }
-
-    return ret;
-}
-
-VALUE
 rb_hash_new_capa(long capa)
 {
-    return rb_hash_new_with_size((st_index_t)capa);
+    return hash_alloc_capa(rb_cHash, 0, Qnil, capa, false);
 }
 
 VALUE
 rb_hash_alloc_fixed_size(VALUE klass, st_index_t size)
 {
-    VALUE ret;
-    if (size > RHASH_AR_TABLE_MAX_SIZE) {
-        ret = hash_alloc_flags(klass, 0, Qnil, true);
-        hash_st_table_init(ret, &objhash, size);
-    }
-    else {
-        size_t slot_size = sizeof(struct RHash) + offsetof(ar_table, pairs) + size * sizeof(ar_table_pair);
-        ret = rb_newobj_of(klass, T_HASH, slot_size);
-    }
-
-    RHASH_SET_IFNONE(ret, Qnil);
-    return ret;
+    return hash_alloc_capa(klass, 0, Qnil, size, true);
 }
 
 static VALUE
@@ -1544,8 +1570,6 @@ hash_copy(VALUE ret, VALUE hash)
         }
         else {
             st_table *tab = RHASH_ST_TABLE(ret);
-            st_init_existing_table_with_size(tab, &objhash, RHASH_AR_TABLE_SIZE(hash));
-
             int bound = RHASH_AR_TABLE_BOUND(hash);
             for (int i = 0; i < bound; i++) {
                 if (ar_cleared_entry(hash, i)) continue;
@@ -1571,7 +1595,7 @@ hash_copy(VALUE ret, VALUE hash)
 static VALUE
 hash_dup_with_compare_by_id(VALUE hash)
 {
-    VALUE dup = hash_alloc_flags(rb_cHash, 0, Qnil, RHASH_ST_TABLE_P(hash));
+    VALUE dup = hash_alloc_capa(rb_cHash, 0, Qnil, RHASH_SIZE(hash), false);
     if (RHASH_ST_TABLE_P(hash)) {
         RHASH_SET_ST_FLAG(dup);
     }
@@ -1585,8 +1609,8 @@ hash_dup_with_compare_by_id(VALUE hash)
 static VALUE
 hash_dup(VALUE hash, VALUE klass, VALUE flags)
 {
-    return hash_copy(hash_alloc_flags(klass, flags, RHASH_IFNONE(hash), !RHASH_EMPTY_P(hash) && RHASH_ST_TABLE_P(hash)),
-                     hash);
+    VALUE dup = hash_alloc_capa(klass, flags, RHASH_IFNONE(hash), RHASH_SIZE(hash), false);
+    return hash_copy(dup, hash);
 }
 
 VALUE
@@ -1606,6 +1630,25 @@ rb_hash_resurrect(VALUE hash)
     VALUE ret = hash_dup(hash, rb_cHash, 0);
     return ret;
 }
+
+#if USE_ZJIT
+bool
+rb_zjit_hash_dup_can_fastpath(VALUE hash, size_t *alloc_size_out, VALUE *flags_out, VALUE *ifnone_out, long *bound_out)
+{
+    if (!RHASH_AR_TABLE_P(hash)) return false;
+    if (rb_hash_compare_by_id_p(hash)) return false;
+
+    const unsigned int bound = RHASH_AR_TABLE_BOUND(hash);
+
+    *alloc_size_out = hash_slot_size(0, false);
+    *flags_out = T_HASH
+        | ((VALUE)RHASH_AR_TABLE_SIZE(hash) << RHASH_AR_TABLE_SIZE_SHIFT)
+        | ((VALUE)bound << RHASH_AR_TABLE_BOUND_SHIFT);
+    *ifnone_out = RHASH_IFNONE(hash);
+    *bound_out = (long)bound;
+    return true;
+}
+#endif
 
 static void
 rb_hash_modify_check(VALUE hash)
@@ -2673,7 +2716,7 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
     if (argc == 0 || RHASH_EMPTY_P(hash)) {
         return copy_compare_by_id(rb_hash_new(), hash);
     }
-    result = copy_compare_by_id(rb_hash_new_with_size(argc), hash);
+    result = copy_compare_by_id(rb_hash_new_capa(argc), hash);
 
     for (i = 0; i < argc; i++) {
         key = argv[i];
@@ -3027,9 +3070,16 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 
     if (RHASH_AR_TABLE_P(hash)) {
         hash_ar_free_and_clear_table(hash);
+        if (RHASH_SIZE(hash2) > RHASH_AR_TABLE_MAX_SIZE) {
+            RHASH_SET_ST_FLAG(hash);
+        }
     }
     else {
         hash_st_free_and_clear_table(hash);
+    }
+
+    if (RHASH_ST_TABLE_P(hash)) {
+        st_init_existing_table_with_size(RHASH_ST_TABLE(hash), &objhash, RHASH_SIZE(hash2));
     }
 
     hash_copy(hash, hash2);
@@ -3757,7 +3807,7 @@ to_h_i(VALUE key, VALUE value, VALUE hash)
 static VALUE
 rb_hash_to_h_block(VALUE hash)
 {
-    VALUE h = rb_hash_new_with_size(RHASH_SIZE(hash));
+    VALUE h = rb_hash_new_capa(RHASH_SIZE(hash));
     rb_hash_foreach(hash, to_h_i, h);
     return h;
 }
@@ -4152,7 +4202,7 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
 static VALUE
 rb_hash_invert(VALUE hash)
 {
-    VALUE h = rb_hash_new_with_size(RHASH_SIZE(hash));
+    VALUE h = rb_hash_new_capa(RHASH_SIZE(hash));
 
     rb_hash_foreach(hash, rb_hash_invert_i, h);
     return h;
@@ -4757,7 +4807,7 @@ rb_ident_hash_new(void)
 }
 
 VALUE
-rb_ident_hash_new_with_size(st_index_t size)
+rb_ident_hash_new_capa(long size)
 {
     VALUE hash = rb_hash_new();
     hash_st_table_init(hash, &identhash, size);
@@ -5147,7 +5197,7 @@ rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
 VALUE
 rb_hash_new_with_bulk_insert(long argc, const VALUE *argv)
 {
-    VALUE val = rb_hash_new_with_size(argc / 2);
+    VALUE val = rb_hash_new_capa(argc / 2);
     rb_hash_bulk_insert(argc, argv, val);
     return val;
 }
@@ -6173,7 +6223,7 @@ env_slice(int argc, VALUE *argv, VALUE _)
     if (argc == 0) {
         return rb_hash_new();
     }
-    result = rb_hash_new_with_size(argc);
+    result = rb_hash_new_capa(argc);
 
     for (i = 0; i < argc; i++) {
         key = argv[i];

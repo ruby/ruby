@@ -70,11 +70,11 @@ class MakeMakefile::Depend
   private_constant :DEFAULT_ROOT, :Declarations
 
   class Scanner # :nodoc:
-    attr_reader :unresolved
+    attr_reader :accessed, :unresolved
 
     def initialize(root:, include_dirs:, quote_dirs: [], macros: {},
                    targets: [], aliases: {}, dependencies: {}, defined: [],
-                   undefined: [])
+                   undefined: [], cache: {})
       @root = File.expand_path(root)
       @include_dirs = include_dirs.map {|dir| File.expand_path(dir, @root)}
       @quote_dirs = quote_dirs.map {|dir| File.expand_path(dir, @root)}
@@ -84,7 +84,9 @@ class MakeMakefile::Depend
       @dependencies = dependencies
       @defined = defined.to_set
       @undefined = undefined.to_set
+      @accessed = Set.new
       @unresolved = Set.new
+      @cache = cache
     end
 
     def scan(source)
@@ -97,46 +99,70 @@ class MakeMakefile::Depend
 
     def visit(path, dependencies, visited, record: true)
       path = File.expand_path(path)
-      return unless File.file?(path)
       return if visited.include?(path)
+      directives = source_directives(path)
+      return unless directives
       visited.add(path)
       dependencies.add(relative(path)) if record
 
       conditions = []
-      File.open(path, "rb") do |file|
-        file.each_line do |line|
-          directive = line[/\A\s*#\s*(.*)/, 1]
-          next unless directive
-
-          case directive
-          when /\Aifdef\s+(\w+)/
-            conditions << symbol_condition($1)
-          when /\Aifndef\s+(\w+)/
-            condition = symbol_condition($1)
-            conditions << (condition == :all ? :all : !condition)
-          when /\Aif\s+(.+)/
-            conditions << expression_condition($1)
-          when /\Aelif\s+(.+)/
-            conditions[-1] = if conditions[-1] == true
-              false
-            elsif conditions[-1] == false
-              expression_condition($1)
-            else
-              :all
-            end
-          when /\Aelse\b/
-            conditions[-1] = !conditions[-1] if [true, false].include?(conditions[-1])
-          when /\Aendif\b/
-            conditions.pop
+      directives.each do |directive|
+        case directive
+        when /\Aifdef\s+(\w+)/
+          conditions << symbol_condition($1)
+        when /\Aifndef\s+(\w+)/
+          condition = symbol_condition($1)
+          conditions << (condition == :all ? :all : !condition)
+        when /\Aif\s+(.+)/
+          conditions << expression_condition($1)
+        when /\Aelif\s+(.+)/
+          conditions[-1] = if conditions[-1] == true
+            false
+          elsif conditions[-1] == false
+            expression_condition($1)
           else
-            next if conditions.include?(false)
-            case directive
-            when /\A(?:line\s+)?\d+\s+"([^"<>]+)"/
-              dependencies.add($1.delete_prefix("./"))
-            when /\Ainclude(?:_next)?\s+(.+)/
-              scan_include($1, path, dependencies, visited)
+            :all
+          end
+        when /\Aelse\b/
+          conditions[-1] = !conditions[-1] if [true, false].include?(conditions[-1])
+        when /\Aendif\b/
+          conditions.pop
+        else
+          next if conditions.include?(false)
+          case directive
+          when /\A(?:line\s+)?\d+\s+"([^"<>]+)"/
+            dependencies.add($1.delete_prefix("./"))
+          when /\Ainclude(?:_next)?\s+(.+)/
+            scan_include($1, path, dependencies, visited)
+          end
+        end
+      end
+    end
+
+    def source_directives(path)
+      path = File.expand_path(path)
+      @accessed.add(path)
+      return @cache[path] if @cache.key?(path)
+
+      @cache[path] = if File.file?(path)
+        File.open(path, "rb") do |file|
+          directives = []
+          logical_line = "".b
+          file.each_line do |line|
+            logical_line << line
+            next if logical_line.sub!(/\\\r?\n\z/, "")
+
+            if directive = logical_line[/\A\s*#\s*\K.*/]
+              directives << directive
+            end
+            logical_line.clear
+          end
+          unless logical_line.empty?
+            if directive = logical_line[/\A\s*#\s*\K.*/]
+              directives << directive
             end
           end
+          directives
         end
       end
     end
@@ -167,7 +193,7 @@ class MakeMakefile::Depend
 
     def scan_include(argument, current, dependencies, visited)
       case argument.sub(%r{//.*\z}, '').strip
-      when /\A([<"])([^>"]+)[>"]/
+      when /\A([<"])([^<>"]+)[>"]/
         quoted = $1 == '"'
         name = $2
       when /\A([A-Za-z_]\w*)/
@@ -210,7 +236,7 @@ class MakeMakefile::Depend
       dirs.concat(@include_dirs)
       dirs.each do |dir|
         path = File.expand_path(name, dir)
-        return path if File.file?(path)
+        return path if source_directives(path)
       end
       nil
     end
@@ -337,6 +363,8 @@ class MakeMakefile::Depend
     @dependency_declarations = {}
     @dependency_targets = {}
     @dependency_contents = {}
+    @source_cache = {}
+    @stat_cache = {}
   end
 
   private
@@ -708,11 +736,13 @@ class MakeMakefile::Depend
       dependencies: declarations.dependencies,
       defined: defined,
       undefined: undefined,
+      cache: @source_cache,
     )
   end
 
   # Appends Make dependency rules for +src+ to +out+ and returns +out+.
-  def makedepend(src, out = [], target: nil, input: nil, project: false)
+  def makedepend(src, out = [], target: nil, input: nil, project: false,
+                 accessed: nil)
     src = relative_dependency(src)
     declaration_input = input || dependency_input(src)
     declarations = dependency_declarations(declaration_input, source: src)
@@ -725,6 +755,7 @@ class MakeMakefile::Depend
       src
     end
     files = scanner.scan(scan_source)
+    accessed&.merge(scanner.accessed)
     if dependencies = declaration(declarations.dependencies, src,
                                   declaration_input)
       files.concat(dependencies[1])
@@ -895,7 +926,7 @@ class MakeMakefile::Depend
   end
 
   # Regenerates dependency +rules+ for the sources identified in +input+.
-  def update_deps(rules, input, group: true, verbose: false)
+  def update_deps(rules, input, group: true, verbose: false, accessed: nil)
     sources = dependency_source_map(rules, input)
     targets = rules.scan(%r[^([-.\w/]+)\.(?:\$\(OBJEXT\)|o):]).flatten.uniq
     unless (missing = targets - sources.keys).empty?
@@ -905,7 +936,9 @@ class MakeMakefile::Depend
     sources.each do |target, src|
       src = resolve_dependency_source(src, input)
       warn "dependencies for #{src}:" if verbose
-      makedepend(src, generated, target: target, input: input)
+      makedepend(
+        src, generated, target: target, input: input, accessed: accessed,
+      )
     end
     compact_dependencies(generated.join, group: group)
   end
@@ -966,6 +999,68 @@ class MakeMakefile::Depend
     end
   end
 
+  DEPENDENCY_CACHE_VERSION = 1 # :nodoc:
+  private_constant :DEPENDENCY_CACHE_VERSION
+
+  # Returns the cache signature for options affecting generated dependencies.
+  def dependency_cache_signature(nmake:, sources:)
+    [DEPENDENCY_CACHE_VERSION, nmake, sources, @make_variables.sort].inspect
+  end
+
+  # Returns cached stat information, or +false+ when +path+ does not exist.
+  def dependency_stat(path)
+    path = File.expand_path(path)
+    return @stat_cache[path] if @stat_cache.key?(path)
+
+    @stat_cache[path] = File.stat(path)
+  rescue Errno::ENOENT, Errno::ENOTDIR
+    @stat_cache[path] = false
+  end
+
+  # Returns whether +destination+ and all recorded scan inputs are unchanged.
+  def dependency_output_fresh?(destination, signature)
+    cache_path = destination + ".mkdepend"
+    return false unless (output_stat = dependency_stat(destination))
+    return false unless File.file?(cache_path)
+
+    lines = File.readlines(cache_path, chomp: true)
+    header = lines.shift&.split("\t", 5)
+    return false unless header == [
+      "mkdepend", signature, output_stat.size.to_s,
+      output_stat.mtime.to_i.to_s, output_stat.mtime.nsec.to_s,
+    ]
+
+    lines.all? do |line|
+      state, path = line.split("\t", 2)
+      next false unless path
+
+      stat = dependency_stat(path)
+      state == "+" ? stat && stat.mtime <= output_stat.mtime : !stat
+    end
+  rescue Errno::ENOENT
+    false
+  end
+
+  # Records scan inputs used to produce +destination+.
+  def write_dependency_cache(destination, signature, paths)
+    output_stat = File.stat(destination)
+    lines = [
+      [
+        "mkdepend", signature, output_stat.size,
+        output_stat.mtime.to_i, output_stat.mtime.nsec,
+      ].join("\t") + "\n",
+    ]
+    paths.sort.each do |path|
+      exists = if @source_cache.key?(path)
+        @source_cache[path]
+      else
+        File.file?(path)
+      end
+      lines << "#{exists ? '+' : '-'}\t#{path}\n"
+    end
+    replace_file(destination + ".mkdepend", lines.join)
+  end
+
   # Reports how dependency rules in +input+ differ from +expected+.
   def report_outdated_dependencies(input, current, expected, err: $stderr)
     current_lines = current.lines
@@ -996,6 +1091,8 @@ class MakeMakefile::Depend
   def run(inputs = ARGV, out: $stdout, err: $stderr, mode: :stdout,
           output: nil, make_variables: {}, nmake: false, sources: false,
           scope: nil, thread_model: nil, verbose: false)
+    @source_cache.clear
+    @stat_cache.clear
     case mode
     when :output
       raise ArgumentError, "output directory is missing" unless output
@@ -1015,6 +1112,9 @@ class MakeMakefile::Depend
       inputs = dependency_files(scope).map {|file| File.join(@root, file)}
     end
     output = File.expand_path(output) if output
+    cache_signature = dependency_cache_signature(
+      nmake: nmake, sources: sources,
+    )
     changed = false
     inputs.each do |input|
       if input.end_with?(".c", ".y")
@@ -1027,15 +1127,27 @@ class MakeMakefile::Depend
         next unless match
         raise "missing #{MARK_END} in #{input}" unless match.begin(1)
 
+        destination = File.join(output, relative_source(input)) if output
+        if destination && dependency_output_fresh?(destination, cache_signature)
+          next
+        end
+
         current_rules = match[0]
+        accessed = Set.new
         expected = update_deps(
           current_rules, input, group: !nmake, verbose: verbose,
+          accessed: accessed,
         )
         expected = minimize_deps(expected, input) if sources
         updated = match.pre_match + expected + match.post_match
         if mode == :output
           updated = normalize_dependency_rules(updated) unless nmake
-          replace_file(File.join(output, relative_source(input)), updated)
+          replace_file(destination, updated)
+          accessed.add(File.expand_path(input))
+          accessed.add(File.join(@root, "depend"))
+          accessed.add(File.expand_path(__FILE__))
+          accessed.add(File.join(@root, "tool/mkdepend.rb"))
+          write_dependency_cache(destination, cache_signature, accessed)
         elsif same_dependency_rules?(current_rules, expected)
           next
         elsif mode == :inplace

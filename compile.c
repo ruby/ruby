@@ -14428,7 +14428,7 @@ static VALUE
 ibf_load_object_hash(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
     long len = (long)ibf_load_small_value(load, &offset);
-    VALUE obj = header->frozen ? rb_hash_alloc_fixed_size(rb_cHash, len) : rb_hash_new_with_size(len);
+    VALUE obj = header->frozen ? rb_hash_alloc_fixed_size(rb_cHash, len) : rb_hash_new_capa(len);
     int i;
 
     for (i = 0; i < len; i++) {

@@ -131,6 +131,13 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   when "rexml"
     test_command[-2..-1] = %w[test/run.rb --ignore-name=/linear_performance/]
 
+  when "fiddle"
+    # When ZJIT is compile-happy, skip Fiddle::TestFunction#test_no_memory_leak
+    # since compiling uses more memory which the test does not expect.
+    if run_opts&.include?("--zjit-call-threshold=1")
+      test_command[-2..-1] = %w[test/run.rb --ignore-name=/\Atest_no_memory_leak\z/]
+    end
+
   when "debug"
     # needs pty
     next unless /mswin|mingw/ =~ RUBY_PLATFORM

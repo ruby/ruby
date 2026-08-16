@@ -117,6 +117,7 @@ fn main() {
         .allowlist_function("rb_zjit_class_allocate_instance_fastpath")
         .allowlist_function("rb_zjit_str_resurrect_fastpath")
         .allowlist_function("rb_zjit_array_dup_can_fastpath")
+        .allowlist_function("rb_zjit_hash_dup_can_fastpath")
         .allowlist_function("rb_zjit_range_new_fastpath")
         .allowlist_function("rb_zjit_array_new_fastpath")
 
@@ -138,7 +139,7 @@ fn main() {
         .allowlist_function("rb_class_real")
         .allowlist_type("ruby_encoding_consts")
         .allowlist_function("rb_hash_new")
-        .allowlist_function("rb_hash_new_with_size")
+        .allowlist_function("rb_hash_new_capa")
         .allowlist_function("rb_hash_resurrect")
         .allowlist_function("rb_hash_stlike_foreach")
         .allowlist_function("rb_to_hash_type")

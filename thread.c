@@ -842,12 +842,25 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 #endif
 
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
+        // The postmortem epilogue below runs after this Ractor is unlinked and no
+        // longer counted, with the GVL already released, and it frees through
+        // VM-global state (the jit_cont list and its mutex, the fiber pool, the
+        // main objspace's malloc accounting).  Nothing else holds the main Ractor
+        // back at that point, so count it like a coroutine epilogue: then
+        // ruby_vm_destruct waits for it (rb_thread_sched_wait_winding) instead of
+        // tearing that state down underneath.  th is freed by the epilogue, so
+        // keep the VM pointer.
+        rb_vm_t *const vm = th->vm;
+        rb_thread_sched_winding_begin(vm);
+
         // after rb_ractor_living_threads_remove()
         // GC will happen anytime and this ractor can be collected (and destroy GVL).
         // So gvl_release() should be before it.
         thread_sched_to_dead(TH_SCHED(th), th);
         rb_ractor_living_threads_remove(th->ractor, th);
         rb_ractor_postmortem_free(&pf);
+
+        rb_thread_sched_winding_end(vm);
     }
     else {
         rb_ractor_living_threads_remove(th->ractor, th);
@@ -1099,22 +1112,13 @@ rb_thread_create(VALUE (*fn)(void *), void *arg)
     return thread_create_core(rb_thread_alloc(rb_cThread), &params);
 }
 
-VALUE
-rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
+static VALUE
+create_ractor_alloc_thread(rb_ractor_t *r, rb_ractor_t *cr, rb_execution_context_t *ec)
 {
-    struct thread_create_params params = {
-        .type = thread_invoke_type_ractor_proc,
-        .g = r,
-        .args = args,
-        .proc = proc,
-    };
-
     /* Allocate the child's main Thread and root Fiber wrappers directly in the child's
      * objspace, so the thread is built of objects it owns.  Whole-VM walks read
      * cr->objspace: swap it under the VM lock, unobservable to others. */
-    VALUE thval = Qundef;
-    rb_ractor_t *cr = GET_RACTOR();
-    rb_execution_context_t *ec = GET_EC();
+    volatile VALUE thval = Qundef;
     const bool multi_objspace = rb_gc_multi_objspace_p();
     enum ruby_tag_type alloc_state = TAG_NONE;
     RB_VM_LOCKING() {
@@ -1154,6 +1158,23 @@ rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
         }
         EC_JUMP_TAG(ec, alloc_state);
     }
+    return thval;
+}
+
+VALUE
+rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
+{
+    struct thread_create_params params = {
+        .type = thread_invoke_type_ractor_proc,
+        .g = r,
+        .args = args,
+        .proc = proc,
+    };
+
+    rb_ractor_t *cr = GET_RACTOR();
+    rb_execution_context_t *ec = GET_EC();
+
+    VALUE thval = create_ractor_alloc_thread(r, cr, ec);
 
     /* Creation can still fail before vm_insert_ractor (an IsolationError, say), and a
      * left-over cover would enumerate the dead child's objspace twice and dangle after
@@ -1780,10 +1801,13 @@ rb_nogvl(void *(*func)(void *), void *data1,
     bool is_main_thread = vm->ractor.main_thread == th;
     int saved_errno = 0;
 
-    rb_thread_resolve_unblock_function(&ubf, &data2, th);
+    bool sentinel_ubf = rb_thread_resolve_unblock_function(&ubf, &data2, th);
 
     if (ubf && rb_ractor_living_thread_num(th->ractor) == 1 && is_main_thread) {
-        if (flags & RB_NOGVL_UBF_ASYNC_SAFE) {
+        // ubf_select, which the sentinel ubfs resolve to, takes ubf_list_lock
+        // and the ractor scheduler lock: not async-signal-safe, whatever the
+        // caller claims.
+        if ((flags & RB_NOGVL_UBF_ASYNC_SAFE) && !sentinel_ubf) {
             vm->ubf_async_safe = 1;
         }
     }
@@ -2055,7 +2079,11 @@ static bool
 thread_io_mn_schedulable(rb_thread_t *th, int events, const struct timeval *timeout)
 {
 #if defined(USE_MN_THREADS) && USE_MN_THREADS
-    return !th_has_dedicated_nt(th) && (events || timeout) && th->blocking;
+    // RB_WAITFD_PRI has no thread_sched_waiting_* event: the scheduler would
+    // register nothing and park the thread forever.  POLLPRI works on the
+    // blocking path.
+    return !th_has_dedicated_nt(th) && (events || timeout) && th->blocking &&
+        !(events & ~(RB_WAITFD_IN | RB_WAITFD_OUT));
 #else
     return false;
 #endif
@@ -2063,6 +2091,7 @@ thread_io_mn_schedulable(rb_thread_t *th, int events, const struct timeval *time
 
 enum io_wait_result {
     io_wait_ready,     // the MN scheduler waited and the fd is ready
+    io_wait_timed_out, // the MN scheduler waited until the timeout expired
     io_wait_unhandled, // the MN scheduler did not wait; use the blocking path
 };
 
@@ -2094,8 +2123,7 @@ thread_io_wait_events(rb_thread_t *th, int fd, int events, const struct timeval 
           case thread_sched_wait_event:
             return io_wait_ready;
           case thread_sched_wait_timeout:
-            // Let the caller re-examine the fd through the blocking path.
-            return io_wait_unhandled;
+            return io_wait_timed_out;
           case thread_sched_wait_unavailable:
             // Never waited: reporting "ready" here would fabricate readiness and
             // spin, so hand the wait back to the caller's blocking path.
@@ -4845,7 +4873,7 @@ thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct tim
     volatile int result = 0;
     nfds_t nfds;
     struct rb_io_blocking_operation blocking_operation;
-    enum ruby_tag_type state;
+    enum ruby_tag_type state = TAG_NONE;
     volatile int lerrno;
 
     RUBY_ASSERT(th);
@@ -4853,16 +4881,28 @@ thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct tim
 
     if (io) {
         blocking_operation.ec = ec;
+COMPILER_WARNING_PUSH
+#if RBIMPL_COMPILER_SINCE(GCC, 12, 0, 0)
+COMPILER_WARNING_IGNORED(-Wdangling-pointer)
+#endif
+        // rb_io_blocking_operation_exit() below unlinks it on every path.
         rb_io_blocking_operation_enter(io, &blocking_operation);
+COMPILER_WARNING_POP
     }
 
-    if (timeout == NULL && thread_io_wait_events(th, fd, events, NULL, false) == io_wait_ready) {
-        // fd is readable
-        state = 0;
+    // A zero timeout is a plain probe; ppoll answers it without parking.
+    bool mn_wait = timeout == NULL || timeout->tv_sec != 0 || timeout->tv_usec != 0;
+
+    switch (mn_wait ? thread_io_wait_events(th, fd, events, timeout, false) : io_wait_unhandled) {
+      case io_wait_ready:
         fds[0].revents = events;
         errno = 0;
-    }
-    else {
+        break;
+      case io_wait_timed_out:
+        // revents stays 0, so the result below becomes 0 as with ppoll's timeout.
+        errno = 0;
+        break;
+      case io_wait_unhandled:
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
             rb_hrtime_t *to, rel, end = 0;
@@ -5038,7 +5078,7 @@ rb_gc_set_stack_end(VALUE **stack_end_p)
 {
     VALUE stack_end;
 COMPILER_WARNING_PUSH
-#if RBIMPL_COMPILER_IS(GCC)
+#if RBIMPL_COMPILER_SINCE(GCC, 12, 0, 0)
 COMPILER_WARNING_IGNORED(-Wdangling-pointer);
 #endif
     *stack_end_p = &stack_end;

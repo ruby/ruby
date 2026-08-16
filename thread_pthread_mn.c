@@ -2,8 +2,306 @@
 
 #if USE_MN_THREADS
 
+#if HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H
 static void timer_thread_unregister_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags);
-static void timer_thread_wakeup_thread_locked(struct rb_thread_sched *sched, rb_thread_t *th, uint32_t event_serial);
+#endif
+
+static bool
+timer_thread_check_exceed(rb_hrtime_t abs, rb_hrtime_t now)
+{
+    return abs <= now;
+}
+
+static rb_thread_t *
+thread_sched_waiting_thread(struct rb_thread_sched_waiting *w)
+{
+    if (w) {
+        return (rb_thread_t *)((size_t)w - offsetof(rb_thread_t, sched.waiting_reason));
+    }
+    else {
+        return NULL;
+    }
+}
+
+#define TIMER_WHEEL_NO_EXPIRY RB_HRTIME_MAX
+#ifndef TIMER_WHEEL_TICK_MS
+#define TIMER_WHEEL_TICK_MS 1 // L0 slot width; coarser trades sleep accuracy for fewer drains
+#endif
+
+/* Timer wheel over the timed waiters.  Every operation runs under
+ * timer_th.waiting_lock.
+ *
+ * Level L buckets deadlines into 64 slots of 64^L ms each; a deadline is
+ * placed by its distance from the drain cursor, so its slot is always
+ * strictly ahead of the cursor at that level.  The drain refines a
+ * not-yet-due waiter onto a finer level instead of cascading whole slots,
+ * so one waiter moves at most once per level over its lifetime.
+ *
+ * This is the hierarchical timing wheel of Varghese & Lauck, "Hashed and
+ * Hierarchical Timing Wheels" (SOSP '87). */
+
+static uint64_t
+timer_wheel_tick(rb_hrtime_t hrt)
+{
+    return hrt / (RB_HRTIME_PER_MSEC * TIMER_WHEEL_TICK_MS);
+}
+
+static inline int
+timer_wheel_ctz64(uint64_t v)
+{
+#if defined(__GNUC__) || defined(__clang__)
+    return __builtin_ctzll(v);
+#else
+    int n = 0;
+    while (!(v & 1)) { v >>= 1; n++; }
+    return n;
+#endif
+}
+
+static int
+timer_wheel_level(uint64_t dist_ms)
+{
+    if (dist_ms < ((uint64_t)1 << TIMER_WHEEL_SLOT_BITS)) return 0;
+    if (dist_ms < ((uint64_t)1 << 2 * TIMER_WHEEL_SLOT_BITS)) return 1;
+    if (dist_ms < ((uint64_t)1 << 3 * TIMER_WHEEL_SLOT_BITS)) return 2;
+    return TIMER_WHEEL_LEVELS - 1;
+}
+
+static void
+timer_wheel_insert(struct rb_thread_sched_waiting *w)
+{
+    uint64_t dl_tick = timer_wheel_tick(w->data.timeout);
+    uint64_t cur = timer_th.wheel_cursor_tick;
+
+    /* A deadline at or behind the cursor parks one tick ahead: its own slot
+     * is already drained and would otherwise wait out a full wheel turn. */
+    uint64_t target = dl_tick > cur ? dl_tick : cur + 1;
+    int lvl = timer_wheel_level(target - cur);
+    int shift = lvl * TIMER_WHEEL_SLOT_BITS;
+    uint64_t slot_tick = target >> shift;
+
+    if (lvl == TIMER_WHEEL_LEVELS - 1) {
+        /* Beyond the wheel range: park on the farthest slot; the drain
+         * re-inserts it with the then-smaller distance. */
+        uint64_t far = (cur >> shift) + TIMER_WHEEL_SLOTS - 1;
+        if (slot_tick > far) slot_tick = far;
+    }
+
+    int slot = (int)(slot_tick & (TIMER_WHEEL_SLOTS - 1));
+
+    ccan_list_add_tail(&timer_th.wheel[lvl].slots[slot], &w->node);
+    timer_th.wheel[lvl].occupied |= UINT64_C(1) << slot;
+    w->wheel_lvl = (uint8_t)lvl;
+    w->wheel_slot = (uint8_t)slot;
+
+    if (w->data.timeout < timer_th.next_expiry) {
+        timer_th.next_expiry = w->data.timeout;
+    }
+}
+
+// Unlink a waiter from the wheel slot or the untimed list it is on.
+static void
+timer_wheel_del(struct rb_thread_sched_waiting *w)
+{
+    ccan_list_del_init(&w->node);
+
+    if (w->flags & thread_sched_waiting_timeout) {
+        struct timer_wheel_level *lv = &timer_th.wheel[w->wheel_lvl];
+        if (ccan_list_empty(&lv->slots[w->wheel_slot])) {
+            lv->occupied &= ~(UINT64_C(1) << w->wheel_slot);
+        }
+    }
+}
+
+/* A lower bound on the earliest deadline: the start time of the nearest
+ * occupied slot per level.  Never later than any real deadline, so waking
+ * by it is at worst early, which is harmless. */
+static rb_hrtime_t
+timer_wheel_next_expiry(void)
+{
+    rb_hrtime_t best = TIMER_WHEEL_NO_EXPIRY;
+
+    for (int lvl = 0; lvl < TIMER_WHEEL_LEVELS; lvl++) {
+        uint64_t occ = timer_th.wheel[lvl].occupied;
+        if (!occ) continue;
+
+        int shift = lvl * TIMER_WHEEL_SLOT_BITS;
+        uint64_t cur_tick = timer_th.wheel_cursor_tick >> shift;
+        unsigned base = (unsigned)((cur_tick + 1) & (TIMER_WHEEL_SLOTS - 1));
+        // rotate so bit k = slot for tick cur_tick+1+k
+        uint64_t rot = (occ >> base) | (base ? (occ << (TIMER_WHEEL_SLOTS - base)) : 0);
+        uint64_t tick = cur_tick + 1 + timer_wheel_ctz64(rot);
+        rb_hrtime_t start = (rb_hrtime_t)(tick << shift) * RB_HRTIME_PER_MSEC * TIMER_WHEEL_TICK_MS;
+
+        if (start < best) best = start;
+    }
+
+    return best;
+}
+
+/* Drain every slot whose tick moved behind `now`, collecting due waiters
+ * onto `expired` and re-bucketing not-yet-due ones onto a finer level.
+ * timer_th.waiting_lock must be held. */
+static void
+timer_wheel_drain(rb_hrtime_t now, uint64_t now_tick, struct ccan_list_head *expired)
+{
+    uint64_t prev_tick = timer_th.wheel_cursor_tick;
+    timer_th.wheel_cursor_tick = now_tick;  // re-inserts below map against the new cursor
+    /* A deadline inside the current tick parks one tick ahead, so its slot
+     * start is later than the deadline.  Keep the exact value: the recompute
+     * below only knows slot starts, and next_expiry must not exceed a deadline. */
+    rb_hrtime_t reinserted = TIMER_WHEEL_NO_EXPIRY;
+
+    for (int lvl = 0; lvl < TIMER_WHEEL_LEVELS; lvl++) {
+        int shift = lvl * TIMER_WHEEL_SLOT_BITS;
+        uint64_t from = prev_tick >> shift;
+        uint64_t to = now_tick >> shift;
+
+        if (to == from) break; // no boundary crossed; coarser levels crossed none either
+
+        uint64_t steps = to - from;
+        if (steps > TIMER_WHEEL_SLOTS) steps = TIMER_WHEEL_SLOTS;
+        struct timer_wheel_level *lv = &timer_th.wheel[lvl];
+
+        for (uint64_t tick = to - steps + 1; tick <= to; tick++) {
+            int slot = (int)(tick & (TIMER_WHEEL_SLOTS - 1));
+
+            if (!(lv->occupied & (UINT64_C(1) << slot))) continue;
+            lv->occupied &= ~(UINT64_C(1) << slot);
+
+            /* Detach first: a far-future waiter re-clamped by the insert below
+             * can land back on this very slot and must not be drained again. */
+            struct ccan_list_head pending;
+            ccan_list_head_init(&pending);
+            ccan_list_append_list(&pending, &lv->slots[slot]);
+
+            struct rb_thread_sched_waiting *w;
+            while ((w = ccan_list_pop(&pending, struct rb_thread_sched_waiting, node)) != NULL) {
+                if (timer_thread_check_exceed(w->data.timeout, now)) {
+                    rb_thread_t *th = thread_sched_waiting_thread(w);
+
+                    RUBY_DEBUG_LOG("wakeup th:%u", rb_th_serial(th));
+
+#if HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H
+                    // An fd+timeout waiter is also on its fd's waiter list.
+                    timer_thread_unregister_waiting(th, w->data.fd, w->flags);
+#endif
+                    /* flags stay set until the wakeup below takes them under
+                     * the lock: a waiter whose flags are already cleared may
+                     * run and re-register through this same `w`, which would
+                     * relink the node we are still holding on `expired`. */
+                    w->data.result = 0;
+
+                    ccan_list_add_tail(expired, &w->node);
+                }
+                else {
+                    /* arrived early: the distance shrank, so this lands on a
+                     * finer level (or a farther slot of the coarsest one) */
+                    if (w->data.timeout < reinserted) reinserted = w->data.timeout;
+                    timer_wheel_insert(w);
+                }
+            }
+        }
+    }
+
+    timer_th.next_expiry = timer_wheel_next_expiry();
+    if (reinserted < timer_th.next_expiry) timer_th.next_expiry = reinserted;
+}
+
+/* Merge the wheel's next expiry into the poll timeout (ms; -1 = none).
+ * Checked even when the scheduler has other work (grq_cnt > 0). */
+static int
+timer_wheel_timeout(int timeout)
+{
+    rb_native_mutex_lock(&timer_th.waiting_lock);
+    {
+        if (timer_th.next_expiry != TIMER_WHEEL_NO_EXPIRY) {
+            rb_hrtime_t now = rb_hrtime_now();
+            rb_hrtime_t hrrel = rb_hrtime_sub(timer_th.next_expiry, now);
+
+            RUBY_DEBUG_LOG("now:%lu rel:%lu", (unsigned long)now, (unsigned long)hrrel);
+
+            rb_hrtime_t msec = (hrrel + RB_HRTIME_PER_MSEC - 1) / RB_HRTIME_PER_MSEC;
+            // A deadline further away than INT_MAX ms must clamp, not truncate:
+            // a negative timeout would be an untimed epoll_wait.
+            int thread_timeout = msec > INT_MAX ? INT_MAX : (int)msec; // ms
+
+            // Use minimum of scheduler timeout and thread sleep timeout
+            if (timeout < 0 || thread_timeout < timeout) {
+                timeout = thread_timeout;
+            }
+        }
+    }
+    rb_native_mutex_unlock(&timer_th.waiting_lock);
+
+    return timeout;
+}
+
+static void
+timer_thread_wakeup_thread_locked(struct rb_thread_sched *sched, rb_thread_t *th, uint32_t event_serial)
+{
+    if (sched->running != th && th->sched.event_serial == event_serial) {
+        thread_sched_to_ready_common(sched, th, true, false);
+    }
+}
+
+static void
+timer_thread_wakeup_thread(rb_thread_t *th, uint32_t event_serial)
+{
+    RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
+    struct rb_thread_sched *sched = TH_SCHED(th);
+
+    thread_sched_lock(sched, th);
+    {
+        timer_thread_wakeup_thread_locked(sched, th, event_serial);
+    }
+    thread_sched_unlock(sched, th);
+}
+
+#define TIMEOUT_WAKE_BATCH 16
+
+static void
+timer_thread_check_timeout(rb_vm_t *vm)
+{
+    rb_hrtime_t now = rb_hrtime_now();
+    uint64_t now_tick = timer_wheel_tick(now);
+    struct ccan_list_head expired;
+
+    ccan_list_head_init(&expired);
+
+    struct timeout_wake { rb_thread_t *th; uint32_t serial; } batch[TIMEOUT_WAKE_BATCH];
+    bool more = true;
+
+    while (more) {
+        int n = 0;
+
+        rb_native_mutex_lock(&timer_th.waiting_lock);
+        {
+            // A second pass finds the cursor already at now_tick and drains nothing.
+            if (now_tick > timer_th.wheel_cursor_tick) {
+                timer_wheel_drain(now, now_tick, &expired);
+            }
+
+            struct rb_thread_sched_waiting *w;
+            while (n < TIMEOUT_WAKE_BATCH &&
+                   (w = ccan_list_pop(&expired, struct rb_thread_sched_waiting, node)) != NULL) {
+                // Name the thread and its serial here, then release it: once the
+                // flags are clear the thread may run and re-register through `w`,
+                // and a serial read after that would match the new registration.
+                batch[n].th = thread_sched_waiting_thread(w);
+                batch[n].serial = w->data.event_serial;
+                w->flags = thread_sched_waiting_none;
+                n++;
+            }
+            more = !ccan_list_empty(&expired);
+        }
+        rb_native_mutex_unlock(&timer_th.waiting_lock);
+
+        for (int i = 0; i < n; i++) {
+            timer_thread_wakeup_thread(batch[i].th, batch[i].serial);
+        }
+    }
+}
 
 static bool
 timer_thread_cancel_waiting(rb_thread_t *th)
@@ -14,7 +312,7 @@ timer_thread_cancel_waiting(rb_thread_t *th)
     {
         if (th->sched.waiting_reason.flags) {
             canceled = true;
-            ccan_list_del_init(&th->sched.waiting_reason.node);
+            timer_wheel_del(&th->sched.waiting_reason);
             timer_thread_unregister_waiting(th, th->sched.waiting_reason.data.fd, th->sched.waiting_reason.flags);
             th->sched.waiting_reason.flags = thread_sched_waiting_none;
         }
@@ -108,9 +406,16 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
             else {
                 RUBY_DEBUG_LOG("sleep");
 
-                th->status = THREAD_STOPPED_FOREVER;
+                // A sleeper's status belongs to the caller: sleep_hrtime
+                // re-sleeps while it stays THREAD_STOPPED and only a waker may
+                // change it, as with native_cond_sleep on a dedicated nt.  An
+                // io wait enters as THREAD_RUNNABLE and shows "sleep" while
+                // parked, as a dedicated nt's blocking region does.
+                enum rb_thread_status prev_status = th->status;
+                if (prev_status == THREAD_RUNNABLE) th->status = THREAD_STOPPED_FOREVER;
                 thread_sched_wakeup_next_thread(sched, th, true);
                 thread_sched_wait_running_turn(sched, th, true);
+                if (prev_status == THREAD_RUNNABLE) th->status = THREAD_RUNNABLE;
 
                 RUBY_DEBUG_LOG("wakeup");
             }
@@ -120,8 +425,6 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
             if (need_cancel) {
                 timer_thread_cancel_waiting(th);
             }
-
-            th->status = THREAD_RUNNABLE;
         }
         else {
             // Ready right now, or not registerable at all -- only the former may
@@ -162,7 +465,7 @@ get_sysconf_page_size(void)
 
 // 512MB chunk
 // 131,072 pages (> 65,536)
-// 0th page is Redzone. Start from 1st page.
+// Head pages hold the chunk header (see start_page); stacks follow.
 
 /*
  *            <--> machine stack + vm stack
@@ -174,6 +477,9 @@ get_sysconf_page_size(void)
 static struct nt_stack_chunk_header {
     struct nt_stack_chunk_header *prev_chunk;
     struct nt_stack_chunk_header *prev_free_chunk;
+    // prev_free_chunk == NULL cannot double as the membership test: the free
+    // list's tail also has it NULL, and re-pushing the tail self-cycles it.
+    bool on_free_list;
 
     uint16_t start_page;
     uint16_t stack_count;
@@ -191,9 +497,32 @@ struct nt_machine_stack_footer {
 
 static rb_nativethread_lock_t nt_machine_stack_lock = RB_NATIVETHREAD_LOCK_INIT;
 
+// The holder at the fork moment does not exist in the child; start over.
+static void
+nt_machine_stack_atfork(void)
+{
+    rb_native_mutex_initialize(&nt_machine_stack_lock);
+}
+
 #include <sys/mman.h>
 
-// vm_stack_size + machine_stack_size + 1 * (guard page size)
+// Page-align the configured sizes: the layout puts a guard page and a
+// MAP_FIXED machine stack behind the VM stack, and both must land on page
+// boundaries whatever RUBY_THREAD_VM_STACK_SIZE and
+// RUBY_THREAD_MACHINE_STACK_SIZE hold (those align only to 4KB).
+static inline size_t
+nt_vm_stack_area(const rb_vm_t *vm)
+{
+    return (size_t)roomof(vm->default_params.thread_vm_stack_size, MSTACK_PAGE_SIZE) * MSTACK_PAGE_SIZE;
+}
+
+static inline size_t
+nt_machine_stack_area(const rb_vm_t *vm)
+{
+    return (size_t)roomof(vm->default_params.thread_machine_stack_size, MSTACK_PAGE_SIZE) * MSTACK_PAGE_SIZE;
+}
+
+// vm stack area + guard page + machine stack area
 static inline size_t
 nt_thread_stack_size(void)
 {
@@ -201,9 +530,7 @@ nt_thread_stack_size(void)
     if (LIKELY(msz > 0)) return msz;
 
     rb_vm_t *vm = GET_VM();
-    int sz = (int)(vm->default_params.thread_vm_stack_size + vm->default_params.thread_machine_stack_size + MSTACK_PAGE_SIZE);
-    int page_num = roomof(sz, MSTACK_PAGE_SIZE);
-    msz = (size_t)page_num * MSTACK_PAGE_SIZE;
+    msz = nt_vm_stack_area(vm) + MSTACK_PAGE_SIZE + nt_machine_stack_area(vm);
     return msz;
 }
 
@@ -240,6 +567,7 @@ nt_alloc_thread_stack_chunk(void)
     ch->start_page = header_page_cnt;
     ch->prev_chunk = nt_stack_chunks;
     ch->prev_free_chunk = nt_free_stack_chunks;
+    ch->on_free_list = true; // the caller makes it the free-list head
     ch->uninitialized_stack_count = ch->stack_count = (uint16_t)stack_count;
     ch->free_stack_pos = 0;
 
@@ -272,7 +600,7 @@ nt_stack_chunk_get_stack(const rb_vm_t *vm, struct nt_stack_chunk_header *ch, si
     const char *vstack, *mstack;
     const char *guard_page;
     vstack = nt_stack_chunk_get_stack_start(ch, idx);
-    guard_page = vstack + vm->default_params.thread_vm_stack_size;
+    guard_page = vstack + nt_vm_stack_area(vm);
     mstack = guard_page + MSTACK_PAGE_SIZE;
 
     struct nt_machine_stack_footer *msf = nt_stack_chunk_get_msf(vm, mstack);
@@ -332,18 +660,19 @@ nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
                 // The chunk was mapped PROT_NONE; enable the VM stack and
                 // machine stack pages, leaving the guard page as PROT_NONE.
                 char *stack_start = nt_stack_chunk_get_stack_start(ch, idx);
-                size_t vm_stack_size = vm->default_params.thread_vm_stack_size;
-                size_t mstack_size = nt_thread_stack_size() - vm_stack_size - MSTACK_PAGE_SIZE;
-                char *mstack_start = stack_start + vm_stack_size + MSTACK_PAGE_SIZE;
+                size_t vm_stack_area = nt_vm_stack_area(vm);
+                size_t mstack_size = nt_thread_stack_size() - vm_stack_area - MSTACK_PAGE_SIZE;
+                char *mstack_start = stack_start + vm_stack_area + MSTACK_PAGE_SIZE;
 
                 int mstack_flags = MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE;
 #if defined(MAP_STACK) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
                 mstack_flags |= MAP_STACK;
 #endif
 
-                if (mprotect(stack_start, vm_stack_size, PROT_READ | PROT_WRITE) != 0 ||
+                if (mprotect(stack_start, vm_stack_area, PROT_READ | PROT_WRITE) != 0 ||
                     mmap(mstack_start, mstack_size, PROT_READ | PROT_WRITE, mstack_flags, -1, 0) == MAP_FAILED) {
                     err = errno;
+                    ch->uninitialized_stack_count++; // the slot was not consumed
                 }
                 else {
                     nt_stack_chunk_get_stack(vm, ch, idx, vm_stack, machine_stack);
@@ -352,6 +681,7 @@ nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
             else {
                 nt_free_stack_chunks = ch->prev_free_chunk;
                 ch->prev_free_chunk = NULL;
+                ch->on_free_list = false;
                 goto retry;
             }
         }
@@ -409,7 +739,8 @@ nt_free_stack(void *mstack)
 
         RUBY_DEBUG_LOG("stack:%p mstack:%p ch:%p index:%d", stack, mstack, ch, idx);
 
-        if (ch->prev_free_chunk == NULL) {
+        if (!ch->on_free_list) {
+            ch->on_free_list = true;
             ch->prev_free_chunk = nt_free_stack_chunks;
             nt_free_stack_chunks = ch;
         }
@@ -427,7 +758,7 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
 {
     bool need_to_make = false;
 
-    rb_native_mutex_lock(&vm->ractor.sched.lock);
+    ractor_sched_lock(vm, NULL); // NULL: the timer thread also calls this
     {
         unsigned int schedulable_ractor_cnt = vm->ractor.cnt;
         RUBY_ASSERT(schedulable_ractor_cnt >= 1);
@@ -453,12 +784,21 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
             RUBY_DEBUG_LOG("snt:%d ractor_cnt:%d", (int)vm->ractor.sched.snt_cnt, (int)vm->ractor.cnt);
         }
     }
-    rb_native_mutex_unlock(&vm->ractor.sched.lock);
+    ractor_sched_unlock(vm, NULL);
 
     if (need_to_make) {
         struct rb_native_thread *nt = native_thread_alloc();
         nt->vm = vm;
-        return native_thread_create0(nt);
+        int err = native_thread_create0(nt);
+        if (err) {
+            // Roll back, or this function would conclude forever that the
+            // pool is wide enough and never try again.
+            ractor_sched_lock(vm, NULL);
+            vm->ractor.sched.snt_cnt--;
+            ractor_sched_unlock(vm, NULL);
+            native_thread_destroy(nt);
+        }
+        return err;
     }
     else {
         return 0;
@@ -619,31 +959,19 @@ native_thread_create_shared(rb_thread_t *th)
     tctx->co.argument = th;
 
     RUBY_DEBUG_LOG("th:%u vm_stack:%p machine_stack:%p", rb_th_serial(th), vm_stack, machine_stack);
+
+    // Widen the pool before publishing th.  Once ready, a Ractor's thread that
+    // runs to its end frees its own rb_thread_t (rb_ractor_postmortem_free),
+    // and the caller's create-failure path assumes th never became runnable.
+    int create_err = native_thread_check_and_create_shared(vm);
+    if (create_err) return create_err;
+
     thread_sched_to_ready(TH_SCHED(th), th);
-
-    // setup nt.  th is runnable now and a Ractor's thread that runs to its end frees
-    // its own rb_thread_t (rb_ractor_postmortem_free), so th must not be read again.
-    return native_thread_check_and_create_shared(vm);
+    return 0;
 }
-
-#else // USE_MN_THREADS
-
-static int
-native_thread_create_shared(rb_thread_t *th)
-{
-    rb_bug("unreachable");
-}
-
-static enum thread_sched_wait_result
-thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd, enum thread_sched_waiting_flag events, rb_hrtime_t *rel)
-{
-    rb_bug("unreachable");
-}
-
-#endif // USE_MN_THREADS
 
 /// EPOLL/KQUEUE specific code
-#if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
+#if HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H
 
 /// Per-fd waiter table (struct rb_fd_waiters).  One fd may have several waiters
 /// -- a reader and a writer on one socket -- so the backend is armed with their
@@ -845,18 +1173,27 @@ static void
 verify_waiting_list(void)
 {
 #if VM_CHECK_MODE > 0
-    struct rb_thread_sched_waiting *w, *prev_w = NULL;
+    struct rb_thread_sched_waiting *w;
 
-    // waiting list's timeout order should be [1, 2, 3, ..., 0, 0, 0]
+    for (int lvl = 0; lvl < TIMER_WHEEL_LEVELS; lvl++) {
+        const struct timer_wheel_level *lv = &timer_th.wheel[lvl];
 
-    ccan_list_for_each(&timer_th.waiting, w, node) {
-        // fprintf(stderr, "verify_waiting_list th:%u abs:%lu\n", rb_th_serial(wth), (unsigned long)wth->sched.waiting_reason.data.timeout);
-        if (prev_w) {
-            rb_hrtime_t timeout = w->data.timeout;
-            rb_hrtime_t prev_timeout = w->data.timeout;
-            VM_ASSERT(timeout == 0 || prev_timeout <= timeout);
+        for (int slot = 0; slot < TIMER_WHEEL_SLOTS; slot++) {
+            bool occupied = (lv->occupied >> slot) & 1;
+            VM_ASSERT(occupied == !ccan_list_empty(&lv->slots[slot]));
+
+            ccan_list_for_each(&lv->slots[slot], w, node) {
+                VM_ASSERT(w->flags & thread_sched_waiting_timeout);
+                VM_ASSERT(w->data.timeout != 0);
+                VM_ASSERT(w->wheel_lvl == lvl);
+                VM_ASSERT(w->wheel_slot == slot);
+            }
         }
-        prev_w = w;
+    }
+
+    ccan_list_for_each(&timer_th.waiting_untimed, w, node) {
+        VM_ASSERT(!(w->flags & thread_sched_waiting_timeout));
+        VM_ASSERT(w->data.timeout == 0);
     }
 #endif
 }
@@ -937,10 +1274,6 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
         }
     }
 
-    if (rel && *rel > 0) {
-        flags |= thread_sched_waiting_timeout;
-    }
-
     if (flags & thread_sched_waiting_timeout) {
         VM_ASSERT(rel != NULL);
         abs = rb_hrtime_add(rb_hrtime_now(), *rel);
@@ -994,36 +1327,21 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
 
             if (abs == 0) { // no timeout
                 VM_ASSERT(!(flags & thread_sched_waiting_timeout));
-                ccan_list_add_tail(&timer_th.waiting, &th->sched.waiting_reason.node);
+                ccan_list_add_tail(&timer_th.waiting_untimed, &th->sched.waiting_reason.node);
             }
             else {
                 RUBY_DEBUG_LOG("abs:%lu", (unsigned long)abs);
                 VM_ASSERT(flags & thread_sched_waiting_timeout);
 
-                // insert th to sorted list (TODO: O(n))
-                struct rb_thread_sched_waiting *w, *prev_w = NULL;
-
-                ccan_list_for_each(&timer_th.waiting, w, node) {
-                    if ((w->flags & thread_sched_waiting_timeout) &&
-                        w->data.timeout < abs) {
-                        prev_w = w;
-                    }
-                    else {
-                        break;
-                    }
-                }
-
-                if (prev_w) {
-                    ccan_list_add_after(&timer_th.waiting, &prev_w->node, &th->sched.waiting_reason.node);
-                }
-                else {
-                    ccan_list_add(&timer_th.waiting, &th->sched.waiting_reason.node);
-                }
+                rb_hrtime_t prev_expiry = timer_th.next_expiry;
+                timer_wheel_insert(&th->sched.waiting_reason);
 
                 verify_waiting_list();
 
-                // update timeout seconds; force wake so timer thread notices short deadlines
-                timer_thread_wakeup_force();
+                if (timer_th.next_expiry < prev_expiry) {
+                    // an earlier deadline than the timer thread is armed for
+                    timer_thread_wakeup_force();
+                }
             }
         }
         else {
@@ -1142,7 +1460,7 @@ timer_thread_wake_fd_waiters(int fd, uint32_t generation, uint32_t wake_flags, i
                     }
 
                     ccan_list_del_init(&w->fd_node);
-                    ccan_list_del_init(&w->node); // also leaves the timeout list
+                    timer_wheel_del(w); // also leaves the timer wheel
 
                     w->flags = thread_sched_waiting_none;
                     w->data.fd = -1;
@@ -1278,7 +1596,9 @@ timer_thread_polling(rb_vm_t *vm)
     }
 }
 
-#else // HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H
+#endif // HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H
+
+#else // USE_MN_THREADS
 
 static void
 timer_thread_setup_mn(void)
@@ -1328,4 +1648,28 @@ timer_thread_polling(rb_vm_t *vm)
     }
 }
 
-#endif // HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H
+static int
+native_thread_create_shared(rb_thread_t *th)
+{
+    rb_bug("unreachable");
+}
+
+static enum thread_sched_wait_result
+thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd, enum thread_sched_waiting_flag events, rb_hrtime_t *rel)
+{
+    rb_bug("unreachable");
+}
+
+static int
+timer_wheel_timeout(int timeout)
+{
+    return timeout; // no M:N threads, no timed waiters
+}
+
+static void
+timer_thread_check_timeout(rb_vm_t *vm)
+{
+    // no M:N threads, no timed waiters
+}
+
+#endif // USE_MN_THREADS

@@ -326,7 +326,6 @@ pub const RSTRING_NOEMBED: ruby_rstring_flags = 8192;
 pub const RSTRING_FSTR: ruby_rstring_flags = 536870912;
 pub type ruby_rstring_flags = u32;
 pub type st_data_t = ::std::os::raw::c_ulong;
-pub type st_index_t = st_data_t;
 pub const ST_CONTINUE: st_retval = 0;
 pub const ST_STOP: st_retval = 1;
 pub const ST_DELETE: st_retval = 2;
@@ -2005,6 +2004,8 @@ pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
 pub const RCLASS_OFFSET_PRIME_FIELDS_OBJ: jit_bindgen_constants = 40;
 pub const TDATA_OFFSET_FIELDS_OBJ: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_RHASH_IFNONE: jit_bindgen_constants = 16;
+pub const RUBY_OFFSET_RHASH_AR_HINT: jit_bindgen_constants = 24;
+pub const RUBY_OFFSET_RHASH_AR_PAIRS: jit_bindgen_constants = 32;
 pub const RUBY_RHASH_AR_TABLE_MAX_SIZE: jit_bindgen_constants = 8;
 pub const RUBY_OFFSET_RSTRING_LEN: jit_bindgen_constants = 16;
 pub const RB_SHAPE_FLAG_SHIFT: jit_bindgen_constants = 32;
@@ -2132,6 +2133,7 @@ unsafe extern "C" {
     pub fn rb_ary_clear(ary: VALUE) -> VALUE;
     pub fn rb_ary_concat(lhs: VALUE, rhs: VALUE) -> VALUE;
     pub fn rb_hash_new() -> VALUE;
+    pub fn rb_hash_new_capa(capa: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_hash_aref(hash: VALUE, key: VALUE) -> VALUE;
     pub fn rb_hash_aset(hash: VALUE, key: VALUE, val: VALUE) -> VALUE;
     pub fn rb_hash_bulk_insert(argc: ::std::os::raw::c_long, argv: *const VALUE, hash: VALUE);
@@ -2260,7 +2262,6 @@ unsafe extern "C" {
         func: st_foreach_callback_func,
         arg: st_data_t,
     ) -> ::std::os::raw::c_int;
-    pub fn rb_hash_new_with_size(size: st_index_t) -> VALUE;
     pub fn rb_hash_new_with_bulk_insert(argc: ::std::os::raw::c_long, argv: *const VALUE) -> VALUE;
     pub fn rb_hash_resurrect(hash: VALUE) -> VALUE;
     pub fn rb_hash_stlike_lookup(
@@ -2302,6 +2303,13 @@ unsafe extern "C" {
         alloc_size_out: *mut usize,
         flags_out: *mut VALUE,
         len_out: *mut ::std::os::raw::c_long,
+    ) -> bool;
+    pub fn rb_zjit_hash_dup_can_fastpath(
+        hash: VALUE,
+        alloc_size_out: *mut usize,
+        flags_out: *mut VALUE,
+        ifnone_out: *mut VALUE,
+        bound_out: *mut ::std::os::raw::c_long,
     ) -> bool;
     pub fn rb_zjit_range_new_fastpath(
         exclude_end: bool,

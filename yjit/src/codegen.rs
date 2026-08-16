@@ -2725,9 +2725,9 @@ fn gen_newhash(
     jit_prepare_call_with_gc(jit, asm);
 
     if num != 0 {
-        // val = rb_hash_new_with_size(num / 2);
+        // val = rb_hash_new_capa(num / 2);
         let new_hash = asm.ccall(
-            rb_hash_new_with_size as *const u8,
+            rb_hash_new_capa as *const u8,
             vec![Opnd::UImm(num / 2)]
         );
 
@@ -6770,7 +6770,7 @@ fn c_method_tracing_currently_enabled(jit: &JITState) -> bool {
 unsafe extern "C" fn build_kwhash(ci: *const rb_callinfo, sp: *const VALUE) -> VALUE {
     let kw_arg = vm_ci_kwarg(ci);
     let kw_len: usize = get_cikw_keyword_len(kw_arg).try_into().unwrap();
-    let hash = rb_hash_new_with_size(kw_len as u64);
+    let hash = rb_hash_new_capa(kw_len as i64);
 
     for kwarg_idx in 0..kw_len {
         let key = get_cikw_keywords_idx(kw_arg, kwarg_idx.try_into().unwrap());
@@ -8588,7 +8588,7 @@ fn gen_iseq_kw_call(
 
                 // Use the total number of supplied keywords as a size upper bound
                 let keyword_len = unsafe { (*keywords).keyword_len } as usize;
-                let hash = unsafe { rb_hash_new_with_size(keyword_len as u64) };
+                let hash = unsafe { rb_hash_new_capa(keyword_len as i64) };
 
                 // Put pairs into the kwrest hash as the mask describes
                 for kwarg_idx in 0..keyword_len {

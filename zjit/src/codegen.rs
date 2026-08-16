@@ -779,7 +779,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, function, &function.frame_state(state))),
         Insn::BreakPoint => no_output!(asm.breakpoint()),
         Insn::Unreachable => no_output!(asm.abort()),
-        &Insn::HashDup { val, state } => { gen_hash_dup(asm, opnd!(val), &function.frame_state(state)) },
+        &Insn::HashDup { val, state } => { gen_hash_dup(jit, asm, function, val, opnd!(val), &function.frame_state(state)) },
         &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, function, opnd!(hash), opnd!(key), &function.frame_state(state)) },
         &Insn::HashAset { hash, key, val, state } => { no_output!(gen_hash_aset(jit, asm, function, opnd!(hash), opnd!(key), opnd!(val), &function.frame_state(state))) },
         &Insn::ArrayPush { array, val, state } => { no_output!(gen_array_push(asm, opnd!(array), opnd!(val), &function.frame_state(state))) },
@@ -1324,7 +1324,45 @@ fn gen_check_interrupts(jit: &mut JITState, asm: &mut Assembler, function: &Func
     asm.jnz(jit, side_exit(jit, function, state, SideExitReason::Interrupt));
 }
 
-fn gen_hash_dup(asm: &mut Assembler, val: Opnd, state: &FrameState) -> lir::Opnd {
+fn gen_hash_dup(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    function: &Function,
+    val_id: InsnId,
+    val: Opnd,
+    state: &FrameState,
+) -> lir::Opnd {
+    if let Some(src) = function.type_of(val_id).ruby_object() {
+        let mut alloc_size: usize = 0;
+        let mut flags = VALUE(0);
+        let mut ifnone = VALUE(0);
+        let mut bound: c_long = 0;
+        if unsafe { rb_zjit_hash_dup_can_fastpath(src, &mut alloc_size, &mut flags, &mut ifnone, &mut bound) } {
+            let klass = unsafe { rb_cHash };
+
+            let src_ptr = src.as_usize() as *const u8;
+            let hint_word = unsafe { (src_ptr.add(RUBY_OFFSET_RHASH_AR_HINT as usize) as *const u64).read() };
+            let pairs_base = unsafe { src_ptr.add(RUBY_OFFSET_RHASH_AR_PAIRS as usize) as *const VALUE };
+
+            return gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.into(), klass,
+                |asm, obj| {
+                    asm.store(Opnd::mem(VALUE_BITS, obj, RUBY_OFFSET_RHASH_IFNONE), Opnd::Value(ifnone));
+                    asm.store(Opnd::mem(VALUE_BITS, obj, RUBY_OFFSET_RHASH_AR_HINT), Opnd::UImm(hint_word));
+                    for i in 0..bound {
+                        let pair = unsafe { pairs_base.add(2 * (i as usize)) };
+                        let (key, value) = unsafe { (pair.read(), pair.add(1).read()) };
+                        let offset = RUBY_OFFSET_RHASH_AR_PAIRS + (i as i32) * 2 * SIZEOF_VALUE_I32;
+                        asm.store(Opnd::mem(VALUE_BITS, obj, offset), Opnd::Value(key));
+                        asm.store(Opnd::mem(VALUE_BITS, obj, offset + SIZEOF_VALUE_I32), Opnd::Value(value));
+                    }
+                },
+                |asm| {
+                    gen_prepare_leaf_call_with_gc(asm, state);
+                    asm_ccall!(asm, rb_hash_resurrect, val)
+                });
+        }
+    }
+
     gen_prepare_leaf_call_with_gc(asm, state);
     asm_ccall!(asm, rb_hash_resurrect, val)
 }
@@ -2518,10 +2556,10 @@ fn gen_new_hash(
                     asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
                 },
                 |asm| {
-                    asm_ccall!(asm, rb_hash_new_with_size, num_pairs.into())
+                    asm_ccall!(asm, rb_hash_new_capa, num_pairs.into())
                 })
         } else {
-            asm_ccall!(asm, rb_hash_new_with_size, num_pairs.into())
+            asm_ccall!(asm, rb_hash_new_capa, num_pairs.into())
         };
 
         let argv = gen_push_opnds(jit, asm, &elements);

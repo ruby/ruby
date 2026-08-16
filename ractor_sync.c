@@ -1070,7 +1070,7 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
     /* A copy payload's preparation can raise (an uncopyable object), so it runs before
      * the basket is allocated and cannot leak one; the move branch allocates first,
      * since an alloc raise must not orphan an already built courier. */
-    VALUE v = Qfalse;
+    volatile VALUE v = Qfalse;
     bool marshaled = false;
     struct rb_ractor_move_courier *courier = NULL;
 

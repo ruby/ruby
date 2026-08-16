@@ -11,6 +11,29 @@
 # define ZJIT_STATS (USE_ZJIT && RUBY_DEBUG)
 #endif
 
+// JITFrame is defined here as the single source of truth and imported into
+// Rust via bindgen. C code reads fields directly; Rust uses an impl block.
+typedef struct zjit_jit_frame {
+    // Program counter for this frame, used for backtraces and GC.
+    // NULL for C frames (they don't have a Ruby PC).
+    const VALUE *pc;
+    // The ISEQ this frame belongs to. Marked via rb_execution_context_mark.
+    // NULL for C frames.
+    const rb_iseq_t *iseq;
+    // Whether to materialize block_code when this frame is materialized.
+    // True when the ISEQ doesn't contain send/invokesuper/invokeblock
+    // (which write block_code themselves), so we must restore it.
+    // Always false for C frames.
+    bool materialize_block_code;
+
+    // Number of stack map entries in stack[].
+    uint32_t stack_size;
+    // Flexible array of stack map entries, executed in order by
+    // zjit_materialize_frames(). See the ZJIT_STACK_MAP_* opcodes above.
+    VALUE stack[];
+} zjit_jit_frame_t;
+
+#if USE_ZJIT
 // Stack map entries are opcodes for zjit_materialize_frames(), which walks them
 // in order while moving a cursor down the VM stack. An untagged entry is an
 // immediate Ruby VALUE to store; the tagged forms below copy from the native
@@ -83,29 +106,6 @@ ZJIT_STACK_MAP_BASE_PTR_STACK_SIZE(VALUE entry)
     return entry >> ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT;
 }
 
-// JITFrame is defined here as the single source of truth and imported into
-// Rust via bindgen. C code reads fields directly; Rust uses an impl block.
-typedef struct zjit_jit_frame {
-    // Program counter for this frame, used for backtraces and GC.
-    // NULL for C frames (they don't have a Ruby PC).
-    const VALUE *pc;
-    // The ISEQ this frame belongs to. Marked via rb_execution_context_mark.
-    // NULL for C frames.
-    const rb_iseq_t *iseq;
-    // Whether to materialize block_code when this frame is materialized.
-    // True when the ISEQ doesn't contain send/invokesuper/invokeblock
-    // (which write block_code themselves), so we must restore it.
-    // Always false for C frames.
-    bool materialize_block_code;
-
-    // Number of stack map entries in stack[].
-    uint32_t stack_size;
-    // Flexible array of stack map entries, executed in order by
-    // zjit_materialize_frames(). See the ZJIT_STACK_MAP_* opcodes above.
-    VALUE stack[];
-} zjit_jit_frame_t;
-
-#if USE_ZJIT
 extern void *rb_zjit_entry;
 extern const zjit_jit_frame_t rb_zjit_c_frame;
 extern uint64_t rb_zjit_call_threshold;
@@ -137,6 +137,7 @@ VALUE rb_zjit_new_obj_shape(VALUE flags, size_t alloc_size);
 bool rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, VALUE *flags_out);
 bool rb_zjit_str_resurrect_fastpath(VALUE str, bool chilled, size_t *size_out, VALUE *flags_out, long *len_out, size_t *byte_size_out);
 bool rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_out, long *len_out);
+bool rb_zjit_hash_dup_can_fastpath(VALUE hash, size_t *alloc_size_out, VALUE *flags_out, VALUE *ifnone_out, long *bound_out);
 void rb_zjit_range_new_fastpath(bool exclude_end, size_t *alloc_size_out, VALUE *flags_out);
 void rb_zjit_array_new_fastpath(size_t *alloc_size_out, VALUE *flags_out);
 bool rb_zjit_newobj_hook_enabled_p(void);
