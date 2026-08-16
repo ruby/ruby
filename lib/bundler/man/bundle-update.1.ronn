@@ -65,8 +65,8 @@ gem.
   Use the specified gemfile instead of [`Gemfile(5)`][Gemfile(5)].
 
 * `--jobs=<number>`, `-j=<number>`:
-  Specify the number of jobs to run in parallel. The default is the number of
-  available processors.
+  Specify the number of installation jobs to run in parallel. The default is
+  the number of available processors.
 
 * `--retry=[<number>]`:
   Retry failed network or git requests for <number> times.

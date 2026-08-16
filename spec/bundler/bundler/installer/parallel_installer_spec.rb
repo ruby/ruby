@@ -56,25 +56,38 @@ RSpec.describe Bundler::ParallelInstaller do
     end
     let(:installer) { Bundler::Installer.new(bundled_app, definition) }
 
-    it "queues native extensions in priority" do
-      parallel_installer = Bundler::ParallelInstaller.new(installer, definition.specs, 2, false, true)
-      worker_pool = parallel_installer.send(:worker_pool)
-      expected = 6 # Enqueue to download bundler and the 2 gems. Enqueue to install Bundler and the 2 gems.
+    it "prioritizes native extensions for installation" do
+      parallel_installer = Bundler::ParallelInstaller.new(installer, definition.specs, 2, false, true, download_size: 6)
+      download_worker_pool = parallel_installer.send(:download_worker_pool)
+      install_worker_pool = parallel_installer.send(:worker_pool)
 
-      expect(worker_pool).to receive(:enq).exactly(expected).times.and_wrap_original do |original_enq, spec, opts|
-        unless opts.nil? # Enqueued for download, no priority
-          if spec.name == "gem_with_extension"
-            expect(opts).to eq({ priority: true })
-          else
-            expect(opts).to eq({ priority: false })
-          end
+      expect(download_worker_pool).to receive(:enq).exactly(3).times.and_call_original
+      expect(install_worker_pool).to receive(:enq).exactly(3).times.and_wrap_original do |original_enq, spec, opts|
+        if spec.name == "gem_with_extension"
+          expect(opts).to eq({ priority: true })
+        else
+          expect(opts).to eq({ priority: false })
         end
 
-        opts ||= {}
         original_enq.call(spec, **opts)
       end
 
       parallel_installer.call
+    end
+  end
+
+  describe "worker pools" do
+    it "uses separate sizes for download and installation workers" do
+      parallel_installer = described_class.new(nil, [], 2, false, false, download_size: 6)
+
+      download_worker_pool = parallel_installer.send(:download_worker_pool)
+      install_worker_pool = parallel_installer.send(:worker_pool)
+
+      expect(download_worker_pool.instance_variable_get(:@size)).to eq(6)
+      expect(install_worker_pool.instance_variable_get(:@size)).to eq(2)
+    ensure
+      download_worker_pool&.stop
+      install_worker_pool&.stop
     end
   end
 

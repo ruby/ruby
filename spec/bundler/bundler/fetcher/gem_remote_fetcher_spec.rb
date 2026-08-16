@@ -6,6 +6,12 @@ require_relative "../../support/artifice/helpers/artifice"
 
 RSpec.describe Bundler::Fetcher::GemRemoteFetcher do
   describe "#initialize" do
+    it "uses download jobs for the connection pool size" do
+      Bundler.settings.temporary(download_jobs: 7) do
+        expect(subject.instance_variable_get(:@pool_size)).to eq(7)
+      end
+    end
+
     context "when ssl_ca_cert setting is not set" do
       before do
         allow(Bundler.settings).to receive(:[]).and_call_original

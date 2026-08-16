@@ -18,6 +18,16 @@ RSpec.describe Bundler::Fetcher::CompactIndex do
     allow(compact_index).to receive(:compact_index_client).and_return(compact_index_client)
   end
 
+  describe "#bundle_worker" do
+    it "uses metadata jobs for the worker pool size" do
+      Bundler.settings.temporary(metadata_jobs: 9) do
+        worker = compact_index.send(:bundle_worker)
+
+        expect(worker.instance_variable_get(:@size)).to eq(9)
+      end
+    end
+  end
+
   describe "#specs_for_names" do
     let(:thread_list) { Thread.list.select {|thread| thread.status == "run" } }
     let(:thread_inspection) { thread_list.map {|th| "  * #{th}:\n    #{th.backtrace_locations.join("\n    ")}" }.join("\n") }

@@ -25,6 +25,7 @@ module Bundler
         @checksum_store = Checksum::Store.new
         @gem_installers = {}
         @gem_installers_mutex = Mutex.new
+        @remote_spec_for_mutex = Mutex.new
         @remote_specs_mutex = Mutex.new
 
         cooldown = options["cooldown"]
@@ -443,12 +444,14 @@ module Bundler
       # Looks up a single spec in the remote sources, fetching only its own
       # name when the full remote index is not already materialized.
       def remote_spec_for(spec)
-        return remote_specs.search(spec).first if @remote_specs || api_fetchers.empty?
+        @remote_spec_for_mutex.synchronize do
+          return remote_specs.search(spec).first if @remote_specs || api_fetchers.empty?
 
-        index = Index.build do |idx|
-          fetch_names(api_fetchers, [spec.name], idx)
+          index = Index.build do |idx|
+            fetch_names(api_fetchers, [spec.name], idx)
+          end
+          index.search(spec).first
         end
-        index.search(spec).first
       end
 
       def fetch_names(fetchers, dependency_names, index)

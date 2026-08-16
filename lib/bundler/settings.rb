@@ -46,7 +46,9 @@ module Bundler
 
     NUMBER_KEYS = %w[
       cooldown
+      download_jobs
       jobs
+      metadata_jobs
       redirect
       retry
       ssl_verify_mode
@@ -383,8 +385,16 @@ module Bundler
       @app_cache_path ||= self[:cache_path] || "vendor/cache"
     end
 
+    def download_parallelization
+      self[:download_jobs] || [installation_parallelization * 3, 8].min
+    end
+
     def installation_parallelization
       self[:jobs] || processor_count
+    end
+
+    def metadata_parallelization
+      self[:metadata_jobs] || download_parallelization
     end
 
     ##
