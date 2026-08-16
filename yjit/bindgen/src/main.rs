@@ -98,7 +98,7 @@ fn main() {
         .allowlist_function("rb_obj_frozen_p")
         .allowlist_type("ruby_encoding_consts")
         .allowlist_function("rb_hash_new")
-        .allowlist_function("rb_hash_new_with_size")
+        .allowlist_function("rb_hash_new_capa")
         .allowlist_function("rb_hash_resurrect")
         .allowlist_function("rb_to_hash_type")
         .allowlist_type("st_retval")

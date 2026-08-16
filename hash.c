@@ -1546,12 +1546,6 @@ copy_compare_by_id(VALUE hash, VALUE basis)
 }
 
 VALUE
-rb_hash_new_with_size(st_index_t size)
-{
-    return hash_alloc_capa(rb_cHash, 0, Qnil, size, false);
-}
-
-VALUE
 rb_hash_new_capa(long capa)
 {
     return hash_alloc_capa(rb_cHash, 0, Qnil, capa, false);
@@ -2722,7 +2716,7 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
     if (argc == 0 || RHASH_EMPTY_P(hash)) {
         return copy_compare_by_id(rb_hash_new(), hash);
     }
-    result = copy_compare_by_id(rb_hash_new_with_size(argc), hash);
+    result = copy_compare_by_id(rb_hash_new_capa(argc), hash);
 
     for (i = 0; i < argc; i++) {
         key = argv[i];
@@ -3813,7 +3807,7 @@ to_h_i(VALUE key, VALUE value, VALUE hash)
 static VALUE
 rb_hash_to_h_block(VALUE hash)
 {
-    VALUE h = rb_hash_new_with_size(RHASH_SIZE(hash));
+    VALUE h = rb_hash_new_capa(RHASH_SIZE(hash));
     rb_hash_foreach(hash, to_h_i, h);
     return h;
 }
@@ -4208,7 +4202,7 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
 static VALUE
 rb_hash_invert(VALUE hash)
 {
-    VALUE h = rb_hash_new_with_size(RHASH_SIZE(hash));
+    VALUE h = rb_hash_new_capa(RHASH_SIZE(hash));
 
     rb_hash_foreach(hash, rb_hash_invert_i, h);
     return h;
@@ -4813,7 +4807,7 @@ rb_ident_hash_new(void)
 }
 
 VALUE
-rb_ident_hash_new_with_size(st_index_t size)
+rb_ident_hash_new_capa(long size)
 {
     VALUE hash = rb_hash_new();
     hash_st_table_init(hash, &identhash, size);
@@ -5203,7 +5197,7 @@ rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
 VALUE
 rb_hash_new_with_bulk_insert(long argc, const VALUE *argv)
 {
-    VALUE val = rb_hash_new_with_size(argc / 2);
+    VALUE val = rb_hash_new_capa(argc / 2);
     rb_hash_bulk_insert(argc, argv, val);
     return val;
 }
@@ -6229,7 +6223,7 @@ env_slice(int argc, VALUE *argv, VALUE _)
     if (argc == 0) {
         return rb_hash_new();
     }
-    result = rb_hash_new_with_size(argc);
+    result = rb_hash_new_capa(argc);
 
     for (i = 0; i < argc; i++) {
         key = argv[i];

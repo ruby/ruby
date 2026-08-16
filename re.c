@@ -893,7 +893,7 @@ static VALUE
 rb_reg_named_captures(VALUE re)
 {
     regex_t *reg = (rb_reg_check(re), RREGEXP_PTR(re));
-    VALUE hash = rb_hash_new_with_size(onig_number_of_names(reg));
+    VALUE hash = rb_hash_new_capa(onig_number_of_names(reg));
     onig_foreach_name(reg, reg_named_captures_iter, (void*)hash);
     return hash;
 }
@@ -2669,11 +2669,11 @@ match_deconstruct_keys(VALUE match, VALUE keys)
     match_check(match);
 
     if (NIL_P(RMATCH(match)->regexp)) {
-        return rb_hash_new_with_size(0);
+        return rb_hash_new();
     }
 
     if (NIL_P(keys)) {
-        h = rb_hash_new_with_size(onig_number_of_names(RREGEXP_PTR(RMATCH(match)->regexp)));
+        h = rb_hash_new_capa(onig_number_of_names(RREGEXP_PTR(RMATCH(match)->regexp)));
 
         struct named_captures_data data = { h, match, 1 };
 
@@ -2685,10 +2685,10 @@ match_deconstruct_keys(VALUE match, VALUE keys)
     Check_Type(keys, T_ARRAY);
 
     if (onig_number_of_names(RREGEXP_PTR(RMATCH(match)->regexp)) < RARRAY_LEN(keys)) {
-        return rb_hash_new_with_size(0);
+        return rb_hash_new();
     }
 
-    h = rb_hash_new_with_size(RARRAY_LEN(keys));
+    h = rb_hash_new_capa(RARRAY_LEN(keys));
 
     for (i=0; i<RARRAY_LEN(keys); i++) {
         VALUE key = RARRAY_AREF(keys, i);

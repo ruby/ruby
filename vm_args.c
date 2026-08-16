@@ -192,7 +192,7 @@ args_kw_argv_to_hash(struct args_info *args)
     const struct rb_callinfo_kwarg *kw_arg = args->kw_arg;
     const VALUE *const passed_keywords = kw_arg->keywords;
     const int kw_len = kw_arg->keyword_len;
-    VALUE h = rb_hash_new_with_size(kw_len);
+    VALUE h = rb_hash_new_capa(kw_len);
     const int kw_start = args->argc - kw_len;
     const VALUE * const kw_argv = args->argv + kw_start;
     int i;
@@ -293,7 +293,7 @@ static VALUE
 make_rest_kw_hash(const VALUE *passed_keywords, int passed_keyword_len, const VALUE *kw_argv)
 {
     int i;
-    VALUE obj = rb_hash_new_with_size(passed_keyword_len);
+    VALUE obj = rb_hash_new_capa(passed_keyword_len);
 
     for (i=0; i<passed_keyword_len; i++) {
         if (!UNDEF_P(kw_argv[i])) {

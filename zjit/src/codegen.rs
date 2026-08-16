@@ -2556,10 +2556,10 @@ fn gen_new_hash(
                     asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
                 },
                 |asm| {
-                    asm_ccall!(asm, rb_hash_new_with_size, num_pairs.into())
+                    asm_ccall!(asm, rb_hash_new_capa, num_pairs.into())
                 })
         } else {
-            asm_ccall!(asm, rb_hash_new_with_size, num_pairs.into())
+            asm_ccall!(asm, rb_hash_new_capa, num_pairs.into())
         };
 
         let argv = gen_push_opnds(jit, asm, &elements);
