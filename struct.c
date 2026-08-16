@@ -321,7 +321,7 @@ rb_data_s_new(int argc, const VALUE *argv, VALUE klass)
         int num_members = RARRAY_LENINT(members);
 
         rb_check_arity(argc, 0, num_members);
-        VALUE arg_hash = rb_hash_new_with_size(argc);
+        VALUE arg_hash = rb_hash_new_capa(argc);
         for (long i=0; i<argc; i++) {
             VALUE k = rb_ary_entry(members, i), v = argv[i];
             rb_hash_aset(arg_hash, k, v);
@@ -1088,7 +1088,7 @@ rb_struct_to_a(VALUE s)
 static VALUE
 rb_struct_to_h(VALUE s)
 {
-    VALUE h = rb_hash_new_with_size(RSTRUCT_LEN_RAW(s));
+    VALUE h = rb_hash_new_capa(RSTRUCT_LEN_RAW(s));
     VALUE members = rb_struct_members(s);
     long i;
     int block_given = rb_block_given_p();
@@ -1142,9 +1142,9 @@ deconstruct_keys(VALUE s, VALUE keys, bool name_only)
 
     }
     if (RSTRUCT_LEN_RAW(s) < RARRAY_LEN(keys)) {
-        return rb_hash_new_with_size(0);
+        return rb_hash_new();
     }
-    h = rb_hash_new_with_size(RARRAY_LEN(keys));
+    h = rb_hash_new_capa(RARRAY_LEN(keys));
     for (i=0; i<RARRAY_LEN(keys); i++) {
         VALUE key = RARRAY_AREF(keys, i);
         int i = rb_struct_pos(s, &key, name_only);

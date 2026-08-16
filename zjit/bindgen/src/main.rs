@@ -139,7 +139,7 @@ fn main() {
         .allowlist_function("rb_class_real")
         .allowlist_type("ruby_encoding_consts")
         .allowlist_function("rb_hash_new")
-        .allowlist_function("rb_hash_new_with_size")
+        .allowlist_function("rb_hash_new_capa")
         .allowlist_function("rb_hash_resurrect")
         .allowlist_function("rb_hash_stlike_foreach")
         .allowlist_function("rb_to_hash_type")

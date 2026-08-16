@@ -10042,7 +10042,7 @@ type_name(int type, VALUE obj)
 static void
 gc_count_add_each_types(VALUE hash, const char *name, const size_t *types)
 {
-    VALUE result = rb_hash_new_with_size(T_MASK);
+    VALUE result = rb_hash_new_capa(T_MASK);
     int i;
     for (i=0; i<T_MASK; i++) {
         const char *type = type_name(i, 0);
@@ -12457,7 +12457,7 @@ rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
     }
 }
 
-VALUE rb_ident_hash_new_with_size(st_index_t size);
+VALUE rb_ident_hash_new_capa(long size);
 
 #if GC_DEBUG_STRESS_TO_CLASS
 /*
@@ -12473,7 +12473,7 @@ rb_gcdebug_add_stress_to_class(int argc, VALUE *argv, VALUE self)
     rb_objspace_t *objspace = rb_gc_get_objspace();
 
     if (!stress_to_class) {
-        set_stress_to_class(rb_ident_hash_new_with_size(argc));
+        set_stress_to_class(rb_ident_hash_new_capa(argc));
     }
 
     for (int i = 0; i < argc; i++) {

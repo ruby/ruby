@@ -2215,13 +2215,13 @@ set_to_hash_i(st_data_t key, st_data_t arg)
 static VALUE
 set_i_to_h(VALUE set)
 {
-    st_index_t size = RSET_SIZE(set);
+    long size = RSET_SIZE(set);
     VALUE hash;
     if (RSET_COMPARE_BY_IDENTITY(set)) {
-        hash = rb_ident_hash_new_with_size(size);
+        hash = rb_ident_hash_new_capa(size);
     }
     else {
-        hash = rb_hash_new_with_size(size);
+        hash = rb_hash_new_capa(size);
     }
     rb_hash_set_default(hash, Qfalse);
 

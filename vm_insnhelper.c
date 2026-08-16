@@ -2784,7 +2784,7 @@ vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling,
 {
     const VALUE *const passed_keywords = vm_ci_kwarg(ci)->keywords;
     const int kw_len = vm_ci_kwarg(ci)->keyword_len;
-    const VALUE h = rb_hash_new_with_size(kw_len);
+    const VALUE h = rb_hash_new_capa(kw_len);
     VALUE *sp = cfp->sp;
     int i;
 
@@ -6529,7 +6529,7 @@ vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, cons
         int argc = 1;
 
         if (!UNDEF_P(buffer)) {
-            args[1] = rb_hash_new_with_size(1);
+            args[1] = rb_hash_new_capa(1);
             rb_hash_aset(args[1], ID2SYM(idBuffer), buffer);
             kw_splat = RB_PASS_KEYWORDS;
             argc++;

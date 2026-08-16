@@ -1874,7 +1874,7 @@ r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
 static VALUE
 r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE extmod, int type)
 {
-    VALUE (*hash_new_with_size)(st_index_t) = rb_hash_new_with_size;
+    VALUE (*hash_new_capa)(long) = rb_hash_new_capa;
     VALUE v = Qnil;
     long id;
     st_data_t link;
@@ -1950,7 +1950,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
             if ((c == rb_cHash) &&
                 /* Hack for compare_by_identity */
                 (type == TYPE_HASH || type == TYPE_HASH_DEF)) {
-                hash_new_with_size = rb_ident_hash_new_with_size;
+                hash_new_capa = rb_ident_hash_new_capa;
                 goto type_hash;
             }
             v = r_object_for(arg, partial, 0, c, extmod, type);
@@ -2126,7 +2126,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
         {
             long len = r_keep_readable(arg, r_long(arg), 2);
 
-            v = hash_new_with_size(len);
+            v = hash_new_capa(len);
             v = r_entry(v, arg);
             arg->readable += (len - 1) * 2;
             while (len--) {
