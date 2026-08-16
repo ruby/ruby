@@ -31,7 +31,7 @@ end
 # Probe used to confirm the compiler both accepts +flag+ and can compile the
 # intrinsics the backend relies on.
 def blake3_have_isa?(name, flag, snippet)
-  checking_for("#{name} intrinsics (#{flag})") do
+  checking_for("#{name} intrinsics" + (flag ? " (#{flag})" : "")) do
     try_compile(snippet, flag)
   end
 end
@@ -40,27 +40,29 @@ case RbConfig::CONFIG["host_cpu"]
 when /\A(x86_64|amd64|x64)\z/i
   # Try to detect which SIMD features this x86 machine and compiler has
   x86_backends = [
-    ["blake3_sse2",   "SSE2",    "-msse2",
+    ["blake3_sse2",   "SSE2",    ["-msse2", "-arch:SSE2"],
      "#include <immintrin.h>\nint main(void){ volatile __m128i x = _mm_setzero_si128(); (void)x; return 0; }\n",
      "BLAKE3_NO_SSE2"],
-    ["blake3_sse41",  "SSE4.1",  "-msse4.1",
+    ["blake3_sse41",  "SSE4.1",  ["-msse4.1", "-arch:AVX"],
      "#include <immintrin.h>\nint main(void){ volatile __m128i x = _mm_setzero_si128(); return _mm_testz_si128(x, x); }\n",
      "BLAKE3_NO_SSE41"],
-    ["blake3_avx2",   "AVX2",    "-mavx2",
+    ["blake3_avx2",   "AVX2",    ["-mavx2", "-arch:AVX2"],
      "#include <immintrin.h>\nint main(void){ volatile __m256i x = _mm256_setzero_si256(); (void)x; return 0; }\n",
      "BLAKE3_NO_AVX2"],
-    ["blake3_avx512", "AVX-512", "-mavx512f -mavx512vl",
+    ["blake3_avx512", "AVX-512", ["-mavx512f -mavx512vl", "-arch:AVX512"],
      "#include <immintrin.h>\nint main(void){ volatile __m512i x = _mm512_setzero_si512(); (void)x; return 0; }\n",
      "BLAKE3_NO_AVX512"],
   ]
 
-  x86_backends.each do |obj, name, flag, snippet, no_macro|
-    if blake3_have_isa?(name, flag, snippet)
-      objs << obj
-      simd_cflags[obj] = flag
-    else
+  x86_backends.each do |obj, name, flags, snippet, no_macro|
+    [nil, *flags].any? do |flag|
+      if blake3_have_isa?(name, flag, snippet)
+        objs << obj
+        simd_cflags[obj] = flag
+        true
+      end
+    end or
       blake3_disable(no_macro)
-    end
   end
 when /\A(aarch64|arm64)\z/i
   # NEON is part of the AArch64 baseline, so no runtime detection or special
