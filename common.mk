@@ -1353,8 +1353,8 @@ build-tool/dump_ast$(BUILD_EXEEXT): build-tool/Makefile
 
 clean-local:: clean-build-tool
 clean-build-tool:
-	- cd build-tool && $(MAKE) clean 2> $(NULL) || $(NULLCMD)
-	- $(RMDIR) build-tool
+	- cd build-tool 2> $(NULL) && $(MAKE) clean 2> $(NULL) || $(NULLCMD)
+	- $(RMDIR) build-tool 2> $(NULL) || $(NULLCMD)
 
 $(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
 
@@ -2045,7 +2045,7 @@ clean-modular-gc: gc/clean
 distclean-modular-gc: gc/distclean
 realclean-modular-gc: gc/realclean
 distclean-modular-gc realclean-modular-gc:
-	-$(Q) $(RMDIR) gc
+	-$(Q) $(RMDIR) gc 2> $(NULL) || $(NULLCMD)
 
 help: PHONY
 	$(MESSAGE_BEGIN) \
