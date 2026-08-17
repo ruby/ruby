@@ -1092,13 +1092,195 @@ CODE
     assert_equal(S("car"), shared)
   end
 
+  def test_bit_set_clear_flip_region
+    s = S("\x00\x00")
+    assert_same(s, s.bit_set(4, 8))
+    assert_equal(S("\xF0\x0F"), s)
+    s = S("\x00\x00")
+    s.bit_set(4..11)
+    assert_equal(S("\xF0\x0F"), s)
+    s = S("\xFF\xFF")
+    assert_same(s, s.bit_clear(4, 8))
+    assert_equal(S("\x0F\xF0"), s)
+    s = S("\xFF\xFF")
+    s.bit_clear(4..11)
+    assert_equal(S("\x0F\xF0"), s)
+    s = S("\x00\xFF")
+    assert_same(s, s.bit_flip(4, 8))
+    assert_equal(S("\xF0\xF0"), s)
+    s = S("\x00\xFF")
+    s.bit_flip(4..11)
+    assert_equal(S("\xF0\xF0"), s)
+
+    # Range variants
+    s = S("\x00")
+    s.bit_set(0...8)
+    assert_equal(S("\xFF"), s)
+    s = S("\x00\x00")
+    s.bit_set(8..)
+    assert_equal(S("\x00\xFF"), s)
+    s = S("\x00")
+    s.bit_set(..3)
+    assert_equal(S("\x0F"), s)
+    s = S("\x00")
+    s.bit_set(nil..nil)
+    assert_equal(S("\xFF"), s)
+
+    # A region spanning several bytes exercises the byte-fill path.
+    s = S("\x00" * 5)
+    s.bit_set(4, 32)
+    assert_equal(S("\xF0\xFF\xFF\xFF\x0F"), s)
+    s.bit_flip(0..)
+    assert_equal(S("\x0F\x00\x00\x00\xF0"), s)
+
+    # One-bit and zero-bit forms
+    s = S("\x00")
+    s.bit_set(3, 1)
+    assert_equal(S("\x08"), s)
+    s = S("\xAA")
+    assert_same(s, s.bit_set(0, 0))
+    s.bit_clear(0, 0)
+    s.bit_flip(0, 0)
+    assert_equal(S("\xAA"), s)
+    s = S("\x00")
+    assert_same(s, s.bit_set(8..))  # empty region at the very end
+    s.bit_set(8, 0)
+    s.bit_set(0...0)
+    assert_equal(S("\x00"), s)
+
+    # lsb_first: false interprets the same logical positions MSB-first.
+    s = S("\x00\x00")
+    s.bit_set(6..9, lsb_first: false)
+    assert_equal(S("\x03\xC0"), s)
+    s = S("\x00\x00")
+    s.bit_set(6, 4, lsb_first: false)
+    assert_equal(S("\x03\xC0"), s)
+
+    # Writes do not clamp: any part of the region outside self raises.
+    assert_raise(IndexError) { S("\x00").bit_set(0, 9) }
+    assert_raise(IndexError) { S("\x00").bit_set(8, 1) }
+    assert_raise(IndexError) { S("\x00").bit_set(0..8) }
+    assert_raise(IndexError) { S("\x00").bit_set(0...9) }
+    assert_raise(IndexError) { S("\x00").bit_set(8..8) }
+    assert_raise(IndexError) { S("\x00").bit_set(9..) }
+    # An empty region is no exception when it begins past the end.
+    assert_raise(IndexError) { S("\x00").bit_set(9, 0) }
+    assert_raise(IndexError) { S("\x00").bit_set(9...9) }
+    assert_raise(IndexError) { S("\x00").bit_clear(9, 0) }
+    assert_raise(IndexError) { S("\x00").bit_flip(9, 0) }
+    assert_raise(IndexError) { S("\x00").bit_clear(0..100) }
+    assert_raise(IndexError) { S("\x00").bit_flip(0..100) }
+    assert_raise(IndexError) { S("").bit_set(0..7) }
+    assert_raise(IndexError) { S("\x00").bit_set(..-1) }
+    assert_raise(IndexError) { S("\x00").bit_set(-1..2) }
+    assert_raise(IndexError) { S("\x00").bit_set(2**62, 1) }
+    assert_raise(IndexError) { S("\x00").bit_set(2**62..2**62 + 4) }
+    assert_raise(ArgumentError) { S("\x00").bit_set(0, -1) }
+    assert_raise(ArgumentError) { S("\x00").bit_set(0, 2**100) }
+    assert_raise(ArgumentError) { S("\x00").bit_set(0..2**100) }
+    assert_raise(ArgumentError) { S("\x00").bit_set(0..3, 4) }
+    # An explicit nil is an argument, not an omitted one.
+    assert_raise(TypeError) { S("\x00").bit_set(0, nil) }
+    assert_raise(ArgumentError) { S("\x00").bit_set(0..3, nil) }
+    assert_raise(ArgumentError) { S("\x00").bit_set(0..3, lsb_first: nil) }
+    assert_raise(FrozenError) { S("\x00").freeze.bit_set(0..3) }
+    # A zero-length write still requires a mutable receiver, but an
+    # out-of-range region is detected before the frozen check.
+    assert_raise(FrozenError) { S("\x00").freeze.bit_set(0, 0) }
+    assert_raise(FrozenError) { S("\x00").freeze.bit_clear(0...0) }
+    assert_raise(FrozenError) { S("\x00").freeze.bit_flip(8..) }
+    assert_raise(IndexError) { S("\x00").freeze.bit_set(9, 0) }
+
+    # Copy-on-write: mutating must not affect a shared sibling.
+    shared = S("fooXbar").split(S("X")).last
+    shared.bit_set(0..7)
+    assert_equal(S("\xFFar").b, shared.b)
+  end
+
   def test_bit_count
     assert_equal(0, S("").bit_count)
     assert_equal(0, S("\x00").bit_count)
     assert_equal(8, S("\xFF").bit_count)
     assert_equal(8, S("\xAA\xF0").bit_count)
+    # A full-string popcount is bit-order independent; the keyword is
+    # validated but has no effect.
+    assert_equal(8, S("\xFF").bit_count(lsb_first: false))
     assert_raise(ArgumentError) { S("\x00").bit_count(0) }
-    assert_raise(ArgumentError) { S("\x00").bit_count(lsb_first: false) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(lsb_first: nil) }
+  end
+
+  def test_bit_count_region
+    data = S("\xFF\x00\xF0")
+    assert_equal(8, data.bit_count(0, 8))
+    assert_equal(0, data.bit_count(8, 8))
+    assert_equal(0, data.bit_count(16, 4))
+    assert_equal(4, data.bit_count(20, 4))
+    assert_equal(4, data.bit_count(4, 8))
+    assert_equal(8, data.bit_count(0..7))
+    assert_equal(0, data.bit_count(8..15))
+    assert_equal(8, data.bit_count(0...8))
+    assert_equal(4, data.bit_count(16..))
+    assert_equal(8, data.bit_count(..7))
+    assert_equal(12, data.bit_count(nil..nil))
+    assert_equal(0, data.bit_count(0, 0))
+    assert_equal(0, data.bit_count(0...0))
+
+    # Reads clamp: only the part of the region that exists is counted.
+    assert_equal(4, data.bit_count(16, 100))
+    assert_equal(0, data.bit_count(24, 8))
+    assert_equal(0, data.bit_count(100, 8))
+    assert_equal(4, data.bit_count(16..100))
+    assert_equal(0, data.bit_count(100..200))
+    assert_equal(0, data.bit_count(2**62, 8))
+
+    # lsb_first: selects which physical bits a non-byte-aligned region means.
+    assert_equal(0, S("\xF0").bit_count(0, 4))
+    assert_equal(4, S("\xF0").bit_count(0, 4, lsb_first: false))
+    assert_equal(4, S("\xF0").bit_count(0..3, lsb_first: false))
+    assert_equal(4, S("\xF0").bit_count(4, 4))
+
+    assert_raise(IndexError) { S("\x00").bit_count(-1, 4) }
+    assert_raise(IndexError) { S("\x00").bit_count(-1..3) }
+    assert_raise(IndexError) { S("\x00").bit_count(..-1) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(0, -1) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(2**100, 1) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(0, 2**100) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(0..2**100) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(0..3, 4) }
+    # An explicit nil is an argument, not an omitted one.
+    assert_raise(ArgumentError) { S("\x00").bit_count(nil) }
+    assert_raise(TypeError) { S("\x00").bit_count(nil, 3) }
+    assert_raise(TypeError) { S("\x00").bit_count(0, nil) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(0..3, nil) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(0, 4, lsb_first: nil) }
+  end
+
+  def test_bit_region_argument_side_effect
+    # Coercing an argument (Integer#to_int, or a Range endpoint) may run user
+    # code that resizes the receiver.  The bounds check and the memory access
+    # must both see the post-coercion length, or a stale size lets the region
+    # method read or write out of bounds.
+    shrink = Class.new do
+      def initialize(str, value); @str, @value = str, value; end
+      def to_int; @str.replace("\xFF".b); @value; end
+    end
+
+    # Writes: the region no longer fits the shrunken string, so this must raise
+    # rather than write past the reallocated buffer.
+    s = S("\x00") * 8
+    assert_raise(IndexError) { s.bit_set(0, shrink.new(s, 64)) }
+    assert_equal("\xFF".b, s.b)
+
+    # A Range endpoint is coerced the same way; a beginless range keeps the
+    # custom object out of Range's begin <=> end construction check.
+    s = S("\x00") * 8
+    assert_raise(IndexError) { s.bit_set(..shrink.new(s, 63)) }
+    assert_equal("\xFF".b, s.b)
+
+    # Reads clamp to the post-coercion length instead of reading freed memory.
+    s = S("\xFF") * 8
+    assert_equal(8, s.bit_count(0, shrink.new(s, 64)))
+    assert_equal("\xFF".b, s.b)
   end
 
   def test_bitwise

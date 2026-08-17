@@ -4,13 +4,31 @@ Sets the bit at zero-based bit +offset+ to 0; returns +self+:
   s.bit_clear(1) # => "\xFD"
   s              # => "\xFD"
 
+With +length+, clears the +length+ consecutive bits beginning at +offset+;
+with a Range, clears the bits covered by +range+:
+
+  s = "\xFF\xFF"
+  s.bit_clear(4, 8)  # => "\x0F\xF0"
+  s = "\xFF\xFF"
+  s.bit_clear(4..11) # => "\x0F\xF0"
+
+The entire region must lie within +self+; a region that extends beyond the
+end raises +IndexError+ rather than being clamped. Writing zero bits is a
+no-op, but even an empty region raises +IndexError+ when it begins beyond
+the end of +self+.
+
 By default, bits within each byte are numbered from least-significant to
 most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
 within each byte are numbered from most-significant to least-significant:
 
   s = "\xFF"
-  s.bit_clear(1, lsb_first: false) # => "\xBF"
+  s.bit_clear(1, lsb_first: false)     # => "\xBF"
+  s = "\xFF\xFF"
+  s.bit_clear(4, 8, lsb_first: false)  # => "\xF0\x0F"
 
-Raises +IndexError+ if +offset+ is out of range.
-Raises +ArgumentError+ if +offset+ is too large to be represented.
+Raises +IndexError+ if +offset+ is out of range, or if any part of the
+region lies outside +self+.
+Raises +ArgumentError+ if +length+ is negative.
+Raises +ArgumentError+ if a bit position is too large to be represented.
 Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.
+Raises +FrozenError+ if +self+ is frozen, even when writing zero bits.
