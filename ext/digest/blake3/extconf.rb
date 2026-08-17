@@ -82,26 +82,9 @@ $objs = objs.map { |o| "#{o}.#{$OBJEXT}" }
 
 have_header("sys/cdefs.h")
 
-checking_for("C11 atomics") do
-  ok = try_compile(<<~C)
-    static _Atomic int atomic_int = 0;
-    static int t(void) {return atomic_int;}
-    #{MAIN_DOES_NOTHING 't'}
-  C
-  unless ok
-    $defs << "-DBLAKE3_ATOMICS=0"
-  end
-  ok
-end
-
 $preload = %w[digest]
 
-create_makefile("digest/blake3") do |mk|
-  mk.grep(/^CPPFLAGS *=/) {|m|
-    m.sub!(/(?=-DRUBY_EXTCONF_H)/) {[$defs, ''].join(' ')}
-  }
-  mk
-end
+create_makefile("digest/blake3")
 
 # Emit one explicit compile rule per SIMD backend so each gets its own
 # instruction-set flag.  mkmf's implicit .c.o rule compiles every object with
