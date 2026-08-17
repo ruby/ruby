@@ -117,9 +117,9 @@ fn main() {
         .allowlist_function("rb_zjit_class_allocate_instance_fastpath")
         .allowlist_function("rb_zjit_str_resurrect_fastpath")
         .allowlist_function("rb_zjit_array_dup_can_fastpath")
+        .allowlist_function("rb_zjit_array_new_can_fastpath")
         .allowlist_function("rb_zjit_hash_dup_can_fastpath")
         .allowlist_function("rb_zjit_range_new_fastpath")
-        .allowlist_function("rb_zjit_array_new_fastpath")
 
         // For crashing
         .allowlist_function("rb_bug")

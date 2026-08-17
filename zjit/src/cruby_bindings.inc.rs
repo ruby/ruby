@@ -2304,6 +2304,11 @@ unsafe extern "C" {
         flags_out: *mut VALUE,
         len_out: *mut ::std::os::raw::c_long,
     ) -> bool;
+    pub fn rb_zjit_array_new_can_fastpath(
+        len: ::std::os::raw::c_long,
+        alloc_size_out: *mut usize,
+        flags_out: *mut VALUE,
+    ) -> bool;
     pub fn rb_zjit_hash_dup_can_fastpath(
         hash: VALUE,
         alloc_size_out: *mut usize,
@@ -2316,7 +2321,6 @@ unsafe extern "C" {
         alloc_size_out: *mut usize,
         flags_out: *mut VALUE,
     );
-    pub fn rb_zjit_array_new_fastpath(alloc_size_out: *mut usize, flags_out: *mut VALUE);
     pub fn rb_profile_frames(
         start: ::std::os::raw::c_int,
         limit: ::std::os::raw::c_int,
