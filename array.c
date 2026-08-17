@@ -2937,27 +2937,29 @@ rb_ary_resurrect(VALUE ary)
 
 #if USE_ZJIT
 bool
-rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_out, long *len_out)
+rb_zjit_array_new_can_fastpath(long len, size_t *alloc_size_out, VALUE *flags_out)
 {
-    long len = RARRAY_LEN(ary);
-    long embed_capa = (sizeof(struct RArray) - offsetof(struct RArray, as.ary)) / sizeof(VALUE);
+    if (!ary_embeddable_p(len)) {
+        return false;
+    }
+    long embed_size = ary_embed_size(len);
 
-    if (len > embed_capa) return false;
-
-    *alloc_size_out = sizeof(struct RArray);
+    *alloc_size_out = embed_size;
     *flags_out = T_ARRAY | RARRAY_EMBED_FLAG | ((VALUE)len << RARRAY_EMBED_LEN_SHIFT);
-    *len_out = len;
     return true;
 }
 
-void
-rb_zjit_array_new_fastpath(size_t *alloc_size_out, VALUE *flags_out)
+bool
+rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_out, long *len_out)
 {
-    size_t size = sizeof(struct RArray);
-    shape_id_t shape_id = rb_shape_transition_slot_size(ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER,
-                                                        rb_gc_size_slot_size(size));
-    *alloc_size_out = size;
-    *flags_out = T_ARRAY | RARRAY_EMBED_FLAG | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
+    long len = RARRAY_LEN(ary);
+    if (!rb_zjit_array_new_can_fastpath(len, alloc_size_out, flags_out)) {
+        return false;
+    }
+    else {
+        *len_out = len;
+        return true;
+    }
 }
 #endif
 
