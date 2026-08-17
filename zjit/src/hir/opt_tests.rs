@@ -6185,6 +6185,40 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_opt_new_with_shareable_object_multi_ractor() {
+        eval("
+            def test = Object.new
+            Ractor.new {}.value
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:BasicObject = GetConstantPath 0x1000
+          v12:NilClass = Const Value(nil)
+          v15:CBool = IsMethodCFunc v10, :new
+          CondBranch v15, bb6(), bb4()
+        bb6():
+          v17:HeapBasicObject = ObjectAlloc v10
+          PatchPoint NoSingletonClass(Object@0x1010)
+          PatchPoint MethodRedefined(Object@0x1010, initialize@0x1018, cme:0x1020)
+          v43:ObjectExact = GuardType v17, ObjectExact recompile
+          CheckInterrupts
+          Return v43
+        bb4():
+          SideExit NoProfileSend recompile
+        ");
+    }
+
+    #[test]
     fn test_opt_new_basic_object() {
         eval("
             def test = BasicObject.new
