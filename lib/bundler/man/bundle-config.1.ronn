@@ -133,7 +133,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Defaults to `vendor/cache`.
 * `clean` (`BUNDLE_CLEAN`):
    Whether Bundler should run `bundle clean` automatically after
-   `bundle install`. Defaults to `true` in Bundler 4, as long as `path` is not
+   `bundle install`. Defaults to `true` in Bundler 5, as long as `path` is not
    explicitly configured.
 * `console` (`BUNDLE_CONSOLE`):
    The console that `bundle console` starts. Defaults to `irb`.
