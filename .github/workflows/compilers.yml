@@ -66,7 +66,6 @@ jobs:
           tag: clang-22
           with_gcc: 'clang-22 -flto=auto'
           optflags: '-O2'
-          enable_shared: false
         timeout-minutes: 30
       - { uses: './.github/actions/compilers', name: '-O0', with: { optflags: '-O0 -march=x86-64 -mtune=generic' }, timeout-minutes: 8 }
       # - { uses: './.github/actions/compilers', name: '-O3', with: { optflags: '-O3 -march=x86-64 -mtune=generic', check: true } }
