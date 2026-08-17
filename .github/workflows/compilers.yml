@@ -35,7 +35,7 @@ env:
 # Each job is split so that they roughly take 30min to run through.
 jobs:
   compile-if:
-    name: 'omnibus compilations, trigger'
+    name: 'omnibus compilations, source'
     runs-on: ubuntu-latest
     if: >-
       ${{!(false
@@ -44,9 +44,26 @@ jobs:
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
+    timeout-minutes: 10
+
     steps:
-      - run: true
-        working-directory:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
+      # Set fetch-depth: 10 so that Launchable can receive commits information.
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - name: Archive sources
+        working-directory: ${{ github.workspace }}
+        # `.downloaded-cache` will be restored from the common cache
+        run: >-
+          tar -cf "${RUNNER_TEMP}/compilation-source.tar"
+          --exclude='src/.downloaded-cache'
+          src
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compilation-source
+          path: ${{ runner.temp }}/compilation-source.tar
+          compression-level: 0
+          retention-days: 1
 
   compile1:
     name: 'omnibus compilations, #1'
@@ -58,8 +75,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
-      # Set fetch-depth: 10 so that Launchable can receive commits information.
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - uses: './.github/actions/setup/compilation-source'
       - name: 'clang 23 LTO'
         uses: './.github/actions/compilers'
         with:
@@ -80,7 +96,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - uses: './.github/actions/setup/compilation-source'
       - name: 'GCC 15 LTO'
         uses: './.github/actions/compilers'
         with:
@@ -108,7 +124,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - uses: './.github/actions/setup/compilation-source'
       - { uses: './.github/actions/compilers', name: 'clang 20', with: { tag: 'clang-20' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'clang 19', with: { tag: 'clang-19' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'clang 18', with: { tag: 'clang-18' }, timeout-minutes: 8 }
@@ -127,7 +143,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - uses: './.github/actions/setup/compilation-source'
       - { uses: './.github/actions/compilers', name: 'clang 13', with: { tag: 'clang-13' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'clang 12', with: { tag: 'clang-12' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'clang 11', with: { tag: 'clang-11' }, timeout-minutes: 8 }
@@ -148,7 +164,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - uses: './.github/actions/setup/compilation-source'
       # -Wno-strict-prototypes is necessary with clang-15 or newer, since
       # older autoconf prior to 2.72 generate functions without prototype
       # and -pedantic now implies strict-prototypes. Disabling the error
@@ -174,7 +190,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - uses: './.github/actions/setup/compilation-source'
       - { uses: './.github/actions/compilers', name: 'C++20', with: { CXXFLAGS: '-std=c++20 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'C++23', with: { CXXFLAGS: '-std=c++23 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'C++26', with: { CXXFLAGS: '-std=c++26 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }, timeout-minutes: 8 }
@@ -194,7 +210,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - uses: './.github/actions/setup/compilation-source'
       - { uses: './.github/actions/compilers', name: 'disable-jit',         with: { append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'disable-yjit',        with: { append_configure: '--disable-yjit' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'disable-zjit',        with: { append_configure: '--disable-zjit' }, timeout-minutes: 8 }
@@ -214,7 +230,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - uses: './.github/actions/setup/compilation-source'
       - { uses: './.github/actions/compilers', name: 'NDEBUG',                         with: { cppflags: '-DNDEBUG' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'RUBY_DEBUG',                     with: { cppflags: '-DRUBY_DEBUG' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'ARRAY_DEBUG',                    with: { cppflags: '-DARRAY_DEBUG' }, timeout-minutes: 8 }
@@ -233,7 +249,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - uses: './.github/actions/setup/compilation-source'
       - { uses: './.github/actions/compilers', name: 'HASH_DEBUG',                     with: { cppflags: '-DHASH_DEBUG' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'ID_TABLE_DEBUG',                 with: { cppflags: '-DID_TABLE_DEBUG' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'RGENGC_DEBUG=-1',                with: { cppflags: '-DRGENGC_DEBUG=-1' }, timeout-minutes: 8 }
@@ -253,7 +269,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - uses: './.github/actions/setup/compilation-source'
       - { uses: './.github/actions/compilers', name: 'USE_LAZY_LOAD',                  with: { cppflags: '-DUSE_LAZY_LOAD' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'USE_RUBY_DEBUG_LOG=1',           with: { cppflags: '-DUSE_RUBY_DEBUG_LOG=1' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'USE_DEBUG_COUNTER',              with: { cppflags: '-DUSE_DEBUG_COUNTER=1' }, timeout-minutes: 8 }
@@ -274,7 +290,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - uses: './.github/actions/setup/compilation-source'
       - { uses: './.github/actions/compilers', name: 'GC_DEBUG_STRESS_TO_CLASS',       with: { cppflags: '-DGC_DEBUG_STRESS_TO_CLASS' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'GC_ENABLE_LAZY_SWEEP=0',         with: { cppflags: '-DGC_ENABLE_LAZY_SWEEP=0' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'GC_PROFILE_DETAIL_MEMORY',       with: { cppflags: '-DGC_PROFILE_DETAIL_MEMORY' }, timeout-minutes: 8 }
@@ -293,7 +309,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - uses: './.github/actions/setup/compilation-source'
       - { uses: './.github/actions/compilers', name: 'VM_DEBUG_BP_CHECK',              with: { cppflags: '-DVM_DEBUG_BP_CHECK' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'VM_DEBUG_VERIFY_METHOD_CACHE',   with: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' }, timeout-minutes: 8 }
       - { uses: './.github/actions/compilers', name: 'YJIT_FORCE_ENABLE',              with: { cppflags: '-DYJIT_FORCE_ENABLE' }, timeout-minutes: 8 }
@@ -328,6 +344,21 @@ jobs:
           label: 'omnibus'
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+
+      # Reduce retained artifact storage.
+      - name: Create empty source artifact
+        run: touch compilation-source.empty
+        working-directory: ${{ runner.temp }}
+        if: ${{ always() }}
+      - name: Shrink source artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compilation-source
+          path: ${{ runner.temp }}/compilation-source.empty
+          overwrite: true
+          retention-days: 1
+        if: ${{ always() }}
+
       - run: false
         working-directory:
         if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
