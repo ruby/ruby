@@ -823,6 +823,7 @@ typedef struct rb_global_objspace {
         bool compacting;
         struct rb_objspace **objspaces;
         size_t n_objspaces, objspaces_capa;
+        size_t count;
     } global_gc;
 
     /* Index of every objspace's heap pages, ordered by body address.  Writers (page
@@ -9051,6 +9052,7 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
         }
     }
     driver->profile.major_gc_count++;
+    global_objspace->global_gc.count++;
 
     /* Enable compaction in every objspace before the mark: the unified conservative root
      * scan then pins machine-stack referents (gc_pin only pins while during_compacting)
@@ -9502,7 +9504,7 @@ rb_gc_impl_objspace_absorb(void *dst_ptr, void *src_ptr)
 }
 
 void
-rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact)
+rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact, bool global)
 {
     rb_objspace_t *objspace = objspace_ptr;
     unsigned int reason = (GPR_FLAG_FULL_MARK |
@@ -9530,9 +9532,14 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
     }
 
     /* An explicit full GC.start with multiple objspaces runs a global GC, the only
-     * collector that reclaims shareable and cross-objspace garbage.  It stops the world,
-     * so auto_compact is honoured here too (mirroring full mark x autocompact locally). */
-    if (!rb_gc_single_objspace_p() && (reason & GPR_FLAG_FULL_MARK)) {
+     * collector that reclaims shareable and cross-objspace garbage. It stops the world,
+     * so auto_compact is honoured here too (mirroring full mark x autocompact locally).
+     * GC.start(global: false) opts out */
+    if (!global) {
+        gc_rest(objspace);
+        gc_start_body(objspace, reason, false);
+    }
+    else if (!rb_gc_single_objspace_p() && (reason & GPR_FLAG_FULL_MARK)) {
         gc_start_global(objspace, reason, compact || ruby_enable_autocompact, false);
     }
     else {
@@ -9556,7 +9563,7 @@ rb_gc_impl_prepare_heap(void *objspace_ptr)
     double orig_max_free_slots = gc_params.heap_free_slots_max_ratio;
     /* Ensure that all empty pages are moved onto empty_pages. */
     gc_params.heap_free_slots_max_ratio = 0.0;
-    rb_gc_impl_start(objspace, true, true, true, true);
+    rb_gc_impl_start(objspace, true, true, true, true, true);
     gc_params.heap_free_slots_max_ratio = orig_max_free_slots;
 
     objspace->heap_pages.allocatable_bytes = 0;
@@ -10207,6 +10214,7 @@ enum gc_stat_sym {
     gc_stat_sym_malloc_increase_bytes_limit,
     gc_stat_sym_minor_gc_count,
     gc_stat_sym_major_gc_count,
+    gc_stat_sym_global_gc_count,
     gc_stat_sym_compact_count,
     gc_stat_sym_read_barrier_faults,
     gc_stat_sym_total_moved_objects,
@@ -10263,6 +10271,7 @@ setup_gc_stat_symbols(void)
         S(malloc_increase_bytes_limit);
         S(minor_gc_count);
         S(major_gc_count);
+        S(global_gc_count);
         S(compact_count);
         S(read_barrier_faults);
         S(total_moved_objects);
@@ -10352,6 +10361,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(malloc_increase_bytes_limit, malloc_limit);
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
+    SET(global_gc_count, global_objspace->global_gc.count);
     SET(compact_count, objspace->profile.compact_count);
     SET(read_barrier_faults, objspace->profile.read_barrier_faults);
     SET(total_moved_objects, objspace->rcompactor.total_moved);
@@ -12207,7 +12217,7 @@ gc_compact(VALUE self)
     gc_config_full_mark_set(TRUE);
 
     /* Run GC with compaction enabled */
-    rb_gc_impl_start(rb_gc_get_objspace(), true, true, true, true);
+    rb_gc_impl_start(rb_gc_get_objspace(), true, true, true, true, true);
     gc_config_full_mark_set(full_marking_p);
 
     return gc_compact_stats(self);
@@ -12284,12 +12294,12 @@ gc_verify_compaction_references(int argc, VALUE* argv, VALUE self)
      * moved-reference walk) is built for a single objspace, so with several demote it
      * to a plain full GC.  Plain GC.compact does compact them via the global GC. */
     if (!rb_gc_single_objspace_p()) {
-        rb_gc_impl_start(objspace, true, true, true, false);
+        rb_gc_impl_start(objspace, true, true, true, false, true);
         return gc_compact_stats(self);
     }
 
     /* Clear the heap. */
-    rb_gc_impl_start(objspace, true, true, true, false);
+    rb_gc_impl_start(objspace, true, true, true, false, true);
 
     unsigned int lev = RB_GC_VM_LOCK();
     {
@@ -12349,7 +12359,7 @@ gc_verify_compaction_references(int argc, VALUE* argv, VALUE self)
     }
     RB_GC_VM_UNLOCK(lev);
 
-    rb_gc_impl_start(rb_gc_get_objspace(), true, true, true, true);
+    rb_gc_impl_start(rb_gc_get_objspace(), true, true, true, true, true);
 
     rb_objspace_reachable_objects_from_root(root_obj_check_moved_i, objspace);
     objspace_each_objects(objspace, heap_check_moved_i, objspace, TRUE);

@@ -37,16 +37,27 @@ module GC
   #     interleaved with program execution both before the method returns and afterward;
   #     therefore sweeping may not be completed before the return.
   #
+  # - +global+:
+  #   a boolean value specifying, when multiple Ractors are running, whether to collect
+  #   every Ractor's heap together in a single stop-the-world mark/sweep cycle:
+  #
+  #   - +true+: with more than one Ractor it runs a stop-the-world cycle and reclaims shareable
+  #     and cross-Ractor garbage. With one running Ractor, it runs a major GC instead. If a global
+  #     does run, the other options are ignored because full marking, immediate marking and immediate
+  #     sweeping are implied.
+  #   - +false+: collect only the calling Ractor's own objects. Shareable objects and cross-ractor
+  #     garbage is not swept. With one running Ractor, it runs a major GC.
+  #
   # Note that these keyword arguments are implementation- and version-dependent,
   # are not guaranteed to be future-compatible,
   # and may be ignored in some implementations.
-  def self.start full_mark: true, immediate_mark: true, immediate_sweep: true
-    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
+  def self.start full_mark: true, immediate_mark: true, immediate_sweep: true, global: true
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false, global
   end
 
   # Alias of GC.start
-  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
-    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
+  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true, global: true
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false, global
   end
 
   # call-seq:
@@ -158,6 +169,7 @@ module GC
   #    malloc_increase_bytes_limit: 16777216,
   #    minor_gc_count: 0,
   #    major_gc_count: 1,
+  #    global_gc_count: 0,
   #    compact_count: 0,
   #    read_barrier_faults: 0,
   #    total_moved_objects: 0,
@@ -224,6 +236,8 @@ module GC
   #   The total number of minor garbage collections run since process start.
   # - +:major_gc_count+:
   #   The total number of major garbage collections run since process start.
+  # - +:global_gc_count+:
+  #   The total number of global garbage collections run since process start.
   # - +:compact_count+:
   #   The total number of compactions run since process start.
   # - +:read_barrier_faults+:
@@ -610,8 +624,8 @@ end
 
 module ObjectSpace
   # Alias of GC.start
-  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
-    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
+  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true, global: true
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false, global
   end
 
   module_function :garbage_collect
