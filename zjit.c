@@ -86,12 +86,6 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
 
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
 
-bool
-rb_zjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
-{
-    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
-}
-
 // Convert a given ISEQ's instructions to zjit_* instructions
 void
 rb_zjit_profile_enable(const rb_iseq_t *iseq)

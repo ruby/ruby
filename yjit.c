@@ -373,12 +373,6 @@ rb_ENCODING_GET(VALUE obj)
     return RB_ENCODING_GET(obj);
 }
 
-bool
-rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
-{
-    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
-}
-
 // For running write barriers from Rust. Required when we add a new edge in the
 // object graph from `old` to `young`.
 void
