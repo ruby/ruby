@@ -120,11 +120,11 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal_float(-3.141, parse('-3141.0e-3'))
     assert_equal_float(-3.141, parse('-3141e-3'))
     assert_raise(ParserError) { parse('NaN') }
-    assert parse('NaN', :allow_nan => true).nan?
+    assert parse('NaN', allow_nan: true).nan?
     assert_raise(ParserError) { parse('Infinity') }
-    assert_equal(1.0/0, parse('Infinity', :allow_nan => true))
+    assert_equal(1.0/0, parse('Infinity', allow_nan: true))
     assert_raise(ParserError) { parse('-Infinity') }
-    assert_equal(-1.0/0, parse('-Infinity', :allow_nan => true))
+    assert_equal(-1.0/0, parse('-Infinity', allow_nan: true))
     capture_output { assert_equal(Float::INFINITY, parse("23456789012E666")) }
   end
 
@@ -258,9 +258,9 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal_float 3.141, parse('3.141'), 1E-3
     assert_equal 2 ** 64, parse('18446744073709551616')
     assert_equal 'foo', parse('"foo"')
-    assert parse('NaN', :allow_nan => true).nan?
-    assert parse('Infinity', :allow_nan => true).infinite?
-    assert parse('-Infinity', :allow_nan => true).infinite?
+    assert parse('NaN', allow_nan: true).nan?
+    assert parse('Infinity', allow_nan: true).infinite?
+    assert parse('-Infinity', allow_nan: true).infinite?
   end
 
   def test_parse_arrays_with_allow_trailing_comma
@@ -471,17 +471,17 @@ class JSONParserTest < Test::Unit::TestCase
   def test_symbolize_names
     assert_equal({ "foo" => "bar", "baz" => "quux" },
       parse('{"foo":"bar", "baz":"quux"}'))
-    assert_equal({ :foo => "bar", :baz => "quux" },
-      parse('{"foo":"bar", "baz":"quux"}', :symbolize_names => true))
+    assert_equal({ foo: "bar", baz: "quux" },
+      parse('{"foo":"bar", "baz":"quux"}', symbolize_names: true))
   end
 
   def test_freeze
-    assert_predicate parse('{}', :freeze => true), :frozen?
-    assert_predicate parse('[]', :freeze => true), :frozen?
-    assert_predicate parse('"foo"', :freeze => true), :frozen?
+    assert_predicate parse('{}', freeze: true), :frozen?
+    assert_predicate parse('[]', freeze: true), :frozen?
+    assert_predicate parse('"foo"', freeze: true), :frozen?
 
-    assert_same(-'foo', parse('"foo"', :freeze => true))
-    assert_same(-'foo', parse('{"foo": 1}', :freeze => true).keys.first)
+    assert_same(-'foo', parse('"foo"', freeze: true))
+    assert_same(-'foo', parse('{"foo": 1}', freeze: true).keys.first)
   end
 
   def test_parse_comments
@@ -544,14 +544,14 @@ class JSONParserTest < Test::Unit::TestCase
     too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[["Too deep"]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
     too_deep_ary = eval too_deep
     assert_raise(JSON::NestingError) { parse too_deep }
-    assert_raise(JSON::NestingError) { parse too_deep, :max_nesting => 100 }
-    ok = parse too_deep, :max_nesting => 101
+    assert_raise(JSON::NestingError) { parse too_deep, max_nesting: 100 }
+    ok = parse too_deep, max_nesting: 101
     assert_equal too_deep_ary, ok
-    ok = parse too_deep, :max_nesting => nil
+    ok = parse too_deep, max_nesting: nil
     assert_equal too_deep_ary, ok
-    ok = parse too_deep, :max_nesting => false
+    ok = parse too_deep, max_nesting: false
     assert_equal too_deep_ary, ok
-    ok = parse too_deep, :max_nesting => 0
+    ok = parse too_deep, max_nesting: 0
     assert_equal too_deep_ary, ok
   end
 
@@ -702,14 +702,14 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_parse_array_custom_array_derived_class
-    res = parse('[1,2]', :array_class => SubArray)
+    res = parse('[1,2]', array_class: SubArray)
     assert_equal([1,2], res)
     assert_equal(SubArray, res.class)
     assert res.shifted?
   end
 
   def test_parse_array_custom_non_array_derived_class
-    res = parse('[1,2]', :array_class => SubArrayWrapper)
+    res = parse('[1,2]', array_class: SubArrayWrapper)
     assert_equal([1,2], res.data)
     assert_equal(1, res[0])
     assert_equal(SubArrayWrapper, res.class)
@@ -748,7 +748,7 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_parse_object_custom_hash_derived_class
-    res = parse('{"foo":"bar"}', :object_class => SubHash)
+    res = parse('{"foo":"bar"}', object_class: SubHash)
     assert_equal({"foo" => "bar"}, res)
     assert_equal(SubHash, res.class)
     assert res.item_set?
@@ -775,7 +775,7 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_parse_object_custom_non_hash_derived_class
-    res = parse('{"foo":"bar"}', :object_class => OpenStructLike)
+    res = parse('{"foo":"bar"}', object_class: OpenStructLike)
     assert_equal "bar", res.foo
     assert_equal "bar", res[:foo]
     assert_equal(OpenStructLike, res.class)

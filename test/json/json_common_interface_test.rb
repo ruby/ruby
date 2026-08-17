@@ -158,16 +158,16 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
 
   def test_load_with_options
     json  = '{ "foo": NaN }'
-    assert JSON.load(json, nil, :allow_nan => true)['foo'].nan?
-    assert JSON.load(json, :allow_nan => true)['foo'].nan?
+    assert JSON.load(json, nil, allow_nan: true)['foo'].nan?
+    assert JSON.load(json, allow_nan: true)['foo'].nan?
   end
 
   def test_load_null
-    assert_equal nil, JSON.load(nil, nil, :allow_blank => true)
-    assert_raise(TypeError) { JSON.load(nil, nil, :allow_blank => false) }
-    assert_raise(JSON::ParserError) { JSON.load('', nil, :allow_blank => false) }
-    assert_raise(TypeError) { JSON.load([], nil, :allow_blank => true) }
-    assert_raise(TypeError) { JSON.load({}, nil, :allow_blank => true) }
+    assert_equal nil, JSON.load(nil, nil, allow_blank: true)
+    assert_raise(TypeError) { JSON.load(nil, nil, allow_blank: false) }
+    assert_raise(JSON::ParserError) { JSON.load('', nil, allow_blank: false) }
+    assert_raise(TypeError) { JSON.load([], nil, allow_blank: true) }
+    assert_raise(TypeError) { JSON.load({}, nil, allow_blank: true) }
   end
 
   def test_unsafe_load
@@ -240,16 +240,16 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
 
   def test_unsafe_load_with_options
     nan_json = '{ "foo": NaN }'
-    assert_raise(JSON::ParserError) { JSON.unsafe_load(nan_json, nil, :allow_nan => false)['foo'].nan? }
+    assert_raise(JSON::ParserError) { JSON.unsafe_load(nan_json, nil, allow_nan: false)['foo'].nan? }
     # make sure it still uses the defaults when something is provided
-    assert JSON.unsafe_load(nan_json, nil, :allow_blank => true)['foo'].nan?
-    assert JSON.unsafe_load(nan_json, :allow_nan => true)['foo'].nan?
+    assert JSON.unsafe_load(nan_json, nil, allow_blank: true)['foo'].nan?
+    assert JSON.unsafe_load(nan_json, allow_nan: true)['foo'].nan?
   end
 
   def test_unsafe_load_null
-    assert_equal nil, JSON.unsafe_load(nil, nil, :allow_blank => true)
-    assert_raise(TypeError) { JSON.unsafe_load(nil, nil, :allow_blank => false) }
-    assert_raise(JSON::ParserError) { JSON.unsafe_load('', nil, :allow_blank => false) }
+    assert_equal nil, JSON.unsafe_load(nil, nil, allow_blank: true)
+    assert_raise(TypeError) { JSON.unsafe_load(nil, nil, allow_blank: false) }
+    assert_raise(JSON::ParserError) { JSON.unsafe_load('', nil, allow_blank: false) }
   end
 
   def test_dump
