@@ -846,13 +846,13 @@ mod tests {
     }
 
     #[test]
-    fn singletons_do_not_have_ruby_object() {
-        assert_eq!(Type::from_value(Qnil).ruby_object(), None);
-        assert_eq!(types::NilClass.ruby_object(), None);
-        assert_eq!(Type::from_value(Qtrue).ruby_object(), None);
-        assert_eq!(types::TrueClass.ruby_object(), None);
-        assert_eq!(Type::from_value(Qfalse).ruby_object(), None);
-        assert_eq!(types::FalseClass.ruby_object(), None);
+    fn singletons_have_ruby_object() {
+        assert_eq!(Type::from_value(Qnil).ruby_object(), Some(Qnil));
+        assert_eq!(types::NilClass.ruby_object(), Some(Qnil));
+        assert_eq!(Type::from_value(Qtrue).ruby_object(), Some(Qtrue));
+        assert_eq!(types::TrueClass.ruby_object(), Some(Qtrue));
+        assert_eq!(Type::from_value(Qfalse).ruby_object(), Some(Qfalse));
+        assert_eq!(types::FalseClass.ruby_object(), Some(Qfalse));
     }
 
     #[test]
