@@ -4532,9 +4532,27 @@ struct gc_sweep_context {
     /* Hoisted out of the per-slot pinned-free assert: too expensive for the sweep loop
      * as an external call. */
     unsigned char check_pinned_free;
+    /* This is a parallel local sweep (multi-Ractor, not a global GC), so a non-thread-safe
+     * T_DATA dfree must be deferred to the global GC rather than run here. */
+    unsigned char defer_nonlocal_free;
 
     struct free_region *free_region;
 };
+
+/* True when a local (per-Ractor) sweep must not free obj. Doing so would run a T_DATA
+ * dfree inline (RUBY_TYPED_FREE_IMMEDIATELY) that is not RUBY_TYPED_THREAD_SAFE_FREE. */
+static bool
+gc_obj_defer_local_free_p(VALUE obj)
+{
+    if (BUILTIN_TYPE(obj) != T_DATA) return false;
+
+    const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+    void (*dfree)(void *) = type->function.dfree;
+    if (!dfree || dfree == RUBY_DEFAULT_FREE) return false;
+    if (type->flags & RUBY_TYPED_THREAD_SAFE_FREE) return false;
+
+    return (type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
+}
 
 static inline void
 gc_sweep_register_free_slot(rb_objspace_t *objspace, struct heap_page *page, struct gc_sweep_context *ctx, uintptr_t p, short slot_size)
@@ -4628,6 +4646,17 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                 CHECK(RVALUE_UNCOLLECTIBLE);
 #undef CHECK
 #endif
+
+                if (RB_UNLIKELY(ctx->defer_nonlocal_free && gc_obj_defer_local_free_p(vp))) {
+                    /* Retain this slot: freeing it here would run a non-thread-safe dfree
+                     * concurrently with another Ractor's sweep. Wait until global GC or
+                     * single objspace */
+                    MARK_IN_BITMAP(GET_HEAP_MARK_BITS(vp), vp);
+                    MARK_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(vp), vp);
+                    sweep_page->flags.has_shareable_objects = TRUE;
+                    objspace->shareable_objects++;
+                    break;
+                }
 
                 if (!rb_gc_obj_needs_cleanup_p(vp)) {
                     (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, slot_size);
@@ -5116,6 +5145,9 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
      * to multi-objspace.  A global GC's exact mark does not pin, so it is excluded. */
     const unsigned char check_pinned_free = objspace->last_cycle_pinned;
 
+    const unsigned char defer_nonlocal_free =
+        rb_gc_multi_ractor_p() && !objspace->flags.during_global_gc;
+
     do {
         RUBY_DEBUG_LOG("sweep_page:%p", (void *)sweep_page);
 
@@ -5125,6 +5157,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
             .freed_slots = 0,
             .empty_slots = 0,
             .check_pinned_free = check_pinned_free,
+            .defer_nonlocal_free = defer_nonlocal_free,
         };
         gc_sweep_page(objspace, heap, &ctx);
         int free_slots = ctx.freed_slots + ctx.empty_slots;
@@ -6530,10 +6563,17 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                 data->parent = obj;
                 data->parent_shareable = sh_bit;
 
+                /* A dead non-thread-safe T_DATA is retained until the global GC. It borrows
+                 * the shareable bit and looks live, but its children were not pinned and
+                 * may already be gone, so the child-graph checks below do not apply. */
+                bool deferred_retained = sh_bit && gc_obj_defer_local_free_p(obj);
+
                 /* Bitmap invariants: a page's shareable bit matches FL_SHAREABLE
                  * exactly, and a shref record only ever points at an unshareable
-                 * object. */
-                if (sh_bit != !!RB_FL_TEST_RAW(obj, RUBY_FL_SHAREABLE)) {
+                 * object.  A deferred non-thread-safe T_DATA borrows the shareable
+                 * bit without the flag to survive local sweeps until a global GC. */
+                if (sh_bit != !!RB_FL_TEST_RAW(obj, RUBY_FL_SHAREABLE) &&
+                        !deferred_retained) {
                     fprintf(stderr, "verify_internal_consistency_i: shareable bit %d "
                             "disagrees with FL_SHAREABLE on %s\n", (int)sh_bit, rb_obj_info(obj));
                     data->err_count++;
@@ -6546,7 +6586,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
 
                 /* Normally, we don't expect T_MOVED objects to be in the heap.
                 * But they can stay alive on the stack, */
-                if (!gc_object_moved_p(objspace, obj)) {
+                if (!gc_object_moved_p(objspace, obj) && !deferred_retained) {
                     /* moved slots don't have children */
                     rb_objspace_reachable_objects_from(obj, check_children_i, (void *)data);
                 }
@@ -6555,7 +6595,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                 if (RVALUE_OLD_P(objspace, obj)) data->old_object_count++;
                 if (RVALUE_WB_UNPROTECTED(objspace, obj) && RVALUE_UNCOLLECTIBLE(objspace, obj)) data->remembered_shady_count++;
 
-                if (!is_marking(objspace) && RVALUE_OLD_P(objspace, obj)) {
+                if (!is_marking(objspace) && RVALUE_OLD_P(objspace, obj) && !deferred_retained) {
                     /* reachable objects from an oldgen object should be old or (young with remember) */
                     data->parent = obj;
                     rb_objspace_reachable_objects_from(obj, check_generation_i, (void *)data);
@@ -6565,7 +6605,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                     rb_gc_verify_shareable(obj);
                 }
 
-                if (is_incremental_marking(objspace)) {
+                if (is_incremental_marking(objspace) && !deferred_retained) {
                     if (RVALUE_BLACK_P(objspace, obj)) {
                         /* reachable objects from black objects should be black or grey objects */
                         data->parent = obj;
