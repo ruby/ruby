@@ -230,7 +230,7 @@ module Prism
           comment_newline_location = nil
 
           while index < length
-            token, _ = lexed[index]
+            token = lexed[index]
             index += 1
             next if TYPES_ALWAYS_SKIP.include?(token.type)
 
@@ -253,7 +253,7 @@ module Prism
             when :tCOMMENT
               if token.type == :EMBDOC_BEGIN
 
-                while !((next_token = lexed[index]&.first) && next_token.type == :EMBDOC_END) && (index < length - 1)
+                while !((next_token = lexed[index]) && next_token.type == :EMBDOC_END) && (index < length - 1)
                   value += next_token.value
                   index += 1
                 end
@@ -267,7 +267,7 @@ module Prism
                 location = range(token.location.start_offset, token.location.end_offset - 1) if value.chomp!
               end
             when :tNL
-              next_token, _ = lexed[index]
+              next_token = lexed[index]
               # Newlines after comments are emitted out of order.
               if next_token&.type == :COMMENT
                 comment_newline_location = location
@@ -300,8 +300,8 @@ module Prism
               location = range(token.location.start_offset, token.location.start_offset + percent_array_leading_whitespace(value))
               value = nil
             when :tSTRING_BEG
-              next_token, _ = lexed[index]
-              next_next_token, _ = lexed[index + 1]
+              next_token = lexed[index]
+              next_next_token = lexed[index + 1]
               basic_quotes = value == '"' || value == "'"
 
               if basic_quotes && next_token&.type == :STRING_END
@@ -369,7 +369,7 @@ module Prism
                 while token.type == :STRING_CONTENT
                   current_length += token.value.bytesize
                   # Heredoc interpolation can have multiple STRING_CONTENT nodes on the same line.
-                  prev_token, _ = lexed[index - 2] if index - 2 >= 0
+                  prev_token = lexed[index - 2] if index - 2 >= 0
                   is_first_token_on_line = prev_token && token.location.start_line != prev_token.location.start_line
                   # The parser gem only removes indentation when the heredoc is not nested
                   not_nested = heredoc_stack.size == 1
@@ -389,7 +389,7 @@ module Prism
                     tokens << [:tSTRING_CONTENT, [current_string, range(start_offset, start_offset + current_length)]]
                     break
                   end
-                  token, _ = lexed[index]
+                  token = lexed[index]
                   index += 1
                 end
               else
@@ -444,7 +444,7 @@ module Prism
               end
 
               if percent_array?(quote_stack.pop)
-                prev_token, _ = lexed[index - 2] if index - 2 >= 0
+                prev_token = lexed[index - 2] if index - 2 >= 0
                 empty = %i[PERCENT_LOWER_I PERCENT_LOWER_W PERCENT_UPPER_I PERCENT_UPPER_W].include?(prev_token&.type)
                 ends_with_whitespace = prev_token&.type == :WORDS_SEP
                 # parser always emits a space token after content in a percent array, even if no actual whitespace is present.
@@ -453,7 +453,7 @@ module Prism
                 end
               end
             when :tSYMBEG
-              if (next_token = lexed[index]&.first) && next_token.type != :STRING_CONTENT && next_token.type != :EMBEXPR_BEGIN && next_token.type != :EMBVAR && next_token.type != :STRING_END
+              if (next_token = lexed[index]) && next_token.type != :STRING_CONTENT && next_token.type != :EMBEXPR_BEGIN && next_token.type != :EMBVAR && next_token.type != :STRING_END
                 next_location = token.location.join(next_token.location)
                 type = :tSYMBOL
                 value = next_token.value
@@ -470,7 +470,7 @@ module Prism
             when :tXSTRING_BEG
               quote_stack.push(value)
             when :tSYMBOLS_BEG, :tQSYMBOLS_BEG, :tWORDS_BEG, :tQWORDS_BEG
-              if (next_token = lexed[index]&.first) && next_token.type == :WORDS_SEP
+              if (next_token = lexed[index]) && next_token.type == :WORDS_SEP
                 index += 1
               end
 
@@ -550,9 +550,9 @@ module Prism
           previous_line = -1
           result = Float::MAX
 
-          while (next_token = lexed[next_token_index]&.first)
+          while (next_token = lexed[next_token_index])
             next_token_index += 1
-            next_next_token, _ = lexed[next_token_index]
+            next_next_token = lexed[next_token_index]
             first_token_on_line = next_token.location.start_column == 0
 
             # String content inside nested heredocs and interpolation is ignored
