@@ -256,6 +256,27 @@ pub use crate::backend::current::{
 
 pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 
+/// Where the C calling convention passes an argument.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum CArgLocation {
+    /// In one of the argument registers.
+    Reg(Opnd),
+    /// In the stack slot that the caller reserves at the bottom of its frame.
+    /// The slot address depends on the reader: the caller writes it relative
+    /// to the native SP at the call, and the callee reads it from above its
+    /// return address and saved frame pointer.
+    StackSlot(usize),
+}
+
+/// Return where the C calling convention passes argument `idx`.
+pub fn c_arg_location(idx: usize) -> CArgLocation {
+    if idx < C_ARG_OPNDS.len() {
+        CArgLocation::Reg(C_ARG_OPNDS[idx])
+    } else {
+        CArgLocation::StackSlot(idx - C_ARG_OPNDS.len())
+    }
+}
+
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Ord, PartialOrd)]
 pub enum MemBase
@@ -2575,20 +2596,23 @@ impl Assembler
             if self.basic_blocks[block_id.0].is_dummy() { continue; }
             let params = self.basic_blocks[block_id.0].parameters.clone();
 
-            // Rewrite VRegs to physical registers before sequentialization
-            // so the parcopy algorithm can detect physical register conflicts.
-            let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().take(C_ARG_OPNDS.len()).enumerate()
+            // Rewrite VRegs to physical registers or stack slots before sequentialization
+            // so the parcopy algorithm can detect conflicts between them.
+            let copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
                 .map(|(i, param)| parcopy::RegisterCopy::<Opnd> {
-                    source: C_ARG_OPNDS[i],
+                    source: match c_arg_location(i) {
+                        CArgLocation::Reg(reg) => reg,
+                        CArgLocation::StackSlot(slot) => Opnd::mem(64, NATIVE_BASE_PTR, Self::frame_size() + slot as i32 * SIZEOF_VALUE_I32),
+                    },
                     destination: Self::rewritten_opnd(*param, intervals, regs),
                 })
                 .filter(|copy| copy.source != copy.destination)
                 .collect();
 
-            debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
-                "parcopy must operate on physical registers, not VRegs");
-            let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
-            let mut moves: Vec<Insn> = sequentialized
+            debug_assert!(copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
+                "parcopy must operate on physical locations, not VRegs");
+            let sequentialized = parcopy::sequentialize_register(&copies, Opnd::Reg(SCRATCH_REG));
+            let moves: Vec<Insn> = sequentialized
                 .iter()
                 .map(|copy| match copy.source {
                     Opnd::Value(_) => Insn::LoadInto {
@@ -2601,19 +2625,6 @@ impl Assembler
                     },
                 })
                 .collect();
-
-            // Parameters beyond the argument registers are passed on the native
-            // stack, as specified by the C ABI: handle_caller_saved_regs() in the
-            // caller pushes them right below its frame, so with the return
-            // address and the saved frame pointer in between ([Self::frame_size]
-            // bytes on both platforms), they sit right above this frame's
-            // NATIVE_BASE_PTR. Load them after the register moves above so that
-            // no argument register is clobbered before its copy is done.
-            for (stack_idx, param) in params.iter().enumerate().skip(C_ARG_OPNDS.len())
-                .map(|(i, param)| (i - C_ARG_OPNDS.len(), param)) {
-                let src = Opnd::mem(64, NATIVE_BASE_PTR, Self::frame_size() + stack_idx as i32 * SIZEOF_VALUE_I32);
-                moves.push(Insn::Mov { dest: Self::rewritten_opnd(*param, intervals, regs), src });
-            }
 
             // Find the position after FrameSetup to insert moves. They must come
             // after FrameSetup (not before) because spilled destinations and
