@@ -10053,8 +10053,8 @@ fn add_iseq_to_hir(
                         && block_handler_class.is_some_and(|obj| unsafe { rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1 });
 
                     // Collect the profiled ISEQ blocks that can be invoked directly with a JIT-to-JIT call.
-                    // The first entry of buckets is the most common type, so the hottest block is compared first.
                     let mut fallback_reason = InvokeBlockNotSpecialized;
+                    // The first entry of buckets is the most common type, so it will be inserted to direct_iseqs first too.
                     let mut direct_iseqs: Vec<IseqPtr> = vec![];
                     if let Some(summary) = block_handler_summary.as_ref() {
                         if can_direct_invoke_block(flags)
@@ -10067,8 +10067,10 @@ fn add_iseq_to_hir(
                                 if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 } {
                                     let iseq = obj.as_iseq();
                                     match can_direct_invoke_block_iseq(iseq, args.len()) {
-                                        Ok(()) if !direct_iseqs.contains(&iseq) => direct_iseqs.push(iseq),
-                                        Ok(()) => {}
+                                        // Push an ISEQ that can be dispatched directly, deduplicating direct_iseqs.
+                                        Ok(()) => if !direct_iseqs.contains(&iseq) {
+                                            direct_iseqs.push(iseq);
+                                        }
                                         Err(reason) => fallback_reason = reason,
                                     }
                                 }
