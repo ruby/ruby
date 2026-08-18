@@ -621,13 +621,13 @@ module Prism
       last_comment_token = nil #: lex_compat_token?
       last_comment_end = nil #: Integer?
 
-      result_value.each_with_index do |(prism_token, prism_state), index|
+      result_value.each_with_index do |prism_token, index|
         lineno = prism_token.location.start_line
         column = prism_token.location.start_column
 
         event = RIPPER.fetch(prism_token.type)
         value = prism_token.value
-        lex_state = Translation::Ripper::Lexer::State[prism_state]
+        lex_state = Translation::Ripper::Lexer::State[prism_token._ripper_state]
 
         # A comment token does not include its terminating newline, but
         # ripper's comment value does, so the newline token that directly
@@ -701,7 +701,7 @@ module Prism
             # Ripper's lexed state. So here, if it's a regexp end token, we
             # output the state as the previous state, solely for the sake of
             # comparison.
-            previous_token = result_value[index - 1][0]
+            previous_token = result_value[index - 1]
             lex_state =
               if RIPPER.fetch(previous_token.type) == :on_embexpr_end
                 # If the previous token is embexpr_end, then we have to do even
@@ -714,11 +714,11 @@ module Prism
 
                 until counter == 0
                   current_index -= 1
-                  current_event = RIPPER.fetch(result_value[current_index][0].type)
+                  current_event = RIPPER.fetch(result_value[current_index].type)
                   counter += { on_embexpr_beg: -1, on_embexpr_end: 1 }[current_event] || 0
                 end
 
-                Translation::Ripper::Lexer::State[result_value[current_index][1]]
+                Translation::Ripper::Lexer::State[result_value[current_index]._ripper_state]
               else
                 previous_state
               end
@@ -726,12 +726,12 @@ module Prism
             [[lineno, column], event, value, lex_state]
           when :on_eof
             eof_token = prism_token
-            previous_token = result_value[index - 1][0]
+            previous_token = result_value[index - 1]
 
             # A newline that was folded back into a comment still marks the
             # comment boundary for the check below.
             comment_boundary = previous_token.type == :COMMENT ||
-              (index >= 2 && %i[NEWLINE NEWLINE_TERMINATOR IGNORED_NEWLINE].include?(previous_token.type) && result_value[index - 2][0].type == :COMMENT && result_value[index - 2][0].location.end_offset == previous_token.location.start_offset)
+              (index >= 2 && %i[NEWLINE NEWLINE_TERMINATOR IGNORED_NEWLINE].include?(previous_token.type) && result_value[index - 2].type == :COMMENT && result_value[index - 2].location.end_offset == previous_token.location.start_offset)
 
             # If we're at the end of the file and the previous token was a
             # comment and there is still whitespace after the comment, then
