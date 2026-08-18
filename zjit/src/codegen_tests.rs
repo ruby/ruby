@@ -743,6 +743,22 @@ fn test_send_direct_with_stack_args() {
 }
 
 #[test]
+fn test_send_direct_with_equal_stack_args() {
+    // A pair of adjacent stack-passed arguments that are the same zero immediate
+    // (false) or the same register lowers to an STP with an identical register
+    // pair on arm64, e.g. `stp xzr, xzr`, which the assembler used to reject.
+    // On arm64, c_args[8] and c_args[9] (arguments h and i below) form a pair.
+    set_call_threshold(2);
+    eval("
+        def callee(a, b, c, d, e, f, g, h, i, j) = [a, b, c, d, e, f, g, h, i, j]
+        def test(x = 9) = [callee(1, 2, 3, 4, 5, 6, 7, false, false, 10), callee(1, 2, 3, 4, 5, 6, 7, x, x, 10)]
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"[[1, 2, 3, 4, 5, 6, 7, false, false, 10], [1, 2, 3, 4, 5, 6, 7, 9, 9, 10]]");
+}
+
+#[test]
 fn test_yield_inline_invocation_live_stack_below_args() {
     // A live value sits on the stack below the yield args; the no-receiver-slot SP math
     // must preserve it so `x +` sees the right operand.
