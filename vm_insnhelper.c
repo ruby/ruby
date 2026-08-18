@@ -1685,7 +1685,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
     else if (state == TAG_BREAK) {
         int is_orphan = 1;
         const VALUE *ep = GET_EP();
-        const rb_iseq_t *base_iseq = GET_ISEQ();
+        const rb_iseq_t *base_iseq = CFP_ISEQ(reg_cfp);
         escape_cfp = reg_cfp;
 
         while (ISEQ_BODY(base_iseq)->type != ISEQ_TYPE_BLOCK) {
