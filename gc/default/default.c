@@ -3641,14 +3641,15 @@ objspace_each_objects_try(VALUE arg)
                     if (stop) break;
                 }
             }
-            else if (data->skip_unswept_dead &&
-                     is_lazy_sweeping(objspace) && page->flags.before_sweep) {
+            else if (data->skip_unswept_dead) {
                 /* A foreign page pending sweep: hand out the live objects one slot at a
                  * time and skip the unmarked (dead) ones the owner's sweep frees as soon
                  * as the barrier lifts. */
+                const bool page_unswept = is_lazy_sweeping(objspace) && page->flags.before_sweep;
                 bool stop = false;
                 for (uintptr_t slot = pstart; slot < pend; slot += heap->slot_size) {
-                    if (!RVALUE_MARKED(objspace, (VALUE)slot)) continue;
+                    if (page_unswept && !RVALUE_MARKED(objspace, (VALUE)slot)) continue;
+                    if (rb_gc_impl_internal_object_p(objspace, (VALUE)slot)) continue;
                     if (data->each_obj_callback &&
                         (*data->each_obj_callback)((void *)slot, (void *)(slot + heap->slot_size),
                                                    heap->slot_size, data->data)) {
@@ -4554,11 +4555,14 @@ gc_obj_defer_local_free_p(VALUE obj)
     return (type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
 }
 
+/* True for objects we don't want to include when iterating over the heap, like
+ * during `ObjectSpace.each_object`. */
 bool
 rb_gc_impl_internal_object_p(void *objspace_ptr, VALUE obj)
 {
-    return gc_obj_defer_local_free_p(obj) &&
-           MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(obj), obj) &&
+    /* Test the shareable bitmap before reading obj's flags. */
+    return MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(obj), obj) &&
+           gc_obj_defer_local_free_p(obj) &&
            !RB_FL_TEST_RAW(obj, RUBY_FL_SHAREABLE);
 }
 
