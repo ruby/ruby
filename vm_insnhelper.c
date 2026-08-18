@@ -2251,6 +2251,15 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
     return cc;
 }
 
+#if VM_CHECK_MODE > 0
+static bool
+vm_cd_owned_by_iseq_p(const struct rb_call_data *cd, const rb_iseq_t *iseq)
+{
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    return cd >= body->call_data && cd < body->call_data + body->ci_size;
+}
+#endif
+
 static const struct rb_callcache *
 vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
@@ -2265,6 +2274,10 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 
     const struct rb_callcache *empty_cc = &vm_empty_cc;
     if (cd_owner && cc != empty_cc) {
+        // invokesuper dispatches with a cd on the machine stack, which has no
+        // owning iseq to remember and keeps its ci out of the GC.
+        VM_ASSERT(!vm_ci_markable(cd->ci) ||
+                  vm_cd_owned_by_iseq_p(cd, (const rb_iseq_t *)cd_owner));
         RB_OBJ_WRITTEN(cd_owner, Qundef, cc);
     }
 
