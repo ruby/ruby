@@ -714,6 +714,7 @@ typedef struct gc_function_map {
     struct rb_gc_object_metadata_entry *(*object_metadata)(void *objspace_ptr, VALUE obj);
     bool (*live_object_p)(void *objspace_ptr, const void *ptr);
     bool (*garbage_object_p)(void *objspace_ptr, VALUE obj);
+    bool (*internal_object_p)(void *objspace_ptr, VALUE obj);
     void (*set_event_hook)(void *objspace_ptr, const rb_event_flag_t event);
     void (*copy_attributes)(void *objspace_ptr, VALUE dest, VALUE obj);
 
@@ -910,6 +911,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(object_metadata);
     load_modular_gc_func(live_object_p);
     load_modular_gc_func(garbage_object_p);
+    load_modular_gc_func(internal_object_p);
     load_modular_gc_func(set_event_hook);
     load_modular_gc_func(copy_attributes);
 
@@ -1015,6 +1017,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_object_metadata rb_gc_functions.object_metadata
 # define rb_gc_impl_live_object_p rb_gc_functions.live_object_p
 # define rb_gc_impl_garbage_object_p rb_gc_functions.garbage_object_p
+# define rb_gc_impl_internal_object_p rb_gc_functions.internal_object_p
 # define rb_gc_impl_set_event_hook rb_gc_functions.set_event_hook
 # define rb_gc_impl_copy_attributes rb_gc_functions.copy_attributes
 #endif
@@ -1907,6 +1910,7 @@ internal_object_p(VALUE obj)
             return 0;
           default:
             if (!RBASIC(obj)->klass) break;
+            if (rb_gc_impl_internal_object_p(rb_gc_get_objspace(), obj)) return 1;
             return 0;
         }
     }

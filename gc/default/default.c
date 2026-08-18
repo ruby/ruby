@@ -4554,6 +4554,14 @@ gc_obj_defer_local_free_p(VALUE obj)
     return (type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
 }
 
+bool
+rb_gc_impl_internal_object_p(void *objspace_ptr, VALUE obj)
+{
+    return gc_obj_defer_local_free_p(obj) &&
+           MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(obj), obj) &&
+           !RB_FL_TEST_RAW(obj, RUBY_FL_SHAREABLE);
+}
+
 static inline void
 gc_sweep_register_free_slot(rb_objspace_t *objspace, struct heap_page *page, struct gc_sweep_context *ctx, uintptr_t p, short slot_size)
 {
