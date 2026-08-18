@@ -60,7 +60,7 @@ for /f "delims== tokens=1,*" %%I in (" %argv1% ") do ((set "opt=%%I") && (set "a
     set "opt=%opt:~0,-1%"
   )
   if "%opt%"=="" (
-    echo 1>&2 %configure%: assignment for empty variable name %argv1%
+    call echo 1>&2 %configure%: assignment for empty variable name %%argv1%%
     exit /b 1
   )
   if "%opt%" == "--debug-configure" (
@@ -145,19 +145,19 @@ goto :loopend ;
   )
   if %enable% == yes if defined arg (set "enable=%arg%")
   if "%feature%" == "install-doc" (
-    echo>> %config_make% RDOCTARGET = %enable:yes=r%doc
+    call echo>> %config_make% RDOCTARGET = %%enable:yes=r%%doc
   )
   if "%feature%" == "install-static-library" (
-    echo>> %config_make% INSTALL_STATIC_LIBRARY = %enable%
+    call echo>> %config_make% INSTALL_STATIC_LIBRARY = %%enable%%
   )
   if "%feature%" == "debug-env" (
-    echo>> %config_make% ENABLE_DEBUG_ENV = %enable%
+    call echo>> %config_make% ENABLE_DEBUG_ENV = %%enable%%
   )
   if "%feature%" == "devel" (
-    echo>> %config_make% RUBY_DEVEL = %enable%
+    call echo>> %config_make% RUBY_DEVEL = %%enable%%
   )
   if "%feature%" == "rubygems" (
-     echo>> %config_make% USE_RUBYGEMS = %enable%
+    call echo> %config_make% USE_RUBYGEMS = %%enable%%
   )
 goto :loopend ;
 :withoutarg
@@ -199,7 +199,7 @@ goto :loop ;
 goto :loopend ;
 :extout
   if "%eq%" == "" call :take_arg
-  if not "%arg%" == ".ext" (echo>> %config_make% EXTOUT = %arg%)
+  if not "%arg%" == ".ext" (call echo>> %config_make% EXTOUT = %%arg%%)
 goto :loopend ;
 :path
   if "%eq%" == "" call :take_arg
@@ -280,7 +280,7 @@ goto :EOF
   exit /b 1
 :end
 if "%debug_configure%" == "yes" (type %confargs%)
-if defined optdirs (echo>>%config_make% optdirs = %optdirs:~1%)
+if defined optdirs (call echo>>%config_make% optdirs = %%optdirs:~1%%)
 (
   echo.
   echo configure_args = \
