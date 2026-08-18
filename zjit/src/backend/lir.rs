@@ -1856,6 +1856,8 @@ pub struct Assembler {
     /// consumes this through Insn::CCall, after it knows whether each live VReg
     /// is in a saved register or an allocator spill slot.
     stack_map: Option<StackMap>,
+
+    might_use_vregs: bool,
 }
 
 impl Assembler
@@ -1872,6 +1874,7 @@ impl Assembler
             num_vregs: 0,
             idx: 0,
             stack_map: None,
+            might_use_vregs: true,
         }
     }
 
@@ -1906,6 +1909,7 @@ impl Assembler
             label_names: old_asm.label_names.clone(),
             accept_scratch_reg: old_asm.accept_scratch_reg,
             stack_state: old_asm.stack_state.clone(),
+            might_use_vregs: old_asm.might_use_vregs,
             ..Self::new()
         };
 
@@ -1914,6 +1918,14 @@ impl Assembler
         asm.num_vregs = old_asm.num_vregs;
 
         asm
+    }
+
+    pub fn i_solemnly_swear_not_to_use_a_vreg(&mut self) {
+        self.might_use_vregs = false;
+    }
+
+    pub fn must_run_regalloc(&self) -> bool {
+        self.might_use_vregs
     }
 
     // Create a new LIR basic block.  Returns the newly created block ID
@@ -2164,6 +2176,7 @@ impl Assembler
 
     /// Build an Opnd::VReg
     pub fn new_vreg(&mut self, num_bits: u8) -> Opnd {
+        assert!(self.might_use_vregs, "Assembler is not allowed to use VRegs");
         let vreg = Opnd::VReg { idx: self.num_vregs.into(), num_bits };
         self.num_vregs += 1;
         vreg
