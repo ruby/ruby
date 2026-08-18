@@ -123,6 +123,7 @@
 #include "vm_sync.h"
 #include "vm_callinfo.h"
 #include "ractor_core.h"
+#include "internal/ractor.h"
 #include "yjit.h"
 #include "zjit.h"
 
@@ -355,6 +356,12 @@ bool
 rb_gc_multi_ractor_p(void)
 {
     return rb_multi_ractor_p();
+}
+
+uint32_t
+rb_gc_ractor_last_id(void)
+{
+    return rb_ractor_last_id();
 }
 
 bool
@@ -714,6 +721,7 @@ typedef struct gc_function_map {
     struct rb_gc_object_metadata_entry *(*object_metadata)(void *objspace_ptr, VALUE obj);
     bool (*live_object_p)(void *objspace_ptr, const void *ptr);
     bool (*garbage_object_p)(void *objspace_ptr, VALUE obj);
+    bool (*internal_object_p)(void *objspace_ptr, VALUE obj);
     void (*set_event_hook)(void *objspace_ptr, const rb_event_flag_t event);
     void (*copy_attributes)(void *objspace_ptr, VALUE dest, VALUE obj);
 
@@ -910,6 +918,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(object_metadata);
     load_modular_gc_func(live_object_p);
     load_modular_gc_func(garbage_object_p);
+    load_modular_gc_func(internal_object_p);
     load_modular_gc_func(set_event_hook);
     load_modular_gc_func(copy_attributes);
 
@@ -1015,6 +1024,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_object_metadata rb_gc_functions.object_metadata
 # define rb_gc_impl_live_object_p rb_gc_functions.live_object_p
 # define rb_gc_impl_garbage_object_p rb_gc_functions.garbage_object_p
+# define rb_gc_impl_internal_object_p rb_gc_functions.internal_object_p
 # define rb_gc_impl_set_event_hook rb_gc_functions.set_event_hook
 # define rb_gc_impl_copy_attributes rb_gc_functions.copy_attributes
 #endif
@@ -1907,6 +1917,7 @@ internal_object_p(VALUE obj)
             return 0;
           default:
             if (!RBASIC(obj)->klass) break;
+            if (rb_gc_impl_internal_object_p(rb_gc_get_objspace(), obj)) return 1;
             return 0;
         }
     }
@@ -4005,6 +4016,7 @@ static void gc_orphan_merge_job(void *unused);
 static void
 zombie_objspaces_push(rb_vm_t *vm, void *objspace, void **owner_slot, struct rb_ractor_struct *owner)
 {
+    ASSERT_vm_locking();
     if (vm->gc.zombie_objspaces_count == vm->gc.zombie_objspaces_capa) {
         size_t new_capa = vm->gc.zombie_objspaces_capa ? vm->gc.zombie_objspaces_capa * 2 : 16;
         struct rb_objspace_zombie *grown =
@@ -4083,6 +4095,7 @@ void
 rb_gc_objspace_disown(void *objspace)
 {
     if (!rb_gc_impl_multi_objspace_p()) return;
+    ASSERT_vm_locking();
     rb_vm_t *vm = GET_VM();
     bool found = false;
 
@@ -4117,6 +4130,7 @@ rb_gc_during_global_gc_p(void)
 static void
 rb_gc_vm_forget_zombie(void *objspace)
 {
+    ASSERT_vm_locking();
     rb_vm_t *vm = GET_VM();
     size_t n = vm->gc.zombie_objspaces_count;
     for (size_t i = 0; i < n; i++) {

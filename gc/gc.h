@@ -106,6 +106,7 @@ MODULAR_GC_FN void rb_gc_save_machine_context(void);
 MODULAR_GC_FN void rb_gc_mark_roots(void *objspace, const char **categoryp);
 MODULAR_GC_FN bool rb_gc_multi_ractor_p(void);
 MODULAR_GC_FN bool rb_gc_ever_multi_ractor_p(void);
+MODULAR_GC_FN uint32_t rb_gc_ractor_last_id(void);
 /* Process-wide GC disable flag (GC.disable / rb_gc_disable).  Every GC trigger in
  * an impl checks it, so disabling stops automatic GC in every Ractor.  The
  * per-objspace switch is objspace->flags.dont_gc. */
