@@ -19374,7 +19374,7 @@ mod hir_opt_tests {
           Jump bb8(v55)
         bb8(v47:BasicObject):
           v58:CBool = Test v47
-          CondBranch v58, bb5(v18), bb12()
+          CondBranch v58, bb5(), bb12()
         bb12():
           PatchPoint NoEPEscape(set_value_loop)
           PatchPoint SingleRactorMode
@@ -19384,13 +19384,13 @@ mod hir_opt_tests {
           WriteBarrier v18, v19
           v72:CShape[0x1039] = Const CShape(0x1039)
           StoreField v18, :shape_id@0x1038, v72
-          Jump bb5(v18)
-        bb5(v76:HeapBasicObject):
+          Jump bb5()
+        bb5():
           PatchPoint NoEPEscape(set_value_loop)
           v84:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, +@0x103c, cme:0x1040)
           v98:Fixnum = FixnumAdd v19, v84
-          Jump bb6(v76, v98)
+          Jump bb6(v18, v98)
         bb7():
           v34:NilClass = Const Value(nil)
           CheckInterrupts
