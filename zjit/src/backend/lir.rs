@@ -2489,14 +2489,12 @@ impl Assembler
 
         // Count predecessors for each block
         let mut num_predecessors: HashMap<BlockId, usize> = HashMap::new();
-        for block_id in self.block_order() {
+        let block_order = self.block_order();
+        for &block_id in &block_order {
             for succ in self.basic_blocks[block_id.0].successors() {
                 *num_predecessors.entry(succ).or_insert(0) += 1;
             }
         }
-
-        // Collect block order upfront so we don't borrow self while mutating
-        let block_order = self.block_order();
 
         // This code is iterating over each block in our CFG and inserting
         // copy instructions at each edge.
@@ -2653,7 +2651,7 @@ impl Assembler
             }
         }
 
-        self.rewrite_instructions(intervals, regs);
+        self.rewrite_instructions(&block_order, intervals, regs);
     }
 
     /// Handle caller-saved registers around CCall instructions.
@@ -2953,8 +2951,8 @@ impl Assembler
 
     /// Walk every instruction and replace VReg operands with the physical
     /// register (or stack slot) assigned to the VReg's interval.
-    fn rewrite_instructions(&mut self, intervals: &[Interval], regs: &RegPool) {
-        for block_id in self.block_order() {
+    fn rewrite_instructions(&mut self, block_order: &[BlockId], intervals: &[Interval], regs: &RegPool) {
+        for &block_id in block_order {
             for insn in self.basic_blocks[block_id.0].insns.iter_mut() {
                 insn.for_each_operand_mut(|opnd| {
                     Self::rewrite_opnd(opnd, intervals, regs);
