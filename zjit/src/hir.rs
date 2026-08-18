@@ -7365,6 +7365,7 @@ impl Function {
             run_pass!(canonicalize);
             run_pass!(fold_constants);
             run_pass!(canonicalize);
+            run_pass!(remove_trivial_block_params);
             run_pass!(clean_cfg);
             run_pass!(remove_redundant_patch_points);
             run_pass!(remove_duplicate_check_interrupts);
