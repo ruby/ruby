@@ -235,6 +235,13 @@ rb_gc_event_hook(VALUE obj, rb_event_flag_t event)
 #endif
 }
 
+/* Nonzero once the cleanup walk has stashed an objspace, which is the only case where a
+ * thread needs one other than its own Ractor's.  One unsynchronised load gates it,
+ * keeping the per-reference marking path and the malloc paths clear of the lookups
+ * below.  It is never unwound, so a stale zero only costs a resolution that predates the
+ * stash. */
+static rb_atomic_t gc_objspace_override_count;
+
 /* VM destruct's free-at-exit walk can free the thread and Ractor structs first, so
  * resolving through the current Ractor would use freed memory; return the objspace
  * stashed before the walk started. */
@@ -243,11 +250,19 @@ void
 rb_gc_stash_cleanup_objspace(void)
 {
     GET_VM()->gc.cleanup_objspace = rb_gc_get_objspace();
+    /* Never unwound, as the VM is going away: from here every resolution takes the slow
+     * path, which is where the stashed objspace is returned from. */
+    RUBY_ATOMIC_INC(gc_objspace_override_count);
 }
 
-static inline void *
-gc_current_objspace_of(rb_ractor_t *const cr)
+/* Out of line to keep the rare arms out of RB_GC_MARK_OR_TRAVERSE's inline expansions. */
+NOINLINE(static void *gc_current_objspace_slow(rb_ractor_t *const cr));
+
+static void *
+gc_current_objspace_slow(rb_ractor_t *const cr)
 {
+    /* Checked before anything reads cr or the EC: the cleanup walk is the case where
+     * both may already be freed (see rb_gc_stash_cleanup_objspace). */
     if (RB_UNLIKELY(ruby_vm_during_cleanup) && GET_VM()->gc.cleanup_objspace) {
         return GET_VM()->gc.cleanup_objspace;
     }
@@ -259,6 +274,16 @@ gc_current_objspace_of(rb_ractor_t *const cr)
     /* A live current Ractor always has an objspace. */
     RUBY_ASSERT(cr->objspace != NULL);
     return cr->objspace;
+}
+
+static inline void *
+gc_current_objspace_of(rb_ractor_t *const cr)
+{
+    if (RB_LIKELY(cr != NULL && gc_objspace_override_count == 0)) {
+        RUBY_ASSERT(cr->objspace != NULL);
+        return cr->objspace;
+    }
+    return gc_current_objspace_slow(cr);
 }
 
 void *
