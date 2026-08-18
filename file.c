@@ -3985,7 +3985,7 @@ strrdirsep(const char *path, const char *end, bool mb_enc, rb_encoding *enc)
 
     const char *cursor = end - 1;
 
-    while (isdirsep(cursor[0])) {
+    while (cursor >= path && isdirsep(cursor[0])) {
         cursor--;
     }
 

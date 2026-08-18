@@ -1371,6 +1371,17 @@ class TestFileExhaustive < Test::Unit::TestCase
     bug3175 = '[ruby-core:29627]'
     assert_equal(".rb", File.extname("/tmp//bla.rb"), bug3175)
 
+    # A path consisting only of separators must not make the backward
+    # scan in strrdirsep read before the beginning of the string.
+    seps = NTFS ? ["/", "\\"] : ["/"]
+    seps.each do |sep|
+      [1, 2, 23, 24, 1000].each do |len|
+        path = sep * len
+        assert_equal("", File.extname(path), "File.extname(#{path.inspect})")
+      end
+    end
+    assert_equal("", File.extname(""))
+
     assert_incompatible_encoding {|d| File.extname(d)}
   end
 
