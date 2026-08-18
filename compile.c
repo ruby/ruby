@@ -3141,32 +3141,13 @@ find_destination(INSN *i)
 static int
 remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
-    LINK_ELEMENT *first = i, *end, *scan;
+    LINK_ELEMENT *first = i, *end, *scan, *pending_end = 0;
+    LABEL *pending = 0;
     int *unref_counts = 0, nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
 
     if (!i) return 0;
     unref_counts = ALLOCA_N(int, nlabels);
     MEMZERO(unref_counts, int, nlabels);
-
-    scan = i;
-    do {
-        LABEL *lab;
-        if (IS_INSN(scan)) {
-            if (IS_INSN_ID(scan, leave)) {
-                break;
-            }
-            else if ((lab = find_destination((INSN *)scan)) != 0) {
-                unref_counts[lab->label_no]++;
-            }
-        }
-        else if (IS_LABEL(scan)) {
-            lab = (LABEL *)scan;
-            if (lab->unremovable) return 0;
-        }
-        else if (IS_ADJUST(scan)) {
-            return 0;
-        }
-    } while ((scan = scan->next) != 0);
 
     end = i;
     scan = i;
@@ -3174,23 +3155,41 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
         LABEL *lab;
         if (IS_INSN(scan)) {
             if (IS_INSN_ID(scan, leave)) {
+                if (pending) break;
                 end = scan;
                 break;
+            }
+            else if ((lab = find_destination((INSN *)scan)) != 0) {
+                unref_counts[lab->label_no]++;
+                if (lab == pending && lab->refcnt <= unref_counts[lab->label_no]) {
+                    pending = 0;
+                }
             }
         }
         else if (IS_LABEL(scan)) {
             lab = (LABEL *)scan;
+            if (lab->unremovable) {
+                if (pending) break;
+                return 0;
+            }
             if (lab->refcnt > unref_counts[lab->label_no]) {
-                if (scan == first) return 0;
-                break;
+                if (pending) break;
+                pending = lab;
+                pending_end = (scan == first) ? 0 : end;
             }
             continue;
         }
         else if (IS_ADJUST(scan)) {
+            if (pending) break;
             return 0;
         }
-        end = scan;
+        if (!pending) end = scan;
     } while ((scan = scan->next) != 0);
+
+    if (pending) {
+        if (!pending_end) return 0;
+        end = pending_end;
+    }
     i = first;
     do {
         if (IS_INSN(i)) {
