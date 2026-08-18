@@ -607,10 +607,4 @@ ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *ar
     }
 }
 
-#undef strtod
-#define strtod ruby_strtod
-#undef dtoa
-#define dtoa ruby_dtoa
-#undef hdtoa
-#define hdtoa ruby_hdtoa
-#include "missing/dtoa.c"
+#include "missing/fpfmt.c"
