@@ -3034,6 +3034,13 @@ impl Function {
         id
     }
 
+    pub fn prepend_insn(&mut self, block: BlockId, insn: Insn) -> InsnId {
+        assert!(!matches!(insn, Insn::Param), "Cannot prepend a Param instruction");
+        let id = self.new_insn(insn);
+        self.blocks[block.to_usize()].insns.insert(0, id);
+        id
+    }
+
     pub fn push_comment(&mut self, block: BlockId, message: String) -> InsnId {
         self.push_insn(block, Insn::Comment { message })
     }
@@ -6159,6 +6166,17 @@ impl Function {
                 for (idx, state) in block_preds.iter().enumerate() {
                     if let ParamValue::One(_) = state {
                         trivial_indices.push(idx);
+                    } else {
+                        // If the param has a constant Ruby object associated with it, even if it
+                        // is passed muliple InsnId, we can still optimize it away.
+                        let param_id = self.blocks[block_id.to_usize()].params[idx];
+                        if let Some(obj) = self.type_of(param_id).ruby_object() {
+                            let const_insn = self.prepend_insn(*block_id, Insn::Const { val: Const::Value(obj) });
+                            self.insn_types[const_insn.to_usize()] = self.infer_type(const_insn);
+                            self.make_equal_to(param_id, const_insn);
+                            trivial_indices.push(idx);
+                            changed = true;
+                        }
                     }
                 }
 

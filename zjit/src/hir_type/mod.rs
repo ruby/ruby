@@ -436,6 +436,9 @@ impl Type {
 
     /// Return the object specialization, if any.
     pub fn ruby_object(&self) -> Option<VALUE> {
+        if self.is_subtype(types::NilClass) { return Some(Qnil); }
+        if self.is_subtype(types::TrueClass) { return Some(Qtrue); }
+        if self.is_subtype(types::FalseClass) { return Some(Qfalse); }
         match self.spec() {
             Specialization::Object(val) => Some(val),
             _ => None,
