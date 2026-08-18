@@ -3091,17 +3091,20 @@ impl Function {
         self.load_field(block, captured, FieldName::code_iseq, offset, types::CPtr)
     }
 
+    /// Untag an ISEQ block handler into its `struct rb_captured_block *`:
+    /// captured = block_handler & ~0x3
+    fn untag_block_handler(&mut self, block: BlockId, block_handler: InsnId) -> InsnId {
+        let untag_mask = self.push_insn(block, Insn::Const { val: Const::CInt64(!0x3) });
+        self.push_insn(block, Insn::IntAnd { left: block_handler, right: untag_mask })
+    }
+
     /// Dispatch `yield` to a known ISEQ block without guarding tag or ISEQ. When the enclosing method is
     /// inlined and the caller passed a literal block, [`Insn::PushInlineFrame`] wrote that exact
     /// block into this frame's EP from a compile-time constant, so both guards are unnecessary.
     fn push_invoke_block_iseq_direct(&mut self, block: BlockId, block_iseq: IseqPtr, level: u32, args: Vec<InsnId>, state: InsnId) -> InsnId {
         let ep = self.get_ep(block, level);
         let block_handler = self.load_ep_env_field(block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
-
-        // captured = block_handler & ~0x3 (struct rb_captured_block *)
-        let untag_mask = self.push_insn(block, Insn::Const { val: Const::CInt64(!0x3) });
-        let captured = self.push_insn(block, Insn::IntAnd { left: block_handler, right: untag_mask });
-
+        let captured = self.untag_block_handler(block, block_handler);
         self.push_insn(block, Insn::InvokeBlockIseqDirect { iseq: block_iseq, captured, args, state })
     }
 
@@ -3129,10 +3132,7 @@ impl Function {
         if iseqs.len() == 1 && !self.policy.no_side_exits {
             let block_iseq = iseqs[0];
             self.push_insn(block, Insn::GuardBitEquals { val: tag, expected: Const::CInt64(0x1), reason: Box::new(SideExitReason::InvokeBlockHandlerNotIseq), state, recompile: Some(Recompile) });
-
-            // captured = block_handler & ~0x3 (struct rb_captured_block *)
-            let untag_mask = self.push_insn(block, Insn::Const { val: Const::CInt64(!0x3) });
-            let captured = self.push_insn(block, Insn::IntAnd { left: block_handler, right: untag_mask });
+            let captured = self.untag_block_handler(block, block_handler);
 
             // Guard captured->code.iseq is the profiled block iseq. Compare the raw imemo pointer:
             // type inference (from_value) can't type an iseq imemo, so guard it as a CPtr identity.
@@ -3157,9 +3157,7 @@ impl Function {
             if_false: BranchEdge { target: fallback_block, args: vec![] },
         });
 
-        // captured = block_handler & ~0x3 (struct rb_captured_block *)
-        let untag_mask = self.push_insn(dispatch_block, Insn::Const { val: Const::CInt64(!0x3) });
-        let captured = self.push_insn(dispatch_block, Insn::IntAnd { left: block_handler, right: untag_mask });
+        let captured = self.untag_block_handler(dispatch_block, block_handler);
         let captured_iseq = self.load_captured_code_iseq(dispatch_block, captured);
 
         let mut compare_block = dispatch_block;
