@@ -50,6 +50,19 @@ module Bundler
       end
     end
 
+    # `require_paths` is overridden above, but `full_require_paths` (and so
+    # `load_paths`) is computed from `raw_require_paths`, which would otherwise
+    # report the default `lib` for every gem
+    def raw_require_paths
+      if @remote_specification
+        @remote_specification.raw_require_paths
+      elsif _local_specification
+        _local_specification.raw_require_paths
+      else
+        super
+      end
+    end
+
     # needed for inline
     def load_paths
       # remote specs aren't installed, and can't have load_paths
