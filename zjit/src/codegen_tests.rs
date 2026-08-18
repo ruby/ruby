@@ -713,7 +713,7 @@ fn test_yield_inline_invocation_with_args() {
 }
 
 #[test]
-fn test_yield_with_stack_args() {
+fn test_yield_with_more_args_than_abi_registers() {
     // `self` + eight yield args don't fit in C argument registers (6 on x86_64, 8 on
     // arm64), so the direct block invocation passes the overflow arguments on the
     // native stack.
@@ -728,7 +728,7 @@ fn test_yield_with_stack_args() {
 }
 
 #[test]
-fn test_send_direct_with_stack_args() {
+fn test_send_direct_with_more_args_than_abi_registers() {
     // `self` + ten args don't fit in C argument registers (6 on x86_64, 8 on arm64),
     // so the JIT-to-JIT call passes the overflow arguments on the native stack, and
     // the callee's JIT entry loads them from above its frame.
@@ -743,7 +743,7 @@ fn test_send_direct_with_stack_args() {
 }
 
 #[test]
-fn test_send_direct_with_equal_stack_args() {
+fn test_send_direct_with_equal_args_beyond_abi_registers() {
     // A pair of adjacent stack-passed arguments that are the same zero immediate
     // (false) or the same register lowers to an STP with an identical register
     // pair on arm64, e.g. `stp xzr, xzr`, which the assembler used to reject.

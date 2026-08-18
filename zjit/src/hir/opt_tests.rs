@@ -4217,7 +4217,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_yield_with_stack_args_specializes() {
+    fn test_specialize_yield_with_more_args_than_abi_registers() {
         // Captured self plus eight args don't fit in C argument registers (6 on x86_64,
         // 8 on arm64); the profiled invokeblock specialization still emits
         // InvokeBlockIseqDirect, passing the overflow arguments on the stack.
@@ -4263,8 +4263,8 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_inlined_yield_with_stack_args_specializes() {
-        // Same as test_yield_with_stack_args_specializes, but for the guard-free
+    fn test_specialize_inlined_yield_with_more_args_than_abi_registers() {
+        // Same as test_specialize_yield_with_more_args_than_abi_registers, but for the guard-free
         // yield dispatch inside an inlined callee whose caller passes a literal block.
         let result = eval("
             def foo = yield(1, 2, 3, 4, 5, 6, 7, 8)
