@@ -327,6 +327,79 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_resize_after_free
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    buffer.free
+    assert_predicate buffer, :null?
+
+    buffer.resize(8)
+    assert_equal 8, buffer.size
+    refute_predicate buffer, :null?
+  end
+
+  def test_free_frozen
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    buffer.freeze
+
+    assert_raise(FrozenError) do
+      buffer.free
+    end
+
+    refute_predicate buffer, :null?
+    assert_equal "test", buffer.get_string
+  end
+
+  def test_free_frozen_external
+    string = "Hello World".freeze
+    buffer = IO::Buffer.for(string)
+    buffer.freeze
+
+    assert_raise(FrozenError) do
+      buffer.free
+    end
+
+    refute_predicate buffer, :null?
+    assert_equal string, buffer.get_string
+  end
+
+  def test_free_frozen_in_block
+    string = +"Hello World"
+
+    buffer = IO::Buffer.for(string, &:freeze)
+    assert_predicate buffer, :null?
+
+    # The string is no longer locked by the buffer:
+    assert_equal "Hello World!", string << "!"
+  end
+
+  def test_resize_frozen
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    buffer.freeze
+
+    assert_raise(FrozenError) do
+      buffer.resize(8)
+    end
+
+    assert_equal 4, buffer.size
+    assert_equal "test", buffer.get_string
+  end
+
+  def test_resize_frozen_external
+    string = "Hello World".freeze
+    buffer = IO::Buffer.for(string)
+    buffer.freeze
+
+    assert_raise(FrozenError) do
+      buffer.resize(8)
+    end
+
+    assert_equal string.bytesize, buffer.size
+    assert_equal string, buffer.get_string
+  end
+
   def test_compare_same_size
     buffer1 = IO::Buffer.new(1)
     assert_equal buffer1, buffer1
