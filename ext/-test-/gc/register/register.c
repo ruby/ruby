@@ -52,11 +52,39 @@ gc_unregister_address_keeps_siblings(VALUE self)
     return result;
 }
 
+static VALUE static_slot;
+
+static VALUE
+gc_register_static(VALUE self, VALUE v)
+{
+    rb_gc_register_address(&static_slot);
+    static_slot = v;
+    return Qtrue;
+}
+
+static VALUE
+gc_unregister_static(VALUE self)
+{
+    rb_gc_unregister_address(&static_slot);
+    return Qnil;
+}
+
+static VALUE
+gc_static_slot_value(VALUE self)
+{
+    return static_slot;
+}
+
 void
 Init_register(void)
 {
+    rb_ext_ractor_safe(true);
+
     VALUE mBug = rb_define_module("Bug");
     VALUE mGC = rb_define_module_under(mBug, "GC");
     rb_define_singleton_method(mGC, "unregister_address_keeps_siblings?",
                                gc_unregister_address_keeps_siblings, 0);
+    rb_define_singleton_method(mGC, "register_static", gc_register_static, 1);
+    rb_define_singleton_method(mGC, "unregister_static", gc_unregister_static, 0);
+    rb_define_singleton_method(mGC, "static_slot_value", gc_static_slot_value, 0);
 }
