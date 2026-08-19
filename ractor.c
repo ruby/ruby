@@ -332,6 +332,7 @@ rb_ractor_mark_local_roots(rb_ractor_t *r)
          * wrappers, stdio, stack leftovers -- is what it exists to reclaim. */
         rb_ractor_mark_terminated_join_value(r);
         rb_gc_mark_vm_stack_values((long)r->registered_marks_cnt, r->registered_marks);
+        rb_gc_mark_registered_addrs(r, true);
         return;
     }
 
@@ -349,6 +350,7 @@ rb_ractor_mark_local_roots(rb_ractor_t *r)
      * owner or to the global GC. */
     rb_gc_mark_vm_stack_values((long)r->registered_marks_cnt, r->registered_marks);
 
+    rb_gc_mark_registered_addrs(r, true);
 }
 
 /* Mark and pin a terminated, unfreed Ractor's return value (legacy); the global GC
@@ -383,6 +385,32 @@ rb_ractor_absorb_registered_marks(rb_ractor_t *dst, rb_ractor_t *src)
            src->registered_marks, VALUE, src->registered_marks_cnt);
     dst->registered_marks_cnt = need;
     src->registered_marks_cnt = 0;
+}
+
+void
+rb_ractor_absorb_registered_addrs_without_gc(rb_ractor_t *dst, rb_ractor_t *src)
+{
+    rb_vm_t *vm = GET_VM();
+
+    rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
+    if (src->registered_addrs_cnt > 0) {
+        size_t need = dst->registered_addrs_cnt + src->registered_addrs_cnt;
+        if (need > dst->registered_addrs_capa) {
+            size_t nc = dst->registered_addrs_capa ? dst->registered_addrs_capa : 64;
+            while (nc < need) nc *= 2;
+            VALUE **p = realloc(dst->registered_addrs, nc * sizeof(VALUE *));
+            if (!p) rb_bug("rb_ractor_absorb_registered_addrs_without_gc: out of memory");
+            dst->registered_addrs = p;
+            dst->registered_addrs_capa = nc;
+        }
+        MEMCPY(dst->registered_addrs + dst->registered_addrs_cnt,
+               src->registered_addrs, VALUE *, src->registered_addrs_cnt);
+        dst->registered_addrs_cnt = need;
+        src->registered_addrs_cnt = 0;
+        rb_gc_registered_addrs_enroll_without_gc(vm, dst);
+    }
+    rb_gc_registered_addrs_unenroll_without_gc(vm, src);
+    rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
 }
 
 static int
@@ -440,10 +468,10 @@ ractor_free(void *ptr)
     ractor_sync_free(r);
 
     if (r->in_terminated_set) {
-        rb_native_mutex_lock(&GET_VM()->gc.registered_globals.lock);
+        rb_native_mutex_lock(&GET_VM()->gc.registered_addrs.lock);
         ccan_list_del(&r->vmlr_node);
         r->in_terminated_set = false;
-        rb_native_mutex_unlock(&GET_VM()->gc.registered_globals.lock);
+        rb_native_mutex_unlock(&GET_VM()->gc.registered_addrs.lock);
     }
 
     /* An orphan (unjoined) Ractor hands its rb_gc_register_mark_object pins to main
@@ -451,10 +479,20 @@ ractor_free(void *ptr)
      * Both happen before the objspace merge, so no window has unmoved registrations. */
     if (!r->main_ractor) {
         rb_ractor_absorb_registered_marks(GET_VM()->ractor.main_ractor, r);
+        rb_ractor_absorb_registered_addrs_without_gc(GET_VM()->ractor.main_ractor, r);
+    }
+    else {
+        rb_native_mutex_lock(&GET_VM()->gc.registered_addrs.lock);
+        rb_gc_registered_addrs_unenroll_without_gc(GET_VM(), r);
+        rb_native_mutex_unlock(&GET_VM()->gc.registered_addrs.lock);
     }
     free(r->registered_marks);
     r->registered_marks = NULL;
     r->registered_marks_cnt = r->registered_marks_capa = 0;
+
+    free(r->registered_addrs);
+    r->registered_addrs = NULL;
+    r->registered_addrs_cnt = r->registered_addrs_capa = 0;
 
     if (!r->main_ractor) {
         SIZED_FREE(r);
@@ -622,10 +660,10 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
          * registered_marks of a Ractor that left the set; track it in a separate list
          * until ractor_free. */
         if (!rb_gc_multi_objspace_p()) {
-            rb_native_mutex_lock(&vm->gc.registered_globals.lock);
+            rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
             ccan_list_add(&vm->ractor.terminated_set, &cr->vmlr_node);
             cr->in_terminated_set = true;
-            rb_native_mutex_unlock(&vm->gc.registered_globals.lock);
+            rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
         }
 
         if (vm->ractor.cnt <= 2 && vm->ractor.sync.terminate_waiting) {
