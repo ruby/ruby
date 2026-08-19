@@ -231,7 +231,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
         if (LIKELY(body->local_table != rb_iseq_shared_exc_local_tbl)) {
             SIZED_FREE_N(body->local_table, body->local_table_size);
         }
-        SIZED_FREE_N(body->lvar_states, body->local_table_size);
+        SIZED_FREE_N(body->lvar_states, ISEQ_LVAR_STATES_BUFLEN(body->local_table_size));
 
         compile_data_free(ISEQ_COMPILE_DATA(iseq));
         if (body->outer_variables) rb_id_table_free(body->outer_variables);
@@ -544,7 +544,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         size += body->iseq_size * sizeof(VALUE);
         size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
         size += body->local_table_size * sizeof(ID); // body->local_table
-        if (body->lvar_states) size += body->local_table_size * sizeof(enum lvar_state);
+        if (body->lvar_states) size += ISEQ_LVAR_STATES_BUFLEN(body->local_table_size) * sizeof(uint8_t);
         size += ISEQ_MBITS_BUFLEN(body->iseq_size) * ISEQ_MBITS_SIZE;
         if (body->catch_table) {
             size += iseq_catch_table_bytes(body->catch_table->size);
