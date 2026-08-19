@@ -2412,10 +2412,18 @@ struct move_node {
     } u;
 };
 
+/* A child slot holds a node id, or -- with this bit set -- an index into c->refs.
+ * The courier is in-process, so a shareable payload can travel as the VALUE itself
+ * instead of costing a whole move_node; the registry marks and pins c->refs. */
+#define MOVE_ID_REF_BIT 0x80000000u
+
 struct rb_ractor_move_courier {
     struct move_node *nodes;
     uint32_t count;
     uint32_t capa;
+    VALUE *refs;              /* shareable payloads, embedded by value */
+    uint32_t refs_count;
+    uint32_t refs_capa;
     uint32_t root;
     struct ccan_list_node reg_node;  /* in-flight courier registry (a GC root while it lives) */
 };
@@ -2460,6 +2468,9 @@ rb_ractor_move_courier_registry_mark(void)
 struct move_build {
     struct rb_ractor_move_courier *c;
     st_table *seen;   /* src VALUE -> (node id + 1) */
+    /* Copy mode: read the sources instead of taking them apart.  No husk, no buffer
+     * hand-over, no freeing of the source's internals. */
+    bool copy;
 };
 
 static uint32_t move_capture(struct move_build *b, VALUE obj);
@@ -2481,6 +2492,29 @@ move_alloc_node(struct rb_ractor_move_courier *c)
     c->nodes[id].iv_vals = NULL;
     c->nodes[id].u.ref = Qnil;
     return id;
+}
+
+/* Embed a shareable payload by value and return its tagged child id.  No dedup: a REF
+ * is the same word however often it appears, and an array of immediates would otherwise
+ * pay a lookup and an insert per element. */
+static uint32_t
+move_alloc_ref(struct rb_ractor_move_courier *c, VALUE v)
+{
+    if (c->refs_count == c->refs_capa) {
+        c->refs_capa = c->refs_capa ? c->refs_capa * 2 : 8;
+        REALLOC_N(c->refs, VALUE, c->refs_capa);
+    }
+    uint32_t idx = c->refs_count++;
+    c->refs[idx] = v;
+    return MOVE_ID_REF_BIT | idx;
+}
+
+/* Resolve a child slot to the object it names. */
+static VALUE
+move_child(const struct rb_ractor_move_courier *c, VALUE shells, uint32_t id)
+{
+    if (id & MOVE_ID_REF_BIT) return c->refs[id & ~MOVE_ID_REF_BIT];
+    return RARRAY_AREF(shells, id);
 }
 
 /* Turn a moved source into a valid RactorMovedObject without passing through flags==0,
@@ -2591,23 +2625,27 @@ move_capture_ivars(struct move_build *b, VALUE obj, uint32_t id)
 static uint32_t
 move_capture(struct move_build *b, VALUE obj)
 {
+    /* An immediate is never in seen (only captured objects are inserted), so it can
+     * skip the lookup entirely: that is the whole cost of an array of numbers. */
+    if (RB_SPECIAL_CONST_P(obj)) {
+        return move_alloc_ref(b->c, obj);
+    }
+
+    /* Seen first, and only then shareable: move husks each source as it goes, and a
+     * husk is a frozen field-less object, which rb_ractor_shareable_p answers true for.
+     * Testing shareable first would embed the husk instead of resolving the second
+     * occurrence to the node the first one built. */
     st_data_t existing;
     if (st_lookup(b->seen, (st_data_t)obj, &existing)) {
         return (uint32_t)existing - 1;
     }
 
+    if (rb_ractor_shareable_p(obj)) {
+        return move_alloc_ref(b->c, obj);
+    }
+
     uint32_t id = move_alloc_node(b->c);
     st_insert(b->seen, (st_data_t)obj, (st_data_t)(uintptr_t)(id + 1));
-
-    if (RB_SPECIAL_CONST_P(obj) || rb_ractor_shareable_p(obj)) {
-        b->c->nodes[id].kind = MOVE_KIND_REF;
-        b->c->nodes[id].frozen = false;
-        b->c->nodes[id].niv = 0;
-        b->c->nodes[id].iv_ids = NULL;
-        b->c->nodes[id].iv_vals = NULL;
-        b->c->nodes[id].u.ref = obj;
-        return id;
-    }
 
     /* Reject an unmovable object before anything is mutated. */
     if (BUILTIN_TYPE(obj) == T_FILE && RFILE(obj)->fptr == NULL) {
@@ -2623,11 +2661,11 @@ move_capture(struct move_build *b, VALUE obj)
         /* Give the source its own buffer (drop sharing, copy a static STR_NOFREE one).
          * Safe even when frozen: it changes ownership, not content.  Afterwards a string
          * is embedded, owns a private heap buffer, or is a shared ROOT (a no-op). */
-        rb_str_make_independent(obj);
+        if (!b->copy) rb_str_make_independent(obj);
         long len = RSTRING_LEN(obj);
         int encidx = ENCODING_GET(obj);
         char *ptr;
-        if (!STR_EMBED_P(obj) && rb_str_reembeddable_p(obj)) {
+        if (!b->copy && !STR_EMBED_P(obj) && rb_str_reembeddable_p(obj)) {
             /* Owns a private heap buffer: carry the pointer over (zero-copy) and leave
              * the source as a shell that does not free it. */
             ptr = RSTRING(obj)->as.heap.ptr;
@@ -2661,7 +2699,7 @@ move_capture(struct move_build *b, VALUE obj)
         /* Free the source's heap buffer now that the children were read, but only when it
          * is private: a sharer's belongs to its root, a root's to its sharers -- and a
          * frozen array is a root without carrying the flag. */
-        if (!ARY_EMBED_P(obj) && !ARY_SHARED_P(obj) && !ARY_SHARED_ROOT_P(obj) && !OBJ_FROZEN(obj)) {
+        if (!b->copy && !ARY_EMBED_P(obj) && !ARY_SHARED_P(obj) && !ARY_SHARED_ROOT_P(obj) && !OBJ_FROZEN(obj)) {
             ruby_xfree((void *)RARRAY_CONST_PTR(obj));
         }
         break;
@@ -2681,7 +2719,7 @@ move_capture(struct move_build *b, VALUE obj)
         b->c->nodes[id].u.hash.compare_by_id = RTEST(rb_hash_compare_by_id_p(obj));
         b->c->nodes[id].u.hash.proc_default = FL_TEST_RAW(obj, RHASH_PROC_DEFAULT) != 0;
         /* Free the source's st-table internals (an ar table lives in the slot) */
-        rb_hash_free(obj);
+        if (!b->copy) rb_hash_free(obj);
         break;
       }
 
@@ -2704,7 +2742,7 @@ move_capture(struct move_build *b, VALUE obj)
         b->c->nodes[id].u.strct.elems = elems;
         b->c->nodes[id].u.strct.klass = RBASIC_CLASS(obj);
         /* Free the source's private heap buffer (an embedded struct has none) */
-        if (RSTRUCT_EMBED_LEN(obj) == 0) {
+        if (!b->copy && RSTRUCT_EMBED_LEN(obj) == 0) {
             ruby_xfree((void *)RSTRUCT_CONST_PTR(obj));
         }
         break;
@@ -2713,6 +2751,7 @@ move_capture(struct move_build *b, VALUE obj)
       case T_MATCH: {
         /* The regexp and the matched string travel as ordinary children; re.c dumps the
          * registers (freeing the source's onig and char_offset). */
+        VM_ASSERT(!b->copy);   /* copy_courier_supported_p rejects it */
         VALUE re, st;
         int nregs;
         void *regs = rb_match_move_dump(obj, &re, &st, &nregs);
@@ -2729,6 +2768,7 @@ move_capture(struct move_build *b, VALUE obj)
 
       case T_FILE:
       {
+        VM_ASSERT(!b->copy);   /* copy_courier_supported_p rejects it */
         /* Carry the whole fptr (fd included) by pointer; the source shell does not
          * close it.  fptr's VALUE members lose their root once the source is T_MOVED,
          * so capture them as ordinary child nodes, detached; rebuild writes them back. */
@@ -2764,7 +2804,7 @@ move_capture(struct move_build *b, VALUE obj)
                  rb_class_name(rb_obj_class(obj)));
     }
 
-    move_neutralize_source(obj);
+    if (!b->copy) move_neutralize_source(obj);
     return id;
 }
 
@@ -2848,6 +2888,115 @@ move_preflight(VALUE obj, st_table *seen)
     rb_ivar_foreach(obj, move_preflight_ivar_i, (st_data_t)seen);
 }
 
+struct copy_support_ctx {
+    st_table *seen;
+    bool ok;
+};
+
+static bool copy_courier_supported_p(VALUE obj, st_table *seen);
+
+static int
+copy_support_val_i(st_data_t val, st_data_t arg)
+{
+    struct copy_support_ctx *ctx = (struct copy_support_ctx *)arg;
+    if (!copy_courier_supported_p((VALUE)val, ctx->seen)) {
+        ctx->ok = false;
+        return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
+static int
+copy_support_ivar_i(ID name, VALUE val, st_data_t arg)
+{
+    return copy_support_val_i((st_data_t)val, arg);
+}
+
+static int
+copy_support_hash_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    if (copy_support_val_i(key, arg) == ST_STOP) return ST_STOP;
+    return copy_support_val_i(val, arg);
+}
+
+/* Read-only walk: can the copy courier carry obj's whole graph?  Everything it says no
+ * to (MatchData, IO, any other T_DATA, a singleton class) stays on the older on-heap
+ * snapshot path, which keeps handling or rejecting it exactly as before. */
+static bool
+copy_courier_supported_p(VALUE obj, st_table *seen)
+{
+    if (RB_SPECIAL_CONST_P(obj) || rb_ractor_shareable_p(obj)) return true;
+    if (st_lookup(seen, (st_data_t)obj, NULL)) return true;   /* cycle */
+    st_insert(seen, (st_data_t)obj, 0);
+
+    /* A singleton class is a send error today (the native copier refuses it and Marshal
+     * then raises); the courier would happily carry it, so keep it off this path. */
+    VALUE klass = RBASIC_CLASS(obj);
+    if (klass == 0 || FL_TEST_RAW(klass, FL_SINGLETON)) return false;
+
+    struct copy_support_ctx ctx = { seen, true };
+
+    switch (BUILTIN_TYPE(obj)) {
+      case T_STRING:
+      case T_OBJECT:
+        break;                       /* children are ivars only (below) */
+      case T_ARRAY:
+        for (long i = 0; i < RARRAY_LEN(obj); i++) {
+            if (!copy_courier_supported_p(RARRAY_AREF(obj, i), seen)) return false;
+        }
+        break;
+      case T_HASH:
+        rb_hash_stlike_foreach(obj, copy_support_hash_i, (st_data_t)&ctx);
+        if (!ctx.ok) return false;
+        if (!copy_courier_supported_p(RHASH_IFNONE(obj), seen)) return false;
+        break;
+      case T_STRUCT:
+        for (long i = 0; i < RSTRUCT_LEN(obj); i++) {
+            if (!copy_courier_supported_p(RSTRUCT_GET(obj, (int)i), seen)) return false;
+        }
+        break;
+      default:
+        return false;
+    }
+
+    rb_ivar_foreach(obj, copy_support_ivar_i, (st_data_t)&ctx);
+    return ctx.ok;
+}
+
+/* Build a courier holding a copy of obj's graph, leaving the sources untouched.
+ * Returns NULL when the graph has a type only the on-heap snapshot path handles. */
+struct rb_ractor_move_courier *
+rb_ractor_copy_courier_build(VALUE obj)
+{
+    {
+        st_table *seen = st_init_numtable();
+        bool ok = copy_courier_supported_p(obj, seen);
+        st_free_table(seen);
+        if (!ok) return NULL;
+    }
+
+    struct rb_ractor_move_courier *c = ZALLOC(struct rb_ractor_move_courier);
+    struct move_build b = { c, st_init_numtable(), true };
+
+    /* Same registry cover as a move courier: the shareable REFs it carries need a root
+     * for its whole lifetime. */
+    move_courier_registry_add(c);
+
+    enum ruby_tag_type state;
+    rb_execution_context_t *ec = GET_EC();
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        c->root = move_capture(&b, obj);
+    }
+    EC_POP_TAG();
+    st_free_table(b.seen);
+    if (state != TAG_NONE) {
+        rb_ractor_move_courier_free(c);
+        EC_JUMP_TAG(ec, state);
+    }
+    return c;
+}
+
 /* Build a move courier from obj and turn every captured source into a
  * RactorMovedObject (move semantics).  Returns the xmalloc'd courier. */
 struct rb_ractor_move_courier *
@@ -2869,7 +3018,7 @@ rb_ractor_move_courier_build(VALUE obj)
     }
 
     struct rb_ractor_move_courier *c = ZALLOC(struct rb_ractor_move_courier);
-    struct move_build b = { c, st_init_numtable() };
+    struct move_build b = { c, st_init_numtable(), false };
 
     /* Between send and materialization the courier's shareable REFs pass through
      * windows where nothing else roots them; register it for its whole lifetime so the
@@ -2970,7 +3119,7 @@ rb_ractor_move_courier_materialize(struct rb_ractor_move_courier *c)
         switch (n->kind) {
           case MOVE_KIND_ARRAY:
             for (long j = 0; j < n->u.ary.len; j++) {
-                rb_ary_push(shell, RARRAY_AREF(shells, n->u.ary.elems[j]));
+                rb_ary_push(shell, move_child(c, shells, n->u.ary.elems[j]));
             }
             break;
           case MOVE_KIND_HASH:
@@ -2980,23 +3129,23 @@ rb_ractor_move_courier_materialize(struct rb_ractor_move_courier *c)
             break;
           case MOVE_KIND_STRUCT:
             for (long j = 0; j < n->u.strct.len; j++) {
-                RSTRUCT_SET(shell, (int)j, RARRAY_AREF(shells, n->u.strct.elems[j]));
+                RSTRUCT_SET(shell, (int)j, move_child(c, shells, n->u.strct.elems[j]));
             }
             break;
           case MOVE_KIND_MATCH:
-            rb_match_move_load(shell, RARRAY_AREF(shells, n->u.match.regexp_id),
-                               RARRAY_AREF(shells, n->u.match.str_id),
+            rb_match_move_load(shell, move_child(c, shells, n->u.match.regexp_id),
+                               move_child(c, shells, n->u.match.str_id),
                                n->u.match.num_regs, n->u.match.regs);
             break;
           case MOVE_KIND_IO: {
             /* Write the rebuilt VALUE members back into fptr (capture detached them).
              * write_lock and wakeup_mutex stay nil; io.c recreates them lazily. */
             struct rb_io *fptr = RFILE(shell)->fptr;
-            RB_OBJ_WRITE(shell, &fptr->pathv, RARRAY_AREF(shells, n->u.io.pathv_id));
-            RB_OBJ_WRITE(shell, &fptr->encs.ecopts, RARRAY_AREF(shells, n->u.io.ecopts_id));
-            RB_OBJ_WRITE(shell, &fptr->writeconv_pre_ecopts, RARRAY_AREF(shells, n->u.io.wc_pre_ecopts_id));
-            RB_OBJ_WRITE(shell, &fptr->writeconv_asciicompat, RARRAY_AREF(shells, n->u.io.wc_asciicompat_id));
-            RB_OBJ_WRITE(shell, &fptr->timeout, RARRAY_AREF(shells, n->u.io.timeout_id));
+            RB_OBJ_WRITE(shell, &fptr->pathv, move_child(c, shells, n->u.io.pathv_id));
+            RB_OBJ_WRITE(shell, &fptr->encs.ecopts, move_child(c, shells, n->u.io.ecopts_id));
+            RB_OBJ_WRITE(shell, &fptr->writeconv_pre_ecopts, move_child(c, shells, n->u.io.wc_pre_ecopts_id));
+            RB_OBJ_WRITE(shell, &fptr->writeconv_asciicompat, move_child(c, shells, n->u.io.wc_asciicompat_id));
+            RB_OBJ_WRITE(shell, &fptr->timeout, move_child(c, shells, n->u.io.timeout_id));
             break;
           }
           default:
@@ -3004,7 +3153,7 @@ rb_ractor_move_courier_materialize(struct rb_ractor_move_courier *c)
         }
         /* Restore instance and generic ivars (any non-REF node can have them) */
         for (uint32_t j = 0; j < n->niv; j++) {
-            rb_ivar_set(shell, n->iv_ids[j], RARRAY_AREF(shells, n->iv_vals[j]));
+            rb_ivar_set(shell, n->iv_ids[j], move_child(c, shells, n->iv_vals[j]));
         }
     }
 
@@ -3016,11 +3165,11 @@ rb_ractor_move_courier_materialize(struct rb_ractor_move_courier *c)
         if (n->kind != MOVE_KIND_HASH) continue;
         VALUE shell = RARRAY_AREF(shells, i - 1);
         for (long j = 0; j < n->u.hash.size; j++) {
-            rb_hash_aset(shell, RARRAY_AREF(shells, n->u.hash.kv[2 * j]),
-                         RARRAY_AREF(shells, n->u.hash.kv[2 * j + 1]));
+            rb_hash_aset(shell, move_child(c, shells, n->u.hash.kv[2 * j]),
+                         move_child(c, shells, n->u.hash.kv[2 * j + 1]));
         }
         /* Restore the default value and default proc (before freezing) */
-        VALUE ifnone = RARRAY_AREF(shells, n->u.hash.ifnone_id);
+        VALUE ifnone = move_child(c, shells, n->u.hash.ifnone_id);
         if (n->u.hash.proc_default) {
             rb_hash_set_default_proc(shell, ifnone);
         }
@@ -3037,7 +3186,7 @@ rb_ractor_move_courier_materialize(struct rb_ractor_move_courier *c)
         }
     }
 
-    VALUE root = c->count ? RARRAY_AREF(shells, c->root) : Qnil;
+    VALUE root = (c->count || c->refs_count) ? move_child(c, shells, c->root) : Qnil;
     RB_GC_GUARD(shells);
     return root;
 }
@@ -3080,6 +3229,7 @@ rb_ractor_move_courier_free(struct rb_ractor_move_courier *c)
     }
     move_courier_registry_remove(c);
     ruby_xfree(c->nodes);
+    ruby_xfree(c->refs);
     ruby_xfree(c);
 }
 
@@ -3090,6 +3240,9 @@ void
 rb_ractor_move_courier_mark(struct rb_ractor_move_courier *c)
 {
     if (!c) return;
+    for (uint32_t i = 0; i < c->refs_count; i++) {
+        rb_gc_mark(c->refs[i]);
+    }
     for (uint32_t i = 0; i < c->count; i++) {
         struct move_node *n = &c->nodes[i];
         if (n->kind == MOVE_KIND_REF) {
