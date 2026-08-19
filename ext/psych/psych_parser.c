@@ -500,7 +500,11 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
             rb_protect(protected_end_mapping, handler, &state);
             break;
           case YAML_NO_EVENT:
+            /* Once libyaml has produced the stream end, every later call
+             * succeeds with a zeroed event and YAML_STREAM_END_EVENT can no
+             * longer be reached.  Stop rather than loop forever. */
             rb_protect(protected_empty, handler, &state);
+            done = 1;
             break;
           case YAML_STREAM_END_EVENT:
             rb_protect(protected_end_stream, handler, &state);

@@ -477,7 +477,10 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
                 rb_protect(protected_end_mapping, handler, &state);
             break;
             case FYET_NONE:
+                /* An event with no type cannot advance the stream, so stop
+                 * rather than loop forever. */
                 rb_protect(protected_empty, handler, &state);
+                done = 1;
             break;
             case FYET_STREAM_END:
                 rb_protect(protected_end_stream, handler, &state);
