@@ -1512,6 +1512,14 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
+  def test_status_frozen_shareable
+    with_tmpchdir do
+      s = run_in_child("exit 1")
+      assert_predicate(s, :frozen?)
+      assert(Ractor.shareable?(s), "a frozen Process::Status should be shareable")
+    end
+  end
+
   def test_status_kill
     return unless Process.respond_to?(:kill)
     return unless Signal.list.include?("KILL")

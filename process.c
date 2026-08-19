@@ -588,7 +588,7 @@ static const rb_data_type_t rb_process_status_type = {
         .dfree = RUBY_DEFAULT_FREE,
         .dsize = NULL,
     },
-    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 static VALUE
