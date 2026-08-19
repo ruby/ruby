@@ -853,9 +853,8 @@ static int w32_cmdvector(const WCHAR *, char ***, UINT, rb_encoding *);
  * runtime <https://go.dev/src/runtime/os_windows.go>, whose maintainers have
  * proposed to drop it <https://github.com/golang/go/issues/66560>.
  *
- * Called from rb_w32_sysinit, which runs before the VM exists, and from
- * ruby_setup, so that a program which embeds libruby without calling
- * ruby_sysinit gets it as well. */
+ * Called from ruby_setup, not from rb_w32_sysinit, which a program that
+ * embeds libruby is not expected to call. */
 void
 rb_w32_init_long_paths(void)
 {
@@ -863,14 +862,10 @@ rb_w32_init_long_paths(void)
     enum {peb_bit_field_offset = 3, is_long_path_aware_process = 0x80};
     typedef long (WINAPI version_func)(OSVERSIONINFOW *);
     typedef void *(WINAPI peb_func)(void);
-    static int done = 0;
     version_func *pRtlGetVersion;
     peb_func *pRtlGetCurrentPeb;
     OSVERSIONINFOW osvi;
     BYTE *bit_field;
-
-    if (done) return;
-    done = 1;
 
     pRtlGetVersion = (version_func *)get_proc_address("ntdll.dll", "RtlGetVersion", NULL);
     if (!pRtlGetVersion) return;
@@ -900,7 +895,6 @@ rb_w32_sysinit(int *argc, char ***argv)
     SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX);
 
     get_version();
-    rb_w32_init_long_paths();
 
     //
     // subvert cmd.exe's feeble attempt at command line parsing
