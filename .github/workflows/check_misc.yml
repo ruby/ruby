@@ -66,6 +66,7 @@ jobs:
         run: |
           git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac | sed "s/^/::error::/"
           test ${PIPESTATUS[0]} != 0
+        if: always()
 
       - name: Check for header macros
         run: |
@@ -77,6 +78,7 @@ jobs:
           done
           exit $fail
         working-directory: include
+        if: always()
 
       - name: Check for __has_builtin functions
         run: |
@@ -91,12 +93,14 @@ jobs:
               git -P grep -F "${missing[@]}" | sed 's/^/::error::/' | head
               false
           }
+        if: always()
 
       - id: now
         run: |
           date +"mon=%-m"%n"day=%-d" >> $GITHUB_OUTPUT
         env:
           TZ: Asia/Tokyo
+        if: always()
 
       - id: deprecation
         run: |
@@ -107,12 +111,14 @@ jobs:
               true
           fi
         continue-on-error: ${{ steps.now.outputs.mon < 12 }}
+        if: always()
 
       - name: Check if to generate documents
         id: rdoc
         run: |
           set -- $(sed 's/#.*//;/^rdoc /!d' gems/bundled_gems)
           { echo version=$2; echo ref=$4; } >> $GITHUB_OUTPUT
+        if: always()
 
       - name: Checkout rdoc
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -121,7 +127,7 @@ jobs:
           ref: ${{ steps.rdoc.outputs.ref }}
           path: .bundle/gems/rdoc-${{ steps.rdoc.outputs.version }}
           persist-credentials: false
-        if: ${{ steps.rdoc.outputs.ref != '' }}
+        if: ${{ always() && steps.rdoc.outputs.ref != '' }}
 
       - name: Generate rdoc scripts
         run: |
@@ -133,11 +139,12 @@ jobs:
           bundle install --jobs 4
           bundle exec rake generate
         working-directory: .bundle/gems/rdoc-${{ steps.rdoc.outputs.version }}
-        if: ${{ steps.rdoc.outputs.ref != '' }}
+        if: ${{ always() && steps.rdoc.outputs.ref != '' }}
 
       - name: Core docs coverage
         run: |
           make XRUBY=ruby RDOC_DEPENDS= RBCONFIG=update-rbconfig rdoc-coverage
+        if: always()
 
       - name: Generate docs
         id: docs
@@ -146,19 +153,19 @@ jobs:
           echo htmlout=ruby-html-${GITHUB_SHA:0:10} >> $GITHUB_OUTPUT
         # Generate only when document commit/PR
         if: >-
-          ${{false
+          ${{always() && (false
           || contains(github.event.head_commit.message, '[ruby/rdoc]')
           || contains(github.event.head_commit.message, '[DOC]')
           || contains(github.event.pull_request.title, '[DOC]')
           || contains(github.event.pull_request.labels.*.name, 'Documentation')
-          }}
+          )}}
 
       - name: Upload docs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           path: html
           name: ${{ steps.docs.outputs.htmlout }}
-        if: ${{ steps.docs.outcome == 'success' }}
+        if: ${{ always() && steps.docs.outcome == 'success' }}
 
       - uses: ./.github/actions/slack
         with:
