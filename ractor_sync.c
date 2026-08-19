@@ -238,11 +238,6 @@ struct ractor_basket {
          * in-flight pin, so it never keeps a page of the sender's heap alive. */
         char *mbuf;
         size_t mlen;
-        /* Every node of a native copy snapshot, collected while building it (raw
-         * malloc).  The global GC's re-pin walks this list, since traversing the graph
-         * in-GC would need generic-ivar lookups.  NULL: only the root (p.v) is pinned. */
-        VALUE *pinned;
-        size_t pinned_cnt;
     } p; // payload
 
     struct ccan_list_node node;
@@ -276,15 +271,6 @@ ractor_basket_mark(const struct ractor_basket *b)
 static void
 ractor_basket_free(struct ractor_basket *b)
 {
-    /* A basket that dies before being enqueued clears the sender's re-pin slot; a
-     * free by the Ractor tearing the queue down does not match and is a no-op. */
-    rb_ractor_t *cr = rb_current_ractor_raw(false);
-    if (cr != NULL && cr->sending_basket == b) {
-        cr->sending_basket = NULL;
-    }
-    free(b->p.pinned);
-    b->p.pinned = NULL;
-    b->p.pinned_cnt = 0;
     ruby_xfree(b->p.mbuf);
     b->p.mbuf = NULL;
     b->p.mlen = 0;
@@ -782,57 +768,6 @@ ractor_sync_mark(rb_ractor_t *r)
     }
 }
 
-/* Re-pin a copy basket's payload: the root and every collected node. */
-static void
-ractor_basket_repin_in_flight(const struct ractor_basket *b)
-{
-    if (b->type != basket_type_copy || b->p.mbuf != NULL || b->p.move_courier != NULL) return;
-    rb_gc_pin_in_flight_message(b->p.v);
-    for (size_t i = 0; i < b->p.pinned_cnt; i++) {
-        rb_gc_pin_in_flight_message(b->p.pinned[i]);
-    }
-}
-
-static void
-ractor_queue_repin_in_flight(const struct ractor_queue *rq)
-{
-    const struct ractor_basket *b;
-    ccan_list_for_each(&rq->set, b, node) {
-        /* A move basket carries an off-heap courier, so it has no shref to re-pin;
-         * ractor_basket_mark marks the shareable VALUEs it carries instead. */
-        ractor_basket_repin_in_flight(b);
-    }
-}
-
-static int
-ractor_repin_ports_i(st_data_t key, st_data_t val, st_data_t data)
-{
-    ractor_queue_repin_in_flight((struct ractor_queue *)val);
-    return ST_CONTINUE;
-}
-
-/* A global GC clears every shref bit, so all in-flight payloads have to be re-pinned
- * before the unified mark.  Runs on the driver, under the barrier. */
-void
-rb_ractor_repin_in_flight(rb_ractor_t *r)
-{
-    if (r->sync.ports) {
-        ractor_queue_repin_in_flight(r->sync.recv_queue);
-        st_foreach(r->sync.ports, ractor_repin_ports_i, 0);
-    }
-    /* Baskets already built but not enqueued yet (in flight on the send path). */
-    if (r->sending_basket != NULL) {
-        ractor_basket_repin_in_flight(r->sending_basket);
-    }
-    /* A snapshot still being built (from prepare_payload's walk until it moves into
-     * the basket). */
-    for (size_t i = 0; i < r->pin_capture_cnt; i++) {
-        rb_gc_pin_in_flight_message(r->pin_capture[i]);
-    }
-    /* Snapshots being materialized are re-pinned from the EC frame chains instead
-     * (rb_execution_context_mark, which also covers a suspended fiber's EC). */
-}
-
 /* A single-objspace impl (mmtk) has no pin or shref bits and no zombie_objspaces, so
  * plain marking from the wrapper keeps these alive; the default GC covers the same set
  * with its pins and its zombie scan. */
@@ -840,12 +775,6 @@ void
 rb_ractor_mark_in_flight_for_single_objspace(rb_ractor_t *r)
 {
     rb_gc_mark(r->sync.legacy);
-    if (r->sending_basket != NULL) {
-        ractor_basket_mark(r->sending_basket);
-    }
-    for (size_t i = 0; i < r->pin_capture_cnt; i++) {
-        rb_gc_mark(r->pin_capture[i]);
-    }
 }
 
 static int
@@ -909,7 +838,6 @@ ractor_sync_init(rb_ractor_t *r)
     r->sync.legacy = Qundef;
 
     // no receive is rebuilding a payload yet
-    r->sync.materializing_copies = 0;
 
 #ifndef RUBY_THREAD_PTHREAD_H
     rb_native_cond_initialize(&r->sync.wakeup_cond);
@@ -1039,44 +967,19 @@ ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket
         }
         else {
             /* Snapshot the object on the sender side without calling the user-visible
-             * #clone: core types are deep-copied natively and anything else is
-             * marshaled here, so its user hooks run on the sender. */
+             * #clone.  Both forms are off-heap, so an in-flight payload is never a GC
+             * object and needs no pin: nothing of the sender's heap stays alive while
+             * the message waits (design_v2.md 4.5).  The courier carries the core
+             * types; anything else is marshaled here, so its user hooks run on the
+             * sender, and the dump travels as plain bytes. */
             *ptype = basket_type_copy;
-            /* An off-heap courier first: an in-flight payload that is not a GC object
-             * needs no pin, so nothing of the sender's heap stays alive while the
-             * message waits (design_v2.md 4.5).  NULL means the graph holds a type only
-             * the on-heap snapshot path below handles. */
             *pcourier = rb_ractor_copy_courier_build(obj);
             if (*pcourier != NULL) return Qundef;
 
-            /* During a native copy, copy_enter collects every snapshot node into the
-             * pin list that covers construction, enqueue and materialization. */
-            rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-            VM_ASSERT(!cr->gen_fields_capturing);
-            cr->gen_fields_capturing = true;
-            VALUE snapshot = Qundef;
-            /* A native copy can raise (allocation, async interrupt).  Leaving the
-             * capturing flag set would fail the next send's assert and leak a stale
-             * pin_capture list into that basket. */
-            enum ruby_tag_type state;
-            EC_PUSH_TAG(ec);
-            if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-                snapshot = ractor_copy_native_try(obj);
-            }
-            EC_POP_TAG();
-            cr->gen_fields_capturing = false;
-            if (state != TAG_NONE) {
-                cr->pin_capture_cnt = 0;
-                EC_JUMP_TAG(ec, state);
-            }
-            if (UNDEF_P(snapshot)) {
-                cr->pin_capture_cnt = 0;
-                snapshot = rb_rescue2(ractor_marshal_dump_body, obj,
-                                      ractor_marshal_dump_rescue, obj,
-                                      rb_eTypeError, (VALUE)0);
-                *pmarshaled = true;
-            }
-            return snapshot;
+            *pmarshaled = true;
+            return rb_rescue2(ractor_marshal_dump_body, obj,
+                              ractor_marshal_dump_rescue, obj,
+                              rb_eTypeError, (VALUE)0);
         }
     }
 }
@@ -1130,18 +1033,9 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
         if (state != TAG_NONE) {
             ruby_xfree(mbuf);
             if (courier != NULL) rb_ractor_move_courier_free(courier);
-            /* Drop the pin list, or every global GC re-pins the dead snapshot from it
-             * forever (rb_ractor_repin_in_flight walks it unconditionally).  The nodes
-             * stay shref-pinned only until the next global GC clears the bits. */
-            rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-            free(cr->pin_capture);
-            cr->pin_capture = NULL;
-            cr->pin_capture_cnt = cr->pin_capture_capa = 0;
             EC_JUMP_TAG(ec, state);
         }
-        /* The dump is off-heap now, so the sender's copy of it is ordinary garbage:
-         * nothing to pin.  A native snapshot still lives in the sender's objspace and
-         * is pinned through cr->pin_capture below. */
+        /* The payload is off-heap, so the sender's dump is ordinary garbage now. */
         if (mbuf != NULL) {
             v = Qundef;
         }
@@ -1154,35 +1048,7 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
     b->p.move_courier = courier;
     b->p.mbuf = mbuf;
     b->p.mlen = mlen;
-    b->p.pinned = NULL;
-    b->p.pinned_cnt = 0;
-    if (type == basket_type_copy) {
-        /* Hand the pin list to the basket, moving the re-pin cover from
-         * cr->pin_capture to cr->sending_basket with no safepoint in between. */
-        rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-        b->p.pinned = cr->pin_capture;
-        b->p.pinned_cnt = cr->pin_capture_cnt;
-        VM_ASSERT(cr->sending_basket == NULL);
-        cr->sending_basket = b;
-        cr->pin_capture = NULL;
-        cr->pin_capture_cnt = cr->pin_capture_capa = 0;
-    }
     return b;
-}
-
-/* True while this Ractor materializes an arriving copy: the half-built result
- * legitimately points at the sender-resident (pinned) snapshot, so a local GC's
- * verifier must not report containment violations, and the copy's own allocations can
- * start that GC. */
-bool
-rb_ractor_materializing_p(void)
-{
-    const rb_ractor_t *cr = rb_current_ractor_raw(false);
-    if (cr == NULL) return false;
-    /* Only a COPY materialization sets this: move shells reference other shells in
-     * this objspace, never the sender's graph.  The count is per Ractor, so a fiber
-     * switch keeps it exact. */
-    return cr->sync.materializing_copies > 0;
 }
 
 static VALUE
@@ -1195,48 +1061,23 @@ ractor_basket_value(struct ractor_basket *b)
         /* An off-heap copy courier rebuilds exactly like a move one; only the sources
          * differ (still alive here, already shells there). */
         if (b->p.move_courier != NULL) goto materialize_courier;
-        /* Materialize the sender's snapshot into the receiving Ractor's objspace.
-         * Passing the sender-resident graph by reference would create an unshareable
-         * cross-objspace edge that neither local GC can follow.  The snapshot stays
-         * pinned in the sender's objspace and becomes garbage there once this copy
-         * finishes.  Marshal.load allocates through this Ractor's normal newobj and
-         * write-barrier paths.
-         *
-         * Rebuilding can raise (marshal load hooks and autoload run user code and an
-         * async interrupt can arrive anywhere), and those hooks can run a nested
-         * Ractor.receive.  The frame is pushed on the machine stack and popped under a
-         * TAG, so the chain never leaks a dead materialization or drops an outer one. */
+        /* The payload is the marshaled bytes.  Marshal.load allocates through this
+         * Ractor's normal newobj and write-barrier paths, and can raise (load hooks and
+         * autoload run user code, an async interrupt can arrive anywhere), so it runs
+         * under a TAG. */
         rb_execution_context_t *ec = rb_current_ec_noinline();
-        rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-        struct ractor_materialize_frame frame = {
-            .snapshot = b->p.v, .pinned = b->p.pinned, .pinned_cnt = b->p.pinned_cnt,
-            .prev = ec->materialize_frames,
-        };
-        ec->materialize_frames = &frame;
-        cr->sync.materializing_copies++;
         VALUE result = Qundef;
         enum ruby_tag_type state;
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-            if (b->p.mbuf != NULL) {
-                /* Rebuild the marshaled bytes in this Ractor's objspace.  Marshal does
-                 * not mark its source (mark_load_arg) and the basket is off the queue,
-                 * so this frame's stack slot is the String's only root for the load. */
-                VALUE bin = rb_str_new(b->p.mbuf, (long)b->p.mlen);
-                result = rb_marshal_load(bin);
-                RB_GC_GUARD(bin);
-            }
-            else if (b->p.marshaled) {
-                result = rb_marshal_load(b->p.v);
-            }
-            else {
-                result = ractor_copy_native_try(b->p.v);
-                if (UNDEF_P(result)) rb_bug("ractor_basket_value: native snapshot not natively copyable");
-            }
+            /* Rebuild the byte string in this Ractor's objspace.  Marshal does not mark
+             * its source (mark_load_arg) and the basket is off the queue, so this
+             * frame's stack slot is the String's only root for the load. */
+            VALUE bin = rb_str_new(b->p.mbuf, (long)b->p.mlen);
+            result = rb_marshal_load(bin);
+            RB_GC_GUARD(bin);
         }
         EC_POP_TAG();
-        ec->materialize_frames = frame.prev;
-        cr->sync.materializing_copies--;
         /* rb_copy_generic_ivar left the sender-resident snapshot host and fields_obj in
          * this EC's gen_fields_cache; the snapshot is garbage on the sender now, and a
          * stale cache hit on a reused address would deref a freed foreign fields_obj.
@@ -1643,15 +1484,6 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
         else {
             b->port_id = ractor_port_id(rp);
             ractor_queue_enq(rp->r, rp->r->sync.recv_queue, b);
-            /* From basket_new to the enqueue the sender's sending_basket slot covers
-             * the re-pin; from here the queue walk does, so drop the slot (no safepoint
-             * or malloc-triggered GC inside the lock, so the cover never lapses). */
-            if (b->type == basket_type_copy) {
-                rb_ractor_t *scr = rb_current_ractor_raw(false);
-                if (scr != NULL && scr->sending_basket == b) {
-                    scr->sending_basket = NULL;
-                }
-            }
         }
     }
     RACTOR_UNLOCK(rp->r);
@@ -1687,8 +1519,6 @@ ractor_basket_new_ref(VALUE shareable)
     b->p.move_courier = NULL;
     b->p.mbuf = NULL;
     b->p.mlen = 0;
-    b->p.pinned = NULL;
-    b->p.pinned_cnt = 0;
 
     return b;
 }

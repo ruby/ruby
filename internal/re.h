@@ -66,7 +66,7 @@ VALUE rb_reg_match_p(VALUE re, VALUE str, long pos);
 VALUE rb_reg_regsub_match(VALUE str, VALUE src, VALUE match);
 VALUE rb_match_init_copy(VALUE copy, VALUE orig);
 /* MatchData transfer for the move courier (ractor.c). */
-void *rb_match_move_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs_out);
+void *rb_match_move_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs_out, bool release_source);
 VALUE rb_match_move_alloc(VALUE klass, int num_regs);
 void rb_match_move_load(VALUE match, VALUE regexp, VALUE str, int num_regs, const void *blob);
 void rb_match_move_free(void *blob);

@@ -1266,12 +1266,6 @@ rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
 }
 
 void
-rb_gc_impl_pin_in_flight_message(void *objspace_ptr, VALUE obj)
-{
-    /* With a single objspace there is nothing to pin. */
-}
-
-void
 rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
     struct MMTk_ractor_cache *cache = rb_gc_get_ractor_newobj_cache();

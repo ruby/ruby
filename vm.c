@@ -3905,23 +3905,6 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     rb_gc_mark(ec->local_storage_recursive_hash_for_trace);
     rb_gc_mark(ec->private_const_reference);
 
-    /* Snapshots of copy receives being materialized; off the queue, this is their only
-     * root.  A snapshot is sender-resident, skipped as foreign by our local GC; the
-     * global GC marks it and re-pins its shrefs (its clear pass dropped all).  Move
-     * couriers are covered by the in-flight registry instead (ractor.c). */
-    for (const struct ractor_materialize_frame *f = ec->materialize_frames; f != NULL; f = f->prev) {
-        rb_gc_mark(f->snapshot);
-        if (f->snapshot && !RB_SPECIAL_CONST_P(f->snapshot) && rb_gc_during_global_gc_p()) {
-            /* Every node, not just the root: if compaction moved a snapshot node,
-             * the address-keyed generic_fields entries and the dedup table would
-             * break. */
-            rb_gc_pin_in_flight_message(f->snapshot);
-            for (size_t i = 0; i < f->pinned_cnt; i++) {
-                rb_gc_pin_in_flight_message(f->pinned[i]);
-            }
-        }
-    }
-
     rb_gc_mark_movable(ec->storage);
 }
 

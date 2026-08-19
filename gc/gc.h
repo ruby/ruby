@@ -90,7 +90,6 @@ MODULAR_GC_FN void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func ca
 MODULAR_GC_FN void rb_gc_vm_generic_fields_mark_foreach(int (*cb)(VALUE key, VALUE val, void *arg), void *arg);
 MODULAR_GC_FN void rb_gc_vm_generic_fields_drain_dead(bool (*is_dead)(VALUE key));
 /* Exemptions for the shareable containment verifier (called from a gc-impl). */
-MODULAR_GC_FN bool rb_gc_current_ractor_materializing_p(void);
 MODULAR_GC_FN VALUE rb_gc_vm_top_self(void);
 MODULAR_GC_FN void rb_gc_update_object_references(void *objspace, VALUE obj);
 MODULAR_GC_FN void rb_gc_update_vm_references(void *objspace);

@@ -46,22 +46,9 @@ struct rb_ractor_sync {
     VALUE legacy;
     bool legacy_exc;
     bool legacy_taken; /* Ractor#value already returned the value */
-
-    /* Number of receives currently materializing a copy (only the owner's threads
-     * update it, under the GVL). */
-    int materializing_copies;
 };
 
 struct ractor_basket;
-
-/* One in-flight copy payload being rebuilt (lives on the receiver's machine
- * stack) */
-struct ractor_materialize_frame {
-    VALUE snapshot;                          /* the sender-side snapshot */
-    const VALUE *pinned;                     /* pin list of every snapshot node (owned by the basket) */
-    size_t pinned_cnt;
-    struct ractor_materialize_frame *prev;
-};
 
 // created
 //   | ready to run
@@ -162,28 +149,12 @@ struct rb_ractor_struct {
      * still enumerates it. */
     void *creating_child_objspace;
 
-    /* True while Ractor#send builds a native copy snapshot; copy_enter then collects
-     * every snapshot node into pin_capture below.  Owner thread only. */
-    bool gen_fields_capturing;
-
-    /* Pin list collecting every node while a copy snapshot is built (basket_new
-     * hands it over to the basket).  A global GC clears every shref, so the re-pin
-     * has to cover all nodes, not just the root. */
-    VALUE *pin_capture;
-    size_t pin_capture_cnt, pin_capture_capa;
-    /* The in-flight copy basket between basket_new and the enqueue, so the re-pin
-     * covers that window too */
-    struct ractor_basket *sending_basket;
 }; // rb_ractor_t is defined in vm_core.h
 
 /* Mark the GC roots held in Ractor r's C structs (from the root scan in gc.c). */
 void rb_ractor_mark_local_roots(rb_ractor_t *r);
 void rb_ractor_mark_terminated_join_value(rb_ractor_t *r);
-void rb_ractor_repin_in_flight(rb_ractor_t *r);
 void rb_ractor_mark_in_flight_for_single_objspace(rb_ractor_t *r);
-/* True while the current Ractor is materializing an arriving copy (see the
- * definition in ractor_sync.c). */
-bool rb_ractor_materializing_p(void);
 
 /* Move src's registered_marks to dst and leave src empty (on join or when an orphan
  * is absorbed).  An absorb can run during a GC sweep, so the implementation uses raw
