@@ -64,7 +64,8 @@ jobs:
 
       - name: Check for bash specific substitution in configure.ac
         run: |
-          git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac && exit 1 || :
+          git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac | sed "s/^/::error::/"
+          test ${PIPESTATUS[0]} != 0
 
       - name: Check for header macros
         run: |
@@ -72,7 +73,7 @@ jobs:
           for header in ruby/*.h; do
             git grep -l -F -e $header -e HAVE_`echo $header | tr a-z./ A-Z__` -- . > /dev/null && continue
             fail=1
-            echo $header
+            echo "::error::$header"
           done
           exit $fail
         working-directory: include
