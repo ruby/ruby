@@ -3013,7 +3013,7 @@ econv_free(void *ptr)
 static size_t
 econv_memsize(const void *ptr)
 {
-    return sizeof(rb_econv_t);
+    return ptr ? rb_econv_memsize((rb_econv_t *)ptr) : 0;
 }
 
 static const rb_data_type_t econv_data_type = {
