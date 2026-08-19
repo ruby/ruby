@@ -186,11 +186,16 @@ struct branch_coverage_result_builder
     int id;
     VALUE result;
     VALUE children;
-    VALUE counters;
 };
 
+/*
+ * Branch coverage result template, cached in branches[2]:
+ *   { base_key => { target_key => counter_index } }
+ * Each peek dups it and replaces the indexes with the counters, which avoids
+ * hashing the array keys again and again.
+ */
 static int
-branch_coverage_ii(VALUE _key, VALUE branch, VALUE v)
+branch_template_ii(VALUE _key, VALUE branch, VALUE v)
 {
     struct branch_coverage_result_builder *b = (struct branch_coverage_result_builder *) v;
 
@@ -199,14 +204,16 @@ branch_coverage_ii(VALUE _key, VALUE branch, VALUE v)
     VALUE target_first_column = RARRAY_AREF(branch, 2);
     VALUE target_last_lineno = RARRAY_AREF(branch, 3);
     VALUE target_last_column = RARRAY_AREF(branch, 4);
-    long counter_idx = FIX2LONG(RARRAY_AREF(branch, 5));
-    rb_hash_aset(b->children, rb_ary_new_from_args(6, target_label, LONG2FIX(b->id++), target_first_lineno, target_first_column, target_last_lineno, target_last_column), RARRAY_AREF(b->counters, counter_idx));
+    VALUE counter_idx = RARRAY_AREF(branch, 5);
+    VALUE key = rb_ary_new_from_args(6, target_label, LONG2FIX(b->id++), target_first_lineno, target_first_column, target_last_lineno, target_last_column);
+    rb_ary_freeze(key);
+    rb_hash_aset(b->children, key, counter_idx);
 
     return ST_CONTINUE;
 }
 
 static int
-branch_coverage_i(VALUE _key, VALUE branch_base, VALUE v)
+branch_template_i(VALUE _key, VALUE branch_base, VALUE v)
 {
     struct branch_coverage_result_builder *b = (struct branch_coverage_result_builder *) v;
 
@@ -217,26 +224,85 @@ branch_coverage_i(VALUE _key, VALUE branch_base, VALUE v)
     VALUE base_last_column = RARRAY_AREF(branch_base, 4);
     VALUE branches = RARRAY_AREF(branch_base, 5);
     VALUE children = rb_hash_new();
-    rb_hash_aset(b->result, rb_ary_new_from_args(6, base_type, LONG2FIX(b->id++), base_first_lineno, base_first_column, base_last_lineno, base_last_column), children);
+    VALUE key = rb_ary_new_from_args(6, base_type, LONG2FIX(b->id++), base_first_lineno, base_first_column, base_last_lineno, base_last_column);
+    rb_ary_freeze(key);
+    rb_hash_aset(b->result, key, children);
     b->children = children;
-    rb_hash_foreach(branches, branch_coverage_ii, v);
+    rb_hash_foreach(branches, branch_template_ii, v);
 
+    return ST_CONTINUE;
+}
+
+/* returns [template, nbases, ntargets] */
+static VALUE
+branch_template(VALUE branches)
+{
+    VALUE structure = RARRAY_AREF(branches, 0);
+    VALUE counters = RARRAY_AREF(branches, 1);
+    long nbases = RHASH_SIZE(structure);
+    long ntargets = RARRAY_LEN(counters);
+    VALUE cache = RARRAY_LEN(branches) > 2 ? RARRAY_AREF(branches, 2) : Qnil;
+
+    if (!NIL_P(cache) &&
+        FIX2LONG(RARRAY_AREF(cache, 1)) == nbases &&
+        FIX2LONG(RARRAY_AREF(cache, 2)) == ntargets) {
+        return RARRAY_AREF(cache, 0);
+    }
+    else {
+        struct branch_coverage_result_builder b;
+        b.id = 0;
+        b.result = rb_hash_new();
+        rb_hash_foreach(structure, branch_template_i, (VALUE)&b);
+        cache = rb_ary_hidden_new(3);
+        rb_ary_push(cache, b.result);
+        rb_ary_push(cache, LONG2FIX(nbases));
+        rb_ary_push(cache, LONG2FIX(ntargets));
+        rb_ary_store(branches, 2, cache);
+        return b.result;
+    }
+}
+
+static int
+branch_fill_check(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    return ST_REPLACE;
+}
+
+/* children: {target_key => counter_index} -> {target_key => counter} */
+static int
+branch_fill_counter(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    VALUE counters = (VALUE)argp;
+    *value = (st_data_t)RARRAY_AREF(counters, FIX2LONG((VALUE)*value));
+    return ST_CONTINUE;
+}
+
+struct branch_fill_arg
+{
+    VALUE result;
+    VALUE counters;
+};
+
+/* result: {base_key => children_template} -> {base_key => filled copy of children} */
+static int
+branch_fill_children(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    struct branch_fill_arg *a = (struct branch_fill_arg *)argp;
+    VALUE children = rb_hash_dup((VALUE)*value);
+    rb_hash_stlike_foreach_with_replace(children, branch_fill_check, branch_fill_counter, (st_data_t)a->counters);
+    RB_OBJ_WRITE(a->result, value, children);
     return ST_CONTINUE;
 }
 
 static VALUE
 branch_coverage(VALUE branches)
 {
-    VALUE structure = RARRAY_AREF(branches, 0);
-
-    struct branch_coverage_result_builder b;
-    b.id = 0;
-    b.result = rb_hash_new();
-    b.counters = RARRAY_AREF(branches, 1);
-
-    rb_hash_foreach(structure, branch_coverage_i, (VALUE)&b);
-
-    return b.result;
+    struct branch_fill_arg a;
+    VALUE template = branch_template(branches);
+    a.counters = RARRAY_AREF(branches, 1);
+    a.result = rb_hash_dup(template);
+    rb_hash_stlike_foreach_with_replace(a.result, branch_fill_check, branch_fill_children, (st_data_t)&a);
+    return a.result;
 }
 
 static void
