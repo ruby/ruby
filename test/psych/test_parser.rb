@@ -70,6 +70,20 @@ module Psych
       end
     end
 
+    def test_event_location_exception_is_propagated
+      klass = Class.new(Psych::Handler) do
+        def event_location start_line, start_column, end_line, end_column
+          raise "from event_location"
+        end
+      end
+
+      parser = Psych::Parser.new klass.new
+      2.times do
+        ex = assert_raise(RuntimeError) { parser.parse "--- hello\n" }
+        assert_equal "from event_location", ex.message
+      end
+    end
+
     def test_multiparse
       3.times do
         @parser.parse '--- foo'

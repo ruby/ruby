@@ -348,6 +348,10 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
         event_args[3] = SIZET2NUM(em ? (size_t)em->line : 0);
         event_args[4] = SIZET2NUM(em ? (size_t)em->column : 0);
         rb_protect(protected_event_location, (VALUE)event_args, &state);
+        if (state) {
+            fy_parser_event_free(parser->fyp, event);
+            rb_jump_tag(state);
+        }
 
         switch (event->type) {
             case FYET_STREAM_START:

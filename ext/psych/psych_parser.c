@@ -312,6 +312,10 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
         event_args[3] = end_line;
         event_args[4] = end_column;
         rb_protect(protected_event_location, (VALUE)event_args, &state);
+        if (state) {
+            yaml_event_delete(&event);
+            rb_jump_tag(state);
+        }
 
         switch(event.type) {
             case YAML_STREAM_START_EVENT:
