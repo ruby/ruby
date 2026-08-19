@@ -232,6 +232,11 @@ struct ractor_basket {
         /* The off-heap (xmalloc) courier of a basket_type_move.  A move basket does
          * not use v. */
         struct rb_ractor_move_courier *move_courier;
+        /* The marshaled bytes of a copy payload, off-heap like a move courier.  When
+         * set, v is unused: an in-flight payload that is not a GC object needs no
+         * in-flight pin, so it never keeps a page of the sender's heap alive. */
+        char *mbuf;
+        size_t mlen;
         /* Every node of a native copy snapshot, collected while building it (raw
          * malloc).  The global GC's re-pin walks this list, since traversing the graph
          * in-GC would need generic-ivar lookups.  NULL: only the root (p.v) is pinned. */
@@ -262,7 +267,7 @@ ractor_basket_mark(const struct ractor_basket *b)
     /* A move courier lives off-heap, and the shareable REFs it carries are marked and
      * pinned as a global GC root by the in-flight registry (ractor.c).  Nothing to do
      * here. */
-    if (b->type != basket_type_move) {
+    if (b->type != basket_type_move && b->p.mbuf == NULL) {
         rb_gc_mark(b->p.v);
     }
 }
@@ -279,6 +284,9 @@ ractor_basket_free(struct ractor_basket *b)
     free(b->p.pinned);
     b->p.pinned = NULL;
     b->p.pinned_cnt = 0;
+    ruby_xfree(b->p.mbuf);
+    b->p.mbuf = NULL;
+    b->p.mlen = 0;
     if (b->type == basket_type_move && b->p.move_courier) {
         /* A move courier that was never consumed (a queue being torn down, say). */
         rb_ractor_move_courier_free(b->p.move_courier);
@@ -777,7 +785,7 @@ ractor_sync_mark(rb_ractor_t *r)
 static void
 ractor_basket_repin_in_flight(const struct ractor_basket *b)
 {
-    if (b->type != basket_type_copy) return;
+    if (b->type != basket_type_copy || b->p.mbuf != NULL) return;
     rb_gc_pin_in_flight_message(b->p.v);
     for (size_t i = 0; i < b->p.pinned_cnt; i++) {
         rb_gc_pin_in_flight_message(b->p.pinned[i]);
@@ -1073,6 +1081,8 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
     volatile VALUE v = Qfalse;
     bool marshaled = false;
     struct rb_ractor_move_courier *courier = NULL;
+    char *mbuf = NULL;
+    size_t mlen = 0;
 
     struct ractor_basket *b;
     if (type == basket_type_move) {
@@ -1098,10 +1108,18 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
         enum ruby_tag_type state;
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+            /* Take the dump off-heap before the basket exists, so an alloc raise below
+             * frees it through mbuf rather than orphaning it. */
+            if (type == basket_type_copy && marshaled) {
+                mlen = (size_t)RSTRING_LEN(v);
+                mbuf = ALLOC_N(char, mlen > 0 ? mlen : 1);
+                memcpy(mbuf, RSTRING_PTR(v), mlen);
+            }
             b = ractor_basket_alloc();
         }
         EC_POP_TAG();
         if (state != TAG_NONE) {
+            ruby_xfree(mbuf);
             /* Drop the pin list, or every global GC re-pins the dead snapshot from it
              * forever (rb_ractor_repin_in_flight walks it unconditionally).  The nodes
              * stay shref-pinned only until the next global GC clears the bits. */
@@ -1111,12 +1129,11 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
             cr->pin_capture_cnt = cr->pin_capture_capa = 0;
             EC_JUMP_TAG(ec, state);
         }
-        /* copy_enter pinned every node at construction with cr->pin_capture as the
-         * re-pin source; hand it to the basket only after basket_alloc (which may GC)
-         * so the cover never lapses.  A marshaled String is pinned here, after the
-         * alloc, so an alloc raise leaves no stale pin. */
-        if (type == basket_type_copy && marshaled) {
-            rb_gc_pin_in_flight_message(v);
+        /* The dump is off-heap now, so the sender's copy of it is ordinary garbage:
+         * nothing to pin.  A native snapshot still lives in the sender's objspace and
+         * is pinned through cr->pin_capture below. */
+        if (mbuf != NULL) {
+            v = Qundef;
         }
     }
 
@@ -1125,6 +1142,8 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
     b->p.v = v;
     b->p.marshaled = marshaled;
     b->p.move_courier = courier;
+    b->p.mbuf = mbuf;
+    b->p.mlen = mlen;
     b->p.pinned = NULL;
     b->p.pinned_cnt = 0;
     if (type == basket_type_copy) {
@@ -1186,7 +1205,15 @@ ractor_basket_value(struct ractor_basket *b)
         enum ruby_tag_type state;
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-            if (b->p.marshaled) {
+            if (b->p.mbuf != NULL) {
+                /* Rebuild the marshaled bytes in this Ractor's objspace.  Marshal does
+                 * not mark its source (mark_load_arg) and the basket is off the queue,
+                 * so this frame's stack slot is the String's only root for the load. */
+                VALUE bin = rb_str_new(b->p.mbuf, (long)b->p.mlen);
+                result = rb_marshal_load(bin);
+                RB_GC_GUARD(bin);
+            }
+            else if (b->p.marshaled) {
                 result = rb_marshal_load(b->p.v);
             }
             else {
@@ -1644,6 +1671,8 @@ ractor_basket_new_ref(VALUE shareable)
     b->p.exception = false;
     b->p.marshaled = false;
     b->p.move_courier = NULL;
+    b->p.mbuf = NULL;
+    b->p.mlen = 0;
     b->p.pinned = NULL;
     b->p.pinned_cnt = 0;
 
