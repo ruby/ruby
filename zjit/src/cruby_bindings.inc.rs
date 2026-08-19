@@ -650,6 +650,14 @@ pub type rb_jit_func_t = ::std::option::Option<
     ) -> VALUE,
 >;
 #[repr(C)]
+pub struct rb_iseq_variable {
+    pub flip_count: rb_snum_t,
+    pub script_lines: VALUE,
+    pub coverage: VALUE,
+    pub pc2branchindex: VALUE,
+    pub original_iseq: *mut VALUE,
+}
+#[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_iseq_constant_body_rb_iseq_parameters {
     pub flags: rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1,
@@ -1272,16 +1280,8 @@ pub const lvar_initialized: rb_iseq_constant_body_lvar_state = 1;
 pub const lvar_reassigned: rb_iseq_constant_body_lvar_state = 2;
 pub type rb_iseq_constant_body_lvar_state = u32;
 #[repr(C)]
-pub struct rb_iseq_constant_body__bindgen_ty_1 {
-    pub flip_count: rb_snum_t,
-    pub script_lines: VALUE,
-    pub coverage: VALUE,
-    pub pc2branchindex: VALUE,
-    pub original_iseq: *mut VALUE,
-}
-#[repr(C)]
 #[derive(Copy, Clone)]
-pub union rb_iseq_constant_body__bindgen_ty_2 {
+pub union rb_iseq_constant_body__bindgen_ty_1 {
     pub list: *mut iseq_bits_t,
     pub single: iseq_bits_t,
 }
@@ -1990,7 +1990,7 @@ pub struct zjit_jit_frame {
     pub stack: __IncompleteArrayField<VALUE>,
 }
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
-pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 288;
+pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 256;
 pub const RUBY_OFFSET_THREAD_RACTOR: zjit_struct_offsets = 24;
 pub type zjit_struct_offsets = u32;
 #[repr(C)]

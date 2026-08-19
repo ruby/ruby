@@ -1004,7 +1004,8 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 VALUE *
 rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 {
-    VALUE *original_code = RUBY_ATOMIC_PTR_LOAD(ISEQ_BODY(iseq)->variable.original_iseq);
+    struct rb_iseq_variable *v = ISEQ_VARIABLE(iseq);
+    VALUE *original_code = v ? RUBY_ATOMIC_PTR_LOAD(v->original_iseq) : NULL;
 
     if (original_code) return original_code;
     original_code = ALLOC_N(VALUE, ISEQ_BODY(iseq)->iseq_size);
@@ -1026,7 +1027,8 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 
     /* Concurrent callers can each build a copy; publish only fully
      * translated code and keep the first one. */
-    VALUE *prev = ATOMIC_PTR_CAS(ISEQ_BODY(iseq)->variable.original_iseq,
+    v = rb_iseq_variable_ensure((rb_iseq_t *)iseq);
+    VALUE *prev = ATOMIC_PTR_CAS(v->original_iseq,
                                  NULL, original_code);
     if (prev) {
         SIZED_FREE_N(original_code, ISEQ_BODY(iseq)->iseq_size);
@@ -1519,7 +1521,7 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
                                     line_no, parent,
                                     isolated_depth ? isolated_depth + 1 : 0,
                                     type, ISEQ_COMPILE_DATA(iseq)->option,
-                                    ISEQ_BODY(iseq)->variable.script_lines);
+                                    ISEQ_SCRIPT_LINES(iseq));
     debugs("[new_child_iseq]< ---------------------------------------\n");
     return ret_iseq;
 }
@@ -9442,7 +9444,7 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
                            rb_iseq_path(iseq), rb_iseq_realpath(iseq),
                            nd_line(line_node), NULL, 0,
                            ISEQ_TYPE_METHOD, ISEQ_COMPILE_DATA(iseq)->option,
-                           ISEQ_BODY(iseq)->variable.script_lines);
+                           ISEQ_SCRIPT_LINES(iseq));
     RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
 
     ALLOCV_END(idtmp);
@@ -13818,7 +13820,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, mandatory_only_iseq_index);
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(ci_entries_offset));
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(outer_variables_offset));
-    ibf_dump_write_small_value(dump, body->variable.flip_count);
+    ibf_dump_write_small_value(dump, ISEQ_FLIP_CNT(iseq));
     ibf_dump_write_small_value(dump, body->local_table_size);
     ibf_dump_write_small_value(dump, body->ivc_size);
     ibf_dump_write_small_value(dump, body->icvarc_size);
@@ -14011,10 +14013,12 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->ci_size = ci_size;
     load_body->insns_info.size = insns_info_size;
 
-    ISEQ_COVERAGE_SET(iseq, Qnil);
+    // variable is NULL from ZALLOC; only allocate if flip_count is non-zero.
     ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
-    load_body->variable.flip_count = variable_flip_count;
-    load_body->variable.script_lines = Qnil;
+    if (variable_flip_count) {
+        struct rb_iseq_variable *v = rb_iseq_variable_ensure(iseq);
+        v->flip_count = variable_flip_count;
+    }
 
     load_body->location.first_lineno = location_first_lineno;
     load_body->location.node_id = location_node_id;
@@ -15240,8 +15244,13 @@ rb_iseq_dup_with_independent_caches(const rb_iseq_t *src_root)
         struct rb_iseq_constant_body *cb = ISEQ_BODY(copy);
         if (!cb->local_iseq) RB_OBJ_WRITE(copy, &cb->local_iseq, sb->local_iseq);
         RB_OBJ_WRITE(copy, &cb->location.pathobj, sb->location.pathobj);
-        RB_OBJ_WRITE(copy, &cb->variable.script_lines, sb->variable.script_lines);
-        ISEQ_COVERAGE_SET(copy, ISEQ_COVERAGE(src_root));
+        VALUE sl = ISEQ_SCRIPT_LINES(src_root);
+        VALUE cov = ISEQ_COVERAGE(src_root);
+        if (!NIL_P(sl) || !NIL_P(cov)) {
+            struct rb_iseq_variable *v = rb_iseq_variable_ensure(copy);
+            RB_OBJ_WRITE(copy, &v->script_lines, sl);
+            RB_OBJ_WRITE(copy, &v->coverage, cov);
+        }
 
         if (i == 0) {
             RB_OBJ_WRITE(copy, &cb->parent_iseq, sb->parent_iseq);
