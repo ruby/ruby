@@ -666,13 +666,19 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Send { cd, block: None, state, reason, .. } => gen_send_without_block(jit, asm, function, cd, &function.frame_state(state), reason),
         &Insn::Send { cd, block: Some(BlockHandler::BlockIseq(blockiseq)), state, reason, .. } => gen_send(jit, asm, function, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::Send { cd, block: Some(BlockHandler::BlockArg), state, reason, .. } => gen_send(jit, asm, function, cd, std::ptr::null(), &function.frame_state(state), reason),
+        &Insn::Send { block: Some(BlockHandler::BlockArgProc(_)), .. } => unreachable!("BlockArgProc only appears in SendDirect"),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, function, cd, blockiseq, &function.frame_state(state), reason),
         Insn::SendDirect(insn) => {
             let SendDirectData { cme, iseq, recv, args, kw_bits, jit_entry_idx, block, state, .. } = &**insn;
+            let block = block.map(|bh| match bh {
+                BlockHandler::BlockIseq(blockiseq) => lir::BlockHandler::Iseq(blockiseq),
+                BlockHandler::BlockArgProc(proc_id) => lir::BlockHandler::Proc(opnd!(proc_id)),
+                BlockHandler::BlockArg => unreachable!("BlockArg in SendDirect"),
+            });
             gen_send_iseq_direct(
                 cb, jit, asm,
                 function, *cme, *iseq, opnd!(recv), opnds!(args),
-                *kw_bits, *jit_entry_idx, &function.frame_state(*state), *block,
+                *kw_bits, *jit_entry_idx, &function.frame_state(*state), block,
             )
         }
         Insn::PushInlineFrame { cme, iseq, recv, num_args, blockiseq, state, .. } => {
@@ -1766,7 +1772,7 @@ fn gen_send_iseq_direct(
     kw_bits: u32,
     jit_entry_idx: u16,
     state: &FrameState,
-    block: Option<BlockHandler>,
+    block: Option<lir::BlockHandler>,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::iseq_optimized_send_count);
 
@@ -1784,11 +1790,14 @@ fn gen_send_iseq_direct(
     gen_spill_locals(jit, asm, state);
     asm.stack_map(stack_map, jit_frame, state.depth);
 
-    // This mirrors vm_caller_setup_arg_block() in for the `blockiseq != NULL` case.
-    // The HIR specialization guards ensure we will only reach here for literal blocks,
-    // not &block forwarding, &:foo, etc. Thise are rejected in `type_specialize` by
-    // `unspecializable_call_type`.
-    let block_handler = block.map(|bh| match bh { BlockHandler::BlockIseq(b) => gen_block_handler_specval(asm, b), BlockHandler::BlockArg => unreachable!("BlockArg in gen_send_iseq_direct") });
+    // This mirrors vm_caller_setup_arg_block().
+    // Unsupported block args (BlockHandler::BlockArg) are rejected upstream in `type_specialize`.
+    let block_handler = block.map(|bh| match bh {
+        // the `blockiseq != NULL` case
+        lir::BlockHandler::Iseq(b) => gen_block_handler_specval(asm, b),
+        // the VM_CALL_ARGS_BLOCKARG case, where vm_to_proc(block_code) returns the given Proc as is
+        lir::BlockHandler::Proc(proc) => proc,
+    });
 
     let callee_is_bmethod = VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) };
 
