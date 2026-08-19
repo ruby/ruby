@@ -2308,12 +2308,10 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     return cc;
 }
 
-ALWAYS_INLINE(static bool vm_cc_hit_p(const struct rb_call_data *cd, VALUE klass));
+ALWAYS_INLINE(static bool vm_cc_hit_p(const struct rb_callcache *cc, const struct rb_call_data *cd, VALUE klass));
 static bool
-vm_cc_hit_p(const struct rb_call_data *cd, VALUE klass)
+vm_cc_hit_p(const struct rb_callcache *cc, const struct rb_call_data *cd, VALUE klass)
 {
-    const struct rb_callcache *cc = cd->cc;
-
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 
 #if OPT_INLINE_METHOD_CACHE
@@ -2341,8 +2339,9 @@ ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(const 
 static const struct rb_callcache *
 vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass)
 {
-    if (vm_cc_hit_p(cd, klass)) {
-        return cd->cc;
+    const struct rb_callcache *cc = cd->cc;
+    if (vm_cc_hit_p(cc, cd, klass)) {
+        return cc;
     }
 
     return vm_search_method_slowpath0((VALUE)CFP_ISEQ(reg_cfp), cd, klass);
@@ -2366,7 +2365,7 @@ rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
     // the iseq on the current CFP.
     VALUE klass = CLASS_OF(recv);
     const struct rb_callcache *cc = cd->cc;
-    if (!vm_cc_hit_p(cd, klass)) {
+    if (!vm_cc_hit_p(cc, cd, klass)) {
         cc = vm_search_method_slowpath0(cd_owner, cd, klass);
     }
     return vm_cc_cme(cc);
