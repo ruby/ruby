@@ -1864,14 +1864,14 @@ update_lvar_state(const rb_iseq_t *iseq, int level, int idx)
         iseq = ISEQ_BODY(iseq)->parent_iseq;
     }
 
-    enum lvar_state *states = ISEQ_BODY(iseq)->lvar_states;
+    uint8_t *states = ISEQ_BODY(iseq)->lvar_states;
     int table_idx = ISEQ_BODY(iseq)->local_table_size - idx;
-    switch (states[table_idx]) {
+    switch (iseq_lvar_state_get(states, table_idx)) {
       case lvar_uninitialized:
-        states[table_idx] = lvar_initialized;
+        iseq_lvar_state_set(states, table_idx, lvar_initialized);
         break;
       case lvar_initialized:
-        states[table_idx] = lvar_reassigned;
+        iseq_lvar_state_set(states, table_idx, lvar_reassigned);
         break;
       case lvar_reassigned:
         /* nothing */
@@ -1885,13 +1885,13 @@ static int
 iseq_set_parameters_lvar_state(const rb_iseq_t *iseq)
 {
     for (unsigned int i=0; i<ISEQ_BODY(iseq)->param.size; i++) {
-        ISEQ_BODY(iseq)->lvar_states[i] = lvar_initialized;
+        iseq_lvar_state_set(ISEQ_BODY(iseq)->lvar_states, i, lvar_initialized);
     }
 
     int lead_num = ISEQ_BODY(iseq)->param.lead_num;
     int opt_num = ISEQ_BODY(iseq)->param.opt_num;
     for (int i=0; i<opt_num; i++) {
-        ISEQ_BODY(iseq)->lvar_states[lead_num + i] = lvar_uninitialized;
+        iseq_lvar_state_set(ISEQ_BODY(iseq)->lvar_states, lead_num + i, lvar_uninitialized);
     }
 
     return COMPILE_OK;
@@ -2257,13 +2257,7 @@ iseq_set_local_table(rb_iseq_t *iseq, const rb_ast_id_table_t *tbl, const NODE *
         MEMCPY(ids, tbl->ids + offset, ID, size);
         ISEQ_BODY(iseq)->local_table = ids;
 
-        enum lvar_state *states = ALLOC_N(enum lvar_state, size);
-        // fprintf(stderr, "iseq:%p states:%p size:%d\n", iseq, states, (int)size);
-        for (unsigned int i=0; i<size; i++) {
-            states[i] = lvar_uninitialized;
-            // fprintf(stderr, "id:%s\n", rb_id2name(ISEQ_BODY(iseq)->local_table[i]));
-        }
-        ISEQ_BODY(iseq)->lvar_states = states;
+        ISEQ_BODY(iseq)->lvar_states = ZALLOC_N(uint8_t, ISEQ_LVAR_STATES_BUFLEN(size));
     }
     ISEQ_BODY(iseq)->local_table_size = size;
 
@@ -12616,7 +12610,7 @@ typedef uint32_t ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #ifdef RUBY_DEVEL
-#define IBF_DEVEL_VERSION 6
+#define IBF_DEVEL_VERSION 7
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -13443,12 +13437,12 @@ static ibf_offset_t
 ibf_dump_lvar_states(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-    const int size = body->local_table_size;
-    IBF_W_ALIGN(enum lvar_state);
-    return ibf_dump_write(dump, body->lvar_states, sizeof(enum lvar_state) * (body->lvar_states ? size : 0));
+    const int size = ISEQ_LVAR_STATES_BUFLEN(body->local_table_size);
+    IBF_W_ALIGN(uint8_t);
+    return ibf_dump_write(dump, body->lvar_states, sizeof(uint8_t) * (body->lvar_states ? size : 0));
 }
 
-static enum lvar_state *
+static uint8_t *
 ibf_load_lvar_states(const struct ibf_load *load, ibf_offset_t lvar_states_offset, int size, const ID *local_table)
 {
     if (local_table == rb_iseq_shared_exc_local_tbl ||
@@ -13456,7 +13450,7 @@ ibf_load_lvar_states(const struct ibf_load *load, ibf_offset_t lvar_states_offse
         return NULL;
     }
     else {
-        enum lvar_state *states = IBF_R(lvar_states_offset, enum lvar_state, size);
+        uint8_t *states = IBF_R(lvar_states_offset, uint8_t, ISEQ_LVAR_STATES_BUFLEN(size));
         return states;
     }
 }

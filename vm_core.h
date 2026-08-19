@@ -410,6 +410,12 @@ enum rb_builtin_attr {
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
 typedef VALUE (*rb_zjit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *, rb_jit_func_t);
 
+enum lvar_state {
+    lvar_uninitialized,
+    lvar_initialized,
+    lvar_reassigned,
+};
+
 struct rb_iseq_constant_body {
     enum rb_iseq_type type;
 
@@ -507,11 +513,7 @@ struct rb_iseq_constant_body {
 
     const ID *local_table;		/* must free */
 
-    enum lvar_state {
-        lvar_uninitialized,
-        lvar_initialized,
-        lvar_reassigned,
-    } *lvar_states;
+    uint8_t *lvar_states;
 
     /* catch table */
     struct iseq_catch_table *catch_table;

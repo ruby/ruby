@@ -1495,7 +1495,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
             for (unsigned int j=0; j<body->local_table_size; j++) {
                 if (id == body->local_table[j]) {
                     // check reassignment
-                    if (body->lvar_states[j] == lvar_reassigned) {
+                    if (iseq_lvar_state_get(body->lvar_states, j) == lvar_reassigned) {
                         VALUE name = rb_id2str(id);
                         VALUE msg = rb_sprintf("cannot make a shareable Proc because "
                                                "the outer variable '%" PRIsVALUE "' may be reassigned.", name);

@@ -1267,10 +1267,6 @@ pub struct rb_iseq_constant_body_iseq_insn_info {
     pub size: ::std::os::raw::c_uint,
     pub succ_index_table: *mut succ_index_table,
 }
-pub const lvar_uninitialized: rb_iseq_constant_body_lvar_state = 0;
-pub const lvar_initialized: rb_iseq_constant_body_lvar_state = 1;
-pub const lvar_reassigned: rb_iseq_constant_body_lvar_state = 2;
-pub type rb_iseq_constant_body_lvar_state = u32;
 #[repr(C)]
 pub struct rb_iseq_constant_body__bindgen_ty_1 {
     pub flip_count: rb_snum_t,
