@@ -686,7 +686,6 @@ typedef struct gc_function_map {
     void (*writebarrier_unprotect)(void *objspace_ptr, VALUE obj);
     void (*writebarrier_remember)(void *objspace_ptr, VALUE obj);
     void (*obj_became_shareable)(void *objspace_ptr, VALUE obj);
-    void (*pin_in_flight_message)(void *objspace_ptr, VALUE obj);
     // Heap walking
     void (*each_objects)(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
     void (*each_objects_shareable)(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
@@ -882,7 +881,6 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(writebarrier_unprotect);
     load_modular_gc_func(writebarrier_remember);
     load_modular_gc_func(obj_became_shareable);
-    load_modular_gc_func(pin_in_flight_message);
     // Heap walking
     load_modular_gc_func(each_objects);
     load_modular_gc_func(each_objects_shareable);
@@ -987,7 +985,6 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_writebarrier_unprotect rb_gc_functions.writebarrier_unprotect
 # define rb_gc_impl_writebarrier_remember rb_gc_functions.writebarrier_remember
 # define rb_gc_impl_obj_became_shareable rb_gc_functions.obj_became_shareable
-# define rb_gc_impl_pin_in_flight_message rb_gc_functions.pin_in_flight_message
 // Heap walking
 # define rb_gc_impl_each_objects rb_gc_functions.each_objects
 # define rb_gc_impl_each_objects_shareable rb_gc_functions.each_objects_shareable
@@ -3267,14 +3264,12 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
                            !rb_gc_impl_multi_objspace_p();
 
     /* Mark the current Ractor's roots from its C structs (a local GC must not depend on
-     * heap wrapper traversal).  A global GC does the same for every Ractor and re-pins
-     * the in-flight payloads whose shrefs its clear pass dropped. */
+     * heap wrapper traversal).  A global GC does the same for every Ractor. */
     MARK_CHECKPOINT("ractor");
     if (global_gc) {
         rb_ractor_t *r;
         ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             rb_ractor_mark_local_roots(r);
-            rb_ractor_repin_in_flight(r);
         }
 
         /* Early in boot (before rb_ractor_main_setup) main is not in vm->ractor.set
@@ -3757,14 +3752,6 @@ rb_gc_obj_became_shareable(VALUE obj)
 
 /* Pin an in-flight message payload in its owner's (the sender's) objspace, so the
  * sender's local GC keeps it alive while it sits in a queue the sender does not walk. */
-void
-rb_gc_pin_in_flight_message(VALUE obj)
-{
-    if (RB_SPECIAL_CONST_P(obj)) return;
-
-    rb_gc_impl_pin_in_flight_message(rb_gc_get_objspace(), obj);
-}
-
 void
 rb_gc_copy_attributes(VALUE dest, VALUE obj)
 {
@@ -4952,13 +4939,6 @@ rb_gc_vm_generic_fields_drain_dead(bool (*is_dead)(VALUE key))
 {
     struct gf_drain_ctx ctx = { is_dead };
     rb_generic_fields_tables_foreach(gf_drain_table_cb, &ctx);
-}
-
-/* A wrapper exported from gc.c so a modular build's gc-impl can call it. */
-bool
-rb_gc_current_ractor_materializing_p(void)
-{
-    return rb_ractor_materializing_p();
 }
 
 VALUE

@@ -6423,7 +6423,6 @@ check_children_i(const VALUE child, void *ptr)
             !MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(child), child) &&
             !MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(child), child) &&
             !rb_gc_impl_during_global_gc_p(data->objspace) &&
-            !rb_gc_current_ractor_materializing_p() &&
             !global_objspace->during_absorb) {
             fprintf(stderr, "check_children_i: containment violation: "
                     "unshareable %s (objspace %p) -> foreign unshareable %s (objspace %p)\n",
@@ -6500,10 +6499,6 @@ root_scope_check_i(const char *category, VALUE obj, void *ptr)
     if (MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(obj), obj)) return;
     if (MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(obj), obj)) return;
     if (obj == rb_gc_vm_top_self()) return;  /* VM-permanent (see check_children_i) */
-    /* A sender-resident snapshot being materialized by a receive is rooted through
-     * sync.materializing_copies: a foreign-unshareable root that is valid only while
-     * the copy runs (see check_children_i). */
-    if (rb_gc_current_ractor_materializing_p()) return;
 
     fprintf(stderr, "root_scope_check_i: root category \"%s\" names a foreign "
             "unshareable without a shref record: %s (owner %p, self %p)\n",
@@ -7840,26 +7835,6 @@ rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
     if (_MARKED_IN_BITMAP(page->shref_bits, page, obj)) {
         _CLEAR_IN_BITMAP(page->shref_bits, page, obj);
         // NOTE: page->has_shref_objects could become stale here (value is true even though logically false)
-    }
-}
-
-void
-rb_gc_impl_pin_in_flight_message(void *objspace_ptr, VALUE obj)
-{
-    if (RB_FL_TEST_RAW(obj, RUBY_FL_SHAREABLE)) return; /* pinned anyway */
-
-    /* The payload's pages belong to the sender, so a plain store is enough. */
-    struct heap_page *page = GET_HEAP_PAGE(obj);
-    if (!_MARKED_IN_BITMAP(page->shref_bits, page, obj)) {
-        _MARK_IN_BITMAP(page->shref_bits, page, obj);
-        page->flags.has_shref_objects = TRUE;
-    }
-    /* A shref bit only makes the object a root for the next local GC; it does not affect an
-     * in-progress global compaction's move decision (pinned_bits).  Moving a payload node
-     * would break the address-keyed maps, dedup tables and pin lists, so pin it as well. */
-    rb_objspace_t *objspace = objspace_ptr;
-    if (objspace->flags.during_global_gc) {
-        gc_pin(objspace, obj);
     }
 }
 

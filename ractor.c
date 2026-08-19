@@ -442,10 +442,6 @@ ractor_free(void *ptr)
     r->registered_marks = NULL;
     r->registered_marks_cnt = r->registered_marks_capa = 0;
 
-    free(r->pin_capture);
-    r->pin_capture = NULL;
-    r->pin_capture_cnt = r->pin_capture_capa = 0;
-
     if (!r->main_ractor) {
         SIZED_FREE(r);
     }
@@ -777,10 +773,6 @@ static void
 ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
 {
     ractor_sync_init(r);
-    r->gen_fields_capturing = false;
-    r->pin_capture = NULL;
-    r->pin_capture_cnt = r->pin_capture_capa = 0;
-    r->sending_basket = NULL;
     st_init_existing_numtable_with_size(&r->pub.targeted_hooks, 0);
     r->pub.hooks.type = hook_list_type_ractor_local;
 
@@ -2376,6 +2368,7 @@ rb_obj_traverse_replace(VALUE obj,
 
 enum move_node_kind {
     MOVE_KIND_REF,       /* an immediate or a shareable object: carried by value */
+    MOVE_KIND_BACKTRACE, /* an exception's backtrace: frames copied into an off-heap blob */
     MOVE_KIND_STRING,
     MOVE_KIND_ARRAY,
     MOVE_KIND_HASH,
@@ -2401,6 +2394,7 @@ struct move_node {
         struct { VALUE klass; } obj;
         struct { long len; uint32_t *elems; VALUE klass; } strct; /* owns elems */
         struct { uint32_t regexp_id, str_id; int num_regs; void *regs; VALUE klass; } match; /* owns regs */
+        struct { void *blob; int size; } bt;                                 /* the courier owns blob */
         struct {
             struct rb_io *fptr;  /* carried by pointer (it owns the fd) */
             VALUE klass;
@@ -2751,10 +2745,9 @@ move_capture(struct move_build *b, VALUE obj)
       case T_MATCH: {
         /* The regexp and the matched string travel as ordinary children; re.c dumps the
          * registers (freeing the source's onig and char_offset). */
-        VM_ASSERT(!b->copy);   /* copy_courier_supported_p rejects it */
         VALUE re, st;
         int nregs;
-        void *regs = rb_match_move_dump(obj, &re, &st, &nregs);
+        void *regs = rb_match_move_dump(obj, &re, &st, &nregs, !b->copy);
         uint32_t rid = move_capture(b, re);
         uint32_t sid = move_capture(b, st);
         b->c->nodes[id].kind = MOVE_KIND_MATCH;
@@ -2799,6 +2792,18 @@ move_capture(struct move_build *b, VALUE obj)
         break;
       }
 
+      case T_DATA:
+        /* Only an exception's backtrace, and only for a copy: move still refuses every
+         * T_DATA (its source would have to be taken apart). */
+        if (b->copy && rb_backtrace_p(obj)) {
+            int size;
+            void *blob = rb_backtrace_blob_dump(obj, &size);
+            b->c->nodes[id].kind = MOVE_KIND_BACKTRACE;
+            b->c->nodes[id].u.bt.blob = blob;
+            b->c->nodes[id].u.bt.size = size;
+            break;
+        }
+        /* fall through */
       default:
         rb_raise(rb_eRactorError, "can not move a %"PRIsVALUE" object",
                  rb_class_name(rb_obj_class(obj)));
@@ -2940,6 +2945,16 @@ copy_courier_supported_p(VALUE obj, st_table *seen)
       case T_STRING:
       case T_OBJECT:
         break;                       /* children are ivars only (below) */
+      case T_MATCH: {
+        struct RMatch *rm = RMATCH(obj);
+        if (!copy_courier_supported_p(rm->regexp, seen)) return false;
+        if (!copy_courier_supported_p(rm->str, seen)) return false;
+        break;
+      }
+      case T_DATA:
+        /* An exception's backtrace is the one T_DATA the courier carries. */
+        if (!rb_backtrace_p(obj)) return false;
+        break;
       case T_ARRAY:
         for (long i = 0; i < RARRAY_LEN(obj); i++) {
             if (!copy_courier_supported_p(RARRAY_AREF(obj, i), seen)) return false;
@@ -3100,6 +3115,9 @@ rb_ractor_move_courier_materialize(struct rb_ractor_move_courier *c)
             shell = rb_match_move_alloc(rb_class_real(n->u.match.klass), n->u.match.num_regs);
             move_apply_moved_klass(shell, n->u.match.klass);
             break;
+          case MOVE_KIND_BACKTRACE:
+            shell = rb_backtrace_blob_load(n->u.bt.blob, n->u.bt.size);
+            break;
           case MOVE_KIND_IO:
             shell = rb_obj_alloc(rb_class_real(n->u.io.klass));
             move_apply_moved_klass(shell, n->u.io.klass);
@@ -3214,6 +3232,9 @@ rb_ractor_move_courier_free(struct rb_ractor_move_courier *c)
           case MOVE_KIND_MATCH:
             rb_match_move_free(n->u.match.regs);
             break;
+          case MOVE_KIND_BACKTRACE:
+            ruby_xfree(n->u.bt.blob);
+            break;
           case MOVE_KIND_IO:
             /* A delivered IO left fptr == NULL (the rebuilt IO owns it).  An
              * undelivered one still owns the fd and its source is already a
@@ -3262,6 +3283,9 @@ rb_ractor_move_courier_mark(struct rb_ractor_move_courier *c)
         }
         else if (n->kind == MOVE_KIND_STRING) {
             rb_gc_mark(n->u.str.klass);
+        }
+        else if (n->kind == MOVE_KIND_BACKTRACE) {
+            rb_backtrace_blob_mark(n->u.bt.blob, n->u.bt.size);
         }
         else if (n->kind == MOVE_KIND_ARRAY) {
             rb_gc_mark(n->u.ary.klass);
@@ -3337,21 +3361,6 @@ ractor_native_shallow_copy(VALUE obj)
     return copy;
 }
 
-/* Add a node of the snapshot under construction to the pin list and pin it now. */
-static void
-ractor_pin_capture_push(rb_ractor_t *cr, VALUE v)
-{
-    if (cr->pin_capture_cnt == cr->pin_capture_capa) {
-        size_t nc = cr->pin_capture_capa ? cr->pin_capture_capa * 2 : 16;
-        VALUE *p = realloc(cr->pin_capture, nc * sizeof(VALUE));
-        if (!p) rb_bug("ractor_pin_capture_push: out of memory");
-        cr->pin_capture = p;
-        cr->pin_capture_capa = nc;
-    }
-    cr->pin_capture[cr->pin_capture_cnt++] = v;
-    rb_gc_pin_in_flight_message(v);
-}
-
 static enum obj_traverse_iterator_result
 copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
 {
@@ -3363,17 +3372,6 @@ copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
         VALUE copy = ractor_native_shallow_copy(obj);
         if (UNDEF_P(copy)) return traverse_stop; /* no native copy for this type */
         data->replacement = copy;
-        /* Collect every node into the pin list as the snapshot is built: the global
-         * GC's re-pin must cover all nodes, not just the root (moving one breaks the
-         * address-keyed dedup table).  fields_obj is not included: the global
-         * generic_fields table reaches it and compaction updates that. */
-        rb_ractor_t *cr = GET_RACTOR();
-        if (cr->gen_fields_capturing) {
-            /* Pin from birth (shref bit, plus the pin bit during a global compaction).
-             * rb_ractor_repin_in_flight re-pins via cr->pin_capture, so the cover runs
-             * unbroken from construction through enqueue to materialization. */
-            ractor_pin_capture_push(cr, copy);
-        }
         return traverse_cont;
     }
 }

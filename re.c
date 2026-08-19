@@ -1084,7 +1084,7 @@ match_set_regs(VALUE match, int num_regs, const OnigPosition *beg, const OnigPos
  * registers are written out to an onig-independent blob so the original malloc'd area can be
  * freed, leaving an empty shell behind, and rebuilt from the blob on the receiving side. */
 void *
-rb_match_move_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs_out)
+rb_match_move_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs_out, bool release_source)
 {
     struct RMatch *rm = RMATCH(match);
     int n = rm->num_regs;
@@ -1100,15 +1100,18 @@ rb_match_move_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs
         blob[2 * i + 1] = end[i];
     }
 
-    if (FL_TEST_RAW(match, RMATCH_ONIG)) {
-        onig_region_free(&rm->as.onig, 0);
-        memset(&rm->as.onig, 0, sizeof(rm->as.onig));
-        FL_UNSET_RAW(match, RMATCH_ONIG);
-    }
-    if (rm->char_offset) {
-        ruby_xfree(rm->char_offset);
-        rm->char_offset = NULL;
-        rm->char_offset_num_allocated = 0;
+    /* A copy leaves the source usable; only a move takes its internals apart. */
+    if (release_source) {
+        if (FL_TEST_RAW(match, RMATCH_ONIG)) {
+            onig_region_free(&rm->as.onig, 0);
+            memset(&rm->as.onig, 0, sizeof(rm->as.onig));
+            FL_UNSET_RAW(match, RMATCH_ONIG);
+        }
+        if (rm->char_offset) {
+            ruby_xfree(rm->char_offset);
+            rm->char_offset = NULL;
+            rm->char_offset_num_allocated = 0;
+        }
     }
     return blob;
 }

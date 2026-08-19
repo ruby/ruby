@@ -1125,7 +1125,6 @@ struct rb_waiting_list {
     struct rb_fiber_struct *fiber;
 };
 
-struct ractor_materialize_frame;
 
 struct rb_execution_context_struct {
     /* execution information */
@@ -1177,11 +1176,6 @@ struct rb_execution_context_struct {
         VALUE obj;
         VALUE fields_obj;
     } gen_fields_cache;
-
-    /* Chain of receive frames being materialized on this EC (LIFO; the frames live
-     * on the C stack).  A thread or fiber switch cannot corrupt it, since each EC's
-     * chain only contains that EC's own nesting. */
-    struct ractor_materialize_frame *materialize_frames;
 
     /* for GC */
     struct {
