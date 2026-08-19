@@ -4541,9 +4541,15 @@ struct gc_sweep_context {
 };
 
 /* True when a local (per-Ractor) sweep must not free obj. Doing so would run a T_DATA
- * dfree inline (RUBY_TYPED_FREE_IMMEDIATELY) that is not RUBY_TYPED_THREAD_SAFE_FREE. */
+ * dfree inline (RUBY_TYPED_FREE_IMMEDIATELY) that is not RUBY_TYPED_THREAD_SAFE_FREE.
+ *
+ * NOTE: We must free the root fiber during postmortem collection, otherwise another Ractor
+ * can collect the fiber through a major GC while we're still tearing it down. Once fibers are
+ * THREAD_SAFE_FREE, we no longer need the root fiber condition as it will be guaranteed to be
+ * collected during this time.
+ */
 static bool
-gc_obj_defer_local_free_p(VALUE obj)
+gc_obj_defer_local_free_p(rb_objspace_t *objspace, VALUE obj)
 {
     if (BUILTIN_TYPE(obj) != T_DATA) return false;
 
@@ -4552,7 +4558,17 @@ gc_obj_defer_local_free_p(VALUE obj)
     if (!dfree || dfree == RUBY_DEFAULT_FREE) return false;
     if (type->flags & RUBY_TYPED_THREAD_SAFE_FREE) return false;
 
-    return (type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
+    if (type->flags & RUBY_TYPED_FREE_IMMEDIATELY) {
+        if (objspace->flags.during_postmortem) {
+            if (rb_fiber_current() == obj) {
+                return false; // we must run `fiber_free`
+            }
+        }
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 /* True for objects we don't want to include when iterating over the heap, like
@@ -4560,9 +4576,10 @@ gc_obj_defer_local_free_p(VALUE obj)
 bool
 rb_gc_impl_internal_object_p(void *objspace_ptr, VALUE obj)
 {
+    rb_objspace_t *objspace = objspace_ptr;
     /* Test the shareable bitmap before reading obj's flags. */
     return MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(obj), obj) &&
-           gc_obj_defer_local_free_p(obj) &&
+           gc_obj_defer_local_free_p(objspace, obj) &&
            !RB_FL_TEST_RAW(obj, RUBY_FL_SHAREABLE);
 }
 
@@ -4659,7 +4676,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 #undef CHECK
 #endif
 
-                if (RB_UNLIKELY(ctx->defer_nonlocal_free && gc_obj_defer_local_free_p(vp))) {
+                if (RB_UNLIKELY(ctx->defer_nonlocal_free && gc_obj_defer_local_free_p(objspace, vp))) {
                     /* Retain this slot: freeing it here would run a non-thread-safe dfree
                      * concurrently with another Ractor's sweep. Wait until global GC or
                      * single objspace */
@@ -6578,7 +6595,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                 /* A dead non-thread-safe T_DATA is retained until the global GC. It borrows
                  * the shareable bit and looks live, but its children were not pinned and
                  * may already be gone, so the child-graph checks below do not apply. */
-                bool deferred_retained = sh_bit && gc_obj_defer_local_free_p(obj);
+                bool deferred_retained = sh_bit && gc_obj_defer_local_free_p(objspace, obj);
 
                 /* Bitmap invariants: a page's shareable bit matches FL_SHAREABLE
                  * exactly, and a shref record only ever points at an unshareable
