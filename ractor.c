@@ -2388,7 +2388,7 @@ struct move_node {
     uint32_t *iv_vals;   /* owned by the courier; node ids */
     union {
         VALUE ref;
-        struct { char *ptr; long len; int encidx; VALUE klass; } str;        /* the courier owns ptr */
+        struct { char *ptr; long len, capa; int encidx; VALUE klass; } str;  /* the courier owns ptr */
         struct { long len; uint32_t *elems; VALUE klass; } ary;              /* the courier owns elems */
         struct { long size; uint32_t *kv; uint32_t ifnone_id; bool compare_by_id; bool proc_default; VALUE klass; } hash; /* owns kv (2*size) */
         struct { VALUE klass; } obj;
@@ -2658,24 +2658,31 @@ move_capture(struct move_build *b, VALUE obj)
         if (!b->copy) rb_str_make_independent(obj);
         long len = RSTRING_LEN(obj);
         int encidx = ENCODING_GET(obj);
+        /* The receiver adopts this buffer as a String body, which is freed by size:
+         * capa has to describe the allocation exactly (capa + terminator bytes). */
+        const int termlen = rb_enc_mbminlen(rb_enc_from_index(encidx));
         char *ptr;
+        long capa;
         if (!b->copy && !STR_EMBED_P(obj) && rb_str_reembeddable_p(obj)) {
             /* Owns a private heap buffer: carry the pointer over (zero-copy) and leave
              * the source as a shell that does not free it. */
             ptr = RSTRING(obj)->as.heap.ptr;
+            capa = RSTRING(obj)->as.heap.aux.capa;
         }
         else {
             /* Embedded or a shared root: copy the bytes into a courier-owned buffer.
              * Taking a root's buffer would dangle its copy-on-write children, so leave
              * it (the same reason T_ARRAY excludes ARY_SHARED_ROOT_P below). */
-            ptr = ALLOC_N(char, len + 1);
+            ptr = ALLOC_N(char, len + termlen);
             if (len) memcpy(ptr, RSTRING_PTR(obj), len);
-            ptr[len] = '\0';
+            memset(ptr + len, 0, termlen);
+            capa = len;
         }
         b->c->nodes[id].kind = MOVE_KIND_STRING;
         b->c->nodes[id].u.str.klass = RBASIC_CLASS(obj);
         b->c->nodes[id].u.str.ptr = ptr;
         b->c->nodes[id].u.str.len = len;
+        b->c->nodes[id].u.str.capa = capa;
         b->c->nodes[id].u.str.encidx = encidx;
         break;
       }
@@ -3090,7 +3097,11 @@ rb_ractor_move_courier_materialize(struct rb_ractor_move_courier *c)
             shell = n->u.ref;
             break;
           case MOVE_KIND_STRING:
-            shell = rb_enc_str_new(n->u.str.ptr, n->u.str.len, rb_enc_from_index(n->u.str.encidx));
+            /* Hand the courier's buffer to the String instead of copying it again: the
+             * bytes were already copied (or taken from the source) when the node was
+             * built. */
+            shell = rb_str_new_owned(n->u.str.ptr, n->u.str.len, n->u.str.capa, n->u.str.encidx);
+            n->u.str.ptr = NULL;   /* consumed: the new String owns it now */
             move_apply_moved_klass(shell, n->u.str.klass);
             break;
           case MOVE_KIND_ARRAY:
