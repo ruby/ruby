@@ -76,10 +76,10 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
         uintptr_t code_ptr = (uintptr_t)rb_zjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
         if (jit_exception) {
-            iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
+            ISEQ_BODY(iseq)->jit_exception = (rb_jit_func_t)code_ptr;
         }
         else {
-            iseq->body->jit_entry = (rb_jit_func_t)code_ptr;
+            ISEQ_BODY(iseq)->jit_entry = (rb_jit_func_t)code_ptr;
         }
     }
 }
@@ -94,11 +94,11 @@ rb_zjit_profile_enable(const rb_iseq_t *iseq)
     const void *const *insn_table = rb_vm_get_insns_address_table();
 
     unsigned int insn_idx = 0;
-    while (insn_idx < iseq->body->iseq_size) {
-        int insn = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_idx]);
+    while (insn_idx < ISEQ_BODY(iseq)->iseq_size) {
+        int insn = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[insn_idx]);
         int zjit_insn = vm_bare_insn_to_zjit_insn(insn);
         if (insn != zjit_insn) {
-            iseq->body->iseq_encoded[insn_idx] = (VALUE)insn_table[zjit_insn];
+            ISEQ_BODY(iseq)->iseq_encoded[insn_idx] = (VALUE)insn_table[zjit_insn];
         }
         insn_idx += insn_len(insn);
     }
@@ -112,11 +112,11 @@ rb_zjit_profile_disable(const rb_iseq_t *iseq)
     const void *const *insn_table = rb_vm_get_insns_address_table();
 
     unsigned int insn_idx = 0;
-    while (insn_idx < iseq->body->iseq_size) {
-        int insn = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_idx]);
+    while (insn_idx < ISEQ_BODY(iseq)->iseq_size) {
+        int insn = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[insn_idx]);
         int bare_insn = vm_zjit_insn_to_bare_insn(insn);
         if (insn != bare_insn) {
-            iseq->body->iseq_encoded[insn_idx] = (VALUE)insn_table[bare_insn];
+            ISEQ_BODY(iseq)->iseq_encoded[insn_idx] = (VALUE)insn_table[bare_insn];
         }
         insn_idx += insn_len(insn);
     }
@@ -134,11 +134,11 @@ void
 rb_zjit_iseq_insn_set(const rb_iseq_t *iseq, unsigned int insn_idx, enum ruby_vminsn_type bare_insn)
 {
 #if RUBY_DEBUG
-    int insn = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_idx]);
+    int insn = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[insn_idx]);
     RUBY_ASSERT(vm_zjit_insn_to_bare_insn(insn) == (int)bare_insn);
 #endif
     const void *const *insn_table = rb_vm_get_insns_address_table();
-    iseq->body->iseq_encoded[insn_idx] = (VALUE)insn_table[bare_insn];
+    ISEQ_BODY(iseq)->iseq_encoded[insn_idx] = (VALUE)insn_table[bare_insn];
 }
 
 // Get profiling information for ISEQ
@@ -146,8 +146,8 @@ void *
 rb_iseq_get_zjit_payload(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    if (iseq->body) {
-        return iseq->body->zjit_payload;
+    if (ISEQ_BODY(iseq)) {
+        return ISEQ_BODY(iseq)->zjit_payload;
     }
     else {
         // Body is NULL when constructing the iseq.
@@ -160,9 +160,9 @@ void
 rb_iseq_set_zjit_payload(const rb_iseq_t *iseq, void *payload)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    RUBY_ASSERT_ALWAYS(iseq->body);
-    RUBY_ASSERT_ALWAYS(NULL == iseq->body->zjit_payload);
-    iseq->body->zjit_payload = payload;
+    RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
+    RUBY_ASSERT_ALWAYS(NULL == ISEQ_BODY(iseq)->zjit_payload);
+    ISEQ_BODY(iseq)->zjit_payload = payload;
 }
 
 void

@@ -2951,9 +2951,9 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
         rb_str_modify_expand(str, header_minlen - l);
         memset(RSTRING_END(str), '=', header_minlen - l);
     }
-    if (iseq->body->builtin_attrs) {
+    if (ISEQ_BODY(iseq)->builtin_attrs) {
 #define disasm_builtin_attr(str, iseq, attr) \
-        if (iseq->body->builtin_attrs & BUILTIN_ATTR_ ## attr) { \
+        if (ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_ ## attr) { \
             rb_str_cat2(str, " " #attr); \
         }
         disasm_builtin_attr(str, iseq, LEAF);

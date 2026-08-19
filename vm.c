@@ -483,7 +483,7 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
 
     // Record the number of calls at the beginning of the interval
     if (entry_calls + YJIT_CALL_COUNT_INTERV == rb_yjit_call_threshold) {
-        iseq->body->yjit_calls_at_interv = yjit_total_entry_hits;
+        ISEQ_BODY(iseq)->yjit_calls_at_interv = yjit_total_entry_hits;
     }
 
     // Try to estimate the total time taken (total number of calls) to reach 20 calls to this ISEQ
@@ -494,7 +494,7 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
             return true;
         }
 
-        uint64_t num_calls = yjit_total_entry_hits - iseq->body->yjit_calls_at_interv;
+        uint64_t num_calls = yjit_total_entry_hits - ISEQ_BODY(iseq)->yjit_calls_at_interv;
 
         // Reject ISEQs that don't get called often enough
         if (num_calls > rb_yjit_cold_threshold) {

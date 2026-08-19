@@ -2230,7 +2230,7 @@ rb_hash_proc(st_index_t hash, VALUE prc)
             }
         }
         else {
-            hash = rb_st_hash_uint(hash, (st_index_t)proc->block.as.captured.code.iseq->body);
+            hash = rb_st_hash_uint(hash, (st_index_t)ISEQ_BODY(proc->block.as.captured.code.iseq));
         }
         break;
       case block_type_ifunc:
