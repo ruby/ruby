@@ -543,13 +543,16 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         size += sizeof(struct rb_iseq_constant_body);
         size += body->iseq_size * sizeof(VALUE);
         size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
-        size += body->local_table_size * sizeof(ID);
+        size += body->local_table_size * sizeof(ID); // body->local_table
+        if (body->lvar_states) size += body->local_table_size * sizeof(enum lvar_state);
         size += ISEQ_MBITS_BUFLEN(body->iseq_size) * ISEQ_MBITS_SIZE;
         if (body->catch_table) {
             size += iseq_catch_table_bytes(body->catch_table->size);
         }
         size += (body->param.opt_num + 1) * sizeof(VALUE);
         size += param_keyword_size(body->param.keyword);
+
+        if (body->outer_variables) size += rb_id_table_memsize(body->outer_variables);
 
         /* body->is_entries */
         size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
@@ -2951,9 +2954,9 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
         rb_str_modify_expand(str, header_minlen - l);
         memset(RSTRING_END(str), '=', header_minlen - l);
     }
-    if (iseq->body->builtin_attrs) {
+    if (ISEQ_BODY(iseq)->builtin_attrs) {
 #define disasm_builtin_attr(str, iseq, attr) \
-        if (iseq->body->builtin_attrs & BUILTIN_ATTR_ ## attr) { \
+        if (ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_ ## attr) { \
             rb_str_cat2(str, " " #attr); \
         }
         disasm_builtin_attr(str, iseq, LEAF);

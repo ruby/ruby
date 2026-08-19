@@ -3180,9 +3180,9 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             VM_ASSERT(cc == calling->cc);
 
             if (vm_call_iseq_optimizable_p(ci, cc)) {
-                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) && ruby_vm_c_events_enabled == 0) {
-                    VM_ASSERT(iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF);
-                    vm_cc_bf_set(cc, (void *)iseq->body->iseq_encoded[1]);
+                if ((ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) && ruby_vm_c_events_enabled == 0) {
+                    VM_ASSERT(ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_LEAF);
+                    vm_cc_bf_set(cc, (void *)ISEQ_BODY(iseq)->iseq_encoded[1]);
                     CC_SET_FASTPATH(cc, vm_call_single_noarg_leaf_builtin, true);
                 }
                 else {

@@ -182,7 +182,7 @@ module Prism
                        loader.load_constant_pool(constant_pool)
       raise unless     loader.eof?
 
-      value = [node, tokens] #: [ProgramNode, Array[[Token, Integer]]]
+      value = [node, tokens] #: [ProgramNode, Array[Token]]
       result = ParseLexResult.new(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
 
       tokens.each do |token|
@@ -434,18 +434,18 @@ module Prism
         warnings
       end
 
-      #: () -> Array[[Token, Integer]]
+      #: () -> Array[Token]
       def load_tokens
-        tokens = [] #: Array[[Token, Integer]]
+        tokens = [] #: Array[Token]
 
         while (type = TOKEN_TYPES.fetch(load_varuint))
           location = load_location_object(false)
 
           lex_state = load_varuint
 
-          token = Token.new(@source, type, location.slice, location)
+          token = Token.new(@source, type, location.slice, location, lex_state)
 
-          tokens << [token, lex_state]
+          tokens << token
         end
 
         tokens

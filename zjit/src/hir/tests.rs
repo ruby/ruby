@@ -476,22 +476,21 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v14:NilClass = Const Value(nil)
-          PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1008, Integer)
-          v20:ClassSubclass[Integer@0x1010] = Const Value(VALUE(0x1010))
-          v22:BasicObject = CheckMatch v10, v20, CASE
-          v24:CBool = Test v22
-          v25:Truthy = RefineType v22, Truthy
-          CondBranch v24, bb4(v9, v10, v14, v10), bb5()
-        bb4(v37:BasicObject, v38:BasicObject, v39:NilClass, v40:BasicObject):
-          v45:Fixnum[1] = Const Value(1)
+          v19:ClassSubclass[Integer@0x1010] = Const Value(VALUE(0x1010))
+          v21:BasicObject = CheckMatch v10, v19, CASE
+          v23:CBool = Test v21
+          v24:Truthy = RefineType v21, Truthy
+          CondBranch v23, bb4(v9, v10, v14, v10), bb5()
+        bb4(v36:BasicObject, v37:BasicObject, v38:NilClass, v39:BasicObject):
+          v44:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v45
+          Return v44
         bb5():
-          v27:Falsy = RefineType v22, Falsy
-          v32:Fixnum[2] = Const Value(2)
+          v26:Falsy = RefineType v21, Falsy
+          v31:Fixnum[2] = Const Value(2)
           CheckInterrupts
-          Return v32
+          Return v31
         ");
     }
 
@@ -2211,9 +2210,8 @@ pub(crate) mod hir_build_tests {
           PatchPoint NoEPEscape(test)
           v18:CPtr = LoadSP
           v19:BasicObject = LoadField v18, :block@0x1000
-          PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1030, ::RubyVM::ZJIT)
-          v25:ModuleSubclass[RubyVM::ZJIT@0x1038] = Const Value(VALUE(0x1038))
+          v24:ModuleSubclass[RubyVM::ZJIT@0x1038] = Const Value(VALUE(0x1038))
           SideExit DirectiveInduced
         ");
     }
@@ -2252,9 +2250,8 @@ pub(crate) mod hir_build_tests {
           v17:Fixnum[1] = Const Value(1)
           v22:BasicObject = Send v11, 0x1008, :consume # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
-          PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1030, ::RubyVM::ZJIT)
-          v30:ModuleSubclass[RubyVM::ZJIT@0x1038] = Const Value(VALUE(0x1038))
+          v29:ModuleSubclass[RubyVM::ZJIT@0x1038] = Const Value(VALUE(0x1038))
           SideExit DirectiveInduced
         ");
     }

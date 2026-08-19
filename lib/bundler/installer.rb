@@ -83,6 +83,12 @@ module Bundler
         install(options)
 
         Gem::Specification.reset # invalidate gem specification cache so that installed gems are immediately available
+        # Drop the source caches too, since releasing resolution memory dropped
+        # the source indexes. A resolution happening after this point would
+        # otherwise rebuild them around a snapshot of installed gems taken
+        # before the install, and materialize against remote specs that don't
+        # know where the gems they stand for ended up.
+        @definition.sources.clear_cache
 
         lock
         Standalone.new(options[:standalone], @definition).generate if options[:standalone]

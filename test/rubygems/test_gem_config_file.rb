@@ -44,6 +44,7 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal 365, @cfg.cert_expiration_length_days
     assert_equal false, @cfg.ipv4_fallback_enabled
     assert_equal true, @cfg.install_extension_in_lib
+    assert_equal Gem::ConfigFile::DEFAULT_COOLDOWN, @cfg.cooldown
 
     File.open @temp_conf, "w" do |fp|
       fp.puts ":backtrace: true"
@@ -63,6 +64,7 @@ class TestGemConfigFile < Gem::TestCase
       fp.puts ":install_extension_in_lib: false"
       fp.puts ":ipv4_fallback_enabled: true"
       fp.puts ":use_psych: true"
+      fp.puts ":cooldown: 7"
     end
 
     util_config_file
@@ -81,6 +83,7 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal false, @cfg.install_extension_in_lib
     assert_equal true, @cfg.ipv4_fallback_enabled
     assert_equal true, @cfg.use_psych
+    assert_equal 7, @cfg.cooldown
   end
 
   def test_initialize_ipv4_fallback_enabled_env

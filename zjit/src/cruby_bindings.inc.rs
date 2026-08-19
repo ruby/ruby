@@ -2304,6 +2304,11 @@ unsafe extern "C" {
         flags_out: *mut VALUE,
         len_out: *mut ::std::os::raw::c_long,
     ) -> bool;
+    pub fn rb_zjit_array_new_can_fastpath(
+        len: ::std::os::raw::c_long,
+        alloc_size_out: *mut usize,
+        flags_out: *mut VALUE,
+    ) -> bool;
     pub fn rb_zjit_hash_dup_can_fastpath(
         hash: VALUE,
         alloc_size_out: *mut usize,
@@ -2316,7 +2321,6 @@ unsafe extern "C" {
         alloc_size_out: *mut usize,
         flags_out: *mut VALUE,
     );
-    pub fn rb_zjit_array_new_fastpath(alloc_size_out: *mut usize, flags_out: *mut VALUE);
     pub fn rb_profile_frames(
         start: ::std::os::raw::c_int,
         limit: ::std::os::raw::c_int,
@@ -2331,7 +2335,6 @@ unsafe extern "C" {
     pub fn rb_zjit_profile_disable(iseq: *const rb_iseq_t);
     pub fn rb_zjit_insn_to_bare_insn(insn: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
-    pub fn rb_zjit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;
     pub fn rb_zjit_iseq_insn_set(
         iseq: *const rb_iseq_t,
         insn_idx: ::std::os::raw::c_uint,
@@ -2455,6 +2458,7 @@ unsafe extern "C" {
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
     pub fn rb_jit_shape_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_jit_multi_ractor_p() -> bool;
+    pub fn rb_jit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;
     pub fn rb_jit_vm_lock_then_barrier(
         recursive_lock_level: *mut ::std::os::raw::c_uint,
         file: *const ::std::os::raw::c_char,

@@ -244,6 +244,12 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
     * SunOS 4 (Solaris, i.e. SunOS 5, is unaffected)
     * BSD/OS (BSDi)
 
+* Windows 10 1703 or later no longer needs the `LongPathsEnabled` registry
+  value to use paths longer than 260 characters.  This applies to any process
+  running the interpreter, including a program which embeds libruby.  Each path
+  component is still limited to 255 characters, and a child process still
+  starts with the `MAX_PATH` limited current directory. [[Bug #18947]]
+
 ## Compatibility issues
 
 * `Kernel#at_exit` and `END {}` now raise `Ractor::IsolationError` when called
@@ -327,6 +333,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ## JIT
 
+[Bug #18947]: https://bugs.ruby-lang.org/issues/18947
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330

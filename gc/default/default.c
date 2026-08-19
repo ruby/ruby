@@ -1677,7 +1677,7 @@ RVALUE_UNCOLLECTIBLE(rb_objspace_t *objspace, VALUE obj)
 #define RVALUE_PAGE_UNCOLLECTIBLE(page, obj)  MARKED_IN_BITMAP((page)->uncollectible_bits, (obj))
 #define RVALUE_PAGE_MARKING(page, obj)        MARKED_IN_BITMAP((page)->marking_bits, (obj))
 
-static int rgengc_remember(rb_objspace_t *objspace, VALUE obj);
+static void rgengc_remember(rb_objspace_t *objspace, VALUE obj);
 static void gc_bitmaps_clear(rb_objspace_t *objspace, rb_heap_t *heap, bool clear_shref);
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
 static bool verify_pointer_in_any_heap_p(const void *ptr); /* cross-objspace ownership test */
@@ -5786,10 +5786,10 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
 {
     GC_ASSERT(!SPECIAL_CONST_P(obj));
 
-    /* Never write a foreign page's pinned bit (a global GC may: everyone is stopped). */
-    if (gc_skip_foreign_object_p(objspace, obj)) return;
-
     if (RB_UNLIKELY(objspace->flags.during_compacting)) {
+        /* Never write a foreign page's pinned bit (a global GC may: everyone is stopped). */
+        if (gc_skip_foreign_object_p(objspace, obj)) return;
+
         if (RB_LIKELY(during_gc)) {
             if (!RVALUE_PINNED(objspace, obj)) {
                 GC_ASSERT(GET_HEAP_PAGE(obj)->pinned_slots <= GET_HEAP_PAGE(obj)->total_slots);
@@ -7553,7 +7553,7 @@ gc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...)
 
 /* bit operations */
 
-static int
+static void
 rgengc_remembersetbits_set(rb_objspace_t *objspace, VALUE obj)
 {
     struct heap_page *page = GET_HEAP_PAGE(obj);
@@ -7563,16 +7563,14 @@ rgengc_remembersetbits_set(rb_objspace_t *objspace, VALUE obj)
      * local a (under its Ractor's GVL) and a global GC writes from the driver alone.
      * Set the bit before the page flag so a page pending re-scan stays in
      * rememberset_mark. */
-    const bool newly = !_MARKED_IN_BITMAP(bits, page, obj);
     _MARK_IN_BITMAP(bits, page, obj);
     page->flags.has_remembered_objects = TRUE;
-    return newly ? TRUE : FALSE;
 }
 
 /* wb, etc */
 
 /* return FALSE if already remembered */
-static int
+static void
 rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 {
     gc_report(6, objspace, "rgengc_remember: %s %s\n", rb_obj_info(obj),
@@ -7595,7 +7593,7 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
     }
 #endif /* RGENGC_PROFILE > 0 */
 
-    return rgengc_remembersetbits_set(objspace, obj);
+    rgengc_remembersetbits_set(objspace, obj);
 }
 
 #ifndef PROFILE_REMEMBERSET_MARK
@@ -7785,9 +7783,6 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_NONE);
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_MOVED);
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_ZOMBIE);
-    GC_ASSERT(RB_BUILTIN_TYPE(b) != T_NONE);
-    GC_ASSERT(RB_BUILTIN_TYPE(b) != T_MOVED);
-    GC_ASSERT(RB_BUILTIN_TYPE(b) != T_ZOMBIE);
 
     /* A shareable object now references an unshareable one: record b as a shref so its
      * owner's local GC roots it (the parent may live in another objspace, untraversed
@@ -7844,6 +7839,7 @@ rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
      * the only writer, so a plain clear is enough. */
     if (_MARKED_IN_BITMAP(page->shref_bits, page, obj)) {
         _CLEAR_IN_BITMAP(page->shref_bits, page, obj);
+        // NOTE: page->has_shref_objects could become stale here (value is true even though logically false)
     }
 }
 

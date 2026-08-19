@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../rubygems"
+require_relative "cooldown"
 require_relative "dependency_list"
 require_relative "package"
 require_relative "installer"
@@ -42,6 +43,12 @@ class Gem::DependencyInstaller
   # List of gems installed by #install in alphabetic order
 
   attr_reader :installed_gems
+
+  ##
+  # Per-gem summary entries for the newest versions the cooldown kept out
+  # of the last resolution.  See Gem::Cooldown.output_skipped_summary.
+
+  attr_reader :cooldown_skipped
 
   ##
   # Creates a new installer instance.
@@ -90,6 +97,8 @@ class Gem::DependencyInstaller
     @prog_mode = options[:prog_mode]
     @build_extension = options[:build_extension]
     @install_plugin = options[:install_plugin]
+    @cooldown = Gem::Cooldown.from_options options
+    @cooldown_skipped = []
 
     # Indicates that we should not try to update any deps unless
     # we absolutely must.
@@ -210,6 +219,7 @@ class Gem::DependencyInstaller
     request_set.development_shallow = @dev_shallow
     request_set.soft_missing = @force
     request_set.prerelease = @prerelease
+    request_set.cooldown = @cooldown
 
     installer_set = Gem::Resolver::InstallerSet.new @domain
     installer_set.ignore_installed = (@minimal_deps == false) || @only_install_dir
@@ -258,6 +268,7 @@ class Gem::DependencyInstaller
     request_set.resolve installer_set
 
     @errors.concat request_set.errors
+    @cooldown_skipped = request_set.resolver&.cooldown_skipped || []
 
     request_set
   end

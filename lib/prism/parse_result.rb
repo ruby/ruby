@@ -1053,11 +1053,11 @@ module Prism
   # This is a result specific to the `lex` and `lex_file` methods.
   class LexResult < Result
     # The list of tokens that were parsed from the source code.
-    attr_reader :value #: Array[[Token, Integer]]
+    attr_reader :value #: Array[Token]
 
     # Create a new lex result object with the given values.
     #--
-    #: (Array[[Token, Integer]] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+    #: (Array[Token] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
     def initialize(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
       @value = value
       super(comments, magic_comments, data_loc, errors, warnings, continuable, source)
@@ -1075,11 +1075,11 @@ module Prism
   class ParseLexResult < Result
     # A tuple of the syntax tree and the list of tokens that were parsed from
     # the source code.
-    attr_reader :value #: [ProgramNode, Array[[Token, Integer]]]
+    attr_reader :value #: [ProgramNode, Array[Token]]
 
     # Create a new parse lex result object with the given values.
     #--
-    #: ([ProgramNode, Array[[Token, Integer]]] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+    #: ([ProgramNode, Array[Token]] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
     def initialize(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
       @value = value
       super(comments, magic_comments, data_loc, errors, warnings, continuable, source)
@@ -1109,12 +1109,13 @@ module Prism
 
     # Create a new token object with the given type, value, and location.
     #--
-    #: (Source source, Symbol type, String value, Location | Integer location) -> void
-    def initialize(source, type, value, location)
+    #: (Source source, Symbol type, String value, Location | Integer location, Integer state) -> void
+    def initialize(source, type, value, location, state)
       @source = source
       @type = type
       @value = value
       @location = location
+      @state = state
     end
 
     # Implement the hash pattern matching interface for Token.
@@ -1174,6 +1175,27 @@ module Prism
       value.freeze
       location.freeze
       freeze
+    end
+
+    # For internal use only.
+    #: () -> Integer
+    def _ripper_state # :nodoc:
+      @state
+    end
+
+    # Backwards compatibility for Prism.lex/Prism.lex_file/Prism.parse_lex
+    # when they returned a 2-element array.
+
+    #: (Integer index) -> Token | Integer
+    def [](index) # :nodoc:
+      return self if index == 0
+      return @state if index == 1
+      raise ArgumentError, "Invalid index #{index}"
+    end
+
+    #: () -> Token
+    def first # :nodoc:
+      self
     end
   end
 

@@ -198,8 +198,8 @@ void *
 rb_iseq_get_yjit_payload(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    if (iseq->body) {
-        return iseq->body->yjit_payload;
+    if (ISEQ_BODY(iseq)) {
+        return ISEQ_BODY(iseq)->yjit_payload;
     }
     else {
         // Body is NULL when constructing the iseq.
@@ -211,9 +211,9 @@ void
 rb_iseq_set_yjit_payload(const rb_iseq_t *iseq, void *payload)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    RUBY_ASSERT_ALWAYS(iseq->body);
-    RUBY_ASSERT_ALWAYS(NULL == iseq->body->yjit_payload);
-    iseq->body->yjit_payload = payload;
+    RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
+    RUBY_ASSERT_ALWAYS(NULL == ISEQ_BODY(iseq)->yjit_payload);
+    ISEQ_BODY(iseq)->yjit_payload = payload;
 }
 
 // This is defined only as a named struct inside rb_iseq_constant_body.
@@ -227,11 +227,11 @@ ID rb_get_symbol_id(VALUE namep);
 static bool
 invokebuiltin_delegate_leave_p(const rb_iseq_t *iseq)
 {
-    int insn1 = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]);
-    if ((int)iseq->body->iseq_size != insn_len(insn1) + insn_len(BIN(leave))) {
+    int insn1 = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[0]);
+    if ((int)ISEQ_BODY(iseq)->iseq_size != insn_len(insn1) + insn_len(BIN(leave))) {
         return false;
     }
-    int insn2 = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_len(insn1)]);
+    int insn2 = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[insn_len(insn1)]);
     return (insn1 == BIN(opt_invokebuiltin_delegate) || insn1 == BIN(opt_invokebuiltin_delegate_leave)) &&
             insn2 == BIN(leave);
 }
@@ -241,7 +241,7 @@ const struct rb_builtin_function *
 rb_yjit_builtin_function(const rb_iseq_t *iseq)
 {
     if (invokebuiltin_delegate_leave_p(iseq)) {
-        return (const struct rb_builtin_function *)iseq->body->iseq_encoded[1];
+        return (const struct rb_builtin_function *)ISEQ_BODY(iseq)->iseq_encoded[1];
     }
     else {
         return NULL;
@@ -347,9 +347,9 @@ num_digits(int integer)
 char *
 rb_yjit_iseq_inspect(const rb_iseq_t *iseq)
 {
-    const char *label = RSTRING_PTR(iseq->body->location.label);
+    const char *label = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
     const char *path = RSTRING_PTR(rb_iseq_path(iseq));
-    int lineno = iseq->body->location.code_location.beg_pos.lineno;
+    int lineno = ISEQ_BODY(iseq)->location.code_location.beg_pos.lineno;
 
     const size_t size = strlen(label) + strlen(path) + num_digits(lineno) + 3;
     char *buf = ZALLOC_N(char, size);
@@ -373,12 +373,6 @@ rb_ENCODING_GET(VALUE obj)
     return RB_ENCODING_GET(obj);
 }
 
-bool
-rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
-{
-    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
-}
-
 // For running write barriers from Rust. Required when we add a new edge in the
 // object graph from `old` to `young`.
 void
@@ -398,10 +392,10 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
         uintptr_t code_ptr = (uintptr_t)rb_yjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
         if (jit_exception) {
-            iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
+            ISEQ_BODY(iseq)->jit_exception = (rb_jit_func_t)code_ptr;
         }
         else {
-            iseq->body->jit_entry = (rb_jit_func_t)code_ptr;
+            ISEQ_BODY(iseq)->jit_entry = (rb_jit_func_t)code_ptr;
         }
     }
 }

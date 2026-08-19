@@ -70,6 +70,127 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_path_exist File.join(@gemhome, "specifications", "b-2.gemspec")
   end
 
+  def util_cooldown_time(days_ago)
+    (Time.now - days_ago * 86_400).utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+  end
+
+  def util_setup_cooldown_repo(b2_created_at:, b3_created_at:)
+    spec_fetcher do |fetcher|
+      fetcher.gem "b", 1
+    end
+
+    b2, b2_gem = util_gem "b", 2
+    b3, b3_gem = util_gem "b", 3
+    util_setup_compact_index b2, b3, created_at: {
+      "b-2" => b2_created_at,
+      "b-3" => b3_created_at,
+    }.compact
+    add_to_fetcher b2, b2_gem
+    add_to_fetcher b3, b3_gem
+
+    # drop the in-memory tuples spec_fetcher pre-populated so the lookup
+    # goes through Gem::Source#load_specs
+    Gem::SpecFetcher.fetcher = nil
+  end
+
+  def test_execute_cooldown_falls_back_to_older_version
+    util_setup_cooldown_repo b2_created_at: util_cooldown_time(30),
+                             b3_created_at: util_cooldown_time(1)
+
+    @cmd.options[:cooldown] = 7
+    @cmd.options[:args] = []
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Updating installed gems", out.shift
+    assert_equal "Updating b", out.shift
+    assert_equal "Gems updated: b", out.shift
+    assert_equal "The following gem versions were skipped by the cooldown setting:", out.shift
+    assert_equal "  * b 3 (available in 6 days), resolved 2 instead", out.shift
+    assert_empty out
+
+    assert_path_exist File.join(@gemhome, "specifications", "b-2.gemspec")
+    assert_path_not_exist File.join(@gemhome, "specifications", "b-3.gemspec")
+  end
+
+  def test_execute_cooldown_all_new_versions_within_period
+    util_setup_cooldown_repo b2_created_at: util_cooldown_time(1),
+                             b3_created_at: util_cooldown_time(1)
+
+    @cmd.options[:cooldown] = 7
+    @cmd.options[:args] = []
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Updating installed gems", out.shift
+    assert_equal "Nothing to update", out.shift
+    assert_equal "The following gem versions were skipped by the cooldown setting:", out.shift
+    assert_equal "  * b 3 (available in 6 days), resolved 1 instead", out.shift
+    assert_empty out
+  end
+
+  def test_execute_cooldown_missing_created_at_fails_open
+    util_setup_cooldown_repo b2_created_at: nil, b3_created_at: nil
+
+    @cmd.options[:cooldown] = 7
+    @cmd.options[:args] = []
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Updating installed gems", out.shift
+    assert_equal "Updating b", out.shift
+    assert_equal "Gems updated: b", out.shift
+    assert_empty out
+
+    assert_path_exist File.join(@gemhome, "specifications", "b-3.gemspec")
+    assert_equal 1, @ui.error.scan("publish times").size
+  end
+
+  def test_execute_system_cooldown
+    spec_fetcher
+
+    ru8, ru8_gem = util_gem "rubygems-update", 8 do |s|
+      s.files = %w[setup.rb]
+    end
+    ru9, ru9_gem = util_gem "rubygems-update", 9 do |s|
+      s.files = %w[setup.rb]
+    end
+
+    util_setup_compact_index ru8, ru9, created_at: {
+      "rubygems-update-8" => util_cooldown_time(30),
+      "rubygems-update-9" => util_cooldown_time(1),
+    }
+    add_to_fetcher ru8, ru8_gem
+    add_to_fetcher ru9, ru9_gem
+
+    Gem::SpecFetcher.fetcher = nil
+
+    @cmd.options[:args]     = []
+    @cmd.options[:system]   = true
+    @cmd.options[:cooldown] = 7
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Installing RubyGems 8", out.shift
+    assert_equal "RubyGems system software updated", out.shift
+    assert_equal "The following gem versions were skipped by the cooldown setting:", out.shift
+    assert_equal "  * rubygems-update 9 (available in 6 days), resolved 8 instead", out.shift
+
+    assert_empty out
+  end
+
   def test_execute_multiple
     spec_fetcher do |fetcher|
       fetcher.download "a",  2

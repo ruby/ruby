@@ -57,6 +57,7 @@
 #ifndef __OpenBSD__
 # define RBIMPL_HAS_BUILTIN___builtin_bswap32           RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_bswap64           RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
+# define RBIMPL_HAS_BUILTIN___builtin_bswap128          RBIMPL_COMPILER_SINCE(GCC, 11, 1, 0)
 #endif
 # define RBIMPL_HAS_BUILTIN___builtin_clz               RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_clzl              RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
@@ -66,6 +67,7 @@
 # define RBIMPL_HAS_BUILTIN___builtin_ctzl              RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_ctzll             RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_expect            RBIMPL_COMPILER_SINCE(GCC, 3, 0, 0)
+# define RBIMPL_HAS_BUILTIN___builtin_memcpy            RBIMPL_COMPILER_SINCE(GCC, 3, 0, 0) // or older
 # define RBIMPL_HAS_BUILTIN___builtin_mul_overflow      RBIMPL_COMPILER_SINCE(GCC, 5, 1, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_mul_overflow_p    RBIMPL_COMPILER_SINCE(GCC, 7, 0, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_popcount          RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
@@ -92,6 +94,7 @@
 # define RBIMPL_HAS_BUILTIN___builtin_bswap16           HAVE_BUILTIN___BUILTIN_BSWAP16
 # define RBIMPL_HAS_BUILTIN___builtin_bswap32           HAVE_BUILTIN___BUILTIN_BSWAP32
 # define RBIMPL_HAS_BUILTIN___builtin_bswap64           HAVE_BUILTIN___BUILTIN_BSWAP64
+# define RBIMPL_HAS_BUILTIN___builtin_bswap128          HAVE_BUILTIN___BUILTIN_BSWAP128
 # define RBIMPL_HAS_BUILTIN___builtin_clz               HAVE_BUILTIN___BUILTIN_CLZ
 # define RBIMPL_HAS_BUILTIN___builtin_clzl              HAVE_BUILTIN___BUILTIN_CLZL
 # define RBIMPL_HAS_BUILTIN___builtin_clzll             HAVE_BUILTIN___BUILTIN_CLZLL

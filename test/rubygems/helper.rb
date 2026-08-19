@@ -543,6 +543,10 @@ class Gem::TestCase < Test::Unit::TestCase
       Gem::RemoteFetcher.fetcher = nil
     end
 
+    if defined? Gem::Cooldown
+      Gem::Cooldown.reset_warned_missing_created_at
+    end
+
     Dir.chdir @current_dir
 
     ENV.replace(@orig_env)
