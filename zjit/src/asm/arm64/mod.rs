@@ -912,6 +912,8 @@ pub fn stp_pre(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+            assert!( !(rn.base_reg_no != 31 && (rn.base_reg_no == rt1.reg_no || rn.base_reg_no == rt2.reg_no)),
+                "Behavior is unpredictable when storing and writing back to the same register ({})", rn.base_reg_no);
 
             RegisterPair::stp_pre(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
@@ -929,6 +931,8 @@ pub fn stp_post(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+            assert!( !(rn.base_reg_no != 31 && (rn.base_reg_no == rt1.reg_no || rn.base_reg_no == rt2.reg_no)),
+                "Behavior is unpredictable when storing and writing back to the same register ({})", rn.base_reg_no);
 
             RegisterPair::stp_post(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
@@ -1833,6 +1837,18 @@ mod tests {
         let cb = compile(|cb| stp_pre(cb, X31, X31, A64Opnd::new_mem(64, X31, -16)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: stp xzr, xzr, [sp, #-0x10]!");
         assert_snapshot!(cb.hexdump(), @"ff7fbfa9");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_stp_pre_write_back_to_source() {
+        compile(|cb| stp_pre(cb, X0, X0, A64Opnd::new_mem(64, X0, -16)));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_stp_post_write_back_to_source() {
+        compile(|cb| stp_post(cb, X0, X0, A64Opnd::new_mem(64, X0, -16)));
     }
 
     #[test]
