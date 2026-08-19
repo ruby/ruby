@@ -544,6 +544,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         size += body->iseq_size * sizeof(VALUE);
         size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
         size += body->local_table_size * sizeof(ID); // body->local_table
+        if (body->lvar_states) size += body->local_table_size * sizeof(enum lvar_state);
         size += ISEQ_MBITS_BUFLEN(body->iseq_size) * ISEQ_MBITS_SIZE;
         if (body->catch_table) {
             size += iseq_catch_table_bytes(body->catch_table->size);
