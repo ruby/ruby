@@ -256,7 +256,7 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
-  def test_branch_coverage_for_eval_repeated
+def test_branch_coverage_for_eval_repeated
     assert_in_out_err(["-W0", *ARGV], <<-"end;", ["2", "2", "[[0, 1], [0, 2]]"], [])
       Coverage.start(eval: true, branches: true)
 
@@ -281,6 +281,42 @@ class TestCoverage < Test::Unit::TestCase
       r = Coverage.peek_result["test.rb"][:branches]
       p r.size
       p r.values.map {|targets| targets.values.sort }.sort
+    end;
+  end
+
+  def test_peek_result_branches_after_eval_adds_branches
+    assert_in_out_err(ARGV, <<-"end;", ["1", "1", "2", "3", "1", "false"], [])
+      Coverage.start(eval: true, branches: true)
+
+      sum = ->(r) { r.sum {|_, targets| targets.sum {|_, count| count } } }
+
+      eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb", 1)
+      def foo(x)
+        x ? 1 : 2
+      end
+      RUBY
+
+      foo(true)
+      r1 = Coverage.peek_result["test.rb"][:branches]
+      p r1.size
+      p sum[r1]
+
+      # A later eval with the same path adds new branches to the same file,
+      # and the cached result template must be refreshed accordingly
+      eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb", 10)
+      def bar(x)
+        x ? 1 : 2
+      end
+      RUBY
+
+      foo(true)
+      bar(false)
+      r2 = Coverage.peek_result["test.rb"][:branches]
+      p r2.size
+      p sum[r2]
+      # the earlier snapshot must not be affected
+      p sum[r1]
+      p r1.equal?(r2)
     end;
   end
 
