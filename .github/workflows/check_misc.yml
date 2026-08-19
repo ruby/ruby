@@ -78,6 +78,20 @@ jobs:
           exit $fail
         working-directory: include
 
+      - name: Check for __has_builtin functions
+        run: |
+          missing=()
+          for check in $(git grep -h --no-line-number -o '__has_builtin(__[_a-zA-Z0-9]*)' | sort -u); do
+              func="${check#__has_builtin(}"
+              func="${func%)}"
+              git -P grep -w "RBIMPL_HAS_BUILTIN_$func" > /dev/null || missing+=("-e" "$check")
+          done
+          [ ${#missing[@]} = 0 ] || {
+              echo "::error::Missing __has_builtin fallbacks:"
+              git -P grep -F "${missing[@]}" | sed 's/^/::error::/' | head
+              false
+          }
+
       - id: now
         run: |
           date +"mon=%-m"%n"day=%-d" >> $GITHUB_OUTPUT
