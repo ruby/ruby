@@ -52,19 +52,28 @@ static int io_reader(void * data, unsigned char *buf, size_t size, size_t *read)
     return 1;
 }
 
+/* The parser calls back into Ruby for every event, so a handler can call
+ * Psych::Parser#parse again on the same object.  parse() reinitialises the
+ * parser it is handed, which would pull the input out from under the loop
+ * still driving it, so keep a flag to reject a reentrant call. */
+typedef struct {
+    yaml_parser_t yaml_parser;
+    int parsing;
+} psych_parser_t;
+
 static void dealloc(void * ptr)
 {
-    yaml_parser_t * parser;
+    psych_parser_t * parser;
 
-    parser = (yaml_parser_t *)ptr;
-    yaml_parser_delete(parser);
+    parser = (psych_parser_t *)ptr;
+    yaml_parser_delete(&parser->yaml_parser);
     xfree(parser);
 }
 
 #if 0
 static size_t memsize(const void *ptr)
 {
-    const yaml_parser_t *parser = ptr;
+    const psych_parser_t *parser = ptr;
     /* TODO: calculate parser's size */
     return 0;
 }
@@ -81,10 +90,10 @@ static const rb_data_type_t psych_parser_type = {
 
 static VALUE allocate(VALUE klass)
 {
-    yaml_parser_t * parser;
-    VALUE obj = TypedData_Make_Struct(klass, yaml_parser_t, &psych_parser_type, parser);
+    psych_parser_t * parser;
+    VALUE obj = TypedData_Make_Struct(klass, psych_parser_t, &psych_parser_type, parser);
 
-    yaml_parser_initialize(parser);
+    yaml_parser_initialize(&parser->yaml_parser);
 
     return obj;
 }
@@ -257,17 +266,28 @@ static VALUE protected_event_location(VALUE pointer)
     return rb_funcall3(args[0], id_event_location, 4, args + 1);
 }
 
-static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
+struct parse_args {
+    psych_parser_t * psych_parser;
+    VALUE self;
+    VALUE handler;
+    VALUE yaml;
+    VALUE path;
+};
+
+static VALUE parse_body(VALUE ptr)
 {
-    yaml_parser_t * parser;
+    struct parse_args * pargs = (struct parse_args *)ptr;
+    yaml_parser_t * parser = &pargs->psych_parser->yaml_parser;
+    VALUE self = pargs->self;
+    VALUE handler = pargs->handler;
+    VALUE yaml = pargs->yaml;
+    VALUE path = pargs->path;
     yaml_event_t event;
     int done = 0;
     int state = 0;
     int parser_encoding = YAML_ANY_ENCODING;
     int encoding = rb_utf8_encindex();
     rb_encoding * internal_enc = rb_default_internal_encoding();
-
-    TypedData_Get_Struct(self, yaml_parser_t, &psych_parser_type, parser);
 
     yaml_parser_delete(parser);
     yaml_parser_initialize(parser);
@@ -518,6 +538,37 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
     return self;
 }
 
+static VALUE parse_ensure(VALUE ptr)
+{
+    psych_parser_t * parser = (psych_parser_t *)ptr;
+
+    parser->parsing = 0;
+
+    return Qnil;
+}
+
+static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
+{
+    psych_parser_t * parser;
+    struct parse_args pargs;
+
+    TypedData_Get_Struct(self, psych_parser_t, &psych_parser_type, parser);
+
+    if (parser->parsing) {
+        rb_raise(rb_const_get(mPsych, rb_intern("Exception")),
+                "parser is already parsing, it cannot be reused from a handler callback");
+    }
+    parser->parsing = 1;
+
+    pargs.psych_parser = parser;
+    pargs.self         = self;
+    pargs.handler      = handler;
+    pargs.yaml         = yaml;
+    pargs.path         = path;
+
+    return rb_ensure(parse_body, (VALUE)&pargs, parse_ensure, (VALUE)parser);
+}
+
 /*
  * call-seq:
  *    parser.mark # => #<Psych::Parser::Mark>
@@ -529,13 +580,13 @@ static VALUE mark(VALUE self)
 {
     VALUE mark_klass;
     VALUE args[3];
-    yaml_parser_t * parser;
+    psych_parser_t * parser;
 
-    TypedData_Get_Struct(self, yaml_parser_t, &psych_parser_type, parser);
+    TypedData_Get_Struct(self, psych_parser_t, &psych_parser_type, parser);
     mark_klass = rb_const_get_at(cPsychParser, rb_intern("Mark"));
-    args[0] = SIZET2NUM(parser->mark.index);
-    args[1] = SIZET2NUM(parser->mark.line);
-    args[2] = SIZET2NUM(parser->mark.column);
+    args[0] = SIZET2NUM(parser->yaml_parser.mark.index);
+    args[1] = SIZET2NUM(parser->yaml_parser.mark.line);
+    args[2] = SIZET2NUM(parser->yaml_parser.mark.column);
 
     return rb_class_new_instance(3, args, mark_klass);
 }

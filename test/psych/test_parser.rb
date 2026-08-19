@@ -26,6 +26,39 @@ module Psych
       end
     end
 
+    # Calls Parser#parse again, once, from inside a callback of the parse it is
+    # already handling.
+    class ReentrantHandler < Handler
+      attr_accessor :parser, :inner_yaml
+      attr_reader :inner_error, :scalars, :empty_calls
+
+      def initialize
+        @parser      = nil
+        @inner_yaml  = nil
+        @inner_error = nil
+        @scalars     = []
+        @empty_calls = 0
+      end
+
+      def empty
+        @empty_calls += 1
+        raise "handler#empty keeps being called, the parse loop is not terminating" if @empty_calls > 1000
+      end
+
+      def scalar value, anchor, tag, plain, quoted, style
+        @scalars << value
+
+        inner, @inner_yaml = @inner_yaml, nil
+        return unless inner
+
+        begin
+          @parser.parse inner
+        rescue => e
+          @inner_error = e
+        end
+      end
+    end
+
     def setup
       super
       @handler        = EventCatcher.new
@@ -82,6 +115,42 @@ module Psych
         ex = assert_raise(RuntimeError) { parser.parse "--- hello\n" }
         assert_equal "from event_location", ex.message
       end
+    end
+
+    def test_parse_is_not_reentrant
+      pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
+
+      handler = ReentrantHandler.new
+      handler.inner_yaml = "--- inner\n"
+      parser = Psych::Parser.new handler
+      handler.parser = parser
+
+      parser.parse "--- outer\n"
+
+      assert_kind_of Psych::Exception, handler.inner_error
+      assert_equal ['outer'], handler.scalars
+      assert_equal 0, handler.empty_calls
+
+      # The in-use flag is cleared when the parse finishes, so the same parser
+      # can be used again afterwards.
+      handler.scalars.clear
+      parser.parse "--- second\n"
+      assert_equal ['second'], handler.scalars
+    end
+
+    def test_parse_is_not_reentrant_with_invalid_inner_document
+      pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
+
+      handler = ReentrantHandler.new
+      handler.inner_yaml = "--- \x00bad\n"
+      parser = Psych::Parser.new handler
+      handler.parser = parser
+
+      parser.parse "--- outer\n"
+
+      assert_kind_of Psych::Exception, handler.inner_error
+      assert_equal ['outer'], handler.scalars
+      assert_equal 0, handler.empty_calls
     end
 
     def test_multiparse
