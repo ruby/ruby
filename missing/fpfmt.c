@@ -401,7 +401,7 @@ prescale(int e, int p, int lp)
     // make sure p is within range of precomputed table
     RUBY_ASSERT_ALWAYS(p >= POW10_MIN && p <= POW10_MAX);
 
-    uint64_t *res = POW10_TABLE[p - POW10_MIN];
+    const uint64_t *res = POW10_TABLE[p - POW10_MIN];
     return (Scaler){ { res[0], res[1] }, -(e + lp + 3) };
 }
 
@@ -1223,7 +1223,7 @@ ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
             fr = short_width(d);
             n = digits(fr.m);
             break;
-        case 3:
+        case 3: {
             FloatRep probe = fixed_width(d, 1);
             int decpt_guess = 1 + probe.e;
             n = decpt_guess + ndigits;
@@ -1245,6 +1245,7 @@ ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
                 fr = fixed_width(d, n);
             }
             break;
+        }
         default: // mode 2 (%e/%g): max(1, ndigits) significant digits
             n = ndigits < 1 ? 1 : ndigits;
             if (n > DTOA_MAX_DIGITS) return rational_arith_dtoa(d, ndigits, false, decpt, rve);
