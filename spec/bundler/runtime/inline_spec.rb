@@ -712,7 +712,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
       build_gem "unusual_paths", "1.0.0", no_default: true do |s|
         s.require_paths = ["lib/unusual_paths"]
-        s.write "lib/unusual_paths/unusual_paths.rb", "UNUSUAL_PATHS = '1.0.0'"
+        s.write "lib/unusual_paths/unusual_paths.rb", "UNUSUAL_PATHS = 'loaded'"
       end
     end
 
@@ -734,7 +734,7 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to include("Installing unusual_paths 1.0.0")
-    expect(out).to include("1.0.0")
+    expect(out).to include("loaded")
     expect(err).to be_empty
   end
 
