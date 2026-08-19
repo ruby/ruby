@@ -113,6 +113,9 @@ jobs:
         continue-on-error: ${{ steps.now.outputs.mon < 12 }}
         if: always()
 
+      - run: make check-depends
+        if: always()
+
       - name: Check if to generate documents
         id: rdoc
         run: |
