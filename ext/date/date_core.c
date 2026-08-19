@@ -2625,9 +2625,9 @@ offset_to_sec(VALUE vof, int *rof)
 		if (!FIXNUM_P(vn))
 		    return 0;
 		n = FIX2LONG(vn);
-		if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
-		    return 0;
 	    }
+	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
+		return 0;
 	    *rof = (int)n;
 	    return 1;
 	}
