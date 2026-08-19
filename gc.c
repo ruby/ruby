@@ -604,14 +604,14 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 
 static const char *obj_type_name(VALUE obj);
 
-/* A forking parent can hold registered_globals.lock (every Ractor's root scan takes
- * it); inheriting it locked would make the child's first GC wait forever, so rebuild
- * it, like the generic_fields lock. */
+/* A forking parent can hold registered_addrs.lock; inheriting it locked would make
+ * the child's first register wait forever, so rebuild it, like the generic_fields
+ * lock. */
 void
 rb_gc_atfork_global_locks(void)
 {
     rb_vm_t *vm = GET_VM();
-    rb_native_mutex_initialize(&vm->gc.registered_globals.lock);
+    rb_native_mutex_initialize(&vm->gc.registered_addrs.lock);
 }
 
 #include "gc/default/default.c"
@@ -3249,6 +3249,19 @@ rb_gc_get_ec(void)
 }
 
 void
+rb_gc_mark_registered_addrs(rb_ractor_t *r, bool need_lock)
+{
+    if (r->registered_addrs_cnt == 0) return;
+
+    rb_vm_t *vm = GET_VM();
+    if (need_lock) rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
+    for (size_t i = 0; i < r->registered_addrs_cnt; i++) {
+        rb_gc_mark_maybe(*r->registered_addrs[i]);
+    }
+    if (need_lock) rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
+}
+
+void
 rb_gc_mark_roots(void *objspace, const char **categoryp)
 {
     rb_execution_context_t *ec = rb_gc_get_ec();
@@ -3286,6 +3299,7 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
             if (owner) {
                 rb_gc_mark_vm_stack_values((long)owner->registered_marks_cnt,
                                            owner->registered_marks);
+                rb_gc_mark_registered_addrs(owner, true);
             }
         }
 
@@ -3294,27 +3308,18 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
          * reachability.  With multiple objspaces zombie_objspaces covers this. */
         if (!rb_gc_impl_multi_objspace_p()) {
             rb_ractor_t *tr;
-            rb_native_mutex_lock(&vm->gc.registered_globals.lock);
+            rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
             ccan_list_for_each(&vm->ractor.terminated_set, tr, vmlr_node) {
                 rb_gc_mark_vm_stack_values((long)tr->registered_marks_cnt,
                                            tr->registered_marks);
+                rb_gc_mark_registered_addrs(tr, false);
             }
-            rb_native_mutex_unlock(&vm->gc.registered_globals.lock);
+            rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
         }
     }
     else {
         rb_ractor_mark_local_roots(rb_ec_ractor_ptr(ec));
     }
-
-    /* rb_gc_register_address slots live in one VM-wide list: *addr can later hold
-     * another objspace's value, so every Ractor's GC scans all slots conservatively,
-     * marking only its own residents. */
-    MARK_CHECKPOINT("registered_globals");
-    rb_native_mutex_lock(&vm->gc.registered_globals.lock);
-    for (size_t i = 0; i < vm->gc.registered_globals.addrs_cnt; i++) {
-        rb_gc_mark_maybe(*vm->gc.registered_globals.addrs[i]);
-    }
-    rb_native_mutex_unlock(&vm->gc.registered_globals.lock);
 
     /* Trap handlers live in the VM-global vm->trap_list.cmd[], a fixed array of aligned
      * VALUEs (signal.c uses ACCESS_ONCE): a racing walk reads either the old or the new
@@ -3813,21 +3818,76 @@ rb_gc_register_mark_object(VALUE obj)
     }
 }
 
+static rb_ractor_t *
+gc_registered_addrs_owner(rb_vm_t *vm)
+{
+    rb_ractor_t *cr = rb_current_ractor_raw(false);
+    if (cr) return cr;
+    RUBY_ASSERT(vm->ractor.main_ractor != NULL);
+    return vm->ractor.main_ractor;
+}
+
+void
+rb_gc_registered_addrs_enroll_without_gc(rb_vm_t *vm, rb_ractor_t *r)
+{
+    if (r->registered_addrs_listed) return;
+    if (vm->gc.registered_addrs.registry_cnt == vm->gc.registered_addrs.registry_capa) {
+        size_t nc = vm->gc.registered_addrs.registry_capa ? vm->gc.registered_addrs.registry_capa * 2 : 16;
+        struct rb_ractor_struct **p = realloc(vm->gc.registered_addrs.registry,
+                                              nc * sizeof(struct rb_ractor_struct *));
+        if (!p) rb_bug("rb_gc_registered_addrs_enroll_without_gc: out of memory");
+        vm->gc.registered_addrs.registry = p;
+        vm->gc.registered_addrs.registry_capa = nc;
+    }
+    vm->gc.registered_addrs.registry[vm->gc.registered_addrs.registry_cnt++] = r;
+    r->registered_addrs_listed = true;
+}
+
+void
+rb_gc_registered_addrs_unenroll_without_gc(rb_vm_t *vm, rb_ractor_t *r)
+{
+    if (!r->registered_addrs_listed) return;
+    for (size_t i = 0; i < vm->gc.registered_addrs.registry_cnt; i++) {
+        if (vm->gc.registered_addrs.registry[i] == r) {
+            vm->gc.registered_addrs.registry[i] =
+                vm->gc.registered_addrs.registry[--vm->gc.registered_addrs.registry_cnt];
+            break;
+        }
+    }
+    r->registered_addrs_listed = false;
+}
+
+static bool
+gc_registered_addrs_remove(rb_ractor_t *r, VALUE *addr)
+{
+    for (size_t i = 0; i < r->registered_addrs_cnt; i++) {
+        if (r->registered_addrs[i] == addr) {
+            MEMMOVE(&r->registered_addrs[i], &r->registered_addrs[i + 1],
+                    VALUE *, r->registered_addrs_cnt - i - 1);
+            r->registered_addrs_cnt--;
+            return true;
+        }
+    }
+    return false;
+}
+
 void
 rb_gc_register_address(VALUE *addr)
 {
     rb_vm_t *vm = GET_VM();
 
-    rb_native_mutex_lock(&vm->gc.registered_globals.lock);
-    if (vm->gc.registered_globals.addrs_cnt == vm->gc.registered_globals.addrs_capa) {
-        size_t nc = vm->gc.registered_globals.addrs_capa ? vm->gc.registered_globals.addrs_capa * 2 : 64;
-        VALUE **p = realloc(vm->gc.registered_globals.addrs, nc * sizeof(VALUE *));
+    rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
+    rb_ractor_t *owner = gc_registered_addrs_owner(vm);
+    if (owner->registered_addrs_cnt == owner->registered_addrs_capa) {
+        size_t nc = owner->registered_addrs_capa ? owner->registered_addrs_capa * 2 : 64;
+        VALUE **p = realloc(owner->registered_addrs, nc * sizeof(VALUE *));
         if (!p) rb_bug("rb_gc_register_address: out of memory");
-        vm->gc.registered_globals.addrs = p;
-        vm->gc.registered_globals.addrs_capa = nc;
+        owner->registered_addrs = p;
+        owner->registered_addrs_capa = nc;
     }
-    vm->gc.registered_globals.addrs[vm->gc.registered_globals.addrs_cnt++] = addr;
-    rb_native_mutex_unlock(&vm->gc.registered_globals.lock);
+    owner->registered_addrs[owner->registered_addrs_cnt++] = addr;
+    rb_gc_registered_addrs_enroll_without_gc(vm, owner);
+    rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
 
     /* Some C extensions register before assigning, so protect obj from GC here. */
     RB_GC_GUARD(*addr);
@@ -3838,19 +3898,17 @@ rb_gc_unregister_address(VALUE *addr)
 {
     rb_vm_t *vm = GET_VM();
 
-    /* One VM-wide list, so a register and unregister from different Ractors (Init on
-     * main, dfree elsewhere) still pair up.  Silently a no-op when not found: upstream
-     * tolerates a double unregister too. */
-    rb_native_mutex_lock(&vm->gc.registered_globals.lock);
-    for (size_t i = 0; i < vm->gc.registered_globals.addrs_cnt; i++) {
-        if (vm->gc.registered_globals.addrs[i] == addr) {
-            MEMMOVE(&vm->gc.registered_globals.addrs[i], &vm->gc.registered_globals.addrs[i + 1],
-                    VALUE *, vm->gc.registered_globals.addrs_cnt - i - 1);
-            vm->gc.registered_globals.addrs_cnt--;
+    rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
+    rb_ractor_t *cr = rb_current_ractor_raw(false);
+    if (cr && gc_registered_addrs_remove(cr, addr)) goto done;
+    for (size_t i = 0; i < vm->gc.registered_addrs.registry_cnt; i++) {
+        if (vm->gc.registered_addrs.registry[i] != cr &&
+            gc_registered_addrs_remove(vm->gc.registered_addrs.registry[i], addr)) {
             break;
         }
     }
-    rb_native_mutex_unlock(&vm->gc.registered_globals.lock);
+  done:
+    rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
 }
 
 void
@@ -4311,6 +4369,7 @@ rb_gc_objspace_absorb_all_zombies(void)
         rb_ractor_t *owner = vm->gc.zombie_objspaces[0].owner;
         if (owner) {
             rb_ractor_absorb_registered_marks(GET_RACTOR(), owner);
+            rb_ractor_absorb_registered_addrs_without_gc(GET_RACTOR(), owner);
         }
         rb_gc_objspace_absorb_into_current(vm->gc.zombie_objspaces[0].owner_slot);
         if (vm->gc.zombie_objspaces_count >= before) {

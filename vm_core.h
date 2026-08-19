@@ -859,14 +859,11 @@ typedef struct rb_vm_struct {
 #if USE_MODULAR_GC
         struct gc_mark_func_data_struct *mark_func_data;
 #endif
-        /* One VM-wide list for rb_gc_register_address: a slot can later hold another
-         * objspace's value, so it is not split per Ractor and every Ractor's GC scans it
-         * conservatively.  Leaf lock; register/unregister are cold paths. */
         struct {
             rb_nativethread_lock_t lock;
-            VALUE **addrs;              /* rb_gc_register_address: mark_maybe on *addr */
-            size_t addrs_cnt, addrs_capa;
-        } registered_globals;
+            struct rb_ractor_struct **registry;
+            size_t registry_cnt, registry_capa;
+        } registered_addrs;
 
         /* Holders keeping GC disabled (atomic): Ractors that called GC.disable (at
          * most one hold each) plus short internal critical sections.  One holder stops
