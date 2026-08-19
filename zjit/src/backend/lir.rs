@@ -1484,13 +1484,6 @@ impl Interval {
         self.end() <= pos
     }
 
-    /// Check if the interval is alive at position
-    /// Panics if the range is not set
-    pub fn survives(&self, position: usize) -> bool {
-        assert!(self.ranges.len() > 0, "survives called on interval with no range");
-        self.ranges.iter().any(|range| range.from < position && position < range.to)
-    }
-
     /// Returns true if position falls inside one of the ranges in this
     /// interval.
     pub fn covers(&self, position: usize) -> bool {
@@ -2704,19 +2697,28 @@ impl Assembler
                         HashSet::default()
                     };
 
-                    // Find survivors: intervals that survive this Call instruction
-                    // We need to preserve the "surviving" registers past the ccall,
-                    // so we're going to push them all on the stack, then pop
-                    // after we make the ccall
+                    // Find survivors: intervals that are live across this Call
+                    // instruction. We need to preserve the "surviving" registers
+                    // past the ccall, so we're going to push them all on the
+                    // stack, then pop after we make the ccall
+                    let out_vreg_id = out.is_vreg().then(|| out.vreg_idx());
+                    debug_assert!(
+                        out_vreg_id.is_none_or(|id| !intervals[id].has_bounds() || intervals[id].born_at(insn_number)),
+                        "a CCall's output interval must start at the CCall"
+                    );
                     let survivors: Vec<VRegId> = intervals.iter()
                         .filter(|interval| {
                             // We need to spill register intervals on this CCall in two cases:
-                            // 1) The VReg is referenced in an instruction after the CCall
-                            let survives_call = interval.has_bounds() && interval.survives(insn_number);
+                            // 1) The VReg is live across the CCall. The VReg this CCall
+                            //    defines is not one of them: its range starts here, so it
+                            //    holds no value yet and there is nothing to preserve.
+                            let live_across_call = Some(interval.vreg_id) != out_vreg_id
+                                && interval.covers(insn_number);
+
                             // 2) The VReg is referenced by the stack map for the CCall
                             let stack_map_reg = stack_vreg_ids.contains(&interval.vreg_id);
                             let is_register = interval.assigned.get().and_then(|alloc| alloc.alloc_pool_index(alloc_regs)).is_some();
-                            is_register && (survives_call || stack_map_reg)
+                            is_register && (live_across_call || stack_map_reg)
                         })
                         .map(|interval| interval.vreg_id)
                         .collect();
@@ -4778,12 +4780,12 @@ mod tests {
         assert_eq!(interval.end(), 25);
 
         // The vreg is not live inside the hole ...
-        assert!(!interval.survives(10));
-        assert!(!interval.survives(15));
+        assert!(!interval.covers(10));
+        assert!(!interval.covers(15));
         // ... but the interval is not over, so it must keep its register.
         assert!(interval.end() > 15);
         // ... and it is live again on the far side.
-        assert!(interval.survives(22));
+        assert!(interval.covers(22));
 
         // A range that abuts the last one merges into it.
         interval.add_range(25, 30);
@@ -4809,15 +4811,15 @@ mod tests {
     }
 
     #[test]
-    fn test_interval_survives() {
+    fn test_interval_covers() {
         let mut interval = Interval::new(VRegId(1));
         interval.add_range(3, 10);
 
-        assert!(!interval.survives(2));  // Before range
-        assert!(!interval.survives(3));  // At start (exclusive)
-        assert!(interval.survives(5));   // Inside range
-        assert!(!interval.survives(10)); // At end (exclusive)
-        assert!(!interval.survives(11)); // After range
+        assert!(!interval.covers(2));  // Before range
+        assert!(interval.covers(3));   // At start (inclusive: the def position)
+        assert!(interval.covers(5));   // Inside range
+        assert!(!interval.covers(10)); // At end (exclusive)
+        assert!(!interval.covers(11)); // After range
     }
 
     #[test]
@@ -4829,7 +4831,6 @@ mod tests {
         // so position 11 belongs to no instruction.
         interval.set_from(10);
         assert_eq!(interval.ranges, vec![LiveRange { from: 10, to: 11 }]);
-        assert!(!interval.survives(10));
         assert!(interval.is_dead());
 
         // With existing range, updates start but keeps end
@@ -4861,13 +4862,6 @@ mod tests {
     fn test_interval_add_range_invalid() {
         let mut interval = Interval::new(VRegId(1));
         interval.add_range(10, 5);
-    }
-
-    #[test]
-    #[should_panic(expected = "survives called on interval with no range")]
-    fn test_interval_survives_panics_without_range() {
-        let interval = Interval::new(VRegId(1));
-        interval.survives(5);
     }
 
     #[test]
@@ -4906,7 +4900,7 @@ mod tests {
         ]);
         assert_eq!(intervals[r12_idx].start(), 20);
         assert_eq!(intervals[r12_idx].end(), 38);
-        assert!(!intervals[r12_idx].survives(32));
+        assert!(!intervals[r12_idx].covers(32));
 
         assert_eq!(intervals[r13_idx].ranges, vec![LiveRange { from: 20, to: 32 }]);
 
