@@ -22,6 +22,25 @@ static VALUE cme2counter = Qnil;
 static VALUE me_set = Qnil;
 
 /*
+ * Method coverage result template:
+ *   method_tmpl_by_path: { path => { key => me or [me, ...] } }
+ * Each peek dups the per-path template and replaces the values with the
+ * call counts.  me_set and cme2counter are append-only and iterate in
+ * insertion order, so only the entries after the ones already seen are added.
+ */
+static VALUE method_tmpl_by_path = Qnil;
+static long method_tmpl_n_me_set = 0;
+static long method_tmpl_n_cme2counter = 0;
+
+static void
+method_template_reset(void)
+{
+    method_tmpl_by_path = Qnil;
+    method_tmpl_n_me_set = 0;
+    method_tmpl_n_cme2counter = 0;
+}
+
+/*
  *  call-seq: Coverage.supported?(mode) -> true or false
  *
  *  Returns true if coverage measurement is supported for the given mode.
@@ -120,6 +139,7 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
         cme2counter = Qnil;
         me_set = Qnil;
     }
+    method_template_reset();
 
     coverages = rb_get_coverages();
     if (!RTEST(coverages)) {
@@ -305,30 +325,130 @@ branch_coverage(VALUE branches)
     return a.result;
 }
 
+struct method_template_add_arg {
+    long skip;
+    long i;
+    int check_me_set;   /* skip the entries in me_set (they are already added) */
+};
+
 static void
-method_coverage_i(const struct rb_coverage_method_data *method, void *data)
+method_template_add(VALUE me)
 {
-    VALUE ncoverages = *(VALUE *)data;
-    VALUE ncoverage = rb_hash_aref(ncoverages, method->path);
+    struct rb_coverage_method_data d;
+    VALUE tmpl, key, mes;
 
-    if (!NIL_P(ncoverage)) {
-        VALUE methods = rb_hash_aref(ncoverage, ID2SYM(rb_intern("methods")));
-        VALUE key = rb_ary_new_from_args(6, method->owner, method->method_id,
-                                         method->first_lineno, method->first_column,
-                                         method->last_lineno, method->last_column);
-        VALUE rcount = method->count;
-        VALUE previous = rb_hash_aref(methods, key);
+    if (!rb_coverage_method_data_of(me, Qnil, &d)) return;
 
-        if (NIL_P(rcount)) rcount = LONG2FIX(0);
-        if (NIL_P(previous)) previous = LONG2FIX(0);
-        if (!POSFIXABLE(FIX2LONG(rcount) + FIX2LONG(previous))) {
-            rcount = LONG2FIX(FIXNUM_MAX);
-        }
-        else {
-            rcount = LONG2FIX(FIX2LONG(rcount) + FIX2LONG(previous));
-        }
-        rb_hash_aset(methods, key, rcount);
+    tmpl = rb_hash_lookup(method_tmpl_by_path, d.path);
+    if (NIL_P(tmpl)) {
+        tmpl = rb_hash_new();
+        rb_hash_aset(method_tmpl_by_path, d.path, tmpl);
     }
+    key = rb_ary_new_from_args(6, d.owner, d.method_id,
+                               d.first_lineno, d.first_column,
+                               d.last_lineno, d.last_column);
+    rb_ary_freeze(key);
+    mes = rb_hash_lookup(tmpl, key);
+    if (NIL_P(mes)) {
+        rb_hash_aset(tmpl, key, me);
+    }
+    else if (RB_TYPE_P(mes, T_ARRAY)) {
+        rb_ary_push(mes, me);
+    }
+    else {
+        VALUE ary = rb_ary_hidden_new(2);
+        rb_ary_push(ary, mes);
+        rb_ary_push(ary, me);
+        rb_hash_aset(tmpl, key, ary);
+    }
+}
+
+static int
+method_template_add_i(VALUE me, VALUE value, VALUE data)
+{
+    struct method_template_add_arg *arg = (struct method_template_add_arg *)data;
+    if (arg->i++ >= arg->skip) {
+        if (arg->check_me_set && RTEST(rb_hash_lookup2(me_set, me, Qfalse))) return ST_CONTINUE;
+        method_template_add(me);
+    }
+    return ST_CONTINUE;
+}
+
+static void
+method_template_update(void)
+{
+    struct method_template_add_arg arg;
+
+    if (NIL_P(method_tmpl_by_path)) {
+        method_tmpl_by_path = rb_hash_new();
+        method_tmpl_n_me_set = 0;
+        method_tmpl_n_cme2counter = 0;
+    }
+    if (RTEST(me_set) && RHASH_SIZE(me_set) > (size_t)method_tmpl_n_me_set) {
+        arg.skip = method_tmpl_n_me_set;
+        arg.i = 0;
+        arg.check_me_set = 0;
+        rb_hash_foreach(me_set, method_template_add_i, (VALUE)&arg);
+        method_tmpl_n_me_set = arg.i;
+    }
+    if (RTEST(cme2counter) && RHASH_SIZE(cme2counter) > (size_t)method_tmpl_n_cme2counter) {
+        arg.skip = method_tmpl_n_cme2counter;
+        arg.i = 0;
+        arg.check_me_set = RTEST(me_set);
+        rb_hash_foreach(cme2counter, method_template_add_i, (VALUE)&arg);
+        method_tmpl_n_cme2counter = arg.i;
+    }
+}
+
+static int
+method_fill_check(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    return ST_REPLACE;
+}
+
+static long
+method_call_count(VALUE me)
+{
+    VALUE c = rb_hash_lookup2(cme2counter, me, Qnil);
+    return FIXNUM_P(c) ? FIX2LONG(c) : 0;
+}
+
+/* methods: {key => me or [me, ...]} -> {key => count}, where count is the
+ * sum of the call counts of all the method entries sharing the key
+ * (methods redefined at the same location) */
+static int
+method_fill_count(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    VALUE mes = (VALUE)*value;
+    long count;
+    if (RB_TYPE_P(mes, T_ARRAY)) {
+        long i;
+        count = 0;
+        for (i = 0; i < RARRAY_LEN(mes); i++) {
+            count += method_call_count(RARRAY_AREF(mes, i));
+            if (!POSFIXABLE(count)) count = FIXNUM_MAX;
+        }
+    }
+    else {
+        count = method_call_count(mes);
+    }
+    *value = (st_data_t)LONG2FIX(count);
+    return ST_CONTINUE;
+}
+
+static VALUE
+method_coverage(VALUE path)
+{
+    VALUE tmpl = rb_hash_lookup(method_tmpl_by_path, path);
+    VALUE methods;
+    if (NIL_P(tmpl)) {
+        methods = rb_hash_new();
+    }
+    else {
+        methods = rb_hash_dup(tmpl);
+        rb_hash_stlike_foreach_with_replace(methods, method_fill_check, method_fill_count, 0);
+    }
+    return methods;
 }
 
 static int
@@ -360,7 +480,7 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
         }
 
         if (current_mode & COVERAGE_TARGET_METHODS) {
-            rb_hash_aset(h, ID2SYM(rb_intern("methods")), rb_hash_new());
+            rb_hash_aset(h, ID2SYM(rb_intern("methods")), method_coverage(path));
         }
 
         coverage = h;
@@ -391,11 +511,10 @@ rb_coverage_peek_result(VALUE klass)
         rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
     }
 
-    rb_hash_foreach(coverages, coverage_peek_result_i, ncoverages);
-
     if (current_mode & COVERAGE_TARGET_METHODS) {
-        rb_coverage_each_method(method_coverage_i, &ncoverages);
+        method_template_update();
     }
+    rb_hash_foreach(coverages, coverage_peek_result_i, ncoverages);
 
     rb_hash_freeze(ncoverages);
     return ncoverages;
@@ -472,6 +591,7 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
         rb_reset_coverages();
         cme2counter = Qnil;
         me_set = Qnil;
+        method_template_reset();
         current_state = IDLE;
     }
     return ncoverages;
@@ -737,4 +857,5 @@ Init_coverage(void)
     rb_define_module_function(rb_mCoverage, "running?", rb_coverage_running, 0);
     rb_global_variable(&cme2counter);
     rb_global_variable(&me_set);
+    rb_global_variable(&method_tmpl_by_path);
 }

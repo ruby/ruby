@@ -6274,27 +6274,38 @@ struct method_coverage_arg {
     void *data;
 };
 
-static void
-method_coverage_call(const rb_method_entry_t *me, VALUE count,
-                     struct method_coverage_arg *arg)
+/* Fills *out for the method entry `me_v` and returns true, or returns false
+ * if the method entry is not a subject of method coverage (aliases,
+ * complemented entries, and methods without a source location). */
+bool
+rb_coverage_method_data_of(VALUE me_v, VALUE count, struct rb_coverage_method_data *out)
 {
+    const rb_method_entry_t *me = (const rb_method_entry_t *)me_v;
     VALUE location[5];
     const rb_method_entry_t *resolved_me = rb_resolve_me_location(me, location);
 
     if (me != resolved_me || RB_TYPE_P(me->owner, T_ICLASS) ||
-        FIX2LONG(location[1]) <= 0) return;
+        FIX2LONG(location[1]) <= 0) return false;
 
-    struct rb_coverage_method_data method = {
-        .owner = me->owner,
-        .method_id = ID2SYM(me->def->original_id),
-        .path = location[0],
-        .first_lineno = location[1],
-        .first_column = location[2],
-        .last_lineno = location[3],
-        .last_column = location[4],
-        .count = count,
-    };
-    arg->callback(&method, arg->data);
+    out->owner = me->owner;
+    out->method_id = ID2SYM(me->def->original_id);
+    out->path = location[0];
+    out->first_lineno = location[1];
+    out->first_column = location[2];
+    out->last_lineno = location[3];
+    out->last_column = location[4];
+    out->count = count;
+    return true;
+}
+
+static void
+method_coverage_call(const rb_method_entry_t *me, VALUE count,
+                     struct method_coverage_arg *arg)
+{
+    struct rb_coverage_method_data method;
+    if (rb_coverage_method_data_of((VALUE)me, count, &method)) {
+        arg->callback(&method, arg->data);
+    }
 }
 
 static int

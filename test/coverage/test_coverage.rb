@@ -320,6 +320,46 @@ def test_branch_coverage_for_eval_repeated
     end;
   end
 
+  def test_peek_result_methods_after_eval_adds_methods
+    assert_in_out_err(["-W0", *ARGV], <<-"end;", ["1", "2", "1", "3", "1", "false"], [])
+      Coverage.start(eval: true, methods: true)
+
+      eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb", 1)
+      class Foo
+        def foo; end
+      end
+      RUBY
+
+      Foo.new.foo
+      r1 = Coverage.peek_result["test.rb"][:methods]
+      p r1.size
+
+      # A later eval with the same path adds new methods to the same file,
+      # and redefining a method at the same location shares the key
+      eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb", 10)
+      class Foo
+        def bar; end
+      end
+      RUBY
+      eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb", 1)
+      class Foo
+        def foo; end
+      end
+      RUBY
+
+      Foo.new.foo
+      Foo.new.foo
+      Foo.new.bar
+      r2 = Coverage.peek_result["test.rb"][:methods]
+      p r2.size
+      # the earlier snapshot must not be affected
+      p r1.size
+      p r2[[Foo, :foo, 2, 8, 2, 20]]
+      p r2[[Foo, :bar, 11, 8, 11, 20]]
+      p r1.equal?(r2)
+    end;
+  end
+
   def test_eval_negative_lineno
     assert_in_out_err(ARGV, <<-"end;", ["[1, 1, 1]"], [])
       Coverage.start(eval: true, lines: true)
