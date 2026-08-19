@@ -6483,11 +6483,7 @@ root_scope_check_i(const char *category, VALUE obj, void *ptr)
     if (strcmp(category, "machine_context") == 0 ||
         strcmp(category, "vm_registered_objects") == 0 ||
         strcmp(category, "end_proc") == 0 ||
-        strcmp(category, "trap_list") == 0 ||
-        /* Every Ractor's root scan walks the one VM-wide registered-globals list (a slot
-         * can hold another objspace's value); rb_gc_mark_maybe filters to its own
-         * objspace, so a foreign entry here is by design, not a leak. */
-        strcmp(category, "registered_globals") == 0) {
+        strcmp(category, "trap_list") == 0) {
         return;
     }
 
