@@ -23,6 +23,7 @@ static void ractor_add_port(rb_ractor_t *r, st_data_t id);
 struct rb_ractor_move_courier *rb_ractor_move_courier_build(VALUE obj);
 VALUE rb_ractor_move_courier_materialize(struct rb_ractor_move_courier *c);
 void rb_ractor_move_courier_free(struct rb_ractor_move_courier *c);
+struct rb_ractor_move_courier *rb_ractor_copy_courier_build(VALUE obj);
 
 static void
 ractor_port_mark(void *ptr)
@@ -267,7 +268,7 @@ ractor_basket_mark(const struct ractor_basket *b)
     /* A move courier lives off-heap, and the shareable REFs it carries are marked and
      * pinned as a global GC root by the in-flight registry (ractor.c).  Nothing to do
      * here. */
-    if (b->type != basket_type_move && b->p.mbuf == NULL) {
+    if (b->type != basket_type_move && b->p.mbuf == NULL && b->p.move_courier == NULL) {
         rb_gc_mark(b->p.v);
     }
 }
@@ -287,7 +288,7 @@ ractor_basket_free(struct ractor_basket *b)
     ruby_xfree(b->p.mbuf);
     b->p.mbuf = NULL;
     b->p.mlen = 0;
-    if (b->type == basket_type_move && b->p.move_courier) {
+    if (b->p.move_courier) {
         /* A move courier that was never consumed (a queue being torn down, say). */
         rb_ractor_move_courier_free(b->p.move_courier);
         b->p.move_courier = NULL;
@@ -785,7 +786,7 @@ ractor_sync_mark(rb_ractor_t *r)
 static void
 ractor_basket_repin_in_flight(const struct ractor_basket *b)
 {
-    if (b->type != basket_type_copy || b->p.mbuf != NULL) return;
+    if (b->type != basket_type_copy || b->p.mbuf != NULL || b->p.move_courier != NULL) return;
     rb_gc_pin_in_flight_message(b->p.v);
     for (size_t i = 0; i < b->p.pinned_cnt; i++) {
         rb_gc_pin_in_flight_message(b->p.pinned[i]);
@@ -1025,7 +1026,8 @@ ractor_marshal_dump_rescue(VALUE obj, VALUE errinfo)
 }
 
 static VALUE
-ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type *ptype, bool *pmarshaled)
+ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type *ptype, bool *pmarshaled,
+                       struct rb_ractor_move_courier **pcourier)
 {
     switch (*ptype) {
       case basket_type_ref:
@@ -1040,6 +1042,13 @@ ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket
              * #clone: core types are deep-copied natively and anything else is
              * marshaled here, so its user hooks run on the sender. */
             *ptype = basket_type_copy;
+            /* An off-heap courier first: an in-flight payload that is not a GC object
+             * needs no pin, so nothing of the sender's heap stays alive while the
+             * message waits (design_v2.md 4.5).  NULL means the graph holds a type only
+             * the on-heap snapshot path below handles. */
+            *pcourier = rb_ractor_copy_courier_build(obj);
+            if (*pcourier != NULL) return Qundef;
+
             /* During a native copy, copy_enter collects every snapshot node into the
              * pin list that covers construction, enqueue and materialization. */
             rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
@@ -1104,7 +1113,7 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
         }
     }
     else {
-        v = ractor_prepare_payload(ec, obj, &type, &marshaled);
+        v = ractor_prepare_payload(ec, obj, &type, &marshaled, &courier);
         enum ruby_tag_type state;
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
@@ -1120,6 +1129,7 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
         EC_POP_TAG();
         if (state != TAG_NONE) {
             ruby_xfree(mbuf);
+            if (courier != NULL) rb_ractor_move_courier_free(courier);
             /* Drop the pin list, or every global GC re-pins the dead snapshot from it
              * forever (rb_ractor_repin_in_flight walks it unconditionally).  The nodes
              * stay shref-pinned only until the next global GC clears the bits. */
@@ -1182,6 +1192,9 @@ ractor_basket_value(struct ractor_basket *b)
       case basket_type_ref:
         break;
       case basket_type_copy: {
+        /* An off-heap copy courier rebuilds exactly like a move one; only the sources
+         * differ (still alive here, already shells there). */
+        if (b->p.move_courier != NULL) goto materialize_courier;
         /* Materialize the sender's snapshot into the receiving Ractor's objspace.
          * Passing the sender-resident graph by reference would create an unshareable
          * cross-objspace edge that neither local GC can follow.  The snapshot stays
@@ -1241,7 +1254,8 @@ ractor_basket_value(struct ractor_basket *b)
         RB_GC_GUARD(result);
         break;
       }
-      case basket_type_move: {
+      case basket_type_move:
+      materialize_courier: {
         /* Rebuild the moved graph from the off-heap courier into this Ractor's
          * objspace.  The sources are already RactorMovedObject (set when the courier
          * was built), so move's snapshot semantics hold.  The courier is xmalloc'd
