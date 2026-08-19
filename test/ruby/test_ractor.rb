@@ -244,6 +244,52 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_sending_objects
+    assert_ractor(<<~'RUBY')
+      def echo(obj)
+        Ractor.new { Ractor.receive }.send(obj).value
+      end
+
+      # An unshareable object arrives as an equal copy.
+      def assert_copy(obj)
+        copy = echo(obj)
+        refute_same obj, copy
+        assert_instance_of obj.class, copy
+        assert_equal obj, copy
+      end
+
+      # A shareable object arrives as itself.
+      def assert_shared(obj)
+        assert_same obj, echo(obj)
+      end
+
+      assert_copy Time.at(0)
+      assert_copy Time.now
+      assert_copy [Time.now]
+      assert_shared Ractor::Port.new
+      assert_copy [Ractor::Port.new]
+      assert_copy [Time.now, Ractor::Port.new]
+      # Dump hooks run after the courier is sized, so enough of them make it grow.
+      assert_copy Array.new(2000) { |i| Time.at(i) }
+
+      # Time#_dump keeps these as ivars on the dumped string; Time#== ignores the last two.
+      time = Time.at(0, 123456789, :nsec, in: "+09:00")
+      copy = echo(time)
+      assert_equal time.nsec, copy.nsec
+      assert_equal time.utc_offset, copy.utc_offset
+      assert_equal time.zone, copy.zone
+
+      # Ivars on the object itself land on what _load returned.
+      time.instance_variable_set(:@ivar, +"ivar")
+      assert_equal "ivar", echo(time).instance_variable_get(:@ivar)
+
+      # Every reference to a _load'ed object resolves to the one copy.
+      copy_time, copy_hash = echo([time, { time => time }])
+      assert_same copy_time, copy_hash.keys[0]
+      assert_same copy_time, copy_hash[time]
+    RUBY
+  end
+
   def test_sending_regexps
     assert_ractor(<<~'RUBY')
       def echo(obj)
@@ -283,11 +329,72 @@ class TestRactor < Test::Unit::TestCase
     # A key that was already reached elsewhere in the graph must be complete before the
     # hash inserts it, or it is inserted under the wrong #hash.
     assert_ractor(<<~'RUBY')
+      def echo(obj)
+        Ractor.new { Ractor.receive }.send(obj).value
+      end
+
       key = { 1 => 2 }
-      copy_key, copy_hash = Ractor.new { Ractor.receive }.send([key, { key => 1 }]).value
+      copy_key, copy_hash = echo([key, { key => 1 }])
       assert_equal key, copy_key
       assert_equal 1, copy_hash[key]
       assert_same copy_key, copy_hash.keys[0]
+
+      # The same for a key hashed by an ivar that is itself copied.
+      class ByValue
+        attr_reader :v
+        def initialize(v) = @v = v
+        def hash = @v.hash
+        def eql?(other) = other.is_a?(ByValue) && @v == other.v
+      end
+      key = ByValue.new(+"abc")
+      copy_key, copy_hash = echo([key, { key => 1 }])
+      assert_equal 1, copy_hash[key]
+      assert_same copy_key, copy_hash.keys[0]
+    RUBY
+  end
+
+  def test_failed_send_leaves_receiver_usable
+    # The courier built so far is freed once, not again with the basket.
+    assert_ractor(<<~'RUBY')
+      ractor = Ractor.new { Ractor.receive }
+      assert_raise(Ractor::Error) { ractor.send([proc {}]) }
+      ractor.send(42)
+      assert_equal 42, ractor.value
+    RUBY
+  end
+
+  def test_sending_hook_payloads_under_gc_stress
+    # A dump hook's payload is garbage once captured. A later payload allocated into
+    # its slot must not be taken for the one already seen.
+    assert_ractor(<<~'RUBY', timeout: 60)
+      GC.stress = true
+      times = Array.new(200) { |i| Time.at(i) }
+      assert_equal (0...200).to_a, Ractor.new(times) { |x| x.map(&:to_i) }.value
+    RUBY
+  end
+
+  def test_sending_object_compacted_during_build
+    # A source captured before a dump hook compacts the heap is still found when the
+    # message references it again after.
+    assert_ractor(<<~'RUBY')
+      class CompactingTime < Time
+        def _dump(limit)
+          begin
+            GC.compact
+          rescue NotImplementedError
+          end
+          super
+        end
+      end
+      junk = Array.new(50_000) { +"j" }
+      str = +"x" * 1000
+      msg = [str, CompactingTime.now, str]
+      junk.clear
+      GC.start(full_mark: false, immediate_sweep: true)
+      port = Ractor::Port.new
+      port.send(msg)
+      copy = port.receive
+      assert_same copy[0], copy[2]
     RUBY
   end
 
