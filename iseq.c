@@ -552,6 +552,8 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         size += (body->param.opt_num + 1) * sizeof(VALUE);
         size += param_keyword_size(body->param.keyword);
 
+        if (body->outer_variables) size += rb_id_table_memsize(body->outer_variables);
+
         /* body->is_entries */
         size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
 
