@@ -44,6 +44,9 @@ static VALUE rb_eRactorMovedError;
 static VALUE rb_eRactorClosedError;
 static VALUE rb_cRactorMovedObject;
 
+static ID id_marshal_dump, id_marshal_load;
+static ID id_dump, id_load, id_dump_data, id_load_data;
+
 static void vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *r, const char *file, int line);
 
 
@@ -1351,6 +1354,13 @@ Init_Ractor(void)
     rb_define_method(rb_cRactorMovedObject, "instance_eval", ractor_moved_missing, -1);
     rb_define_method(rb_cRactorMovedObject, "instance_exec", ractor_moved_missing, -1);
 
+    id_marshal_dump = rb_intern_const("marshal_dump");
+    id_marshal_load = rb_intern_const("marshal_load");
+    id_dump        = rb_intern_const("_dump");
+    id_load        = rb_intern_const("_load");
+    id_dump_data   = rb_intern_const("_dump_data");
+    id_load_data   = rb_intern_const("_load_data");
+
     Init_RactorPort();
 }
 
@@ -2367,7 +2377,27 @@ enum courier_node_kind {
     COURIER_KIND_STRUCT,
     COURIER_KIND_MATCH,
     COURIER_KIND_IO,
+    COURIER_KIND_HOOKED,    /* rebuilt from its dump hook's payload by klass._load, marshal_load or _load_data */
 };
+
+/* Marshal's protocols, but nothing is serialized: the hook's return value travels as an
+ * ordinary child node, so sharing, cycles and shareable references all survive. */
+enum courier_hook {
+    COURIER_HOOK_NONE,
+    COURIER_HOOK_MARSHAL_DUMP, /* marshal_dump -> alloc + marshal_load */
+    COURIER_HOOK_DUMP,         /* _dump        -> klass._load         */
+    COURIER_HOOK_DUMP_DATA,    /* _dump_data   -> alloc + _load_data  */
+};
+
+/* Which one obj's class implements, in Marshal's order of preference. */
+static enum courier_hook
+courier_hook_of(VALUE obj)
+{
+    if (rb_obj_respond_to(obj, id_marshal_dump, TRUE)) return COURIER_HOOK_MARSHAL_DUMP;
+    if (rb_obj_respond_to(obj, id_dump, TRUE)) return COURIER_HOOK_DUMP;
+    if (BUILTIN_TYPE(obj) == T_DATA && rb_obj_respond_to(obj, id_dump_data, TRUE)) return COURIER_HOOK_DUMP_DATA;
+    return COURIER_HOOK_NONE;
+}
 
 struct courier_node {
     enum courier_node_kind kind;
@@ -2386,6 +2416,7 @@ struct courier_node {
         struct { long len; uint32_t *elems; VALUE klass; } strct; /* owns elems */
         struct { uint32_t regexp_id, str_id; int num_regs; void *regs; VALUE klass; } match; /* owns regs */
         struct { void *blob; int size; } bt;                                 /* the courier owns blob */
+        struct { VALUE klass; uint32_t payload_id; enum courier_hook hook; } hooked;
         struct {
             struct rb_io *fptr;  /* carried by pointer (it owns the fd) */
             VALUE klass;
@@ -2611,6 +2642,44 @@ courier_capture_ivars(struct courier_build *b, VALUE obj, uint32_t id)
     b->c->nodes[id].iv_vals = oc.vals;
 }
 
+/* Run obj's dump hook and capture what it returns as an ordinary child node.  That
+ * includes _dump's String: Marshal writes its ivars next to its bytes (Time keeps the
+ * sub-microsecond part and the zone there), and a String node carries them the same
+ * way. */
+static void
+courier_capture_hooked(struct courier_build *b, VALUE obj, uint32_t id, enum courier_hook hook)
+{
+    VALUE klass = rb_obj_class(obj);
+    VALUE payload;
+
+    switch (hook) {
+      case COURIER_HOOK_DUMP: {
+        /* _dump takes the depth limit Marshal would have applied; a copy has none. */
+        VALUE limit = INT2FIX(-1);
+        payload = rb_funcallv(obj, id_dump, 1, &limit);
+        if (!RB_TYPE_P(payload, T_STRING)) {
+            rb_raise(rb_eTypeError, "_dump() must return string");
+        }
+        break;
+      }
+      case COURIER_HOOK_MARSHAL_DUMP:
+        payload = rb_funcallv(obj, id_marshal_dump, 0, 0);
+        break;
+      case COURIER_HOOK_DUMP_DATA:
+        payload = rb_funcallv(obj, id_dump_data, 0, 0);
+        break;
+      default:
+        rb_bug("courier_capture_hooked: no dump protocol");
+    }
+
+    uint32_t payload_id = courier_capture(b, payload);
+
+    b->c->nodes[id].kind = COURIER_KIND_HOOKED;
+    b->c->nodes[id].u.hooked.klass = klass;
+    b->c->nodes[id].u.hooked.hook = hook;
+    b->c->nodes[id].u.hooked.payload_id = payload_id;
+}
+
 /* Capture obj into the courier, recurse into its children, return its node id.  The id
  * is registered before recursing (a cycle back resolves to the same node); node fields
  * are written after (recursion can realloc c->nodes); a move neutralizes the source
@@ -2810,9 +2879,17 @@ courier_capture(struct courier_build *b, VALUE obj)
             break;
         }
         /* fall through */
-      default:
-        rb_raise(rb_eRactorError, "can not move a %"PRIsVALUE" object",
-                 rb_class_name(rb_obj_class(obj)));
+      default: {
+        /* Copy has one more option: the object's own dump hook, which the preflight
+         * already found.  Move has not, since it would have to take the source apart. */
+        enum courier_hook hook = b->copy ? courier_hook_of(obj) : COURIER_HOOK_NONE;
+        if (hook == COURIER_HOOK_NONE) {
+            rb_raise(rb_eRactorError, "can not %s a %"PRIsVALUE" object",
+                     b->copy ? "copy" : "move", rb_class_name(rb_obj_class(obj)));
+        }
+        courier_capture_hooked(b, obj, id, hook);
+        break;
+      }
     }
 
     if (!b->copy) move_neutralize_source(obj);
@@ -2980,8 +3057,8 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
         break;
       }
       case T_DATA:
-        /* An exception's backtrace is the one T_DATA the courier carries. */
-        if (!rb_backtrace_p(obj)) return false;
+        /* An exception's backtrace is the one T_DATA the courier carries natively. */
+        if (!rb_backtrace_p(obj) && courier_hook_of(obj) == COURIER_HOOK_NONE) return false;
         break;
       case T_ARRAY:
         for (long i = 0; i < RARRAY_LEN(obj); i++) {
@@ -2999,7 +3076,11 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
         }
         break;
       default:
-        return false;
+        /* Anything else has to dump itself.  What the hook returns is not walked here:
+         * running it twice is not an option, so capture allocates its nodes through the
+         * growth path instead of the reservation. */
+        if (courier_hook_of(obj) == COURIER_HOOK_NONE) return false;
+        break;
     }
 
     rb_ivar_foreach(obj, copy_support_ivar_i, (st_data_t)ctx);
@@ -3148,6 +3229,16 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
           case COURIER_KIND_BACKTRACE:
             shell = rb_backtrace_blob_load(n->u.bt.blob, n->u.bt.size);
             break;
+          case COURIER_KIND_HOOKED:
+            if (n->u.hooked.hook == COURIER_HOOK_DUMP) {
+                shell = Qnil;   /* klass._load makes it below, once its String exists */
+                break;
+            }
+            /* Allocated now and filled by its load hook below, which is what lets a
+             * cycle back through the payload resolve to the object itself. */
+            shell = rb_obj_alloc(rb_class_real(n->u.hooked.klass));
+            courier_apply_klass(shell, n->u.hooked.klass);
+            break;
           case COURIER_KIND_IO:
             shell = rb_obj_alloc(rb_class_real(n->u.io.klass));
             courier_apply_klass(shell, n->u.io.klass);
@@ -3163,8 +3254,10 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
 
     /* Fill in capture's post-order, so each node is settled after everything below it,
      * shared children included: a Hash sees complete keys (a content-based #hash would
-     * collide on every key while the graph is still empty).  Only a cycle reaches a
-     * node still being filled (a #hash cycling through itself is out of scope). */
+     * collide on every key while the graph is still empty), a load hook sees a complete
+     * payload, and a parent sees the object klass._load returned.  Only a cycle reaches
+     * a node still being filled (a #hash or a payload cycling through itself is out of
+     * scope). */
     for (uint32_t k = 0; k < c->count; k++) {
         uint32_t i = c->order[k];
         struct courier_node *n = &c->nodes[i];
@@ -3196,6 +3289,35 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
                 rb_hash_set_default(shell, ifnone);
             }
             break;
+          case COURIER_KIND_HOOKED: {
+            VALUE payload = courier_child(c, shells, n->u.hooked.payload_id);
+            VALUE klass = n->u.hooked.klass;
+            ID mid;
+            switch (n->u.hooked.hook) {
+              case COURIER_HOOK_DUMP:
+                if (!rb_obj_respond_to(klass, id_load, TRUE)) {
+                    rb_raise(rb_eTypeError, "class %"PRIsVALUE" needs to have method '_load'", klass);
+                }
+                /* _load returns the object: it takes the place of the Qnil placeholder
+                 * so everything filled after this receives it, and the ivars restored
+                 * below land on it. */
+                shell = rb_funcallv(klass, id_load, 1, &payload);
+                RARRAY_ASET(shells, i, shell);
+                break;
+              case COURIER_HOOK_MARSHAL_DUMP:
+              case COURIER_HOOK_DUMP_DATA:
+                mid = n->u.hooked.hook == COURIER_HOOK_MARSHAL_DUMP ? id_marshal_load : id_load_data;
+                if (!rb_obj_respond_to(shell, mid, TRUE)) {
+                    rb_raise(rb_eTypeError, "instance of %"PRIsVALUE" needs to have method '%"PRIsVALUE"'",
+                             klass, rb_id2str(mid));
+                }
+                rb_funcallv(shell, mid, 1, &payload);
+                break;
+              default:
+                rb_bug("rb_ractor_courier_materialize: no dump protocol");
+            }
+            break;
+          }
           case COURIER_KIND_STRUCT:
             for (long j = 0; j < n->u.strct.len; j++) {
                 RSTRUCT_SET(shell, (int)j, courier_child(c, shells, n->u.strct.elems[j]));
@@ -3322,6 +3444,9 @@ rb_ractor_courier_mark(struct rb_ractor_courier *c)
         }
         else if (n->kind == COURIER_KIND_HASH) {
             rb_gc_mark(n->u.hash.klass);
+        }
+        else if (n->kind == COURIER_KIND_HOOKED) {
+            rb_gc_mark(n->u.hooked.klass);
         }
     }
 }

@@ -244,6 +244,49 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_sending_objects
+    assert_ractor(<<~'RUBY')
+      def echo(obj)
+        Ractor.new { Ractor.receive }.send(obj).value
+      end
+
+      # An unshareable object arrives as an equal copy.
+      def assert_copy(obj)
+        copy = echo(obj)
+        refute_same obj, copy
+        assert_instance_of obj.class, copy
+        assert_equal obj, copy
+      end
+
+      # A shareable object arrives as itself.
+      def assert_shared(obj)
+        assert_same obj, echo(obj)
+      end
+
+      assert_copy Time.at(0)
+      assert_copy Time.now
+      assert_copy [Time.now]
+      assert_shared Ractor::Port.new
+      assert_copy [Ractor::Port.new]
+      assert_copy [Time.now, Ractor::Port.new]
+      #assert_copy Set.new
+      #assert_copy Set[1,2,3]
+      #assert_copy Set[Ractor::Port.new, Ractor::Port.new]
+
+      # Time#_dump keeps these as ivars on the dumped string; Time#== ignores the last two.
+      time = Time.at(0, 123456789, :nsec, in: "+09:00")
+      copy = echo(time)
+      assert_equal time.nsec, copy.nsec
+      assert_equal time.utc_offset, copy.utc_offset
+      assert_equal time.zone, copy.zone
+
+      # Every reference to a _load'ed object resolves to the one copy.
+      copy_time, copy_hash = echo([time, { time => time }])
+      assert_same copy_time, copy_hash.keys[0]
+      assert_same copy_time, copy_hash[time]
+    RUBY
+  end
+
   def test_sending_hash_with_shared_key
     # A key that was already reached elsewhere in the graph must be complete before the
     # hash inserts it, or it is inserted under the wrong #hash.
