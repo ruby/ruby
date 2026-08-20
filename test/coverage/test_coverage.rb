@@ -256,6 +256,23 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_eval_branch_coverage
+    assert_in_out_err(ARGV, <<-"end;", ["1", "[1, 1]"], [])
+      Coverage.start(eval: true, branches: true)
+      src = "if $flag\n  :a\nelse\n  :b\nend\n"
+
+      $flag = true
+      eval(src, binding, "fake.rb", 1)
+      GC.start
+      $flag = false
+      eval(src, binding, "fake.rb", 1)
+
+      branches = Coverage.result.fetch("fake.rb")[:branches]
+      p branches.size
+      p branches.values.first.values
+    end;
+  end
+
   def test_eval_negative_lineno
     assert_in_out_err(ARGV, <<-"end;", ["[1, 1, 1]"], [])
       Coverage.start(eval: true, lines: true)

@@ -1148,7 +1148,7 @@ pm_compile_conditional(rb_iseq_t *iseq, const pm_node_location_t *node_location,
 
     if (then_label->refcnt && else_label->refcnt && PM_BRANCH_COVERAGE_P(iseq)) {
         conditional_location = pm_code_location(scope_node, node);
-        branches = decl_branch_base(iseq, PTR2NUM(node), &conditional_location, type == PM_IF_NODE ? "if" : "unless");
+        branches = decl_branch_base(iseq, &conditional_location, type == PM_IF_NODE ? "if" : "unless");
     }
 
     if (then_label->refcnt) {
@@ -1278,7 +1278,7 @@ pm_compile_loop(rb_iseq_t *iseq, const pm_node_location_t *node_location, pm_nod
     // Establish branch coverage for the loop.
     if (PM_BRANCH_COVERAGE_P(iseq)) {
         rb_code_location_t loop_location = pm_code_location(scope_node, node);
-        VALUE branches = decl_branch_base(iseq, PTR2NUM(node), &loop_location, type == PM_WHILE_NODE ? "while" : "until");
+        VALUE branches = decl_branch_base(iseq, &loop_location, type == PM_WHILE_NODE ? "while" : "until");
 
         rb_code_location_t branch_location = statements != NULL ? pm_code_location(scope_node, (const pm_node_t *) statements) : loop_location;
         add_trace_branch_coverage(iseq, ret, &branch_location, branch_location.beg_pos.column, 0, "body", branches);
@@ -3789,7 +3789,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
                 .end_pos = { .lineno = end_location.line, .column = end_location.column }
             };
 
-            branches = decl_branch_base(iseq, PTR2NUM(call_node), &code_location, "&.");
+            branches = decl_branch_base(iseq, &code_location, "&.");
         }
 
         PUSH_INSN(ret, location, dup);
@@ -7640,7 +7640,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
 
         if (PM_BRANCH_COVERAGE_P(iseq)) {
             case_location = pm_code_location(scope_node, (const pm_node_t *) cast);
-            branches = decl_branch_base(iseq, PTR2NUM(cast), &case_location, "case");
+            branches = decl_branch_base(iseq, &case_location, "case");
         }
 
         // Loop through each clauses in the case node and compile each of
@@ -7727,7 +7727,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
 
         if (PM_BRANCH_COVERAGE_P(iseq)) {
             case_location = pm_code_location(scope_node, (const pm_node_t *) cast);
-            branches = decl_branch_base(iseq, PTR2NUM(cast), &case_location, "case");
+            branches = decl_branch_base(iseq, &case_location, "case");
         }
 
         // This is the label where everything will fall into if none of the
@@ -7899,7 +7899,7 @@ pm_compile_case_match_node(rb_iseq_t *iseq, const pm_case_match_node_t *node, co
 
     if (PM_BRANCH_COVERAGE_P(iseq)) {
         case_location = pm_code_location(scope_node, (const pm_node_t *) node);
-        branches = decl_branch_base(iseq, PTR2NUM(node), &case_location, "case");
+        branches = decl_branch_base(iseq, &case_location, "case");
     }
 
     // If there is only one pattern, then the behavior changes a bit. It
