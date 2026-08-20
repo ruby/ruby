@@ -2427,22 +2427,41 @@ struct move_build {
 
 static uint32_t move_capture(struct move_build *b, VALUE obj);
 
+/* Off the hot path: the preflight sizes both arrays, so this only runs if its count
+ * came out short.  Swap a fresh array in rather than realloc -- the courier is a GC
+ * root while it is being built, and a realloc leaves the old pointer live over a
+ * window where it may already have been freed. */
+NOINLINE(static void move_grow_nodes(struct rb_ractor_move_courier *c));
+NOINLINE(static void move_grow_refs(struct rb_ractor_move_courier *c));
+
+static void
+move_grow_nodes(struct rb_ractor_move_courier *c)
+{
+    uint32_t capa = c->capa ? c->capa * 2 : 8;
+    struct move_node *nodes = ALLOC_N(struct move_node, capa);
+    if (c->count > 0) MEMCPY(nodes, c->nodes, struct move_node, c->count);
+    struct move_node *old_nodes = c->nodes;
+    c->nodes = nodes;
+    c->capa = capa;
+    ruby_xfree(old_nodes);
+}
+
+static void
+move_grow_refs(struct rb_ractor_move_courier *c)
+{
+    uint32_t capa = c->refs_capa ? c->refs_capa * 2 : 8;
+    VALUE *refs = ALLOC_N(VALUE, capa);
+    if (c->refs_count > 0) MEMCPY(refs, c->refs, VALUE, c->refs_count);
+    VALUE *old_refs = c->refs;
+    c->refs = refs;
+    c->refs_capa = capa;
+    ruby_xfree(old_refs);
+}
+
 static uint32_t
 move_alloc_node(struct rb_ractor_move_courier *c)
 {
-    /* Swap a fresh array in rather than realloc: the courier is a GC root while it is
-     * being built, and a realloc leaves c->nodes pointing at a block it may already
-     * have freed.  (The count bump below is safe: nothing between it and the field
-     * stores can start a GC.) */
-    if (c->count == c->capa) {
-        uint32_t capa = c->capa ? c->capa * 2 : 8;
-        struct move_node *nodes = ALLOC_N(struct move_node, capa);
-        if (c->count > 0) MEMCPY(nodes, c->nodes, struct move_node, c->count);
-        struct move_node *old_nodes = c->nodes;
-        c->nodes = nodes;
-        c->capa = capa;
-        ruby_xfree(old_nodes);
-    }
+    if (RB_UNLIKELY(c->count == c->capa)) move_grow_nodes(c);
     uint32_t id = c->count++;
     /* Initialize to a harmless REF/Qnil so the courier mark (a GC root while sending)
      * is safe even mid-construction; a captured node overwrites it later. */
@@ -2455,25 +2474,30 @@ move_alloc_node(struct rb_ractor_move_courier *c)
     return id;
 }
 
+/* Size the arrays from the preflight's count, so capture never grows them.  A count
+ * that turns out short is not a problem: the growth path below still works. */
+static void
+move_courier_reserve(struct rb_ractor_move_courier *c, uint32_t nodes, uint32_t refs)
+{
+    if (nodes > 0) {
+        c->nodes = ALLOC_N(struct move_node, nodes);
+        c->capa = nodes;
+    }
+    if (refs > 0) {
+        c->refs = ALLOC_N(VALUE, refs);
+        c->refs_capa = refs;
+    }
+}
+
 /* Embed a shareable payload by value and return its tagged child id.  No dedup: a REF
  * is the same word however often it appears, and an array of immediates would otherwise
  * pay a lookup and an insert per element. */
 static uint32_t
 move_alloc_ref(struct rb_ractor_move_courier *c, VALUE v)
 {
-    /* The courier is a GC root while it is being built, so it must never be walkable
-     * in a half-written state.  Grow by allocating a new array and swapping it in: a
-     * realloc would leave c->refs pointing at a block it may already have freed.  The
-     * count is bumped only after the slot holds a real VALUE. */
-    if (c->refs_count == c->refs_capa) {
-        uint32_t capa = c->refs_capa ? c->refs_capa * 2 : 8;
-        VALUE *refs = ALLOC_N(VALUE, capa);
-        if (c->refs_count > 0) MEMCPY(refs, c->refs, VALUE, c->refs_count);
-        VALUE *old_refs = c->refs;
-        c->refs = refs;
-        c->refs_capa = capa;
-        ruby_xfree(old_refs);
-    }
+    /* The count is bumped only after the slot holds a real VALUE: the courier is a GC
+     * root while it is being built and must never be walkable half-written. */
+    if (RB_UNLIKELY(c->refs_count == c->refs_capa)) move_grow_refs(c);
     c->refs[c->refs_count] = v;
     return MOVE_ID_REF_BIT | c->refs_count++;
 }
@@ -2795,20 +2819,26 @@ move_capture(struct move_build *b, VALUE obj)
     return id;
 }
 
-static void move_preflight(VALUE obj, st_table *seen);
+/* Like the copy walk, this also sizes the courier: see copy_support_ctx. */
+struct move_preflight_ctx {
+    st_table *seen;
+    uint32_t nodes, refs;
+};
+
+static void move_preflight(VALUE obj, struct move_preflight_ctx *ctx);
 
 static int
 move_preflight_ivar_i(ID name, VALUE val, st_data_t arg)
 {
-    move_preflight(val, (st_table *)arg);
+    move_preflight(val, (struct move_preflight_ctx *)arg);
     return ST_CONTINUE;
 }
 
 static int
 move_preflight_hash_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    move_preflight((VALUE)key, (st_table *)arg);
-    move_preflight((VALUE)val, (st_table *)arg);
+    move_preflight((VALUE)key, (struct move_preflight_ctx *)arg);
+    move_preflight((VALUE)val, (struct move_preflight_ctx *)arg);
     return ST_CONTINUE;
 }
 
@@ -2816,11 +2846,17 @@ move_preflight_hash_i(st_data_t key, st_data_t val, st_data_t arg)
  * T_MOVED as it goes, so an unmovable object midway would leave the graph broken beyond
  * repair; every "can not move" error is raised here, before anything is mutated. */
 static void
-move_preflight(VALUE obj, st_table *seen)
+move_preflight(VALUE obj, struct move_preflight_ctx *ctx)
 {
-    if (RB_SPECIAL_CONST_P(obj) || rb_ractor_shareable_p(obj)) return;
+    st_table *const seen = ctx->seen;
+
+    if (RB_SPECIAL_CONST_P(obj) || rb_ractor_shareable_p(obj)) {
+        ctx->refs++;
+        return;
+    }
     if (st_lookup(seen, (st_data_t)obj, NULL)) return;   /* cycle */
     st_insert(seen, (st_data_t)obj, 0);
+    ctx->nodes++;
 
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
@@ -2828,22 +2864,22 @@ move_preflight(VALUE obj, st_table *seen)
         break;                       /* children are ivars only (below) */
       case T_MATCH: {
         struct RMatch *rm = RMATCH(obj);
-        move_preflight(rm->regexp, seen);
-        move_preflight(rm->str, seen);
+        move_preflight(rm->regexp, ctx);
+        move_preflight(rm->str, ctx);
         break;
       }
       case T_ARRAY:
         for (long i = 0; i < RARRAY_LEN(obj); i++) {
-            move_preflight(RARRAY_AREF(obj, i), seen);
+            move_preflight(RARRAY_AREF(obj, i), ctx);
         }
         break;
       case T_HASH:
-        rb_hash_stlike_foreach(obj, move_preflight_hash_i, (st_data_t)seen);
-        move_preflight(RHASH_IFNONE(obj), seen);
+        rb_hash_stlike_foreach(obj, move_preflight_hash_i, (st_data_t)ctx);
+        move_preflight(RHASH_IFNONE(obj), ctx);
         break;
       case T_STRUCT:
         for (long i = 0; i < RSTRUCT_LEN(obj); i++) {
-            move_preflight(RSTRUCT_GET(obj, (int)i), seen);
+            move_preflight(RSTRUCT_GET(obj, (int)i), ctx);
         }
         break;
       case T_FILE: {
@@ -2860,11 +2896,11 @@ move_preflight(VALUE obj, st_table *seen)
             /* A close is in progress: a thread is blocked on this IO. */
             rb_raise(rb_eRactorError, "can not move an IO that is being closed");
         }
-        move_preflight(fptr->pathv, seen);
-        move_preflight(fptr->encs.ecopts, seen);
-        move_preflight(fptr->writeconv_pre_ecopts, seen);
-        move_preflight(fptr->writeconv_asciicompat, seen);
-        move_preflight(fptr->timeout, seen);
+        move_preflight(fptr->pathv, ctx);
+        move_preflight(fptr->encs.ecopts, ctx);
+        move_preflight(fptr->writeconv_pre_ecopts, ctx);
+        move_preflight(fptr->writeconv_asciicompat, ctx);
+        move_preflight(fptr->timeout, ctx);
         break;
       }
       default:
@@ -2872,21 +2908,25 @@ move_preflight(VALUE obj, st_table *seen)
                  rb_class_name(rb_obj_class(obj)));
     }
 
-    rb_ivar_foreach(obj, move_preflight_ivar_i, (st_data_t)seen);
+    rb_ivar_foreach(obj, move_preflight_ivar_i, (st_data_t)ctx);
 }
 
+/* The walk also sizes the courier: one node per distinct unshareable object, one ref
+ * per occurrence of a shareable one -- exactly what move_capture allocates, so the
+ * arrays never have to grow while the graph is being captured. */
 struct copy_support_ctx {
     st_table *seen;
+    uint32_t nodes, refs;
     bool ok;
 };
 
-static bool copy_courier_supported_p(VALUE obj, st_table *seen);
+static bool copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx);
 
 static int
 copy_support_val_i(st_data_t val, st_data_t arg)
 {
     struct copy_support_ctx *ctx = (struct copy_support_ctx *)arg;
-    if (!copy_courier_supported_p((VALUE)val, ctx->seen)) {
+    if (!copy_courier_supported_p((VALUE)val, ctx)) {
         ctx->ok = false;
         return ST_STOP;
     }
@@ -2910,18 +2950,22 @@ copy_support_hash_i(st_data_t key, st_data_t val, st_data_t arg)
  * to (MatchData, IO, any other T_DATA, a singleton class) stays on the older on-heap
  * snapshot path, which keeps handling or rejecting it exactly as before. */
 static bool
-copy_courier_supported_p(VALUE obj, st_table *seen)
+copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
 {
-    if (RB_SPECIAL_CONST_P(obj) || rb_ractor_shareable_p(obj)) return true;
+    st_table *const seen = ctx->seen;
+
+    if (RB_SPECIAL_CONST_P(obj) || rb_ractor_shareable_p(obj)) {
+        ctx->refs++;
+        return true;
+    }
     if (st_lookup(seen, (st_data_t)obj, NULL)) return true;   /* cycle */
     st_insert(seen, (st_data_t)obj, 0);
+    ctx->nodes++;
 
     /* A singleton class is a send error today (the native copier refuses it and Marshal
      * then raises); the courier would happily carry it, so keep it off this path. */
     VALUE klass = RBASIC_CLASS(obj);
     if (klass == 0 || FL_TEST_RAW(klass, FL_SINGLETON)) return false;
-
-    struct copy_support_ctx ctx = { seen, true };
 
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
@@ -2929,8 +2973,8 @@ copy_courier_supported_p(VALUE obj, st_table *seen)
         break;                       /* children are ivars only (below) */
       case T_MATCH: {
         struct RMatch *rm = RMATCH(obj);
-        if (!copy_courier_supported_p(rm->regexp, seen)) return false;
-        if (!copy_courier_supported_p(rm->str, seen)) return false;
+        if (!copy_courier_supported_p(rm->regexp, ctx)) return false;
+        if (!copy_courier_supported_p(rm->str, ctx)) return false;
         break;
       }
       case T_DATA:
@@ -2939,25 +2983,25 @@ copy_courier_supported_p(VALUE obj, st_table *seen)
         break;
       case T_ARRAY:
         for (long i = 0; i < RARRAY_LEN(obj); i++) {
-            if (!copy_courier_supported_p(RARRAY_AREF(obj, i), seen)) return false;
+            if (!copy_courier_supported_p(RARRAY_AREF(obj, i), ctx)) return false;
         }
         break;
       case T_HASH:
-        rb_hash_stlike_foreach(obj, copy_support_hash_i, (st_data_t)&ctx);
-        if (!ctx.ok) return false;
-        if (!copy_courier_supported_p(RHASH_IFNONE(obj), seen)) return false;
+        rb_hash_stlike_foreach(obj, copy_support_hash_i, (st_data_t)ctx);
+        if (!ctx->ok) return false;
+        if (!copy_courier_supported_p(RHASH_IFNONE(obj), ctx)) return false;
         break;
       case T_STRUCT:
         for (long i = 0; i < RSTRUCT_LEN(obj); i++) {
-            if (!copy_courier_supported_p(RSTRUCT_GET(obj, (int)i), seen)) return false;
+            if (!copy_courier_supported_p(RSTRUCT_GET(obj, (int)i), ctx)) return false;
         }
         break;
       default:
         return false;
     }
 
-    rb_ivar_foreach(obj, copy_support_ivar_i, (st_data_t)&ctx);
-    return ctx.ok;
+    rb_ivar_foreach(obj, copy_support_ivar_i, (st_data_t)ctx);
+    return ctx->ok;
 }
 
 /* Build a courier holding a copy of obj's graph, leaving the sources untouched.
@@ -2965,14 +3009,15 @@ copy_courier_supported_p(VALUE obj, st_table *seen)
 struct rb_ractor_move_courier *
 rb_ractor_copy_courier_build(VALUE obj, struct rb_ractor_move_courier **slot)
 {
+    struct copy_support_ctx scan = { st_init_numtable(), 0, 0, true };
     {
-        st_table *seen = st_init_numtable();
-        bool ok = copy_courier_supported_p(obj, seen);
-        st_free_table(seen);
+        bool ok = copy_courier_supported_p(obj, &scan);
+        st_free_table(scan.seen);
         if (!ok) return NULL;
     }
 
     struct rb_ractor_move_courier *c = ZALLOC(struct rb_ractor_move_courier);
+    move_courier_reserve(c, scan.nodes, scan.refs);
     struct move_build b = { c, st_init_numtable(), true };
 
     /* Publish it into the caller's basket before capturing anything: from here the
@@ -2999,20 +3044,21 @@ rb_ractor_move_courier_build(VALUE obj, struct rb_ractor_move_courier **slot)
 {
     /* Two phases, preflight then commit, so an unmovable object is raised from the
      * read-only walk while the graph is still intact. */
+    struct move_preflight_ctx scan = { st_init_numtable(), 0, 0 };
     {
-        st_table *pf_seen = st_init_numtable();
         enum ruby_tag_type state;
         rb_execution_context_t *ec = GET_EC();
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-            move_preflight(obj, pf_seen);
+            move_preflight(obj, &scan);
         }
         EC_POP_TAG();
-        st_free_table(pf_seen);
+        st_free_table(scan.seen);
         if (state != TAG_NONE) EC_JUMP_TAG(ec, state);
     }
 
     struct rb_ractor_move_courier *c = ZALLOC(struct rb_ractor_move_courier);
+    move_courier_reserve(c, scan.nodes, scan.refs);
     struct move_build b = { c, st_init_numtable(), false };
 
     /* Publish it into the caller's basket before the sources become T_MOVED: from here
@@ -3117,11 +3163,18 @@ rb_ractor_move_courier_materialize(struct rb_ractor_move_courier *c)
         struct move_node *n = &c->nodes[i];
         VALUE shell = RARRAY_AREF(shells, i);
         switch (n->kind) {
-          case MOVE_KIND_ARRAY:
-            for (long j = 0; j < n->u.ary.len; j++) {
-                rb_ary_push(shell, move_child(c, shells, n->u.ary.elems[j]));
+          case MOVE_KIND_ARRAY: {
+            /* The length is known, so set it once and write the slots, rather than
+             * pushing each element through the capacity check. */
+            const long len = n->u.ary.len;
+            if (len > 0) {
+                rb_ary_resize(shell, len);
+                for (long j = 0; j < len; j++) {
+                    RARRAY_ASET(shell, j, move_child(c, shells, n->u.ary.elems[j]));
+                }
             }
             break;
+          }
           case MOVE_KIND_HASH:
             /* Entry insertion is deferred to a third pass: insertion calls the key's
              * #hash / #eql?, and a content-based #hash would collide on every key while
