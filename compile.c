@@ -628,17 +628,28 @@ setup_branch(const rb_code_location_t *loc, const char *type, VALUE structure, V
 }
 
 static VALUE
-decl_branch_base(rb_iseq_t *iseq, VALUE key, const rb_code_location_t *loc, const char *type)
+decl_branch_base(rb_iseq_t *iseq, int node_id, const rb_code_location_t *loc, const char *type)
 {
     if (!branch_coverage_valid_p(iseq, loc->beg_pos.lineno)) return Qundef;
 
     /*
-     * if !structure[node]
-     *   structure[node] = [type, first_lineno, first_column, last_lineno, last_column, branches = {}]
+     * A branch base is keyed by [source_hash (in two halves), node_id, first_lineno],
+     * which identifies the branch node stably even across (re-)evals against
+     * the same path.
+     *
+     * if !structure[key]
+     *   structure[key] = [type, first_lineno, first_column, last_lineno, last_column, branches = {}]
      * else
-     *   branches = structure[node][5]
+     *   branches = structure[key][5]
      * end
      */
+    uint64_t source_hash = ISEQ_BODY(iseq)->source_hash;
+    VALUE key = rb_ary_new_from_args(4,
+        ULONG2NUM((unsigned long)(source_hash >> 32)),
+        ULONG2NUM((unsigned long)(source_hash & 0xffffffff)),
+        INT2FIX(node_id),
+        INT2FIX(loc->beg_pos.lineno));
+    rb_ary_freeze(key);
 
     VALUE structure = RARRAY_AREF(ISEQ_BRANCH_COVERAGE(iseq), 0);
     VALUE branch_base = rb_hash_aref(structure, key);
@@ -7082,7 +7093,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     ADD_SEQ(ret, cond_seq);
 
     if (then_label->refcnt && else_label->refcnt) {
-        branches = decl_branch_base(iseq, PTR2NUM(node), nd_code_loc(node), type == NODE_IF ? "if" : "unless");
+        branches = decl_branch_base(iseq, nd_node_id(node), nd_code_loc(node), type == NODE_IF ? "if" : "unless");
     }
 
     if (then_label->refcnt) {
@@ -7162,7 +7173,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 
     CHECK(COMPILE(head, "case base", RNODE_CASE(node)->nd_head));
 
-    branches = decl_branch_base(iseq, PTR2NUM(node), nd_code_loc(node), "case");
+    branches = decl_branch_base(iseq, nd_node_id(node), nd_code_loc(node), "case");
 
     node = RNODE_CASE(node)->nd_body;
     EXPECT_NODE("NODE_CASE", node, NODE_WHEN, COMPILE_NG);
@@ -7267,7 +7278,7 @@ compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
     VALUE branches = Qfalse;
     int branch_id = 0;
 
-    branches = decl_branch_base(iseq, PTR2NUM(orig_node), nd_code_loc(orig_node), "case");
+    branches = decl_branch_base(iseq, nd_node_id(orig_node), nd_code_loc(orig_node), "case");
 
     INIT_ANCHOR(body_seq);
     endlabel = NEW_LABEL(nd_line(node));
@@ -8266,7 +8277,7 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
     INIT_ANCHOR(body_seq);
     INIT_ANCHOR(cond_seq);
 
-    branches = decl_branch_base(iseq, PTR2NUM(node), nd_code_loc(node), "case");
+    branches = decl_branch_base(iseq, nd_node_id(node), nd_code_loc(node), "case");
 
     node = RNODE_CASE3(node)->nd_body;
     EXPECT_NODE("NODE_CASE3", node, NODE_IN, COMPILE_NG);
@@ -8470,7 +8481,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     if (tmp_label) ADD_LABEL(ret, tmp_label);
 
     ADD_LABEL(ret, redo_label);
-    branches = decl_branch_base(iseq, PTR2NUM(node), nd_code_loc(node), type == NODE_WHILE ? "while" : "until");
+    branches = decl_branch_base(iseq, nd_node_id(node), nd_code_loc(node), type == NODE_WHILE ? "while" : "until");
 
     const NODE *const coverage_node = RNODE_WHILE(node)->nd_body ? RNODE_WHILE(node)->nd_body : node;
     add_trace_branch_coverage(
@@ -9113,7 +9124,7 @@ qcall_branch_start(rb_iseq_t *iseq, LINK_ANCHOR *const recv, VALUE *branches, co
     LABEL *else_label = NEW_LABEL(nd_line(line_node));
     VALUE br = 0;
 
-    br = decl_branch_base(iseq, PTR2NUM(node), nd_code_loc(node), "&.");
+    br = decl_branch_base(iseq, nd_node_id(node), nd_code_loc(node), "&.");
     *branches = br;
     ADD_INSN(recv, line_node, dup);
     ADD_INSNL(recv, line_node, branchnil, else_label);

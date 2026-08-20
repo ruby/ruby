@@ -6443,7 +6443,7 @@ rb_default_coverage(int n)
         branches = rb_ary_hidden_new_fill(2);
         /* internal data structures for branch coverage:
          *
-         * { branch base node =>
+         * { branch base key (see decl_branch_base) =>
          *     [base_type, base_first_lineno, base_first_column, base_last_lineno, base_last_column, {
          *       branch target id =>
          *         [target_type, target_first_lineno, target_first_column, target_last_lineno, target_last_column, target_counter_index],
@@ -6453,10 +6453,10 @@ rb_default_coverage(int n)
          * }
          *
          * Example:
-         * { NODE_CASE =>
+         * { [source_hash, node_id, lineno] =>
          *     [1, 0, 4, 3, {
-         *       NODE_WHEN => [2, 8, 2, 9, 0],
-         *       NODE_WHEN => [3, 8, 3, 9, 1],
+         *       0 => [2, 8, 2, 9, 0],
+         *       1 => [3, 8, 3, 9, 1],
          *       ...
          *     }],
          *   ...

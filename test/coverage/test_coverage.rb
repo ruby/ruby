@@ -256,6 +256,34 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_branch_coverage_for_eval_repeated
+    assert_in_out_err(["-W0", *ARGV], <<-"end;", ["2", "2", "[[0, 1], [0, 2]]"], [])
+      Coverage.start(eval: true, branches: true)
+
+      code = <<-RUBY
+      def foo(x)
+        x ? 1 : 2
+      end
+      RUBY
+
+      # Evaluating different code at the same path yields separate entries
+      eval(code, TOPLEVEL_BINDING, "test.rb", 1)
+      eval(code.sub("foo", "bar"), TOPLEVEL_BINDING, "test.rb", 10)
+      foo(true)
+      r = Coverage.peek_result["test.rb"][:branches]
+      p r.size
+
+      # Re-evaluating the very same code accumulates the counters instead of
+      # adding duplicated entries
+      eval(code, TOPLEVEL_BINDING, "test.rb", 1)
+      foo(true)
+      bar(false)
+      r = Coverage.peek_result["test.rb"][:branches]
+      p r.size
+      p r.values.map {|targets| targets.values.sort }.sort
+    end;
+  end
+
   def test_eval_negative_lineno
     assert_in_out_err(ARGV, <<-"end;", ["[1, 1, 1]"], [])
       Coverage.start(eval: true, lines: true)
