@@ -436,6 +436,10 @@ impl Type {
 
     /// Return the object specialization, if any.
     pub fn ruby_object(&self) -> Option<VALUE> {
+        // We ask not for the type, but for a specific value associated with this Type. If the Type
+        // is Empty, it will be a subtype of every other Type, but it will never have any value.
+        // Therefore, special-case Empty.
+        if self.is_subtype(types::Empty) { return None; }
         if self.is_subtype(types::NilClass) { return Some(Qnil); }
         if self.is_subtype(types::TrueClass) { return Some(Qtrue); }
         if self.is_subtype(types::FalseClass) { return Some(Qfalse); }
