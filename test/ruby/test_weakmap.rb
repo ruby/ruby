@@ -185,6 +185,18 @@ class TestWeakMap < Test::Unit::TestCase
   end
   alias test_length test_size
 
+  def test_size_reflects_number_of_live_entries
+    was_disabled = GC.disable
+    m = ObjectSpace::WeakMap.new
+    Thread.new { m[Object.new] = Object.new }.join
+    GC.start
+    assert_equal(0, m.size, 'https://bugs.ruby-lang.org/issues/22251')
+    assert_equal(0, m.keys.size)
+    assert_equal(0, m.size)
+  ensure
+    GC.enable unless was_disabled
+  end
+
   def test_frozen_object
     o = Object.new.freeze
     assert_nothing_raised(FrozenError) {@wm[o] = 'foo'}
