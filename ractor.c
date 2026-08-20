@@ -306,11 +306,11 @@ ractor_mark(void *ptr)
      * both the set and zombie_objspaces (orphan-merged) this marker is its only cover. */
     rb_gc_mark(r->sync.default_port_value);
     /* A single-objspace impl (mmtk) has no zombie_objspaces and no pin/shref bits, so
-     * the root scan cannot reach a terminated Ractor's legacy value, queue or in-flight
-     * payloads; and no shref rule forbids following them from the wrapper. */
+     * the root scan cannot reach a terminated Ractor's queue, in-flight payloads or
+     * join value; and no shref rule forbids following them from the wrapper. */
     if (!rb_gc_multi_objspace_p()) {
         ractor_mark_unshareable_parts(r);
-        rb_ractor_mark_in_flight_for_single_objspace(r);
+        rb_ractor_mark_terminated_join_value(r);
     }
 }
 

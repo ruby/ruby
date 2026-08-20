@@ -825,15 +825,6 @@ ractor_sync_mark(rb_ractor_t *r)
     }
 }
 
-/* A single-objspace impl (mmtk) has no pin or shref bits and no zombie_objspaces, so
- * plain marking from the wrapper keeps these alive; the default GC covers the same set
- * with its pins and its zombie scan. */
-void
-rb_ractor_mark_in_flight_for_single_objspace(rb_ractor_t *r)
-{
-    rb_gc_mark(r->sync.legacy);
-}
-
 static int
 ractor_sync_free_ports_i(st_data_t _key, st_data_t val, st_data_t _args)
 {
