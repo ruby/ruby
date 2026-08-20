@@ -767,7 +767,11 @@ pub enum SendFallbackReason {
     SendBlockArgNotNil,
     CCallWithFrameTooManyArgs,
     ObjToStringNotString,
+    /// Too many arguments in a C call to fit in C ABI registers.
     TooManyArgsForLir,
+    /// An operand doesn't fit in the integer type that encodes it,
+    /// e.g. an argument count that overflows IseqCall's u16.
+    OperandTooLarge,
     /// The Proc object for a BMETHOD is not defined by an ISEQ. (See `enum rb_block_type`.)
     BmethodNonIseqProc,
     /// Caller supplies too few or too many arguments than what the callee's parameters expects.
@@ -838,6 +842,7 @@ impl Display for SendFallbackReason {
             CCallWithFrameTooManyArgs => write!(f, "CCallWithFrame: too many arguments"),
             ObjToStringNotString => write!(f, "ObjToString: result is not a string"),
             TooManyArgsForLir => write!(f, "Too many arguments for LIR"),
+            OperandTooLarge => write!(f, "Operand doesn't fit in its encoding"),
             BmethodNonIseqProc => write!(f, "Bmethod: Proc object is not defined by an ISEQ"),
             ArgcParamMismatch => write!(f, "Argument count does not match parameter count"),
             ComplexArgPass => write!(f, "Complex argument passing"),
@@ -2702,7 +2707,7 @@ fn can_direct_send(iseq: *const rb_iseq_t, ci: *const rb_callinfo, args: &[InsnI
 
     // IseqCall stores the JIT entry index and argc as u16.
     if u16::try_from(send_argc).is_err() {
-        return Err(SendDirectFailure::new(TooManyArgsForLir));
+        return Err(SendDirectFailure::new(OperandTooLarge));
     }
 
     Ok(())
@@ -4017,7 +4022,7 @@ impl Function {
         // rest packing changes the SendDirect argument count.
         // See: vm_args.c's setup_parameters_complex and args_setup_opt_parameters.
         let passed_opt_num = (positional_argc - min_positional_argc).min(opt_num);
-        let jit_entry_idx = passed_opt_num.try_into().map_err(|_| TooManyArgsForLir)?;
+        let jit_entry_idx = passed_opt_num.try_into().map_err(|_| OperandTooLarge)?;
 
         // Methods without *rest still need the jit_entry_idx computed above,
         // but their positional args do not need repacking.
@@ -4704,7 +4709,7 @@ impl Function {
                                     {
                                         let native_index = (index as i64) * (SIZEOF_VALUE as i64);
                                         if native_index > (i32::MAX as i64) {
-                                            self.set_dynamic_send_reason(insn_id, TooManyArgsForLir);
+                                            self.set_dynamic_send_reason(insn_id, OperandTooLarge);
                                             self.push_insn_id(block, insn_id); continue;
                                         }
                                     }
