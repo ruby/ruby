@@ -9098,7 +9098,7 @@ fn add_iseq_to_hir(
                         let ep = fun.get_ep(block, 0);
                         fun.get_local_from_ep(block, iseq, ep, ep_offset, 0, types::BasicObject)
                     } else {
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) });
+                        // Spill locals on the exit for the same reason as getlocal_WC_0.
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
                         local_inval = false;
                         state.getlocal(ep_offset)
@@ -9311,7 +9311,9 @@ fn add_iseq_to_hir(
                         assert!(local_inval); // if check above
                         // There has been some non-leaf call since JIT entry or the last patch point,
                         // so add a patch point to make sure locals have not been escaped.
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) }); // skip spilling locals
+                        // The exit must spill locals: NoEPEscape is invalidated per ISEQ, so this
+                        // patch point can fire in a frame whose own EP never escaped, and whose
+                        // locals only live in FrameState (see YARVINSN_setlocal_WC_0).
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
                         local_inval = false;
 
@@ -9329,7 +9331,15 @@ fn add_iseq_to_hir(
                     } else if local_inval {
                         // If there has been any non-leaf call since JIT entry or the last patch point,
                         // add a patch point to make sure locals have not been escaped.
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) }); // skip spilling locals
+                        //
+                        // The exit must spill locals. A `setlocal` only records the value in
+                        // FrameState, so a local assigned earlier in this frame (e.g. the default
+                        // value of an optional parameter, assigned right after a JIT entry) can
+                        // live nowhere but a register. NoEPEscape is invalidated for the whole
+                        // ISEQ as soon as any one frame escapes its EP, so this patch point can
+                        // fire in a frame whose own EP is still on the stack. Exiting without
+                        // writing the locals leaves the interpreter reading whatever the previous
+                        // frame at those stack slots left behind.
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
                         local_inval = false;
                     }
