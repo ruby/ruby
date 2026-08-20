@@ -794,4 +794,20 @@ class TestRactor < Test::Unit::TestCase
       assert_equal :ok, r.value
     RUBY
   end
+  def test_port_queue_dropped_when_port_unreachable
+    omit 'not fixed for mmtk: it never calls rb_ractor_finish_marking, where the reap runs' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY')
+      200.times do
+        port = Ractor::Port.new
+        Ractor.new(port) { |p| p << Ractor::Port.new; nil }.join
+      end
+      8.times { GC.start }
+      # A dropped message holding a port used to root the sending Ractor, and with it
+      # that Ractor's whole objspace, for the life of the process: every one of the 200
+      # survived.  A few of the last still can -- the reap needs a second full mark, and
+      # a conservative stack scan holds whatever it holds -- so this is not exact.
+      assert_operator ObjectSpace.each_object(Ractor).count, :<, 20
+    RUBY
+  end
+
 end

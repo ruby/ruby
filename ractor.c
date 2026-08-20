@@ -3671,7 +3671,7 @@ rb_ractor_local_storage_ptr_set(rb_ractor_local_key_t key, void *ptr)
 #define DEFAULT_KEYS_CAPA 0x10
 
 void
-rb_ractor_finish_marking(void)
+rb_ractor_finish_marking(bool full_mark)
 {
     /* A freed key's struct may only be released by a collection that purged every
      * Ractor's storage with no other marker running: a global GC, or a single objspace.
@@ -3684,6 +3684,8 @@ rb_ractor_finish_marking(void)
      * zombie_objspaces only marks the join slot): purge here, under the barrier, before
      * the struct is freed, or a later ractor_free reads a freed key. */
     rb_vm_t *vm = GET_VM();
+    rb_ractor_t *r;
+
     for (size_t zi = 0; zi < vm->gc.zombie_objspaces_count; zi++) {
         rb_ractor_t *owner = vm->gc.zombie_objspaces[zi].owner;
         if (owner == NULL || owner->local_storage == NULL) continue;
@@ -3697,6 +3699,16 @@ rb_ractor_finish_marking(void)
     if (freed_ractor_local_keys.capa > DEFAULT_KEYS_CAPA) {
         freed_ractor_local_keys.capa = DEFAULT_KEYS_CAPA;
         SIZED_REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, DEFAULT_KEYS_CAPA, freed_ractor_local_keys.capa);
+    }
+
+    /* Under a minor mark an unmarked port is not a dead one. */
+    if (full_mark) {
+        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+            rb_ractor_reap_dead_ports(r);
+        }
+        if (vm->ractor.cnt == 0 && vm->ractor.main_ractor) {
+            rb_ractor_reap_dead_ports(vm->ractor.main_ractor);
+        }
     }
 }
 
