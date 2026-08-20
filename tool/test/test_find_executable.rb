@@ -9,7 +9,7 @@ class TestFindExecutable < Test::Unit::TestCase
     ruby = RbConfig.ruby
     command = File.basename(ruby, RbConfig::CONFIG["EXEEXT"])
     original_path = ENV["PATH"]
-    ENV["PATH"] = File.dirname(ruby)
+    ENV["PATH"] = File.dirname(ruby) + File::PATH_SEPARATOR + original_path
 
     found = EnvUtil.find_executable(command, "--version") do |output|
       output.start_with?("ruby ")
