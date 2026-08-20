@@ -4310,6 +4310,9 @@ impl Function {
         level: u32,
         return_type: Type,
     ) -> InsnId {
+        if level > 0 {
+            self.count(block, Counter::vm_read_from_parent_iseq_local_count);
+        }
         let local_id = get_local_var_id(iseq, level, ep_offset);
         let ep_offset = i32::try_from(ep_offset)
             .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to i32"));
@@ -9254,6 +9257,9 @@ fn add_iseq_to_hir(
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_getlocal_WC_0 => {
+                    if unsafe { rb_get_iseq_body_type(iseq) } == ISEQ_TYPE_BLOCK {
+                        fun.count(block, Counter::vm_read_from_local_in_block_count);
+                    }
                     let ep_offset = get_arg(pc, 0).as_u32();
                     if !local_inval {
                         // The FrameState is the source of truth for locals until invalidated.
@@ -9280,6 +9286,9 @@ fn add_iseq_to_hir(
                     }
                 }
                 YARVINSN_setlocal_WC_0 => {
+                    if unsafe { rb_get_iseq_body_type(iseq) } == ISEQ_TYPE_BLOCK {
+                        fun.count(block, Counter::vm_write_to_local_in_block_count);
+                    }
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.stack_pop()?;
                     if ep_escaped {
