@@ -312,6 +312,13 @@ ractor_mark(void *ptr)
         ractor_mark_unshareable_parts(r);
         rb_ractor_mark_terminated_join_value(r);
     }
+    else if (rb_gc_during_global_gc_p()) {
+        /* The join value is only of use to whoever can still call Ractor#value, which
+         * means holding this wrapper, so mark it as the wrapper's child rather than as a
+         * root.  A global GC stops the world and marks every objspace together, which is
+         * what lets the shareable wrapper reach an unshareable value at all. */
+        rb_ractor_mark_terminated_join_value(r);
+    }
 }
 
 /* Mark the GC roots reachable from Ractor r's C structs.  A local GC cannot rely on the
