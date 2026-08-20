@@ -2463,16 +2463,17 @@ static uint32_t
 courier_alloc_node(struct rb_ractor_courier *c)
 {
     if (RB_UNLIKELY(c->count == c->capa)) courier_grow_nodes(c);
-    uint32_t id = c->count++;
-    /* Initialize to a harmless REF/Qnil so the courier mark (a GC root while sending)
-     * is safe even mid-construction; a captured node overwrites it later. */
-    c->nodes[id].kind = COURIER_KIND_REF;
-    c->nodes[id].frozen = false;
-    c->nodes[id].niv = 0;
-    c->nodes[id].iv_ids = NULL;
-    c->nodes[id].iv_vals = NULL;
-    c->nodes[id].u.ref = Qnil;
-    return id;
+    /* Fill the slot with a harmless REF/Qnil and bump the count only after, the way
+     * courier_alloc_ref does: the courier is a GC root while it is being built, and
+     * the mark walks nodes[0, count).  A captured node overwrites this later. */
+    struct courier_node *n = &c->nodes[c->count];
+    n->kind = COURIER_KIND_REF;
+    n->frozen = false;
+    n->niv = 0;
+    n->iv_ids = NULL;
+    n->iv_vals = NULL;
+    n->u.ref = Qnil;
+    return c->count++;
 }
 
 /* Size the arrays from the preflight's count, so capture never grows them.  A count
