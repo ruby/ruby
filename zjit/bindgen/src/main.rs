@@ -422,6 +422,7 @@ fn main() {
         .allowlist_function("rb_get_def_iseq_ptr")
         .allowlist_function("rb_get_def_bmethod_proc")
         .allowlist_function("rb_jit_get_proc_ptr")
+        .allowlist_type("rb_block_type")
         .allowlist_function("rb_iseq_encoded_size")
         .allowlist_function("rb_get_iseq_body_total_calls")
         .allowlist_function("rb_get_iseq_body_local_iseq")

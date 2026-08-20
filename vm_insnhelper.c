@@ -5205,7 +5205,7 @@ block_proc_is_lambda(const VALUE procval)
 
     if (procval) {
         GetProcPtr(procval, proc);
-        return proc->is_lambda;
+        return proc->header.is_lambda;
     }
     else {
         return 0;
@@ -5497,8 +5497,8 @@ vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
         VALUE procval = VM_BH_TO_PROC(block_handler);
         rb_proc_t *po;
         GetProcPtr(procval, po);
-        if (po->is_refined) refined_procval = procval;
-        is_lambda = po->is_lambda;
+        if (po->header.is_refined) refined_procval = procval;
+        is_lambda = po->header.is_lambda;
         block_handler = vm_block_to_block_handler(&po->block);
     }
 

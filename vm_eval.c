@@ -2239,8 +2239,8 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
                 VALUE procval = VM_BH_TO_PROC(block_handler);
                 rb_proc_t *po;
                 GetProcPtr(procval, po);
-                is_lambda = po->is_lambda;
-                if (po->is_refined) proc_cref = rb_proc_refinements_cref_for_call(procval);
+                is_lambda = po->header.is_lambda;
+                if (po->header.is_refined) proc_cref = rb_proc_refinements_cref_for_call(procval);
                 block_handler = vm_block_to_block_handler(&po->block);
             }
             goto again;

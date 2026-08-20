@@ -995,12 +995,12 @@ enum rb_block_type {
 };
 
 struct rb_block {
+    enum rb_block_type type : 8;
     union {
         struct rb_captured_block captured;
         VALUE symbol;
         VALUE proc;
     } as;
-    enum rb_block_type type;
 };
 
 typedef struct rb_control_frame_struct {
@@ -1398,12 +1398,43 @@ extern const rb_data_type_t ruby_proc_data_type;
     GetCoreDataFromValue((obj), rb_proc_t, &ruby_proc_data_type, (ptr))
 
 typedef struct {
-    const struct rb_block block;
+    enum rb_block_type type : 8;
     unsigned int is_from_method: 1;	/* bool */
     unsigned int is_lambda: 1;		/* bool */
     unsigned int is_isolated: 1;        /* bool */
     unsigned int is_refined: 1;         /* bool: Proc#refined */
+} rb_proc_header_t;
+
+typedef struct {
+    rb_proc_header_t header;
+    struct rb_captured_block captured;
+} rb_proc_captured_t;
+
+typedef struct {
+    rb_proc_header_t header;
+    VALUE symbol;
+} rb_proc_symbol_t;
+
+typedef struct {
+    rb_proc_header_t header;
+    VALUE proc;
+} rb_proc_proc_t;
+
+/* A Proc of any block type. */
+typedef union {
+    const struct rb_block block;
+    rb_proc_header_t header;
+    rb_proc_captured_t captured;
+    rb_proc_symbol_t symbol;
+    rb_proc_proc_t proc;
 } rb_proc_t;
+
+STATIC_ASSERT(rb_proc_captured_offset,
+    offsetof(rb_proc_captured_t, captured) == offsetof(rb_proc_t, block.as.captured));
+STATIC_ASSERT(rb_proc_symbol_offset,
+    offsetof(rb_proc_symbol_t, symbol) == offsetof(rb_proc_t, block.as.symbol));
+STATIC_ASSERT(rb_proc_proc_offset,
+    offsetof(rb_proc_proc_t, proc) == offsetof(rb_proc_t, block.as.proc));
 
 /* A refined proc's refinements recipe (see Proc#refined) lives in a hidden
  * ivar on the proc object; the accessors return nil/NULL unless is_refined is
@@ -2046,7 +2077,7 @@ VM_BH_FROM_PROC(VALUE procval)
 /* VM related object allocate functions */
 VALUE rb_thread_alloc(VALUE klass);
 VALUE rb_binding_alloc(VALUE klass);
-VALUE rb_proc_alloc(VALUE klass);
+VALUE rb_proc_alloc(VALUE klass, enum rb_block_type block_type);
 VALUE rb_proc_dup(VALUE self);
 VALUE rb_proc_dup_0(VALUE self);
 

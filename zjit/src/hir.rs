@@ -4603,10 +4603,10 @@ impl Function {
                         } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
                             let proc = unsafe { rb_jit_get_proc_ptr(procv) };
-                            let proc_block = unsafe { &(*proc).block };
+                            let proc_block = unsafe { (*proc).block.as_ref() };
                             // Target ISEQ bmethods. Can't handle for example, `define_method(:foo, &:foo)`
                             // which makes a `block_type_symbol` bmethod.
-                            if proc_block.type_ != block_type_iseq {
+                            if proc_block.type_() != block_type_iseq {
                                 self.set_dynamic_send_reason(insn_id, BmethodNonIseqProc);
                                 self.push_insn_id(block, insn_id); continue;
                             }

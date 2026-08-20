@@ -1326,8 +1326,9 @@ pub const block_type_proc: rb_block_type = 3;
 pub type rb_block_type = u32;
 #[repr(C)]
 pub struct rb_block {
+    pub _bitfield_align_1: [u8; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
     pub as_: rb_block__bindgen_ty_1,
-    pub type_: rb_block_type,
 }
 #[repr(C)]
 pub struct rb_block__bindgen_ty_1 {
@@ -1335,6 +1336,50 @@ pub struct rb_block__bindgen_ty_1 {
     pub symbol: __BindgenUnionField<VALUE>,
     pub proc_: __BindgenUnionField<VALUE>,
     pub bindgen_union_field: [u64; 3usize],
+}
+impl rb_block {
+    #[inline]
+    pub fn type_(&self) -> rb_block_type {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 8u8) as u32) }
+    }
+    #[inline]
+    pub fn set_type(&mut self, val: rb_block_type) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 8u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn type__raw(this: *const Self) -> rb_block_type {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                0usize,
+                8u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_type_raw(this: *mut Self, val: rb_block_type) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                0usize,
+                8u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(type_: rb_block_type) -> __BindgenBitfieldUnit<[u8; 1usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 8u8, {
+            let type_: u32 = unsafe { ::std::mem::transmute(type_) };
+            type_ as u64
+        });
+        __bindgen_bitfield_unit
+    }
 }
 #[repr(C)]
 pub struct rb_control_frame_struct {
@@ -1348,30 +1393,64 @@ pub struct rb_control_frame_struct {
 }
 pub type rb_control_frame_t = rb_control_frame_struct;
 #[repr(C)]
-pub struct rb_proc_t {
-    pub block: rb_block,
+#[repr(align(4))]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_proc_header_t {
     pub _bitfield_align_1: [u8; 0],
-    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
-    pub __bindgen_padding_0: [u8; 7usize],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 2usize]>,
+    pub __bindgen_padding_0: u16,
 }
-impl rb_proc_t {
+impl rb_proc_header_t {
+    #[inline]
+    pub fn type_(&self) -> rb_block_type {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 8u8) as u32) }
+    }
+    #[inline]
+    pub fn set_type(&mut self, val: rb_block_type) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 8u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn type__raw(this: *const Self) -> rb_block_type {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                0usize,
+                8u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_type_raw(this: *mut Self, val: rb_block_type) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                0usize,
+                8u8,
+                val as u64,
+            )
+        }
+    }
     #[inline]
     pub fn is_from_method(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u32) }
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(8usize, 1u8) as u32) }
     }
     #[inline]
     pub fn set_is_from_method(&mut self, val: ::std::os::raw::c_uint) {
         unsafe {
             let val: u32 = ::std::mem::transmute(val);
-            self._bitfield_1.set(0usize, 1u8, val as u64)
+            self._bitfield_1.set(8usize, 1u8, val as u64)
         }
     }
     #[inline]
     pub unsafe fn is_from_method_raw(this: *const Self) -> ::std::os::raw::c_uint {
         unsafe {
-            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
-                0usize,
+                8usize,
                 1u8,
             ) as u32)
         }
@@ -1380,9 +1459,9 @@ impl rb_proc_t {
     pub unsafe fn set_is_from_method_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
         unsafe {
             let val: u32 = ::std::mem::transmute(val);
-            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
-                0usize,
+                8usize,
                 1u8,
                 val as u64,
             )
@@ -1390,21 +1469,21 @@ impl rb_proc_t {
     }
     #[inline]
     pub fn is_lambda(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u32) }
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(9usize, 1u8) as u32) }
     }
     #[inline]
     pub fn set_is_lambda(&mut self, val: ::std::os::raw::c_uint) {
         unsafe {
             let val: u32 = ::std::mem::transmute(val);
-            self._bitfield_1.set(1usize, 1u8, val as u64)
+            self._bitfield_1.set(9usize, 1u8, val as u64)
         }
     }
     #[inline]
     pub unsafe fn is_lambda_raw(this: *const Self) -> ::std::os::raw::c_uint {
         unsafe {
-            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
-                1usize,
+                9usize,
                 1u8,
             ) as u32)
         }
@@ -1413,9 +1492,9 @@ impl rb_proc_t {
     pub unsafe fn set_is_lambda_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
         unsafe {
             let val: u32 = ::std::mem::transmute(val);
-            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
-                1usize,
+                9usize,
                 1u8,
                 val as u64,
             )
@@ -1423,21 +1502,21 @@ impl rb_proc_t {
     }
     #[inline]
     pub fn is_isolated(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(2usize, 1u8) as u32) }
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(10usize, 1u8) as u32) }
     }
     #[inline]
     pub fn set_is_isolated(&mut self, val: ::std::os::raw::c_uint) {
         unsafe {
             let val: u32 = ::std::mem::transmute(val);
-            self._bitfield_1.set(2usize, 1u8, val as u64)
+            self._bitfield_1.set(10usize, 1u8, val as u64)
         }
     }
     #[inline]
     pub unsafe fn is_isolated_raw(this: *const Self) -> ::std::os::raw::c_uint {
         unsafe {
-            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
-                2usize,
+                10usize,
                 1u8,
             ) as u32)
         }
@@ -1446,9 +1525,9 @@ impl rb_proc_t {
     pub unsafe fn set_is_isolated_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
         unsafe {
             let val: u32 = ::std::mem::transmute(val);
-            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
-                2usize,
+                10usize,
                 1u8,
                 val as u64,
             )
@@ -1456,21 +1535,21 @@ impl rb_proc_t {
     }
     #[inline]
     pub fn is_refined(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(3usize, 1u8) as u32) }
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(11usize, 1u8) as u32) }
     }
     #[inline]
     pub fn set_is_refined(&mut self, val: ::std::os::raw::c_uint) {
         unsafe {
             let val: u32 = ::std::mem::transmute(val);
-            self._bitfield_1.set(3usize, 1u8, val as u64)
+            self._bitfield_1.set(11usize, 1u8, val as u64)
         }
     }
     #[inline]
     pub unsafe fn is_refined_raw(this: *const Self) -> ::std::os::raw::c_uint {
         unsafe {
-            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 1usize]>>::raw_get(
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
-                3usize,
+                11usize,
                 1u8,
             ) as u32)
         }
@@ -1479,9 +1558,9 @@ impl rb_proc_t {
     pub unsafe fn set_is_refined_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
         unsafe {
             let val: u32 = ::std::mem::transmute(val);
-            <__BindgenBitfieldUnit<[u8; 1usize]>>::raw_set(
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
-                3usize,
+                11usize,
                 1u8,
                 val as u64,
             )
@@ -1489,30 +1568,59 @@ impl rb_proc_t {
     }
     #[inline]
     pub fn new_bitfield_1(
+        type_: rb_block_type,
         is_from_method: ::std::os::raw::c_uint,
         is_lambda: ::std::os::raw::c_uint,
         is_isolated: ::std::os::raw::c_uint,
         is_refined: ::std::os::raw::c_uint,
-    ) -> __BindgenBitfieldUnit<[u8; 1usize]> {
-        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
-        __bindgen_bitfield_unit.set(0usize, 1u8, {
+    ) -> __BindgenBitfieldUnit<[u8; 2usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 2usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 8u8, {
+            let type_: u32 = unsafe { ::std::mem::transmute(type_) };
+            type_ as u64
+        });
+        __bindgen_bitfield_unit.set(8usize, 1u8, {
             let is_from_method: u32 = unsafe { ::std::mem::transmute(is_from_method) };
             is_from_method as u64
         });
-        __bindgen_bitfield_unit.set(1usize, 1u8, {
+        __bindgen_bitfield_unit.set(9usize, 1u8, {
             let is_lambda: u32 = unsafe { ::std::mem::transmute(is_lambda) };
             is_lambda as u64
         });
-        __bindgen_bitfield_unit.set(2usize, 1u8, {
+        __bindgen_bitfield_unit.set(10usize, 1u8, {
             let is_isolated: u32 = unsafe { ::std::mem::transmute(is_isolated) };
             is_isolated as u64
         });
-        __bindgen_bitfield_unit.set(3usize, 1u8, {
+        __bindgen_bitfield_unit.set(11usize, 1u8, {
             let is_refined: u32 = unsafe { ::std::mem::transmute(is_refined) };
             is_refined as u64
         });
         __bindgen_bitfield_unit
     }
+}
+#[repr(C)]
+pub struct rb_proc_captured_t {
+    pub header: rb_proc_header_t,
+    pub captured: rb_captured_block,
+}
+#[repr(C)]
+pub struct rb_proc_symbol_t {
+    pub header: rb_proc_header_t,
+    pub symbol: VALUE,
+}
+#[repr(C)]
+pub struct rb_proc_proc_t {
+    pub header: rb_proc_header_t,
+    pub proc_: VALUE,
+}
+#[repr(C)]
+pub struct rb_proc_t {
+    pub block: __BindgenUnionField<rb_block>,
+    pub header: __BindgenUnionField<rb_proc_header_t>,
+    pub captured: __BindgenUnionField<rb_proc_captured_t>,
+    pub symbol: __BindgenUnionField<rb_proc_symbol_t>,
+    pub proc_: __BindgenUnionField<rb_proc_proc_t>,
+    pub bindgen_union_field: [u64; 4usize],
 }
 pub const VM_CHECKMATCH_TYPE_WHEN: vm_check_match_type = 1;
 pub const VM_CHECKMATCH_TYPE_CASE: vm_check_match_type = 2;
