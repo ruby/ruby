@@ -723,10 +723,6 @@ rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
     // initialize as a main ractor
     vm->ractor.cnt = 0;
     vm->ractor.blocking_cnt = 0;
-    /* Another thread may have held the lock at fork, so rebuild it in the child (the
-     * same reason generic_fields_lock is re-initialized at fork).  The registry's list
-     * head is left alone: the nodes of surviving couriers are still linked into it. */
-    rb_native_mutex_initialize(&vm->ractor.move_courier_registry_lock);
     /* Only main survives a fork: the holds of dead Ractors and of critical sections are
      * gone, leaving main's own disable. */
     rb_gc_disable_holders_atfork();
@@ -2408,7 +2404,7 @@ struct move_node {
 
 /* A child slot holds a node id, or -- with this bit set -- an index into c->refs.
  * The courier is in-process, so a shareable payload can travel as the VALUE itself
- * instead of costing a whole move_node; the registry marks and pins c->refs. */
+ * instead of costing a whole move_node; the basket holding the courier marks c->refs. */
 #define MOVE_ID_REF_BIT 0x80000000u
 
 struct rb_ractor_move_courier {
@@ -2419,45 +2415,7 @@ struct rb_ractor_move_courier {
     uint32_t refs_count;
     uint32_t refs_capa;
     uint32_t root;
-    struct ccan_list_node reg_node;  /* in-flight courier registry (a GC root while it lives) */
 };
-
-/* VM-global list of move couriers in flight (vm->ractor.move_courier_registry).  A
- * courier is off-heap and carries shareable REFs as raw pointers; in some windows only
- * a transient (a stack-local message queue, say) reaches it, so a global GC could
- * collect the REFs.  Registered from build to free, marked and pinned by the global
- * GC's root pass (only a global GC frees shareable objects, so only it needs this).
- * add/remove run concurrently and take the lock; stop-the-world marking does not, which
- * is sound only because add/remove contain no safepoint (none may be added: a mark
- * could then see a half-linked list across the barrier). */
-
-static void
-move_courier_registry_add(struct rb_ractor_move_courier *c)
-{
-    rb_native_mutex_lock(&GET_VM()->ractor.move_courier_registry_lock);
-    ccan_list_add(&GET_VM()->ractor.move_courier_registry, &c->reg_node);
-    rb_native_mutex_unlock(&GET_VM()->ractor.move_courier_registry_lock);
-}
-
-static void
-move_courier_registry_remove(struct rb_ractor_move_courier *c)
-{
-    rb_native_mutex_lock(&GET_VM()->ractor.move_courier_registry_lock);
-    ccan_list_del(&c->reg_node);
-    rb_native_mutex_unlock(&GET_VM()->ractor.move_courier_registry_lock);
-}
-
-void rb_ractor_move_courier_mark(struct rb_ractor_move_courier *c);
-
-/* Called from the global GC's root pass; stop-the-world, so no lock. */
-void
-rb_ractor_move_courier_registry_mark(void)
-{
-    struct rb_ractor_move_courier *c;
-    ccan_list_for_each(&GET_VM()->ractor.move_courier_registry, c, reg_node) {
-        rb_ractor_move_courier_mark(c);
-    }
-}
 
 struct move_build {
     struct rb_ractor_move_courier *c;
@@ -2472,9 +2430,18 @@ static uint32_t move_capture(struct move_build *b, VALUE obj);
 static uint32_t
 move_alloc_node(struct rb_ractor_move_courier *c)
 {
+    /* Swap a fresh array in rather than realloc: the courier is a GC root while it is
+     * being built, and a realloc leaves c->nodes pointing at a block it may already
+     * have freed.  (The count bump below is safe: nothing between it and the field
+     * stores can start a GC.) */
     if (c->count == c->capa) {
-        c->capa = c->capa ? c->capa * 2 : 8;
-        REALLOC_N(c->nodes, struct move_node, c->capa);
+        uint32_t capa = c->capa ? c->capa * 2 : 8;
+        struct move_node *nodes = ALLOC_N(struct move_node, capa);
+        if (c->count > 0) MEMCPY(nodes, c->nodes, struct move_node, c->count);
+        struct move_node *old_nodes = c->nodes;
+        c->nodes = nodes;
+        c->capa = capa;
+        ruby_xfree(old_nodes);
     }
     uint32_t id = c->count++;
     /* Initialize to a harmless REF/Qnil so the courier mark (a GC root while sending)
@@ -2494,13 +2461,21 @@ move_alloc_node(struct rb_ractor_move_courier *c)
 static uint32_t
 move_alloc_ref(struct rb_ractor_move_courier *c, VALUE v)
 {
+    /* The courier is a GC root while it is being built, so it must never be walkable
+     * in a half-written state.  Grow by allocating a new array and swapping it in: a
+     * realloc would leave c->refs pointing at a block it may already have freed.  The
+     * count is bumped only after the slot holds a real VALUE. */
     if (c->refs_count == c->refs_capa) {
-        c->refs_capa = c->refs_capa ? c->refs_capa * 2 : 8;
-        REALLOC_N(c->refs, VALUE, c->refs_capa);
+        uint32_t capa = c->refs_capa ? c->refs_capa * 2 : 8;
+        VALUE *refs = ALLOC_N(VALUE, capa);
+        if (c->refs_count > 0) MEMCPY(refs, c->refs, VALUE, c->refs_count);
+        VALUE *old_refs = c->refs;
+        c->refs = refs;
+        c->refs_capa = capa;
+        ruby_xfree(old_refs);
     }
-    uint32_t idx = c->refs_count++;
-    c->refs[idx] = v;
-    return MOVE_ID_REF_BIT | idx;
+    c->refs[c->refs_count] = v;
+    return MOVE_ID_REF_BIT | c->refs_count++;
 }
 
 /* Resolve a child slot to the object it names. */
@@ -2988,7 +2963,7 @@ copy_courier_supported_p(VALUE obj, st_table *seen)
 /* Build a courier holding a copy of obj's graph, leaving the sources untouched.
  * Returns NULL when the graph has a type only the on-heap snapshot path handles. */
 struct rb_ractor_move_courier *
-rb_ractor_copy_courier_build(VALUE obj)
+rb_ractor_copy_courier_build(VALUE obj, struct rb_ractor_move_courier **slot)
 {
     {
         st_table *seen = st_init_numtable();
@@ -3000,9 +2975,9 @@ rb_ractor_copy_courier_build(VALUE obj)
     struct rb_ractor_move_courier *c = ZALLOC(struct rb_ractor_move_courier);
     struct move_build b = { c, st_init_numtable(), true };
 
-    /* Same registry cover as a move courier: the shareable REFs it carries need a root
-     * for its whole lifetime. */
-    move_courier_registry_add(c);
+    /* Publish it into the caller's basket before capturing anything: from here the
+     * shareable payloads it collects are rooted by the basket's holder. */
+    *slot = c;
 
     enum ruby_tag_type state;
     rb_execution_context_t *ec = GET_EC();
@@ -3012,17 +2987,15 @@ rb_ractor_copy_courier_build(VALUE obj)
     }
     EC_POP_TAG();
     st_free_table(b.seen);
-    if (state != TAG_NONE) {
-        rb_ractor_move_courier_free(c);
-        EC_JUMP_TAG(ec, state);
-    }
+    /* Published above, so the basket owns it even half-built: it frees it. */
+    if (state != TAG_NONE) EC_JUMP_TAG(ec, state);
     return c;
 }
 
 /* Build a move courier from obj and turn every captured source into a
  * RactorMovedObject (move semantics).  Returns the xmalloc'd courier. */
 struct rb_ractor_move_courier *
-rb_ractor_move_courier_build(VALUE obj)
+rb_ractor_move_courier_build(VALUE obj, struct rb_ractor_move_courier **slot)
 {
     /* Two phases, preflight then commit, so an unmovable object is raised from the
      * read-only walk while the graph is still intact. */
@@ -3042,11 +3015,10 @@ rb_ractor_move_courier_build(VALUE obj)
     struct rb_ractor_move_courier *c = ZALLOC(struct rb_ractor_move_courier);
     struct move_build b = { c, st_init_numtable(), false };
 
-    /* Between send and materialization the courier's shareable REFs pass through
-     * windows where nothing else roots them; register it for its whole lifetime so the
-     * registry root pass marks and pins them.  Registering before the sources become
-     * T_MOVED is safe: partial nodes are initialized mark-safe. */
-    move_courier_registry_add(c);
+    /* Publish it into the caller's basket before the sources become T_MOVED: from here
+     * the basket's holder roots what the courier carries, and partial nodes are
+     * initialized mark-safe. */
+    *slot = c;
 
     enum ruby_tag_type state;
     rb_execution_context_t *ec = GET_EC();
@@ -3057,10 +3029,9 @@ rb_ractor_move_courier_build(VALUE obj)
     EC_POP_TAG();
     st_free_table(b.seen);
     if (state != TAG_NONE) {
-        /* move_capture raised (an unmovable type, an interrupt).  Remove the courier
-         * from the registry and free it before re-raising; the partial nodes are
-         * mark-safe and safe to free. */
-        rb_ractor_move_courier_free(c);
+        /* move_capture raised (an unmovable type, an interrupt).  The courier belongs to
+         * the basket from the publish above, so leave it there and re-raise: the basket
+         * frees it, once, on the way out. */
         EC_JUMP_TAG(ec, state);
     }
     return c;
@@ -3259,7 +3230,6 @@ rb_ractor_move_courier_free(struct rb_ractor_move_courier *c)
             break;
         }
     }
-    move_courier_registry_remove(c);
     ruby_xfree(c->nodes);
     ruby_xfree(c->refs);
     ruby_xfree(c);

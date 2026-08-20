@@ -38,6 +38,11 @@ struct rb_ractor_sync {
     struct st_table *ports;
     size_t next_port_id;
 
+    /* The baskets this Ractor holds that are on no queue: one it is building to send,
+     * and one it has taken off a queue and is materializing.  A queued basket is rooted
+     * by its queue instead.  Only the owner touches this list. */
+    struct ccan_list_head off_queue_baskets;
+
     // monitors
     struct ccan_list_head monitors;
 

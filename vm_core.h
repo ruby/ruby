@@ -735,12 +735,9 @@ typedef struct rb_vm_struct {
 #endif
         } sync;
 
-        /* VM-wide locks for the Ractor transfer/inheritance machinery, plus the
-         * registry of in-flight move couriers.  All of them are leaf locks: no
-         * safepoint inside a critical section. */
+        /* VM-wide locks for the Ractor transfer/inheritance machinery.  All of them
+         * are leaf locks: no safepoint inside a critical section. */
         rb_nativethread_lock_t generic_fields_lock;   /* the shared generic-fields table in variable.c */
-        struct ccan_list_head move_courier_registry;  /* couriers in flight (ractor.c); the global GC marks them */
-        rb_nativethread_lock_t move_courier_registry_lock;
 
 #ifdef RUBY_THREAD_PTHREAD_H
         // ractor scheduling
