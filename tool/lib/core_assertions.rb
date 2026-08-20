@@ -327,8 +327,8 @@ module Test
         at_exit {
           assertions = assertions_ivar_get.call(:@_assertions)
           out_write.call <<~OUT
-          <error id="#{token}" assertions=#{integer_to_s.bind_call(assertions)}>
-          #{array_pack.bind_call([marshal_dump.call($!)], 'm0')}
+          <error id="#{token}" assertions=#{integer_to_s.bind(assertions).call}>
+          #{array_pack.bind([marshal_dump.call($!)]).call('m0')}
           </error id="#{token}">
           OUT
         }
