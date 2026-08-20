@@ -4137,11 +4137,8 @@ rb_gc_vm_refresh_zombie_pages(void)
     vm->gc.zombie_total_pages = total;
 }
 
-/* Incremental marking only runs single-objspace; vm_insert_ractor0 calls this just
- * before a second Ractor becomes visible so any cycle in progress finishes; a settle
- * cannot resume, nor inheritance extend, another objspace's partial mark. */
 void
-rb_gc_finish_in_flight_gc(void)
+rb_gc_rest(void)
 {
     rb_gc_impl_gc_rest(rb_gc_get_objspace());
 }
