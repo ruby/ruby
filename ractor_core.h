@@ -159,7 +159,6 @@ struct rb_ractor_struct {
 /* Mark the GC roots held in Ractor r's C structs (from the root scan in gc.c). */
 void rb_ractor_mark_local_roots(rb_ractor_t *r);
 void rb_ractor_mark_terminated_join_value(rb_ractor_t *r);
-void rb_ractor_mark_in_flight_for_single_objspace(rb_ractor_t *r);
 
 /* Move src's registered_marks to dst and leave src empty (on join or when an orphan
  * is absorbed).  An absorb can run during a GC sweep, so the implementation uses raw
