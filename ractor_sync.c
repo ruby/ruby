@@ -19,14 +19,14 @@ static struct ractor_basket *ractor_basket_new_ref(VALUE shareable);
 static void ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, struct ractor_basket *b, bool raise_on_error);
 static void ractor_add_port(rb_ractor_t *r, st_data_t id);
 
-// The off-heap courier used for moves.  It is defined in ractor.c.
-struct rb_ractor_move_courier *rb_ractor_move_courier_build(VALUE obj, struct rb_ractor_move_courier **slot);
-VALUE rb_ractor_move_courier_materialize(struct rb_ractor_move_courier *c);
-void rb_ractor_move_courier_free(struct rb_ractor_move_courier *c);
+// The off-heap courier a copy or a move payload travels in.  Defined in ractor.c.
+struct rb_ractor_courier *rb_ractor_courier_build_move(VALUE obj, struct rb_ractor_courier **slot);
+VALUE rb_ractor_courier_materialize(struct rb_ractor_courier *c);
+void rb_ractor_courier_free(struct rb_ractor_courier *c);
 static void ractor_off_queue_add(rb_ractor_t *cr, struct ractor_basket *b);
 static void ractor_off_queue_remove(struct ractor_basket *b);
-void rb_ractor_move_courier_mark(struct rb_ractor_move_courier *c);
-struct rb_ractor_move_courier *rb_ractor_copy_courier_build(VALUE obj, struct rb_ractor_move_courier **slot);
+void rb_ractor_courier_mark(struct rb_ractor_courier *c);
+struct rb_ractor_courier *rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot);
 
 static void
 ractor_port_mark(void *ptr)
@@ -233,10 +233,10 @@ struct ractor_basket {
          * Marshal byte String.  The receiver rebuilds it with Marshal.load instead
          * of walking it natively. */
         bool marshaled;
-        /* The off-heap (xmalloc) courier of a basket_type_move.  A move basket does
-         * not use v. */
-        struct rb_ractor_move_courier *move_courier;
-        /* The marshaled bytes of a copy payload, off-heap like a move courier.  When
+        /* The off-heap (xmalloc) courier the payload graph was serialized into.
+         * Copy and move both use it; when set, v is unused. */
+        struct rb_ractor_courier *courier;
+        /* The marshaled bytes of a copy payload, off-heap like the courier.  When
          * set, v is unused: an in-flight payload that is not a GC object needs no
          * in-flight pin, so it never keeps a page of the sender's heap alive. */
         char *mbuf;
@@ -264,12 +264,12 @@ ractor_basket_none_p(const struct ractor_basket *b)
 static void
 ractor_basket_mark(const struct ractor_basket *b)
 {
-    if (b->p.move_courier != NULL) {
+    if (b->p.courier != NULL) {
         /* The payload became this Ractor's to root the moment the message was enqueued
          * here: the sender's own roots stop at the send.  Before and after the queue the
          * basket is on its holder's off_queue_baskets instead, so a courier is rooted
          * from the moment it is allocated to the moment it is freed. */
-        rb_ractor_move_courier_mark(b->p.move_courier);
+        rb_ractor_courier_mark(b->p.courier);
     }
     else if (b->p.mbuf == NULL) {
         /* Marshaled bytes are off-heap and hold nothing to mark. */
@@ -284,10 +284,10 @@ ractor_basket_free(struct ractor_basket *b)
     ruby_xfree(b->p.mbuf);
     b->p.mbuf = NULL;
     b->p.mlen = 0;
-    if (b->p.move_courier) {
-        /* A move courier that was never consumed (a queue being torn down, say). */
-        rb_ractor_move_courier_free(b->p.move_courier);
-        b->p.move_courier = NULL;
+    if (b->p.courier) {
+        /* A courier that was never consumed (a queue being torn down, say). */
+        rb_ractor_courier_free(b->p.courier);
+        b->p.courier = NULL;
     }
     SIZED_FREE(b);
 }
@@ -305,7 +305,7 @@ ractor_basket_alloc(void)
     b->p.v = Qnil;
     b->p.exception = false;
     b->p.marshaled = false;
-    b->p.move_courier = NULL;
+    b->p.courier = NULL;
     b->p.mbuf = NULL;
     b->p.mlen = 0;
     ccan_list_node_init(&b->off_queue_node);
@@ -1013,7 +1013,7 @@ ractor_marshal_dump_rescue(VALUE obj, VALUE errinfo)
 
 static VALUE
 ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type *ptype, bool *pmarshaled,
-                       struct rb_ractor_move_courier **pcourier)
+                       struct rb_ractor_courier **pcourier)
 {
     switch (*ptype) {
       case basket_type_ref:
@@ -1031,7 +1031,7 @@ ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket
              * types; anything else is marshaled here, so its user hooks run on the
              * sender, and the dump travels as plain bytes. */
             *ptype = basket_type_copy;
-            if (rb_ractor_copy_courier_build(obj, pcourier) != NULL) return Qundef;
+            if (rb_ractor_courier_build_copy(obj, pcourier) != NULL) return Qundef;
 
             *pmarshaled = true;
             return rb_rescue2(ractor_marshal_dump_body, obj,
@@ -1064,10 +1064,10 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
              * RactorMovedObject.  While in flight there is no GC object left for the
              * sender's GC to mark, sweep or move.  The build publishes the courier into
              * the basket as soon as it exists. */
-            rb_ractor_move_courier_build(obj, &b->p.move_courier);
+            rb_ractor_courier_build_move(obj, &b->p.courier);
         }
         else {
-            v = ractor_prepare_payload(ec, obj, &type, &marshaled, &b->p.move_courier);
+            v = ractor_prepare_payload(ec, obj, &type, &marshaled, &b->p.courier);
             if (type == basket_type_copy && marshaled) {
                 /* Take the dump off-heap: the sender's copy of it is ordinary garbage
                  * from here, so nothing of its heap is held while the message waits. */
@@ -1103,7 +1103,7 @@ ractor_basket_value(struct ractor_basket *b)
       case basket_type_copy: {
         /* An off-heap copy courier rebuilds exactly like a move one; only the sources
          * differ (still alive here, already shells there). */
-        if (b->p.move_courier != NULL) goto materialize_courier;
+        if (b->p.courier != NULL) goto materialize_courier;
         /* The payload is the marshaled bytes.  Marshal.load allocates through this
          * Ractor's normal newobj and write-barrier paths, and can raise (load hooks and
          * autoload run user code, an async interrupt can arrive anywhere), so it runs
@@ -1151,7 +1151,7 @@ ractor_basket_value(struct ractor_basket *b)
          * #hash runs user code, and an async interrupt can arrive).  On a raise the
          * courier is still owned by the basket, whose teardown frees it. */
         rb_execution_context_t *ec = rb_current_ec_noinline();
-        struct rb_ractor_move_courier *courier = b->p.move_courier;
+        struct rb_ractor_courier *courier = b->p.courier;
         /* Keep the materialized graph on the machine stack (result): it is the only
          * root until it reaches the caller.  courier_free below runs a long loop, and
          * only the malloc'd basket's p.v holding it would give a concurrent global GC a
@@ -1160,16 +1160,16 @@ ractor_basket_value(struct ractor_basket *b)
         enum ruby_tag_type state;
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-            result = rb_ractor_move_courier_materialize(courier);
+            result = rb_ractor_courier_materialize(courier);
         }
         EC_POP_TAG();
         if (state != TAG_NONE) {
-            /* An unconsumed courier stays in b->p.move_courier; basket_free frees it. */
+            /* An unconsumed courier stays in b->p.courier; basket_free frees it. */
             ractor_basket_free(b);
             EC_JUMP_TAG(ec, state);
         }
-        rb_ractor_move_courier_free(courier);
-        b->p.move_courier = NULL;
+        rb_ractor_courier_free(courier);
+        b->p.courier = NULL;
         b->p.v = result;
         RB_GC_GUARD(result);
         break;
@@ -1563,7 +1563,7 @@ ractor_basket_new_ref(VALUE shareable)
     b->p.v = shareable;
     b->p.exception = false;
     b->p.marshaled = false;
-    b->p.move_courier = NULL;
+    b->p.courier = NULL;
     b->p.mbuf = NULL;
     b->p.mlen = 0;
 

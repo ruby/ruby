@@ -1084,7 +1084,7 @@ match_set_regs(VALUE match, int num_regs, const OnigPosition *beg, const OnigPos
  * registers are written out to an onig-independent blob so the original malloc'd area can be
  * freed, leaving an empty shell behind, and rebuilt from the blob on the receiving side. */
 void *
-rb_match_move_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs_out, bool release_source)
+rb_match_blob_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs_out, bool release_source)
 {
     struct RMatch *rm = RMATCH(match);
     int n = rm->num_regs;
@@ -1117,13 +1117,13 @@ rb_match_move_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs
 }
 
 VALUE
-rb_match_move_alloc(VALUE klass, int num_regs)
+rb_match_blob_alloc(VALUE klass, int num_regs)
 {
     return match_alloc_n(klass, num_regs);
 }
 
 void
-rb_match_move_load(VALUE match, VALUE regexp, VALUE str, int num_regs, const void *blob_)
+rb_match_blob_load(VALUE match, VALUE regexp, VALUE str, int num_regs, const void *blob_)
 {
     const OnigPosition *blob = blob_;
     struct RMatch *rm = RMATCH(match);
@@ -1142,7 +1142,7 @@ rb_match_move_load(VALUE match, VALUE regexp, VALUE str, int num_regs, const voi
 }
 
 void
-rb_match_move_free(void *blob)
+rb_match_blob_free(void *blob)
 {
     ruby_xfree(blob);
 }
