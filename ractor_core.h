@@ -13,7 +13,7 @@
 #define RUBY_TYPED_FROZEN_SHAREABLE_NO_REC RUBY_FL_FINALIZE
 
 /* An in-flight move payload, serialized off-heap (defined in ractor.c). */
-struct rb_ractor_move_courier;
+struct rb_ractor_courier;
 
 struct rb_ractor_sync {
     // ractor lock
