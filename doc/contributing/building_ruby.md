@@ -298,7 +298,7 @@ The compiled Ruby will now automatically crash with a report and a backtrace
 if ASAN detects a memory safety issue. To run Ruby's test suite under ASAN,
 issue the following command. Note that this will take quite a long time (over
 two hours on my laptop); the `RUBY_TEST_TIMEOUT_SCALE` and
-`SYNTAX_SUGEST_TIMEOUT` variables are required to make sure tests don't
+`SYNTAX_SUGGEST_TIMEOUT` variables are required to make sure tests don't
 spuriously fail with timeouts when in fact they're just slow.
 
 ```sh
