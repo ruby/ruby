@@ -579,6 +579,66 @@ class TestRactor < Test::Unit::TestCase
       assert_equal 4, ports.size
     RUBY
   end
+  def test_port_receive_timeout
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      port = Ractor::Port.new
+
+      t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      assert_nil port.receive(timeout: 0.1)
+      assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0, :>=, 0.1
+
+      # a message that is already there wins over the timeout
+      port << :a
+      assert_equal :a, port.receive(timeout: 10)
+
+      # timeout: 0 polls
+      assert_nil port.receive(timeout: 0)
+      port << :b
+      assert_equal :b, port.receive(timeout: 0)
+    RUBY
+  end
+
+  def test_receive_timeout_on_mn_thread
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      # a Ractor's thread is an M:N thread: the timeout must not need a native thread
+      r = Ractor.new do
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        [Ractor.receive(timeout: 0.1), Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0]
+      end
+      v, elapsed = r.value
+      assert_nil v
+      assert_operator elapsed, :>=, 0.1
+    RUBY
+  end
+
+  def test_select_timeout
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      p1, p2 = Ractor::Port.new, Ractor::Port.new
+      assert_nil Ractor.select(p1, p2, timeout: 0.1)
+
+      p2 << :b
+      assert_equal [p2, :b], Ractor.select(p1, p2, timeout: 10)
+    RUBY
+  end
+
+  def test_receive_timeout_racing_with_send
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      # the timeout and a send aim at the same instant: both wake the waiter
+      results = []
+      300.times do
+        port = Ractor::Port.new
+        th = Thread.new(port) {|p| sleep 0.001; p << :msg }
+        results << port.receive(timeout: 0.001)
+        th.join
+      end
+      assert_empty results.uniq - [:msg, nil]
+    RUBY
+  end
+
 
   # Moving a Hash that has Hash keys must not lose entries (regression guard for inserting a
   # key before its contents are filled in, which corrupts its hash value).

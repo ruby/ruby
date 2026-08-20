@@ -894,7 +894,7 @@ void
 rb_ractor_receive_parameters(rb_execution_context_t *ec, rb_ractor_t *r, int len, VALUE *ptr)
 {
     for (int i=0; i<len; i++) {
-        ptr[i] = ractor_receive(ec, ractor_default_port(r));
+        ptr[i] = ractor_receive(ec, ractor_default_port(r), NULL);
     }
 }
 
@@ -3950,7 +3950,7 @@ rb_ractor_require(VALUE feature, bool silent)
     rb_ractor_interrupt_exec(main_r, ractor_require_func, (void *)crr_obj, rb_interrupt_exec_flag_value_data);
 
     // wait for require done
-    VALUE results = ractor_port_receive(ec, crr->port);
+    VALUE results = ractor_port_receive(ec, crr->port, Qnil);
     ractor_port_close(ec, crr->port);
 
     VALUE exc = rb_ary_pop(results);
@@ -4001,7 +4001,7 @@ rb_ractor_autoload_load(VALUE module, ID name)
     rb_ractor_interrupt_exec(main_r, ractor_autoload_load_func, (void *)crr_obj, rb_interrupt_exec_flag_value_data);
 
     // wait for require done
-    VALUE results = ractor_port_receive(ec, crr->port);
+    VALUE results = ractor_port_receive(ec, crr->port, Qnil);
     ractor_port_close(ec, crr->port);
 
     VALUE exc = rb_ary_pop(results);

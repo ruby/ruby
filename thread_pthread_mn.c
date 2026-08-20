@@ -364,6 +364,24 @@ enum timer_thread_register_result {
 static enum timer_thread_register_result
 timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags, rb_hrtime_t *rel, uint32_t event_serial);
 
+// Arm a timeout-only wake on the timer thread for a Ractor wait.  Returns false
+// if the deadline has already passed, in which case nothing was registered.
+static bool
+ractor_sched_timeout_arm(rb_thread_t *th, const rb_hrtime_t *rel)
+{
+    rb_hrtime_t rel_copy = *rel;
+
+    return timer_thread_register_waiting(th, -1, thread_sched_waiting_timeout, &rel_copy,
+                                         ++th->sched.event_serial) == timer_thread_registered;
+}
+
+// Returns true if the timeout was still armed, i.e. it did not fire.
+static bool
+ractor_sched_timeout_disarm(rb_thread_t *th)
+{
+    return timer_thread_cancel_waiting(th);
+}
+
 // return how the wait ended; see enum thread_sched_wait_result
 static enum thread_sched_wait_result
 thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd, enum thread_sched_waiting_flag events, rb_hrtime_t *rel)
@@ -414,7 +432,7 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
                 enum rb_thread_status prev_status = th->status;
                 if (prev_status == THREAD_RUNNABLE) th->status = THREAD_STOPPED_FOREVER;
                 thread_sched_wakeup_next_thread(sched, th, true);
-                thread_sched_wait_running_turn(sched, th, true);
+                thread_sched_wait_running_turn(sched, th, true, NULL);
                 if (prev_status == THREAD_RUNNABLE) th->status = THREAD_RUNNABLE;
 
                 RUBY_DEBUG_LOG("wakeup");
@@ -1656,6 +1674,20 @@ native_thread_create_shared(rb_thread_t *th)
 
 static enum thread_sched_wait_result
 thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd, enum thread_sched_waiting_flag events, rb_hrtime_t *rel)
+{
+    rb_bug("unreachable");
+}
+
+// Without the wheel every thread is dedicated, so a Ractor wait takes its
+// deadline on its own condvar and never reaches these.
+static bool
+ractor_sched_timeout_arm(rb_thread_t *th, const rb_hrtime_t *rel)
+{
+    rb_bug("unreachable");
+}
+
+static bool
+ractor_sched_timeout_disarm(rb_thread_t *th)
 {
     rb_bug("unreachable");
 }

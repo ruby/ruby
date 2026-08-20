@@ -265,10 +265,11 @@ class Ractor
 
   #
   # call-seq:
-  #    Ractor.select(*ractors_or_ports) -> [ractor or port, obj]
+  #    Ractor.select(*ractors_or_ports, timeout: nil) -> [ractor or port, obj] or nil
   #
   # Blocks the current Thread until one of the given ports has received a message. Returns an
   # array of two elements where the first element is the Port and the second is the received object.
+  # With +timeout+ (in seconds) it returns +nil+ instead once the timeout passes.
   # This method can also accept Ractor objects themselves, and in that case will wait until one
   # has terminated and return a two-element array where the first element is the ractor and the
   # second is its termination value.
@@ -307,7 +308,7 @@ class Ractor
   #      values << val
   #    end
   #
-  def self.select(*ports)
+  def self.select(*ports, timeout: nil)
     raise ArgumentError, 'specify at least one Ractor::Port or Ractor' if ports.empty?
 
     monitors = {} # Ractor::Port => Ractor
@@ -327,7 +328,10 @@ class Ractor
     end
 
     begin
-      result_port, obj = __builtin_ractor_select_internal(ports)
+      result = __builtin_ractor_select_internal(ports, timeout)
+      return nil if result.nil? # timed out
+
+      result_port, obj = result
 
       if r = monitors[result_port]
         [r, r.value]
@@ -345,11 +349,11 @@ class Ractor
 
   #
   # call-seq:
-  #    Ractor.receive -> obj
+  #    Ractor.receive(timeout: nil) -> obj or nil
   #
   # Receives a message from the current ractor's default port.
-  def self.receive
-    Ractor.current.default_port.receive
+  def self.receive(timeout: nil)
+    Ractor.current.default_port.receive(timeout: timeout)
   end
 
   class << self
@@ -357,8 +361,8 @@ class Ractor
   end
 
   # same as Ractor.receive
-  private def receive
-    default_port.receive
+  private def receive(timeout: nil)
+    default_port.receive(timeout: timeout)
   end
   alias recv receive
 
@@ -702,7 +706,7 @@ class Ractor
   class Port
     #
     # call-seq:
-    #    port.receive -> msg
+    #    port.receive(timeout: nil) -> msg or nil
     #
     # Receives a message from the port (which was sent there by Port#send). Only the ractor
     # that created the port can receive messages this way.
@@ -743,6 +747,17 @@ class Ractor
     #     Still received only one
     #     Received: message2
     #
+    # With +timeout+ (in seconds) the method gives up waiting and returns +nil+
+    # once it passes. A message that arrives just as the timeout expires is still
+    # returned; the timeout bounds the wait, it does not cut delivery off.
+    #
+    #     port = Ractor::Port.new
+    #     port.receive(timeout: 0.1) #=> nil
+    #     port.receive(timeout: 0)   #=> nil
+    #
+    # A +timeout+ of 0 never blocks and reads no clock: it takes a message if one
+    # is already there and returns +nil+ otherwise.
+    #
     # If the port is closed and there are no more messages in the message queue,
     # the method raises Ractor::ClosedError.
     #
@@ -750,9 +765,9 @@ class Ractor
     #     port.close
     #     port.receive #=> raise Ractor::ClosedError
     #
-    def receive
+    def receive(timeout: nil)
       __builtin_cexpr! %q{
-        ractor_port_receive(ec, self)
+        ractor_port_receive(ec, self, timeout)
       }
     end
 
