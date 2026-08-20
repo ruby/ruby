@@ -3341,15 +3341,6 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
         if (vm_mark_needs_lock) vm_mark_lock_lev = RB_GC_VM_LOCK_NO_BARRIER();
         rb_vm_mark(vm);
 
-        if (global_gc) {
-            /* Mark and pin the shareable REFs of in-flight (off-heap) move couriers,
-             * covering the transient window between queue and materialize frame.  Only
-             * a global GC frees shareable objects, so only it needs this pass. */
-            MARK_CHECKPOINT("move_couriers");
-            void rb_ractor_move_courier_registry_mark(void);
-            rb_ractor_move_courier_registry_mark();
-        }
-
         MARK_CHECKPOINT("global_tbl");
         rb_gc_mark_global_tbl();
 

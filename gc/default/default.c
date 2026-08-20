@@ -6415,9 +6415,8 @@ check_children_i(const VALUE child, void *ptr)
          * unshareable parent holding an unrecorded foreign unshareable child would be
          * invisible to both local GCs.  The exception is a box's top_self, which every
          * thread's th->top_self points at and which is VM-permanent.  Skipped during a
-         * global GC: it clears every shref bit and keeps in-flight payloads alive by
-         * re-pinning, so the shref exemption would not fire, and its unified exact
-         * stop-the-world mark makes the invariant itself moot. */
+         * global GC: it clears every shref bit, so the shref exemption would not fire,
+         * and its unified exact stop-the-world mark makes the invariant itself moot. */
         if (!data->parent_shareable &&
             child != rb_gc_vm_top_self() &&
             !MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(child), child) &&
@@ -9044,8 +9043,8 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
         }
     }
 
-    /* steps 6-7: every Ractor's roots (gc.c walks them all and re-pins in-flight payloads),
-     * then one unified precise mark.  A global GC does not go through gc_marks, so the marking
+    /* steps 6-7: every Ractor's roots (gc.c walks them all), then one unified precise
+     * mark.  A global GC does not go through gc_marks, so the marking
      * phase is opened here instead; it closes after rb_ractor_finish_marking below, which is
      * where gc_marks_finish ends for a local collection. */
     gc_marking_enter(driver);
