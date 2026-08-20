@@ -166,6 +166,29 @@ class TestRactor < Test::Unit::TestCase
       refute_equal main_ractor_id, ractor_id
     end;
   end
+  def test_ractor_with_live_threads_terminates_without_waiting
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      # A Ractor that ends while a thread of its own is still running used to sit out
+      # the one second poll in rb_thread_terminate_all(), once per Ractor.  Measure
+      # against the same Ractors without a live thread, so that a busy machine, which
+      # makes both of them slow, does not decide this.
+      n = 5
+      elapsed = ->(&blk) {
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        n.times { blk.call }
+        Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0
+      }
+
+      base = elapsed.call { assert_equal :done, Ractor.new { :done }.value }
+      live = elapsed.call { assert_equal :done, Ractor.new { Thread.new { sleep 10 }; :done }.value }
+
+      # the bug costs a second per Ractor, so #{n} seconds here
+      assert_operator live, :<, base + 2.0,
+                      "#{n} Ractors with a live thread took #{live}s, without one #{base}s"
+    RUBY
+  end
+
 
   def test_class_instance_variables
     assert_ractor(<<~'RUBY')
