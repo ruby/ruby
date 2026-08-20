@@ -7113,7 +7113,7 @@ gc_marks_finish(rb_objspace_t *objspace)
     }
 
     // TODO: refactor so we don't need to call this
-    rb_ractor_finish_marking();
+    rb_ractor_finish_marking(is_full_marking(objspace));
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_MARK);
 }
@@ -9065,7 +9065,7 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
     /* This cycle's root pass over every Ractor has swept the deleted ractor-local keys out of
      * each storage.  Free the key structs while still inside the barrier (a local GC never
      * can; see rb_ractor_finish_marking). */
-    rb_ractor_finish_marking();
+    rb_ractor_finish_marking(true);
 
     gc_marking_exit(driver);
 

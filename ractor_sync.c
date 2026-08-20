@@ -28,6 +28,8 @@ static void ractor_off_queue_remove(struct ractor_basket *b);
 void rb_ractor_courier_mark(struct rb_ractor_courier *c);
 struct rb_ractor_courier *rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot);
 
+static void ractor_port_note_alive(const struct ractor_port *rp);
+
 static void
 ractor_port_mark(void *ptr)
 {
@@ -35,6 +37,13 @@ ractor_port_mark(void *ptr)
 
     if (rp->r) {
         rb_gc_mark(rp->r->pub.self);
+
+        /* Only a mark that covers every objspace can call a port dead.  Ask the single
+         * objspace first: it answers without the VM, which a GC worker thread cannot
+         * reach (mmtk marks from several of them). */
+        if (rb_gc_single_objspace_p() || rb_gc_during_global_gc_p()) {
+            ractor_port_note_alive(rp);
+        }
     }
 }
 
@@ -342,6 +351,7 @@ ractor_mark_off_queue_baskets(rb_ractor_t *r)
 struct ractor_queue {
     struct ccan_list_head set;
     bool closed;
+    bool alive;  /* its Ractor::Port is still reachable; see the reap below */
 };
 
 static void
@@ -349,6 +359,7 @@ ractor_queue_init(struct ractor_queue *rq)
 {
     ccan_list_head_init(&rq->set);
     rq->closed = false;
+    rq->alive = true;
 }
 
 static struct ractor_queue *
@@ -357,6 +368,19 @@ ractor_queue_new(void)
     struct ractor_queue *rq = ALLOC(struct ractor_queue);
     ractor_queue_init(rq);
     return rq;
+}
+
+static void
+ractor_port_note_alive(const struct ractor_port *rp)
+{
+    struct ractor_queue *rq;
+
+    if (rp->r->sync.ports && st_lookup(rp->r->sync.ports, rp->id_, (st_data_t *)&rq)) {
+        /* Several markers can reach the same port at once (mmtk marks from its GC worker
+         * threads), but they all store the same value and the reap reads it once marking
+         * is over. */
+        rq->alive = true;
+    }
 }
 
 static void
@@ -605,6 +629,32 @@ ractor_close_port(rb_execution_context_t *ec, rb_ractor_t *cr, const struct ract
     RACTOR_UNLOCK_SELF(cr);
 
     return rq != NULL;
+}
+
+/* A port is the only way to receive from its queue, so a queue whose port is gone is
+ * unreachable -- but the table is keyed by id, so no sweep finds it.  Mark and sweep the
+ * table itself: ractor_port_mark sets the flag, this clears it for the next cycle. */
+static int
+ractor_reap_dead_ports_i(st_data_t port_id, st_data_t val, st_data_t dat)
+{
+    struct ractor_queue *rq = (struct ractor_queue *)val;
+
+    if (rq->alive) {
+        rq->alive = false;
+        return ST_CONTINUE;
+    }
+    else {
+        ractor_queue_free(rq);
+        return ST_DELETE;
+    }
+}
+
+void
+rb_ractor_reap_dead_ports(rb_ractor_t *r)
+{
+    if (r->sync.ports) {
+        st_foreach(r->sync.ports, ractor_reap_dead_ports_i, 0);
+    }
 }
 
 static int
