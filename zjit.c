@@ -148,6 +148,13 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
     }
 }
 
+// This is used by a function stub to install compiled code as the ISEQ's entry point.
+void
+rb_zjit_iseq_set_jit_entry(const rb_iseq_t *iseq, void *code_ptr)
+{
+    ISEQ_BODY(iseq)->jit_entry = (rb_jit_func_t)code_ptr;
+}
+
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
 
 // Convert a given ISEQ's instructions to zjit_* instructions
@@ -166,6 +173,26 @@ rb_zjit_profile_enable(const rb_iseq_t *iseq)
         }
         insn_idx += insn_len(insn);
     }
+}
+
+// Return false if a function stub has not collected enough profiles yet, enabling
+// profiling instructions as needed. Return true once enough profiles are collected.
+bool
+rb_zjit_profile_stub_hit(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+
+    if (body->jit_entry_calls < rb_zjit_profile_threshold) {
+        // Skip the unprofiled warmup. The compiled caller already establishes
+        // that the callee is hot, so go straight to the profiling window.
+        body->jit_entry_calls = rb_zjit_profile_threshold;
+        rb_zjit_profile_enable(iseq);
+    }
+    else {
+        body->jit_entry_calls++;
+    }
+
+    return body->jit_entry_calls >= rb_zjit_call_threshold;
 }
 
 // Convert a given ISEQ's ZJIT instructions to bare instructions

@@ -10406,8 +10406,14 @@ mod hir_opt_tests {
           StoreField v6, :@foo@0x1002, v10
           Jump bb4()
         bb6():
-          v22:CShape[0x1003] = GuardBitEquals v15, CShape(0x1003) recompile
+          v22:CShape[0x1003] = Const CShape(0x1003)
+          v23:CBool = IsBitEqual v15, v22
+          CondBranch v23, bb7(), bb8()
+        bb7():
           StoreField v6, :@foo@0x1004, v10
+          Jump bb4()
+        bb8():
+          SetIvar v6, :@foo, v10
           Jump bb4()
         bb4():
           CheckInterrupts
@@ -20856,7 +20862,10 @@ mod hir_opt_tests {
 
     #[test]
     fn test_trigger_guard_type_recompilation() {
-        set_max_versions(2);
+        // The first call transitions C's shape by defining @a, so the setivar shape
+        // guard misses once and already spends a version during the Fixnum phase.
+        // Leave room for one more version so the Float phase can recompile.
+        set_max_versions(3);
         set_inline_threshold(0);
         eval("
             class C
@@ -20961,7 +20970,7 @@ mod hir_opt_tests {
           v8:BasicObject = LoadArg :x@1
           Jump bb3(v7, v8)
         bb3(v11:HeapBasicObject, v12:BasicObject):
-          v90:NilClass = Const Value(nil)
+          v94:NilClass = Const Value(nil)
           v17:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
           v21:CShape = LoadField v11, :shape_id@0x1001
@@ -21002,9 +21011,11 @@ mod hir_opt_tests {
           v89:Float = FloatAdd v57, v44
           Jump bb9(v89)
         bb13():
-          v60:BasicObject = Send v12, :+, v44 # SendFallbackReason: Send: polymorphic call site
-          Jump bb9(v60)
-        bb9(v47:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v92:Fixnum = GuardType v12, Fixnum recompile
+          v93:Fixnum = FixnumAdd v92, v44
+          Jump bb9(v93)
+        bb9(v47:Float|Fixnum):
           PatchPoint SingleRactorMode
           v69:CShape = LoadField v11, :shape_id@0x1001
           v70:CShape[0x1002] = Const CShape(0x1002)

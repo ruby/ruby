@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes};
+use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -114,6 +114,71 @@ fn test_nil() {
 }
 
 #[test]
+fn test_function_stub_profiles_before_compiling() {
+    rb_zjit_prepare_options();
+    set_inline_threshold(0);
+    let num_profiles = get_option!(num_profiles);
+    let call_threshold = CallThreshold::from(num_profiles) + 2;
+    set_call_threshold(call_threshold);
+
+    eval(&format!("
+        class Integer
+          def zjit_profile_stub_target = self + 1
+        end
+
+        def zjit_profile_stub_entry(run)
+          1.zjit_profile_stub_target if run
+        end
+
+        i = 0
+        while i < {call_threshold}
+          zjit_profile_stub_entry(false)
+          i += 1
+        end
+    "));
+
+    let entry_iseq = get_method_iseq("self", "zjit_profile_stub_entry");
+    let entry_payload = get_or_create_iseq_payload(entry_iseq);
+    let entry_version = unsafe { entry_payload.versions.last().unwrap().as_ref() };
+    assert_eq!(1, entry_version.outgoing.len(), "expected a JIT-to-JIT function stub");
+
+    let target_iseq = get_method_iseq("1", "zjit_profile_stub_target");
+    assert!(get_or_create_iseq_payload(target_iseq).versions.is_empty());
+
+    // Every stub hit in the profiling window should interpret the callee
+    // without compiling it.
+    for _ in 0..num_profiles {
+        assert_eq!(VALUE::fixnum_from_usize(2), eval("zjit_profile_stub_entry(true)"));
+        assert!(get_or_create_iseq_payload(target_iseq).versions.is_empty());
+    }
+
+    // Verify that the interpreted executions populated the profile for `+`.
+    let mut insn_idx = 0;
+    let iseq_size = unsafe { get_iseq_encoded_size(target_iseq) };
+    let plus_idx = loop {
+        assert!(insn_idx < iseq_size, "target ISEQ does not contain opt_plus");
+        let opcode = iseq_opcode_at_idx(target_iseq, insn_idx);
+        let bare_opcode = unsafe { rb_zjit_insn_to_bare_insn(opcode as i32) } as u32;
+        if bare_opcode == YARVINSN_opt_plus {
+            break insn_idx as usize;
+        }
+        insn_idx += insn_len(bare_opcode as usize);
+    };
+    assert_eq!(
+        2,
+        get_or_create_iseq_payload(target_iseq)
+            .profile
+            .get_operand_types(plus_idx)
+            .unwrap()
+            .len(),
+    );
+
+    // The following hit observes a completed profiling window and compiles.
+    assert_eq!(VALUE::fixnum_from_usize(2), eval("zjit_profile_stub_entry(true)"));
+    assert_eq!(1, get_or_create_iseq_payload(target_iseq).versions.len());
+}
+
+#[test]
 fn test_putobject() {
     assert_snapshot!(inspect("
         def test = 1
@@ -123,25 +188,69 @@ fn test_putobject() {
 }
 
 #[test]
-fn test_recompile_exit_waits_for_interpreter_profiles() {
+fn test_recompile_exit_invalidates_on_first_exit() {
     set_call_threshold(2);
     eval("
-        def recompile_profile_window(a, b) = a + b
-        recompile_profile_window(1, 2)
-        recompile_profile_window(1, 2)
+        def recompile_on_first_exit(a, b) = a + b
+        recompile_on_first_exit(1, 2)
+        recompile_on_first_exit(1, 2)
     ");
 
-    let iseq = get_method_iseq("self", "recompile_profile_window");
-    let num_profiles = get_option!(num_profiles);
-    for _ in 0..num_profiles {
-        eval("recompile_profile_window(1.5, 2.5)");
-    }
+    let iseq = get_method_iseq("self", "recompile_on_first_exit");
     let payload = get_or_create_iseq_payload(iseq);
+    assert_eq!(1, payload.versions.len());
     assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
 
-    eval("recompile_profile_window(1.5, 2.5)");
+    // The first recompile exit invalidates the version right away, so subsequent
+    // calls re-profile every instruction in the interpreter before recompiling.
+    eval("recompile_on_first_exit(1.5, 2.5)");
     let payload = get_or_create_iseq_payload(iseq);
+    assert_eq!(1, payload.versions.len());
     assert!(unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+}
+
+#[test]
+fn test_function_stub_reprofiles_after_invalidation() {
+    rb_zjit_prepare_options();
+    set_inline_threshold(0);
+    let num_profiles = get_option!(num_profiles);
+    let call_threshold = CallThreshold::from(num_profiles) + 2;
+    set_call_threshold(call_threshold);
+
+    eval(&format!("
+        def stub_reprofile_target(n) = n + 1
+        def stub_reprofile_entry(n) = stub_reprofile_target(n)
+
+        i = 0
+        while i < {call_threshold}
+          stub_reprofile_entry(1)
+          i += 1
+        end
+    "));
+
+    let target_iseq = get_method_iseq("self", "stub_reprofile_target");
+    let target_payload = get_or_create_iseq_payload(target_iseq);
+    assert_eq!(1, target_payload.versions.len());
+    assert!(!unsafe { target_payload.versions.last().unwrap().as_ref() }.is_invalidated());
+
+    // The first Float argument misses the Fixnum guard in the callee, and the
+    // recompile exit invalidates the callee right away, re-stubbing the
+    // JIT-to-JIT call into it.
+    assert_eq!(Qtrue, eval("stub_reprofile_entry(1.5) == 2.5"));
+    let target_payload = get_or_create_iseq_payload(target_iseq);
+    assert_eq!(1, target_payload.versions.len());
+    assert!(unsafe { target_payload.versions.last().unwrap().as_ref() }.is_invalidated());
+
+    // Every stub hit in the profiling window should interpret the invalidated
+    // callee without recompiling it.
+    for _ in 0..num_profiles {
+        assert_eq!(Qtrue, eval("stub_reprofile_entry(1.5) == 2.5"));
+        assert_eq!(1, get_or_create_iseq_payload(target_iseq).versions.len());
+    }
+
+    // The following hit observes a completed profiling window and recompiles.
+    assert_eq!(Qtrue, eval("stub_reprofile_entry(1.5) == 2.5"));
+    assert_eq!(2, get_or_create_iseq_payload(target_iseq).versions.len());
 }
 
 #[test]
