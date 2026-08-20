@@ -1141,14 +1141,8 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
  *   File.exist?(dirpath)         # => false
  *   FileUtils.cp_r('doc', 'foo') # Create directory by copying.
  *   File.atime(dirpath)          # => 2026-08-15 14:10:04.832180372 -0500
- *   stat0 = File::Stat.new(dirpath)
- *   stat0.atime                  # => 2026-08-15 14:10:04.832180372 -0500
- *   # Read directory entries (may update atime).
- *   dir = Dir.new(dirpath)
- *   dir.entries.take(3)          # => ["syntax", "contributing", "strscan"]
- *   File.atime(dirpath)          # => 2026-08-15 14:10:04.832180372 -0500  # Not updated.
- *   stat1 = File::Stat.new(dirpath)
- *   stat1.atime                  # => 2026-08-15 14:10:04.832180372 -0500
+ *   stat = File::Stat.new(dirpath)
+ *   stat.atime                   # => 2026-08-15 14:10:04.832180372 -0500
  *   # Clean up.
  *   FileUtils.rm_rf(dirpath)
  *   dir.close

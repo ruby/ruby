@@ -1372,8 +1372,6 @@ class Pathname    # * File *
   # pn.exist? # => false
   # pn.write('foo')
   # pn.atime # => 2026-08-15 14:30:28.624455747 -0500
-  # pn.read
-  # pn.atime # => 2026-08-15 14:30:28.624455747 -0500
   # pn.delete
   # ```
   #
