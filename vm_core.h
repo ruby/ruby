@@ -580,10 +580,10 @@ struct rb_iseq_constant_body {
     void *zjit_payload;
 #endif
 
-    // Hash of the source this iseq was compiled from. Meaningful only when
-    // has_source_hash is set.
+    // Hash of the source this iseq was compiled from, or 0 if it is
+    // unavailable. A computed hash of 0 is remapped to another value, so
+    // 0 never denotes a real hash.
     uint64_t source_hash;
-    bool has_source_hash;
 };
 
 /* T_IMEMO/iseq */
