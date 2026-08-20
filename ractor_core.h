@@ -100,6 +100,9 @@ struct rb_ractor_struct {
         struct rb_thread_sched sched;
         rb_execution_context_t *running_ec;
         rb_thread_t *main;
+
+        // `main` is in rb_thread_terminate_all(), waiting for the others to go
+        bool terminating;
     } threads;
 
     /* Postponed jobs targeted at this Ractor
