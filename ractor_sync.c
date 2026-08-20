@@ -1543,8 +1543,11 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
     else {
         RUBY_DEBUG_LOG("closed:%u@r%u", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r));
 
+        /* Nothing took the basket: it was not enqueued, so free it whether or not the
+         * caller wants the error raised. */
+        ractor_basket_free(b);
+
         if (raise_on_error) {
-            ractor_basket_free(b);
             rb_raise(rb_eRactorClosedError, "The port was already closed");
         }
     }
