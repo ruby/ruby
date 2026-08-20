@@ -3827,6 +3827,15 @@ gc_registered_addrs_owner(rb_vm_t *vm)
     return vm->ractor.main_ractor;
 }
 
+static void
+gc_registered_addrs_check_main_ractor(rb_vm_t *vm, const char *api)
+{
+    rb_ractor_t *cr = rb_current_ractor_raw(false);
+    if (cr && cr != vm->ractor.main_ractor) {
+        rb_raise(rb_eRactorUnsafeError, "%s can only be called from the main Ractor", api);
+    }
+}
+
 void
 rb_gc_registered_addrs_enroll_without_gc(rb_vm_t *vm, rb_ractor_t *r)
 {
@@ -3876,6 +3885,7 @@ rb_gc_register_address(VALUE *addr)
 {
     rb_vm_t *vm = GET_VM();
 
+    gc_registered_addrs_check_main_ractor(vm, "rb_gc_register_address");
     rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
     rb_ractor_t *owner = gc_registered_addrs_owner(vm);
     if (owner->registered_addrs_cnt == owner->registered_addrs_capa) {
@@ -3898,6 +3908,7 @@ rb_gc_unregister_address(VALUE *addr)
 {
     rb_vm_t *vm = GET_VM();
 
+    gc_registered_addrs_check_main_ractor(vm, "rb_gc_unregister_address");
     rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
     rb_ractor_t *cr = rb_current_ractor_raw(false);
     if (cr && gc_registered_addrs_remove(cr, addr)) goto done;

@@ -11,14 +11,19 @@ class Test_GCRegisterAddress < Test::Unit::TestCase
     assert_equal(true, Bug::GC.unregister_address_keeps_siblings?)
   end
 
-  def test_registered_value_survives_owner_ractor_join
-    r = Ractor.new { Bug::GC.register_static("registered in child".dup) }
-    assert_equal(true, r.value)
+  def test_registered_value_survives_full_gc
+    Bug::GC.register_static("registered on main".dup)
 
     2.times { GC.start(full_mark: true) }
-    assert_equal("registered in child", Bug::GC.static_slot_value)
+    assert_equal("registered on main", Bug::GC.static_slot_value)
   ensure
     Bug::GC.unregister_static
+  end
+
+  def test_register_address_from_non_main_ractor_raises
+    r = Ractor.new { Bug::GC.register_static("registered in child".dup) }
+    e = assert_raise(Ractor::RemoteError) { r.value }
+    assert_instance_of(Ractor::UnsafeError, e.cause)
   end
 
   def make_registered_weakref(level = 10)
@@ -30,11 +35,21 @@ class Test_GCRegisterAddress < Test::Unit::TestCase
     end
   end
 
-  def test_unregister_address_from_another_ractor
+  def test_unregister_address_from_non_main_ractor_raises
+    Bug::GC.register_static("main owns this".dup)
+
+    r = Ractor.new { Bug::GC.unregister_static }
+    e = assert_raise(Ractor::RemoteError) { r.value }
+    assert_instance_of(Ractor::UnsafeError, e.cause)
+  ensure
+    Bug::GC.unregister_static
+  end
+
+  def test_unregistered_value_is_collectable
     ref = make_registered_weakref
     assert_predicate(ref, :weakref_alive?)
 
-    assert_equal(true, Ractor.new { Bug::GC.unregister_static; true }.value)
+    Bug::GC.unregister_static
 
     10.times do
       GC.start(full_mark: true)

@@ -393,6 +393,9 @@ void rb_gc_adjust_memory_usage(ssize_t diff);
  * Because this  registration itself has  a possibility  to trigger a  GC, this
  * function  must be  called  before any  GC-able objects  is  assigned to  the
  * address pointed by `valptr`.
+ *
+ * This function can  only be called from the main  Ractor.  Calling it from a
+ * non-main Ractor raises Ractor::UnsafeError.
  */
 void rb_gc_register_address(VALUE *valptr);
 
@@ -404,6 +407,9 @@ void rb_global_variable(VALUE *);
 /**
  * Inform the garbage collector that a pointer previously passed to
  * `rb_gc_register_address()` no longer points to a live Ruby object.
+ *
+ * This function can  only be called from the main  Ractor.  Calling it from a
+ * non-main Ractor raises Ractor::UnsafeError.
  */
 void rb_gc_unregister_address(VALUE *valptr);
 
