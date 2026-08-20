@@ -1140,7 +1140,7 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
 
     if (body && body->has_source_hash) {
         ISEQ_BODY(iseq)->source_hash = body->source_hash;
-        ISEQ_BODY(iseq)->has_source_hash = true;
+        RUBY_ASSERT(ISEQ_BODY(iseq)->source_hash != 0);
     }
 
     rb_iseq_compile_node(iseq, node);
@@ -1164,7 +1164,7 @@ pm_iseq_build(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
     ISEQ_BODY(iseq)->prism = true;
 
     ISEQ_BODY(iseq)->source_hash = node->source_hash;
-    ISEQ_BODY(iseq)->has_source_hash = true;
+    RUBY_ASSERT(ISEQ_BODY(iseq)->source_hash != 0);
 
     rb_compile_option_t next_option;
     if (!option) option = &COMPILE_OPTION_DEFAULT;
@@ -3764,7 +3764,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_hash_aset(misc, ID2SYM(rb_intern("local_size")), INT2FIX(iseq_body->local_table_size));
     rb_hash_aset(misc, ID2SYM(rb_intern("stack_max")), INT2FIX(iseq_body->stack_max));
     rb_hash_aset(misc, ID2SYM(rb_intern("node_id")), INT2FIX(iseq_body->location.node_id));
-    rb_hash_aset(misc, ID2SYM(rb_intern("source_hash")), iseq_body->has_source_hash ? ULL2NUM(iseq_body->source_hash) : Qnil);
+    rb_hash_aset(misc, ID2SYM(rb_intern("source_hash")), iseq_body->source_hash ? ULL2NUM(iseq_body->source_hash) : Qnil);
     rb_hash_aset(misc, ID2SYM(rb_intern("code_location")),
             rb_ary_new_from_args(4,
                 INT2FIX(iseq_body->location.code_location.beg_pos.lineno),
@@ -4607,7 +4607,7 @@ static VALUE
 iseqw_source_hash(VALUE self)
 {
     const rb_iseq_t *iseq = iseqw_check(self);
-    if (!ISEQ_BODY(iseq)->has_source_hash) return Qnil;
+    if (!ISEQ_BODY(iseq)->source_hash) return Qnil;
     return ULL2NUM(ISEQ_BODY(iseq)->source_hash);
 }
 

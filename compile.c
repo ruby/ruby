@@ -1506,7 +1506,7 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
 
     // The child AST wrapper does not carry the source hash, so copy it from
     // the enclosing iseq before compiling, for grandchildren to inherit it.
-    if (ISEQ_BODY(iseq)->has_source_hash) {
+    if (ISEQ_BODY(iseq)->source_hash) {
         rb_ast_t *child_ast = rb_ruby_ast_data_get(ast_value);
         child_ast->body.source_hash = ISEQ_BODY(iseq)->source_hash;
         child_ast->body.has_source_hash = 1;
@@ -12487,7 +12487,6 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
     VALUE source_hash = rb_hash_aref(misc, ID2SYM(rb_intern("source_hash")));
     if (!NIL_P(source_hash)) {
         ISEQ_BODY(iseq)->source_hash = NUM2ULL(source_hash);
-        ISEQ_BODY(iseq)->has_source_hash = true;
     }
 
     VALUE node_ids = Qfalse;
@@ -12616,7 +12615,7 @@ typedef uint32_t ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #ifdef RUBY_DEVEL
-#define IBF_DEVEL_VERSION 6
+#define IBF_DEVEL_VERSION 7
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -13796,12 +13795,10 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, location_label_index);
     ibf_dump_write_small_value(dump, body->location.first_lineno);
     ibf_dump_write_small_value(dump, body->location.node_id);
-    /* Dump the source hash in two 32-bit halves, because VALUE may be
-     * 32 bits wide. */
-    uint64_t source_hash = body->has_source_hash ? body->source_hash : 0;
-    ibf_dump_write_small_value(dump, (VALUE)(uint32_t)(source_hash >> 32));
-    ibf_dump_write_small_value(dump, (VALUE)(uint32_t)source_hash);
-    ibf_dump_write_small_value(dump, body->has_source_hash ? 1 : 0);
+    /* Dump the source hash (0 if unavailable) in two 32-bit halves, because
+     * VALUE may be 32 bits wide. */
+    ibf_dump_write_small_value(dump, (VALUE)(uint32_t)(body->source_hash >> 32));
+    ibf_dump_write_small_value(dump, (VALUE)(uint32_t)body->source_hash);
     ibf_dump_write_small_value(dump, body->location.code_location.beg_pos.lineno);
     ibf_dump_write_small_value(dump, body->location.code_location.beg_pos.column);
     ibf_dump_write_small_value(dump, body->location.code_location.end_pos.lineno);
@@ -13917,7 +13914,6 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const uint64_t source_hash_hi = (uint64_t)ibf_load_small_value(load, &reading_pos);
     const uint64_t source_hash_lo = (uint64_t)ibf_load_small_value(load, &reading_pos);
     const uint64_t source_hash = (source_hash_hi << 32) | (uint32_t)source_hash_lo;
-    const bool has_source_hash = ibf_load_small_value(load, &reading_pos) != 0;
     const int location_code_location_beg_pos_lineno = (int)ibf_load_small_value(load, &reading_pos);
     const int location_code_location_beg_pos_column = (int)ibf_load_small_value(load, &reading_pos);
     const int location_code_location_end_pos_lineno = (int)ibf_load_small_value(load, &reading_pos);
@@ -14019,7 +14015,6 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->location.first_lineno = location_first_lineno;
     load_body->location.node_id = location_node_id;
     load_body->source_hash = source_hash;
-    load_body->has_source_hash = has_source_hash;
     load_body->location.code_location.beg_pos.lineno = location_code_location_beg_pos_lineno;
     load_body->location.code_location.beg_pos.column = location_code_location_beg_pos_column;
     load_body->location.code_location.end_pos.lineno = location_code_location_end_pos_lineno;
