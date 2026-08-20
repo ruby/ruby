@@ -3279,15 +3279,13 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
         }
         /* A Ractor that terminated (left vm->ractor.set) but whose struct is not freed
          * still owns rb_gc_register_mark_object pins.  Keep them alive until
-         * ractor_free hands them to main; an orphan (owner == NULL) was moved above. */
+         * ractor_free hands them to main; an orphan (owner == NULL) was moved above.
+         * The join value is not rooted here: ractor_mark marks it from the wrapper. */
         for (size_t i = 0; i < vm->gc.zombie_objspaces_count; i++) {
             rb_ractor_t *owner = vm->gc.zombie_objspaces[i].owner;
             if (owner) {
                 rb_gc_mark_vm_stack_values((long)owner->registered_marks_cnt,
                                            owner->registered_marks);
-                /* Keep a terminated Ractor's join value (read by Ractor#value) alive
-                 * without depending on wrapper reachability.  Threads are not walked. */
-                rb_ractor_mark_terminated_join_value(owner);
             }
         }
 
