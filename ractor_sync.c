@@ -13,7 +13,7 @@ ractor_port_id(const struct ractor_port *rp)
 
 static VALUE rb_cRactorPort;
 
-static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp);
+static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, const rb_hrtime_t *end);
 static VALUE ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
 static struct ractor_basket *ractor_basket_new_ref(VALUE shareable);
 static void ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, struct ractor_basket *b, bool raise_on_error);
@@ -149,8 +149,10 @@ ractor_port_p(VALUE self)
     return rb_typeddata_is_kind_of(self, &ractor_port_data_type);
 }
 
+static const rb_hrtime_t *ractor_timeout_deadline(VALUE timeout, rb_hrtime_t *storage);
+
 static VALUE
-ractor_port_receive(rb_execution_context_t *ec, VALUE self)
+ractor_port_receive(rb_execution_context_t *ec, VALUE self, VALUE timeout)
 {
     const struct ractor_port *rp = ractor_port_ptr_check(self);
 
@@ -158,9 +160,14 @@ ractor_port_receive(rb_execution_context_t *ec, VALUE self)
         rb_raise(rb_eRactorError, "only allowed from the creator Ractor of this port");
     }
 
-    VALUE v = ractor_receive(ec, rp);
+    rb_hrtime_t deadline;
+    const rb_hrtime_t *end = ractor_timeout_deadline(timeout, &deadline);
+
+    VALUE v = ractor_receive(ec, rp, end);
     RB_GC_GUARD(self);
-    return v;
+
+    // no message before the timeout
+    return UNDEF_P(v) ? Qnil : v;
 }
 
 static VALUE
@@ -1294,13 +1301,22 @@ basket_type_name(enum ractor_basket_type type)
 #else // win32
 
 static void
-ractor_cond_wait(rb_ractor_t *r)
+ractor_cond_wait(rb_ractor_t *r, const rb_hrtime_t *end)
 {
 #if RACTOR_CHECK_MODE > 0
     VALUE locked_by = r->sync.locked_by;
     r->sync.locked_by = Qnil;
 #endif
-    rb_native_cond_wait(&r->sync.wakeup_cond, &r->sync.lock);
+    if (end) {
+        rb_hrtime_t now = rb_hrtime_now();
+        rb_hrtime_t rel = *end > now ? *end - now : 0;
+        // the condvar takes msec: never round a live timeout down to 0
+        unsigned long msec = (unsigned long)(rel / RB_HRTIME_PER_MSEC);
+        rb_native_cond_timedwait(&r->sync.wakeup_cond, &r->sync.lock, msec > 0 ? msec : 1);
+    }
+    else {
+        rb_native_cond_wait(&r->sync.wakeup_cond, &r->sync.lock);
+    }
 
 #if RACTOR_CHECK_MODE > 0
     r->sync.locked_by = locked_by;
@@ -1316,7 +1332,7 @@ ractor_wait_no_gvl(void *ptr)
     RACTOR_LOCK_SELF(cr);
     {
         if (waiter->wakeup_status == wakeup_none) {
-            ractor_cond_wait(cr);
+            ractor_cond_wait(cr, waiter->end);
         }
     }
     RACTOR_UNLOCK_SELF(cr);
@@ -1406,14 +1422,16 @@ ubf_ractor_wait(void *ptr)
     rb_native_mutex_lock(&th->interrupt_lock);
 }
 
+// Waits for an event on cr.  `end` is an absolute deadline, NULL to wait forever.
 static enum ractor_wakeup_status
-ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr)
+ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr, const rb_hrtime_t *end)
 {
     rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     struct ractor_waiter waiter = {
         .wakeup_status = wakeup_none,
         .th = th,
+        .end = end,
     };
 
     RUBY_DEBUG_LOG("wait%s", "");
@@ -1481,19 +1499,30 @@ ractor_check_received(rb_ractor_t *cr, struct ractor_queue *messages)
     return received;
 }
 
-static void
-ractor_wait_receive(rb_execution_context_t *ec, rb_ractor_t *cr)
+// Returns false if the deadline `end` passed with nothing to deliver.  Incoming
+// messages are delivered even then, so the caller retries its queue once more.
+static bool
+ractor_wait_receive(rb_execution_context_t *ec, rb_ractor_t *cr, const rb_hrtime_t *end)
 {
     struct ractor_queue messages;
     bool deliverred = false;
+    bool timedout = false;
 
     RACTOR_LOCK_SELF(cr);
     {
         if (ractor_check_received(cr, &messages)) {
             deliverred = true;
         }
+        else if (!end) {
+            ractor_wait(ec, cr, NULL); // no timeout: wait until a message arrives
+        }
+        else if (*end == 0) {
+            timedout = true; // `timeout: 0`: over without reading any clock
+        }
         else {
-            ractor_wait(ec, cr);
+            // only a wakeup nobody claimed can be the deadline, so only then look at
+            // the clock: a send or an interrupt says what woke this thread by itself
+            timedout = ractor_wait(ec, cr, end) == wakeup_none && rb_hrtime_now() >= *end;
         }
     }
     RACTOR_UNLOCK_SELF(cr);
@@ -1506,6 +1535,8 @@ ractor_wait_receive(rb_execution_context_t *ec, rb_ractor_t *cr)
             ractor_queue_enq(cr, ractor_get_queue(cr, b->port_id, false), b);
         }
     }
+
+    return !timedout;
 }
 
 static VALUE
@@ -1533,8 +1564,12 @@ ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *cr, const struct rac
     }
 }
 
+// Returns Qundef if the deadline passed first.  It bounds how long this blocks; it
+// does not cut delivery off.  A message that lands while the timeout is being
+// reported is still returned, as Thread::Queue#pop(timeout:) does.  Either way
+// nothing is lost: a basket only leaves the queue when it is returned.
 static VALUE
-ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp)
+ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, const rb_hrtime_t *end)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     VM_ASSERT(cr == rp->r);
@@ -1547,10 +1582,31 @@ ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp)
         if (v != Qundef) {
             return v;
         }
-        else {
-            ractor_wait_receive(ec, cr);
+        else if (!ractor_wait_receive(ec, cr, end)) {
+            return Qundef;
         }
     }
+}
+
+// A timeout argument becomes an absolute deadline, or 0 for `timeout: 0`, which
+// every wait reads as "do not wait".  Returns NULL when there is no timeout.
+static const rb_hrtime_t *
+ractor_timeout_deadline(VALUE timeout, rb_hrtime_t *storage)
+{
+    if (NIL_P(timeout)) return NULL;
+
+    if (!(FIXNUM_P(timeout) && FIX2LONG(timeout) == 0)) {
+        struct timeval tv = rb_time_interval(timeout); // raises on a negative timeout
+        rb_hrtime_t rel = rb_timeval2hrtime(&tv);
+
+        if (rel > 0) {
+            *storage = rb_hrtime_add(rb_hrtime_now(), rel);
+            return storage;
+        }
+    }
+
+    *storage = 0;
+    return storage;
 }
 
 // Ractor#send
@@ -1816,7 +1872,7 @@ ractor_selector_wait_i(st_data_t key, st_data_t val, st_data_t data)
 }
 
 static VALUE
-ractor_selector__wait(rb_execution_context_t *ec, VALUE selector)
+ractor_selector__wait(rb_execution_context_t *ec, VALUE selector, const rb_hrtime_t *end)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     struct ractor_selector *s = RACTOR_SELECTOR_PTR(selector);
@@ -1833,8 +1889,9 @@ ractor_selector__wait(rb_execution_context_t *ec, VALUE selector)
         if (data.found) {
             return rb_ary_new_from_args(2, data.rpv, data.v);
         }
-
-        ractor_wait_receive(ec, cr);
+        else if (!ractor_wait_receive(ec, cr, end)) {
+            return Qnil;
+        }
     }
 }
 
@@ -1847,7 +1904,7 @@ ractor_selector__wait(rb_execution_context_t *ec, VALUE selector)
 static VALUE
 ractor_selector_wait(VALUE selector)
 {
-    return ractor_selector__wait(GET_EC(), selector);
+    return ractor_selector__wait(GET_EC(), selector, NULL);
 }
 
 static VALUE
@@ -1863,10 +1920,13 @@ ractor_selector_new(int argc, VALUE *ractors, VALUE klass)
 }
 
 static VALUE
-ractor_select_internal(rb_execution_context_t *ec, VALUE self, VALUE ports)
+ractor_select_internal(rb_execution_context_t *ec, VALUE self, VALUE ports, VALUE timeout)
 {
+    rb_hrtime_t deadline;
+    const rb_hrtime_t *end = ractor_timeout_deadline(timeout, &deadline);
+
     VALUE selector = ractor_selector_new(RARRAY_LENINT(ports), (VALUE *)RARRAY_CONST_PTR(ports), rb_cRactorSelector);
-    VALUE result = ractor_selector__wait(ec, selector);
+    VALUE result = ractor_selector__wait(ec, selector, end);
 
     RB_GC_GUARD(selector);
     RB_GC_GUARD(ports);

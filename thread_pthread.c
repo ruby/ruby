@@ -334,6 +334,8 @@ static void ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r);
 static void timer_thread_wakeup(void);
 static void timer_thread_wakeup_locked(rb_vm_t *vm);
 static void timer_thread_wakeup_force(void);
+static bool ractor_sched_timeout_arm(rb_thread_t *th, const rb_hrtime_t *rel);
+static bool ractor_sched_timeout_disarm(rb_thread_t *th);
 static void thread_sched_switch(rb_thread_t *cth, rb_thread_t *next_th);
 static void ractor_sched_cancel_enq(rb_vm_t *vm, struct rb_thread_sched *sched);
 #if USE_MN_THREADS
@@ -863,9 +865,9 @@ thread_sched_to_ready(struct rb_thread_sched *sched, rb_thread_t *th)
     thread_sched_unlock(sched, th);
 }
 
-// wait until sched->running is `th`.
+// wait until sched->running is `th`.  `end` is an absolute deadline for a dedicated
 static void
-thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, bool can_direct_transfer)
+thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, bool can_direct_transfer, const rb_hrtime_t *end)
 {
     RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
 
@@ -922,9 +924,31 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
                 thread_sched_set_unlocked(sched, th);
                 {
                     RUBY_DEBUG_LOG("nt:%d cond:%p", th->nt->serial, &th->nt->cond.readyq);
-                    rb_native_cond_wait(&th->nt->cond.readyq, &sched->lock_);
+                    rb_nativethread_cond_t *cond = &th->nt->cond.readyq;
+
+                    if (end) {
+                        rb_hrtime_t abs = *end;
+
+                        if (!condattr_monotonic) {
+                            // the condvar counts in another clock: restate it there
+                            rb_hrtime_t now = rb_hrtime_now();
+                            abs = native_cond_timeout(cond, *end > now ? *end - now : 0);
+                        }
+                        native_cond_timedwait(cond, &sched->lock_, &abs);
+                    }
+                    else {
+                        rb_native_cond_wait(cond, &sched->lock_);
+                    }
                 }
                 thread_sched_set_locked(sched, th);
+
+                if (end && rb_hrtime_now() >= *end &&
+                    sched->running != th && !th->sched.node.is_ready) {
+                    // the deadline passed and nobody woke this thread: get back in
+                    // line for the running turn, then wait for it without a deadline
+                    thread_sched_to_ready_common(sched, th, false, false);
+                    end = NULL;
+                }
 
                 if (sched->runnable_hot_th != NULL && sched->runnable_hot_th_waiting) {
                     VM_ASSERT(sched->runnable_hot_th != th);
@@ -1012,7 +1036,7 @@ thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
     }
 
     // TODO: check SNT number
-    thread_sched_wait_running_turn(sched, th, false);
+    thread_sched_wait_running_turn(sched, th, false, NULL);
 }
 
 // waiting -> ready -> running
@@ -1220,7 +1244,7 @@ thread_sched_to_waiting_until_wakeup(struct rb_thread_sched *sched, rb_thread_t 
             bool can_direct_transfer = !th_has_dedicated_nt(th);
             // NOTE: th->status is set before and after this sleep outside of this function in `sleep_forever`
             thread_sched_wakeup_next_thread(sched, th, can_direct_transfer);
-            thread_sched_wait_running_turn(sched, th, can_direct_transfer);
+            thread_sched_wait_running_turn(sched, th, can_direct_transfer, NULL);
         }
     }
     thread_sched_unlock(sched, th);
@@ -1242,7 +1266,7 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
             thread_sched_wakeup_next_thread(sched, th, !th_has_dedicated_nt(th));
             bool can_direct_transfer = !th_has_dedicated_nt(th);
             thread_sched_to_ready_common(sched, th, false, can_direct_transfer);
-            thread_sched_wait_running_turn(sched, th, can_direct_transfer);
+            thread_sched_wait_running_turn(sched, th, can_direct_transfer, NULL);
             th->status = THREAD_RUNNABLE;
         }
         else {
@@ -1531,15 +1555,49 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
     thread_sched_lock(sched, th);
     rb_ractor_unlock_self(cr);
     {
-        // setup sleep
-        bool can_direct_transfer = !th_has_dedicated_nt(th);
-        RB_VM_SAVE_MACHINE_CONTEXT(th);
-        th->status = THREAD_STOPPED_FOREVER;
-        RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
-        thread_sched_wakeup_next_thread(sched, th, can_direct_transfer);
-        // sleep
-        thread_sched_wait_running_turn(sched, th, can_direct_transfer);
-        th->status = THREAD_RUNNABLE;
+        // A dedicated native thread takes the deadline on the very condvar a wakeup
+        // signals.  An M:N thread has no condvar of its own, so its deadline goes to
+        // the timer thread, which then wakes it the way rb_ractor_sched_wakeup() does.
+        bool dedicated = th_has_dedicated_nt(th);
+        const rb_hrtime_t *end_p = NULL;
+        bool armed = false, expired = false;
+
+        if (waiter->end) {
+            if (dedicated) {
+                end_p = waiter->end;
+            }
+            else {
+                // the timer wheel takes a relative timeout
+                rb_hrtime_t now = rb_hrtime_now();
+                rb_hrtime_t rel = *waiter->end > now ? *waiter->end - now : 0;
+
+                armed = ractor_sched_timeout_arm(th, &rel);
+                expired = !armed;
+            }
+        }
+
+        if (expired) {
+            RUBY_DEBUG_LOG("expired before sleep%s", "");
+        }
+        else if (armed && th->sched.waiting_reason.flags == thread_sched_waiting_none) {
+            // the timer thread already took this thread out of the wheel; bump the
+            // serial so that it does not try to wake a thread that never slept
+            th->sched.event_serial++;
+        }
+        else {
+            // setup sleep
+            bool can_direct_transfer = !dedicated;
+            RB_VM_SAVE_MACHINE_CONTEXT(th);
+            th->status = THREAD_STOPPED_FOREVER;
+            RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
+            thread_sched_wakeup_next_thread(sched, th, can_direct_transfer);
+            // sleep
+            thread_sched_wait_running_turn(sched, th, can_direct_transfer, end_p);
+            th->status = THREAD_RUNNABLE;
+
+            // whoever woke this thread took the timeout back first
+            VM_ASSERT(th->sched.waiting_reason.flags == thread_sched_waiting_none);
+        }
     }
     thread_sched_unlock(sched, th);
     rb_ractor_lock_self(cr);
@@ -1561,7 +1619,20 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *r_th)
     {
         if (r_th->status == THREAD_STOPPED_FOREVER) {
             RUBY_ATOMIC_ADD(r_th->unblock.event_serial, 1);
-            thread_sched_to_ready_common(sched, r_th, true, false);
+
+            // r_th must not resume with a wheel entry left behind: take its timeout
+            // back, as ubf_event_waiting() does.  Only r_th arms it, and it is
+            // parked here, so reading the flags without the timer lock is safe.
+            if (r_th->sched.waiting_reason.flags != thread_sched_waiting_none) {
+                ractor_sched_timeout_disarm(r_th);
+            }
+
+            // a timeout that fired first may have made r_th runnable already: waking
+            // it twice would put it on the readyq twice
+            if (sched->running != r_th && !r_th->sched.node.is_ready) {
+                r_th->sched.event_serial++; // a timeout still armed must not wake it again
+                thread_sched_to_ready_common(sched, r_th, true, false);
+            }
         }
     }
     thread_sched_unlock(sched, r_th);
@@ -2491,7 +2562,7 @@ nt_start(void *ptr)
                 if (sched->running == th) {
                     thread_sched_add_running_thread(sched, th);
                 }
-                thread_sched_wait_running_turn(sched, th, false);
+                thread_sched_wait_running_turn(sched, th, false, NULL);
             }
             thread_sched_unlock(sched, th);
 

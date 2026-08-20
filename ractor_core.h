@@ -4,6 +4,7 @@
 #include "vm_core.h"
 #include "id_table.h"
 #include "vm_debug.h"
+#include "hrtime.h"
 
 #ifndef RACTOR_CHECK_MODE
 #define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
@@ -181,6 +182,9 @@ struct ractor_waiter {
     rb_thread_t *th;
     struct ccan_list_node node;
     rb_atomic_t event_serial;
+
+    // absolute deadline for this wait, NULL when there is no timeout
+    const rb_hrtime_t *end;
 };
 
 static inline VALUE
