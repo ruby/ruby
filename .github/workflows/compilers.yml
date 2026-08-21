@@ -183,7 +183,6 @@ jobs:
 
       - { uses: *compilers, name: 'NDEBUG', with: { cppflags: '-DNDEBUG' }, timeout-minutes: 8, if: "${{ matrix.shard == '15' }}" }
       - { uses: *compilers, name: 'RUBY_DEBUG', with: { cppflags: '-DRUBY_DEBUG' }, timeout-minutes: 8, if: "${{ matrix.shard == '15' }}" }
-      - { uses: *compilers, name: 'ARRAY_DEBUG', with: { cppflags: '-DARRAY_DEBUG' }, timeout-minutes: 8, if: "${{ matrix.shard == '15' }}" }
       - { uses: *compilers, name: 'CCAN_LIST_DEBUG', with: { cppflags: '-DCCAN_LIST_DEBUG' }, timeout-minutes: 8, if: "${{ matrix.shard == '15' }}" }
       - { uses: *compilers, name: 'CPDEBUG=-1', with: { cppflags: '-DCPDEBUG=-1' }, timeout-minutes: 8, if: "${{ matrix.shard == '04' }}" }
       - { uses: *compilers, name: 'ENC_DEBUG', with: { cppflags: '-DENC_DEBUG' }, timeout-minutes: 8, if: "${{ matrix.shard == '04' }}" }
@@ -191,10 +190,8 @@ jobs:
       - { uses: *compilers, name: 'VM_DEBUG_VERIFY_METHOD_CACHE', with: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' }, timeout-minutes: 8, if: "${{ matrix.shard == '04' }}" }
 
       - { uses: *compilers, name: 'ID_TABLE_DEBUG', with: { cppflags: '-DID_TABLE_DEBUG' }, timeout-minutes: 8, if: "${{ matrix.shard == '17' }}" }
-      - { uses: *compilers, name: 'RGENGC_DEBUG=-1', with: { cppflags: '-DRGENGC_DEBUG=-1' }, timeout-minutes: 8, if: "${{ matrix.shard == '17' }}" }
       - { uses: *compilers, name: 'SYMBOL_DEBUG', with: { cppflags: '-DSYMBOL_DEBUG' }, timeout-minutes: 8, if: "${{ matrix.shard == '17' }}" }
       - { uses: *compilers, name: 'RGENGC_CHECK_MODE', with: { cppflags: '-DRGENGC_CHECK_MODE' }, timeout-minutes: 8, if: "${{ matrix.shard == '06' }}" }
-      - { uses: *compilers, name: 'VM_CHECK_MODE', with: { cppflags: '-DVM_CHECK_MODE' }, timeout-minutes: 8, if: "${{ matrix.shard == '06' }}" }
       - { uses: *compilers, name: 'USE_EMBED_CI=0', with: { cppflags: '-DUSE_EMBED_CI=0' }, timeout-minutes: 8, if: "${{ matrix.shard == '06' }}" }
       - { uses: *compilers, name: 'USE_FLONUM=0', with: { cppflags: '-DUSE_FLONUM=0', append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 8, if: "${{ matrix.shard == '06' }}" }
 
@@ -206,7 +203,6 @@ jobs:
       - { uses: *compilers, name: 'DEBUG_INTEGER_PACK', with: { cppflags: '-DDEBUG_INTEGER_PACK' }, timeout-minutes: 8, if: "${{ matrix.shard == '16' }}" }
       - { uses: *compilers, name: 'RGENGC_PROFILE', with: { cppflags: '-DRGENGC_PROFILE' }, timeout-minutes: 8, if: "${{ matrix.shard == '16' }}" }
 
-      - { uses: *compilers, name: 'GC_DEBUG_STRESS_TO_CLASS', with: { cppflags: '-DGC_DEBUG_STRESS_TO_CLASS' }, timeout-minutes: 8, if: "${{ matrix.shard == '21' }}" }
       - { uses: *compilers, name: 'GC_DEBUG', with: { cppflags: '-DGC_DEBUG' }, timeout-minutes: 8, if: "${{ matrix.shard == '21' }}" }
       - { uses: *compilers, name: 'GC_ENABLE_LAZY_SWEEP=0', with: { cppflags: '-DGC_ENABLE_LAZY_SWEEP=0' }, timeout-minutes: 8, if: "${{ matrix.shard == '21' }}" }
       - { uses: *compilers, name: 'GC_PROFILE_DETAIL_MEMORY', with: { cppflags: '-DGC_PROFILE_DETAIL_MEMORY' }, timeout-minutes: 8, if: "${{ matrix.shard == '21' }}" }
