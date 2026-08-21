@@ -2640,7 +2640,7 @@ frame_name(const rb_control_frame_t *cfp)
 static void
 hook_before_rewind(rb_execution_context_t *ec, bool cfp_returning_with_value, int state, struct vm_throw_data *err)
 {
-    if (state == TAG_RAISE && RBASIC(err)->klass == rb_eSysStackError) {
+    if (state == TAG_RAISE && !RB_SPECIAL_CONST_P((VALUE)err) && RBASIC(err)->klass == rb_eSysStackError) {
         return;
     }
     else {
@@ -2984,6 +2984,20 @@ static inline VALUE
 vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, VALUE errinfo)
 {
     struct vm_throw_data *err = (struct vm_throw_data *)errinfo;
+
+    /* If rb_funcall is called between rb_protect and rb_jump_tag and the ruby
+     * code has a rescue clause errinfo will be Qnil if not properly preserved.
+     * At that point the original exception is lost.
+     * Rather than silently exiting we synthesize a RuntimeError that
+     * will either end the process or be caught by the caller. */
+    if (state == TAG_RAISE && NIL_P(errinfo)) {
+        errinfo = rb_exc_new_cstr(rb_eRuntimeError,
+            "[Bug] exception object was lost during stack unwinding; "
+            "a native extension may have run Ruby code containing a rescue clause "
+            "between rb_protect and rb_jump_tag");
+        err = (struct vm_throw_data *)errinfo;
+        ec->errinfo = errinfo;
+    }
 
     for (;;) {
         unsigned int i;
