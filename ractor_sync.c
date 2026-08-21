@@ -1300,7 +1300,12 @@ ractor_cond_wait(rb_ractor_t *r)
     VALUE locked_by = r->sync.locked_by;
     r->sync.locked_by = Qnil;
 #endif
+    /* The native condition wait releases the Ractor lock while this thread is
+     * blocked, so another thread of the same Ractor may run. */
+    VM_ASSERT(r->malloc_gc_disabled);
+    r->malloc_gc_disabled = false;
     rb_native_cond_wait(&r->sync.wakeup_cond, &r->sync.lock);
+    r->malloc_gc_disabled = true;
 
 #if RACTOR_CHECK_MODE > 0
     r->sync.locked_by = locked_by;

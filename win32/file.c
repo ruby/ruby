@@ -268,7 +268,7 @@ rb_default_home_dir(VALUE result)
     append_wstr(result, dir, -1,
                        CP_UTF8, rb_utf8_encoding());
 
-    xfree(dir);
+    free(dir);
     return result;
 }
 
