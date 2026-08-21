@@ -2210,6 +2210,20 @@ rb_proc_parameters(int argc, VALUE *argv, VALUE self)
     return rb_iseq_parameters(iseq, is_proc);
 }
 
+static st_index_t
+iseq_location_hash(st_index_t hash, const rb_iseq_t *iseq)
+{
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    if (body) {
+        const rb_iseq_location_t *loc = &body->location;
+        hash = rb_st_hash_uint(hash, (st_index_t)loc->code_location.beg_pos.lineno);
+        hash = rb_st_hash_uint(hash, (st_index_t)loc->code_location.beg_pos.column);
+        hash = rb_st_hash_uint(hash, (st_index_t)loc->code_location.end_pos.lineno);
+        hash = rb_st_hash_uint(hash, (st_index_t)loc->code_location.end_pos.column);
+    }
+    return hash;
+}
+
 st_index_t
 rb_hash_proc(st_index_t hash, VALUE prc)
 {
@@ -2224,13 +2238,13 @@ rb_hash_proc(st_index_t hash, VALUE prc)
             VALUE recipe = rb_proc_refinements_recipe(prc);
             long len = RARRAY_LEN(recipe);
             hash = rb_st_hash_uint(hash, (st_index_t)RARRAY_AREF(recipe, REFINEMENT_RECIPE_BASE_CREF));
-            hash = rb_st_hash_uint(hash, (st_index_t)((const rb_iseq_t *)RARRAY_AREF(recipe, REFINEMENT_RECIPE_SRC_ISEQ))->body);
+            hash = iseq_location_hash(hash, (const rb_iseq_t *)RARRAY_AREF(recipe, REFINEMENT_RECIPE_SRC_ISEQ));
             for (long i = REFINEMENT_RECIPE_MODS; i < len; i++) {
                 hash = rb_st_hash_uint(hash, (st_index_t)RARRAY_AREF(recipe, i));
             }
         }
         else {
-            hash = rb_st_hash_uint(hash, (st_index_t)ISEQ_BODY(proc->block.as.captured.code.iseq));
+            hash = iseq_location_hash(hash, proc->block.as.captured.code.iseq);
         }
         break;
       case block_type_ifunc:
