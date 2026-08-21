@@ -5364,11 +5364,11 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
 
 /*
  *  call-seq:
- *    File.basename(path, suffix = '') -> new_string
+ *    File.basename(path, suffix = '') -> string
  *
- *  Returns a new string containing all or part of the last entry of the given +path+.
- *  Entries are delimited by the value of constant File::SEPARATOR
- *  and, if non-nil, the value of constant File::ALT_SEPARATOR.
+ *  Returns a new string containing all or part of the last component of the given +path+.
+ *  Components are delimited by the value of constant File::SEPARATOR
+ *  and, if non-+nil+, the value of constant File::ALT_SEPARATOR.
  *
  *  When +suffix+ is the empty string <tt>''</tt>,
  *  returns all of the last entry:
