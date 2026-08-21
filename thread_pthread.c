@@ -334,6 +334,7 @@ static void ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r);
 static void timer_thread_wakeup(void);
 static void timer_thread_wakeup_locked(rb_vm_t *vm);
 static void timer_thread_wakeup_force(void);
+static void timer_thread_wake_fence(struct rb_thread_struct *th);
 static bool ractor_sched_timeout_arm(rb_thread_t *th, const rb_hrtime_t *rel);
 static bool ractor_sched_timeout_disarm(rb_thread_t *th);
 static void thread_sched_switch(rb_thread_t *cth, rb_thread_t *next_th);
@@ -1112,6 +1113,9 @@ thread_sched_to_dead_common(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_to_dead(struct rb_thread_sched *sched, rb_thread_t *th)
 {
+    // wait out any pending wake here, while th's Ractor is still alive
+    timer_thread_wake_fence(th);
+
     thread_sched_lock(sched, th);
     {
         thread_sched_to_dead_common(sched, th);
@@ -2667,8 +2671,15 @@ thread_sched_reclaim(struct coroutine_context *dead_co)
 #endif
 
 void
+rb_thread_wake_fence(rb_thread_t *th)
+{
+    timer_thread_wake_fence(th);
+}
+
+void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
+    timer_thread_wake_fence(th);
 #if USE_MN_THREADS
     if (th->sched.malloc_stack) {
         // has dedicated
@@ -3181,6 +3192,9 @@ static struct {
     rb_hrtime_t next_expiry;   // never later than the earliest deadline
     struct ccan_list_head waiting_untimed;
     pthread_mutex_t waiting_lock;
+
+    // signaled when wake_pending clears on a thread; see timer_thread_wake_fence
+    rb_nativethread_cond_t wake_pending_cond;
 #endif
 
 #if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
@@ -3405,6 +3419,7 @@ rb_thread_create_timer_thread(void)
         timer_th.next_expiry = TIMER_WHEEL_NO_EXPIRY;
         ccan_list_head_init(&timer_th.waiting_untimed);
         rb_native_mutex_initialize(&timer_th.waiting_lock);
+        rb_native_cond_initialize(&timer_th.wake_pending_cond);
 #endif
 
         // open communication channel

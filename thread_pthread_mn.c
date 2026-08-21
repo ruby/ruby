@@ -260,6 +260,44 @@ timer_thread_wakeup_thread(rb_thread_t *th, uint32_t event_serial)
 
 #define TIMEOUT_WAKE_BATCH 16
 
+// One thread the timer thread is about to wake, with the serial it was armed at.
+struct timer_wake { rb_thread_t *th; uint32_t serial; };
+
+// Mark each thread while a wake is pending for it, so a dying thread can wait
+// (timer_thread_wake_fence).  Set under waiting_lock before the lock is dropped.
+static void
+timer_wake_pending_set(struct timer_wake *batch, int n)
+{
+    for (int i = 0; i < n; i++) {
+        batch[i].th->sched.wake_pending = true;
+    }
+}
+
+static void
+timer_wake_pending_clear(struct timer_wake *batch, int n)
+{
+    rb_native_mutex_lock(&timer_th.waiting_lock);
+    for (int i = 0; i < n; i++) {
+        batch[i].th->sched.wake_pending = false;
+    }
+    rb_native_cond_broadcast(&timer_th.wake_pending_cond);
+    rb_native_mutex_unlock(&timer_th.waiting_lock);
+}
+
+// Wait out a pending wake before a thread is freed: it would touch freed memory,
+// or wake a reused thread whose first serial matches the stale entry.
+static void
+timer_thread_wake_fence(rb_thread_t *th)
+{
+    if (!TIMER_THREAD_CREATED_P()) return;
+
+    rb_native_mutex_lock(&timer_th.waiting_lock);
+    while (th->sched.wake_pending) {
+        rb_native_cond_wait(&timer_th.wake_pending_cond, &timer_th.waiting_lock);
+    }
+    rb_native_mutex_unlock(&timer_th.waiting_lock);
+}
+
 static void
 timer_thread_check_timeout(rb_vm_t *vm)
 {
@@ -269,7 +307,7 @@ timer_thread_check_timeout(rb_vm_t *vm)
 
     ccan_list_head_init(&expired);
 
-    struct timeout_wake { rb_thread_t *th; uint32_t serial; } batch[TIMEOUT_WAKE_BATCH];
+    struct timer_wake batch[TIMEOUT_WAKE_BATCH];
     bool more = true;
 
     while (more) {
@@ -294,12 +332,14 @@ timer_thread_check_timeout(rb_vm_t *vm)
                 n++;
             }
             more = !ccan_list_empty(&expired);
+            timer_wake_pending_set(batch, n);
         }
         rb_native_mutex_unlock(&timer_th.waiting_lock);
 
         for (int i = 0; i < n; i++) {
             timer_thread_wakeup_thread(batch[i].th, batch[i].serial);
         }
+        timer_wake_pending_clear(batch, n);
     }
 }
 
@@ -1452,7 +1492,7 @@ event_wait(rb_vm_t *vm)
 static void
 timer_thread_wake_fd_waiters(int fd, uint32_t generation, uint32_t wake_flags, int result)
 {
-    struct { rb_thread_t *th; uint32_t serial; } batch[FD_WAKE_BATCH];
+    struct timer_wake batch[FD_WAKE_BATCH];
 
     if (wake_flags == 0) return;
 
@@ -1493,12 +1533,15 @@ timer_thread_wake_fd_waiters(int fd, uint32_t generation, uint32_t wake_flags, i
                 // they all just woke up).
                 fd_waiters_arm(fd, e, fd_waiters_union(e));
             }
+
+            timer_wake_pending_set(batch, n);
         }
         rb_native_mutex_unlock(&timer_th.waiting_lock);
 
         for (int i = 0; i < n; i++) {
             timer_thread_wakeup_thread(batch[i].th, batch[i].serial);
         }
+        timer_wake_pending_clear(batch, n);
 
         if (!more) break;
     }
@@ -1696,6 +1739,12 @@ static int
 timer_wheel_timeout(int timeout)
 {
     return timeout; // no M:N threads, no timed waiters
+}
+
+static void
+timer_thread_wake_fence(rb_thread_t *th)
+{
+    // no timer wheel, no wake batches
 }
 
 static void
