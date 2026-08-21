@@ -805,6 +805,24 @@ pub enum SendFallbackReason {
     /// The `sendforward` instruction (argument forwarding `...`) is not yet optimized in
     /// `type_specialize`.
     SendForwardNotSpecialized,
+    /// Attempted to specialize a `sendforward` call that doesn't have caller callinfo profile data.
+    SendForwardCallerCiNoProfiles,
+    /// The forwarded caller callinfo at a `sendforward` call is polymorphic.
+    SendForwardCallerCiPolymorphic,
+    /// The forwarded caller callinfo at a `sendforward` call is megamorphic.
+    SendForwardCallerCiMegamorphic,
+    /// Attempted to specialize a `sendforward` call that doesn't have receiver profile data.
+    SendForwardReceiverNoProfiles,
+    /// The receiver at a `sendforward` call is polymorphic.
+    SendForwardReceiverPolymorphic,
+    /// The receiver at a `sendforward` call is megamorphic.
+    SendForwardReceiverMegamorphic,
+    /// The `sendforward` call site uses a complex forwarding shape that is not supported.
+    SendForwardComplexArgsPass,
+    /// The caller being forwarded by `sendforward` uses a complex argument pattern.
+    SendForwardCallerComplexArgsPass,
+    /// Cannot optimize the `sendforward` call due to the target method.
+    SendForwardNotOptimizedMethodType(MethodType),
     /// The `invokesuperforward` instruction (super with forwarding `...`) is not yet optimized in
     /// `type_specialize`.
     InvokeSuperForwardNotSpecialized,
@@ -854,6 +872,15 @@ impl Display for SendFallbackReason {
             InvokeBlockNotSpecialized => write!(f, "InvokeBlock: not yet specialized"),
             InvokeBlockPolymorphicMiss => write!(f, "InvokeBlock: polymorphic dispatch miss"),
             SendForwardNotSpecialized => write!(f, "SendForward: not yet specialized"),
+            SendForwardCallerCiNoProfiles => write!(f, "SendForward: no caller callinfo profile data available"),
+            SendForwardCallerCiPolymorphic => write!(f, "SendForward: polymorphic caller callinfo"),
+            SendForwardCallerCiMegamorphic => write!(f, "SendForward: megamorphic caller callinfo"),
+            SendForwardReceiverNoProfiles => write!(f, "SendForward: no receiver profile data available"),
+            SendForwardReceiverPolymorphic => write!(f, "SendForward: polymorphic receiver"),
+            SendForwardReceiverMegamorphic => write!(f, "SendForward: megamorphic receiver"),
+            SendForwardComplexArgsPass => write!(f, "SendForward: complex argument passing"),
+            SendForwardCallerComplexArgsPass => write!(f, "SendForward: complex argument passing from forwarded caller"),
+            SendForwardNotOptimizedMethodType(method_type) => write!(f, "SendForward: unsupported target method type {:?}", method_type),
             InvokeSuperForwardNotSpecialized => write!(f, "InvokeSuperForward: not yet specialized"),
             SingleRactorModeRequired => write!(f, "Single-ractor mode required"),
             Uncategorized(insn) => write!(f, "Uncategorized({})", insn_name(insn.to_usize())),
@@ -885,6 +912,7 @@ pub enum FieldName {
     shape_id,
     as_heap,
     fields_obj,
+    forwarded_arg,
     thread_ptr,
     len,
     SelfParam,
@@ -5299,6 +5327,197 @@ impl Function {
                             // Other method types (not ISEQ or CFUNC)
                             self.push_insn_id(block, insn_id);
                             self.set_dynamic_send_reason(insn_id, SuperNotOptimizedMethodType(MethodType::from(def_type)));
+                            continue;
+                        }
+                    }
+                    &Insn::SendForward { mut recv, cd, blockiseq, ref args, state, .. } => {
+                        let args = args.to_vec();
+                        let site_ci = unsafe { (*cd).ci }; // info about the `callee(...)` call site
+                        let site_flags = unsafe { rb_vm_ci_flag(site_ci) };
+                        // This path only handles the simple forwarding shape produced by
+                        // `callee(...)`: no literal block, no explicit arguments at the
+                        // forwarding site, and exactly one caller_ci operand on the stack for now.
+                        if !blockiseq.is_null()
+                            || unsafe { rb_vm_ci_argc(site_ci) } != 0
+                            || args.len() != 1
+                            || site_flags & VM_CALL_FORWARDING == 0
+                            || site_flags & (
+                                VM_CALL_ARGS_SPLAT |
+                                VM_CALL_ARGS_BLOCKARG |
+                                VM_CALL_KWARG |
+                                VM_CALL_KW_SPLAT |
+                                VM_CALL_TAILCALL |
+                                VM_CALL_OPT_SEND
+                            ) != 0 {
+                            self.set_dynamic_send_reason(insn_id, SendForwardComplexArgsPass);
+                            self.push_insn_id(block, insn_id);
+                            continue;
+                        }
+
+                        // The receiver is stored separately in `recv`; this single operand is the
+                        // caller's callinfo pushed by `sendforward`.
+                        let caller_ci_opnd = args[0];
+                        // The last operand for `sendforward` is the caller's callinfo. It is not
+                        // a Ruby operand, so profile its exact identity to recover the forwarded
+                        // positional arity and caller-side flags.
+                        let caller_ci_summary = self.profiles.as_ref()
+                            .map(|profiles| self.profile_summary(profiles, caller_ci_opnd, state))
+                            .unwrap_or_else(TypeDistributionSummary::empty);
+
+                        if caller_ci_summary.is_polymorphic() || caller_ci_summary.is_skewed_polymorphic() {
+                            self.set_dynamic_send_reason(insn_id, SendForwardCallerCiPolymorphic);
+                            self.push_insn_id(block, insn_id);
+                            continue;
+                        } else if caller_ci_summary.is_megamorphic() || caller_ci_summary.is_skewed_megamorphic() {
+                            self.set_dynamic_send_reason(insn_id, SendForwardCallerCiMegamorphic);
+                            self.push_insn_id(block, insn_id);
+                            continue;
+                        } else if !caller_ci_summary.is_monomorphic() {
+                            self.set_dynamic_send_reason(insn_id, SendForwardCallerCiNoProfiles);
+                            self.push_insn_id(block, insn_id);
+                            continue;
+                        }
+
+                        let caller_ci_profile = caller_ci_summary.bucket(0);
+                        debug_assert!(caller_ci_profile.flags().is_object_profiling());
+                        let caller_ci = caller_ci_profile.class().as_ptr::<rb_callinfo>();
+                        let caller_flags = unsafe { rb_vm_ci_flag(caller_ci) };
+                        // If the forwarded caller info indicates overly complex arguments, then
+                        // do not optimize into a `SendDirect`.
+                        if unspecializable_c_call_type(caller_flags) {
+                            self.count_complex_call_features(block, caller_flags, state);
+                            self.set_dynamic_send_reason(insn_id, SendForwardCallerComplexArgsPass);
+                            self.push_insn_id(block, insn_id);
+                            continue;
+                        }
+
+                        let call_iseq = self.frame_state(state).iseq;
+                        // We reconstruct forwarded arguments from the current frame's EP below.
+                        // Reject escaped environments because their storage may no longer be in
+                        // the in-frame layout we load from.
+                        if iseq_ep_starts_escaped(call_iseq) || iseq_seen_ep_escape(call_iseq) {
+                            self.push_insn_id(block, insn_id);
+                            continue;
+                        }
+
+                        let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), state) {
+                            ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
+                            ReceiverTypeResolution::Monomorphic { profiled_type }
+                            | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => (profiled_type.class(), Some(profiled_type)),
+                            ReceiverTypeResolution::SkewedMegamorphic { .. }
+                            | ReceiverTypeResolution::Megamorphic => {
+                                self.set_dynamic_send_reason(insn_id, SendForwardReceiverMegamorphic);
+                                self.push_insn_id(block, insn_id);
+                                continue;
+                            }
+                            ReceiverTypeResolution::Polymorphic => {
+                                self.set_dynamic_send_reason(insn_id, SendForwardReceiverPolymorphic);
+                                self.push_insn_id(block, insn_id);
+                                continue;
+                            }
+                            ReceiverTypeResolution::NoProfile => {
+                                self.set_dynamic_send_reason(insn_id, SendForwardReceiverNoProfiles);
+                                self.push_insn_id(block, insn_id);
+                                continue;
+                            }
+                        };
+
+                        let mid = unsafe { vm_ci_mid(site_ci) };
+                        // Do method lookup
+                        let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
+                        if cme.is_null() {
+                            self.set_dynamic_send_reason(insn_id, SendForwardNotOptimizedMethodType(MethodType::Null));
+                            self.push_insn_id(block, insn_id);
+                            continue;
+                        }
+                        // Load an overloaded cme if applicable. See vm_search_cc().
+                        // It allows you to use a faster ISEQ if possible.
+                        cme = unsafe { rb_check_overloaded_cme(cme, caller_ci) };
+                        let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
+                        match (visibility, site_flags & VM_CALL_FCALL != 0) {
+                            (METHOD_VISI_PUBLIC, _) => {}
+                            (METHOD_VISI_PRIVATE, true) => {}
+                            (METHOD_VISI_PROTECTED, true) => {}
+                            _ => {
+                                self.set_dynamic_send_reason(insn_id, SendNotOptimizedNeedPermission);
+                                self.push_insn_id(block, insn_id);
+                                continue;
+                            }
+                        }
+                        let mut def_type = unsafe { get_cme_def_type(cme) };
+                        while def_type == VM_METHOD_TYPE_ALIAS {
+                            cme = unsafe { rb_aliased_callable_method_entry(cme) };
+                            def_type = unsafe { get_cme_def_type(cme) };
+                        }
+
+                        if def_type == VM_METHOD_TYPE_ISEQ {
+                            // TODO(max): Allow non-iseq; cache cme
+                            // Only specialize positional-positional calls
+                            // TODO(max): Handle other kinds of parameter passing
+                            let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(call_iseq), state });
+                            let ep = self.get_ep(block, 0);
+                            // Rebuild the forwarded positional arguments from the forwardable
+                            // method's frame. This mirrors vm_adjust_stack_forwarding(), but keeps
+                            // the values as HIR operands instead of copying them onto the VM stack.
+                            let caller_argc = unsafe { rb_vm_ci_argc(caller_ci) } as usize;
+                            let forward_local_size = num_locals(call_iseq) + caller_argc;
+                            let forwarded_args: Vec<InsnId> = (0..caller_argc)
+                                .map(|arg_idx| {
+                                    let ep_offset = local_size_and_idx_to_ep_offset(forward_local_size, arg_idx);
+                                    self.load_field(block, ep, FieldName::forwarded_arg, -SIZEOF_VALUE_I32 * ep_offset, types::BasicObject)
+                                })
+                                .collect();
+
+                            if !can_direct_send(self, block, iseq, caller_ci, insn_id, forwarded_args.as_slice(), false) {
+                                self.push_insn_id(block, insn_id);
+                                continue;
+                            }
+
+                            // Check if the args are compatible before emitting any assumptions
+                            let send_frame_state = {
+                                let new_state = self.frame_state(state).with_replaced_args(&forwarded_args, args.len());
+                                self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) })
+                            };
+                            let Ok(SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx }) = self.prepare_direct_send_args(block, &forwarded_args, caller_ci, iseq, send_frame_state)
+                                .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
+                                self.push_insn_id(block, insn_id);
+                                continue;
+                            };
+
+                            // `sendforward` also forwards the current frame's block handler. This
+                            // positional-only fast path does not yet pass blocks through SendDirect,
+                            // so guard that there is no block instead of silently dropping one.
+                            let block_handler = self.load_ep_env_field(block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
+                            self.push_insn(block, Insn::GuardBitEquals {
+                                val: block_handler,
+                                expected: Const::CInt64(VM_BLOCK_HANDLER_NONE.into()),
+                                reason: Box::new(SideExitReason::UnhandledBlockArg),
+                                state,
+                                recompile: None,
+                            });
+
+                            // Check singleton class assumption first, before emitting other patchpoints
+                            if !self.assume_no_singleton_classes(block, klass, state) {
+                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                                self.push_insn_id(block, insn_id);
+                                continue;
+                            }
+
+                            // Add PatchPoint for method redefinition
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+
+                            // Add GuardType for profiled receiver
+                            if let Some(profiled_type) = profiled_type {
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
+                                self.insn_types[recv.to_usize()] = self.infer_type(recv);
+                            }
+
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, block: None })));
+                            self.make_equal_to(insn_id, replacement);
+                        } else {
+                            self.set_dynamic_send_reason(insn_id, SendForwardNotOptimizedMethodType(MethodType::from(def_type)));
+                            self.push_insn_id(block, insn_id);
                             continue;
                         }
                     }
