@@ -667,6 +667,38 @@ class TestSuper < Test::Unit::TestCase
     assert_equal(:test, c.new.test)
   end
 
+  def test_super_with_prepended_module_after_include_method_caching
+    m = Module.new do
+      def test
+        :m
+      end
+    end
+
+    c = Class.new { include m }
+
+    m.prepend(Module.new do
+      def test
+        super
+      end
+    end)
+
+    # prime the super call-site cache through the prepended module
+    assert_equal(:m, c.new.test)
+
+    m.class_eval do
+      begin
+        verbose_bak, $VERBOSE = $VERBOSE, nil
+        def test
+          :redefined
+        end
+      ensure
+        $VERBOSE = verbose_bak
+      end
+    end
+
+    assert_equal(:redefined, c.new.test)
+  end
+
   class TestFor_super_with_modified_rest_parameter_base
     def foo *args
       args
