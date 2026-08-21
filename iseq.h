@@ -26,6 +26,26 @@ RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MBITS_SET_P(buf, i) ((buf[(i) / ISEQ_MBITS_BITLENGTH] >> ((i) % ISEQ_MBITS_BITLENGTH)) & 0x1)
 #define ISEQ_MBITS_BUFLEN(size) roomof(size, ISEQ_MBITS_BITLENGTH)
 
+#define ISEQ_LVAR_STATE_BITS 2
+#define ISEQ_LVAR_STATES_PER_BYTE (CHAR_BIT / ISEQ_LVAR_STATE_BITS)
+#define ISEQ_LVAR_STATES_BUFLEN(size) roomof(size, ISEQ_LVAR_STATES_PER_BYTE)
+STATIC_ASSERT(lvar_state_fits_in_iseq_lvar_state_bits, lvar_reassigned < (1 << ISEQ_LVAR_STATE_BITS));
+
+static inline enum lvar_state
+iseq_lvar_state_get(const uint8_t *buf, unsigned int i)
+{
+    const unsigned int shift = (i % ISEQ_LVAR_STATES_PER_BYTE) * ISEQ_LVAR_STATE_BITS;
+    return (enum lvar_state)((buf[i / ISEQ_LVAR_STATES_PER_BYTE] >> shift) & ((1 << ISEQ_LVAR_STATE_BITS) - 1));
+}
+
+static inline void
+iseq_lvar_state_set(uint8_t *buf, unsigned int i, enum lvar_state state)
+{
+    uint8_t *const byte = &buf[i / ISEQ_LVAR_STATES_PER_BYTE];
+    const unsigned int shift = (i % ISEQ_LVAR_STATES_PER_BYTE) * ISEQ_LVAR_STATE_BITS;
+    *byte = (*byte & ~(((1 << ISEQ_LVAR_STATE_BITS) - 1) << shift)) | ((uint8_t)state << shift);
+}
+
 #ifndef USE_ISEQ_NODE_ID
 #define USE_ISEQ_NODE_ID 1
 #endif

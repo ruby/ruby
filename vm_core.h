@@ -410,6 +410,12 @@ enum rb_builtin_attr {
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
 typedef VALUE (*rb_zjit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *, rb_jit_func_t);
 
+enum lvar_state {
+    lvar_uninitialized,
+    lvar_initialized,
+    lvar_reassigned,
+};
+
 struct rb_iseq_constant_body {
     enum rb_iseq_type type;
 
@@ -507,11 +513,7 @@ struct rb_iseq_constant_body {
 
     const ID *local_table;		/* must free */
 
-    enum lvar_state {
-        lvar_uninitialized,
-        lvar_initialized,
-        lvar_reassigned,
-    } *lvar_states;
+    uint8_t *lvar_states;
 
     /* catch table */
     struct iseq_catch_table *catch_table;
@@ -578,10 +580,10 @@ struct rb_iseq_constant_body {
     void *zjit_payload;
 #endif
 
-    // Hash of the source this iseq was compiled from. Meaningful only when
-    // has_source_hash is set.
+    // Hash of the source this iseq was compiled from, or 0 if it is
+    // unavailable. A computed hash of 0 is remapped to another value, so
+    // 0 never denotes a real hash.
     uint64_t source_hash;
-    bool has_source_hash;
 };
 
 /* T_IMEMO/iseq */
@@ -735,12 +737,9 @@ typedef struct rb_vm_struct {
 #endif
         } sync;
 
-        /* VM-wide locks for the Ractor transfer/inheritance machinery, plus the
-         * registry of in-flight move couriers.  All of them are leaf locks: no
-         * safepoint inside a critical section. */
+        /* VM-wide locks for the Ractor transfer/inheritance machinery.  All of them
+         * are leaf locks: no safepoint inside a critical section. */
         rb_nativethread_lock_t generic_fields_lock;   /* the shared generic-fields table in variable.c */
-        struct ccan_list_head move_courier_registry;  /* couriers in flight (ractor.c); the global GC marks them */
-        rb_nativethread_lock_t move_courier_registry_lock;
 
 #ifdef RUBY_THREAD_PTHREAD_H
         // ractor scheduling
@@ -1125,7 +1124,6 @@ struct rb_waiting_list {
     struct rb_fiber_struct *fiber;
 };
 
-struct ractor_materialize_frame;
 
 struct rb_execution_context_struct {
     /* execution information */
@@ -1177,11 +1175,6 @@ struct rb_execution_context_struct {
         VALUE obj;
         VALUE fields_obj;
     } gen_fields_cache;
-
-    /* Chain of receive frames being materialized on this EC (LIFO; the frames live
-     * on the C stack).  A thread or fiber switch cannot corrupt it, since each EC's
-     * chain only contains that EC's own nesting. */
-    struct ractor_materialize_frame *materialize_frames;
 
     /* for GC */
     struct {

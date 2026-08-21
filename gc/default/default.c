@@ -1677,7 +1677,7 @@ RVALUE_UNCOLLECTIBLE(rb_objspace_t *objspace, VALUE obj)
 #define RVALUE_PAGE_UNCOLLECTIBLE(page, obj)  MARKED_IN_BITMAP((page)->uncollectible_bits, (obj))
 #define RVALUE_PAGE_MARKING(page, obj)        MARKED_IN_BITMAP((page)->marking_bits, (obj))
 
-static int rgengc_remember(rb_objspace_t *objspace, VALUE obj);
+static void rgengc_remember(rb_objspace_t *objspace, VALUE obj);
 static void gc_bitmaps_clear(rb_objspace_t *objspace, rb_heap_t *heap, bool clear_shref);
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
 static bool verify_pointer_in_any_heap_p(const void *ptr); /* cross-objspace ownership test */
@@ -5786,10 +5786,10 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
 {
     GC_ASSERT(!SPECIAL_CONST_P(obj));
 
-    /* Never write a foreign page's pinned bit (a global GC may: everyone is stopped). */
-    if (gc_skip_foreign_object_p(objspace, obj)) return;
-
     if (RB_UNLIKELY(objspace->flags.during_compacting)) {
+        /* Never write a foreign page's pinned bit (a global GC may: everyone is stopped). */
+        if (gc_skip_foreign_object_p(objspace, obj)) return;
+
         if (RB_LIKELY(during_gc)) {
             if (!RVALUE_PINNED(objspace, obj)) {
                 GC_ASSERT(GET_HEAP_PAGE(obj)->pinned_slots <= GET_HEAP_PAGE(obj)->total_slots);
@@ -6415,15 +6415,13 @@ check_children_i(const VALUE child, void *ptr)
          * unshareable parent holding an unrecorded foreign unshareable child would be
          * invisible to both local GCs.  The exception is a box's top_self, which every
          * thread's th->top_self points at and which is VM-permanent.  Skipped during a
-         * global GC: it clears every shref bit and keeps in-flight payloads alive by
-         * re-pinning, so the shref exemption would not fire, and its unified exact
-         * stop-the-world mark makes the invariant itself moot. */
+         * global GC: it clears every shref bit, so the shref exemption would not fire,
+         * and its unified exact stop-the-world mark makes the invariant itself moot. */
         if (!data->parent_shareable &&
             child != rb_gc_vm_top_self() &&
             !MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(child), child) &&
             !MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(child), child) &&
             !rb_gc_impl_during_global_gc_p(data->objspace) &&
-            !rb_gc_current_ractor_materializing_p() &&
             !global_objspace->during_absorb) {
             fprintf(stderr, "check_children_i: containment violation: "
                     "unshareable %s (objspace %p) -> foreign unshareable %s (objspace %p)\n",
@@ -6500,10 +6498,6 @@ root_scope_check_i(const char *category, VALUE obj, void *ptr)
     if (MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(obj), obj)) return;
     if (MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(obj), obj)) return;
     if (obj == rb_gc_vm_top_self()) return;  /* VM-permanent (see check_children_i) */
-    /* A sender-resident snapshot being materialized by a receive is rooted through
-     * sync.materializing_copies: a foreign-unshareable root that is valid only while
-     * the copy runs (see check_children_i). */
-    if (rb_gc_current_ractor_materializing_p()) return;
 
     fprintf(stderr, "root_scope_check_i: root category \"%s\" names a foreign "
             "unshareable without a shref record: %s (owner %p, self %p)\n",
@@ -7119,7 +7113,7 @@ gc_marks_finish(rb_objspace_t *objspace)
     }
 
     // TODO: refactor so we don't need to call this
-    rb_ractor_finish_marking();
+    rb_ractor_finish_marking(is_full_marking(objspace));
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_MARK);
 }
@@ -7553,7 +7547,7 @@ gc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...)
 
 /* bit operations */
 
-static int
+static void
 rgengc_remembersetbits_set(rb_objspace_t *objspace, VALUE obj)
 {
     struct heap_page *page = GET_HEAP_PAGE(obj);
@@ -7563,16 +7557,14 @@ rgengc_remembersetbits_set(rb_objspace_t *objspace, VALUE obj)
      * local a (under its Ractor's GVL) and a global GC writes from the driver alone.
      * Set the bit before the page flag so a page pending re-scan stays in
      * rememberset_mark. */
-    const bool newly = !_MARKED_IN_BITMAP(bits, page, obj);
     _MARK_IN_BITMAP(bits, page, obj);
     page->flags.has_remembered_objects = TRUE;
-    return newly ? TRUE : FALSE;
 }
 
 /* wb, etc */
 
 /* return FALSE if already remembered */
-static int
+static void
 rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 {
     gc_report(6, objspace, "rgengc_remember: %s %s\n", rb_obj_info(obj),
@@ -7595,7 +7587,7 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
     }
 #endif /* RGENGC_PROFILE > 0 */
 
-    return rgengc_remembersetbits_set(objspace, obj);
+    rgengc_remembersetbits_set(objspace, obj);
 }
 
 #ifndef PROFILE_REMEMBERSET_MARK
@@ -7785,9 +7777,6 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_NONE);
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_MOVED);
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_ZOMBIE);
-    GC_ASSERT(RB_BUILTIN_TYPE(b) != T_NONE);
-    GC_ASSERT(RB_BUILTIN_TYPE(b) != T_MOVED);
-    GC_ASSERT(RB_BUILTIN_TYPE(b) != T_ZOMBIE);
 
     /* A shareable object now references an unshareable one: record b as a shref so its
      * owner's local GC roots it (the parent may live in another objspace, untraversed
@@ -7844,26 +7833,7 @@ rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
      * the only writer, so a plain clear is enough. */
     if (_MARKED_IN_BITMAP(page->shref_bits, page, obj)) {
         _CLEAR_IN_BITMAP(page->shref_bits, page, obj);
-    }
-}
-
-void
-rb_gc_impl_pin_in_flight_message(void *objspace_ptr, VALUE obj)
-{
-    if (RB_FL_TEST_RAW(obj, RUBY_FL_SHAREABLE)) return; /* pinned anyway */
-
-    /* The payload's pages belong to the sender, so a plain store is enough. */
-    struct heap_page *page = GET_HEAP_PAGE(obj);
-    if (!_MARKED_IN_BITMAP(page->shref_bits, page, obj)) {
-        _MARK_IN_BITMAP(page->shref_bits, page, obj);
-        page->flags.has_shref_objects = TRUE;
-    }
-    /* A shref bit only makes the object a root for the next local GC; it does not affect an
-     * in-progress global compaction's move decision (pinned_bits).  Moving a payload node
-     * would break the address-keyed maps, dedup tables and pin lists, so pin it as well. */
-    rb_objspace_t *objspace = objspace_ptr;
-    if (objspace->flags.during_global_gc) {
-        gc_pin(objspace, obj);
+        // NOTE: page->has_shref_objects could become stale here (value is true even though logically false)
     }
 }
 
@@ -9073,8 +9043,8 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
         }
     }
 
-    /* steps 6-7: every Ractor's roots (gc.c walks them all and re-pins in-flight payloads),
-     * then one unified precise mark.  A global GC does not go through gc_marks, so the marking
+    /* steps 6-7: every Ractor's roots (gc.c walks them all), then one unified precise
+     * mark.  A global GC does not go through gc_marks, so the marking
      * phase is opened here instead; it closes after rb_ractor_finish_marking below, which is
      * where gc_marks_finish ends for a local collection. */
     gc_marking_enter(driver);
@@ -9095,7 +9065,7 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
     /* This cycle's root pass over every Ractor has swept the deleted ractor-local keys out of
      * each storage.  Free the key structs while still inside the barrier (a local GC never
      * can; see rb_ractor_finish_marking). */
-    rb_ractor_finish_marking();
+    rb_ractor_finish_marking(true);
 
     gc_marking_exit(driver);
 

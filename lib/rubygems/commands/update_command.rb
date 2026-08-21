@@ -2,6 +2,7 @@
 
 require_relative "../command"
 require_relative "../command_manager"
+require_relative "../cooldown"
 require_relative "../dependency_installer"
 require_relative "../install_update_options"
 require_relative "../local_remote_options"
@@ -95,8 +96,12 @@ command to remove old versions.
   end
 
   def execute
+    @cooldown = Gem::Cooldown.from_options options
+    @cooldown_skipped = []
+
     if options[:system]
       update_rubygems
+      output_cooldown_skipped_summary
       return
     end
 
@@ -132,6 +137,8 @@ command to remove old versions.
     end
     say "Gems already up-to-date: #{up_to_date_names.join(" ")}" unless up_to_date_names.empty?
     say "Gems not currently installed: #{not_installed_names.join(" ")}" unless not_installed_names.empty?
+
+    output_cooldown_skipped_summary
   end
 
   def fetch_remote_gems(spec) # :nodoc:
@@ -140,7 +147,12 @@ command to remove old versions.
 
     fetcher = Gem::SpecFetcher.fetcher
 
-    spec_tuples, errors = fetcher.search_for_dependency dependency
+    # The default indexes carry only the newest version of each gem, which
+    # leaves nothing to fall back to when the cooldown excludes it, so
+    # search the full index instead.
+    type = dependency.prerelease? ? :complete : :released if @cooldown&.active?
+
+    spec_tuples, errors = fetcher.search_for_dependency dependency, type: type
 
     error = errors.find {|e| e.respond_to? :exception }
 
@@ -167,10 +179,76 @@ command to remove old versions.
   def highest_remote_name_tuple(spec) # :nodoc:
     spec_tuples = fetch_remote_gems spec
 
-    highest_remote_gem = spec_tuples.max
+    highest_remote_gem = filter_cooldown_tuples(spec_tuples).max
     return unless highest_remote_gem
 
     highest_remote_gem.first
+  end
+
+  ##
+  # Rejects [NameTuple, Gem::Source] pairs published within the cooldown
+  # period.  Tuples with an unknown publish time are kept, so the cooldown
+  # fails open.
+
+  def filter_cooldown_tuples(spec_tuples) # :nodoc:
+    return spec_tuples unless @cooldown&.active?
+
+    with_times = spec_tuples.map do |tup, source|
+      [tup, source, source.created_at(tup.name, tup.version, tup.platform)]
+    end
+
+    if !with_times.empty? && with_times.none? {|_, _, created_at| created_at }
+      Gem::Cooldown.warn_missing_created_at with_times.first[1]
+    end
+
+    with_times.reject do |tup, _, created_at|
+      next false unless @cooldown.skip?(created_at)
+
+      (@cooldown_skipped_tuples ||= {})[[tup.name, tup.version]] ||= created_at
+      true
+    end.map {|tup, source, _| [tup, source] }
+  end
+
+  ##
+  # Summary entries for tuples the cooldown kept out of the update, kept
+  # only when newer than the version the update actually settled on (the
+  # updated version, or the one already installed when nothing moved).
+
+  def cooldown_skipped_tuple_entries # :nodoc:
+    skipped = @cooldown_skipped_tuples
+    return [] unless skipped
+
+    resolved = {}
+    @updated.each do |spec|
+      version = resolved[spec.name]
+      resolved[spec.name] = spec.version if version.nil? || spec.version > version
+    end
+
+    skipped.filter_map do |(name, version), created_at|
+      resolved_version = resolved[name] || resolved_fallback_version(name)
+      next unless resolved_version && version > resolved_version
+
+      {
+        name: name,
+        version: version,
+        resolved: resolved_version,
+        available_in_days: @cooldown.remaining_days(created_at),
+      }
+    end
+  end
+
+  def resolved_fallback_version(name) # :nodoc:
+    if name == "rubygems-update"
+      Gem::Version.new Gem::VERSION
+    else
+      Gem::Specification.find_all_by_name(name).map(&:version).max
+    end
+  end
+
+  def output_cooldown_skipped_summary # :nodoc:
+    entries = (@cooldown_skipped || []) + cooldown_skipped_tuple_entries
+
+    Gem::Cooldown.output_skipped_summary entries
   end
 
   def install_rubygems(spec) # :nodoc:
@@ -256,6 +334,10 @@ command to remove old versions.
     @installer.installed_gems.each do |spec|
       @updated << spec
     end
+
+    (@cooldown_skipped ||= []).concat @installer.cooldown_skipped
+
+    @installer.installed_gems
   end
 
   def update_gems(gems_to_update)

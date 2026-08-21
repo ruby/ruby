@@ -117,9 +117,9 @@ fn main() {
         .allowlist_function("rb_zjit_class_allocate_instance_fastpath")
         .allowlist_function("rb_zjit_str_resurrect_fastpath")
         .allowlist_function("rb_zjit_array_dup_can_fastpath")
+        .allowlist_function("rb_zjit_array_new_can_fastpath")
         .allowlist_function("rb_zjit_hash_dup_can_fastpath")
         .allowlist_function("rb_zjit_range_new_fastpath")
-        .allowlist_function("rb_zjit_array_new_fastpath")
 
         // For crashing
         .allowlist_function("rb_bug")
@@ -352,6 +352,7 @@ fn main() {
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
+        .allowlist_function("rb_jit_constcache_shareable")
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")
@@ -407,7 +408,6 @@ fn main() {
         .allowlist_function("rb_get_cfp_ep")
         .allowlist_function("rb_get_cfp_ep_level")
         .allowlist_function("rb_get_cme_def_type")
-        .allowlist_function("rb_zjit_constcache_shareable")
         .allowlist_function("rb_zjit_vm_search_method")
         .allowlist_function("rb_zjit_cme_is_cfunc")
         .allowlist_function("rb_get_cme_def_body_attr_id")

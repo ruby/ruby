@@ -22,7 +22,7 @@ use crate::state::ZJITState;
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
+use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
 use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
@@ -2225,23 +2225,40 @@ fn gen_new_array(
     elements: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_leaf_call_with_gc(asm, state);
-
     let num: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
-    if !elements.is_empty() {
-        let argv = gen_push_opnds(jit, asm, &elements);
-        return asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv);
+    let mut alloc_size: usize = 0;
+    let mut flags = VALUE(0);
+    let mut argv = Opnd::UImm(0);
+    // NOTE: we can't use gen_push_opnds in slow path because jit var can't be borrowed properly
+    if elements.len() > 0 {
+        argv = asm.alloc_stack(jit, elements.len());
+    }
+    // When the new array would be embedded, bump-allocate it inline and initialize the elements
+    // directly. The fresh object is young and white, so those writes need no write barriers.
+    if unsafe { rb_zjit_array_new_can_fastpath(num, &mut alloc_size, &mut flags) } {
+        let klass = unsafe { rb_cArray };
+        return gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.into(), klass,
+            |asm, ary| {
+                for (i, &elem) in elements.iter().enumerate() {
+                    let offset = RUBY_OFFSET_RARRAY_AS_ARY + (i as i32) * SIZEOF_VALUE_I32;
+                    asm.store(Opnd::mem(VALUE_BITS, ary, offset), elem);
+                }
+            },
+            |asm| {
+                gen_prepare_leaf_call_with_gc(asm, state);
+                if elements.len() > 0 {
+                    gen_write_operands(asm, &elements, argv);
+                }
+                asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv)
+            });
     }
 
-    let mut alloc_size: usize = 0;
-    let mut flags: VALUE = VALUE(0);
-    unsafe { rb_zjit_array_new_fastpath(&mut alloc_size, &mut flags) };
-    let klass = unsafe { rb_cArray };
-
-    gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.into(), klass, |_asm, _obj| {}, |asm| {
-        asm_ccall!(asm, rb_ec_ary_new_from_values, EC, 0i64.into(), Opnd::UImm(0))
-    })
+    gen_prepare_leaf_call_with_gc(asm, state);
+    if elements.len() > 0 {
+        gen_write_operands(asm, &elements, argv);
+    }
+    asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv)
 }
 
 /// Adjust potentially-negative index by the given length, returning the adjusted index. If still negative,
@@ -3920,15 +3937,26 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
 
     // If the stubbed ISEQ fails to compile, function_stub_hit exits to the
     // interpreter with this callee frame. Direct JIT-to-JIT calls pass arguments
-    // in C argument registers, so spill the packed argument locals first. The
-    // fallback path will reshape these around any optional positional gaps.
+    // in C argument registers and the rest on the native stack, so spill the
+    // packed argument locals first. The fallback path will reshape these around
+    // any optional positional gaps.
     let argc = iseq_call.argc.to_usize();
-    assert!(argc < C_ARG_OPNDS.len(), "SendDirect must fit receiver plus arguments in C argument registers");
     let local_size = unsafe { get_iseq_body_local_table_size(iseq_call.iseq.get()) }.to_usize();
     for arg_idx in 0..argc {
+        let src = match lir::c_arg_location(arg_idx + 1) { // +1 for self
+            CArgLocation::Reg(reg) => reg,
+            CArgLocation::StackSlot(slot) => {
+                // The stub runs before any frame setup, so stack-passed arguments
+                // sit right above the return address (x86_64) or right at the
+                // native SP (arm64, where the return address is in a register).
+                let ret_addr_bytes = if cfg!(target_arch = "x86_64") { SIZEOF_VALUE_I32 } else { 0 };
+                asm.load_into(scratch_reg, Opnd::mem(64, NATIVE_STACK_PTR, ret_addr_bytes + slot as i32 * SIZEOF_VALUE_I32));
+                scratch_reg
+            }
+        };
         asm.store(
             Opnd::mem(64, SP, -local_size_and_idx_to_bp_offset(local_size, arg_idx) * SIZEOF_VALUE_I32),
-            C_ARG_OPNDS[arg_idx + 1],
+            src,
         );
     }
 
@@ -4084,12 +4112,16 @@ fn gen_push_opnds(jit: &JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::O
         Opnd::UImm(0)
     };
 
-    // Write operands into stack slots allocated by asm.alloc_stack()
-    for (idx, &opnd) in opnds.iter().enumerate() {
-        asm.mov(Opnd::mem(VALUE_BITS, argv, idx as i32 * SIZEOF_VALUE_I32), opnd);
-    }
+    gen_write_operands(asm, opnds, argv);
 
     argv
+}
+
+/// Write operands into stack slots previously reserved by asm.alloc_stack().
+fn gen_write_operands(asm: &mut Assembler, opnds: &[Opnd], stack: lir::Opnd) {
+    for (idx, &opnd) in opnds.iter().enumerate() {
+        asm.mov(Opnd::mem(VALUE_BITS, stack, idx as i32 * SIZEOF_VALUE_I32), opnd);
+    }
 }
 
 fn gen_toregexp(jit: &mut JITState, asm: &mut Assembler, function: &Function, opt: usize, values: Vec<Opnd>, state: &FrameState) -> Opnd {

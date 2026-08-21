@@ -482,6 +482,10 @@ rb_thread_terminate_all(rb_thread_t *th)
     /* unlock all locking mutexes */
     rb_threadptr_unlock_all_locking_mutexes(th);
 
+    // tells the last sub-thread to wake this one out of the sleep below.  Nothing
+    // clears it: no thread of this Ractor can run again once this returns.
+    cr->threads.terminating = true;
+
     EC_PUSH_TAG(ec);
     if (EC_EXEC_TAG() == TAG_NONE) {
       retry:
@@ -810,7 +814,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
                (void *)th, th->locking_mutex);
     }
 
-    if (ractor_main_th->status == THREAD_KILLED &&
+    if (th->ractor->threads.terminating &&
         th->ractor->threads.cnt <= 2 /* main thread and this thread */) {
         /* I'm last thread. wake up main thread from rb_thread_terminate_all */
         rb_threadptr_interrupt(ractor_main_th);
@@ -6274,27 +6278,38 @@ struct method_coverage_arg {
     void *data;
 };
 
-static void
-method_coverage_call(const rb_method_entry_t *me, VALUE count,
-                     struct method_coverage_arg *arg)
+/* Fills *out for the method entry `me_v` and returns true, or returns false
+ * if the method entry is not a subject of method coverage (aliases,
+ * complemented entries, and methods without a source location). */
+bool
+rb_coverage_method_data_of(VALUE me_v, VALUE count, struct rb_coverage_method_data *out)
 {
+    const rb_method_entry_t *me = (const rb_method_entry_t *)me_v;
     VALUE location[5];
     const rb_method_entry_t *resolved_me = rb_resolve_me_location(me, location);
 
     if (me != resolved_me || RB_TYPE_P(me->owner, T_ICLASS) ||
-        FIX2LONG(location[1]) <= 0) return;
+        FIX2LONG(location[1]) <= 0) return false;
 
-    struct rb_coverage_method_data method = {
-        .owner = me->owner,
-        .method_id = ID2SYM(me->def->original_id),
-        .path = location[0],
-        .first_lineno = location[1],
-        .first_column = location[2],
-        .last_lineno = location[3],
-        .last_column = location[4],
-        .count = count,
-    };
-    arg->callback(&method, arg->data);
+    out->owner = me->owner;
+    out->method_id = ID2SYM(me->def->original_id);
+    out->path = location[0];
+    out->first_lineno = location[1];
+    out->first_column = location[2];
+    out->last_lineno = location[3];
+    out->last_column = location[4];
+    out->count = count;
+    return true;
+}
+
+static void
+method_coverage_call(const rb_method_entry_t *me, VALUE count,
+                     struct method_coverage_arg *arg)
+{
+    struct rb_coverage_method_data method;
+    if (rb_coverage_method_data_of((VALUE)me, count, &method)) {
+        arg->callback(&method, arg->data);
+    }
 }
 
 static int
@@ -6443,7 +6458,7 @@ rb_default_coverage(int n)
         branches = rb_ary_hidden_new_fill(2);
         /* internal data structures for branch coverage:
          *
-         * { branch base node =>
+         * { branch base key (see decl_branch_base) =>
          *     [base_type, base_first_lineno, base_first_column, base_last_lineno, base_last_column, {
          *       branch target id =>
          *         [target_type, target_first_lineno, target_first_column, target_last_lineno, target_last_column, target_counter_index],
@@ -6453,10 +6468,10 @@ rb_default_coverage(int n)
          * }
          *
          * Example:
-         * { NODE_CASE =>
+         * { [source_hash, node_id, lineno] =>
          *     [1, 0, 4, 3, {
-         *       NODE_WHEN => [2, 8, 2, 9, 0],
-         *       NODE_WHEN => [3, 8, 3, 9, 1],
+         *       0 => [2, 8, 2, 9, 0],
+         *       1 => [3, 8, 3, 9, 1],
          *       ...
          *     }],
          *   ...

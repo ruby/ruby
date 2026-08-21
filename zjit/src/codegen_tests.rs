@@ -713,10 +713,10 @@ fn test_yield_inline_invocation_with_args() {
 }
 
 #[test]
-fn test_yield_with_too_many_args_for_lir() {
+fn test_yield_with_more_args_than_abi_registers() {
     // `self` + eight yield args don't fit in C argument registers (6 on x86_64, 8 on
-    // arm64), so the direct block invocation must be rejected instead of emitting an
-    // uncompilable CCall.
+    // arm64), so the direct block invocation passes the overflow arguments on the
+    // native stack.
     set_call_threshold(2);
     eval("
         def foo = yield(1, 2, 3, 4, 5, 6, 7, 8)
@@ -725,6 +725,37 @@ fn test_yield_with_too_many_args_for_lir() {
         test
     ");
     assert_snapshot!(assert_compiles("test"), @"36");
+}
+
+#[test]
+fn test_send_direct_with_more_args_than_abi_registers() {
+    // `self` + ten args don't fit in C argument registers (6 on x86_64, 8 on arm64),
+    // so the JIT-to-JIT call passes the overflow arguments on the native stack, and
+    // the callee's JIT entry loads them from above its frame.
+    set_call_threshold(2);
+    eval("
+        def callee(a, b, c, d, e, f, g, h, i, j) = [a, b, c, d, e, f, g, h, i, j]
+        def test = callee(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]");
+}
+
+#[test]
+fn test_send_direct_with_equal_args_beyond_abi_registers() {
+    // A pair of adjacent stack-passed arguments that are the same zero immediate
+    // (false) or the same register lowers to an STP with an identical register
+    // pair on arm64, e.g. `stp xzr, xzr`, which the assembler used to reject.
+    // On arm64, c_args[8] and c_args[9] (arguments h and i below) form a pair.
+    set_call_threshold(2);
+    eval("
+        def callee(a, b, c, d, e, f, g, h, i, j) = [a, b, c, d, e, f, g, h, i, j]
+        def test(x = 9) = [callee(1, 2, 3, 4, 5, 6, 7, false, false, 10), callee(1, 2, 3, 4, 5, 6, 7, x, x, 10)]
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"[[1, 2, 3, 4, 5, 6, 7, false, false, 10], [1, 2, 3, 4, 5, 6, 7, 9, 9, 10]]");
 }
 
 #[test]
@@ -4248,6 +4279,45 @@ fn test_new_array_order() {
         test
         test
     "), @"[3, 2, 1]");
+}
+
+#[test]
+fn test_new_array_embedded_gc_stress() {
+    eval(r#"
+        def make(a) = [a, a, a]
+    "#);
+    assert_contains_opcode("make", YARVINSN_newarray);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          s = "x"
+          make(s)
+          a = make(s)
+          a << :extra
+          [a.frozen?, a.class, a]
+        ensure
+          GC.stress = false
+        end
+    "#), @r#"[false, Array, ["x", "x", "x", :extra]]"#);
+}
+
+#[test]
+fn test_new_array_embedded_memcpy_gc_stress() {
+    eval(r#"
+        def make(a) = [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a] # size: 17
+    "#);
+    assert_contains_opcode("make", YARVINSN_newarray);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          s = "y"
+          make(s)
+          m = make(s)
+          [m.frozen?, m.length, m.class]
+        ensure
+          GC.stress = false
+        end
+    "#), @r#"[false, 17, Array]"#);
 }
 
 #[test]

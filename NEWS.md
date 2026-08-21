@@ -179,7 +179,7 @@ They are still available on rubygems.org and can be installed with
   * 0.6.3 to [v0.6.4][pp-v0.6.4]
 * prism 1.9.0
   * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
-* psych 5.4.0
+* psych 5.5.0
   * 5.3.1 to [v5.4.0][psych-v5.4.0]
 * resolv 0.7.1
   * 0.7.0 to [v0.7.1][resolv-v0.7.1]
@@ -243,6 +243,12 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
     * Interix (Windows Services for UNIX)
     * SunOS 4 (Solaris, i.e. SunOS 5, is unaffected)
     * BSD/OS (BSDi)
+
+* Windows 10 1703 or later no longer needs the `LongPathsEnabled` registry
+  value to use paths longer than 260 characters.  This applies to any process
+  running the interpreter, including a program which embeds libruby.  Each path
+  component is still limited to 255 characters, and a child process still
+  starts with the `MAX_PATH` limited current directory. [[Bug #18947]]
 
 ## Compatibility issues
 
@@ -327,6 +333,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ## JIT
 
+[Bug #18947]: https://bugs.ruby-lang.org/issues/18947
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330

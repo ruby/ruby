@@ -231,7 +231,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
         if (LIKELY(body->local_table != rb_iseq_shared_exc_local_tbl)) {
             SIZED_FREE_N(body->local_table, body->local_table_size);
         }
-        SIZED_FREE_N(body->lvar_states, body->local_table_size);
+        SIZED_FREE_N(body->lvar_states, ISEQ_LVAR_STATES_BUFLEN(body->local_table_size));
 
         compile_data_free(ISEQ_COMPILE_DATA(iseq));
         if (body->outer_variables) rb_id_table_free(body->outer_variables);
@@ -541,13 +541,16 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         size += sizeof(struct rb_iseq_constant_body);
         size += body->iseq_size * sizeof(VALUE);
         size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
-        size += body->local_table_size * sizeof(ID);
+        size += body->local_table_size * sizeof(ID); // body->local_table
+        if (body->lvar_states) size += ISEQ_LVAR_STATES_BUFLEN(body->local_table_size) * sizeof(uint8_t);
         size += ISEQ_MBITS_BUFLEN(body->iseq_size) * ISEQ_MBITS_SIZE;
         if (body->catch_table) {
             size += iseq_catch_table_bytes(body->catch_table->size);
         }
         size += (body->param.opt_num + 1) * sizeof(VALUE);
         size += param_keyword_size(body->param.keyword);
+
+        if (body->outer_variables) size += rb_id_table_memsize(body->outer_variables);
 
         /* body->is_entries */
         size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
@@ -1135,7 +1138,7 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
 
     if (body && body->has_source_hash) {
         ISEQ_BODY(iseq)->source_hash = body->source_hash;
-        ISEQ_BODY(iseq)->has_source_hash = true;
+        RUBY_ASSERT(ISEQ_BODY(iseq)->source_hash != 0);
     }
 
     rb_iseq_compile_node(iseq, node);
@@ -1159,7 +1162,7 @@ pm_iseq_build(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
     ISEQ_BODY(iseq)->prism = true;
 
     ISEQ_BODY(iseq)->source_hash = node->source_hash;
-    ISEQ_BODY(iseq)->has_source_hash = true;
+    RUBY_ASSERT(ISEQ_BODY(iseq)->source_hash != 0);
 
     rb_compile_option_t next_option;
     if (!option) option = &COMPILE_OPTION_DEFAULT;
@@ -2949,9 +2952,9 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
         rb_str_modify_expand(str, header_minlen - l);
         memset(RSTRING_END(str), '=', header_minlen - l);
     }
-    if (iseq->body->builtin_attrs) {
+    if (ISEQ_BODY(iseq)->builtin_attrs) {
 #define disasm_builtin_attr(str, iseq, attr) \
-        if (iseq->body->builtin_attrs & BUILTIN_ATTR_ ## attr) { \
+        if (ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_ ## attr) { \
             rb_str_cat2(str, " " #attr); \
         }
         disasm_builtin_attr(str, iseq, LEAF);
@@ -3759,7 +3762,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_hash_aset(misc, ID2SYM(rb_intern("local_size")), INT2FIX(iseq_body->local_table_size));
     rb_hash_aset(misc, ID2SYM(rb_intern("stack_max")), INT2FIX(iseq_body->stack_max));
     rb_hash_aset(misc, ID2SYM(rb_intern("node_id")), INT2FIX(iseq_body->location.node_id));
-    rb_hash_aset(misc, ID2SYM(rb_intern("source_hash")), iseq_body->has_source_hash ? ULL2NUM(iseq_body->source_hash) : Qnil);
+    rb_hash_aset(misc, ID2SYM(rb_intern("source_hash")), iseq_body->source_hash ? ULL2NUM(iseq_body->source_hash) : Qnil);
     rb_hash_aset(misc, ID2SYM(rb_intern("code_location")),
             rb_ary_new_from_args(4,
                 INT2FIX(iseq_body->location.code_location.beg_pos.lineno),
@@ -4602,7 +4605,7 @@ static VALUE
 iseqw_source_hash(VALUE self)
 {
     const rb_iseq_t *iseq = iseqw_check(self);
-    if (!ISEQ_BODY(iseq)->has_source_hash) return Qnil;
+    if (!ISEQ_BODY(iseq)->source_hash) return Qnil;
     return ULL2NUM(ISEQ_BODY(iseq)->source_hash);
 }
 

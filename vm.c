@@ -276,8 +276,8 @@ vm_ep_in_heap_p_(const rb_execution_context_t *ec, const VALUE *ep)
 int
 rb_vm_ep_in_heap_p(const VALUE *ep)
 {
-    const rb_execution_context_t *ec = GET_EC();
-    if (ec->vm_stack == NULL) return TRUE;
+    const rb_execution_context_t *ec = rb_current_execution_context(false);
+    if (ec == NULL || ec->vm_stack == NULL) return TRUE;
     return vm_ep_in_heap_p_(ec, ep);
 }
 #endif
@@ -483,7 +483,7 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
 
     // Record the number of calls at the beginning of the interval
     if (entry_calls + YJIT_CALL_COUNT_INTERV == rb_yjit_call_threshold) {
-        iseq->body->yjit_calls_at_interv = yjit_total_entry_hits;
+        ISEQ_BODY(iseq)->yjit_calls_at_interv = yjit_total_entry_hits;
     }
 
     // Try to estimate the total time taken (total number of calls) to reach 20 calls to this ISEQ
@@ -494,7 +494,7 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
             return true;
         }
 
-        uint64_t num_calls = yjit_total_entry_hits - iseq->body->yjit_calls_at_interv;
+        uint64_t num_calls = yjit_total_entry_hits - ISEQ_BODY(iseq)->yjit_calls_at_interv;
 
         // Reject ISEQs that don't get called often enough
         if (num_calls > rb_yjit_cold_threshold) {
@@ -1495,7 +1495,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
             for (unsigned int j=0; j<body->local_table_size; j++) {
                 if (id == body->local_table[j]) {
                     // check reassignment
-                    if (body->lvar_states[j] == lvar_reassigned) {
+                    if (iseq_lvar_state_get(body->lvar_states, j) == lvar_reassigned) {
                         VALUE name = rb_id2str(id);
                         VALUE msg = rb_sprintf("cannot make a shareable Proc because "
                                                "the outer variable '%" PRIsVALUE "' may be reassigned.", name);
@@ -3905,23 +3905,6 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     rb_gc_mark(ec->local_storage_recursive_hash_for_trace);
     rb_gc_mark(ec->private_const_reference);
 
-    /* Snapshots of copy receives being materialized; off the queue, this is their only
-     * root.  A snapshot is sender-resident, skipped as foreign by our local GC; the
-     * global GC marks it and re-pins its shrefs (its clear pass dropped all).  Move
-     * couriers are covered by the in-flight registry instead (ractor.c). */
-    for (const struct ractor_materialize_frame *f = ec->materialize_frames; f != NULL; f = f->prev) {
-        rb_gc_mark(f->snapshot);
-        if (f->snapshot && !RB_SPECIAL_CONST_P(f->snapshot) && rb_gc_during_global_gc_p()) {
-            /* Every node, not just the root: if compaction moved a snapshot node,
-             * the address-keyed generic_fields entries and the dedup table would
-             * break. */
-            rb_gc_pin_in_flight_message(f->snapshot);
-            for (size_t i = 0; i < f->pinned_cnt; i++) {
-                rb_gc_pin_in_flight_message(f->pinned[i]);
-            }
-        }
-    }
-
     rb_gc_mark_movable(ec->storage);
 }
 
@@ -4843,8 +4826,6 @@ Init_BareVM(void)
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
     rb_native_mutex_initialize(&vm->ractor.generic_fields_lock);
-    rb_native_mutex_initialize(&vm->ractor.move_courier_registry_lock);
-    ccan_list_head_init(&vm->ractor.move_courier_registry);
     rb_native_mutex_initialize(&vm->gc.registered_globals.lock);
     vm->gc.orphan_merge_pjob = POSTPONED_JOB_HANDLE_INVALID;
 

@@ -304,7 +304,6 @@ rb_obj_atomic_write(
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);
 void rb_gc_writebarrier_remember(VALUE obj);
 void rb_gc_obj_became_shareable(VALUE obj);
-void rb_gc_pin_in_flight_message(VALUE obj);
 bool rb_gc_multi_objspace_p(void);
 bool rb_gc_obj_foreign_p(VALUE obj);
 void *rb_gc_objspace_alloc(void);
@@ -318,7 +317,7 @@ void rb_gc_zombie_objspaces_atfork(void);
 void rb_gc_disable_holders_atfork(void);
 void rb_gc_atfork_global_locks(void);
 void rb_gc_stash_cleanup_objspace(void);
-void rb_gc_finish_in_flight_gc(void);
+void rb_gc_rest(void);
 bool rb_gc_during_global_gc_p(void);
 bool rb_gc_single_objspace_p(void);
 const char *rb_obj_info(VALUE obj);

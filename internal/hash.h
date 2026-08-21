@@ -84,7 +84,6 @@ VALUE rb_hash_rehash(VALUE hash);
 int rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val);
 VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
 int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
-int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg);
 bool rb_hash_default_unredefined(VALUE hash);
 VALUE rb_hash_alloc_fixed_size(VALUE klass, st_index_t size);
@@ -108,6 +107,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_hash_delete_entry(VALUE hash, VALUE key);
 VALUE rb_ident_hash_new(void);
 int rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg);
+int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_hash_new_with_bulk_insert(long argc, const VALUE *argv);

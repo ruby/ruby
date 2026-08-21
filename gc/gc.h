@@ -90,7 +90,6 @@ MODULAR_GC_FN void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func ca
 MODULAR_GC_FN void rb_gc_vm_generic_fields_mark_foreach(int (*cb)(VALUE key, VALUE val, void *arg), void *arg);
 MODULAR_GC_FN void rb_gc_vm_generic_fields_drain_dead(bool (*is_dead)(VALUE key));
 /* Exemptions for the shareable containment verifier (called from a gc-impl). */
-MODULAR_GC_FN bool rb_gc_current_ractor_materializing_p(void);
 MODULAR_GC_FN VALUE rb_gc_vm_top_self(void);
 MODULAR_GC_FN void rb_gc_update_object_references(void *objspace, VALUE obj);
 MODULAR_GC_FN void rb_gc_update_vm_references(void *objspace);
@@ -134,7 +133,7 @@ MODULAR_GC_FN void rb_gc_print_backtrace();
 RUBY_SYMBOL_EXPORT_END
 #endif
 
-void rb_ractor_finish_marking(void);
+void rb_ractor_finish_marking(bool full_mark);
 
 // -------------------Private section begin------------------------
 // Functions in this section are private to the default GC and gc.c

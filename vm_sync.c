@@ -17,10 +17,16 @@ vm_locked(rb_vm_t *vm)
 }
 
 #if RUBY_DEBUG > 0
+static bool
+vm_lock_assertable_p(void)
+{
+    return rb_current_execution_context(false) != NULL;
+}
+
 void
 RUBY_ASSERT_vm_locking(void)
 {
-    if (rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(vm_locked(vm));
     }
@@ -29,7 +35,7 @@ RUBY_ASSERT_vm_locking(void)
 void
 RUBY_ASSERT_vm_locking_with_barrier(void)
 {
-    if (rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(vm_locked(vm));
 
@@ -43,7 +49,7 @@ RUBY_ASSERT_vm_locking_with_barrier(void)
 void
 RUBY_ASSERT_vm_unlocking(void)
 {
-    if (rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(!vm_locked(vm));
     }

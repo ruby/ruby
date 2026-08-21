@@ -2251,6 +2251,15 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
     return cc;
 }
 
+#if VM_CHECK_MODE > 0
+static bool
+vm_cd_owned_by_iseq_p(const struct rb_call_data *cd, const rb_iseq_t *iseq)
+{
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    return cd >= body->call_data && cd < body->call_data + body->ci_size;
+}
+#endif
+
 static const struct rb_callcache *
 vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
@@ -2265,6 +2274,10 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 
     const struct rb_callcache *empty_cc = &vm_empty_cc;
     if (cd_owner && cc != empty_cc) {
+        // invokesuper dispatches with a cd on the machine stack, which has no
+        // owning iseq to remember and keeps its ci out of the GC.
+        VM_ASSERT(!vm_ci_markable(cd->ci) ||
+                  vm_cd_owned_by_iseq_p(cd, (const rb_iseq_t *)cd_owner));
         RB_OBJ_WRITTEN(cd_owner, Qundef, cc);
     }
 
@@ -2295,12 +2308,10 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     return cc;
 }
 
-ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass));
-static const struct rb_callcache *
-vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass)
+ALWAYS_INLINE(static bool vm_cc_hit_p(const struct rb_callcache *cc, const struct rb_call_data *cd, VALUE klass));
+static bool
+vm_cc_hit_p(const struct rb_callcache *cc, const struct rb_call_data *cd, VALUE klass)
 {
-    const struct rb_callcache *cc = cd->cc;
-
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 
 #if OPT_INLINE_METHOD_CACHE
@@ -2312,7 +2323,7 @@ vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct 
                       (vm_ci_flag(cd->ci) & VM_CALL_SUPER) ||         // search_super w/ define_method
                       vm_cc_cme(cc)->called_id == vm_ci_mid(cd->ci)); // cme->called_id == ci->mid
 
-            return cc;
+            return true;
         }
         RB_DEBUG_COUNTER_INC(mc_inline_miss_invalidated);
     }
@@ -2320,6 +2331,18 @@ vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct 
         RB_DEBUG_COUNTER_INC(mc_inline_miss_klass);
     }
 #endif
+
+    return false;
+}
+
+ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass));
+static const struct rb_callcache *
+vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass)
+{
+    const struct rb_callcache *cc = cd->cc;
+    if (vm_cc_hit_p(cc, cd, klass)) {
+        return cc;
+    }
 
     return vm_search_method_slowpath0((VALUE)CFP_ISEQ(reg_cfp), cd, klass);
 }
@@ -2339,9 +2362,12 @@ const struct rb_callable_method_entry_struct *
 rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
 {
     // Called from ZJIT with the compile-time iseq, which may differ from
-    // the iseq on the current CFP. Use the slowpath to avoid stale caches.
+    // the iseq on the current CFP.
     VALUE klass = CLASS_OF(recv);
-    const struct rb_callcache *cc = vm_search_method_slowpath0(cd_owner, cd, klass);
+    const struct rb_callcache *cc = cd->cc;
+    if (!vm_cc_hit_p(cc, cd, klass)) {
+        cc = vm_search_method_slowpath0(cd_owner, cd, klass);
+    }
     return vm_cc_cme(cc);
 }
 
@@ -2418,11 +2444,7 @@ rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const cfunc_type func
 int
 rb_vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
 {
-    // Called from ZJIT with the compile-time iseq, which may differ from
-    // the iseq on the current CFP. Use the slowpath to avoid stale caches.
-    VALUE klass = CLASS_OF(recv);
-    const struct rb_callcache *cc = vm_search_method_slowpath0((VALUE)iseq, cd, klass);
-    const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
+    const struct rb_callable_method_entry_struct *cme = rb_zjit_vm_search_method((VALUE)iseq, cd, recv);
     return check_cfunc(cme, func);
 }
 
@@ -3180,9 +3202,9 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             VM_ASSERT(cc == calling->cc);
 
             if (vm_call_iseq_optimizable_p(ci, cc)) {
-                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) && ruby_vm_c_events_enabled == 0) {
-                    VM_ASSERT(iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF);
-                    vm_cc_bf_set(cc, (void *)iseq->body->iseq_encoded[1]);
+                if ((ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) && ruby_vm_c_events_enabled == 0) {
+                    VM_ASSERT(ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_LEAF);
+                    vm_cc_bf_set(cc, (void *)ISEQ_BODY(iseq)->iseq_encoded[1]);
                     CC_SET_FASTPATH(cc, vm_call_single_noarg_leaf_builtin, true);
                 }
                 else {

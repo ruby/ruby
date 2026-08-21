@@ -27,6 +27,7 @@ require "rbconfig"
 #
 # +:backtrace+:: See #backtrace
 # +:bulk_threshold+:: See #bulk_threshold
+# +:cooldown+:: See #cooldown
 # +:verbose+:: See #verbose
 # +:update_sources+:: See #update_sources
 # +:concurrent_downloads+:: See #concurrent_downloads
@@ -55,6 +56,7 @@ class Gem::ConfigFile
 
   DEFAULT_BACKTRACE = true
   DEFAULT_BULK_THRESHOLD = 1000
+  DEFAULT_COOLDOWN = 0
   DEFAULT_VERBOSITY = true
   DEFAULT_UPDATE_SOURCES = true
   DEFAULT_CONCURRENT_DOWNLOADS = 8
@@ -115,6 +117,13 @@ class Gem::ConfigFile
   # threshold value, then a bulk download technique is used.  (deprecated)
 
   attr_accessor :bulk_threshold
+
+  ##
+  # Number of days a newly published gem version must wait before it is
+  # considered for installation or update (the cooldown period).  0
+  # disables the cooldown.
+
+  attr_accessor :cooldown
 
   ##
   # Verbose level of output:
@@ -211,6 +220,7 @@ class Gem::ConfigFile
 
     @backtrace = DEFAULT_BACKTRACE
     @bulk_threshold = DEFAULT_BULK_THRESHOLD
+    @cooldown = DEFAULT_COOLDOWN
     @verbose = DEFAULT_VERBOSITY
     @update_sources = DEFAULT_UPDATE_SOURCES
     @concurrent_downloads = DEFAULT_CONCURRENT_DOWNLOADS
@@ -239,7 +249,7 @@ class Gem::ConfigFile
 
     @hash.transform_keys! do |k|
       # gemhome and gempath are not working with symbol keys
-      if %w[backtrace bulk_threshold verbose update_sources cert_expiration_length_days
+      if %w[backtrace bulk_threshold cooldown verbose update_sources cert_expiration_length_days
             concurrent_downloads install_extension_in_lib ipv4_fallback_enabled
             global_gem_cache use_psych sources
             disable_default_gem_server ssl_verify_mode ssl_ca_cert ssl_client_cert].include?(k)
@@ -252,6 +262,7 @@ class Gem::ConfigFile
     # HACK: these override command-line args, which is bad
     @backtrace                   = @hash[:backtrace]                   if @hash.key? :backtrace
     @bulk_threshold              = @hash[:bulk_threshold]              if @hash.key? :bulk_threshold
+    @cooldown                    = @hash[:cooldown]                    if @hash.key? :cooldown
     @verbose                     = @hash[:verbose]                     if @hash.key? :verbose
     @update_sources              = @hash[:update_sources]              if @hash.key? :update_sources
     @concurrent_downloads        = @hash[:concurrent_downloads]        if @hash.key? :concurrent_downloads

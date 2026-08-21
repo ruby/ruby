@@ -8,11 +8,6 @@ require "bundler"
 RSpec.describe Bundler::ParallelInstaller do
   describe "priority queue" do
     before do
-      # Anchor the vendored Persistent classes on the real Gem::Net::HTTP
-      # before Artifice replaces it, see Artifice.activate_with. Requiring
-      # support/artifice/compact_index already activates Artifice, so this
-      # must come first.
-      require "bundler/vendored_persistent"
       require "support/artifice/compact_index"
       Artifice.activate_with(CompactIndexAPI)
 
@@ -103,11 +98,6 @@ RSpec.describe Bundler::ParallelInstaller do
         skip "This example does not work under a parent make jobserver"
       end
 
-      # Anchor the vendored Persistent classes on the real Gem::Net::HTTP
-      # before Artifice replaces it, see Artifice.activate_with. Requiring
-      # support/artifice/compact_index already activates Artifice, so this
-      # must come first.
-      require "bundler/vendored_persistent"
       require "support/artifice/compact_index"
       Artifice.activate_with(CompactIndexAPI)
 
@@ -142,9 +132,12 @@ RSpec.describe Bundler::ParallelInstaller do
       Bundler.ui = Bundler::UI::Silent.new
     end
 
+    # The `before` hook can `skip` before it saves anything, so only restore
+    # what was actually captured. Otherwise every skipped example clobbers the
+    # globals with nil.
     after do
-      Bundler.ui = @old_ui
-      Gem::Request::ConnectionPools.client = @previous_client
+      Bundler.ui = @old_ui if @old_ui
+      Gem::Request::ConnectionPools.client = @previous_client if @previous_client
       Artifice.deactivate
     end
 

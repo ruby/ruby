@@ -2366,6 +2366,7 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_assume_aligned, [__builtin_assume_aligned((voi
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap16, [__builtin_bswap16(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap32, [__builtin_bswap32(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap64, [__builtin_bswap64(0)])
+test "$ac_cv_sizeof___int128" = 0 || RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap128, [__builtin_bswap128(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_popcount, [__builtin_popcount(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_popcountll, [__builtin_popcountll(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clz, [__builtin_clz(0)])

@@ -208,6 +208,39 @@ class TestGemSource < Gem::TestCase
     assert_equal %w[a-1], released
   end
 
+  def test_created_at
+    a1 = util_spec "a", "1"
+    a2 = util_spec "a", "2"
+    b2_java = util_spec "b", "2" do |s|
+      s.platform = "java"
+    end
+
+    util_setup_compact_index a1, a2, b2_java, created_at: {
+      "a-2" => "2026-06-05T10:30:45Z",
+      "b-2-java" => "2026-06-06T00:00:00Z",
+    }
+
+    assert_equal Time.utc(2026, 6, 5, 10, 30, 45), @source.created_at("a", v(2))
+    assert_equal Time.utc(2026, 6, 6), @source.created_at("b", v(2), "java")
+
+    # no created_at metadata for this version
+    assert_nil @source.created_at("a", v(1))
+
+    # unknown version and unknown gem
+    assert_nil @source.created_at("a", v(9))
+    assert_nil @source.created_at("c", v(1))
+  end
+
+  def test_created_at_file_uri
+    source = Gem::Source.new "file:///tmp/gems"
+
+    assert_nil source.created_at("a", v(1))
+  end
+
+  def test_created_at_fetch_error
+    assert_nil @source.created_at("a", v(1))
+  end
+
   def test_compact_index_cache_dir_removes_tmpdir_at_exit
     source = Gem::Source.new @gem_repo
     def source.update_cache?

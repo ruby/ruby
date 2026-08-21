@@ -1,4 +1,5 @@
 use std::cell::{Cell, RefCell};
+use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
 use std::mem::take;
@@ -250,11 +251,32 @@ pub use crate::backend::current::{
     mem_base_reg,
     Reg,
     EC, CFP, SP,
-    NATIVE_BASE_PTR,
+    NATIVE_BASE_PTR, NATIVE_STACK_PTR,
     C_ARG_OPNDS, C_RET_OPND,
 };
 
 pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
+
+/// Where the C calling convention passes an argument.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum CArgLocation {
+    /// In one of the argument registers.
+    Reg(Opnd),
+    /// In the stack slot that the caller reserves at the bottom of its frame.
+    /// The slot address depends on the reader: the caller writes it relative
+    /// to the native SP at the call, and the callee reads it from above its
+    /// return address and saved frame pointer.
+    StackSlot(usize),
+}
+
+/// Return where the C calling convention passes argument `idx`.
+pub fn c_arg_location(idx: usize) -> CArgLocation {
+    if idx < C_ARG_OPNDS.len() {
+        CArgLocation::Reg(C_ARG_OPNDS[idx])
+    } else {
+        CArgLocation::StackSlot(idx - C_ARG_OPNDS.len())
+    }
+}
 
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Ord, PartialOrd)]
@@ -2468,14 +2490,12 @@ impl Assembler
 
         // Count predecessors for each block
         let mut num_predecessors: HashMap<BlockId, usize> = HashMap::new();
-        for block_id in self.block_order() {
+        let block_order = self.block_order();
+        for &block_id in &block_order {
             for succ in self.basic_blocks[block_id.0].successors() {
                 *num_predecessors.entry(succ).or_insert(0) += 1;
             }
         }
-
-        // Collect block order upfront so we don't borrow self while mutating
-        let block_order = self.block_order();
 
         // This code is iterating over each block in our CFG and inserting
         // copy instructions at each edge.
@@ -2575,33 +2595,22 @@ impl Assembler
             if self.basic_blocks[block_id.0].is_dummy() { continue; }
             let params = self.basic_blocks[block_id.0].parameters.clone();
 
-            // JIT-to-JIT entries that would need more argument registers should
-            // be unreachable because can_direct_send() refuses to call them.
-            // Keep compiling the function body, but make the unsupported entry
-            // abort if control ever reaches it. TODO: Remove this (Shopify/ruby#916)
-            if params.len() > C_ARG_OPNDS.len() {
-                let insert_pos = self.basic_blocks[block_id.0].insns.iter()
-                    .position(|insn| matches!(insn, Insn::FrameSetup { .. }))
-                    .or_else(|| self.basic_blocks[block_id.0].insns.iter().position(|insn| matches!(insn, Insn::Label(_))).map(|idx| idx + 1))
-                    .unwrap_or(0);
-                self.basic_blocks[block_id.0].insns.insert(insert_pos, Insn::Abort);
-                self.basic_blocks[block_id.0].insn_ids.insert(insert_pos, None);
-                continue;
-            }
-
-            // Rewrite VRegs to physical registers before sequentialization
-            // so the parcopy algorithm can detect physical register conflicts.
-            let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
+            // Rewrite VRegs to physical registers or stack slots before sequentialization
+            // so the parcopy algorithm can detect conflicts between them.
+            let copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
                 .map(|(i, param)| parcopy::RegisterCopy::<Opnd> {
-                    source: C_ARG_OPNDS[i],
+                    source: match c_arg_location(i) {
+                        CArgLocation::Reg(reg) => reg,
+                        CArgLocation::StackSlot(slot) => Opnd::mem(64, NATIVE_BASE_PTR, Self::frame_size() + slot as i32 * SIZEOF_VALUE_I32),
+                    },
                     destination: Self::rewritten_opnd(*param, intervals, regs),
                 })
                 .filter(|copy| copy.source != copy.destination)
                 .collect();
 
-            debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
-                "parcopy must operate on physical registers, not VRegs");
-            let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
+            debug_assert!(copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
+                "parcopy must operate on physical locations, not VRegs");
+            let sequentialized = parcopy::sequentialize_register(&copies, Opnd::Reg(SCRATCH_REG));
             let moves: Vec<Insn> = sequentialized
                 .iter()
                 .map(|copy| match copy.source {
@@ -2616,9 +2625,13 @@ impl Assembler
                 })
                 .collect();
 
-            // Find the position after FrameSetup to insert moves
+            // Find the position after FrameSetup to insert moves. They must come
+            // after FrameSetup (not before) because spilled destinations and
+            // stack-passed parameter sources are NATIVE_BASE_PTR-relative, and
+            // NATIVE_BASE_PTR points at the caller's frame until FrameSetup.
             let insert_pos = self.basic_blocks[block_id.0].insns.iter()
                 .position(|insn| matches!(insn, Insn::FrameSetup { .. }))
+                .map(|idx| idx + 1)
                 .or_else(|| self.basic_blocks[block_id.0].insns.iter().position(|insn| matches!(insn, Insn::Label(_))).map(|idx| idx + 1))
                 .unwrap_or(0);
 
@@ -2639,7 +2652,7 @@ impl Assembler
             }
         }
 
-        self.rewrite_instructions(intervals, regs);
+        self.rewrite_instructions(&block_order, intervals, regs);
     }
 
     /// Handle caller-saved registers around CCall instructions.
@@ -2939,8 +2952,8 @@ impl Assembler
 
     /// Walk every instruction and replace VReg operands with the physical
     /// register (or stack slot) assigned to the VReg's interval.
-    fn rewrite_instructions(&mut self, intervals: &[Interval], regs: &RegPool) {
-        for block_id in self.block_order() {
+    fn rewrite_instructions(&mut self, block_order: &[BlockId], intervals: &[Interval], regs: &RegPool) {
+        for &block_id in block_order {
             for insn in self.basic_blocks[block_id.0].insns.iter_mut() {
                 insn.for_each_operand_mut(|opnd| {
                     Self::rewrite_opnd(opnd, intervals, regs);
@@ -3279,15 +3292,16 @@ impl Assembler
                 };
 
                 // Compile the shared side exit if not compiled yet
-                let compiled_exit = if let Some(&compiled_exit) = compiled_exits.get(&exit) {
-                    Target::Label(compiled_exit)
-                } else {
-                    let new_exit = self.new_label("side_exit");
-                    self.write_label(new_exit.clone());
-                    asm_comment!(self, "Exit: {}", exit.pc);
-                    compile_exit(self, &exit, None);
-                    compiled_exits.insert(exit, new_exit.unwrap_label());
-                    new_exit
+                let compiled_exit = match compiled_exits.entry(exit) {
+                    Entry::Occupied(entry) => Target::Label(*entry.get()),
+                    Entry::Vacant(entry) => {
+                        let new_exit = self.new_label("side_exit");
+                        self.write_label(new_exit.clone());
+                        asm_comment!(self, "Exit: {}", entry.key().pc);
+                        compile_exit(self, entry.key(), None);
+                        entry.insert(new_exit.unwrap_label());
+                        new_exit
+                    }
                 };
 
                 *self.basic_blocks[block_id].insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
@@ -5143,18 +5157,26 @@ mod tests {
     }
 
     #[test]
-    fn test_resolve_ssa_entry_params_too_many_abort() {
+    fn test_resolve_ssa_entry_params_beyond_arg_regs_use_stack() {
         let mut asm = Assembler::new();
         let block = asm.new_block(hir::BlockId(0), true, 0);
         asm.set_current_block(block);
         let label = asm.new_label("bb0");
         asm.write_label(label);
 
-        for _ in 0..=C_ARG_OPNDS.len() {
+        let params: Vec<Opnd> = (0..=C_ARG_OPNDS.len()).map(|_| {
             let param = asm.new_vreg(64);
             asm.basic_blocks[block.0].add_parameter(param);
+            param
+        }).collect();
+        // Use every parameter so they are all live and get allocations.
+        let mut acc = params[0];
+        for &param in &params[1..] {
+            let out = asm.new_vreg(64);
+            asm.basic_blocks[block.0].push_insn(Insn::Add { left: acc, right: param, out });
+            acc = out;
         }
-        asm.basic_blocks[block.0].push_insn(Insn::CRet(Opnd::UImm(0)));
+        asm.basic_blocks[block.0].push_insn(Insn::CRet(acc));
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(0);
@@ -5165,7 +5187,16 @@ mod tests {
 
         asm.resolve_ssa(&intervals, &regs);
 
-        assert!(matches!(asm.basic_blocks[block.0].insns[1], Insn::Abort));
+        // The parameter that doesn't fit in argument registers is loaded from
+        // the caller's outgoing-argument area, right above this frame's
+        // return address and saved frame pointer.
+        let insns = &asm.basic_blocks[block.0].insns;
+        assert!(!insns.iter().any(|insn| matches!(insn, Insn::Abort)), "no entry should abort");
+        let expected_src = Opnd::mem(64, NATIVE_BASE_PTR, Assembler::frame_size());
+        assert!(
+            insns.iter().any(|insn| matches!(insn, Insn::Mov { src, .. } if *src == expected_src)),
+            "expected a load from {expected_src:?}, got: {insns:?}"
+        );
     }
 
     fn build_critical_edge() -> (Assembler, Opnd, Opnd, Opnd, Opnd, Opnd, BlockId, BlockId, BlockId) {

@@ -625,7 +625,7 @@ class Bundler::Thor
     # alias name.
     def find_command_possibilities(meth)
       len = meth.to_s.length
-      possibilities = all_commands.reject { |_k, c| c.hidden? }.merge(map).keys.select { |n| meth == n[0, len] }.sort
+      possibilities = all_commands.reject {|k, v| v.is_a?(HiddenCommand) }.merge(map).keys.select { |n| meth == n[0, len] }.sort
       unique_possibilities = possibilities.map { |k| map[k] || k }.uniq
 
       if possibilities.include?(meth)
@@ -669,6 +669,39 @@ class Bundler::Thor
       end
     else
       self.class.help(shell, subcommand)
+    end
+  end
+
+  map TREE_MAPPINGS => :tree
+
+  desc "tree", "Print a tree of all available commands"
+  def tree
+    build_command_tree(self.class, "")
+  end
+
+private
+
+  def build_command_tree(klass, indent)
+    # Print current class name if it's not the root Bundler::Thor class
+    unless klass == Bundler::Thor
+      say "#{indent}#{klass.namespace || 'default'}", :blue
+      indent = "#{indent}  "
+    end
+
+    # Print all commands for this class
+    visible_commands = klass.commands.reject { |_, cmd| cmd.hidden? || cmd.name == "help" }
+    commands_count = visible_commands.count
+    visible_commands.sort.each_with_index do |(command_name, command), i|
+      description = command.description.split("\n").first || ""
+      icon = i == (commands_count - 1) ? "└─" : "├─"
+      say "#{indent}#{icon} ", nil, false
+      say command_name, :green, false
+      say " (#{description})" unless description.empty?
+    end
+
+    # Print all subcommands (from registered Bundler::Thor subclasses)
+    klass.subcommand_classes.each do |_, subclass|
+      build_command_tree(subclass, indent)
     end
   end
 end
