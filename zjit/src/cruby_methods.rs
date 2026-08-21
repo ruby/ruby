@@ -563,7 +563,14 @@ fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
     if fun.likely_a(recv, types::StringExact, state) && fun.likely_a(other, types::String, state) {
         let recv = fun.coerce_to(block, recv, types::StringExact, state);
         let other = fun.coerce_to(block, other, types::String, state);
-        let _ = fun.push_insn(block, hir::Insn::StringAppend { recv, other, state });
+        // Load both strings' flags in HIR so that optimizer passes can dedup the loads,
+        // while codegen keeps the encoding comparison fused with its branch. XOR the
+        // flags in HIR too; passing both loads into StringAppend would keep one more
+        // value alive into its ccall, which currently spills a register.
+        let recv_flags = fun.load_rbasic_flags(block, recv);
+        let other_flags = fun.load_rbasic_flags(block, other);
+        let flags_xor = fun.push_insn(block, hir::Insn::IntXor { left: recv_flags, right: other_flags });
+        let _ = fun.push_insn(block, hir::Insn::StringAppend { recv, other, flags_xor, state });
         return Some(recv);
     }
     if fun.likely_a(recv, types::StringExact, state) && fun.likely_a(other, types::Fixnum, state) {

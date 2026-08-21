@@ -977,7 +977,10 @@ pub enum Insn {
     /// Call rb_str_getbyte with known-Fixnum index
     StringGetbyte { string: InsnId, index: InsnId },
     StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
-    StringAppend { recv: InsnId, other: InsnId, state: InsnId },
+    /// Append `other` to `recv`. `flags_xor` is the XOR of the two strings' RBasic flags
+    /// loaded in HIR; codegen tests its encoding bits to select between a simple
+    /// memcpy-based append (rb_jit_str_simple_append) and the encoding-aware rb_str_buf_append.
+    StringAppend { recv: InsnId, other: InsnId, flags_xor: InsnId, state: InsnId },
     StringAppendCodepoint { recv: InsnId, other: InsnId, state: InsnId },
     StringEqual { left: InsnId, right: InsnId },
 
@@ -1253,6 +1256,7 @@ pub enum Insn {
     FixnumXor  { left: InsnId, right: InsnId },
     IntAnd     { left: InsnId, right: InsnId },
     IntOr      { left: InsnId, right: InsnId },
+    IntXor     { left: InsnId, right: InsnId },
     FixnumLShift { left: InsnId, right: InsnId, state: InsnId },
     FixnumRShift { left: InsnId, right: InsnId },
 
@@ -1398,8 +1402,13 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*index);
                 $visit_one!(*value);
             }
-            Insn::StringAppend { recv, other, state }
-            | Insn::StringAppendCodepoint { recv, other, state } => {
+            Insn::StringAppend { recv, other, flags_xor, state } => {
+                $visit_one!(*recv);
+                $visit_one!(*other);
+                $visit_one!(*flags_xor);
+                $visit_one!(*state);
+            }
+            Insn::StringAppendCodepoint { recv, other, state } => {
                 $visit_one!(*recv);
                 $visit_one!(*other);
                 $visit_one!(*state);
@@ -1482,6 +1491,7 @@ macro_rules! for_each_operand_impl {
             | Insn::FixnumXor { left, right }
             | Insn::IntAnd { left, right }
             | Insn::IntOr { left, right }
+            | Insn::IntXor { left, right }
             | Insn::FixnumRShift { left, right }
             | Insn::IsBitEqual { left, right }
             | Insn::IsBitNotEqual { left, right } => {
@@ -1874,6 +1884,7 @@ impl Insn {
             Insn::FixnumXor { .. } => effects::Empty,
             Insn::IntAnd { .. } => effects::Empty,
             Insn::IntOr { .. } => effects::Empty,
+            Insn::IntXor { .. } => effects::Empty,
             Insn::FixnumLShift { .. } => effects::Empty,
             Insn::FixnumRShift { .. } => effects::Empty,
             Insn::AnyToString { .. } => effects::Any,
@@ -2117,8 +2128,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::StringSetbyteFixnum { string, index, value, .. } => {
                 write!(f, "StringSetbyteFixnum {string}, {index}, {value}")
             }
-            Insn::StringAppend { recv, other, .. } => {
-                write!(f, "StringAppend {recv}, {other}")
+            Insn::StringAppend { recv, other, flags_xor, .. } => {
+                write!(f, "StringAppend {recv}, {other}, flags_xor: {flags_xor}")
             }
             Insn::StringAppendCodepoint { recv, other, .. } => {
                 write!(f, "StringAppendCodepoint {recv}, {other}")
@@ -2266,6 +2277,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumXor  { left, right, .. } => { write!(f, "FixnumXor {left}, {right}") },
             Insn::IntAnd     { left, right } => { write!(f, "IntAnd {left}, {right}") },
             Insn::IntOr      { left, right } => { write!(f, "IntOr {left}, {right}") },
+            Insn::IntXor     { left, right } => { write!(f, "IntXor {left}, {right}") },
             Insn::FixnumLShift { left, right, .. } => { write!(f, "FixnumLShift {left}, {right}") },
             Insn::FixnumRShift { left, right, .. } => { write!(f, "FixnumRShift {left}, {right}") },
             Insn::GuardType { val, guard_type, recompile, .. } => {
@@ -3565,6 +3577,7 @@ impl Function {
             Insn::FixnumXor  { .. } => types::Fixnum,
             Insn::IntAnd { .. } => types::CInt64,
             Insn::IntOr { left, .. } => self.type_of(*left).unspecialized(),
+            Insn::IntXor { left, .. } => self.type_of(*left).unspecialized(),
             Insn::FixnumLShift { .. } => types::Fixnum,
             Insn::FixnumRShift { .. } => types::Fixnum,
             Insn::PutSpecialObject { .. } => types::BasicObject,
@@ -7556,9 +7569,10 @@ impl Function {
             // Instructions with String operands
             Insn::StringCopy { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
             Insn::StringIntern { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
-            Insn::StringAppend { recv, other, .. } => {
+            Insn::StringAppend { recv, other, flags_xor, .. } => {
                 self.assert_subtype(insn_id, recv, types::StringExact)?;
-                self.assert_subtype(insn_id, other, types::String)
+                self.assert_subtype(insn_id, other, types::String)?;
+                self.assert_subtype(insn_id, flags_xor, types::CUInt64)
             }
             Insn::StringAppendCodepoint { recv, other, .. } => {
                 self.assert_subtype(insn_id, recv, types::StringExact)?;
@@ -7617,7 +7631,8 @@ impl Function {
                 }
             }
             Insn::IntAnd { left, right }
-            | Insn::IntOr { left, right } => {
+            | Insn::IntOr { left, right }
+            | Insn::IntXor { left, right } => {
                 // TODO: Expand this to other matching C integer sizes when we need them.
                 let left_type = self.type_of(left);
                 if left_type.is_subtype(types::CInt64) {
