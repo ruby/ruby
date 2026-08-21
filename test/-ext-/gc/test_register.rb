@@ -21,9 +21,14 @@ class Test_GCRegisterAddress < Test::Unit::TestCase
   end
 
   def test_register_address_from_non_main_ractor_raises
-    r = Ractor.new { Bug::GC.register_static("registered in child".dup) }
-    e = assert_raise(Ractor::RemoteError) { r.value }
-    assert_instance_of(Ractor::UnsafeError, e.cause)
+    assert_ractor(<<~RUBY, require: "-test-/gc/register")
+      r = Ractor.new do
+        Thread.current.report_on_exception = false
+        Bug::GC.register_static("registered in child".dup)
+      end
+      e = assert_raise(Ractor::RemoteError) { r.value }
+      assert_instance_of(Ractor::UnsafeError, e.cause)
+    RUBY
   end
 
   def make_registered_weakref(level = 10)
@@ -36,13 +41,16 @@ class Test_GCRegisterAddress < Test::Unit::TestCase
   end
 
   def test_unregister_address_from_non_main_ractor_raises
-    Bug::GC.register_static("main owns this".dup)
+    assert_ractor(<<~RUBY, require: "-test-/gc/register")
+      Bug::GC.register_static("main owns this".dup)
 
-    r = Ractor.new { Bug::GC.unregister_static }
-    e = assert_raise(Ractor::RemoteError) { r.value }
-    assert_instance_of(Ractor::UnsafeError, e.cause)
-  ensure
-    Bug::GC.unregister_static
+      r = Ractor.new do
+        Thread.current.report_on_exception = false
+        Bug::GC.unregister_static
+      end
+      e = assert_raise(Ractor::RemoteError) { r.value }
+      assert_instance_of(Ractor::UnsafeError, e.cause)
+    RUBY
   end
 
   def test_unregistered_value_is_collectable
