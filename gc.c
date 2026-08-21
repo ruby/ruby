@@ -123,6 +123,7 @@
 #include "vm_sync.h"
 #include "vm_callinfo.h"
 #include "ractor_core.h"
+#include "internal/ractor.h"
 #include "yjit.h"
 #include "zjit.h"
 
@@ -355,6 +356,12 @@ bool
 rb_gc_multi_ractor_p(void)
 {
     return rb_multi_ractor_p();
+}
+
+uint32_t
+rb_gc_ractor_last_id(void)
+{
+    return rb_ractor_last_id();
 }
 
 bool
