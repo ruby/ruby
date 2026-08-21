@@ -106,6 +106,11 @@ struct rb_thread_sched_item {
     // the timer thread has a wake pending for this thread; under waiting_lock
     bool wake_pending;
 
+    // parked on its own condvar with a deadline; under the sched lock (see
+    // ubf_waiting).  Always false for an M:N thread: its deadline lives on the
+    // timer wheel, and its early wake comes from the timer thread instead.
+    bool waiting_timed;
+
     bool malloc_stack;
     void *context_stack;
     size_t context_stack_size;
@@ -124,20 +129,8 @@ struct rb_native_thread {
 
     struct rb_thread_struct *running_thread;
 
-    // to control native thread
-#if defined(__GLIBC__) || defined(__FreeBSD__)
-    union
-#else
-    /*
-     * assume the platform condvars are badly implemented and have a
-     * "memory" of which mutex they're associated with
-     */
-    struct
-#endif
-      {
-        rb_nativethread_cond_t intr; /* th->interrupt_lock */
-        rb_nativethread_cond_t readyq; /* use sched->lock */
-    } cond;
+    // to control native thread; use sched->lock
+    rb_nativethread_cond_t readyq;
 
 #ifdef USE_SIGALTSTACK
     void *altstack;
