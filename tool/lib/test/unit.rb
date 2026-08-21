@@ -282,7 +282,7 @@ module Test
 
         opts.separator "parallel test options:"
 
-        options[:retry] = false
+        options[:retry] = true
 
         opts.on '-j N', '--jobs N', /\A(t)?(\d+)\z/, "Allow run tests with N jobs at once" do |_, t, a|
           options[:testing] = true & t # For testing

@@ -187,7 +187,7 @@ module TestParallel
     end
 
     def test_should_retry_failed_on_workers
-      spawn_runner "--retry"
+      spawn_runner
       buf = ::TestParallel.timeout(TIMEOUT) {@test_out.read}
       assert_match(/^Retrying\.+$/,buf)
     end
@@ -214,7 +214,7 @@ module TestParallel
     end
 
     def test_hungup
-      spawn_runner("--worker-timeout=1", "--retry", "test4test_hungup.rb", env: {"RUBY_CRASH_REPORT"=>nil})
+      spawn_runner("--worker-timeout=1", "test4test_hungup.rb", env: {"RUBY_CRASH_REPORT"=>nil})
       buf = ::TestParallel.timeout(TIMEOUT) {@test_out.read}
       assert_match(/^Retrying hung up testcases\.+$/, buf)
       assert_match(/^2 tests,.* 0 failures,/, buf)
