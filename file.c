@@ -2734,21 +2734,27 @@ rb_file_ctime(VALUE obj)
 #if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
- *     File.birthtime(entry_path) -> new_time
+ *    File.birthtime(path) -> time
  *
  * Returns a new Time object containing the create time
- * of the entry at the given +path+:
+ * of the entry at the given +path+;
+ * see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
  *
- *   path = 't.tmp'
- *   File.birthtime(path) # Raises Errno::ENOENT: No such file or directory
- *   File.write(path, 'foo')
- *   File.birthtime(path) # => 2026-04-14 11:10:43.2891695 -0500
- *   File.write(path, 'bar')
- *   File.birthtime(path) # => 2026-04-14 11:10:43.2891695 -0500
- *   File.delete(path)
- *   File.birthtime(path) # Raises Errno::ENOENT: No such file or directory
+ *   filepath = 't.tmp'
+ *   File.birthtime(filepath) # Raises Errno::ENOENT: No such file or directory
+ *   File.write(filepath, 'foo')
+ *   File.birthtime(filepath) # => 2026-04-14 11:10:43.2891695 -0500
+ *   File.write(filepath, 'bar')
+ *   File.birthtime(filepath) # => 2026-04-14 11:10:43.2891695 -0500
+ *   File.delete(filepath)
+ *   File.birthtime(filepath) # Raises Errno::ENOENT: No such file or directory.
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ *   dirpath = 'tmp'
+ *   Dir.mkdir(dirpath)
+ *   File.birthtime(dirpath) # => 2026-08-21 13:42:19.389324172 -0500
+ *   Dir.rmdir(dirpath)
+ *   File.birthtime(dirpath) # Raises Errno::ENOENT: No such file or directory.
+ *
  */
 
 VALUE
