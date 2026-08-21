@@ -836,6 +836,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 
 #if defined(USE_MN_THREADS) && USE_MN_THREADS
     if (th_has_coroutine(th)) {
+        // wait out any pending wake while th and its Ractor are still alive
+        rb_thread_wake_fence(th);
+
         // Run the coroutine thread's epilogue here, while th is still valid;
         // co_start then only makes the final transfer (see
         // coroutine_thread_terminated in thread_pthread_mn.c).
