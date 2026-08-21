@@ -1,6 +1,11 @@
 class Gem::Net::HTTP::Persistent::TimedStackMulti < Bundler::ConnectionPool::TimedStack # :nodoc:
 
   ##
+  # Detects if Bundler::ConnectionPool 3.0+ is being used (needed for TimedStack subclass compatibility)
+
+  CP_USES_KEYWORD_ARGS = Gem::Version.new(Bundler::ConnectionPool::VERSION) >= Gem::Version.new('3.0.0') # :nodoc:
+
+  ##
   # Returns a new hash that has arrays for keys
   #
   # Using a class method to limit the bindings referenced by the hash's
@@ -11,7 +16,11 @@ class Gem::Net::HTTP::Persistent::TimedStackMulti < Bundler::ConnectionPool::Tim
   end
 
   def initialize(size = 0, &block)
-    super
+    if CP_USES_KEYWORD_ARGS
+      super(size: size, &block)
+    else
+      super(size, &block)
+    end
 
     @enqueued = 0
     @ques = self.class.hash_of_arrays

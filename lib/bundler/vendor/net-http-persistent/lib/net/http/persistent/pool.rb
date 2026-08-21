@@ -4,7 +4,7 @@ class Gem::Net::HTTP::Persistent::Pool < Bundler::ConnectionPool # :nodoc:
   attr_reader :key # :nodoc:
 
   def initialize(options = {}, &block)
-    super
+    super(**options, &block)
 
     @available = Gem::Net::HTTP::Persistent::TimedStackMulti.new(@size, &block)
     @key = "current-#{@available.object_id}"
