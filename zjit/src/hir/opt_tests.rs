@@ -7375,10 +7375,9 @@ mod hir_opt_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
           v17:ArrayExact = NewArray
-          v23:ArrayExact = ToArray v17
-          v25:BasicObject = Send v12, :call, v23 # SendFallbackReason: Complex argument passing
+          v36:BasicObject = Send v12, :call, v17 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v25
+          Return v36
         ");
     }
 
@@ -14660,18 +14659,15 @@ mod hir_opt_tests {
           Jump bb3(v5, v6)
         bb3(v8:BasicObject, v9:NilClass):
           v13:ArrayExact = NewArray
-          v19:ArrayExact = ToArray v13
-          v21:BasicObject = Send v8, :foo, v19 # SendFallbackReason: Complex argument passing
-          v25:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v26:StringExact = StringCopy v25
+          v32:BasicObject = Send v8, :foo, v13 # SendFallbackReason: Complex argument passing
+          v36:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v37:StringExact = StringCopy v36
           PatchPoint NoEPEscape(test)
-          v31:ArrayExact = ToArray v13
-          v33:BasicObject = Send v26, :display, v31 # SendFallbackReason: Complex argument passing
+          v55:BasicObject = Send v37, :display, v13 # SendFallbackReason: Complex argument passing
           PatchPoint NoEPEscape(test)
-          v41:ArrayExact = ToArray v13
-          v43:BasicObject = Send v8, :itself, v41 # SendFallbackReason: Complex argument passing
+          v76:BasicObject = Send v8, :itself, v13 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v43
+          Return v76
         ");
     }
 
@@ -14702,14 +14698,29 @@ mod hir_opt_tests {
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
-          v20:ArrayExact = ToArray v11
+          v21:CBool = HasType v11, NilClass
+          CondBranch v21, bb4(), bb5()
+        bb4():
+          v23:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb8(v23)
+        bb5():
+          v25:NotNil = RefineType v11, NotNil
+          v26:CBool = HasType v25, ArrayExact
+          CondBranch v26, bb6(), bb7()
+        bb6():
+          v28:ArrayExact = RefineType v25, ArrayExact
+          Jump bb8(v28)
+        bb7():
+          v30:ArrayExact = ToArray v25
+          Jump bb8(v30)
+        bb8(v20:ArrayExact):
           IncrCounter zjit_insn_count
           IncrCounter complex_arg_pass_caller_splat
           IncrCounter caller_splat_profile_monomorphic
-          v23:BasicObject = Send v10, :foo, v20 # SendFallbackReason: Complex argument passing
+          v34:BasicObject = Send v10, :foo, v20 # SendFallbackReason: Complex argument passing
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v23
+          Return v34
         ");
     }
 
@@ -14742,14 +14753,29 @@ mod hir_opt_tests {
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
-          v20:ArrayExact = ToArray v11
+          v21:CBool = HasType v11, NilClass
+          CondBranch v21, bb4(), bb5()
+        bb4():
+          v23:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb8(v23)
+        bb5():
+          v25:NotNil = RefineType v11, NotNil
+          v26:CBool = HasType v25, ArrayExact
+          CondBranch v26, bb6(), bb7()
+        bb6():
+          v28:ArrayExact = RefineType v25, ArrayExact
+          Jump bb8(v28)
+        bb7():
+          v30:ArrayExact = ToArray v25
+          Jump bb8(v30)
+        bb8(v20:ArrayExact):
           IncrCounter zjit_insn_count
           IncrCounter complex_arg_pass_caller_splat
           IncrCounter caller_splat_profile_polymorphic
-          v23:BasicObject = Send v10, :foo, v20 # SendFallbackReason: Complex argument passing
+          v34:BasicObject = Send v10, :foo, v20 # SendFallbackReason: Complex argument passing
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v23
+          Return v34
         ");
     }
 
@@ -17448,10 +17474,25 @@ mod hir_opt_tests {
           v7:BasicObject = LoadArg :x@1
           Jump bb3(v6, v7)
         bb3(v9:HeapBasicObject, v10:BasicObject):
-          v16:ArrayExact = ToArray v10
-          v18:BasicObject = InvokeSuper v9, 0x1008, v16 # SendFallbackReason: super: complex argument passing to `super` call
+          v17:CBool = HasType v10, NilClass
+          CondBranch v17, bb4(), bb5()
+        bb4():
+          v19:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb8(v19)
+        bb5():
+          v21:NotNil = RefineType v10, NotNil
+          v22:CBool = HasType v21, ArrayExact
+          CondBranch v22, bb6(), bb7()
+        bb6():
+          v24:ArrayExact = RefineType v21, ArrayExact
+          Jump bb8(v24)
+        bb7():
+          v26:ArrayExact = ToArray v21
+          Jump bb8(v26)
+        bb8(v16:ArrayExact):
+          v29:BasicObject = InvokeSuper v9, 0x1010, v16 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
-          Return v18
+          Return v29
         ");
     }
 
