@@ -1741,8 +1741,9 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
     slice->base = (char*)buffer->base + offset;
     slice->size = length;
 
-    // The source should be the root buffer:
-    if (buffer->source != Qnil) {
+    // Slices retain their root buffer. If this buffer is already a slice,
+    // retain its root directly rather than building a chain of slices:
+    if (rb_typeddata_is_kind_of(buffer->source, &rb_io_buffer_type)) {
         RB_OBJ_WRITE(instance, &slice->source, buffer->source);
     }
     else {
@@ -1758,8 +1759,9 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
  *  Produce another IO::Buffer which is a slice (or view into) the current one
  *  starting at +offset+ bytes and going for +length+ bytes.
  *
- *  The slicing happens without copying of memory, and the slice keeps being
- *  associated with the original buffer's source (string, or file), if any.
+ *  The slicing happens without copying memory. The slice retains its root
+ *  buffer and becomes invalid if that root is freed, transferred, resized so
+ *  that the slice is outside its bounds, or otherwise invalidated.
  *
  *  If the offset is not given, it will be zero. If the offset is negative, it
  *  will raise an ArgumentError.

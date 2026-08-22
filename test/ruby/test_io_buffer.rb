@@ -396,6 +396,33 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "Hello World", hello
   end
 
+  def test_string_backed_slice_is_invalidated_when_root_is_freed
+    buffer = IO::Buffer.for("Hello World")
+    slice = buffer.slice(0, 5)
+
+    assert_predicate slice, :valid?
+    buffer.free
+    refute_predicate slice, :valid?
+    assert_raise(IO::Buffer::InvalidatedError) {slice.get_string}
+  ensure
+    slice&.free unless slice&.null?
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_string_backed_slice_escaping_block_is_invalidated
+    slice = nil
+
+    IO::Buffer.for(+"Hello World") do |buffer|
+      slice = buffer.slice(0, 5)
+      assert_predicate slice, :valid?
+    end
+
+    refute_predicate slice, :valid?
+    assert_raise(IO::Buffer::InvalidatedError) {slice.get_string}
+  ensure
+    slice&.free unless slice&.null?
+  end
+
   def test_transfer
     hello = %w"Hello World".join(" ")
     buffer = IO::Buffer.for(hello)

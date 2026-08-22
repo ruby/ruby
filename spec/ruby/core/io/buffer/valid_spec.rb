@@ -83,12 +83,24 @@ describe "IO::Buffer#valid?" do
       end
     end
 
-    it "is true for a slice of a freed string-backed buffer while string is alive" do
-      @buffer = IO::Buffer.for("alive")
-      slice = @buffer.slice(0, 2)
-      slice.valid?.should == true
-      @buffer.free
-      slice.valid?.should == true
+    ruby_version_is ""..."4.1" do
+      it "is true for a slice of a freed string-backed buffer while string is alive" do
+        @buffer = IO::Buffer.for("alive")
+        slice = @buffer.slice(0, 2)
+        slice.valid?.should == true
+        @buffer.free
+        slice.valid?.should == true
+      end
+    end
+
+    ruby_version_is "4.1" do
+      it "is false for a slice of a freed string-backed buffer" do
+        @buffer = IO::Buffer.for("alive")
+        slice = @buffer.slice(0, 2)
+        slice.valid?.should == true
+        @buffer.free
+        slice.valid?.should == false
+      end
     end
 
     # There probably should be a test with a garbage-collected string,
