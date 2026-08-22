@@ -3570,49 +3570,61 @@ sort_returned(struct ary_sort_data *data)
     sort_reentered(data->ary);
 }
 
-static int
-sort_1(const void *ap, const void *bp, void *dummy)
+static inline bool
+sort_1_less(VALUE a, VALUE b, void *dummy)
 {
     struct ary_sort_data *data = dummy;
-    VALUE retval = sort_reentered(data->ary);
-    VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     VALUE args[2];
     int n;
 
+    sort_reentered(data->ary);
     args[0] = a;
     args[1] = b;
-    retval = rb_yield_values2(2, args);
+    VALUE retval = rb_yield_values2(2, args);
     n = rb_cmpint(retval, a, b);
     sort_returned(data);
-    return n;
+    return n < 0;
 }
 
-static int
-sort_2(const void *ap, const void *bp, void *dummy)
+static inline bool
+sort_2_less(VALUE a, VALUE b, void *dummy)
 {
     struct ary_sort_data *data = dummy;
-    VALUE retval = sort_reentered(data->ary);
-    VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     int n;
 
+    sort_reentered(data->ary);
+
     if (FIXNUM_P(a) && FIXNUM_P(b) && CMP_OPTIMIZABLE(INTEGER)) {
-        if ((long)a > (long)b) return 1;
-        if ((long)a < (long)b) return -1;
-        return 0;
+        return (SIGNED_VALUE)a < (SIGNED_VALUE)b;
     }
     if (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(STRING)) {
-        return rb_str_cmp(a, b);
+        return rb_str_cmp(a, b) < 0;
     }
     if (RB_FLOAT_TYPE_P(a) && CMP_OPTIMIZABLE(FLOAT)) {
-        return rb_float_cmp(a, b);
+        return rb_float_cmp(a, b) < 0;
     }
 
-    retval = rb_funcallv(a, id_cmp, 1, &b);
+    VALUE retval = rb_funcallv(a, id_cmp, 1, &b);
     n = rb_cmpint(retval, a, b);
     sort_returned(data);
 
-    return n;
+    return n < 0;
 }
+
+/* Array#sort with a block: the yield dominates, but sorting in Ruby's own
+ * introsort rather than qsort_r keeps a raising block from unwinding through
+ * libc and stranding its scratch buffer. */
+#define SORT_NAME ary_sort_block
+#define SORT_ELEM VALUE
+#define SORT_LESS(a, b, arg) sort_1_less(a, b, arg)
+#include "sort_template.h"
+
+/* Array#sort with no block. Expanding the comparison inline here is the point:
+ * behind qsort_r's function pointer it could never be. */
+#define SORT_NAME ary_sort_cmp
+#define SORT_ELEM VALUE
+#define SORT_LESS(a, b, arg) sort_2_less(a, b, arg)
+#include "sort_template.h"
 
 /*
  *  call-seq:
@@ -3637,8 +3649,12 @@ rb_ary_sort_bang(VALUE ary)
         data.ary = tmp;
         data.receiver = ary;
         RARRAY_PTR_USE(tmp, ptr, {
-            ruby_qsort(ptr, len, sizeof(VALUE),
-                       rb_block_given_p()?sort_1:sort_2, &data);
+            if (rb_block_given_p()) {
+                ary_sort_block_sort(ptr, ptr + len, &data);
+            }
+            else {
+                ary_sort_cmp_sort(ptr, ptr + len, &data);
+            }
         }); /* WB: no new reference */
         rb_ary_modify(ary);
         if (ARY_EMBED_P(tmp)) {

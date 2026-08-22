@@ -1436,31 +1436,10 @@ sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _data))
     return Qnil;
 }
 
-static int
-sort_by_cmp(const void *ap, const void *bp, void *data)
-{
-    VALUE a;
-    VALUE b;
-    VALUE ary = (VALUE)data;
-
-    if (RBASIC(ary)->klass) {
-        rb_raise(rb_eRuntimeError, "sort_by reentered");
-    }
-
-    a = *(VALUE *)ap;
-    b = *(VALUE *)bp;
-
-    return OPTIMIZED_CMP(a, b);
-}
-
 
 /*
     This is parts of uniform sort
 */
-
-#define uless rb_uniform_is_less
-#define UNIFORM_SWAP(a,b)\
-    do{struct rb_uniform_sort_data tmp = a; a = b; b = tmp;}  while(0)
 
 struct rb_uniform_sort_data {
     VALUE v;
@@ -1484,146 +1463,30 @@ rb_uniform_is_less(VALUE a, VALUE b)
     }
 }
 
+/* Direct primitive data compare sort, for keys that are all Fixnum or all Float. */
+#define SORT_NAME rb_uniform
+#define SORT_ELEM struct rb_uniform_sort_data
+#define SORT_LESS(a, b, arg) ((void)(arg), rb_uniform_is_less((a).v, (b).v))
+#include "sort_template.h"
+
+/* The same sort for pairs whose keys need a general comparison. */
 static inline bool
-rb_uniform_is_larger(VALUE a, VALUE b)
+rb_sort_by_pair_is_less(struct rb_uniform_sort_data a,
+                        struct rb_uniform_sort_data b, void *arg)
 {
+    VALUE ary = (VALUE)arg;
 
-    if (FIXNUM_P(a) && FIXNUM_P(b)) {
-        return (SIGNED_VALUE)a > (SIGNED_VALUE)b;
+    if (RBASIC(ary)->klass) {
+        rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
-    else if (FIXNUM_P(a)) {
-        RUBY_ASSERT(RB_FLOAT_TYPE_P(b));
-        return rb_float_cmp(b, a) < 0;
-    }
-    else {
-        RUBY_ASSERT(RB_FLOAT_TYPE_P(a));
-        return rb_float_cmp(a, b) > 0;
-    }
+
+    return OPTIMIZED_CMP(a.v, b.v) < 0;
 }
 
-#define med3_val(a,b,c) (uless(a,b)?(uless(b,c)?b:uless(c,a)?a:c):(uless(c,b)?b:uless(a,c)?a:c))
-
-static void
-rb_uniform_insertionsort_2(struct rb_uniform_sort_data* ptr_begin,
-                           struct rb_uniform_sort_data* ptr_end)
-{
-    if ((ptr_end - ptr_begin) < 2) return;
-    struct rb_uniform_sort_data tmp, *j, *k,
-                                *index = ptr_begin+1;
-    for (; index < ptr_end; index++) {
-        tmp = *index;
-        j = k = index;
-        if (uless(tmp.v, ptr_begin->v)) {
-            while (ptr_begin < j) {
-                *j = *(--k);
-                j = k;
-            }
-        }
-        else {
-            while (uless(tmp.v, (--k)->v)) {
-                *j = *k;
-                j = k;
-            }
-        }
-        *j = tmp;
-    }
-}
-
-static inline void
-rb_uniform_heap_down_2(struct rb_uniform_sort_data* ptr_begin,
-                       size_t offset, size_t len)
-{
-    size_t c;
-    struct rb_uniform_sort_data tmp = ptr_begin[offset];
-    while ((c = (offset<<1)+1) <= len) {
-        if (c < len && uless(ptr_begin[c].v, ptr_begin[c+1].v)) {
-            c++;
-        }
-        if (!uless(tmp.v, ptr_begin[c].v)) break;
-        ptr_begin[offset] = ptr_begin[c];
-        offset = c;
-    }
-    ptr_begin[offset] = tmp;
-}
-
-static void
-rb_uniform_heapsort_2(struct rb_uniform_sort_data* ptr_begin,
-                      struct rb_uniform_sort_data* ptr_end)
-{
-    size_t n = ptr_end - ptr_begin;
-    if (n < 2) return;
-
-    for (size_t offset = n>>1; offset > 0;) {
-        rb_uniform_heap_down_2(ptr_begin, --offset, n-1);
-    }
-    for (size_t offset = n-1; offset > 0;) {
-        UNIFORM_SWAP(*ptr_begin, ptr_begin[offset]);
-        rb_uniform_heap_down_2(ptr_begin, 0, --offset);
-    }
-}
-
-
-static void
-rb_uniform_quicksort_intro_2(struct rb_uniform_sort_data* ptr_begin,
-                             struct rb_uniform_sort_data* ptr_end, size_t d)
-{
-
-    if (ptr_end - ptr_begin <= 16) {
-        rb_uniform_insertionsort_2(ptr_begin, ptr_end);
-        return;
-    }
-    if (d == 0) {
-        rb_uniform_heapsort_2(ptr_begin, ptr_end);
-        return;
-    }
-
-    VALUE x = med3_val(ptr_begin->v,
-                       ptr_begin[(ptr_end - ptr_begin)>>1].v,
-                       ptr_end[-1].v);
-    struct rb_uniform_sort_data *i = ptr_begin;
-    struct rb_uniform_sort_data *j = ptr_end-1;
-
-    do {
-        while (uless(i->v, x)) i++;
-        while (uless(x, j->v)) j--;
-        if (i <= j) {
-            UNIFORM_SWAP(*i, *j);
-            i++;
-            j--;
-        }
-    } while (i <= j);
-    j++;
-    if (ptr_end - j > 1)   rb_uniform_quicksort_intro_2(j, ptr_end, d-1);
-    if (i - ptr_begin > 1) rb_uniform_quicksort_intro_2(ptr_begin, i, d-1);
-}
-
-/**
- * Direct primitive data compare sort. Implement with intro sort.
- * @param[in]     ptr_begin  The begin address of target rb_ary's raw pointer.
- * @param[in]     ptr_end    The end address of target rb_ary's raw pointer.
-**/
-static void
-rb_uniform_intro_sort_2(struct rb_uniform_sort_data* ptr_begin,
-                        struct rb_uniform_sort_data* ptr_end)
-{
-    size_t n = ptr_end - ptr_begin;
-    size_t d = CHAR_BIT * sizeof(n) - nlz_intptr(n) - 1;
-    bool sorted_flag = true;
-
-    for (struct rb_uniform_sort_data* ptr = ptr_begin+1; ptr < ptr_end; ptr++) {
-        if (rb_uniform_is_larger((ptr-1)->v, (ptr)->v)) {
-            sorted_flag = false;
-            break;
-        }
-    }
-
-    if (sorted_flag) {
-        return;
-    }
-    rb_uniform_quicksort_intro_2(ptr_begin, ptr_end, d<<1);
-}
-
-#undef uless
+#define SORT_NAME rb_sort_by_pair
+#define SORT_ELEM struct rb_uniform_sort_data
+#define SORT_LESS(a, b, arg) rb_sort_by_pair_is_less(a, b, arg)
+#include "sort_template.h"
 
 
 /*
@@ -1745,13 +1608,15 @@ enum_sort_by(VALUE obj)
     if (RARRAY_LEN(ary) > 2) {
         if (data->primitive_uniformed) {
             RARRAY_PTR_USE(ary, ptr,
-                           rb_uniform_intro_sort_2((struct rb_uniform_sort_data*)ptr,
-                                                   (struct rb_uniform_sort_data*)(ptr + RARRAY_LEN(ary))));
+                           rb_uniform_sort((struct rb_uniform_sort_data*)ptr,
+                                           (struct rb_uniform_sort_data*)(ptr + RARRAY_LEN(ary)),
+                                           NULL));
         }
         else {
             RARRAY_PTR_USE(ary, ptr,
-                           ruby_qsort(ptr, RARRAY_LEN(ary)/2, 2*sizeof(VALUE),
-                                      sort_by_cmp, (void *)ary));
+                           rb_sort_by_pair_sort((struct rb_uniform_sort_data*)ptr,
+                                                (struct rb_uniform_sort_data*)(ptr + RARRAY_LEN(ary)),
+                                                (void *)ary));
         }
     }
     if (RBASIC(ary)->klass) {
@@ -1986,6 +1851,33 @@ nmin_block_cmp(const void *ap, const void *bp, void *_data)
     return rb_cmpint(cmp, a, b);
 }
 
+/* nmin_cmp and nmin_block_cmp both read only the first VALUE of an element, so
+ * one instantiation per layout covers either of them. */
+static inline bool
+nmin_value_is_less(VALUE a, VALUE b, void *arg)
+{
+    struct nmin_data *data = arg;
+    return (*data->cmpfunc)(&a, &b, data) < 0;
+}
+
+#define SORT_NAME nmin_value
+#define SORT_ELEM VALUE
+#define SORT_LESS(a, b, arg) nmin_value_is_less(a, b, arg)
+#include "sort_template.h"
+
+static inline bool
+nmin_pair_is_less(struct rb_uniform_sort_data a,
+                  struct rb_uniform_sort_data b, void *arg)
+{
+    struct nmin_data *data = arg;
+    return (*data->cmpfunc)(&a, &b, data) < 0;
+}
+
+#define SORT_NAME nmin_pair
+#define SORT_ELEM struct rb_uniform_sort_data
+#define SORT_LESS(a, b, arg) nmin_pair_is_less(a, b, arg)
+#include "sort_template.h"
+
 static void
 nmin_filter(struct nmin_data *data)
 {
@@ -2141,10 +2033,9 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
     if (by) {
         long i;
         RARRAY_PTR_USE(result, ptr, {
-            ruby_qsort(ptr,
-                       RARRAY_LEN(result)/2,
-                       sizeof(VALUE)*2,
-                       data.cmpfunc, (void *)&data);
+            nmin_pair_sort((struct rb_uniform_sort_data *)ptr,
+                           (struct rb_uniform_sort_data *)(ptr + RARRAY_LEN(result)),
+                           &data);
             for (i=1; i<RARRAY_LEN(result); i+=2) {
                 ptr[i/2] = ptr[i];
             }
@@ -2153,8 +2044,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
     }
     else {
         RARRAY_PTR_USE(result, ptr, {
-            ruby_qsort(ptr, RARRAY_LEN(result), sizeof(VALUE),
-                       data.cmpfunc, (void *)&data);
+            nmin_value_sort(ptr, ptr + RARRAY_LEN(result), &data);
         });
     }
     if (rev) {
