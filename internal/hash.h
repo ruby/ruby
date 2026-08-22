@@ -89,6 +89,7 @@ bool rb_hash_default_unredefined(VALUE hash);
 VALUE rb_hash_alloc_fixed_size(VALUE klass, st_index_t size);
 VALUE rb_ident_hash_new_capa(long size);
 void rb_hash_free(VALUE hash);
+VALUE rb_hash_alloc_copy(VALUE klass, VALUE src);
 RUBY_EXTERN VALUE rb_cHash_empty_frozen;
 
 static inline unsigned RHASH_AR_TABLE_SIZE_RAW(VALUE h);
