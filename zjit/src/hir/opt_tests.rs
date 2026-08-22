@@ -8059,6 +8059,53 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_specialize_polymorphic_setivar_same_offset() {
+        set_call_threshold(3);
+        // Both shapes already have @a at the same index with no shape transition, so the
+        // polymorphic dispatch should share a single optimized store block.
+        eval("
+            class C
+              def test = @a = 5
+            end
+            obj = C.new
+            obj.instance_variable_set(:@a, 1)
+            obj.test
+            obj = C.new
+            obj.instance_variable_set(:@a, 1)
+            obj.instance_variable_set(:@b, 1)
+            obj.test
+            TEST = C.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[5] = Const Value(5)
+          PatchPoint SingleRactorMode
+          v14:HeapBasicObject = GuardType v6, HeapBasicObject
+          v15:CShape = LoadField v14, :shape_id@0x1000
+          v16:CShape[0x1001] = Const CShape(0x1001)
+          v17:CBool = IsBitEqual v15, v16
+          CondBranch v17, bb5(), bb6()
+        bb6():
+          v22:CShape[0x1002] = GuardBitEquals v15, CShape(0x1002) recompile
+          Jump bb5()
+        bb5():
+          StoreField v14, :@a@0x1003, v10
+          WriteBarrier v14, v10
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
     fn test_dont_specialize_complex_shape_setivar() {
         eval(r#"
             class C
@@ -10872,20 +10919,81 @@ mod hir_opt_tests {
           v14:CShape[0x1001] = Const CShape(0x1001)
           v15:CBool = IsBitEqual v12, v14
           CondBranch v15, bb5(), bb6()
-        bb5():
-          v17:BasicObject = LoadField v11, :@foo@0x1002
-          Jump bb4(v17)
         bb6():
-          v19:CShape[0x1003] = GuardBitEquals v12, CShape(0x1003) recompile
-          v21:BasicObject = LoadField v11, :@foo@0x1002
-          Jump bb4(v21)
-        bb4(v13:BasicObject):
-          v24:Fixnum[1] = Const Value(1)
+          v19:CShape[0x1002] = GuardBitEquals v12, CShape(0x1002) recompile
+          Jump bb5()
+        bb5():
+          v17:BasicObject = LoadField v11, :@foo@0x1003
+          v22:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v35:Fixnum = GuardType v13, Fixnum recompile
-          v36:Fixnum = FixnumAdd v35, v24
+          v33:Fixnum = GuardType v17, Fixnum recompile
+          v34:Fixnum = FixnumAdd v33, v22
           CheckInterrupts
-          Return v36
+          Return v34
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_polymorphic_extended_same_index() {
+        set_call_threshold(3);
+        // Both shapes have extended (heap) fields with @foo at the same index, so the
+        // polymorphic dispatch should share a single optimized load block. The extended
+        // layout is part of the dedup key, so this must not merge with embedded loads.
+        // Allocate both objects before filling them so both start in a small slot,
+        // outgrow it, and spill their fields to the heap (extended layout); an object
+        // allocated after the class has seen large instances would get a large slot and
+        // stay embedded.
+        eval(r#"
+            class C
+              def variant_a
+                @foo = 1
+                100.times { |i| instance_variable_set(:"@a#{i}", i) }
+              end
+
+              def variant_b
+                @foo = 2
+                100.times { |i| instance_variable_set(:"@b#{i}", i) }
+              end
+
+              def foo = @foo + 1
+            end
+
+            O1 = C.new
+            O2 = C.new
+            O1.variant_a
+            O2.variant_b
+            O1.foo
+            O2.foo
+        "#);
+        assert_snapshot!(hir_string_proc("C.instance_method(:foo)"), @"
+        fn foo@<compiled>:13:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :shape_id@0x1000
+          v14:CShape[0x1001] = Const CShape(0x1001)
+          v15:CBool = IsBitEqual v12, v14
+          CondBranch v15, bb5(), bb6()
+        bb6():
+          v20:CShape[0x1002] = GuardBitEquals v12, CShape(0x1002) recompile
+          Jump bb5()
+        bb5():
+          v17:IMemo = LoadField v11, :fields_obj@0x1003
+          v18:BasicObject = LoadField v17, :@foo@0x1003
+          v23:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v34:Fixnum = GuardType v18, Fixnum recompile
+          v35:Fixnum = FixnumAdd v34, v23
+          CheckInterrupts
+          Return v35
         ");
     }
 
