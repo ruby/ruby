@@ -2873,15 +2873,27 @@ chmod_internal(const char *path, void *mode)
 
 /*
  *  call-seq:
- *     File.chmod(mode_int, file_name, ... )  ->  integer
+ *     File.chmod(mode, *paths) -> integer
  *
- *  Changes permission bits on the named file(s) to the bit pattern
- *  represented by <i>mode_int</i>. Actual effects are operating system
- *  dependent (see the beginning of this section). On Unix systems, see
- *  <code>chmod(2)</code> for details. Returns the number of files
- *  processed.
+ *  Changes the mode (i.e., permissions) of the entries of each the given +paths+;
+ *  see {File Permissions}[rdoc-ref:File@File+Permissions].
+ *  Returns the count of the given +paths+:
  *
- *     File.chmod(0644, "testfile", "out")   #=> 2
+ *    filepath = 't.tmp'
+ *    File.write(filepath, 'foo')
+ *    dirpath = 'tempdir'
+ *    Dir.mkdir(dirpath)
+ *    File::Stat.new(filepath).mode.to_s(8) # => "100664"
+ *    File::Stat.new(dirpath).mode.to_s(8)  # => "40775"
+ *    File.chmod(0775, filepath, dirpath)   # => 2
+ *    File::Stat.new(filepath).mode.to_s(8) # => "100775"
+ *    File::Stat.new(dirpath).mode.to_s(8)  # => "40775"
+ *    File.chmod(0664, filepath, dirpath)   # => 2
+ *    File::Stat.new(filepath).mode.to_s(8) # => "100664"
+ *    File::Stat.new(dirpath).mode.to_s(8)  # => "40664"
+ *    File.delete(filepath)
+ *    Dir.rmdir(dirpath)
+ *
  */
 
 static VALUE
