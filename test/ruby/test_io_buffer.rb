@@ -309,6 +309,30 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 1, buffer.size
   end
 
+  def test_resize_zero_mapped
+    buffer = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    assert_predicate buffer, :mapped?
+
+    buffer.resize(0)
+    assert_predicate buffer, :null?
+    assert_equal "", buffer.get_string
+
+    buffer.resize(1)
+    assert_equal 1, buffer.size
+  end
+
+  def test_resize_zero_slice
+    buffer = IO::Buffer.new(64)
+    slice = buffer.slice(0, 8)
+
+    slice.resize(0)
+    assert_predicate slice, :null?
+    assert_equal 64, buffer.size
+
+    slice.resize(1)
+    assert_equal 1, slice.size
+  end
+
   def test_resize_zero_external
     buffer = IO::Buffer.for('1')
 

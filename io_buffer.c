@@ -1934,6 +1934,11 @@ rb_io_buffer_resize(VALUE self, size_t size)
         rb_raise(rb_eIOBufferAccessError, "Cannot resize external buffer!");
     }
 
+    if (size == 0) {
+        io_buffer_free(buffer);
+        return;
+    }
+
 #if defined(HAVE_MREMAP) && defined(MREMAP_MAYMOVE)
     if (buffer->flags & RB_IO_BUFFER_MAPPED) {
         void *base = mremap(buffer->base, buffer->size, size, MREMAP_MAYMOVE);
@@ -1952,11 +1957,6 @@ rb_io_buffer_resize(VALUE self, size_t size)
 #endif
 
     if (buffer->flags & RB_IO_BUFFER_INTERNAL) {
-        if (size == 0) {
-            io_buffer_free(buffer);
-            return;
-        }
-
         void *base = realloc(buffer->base, size);
 
         if (!base) {
