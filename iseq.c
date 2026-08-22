@@ -1518,8 +1518,6 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         error = pm_parse_string(&result, src, file, ruby_vm_keep_script_lines ? &script_lines : NULL);
     }
 
-    RB_GC_GUARD(src);
-
     if (error == Qnil) {
         int error_state;
         iseq_new_setup_coverage(file, (int) (pm_parser_line_offsets(result.node.parser)->size - 1));
@@ -1536,6 +1534,7 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         pm_parse_result_free(&result);
         rb_exc_raise(error);
     }
+    RB_GC_GUARD(src);
 
     return iseq;
 }
