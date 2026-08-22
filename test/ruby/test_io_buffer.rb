@@ -315,6 +315,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     buffer.resize(0)
     assert_predicate buffer, :null?
+    assert_equal "", buffer.get_string
 
     buffer.resize(1)
     assert_equal 1, buffer.size
