@@ -272,6 +272,21 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_fork_child_gc_pins_shareable_objects
+    # A forked child re-enters single-Ractor mode while the Ractors it had before the
+    # fork leave their objspaces behind, so its local GC still has to pin shareable
+    # objects instead of collecting them.
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      Ractor.new(port) { |p| p << Ractor::Port.new; Ractor.receive }
+      foreign_port = port.receive # a Port owned by, and allocated in, the other Ractor
+      pid = fork { 100_000.times { +"x" }; exit!(0) }
+      _, status = Process.waitpid2(pid)
+      assert_predicate status, :success?
+      assert_instance_of Ractor::Port, foreign_port
+    RUBY
+  end if Process.respond_to?(:fork)
+
   def test_fork_raise_isolation_error
     assert_ractor(<<~'RUBY')
       ractor = Ractor.new do
