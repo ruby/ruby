@@ -8,10 +8,6 @@
 
 **********************************************************************/
 
-#ifndef USE_DEBUG_COUNTER
-#define USE_DEBUG_COUNTER 0
-#endif
-
 #ifdef RB_DEBUG_COUNTER
 
 // method cache (IMC: inline method cache)
@@ -354,6 +350,14 @@ RB_DEBUG_COUNTER(load_path_is_not_realpath)
 #include "ruby/internal/config.h"
 #include <stddef.h>             /* for size_t */
 #include "ruby/ruby.h"          /* for VALUE */
+
+#ifndef USE_DEBUG_COUNTER
+# ifdef RUBY_DEVEL
+#   define USE_DEBUG_COUNTER 1
+# else
+#   define USE_DEBUG_COUNTER 0
+# endif
+#endif
 
 #if !defined(__GNUC__) && USE_DEBUG_COUNTER
 #error "USE_DEBUG_COUNTER is not supported by other than __GNUC__"

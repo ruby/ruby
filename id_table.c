@@ -3,7 +3,11 @@
 #include "id_table.h"
 
 #ifndef ID_TABLE_DEBUG
-#define ID_TABLE_DEBUG 0
+# ifdef RUBY_DEVEL
+#   define ID_TABLE_DEBUG 1
+# else
+#   define ID_TABLE_DEBUG 0
+# endif
 #endif
 
 #if ID_TABLE_DEBUG == 0

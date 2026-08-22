@@ -152,7 +152,11 @@ RBIMPL_WARNING_IGNORED(-Wunused-function)
  * 5: show all references
  */
 #ifndef RGENGC_CHECK_MODE
-# define RGENGC_CHECK_MODE  0
+# ifdef RUBY_DEVEL
+#   define RGENGC_CHECK_MODE 1
+# else
+#   define RGENGC_CHECK_MODE 0
+# endif
 #endif
 
 #ifndef GC_ASSERT
