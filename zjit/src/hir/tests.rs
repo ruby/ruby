@@ -2755,16 +2755,15 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v15:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
-          v17:HashExact = NewHash
-          PatchPoint NoEPEscape(test)
-          v22:BasicObject = Send v15, :core#hash_merge_kwd, v17, v10 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v24:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
-          v27:StaticSymbol[:b] = Const Value(VALUE(0x1010))
-          v29:Fixnum[1] = Const Value(1)
-          v31:BasicObject = Send v24, :core#hash_merge_ptr, v22, v27, v29 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v33:BasicObject = Send v9, :foo, v31 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v17:NilClass = Const Value(nil)
+          v20:BasicObject = Send v15, :core#hash_merge_kwd, v17, v10 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v22:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
+          v25:StaticSymbol[:b] = Const Value(VALUE(0x1010))
+          v27:Fixnum[1] = Const Value(1)
+          v29:BasicObject = Send v22, :core#hash_merge_ptr, v20, v25, v27 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v31:BasicObject = Send v9, :foo, v29 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v33
+          Return v31
         ");
     }
 

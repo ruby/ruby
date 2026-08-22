@@ -4236,13 +4236,18 @@ m_core_set_postexe(VALUE self)
     return Qnil;
 }
 
-static VALUE core_hash_merge_kwd(VALUE hash, VALUE kw);
-
 static VALUE
 core_hash_merge(VALUE hash, long argc, const VALUE *argv)
 {
+    if (NIL_P(hash)) {
+        return rb_hash_new_with_bulk_insert(argc, argv);
+    }
+
     Check_Type(hash, T_HASH);
-    VM_ASSERT(argc % 2 == 0);
+    if (OBJ_FROZEN(hash)) {
+        return rb_hash_new_with_bulk_merge(hash, argc, argv);
+    }
+
     rb_hash_bulk_insert(argc, argv, hash);
     return hash;
 }
@@ -4251,25 +4256,40 @@ static VALUE
 m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
 {
     VALUE hash = argv[0];
+    VM_ASSERT(argc % 2 == 1);
 
-    REWIND_CFP(hash = core_hash_merge(hash, argc-1, argv+1));
+    REWIND_CFP(hash = core_hash_merge(hash, argc - 1, argv + 1));
 
     return hash;
 }
 
-static int
-kwmerge_i(VALUE key, VALUE value, VALUE hash)
+static VALUE core_hash_merge_kwd(VALUE hash, VALUE kw)
 {
-    rb_hash_aset(hash, key, value);
-    return ST_CONTINUE;
+    kw = rb_to_hash_type(kw);
+    if (NIL_P(hash)) {
+        return rb_hash_resurrect(kw);
+    }
+    else {
+        Check_Type(hash, T_HASH);
+        return rb_hash_new_merge2(hash, kw);
+    }
 }
 
 static VALUE
 m_core_hash_merge_kwd(VALUE recv, VALUE hash, VALUE kw)
 {
-    if (!NIL_P(kw)) {
+    if (NIL_P(kw)) {
+        if (NIL_P(hash)) {
+            hash = rb_hash_new();
+        }
+        else {
+            hash = rb_hash_resurrect(hash);
+        }
+    }
+    else {
         REWIND_CFP(hash = core_hash_merge_kwd(hash, kw));
     }
+    VM_ASSERT(CLASS_OF(hash));
     return hash;
 }
 
@@ -4289,13 +4309,6 @@ static VALUE
 m_core_ensure_shareable(VALUE recv, VALUE obj, VALUE name)
 {
     return rb_ractor_ensure_shareable(obj, name);
-}
-
-static VALUE
-core_hash_merge_kwd(VALUE hash, VALUE kw)
-{
-    rb_hash_foreach(rb_to_hash_type(kw), kwmerge_i, hash);
-    return hash;
 }
 
 extern VALUE *rb_gc_stack_start;
