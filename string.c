@@ -9231,12 +9231,14 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
  *    'hello'.tr('aeiou', '-')   # => "h-ll-"
  *    'hello'.tr('aeiou', 'AA-') # => "hAll-"
  *
- *  Arguments +selector+ and +replacements+ must be valid character selectors
- *  (see {Character Selectors}[rdoc-ref:character_selectors.rdoc]),
- *  and may use any of its valid forms, including negation, ranges, and escapes:
+ *  Argument +selector+ must be a valid character selector
+ *  (see {Character Selectors}[rdoc-ref:character_selectors.rdoc]).
+ *  Both +selector+ and +replacements+ may use ranges and escapes, but only
+ *  +selector+ supports negation:
  *
- *    'hello'.tr('^aeiou', '-')       # => "-e--o"     # Negation.
+ *    'hello'.tr('^aeiou', '-')       # => "-e--o"     # Negation in selector.
  *    'ibm'.tr('b-z', 'a-z')          # => "hal"       # Range.
+ *    'hello'.tr('el', '^*')          # => "h^**o"     # Literal caret.
  *    'hel^lo'.tr('\^aeiou', '-')     # => "h-l-l-"    # Escaped leading caret.
  *    'i-b-m'.tr('b\-z', 'a-z')       # => "ibabm"     # Escaped embedded hyphen.
  *    'foo\\bar'.tr('ab\\', 'XYZ')    # => "fooZYXr"   # Escaped backslash.
