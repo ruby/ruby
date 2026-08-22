@@ -453,6 +453,16 @@ class TestIOBuffer < Test::Unit::TestCase
     transferred = buffer.transfer
     assert_equal "Hello World", transferred.get_string
     assert_predicate buffer, :null?
+    assert_predicate buffer, :empty?
+    assert_predicate buffer, :valid?
+    refute_predicate buffer, :external?
+    refute_predicate buffer, :internal?
+    refute_predicate buffer, :mapped?
+    refute_predicate buffer, :shared?
+    refute_predicate buffer, :private?
+    refute_predicate buffer, :readonly?
+    assert_equal "", buffer.get_string
+    assert_equal 0, buffer.set_string("")
     assert_raise IO::Buffer::AccessError do
       transferred.set_string("Goodbye")
     end
