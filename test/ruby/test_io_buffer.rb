@@ -2,6 +2,7 @@
 
 require 'tempfile'
 require 'rbconfig/sizeof'
+require 'io/nonblock'
 require '-test-/io_buffer'
 
 class TestIOBuffer < Test::Unit::TestCase
@@ -26,7 +27,6 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 2, IO::Buffer::INTERNAL
     assert_equal 4, IO::Buffer::MAPPED
 
-    assert_equal 32, IO::Buffer::LOCKED
     assert_equal 64, IO::Buffer::PRIVATE
 
     assert_equal 128, IO::Buffer::READONLY
@@ -448,20 +448,102 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "Ciao! World", hello
   end
 
-  def test_locked
-    buffer = IO::Buffer.new(128, IO::Buffer::INTERNAL|IO::Buffer::LOCKED)
+  def test_counted_locking
+    buffer = IO::Buffer.new(128)
 
-    assert_raise IO::Buffer::LockedError do
-      buffer.resize(256)
+    Bug::IOBuffer.lock(buffer)
+    Bug::IOBuffer.lock(buffer)
+
+    assert_predicate buffer, :locked?
+    assert_raise(IO::Buffer::LockedError) {buffer.free}
+
+    Bug::IOBuffer.unlock(buffer)
+
+    assert_predicate buffer, :locked?
+    assert_raise(IO::Buffer::LockedError) {buffer.resize(256)}
+
+    Bug::IOBuffer.unlock(buffer)
+
+    refute_predicate buffer, :locked?
+    buffer.resize(256)
+    assert_equal 256, buffer.size
+  ensure
+    Bug::IOBuffer.unlock(buffer) while buffer&.locked?
+    buffer&.free
+  end
+
+  def test_new_locked
+    buffer = Bug::IOBuffer.new_locked(128)
+
+    assert_predicate buffer, :locked?
+    assert_raise(IO::Buffer::LockedError) {buffer.free}
+
+    Bug::IOBuffer.free_locked(buffer)
+
+    refute_predicate buffer, :locked?
+    assert_predicate buffer, :null?
+  ensure
+    Bug::IOBuffer.free_locked(buffer) if buffer&.locked?
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_slice_and_root_share_lock_count
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 64)
+
+    Bug::IOBuffer.lock(buffer)
+    Bug::IOBuffer.lock(slice)
+
+    Bug::IOBuffer.unlock(buffer)
+
+    assert_predicate buffer, :locked?
+    assert_predicate slice, :locked?
+    assert_raise(IO::Buffer::LockedError) {buffer.free}
+
+    Bug::IOBuffer.unlock(slice)
+
+    refute_predicate buffer, :locked?
+    refute_predicate slice, :locked?
+    buffer.free
+    refute_predicate slice, :valid?
+  ensure
+    Bug::IOBuffer.unlock(buffer) while buffer&.locked?
+    slice&.free unless slice&.null?
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_invalid_slice_does_not_lock_source
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 64)
+
+    buffer.free
+
+    yielded = false
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.locked do
+        yielded = true
+      end
     end
 
-    assert_equal 128, buffer.size
+    refute yielded
+    refute_predicate buffer, :locked?
+    refute_predicate slice, :locked?
+  ensure
+    slice&.free unless slice&.null?
+    buffer&.free unless buffer&.null?
+  end
 
-    assert_raise IO::Buffer::LockedError do
-      buffer.free
+  def test_string_backed_slice_shares_root_lock
+    buffer = IO::Buffer.for("test")
+    slice = buffer.slice(0, 2)
+
+    slice.locked do
+      assert_predicate buffer, :locked?
+      assert_raise(IO::Buffer::LockedError) {buffer.free}
     end
-
-    assert_equal 128, buffer.size
+  ensure
+    slice&.free unless slice&.null?
+    buffer&.free unless buffer&.null?
   end
 
   def test_get_string
@@ -623,6 +705,39 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_each_locks_backing_allocation
+    buffer = IO::Buffer.for("Hello World").dup
+
+    assert_raise(IO::Buffer::LockedError) do
+      buffer.each(:U8) do
+        buffer.free
+      end
+    end
+
+    assert_equal "Hello World", buffer.get_string
+    refute_predicate buffer, :locked?
+  ensure
+    buffer&.free
+  end
+
+  def test_each_on_slice_locks_root_allocation
+    buffer = IO::Buffer.for("Hello World").dup
+    slice = buffer.slice
+
+    assert_raise(IO::Buffer::LockedError) do
+      slice.each(:U8) do
+        buffer.resize(32)
+      end
+    end
+
+    assert_equal "Hello World", slice.get_string
+    refute_predicate buffer, :locked?
+    refute_predicate slice, :locked?
+  ensure
+    slice&.free
+    buffer&.free
+  end
+
   def test_zero_length_each
     buffer = IO::Buffer.new(0)
 
@@ -635,6 +750,21 @@ class TestIOBuffer < Test::Unit::TestCase
 
     assert_equal string.bytes, buffer.each_byte.to_a
     assert_equal string.bytes[3, 5], buffer.each_byte(3, 5).to_a
+  end
+
+  def test_each_byte_locks_backing_allocation
+    buffer = IO::Buffer.for("Hello World").dup
+
+    assert_raise(IO::Buffer::LockedError) do
+      buffer.each_byte do
+        buffer.transfer
+      end
+    end
+
+    assert_equal "Hello World", buffer.get_string
+    refute_predicate buffer, :locked?
+  ensure
+    buffer&.free
   end
 
   def test_each_byte_bounds_error
@@ -694,6 +824,42 @@ class TestIOBuffer < Test::Unit::TestCase
     thread.join
 
     input.close
+  end
+
+  def test_overlapping_reads_retain_independent_locks
+    input1, output1 = IO.pipe
+    input2, output2 = IO.pipe
+    input1.nonblock = false
+    input2.nonblock = false
+    buffer = IO::Buffer.new(2)
+
+    thread1 = Thread.new {buffer.read(input1, 1, 0)}
+    thread2 = Thread.new {buffer.read(input2, 1, 1)}
+
+    Thread.pass until thread1.stop? && thread2.stop?
+
+    assert_predicate buffer, :locked?
+
+    output1.write("A")
+    assert_equal 1, thread1.value
+
+    assert_predicate thread2, :alive?
+    assert_predicate buffer, :locked?
+    assert_raise(IO::Buffer::LockedError) {buffer.free}
+
+    output2.write("B")
+    assert_equal 1, thread2.value
+
+    refute_predicate buffer, :locked?
+    assert_equal "AB", buffer.get_string
+  ensure
+    thread1&.kill&.join
+    thread2&.kill&.join
+    input1&.close
+    output1&.close
+    input2&.close
+    output2&.close
+    buffer&.free unless buffer&.null?
   end
 
   def hello_world_tempfile(repeats = 1)

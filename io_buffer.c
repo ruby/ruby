@@ -46,7 +46,7 @@ enum {
     RB_IO_BUFFER_INSPECT_HEXDUMP_WIDTH = 16,
 
     // This is used to validate the flags given by the user.
-    RB_IO_BUFFER_FLAGS_MASK = RB_IO_BUFFER_EXTERNAL | RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED | RB_IO_BUFFER_SHARED | RB_IO_BUFFER_LOCKED | RB_IO_BUFFER_PRIVATE | RB_IO_BUFFER_READONLY,
+    RB_IO_BUFFER_FLAGS_MASK = RB_IO_BUFFER_EXTERNAL | RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED | RB_IO_BUFFER_SHARED | RB_IO_BUFFER_PRIVATE | RB_IO_BUFFER_READONLY,
 
     RB_IO_BUFFER_DEBUG = 0,
 };
@@ -55,6 +55,8 @@ struct rb_io_buffer {
     void *base;
     size_t size;
     enum rb_io_buffer_flags flags;
+    // Locking and unlocking are performed with the GVL held.
+    size_t lock_count;
 
 #if defined(_WIN32)
     HANDLE mapping;
@@ -189,6 +191,7 @@ io_buffer_zero(struct rb_io_buffer *buffer)
 {
     buffer->base = NULL;
     buffer->size = 0;
+    buffer->lock_count = 0;
 #if defined(_WIN32)
     buffer->mapping = NULL;
 #endif
@@ -222,6 +225,7 @@ io_buffer_initialize(VALUE self, struct rb_io_buffer *buffer, void *base, size_t
     buffer->base = base;
     buffer->size = size;
     buffer->flags = flags;
+    buffer->lock_count = 0;
     RB_OBJ_WRITE(self, &buffer->source, source);
 
 #if defined(_WIN32)
@@ -260,6 +264,7 @@ io_buffer_free(struct rb_io_buffer *buffer)
 
         buffer->size = 0;
         buffer->flags = 0;
+        buffer->lock_count = 0;
         buffer->source = Qnil;
     }
 
@@ -342,6 +347,25 @@ get_io_buffer(VALUE self)
     struct rb_io_buffer *buffer;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
     return buffer;
+}
+
+// Return the buffer which owns the lock count. A slice backed by another
+// buffer shares that source buffer's lock count. Other external sources, such
+// as strings, manage their own lifetime and do not share buffer lock state.
+static struct rb_io_buffer *
+io_buffer_lock_owner(struct rb_io_buffer *buffer)
+{
+    if (rb_typeddata_is_kind_of(buffer->source, &rb_io_buffer_type)) {
+        return get_io_buffer(buffer->source);
+    }
+
+    return buffer;
+}
+
+static bool
+io_buffer_locked(struct rb_io_buffer *buffer)
+{
+    return io_buffer_lock_owner(buffer)->lock_count > 0;
 }
 
 static inline enum rb_io_buffer_flags
@@ -758,6 +782,16 @@ rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags)
 }
 
 VALUE
+rb_io_buffer_new_locked(void *base, size_t size, enum rb_io_buffer_flags flags)
+{
+    VALUE instance = rb_io_buffer_new(base, size, flags);
+
+    rb_io_buffer_lock(instance);
+
+    return instance;
+}
+
+VALUE
 rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags)
 {
     VALUE instance = rb_io_buffer_type_allocate(rb_cIOBuffer);
@@ -1135,7 +1169,7 @@ rb_io_buffer_to_s(VALUE self)
         rb_str_cat2(result, " SHARED");
     }
 
-    if (buffer->flags & RB_IO_BUFFER_LOCKED) {
+    if (io_buffer_locked(buffer)) {
         rb_str_cat2(result, " LOCKED");
     }
 
@@ -1427,12 +1461,11 @@ rb_io_buffer_shared_p(VALUE self)
 /*
  *  call-seq: locked? -> true or false
  *
- *  If the buffer is _locked_, meaning it is inside #locked block execution.
- *  Locked buffer can't be resized or freed, and another lock can't be acquired
- *  on it.
+ *  If the buffer is _locked_, its underlying allocation cannot be resized,
+ *  freed or transferred. Locks are shared with slices and may be nested.
  *
- *  Locking is not thread safe, but is a semantic used to ensure buffers don't
- *  move while being used by a system call.
+ *  Locking is a lifetime mechanism used to ensure buffers don't move while
+ *  being used by a system call or other native operation.
  *
  *    buffer.locked do
  *      buffer.write(io) # theoretical system call interface
@@ -1443,7 +1476,7 @@ rb_io_buffer_locked_p(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    return RBOOL(buffer->flags & RB_IO_BUFFER_LOCKED);
+    return RBOOL(io_buffer_locked(buffer));
 }
 
 /*  call-seq: private? -> true or false
@@ -1499,23 +1532,16 @@ io_buffer_readonly_p(VALUE self)
     return RBOOL(rb_io_buffer_readonly_p(self));
 }
 
-static int
-io_buffer_try_lock(struct rb_io_buffer *buffer)
-{
-    if (buffer->flags & RB_IO_BUFFER_LOCKED) {
-        return 0;
-    }
-
-    buffer->flags |= RB_IO_BUFFER_LOCKED;
-    return 1;
-}
-
 static void
 io_buffer_lock(struct rb_io_buffer *buffer)
 {
-    if (!io_buffer_try_lock(buffer)) {
-        rb_raise(rb_eIOBufferLockedError, "Buffer already locked!");
+    struct rb_io_buffer *owner = io_buffer_lock_owner(buffer);
+
+    if (owner->lock_count == SIZE_MAX) {
+        rb_raise(rb_eIOBufferLockedError, "It's locks all the way down!");
     }
+
+    owner->lock_count += 1;
 }
 
 VALUE
@@ -1531,11 +1557,13 @@ rb_io_buffer_lock(VALUE self)
 static void
 io_buffer_unlock(struct rb_io_buffer *buffer)
 {
-    if (!(buffer->flags & RB_IO_BUFFER_LOCKED)) {
+    struct rb_io_buffer *owner = io_buffer_lock_owner(buffer);
+
+    if (owner->lock_count == 0) {
         rb_raise(rb_eIOBufferLockedError, "Buffer not locked!");
     }
 
-    buffer->flags &= ~RB_IO_BUFFER_LOCKED;
+    owner->lock_count -= 1;
 }
 
 VALUE
@@ -1552,9 +1580,11 @@ int
 rb_io_buffer_try_unlock(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer *owner = io_buffer_lock_owner(buffer);
 
-    if (buffer->flags & RB_IO_BUFFER_LOCKED) {
-        buffer->flags &= ~RB_IO_BUFFER_LOCKED;
+    if (owner->lock_count > 0) {
+        owner->lock_count -= 1;
+
         return 1;
     }
 
@@ -1566,7 +1596,7 @@ rb_io_buffer_locked_ensure(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    buffer->flags &= ~RB_IO_BUFFER_LOCKED;
+    io_buffer_unlock(buffer);
 
     return Qnil;
 }
@@ -1574,16 +1604,14 @@ rb_io_buffer_locked_ensure(VALUE self)
 /*
  *  call-seq: locked { ... }
  *
- *  Allows to process a buffer in exclusive way, for concurrency-safety. While
- *  the block is performed, the buffer is considered locked, and no other code
- *  can enter the lock. Also, locked buffer can't be changed with #resize or
- *  #free.
+ *  Prevents the buffer or its buffer source from being moved or freed while
+ *  the block is executing. Locks are nested and shared with slices backed by
+ *  the same buffer source. The source remains locked until every nested lock
+ *  has been released.
  *
- *  The following operations acquire a lock: #resize, #free.
- *
- *  Locking is not thread safe. It is designed as a safety net around
- *  non-blocking system calls. You can only share a buffer between threads with
- *  appropriate synchronisation techniques.
+ *  Locking protects allocation lifetime; it does not serialize access to the
+ *  bytes. Code that shares mutable buffer contents between threads must still
+ *  use appropriate synchronization.
  *
  *    buffer = IO::Buffer.new(4)
  *    buffer.locked? #=> false
@@ -1595,9 +1623,8 @@ rb_io_buffer_locked_ensure(VALUE self)
  *    end
  *
  *    Fiber.schedule do
- *      # in `locked': Buffer already locked! (IO::Buffer::LockedError)
  *      buffer.locked do
- *        buffer.set_string("test", 0)
+ *        buffer.set_string("test", 0) # Nested locking is allowed.
  *      end
  *    end
  */
@@ -1606,11 +1633,11 @@ rb_io_buffer_locked(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    if (buffer->flags & RB_IO_BUFFER_LOCKED) {
-        rb_raise(rb_eIOBufferLockedError, "Buffer already locked!");
-    }
+    // Only yield the block for a currently valid view. In particular, an
+    // invalid slice should not lock its source.
+    io_buffer_validate_for_reading(buffer);
 
-    buffer->flags |= RB_IO_BUFFER_LOCKED;
+    io_buffer_lock(buffer);
 
     return rb_ensure(rb_yield, self, rb_io_buffer_locked_ensure, self);
 }
@@ -1645,7 +1672,7 @@ rb_io_buffer_free(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    if (buffer->flags & RB_IO_BUFFER_LOCKED) {
+    if (io_buffer_locked(buffer)) {
         rb_raise(rb_eIOBufferLockedError, "Buffer is locked!");
     }
 
@@ -1657,6 +1684,14 @@ rb_io_buffer_free(VALUE self)
 VALUE rb_io_buffer_free_locked(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer *owner = io_buffer_lock_owner(buffer);
+
+    // This function is used to invalidate temporary wrappers around borrowed
+    // memory. If another lock remains, the owner cannot safely end the
+    // lifetime of that memory while another operation still retains it.
+    if (owner->lock_count != 1) {
+        rb_bug("rb_io_buffer_free_locked: expected lock count 1, got %" PRIuSIZE, owner->lock_count);
+    }
 
     io_buffer_unlock(buffer);
     io_buffer_free(buffer);
@@ -1838,7 +1873,7 @@ rb_io_buffer_transfer(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    if (buffer->flags & RB_IO_BUFFER_LOCKED) {
+    if (io_buffer_locked(buffer)) {
         rb_raise(rb_eIOBufferLockedError, "Cannot transfer ownership of locked buffer!");
     }
 
@@ -1886,7 +1921,7 @@ rb_io_buffer_resize(VALUE self, size_t size)
 
     io_buffer_validate_for_reading(buffer);
 
-    if (buffer->flags & RB_IO_BUFFER_LOCKED) {
+    if (io_buffer_locked(buffer)) {
         rb_raise(rb_eIOBufferLockedError, "Cannot resize locked buffer!");
     }
 
@@ -2378,26 +2413,19 @@ io_buffer_extract_offset_count(ID buffer_type, size_t size, int argc, VALUE *arg
     }
 }
 
-/*
- *  call-seq:
- *    each(buffer_type, [offset, [count]]) {|offset, value| ...} -> self
- *    each(buffer_type, [offset, [count]]) -> enumerator
- *
- *  Iterates over the buffer, yielding each +value+ of +buffer_type+ starting
- *  from +offset+.
- *
- *  If +count+ is given, only +count+ values will be yielded.
- *
- *    IO::Buffer.for("Hello World").each(:U8, 2, 2) do |offset, value|
- *      puts "#{offset}: #{value}"
- *    end
- *    # 2: 108
- *    # 3: 108
- */
+struct io_buffer_each_arguments {
+    VALUE self;
+    int argc;
+    VALUE *argv;
+};
+
 static VALUE
-io_buffer_each(int argc, VALUE *argv, VALUE self)
+io_buffer_each_locked(VALUE _arguments)
 {
-    RETURN_ENUMERATOR_KW(self, argc, argv, RB_NO_KEYWORDS);
+    struct io_buffer_each_arguments *arguments = (void *)_arguments;
+    VALUE self = arguments->self;
+    int argc = arguments->argc;
+    VALUE *argv = arguments->argv;
 
     const void *base;
     size_t size;
@@ -2422,6 +2450,37 @@ io_buffer_each(int argc, VALUE *argv, VALUE self)
     }
 
     return self;
+}
+
+/*
+ *  call-seq:
+ *    each(buffer_type, [offset, [count]]) {|offset, value| ...} -> self
+ *    each(buffer_type, [offset, [count]]) -> enumerator
+ *
+ *  Iterates over the buffer, yielding each +value+ of +buffer_type+ starting
+ *  from +offset+.
+ *
+ *  If +count+ is given, only +count+ values will be yielded.
+ *
+ *    IO::Buffer.for("Hello World").each(:U8, 2, 2) do |offset, value|
+ *      puts "#{offset}: #{value}"
+ *    end
+ *    # 2: 108
+ *    # 3: 108
+ */
+static VALUE
+io_buffer_each(int argc, VALUE *argv, VALUE self)
+{
+    RETURN_ENUMERATOR_KW(self, argc, argv, RB_NO_KEYWORDS);
+
+    struct io_buffer_each_arguments arguments = {
+        .self = self,
+        .argc = argc,
+        .argv = argv,
+    };
+
+    rb_io_buffer_lock(self);
+    return rb_ensure(io_buffer_each_locked, (VALUE)&arguments, rb_io_buffer_locked_ensure, self);
 }
 
 /*
@@ -2463,6 +2522,34 @@ io_buffer_values(int argc, VALUE *argv, VALUE self)
     return array;
 }
 
+static VALUE
+io_buffer_each_byte_locked(VALUE _arguments)
+{
+    struct io_buffer_each_arguments *arguments = (void *)_arguments;
+    VALUE self = arguments->self;
+    int argc = arguments->argc;
+    VALUE *argv = arguments->argv;
+
+    const void *base;
+    size_t size;
+
+    rb_io_buffer_get_bytes_for_reading(self, &base, &size);
+
+    size_t offset, count;
+    io_buffer_extract_offset_count(RB_IO_BUFFER_DATA_TYPE_U8, size, argc, argv, &offset, &count);
+
+    if (size_sum_is_bigger_than(offset, count, size)) {
+        rb_raise(rb_eArgError, "Specified offset+count is bigger than the buffer size!");
+    }
+
+    for (size_t i = 0; i < count; i++) {
+        unsigned char *value = (unsigned char *)base + i + offset;
+        rb_yield(RB_INT2FIX(*value));
+    }
+
+    return self;
+}
+
 /*
  *  call-seq:
  *    each_byte([offset, [count]]) {|byte| ...} -> self
@@ -2483,24 +2570,14 @@ io_buffer_each_byte(int argc, VALUE *argv, VALUE self)
 {
     RETURN_ENUMERATOR_KW(self, argc, argv, RB_NO_KEYWORDS);
 
-    const void *base;
-    size_t size;
+    struct io_buffer_each_arguments arguments = {
+        .self = self,
+        .argc = argc,
+        .argv = argv,
+    };
 
-    rb_io_buffer_get_bytes_for_reading(self, &base, &size);
-
-    size_t offset, count;
-    io_buffer_extract_offset_count(RB_IO_BUFFER_DATA_TYPE_U8, size, argc, argv, &offset, &count);
-
-    if (size_sum_is_bigger_than(offset, count, size)) {
-        rb_raise(rb_eArgError, "Specified offset+count is bigger than the buffer size!");
-    }
-
-    for (size_t i = 0; i < count; i++) {
-        unsigned char *value = (unsigned char *)base + i + offset;
-        rb_yield(RB_INT2FIX(*value));
-    }
-
-    return self;
+    rb_io_buffer_lock(self);
+    return rb_ensure(io_buffer_each_byte_locked, (VALUE)&arguments, rb_io_buffer_locked_ensure, self);
 }
 
 static inline void
@@ -3044,16 +3121,12 @@ io_buffer_blocking_region(VALUE io, struct rb_io_buffer *buffer, rb_blocking_fun
         .data = data,
     };
 
-    // If the buffer is already locked, we can skip the ensure (unlock):
-    if (buffer->flags & RB_IO_BUFFER_LOCKED) {
-        return io_buffer_blocking_region_begin((VALUE)&argument);
-    }
-    else {
-        // The buffer should be locked for the duration of the blocking region:
-        io_buffer_lock(buffer);
+    // The buffer should be locked for the duration of the blocking region. We
+    // always acquire our own reference so another operation cannot release the
+    // allocation while this operation is still using it:
+    io_buffer_lock(buffer);
 
-        return rb_ensure(io_buffer_blocking_region_begin, (VALUE)&argument, io_buffer_blocking_region_ensure, (VALUE)&argument);
-    }
+    return rb_ensure(io_buffer_blocking_region_begin, (VALUE)&argument, io_buffer_blocking_region_ensure, (VALUE)&argument);
 }
 
 struct io_buffer_read_internal_argument {
@@ -4114,9 +4187,6 @@ Init_IO_Buffer(void)
 
     /* Indicates that the memory in the buffer is also mapped such that it can be shared with other processes. See #shared? for more details. */
     rb_define_const(rb_cIOBuffer, "SHARED", RB_INT2NUM(RB_IO_BUFFER_SHARED));
-
-    /* Indicates that the memory in the buffer is locked and cannot be resized or freed. See #locked? and #locked for more details. */
-    rb_define_const(rb_cIOBuffer, "LOCKED", RB_INT2NUM(RB_IO_BUFFER_LOCKED));
 
     /* Indicates that the memory in the buffer is mapped privately and changes won't be replicated to the underlying file. See #private? for more details. */
     rb_define_const(rb_cIOBuffer, "PRIVATE", RB_INT2NUM(RB_IO_BUFFER_PRIVATE));
