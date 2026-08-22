@@ -1948,7 +1948,7 @@ rb_file_socket_p(VALUE obj, VALUE fname)
  *   File.blockdev?(object) -> true or false
  *
  * Returns whether +object+ (a path or IO object)
- * represents a block device (i.e., a direct-access device)
+ * represents a block device (i.e., a direct-access device):
  *
  *   File.blockdev?('/dev/nvme0n1') # => true
  *   File.blockdev?('/dev/loop0')   # => true
