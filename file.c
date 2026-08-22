@@ -3047,16 +3047,46 @@ chown_internal(const char *path, void *arg)
 
 /*
  *  call-seq:
- *     File.chown(owner_int, group_int, file_name, ...)  ->  integer
+ *    File.chown(owner_int, group_int, *paths) -> integer
  *
- *  Changes the owner and group of the named file(s) to the given
- *  numeric owner and group id's. Only a process with superuser
- *  privileges may change the owner of a file. The current owner of a
- *  file may change the file's group to any group to which the owner
- *  belongs. A <code>nil</code> or -1 owner or group id is ignored.
- *  Returns the number of files processed.
+ *  Changes the owner and group of the entry at each of the given +paths+;
+ *  returns the count of the given +paths+:
  *
- *     File.chown(nil, 100, "testfile")
+ *    # Super user; all privileges.
+ *    Process.uid                               => 0
+ *    Process.gid                               => 0
+ *    # Create a directory and a file.
+ *    dirpath = 'doc/foo'
+ *    Dir.mkdir(dirpath)
+ *    filepath = 't.tmp'
+ *    File.write(filepath, 'foo')
+ *    # Get their user and group ids.
+ *    dirstat = File::Stat.new(dirpath)
+ *    dirstat.uid                               => 0
+ *    dirstat.gid                               => 0
+ *    filestat = File::Stat.new(filepath)
+ *    filestat.uid                              => 0
+ *    filestat.gid                              => 0
+ *    # Change ownership of both.
+ *    File.chown(1000, 1000, filepath, dirpath) => 2
+ *    dirstat = File::Stat.new(dirpath)
+ *    dirstat.uid                               => 1000
+ *    dirstat.gid                               => 1000
+ *    filestat = File::Stat.new(filepath)
+ *    filestat.uid                              => 1000
+ *    filestat.gid                              => 1000
+ *    # Clean up.
+ *    Dir.rmdir(dirpath)
+ *    File.delete(filepath)
+ *
+ *  Notes:
+ *
+ *  - On Windows, the owner and group are not changed.
+ *  - Only a process with superuser privileges can change the owner of an entry.
+ *  - The owner of an entry can change its group to any group
+ *    to which the owner belongs.
+ *  - A +nil+ or +-1+ owner or group id is ignored.
+ *  - The method follows symbolic links to the target entry.
  *
  */
 
