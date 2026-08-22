@@ -6837,6 +6837,22 @@ flatten(VALUE ary, int level)
     return result;
 }
 
+static inline VALUE
+single_nested_array(VALUE ary)
+{
+    // Fast path for the common variadic argument pattern:
+    // def foo(*args)
+    //   args.flatten!
+    //   ...
+    if (RARRAY_LEN(ary) == 1) {
+        VALUE first = RARRAY_AREF(ary, 0);
+        if (RB_TYPE_P(first, T_ARRAY) && CLASS_OF(first) == rb_cArray) {
+            return first;
+        }
+    }
+    return 0;
+}
+
 /*
  *  call-seq:
  *    flatten!(depth = nil) -> self or nil
@@ -6883,11 +6899,24 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
     if (!NIL_P(lv)) level = NUM2INT(lv);
     if (level == 0) return Qnil;
 
-    result = flatten(ary, level);
-    if (result == ary) {
-        return Qnil;
+    VALUE child = single_nested_array(ary);
+    if (child) {
+        if (level == 1) {
+            result = child;
+        }
+        else {
+            if (level > 1) level--;
+            result = flatten(child, level);
+        }
     }
-    if (!(mod = ARY_EMBED_P(result))) rb_ary_freeze(result);
+    else {
+        result = flatten(ary, level);
+        if (result == ary) {
+            return Qnil;
+        }
+    }
+
+    if (!(mod = ARY_EMBED_P(result) && result != child)) rb_ary_freeze(result);
     rb_ary_replace(ary, result);
     if (mod) ARY_SET_EMBED_LEN(result, 0);
 
@@ -6940,9 +6969,22 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
         if (level == 0) return ary_make_shared_copy(ary);
     }
 
-    result = flatten(ary, level);
-    if (result == ary) {
-        result = ary_make_shared_copy(ary);
+    VALUE child = single_nested_array(ary);
+    if (child) {
+        if (level == 1) {
+            result = child;
+        }
+        else {
+            level--;
+            result = flatten(child, level);
+        }
+    }
+    else {
+        result = flatten(ary, level);
+    }
+
+    if (result == ary || result == child) {
+        return ary_make_shared_copy(result);
     }
 
     return result;
