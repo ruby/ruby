@@ -401,6 +401,21 @@ typedef VALUE stack_type;
 
 static const rb_code_location_t NULL_LOC = { {0, -1}, {0, -1} };
 
+struct parser_params;
+void rb_parser_show_bitstack(struct parser_params *, stack_type, const char *, int);
+
+enum cmdarg_effect_type {
+    CMDARG_EFFECT_NONE,
+    CMDARG_EFFECT_PUSH,
+    CMDARG_EFFECT_POP,
+};
+
+static inline void parser_cmdarg_push(struct parser_params *p, int n);
+static inline void parser_cmdarg_pop(struct parser_params *p);
+static inline void parser_cmdarg_effect_before_shift(struct parser_params *p, int recovery);
+static inline void parser_cmdarg_effect_commit(struct parser_params *p);
+static inline void parser_cmdarg_effect_discard(struct parser_params *p);
+
 # define SHOW_BITSTACK(stack, name) (p->debug ? rb_parser_show_bitstack(p, stack, name, __LINE__) : (void)0)
 # define BITSTACK_PUSH(stack, n) (((p->stack) = ((p->stack)<<1)|((n)&1)), SHOW_BITSTACK(p->stack, #stack"(push)"))
 # define BITSTACK_POP(stack)	 (((p->stack) = (p->stack) >> 1), SHOW_BITSTACK(p->stack, #stack"(pop)"))
@@ -416,8 +431,8 @@ static const rb_code_location_t NULL_LOC = { {0, -1}, {0, -1} };
 
 /* A flag to identify keyword_do_block; "do" keyword after command_call.
    Example: `foo 1, 2 do`. */
-#define CMDARG_PUSH(n)	BITSTACK_PUSH(cmdarg_stack, (n))
-#define CMDARG_POP()	BITSTACK_POP(cmdarg_stack)
+#define CMDARG_PUSH(n)	parser_cmdarg_push(p, (n))
+#define CMDARG_POP()	parser_cmdarg_pop(p)
 #define CMDARG_P()	BITSTACK_SET_P(cmdarg_stack)
 #define CMDARG_SET(n)	BITSTACK_SET(cmdarg_stack, (n))
 
@@ -519,6 +534,10 @@ struct parser_params {
     } lex;
     stack_type cond_stack;
     stack_type cmdarg_stack;
+    struct {
+        enum cmdarg_effect_type type;
+        int value;
+    } cmdarg_effect;
     int tokidx;
     int toksiz;
     int heredoc_end;
@@ -580,6 +599,8 @@ struct parser_params {
 # endif
     unsigned int error_p: 1;
     unsigned int cr_seen: 1;
+    unsigned int cmdarg_lexing: 1;
+    unsigned int cmdarg_effect_recovery: 1;
 
     /* Streaming hash state of the source bytes read so far. */
     rb_source_hash_state_t source_hash;
@@ -617,6 +638,69 @@ struct parser_params {
 #endif
 };
 
+static inline void
+parser_cmdarg_effect_set(struct parser_params *p, enum cmdarg_effect_type type, int value)
+{
+    if (!p->cmdarg_lexing) {
+        switch (type) {
+          case CMDARG_EFFECT_PUSH:
+            BITSTACK_PUSH(cmdarg_stack, value);
+            return;
+          case CMDARG_EFFECT_POP:
+            BITSTACK_POP(cmdarg_stack);
+            return;
+          case CMDARG_EFFECT_NONE:
+            return;
+        }
+    }
+
+    if (p->cmdarg_effect.type != CMDARG_EFFECT_NONE) {
+        rb_bug("multiple CMDARG effects for one token");
+    }
+    p->cmdarg_effect.type = type;
+    p->cmdarg_effect.value = value;
+}
+
+static inline void
+parser_cmdarg_push(struct parser_params *p, int n)
+{
+    parser_cmdarg_effect_set(p, CMDARG_EFFECT_PUSH, n);
+}
+
+static inline void
+parser_cmdarg_pop(struct parser_params *p)
+{
+    parser_cmdarg_effect_set(p, CMDARG_EFFECT_POP, 0);
+}
+
+static inline void
+parser_cmdarg_effect_before_shift(struct parser_params *p, int recovery)
+{
+    p->cmdarg_effect_recovery = recovery != 0;
+}
+
+static inline void
+parser_cmdarg_effect_commit(struct parser_params *p)
+{
+    if (p->cmdarg_effect_recovery) {
+        p->cmdarg_effect_recovery = FALSE;
+        return;
+    }
+    parser_cmdarg_effect_set(p, p->cmdarg_effect.type, p->cmdarg_effect.value);
+    p->cmdarg_effect.type = CMDARG_EFFECT_NONE;
+}
+
+static inline void
+parser_cmdarg_effect_discard(struct parser_params *p)
+{
+    p->cmdarg_effect.type = CMDARG_EFFECT_NONE;
+    p->cmdarg_effect_recovery = FALSE;
+}
+
+/* Lrama calls this immediately before after_shift.  Recovery tokens must
+ * not commit the effect belonging to the backed-up lookahead token. */
+#define YY_BEFORE_SHIFT(p, recovery) parser_cmdarg_effect_before_shift((p), (recovery))
+
 #define NUMPARAM_ID_P(id) numparam_id_p(p, id)
 #define NUMPARAM_ID_TO_IDX(id) (unsigned int)(((id) >> ID_SCOPE_SHIFT) - (tNUMPARAM_1 - 1))
 #define NUMPARAM_IDX_TO_ID(idx) TOKEN2LOCALID((tNUMPARAM_1 - 1 + (idx)))
@@ -633,6 +717,7 @@ static void numparam_name(struct parser_params *p, ID id);
 static void
 after_shift(struct parser_params *p)
 {
+    parser_cmdarg_effect_commit(p);
     if (p->debug) {
         rb_parser_printf(p, "after-shift: %+"PRIsVALUE"\n", p->s_value);
     }
@@ -686,6 +771,7 @@ after_pop_stack(int len, struct parser_params *p)
 static void
 after_shift(struct parser_params *p)
 {
+    parser_cmdarg_effect_commit(p);
 }
 
 static void
@@ -4239,38 +4325,11 @@ call_args	: value_expr(command)
                 ;
 
 command_args	:   {
-                        /* If call_args starts with a open paren '(' or '[',
-                         * look-ahead reading of the letters calls CMDARG_PUSH(0),
-                         * but the push must be done after CMDARG_PUSH(1).
-                         * So this code makes them consistent by first cancelling
-                         * the premature CMDARG_PUSH(0), doing CMDARG_PUSH(1),
-                         * and finally redoing CMDARG_PUSH(0).
-                         */
-                        int lookahead = 0;
-                        switch (yychar) {
-                          case '(': case tLPAREN: case tLPAREN_ARG: case '[': case tLBRACK:
-                            lookahead = 1;
-                        }
-                        if (lookahead) CMDARG_POP();
                         CMDARG_PUSH(1);
-                        if (lookahead) CMDARG_PUSH(0);
                     }
                   call_args
                     {
-                        /* call_args can be followed by tLBRACE_ARG (that does CMDARG_PUSH(0) in the lexer)
-                         * but the push must be done after CMDARG_POP() in the parser.
-                         * So this code does CMDARG_POP() to pop 0 pushed by tLBRACE_ARG,
-                         * CMDARG_POP() to pop 1 pushed by command_args,
-                         * and CMDARG_PUSH(0) to restore back the flag set by tLBRACE_ARG.
-                         */
-                        int lookahead = 0;
-                        switch (yychar) {
-                          case tLBRACE_ARG:
-                            lookahead = 1;
-                        }
-                        if (lookahead) CMDARG_POP();
                         CMDARG_POP();
-                        if (lookahead) CMDARG_PUSH(0);
                         $$ = $2;
                     /*% ripper: $:2 %*/
                     }
@@ -11180,11 +11239,17 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *p)
 {
     enum yytokentype t;
 
+    /* A lookahead token can be discarded without passing through after_shift.
+     * Discard its lexer-side CMDARG effect before reading the replacement token.
+     */
+    parser_cmdarg_effect_discard(p);
+    p->cmdarg_lexing = TRUE;
     p->lval = lval;
     lval->node = 0;
     p->yylloc = yylloc;
 
     t = parser_yylex(p);
+    p->cmdarg_lexing = FALSE;
 
     if (has_delayed_token(p))
         dispatch_delayed_token(p, t);
