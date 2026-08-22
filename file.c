@@ -1957,7 +1957,7 @@ rb_file_socket_p(VALUE obj, VALUE fname)
  *   File.blockdev?('nosuch')       # => false
  *   File.blockdev?($stdin)         # => false
  *
- * The returned value is filesystem-dependent; on Windows, almost always +false+.
+ * The returned value is filesystem-dependent; on Windows, always +false+.
  */
 
 static VALUE
