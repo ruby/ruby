@@ -266,6 +266,7 @@ fn main() {
         .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")
         .allowlist_function("rb_jit_get_proc_ptr")
+        .allowlist_type("rb_block_type")
         .allowlist_function("rb_yjit_exit_locations_dict")
         .allowlist_function("rb_jit_icache_invalidate")
         .allowlist_function("rb_optimized_call")
