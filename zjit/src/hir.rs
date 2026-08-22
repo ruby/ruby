@@ -6765,6 +6765,82 @@ impl Function {
         true
     }
 
+    /// Replace block parameters that can only ever hold one value with that constant, and
+    /// drop the parameter from the block and from every branch that targets it.
+    fn reduce_block_params(&mut self) {
+        // Parameter indices to drop for each block.
+        let mut dropped: Vec<Vec<usize>> = vec![vec![]; self.blocks.len()];
+        for block in self.reverse_post_order() {
+            // Entry block parameters are the calling convention, not phis: codegen maps them
+            // to argument registers and `copy_param_types` types them from the ISEQ.
+            if block == self.entries_block || self.is_entry_block(block) {
+                continue;
+            }
+            let params = self.blocks[block.to_usize()].params.clone();
+            let mut consts = vec![];
+            for (idx, &param) in params.iter().enumerate() {
+                let Some(val) = self.type_of(param).exact_ruby_value() else {
+                    continue
+                };
+                dropped[block.to_usize()].push(idx);
+                consts.push((param, val));
+            }
+            // Insert the constants at the top of the block so that they dominate every
+            // use of the parameter they replace.
+            let mut materialized: HashMap<VALUE, InsnId> = HashMap::new();
+            let mut prologue = vec![];
+            for (param, val) in consts {
+                let replacement = *materialized.entry(val).or_insert_with(|| {
+                    let replacement = self.new_insn(Insn::Const { val: Const::Value(val) });
+                    self.insn_types[replacement.to_usize()] = self.infer_type(replacement);
+                    prologue.push(replacement);
+                    replacement
+                });
+                self.make_equal_to(param, replacement);
+            }
+            self.blocks[block.to_usize()].insns.splice(0..0, prologue);
+            // Keep the surviving parameters in order.
+            let drop_set: HashSet<usize> = dropped[block.to_usize()].iter().copied().collect();
+            self.blocks[block.to_usize()].params = params.into_iter().enumerate()
+                .filter(|(idx, _)| !drop_set.contains(idx))
+                .map(|(_, param)| param)
+                .collect();
+        }
+
+        // If there's nothing to drop, finish the pass early.
+        if dropped.iter().all(|indices| indices.is_empty()) {
+            return;
+        }
+
+        // Drop the matching arguments from every branch, so each edge keeps the arity of
+        // its target block.
+        let retain_args = |edge: &mut BranchEdge, dropped: &[Vec<usize>]| {
+            let drop_set = &dropped[edge.target.to_usize()];
+            if drop_set.is_empty() {
+                return;
+            }
+            let mut arg_idx = 0;
+            edge.args.retain(|_| {
+                let keep = !drop_set.contains(&arg_idx);
+                arg_idx += 1;
+                keep
+            });
+        };
+        for block in self.reverse_post_order() {
+            let Some(&terminator_id) = self.blocks[block.to_usize()].insns.last() else {
+                continue
+            };
+            match &mut self.insns[terminator_id.to_usize()] {
+                Insn::Jump(edge) => retain_args(edge, &dropped),
+                Insn::CondBranch { if_true, if_false, .. } => {
+                    retain_args(if_true, &dropped);
+                    retain_args(if_false, &dropped);
+                }
+                _ => {}
+            }
+        }
+    }
+
     /// Clean up linked lists of blocks A -> B -> C into A (with B's and C's instructions).
     fn clean_cfg(&mut self) {
         // num_in_edges is invariant throughout cleaning the CFG:
@@ -7177,6 +7253,7 @@ impl Function {
             (canonicalize) => { Counter::compile_hir_canonicalize_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
             (clean_cfg) => { Counter::compile_hir_clean_cfg_time_ns };
+            (reduce_block_params) => { Counter::compile_hir_reduce_block_params_time_ns };
             (remove_redundant_patch_points) => { Counter::compile_hir_remove_redundant_patch_points_time_ns };
             (remove_duplicate_check_interrupts) => { Counter::compile_hir_remove_duplicate_check_interrupts_time_ns };
             (eliminate_empty_inline_frames) => { Counter::compile_hir_eliminate_empty_inline_frames_time_ns };
@@ -7228,6 +7305,7 @@ impl Function {
             run_pass!(optimize_load_store);
             run_pass!(canonicalize);
             run_pass!(fold_constants);
+            run_pass!(reduce_block_params);
             run_pass!(clean_cfg);
             run_pass!(remove_redundant_patch_points);
             run_pass!(remove_duplicate_check_interrupts);
