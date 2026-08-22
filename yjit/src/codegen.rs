@@ -2875,7 +2875,7 @@ fn jit_chain_guard(
     jcc: JCCKinds,
     jit: &mut JITState,
     asm: &mut Assembler,
-    depth_limit: u8,
+    depth_limit: u16,
     counter: Counter,
 ) {
     let target0_gen_fn = match jcc {
@@ -2902,22 +2902,22 @@ fn jit_chain_guard(
 }
 
 // up to 8 different shapes for each
-pub const GET_IVAR_MAX_DEPTH: u8 = 8;
+pub const GET_IVAR_MAX_DEPTH: u16 = 8;
 
 // up to 8 different shapes for each
-pub const SET_IVAR_MAX_DEPTH: u8 = 8;
+pub const SET_IVAR_MAX_DEPTH: u16 = 8;
 
 // hashes and arrays
-pub const OPT_AREF_MAX_CHAIN_DEPTH: u8 = 2;
+pub const OPT_AREF_MAX_CHAIN_DEPTH: u16 = 2;
 
 // expandarray
-pub const EXPANDARRAY_MAX_CHAIN_DEPTH: u8 = 4;
+pub const EXPANDARRAY_MAX_CHAIN_DEPTH: u16 = 4;
 
 // up to 5 different methods for send
-pub const SEND_MAX_DEPTH: u8 = 5;
+pub const SEND_MAX_DEPTH: u16 = 5;
 
-// up to 20 different offsets for case-when
-pub const CASE_WHEN_MAX_DEPTH: u8 = 20;
+// Specialize every value of a byte-sized case expression
+pub const CASE_WHEN_MAX_DEPTH: u16 = 256;
 
 pub const MAX_SPLAT_LENGTH: i32 = 127;
 
@@ -2928,7 +2928,7 @@ pub const MAX_SPLAT_LENGTH: i32 = 127;
 fn gen_get_ivar(
     jit: &mut JITState,
     asm: &mut Assembler,
-    max_chain_depth: u8,
+    max_chain_depth: u16,
     comptime_receiver: VALUE,
     ivar_name: ID,
     recv: Opnd,
@@ -4982,7 +4982,7 @@ fn jit_guard_known_klass(
     obj_opnd: Opnd,
     insn_opnd: YARVOpnd,
     sample_instance: VALUE,
-    max_chain_depth: u8,
+    max_chain_depth: u16,
     counter: Counter,
 ) {
     let known_klass = sample_instance.class_of();
