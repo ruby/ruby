@@ -648,14 +648,15 @@ rb_io_buffer_for_reading(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE)
     }
 }
 
-/* Forward declaration: rb_io_buffer_readonly_p is defined later in this file. */
-int rb_io_buffer_readonly_p(VALUE self);
+/* Forward declaration: io_buffer_readonly_p is defined later in this file. */
+static int io_buffer_readonly_p(struct rb_io_buffer *buffer);
 
 VALUE
 rb_io_buffer_for_writing(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE), VALUE argument)
 {
     if (rb_obj_is_kind_of(string_or_buffer, rb_cIOBuffer)) {
-        if (rb_io_buffer_readonly_p(string_or_buffer)) {
+        struct rb_io_buffer *buffer = get_io_buffer(string_or_buffer);
+        if (io_buffer_readonly_p(buffer)) {
             rb_raise(rb_eArgError, "buffer is read-only");
         }
         return callback(string_or_buffer, argument);
@@ -1509,11 +1510,9 @@ rb_io_buffer_private_p(VALUE self)
     return RBOOL(buffer->flags & RB_IO_BUFFER_PRIVATE);
 }
 
-int
-rb_io_buffer_readonly_p(VALUE self)
+static int
+io_buffer_readonly_p(struct rb_io_buffer *buffer)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
-
     return buffer->flags & RB_IO_BUFFER_READONLY;
 }
 
@@ -1527,9 +1526,11 @@ rb_io_buffer_readonly_p(VALUE self)
  *  backed by a frozen string or a read-only file.
  */
 static VALUE
-io_buffer_readonly_p(VALUE self)
+rb_io_buffer_readonly_p(VALUE self)
 {
-    return RBOOL(rb_io_buffer_readonly_p(self));
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    return RBOOL(io_buffer_readonly_p(buffer));
 }
 
 static void
@@ -4214,7 +4215,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "shared?", rb_io_buffer_shared_p, 0);
     rb_define_method(rb_cIOBuffer, "locked?", rb_io_buffer_locked_p, 0);
     rb_define_method(rb_cIOBuffer, "private?", rb_io_buffer_private_p, 0);
-    rb_define_method(rb_cIOBuffer, "readonly?", io_buffer_readonly_p, 0);
+    rb_define_method(rb_cIOBuffer, "readonly?", rb_io_buffer_readonly_p, 0);
 
     // Locking to prevent changes while using pointer:
     // rb_define_method(rb_cIOBuffer, "lock", rb_io_buffer_lock, 0);
