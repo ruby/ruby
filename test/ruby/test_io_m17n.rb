@@ -153,6 +153,28 @@ EOT
     }
   end
 
+  def test_open_enc_in_opt_without_encoding_conversion
+    bug20526 = '[ruby-core:118182][Bug #20526]'
+    with_tmpdir {
+      generate_file('tmp', "a\r\r\n")
+      expected = open("tmp") {|f| f.read }
+      actual = open("tmp", encoding: "bom|utf-8") {|f| f.read }
+      assert_equal(expected, actual, bug20526)
+
+      # open(name, encoding: ...) must apply the same default text-mode
+      # on Windows.
+      if /mswin|mingw/ =~ RUBY_PLATFORM
+        assert_equal("a\r\n", actual, bug20526)
+      end
+
+      omit "affected by Bug #21691 on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+      expected = open("tmp", universal_newline: true) {|f| f.read }
+      actual = open("tmp", encoding: "bom|utf-8", universal_newline: true) {|f| f.read }
+      assert_equal(expected, actual, bug20526)
+      assert_equal("a\n\n", actual, bug20526)
+    }
+  end
+
   def test_open_r_encname_in_opt
     with_tmpdir {
       generate_file('tmp', "")
