@@ -14661,8 +14661,23 @@ mod hir_opt_tests {
         bb3(v8:BasicObject, v9:NilClass):
           v13:ArrayExact = NewArray
           v19:ArrayExact = ToArray v13
-          v21:BasicObject = Send v8, :foo, v19 # SendFallbackReason: Complex argument passing
-          v25:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v54:CInt64 = ArrayLength v19
+          v55:CInt64[0] = Const CInt64(0)
+          v56:CBool = IsBitEqual v54, v55
+          CondBranch v56, bb4(), bb5()
+        bb4():
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v50:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v8, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame :foo, v50 (0x1038), num_args=0
+          PatchPoint MethodRedefined(Object@0x1000, itself@0x1060, cme:0x1068)
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb6(v50)
+        bb5():
+          v58:BasicObject = Send v8, :foo, v19 # SendFallbackReason: Complex argument passing
+          Jump bb6(v58)
+        bb6(v53:BasicObject):
+          v25:StringExact[VALUE(0x1090)] = Const Value(VALUE(0x1090))
           v26:StringExact = StringCopy v25
           PatchPoint NoEPEscape(test)
           v31:ArrayExact = ToArray v13
@@ -14676,10 +14691,79 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn dont_specialize_call_to_iseq_with_monomorphic_caller_splat() {
+    fn inline_call_to_iseq_with_monomorphic_caller_splat() {
         enable_zjit_stats();
         eval("
-            def foo(*args) = args
+            def foo(a, b) = [a, b]
+            def test(args) = foo(*args)
+            test([1, 2])
+            test([3, 4])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :args@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :args@1
+          IncrCounterPtr
+          Jump bb3(v6, v7)
+        bb3(v10:BasicObject, v11:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v20:ArrayExact = ToArray v11
+          IncrCounter zjit_insn_count
+          IncrCounter caller_splat_profile_monomorphic
+          v41:CInt64 = ArrayLength v20
+          v42:CInt64[2] = Const CInt64(2)
+          v43:CBool = IsBitEqual v41, v42
+          CondBranch v43, bb7(), bb5()
+        bb7():
+          v45:CInt64 = CCall v20, :rb_jit_ruby2_keywords_splat_p@0x1001
+          v46:CInt64[0] = Const CInt64(0)
+          v47:CBool = IsBitEqual v45, v46
+          CondBranch v47, bb4(), bb5()
+        bb4():
+          IncrCounter caller_splat_optimized
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v33:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v34:CInt64[0] = Const CInt64(0)
+          v35:BasicObject = ArrayAref v20, v34
+          v36:CInt64[1] = Const CInt64(1)
+          v37:BasicObject = ArrayAref v20, v36
+          PushInlineFrame :foo, v33 (0x1040), num_args=2
+          IncrCounter inline_iseq_optimized_send_count
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v65:ArrayExact = NewArray v35, v37
+          IncrCounter zjit_insn_count
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb6(v65)
+        bb5():
+          IncrCounter complex_arg_pass_caller_splat
+          v50:BasicObject = Send v10, :foo, v20 # SendFallbackReason: Complex argument passing
+          Jump bb6(v50)
+        bb6(v40:BasicObject):
+          IncrCounter zjit_insn_count
+          CheckInterrupts
+          Return v40
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_monomorphic_caller_splat() {
+        enable_zjit_stats();
+        set_inline_threshold(0);
+        eval("
+            def foo(arg) = arg
             def test(args) = foo(*args)
             test([1])
             test([2])
@@ -14704,9 +14788,397 @@ mod hir_opt_tests {
           IncrCounter zjit_insn_count
           v20:ArrayExact = ToArray v11
           IncrCounter zjit_insn_count
+          IncrCounter caller_splat_profile_monomorphic
+          v39:CInt64 = ArrayLength v20
+          v40:CInt64[1] = Const CInt64(1)
+          v41:CBool = IsBitEqual v39, v40
+          CondBranch v41, bb7(), bb5()
+        bb7():
+          v43:CInt64 = CCall v20, :rb_jit_ruby2_keywords_splat_p@0x1001
+          v44:CInt64[0] = Const CInt64(0)
+          v45:CBool = IsBitEqual v43, v44
+          CondBranch v45, bb4(), bb5()
+        bb4():
+          IncrCounter caller_splat_optimized
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v33:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v34:CInt64[0] = Const CInt64(0)
+          v35:BasicObject = ArrayAref v20, v34
+          v37:BasicObject = SendDirect v33, 0x0, :foo (0x1040), v35
+          Jump bb6(v37)
+        bb5():
+          IncrCounter complex_arg_pass_caller_splat
+          v48:BasicObject = Send v10, :foo, v20 # SendFallbackReason: Complex argument passing
+          Jump bb6(v48)
+        bb6(v38:BasicObject):
+          IncrCounter zjit_insn_count
+          CheckInterrupts
+          Return v38
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_empty_caller_splat() {
+        eval("
+            def foo(arg = 1) = arg
+            def test(args) = foo(*args)
+            test([])
+            test([])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :args@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :args@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:ArrayExact = ToArray v10
+          v29:CInt64 = ArrayLength v16
+          v30:CInt64[0] = Const CInt64(0)
+          v31:CBool = IsBitEqual v29, v30
+          CondBranch v31, bb4(), bb5()
+        bb4():
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame :foo, v25 (0x1040), num_args=0
+          v41:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb6(v41)
+        bb5():
+          v33:BasicObject = Send v9, :foo, v16 # SendFallbackReason: Complex argument passing
+          Jump bb6(v33)
+        bb6(v28:BasicObject):
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_caller_splat_and_positional_prefix() {
+        eval("
+            def foo(a, b, c) = [a, b, c]
+            def test(args) = foo(1, *args)
+            test([2, 3])
+            test([4, 5])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :args@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :args@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          v18:ArrayExact = ToArray v10
+          v35:CInt64 = ArrayLength v18
+          v36:CInt64[2] = Const CInt64(2)
+          v37:CBool = IsBitEqual v35, v36
+          CondBranch v37, bb7(), bb5()
+        bb7():
+          v39:CInt64 = CCall v18, :rb_jit_ruby2_keywords_splat_p@0x1001
+          v40:CInt64[0] = Const CInt64(0)
+          v41:CBool = IsBitEqual v39, v40
+          CondBranch v41, bb4(), bb5()
+        bb4():
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v28:CInt64[0] = Const CInt64(0)
+          v29:BasicObject = ArrayAref v18, v28
+          v30:CInt64[1] = Const CInt64(1)
+          v31:BasicObject = ArrayAref v18, v30
+          PushInlineFrame :foo, v27 (0x1040), num_args=3
+          v57:ArrayExact = NewArray v15, v29, v31
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb6(v57)
+        bb5():
+          v43:BasicObject = Send v9, :foo, v15, v18 # SendFallbackReason: Complex argument passing
+          Jump bb6(v43)
+        bb6(v34:BasicObject):
+          CheckInterrupts
+          Return v34
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_many_caller_splat_arguments_and_rest_parameter() {
+        eval("
+            def foo(*args) = args.length
+            def test(args) = foo(*args)
+            test([1, 2, 3, 4, 5, 6, 7])
+            test([8, 9, 10, 11, 12, 13, 14])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :args@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :args@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:ArrayExact = ToArray v10
+          v44:CInt64 = ArrayLength v16
+          v45:CInt64[7] = Const CInt64(7)
+          v46:CBool = IsBitEqual v44, v45
+          CondBranch v46, bb7(), bb5()
+        bb7():
+          v48:CInt64 = CCall v16, :rb_jit_ruby2_keywords_splat_p@0x1001
+          v49:CInt64[0] = Const CInt64(0)
+          v50:CBool = IsBitEqual v48, v49
+          CondBranch v50, bb4(), bb5()
+        bb4():
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v26:CInt64[0] = Const CInt64(0)
+          v27:BasicObject = ArrayAref v16, v26
+          v28:CInt64[1] = Const CInt64(1)
+          v29:BasicObject = ArrayAref v16, v28
+          v30:CInt64[2] = Const CInt64(2)
+          v31:BasicObject = ArrayAref v16, v30
+          v32:CInt64[3] = Const CInt64(3)
+          v33:BasicObject = ArrayAref v16, v32
+          v34:CInt64[4] = Const CInt64(4)
+          v35:BasicObject = ArrayAref v16, v34
+          v36:CInt64[5] = Const CInt64(5)
+          v37:BasicObject = ArrayAref v16, v36
+          v38:CInt64[6] = Const CInt64(6)
+          v39:BasicObject = ArrayAref v16, v38
+          v40:ArrayExact = NewArray v27, v29, v31, v33, v35, v37, v39
+          PushInlineFrame :foo, v25 (0x1040), num_args=1
+          PatchPoint NoSingletonClass(Array@0x1068)
+          PatchPoint MethodRedefined(Array@0x1068, length@0x1070, cme:0x1078)
+          v76:CInt64 = ArrayLength v40
+          v77:Fixnum = BoxFixnum v76
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb6(v77)
+        bb5():
+          v52:BasicObject = Send v9, :foo, v16 # SendFallbackReason: Complex argument passing
+          Jump bb6(v52)
+        bb6(v43:BasicObject):
+          CheckInterrupts
+          Return v43
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_caller_splat_and_complex_parameters() {
+        eval("
+            def foo(a, b = 2, *rest, z, k: 40) = [a, b, rest, z, k]
+            def test(args) = foo(1, *args)
+            test([3, 4, 5])
+            test([6, 7, 8])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :args@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :args@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          v18:ArrayExact = ToArray v10
+          v39:CInt64 = ArrayLength v18
+          v40:CInt64[3] = Const CInt64(3)
+          v41:CBool = IsBitEqual v39, v40
+          CondBranch v41, bb7(), bb5()
+        bb7():
+          v43:CInt64 = CCall v18, :rb_jit_ruby2_keywords_splat_p@0x1001
+          v44:CInt64[0] = Const CInt64(0)
+          v45:CBool = IsBitEqual v43, v44
+          CondBranch v45, bb4(), bb5()
+        bb4():
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v28:CInt64[0] = Const CInt64(0)
+          v29:BasicObject = ArrayAref v18, v28
+          v30:CInt64[1] = Const CInt64(1)
+          v31:BasicObject = ArrayAref v18, v30
+          v32:ArrayExact = NewArray v31
+          v33:CInt64[2] = Const CInt64(2)
+          v34:BasicObject = ArrayAref v18, v33
+          v35:Fixnum[40] = Const Value(40)
+          v71:Fixnum[0] = Const Value(0)
+          PushInlineFrame :foo, v27 (0x1040), num_args=5
+          v66:ArrayExact = NewArray v15, v29, v32, v34, v35
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb6(v66)
+        bb5():
+          v47:BasicObject = Send v9, :foo, v15, v18 # SendFallbackReason: Complex argument passing
+          Jump bb6(v47)
+        bb6(v38:BasicObject):
+          CheckInterrupts
+          Return v38
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_call_to_iseq_with_caller_splat_and_required_keyword() {
+        enable_zjit_stats();
+        eval("
+            def foo(*args, k:) = [args, k]
+            def test(args) = foo(*args, k: 40)
+            test([1, 2])
+            test([3, 4])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :args@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :args@1
+          IncrCounterPtr
+          Jump bb3(v6, v7)
+        bb3(v10:BasicObject, v11:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v20:ArrayExact = ToArray v11
+          IncrCounter zjit_insn_count
+          v23:HashExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          IncrCounter zjit_insn_count
           IncrCounter complex_arg_pass_caller_splat
           IncrCounter caller_splat_profile_monomorphic
-          v23:BasicObject = Send v10, :foo, v20 # SendFallbackReason: Complex argument passing
+          IncrCounter complex_arg_pass_caller_kw_splat
+          v26:BasicObject = Send v10, :foo, v20, v23 # SendFallbackReason: Complex argument passing
+          IncrCounter zjit_insn_count
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_caller_splat_and_block_literal() {
+        eval("
+            def foo(*args) = yield args.length
+            def test(args) = foo(*args) { |n| n + 4 }
+            test([1, 2, 3])
+            test([4, 5, 6])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :args@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :args@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:ArrayExact = ToArray v10
+          v38:CInt64 = ArrayLength v16
+          v39:CInt64[3] = Const CInt64(3)
+          v40:CBool = IsBitEqual v38, v39
+          CondBranch v40, bb7(), bb5()
+        bb7():
+          v42:CInt64 = CCall v16, :rb_jit_ruby2_keywords_splat_p@0x1001
+          v43:CInt64[0] = Const CInt64(0)
+          v44:CBool = IsBitEqual v42, v43
+          CondBranch v44, bb4(), bb5()
+        bb4():
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v28:CInt64[0] = Const CInt64(0)
+          v29:BasicObject = ArrayAref v16, v28
+          v30:CInt64[1] = Const CInt64(1)
+          v31:BasicObject = ArrayAref v16, v30
+          v32:CInt64[2] = Const CInt64(2)
+          v33:BasicObject = ArrayAref v16, v32
+          v34:ArrayExact = NewArray v29, v31, v33
+          PushInlineFrame :foo, v27 (0x1040), num_args=1
+          PatchPoint NoSingletonClass(Array@0x1068)
+          PatchPoint MethodRedefined(Array@0x1068, length@0x1070, cme:0x1078)
+          v76:CInt64 = ArrayLength v34
+          v77:Fixnum = BoxFixnum v76
+          v59:CPtr = GetEP 0
+          v60:CInt64 = LoadField v59, :VM_ENV_DATA_INDEX_SPECVAL@0x10a0
+          v61:CInt64[-4] = Const CInt64(-4)
+          v62:CInt64 = IntAnd v60, v61
+          v63:BasicObject = InvokeBlockIseqDirect (0x10a8), v62, v77
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb6(v63)
+        bb5():
+          v46:BasicObject = Send v9, 0x10a8, :foo, v16 # SendFallbackReason: Complex argument passing
+          Jump bb6(v46)
+        bb6(v37:BasicObject):
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v37
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_call_to_iseq_with_monomorphic_caller_splat_argc_mismatch() {
+        enable_zjit_stats();
+        eval("
+            def foo(a, b) = [a, b]
+            def test(args) = foo(*args)
+            test([1]) rescue nil
+            test([2]) rescue nil
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :args@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :args@1
+          IncrCounterPtr
+          Jump bb3(v6, v7)
+        bb3(v10:BasicObject, v11:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v20:ArrayExact = ToArray v11
+          IncrCounter zjit_insn_count
+          IncrCounter caller_splat_profile_monomorphic
+          IncrCounter send_direct_fallback_context_send
+          v23:BasicObject = Send v10, :foo, v20 # SendFallbackReason: Argument count does not match parameter count
           IncrCounter zjit_insn_count
           CheckInterrupts
           Return v23
@@ -14744,8 +15216,8 @@ mod hir_opt_tests {
           IncrCounter zjit_insn_count
           v20:ArrayExact = ToArray v11
           IncrCounter zjit_insn_count
-          IncrCounter complex_arg_pass_caller_splat
           IncrCounter caller_splat_profile_polymorphic
+          IncrCounter complex_arg_pass_caller_splat
           v23:BasicObject = Send v10, :foo, v20 # SendFallbackReason: Complex argument passing
           IncrCounter zjit_insn_count
           CheckInterrupts
