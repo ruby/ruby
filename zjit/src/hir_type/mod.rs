@@ -436,6 +436,13 @@ impl Type {
 
     /// Return the object specialization, if any.
     pub fn ruby_object(&self) -> Option<VALUE> {
+        // We ask not for the type, but for a specific value associated with this Type. If the Type
+        // is Empty, it will be a subtype of every other Type, but it will never have any value.
+        // Therefore, special-case Empty.
+        if self.is_subtype(types::Empty) { return None; }
+        if self.is_subtype(types::NilClass) { return Some(Qnil); }
+        if self.is_subtype(types::TrueClass) { return Some(Qtrue); }
+        if self.is_subtype(types::FalseClass) { return Some(Qfalse); }
         match self.spec() {
             Specialization::Object(val) => Some(val),
             _ => None,
@@ -843,13 +850,13 @@ mod tests {
     }
 
     #[test]
-    fn singletons_do_not_have_ruby_object() {
-        assert_eq!(Type::from_value(Qnil).ruby_object(), None);
-        assert_eq!(types::NilClass.ruby_object(), None);
-        assert_eq!(Type::from_value(Qtrue).ruby_object(), None);
-        assert_eq!(types::TrueClass.ruby_object(), None);
-        assert_eq!(Type::from_value(Qfalse).ruby_object(), None);
-        assert_eq!(types::FalseClass.ruby_object(), None);
+    fn singletons_have_ruby_object() {
+        assert_eq!(Type::from_value(Qnil).ruby_object(), Some(Qnil));
+        assert_eq!(types::NilClass.ruby_object(), Some(Qnil));
+        assert_eq!(Type::from_value(Qtrue).ruby_object(), Some(Qtrue));
+        assert_eq!(types::TrueClass.ruby_object(), Some(Qtrue));
+        assert_eq!(Type::from_value(Qfalse).ruby_object(), Some(Qfalse));
+        assert_eq!(types::FalseClass.ruby_object(), Some(Qfalse));
     }
 
     #[test]
