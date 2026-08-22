@@ -6,7 +6,7 @@
 #![allow(clippy::if_same_then_else)]
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
-    backend::lir::C_ARG_OPNDS, cast::IntoUsize, codegen::max_iseq_versions, cruby::*, invariants::{self, iseq_seen_ep_escape}, json::Json, options::{DumpHIR, InlineDepth, debug, get_option}, payload::get_or_create_iseq_payload, profile::reset_profiles_remaining, state::{self, ZJITState},
+    cast::IntoUsize, codegen::max_iseq_versions, cruby::*, invariants::{self, iseq_seen_ep_escape}, json::Json, options::{DumpHIR, InlineDepth, debug, get_option}, payload::get_or_create_iseq_payload, profile::reset_profiles_remaining, state::{self, ZJITState},
 };
 use std::{
     cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, ptr, slice::Iter,
@@ -765,10 +765,7 @@ pub enum SendFallbackReason {
     SendNotOptimizedNeedPermission,
     /// The block argument is not nil, so we can't optimize to SendWithoutBlockDirect
     SendBlockArgNotNil,
-    CCallWithFrameTooManyArgs,
     ObjToStringNotString,
-    /// Too many arguments in a C call to fit in C ABI registers.
-    TooManyArgsForLir,
     /// An operand doesn't fit in the integer type that encodes it,
     /// e.g. an argument count that overflows IseqCall's u16.
     OperandTooLarge,
@@ -839,9 +836,7 @@ impl Display for SendFallbackReason {
             SendCfuncArrayVariadic => write!(f, "Send: C function expects array variadic"),
             SendNotOptimizedMethodType(method_type) => write!(f, "Send: unsupported method type {:?}", method_type),
             SendBlockArgNotNil => write!(f, "Send: block argument is not nil"),
-            CCallWithFrameTooManyArgs => write!(f, "CCallWithFrame: too many arguments"),
             ObjToStringNotString => write!(f, "ObjToString: result is not a string"),
-            TooManyArgsForLir => write!(f, "Too many arguments for LIR"),
             OperandTooLarge => write!(f, "Operand doesn't fit in its encoding"),
             BmethodNonIseqProc => write!(f, "Bmethod: Proc object is not defined by an ISEQ"),
             ArgcParamMismatch => write!(f, "Argument count does not match parameter count"),
@@ -4850,13 +4845,6 @@ impl Function {
                                             return Err(());
                                         }
 
-                                        // TODO: Support passing arguments on the stack in C calls
-                                        // +1 for self
-                                        if (argc as usize)+1 > C_ARG_OPNDS.len() {
-                                            fun.set_dynamic_send_reason(send_insn_id, TooManyArgsForLir);
-                                            return Err(());
-                                        }
-
                                         // Check singleton class assumption first, before emitting other patchpoints
                                         if !fun.assume_no_singleton_classes(block, recv_class, state) {
                                             fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
@@ -5211,14 +5199,6 @@ impl Function {
                                         self.set_dynamic_send_reason(insn_id, ArgcParamMismatch);
                                         continue;
                                     }
-                                    // TODO: Support passing arguments on the stack in C calls
-                                    // +1 for self
-                                    if args.len()+1 > C_ARG_OPNDS.len() {
-                                        self.push_insn_id(block, insn_id);
-                                        self.set_dynamic_send_reason(insn_id, TooManyArgsForLir);
-                                        continue;
-                                    }
-
                                     emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state_iseq);
 
                                     // Try inlining the cfunc into HIR

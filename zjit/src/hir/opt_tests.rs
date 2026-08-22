@@ -21831,7 +21831,10 @@ mod hir_opt_tests {
           v31:Fixnum[6] = Const Value(6)
           v33:Fixnum[7] = Const Value(7)
           v35:Fixnum[8] = Const Value(8)
-          v37:BasicObject = Send v14, :eight, v21, v23, v25, v27, v29, v31, v33, v35 # SendFallbackReason: Too many arguments for LIR
+          PatchPoint NoSingletonClass(ZJITEightArgs@0x1008)
+          PatchPoint MethodRedefined(ZJITEightArgs@0x1008, eight@0x1010, cme:0x1018)
+          v70:ObjectSubclass[class_exact:ZJITEightArgs] = GuardType v14, ObjectSubclass[class_exact:ZJITEightArgs] recompile
+          v71:BasicObject = CCallWithFrame v70, :ZJITEightArgs#eight@0x1040, v21, v23, v25, v27, v29, v31, v33, v35
           PatchPoint NoEPEscape(test)
           v44:CBool = Test v15
           v45:Falsy = RefineType v15, Falsy
@@ -21839,7 +21842,7 @@ mod hir_opt_tests {
         bb5():
           v47:Truthy = RefineType v15, Truthy
           CheckInterrupts
-          Return v37
+          Return v71
         bb4():
           v61:NilClass = Const Value(nil)
           CheckInterrupts
