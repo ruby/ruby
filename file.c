@@ -3073,6 +3073,15 @@ chown_internal(const char *path, void *arg)
  *    Dir.rmdir(dirpath)
  *    File.delete(filepath)
  *
+ *  Notes:
+ *
+ *  - On Windows, the owner and group are not changed.
+ *  - Only a process with superuser privileges can change the owner of an entry.
+ *  - The owner of an entry can change its group to any group
+ *    to which the owner belongs.
+ *  - A +nil+ or +-1+ owner or group id is ignored.
+ *  - The method follows symbolic links to the target entry.
+ *
  */
 
 static VALUE
