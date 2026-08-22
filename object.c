@@ -1845,6 +1845,12 @@ rb_mod_to_s(VALUE klass)
 static VALUE
 rb_mod_freeze(VALUE mod)
 {
+    // Freezing is a modification, and a permanent one: a non-owner could
+    // otherwise make somebody else's class unmodifiable for good.  An already
+    // frozen module changes no state, so it stays a no-op for everybody.
+    if (!OBJ_FROZEN(mod)) {
+        rb_class_owner_check(mod);
+    }
     rb_class_name(mod);
     return rb_obj_freeze(mod);
 }

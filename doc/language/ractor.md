@@ -345,6 +345,56 @@ To isolate unshareable objects across ractors, we introduced additional language
 
 Note that when not using ractors, these additional semantics are not needed (100% compatible with Ruby 2).
 
+### Class and module ownership
+
+Every class/module records the Ractor that created it as its *owner*. Only the owner Ractor can modify the class/module:
+
+* defining, removing or undefining methods, `alias`, and changing method visibility
+* `include`/`prepend` into the class/module, and refining it with `Module#refine`
+* defining or removing constants, and registering `autoload`
+* setting instance variables of the class/module object
+* setting and removing class variables stored in the class/module
+* `Module#freeze` and `Module#set_temporary_name`
+
+Reading (calling methods, instantiating, reading constants and instance variables, subclassing, and so on) is allowed from any Ractor as before.
+
+Ownership bounds *who may write* a class/module, not *what readers may see*. Reads are not synchronized and a class modification is not atomic, so a non-owner Ractor can still observe a class/module while its owner is modifying it: after the first `def` of a `class ... end` body but before the second, or while `include`/`prepend` is rewiring the ancestor chain. What ownership guarantees is a single writer per class/module, not a consistent view for readers.
+
+All classes/modules defined at boot or by code run by the main Ractor (including `require`d libraries) are owned by the main Ractor, so non-main ractors can not monkey-patch them:
+
+```ruby
+r = Ractor.new do
+  class String            # reopening itself is harmless, but...
+    def foo; end          # ...defining a method on a class created by
+  end                     # another Ractor raises
+end
+begin
+  r.join
+rescue Ractor::RemoteError => e
+  e.cause.message #=> "can not modify String because it is created by another Ractor"
+end
+```
+
+In exchange, a Ractor can fully use the classes/modules it created itself, including things which were previously allowed only on the main Ractor:
+
+```ruby
+Ractor.new do
+  k = Class.new do
+    def hello = "hello"
+  end
+  k.const_set(:CONST, [1, 2, 3])       # even unshareable constant values
+  k.instance_variable_set(:@iv, [4, 5]) # even unshareable ivar values
+  k.new.hello
+end.value #=> "hello"
+```
+
+Notes:
+
+* A singleton class (and a metaclass) is owned by the owner of the object it is attached to, not by the Ractor which happened to trigger its lazy creation. So `def C.foo` is allowed exactly for the owner of `C`.
+* Classes/modules whose owner Ractor has terminated become permanently read-only for every Ractor.
+* Since defining a constant in a class/module created by another Ractor is prohibited, a non-main Ractor can not define a top-level class name (it would write a constant into `Object`). Define classes under your own namespace instead: `m = Module.new; m.const_set(:Foo, Class.new)`.
+* Copying a class/module created by another Ractor with `Class#dup`/`Object#clone` creates a copy owned by the copying Ractor; it raises `Ractor::IsolationError` if the source's constants or instance variables refer to unshareable objects.
+
 ### Global variables
 
 Only the main Ractor can access global variables.
@@ -366,7 +416,7 @@ Note that some special global variables, such as `$stdin`, `$stdout` and `$stder
 
 ### Instance variables of shareable objects
 
-Instance variables of classes/modules can be accessed from non-main ractors only if their values are shareable objects.
+Instance variables of classes/modules can be accessed from non-owner ractors only if their values are shareable objects.
 
 ```ruby
 class C
@@ -380,7 +430,7 @@ p Ractor.new do
 end.value #=> 1
 ```
 
-Otherwise, only the main Ractor can access instance variables of shareable objects.
+Otherwise, only the owner Ractor can access instance variables of classes/modules. Setting them is prohibited for non-owner ractors regardless of the value.
 
 ```ruby
 class C
@@ -393,14 +443,14 @@ Ractor.new do
       p @iv
     rescue Ractor::IsolationError
       p $!.message
-      #=> "can not get unshareable values from instance variables of classes/modules from non-main Ractors"
+      #=> "can not get unshareable values from instance variables of classes/modules created by another Ractor (@iv from C)"
     end
 
     begin
       @iv = 42
     rescue Ractor::IsolationError
       p $!.message
-      #=> "can not set instance variables of classes/modules by non-main Ractors"
+      #=> "can not set instance variables of classes/modules created by another Ractor"
     end
   end
 end.join
@@ -423,30 +473,38 @@ end
 
 ### Class variables
 
-Only the main Ractor can access class variables.
+A class variable is shared across the whole inheritance chain, and the class it is actually stored in can change over time (a subclass's definition can be taken over by an ancestor). The Ractor that decides access is therefore the owner of the class the variable is *stored in*, not of the receiver it was looked up through. Only that Ractor can write the variable, and only that Ractor can read a value which is not shareable.
 
 ```ruby
 class C
-  @@cv = 'str'
+  @@cv = 'str' # unshareable object
 end
 
-r = Ractor.new do
+Ractor.new do
   class C
-    p @@cv
+    begin
+      p @@cv # stored in C, which is owned by the main Ractor
+    rescue Ractor::IsolationError
+      p $!.message
+      #=> "can not read non-shareable class variable @@cv of C, which was created by another Ractor"
+    end
   end
-end
+end.join
+```
 
+A Ractor has full use of the class variables of the classes it created itself:
 
-begin
-  r.join
-rescue => e
-  e.class #=> Ractor::IsolationError
-end
+```ruby
+Ractor.new do
+  k = Class.new
+  k.class_variable_set(:@@count, 'not shareable')
+  k.class_variable_get(:@@count)
+end.value #=> "not shareable"
 ```
 
 ### Constants
 
-Only the main Ractor can read constants which refer to an unshareable object.
+Only the owner Ractor of the class/module the constant is defined in can read constants which refer to an unshareable object.
 
 ```ruby
 class C
@@ -462,7 +520,7 @@ rescue => e
 end
 ```
 
-Only the main Ractor can define constants which refer to an unshareable object.
+Defining constants in a class/module created by another Ractor is prohibited, regardless of the value. The owner can define constants with any values, but constants which refer to unshareable objects can only be read back by the owner.
 
 ```ruby
 class C

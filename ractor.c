@@ -9,6 +9,7 @@
 #include "vm_sync.h"
 #include "ractor_core.h"
 #include "internal/array.h"
+#include "internal/class.h"
 #include "internal/complex.h"
 #include "internal/cont.h"
 #include "internal/error.h"
@@ -3105,6 +3106,11 @@ courier_apply_klass(VALUE shell, VALUE klass)
     }
     if (RB_UNLIKELY(FL_TEST_RAW(klass, FL_SINGLETON))) {
         rb_singleton_class_attached(klass, shell);
+        /* A singleton class is owned by the owner of the object it is attached to, and
+         * that object has just become this Ractor's.  Without this the receiver could
+         * define singleton methods on a moved object only when its singleton class had
+         * not been materialized before the move. */
+        rb_class_take_ownership(klass);
     }
 }
 
