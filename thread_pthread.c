@@ -3299,18 +3299,26 @@ static struct {
     } wheel[TIMER_WHEEL_LEVELS];
     uint64_t wheel_cursor_tick; // slots for ticks <= this are drained
     rb_hrtime_t next_expiry;   // never later than the earliest deadline
-    struct ccan_list_head waiting_untimed;
-    pthread_mutex_t waiting_lock;
+    pthread_mutex_t waiting_lock; // the wheel and the flags of fd-less timed waits
+
+    /* The fd map entries and the flags of io waits are guarded per fd by a
+     * shard lock, so unrelated fds register and wake in parallel.  Whoever
+     * clears an io wait's flags under its shard owns the wakeup.  Lock order:
+     * shard -> waiting_lock -> wake_pending_lock, never the other way. */
+#define IO_WAIT_SHARDS 16
+    pthread_mutex_t fd_shard_locks[IO_WAIT_SHARDS];
 
     // signaled when wake_pending clears on a thread; see timer_thread_wake_fence
+    pthread_mutex_t wake_pending_lock;
     rb_nativethread_cond_t wake_pending_cond;
 #endif
 
 #if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
-    // fd -> struct rb_fd_waiters, in chunks so entries never move.
-    // Protected by waiting_lock.
-    struct rb_fd_waiters **fdmap_chunks;
-    unsigned int fdmap_nchunks;
+    // fd -> struct rb_fd_waiters, in chunks so entries never move.  The chunk
+    // table installs slots by CAS (chunks span shards); entry state is guarded
+    // by the fd's shard lock.
+#define FDMAP_MAX_CHUNKS 1024 // fds up to FDMAP_MAX_CHUNKS * FDMAP_CHUNK_SIZE
+    struct rb_fd_waiters *fdmap_chunks[FDMAP_MAX_CHUNKS];
 #endif
 } timer_th = {
     .created_fork_gen = 0,
@@ -3539,6 +3547,21 @@ rb_thread_create_timer_thread(void)
             RUBY_DEBUG_LOG("forked child process");
 
             CLOSE_INVALIDATE_PAIR(timer_th.comm_fds);
+#if USE_MN_THREADS
+            // The parent's waiters do not exist in the child, and the armings
+            // belong to the closed event backend: a stale entry would satisfy
+            // fd_waiters_arm's want == armed_flags check and never arm the new
+            // backend (a lost wake the old dynamic map also had).
+            for (unsigned int ci = 0; ci < FDMAP_MAX_CHUNKS; ci++) {
+                struct rb_fd_waiters *chunk = timer_th.fdmap_chunks[ci];
+                if (chunk == NULL) continue;
+                for (unsigned int i = 0; i < FDMAP_CHUNK_SIZE; i++) {
+                    ccan_list_head_init(&chunk[i].waiters);
+                    chunk[i].armed_flags = 0;
+                    chunk[i].generation++;
+                }
+            }
+#endif
 #if HAVE_SYS_EPOLL_H && USE_MN_THREADS
             close_invalidate(&timer_th.event_fd, "close event_fd");
 #elif HAVE_SYS_EVENT_H && USE_MN_THREADS
@@ -3561,8 +3584,11 @@ rb_thread_create_timer_thread(void)
         }
         timer_th.wheel_cursor_tick = timer_wheel_tick(rb_hrtime_now());
         timer_th.next_expiry = TIMER_WHEEL_NO_EXPIRY;
-        ccan_list_head_init(&timer_th.waiting_untimed);
         rb_native_mutex_initialize(&timer_th.waiting_lock);
+        for (int i = 0; i < IO_WAIT_SHARDS; i++) {
+            rb_native_mutex_initialize(&timer_th.fd_shard_locks[i]);
+        }
+        rb_native_mutex_initialize(&timer_th.wake_pending_lock);
         rb_native_cond_initialize(&timer_th.wake_pending_cond);
 #endif
 
