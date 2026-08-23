@@ -2240,7 +2240,7 @@ class Pathname    # * FileTest *
   # Pathname('nosuch').chardev?       # => false
   # ```
   #
-  # The returned value is filesystem-dependent; on Windows, almost always `false`.
+  # The returned value is filesystem-dependent; on Windows, always `false`.
   def chardev?() FileTest.chardev?(@path) end
 
   # :markup: markdown
