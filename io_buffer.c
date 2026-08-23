@@ -1007,17 +1007,19 @@ io_buffer_validate_slice(VALUE source, void *base, size_t size)
         rb_io_buffer_get_bytes(source, &source_base, &source_size);
     }
 
-    // Source is invalid:
-    if (source_base == NULL) return 0;
+    uintptr_t source_address = (uintptr_t)source_base;
+    uintptr_t address = (uintptr_t)base;
 
     // Base is out of range:
-    if (base < source_base) return 0;
+    if (address < source_address) return 0;
 
-    const void *source_end = (char*)source_base + source_size;
-    const void *end = (char*)base + size;
+    uintptr_t offset = address - source_address;
 
-    // End is out of range:
-    if (end > source_end) return 0;
+    // Base is beyond the end of the source:
+    if (offset > source_size) return 0;
+
+    // End is beyond the end of the source:
+    if (size > source_size - (size_t)offset) return 0;
 
     // It seems okay:
     return 1;
@@ -1788,7 +1790,7 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
     struct rb_io_buffer *slice = get_io_buffer(instance);
 
     slice->flags |= (buffer->flags & RB_IO_BUFFER_READONLY);
-    slice->base = (char*)buffer->base + offset;
+    slice->base = buffer->base ? (char*)buffer->base + offset : NULL;
     slice->size = length;
 
     // Slices retain their root buffer. If this buffer is already a slice,
@@ -3014,7 +3016,9 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
 
     io_buffer_validate_range(buffer, offset, length);
 
-    return rb_enc_str_new((const char*)base + offset, length, encoding);
+    const char *data = base ? (const char*)base + offset : NULL;
+
+    return rb_enc_str_new(data, length, encoding);
 }
 
 /*
