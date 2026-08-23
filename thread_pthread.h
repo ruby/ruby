@@ -95,8 +95,9 @@ struct rb_thread_sched_item {
     struct rb_thread_sched_waiting waiting_reason;
     uint32_t event_serial;
 
-    // the timer thread has a wake pending for this thread; under waiting_lock
-    bool wake_pending;
+    // wakes pending on this thread (timer thread or an fd shard claim);
+    // under timer_th.wake_pending_lock
+    uint32_t wake_pending_cnt;
 
     // parked on its own condvar with a deadline; under the sched lock (see
     // ubf_waiting).  Always false for an M:N thread: its deadline lives on the
