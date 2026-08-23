@@ -1716,9 +1716,9 @@ hash_dup_with_compare_by_id(VALUE hash)
 }
 
 static VALUE
-hash_dup(VALUE hash, VALUE klass, VALUE flags)
+hash_dup(VALUE hash, VALUE klass, VALUE flags, size_t capa)
 {
-    VALUE dup = hash_alloc(klass, flags, RHASH_IFNONE(hash), RHASH_SIZE(hash), false);
+    VALUE dup = hash_alloc(klass, flags, RHASH_IFNONE(hash), capa, false);
     return hash_copy(dup, hash);
 }
 
@@ -1736,11 +1736,11 @@ hash_dup_capa(VALUE hash, size_t capa)
     return ret;
 }
 
-VALUE
-rb_hash_dup(VALUE hash)
+static VALUE
+rb_hash_dup_capa(VALUE hash, size_t capa)
 {
     const VALUE flags = RBASIC(hash)->flags;
-    VALUE ret = hash_dup(hash, rb_obj_class(hash), flags & RHASH_PROC_DEFAULT);
+    VALUE ret = hash_dup(hash, rb_obj_class(hash), flags & RHASH_PROC_DEFAULT, capa);
 
     rb_copy_generic_ivar(ret, hash);
 
@@ -1748,9 +1748,15 @@ rb_hash_dup(VALUE hash)
 }
 
 VALUE
+rb_hash_dup(VALUE hash)
+{
+    return rb_hash_dup_capa(hash, RHASH_SIZE(hash));
+}
+
+VALUE
 rb_hash_resurrect(VALUE hash)
 {
-    return hash_dup(hash, rb_cHash, 0);
+    return hash_dup(hash, rb_cHash, 0, RHASH_SIZE(hash));
 }
 
 #if USE_ZJIT
@@ -3978,7 +3984,7 @@ rb_hash_to_h(VALUE hash)
     }
     if (rb_obj_class(hash) != rb_cHash) {
         const VALUE flags = RBASIC(hash)->flags;
-        hash = hash_dup(hash, rb_cHash, flags & RHASH_PROC_DEFAULT);
+        hash = hash_dup(hash, rb_cHash, flags & RHASH_PROC_DEFAULT, RHASH_SIZE(hash));
     }
     return hash;
 }
@@ -4526,6 +4532,42 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
     return hash1;
 }
 
+static size_t
+hash_merge_guess_size(int argc, VALUE *argv, VALUE self)
+{
+    // Merging small symbol keyed hashes together is common enough that
+    // it's worth specializing for it.
+    // Since symbols never call back into Ruby, we can safely look them
+    // up without fear for side effects.
+    if (argc != 1) {
+        return 0;
+    }
+
+    VALUE other = argv[0];
+    if (!RB_TYPE_P(other, T_HASH) || !RHASH_AR_TABLE_P(other)) {
+        return 0;
+    }
+
+    size_t size = RHASH_SIZE(self);
+    unsigned bound = RHASH_AR_TABLE_BOUND(other);
+    for (unsigned i = 0; i < bound; i++) {
+        VALUE key = RHASH_AR_TABLE_REF(other, i)->key;
+        if (UNDEF_P(key)) {
+            continue;
+        }
+
+        if (!SYMBOL_P(key)) {
+            return 0;
+        }
+
+        if (!hash_stlike_lookup(self, key, NULL)) {
+            size++;
+        }
+    }
+
+    return size;
+}
+
 /*
  *  call-seq:
  *    merge(*other_hashes) -> new_hash
@@ -4575,7 +4617,9 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
 static VALUE
 rb_hash_merge(int argc, VALUE *argv, VALUE self)
 {
-    return rb_hash_update(argc, argv, copy_compare_by_id(rb_hash_dup(self), self));
+    size_t guessed_size = hash_merge_guess_size(argc, argv, self);
+    VALUE ret = guessed_size ? rb_hash_dup_capa(self, guessed_size) : rb_hash_dup(self);
+    return rb_hash_update(argc, argv, copy_compare_by_id(ret, self));
 }
 
 static int
