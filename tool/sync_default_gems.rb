@@ -79,6 +79,8 @@ module SyncDefaultGems
       ["regsyntax.c", "regsyntax.c"],
       ["onigmo.h", "include/ruby/onigmo.h"],
       ["enc", "enc"],
+    ], exclude: [
+      "encoding.c",
     ]),
     "io-console": repo("ruby/io-console", [
       ["ext/io/console", "ext/io/console"],
