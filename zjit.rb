@@ -185,8 +185,10 @@ class << RubyVM::ZJIT
       :throw_count,
 
       :side_exit_size,
-      :code_region_bytes,
       :side_exit_size_ratio,
+      :failed_jit_frame_bytes,
+      :jit_frame_bytes,
+      :code_region_bytes,
       :zjit_alloc_bytes,
       :total_mem_bytes,
       :total_native_stack_bytes,
