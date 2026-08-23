@@ -72,6 +72,9 @@ module Bundler
           env_proxy_for(uri)
         end
         return unless proxy
+        # NO_PROXY="*" bypasses the proxy for every host, which
+        # Gem::URI::Generic.use_proxy? does not understand.
+        return if no_proxy_env.strip == "*"
         return unless Gem::URI::Generic.use_proxy?(uri.hostname, nil, uri.port, no_proxy_env)
         proxy
       end
