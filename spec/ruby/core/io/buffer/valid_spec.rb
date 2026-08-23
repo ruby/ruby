@@ -73,6 +73,25 @@ describe "IO::Buffer#valid?" do
       slice.valid?.should == false
     end
 
+    it "is independent of null? and empty?" do
+      @buffer = IO::Buffer.new(4)
+      slice = @buffer.slice(0, 2)
+      @buffer.free
+
+      slice.valid?.should == false
+      slice.null?.should == false
+      slice.empty?.should == false
+    end
+
+    it "can be true for a non-null empty slice" do
+      @buffer = IO::Buffer.new(4)
+      slice = @buffer.slice(2, 0)
+
+      slice.valid?.should == true
+      slice.null?.should == false
+      slice.empty?.should == true
+    end
+
     it "is false for a slice of a freed file-backed buffer" do
       File.open(__FILE__, "r") do |file|
         @buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::READONLY)

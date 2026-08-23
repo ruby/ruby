@@ -1316,10 +1316,17 @@ rb_io_buffer_size(VALUE self)
 /*
  *  call-seq: valid? -> true or false
  *
- *  Returns whether the buffer buffer is accessible.
+ *  Returns whether the buffer's recorded memory range currently exists within
+ *  its source. A buffer which is not a slice is always valid, including a null
+ *  buffer.
  *
- *  A buffer becomes invalid if it is a slice of another buffer (or string)
- *  which has been freed or re-allocated at a different address.
+ *  A slice can become invalid if its source is freed, transferred, shrunk past
+ *  the slice, or reallocated at a different address. Validity is dynamic: if
+ *  the source later contains the same address range again, the slice becomes
+ *  valid again.
+ *
+ *  #valid?, #null? and #empty? describe independent properties. For example,
+ *  an invalid slice can still have a non-null address and a non-zero size.
  */
 static VALUE
 rb_io_buffer_valid_p(VALUE self)
@@ -1332,8 +1339,11 @@ rb_io_buffer_valid_p(VALUE self)
 /*
  *  call-seq: null? -> true or false
  *
- *  If the buffer was freed with #free, transferred with #transfer, or was
- *  never allocated in the first place.
+ *  Returns whether the buffer has no recorded base address.
+ *
+ *  A buffer is null if it was freed with #free, transferred with #transfer, or
+ *  was never allocated in the first place. A zero-sized buffer or slice may
+ *  have a non-null address, so #null? and #empty? are distinct properties.
  *
  *    buffer = IO::Buffer.new(0)
  *    buffer.null? #=> true
@@ -1354,9 +1364,11 @@ rb_io_buffer_null_p(VALUE self)
 /*
  *  call-seq: empty? -> true or false
  *
- *  If the buffer has 0 size: it is created by ::new with size 0, or with ::for
- *  from an empty string. (Note that empty files can't be mapped, so the buffer
- *  created with ::map will never be empty.)
+ *  Returns whether the buffer has zero size.
+ *
+ *  A buffer can be empty but have a non-null address, for example a zero-sized
+ *  slice or a buffer created with ::for from an empty string. Therefore
+ *  #empty? does not imply #null?.
  */
 static VALUE
 rb_io_buffer_empty_p(VALUE self)
