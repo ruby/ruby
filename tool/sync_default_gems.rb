@@ -21,6 +21,7 @@ module SyncDefaultGems
   # exclude: [ "fnmatch_pattern_after_mapping", ... ]
   Repository = Data.define(:upstream, :branch, :mappings, :exclude) do
     def excluded?(newpath)
+      return true if newpath.end_with?(*%w".a .bundle .dll .dylib .so .o .obj")
       p = newpath
       until p == "."
         return true if exclude.any? {|pat| File.fnmatch?(pat, p, File::FNM_PATHNAME|File::FNM_EXTGLOB)}
@@ -114,8 +115,6 @@ module SyncDefaultGems
       ["lib", "ext/date/lib"],
       ["test/date", "test/date"],
       ["date.gemspec", "ext/date/date.gemspec"],
-    ], exclude: [
-      "ext/date/lib/date_core.bundle",
     ]),
     delegate: lib("ruby/delegate"),
     did_you_mean: repo("ruby/did_you_mean", [
@@ -227,7 +226,6 @@ module SyncDefaultGems
       "ext/psych/lib/org",
       "ext/psych/lib/psych.jar",
       "ext/psych/lib/psych_jars.rb",
-      "ext/psych/lib/psych.{bundle,so}",
       "ext/psych/lib/2.*",
       "ext/psych/yaml/LICENSE",
       "ext/psych/.gitignore",
