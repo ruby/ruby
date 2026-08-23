@@ -1508,6 +1508,18 @@ hash_alloc_capa(VALUE klass, VALUE flags, VALUE ifnone, size_t size, bool frozen
 }
 
 static VALUE
+hash_hidden_new(size_t size)
+{
+    return hash_alloc_capa(0, 0, Qnil, size, false);
+}
+
+VALUE
+rb_hash_alloc_copy(VALUE klass, VALUE src)
+{
+    return hash_alloc_capa(klass, 0, Qnil, RHASH_SIZE(src), false);
+}
+
+static VALUE
 hash_alloc(VALUE klass)
 {
     return hash_alloc_capa(klass, 0, Qnil, 0, false);
@@ -1530,12 +1542,6 @@ empty_hash_alloc(VALUE klass)
     return hash_alloc(klass);
 }
 
-VALUE
-rb_hash_new(void)
-{
-    return hash_alloc(rb_cHash);
-}
-
 static VALUE
 copy_compare_by_id(VALUE hash, VALUE basis)
 {
@@ -1549,6 +1555,12 @@ VALUE
 rb_hash_new_capa(long capa)
 {
     return hash_alloc_capa(rb_cHash, 0, Qnil, capa, false);
+}
+
+VALUE
+rb_hash_new(void)
+{
+    return rb_hash_new_capa(0);
 }
 
 VALUE
@@ -2714,7 +2726,7 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
     VALUE key, value, result;
 
     if (argc == 0 || RHASH_EMPTY_P(hash)) {
-        return copy_compare_by_id(rb_hash_new(), hash);
+        return copy_compare_by_id(rb_hash_new_capa(0), hash);
     }
     result = copy_compare_by_id(rb_hash_new_capa(argc), hash);
 
@@ -3378,7 +3390,7 @@ rb_hash_transform_keys(int argc, VALUE *argv, VALUE hash)
     else {
         RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     }
-    result = rb_hash_new();
+    result = rb_hash_new_capa(RHASH_SIZE(hash));
     if (!RHASH_EMPTY_P(hash)) {
         if (transarg.trans) {
             transarg.result = result;
@@ -3505,7 +3517,7 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
     rb_hash_modify_check(hash);
     if (!RHASH_TABLE_EMPTY_P(hash)) {
         long i;
-        VALUE new_keys = hash_alloc(0);
+        VALUE new_keys = hash_hidden_new(RHASH_SIZE(hash));
         VALUE pairs = rb_ary_hidden_new(RHASH_SIZE(hash) * 2);
         rb_hash_foreach(hash, flatten_i, pairs);
         for (i = 0; i < RARRAY_LEN(pairs); i += 2) {
@@ -3531,7 +3543,6 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
             rb_hash_aset(new_keys, new_key, Qnil);
         }
         rb_ary_clear(pairs);
-        rb_hash_clear(new_keys);
     }
     compact_after_delete(hash);
     return hash;
@@ -4800,7 +4811,7 @@ rb_hash_compare_by_id_p(VALUE hash)
 VALUE
 rb_ident_hash_new(void)
 {
-    VALUE hash = rb_hash_new();
+    VALUE hash = rb_hash_new_capa(0);
     hash_st_table_init(hash, &identhash, 0);
     rb_gc_register_pinning_obj(hash);
     return hash;
@@ -4809,7 +4820,7 @@ rb_ident_hash_new(void)
 VALUE
 rb_ident_hash_new_capa(long size)
 {
-    VALUE hash = rb_hash_new();
+    VALUE hash = rb_hash_new_capa(0);
     hash_st_table_init(hash, &identhash, size);
     rb_gc_register_pinning_obj(hash);
     return hash;
@@ -6220,9 +6231,6 @@ env_slice(int argc, VALUE *argv, VALUE _)
     int i;
     VALUE key, value, result;
 
-    if (argc == 0) {
-        return rb_hash_new();
-    }
     result = rb_hash_new_capa(argc);
 
     for (i = 0; i < argc; i++) {
@@ -6607,14 +6615,26 @@ env_key(VALUE dmy, VALUE value)
     return str;
 }
 
+static inline size_t
+environ_size(char **env)
+{
+    size_t size = 0;
+    while (*env) {
+        size += 1;
+        env++;
+    }
+    return size;
+}
+
 static VALUE
 env_to_hash(void)
 {
-    VALUE hash = rb_hash_new();
+    VALUE hash;
 
     rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
+        hash = rb_hash_new_capa(environ_size(env));
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
