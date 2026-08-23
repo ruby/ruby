@@ -750,9 +750,7 @@ typedef struct rb_vm_struct {
 
             rb_nativethread_cond_t cond; // GRQ
             rb_atomic_t snt_cnt;  // count of shared NTs; lock-free (see native_thread_dedicated_inc)
-#if USE_RUBY_DEBUG_LOG
-            unsigned int dnt_cnt; // count of dedicated NTs; logging only, not atomic
-#endif
+            unsigned int dnt_cnt; // count of dedicated NTs; logging only (USE_RUBY_DEBUG_LOG), not atomic
 
             unsigned int running_cnt;
 
