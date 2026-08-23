@@ -3691,18 +3691,18 @@ unlink_internal(const char *path, void *arg)
 
 /*
  *  call-seq:
- *     File.delete(file_name, ...)  -> integer
- *     File.unlink(file_name, ...)  -> integer
+ *    File.delete(*filepaths) -> integer
+ *    File.unlink(*filepaths) -> integer
  *
- *  Deletes the named files, returning the number of names
- *  passed as arguments. Raises an exception on any error.
- *  Since the underlying implementation relies on the
- *  <code>unlink(2)</code> system call, the type of
- *  exception raised depends on its error type (see
- *  https://man7.org/linux/man-pages/man2/unlink.2.html) and has the form of
- *  e.g. Errno::ENOENT.
+ *  Removes the file entry at each path in +filepaths+;
+ *  returns the number of removed files.
  *
- *  See also Dir::rmdir.
+ *    File.write('t.tmp', 'foo')
+ *    File.write('u.tmp', 'bar')
+ *    File.delete('t.tmp', 'u.tmp') # => 2
+ *
+ *  Raises an exception on any error;
+ *  some files may have been deleted before the path causing the error.
  */
 
 static VALUE
