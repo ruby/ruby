@@ -2691,17 +2691,36 @@ rb_file_mtime(VALUE obj)
 
 /*
  *  call-seq:
- *     File.ctime(file_name)  -> time
+ *     File.ctime(object) -> time
  *
- *  Returns the change time for the named file (the time at which
- *  directory information about the file was changed, not the file
- *  itself).
+ *  Returns a Time object, based on the given +object+,
+ *  which is a string path or an IO object.
  *
- *  _file_name_ can be an IO object.
+ *  On Windows, returns the #birthtime for +object+.
  *
- *  Note that on Windows (NTFS), returns creation time (birth time).
+ *  On other systems,
+ *  returns a new Time object containing the time of the most recent
+ *  metadata change to the entry represented by +object+;
+ *  see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
  *
- *     File.ctime("testfile")   #=> Wed Apr 09 08:53:13 CDT 2003
+ *    # Create directory; directory ctime established.
+ *    dirpath = 'doc/foo'
+ *    Dir.mkdir(dirpath)
+ *    File.ctime(dirpath)                     # => 2026-08-23 10:43:05.473815913 -0500
+ *    # Create file therein; file ctime established; directory ctime updated.
+ *    filepath = File.join(dirpath, 't.tmp')  # => "doc/foo/t.tmp"
+ *    File.write(filepath, 'foo')
+ *    File.ctime(filepath)                    # => 2026-08-23 10:43:37.560429379 -0500
+ *    File.ctime(dirpath)                     # => 2026-08-23 10:43:37.560429379 -0500
+ *    # Write file; file ctime updated; directory ctime not updated.
+ *    File.write(filepath, 'bar')
+ *    File.ctime(filepath)                    # => 2026-08-23 10:46:49.299180833 -0500
+ *    File.ctime(dirpath)                     # => 2026-08-23 10:43:37.560429379 -0500
+ *    # Read file; neither ctime updated.
+ *    File.read(filepath)
+ *    File.ctime(filepath)                    # => 2026-08-23 10:46:49.299180833 -0500
+ *    File.ctime(dirpath)                     # => 2026-08-23 10:43:37.560429379 -0500
+ *    FileUtils.rm_rf(dirpath)                # Clean up.
  *
  */
 
