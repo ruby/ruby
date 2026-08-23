@@ -2634,6 +2634,32 @@ pub enum ValidationError {
     MiscValidationError(InsnId, String),
 }
 
+/// Set of flags incompatible with direct sends to forwardable callees.
+const FORWARDABLE_CALLEE_BLOCKERS: u32 =
+    // `gen_send_iseq_direct` currently handles only the interpreter's `vm_call_iseq_forwardable`
+    // fastpath case, which the interpreter itself rejects on VM_CALL_FORWARDING. The callinfo
+    // to hand over lives in the caller's `...` local, so it should be handled differently.
+    VM_CALL_FORWARDING
+    // We only support `def foo(...)` cases for now.
+    | VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG;
+
+/// Check if we can emit SendDirect to a forwardable (`def foo(...)`) ISEQ.
+fn can_direct_send_forwardable(caller_args: &CallerArguments) -> Result<(), SendDirectFailure> {
+    use Counter::*;
+    if caller_args.flags & FORWARDABLE_CALLEE_BLOCKERS != 0 {
+        return Err(SendDirectFailure::with_counters(
+            ComplexArgPass,
+            vec![complex_arg_pass_param_forwardable],
+        ));
+    }
+    // The frame is grown by exactly the call site's argument count.
+    // `IseqCall` stores argc as u16, and the callee frame has to fit the copied arguments.
+    if u16::try_from(caller_args.original.len()).is_err() {
+        return Err(SendDirectFailure::new(OperandTooLarge));
+    }
+    Ok(())
+}
+
 /// Check if we can emit SendDirect to the given ISEQ with the given arguments.
 fn can_direct_send(iseq: *const rb_iseq_t, caller_args: &CallerArguments, has_block: bool, caller_splat: Option<CallerSplat>) -> Result<(), SendDirectFailure> {
     let mut complex_arg_counters = vec![];
@@ -2644,7 +2670,9 @@ fn can_direct_send(iseq: *const rb_iseq_t, caller_args: &CallerArguments, has_bl
     let caller_passes_block_arg = has_block && (caller_args.flags & VM_CALL_ARGS_BLOCKARG) != 0;
 
     use Counter::*;
-    if 0 != params.flags.forwardable() { count_failure(complex_arg_pass_param_forwardable) }
+    if 0 != params.flags.forwardable() {
+        return can_direct_send_forwardable(caller_args);
+    }
     if callee_has_block_param && caller_passes_block_arg
                                        { count_failure(complex_arg_pass_param_block) }
     if 0 != params.flags.has_kwrest()  { count_failure(complex_arg_pass_param_kwrest) }
@@ -3894,6 +3922,14 @@ impl Function {
     /// Validate and normalize SendDirect arguments without emitting HIR.
     fn build_send_direct_args(&self, caller_args: &CallerArguments, caller_splat: Option<CallerSplat>, iseq: IseqPtr, has_block: bool) -> Result<SendDirectCall, SendDirectFailure> {
         can_direct_send(iseq, caller_args, has_block, caller_splat)?;
+        // A forwardable callee takes the caller's arguments as is.
+        if 0 != unsafe { iseq.params() }.flags.forwardable() {
+            return Ok(SendDirectCall {
+                args: caller_args.original.iter().copied().map(SendDirectArg::Existing).collect(),
+                kw_bits: 0,
+                jit_entry_idx: 0,
+            });
+        }
         let args = Self::expand_caller_splat_args(caller_args, caller_splat);
         let (args, kw_bits) = Self::plan_send_direct_keyword_arguments(args, caller_args, iseq)
             .map_err(SendDirectFailure::new)?;
