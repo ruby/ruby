@@ -41,7 +41,7 @@ RUBY_ASSERT_vm_locking_with_barrier(void)
 
         if (vm->ractor.cnt > 1) {
             /* Written to only when holding both ractor.sync and ractor.sched lock */
-            VM_ASSERT(vm->ractor.sched.barrier_waiting);
+            VM_ASSERT(vm->ractor.sched.barrier_is_waiting);
         }
     }
 }
@@ -66,7 +66,7 @@ static bool
 vm_need_barrier_waiting(const rb_vm_t *vm)
 {
 #ifdef RUBY_THREAD_PTHREAD_H
-    return vm->ractor.sched.barrier_waiting;
+    return vm->ractor.sched.barrier_is_waiting;
 #else
     return vm->ractor.sync.barrier_waiting;
 #endif
@@ -287,7 +287,7 @@ rb_vm_barrier(void)
             return;
         }
         else {
-            VM_ASSERT(!vm->ractor.sched.barrier_waiting);
+            VM_ASSERT(!vm->ractor.sched.barrier_is_waiting);
             rb_ractor_sched_barrier_start(vm, cr);
         }
     }
