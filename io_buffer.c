@@ -191,6 +191,7 @@ io_buffer_zero(struct rb_io_buffer *buffer)
 {
     buffer->base = NULL;
     buffer->size = 0;
+    buffer->flags = 0;
     buffer->lock_count = 0;
 #if defined(_WIN32)
     buffer->mapping = NULL;
@@ -259,13 +260,6 @@ io_buffer_free(struct rb_io_buffer *buffer)
         // if (RB_TYPE_P(buffer->source, T_STRING)) {
         //     rb_str_unlocktmp(buffer->source);
         // }
-
-        buffer->base = NULL;
-
-        buffer->size = 0;
-        buffer->flags = 0;
-        buffer->lock_count = 0;
-        buffer->source = Qnil;
     }
 
 #if defined(_WIN32)
@@ -277,6 +271,8 @@ io_buffer_free(struct rb_io_buffer *buffer)
         buffer->mapping = NULL;
     }
 #endif
+
+    io_buffer_zero(buffer);
 }
 
 static void
