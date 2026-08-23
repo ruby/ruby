@@ -168,46 +168,10 @@ class Gem::DependencyList
   end
 
   ##
-  # Remove everything in the DependencyList that matches but doesn't
-  # satisfy items in +dependencies+ (a hash of gem names to arrays of
-  # dependencies).
-
-  def remove_specs_unsatisfied_by(dependencies)
-    specs.reject! do |spec|
-      dep = dependencies[spec.name]
-      dep && !dep.requirement.satisfied_by?(spec.version)
-    end
-  end
-
-  ##
   # Removes the gemspec matching +full_name+ from the dependency list
 
   def remove_by_name(full_name)
     @specs.delete_if {|spec| spec.full_name == full_name }
-  end
-
-  ##
-  # Return a hash of predecessors.  <tt>result[spec]</tt> is an Array of
-  # gemspecs that have a dependency satisfied by the named gemspec.
-
-  def spec_predecessors
-    result = Hash.new {|h,k| h[k] = [] }
-
-    specs = @specs.sort.reverse
-
-    specs.each do |spec|
-      specs.each do |other|
-        next if spec == other
-
-        other.dependencies.each do |dep|
-          if spec.satisfies_requirement? dep
-            result[spec] << other
-          end
-        end
-      end
-    end
-
-    result
   end
 
   def tsort_each_node(&block)
