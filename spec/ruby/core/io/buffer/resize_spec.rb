@@ -143,9 +143,72 @@ describe "IO::Buffer#resize" do
     -> { @buffer.resize(10.0) }.should.raise(TypeError, "not an Integer")
   end
 
-  context "with a slice of a buffer" do
-    # Current behavior of slice resizing seems unintended (it's undocumented, too).
-    # It either creates a completely new buffer, or breaks the slice on size 0.
-    it "needs to be reviewed for spec completeness"
+  ruby_version_is "4.1" do
+    context "with a slice of a buffer" do
+      it "changes the size of the view without modifying the source" do
+        @buffer = IO::Buffer.for("abcdef").dup
+        slice = @buffer.slice(2, 2)
+
+        slice.resize(4).should.equal?(slice)
+        slice.get_string.should == "cdef"
+        @buffer.get_string.should == "abcdef"
+
+        slice.resize(1)
+        slice.get_string.should == "c"
+      end
+
+      it "does not allocate when resized to zero" do
+        @buffer = IO::Buffer.for("abcdef").dup
+        slice = @buffer.slice(2, 2)
+
+        slice.resize(0)
+        slice.should_not.null?
+        slice.should.empty?
+        slice.should.valid?
+
+        slice.resize(4)
+        slice.get_string.should == "cdef"
+      end
+
+      it "raises ArgumentError when the resized view exceeds the source" do
+        @buffer = IO::Buffer.for("abcdef").dup
+        slice = @buffer.slice(2, 2)
+
+        -> { slice.resize(5) }.should.raise(
+          ArgumentError,
+          "Resized slice exceeds its source buffer!"
+        )
+
+        slice.get_string.should == "cd"
+      end
+
+      it "can be resized while the source allocation is locked" do
+        @buffer = IO::Buffer.for("abcdef").dup
+        slice = @buffer.slice(2, 2)
+
+        slice.locked do
+          slice.resize(4)
+          slice.get_string.should == "cdef"
+        end
+      end
+
+      it "preserves read-only access" do
+        @buffer = IO::Buffer.for("abcdef")
+        slice = @buffer.slice(2, 2)
+
+        slice.resize(4)
+        slice.should.readonly?
+        slice.get_string.should == "cdef"
+      end
+
+      it "uses the retained root buffer as the boundary for nested slices" do
+        @buffer = IO::Buffer.for("abcdef").dup
+        parent = @buffer.slice(1, 2)
+        slice = parent.slice(1, 1)
+
+        slice.resize(4)
+        slice.get_string.should == "cdef"
+      end
+    end
   end
 end

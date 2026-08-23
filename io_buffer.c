@@ -345,13 +345,19 @@ get_io_buffer(VALUE self)
     return buffer;
 }
 
+static bool
+io_buffer_slice_p(struct rb_io_buffer *buffer)
+{
+    return rb_typeddata_is_kind_of(buffer->source, &rb_io_buffer_type);
+}
+
 // Return the buffer which owns the lock count. A slice backed by another
 // buffer shares that source buffer's lock count. Other external sources, such
 // as strings, manage their own lifetime and do not share buffer lock state.
 static struct rb_io_buffer *
 io_buffer_lock_owner(struct rb_io_buffer *buffer)
 {
-    if (rb_typeddata_is_kind_of(buffer->source, &rb_io_buffer_type)) {
+    if (io_buffer_slice_p(buffer)) {
         return get_io_buffer(buffer->source);
     }
 
@@ -1775,7 +1781,7 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
 
     // Slices retain their root buffer. If this buffer is already a slice,
     // retain its root directly rather than building a chain of slices:
-    if (rb_typeddata_is_kind_of(buffer->source, &rb_io_buffer_type)) {
+    if (io_buffer_slice_p(buffer)) {
         RB_OBJ_WRITE(instance, &slice->source, buffer->source);
     }
     else {
@@ -1911,10 +1917,51 @@ io_buffer_resize_copy(VALUE self, struct rb_io_buffer *buffer, size_t size)
     *buffer = resized;
 }
 
+static void
+io_buffer_resize_slice(struct rb_io_buffer *slice, size_t size)
+{
+    struct rb_io_buffer *source = get_io_buffer(slice->source);
+
+    if (!io_buffer_validate(source)) {
+        rb_raise(rb_eIOBufferInvalidatedError, "Buffer is invalid!");
+    }
+
+    if (source->base == NULL || slice->base == NULL) {
+        rb_raise(rb_eIOBufferInvalidatedError, "Buffer is invalid!");
+    }
+
+    uintptr_t source_address = (uintptr_t)source->base;
+    uintptr_t slice_address = (uintptr_t)slice->base;
+
+    if (slice_address < source_address) {
+        rb_raise(rb_eIOBufferInvalidatedError, "Buffer is invalid!");
+    }
+
+    uintptr_t offset = slice_address - source_address;
+
+    if (offset > source->size) {
+        rb_raise(rb_eIOBufferInvalidatedError, "Buffer is invalid!");
+    }
+
+    if (size > source->size - (size_t)offset) {
+        rb_raise(rb_eArgError, "Resized slice exceeds its source buffer!");
+    }
+
+    // Validate the requested range rather than the current range so that
+    // shrinking a slice can restore its validity after the source shrinks.
+    slice->size = size;
+}
+
 void
 rb_io_buffer_resize(VALUE self, size_t size)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    if (io_buffer_slice_p(buffer)) {
+        // Resizing a slice only changes the view, not the locked allocation.
+        io_buffer_resize_slice(buffer, size);
+        return;
+    }
 
     io_buffer_validate_for_reading(buffer);
 
@@ -1986,8 +2033,14 @@ rb_io_buffer_resize(VALUE self, size_t size)
  *    # #<IO::Buffer 0x0000555f5d1a1630+8 INTERNAL>
  *    # 0x00000000  74 65 73 74 00 00 00 00                         test....
  *
- *  External buffer (created with ::for), and locked buffer
- *  can not be resized.
+ *  When the buffer is a slice, resizing changes the size of the view without
+ *  modifying the source buffer or allocating new storage. The resized view
+ *  must remain within the source buffer. Growing the view exposes the existing
+ *  bytes in the source; they are not cleared. Because the source allocation
+ *  does not change, a slice can be resized while its source is locked.
+ *
+ *  External owning buffers (created with ::for), and locked owning buffers
+ *  cannot be resized.
  */
 static VALUE
 io_buffer_resize(VALUE self, VALUE size)

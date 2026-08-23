@@ -326,11 +326,64 @@ class TestIOBuffer < Test::Unit::TestCase
     slice = buffer.slice(0, 8)
 
     slice.resize(0)
-    assert_predicate slice, :null?
+    refute_predicate slice, :null?
+    assert_predicate slice, :empty?
+    assert_predicate slice, :valid?
     assert_equal 64, buffer.size
 
     slice.resize(1)
     assert_equal 1, slice.size
+    assert_predicate slice, :valid?
+  end
+
+  def test_resize_slice_changes_view
+    buffer = IO::Buffer.for("abcdef").dup
+    slice = buffer.slice(2, 2)
+
+    assert_same slice, slice.resize(4)
+    assert_equal "cdef", slice.get_string
+
+    slice.set_string("X")
+    assert_equal "abXdef", buffer.get_string
+
+    slice.resize(1)
+    assert_equal "X", slice.get_string
+  end
+
+  def test_resize_slice_beyond_source
+    buffer = IO::Buffer.for("abcdef").dup
+    slice = buffer.slice(2, 2)
+
+    error = assert_raise(ArgumentError) do
+      slice.resize(5)
+    end
+
+    assert_equal "Resized slice exceeds its source buffer!", error.message
+    assert_equal 2, slice.size
+    assert_equal "cd", slice.get_string
+  end
+
+  def test_resize_locked_slice
+    buffer = IO::Buffer.for("abcdef").dup
+    slice = buffer.slice(2, 2)
+
+    slice.locked do
+      slice.resize(4)
+      assert_equal "cdef", slice.get_string
+
+      assert_raise(IO::Buffer::LockedError) do
+        buffer.resize(8)
+      end
+    end
+  end
+
+  def test_resize_nested_slice_uses_root_bounds
+    buffer = IO::Buffer.for("abcdef").dup
+    parent = buffer.slice(1, 2)
+    slice = parent.slice(1, 1)
+
+    slice.resize(4)
+    assert_equal "cdef", slice.get_string
   end
 
   def test_resize_zero_external
