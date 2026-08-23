@@ -1482,7 +1482,7 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
         // With every snt dedicated or retired, only the timer thread's
         // timeout branch can serve the entry or widen the pool: wake it
         // (a no-op unless it sleeps untimed).
-        if (vm->ractor.sched.snt_cnt == 0) {
+        if (RUBY_ATOMIC_LOAD(vm->ractor.sched.snt_cnt) == 0) {
             timer_thread_wakeup_locked(vm);
         }
 
@@ -1528,8 +1528,8 @@ ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
             RUBY_DEBUG_LOG("wait grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
 
             if (SNT_IDLE_RETIRE >= 0 && ++idle_streak > SNT_IDLE_RETIRE &&
-                (int)vm->ractor.sched.snt_cnt > SNT_KEEP_MINIMUM) {
-                vm->ractor.sched.snt_cnt--;
+                (int)RUBY_ATOMIC_LOAD(vm->ractor.sched.snt_cnt) > SNT_KEEP_MINIMUM) {
+                RUBY_ATOMIC_DEC(vm->ractor.sched.snt_cnt);
                 RUBY_DEBUG_LOG("retire, snt_cnt:%d", (int)vm->ractor.sched.snt_cnt);
                 break;   // returning NULL ends this nt; see the caller
             }
@@ -1862,11 +1862,15 @@ thread_sched_atfork(struct rb_thread_sched *sched)
 
     if (th_has_dedicated_nt(th)) {
         vm->ractor.sched.snt_cnt = 0;
+#if USE_RUBY_DEBUG_LOG
         vm->ractor.sched.dnt_cnt = 1;
+#endif
     }
     else {
         vm->ractor.sched.snt_cnt = 1;
+#if USE_RUBY_DEBUG_LOG
         vm->ractor.sched.dnt_cnt = 0;
+#endif
     }
     vm->ractor.sched.running_cnt = 0;
 
@@ -2029,7 +2033,9 @@ Init_native_thread(rb_thread_t *main_th)
     main_th->nt->vm = vm;
 
     // setup mn
+#if USE_RUBY_DEBUG_LOG
     vm->ractor.sched.dnt_cnt = 1;
+#endif
 }
 
 extern int ruby_mn_threads_enabled;
@@ -2074,18 +2080,21 @@ native_thread_dedicated_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_threa
     RUBY_DEBUG_LOG("nt:%d %d->%d", nt->serial, nt->dedicated, nt->dedicated + 1);
 
     if (nt->dedicated == 0) {
-        ractor_sched_lock(vm, cr);
-        {
-            vm->ractor.sched.snt_cnt--;
-            vm->ractor.sched.dnt_cnt++;
-
-            // This may have dedicated the last snt away from a pending
-            // entry whose enqueue saw snt_cnt > 0 (see ractor_sched_enq).
-            if (vm->ractor.sched.snt_cnt == 0 && vm->ractor.sched.grq_cnt > 0) {
-                timer_thread_wakeup_locked(vm);
+        // Lock-free; pairs with ractor_sched_enq (enq: grq_cnt up then read
+        // snt_cnt / here: snt_cnt down then read grq_cnt) against lost wakeups.
+        if (RUBY_ATOMIC_FETCH_SUB(vm->ractor.sched.snt_cnt, 1) == 1) {
+            // the last snt went dedicated; pending entries need the timer thread
+            ractor_sched_lock(vm, cr);
+            {
+                if (vm->ractor.sched.grq_cnt > 0) {
+                    timer_thread_wakeup_locked(vm);
+                }
             }
+            ractor_sched_unlock(vm, cr);
         }
-        ractor_sched_unlock(vm, cr);
+#if USE_RUBY_DEBUG_LOG
+        vm->ractor.sched.dnt_cnt++;
+#endif
     }
 
     nt->dedicated++;
@@ -2099,21 +2108,21 @@ native_thread_dedicated_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_threa
     nt->dedicated--;
 
     if (nt->dedicated == 0) {
-        ractor_sched_lock(vm, cr);
-        {
-            /* max_cpu bounds the shared threads and this is where one rejoins
-             * them, so this is where the cap has to hold.  A thread with no room
-             * to come back to belongs to neither count until it ends. */
-            if (vm->ractor.sched.snt_cnt < vm->ractor.sched.max_cpu ||
-                (int)vm->ractor.sched.snt_cnt <= MINIMUM_SNT) {
-                vm->ractor.sched.snt_cnt++;
+        // Rejoin under the max_cpu cap; with no room this nt retires and
+        // belongs to neither count until it ends.
+        while (1) {
+            rb_atomic_t snt = RUBY_ATOMIC_LOAD(vm->ractor.sched.snt_cnt);
+            if (snt < vm->ractor.sched.max_cpu || (int)snt <= MINIMUM_SNT) {
+                if (RUBY_ATOMIC_CAS(vm->ractor.sched.snt_cnt, snt, snt + 1) == snt) break;
             }
             else {
                 nt->retiring = true;
+                break;
             }
-            vm->ractor.sched.dnt_cnt--;
         }
-        ractor_sched_unlock(vm, cr);
+#if USE_RUBY_DEBUG_LOG
+        vm->ractor.sched.dnt_cnt--;
+#endif
     }
 }
 

@@ -824,19 +824,25 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
         if (!vm->ractor.main_ractor->threads.sched.enable_mn_threads)
             schedulable_ractor_cnt--; // do not need snt for main ractor
 
-        unsigned int snt_cnt = vm->ractor.sched.snt_cnt;
-        if (((int)snt_cnt < MINIMUM_SNT) ||
-            (snt_cnt < schedulable_ractor_cnt  &&
-             snt_cnt < vm->ractor.sched.max_cpu)) {
+        // CAS keeps a concurrent rejoin from pushing snt_cnt past the cap
+        rb_atomic_t snt_cnt = RUBY_ATOMIC_LOAD(vm->ractor.sched.snt_cnt);
+        while (((int)snt_cnt < MINIMUM_SNT) ||
+               (snt_cnt < schedulable_ractor_cnt  &&
+                snt_cnt < vm->ractor.sched.max_cpu)) {
+            rb_atomic_t prev = RUBY_ATOMIC_CAS(vm->ractor.sched.snt_cnt, snt_cnt, snt_cnt + 1);
+            if (prev == snt_cnt) {
+                need_to_make = true;
+                break;
+            }
+            snt_cnt = prev;
+        }
 
+        if (need_to_make) {
             RUBY_DEBUG_LOG("added snt:%u dnt:%u ractor_cnt:%u grq_cnt:%u",
                            vm->ractor.sched.snt_cnt,
                            vm->ractor.sched.dnt_cnt,
                            vm->ractor.cnt,
                            vm->ractor.sched.grq_cnt);
-
-            vm->ractor.sched.snt_cnt++;
-            need_to_make = true;
         }
         else {
             RUBY_DEBUG_LOG("snt:%d ractor_cnt:%d", (int)vm->ractor.sched.snt_cnt, (int)vm->ractor.cnt);
@@ -852,7 +858,7 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
             // Roll back, or this function would conclude forever that the
             // pool is wide enough and never try again.
             ractor_sched_lock(vm, NULL);
-            vm->ractor.sched.snt_cnt--;
+            RUBY_ATOMIC_DEC(vm->ractor.sched.snt_cnt);
             ractor_sched_unlock(vm, NULL);
             native_thread_destroy(nt);
         }
