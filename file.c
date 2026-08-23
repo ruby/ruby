@@ -1794,19 +1794,27 @@ rb_access(VALUE fname, int mode)
 
 /*
  * call-seq:
- *   File.directory?(path) -> true or false
+ *   File.directory?(object) -> true or false
  *
- * With string +object+ given, returns +true+ if +path+ is a string path
- * leading to a directory, or to a symbolic link to a directory; +false+ otherwise:
+ * Returns whether the given +object+ represents a directory;
+ * +object+ may be a string path or an IO object:
  *
- *   File.directory?('.')              # => true
- *   File.directory?('foo')            # => false
- *   File.symlink('.', 'dirlink')      # => 0
- *   File.directory?('dirlink')        # => true
- *   File.symlink('t,txt', 'filelink') # => 0
- *   File.directory?('filelink')       # => false
+ *   File.directory?('/etc')      # => true
+ *   File.directory?('lib')       # => true
+ *   File.directory?('README.md') # => false
+ *   File.directory?('nosuch')    # => false
+ *   File.directory?($stdin)      # => false
  *
- * Argument +path+ can be an IO object.
+ * Follows symbolic links:
+ *
+ *   dirpath = 'doc/dirname'
+ *   File.symlink('.', dirpath)
+ *   File.directory?(dirpath)     # => true
+ *   File.unlink(dirpath)
+ *   filepath = 't.tmp'
+ *   File.symlink('README.md', filepath)
+ *   File.directory?(filepath)    # => false
+ *   File.unlink(filepath)
  *
  */
 
