@@ -399,6 +399,10 @@ free_targeted_hooks(st_table *hooks_tbl)
     st_foreach(hooks_tbl, free_targeted_hook_lists, 0);
 }
 
+#ifdef RUBY_THREAD_PTHREAD_H
+void rb_thread_sched_destroy(struct rb_thread_sched *);
+#endif
+
 static void
 ractor_free(void *ptr)
 {
@@ -406,6 +410,9 @@ ractor_free(void *ptr)
     RUBY_DEBUG_LOG("free r:%d", rb_ractor_id(r));
 
     free_targeted_hooks(&r->pub.targeted_hooks);
+#ifdef RUBY_THREAD_PTHREAD_H
+    rb_thread_sched_destroy(&r->threads.sched);
+#endif
     rb_native_mutex_destroy(&r->sync.lock);
 #ifdef RUBY_THREAD_WIN32_H
     rb_native_cond_destroy(&r->sync.wakeup_cond);
@@ -1196,7 +1203,7 @@ rb_ractor_terminate_all(void)
             rb_del_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_cond_timedwait(vm, &vm->ractor.sync.terminate_cond, 1000 /* ms */);
 #ifdef RUBY_THREAD_PTHREAD_H
-            while (vm->ractor.sched.barrier_waiting) {
+            while (vm->ractor.sched.barrier_is_waiting) {
                 // A barrier is waiting. Threads relinquish the VM lock before joining the barrier and
                 // since we just acquired the VM lock back, we're blocking other threads from joining it.
                 // We loop until the barrier is over. We can't join this barrier because our thread isn't added to

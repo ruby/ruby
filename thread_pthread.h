@@ -90,14 +90,6 @@ struct rb_thread_sched_item {
         // There is no clear relationship between this and th->status.
         bool is_ready;
 
-        // connected to vm->ractor.sched.timeslice_threads
-        // locked by vm->ractor.sched.lock
-        struct ccan_list_node timeslice_threads;
-
-        // connected to vm->ractor.sched.running_threads
-        // locked by vm->ractor.sched.lock
-        struct ccan_list_node running_threads;
-
     } node;
 
     struct rb_thread_sched_waiting waiting_reason;
@@ -128,6 +120,17 @@ struct rb_native_thread {
 #endif
 
     struct rb_thread_struct *running_thread;
+
+    // The running thread on this shared nt, for the barrier/timeslice scans.
+    // While a scan holds running_th_lock the thread cannot finish parking.
+    rb_nativethread_lock_t running_th_lock;
+    struct rb_thread_struct *running_th;
+    struct ccan_list_node snts_node; // in vm->ractor.sched.ntlist.snts
+    // in vm->ractor.sched.ntlist.running_dnts while running_thread runs
+    struct ccan_list_node running_dnts_node;
+    // barrier_serial stamped by the barrier's counting walk; this nt's
+    // deregistration during that barrier decrements the snapshot count
+    uint32_t barrier_counted_serial;
 
     // to control native thread; use sched->lock
     rb_nativethread_cond_t readyq;
@@ -167,7 +170,7 @@ struct rb_thread_sched {
     struct rb_thread_struct *runnable_hot_th;
     int runnable_hot_th_waiting;
     bool is_running;
-    bool is_running_timeslice;
+
     bool enable_mn_threads;
 
     struct ccan_list_head readyq;
@@ -178,6 +181,7 @@ struct rb_thread_sched {
     // node itself: enqueuers assert it, and direct transfers cancel an
     // outstanding entry (see ractor_sched_cancel_enq).
     struct ccan_list_node grq_node;
+    struct ccan_list_node timeslice_node; // self-linked = not on timeslice.scheds
 };
 
 struct rb_thread_context;

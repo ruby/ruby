@@ -752,18 +752,26 @@ typedef struct rb_vm_struct {
             rb_atomic_t snt_cnt;  // count of shared NTs; lock-free (see native_thread_dedicated_inc)
             unsigned int dnt_cnt; // count of dedicated NTs; logging only (USE_RUBY_DEBUG_LOG), not atomic
 
-            unsigned int running_cnt;
 
             unsigned int max_cpu;
             struct ccan_list_head grq; // // Global Ready Queue
             rb_atomic_t winding_cnt; // native threads between a coroutine epilogue and its reclaim; ruby_vm_destruct waits for 0
             unsigned int grq_cnt;
 
-            // running threads
-            struct ccan_list_head running_threads;
+            // What the barrier walk visits: threads running on dedicated
+            // nts, and the shared nts (whose running_th fields hold the rest).
+            struct {
+                rb_nativethread_lock_t lock;
+                struct ccan_list_head running_dnts;
+                struct ccan_list_head snts;
+            } ntlist;
 
-            // threads which switch context by timeslice
-            struct ccan_list_head timeslice_threads;
+            // scheds whose readyq holds waiters: the timer ticks their
+            // running thread (timeslice_scan) and prunes drained entries.
+            struct {
+                rb_nativethread_lock_t lock;
+                struct ccan_list_head scheds;
+            } timeslice;
 
             // true if timeslice timer is not enable
             bool timeslice_wait_inf;
@@ -771,8 +779,12 @@ typedef struct rb_vm_struct {
             // barrier
             rb_nativethread_cond_t barrier_complete_cond;
             rb_nativethread_cond_t barrier_release_cond;
-            bool barrier_waiting;
-            unsigned int barrier_waiting_cnt;
+            // bool; nonzero while a stop-the-world section is active.  Set
+            // before the barrier walks the running records; a record moved
+            // after the walk sees it (thread_sched_setup_running_threads).
+            rb_atomic_t barrier_is_waiting;
+            unsigned int barrier_joined_cnt; // threads joined so far; under sched.lock
+            unsigned int barrier_running_cnt; // runners counted by the barrier's walk; under sched.lock
             unsigned int barrier_serial;
             struct rb_ractor_struct *barrier_ractor;
             unsigned int barrier_lock_rec;
