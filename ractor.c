@@ -1006,6 +1006,14 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const c
 {
     VM_ASSERT(cr == GET_RACTOR());
 
+#ifdef RUBY_THREAD_PTHREAD_H
+    // vm->ractor.blocking_cnt is only consumed by the win32 scheduler; the
+    // pthread one must not pay a VM lock per blocking region for it.  The
+    // running<->blocking status flips stop with it (all callers), matching
+    // rb_ractor_blocking_threads_dec skipping the reverse transition.
+    return;
+#endif
+
     RUBY_DEBUG_LOG2(file, line,
                     "cr->threads.cnt:%u cr->threads.blocking_cnt:%u vm->ractor.cnt:%u vm->ractor.blocking_cnt:%u",
                     cr->threads.cnt, cr->threads.blocking_cnt,
@@ -1106,6 +1114,8 @@ rb_ractor_blocking_threads_dec(rb_ractor_t *cr, const char *file, int line)
 
     VM_ASSERT(cr == GET_RACTOR());
 
+#ifndef RUBY_THREAD_PTHREAD_H
+    // see rb_ractor_blocking_threads_inc
     if (cr->threads.cnt == cr->threads.blocking_cnt) {
         rb_vm_t *vm = GET_VM();
 
@@ -1113,6 +1123,7 @@ rb_ractor_blocking_threads_dec(rb_ractor_t *cr, const char *file, int line)
             rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
         }
     }
+#endif
 
     cr->threads.blocking_cnt--;
 }
