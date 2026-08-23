@@ -366,7 +366,7 @@ rb_warn_category(VALUE str, VALUE category)
     else {
         VALUE args[2];
         args[0] = str;
-        args[1] = rb_hash_new();
+        args[1] = rb_hash_new_capa(1);
         rb_hash_aset(args[1], sym_category, category);
         return rb_funcallv_kw(rb_mWarning, id_warn, 2, args, RB_PASS_KEYWORDS);
     }
@@ -1734,7 +1734,7 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
     order = check_order_keyword(opt);
 
     {
-        if (NIL_P(opt)) opt = rb_hash_new();
+        if (NIL_P(opt)) opt = rb_hash_new_capa(1);
         rb_hash_aset(opt, sym_highlight, highlight);
     }
 

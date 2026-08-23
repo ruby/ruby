@@ -1944,10 +1944,10 @@ static VALUE
 rb_enc_aliases(VALUE klass)
 {
     VALUE aliases[2];
-    aliases[0] = rb_hash_new();
     aliases[1] = rb_ary_new();
 
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+        aliases[0] = rb_hash_new_capa(st_table_size(enc_table->names));
         st_foreach(enc_table->names, rb_enc_aliases_enc_i, (st_data_t)aliases);
     }
 
