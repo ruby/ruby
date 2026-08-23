@@ -90,6 +90,10 @@ module Bundler
         configure_ssl(connection) if uri.scheme == "https"
         connection.open_timeout = @timeout
         connection.read_timeout = @timeout
+        # Stale connections are already resent by Gem::Request#perform_request,
+        # and Bundler::Retry retries whole requests, so the Gem::Net::HTTP
+        # level retry would only multiply the time spent on a timing out host.
+        connection.max_retries = 0
         connection.start
         connection
       end

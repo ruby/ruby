@@ -179,7 +179,7 @@ Cooldown filtering depends on the gem server providing a per\-version \fBcreated
 .IP "\(bu" 4
 \fBsystem_bindir\fR (\fBBUNDLE_SYSTEM_BINDIR\fR): The location where RubyGems installs binstubs\. Defaults to \fBGem\.bindir\fR\.
 .IP "\(bu" 4
-\fBtimeout\fR (\fBBUNDLE_TIMEOUT\fR): The seconds allowed before timing out for network requests\. Defaults to \fB10\fR\.
+\fBtimeout\fR (\fBBUNDLE_TIMEOUT\fR): The seconds allowed before timing out for network requests, applied to each request individually\. A network operation retried by Bundler may wait a multiple of this value in total\. Defaults to \fB10\fR\.
 .IP "\(bu" 4
 \fBupdate_requires_all_flag\fR (\fBBUNDLE_UPDATE_REQUIRES_ALL_FLAG\fR): Require passing \fB\-\-all\fR to \fBbundle update\fR when everything should be updated, and disallow passing no options to \fBbundle update\fR\.
 .IP "\(bu" 4
