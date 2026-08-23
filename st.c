@@ -1352,9 +1352,8 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
     return 1;
 }
 
-/* Create a copy of old_tab into new_tab. */
-st_table *
-st_replace(st_table *new_tab, st_table *old_tab)
+static st_table *
+st_replace_no_check(st_table *new_tab, st_table *old_tab)
 {
     *new_tab = *old_tab;
     size_t memsize = get_allocated_entries(old_tab) * sizeof(st_table_entry);
@@ -1370,6 +1369,15 @@ st_replace(st_table *new_tab, st_table *old_tab)
     return new_tab;
 }
 
+
+/* Create a copy of old_tab into new_tab. */
+st_table *
+st_replace(st_table *new_tab, st_table *old_tab)
+{
+    RUBY_ASSERT(new_tab->entries == NULL);
+    return st_replace_no_check(new_tab, old_tab);
+}
+
 /* Create and return a copy of table OLD_TAB.  */
 st_table *
 st_copy(st_table *old_tab)
@@ -1382,7 +1390,7 @@ st_copy(st_table *old_tab)
         return NULL;
 #endif
 
-    if (st_replace(new_tab, old_tab) == NULL) {
+    if (st_replace_no_check(new_tab, old_tab) == NULL) {
         st_free_table(new_tab);
         return NULL;
     }
