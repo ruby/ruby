@@ -1990,7 +1990,7 @@ rb_file_blockdev_p(VALUE obj, VALUE fname)
  *   File.chardev?('nosuch')       # => false
  *
  *
- * The returned value is filesystem-dependent; on Windows, almost always +false+.
+ * The returned value is filesystem-dependent; on Windows, always +false+.
  */
 static VALUE
 rb_file_chardev_p(VALUE obj, VALUE fname)
