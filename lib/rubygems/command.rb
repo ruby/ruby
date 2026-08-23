@@ -415,15 +415,6 @@ class Gem::Command
   end
 
   ##
-  # Merge a set of command options with the set of default options (without
-  # modifying the default option hash).
-
-  def merge_options(new_options)
-    @options = @defaults.clone
-    new_options.each {|k,v| @options[k] = v }
-  end
-
-  ##
   # True if the command handles the given argument list.
 
   def handles?(args)
