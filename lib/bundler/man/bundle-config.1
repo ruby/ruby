@@ -330,6 +330,12 @@ Any \fB\.\fR characters in a host name are mapped to a double underscore (\fB__\
 .IP "" 0
 .P
 This means that if you have a gem server named \fBmy\.gem\-host\.com\fR, you'll need to use the \fBBUNDLE_MY__GEM___HOST__COM\fR variable to configure credentials for it through ENV\.
+.SH "PROXY SUPPORT"
+Bundler reads the proxy for a gem source from the \fB:http_proxy\fR key in the RubyGems configuration file (\fB~/\.gemrc\fR), falling back to the environment\. For an \fBhttps\fR source, \fBhttps_proxy\fR (or \fBHTTPS_PROXY\fR) takes precedence over \fBhttp_proxy\fR (or \fBHTTP_PROXY\fR), which is only used when no https\-specific proxy is set\. Proxy credentials that are not embedded in the proxy URL are read from \fBHTTP_PROXY_USER\fR and \fBHTTP_PROXY_PASS\fR, or from \fBHTTPS_PROXY_USER\fR and \fBHTTPS_PROXY_PASS\fR when the https proxy is used\.
+.P
+Setting \fB:http_proxy: :no_proxy\fR in the RubyGems configuration file disables proxies entirely, including any proxy environment variables\. To keep using a proxy from the environment, remove that line\. To configure a proxy in the file, replace \fB:no_proxy\fR with an explicit proxy URL\.
+.P
+The \fBNO_PROXY\fR (or \fBno_proxy\fR) environment variable lists hosts that are reached directly, bypassing the proxy\. An entry matches the host itself and its subdomains, so \fBNO_PROXY=example\.com\fR bypasses both \fBexample\.com\fR and \fBsub\.example\.com\fR, but not \fBmyexample\.com\fR\. An entry starting with a dot matches only subdomains\. A value of \fB*\fR bypasses the proxy for every host\.
 .SH "CONFIGURE BUNDLER DIRECTORIES"
 Bundler's home, cache and plugin directories and config file can be configured through environment variables\. The default location for Bundler's home directory is \fB~/\.bundle\fR, which all directories inherit from by default\. The following outlines the available environment variables and their default values
 .IP "" 4

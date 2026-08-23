@@ -454,6 +454,27 @@ This means that if you have a gem server named `my.gem-host.com`, you'll need to
 use the `BUNDLE_MY__GEM___HOST__COM` variable to configure credentials for it
 through ENV.
 
+## PROXY SUPPORT
+
+Bundler reads the proxy for a gem source from the `:http_proxy` key in the
+RubyGems configuration file (`~/.gemrc`), falling back to the environment.
+For an `https` source, `https_proxy` (or `HTTPS_PROXY`) takes precedence over
+`http_proxy` (or `HTTP_PROXY`), which is only used when no https-specific
+proxy is set. Proxy credentials that are not embedded in the proxy URL are
+read from `HTTP_PROXY_USER` and `HTTP_PROXY_PASS`, or from `HTTPS_PROXY_USER`
+and `HTTPS_PROXY_PASS` when the https proxy is used.
+
+Setting `:http_proxy: :no_proxy` in the RubyGems configuration file disables
+proxies entirely, including any proxy environment variables. To keep using a
+proxy from the environment, remove that line. To configure a proxy in the
+file, replace `:no_proxy` with an explicit proxy URL.
+
+The `NO_PROXY` (or `no_proxy`) environment variable lists hosts that are
+reached directly, bypassing the proxy. An entry matches the host itself and
+its subdomains, so `NO_PROXY=example.com` bypasses both `example.com` and
+`sub.example.com`, but not `myexample.com`. An entry starting with a dot
+matches only subdomains. A value of `*` bypasses the proxy for every host.
+
 ## CONFIGURE BUNDLER DIRECTORIES
 
 Bundler's home, cache and plugin directories and config file can be configured
