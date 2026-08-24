@@ -55,7 +55,7 @@ Only list patch newer versions\.
 Only list gems specified in your Gemfile, not their dependencies\.
 .TP
 \fB\-\-cooldown=<number>\fR
-Annotate (rather than hide) versions that are still inside the cooldown window of \fInumber\fR days\. The prose output appends "in cooldown for Nd more days" and the table form adds "(cooldown Nd)" to the Latest column\. See \fBcooldown\fR in bundle\-config(1)\.
+Annotate (rather than hide) versions that are still inside the cooldown window of \fInumber\fR days\. The prose output appends "in cooldown for Nd more days" and the table form adds "(cooldown Nd)" to the Latest column\. When a version outside the window is newer than the installed one, the prose output also appends "newest out of cooldown X" and the table form becomes "(cooldown Nd, X out of cooldown)"\. See \fBcooldown\fR in bundle\-config(1)\.
 .SH "PATCH LEVEL OPTIONS"
 See bundle update(1) \fIbundle\-update\.1\.html\fR for details\.
 .SH "FILTERING OUTPUT"
