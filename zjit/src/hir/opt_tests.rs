@@ -15232,6 +15232,70 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn specialize_call_to_iseq_with_caller_splat_result_used_by_hash_aset() {
+        // Hash#[]= returns its value argument from its CFunc inline. Ensure it can
+        // consume the caller-splat join result before infer_types runs again.
+        eval("
+            def target(value) = value
+            def test(args)
+              hash = {}
+              hash[:value] = target(*args)
+            end
+            test([1])
+            test([2])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :args@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :args@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          v17:HashExact = NewHash
+          PatchPoint NoEPEscape(test)
+          v23:NilClass = Const Value(nil)
+          v26:StaticSymbol[:value] = Const Value(VALUE(0x1008))
+          v30:ArrayExact = ToArray v12
+          v50:CInt64 = ArrayLength v30
+          v51:CInt64[1] = Const CInt64(1)
+          v52:CBool = IsBitEqual v50, v51
+          CondBranch v52, bb7(), bb5()
+        bb7():
+          v54:CInt64 = CCall v30, :rb_jit_ruby2_keywords_splat_p@0x1010
+          v55:CInt64[0] = Const CInt64(0)
+          v56:CBool = IsBitEqual v54, v55
+          CondBranch v56, bb4(), bb5()
+        bb4():
+          PatchPoint MethodRedefined(Object@0x1018, target@0x1020, cme:0x1028)
+          v44:ObjectSubclass[class_exact*:Object@VALUE(0x1018)] = GuardType v11, ObjectSubclass[class_exact*:Object@VALUE(0x1018)] recompile
+          v45:CInt64[0] = Const CInt64(0)
+          v46:BasicObject = ArrayAref v30, v45
+          PushInlineFrame :target, v44 (0x1050), num_args=1
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb6(v46)
+        bb5():
+          v58:BasicObject = Send v11, :target, v30 # SendFallbackReason: Complex argument passing
+          Jump bb6(v58)
+        bb6(v49:BasicObject):
+          PatchPoint NoSingletonClass(Hash@0x1078)
+          PatchPoint MethodRedefined(Hash@0x1078, []=@0x1080, cme:0x1088)
+          HashAset v17, v26, v49
+          CheckInterrupts
+          Return v49
+        ");
+    }
+
+    #[test]
     fn test_inline_symbol_to_sym() {
         eval(r#"
             def test(o) = o.to_sym

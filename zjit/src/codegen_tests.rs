@@ -7215,6 +7215,19 @@ fn test_send_caller_splat_with_ruby2_keywords_hash_falls_back() {
 }
 
 #[test]
+fn test_send_caller_splat_result_used_by_hash_aset() {
+    eval("
+        def test(value) = value
+        def entry(args)
+          hash = {}
+          hash[:value] = test(*args)
+        end
+        entry([1])
+    ");
+    assert_snapshot!(assert_compiles("entry([2])"), @"2");
+}
+
+#[test]
 fn test_send_kwarg() {
     assert_snapshot!(inspect("
         def test(a:, b:) = [a, b]
