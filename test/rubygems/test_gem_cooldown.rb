@@ -42,6 +42,85 @@ class TestGemCooldown < Gem::TestCase
     Gem.configuration.cooldown = orig_cooldown
   end
 
+  def test_invalid_days_warns_once_and_fails_open
+    use_ui @ui do
+      refute Gem::Cooldown.new("abc").active?
+      refute Gem::Cooldown.new("abc").active?
+    end
+
+    assert_equal 1, @ui.error.scan("Invalid cooldown value").size
+    assert_match 'Invalid cooldown value "abc", so the cooldown is disabled.', @ui.error
+    assert_match "Expected a non-negative integer number of days.", @ui.error
+  end
+
+  def test_negative_days_warns_and_fails_open
+    use_ui @ui do
+      refute Gem::Cooldown.new(-5).active?
+    end
+
+    assert_match "Invalid cooldown value -5", @ui.error
+  end
+
+  def test_partly_numeric_days_warns_and_fails_open
+    use_ui @ui do
+      refute Gem::Cooldown.new("7days").active?
+    end
+
+    assert_match 'Invalid cooldown value "7days"', @ui.error
+  end
+
+  def test_non_numeric_type_warns_instead_of_raising
+    use_ui @ui do
+      [true, [7], :sym].each do |value|
+        refute Gem::Cooldown.new(value).active?
+      end
+    end
+
+    assert_match "Invalid cooldown value true", @ui.error
+  end
+
+  def test_valid_days_do_not_warn
+    use_ui @ui do
+      Gem::Cooldown.new 7
+      Gem::Cooldown.new 0
+      Gem::Cooldown.new "3"
+      Gem::Cooldown.new nil
+    end
+
+    assert_empty @ui.error
+  end
+
+  def test_parse_created_at_without_offset_is_utc
+    with_tz "Asia/Tokyo" do
+      assert_equal Time.utc(2026, 6, 5, 10, 30, 45),
+                   Gem::Cooldown.parse_created_at("2026-06-05T10:30:45")
+    end
+  end
+
+  def test_parse_created_at_keeps_explicit_offset
+    assert_equal Time.utc(2026, 6, 5, 8, 30, 45),
+                 Gem::Cooldown.parse_created_at("2026-06-05T10:30:45+02:00")
+
+    assert_equal Time.utc(2026, 6, 5, 10, 30, 45),
+                 Gem::Cooldown.parse_created_at("2026-06-05T10:30:45Z")
+  end
+
+  def test_parse_created_at_invalid
+    assert_nil Gem::Cooldown.parse_created_at("not a timestamp")
+    assert_nil Gem::Cooldown.parse_created_at("2026")
+    assert_nil Gem::Cooldown.parse_created_at("2026-06-05T10")
+    assert_nil Gem::Cooldown.parse_created_at(nil)
+    assert_nil Gem::Cooldown.parse_created_at(7)
+  end
+
+  def with_tz(tz)
+    orig_tz = ENV["TZ"]
+    ENV["TZ"] = tz
+    yield
+  ensure
+    ENV["TZ"] = orig_tz
+  end
+
   def test_warn_missing_created_at_warns_once
     source = Gem::Source.new @gem_repo
 

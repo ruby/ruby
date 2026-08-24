@@ -545,6 +545,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     if defined? Gem::Cooldown
       Gem::Cooldown.reset_warned_missing_created_at
+      Gem::Cooldown.reset_warned_invalid_days
     end
 
     Dir.chdir @current_dir

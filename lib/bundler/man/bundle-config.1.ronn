@@ -159,6 +159,13 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Gemfile; remember that `--cooldown N` on the command line will
    still override it for that single run.
 
+   The value must be a non-negative integer. `--cooldown` rejects
+   anything else outright, while a value coming from this setting or
+   from `BUNDLE_COOLDOWN` only warns, because a typo left in a config
+   file should not make every command fail. Such a value disables the
+   cooldown for every source, including sources that declare their own
+   `cooldown:` in the Gemfile.
+
    Cooldown filtering depends on the gem server providing a per-version
    `created_at` timestamp in the v2 compact-index format. Versions
    without that metadata - older gem servers, historical entries that

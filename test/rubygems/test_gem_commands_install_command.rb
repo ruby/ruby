@@ -855,6 +855,14 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal 7, @cmd.options[:cooldown]
   end
 
+  def test_cooldown_option_negative
+    e = assert_raise Gem::OptionParser::InvalidArgument do
+      @cmd.handle_options %w[--cooldown -7 a]
+    end
+
+    assert_match "--cooldown", e.message
+  end
+
   def test_execute_with_invalid_gem_file
     FileUtils.touch("a.gem")
 

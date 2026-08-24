@@ -99,6 +99,8 @@ The per\-source \fBcooldown:\fR keyword in the Gemfile, such as \fBsource "https
 .IP
 The CLI flag and this setting apply uniformly to every source, including ones declared with their own \fBcooldown:\fR value\. To keep a private registry permanently exempt while still cooling down public gems, declare \fBsource "https://internal", cooldown: 0\fR in the Gemfile; remember that \fB\-\-cooldown N\fR on the command line will still override it for that single run\.
 .IP
+The value must be a non\-negative integer\. \fB\-\-cooldown\fR rejects anything else outright, while a value coming from this setting or from \fBBUNDLE_COOLDOWN\fR only warns, because a typo left in a config file should not make every command fail\. Such a value disables the cooldown for every source, including sources that declare their own \fBcooldown:\fR in the Gemfile\.
+.IP
 Cooldown filtering depends on the gem server providing a per\-version \fBcreated_at\fR timestamp in the v2 compact\-index format\. Versions without that metadata \- older gem servers, historical entries that predate the v2 cutover on \fBrubygems\.org\fR, or private registries that still emit the v1 format \- are treated as outside the cooldown window and remain resolvable\. If you rely on cooldown for supply\-chain protection, confirm that the gem server emits \fBcreated_at\fR in its \fB/info/<gem>\fR responses\.
 .IP "\(bu" 4
 \fBdefault_cli_command\fR (\fBBUNDLE_DEFAULT_CLI_COMMAND\fR): The command that running \fBbundle\fR without arguments should run\. Defaults to \fBcli_help\fR since Bundler 4, but can also be \fBinstall\fR which was the previous default\.

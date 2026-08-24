@@ -28,8 +28,15 @@ class Gem::Cooldown
   end
 
   def initialize(days, now: Time.now)
-    @days = days.to_i
+    # A gemrc value is arbitrary YAML, so it can be any type at all. Anything
+    # that cannot be read as a non-negative integer leaves the cooldown
+    # disabled rather than raising out of an unrelated command.
+    valid = valid_days?(days)
+
+    @days = valid ? days.to_i : 0
     @now = now
+
+    Gem::Cooldown.warn_invalid_days(days) unless valid || days.nil?
   end
 
   ##
@@ -97,5 +104,31 @@ class Gem::Cooldown
 
   def self.reset_warned_missing_created_at # :nodoc:
     @warned = nil
+  end
+
+  # Warns once per process that a configured cooldown value cannot be read
+  # as a non-negative integer, which leaves the cooldown disabled.  The
+  # --cooldown option is validated by the option parser; this catches the
+  # gemrc path.
+
+  def self.warn_invalid_days(value) # :nodoc:
+    return if @warned_invalid_days
+    @warned_invalid_days = true
+
+    Gem::DefaultUserInteraction.ui.alert_warning \
+      "Invalid cooldown value #{value.inspect}, so the cooldown is disabled. " \
+      "Expected a non-negative integer number of days."
+  end
+
+  def self.reset_warned_invalid_days # :nodoc:
+    @warned_invalid_days = nil
+  end
+
+  private
+
+  def valid_days?(value)
+    days = Integer(value.to_s, exception: false)
+
+    !days.nil? && !days.negative?
   end
 end
