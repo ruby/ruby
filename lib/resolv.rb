@@ -562,7 +562,21 @@ class Resolv
             next if !sender
             senders[[candidate, requester, nameserver, port]] = sender
           end
-          reply, reply_name = requester.request(sender, tout)
+          begin
+            reply, reply_name = requester.request(sender, tout)
+          rescue ResolvTimeout
+            # Giving up part way through a frame loses stream sync, and a peer
+            # seen going away leaves the socket dead.  Either way the requester
+            # says so, and the next attempt has to open a fresh connection.  A
+            # timeout with the stream still on a frame boundary keeps it; a
+            # peer that leaves while nothing is being read goes unnoticed here
+            # and only shows up when the next request is written.
+            unless requester.reusable?
+              requesters.delete([nameserver, port])
+              requester.close
+            end
+            raise
+          end
           case reply.rcode
           when RCode::NoError
             if reply.tc == 1 and not Requester::TCP === requester
@@ -698,6 +712,12 @@ class Resolv
         @socks = nil
       end
 
+      # Whether another request may be sent over the same transport.  Only a
+      # stream transport can end up in a state that rules this out.
+      def reusable?
+        true
+      end
+
       def request(sender, tout)
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         timelimit = start + tout
@@ -724,7 +744,7 @@ class Resolv
             raise ResolvTimeout
           end
           begin
-            reply, from = recv_reply(select_result[0])
+            reply, from = recv_reply(select_result[0], timelimit)
           rescue Errno::ECONNREFUSED, # GNU/Linux, FreeBSD
                  Errno::ECONNRESET, # Windows
                  EOFError
@@ -801,7 +821,7 @@ class Resolv
           self
         end
 
-        def recv_reply(readable_socks)
+        def recv_reply(readable_socks, timelimit = nil)
           lazy_initialize
           reply, from = readable_socks[0].recvfrom(UDPSize)
           return reply, [from[3],from[1]]
@@ -870,7 +890,7 @@ class Resolv
           self
         end
 
-        def recv_reply(readable_socks)
+        def recv_reply(readable_socks, timelimit = nil)
           lazy_initialize
           reply = readable_socks[0].recv(UDPSize)
           return reply, nil
@@ -933,15 +953,28 @@ class Resolv
           sock = TCPSocket.new(@host, @port)
           @socks = [sock]
           @senders = {}
+          @reusable = true
         end
 
-        def recv_reply(readable_socks)
-          len_data = readable_socks[0].read(2)
+        def reusable?
+          @reusable
+        end
+
+        def recv_reply(readable_socks, timelimit = nil)
+          sock = readable_socks[0]
+          len_data = read_exactly(sock, 2, timelimit)
           raise EOFError if len_data.nil? || len_data.bytesize != 2
           len = len_data.unpack('n')[0]
-          reply = @socks[0].read(len)
+          reply = read_exactly(sock, len, timelimit)
           raise EOFError if reply.nil? || reply.bytesize != len
+          @reusable = true
           return reply, nil
+        rescue EOFError, SystemCallError
+          # Whatever the kernel reported, this socket cannot be trusted for
+          # another frame.  In practice that is the peer closing or resetting;
+          # the rest is rare enough that erring towards reconnecting is right.
+          @reusable = false
+          raise
         end
 
         def sender(msg, data, host=@host, port=@port)
@@ -963,10 +996,39 @@ class Resolv
         end
 
         def close
+          @reusable = false
           super
           @senders.each_key {|from,id|
             DNS.free_request_id(@host, @port, id)
           }
+        end
+
+        private
+
+        # Read +len+ bytes, giving up with ResolvTimeout once +timelimit+ (a
+        # CLOCK_MONOTONIC value) has passed.  A shorter result means the peer
+        # closed the connection, which the caller turns into an EOFError.
+        # Consuming any byte marks the requester unusable until the whole frame
+        # has been read, since giving up in between loses frame sync.  Without a
+        # +timelimit+ the read blocks instead and keeps no such mark; that is
+        # only for a caller still using the one argument form of #recv_reply.
+        def read_exactly(sock, len, timelimit)
+          return sock.read(len) unless timelimit
+          buf = String.new
+          while buf.bytesize < len
+            case chunk = sock.read_nonblock(len - buf.bytesize, exception: false)
+            when :wait_readable
+              remaining = timelimit - Process.clock_gettime(Process::CLOCK_MONOTONIC)
+              raise ResolvTimeout if remaining <= 0
+              sock.wait_readable(remaining) or raise ResolvTimeout
+            when nil
+              break
+            else
+              @reusable = false
+              buf << chunk
+            end
+          end
+          buf
         end
       end
 
