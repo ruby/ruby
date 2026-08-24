@@ -159,6 +159,13 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Gemfile; remember that `--cooldown N` on the command line will
    still override it for that single run.
 
+   The value must be a non-negative integer. `--cooldown` rejects
+   anything else outright, while a value coming from this setting or
+   from `BUNDLE_COOLDOWN` only warns, because a typo left in a config
+   file should not make every command fail. Such a value disables the
+   cooldown for every source, including sources that declare their own
+   `cooldown:` in the Gemfile.
+
    Cooldown filtering depends on the gem server providing a per-version
    `created_at` timestamp in the v2 compact-index format. Versions
    without that metadata - older gem servers, historical entries that
@@ -167,6 +174,11 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    window and remain resolvable. If you rely on cooldown for
    supply-chain protection, confirm that the gem server emits
    `created_at` in its `/info/<gem>` responses.
+
+   A `created_at` timestamp is read as UTC when it carries no time zone
+   offset. `rubygems.org` always sends one, but a third-party server
+   that omits it would otherwise shift the cooldown window by the
+   offset of whatever machine runs bundler.
 * `default_cli_command` (`BUNDLE_DEFAULT_CLI_COMMAND`):
    The command that running `bundle` without arguments should run. Defaults to
    `cli_help` since Bundler 4, but can also be `install` which was the previous
@@ -293,7 +305,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `system_bindir` (`BUNDLE_SYSTEM_BINDIR`):
    The location where RubyGems installs binstubs. Defaults to `Gem.bindir`.
 * `timeout` (`BUNDLE_TIMEOUT`):
-   The seconds allowed before timing out for network requests. Defaults to `10`.
+   The seconds allowed before timing out for network requests, applied to each
+   request individually. A network operation retried by Bundler may wait a
+   multiple of this value in total. Defaults to `10`.
 * `update_requires_all_flag` (`BUNDLE_UPDATE_REQUIRES_ALL_FLAG`):
    Require passing `--all` to `bundle update` when everything should be updated,
    and disallow passing no options to `bundle update`.
@@ -451,6 +465,27 @@ names and valid host names, bundler makes the following transformations:
 This means that if you have a gem server named `my.gem-host.com`, you'll need to
 use the `BUNDLE_MY__GEM___HOST__COM` variable to configure credentials for it
 through ENV.
+
+## PROXY SUPPORT
+
+Bundler reads the proxy for a gem source from the `:http_proxy` key in the
+RubyGems configuration file (`~/.gemrc`), falling back to the environment.
+For an `https` source, `https_proxy` (or `HTTPS_PROXY`) takes precedence over
+`http_proxy` (or `HTTP_PROXY`), which is only used when no https-specific
+proxy is set. Proxy credentials that are not embedded in the proxy URL are
+read from `HTTP_PROXY_USER` and `HTTP_PROXY_PASS`, or from `HTTPS_PROXY_USER`
+and `HTTPS_PROXY_PASS` when the https proxy is used.
+
+Setting `:http_proxy: :no_proxy` in the RubyGems configuration file disables
+proxies entirely, including any proxy environment variables. To keep using a
+proxy from the environment, remove that line. To configure a proxy in the
+file, replace `:no_proxy` with an explicit proxy URL.
+
+The `NO_PROXY` (or `no_proxy`) environment variable lists hosts that are
+reached directly, bypassing the proxy. An entry matches the host itself and
+its subdomains, so `NO_PROXY=example.com` bypasses both `example.com` and
+`sub.example.com`, but not `myexample.com`. An entry starting with a dot
+matches only subdomains. A value of `*` bypasses the proxy for every host.
 
 ## CONFIGURE BUNDLER DIRECTORIES
 

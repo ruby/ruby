@@ -124,6 +124,14 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
         settings.set_local :cooldown, "7"
         expect(settings[:cooldown]).to be 7
       end
+
+      it "coerces an unparsable cooldown to 0 without warning here" do
+        # The warning lives in CLI::Common so it fires once per command,
+        # outside any Bundler.ui.silence block. See cli_common_spec.rb.
+        expect(Bundler.ui).not_to receive(:warn)
+        settings.set_local :cooldown, "abc"
+        expect(settings[:cooldown]).to be 0
+      end
     end
 
     context "when it's not possible to create the settings directory" do

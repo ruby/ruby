@@ -28,8 +28,15 @@ class Gem::Cooldown
   end
 
   def initialize(days, now: Time.now)
-    @days = days.to_i
+    # A gemrc value is arbitrary YAML, so it can be any type at all. Anything
+    # that cannot be read as a non-negative integer leaves the cooldown
+    # disabled rather than raising out of an unrelated command.
+    valid = valid_days?(days)
+
+    @days = valid ? days.to_i : 0
     @now = now
+
+    Gem::Cooldown.warn_invalid_days(days) unless valid || days.nil?
   end
 
   ##
@@ -83,6 +90,27 @@ class Gem::Cooldown
     end
   end
 
+  # Matches an ISO 8601 time zone designator at the end of a timestamp.
+  TIME_ZONE_SUFFIX = /(?:Z|z|[+-]\d{2}(?::?\d{2})?)\z/ # :nodoc:
+  private_constant :TIME_ZONE_SUFFIX
+
+  ##
+  # Parses a +created_at+ timestamp from the compact index.  A timestamp
+  # without a time zone offset is read as UTC, because reading it as local
+  # time would shift the cooldown window by the environment's offset.
+  # Returns nil for anything unparsable, so the cooldown fails open.
+
+  def self.parse_created_at(value)
+    return unless value.is_a?(String)
+
+    require "time"
+    begin
+      Time.iso8601(value.match?(TIME_ZONE_SUFFIX) ? value : "#{value}Z")
+    rescue ArgumentError
+      nil
+    end
+  end
+
   ##
   # Warns once per process that +source+ did not provide publish times, so
   # the cooldown cannot be applied to gems from it.
@@ -97,5 +125,31 @@ class Gem::Cooldown
 
   def self.reset_warned_missing_created_at # :nodoc:
     @warned = nil
+  end
+
+  # Warns once per process that a configured cooldown value cannot be read
+  # as a non-negative integer, which leaves the cooldown disabled.  The
+  # --cooldown option is validated by the option parser; this catches the
+  # gemrc path.
+
+  def self.warn_invalid_days(value) # :nodoc:
+    return if @warned_invalid_days
+    @warned_invalid_days = true
+
+    Gem::DefaultUserInteraction.ui.alert_warning \
+      "Invalid cooldown value #{value.inspect}, so the cooldown is disabled. " \
+      "Expected a non-negative integer number of days."
+  end
+
+  def self.reset_warned_invalid_days # :nodoc:
+    @warned_invalid_days = nil
+  end
+
+  private
+
+  def valid_days?(value)
+    days = Integer(value.to_s, exception: false)
+
+    !days.nil? && !days.negative?
   end
 end

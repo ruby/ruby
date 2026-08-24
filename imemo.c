@@ -215,6 +215,9 @@ rb_imemo_fields_clone(VALUE fields_obj)
         // to mark an uninitialized table.
         clone = imemo_fields_new(owner, ROOT_SHAPE_ID, sizeof(struct rb_fields), false /* TODO: check */);
         st_table *dest_table = rb_imemo_fields_complex_tbl(clone);
+#ifdef RUBY_DEBUG
+        dest_table->entries = NULL;
+#endif
         st_replace(dest_table, src_table);
         st_foreach(dest_table, imemo_fields_complex_wb_i, (st_data_t)clone);
         RBASIC_SET_FULL_SHAPE_ID(clone, shape_id);

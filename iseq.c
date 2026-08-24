@@ -203,9 +203,10 @@ rb_iseq_free(const rb_iseq_t *iseq)
 #endif
         SIZED_FREE_N(body->iseq_encoded, body->iseq_size);
         SIZED_FREE_N(body->insns_info.body, body->insns_info.size);
-        SIZED_FREE_N(body->insns_info.positions, body->insns_info.size);
 #if VM_INSN_INFO_TABLE_IMPL == 2
-        ruby_xfree(body->insns_info.succ_index_table);
+        ruby_xfree(body->insns_info.positions_or_succ_index_table.succ_index_table);
+#else
+        SIZED_FREE_N(body->insns_info.positions_or_succ_index_table.positions, body->insns_info.size);
 #endif
         SIZED_FREE_N(body->is_entries, ISEQ_IS_SIZE(body));
         SIZED_FREE_N(body->call_data, body->ci_size);
@@ -806,13 +807,10 @@ rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq)
     struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     int size = body->insns_info.size;
     int max_pos = body->iseq_size;
-    int *data = (int *)body->insns_info.positions;
-    if (body->insns_info.succ_index_table) ruby_xfree(body->insns_info.succ_index_table);
-    body->insns_info.succ_index_table = succ_index_table_create(max_pos, data, size);
-#if VM_CHECK_MODE == 0
-    SIZED_FREE_N(body->insns_info.positions, body->insns_info.size);
-    body->insns_info.positions = NULL;
-#endif
+    unsigned int *positions = body->insns_info.positions_or_succ_index_table.positions;
+    struct succ_index_table *sd = succ_index_table_create(max_pos, (int *)positions, size);
+    SIZED_FREE_N(positions, size);
+    body->insns_info.positions_or_succ_index_table.succ_index_table = sd;
 #endif
 }
 
@@ -822,7 +820,7 @@ rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body)
 {
     int size = body->insns_info.size;
     int max_pos = body->iseq_size;
-    struct succ_index_table *sd = body->insns_info.succ_index_table;
+    struct succ_index_table *sd = body->insns_info.positions_or_succ_index_table.succ_index_table;
     return succ_index_table_invert(max_pos, sd, size);
 }
 #endif
@@ -1140,7 +1138,7 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
 
     if (body && body->has_source_hash) {
         ISEQ_BODY(iseq)->source_hash = body->source_hash;
-        ISEQ_BODY(iseq)->has_source_hash = true;
+        RUBY_ASSERT(ISEQ_BODY(iseq)->source_hash != 0);
     }
 
     rb_iseq_compile_node(iseq, node);
@@ -1164,7 +1162,7 @@ pm_iseq_build(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
     ISEQ_BODY(iseq)->prism = true;
 
     ISEQ_BODY(iseq)->source_hash = node->source_hash;
-    ISEQ_BODY(iseq)->has_source_hash = true;
+    RUBY_ASSERT(ISEQ_BODY(iseq)->source_hash != 0);
 
     rb_compile_option_t next_option;
     if (!option) option = &COMPILE_OPTION_DEFAULT;
@@ -2364,7 +2362,7 @@ get_insn_info_binary_search(const rb_iseq_t *iseq, size_t pos)
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     size_t size = body->insns_info.size;
     const struct iseq_insn_info_entry *insns_info = body->insns_info.body;
-    const unsigned int *positions = body->insns_info.positions;
+    const unsigned int *positions = body->insns_info.positions_or_succ_index_table.positions;
     const int debug = 0;
 
     if (debug) {
@@ -2420,16 +2418,9 @@ get_insn_info_succinct_bitvector(const rb_iseq_t *iseq, size_t pos)
     const int debug = 0;
 
     if (debug) {
-#if VM_CHECK_MODE > 0
-        const unsigned int *positions = body->insns_info.positions;
-        printf("size: %"PRIuSIZE"\n", size);
-        printf("insns_info[%"PRIuSIZE"]: position: %d, line: %d, pos: %"PRIuSIZE"\n",
-               (size_t)0, positions[0], insns_info[0].line_no, pos);
-#else
         printf("size: %"PRIuSIZE"\n", size);
         printf("insns_info[%"PRIuSIZE"]: line: %d, pos: %"PRIuSIZE"\n",
                (size_t)0, insns_info[0].line_no, pos);
-#endif
     }
 
     if (size == 0) {
@@ -2440,8 +2431,8 @@ get_insn_info_succinct_bitvector(const rb_iseq_t *iseq, size_t pos)
     }
     else {
         int index;
-        VM_ASSERT(body->insns_info.succ_index_table != NULL);
-        index = succ_index_lookup(body->insns_info.succ_index_table, (int)pos);
+        VM_ASSERT(body->insns_info.positions_or_succ_index_table.succ_index_table != NULL);
+        index = succ_index_lookup(body->insns_info.positions_or_succ_index_table.succ_index_table, (int)pos);
         return &insns_info[index-1];
     }
 }
@@ -2455,12 +2446,11 @@ get_insn_info(const rb_iseq_t *iseq, size_t pos)
 
 #if VM_CHECK_MODE > 0 || VM_INSN_INFO_TABLE_IMPL == 0
 static const struct iseq_insn_info_entry *
-get_insn_info_linear_search(const rb_iseq_t *iseq, size_t pos)
+get_insn_info_linear_search(const rb_iseq_t *iseq, const unsigned int *positions, size_t pos)
 {
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     size_t i = 0, size = body->insns_info.size;
     const struct iseq_insn_info_entry *insns_info = body->insns_info.body;
-    const unsigned int *positions = body->insns_info.positions;
     const int debug = 0;
 
     if (debug) {
@@ -2496,7 +2486,7 @@ get_insn_info_linear_search(const rb_iseq_t *iseq, size_t pos)
 static const struct iseq_insn_info_entry *
 get_insn_info(const rb_iseq_t *iseq, size_t pos)
 {
-    return get_insn_info_linear_search(iseq, pos);
+    return get_insn_info_linear_search(iseq, ISEQ_BODY(iseq)->insns_info.positions_or_succ_index_table.positions, pos);
 }
 #endif
 
@@ -2506,11 +2496,19 @@ validate_get_insn_info(const rb_iseq_t *iseq)
 {
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     size_t i;
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    unsigned int *positions = rb_iseq_insns_info_decode_positions(body);
+#else
+    const unsigned int *positions = body->insns_info.positions_or_succ_index_table.positions;
+#endif
     for (i = 0; i < body->iseq_size; i++) {
-        if (get_insn_info_linear_search(iseq, i) != get_insn_info(iseq, i)) {
+        if (get_insn_info_linear_search(iseq, positions, i) != get_insn_info(iseq, i)) {
             rb_bug("validate_get_insn_info: get_insn_info_linear_search(iseq, %"PRIuSIZE") != get_insn_info(iseq, %"PRIuSIZE")", i, i);
         }
     }
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    SIZED_FREE_N(positions, body->insns_info.size);
+#endif
 }
 #endif
 
@@ -3764,7 +3762,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_hash_aset(misc, ID2SYM(rb_intern("local_size")), INT2FIX(iseq_body->local_table_size));
     rb_hash_aset(misc, ID2SYM(rb_intern("stack_max")), INT2FIX(iseq_body->stack_max));
     rb_hash_aset(misc, ID2SYM(rb_intern("node_id")), INT2FIX(iseq_body->location.node_id));
-    rb_hash_aset(misc, ID2SYM(rb_intern("source_hash")), iseq_body->has_source_hash ? ULL2NUM(iseq_body->source_hash) : Qnil);
+    rb_hash_aset(misc, ID2SYM(rb_intern("source_hash")), iseq_body->source_hash ? ULL2NUM(iseq_body->source_hash) : Qnil);
     rb_hash_aset(misc, ID2SYM(rb_intern("code_location")),
             rb_ary_new_from_args(4,
                 INT2FIX(iseq_body->location.code_location.beg_pos.lineno),
@@ -4607,7 +4605,7 @@ static VALUE
 iseqw_source_hash(VALUE self)
 {
     const rb_iseq_t *iseq = iseqw_check(self);
-    if (!ISEQ_BODY(iseq)->has_source_hash) return Qnil;
+    if (!ISEQ_BODY(iseq)->source_hash) return Qnil;
     return ULL2NUM(ISEQ_BODY(iseq)->source_hash);
 }
 

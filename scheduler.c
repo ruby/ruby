@@ -976,7 +976,7 @@ rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buf
 VALUE
 rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *base, size_t size, size_t length)
 {
-    VALUE buffer = rb_io_buffer_new(base, size, RB_IO_BUFFER_LOCKED);
+    VALUE buffer = rb_io_buffer_new_locked(base, size, 0);
 
     VALUE result = rb_fiber_scheduler_io_read(scheduler, io, buffer, length, 0);
 
@@ -988,7 +988,7 @@ rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *base, size_t 
 VALUE
 rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *base, size_t size, size_t length)
 {
-    VALUE buffer = rb_io_buffer_new((void*)base, size, RB_IO_BUFFER_LOCKED|RB_IO_BUFFER_READONLY);
+    VALUE buffer = rb_io_buffer_new_locked((void*)base, size, RB_IO_BUFFER_READONLY);
 
     VALUE result = rb_fiber_scheduler_io_write(scheduler, io, buffer, length, 0);
 
@@ -1000,7 +1000,7 @@ rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *base, 
 VALUE
 rb_fiber_scheduler_io_pread_memory(VALUE scheduler, VALUE io, rb_off_t from, void *base, size_t size, size_t length)
 {
-    VALUE buffer = rb_io_buffer_new(base, size, RB_IO_BUFFER_LOCKED);
+    VALUE buffer = rb_io_buffer_new_locked(base, size, 0);
 
     VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, from, buffer, length, 0);
 
@@ -1012,7 +1012,7 @@ rb_fiber_scheduler_io_pread_memory(VALUE scheduler, VALUE io, rb_off_t from, voi
 VALUE
 rb_fiber_scheduler_io_pwrite_memory(VALUE scheduler, VALUE io, rb_off_t from, const void *base, size_t size, size_t length)
 {
-    VALUE buffer = rb_io_buffer_new((void*)base, size, RB_IO_BUFFER_LOCKED|RB_IO_BUFFER_READONLY);
+    VALUE buffer = rb_io_buffer_new_locked((void*)base, size, RB_IO_BUFFER_READONLY);
 
     VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, from, buffer, length, 0);
 

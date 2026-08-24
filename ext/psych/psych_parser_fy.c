@@ -41,6 +41,11 @@ typedef struct {
     size_t mark_line;
     size_t mark_column;
     size_t mark_index;
+    /* The parser calls back into Ruby for every event, so a handler can call
+     * Psych::Parser#parse again on the same object.  parse() destroys and
+     * recreates fyp, which would pull the parser out from under the loop still
+     * driving it, so keep a flag to reject a reentrant call. */
+    int parsing;
 } psych_fy_parser_t;
 
 static const struct fy_parse_cfg psych_parse_cfg = {
@@ -256,16 +261,27 @@ static VALUE token_to_str(struct fy_token *tok, int encoding, rb_encoding *inter
     return str;
 }
 
-static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
-{
+struct parse_args {
     psych_fy_parser_t *parser;
+    VALUE self;
+    VALUE handler;
+    VALUE yaml;
+    VALUE path;
+};
+
+static VALUE parse_body(VALUE ptr)
+{
+    struct parse_args *pargs = (struct parse_args *)ptr;
+    psych_fy_parser_t *parser = pargs->parser;
+    VALUE self = pargs->self;
+    VALUE handler = pargs->handler;
+    VALUE yaml = pargs->yaml;
+    VALUE path = pargs->path;
     struct fy_event *event;
     int done = 0;
     int state = 0;
     int encoding = rb_utf8_encindex();
     rb_encoding *internal_enc = rb_default_internal_encoding();
-
-    TypedData_Get_Struct(self, psych_fy_parser_t, &psych_parser_type, parser);
 
     /* Use a pristine parser for each parse, like fy-tool does.  Reusing a
      * parser across documents via fy_parser_reset() left the default tag
@@ -348,6 +364,10 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
         event_args[3] = SIZET2NUM(em ? (size_t)em->line : 0);
         event_args[4] = SIZET2NUM(em ? (size_t)em->column : 0);
         rb_protect(protected_event_location, (VALUE)event_args, &state);
+        if (state) {
+            fy_parser_event_free(parser->fyp, event);
+            rb_jump_tag(state);
+        }
 
         switch (event->type) {
             case FYET_STREAM_START:
@@ -473,7 +493,10 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
                 rb_protect(protected_end_mapping, handler, &state);
             break;
             case FYET_NONE:
+                /* An event with no type cannot advance the stream, so stop
+                 * rather than loop forever. */
                 rb_protect(protected_empty, handler, &state);
+                done = 1;
             break;
             case FYET_STREAM_END:
                 rb_protect(protected_end_stream, handler, &state);
@@ -487,6 +510,37 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
 
     RB_GC_GUARD(yaml);
     return self;
+}
+
+static VALUE parse_ensure(VALUE ptr)
+{
+    psych_fy_parser_t *parser = (psych_fy_parser_t *)ptr;
+
+    parser->parsing = 0;
+
+    return Qnil;
+}
+
+static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
+{
+    psych_fy_parser_t *parser;
+    struct parse_args pargs;
+
+    TypedData_Get_Struct(self, psych_fy_parser_t, &psych_parser_type, parser);
+
+    if (parser->parsing) {
+        rb_raise(rb_const_get(mPsych, rb_intern("Exception")),
+                "parser is already parsing, it cannot be reused from a handler callback");
+    }
+    parser->parsing = 1;
+
+    pargs.parser  = parser;
+    pargs.self    = self;
+    pargs.handler = handler;
+    pargs.yaml    = yaml;
+    pargs.path    = path;
+
+    return rb_ensure(parse_body, (VALUE)&pargs, parse_ensure, (VALUE)parser);
 }
 
 /*

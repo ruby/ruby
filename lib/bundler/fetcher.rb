@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "vendored_persistent"
+require_relative "vendored_net_http"
 require_relative "vendored_timeout"
 require_relative "vendored_securerandom"
 require "zlib"
@@ -10,6 +10,7 @@ module Bundler
   class Fetcher
     autoload :Base, File.expand_path("fetcher/base", __dir__)
     autoload :CompactIndex, File.expand_path("fetcher/compact_index", __dir__)
+    autoload :ConnectionPools, File.expand_path("fetcher/connection_pools", __dir__)
     autoload :Downloader, File.expand_path("fetcher/downloader", __dir__)
     autoload :Dependency, File.expand_path("fetcher/dependency", __dir__)
     autoload :Index, File.expand_path("fetcher/index", __dir__)
@@ -137,7 +138,7 @@ module Bundler
       @remote = remote
 
       Socket.do_not_reverse_lookup = true
-      connection # create persistent connection
+      connection # set up the connection pools eagerly so SSL support is checked upfront
     end
 
     def uri
@@ -237,7 +238,7 @@ module Bundler
     end
 
     def http_proxy
-      return unless uri = connection.proxy_uri
+      return unless uri = connection.proxy_for(remote_uri)
       uri.to_s
     end
 
@@ -307,28 +308,7 @@ module Bundler
           end
         end
 
-        con = Gem::Net::HTTP::Persistent.new name: "bundler", proxy: :ENV
-        if gem_proxy = Gem.configuration[:http_proxy]
-          con.proxy = Gem::URI.parse(gem_proxy) if gem_proxy != :no_proxy
-        end
-
-        if remote_uri.scheme == "https"
-          con.verify_mode = (Bundler.settings[:ssl_verify_mode] ||
-            OpenSSL::SSL::VERIFY_PEER)
-          con.cert_store = bundler_cert_store
-        end
-
-        ssl_client_cert = Bundler.settings[:ssl_client_cert] ||
-                          (Gem.configuration.ssl_client_cert if
-                            Gem.configuration.respond_to?(:ssl_client_cert))
-        if ssl_client_cert
-          pem = File.read(ssl_client_cert)
-          con.cert = OpenSSL::X509::Certificate.new(pem)
-          con.key  = OpenSSL::PKey.read(pem)
-        end
-
-        con.read_timeout = Fetcher.api_timeout
-        con.open_timeout = Fetcher.api_timeout
+        con = ConnectionPools.new(size: Bundler.settings.processor_count, timeout: Fetcher.api_timeout)
         con.override_headers["User-Agent"] = user_agent
         con.override_headers["X-Gemfile-Source"] = @remote.original_uri.to_s if @remote.original_uri
         con
@@ -339,25 +319,6 @@ module Bundler
     def gemspec_cached_path(spec_file_name)
       paths = Bundler.rubygems.spec_cache_dirs.map {|dir| File.join(dir, spec_file_name) }
       paths.find {|path| File.file? path }
-    end
-
-    def bundler_cert_store
-      store = OpenSSL::X509::Store.new
-      ssl_ca_cert = Bundler.settings[:ssl_ca_cert] ||
-                    (Gem.configuration.ssl_ca_cert if
-                      Gem.configuration.respond_to?(:ssl_ca_cert))
-      if ssl_ca_cert
-        if File.directory? ssl_ca_cert
-          store.add_path ssl_ca_cert
-        else
-          store.add_file ssl_ca_cert
-        end
-      else
-        store.set_default_paths
-        require "rubygems/request"
-        Gem::Request.get_cert_files.each {|c| store.add_file c }
-      end
-      store
     end
 
     def remote_uri

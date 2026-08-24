@@ -7113,7 +7113,7 @@ gc_marks_finish(rb_objspace_t *objspace)
     }
 
     // TODO: refactor so we don't need to call this
-    rb_ractor_finish_marking();
+    rb_ractor_finish_marking(is_full_marking(objspace));
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_MARK);
 }
@@ -9065,7 +9065,7 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
     /* This cycle's root pass over every Ractor has swept the deleted ractor-local keys out of
      * each storage.  Free the key structs while still inside the barrier (a local GC never
      * can; see rb_ractor_finish_marking). */
-    rb_ractor_finish_marking();
+    rb_ractor_finish_marking(true);
 
     gc_marking_exit(driver);
 
@@ -9518,9 +9518,6 @@ rb_gc_impl_prepare_heap(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    size_t orig_total_slots = objspace_available_slots(objspace);
-    size_t orig_allocatable_bytes = objspace->heap_pages.allocatable_bytes;
-
     rb_gc_impl_each_objects(objspace, gc_set_candidate_object_i, objspace_ptr);
 
     double orig_max_free_slots = gc_params.heap_free_slots_max_ratio;
@@ -9534,11 +9531,15 @@ rb_gc_impl_prepare_heap(void *objspace_ptr)
     heap_pages_free_unused_pages(objspace_ptr);
     GC_ASSERT(heap_pages_freeable_pages == 0);
     GC_ASSERT(objspace->empty_pages_count == 0);
-    objspace->heap_pages.allocatable_bytes = orig_allocatable_bytes;
 
-    size_t total_slots = objspace_available_slots(objspace);
-    if (orig_total_slots > total_slots) {
-        objspace->heap_pages.allocatable_bytes += (orig_total_slots - total_slots) * heaps[0].slot_size;
+    // Process.warmup is meant to be called at the end of the boot sequence, which is commonly allocation
+    // heavy and result in GC limits raising significantly, but it's not indicative of the limits needed
+    // for runtime.
+    // Recompute the allocatable_bytes limit based on `gc_params.heap_init_bytes`.
+    GC_ASSERT(objspace->heap_pages.allocatable_bytes == 0);
+    for (int i = 0; i < HEAP_COUNT; i++) {
+        rb_heap_t *heap = &heaps[i];
+        heap_allocatable_bytes_expand(objspace, heap, heap->empty_slots, heap->total_slots, heap->slot_size);
     }
 
 #if defined(HAVE_MALLOC_TRIM) && !defined(RUBY_ALTERNATIVE_MALLOC_HEADER)

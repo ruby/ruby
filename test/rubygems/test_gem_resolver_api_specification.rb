@@ -75,6 +75,46 @@ class TestGemResolverAPISpecification < Gem::TestCase
     assert_nil spec.created_at
   end
 
+  def test_initialize_created_at_without_offset_is_utc
+    set = Gem::Resolver::APISet.new
+    data = {
+      name: "rails",
+      number: "3.0.3",
+      platform: "ruby",
+      dependencies: [],
+      requirements: { created_at: ["2026-06-05T10:30:45"] },
+    }
+
+    with_tz("Asia/Tokyo") do
+      spec = Gem::Resolver::APISpecification.new set, data
+
+      assert_equal Time.utc(2026, 6, 5, 10, 30, 45), spec.created_at
+    end
+  end
+
+  def test_initialize_created_at_keeps_explicit_offset
+    set = Gem::Resolver::APISet.new
+    data = {
+      name: "rails",
+      number: "3.0.3",
+      platform: "ruby",
+      dependencies: [],
+      requirements: { created_at: ["2026-06-05T10:30:45+02:00"] },
+    }
+
+    spec = Gem::Resolver::APISpecification.new set, data
+
+    assert_equal Time.utc(2026, 6, 5, 8, 30, 45), spec.created_at
+  end
+
+  def with_tz(tz)
+    orig_tz = ENV["TZ"]
+    ENV["TZ"] = tz
+    yield
+  ensure
+    ENV["TZ"] = orig_tz
+  end
+
   def test_fetch_development_dependencies
     specs = spec_fetcher do |fetcher|
       fetcher.spec "rails", "3.0.3" do |s|

@@ -23,6 +23,23 @@ thread_sched_waiting_thread(struct rb_thread_sched_waiting *w)
     }
 }
 
+#define FD_WAIT_IO_MASK (thread_sched_waiting_io_read | thread_sched_waiting_io_write)
+
+// Guards the fd map entries and the flags of io waits for its fds.  Whoever
+// clears an io wait's flags under its shard owns that wakeup.
+// Lock order: shard -> waiting_lock -> wake_pending_lock.
+static void
+fd_shard_lock(int fd)
+{
+    rb_native_mutex_lock(&timer_th.fd_shard_locks[(unsigned int)fd % IO_WAIT_SHARDS]);
+}
+
+static void
+fd_shard_unlock(int fd)
+{
+    rb_native_mutex_unlock(&timer_th.fd_shard_locks[(unsigned int)fd % IO_WAIT_SHARDS]);
+}
+
 #define TIMER_WHEEL_NO_EXPIRY RB_HRTIME_MAX
 #ifndef TIMER_WHEEL_TICK_MS
 #define TIMER_WHEEL_TICK_MS 1 // L0 slot width; coarser trades sleep accuracy for fewer drains
@@ -178,20 +195,13 @@ timer_wheel_drain(rb_hrtime_t now, uint64_t now_tick, struct ccan_list_head *exp
             struct rb_thread_sched_waiting *w;
             while ((w = ccan_list_pop(&pending, struct rb_thread_sched_waiting, node)) != NULL) {
                 if (timer_thread_check_exceed(w->data.timeout, now)) {
-                    rb_thread_t *th = thread_sched_waiting_thread(w);
+                    RUBY_DEBUG_LOG("expired th:%u", rb_th_serial(thread_sched_waiting_thread(w)));
 
-                    RUBY_DEBUG_LOG("wakeup th:%u", rb_th_serial(th));
-
-#if HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H
-                    // An fd+timeout waiter is also on its fd's waiter list.
-                    timer_thread_unregister_waiting(th, w->data.fd, w->flags);
-#endif
-                    /* flags stay set until the wakeup below takes them under
-                     * the lock: a waiter whose flags are already cleared may
+                    /* flags stay set until the wakeup takes them under the
+                     * owning lock (the fd shard for io waits, this one
+                     * otherwise): a waiter whose flags are already cleared may
                      * run and re-register through this same `w`, which would
                      * relink the node we are still holding on `expired`. */
-                    w->data.result = 0;
-
                     ccan_list_add_tail(expired, &w->node);
                 }
                 else {
@@ -260,6 +270,53 @@ timer_thread_wakeup_thread(rb_thread_t *th, uint32_t event_serial)
 
 #define TIMEOUT_WAKE_BATCH 16
 
+// One thread the timer thread is about to wake, with the serial it was armed at.
+struct timer_wake { rb_thread_t *th; uint32_t serial; };
+
+// Count a pending wake against a thread, so a dying thread can wait them out
+// (timer_thread_wake_fence).  A count, not a flag: an expiry hold and an fd
+// event's wake can be pending on one thread at once.  Take it while the lock
+// that pinned the thread (shard or waiting_lock) is still held.
+static void
+timer_wake_pending_inc(rb_thread_t *th)
+{
+    rb_native_mutex_lock(&timer_th.wake_pending_lock);
+    th->sched.wake_pending_cnt++;
+    rb_native_mutex_unlock(&timer_th.wake_pending_lock);
+}
+
+static void
+timer_wake_pending_dec(rb_thread_t *th)
+{
+    rb_native_mutex_lock(&timer_th.wake_pending_lock);
+    VM_ASSERT(th->sched.wake_pending_cnt > 0);
+    th->sched.wake_pending_cnt--;
+    rb_native_cond_broadcast(&timer_th.wake_pending_cond);
+    rb_native_mutex_unlock(&timer_th.wake_pending_lock);
+}
+
+static void
+timer_wake_pending_clear(struct timer_wake *batch, int n)
+{
+    for (int i = 0; i < n; i++) {
+        timer_wake_pending_dec(batch[i].th);
+    }
+}
+
+// Wait out pending wakes before a thread is freed: they would touch freed
+// memory, or wake a reused thread whose first serial matches a stale entry.
+static void
+timer_thread_wake_fence(rb_thread_t *th)
+{
+    if (!TIMER_THREAD_CREATED_P()) return;
+
+    rb_native_mutex_lock(&timer_th.wake_pending_lock);
+    while (th->sched.wake_pending_cnt > 0) {
+        rb_native_cond_wait(&timer_th.wake_pending_cond, &timer_th.wake_pending_lock);
+    }
+    rb_native_mutex_unlock(&timer_th.wake_pending_lock);
+}
+
 static void
 timer_thread_check_timeout(rb_vm_t *vm)
 {
@@ -269,11 +326,13 @@ timer_thread_check_timeout(rb_vm_t *vm)
 
     ccan_list_head_init(&expired);
 
-    struct timeout_wake { rb_thread_t *th; uint32_t serial; } batch[TIMEOUT_WAKE_BATCH];
+    struct timer_wake batch[TIMEOUT_WAKE_BATCH];
     bool more = true;
 
     while (more) {
         int n = 0;
+        struct { rb_thread_t *th; uint32_t serial; int fd; } io_claims[TIMEOUT_WAKE_BATCH];
+        int n_io = 0;
 
         rb_native_mutex_lock(&timer_th.waiting_lock);
         {
@@ -283,15 +342,35 @@ timer_thread_check_timeout(rb_vm_t *vm)
             }
 
             struct rb_thread_sched_waiting *w;
-            while (n < TIMEOUT_WAKE_BATCH &&
+            while (n + n_io < TIMEOUT_WAKE_BATCH &&
                    (w = ccan_list_pop(&expired, struct rb_thread_sched_waiting, node)) != NULL) {
                 // Name the thread and its serial here, then release it: once the
                 // flags are clear the thread may run and re-register through `w`,
                 // and a serial read after that would match the new registration.
-                batch[n].th = thread_sched_waiting_thread(w);
-                batch[n].serial = w->data.event_serial;
-                w->flags = thread_sched_waiting_none;
-                n++;
+                // the pop leaves the node dangling; a concurrent claimer's
+                // wheel del (under this lock) must find it self-linked
+                ccan_list_node_init(&w->node);
+
+                if (w->flags & FD_WAIT_IO_MASK) {
+                    // The fd shard owns these flags; claim below, once this
+                    // lock is dropped.  The pending count pins the thread: it
+                    // was parked when we popped its node (a claimed entry
+                    // leaves the wheel before its thread can wake).
+                    io_claims[n_io].th = thread_sched_waiting_thread(w);
+                    io_claims[n_io].serial = w->data.event_serial;
+                    io_claims[n_io].fd = w->data.fd;
+                    timer_wake_pending_inc(io_claims[n_io].th);
+                    n_io++;
+                }
+                else {
+                    // pin before the flags clear; see timer_thread_wake_fd_waiters
+                    batch[n].th = thread_sched_waiting_thread(w);
+                    batch[n].serial = w->data.event_serial;
+                    timer_wake_pending_inc(batch[n].th);
+                    w->flags = thread_sched_waiting_none;
+                    w->data.result = 0;
+                    n++;
+                }
             }
             more = !ccan_list_empty(&expired);
         }
@@ -300,26 +379,78 @@ timer_thread_check_timeout(rb_vm_t *vm)
         for (int i = 0; i < n; i++) {
             timer_thread_wakeup_thread(batch[i].th, batch[i].serial);
         }
+        timer_wake_pending_clear(batch, n);
+
+        // The io entries race the fd event and the ubf for their flags.
+        for (int i = 0; i < n_io; i++) {
+            rb_thread_t *th = io_claims[i].th;
+            int fd = io_claims[i].fd;
+            bool claimed = false;
+
+            fd_shard_lock(fd);
+            {
+                struct rb_thread_sched_waiting *w = &th->sched.waiting_reason;
+
+                if (w->flags != thread_sched_waiting_none &&
+                    w->data.event_serial == io_claims[i].serial) {
+                    VM_ASSERT(w->data.fd == fd);
+                    timer_thread_unregister_waiting(th, fd, w->flags);
+                    w->flags = thread_sched_waiting_none;
+                    w->data.result = 0;
+                    claimed = true;
+                }
+            }
+            fd_shard_unlock(fd);
+
+            if (claimed) {
+                timer_thread_wakeup_thread(th, io_claims[i].serial);
+            }
+            timer_wake_pending_dec(th);
+        }
     }
 }
 
 static bool
 timer_thread_cancel_waiting(rb_thread_t *th)
 {
-    bool canceled = false;
+    struct rb_thread_sched_waiting *w = &th->sched.waiting_reason;
 
-    rb_native_mutex_lock(&timer_th.waiting_lock);
-    {
-        if (th->sched.waiting_reason.flags) {
-            canceled = true;
-            timer_wheel_del(&th->sched.waiting_reason);
-            timer_thread_unregister_waiting(th, th->sched.waiting_reason.data.fd, th->sched.waiting_reason.flags);
-            th->sched.waiting_reason.flags = thread_sched_waiting_none;
+    while (1) {
+        // Racy routing read; the claim is re-verified under the owning lock.
+        enum thread_sched_waiting_flag flags = w->flags;
+
+        if (flags == thread_sched_waiting_none) {
+            return false;
         }
-    }
-    rb_native_mutex_unlock(&timer_th.waiting_lock);
+        else if (flags & FD_WAIT_IO_MASK) {
+            int fd = w->data.fd;
 
-    return canceled;
+            fd_shard_lock(fd);
+            if ((w->flags & FD_WAIT_IO_MASK) && w->data.fd == fd) {
+                if (w->flags & thread_sched_waiting_timeout) {
+                    rb_native_mutex_lock(&timer_th.waiting_lock);
+                    timer_wheel_del(w);
+                    rb_native_mutex_unlock(&timer_th.waiting_lock);
+                }
+                timer_thread_unregister_waiting(th, fd, w->flags);
+                w->flags = thread_sched_waiting_none;
+                fd_shard_unlock(fd);
+                return true;
+            }
+            fd_shard_unlock(fd);
+        }
+        else {
+            rb_native_mutex_lock(&timer_th.waiting_lock);
+            if (w->flags && !(w->flags & FD_WAIT_IO_MASK)) {
+                timer_wheel_del(w);
+                w->flags = thread_sched_waiting_none;
+                rb_native_mutex_unlock(&timer_th.waiting_lock);
+                return true;
+            }
+            rb_native_mutex_unlock(&timer_th.waiting_lock);
+        }
+        // lost the routing race; look again
+    }
 }
 
 static void
@@ -363,6 +494,24 @@ enum timer_thread_register_result {
 
 static enum timer_thread_register_result
 timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags, rb_hrtime_t *rel, uint32_t event_serial);
+
+// Arm a timeout-only wake on the timer thread for a Ractor wait.  Returns false
+// if the deadline has already passed, in which case nothing was registered.
+static bool
+ractor_sched_timeout_arm(rb_thread_t *th, const rb_hrtime_t *rel)
+{
+    rb_hrtime_t rel_copy = *rel;
+
+    return timer_thread_register_waiting(th, -1, thread_sched_waiting_timeout, &rel_copy,
+                                         ++th->sched.event_serial) == timer_thread_registered;
+}
+
+// Returns true if the timeout was still armed, i.e. it did not fire.
+static bool
+ractor_sched_timeout_disarm(rb_thread_t *th)
+{
+    return timer_thread_cancel_waiting(th);
+}
 
 // return how the wait ended; see enum thread_sched_wait_result
 static enum thread_sched_wait_result
@@ -414,7 +563,7 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
                 enum rb_thread_status prev_status = th->status;
                 if (prev_status == THREAD_RUNNABLE) th->status = THREAD_STOPPED_FOREVER;
                 thread_sched_wakeup_next_thread(sched, th, true);
-                thread_sched_wait_running_turn(sched, th, true);
+                thread_sched_wait_running_turn(sched, th, true, NULL);
                 if (prev_status == THREAD_RUNNABLE) th->status = THREAD_RUNNABLE;
 
                 RUBY_DEBUG_LOG("wakeup");
@@ -766,19 +915,25 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
         if (!vm->ractor.main_ractor->threads.sched.enable_mn_threads)
             schedulable_ractor_cnt--; // do not need snt for main ractor
 
-        unsigned int snt_cnt = vm->ractor.sched.snt_cnt;
-        if (((int)snt_cnt < MINIMUM_SNT) ||
-            (snt_cnt < schedulable_ractor_cnt  &&
-             snt_cnt < vm->ractor.sched.max_cpu)) {
+        // CAS keeps a concurrent rejoin from pushing snt_cnt past the cap
+        rb_atomic_t snt_cnt = RUBY_ATOMIC_LOAD(vm->ractor.sched.snt_cnt);
+        while (((int)snt_cnt < MINIMUM_SNT) ||
+               (snt_cnt < schedulable_ractor_cnt  &&
+                snt_cnt < vm->ractor.sched.max_cpu)) {
+            rb_atomic_t prev = RUBY_ATOMIC_CAS(vm->ractor.sched.snt_cnt, snt_cnt, snt_cnt + 1);
+            if (prev == snt_cnt) {
+                need_to_make = true;
+                break;
+            }
+            snt_cnt = prev;
+        }
 
+        if (need_to_make) {
             RUBY_DEBUG_LOG("added snt:%u dnt:%u ractor_cnt:%u grq_cnt:%u",
                            vm->ractor.sched.snt_cnt,
                            vm->ractor.sched.dnt_cnt,
                            vm->ractor.cnt,
                            vm->ractor.sched.grq_cnt);
-
-            vm->ractor.sched.snt_cnt++;
-            need_to_make = true;
         }
         else {
             RUBY_DEBUG_LOG("snt:%d ractor_cnt:%d", (int)vm->ractor.sched.snt_cnt, (int)vm->ractor.cnt);
@@ -794,7 +949,7 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
             // Roll back, or this function would conclude forever that the
             // pool is wide enough and never try again.
             ractor_sched_lock(vm, NULL);
-            vm->ractor.sched.snt_cnt--;
+            RUBY_ATOMIC_DEC(vm->ractor.sched.snt_cnt);
             ractor_sched_unlock(vm, NULL);
             native_thread_destroy(nt);
         }
@@ -977,52 +1132,45 @@ native_thread_create_shared(rb_thread_t *th)
 /// -- a reader and a writer on one socket -- so the backend is armed with their
 /// union, and an event is dispatched to every waiter it concerns.
 
-#define FD_WAIT_IO_MASK (thread_sched_waiting_io_read | thread_sched_waiting_io_write)
+// (FD_WAIT_IO_MASK and the fd shard helpers are defined near the top.)
 
 #define FDMAP_CHUNK_BITS 10
 #define FDMAP_CHUNK_SIZE (1u << FDMAP_CHUNK_BITS)
 #define FDMAP_CHUNK_MASK (FDMAP_CHUNK_SIZE - 1)
 
-// timer_th.waiting_lock must be held.
+// Callable under any fd shard lock: a chunk spans every shard, so the chunk
+// table is not guarded by them; slots install by CAS and are never freed.
 static struct rb_fd_waiters *
 fd_waiters_lookup(int fd, bool create)
 {
     if (fd < 0) return NULL;
 
     unsigned int ci = (unsigned int)fd >> FDMAP_CHUNK_BITS;
+    if (ci >= FDMAP_MAX_CHUNKS) return NULL; // the caller falls back to a blocking wait
 
-    if (ci >= timer_th.fdmap_nchunks) {
+    struct rb_fd_waiters *chunk = RUBY_ATOMIC_PTR_LOAD(timer_th.fdmap_chunks[ci]);
+
+    if (chunk == NULL) {
         if (!create) return NULL;
 
-        unsigned int n = timer_th.fdmap_nchunks ? timer_th.fdmap_nchunks : 8;
-        while (n <= ci) n *= 2;
-
-        // Only the chunk pointers are reallocated; the entries themselves never
-        // move, so the list heads inside them stay valid.
-        struct rb_fd_waiters **chunks = realloc(timer_th.fdmap_chunks, sizeof(*chunks) * n);
-        if (chunks == NULL) rb_bug("fd_waiters_lookup: realloc failed");
-
-        for (unsigned int i = timer_th.fdmap_nchunks; i < n; i++) chunks[i] = NULL;
-        timer_th.fdmap_chunks = chunks;
-        timer_th.fdmap_nchunks = n;
-    }
-
-    if (timer_th.fdmap_chunks[ci] == NULL) {
-        if (!create) return NULL;
-
-        struct rb_fd_waiters *chunk = calloc(FDMAP_CHUNK_SIZE, sizeof(*chunk));
+        chunk = calloc(FDMAP_CHUNK_SIZE, sizeof(*chunk));
         if (chunk == NULL) rb_bug("fd_waiters_lookup: calloc failed");
 
         for (unsigned int i = 0; i < FDMAP_CHUNK_SIZE; i++) {
             ccan_list_head_init(&chunk[i].waiters);
         }
-        timer_th.fdmap_chunks[ci] = chunk;
+
+        struct rb_fd_waiters *prev = RUBY_ATOMIC_PTR_CAS(timer_th.fdmap_chunks[ci], NULL, chunk);
+        if (prev != NULL) {
+            free(chunk); // another shard installed it first
+            chunk = prev;
+        }
     }
 
-    return &timer_th.fdmap_chunks[ci][(unsigned int)fd & FDMAP_CHUNK_MASK];
+    return &chunk[(unsigned int)fd & FDMAP_CHUNK_MASK];
 }
 
-// timer_th.waiting_lock must be held.
+// The fd's shard lock must be held.
 static uint32_t
 fd_waiters_union(struct rb_fd_waiters *e)
 {
@@ -1048,7 +1196,7 @@ fd_event_tag(int fd, uint32_t generation)
 
 // Make the backend match `want`.  Returns false if the fd cannot be registered
 // at all (closed, or unsupported by the backend), leaving the entry untouched.
-// timer_th.waiting_lock must be held.
+// The fd's shard lock must be held.
 static bool
 fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
 {
@@ -1183,17 +1331,15 @@ verify_waiting_list(void)
             VM_ASSERT(occupied == !ccan_list_empty(&lv->slots[slot]));
 
             ccan_list_for_each(&lv->slots[slot], w, node) {
-                VM_ASSERT(w->flags & thread_sched_waiting_timeout);
-                VM_ASSERT(w->data.timeout != 0);
+                // an io entry's flags belong to its fd shard: do not read them here
+                if (!(w->flags & FD_WAIT_IO_MASK)) {
+                    VM_ASSERT(w->flags & thread_sched_waiting_timeout);
+                    VM_ASSERT(w->data.timeout != 0);
+                }
                 VM_ASSERT(w->wheel_lvl == lvl);
                 VM_ASSERT(w->wheel_slot == slot);
             }
         }
-    }
-
-    ccan_list_for_each(&timer_th.waiting_untimed, w, node) {
-        VM_ASSERT(!(w->flags & thread_sched_waiting_timeout));
-        VM_ASSERT(w->data.timeout == 0);
     }
 #endif
 }
@@ -1295,66 +1441,85 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
         VM_ASSERT(fd >= 0);
     }
 
-    rb_native_mutex_lock(&timer_th.waiting_lock);
-    {
-        if (flags & FD_WAIT_IO_MASK) {
-            VM_ASSERT(th != NULL);
-
+    if (flags & FD_WAIT_IO_MASK) {
+        fd_shard_lock(fd);
+        {
             struct rb_fd_waiters *e = fd_waiters_lookup(fd, true);
+
+            if (e == NULL) { // fd beyond the map: fall back to a blocking wait
+                fd_shard_unlock(fd);
+                return timer_thread_unavailable;
+            }
 
             // Arm the union of what this fd's waiters want, so a second waiter
             // on the same fd extends the arming instead of colliding with it.
             if (!fd_waiters_arm(fd, e, fd_waiters_union(e) | (uint32_t)(flags & FD_WAIT_IO_MASK))) {
-                rb_native_mutex_unlock(&timer_th.waiting_lock);
+                fd_shard_unlock(fd);
                 return timer_thread_unavailable;
             }
 
-            ccan_list_add_tail(&e->waiters, &th->sched.waiting_reason.fd_node);
-            RUBY_DEBUG_LOG("armed fd:%d want:%u", fd, e->armed_flags);
-        }
+            if (th) {
+                ccan_list_add_tail(&e->waiters, &th->sched.waiting_reason.fd_node);
 
-        if (th) {
-            VM_ASSERT(th->sched.waiting_reason.flags == thread_sched_waiting_none);
-
-            // setup waiting information
-            {
+                VM_ASSERT(th->sched.waiting_reason.flags == thread_sched_waiting_none);
                 th->sched.waiting_reason.flags = flags;
                 th->sched.waiting_reason.data.timeout = abs;
                 th->sched.waiting_reason.data.fd = fd;
                 th->sched.waiting_reason.data.result = 0;
                 th->sched.waiting_reason.data.event_serial = event_serial;
-            }
 
-            if (abs == 0) { // no timeout
-                VM_ASSERT(!(flags & thread_sched_waiting_timeout));
-                ccan_list_add_tail(&timer_th.waiting_untimed, &th->sched.waiting_reason.node);
-            }
-            else {
-                RUBY_DEBUG_LOG("abs:%lu", (unsigned long)abs);
-                VM_ASSERT(flags & thread_sched_waiting_timeout);
+                if (abs != 0) {
+                    RUBY_DEBUG_LOG("abs:%lu", (unsigned long)abs);
+                    VM_ASSERT(flags & thread_sched_waiting_timeout);
 
-                rb_hrtime_t prev_expiry = timer_th.next_expiry;
-                timer_wheel_insert(&th->sched.waiting_reason);
-
-                verify_waiting_list();
-
-                if (timer_th.next_expiry < prev_expiry) {
-                    // an earlier deadline than the timer thread is armed for
-                    timer_thread_wakeup_force();
+                    rb_native_mutex_lock(&timer_th.waiting_lock);
+                    {
+                        rb_hrtime_t prev_expiry = timer_th.next_expiry;
+                        timer_wheel_insert(&th->sched.waiting_reason);
+                        verify_waiting_list();
+                        if (timer_th.next_expiry < prev_expiry) {
+                            // an earlier deadline than the timer thread is armed for
+                            timer_thread_wakeup_force();
+                        }
+                    }
+                    rb_native_mutex_unlock(&timer_th.waiting_lock);
                 }
             }
+            RUBY_DEBUG_LOG("armed fd:%d want:%u", fd, e->armed_flags);
         }
-        else {
-            VM_ASSERT(abs == 0);
-        }
+        fd_shard_unlock(fd);
     }
-    rb_native_mutex_unlock(&timer_th.waiting_lock);
+    else if (th) {
+        // fd-less timed wait: the wheel lock owns it end to end
+        VM_ASSERT(abs != 0 && (flags & thread_sched_waiting_timeout));
+
+        rb_native_mutex_lock(&timer_th.waiting_lock);
+        {
+            VM_ASSERT(th->sched.waiting_reason.flags == thread_sched_waiting_none);
+            th->sched.waiting_reason.flags = flags;
+            th->sched.waiting_reason.data.timeout = abs;
+            th->sched.waiting_reason.data.fd = fd;
+            th->sched.waiting_reason.data.result = 0;
+            th->sched.waiting_reason.data.event_serial = event_serial;
+
+            rb_hrtime_t prev_expiry = timer_th.next_expiry;
+            timer_wheel_insert(&th->sched.waiting_reason);
+            verify_waiting_list();
+            if (timer_th.next_expiry < prev_expiry) {
+                timer_thread_wakeup_force();
+            }
+        }
+        rb_native_mutex_unlock(&timer_th.waiting_lock);
+    }
+    else {
+        VM_ASSERT(abs == 0);
+    }
 
     return timer_thread_registered;
 }
 
 // Drop `th` from its fd's waiter list and re-arm the backend for whoever is
-// left.  timer_th.waiting_lock must be held.
+// left.  The fd's shard lock must be held.
 static void
 timer_thread_unregister_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags)
 {
@@ -1434,15 +1599,15 @@ event_wait(rb_vm_t *vm)
 static void
 timer_thread_wake_fd_waiters(int fd, uint32_t generation, uint32_t wake_flags, int result)
 {
-    struct { rb_thread_t *th; uint32_t serial; } batch[FD_WAKE_BATCH];
+    struct timer_wake batch[FD_WAKE_BATCH];
 
     if (wake_flags == 0) return;
 
-    for (;;) {
+    while (1) {
         int n = 0;
         bool more = false;
 
-        rb_native_mutex_lock(&timer_th.waiting_lock);
+        fd_shard_lock(fd);
         {
             struct rb_fd_waiters *e = fd_waiters_lookup(fd, false);
 
@@ -1460,15 +1625,26 @@ timer_thread_wake_fd_waiters(int fd, uint32_t generation, uint32_t wake_flags, i
                     }
 
                     ccan_list_del_init(&w->fd_node);
-                    timer_wheel_del(w); // also leaves the timer wheel
+
+                    if (w->flags & thread_sched_waiting_timeout) {
+                        // also leaves the timer wheel (or the expiry pass's
+                        // batch, whose claim will then find the flags gone)
+                        rb_native_mutex_lock(&timer_th.waiting_lock);
+                        timer_wheel_del(w);
+                        rb_native_mutex_unlock(&timer_th.waiting_lock);
+                    }
+
+                    // The pin must be visible before the flags clear: a waiter
+                    // that sees the clear may skip parking, finish and die,
+                    // and the fence only waits on the pending count.
+                    batch[n].th = thread_sched_waiting_thread(w);
+                    batch[n].serial = w->data.event_serial;
+                    timer_wake_pending_inc(batch[n].th);
+                    n++;
 
                     w->flags = thread_sched_waiting_none;
                     w->data.fd = -1;
                     w->data.result = result;
-
-                    batch[n].th = thread_sched_waiting_thread(w);
-                    batch[n].serial = w->data.event_serial;
-                    n++;
                 }
 
                 // Re-arm for whoever is still waiting on this fd (nothing, if
@@ -1476,11 +1652,12 @@ timer_thread_wake_fd_waiters(int fd, uint32_t generation, uint32_t wake_flags, i
                 fd_waiters_arm(fd, e, fd_waiters_union(e));
             }
         }
-        rb_native_mutex_unlock(&timer_th.waiting_lock);
+        fd_shard_unlock(fd);
 
         for (int i = 0; i < n; i++) {
             timer_thread_wakeup_thread(batch[i].th, batch[i].serial);
         }
+        timer_wake_pending_clear(batch, n);
 
         if (!more) break;
     }
@@ -1660,10 +1837,30 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
     rb_bug("unreachable");
 }
 
+// Without the wheel every thread is dedicated, so a Ractor wait takes its
+// deadline on its own condvar and never reaches these.
+static bool
+ractor_sched_timeout_arm(rb_thread_t *th, const rb_hrtime_t *rel)
+{
+    rb_bug("unreachable");
+}
+
+static bool
+ractor_sched_timeout_disarm(rb_thread_t *th)
+{
+    rb_bug("unreachable");
+}
+
 static int
 timer_wheel_timeout(int timeout)
 {
     return timeout; // no M:N threads, no timed waiters
+}
+
+static void
+timer_thread_wake_fence(rb_thread_t *th)
+{
+    // no timer wheel, no wake batches
 }
 
 static void

@@ -90,18 +90,19 @@ struct rb_thread_sched_item {
         // There is no clear relationship between this and th->status.
         bool is_ready;
 
-        // connected to vm->ractor.sched.timeslice_threads
-        // locked by vm->ractor.sched.lock
-        struct ccan_list_node timeslice_threads;
-
-        // connected to vm->ractor.sched.running_threads
-        // locked by vm->ractor.sched.lock
-        struct ccan_list_node running_threads;
-
     } node;
 
     struct rb_thread_sched_waiting waiting_reason;
     uint32_t event_serial;
+
+    // wakes pending on this thread (timer thread or an fd shard claim);
+    // under timer_th.wake_pending_lock
+    uint32_t wake_pending_cnt;
+
+    // parked on its own condvar with a deadline; under the sched lock (see
+    // ubf_waiting).  Always false for an M:N thread: its deadline lives on the
+    // timer wheel, and its early wake comes from the timer thread instead.
+    bool waiting_timed;
 
     bool malloc_stack;
     void *context_stack;
@@ -121,20 +122,19 @@ struct rb_native_thread {
 
     struct rb_thread_struct *running_thread;
 
-    // to control native thread
-#if defined(__GLIBC__) || defined(__FreeBSD__)
-    union
-#else
-    /*
-     * assume the platform condvars are badly implemented and have a
-     * "memory" of which mutex they're associated with
-     */
-    struct
-#endif
-      {
-        rb_nativethread_cond_t intr; /* th->interrupt_lock */
-        rb_nativethread_cond_t readyq; /* use sched->lock */
-    } cond;
+    // The running thread on this shared nt, for the barrier/timeslice scans.
+    // While a scan holds running_th_lock the thread cannot finish parking.
+    rb_nativethread_lock_t running_th_lock;
+    struct rb_thread_struct *running_th;
+    struct ccan_list_node snts_node; // in vm->ractor.sched.ntlist.snts
+    // in vm->ractor.sched.ntlist.running_dnts while running_thread runs
+    struct ccan_list_node running_dnts_node;
+    // barrier_serial stamped by the barrier's counting walk; this nt's
+    // deregistration during that barrier decrements the snapshot count
+    uint32_t barrier_counted_serial;
+
+    // to control native thread; use sched->lock
+    rb_nativethread_cond_t readyq;
 
 #ifdef USE_SIGALTSTACK
     void *altstack;
@@ -171,7 +171,7 @@ struct rb_thread_sched {
     struct rb_thread_struct *runnable_hot_th;
     int runnable_hot_th_waiting;
     bool is_running;
-    bool is_running_timeslice;
+
     bool enable_mn_threads;
 
     struct ccan_list_head readyq;
@@ -182,6 +182,7 @@ struct rb_thread_sched {
     // node itself: enqueuers assert it, and direct transfers cancel an
     // outstanding entry (see ractor_sched_cancel_enq).
     struct ccan_list_node grq_node;
+    struct ccan_list_node timeslice_node; // self-linked = not on timeslice.scheds
 };
 
 struct rb_thread_context;
@@ -230,5 +231,6 @@ RUBY_EXTERN native_tls_key_t ruby_current_ec_key;
 struct rb_ractor_struct;
 void rb_ractor_sched_wait(struct rb_execution_context_struct *ec, struct rb_ractor_struct *cr, rb_unblock_function_t *ubf, void *ptr);
 void rb_ractor_sched_wakeup(struct rb_ractor_struct *r, struct rb_thread_struct *th);
+void rb_thread_wake_fence(struct rb_thread_struct *th);
 
 #endif /* RUBY_THREAD_PTHREAD_H */

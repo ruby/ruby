@@ -1119,7 +1119,8 @@ rb_source_hash_update(rb_source_hash_state_t *state, const uint8_t *ptr, size_t 
 uint64_t
 rb_source_hash_finalize(const rb_source_hash_state_t *state)
 {
-    return state->hash;
+    /* A hash of 0 means no source hash, so remap it to another value. */
+    return state->hash == 0 ? 1 : state->hash;
 }
 
 VALUE

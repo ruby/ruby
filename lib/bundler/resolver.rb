@@ -469,9 +469,9 @@ module Bundler
     def cooldown_excluded?(spec)
       return false unless spec.respond_to?(:created_at) && spec.created_at
       return false unless spec.respond_to?(:remote) && spec.remote
-      return false if locked_by_lockfile?(spec)
       days = spec.remote.effective_cooldown
       return false if days.nil? || days <= 0
+      return false if locked_by_lockfile?(spec)
       (cooldown_now - spec.created_at) < (days * 86_400)
     end
 

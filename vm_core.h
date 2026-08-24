@@ -504,11 +504,13 @@ struct rb_iseq_constant_body {
     /* insn info, must be freed */
     struct iseq_insn_info {
         const struct iseq_insn_info_entry *body;
-        unsigned int *positions;
-        unsigned int size;
+        union {
+            unsigned int *positions;
 #if VM_INSN_INFO_TABLE_IMPL == 2
-        struct succ_index_table *succ_index_table;
+            struct succ_index_table *succ_index_table;
 #endif
+        } positions_or_succ_index_table;
+        unsigned int size;
     } insns_info;
 
     const ID *local_table;		/* must free */
@@ -580,10 +582,10 @@ struct rb_iseq_constant_body {
     void *zjit_payload;
 #endif
 
-    // Hash of the source this iseq was compiled from. Meaningful only when
-    // has_source_hash is set.
+    // Hash of the source this iseq was compiled from, or 0 if it is
+    // unavailable. A computed hash of 0 is remapped to another value, so
+    // 0 never denotes a real hash.
     uint64_t source_hash;
-    bool has_source_hash;
 };
 
 /* T_IMEMO/iseq */
@@ -749,21 +751,29 @@ typedef struct rb_vm_struct {
             bool locked;
 
             rb_nativethread_cond_t cond; // GRQ
-            unsigned int snt_cnt; // count of shared NTs
-            unsigned int dnt_cnt; // count of dedicated NTs
+            rb_atomic_t snt_cnt;  // count of shared NTs; lock-free (see native_thread_dedicated_inc)
+            unsigned int dnt_cnt; // count of dedicated NTs; logging only (USE_RUBY_DEBUG_LOG), not atomic
 
-            unsigned int running_cnt;
 
             unsigned int max_cpu;
             struct ccan_list_head grq; // // Global Ready Queue
             rb_atomic_t winding_cnt; // native threads between a coroutine epilogue and its reclaim; ruby_vm_destruct waits for 0
             unsigned int grq_cnt;
 
-            // running threads
-            struct ccan_list_head running_threads;
+            // What the barrier walk visits: threads running on dedicated
+            // nts, and the shared nts (whose running_th fields hold the rest).
+            struct {
+                rb_nativethread_lock_t lock;
+                struct ccan_list_head running_dnts;
+                struct ccan_list_head snts;
+            } ntlist;
 
-            // threads which switch context by timeslice
-            struct ccan_list_head timeslice_threads;
+            // scheds whose readyq holds waiters: the timer ticks their
+            // running thread (timeslice_scan) and prunes drained entries.
+            struct {
+                rb_nativethread_lock_t lock;
+                struct ccan_list_head scheds;
+            } timeslice;
 
             // true if timeslice timer is not enable
             bool timeslice_wait_inf;
@@ -771,8 +781,12 @@ typedef struct rb_vm_struct {
             // barrier
             rb_nativethread_cond_t barrier_complete_cond;
             rb_nativethread_cond_t barrier_release_cond;
-            bool barrier_waiting;
-            unsigned int barrier_waiting_cnt;
+            // bool; nonzero while a stop-the-world section is active.  Set
+            // before the barrier walks the running records; a record moved
+            // after the walk sees it (thread_sched_setup_running_threads).
+            rb_atomic_t barrier_is_waiting;
+            unsigned int barrier_joined_cnt; // threads joined so far; under sched.lock
+            unsigned int barrier_running_cnt; // runners counted by the barrier's walk; under sched.lock
             unsigned int barrier_serial;
             struct rb_ractor_struct *barrier_ractor;
             unsigned int barrier_lock_rec;
@@ -983,12 +997,12 @@ enum rb_block_type {
 };
 
 struct rb_block {
+    enum rb_block_type type : 8;
     union {
         struct rb_captured_block captured;
         VALUE symbol;
         VALUE proc;
     } as;
-    enum rb_block_type type;
 };
 
 typedef struct rb_control_frame_struct {
@@ -1386,12 +1400,43 @@ extern const rb_data_type_t ruby_proc_data_type;
     GetCoreDataFromValue((obj), rb_proc_t, &ruby_proc_data_type, (ptr))
 
 typedef struct {
-    const struct rb_block block;
+    enum rb_block_type type : 8;
     unsigned int is_from_method: 1;	/* bool */
     unsigned int is_lambda: 1;		/* bool */
     unsigned int is_isolated: 1;        /* bool */
     unsigned int is_refined: 1;         /* bool: Proc#refined */
+} rb_proc_header_t;
+
+typedef struct {
+    rb_proc_header_t header;
+    struct rb_captured_block captured;
+} rb_proc_captured_t;
+
+typedef struct {
+    rb_proc_header_t header;
+    VALUE symbol;
+} rb_proc_symbol_t;
+
+typedef struct {
+    rb_proc_header_t header;
+    VALUE proc;
+} rb_proc_proc_t;
+
+/* A Proc of any block type. */
+typedef union {
+    const struct rb_block block;
+    rb_proc_header_t header;
+    rb_proc_captured_t captured;
+    rb_proc_symbol_t symbol;
+    rb_proc_proc_t proc;
 } rb_proc_t;
+
+STATIC_ASSERT(rb_proc_captured_offset,
+    offsetof(rb_proc_captured_t, captured) == offsetof(rb_proc_t, block.as.captured));
+STATIC_ASSERT(rb_proc_symbol_offset,
+    offsetof(rb_proc_symbol_t, symbol) == offsetof(rb_proc_t, block.as.symbol));
+STATIC_ASSERT(rb_proc_proc_offset,
+    offsetof(rb_proc_proc_t, proc) == offsetof(rb_proc_t, block.as.proc));
 
 /* A refined proc's refinements recipe (see Proc#refined) lives in a hidden
  * ivar on the proc object; the accessors return nil/NULL unless is_refined is
@@ -2034,7 +2079,7 @@ VM_BH_FROM_PROC(VALUE procval)
 /* VM related object allocate functions */
 VALUE rb_thread_alloc(VALUE klass);
 VALUE rb_binding_alloc(VALUE klass);
-VALUE rb_proc_alloc(VALUE klass);
+VALUE rb_proc_alloc(VALUE klass, enum rb_block_type block_type);
 VALUE rb_proc_dup(VALUE self);
 VALUE rb_proc_dup_0(VALUE self);
 

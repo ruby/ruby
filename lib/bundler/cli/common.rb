@@ -3,9 +3,25 @@
 module Bundler
   module CLI::Common
     def self.validate_cooldown!(value)
-      return if value.nil?
+      # Without the flag the config file and BUNDLE_COOLDOWN decide, and those
+      # only warn, so a typo left in a config file keeps the command usable.
+      return warn_invalid_cooldown_setting if value.nil?
       return if value.is_a?(Integer) && value >= 0
       raise InvalidOption, "Expected `--cooldown` to be a non-negative integer, got #{value.inspect}"
+    end
+
+    # A cooldown value that cannot be read as a non-negative integer disables
+    # the cooldown for every source, overriding any per-source `cooldown:` in
+    # the Gemfile, so say so rather than letting the protection lapse quietly.
+    def self.warn_invalid_cooldown_setting
+      value = Bundler.settings.locations(:cooldown).values.first
+      return if value.nil?
+
+      days = Integer(value.to_s, exception: false)
+      return if days && !days.negative?
+
+      Bundler.ui.warn "Invalid cooldown value #{value.inspect}, so the cooldown is disabled for all sources. " \
+                      "Expected a non-negative integer number of days."
     end
 
     def self.output_post_install_messages(messages)

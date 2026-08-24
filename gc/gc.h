@@ -133,7 +133,7 @@ MODULAR_GC_FN void rb_gc_print_backtrace();
 RUBY_SYMBOL_EXPORT_END
 #endif
 
-void rb_ractor_finish_marking(void);
+void rb_ractor_finish_marking(bool full_mark);
 
 // -------------------Private section begin------------------------
 // Functions in this section are private to the default GC and gc.c

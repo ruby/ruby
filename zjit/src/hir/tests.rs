@@ -2754,17 +2754,13 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :a@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          v15:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
-          v17:HashExact = NewHash
-          PatchPoint NoEPEscape(test)
-          v22:BasicObject = Send v15, :core#hash_merge_kwd, v17, v10 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v24:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
-          v27:StaticSymbol[:b] = Const Value(VALUE(0x1010))
-          v29:Fixnum[1] = Const Value(1)
-          v31:BasicObject = Send v24, :core#hash_merge_ptr, v22, v27, v29 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v33:BasicObject = Send v9, :foo, v31 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v16:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
+          v19:StaticSymbol[:b] = Const Value(VALUE(0x1010))
+          v21:Fixnum[1] = Const Value(1)
+          v23:BasicObject = Send v16, :core#hash_merge_ptr, v10, v19, v21 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v25:BasicObject = Send v9, :foo, v23 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v33
+          Return v25
         ");
     }
 

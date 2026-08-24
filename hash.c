@@ -1501,10 +1501,36 @@ hash_alloc_capa(VALUE klass, VALUE flags, VALUE ifnone, size_t size, bool frozen
 {
     VALUE hash = rb_newobj_of(klass, T_HASH | flags, hash_slot_size(size, frozen));
     rb_hash_set_ifnone(hash, ifnone);
+
+#ifdef RUBY_DEBUG
+    if (hash_slot_size(size, frozen) >= sizeof(struct RHash) + sizeof(st_table)) {
+        RHASH_ST_TABLE(hash)->num_entries = 0;
+        RHASH_ST_TABLE(hash)->entries = NULL;
+    }
+#endif
+
+    return hash;
+}
+
+static VALUE
+hash_init_capa(VALUE hash, size_t size)
+{
     if (size > RHASH_AR_TABLE_MAX_SIZE) {
         hash_st_table_init(hash, &objhash, size);
     }
     return hash;
+}
+
+static VALUE
+hash_hidden_new(size_t size)
+{
+    return hash_init_capa(hash_alloc_capa(0, 0, Qnil, size, false), size);
+}
+
+VALUE
+rb_hash_alloc_copy(VALUE klass, VALUE src)
+{
+    return hash_alloc_capa(klass, 0, Qnil, RHASH_SIZE(src), false);
 }
 
 static VALUE
@@ -1530,12 +1556,6 @@ empty_hash_alloc(VALUE klass)
     return hash_alloc(klass);
 }
 
-VALUE
-rb_hash_new(void)
-{
-    return hash_alloc(rb_cHash);
-}
-
 static VALUE
 copy_compare_by_id(VALUE hash, VALUE basis)
 {
@@ -1545,21 +1565,38 @@ copy_compare_by_id(VALUE hash, VALUE basis)
     return hash;
 }
 
+static VALUE
+hash_new_capa(VALUE klass, size_t capa)
+{
+    return hash_init_capa(hash_alloc_capa(klass, 0, Qnil, capa, false), capa);
+}
+
 VALUE
 rb_hash_new_capa(long capa)
 {
-    return hash_alloc_capa(rb_cHash, 0, Qnil, capa, false);
+    if (capa < 0) {
+        rb_raise(rb_eArgError, "negative hash size (or size too big)");
+    }
+    return hash_new_capa(rb_cHash, capa);
+}
+
+VALUE
+rb_hash_new(void)
+{
+    return rb_hash_new_capa(0);
 }
 
 VALUE
 rb_hash_alloc_fixed_size(VALUE klass, st_index_t size)
 {
-    return hash_alloc_capa(klass, 0, Qnil, size, true);
+    return hash_init_capa(hash_alloc_capa(klass, 0, Qnil, size, true), size);
 }
 
 static VALUE
 hash_copy(VALUE ret, VALUE hash)
 {
+    RUBY_ASSERT(RHASH_SIZE(ret) == 0);
+
     if (rb_hash_compare_by_id_p(hash)) {
         rb_gc_register_pinning_obj(ret);
     }
@@ -1570,6 +1607,12 @@ hash_copy(VALUE ret, VALUE hash)
         }
         else {
             st_table *tab = RHASH_ST_TABLE(ret);
+
+            // If `hash` is an ar_table it can't be `compare_by_identity?`.
+            RUBY_ASSERT(!rb_hash_compare_by_id_p(hash));
+            RUBY_ASSERT(RHASH_ST_TABLE(ret)->entries == NULL);
+            st_init_existing_table_with_size(RHASH_ST_TABLE(ret), &objhash, RHASH_SIZE(hash));
+
             int bound = RHASH_AR_TABLE_BOUND(hash);
             for (int i = 0; i < bound; i++) {
                 if (ar_cleared_entry(hash, i)) continue;
@@ -1582,11 +1625,8 @@ hash_copy(VALUE ret, VALUE hash)
         }
     }
     else {
-        HASH_ASSERT(sizeof(st_table) <= sizeof(ar_table));
-
         RHASH_SET_ST_FLAG(ret);
         st_replace(RHASH_ST_TABLE(ret), RHASH_ST_TABLE(hash));
-
         rb_gc_writebarrier_remember(ret);
     }
     return ret;
@@ -1599,9 +1639,6 @@ hash_dup_with_compare_by_id(VALUE hash)
     if (RHASH_ST_TABLE_P(hash)) {
         RHASH_SET_ST_FLAG(dup);
     }
-    else {
-        RHASH_UNSET_ST_FLAG(dup);
-    }
 
     return hash_copy(dup, hash);
 }
@@ -1611,6 +1648,17 @@ hash_dup(VALUE hash, VALUE klass, VALUE flags)
 {
     VALUE dup = hash_alloc_capa(klass, flags, RHASH_IFNONE(hash), RHASH_SIZE(hash), false);
     return hash_copy(dup, hash);
+}
+
+static VALUE
+hash_dup_capa(VALUE hash, size_t capa)
+{
+    VALUE ret = hash_alloc_capa(rb_cHash, 0, Qnil, capa, false);
+    if (capa > RHASH_AR_TABLE_MAX_SIZE) {
+        RHASH_SET_ST_FLAG(ret);
+    }
+    hash_copy(ret, hash);
+    return ret;
 }
 
 VALUE
@@ -1627,8 +1675,7 @@ rb_hash_dup(VALUE hash)
 VALUE
 rb_hash_resurrect(VALUE hash)
 {
-    VALUE ret = hash_dup(hash, rb_cHash, 0);
-    return ret;
+    return hash_dup(hash, rb_cHash, 0);
 }
 
 #if USE_ZJIT
@@ -1828,6 +1875,7 @@ rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifn
 }
 
 static VALUE rb_hash_to_a(VALUE hash);
+static VALUE hash_new_with_bulk_insert(VALUE klass, long argc, const VALUE *argv);
 
 /*
  *  call-seq:
@@ -1874,17 +1922,19 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     if (argc == 1) {
         tmp = rb_hash_s_try_convert(Qnil, argv[0]);
         if (!NIL_P(tmp)) {
-            if (!RHASH_EMPTY_P(tmp)  && rb_hash_compare_by_id_p(tmp)) {
+            if (RHASH_EMPTY_P(tmp)) {
+                return hash_new_capa(klass, 0);
+            }
+
+            if (rb_hash_compare_by_id_p(tmp)) {
                 /* hash_copy for non-empty hash will copy compare_by_identity
                    flag, but we don't want it copied. Work around by
                    converting hash to flattened array and using that. */
                 tmp = rb_hash_to_a(tmp);
             }
             else {
-                hash = hash_alloc(klass);
-                if (!RHASH_EMPTY_P(tmp))
-                    hash_copy(hash, tmp);
-                return hash;
+                hash = hash_alloc_capa(klass, 0, Qnil, RHASH_SIZE(tmp), false);
+                return hash_copy(hash, tmp);
             }
         }
         else {
@@ -1892,9 +1942,11 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
         }
 
         if (!NIL_P(tmp)) {
-            long i;
+            if (RARRAY_LEN(tmp) == 0) {
+                return hash_new_capa(klass, 0);
+            }
 
-            hash = hash_alloc(klass);
+            long i;
             for (i = 0; i < RARRAY_LEN(tmp); ++i) {
                 VALUE e = RARRAY_AREF(tmp, i);
                 VALUE v = rb_check_array_type(e);
@@ -1904,6 +1956,18 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
                     rb_raise(rb_eArgError, "wrong element type %s at %ld (expected array)",
                              rb_builtin_class_name(e), i);
                 }
+
+                if (i == 0) {
+                    switch (RARRAY_LEN(v)) {
+                      case 2:
+                        hash = hash_new_capa(klass, RARRAY_LEN(tmp));
+                        break;
+                      case 1:
+                        hash = hash_new_capa(klass, RARRAY_LEN(tmp) / 1);
+                        break;
+                    }
+                }
+
                 switch (RARRAY_LEN(v)) {
                   default:
                     rb_raise(rb_eArgError, "invalid number of elements (%ld for 1..2)",
@@ -1922,8 +1986,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
         rb_raise(rb_eArgError, "odd number of arguments for Hash");
     }
 
-    hash = hash_alloc(klass);
-    rb_hash_bulk_insert(argc, argv, hash);
+    hash = hash_new_with_bulk_insert(klass, argc, argv);
     hash_verify(hash);
     return hash;
 }
@@ -2714,7 +2777,7 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
     VALUE key, value, result;
 
     if (argc == 0 || RHASH_EMPTY_P(hash)) {
-        return copy_compare_by_id(rb_hash_new(), hash);
+        return copy_compare_by_id(rb_hash_new_capa(0), hash);
     }
     result = copy_compare_by_id(rb_hash_new_capa(argc), hash);
 
@@ -3070,16 +3133,9 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 
     if (RHASH_AR_TABLE_P(hash)) {
         hash_ar_free_and_clear_table(hash);
-        if (RHASH_SIZE(hash2) > RHASH_AR_TABLE_MAX_SIZE) {
-            RHASH_SET_ST_FLAG(hash);
-        }
     }
     else {
         hash_st_free_and_clear_table(hash);
-    }
-
-    if (RHASH_ST_TABLE_P(hash)) {
-        st_init_existing_table_with_size(RHASH_ST_TABLE(hash), &objhash, RHASH_SIZE(hash2));
     }
 
     hash_copy(hash, hash2);
@@ -3378,7 +3434,7 @@ rb_hash_transform_keys(int argc, VALUE *argv, VALUE hash)
     else {
         RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     }
-    result = rb_hash_new();
+    result = rb_hash_new_capa(RHASH_SIZE(hash));
     if (!RHASH_EMPTY_P(hash)) {
         if (transarg.trans) {
             transarg.result = result;
@@ -3505,7 +3561,7 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
     rb_hash_modify_check(hash);
     if (!RHASH_TABLE_EMPTY_P(hash)) {
         long i;
-        VALUE new_keys = hash_alloc(0);
+        VALUE new_keys = hash_hidden_new(RHASH_SIZE(hash));
         VALUE pairs = rb_ary_hidden_new(RHASH_SIZE(hash) * 2);
         rb_hash_foreach(hash, flatten_i, pairs);
         for (i = 0; i < RARRAY_LEN(pairs); i += 2) {
@@ -3531,7 +3587,6 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
             rb_hash_aset(new_keys, new_key, Qnil);
         }
         rb_ary_clear(pairs);
-        rb_hash_clear(new_keys);
     }
     compact_after_delete(hash);
     return hash;
@@ -4800,7 +4855,7 @@ rb_hash_compare_by_id_p(VALUE hash)
 VALUE
 rb_ident_hash_new(void)
 {
-    VALUE hash = rb_hash_new();
+    VALUE hash = rb_hash_new_capa(0);
     hash_st_table_init(hash, &identhash, 0);
     rb_gc_register_pinning_obj(hash);
     return hash;
@@ -4809,7 +4864,7 @@ rb_ident_hash_new(void)
 VALUE
 rb_ident_hash_new_capa(long size)
 {
-    VALUE hash = rb_hash_new();
+    VALUE hash = rb_hash_new_capa(0);
     hash_st_table_init(hash, &identhash, size);
     rb_gc_register_pinning_obj(hash);
     return hash;
@@ -5194,11 +5249,43 @@ rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
     }
 }
 
+static VALUE
+hash_new_with_bulk_insert(VALUE klass, long argc, const VALUE *argv)
+{
+    VALUE val = hash_new_capa(klass, argc / 2);
+    rb_hash_bulk_insert(argc, argv, val);
+    return val;
+}
+
 VALUE
 rb_hash_new_with_bulk_insert(long argc, const VALUE *argv)
 {
-    VALUE val = rb_hash_new_capa(argc / 2);
+    return hash_new_with_bulk_insert(rb_cHash, argc, argv);
+}
+
+VALUE
+rb_hash_merge2_bulk(VALUE hash, long argc, const VALUE *argv, bool dup)
+{
+    VALUE val = hash;
+    if (dup) {
+        // This is used to build literal hashes and keyword arguments,
+        // we can assume duplicate keys are very rare.
+        val = hash_dup_capa(val, RHASH_SIZE(val) + argc / 2);
+    }
     rb_hash_bulk_insert(argc, argv, val);
+    return val;
+}
+
+VALUE
+rb_hash_merge2(VALUE h1, VALUE h2, bool dup)
+{
+    VALUE val = h1;
+    if (dup) {
+        // This is used to build literal hashes and keyword arguments,
+        // we can assume duplicate keys are very rare.
+        val = hash_dup_capa(val, RHASH_SIZE(val) + RHASH_SIZE(h2));
+    }
+    rb_hash_foreach(h2, rb_hash_update_i, val);
     return val;
 }
 
@@ -6220,9 +6307,6 @@ env_slice(int argc, VALUE *argv, VALUE _)
     int i;
     VALUE key, value, result;
 
-    if (argc == 0) {
-        return rb_hash_new();
-    }
     result = rb_hash_new_capa(argc);
 
     for (i = 0; i < argc; i++) {
@@ -6607,14 +6691,26 @@ env_key(VALUE dmy, VALUE value)
     return str;
 }
 
+static inline size_t
+environ_size(char **env)
+{
+    size_t size = 0;
+    while (*env) {
+        size += 1;
+        env++;
+    }
+    return size;
+}
+
 static VALUE
 env_to_hash(void)
 {
-    VALUE hash = rb_hash_new();
+    VALUE hash;
 
     rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
+        hash = rb_hash_new_capa(environ_size(env));
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {

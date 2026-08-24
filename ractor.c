@@ -399,6 +399,10 @@ free_targeted_hooks(st_table *hooks_tbl)
     st_foreach(hooks_tbl, free_targeted_hook_lists, 0);
 }
 
+#ifdef RUBY_THREAD_PTHREAD_H
+void rb_thread_sched_destroy(struct rb_thread_sched *);
+#endif
+
 static void
 ractor_free(void *ptr)
 {
@@ -406,6 +410,9 @@ ractor_free(void *ptr)
     RUBY_DEBUG_LOG("free r:%d", rb_ractor_id(r));
 
     free_targeted_hooks(&r->pub.targeted_hooks);
+#ifdef RUBY_THREAD_PTHREAD_H
+    rb_thread_sched_destroy(&r->threads.sched);
+#endif
     rb_native_mutex_destroy(&r->sync.lock);
 #ifdef RUBY_THREAD_WIN32_H
     rb_native_cond_destroy(&r->sync.wakeup_cond);
@@ -771,6 +778,7 @@ rb_ractor_living_threads_init(rb_ractor_t *r)
     ccan_list_head_init(&r->threads.set);
     r->threads.cnt = 0;
     r->threads.blocking_cnt = 0;
+    r->threads.terminating = false;
 }
 
 static void
@@ -893,7 +901,7 @@ void
 rb_ractor_receive_parameters(rb_execution_context_t *ec, rb_ractor_t *r, int len, VALUE *ptr)
 {
     for (int i=0; i<len; i++) {
-        ptr[i] = ractor_receive(ec, ractor_default_port(r));
+        ptr[i] = ractor_receive(ec, ractor_default_port(r), NULL);
     }
 }
 
@@ -998,6 +1006,14 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const c
 {
     VM_ASSERT(cr == GET_RACTOR());
 
+#ifdef RUBY_THREAD_PTHREAD_H
+    // vm->ractor.blocking_cnt is only consumed by the win32 scheduler; the
+    // pthread one must not pay a VM lock per blocking region for it.  The
+    // running<->blocking status flips stop with it (all callers), matching
+    // rb_ractor_blocking_threads_dec skipping the reverse transition.
+    return;
+#endif
+
     RUBY_DEBUG_LOG2(file, line,
                     "cr->threads.cnt:%u cr->threads.blocking_cnt:%u vm->ractor.cnt:%u vm->ractor.blocking_cnt:%u",
                     cr->threads.cnt, cr->threads.blocking_cnt,
@@ -1098,6 +1114,8 @@ rb_ractor_blocking_threads_dec(rb_ractor_t *cr, const char *file, int line)
 
     VM_ASSERT(cr == GET_RACTOR());
 
+#ifndef RUBY_THREAD_PTHREAD_H
+    // see rb_ractor_blocking_threads_inc
     if (cr->threads.cnt == cr->threads.blocking_cnt) {
         rb_vm_t *vm = GET_VM();
 
@@ -1105,6 +1123,7 @@ rb_ractor_blocking_threads_dec(rb_ractor_t *cr, const char *file, int line)
             rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
         }
     }
+#endif
 
     cr->threads.blocking_cnt--;
 }
@@ -1195,7 +1214,7 @@ rb_ractor_terminate_all(void)
             rb_del_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_cond_timedwait(vm, &vm->ractor.sync.terminate_cond, 1000 /* ms */);
 #ifdef RUBY_THREAD_PTHREAD_H
-            while (vm->ractor.sched.barrier_waiting) {
+            while (vm->ractor.sched.barrier_is_waiting) {
                 // A barrier is waiting. Threads relinquish the VM lock before joining the barrier and
                 // since we just acquired the VM lock back, we're blocking other threads from joining it.
                 // We loop until the barrier is over. We can't join this barrier because our thread isn't added to
@@ -3671,7 +3690,7 @@ rb_ractor_local_storage_ptr_set(rb_ractor_local_key_t key, void *ptr)
 #define DEFAULT_KEYS_CAPA 0x10
 
 void
-rb_ractor_finish_marking(void)
+rb_ractor_finish_marking(bool full_mark)
 {
     /* A freed key's struct may only be released by a collection that purged every
      * Ractor's storage with no other marker running: a global GC, or a single objspace.
@@ -3684,6 +3703,8 @@ rb_ractor_finish_marking(void)
      * zombie_objspaces only marks the join slot): purge here, under the barrier, before
      * the struct is freed, or a later ractor_free reads a freed key. */
     rb_vm_t *vm = GET_VM();
+    rb_ractor_t *r;
+
     for (size_t zi = 0; zi < vm->gc.zombie_objspaces_count; zi++) {
         rb_ractor_t *owner = vm->gc.zombie_objspaces[zi].owner;
         if (owner == NULL || owner->local_storage == NULL) continue;
@@ -3697,6 +3718,16 @@ rb_ractor_finish_marking(void)
     if (freed_ractor_local_keys.capa > DEFAULT_KEYS_CAPA) {
         freed_ractor_local_keys.capa = DEFAULT_KEYS_CAPA;
         SIZED_REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, DEFAULT_KEYS_CAPA, freed_ractor_local_keys.capa);
+    }
+
+    /* Under a minor mark an unmarked port is not a dead one. */
+    if (full_mark) {
+        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+            rb_ractor_reap_dead_ports(r);
+        }
+        if (vm->ractor.cnt == 0 && vm->ractor.main_ractor) {
+            rb_ractor_reap_dead_ports(vm->ractor.main_ractor);
+        }
     }
 }
 
@@ -3937,7 +3968,7 @@ rb_ractor_require(VALUE feature, bool silent)
     rb_ractor_interrupt_exec(main_r, ractor_require_func, (void *)crr_obj, rb_interrupt_exec_flag_value_data);
 
     // wait for require done
-    VALUE results = ractor_port_receive(ec, crr->port);
+    VALUE results = ractor_port_receive(ec, crr->port, Qnil);
     ractor_port_close(ec, crr->port);
 
     VALUE exc = rb_ary_pop(results);
@@ -3988,7 +4019,7 @@ rb_ractor_autoload_load(VALUE module, ID name)
     rb_ractor_interrupt_exec(main_r, ractor_autoload_load_func, (void *)crr_obj, rb_interrupt_exec_flag_value_data);
 
     // wait for require done
-    VALUE results = ractor_port_receive(ec, crr->port);
+    VALUE results = ractor_port_receive(ec, crr->port, Qnil);
     ractor_port_close(ec, crr->port);
 
     VALUE exc = rb_ary_pop(results);

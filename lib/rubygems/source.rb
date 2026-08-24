@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "text"
+require_relative "cooldown"
 ##
 # A Source knows how to list and fetch gems from a RubyGems marshal index.
 #
@@ -210,14 +211,8 @@ class Gem::Source
     return unless row
 
     value = row[Gem::CompactIndexClient::INFO_REQS].assoc("created_at")&.last&.first
-    return unless value.is_a?(String)
 
-    require "time"
-    begin
-      Time.iso8601(value)
-    rescue ArgumentError
-      nil
-    end
+    Gem::Cooldown.parse_created_at(value)
   end
 
   ##

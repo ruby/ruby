@@ -2731,7 +2731,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
     rb_gc_impl_each_object(rb_gc_get_objspace(), count_objects_i, &data);
 
     if (NIL_P(hash)) {
-        hash = rb_hash_new();
+        hash = rb_hash_new_capa(2 + T_MASK);
     }
     else if (!RHASH_EMPTY_P(hash)) {
         rb_hash_stlike_foreach(hash, set_zero, hash);
@@ -4183,9 +4183,12 @@ rb_gc_obj_foreign_p(VALUE obj)
 bool
 rb_gc_single_objspace_p(void)
 {
-    if (!rb_gc_impl_multi_objspace_p() || ruby_single_main_ractor) return true;
+    if (!rb_gc_impl_multi_objspace_p()) return true;
     rb_vm_t *vm = GET_VM();
-    return vm->ractor.cnt == 1 && vm->gc.zombie_objspaces_count == 0 && gc_absorbing_zombie == 0 &&
+    /* One Ractor is not one objspace: a forked child re-enters single-Ractor mode while
+     * the pre-fork Ractors' objspaces are still parked in zombie_objspaces. */
+    return (ruby_single_main_ractor != NULL || vm->ractor.cnt == 1) &&
+           vm->gc.zombie_objspaces_count == 0 && gc_absorbing_zombie == 0 &&
            !gc_absorbed_since_global_gc &&
            (vm->ractor.main_ractor == NULL ||
             vm->ractor.main_ractor->creating_child_objspace == NULL);

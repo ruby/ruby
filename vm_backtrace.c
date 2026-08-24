@@ -601,7 +601,7 @@ location_source_range_m(VALUE self)
     if (node_id == -1) {
         rb_raise(rb_eRuntimeError, "cannot get source range for location without a node ID");
     }
-    if (!ISEQ_BODY(iseq)->has_source_hash) {
+    if (!ISEQ_BODY(iseq)->source_hash) {
         rb_raise(rb_eRuntimeError, "cannot get source range because the source hash is unavailable");
     }
     uint64_t source_hash = ISEQ_BODY(iseq)->source_hash;

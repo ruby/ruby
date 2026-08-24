@@ -89,6 +89,30 @@ io_buffer_for_writing_modify_string(VALUE self, VALUE string)
     return rb_io_buffer_for_writing(string, io_buffer_modify_string, string);
 }
 
+static VALUE
+io_buffer_lock(VALUE self, VALUE buffer)
+{
+    return rb_io_buffer_lock(buffer);
+}
+
+static VALUE
+io_buffer_unlock(VALUE self, VALUE buffer)
+{
+    return rb_io_buffer_unlock(buffer);
+}
+
+static VALUE
+io_buffer_new_locked(VALUE self, VALUE size)
+{
+    return rb_io_buffer_new_locked(NULL, NUM2SIZET(size), RB_IO_BUFFER_INTERNAL);
+}
+
+static VALUE
+io_buffer_free_locked(VALUE self, VALUE buffer)
+{
+    return rb_io_buffer_free_locked(buffer);
+}
+
 void
 Init_io_buffer(void)
 {
@@ -102,4 +126,8 @@ Init_io_buffer(void)
     rb_define_singleton_method(mIOBuffer, "for_writing_set_string", io_buffer_for_writing_set_string, 2);
     rb_define_singleton_method(mIOBuffer, "for_writing_readonly?", io_buffer_for_writing_readonly_p, 1);
     rb_define_singleton_method(mIOBuffer, "for_writing_modify_string", io_buffer_for_writing_modify_string, 1);
+    rb_define_singleton_method(mIOBuffer, "lock", io_buffer_lock, 1);
+    rb_define_singleton_method(mIOBuffer, "unlock", io_buffer_unlock, 1);
+    rb_define_singleton_method(mIOBuffer, "new_locked", io_buffer_new_locked, 1);
+    rb_define_singleton_method(mIOBuffer, "free_locked", io_buffer_free_locked, 1);
 }

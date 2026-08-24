@@ -4,6 +4,7 @@
 #include "vm_core.h"
 #include "id_table.h"
 #include "vm_debug.h"
+#include "hrtime.h"
 
 #ifndef RACTOR_CHECK_MODE
 #define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
@@ -100,6 +101,9 @@ struct rb_ractor_struct {
         struct rb_thread_sched sched;
         rb_execution_context_t *running_ec;
         rb_thread_t *main;
+
+        // `main` is in rb_thread_terminate_all(), waiting for the others to go
+        bool terminating;
     } threads;
 
     /* Postponed jobs targeted at this Ractor
@@ -159,6 +163,7 @@ struct rb_ractor_struct {
 /* Mark the GC roots held in Ractor r's C structs (from the root scan in gc.c). */
 void rb_ractor_mark_local_roots(rb_ractor_t *r);
 void rb_ractor_mark_terminated_join_value(rb_ractor_t *r);
+void rb_ractor_reap_dead_ports(rb_ractor_t *r);
 
 /* Move src's registered_marks to dst and leave src empty (on join or when an orphan
  * is absorbed).  An absorb can run during a GC sweep, so the implementation uses raw
@@ -177,6 +182,9 @@ struct ractor_waiter {
     rb_thread_t *th;
     struct ccan_list_node node;
     rb_atomic_t event_serial;
+
+    // absolute deadline for this wait, NULL when there is no timeout
+    const rb_hrtime_t *end;
 };
 
 static inline VALUE
@@ -229,7 +237,7 @@ VALUE rb_ractor_ensure_shareable(VALUE obj, VALUE name);
 st_table *rb_ractor_targeted_hooks(rb_ractor_t *cr);
 
 RUBY_SYMBOL_EXPORT_BEGIN
-void rb_ractor_finish_marking(void);
+void rb_ractor_finish_marking(bool full_mark);
 
 bool rb_ractor_shareable_p_continue(VALUE obj);
 

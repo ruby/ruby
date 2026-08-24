@@ -1885,6 +1885,7 @@ rb_prepend_module(VALUE klass, VALUE module)
         if (subs_v) {
             struct rb_subclasses *subs = (struct rb_subclasses *)subs_v;
             VALUE *entries = rb_imemo_subclasses_entries(subs_v);
+            VALUE new_origins = 0;
             for (uint32_t i = 0; i < subs->count; i++) {
                 const VALUE subclass = entries[i];
                 if (!subclass) continue;
@@ -1900,10 +1901,20 @@ rb_prepend_module(VALUE klass, VALUE module)
                         RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(subclass));
                         RCLASS_WRITE_ORIGIN(subclass, origin);
                         RICLASS_SET_ORIGIN_SHARED_MTBL(origin);
+                        if (!new_origins) new_origins = rb_ary_hidden_new(1);
+                        rb_ary_push(new_origins, origin);
                     }
                     include_modules_at(subclass, subclass, module, FALSE);
                 }
             }
+            /* Register after the loop. Registering during it would visit the
+             * new iclass and prepend module into it a second time. */
+            if (new_origins) {
+                for (long i = 0; i < RARRAY_LEN(new_origins); i++) {
+                    rb_module_add_to_subclasses_list(klass, RARRAY_AREF(new_origins, i));
+                }
+            }
+            RB_GC_GUARD(new_origins);
         }
     }
 }

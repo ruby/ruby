@@ -1656,7 +1656,7 @@ fn gen_push_inline_frame(
         // Extract EP from the Proc instance
         let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
         let proc = unsafe { rb_jit_get_proc_ptr(procv) };
-        let proc_block = unsafe { &(*proc).block };
+        let proc_block = unsafe { (*proc).block.as_ref() };
         let capture = unsafe { proc_block.as_.captured.as_ref() };
         let bmethod_frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
         // Tag the captured EP like VM_GUARDED_PREV_EP() in vm_call_iseq_bmethod()
@@ -1796,7 +1796,7 @@ fn gen_send_iseq_direct(
         // Extract EP from the Proc instance
         let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
         let proc = unsafe { rb_jit_get_proc_ptr(procv) };
-        let proc_block = unsafe { &(*proc).block };
+        let proc_block = unsafe { (*proc).block.as_ref() };
         let capture = unsafe { proc_block.as_.captured.as_ref() };
         let bmethod_frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
         // Tag the captured EP like VM_GUARDED_PREV_EP() in vm_call_iseq_bmethod()
