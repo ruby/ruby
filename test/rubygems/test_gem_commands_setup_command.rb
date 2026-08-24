@@ -407,55 +407,128 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   def test_show_release_notes
-    @default_external = @ui.outs.external_encoding
-    @ui.outs.set_encoding Encoding::US_ASCII
+    @cmd.options[:previous_version] = "2.0.2"
 
-    @cmd.options[:previous_version] = Gem::Version.new "2.0.2"
-
-    File.open "CHANGELOG.md", "w" do |io|
-      io.puts <<-HISTORY_TXT
-# Changelog
-
-## #{Gem::VERSION} / 2013-03-26
-
-### Bug fixes:
-  * Fixed release note display for LANG=C when installing rubygems
-  * π is tasty
-
-## 2.0.2 / 2013-03-06
-
-### Bug fixes:
-  * Other bugs fixed
-
-## 2.0.1 / 2013-03-05
-
-### Bug fixes:
-  * Yet more bugs fixed
-      HISTORY_TXT
+    with_gem_version "4.0.19" do
+      use_ui @ui do
+        @cmd.show_release_notes
+      end
     end
 
-    use_ui @ui do
-      @cmd.show_release_notes
+    expected = "See https://github.com/ruby/rubygems/blob/v4.0.19/CHANGELOG.md for the changes since 2.0.2.\n"
+
+    assert_equal expected, @ui.output
+  end
+
+  def test_show_release_notes_dev_version
+    @cmd.options[:previous_version] = "2.0.2"
+
+    with_gem_version "4.1.0.dev" do
+      use_ui @ui do
+        @cmd.show_release_notes
+      end
     end
 
-    expected = <<-EXPECTED
-## #{Gem::VERSION} / 2013-03-26
+    expected = "See https://github.com/ruby/rubygems/blob/master/CHANGELOG.md for the changes since 2.0.2.\n"
 
-### Bug fixes:
-  * Fixed release note display for LANG=C when installing rubygems
-  * π is tasty
+    assert_equal expected, @ui.output
+  end
 
-    EXPECTED
+  def test_show_release_notes_released_prerelease
+    @cmd.options[:previous_version] = "2.0.2"
 
-    output = @ui.output
-    output.force_encoding Encoding::UTF_8
+    with_gem_version "4.1.0.beta1" do
+      use_ui @ui do
+        @cmd.show_release_notes
+      end
+    end
 
-    assert_equal expected, output
-  ensure
-    @ui.outs.set_encoding @default_external if @default_external
+    expected = "See https://github.com/ruby/rubygems/blob/v4.1.0.beta1/CHANGELOG.md for the changes since 2.0.2.\n"
+
+    assert_equal expected, @ui.output
+  end
+
+  def test_show_release_notes_downgrade
+    @cmd.handle_options ["--previous-version", "4.0.19"]
+
+    with_gem_version "4.0.10" do
+      use_ui @ui do
+        @cmd.show_release_notes
+      end
+    end
+
+    expected = "See https://github.com/ruby/rubygems/blob/v4.0.10/CHANGELOG.md for the changes.\n"
+
+    assert_equal expected, @ui.output
+  end
+
+  def test_show_release_notes_same_version
+    @cmd.handle_options ["--previous-version", "4.0.19"]
+
+    with_gem_version "4.0.19" do
+      use_ui @ui do
+        @cmd.show_release_notes
+      end
+    end
+
+    expected = "See https://github.com/ruby/rubygems/blob/v4.0.19/CHANGELOG.md for the changes.\n"
+
+    assert_equal expected, @ui.output
+  end
+
+  def test_show_release_notes_whitespace_previous_version
+    @cmd.handle_options ["--previous-version", " 2.0.2\r"]
+
+    with_gem_version "4.0.19" do
+      use_ui @ui do
+        @cmd.show_release_notes
+      end
+    end
+
+    expected = "See https://github.com/ruby/rubygems/blob/v4.0.19/CHANGELOG.md for the changes since 2.0.2.\n"
+
+    assert_equal expected, @ui.output
+  end
+
+  def test_show_release_notes_invalid_previous_version
+    @cmd.handle_options ["--previous-version", "\e[31mnot-a-version"]
+
+    with_gem_version "4.0.19" do
+      use_ui @ui do
+        @cmd.show_release_notes
+      end
+    end
+
+    expected = "See https://github.com/ruby/rubygems/blob/v4.0.19/CHANGELOG.md for the changes.\n"
+
+    assert_equal expected, @ui.output
+  end
+
+  def test_show_release_notes_without_previous_version
+    @cmd.options[:previous_version] = ""
+
+    with_gem_version "4.0.19" do
+      use_ui @ui do
+        @cmd.show_release_notes
+      end
+    end
+
+    expected = "See https://github.com/ruby/rubygems/blob/v4.0.19/CHANGELOG.md for the changes.\n"
+
+    assert_equal expected, @ui.output
   end
 
   private
+
+  def with_gem_version(version)
+    original = Gem::VERSION
+    Gem.send :remove_const, :VERSION
+    Gem.const_set :VERSION, version
+    yield
+  ensure
+    Gem.send :remove_const, :VERSION
+    Gem.const_set :VERSION, original
+  end
 
   def create_dummy_files(list)
     list.each do |file|
