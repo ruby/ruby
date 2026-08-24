@@ -6170,7 +6170,7 @@ impl Function {
             changed = false;
 
             for (row, block) in param_values.iter_mut().zip(&self.blocks) {
-                row.resize(block.params.len(), ParamValue::None);
+                *row = vec![ParamValue::None; block.params.len()];
             }
 
             // Scan through each jump, collecting edges with params to analyze from CondBranch and Jump insns.

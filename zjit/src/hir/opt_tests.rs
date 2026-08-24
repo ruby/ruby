@@ -9649,11 +9649,11 @@ mod hir_opt_tests {
         bb6():
           v18:Truthy = RefineType v10, Truthy
           v20:FalseClass = Const Value(false)
-          Jump bb5(v9, v18, v20)
+          Jump bb5(v18, v20)
         bb4():
           v27:NilClass = Const Value(nil)
-          Jump bb5(v9, v16, v27)
-        bb5(v29:BasicObject, v30:BasicObject, v31:Falsy):
+          Jump bb5(v16, v27)
+        bb5(v30:BasicObject, v31:Falsy):
           v36:CBool = HasType v31, FalseClass
           CondBranch v36, bb8(), bb9()
         bb8():
@@ -18597,9 +18597,9 @@ mod hir_opt_tests {
           CondBranch v17, bb9(), bb4()
         bb9():
           v35:Fixnum[0] = Const Value(0)
-          Jump bb8(v8, v35)
-        bb8(v48:BasicObject, v49:Fixnum):
-          v52:Array = RefineType v48, Array
+          Jump bb8(v35)
+        bb8(v49:Fixnum):
+          v52:Array = RefineType v8, Array
           v53:CInt64 = ArrayLength v52
           v54:Fixnum = BoxFixnum v53
           v55:BoolExact = FixnumGe v49, v54
@@ -18607,9 +18607,9 @@ mod hir_opt_tests {
           CondBranch v57, bb11(), bb7()
         bb11():
           CheckInterrupts
-          Return v48
+          Return v8
         bb7():
-          v75:Array = RefineType v48, Array
+          v75:Array = RefineType v8, Array
           v76:CInt64 = UnboxFixnum v49
           v77:BasicObject = ArrayAref v75, v76
           v79:CPtr = GetEP 0
@@ -18625,7 +18625,7 @@ mod hir_opt_tests {
           v92:Fixnum[1] = Const Value(1)
           v93:Fixnum = FixnumAdd v49, v92
           PatchPoint NoEPEscape(each)
-          Jump bb8(v48, v93)
+          Jump bb8(v93)
         bb4():
           v28:BasicObject = InvokeBuiltin <inline_expr>, v8
           CheckInterrupts
@@ -21940,8 +21940,8 @@ mod hir_opt_tests {
           Jump bb3(v5, v6)
         bb3(v8:BasicObject, v9:NilClass):
           v13:Fixnum[0] = Const Value(0)
-          Jump bb5(v8, v13)
-        bb5(v18:BasicObject, v19:Fixnum):
+          Jump bb5(v13)
+        bb5(v19:Fixnum):
           v23:Fixnum[10] = Const Value(10)
           PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
           v58:BoolExact = FixnumLt v19, v23
@@ -21952,7 +21952,7 @@ mod hir_opt_tests {
           v48:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, +@0x1038, cme:0x1040)
           v62:Fixnum = FixnumAdd v19, v48
-          Jump bb5(v18, v62)
+          Jump bb5(v62)
         bb6():
           CheckInterrupts
           Return v19
