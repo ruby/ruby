@@ -32,6 +32,11 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 128, IO::Buffer::READONLY
   end
 
+  def test_map_alignment
+    assert_kind_of Integer, IO::Buffer::MAP_ALIGNMENT
+    assert_positive IO::Buffer::MAP_ALIGNMENT
+  end
+
   def test_internal_for_reading_with_string
     string = "hello"
 
@@ -211,6 +216,33 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal Encoding::BINARY, contents.encoding
   end
 
+  def test_file_mapped_with_aligned_offset
+    alignment = IO::Buffer::MAP_ALIGNMENT
+
+    Tempfile.create do |file|
+      file.binmode
+      file.write("\0" * alignment)
+      file.write("test")
+      file.flush
+
+      buffer = IO::Buffer.map(file, 4, alignment, IO::Buffer::READONLY)
+      assert_equal "test", buffer.get_string
+    ensure
+      buffer&.free
+    end
+  end
+
+  def test_file_mapped_with_unaligned_offset
+    alignment = IO::Buffer::MAP_ALIGNMENT
+    message = "Offset (1) must be a multiple of IO::Buffer::MAP_ALIGNMENT (#{alignment})!"
+
+    File.open(__FILE__) do |file|
+      assert_raise_with_message(ArgumentError, message) do
+        IO::Buffer.map(file, 1, 1, IO::Buffer::READONLY)
+      end
+    end
+  end
+
   def test_file_mapped_size_too_large
     size = File.size(__FILE__) + 1
     file_size = File.size(__FILE__)
@@ -236,19 +268,19 @@ class TestIOBuffer < Test::Unit::TestCase
 
   def test_file_mapped_offset_too_large
     file_size = File.size(__FILE__)
-    page_count = file_size / IO::Buffer::PAGE_SIZE
-    offset = IO::Buffer::PAGE_SIZE * (page_count + 1)
+    alignment_count = file_size / IO::Buffer::MAP_ALIGNMENT
+    offset = IO::Buffer::MAP_ALIGNMENT * (alignment_count + 1)
     message = "Offset (#{offset}) can't be larger than file size (#{file_size})"
     assert_raise_with_message ArgumentError, message do
       File.open(__FILE__) {|file| IO::Buffer.map(file, nil, offset, IO::Buffer::READONLY)}
     end
 
-    if page_count > 0
-      offset = IO::Buffer::PAGE_SIZE * page_count
+    if alignment_count > 0
+      offset = IO::Buffer::MAP_ALIGNMENT * alignment_count
       available_size = file_size - offset
       size = available_size + 1
-      maximum_page_count = (file_size - size) / IO::Buffer::PAGE_SIZE
-      maximum_offset = IO::Buffer::PAGE_SIZE * maximum_page_count
+      maximum_alignment_count = (file_size - size) / IO::Buffer::MAP_ALIGNMENT
+      maximum_offset = IO::Buffer::MAP_ALIGNMENT * maximum_alignment_count
       message = "Offset (#{offset}) can't be larger than #{maximum_offset} " +
                 "for requested size (#{size})"
       assert_raise_with_message ArgumentError, message do

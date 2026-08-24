@@ -29,6 +29,9 @@ RUBY_EXTERN VALUE rb_cIOBuffer;
 // The operating system page size.
 RUBY_EXTERN size_t RUBY_IO_BUFFER_PAGE_SIZE;
 
+// The alignment required for file mapping offsets.
+RUBY_EXTERN size_t RUBY_IO_BUFFER_MAP_ALIGNMENT;
+
 // The default buffer size, usually a (small) multiple of the page size.
 // Can be overridden by the RUBY_IO_BUFFER_DEFAULT_SIZE environment variable.
 RUBY_EXTERN size_t RUBY_IO_BUFFER_DEFAULT_SIZE;
