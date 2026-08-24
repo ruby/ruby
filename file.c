@@ -1945,13 +1945,19 @@ rb_file_socket_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.blockdev?(filepath) -> true or false
+ *   File.blockdev?(object) -> true or false
  *
- * Returns +true+ if +filepath+ points to a block device, +false+ otherwise:
+ * Returns whether +object+ (a path or IO object)
+ * represents a block device (i.e., a direct-access device):
  *
- *   File.blockdev?('/dev/sda1')       # => true
- *   File.blockdev?(File.new('t.tmp')) # => false
+ *   File.blockdev?('/dev/nvme0n1') # => true
+ *   File.blockdev?('/dev/loop0')   # => true
+ *   File.blockdev?('/dev/tty')     # => false
+ *   File.blockdev?('/dev/null')    # => false
+ *   File.blockdev?('nosuch')       # => false
+ *   File.blockdev?($stdin)         # => false
  *
+ * The returned value is filesystem-dependent; on Windows, always +false+.
  */
 
 static VALUE

@@ -2220,7 +2220,7 @@ class Pathname    # * FileTest *
   # Pathname($stdin).blockdev?         # => false
   # ```
   #
-  # The returned value is OS-dependent; on Windows, almost always `false`.
+  # The returned value is filesystem-dependent; on Windows, always `false`.
   def blockdev?() FileTest.blockdev?(@path) end
 
   # :markup: markdown
