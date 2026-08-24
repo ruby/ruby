@@ -2307,10 +2307,9 @@ rb_ary_to_ary(VALUE obj)
 }
 
 static void
-rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
+rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen, int self_insert)
 {
     long olen;
-    long rofs;
 
     if (len < 0) rb_raise(rb_eIndexError, "negative length (%ld)", len);
     olen = RARRAY_LEN(ary);
@@ -2325,11 +2324,6 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
         len = olen - beg;
     }
 
-    {
-        const VALUE *optr = RARRAY_CONST_PTR(ary);
-        rofs = (rptr >= optr && rptr < optr + olen) ? rptr - optr : -1;
-    }
-
     if (beg >= olen) {
         VALUE target_ary;
         if (beg > ARY_MAX_SIZE - rlen) {
@@ -2339,7 +2333,8 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
         len = beg + rlen;
         ary_mem_clear(ary, olen, beg - olen);
         if (rlen > 0) {
-            if (rofs != -1) rptr = RARRAY_CONST_PTR(ary) + rofs;
+            /* ary's storage may have moved; only ary itself needs re-deriving. */
+            if (self_insert) rptr = RARRAY_CONST_PTR(ary);
             ary_memcpy0(ary, beg, rlen, rptr, target_ary);
         }
         ARY_SET_LEN(ary, len);
@@ -2363,13 +2358,13 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
             ARY_SET_LEN(ary, alen);
         }
         if (rlen > 0) {
-            if (rofs == -1) {
+            if (!self_insert) {
                 rb_gc_writebarrier_remember(ary);
             }
             else {
                 /* In this case, we're copying from a region in this array, so
                  * we don't need to fire the write barrier. */
-                rptr = RARRAY_CONST_PTR(ary) + rofs;
+                rptr = RARRAY_CONST_PTR(ary);
             }
 
             /* do not use RARRAY_PTR() because it can causes GC.
@@ -2469,7 +2464,7 @@ static VALUE
 ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
 {
     VALUE rpl = rb_ary_to_ary(val);
-    rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR(rpl), RARRAY_LEN(rpl));
+    rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR(rpl), RARRAY_LEN(rpl), ary == rpl);
     RB_GC_GUARD(rpl);
     return val;
 }
@@ -2699,7 +2694,7 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
         }
         pos++;
     }
-    rb_ary_splice(ary, pos, 0, argv + 1, argc - 1);
+    rb_ary_splice(ary, pos, 0, argv + 1, argc - 1, FALSE);
     return ary;
 }
 
@@ -4423,7 +4418,7 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
     }
     else {
         VALUE arg2 = rb_ary_new4(len, RARRAY_CONST_PTR(ary)+pos);
-        rb_ary_splice(ary, pos, len, 0, 0);
+        rb_ary_splice(ary, pos, len, 0, 0, FALSE);
         return arg2;
     }
 }
@@ -5270,7 +5265,7 @@ ary_append(VALUE x, VALUE y)
 {
     long n = RARRAY_LEN(y);
     if (n > 0) {
-        rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR(y), n);
+        rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR(y), n, x == y);
     }
     RB_GC_GUARD(y);
     return x;
