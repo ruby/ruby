@@ -2761,7 +2761,7 @@ mod hir_opt_tests {
 
         function.eliminate_dead_code();
 
-        let insns = &function.blocks[block.to_usize()].insns;
+        let insns = &function.blocks[block].insns;
         assert!(insns.contains(&comment));
         assert!(!insns.contains(&dead_const));
     }
