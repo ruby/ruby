@@ -1700,10 +1700,8 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     }
 
 #if VM_INSN_INFO_TABLE_IMPL == 2
-    if (ISEQ_BODY(iseq)->insns_info.succ_index_table == NULL) {
-        debugs("[compile step 7 (rb_iseq_insns_info_encode_positions)] \n");
-        rb_iseq_insns_info_encode_positions(iseq);
-    }
+    debugs("[compile step 7 (rb_iseq_insns_info_encode_positions)] \n");
+    rb_iseq_insns_info_encode_positions(iseq);
 #endif
 
     if (compile_debug > 1) {
@@ -2976,12 +2974,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     /* get rid of memory leak when REALLOC failed */
     body->insns_info.body = insns_info;
-    body->insns_info.positions = positions;
+    body->insns_info.positions_or_succ_index_table.positions = positions;
 
     SIZED_REALLOC_N(insns_info, struct iseq_insn_info_entry, insns_info_index, insns_info_size);
     body->insns_info.body = insns_info;
     SIZED_REALLOC_N(positions, unsigned int, insns_info_index, positions_size);
-    body->insns_info.positions = positions;
+    body->insns_info.positions_or_succ_index_table.positions = positions;
     body->insns_info.size = insns_info_index;
 
     return COMPILE_OK;
@@ -14044,7 +14042,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->param.keyword        = ibf_load_param_keyword(load, param_keyword_offset);
     load_body->param.flags.has_kw   = (param_flags >> 4) & 1;
     load_body->insns_info.body      = ibf_load_insns_info_body(load, insns_info_body_offset, insns_info_size);
-    load_body->insns_info.positions = ibf_load_insns_info_positions(load, insns_info_positions_offset, insns_info_size);
+    load_body->insns_info.positions_or_succ_index_table.positions = ibf_load_insns_info_positions(load, insns_info_positions_offset, insns_info_size);
     load_body->local_table          = ibf_load_local_table(load, local_table_offset, local_table_size);
     load_body->lvar_states          = ibf_load_lvar_states(load, lvar_states_offset, local_table_size, load_body->local_table);
     ibf_load_catch_table(load, catch_table_offset, catch_table_size, iseq);

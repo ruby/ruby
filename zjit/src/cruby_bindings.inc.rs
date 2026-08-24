@@ -1260,11 +1260,16 @@ pub struct rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword {
     pub default_values: *mut VALUE,
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct rb_iseq_constant_body_iseq_insn_info {
     pub body: *const iseq_insn_info_entry,
-    pub positions: *mut ::std::os::raw::c_uint,
+    pub positions_or_succ_index_table: rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1,
     pub size: ::std::os::raw::c_uint,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1 {
+    pub positions: *mut ::std::os::raw::c_uint,
     pub succ_index_table: *mut succ_index_table,
 }
 #[repr(C)]
@@ -2094,7 +2099,7 @@ pub struct zjit_jit_frame {
     pub stack: __IncompleteArrayField<VALUE>,
 }
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
-pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 288;
+pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 280;
 pub const RUBY_OFFSET_THREAD_RACTOR: zjit_struct_offsets = 24;
 pub type zjit_struct_offsets = u32;
 #[repr(C)]

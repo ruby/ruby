@@ -504,11 +504,13 @@ struct rb_iseq_constant_body {
     /* insn info, must be freed */
     struct iseq_insn_info {
         const struct iseq_insn_info_entry *body;
-        unsigned int *positions;
-        unsigned int size;
+        union {
+            unsigned int *positions;
 #if VM_INSN_INFO_TABLE_IMPL == 2
-        struct succ_index_table *succ_index_table;
+            struct succ_index_table *succ_index_table;
 #endif
+        } positions_or_succ_index_table;
+        unsigned int size;
     } insns_info;
 
     const ID *local_table;		/* must free */
