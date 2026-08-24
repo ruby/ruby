@@ -50,6 +50,39 @@ describe "IO::Buffer#valid?" do
       slice.valid?.should == true
     end
 
+    ruby_version_is "4.1" do
+      it "is true for an empty slice of an empty buffer" do
+        @buffer = IO::Buffer.new(0)
+        slice = @buffer.slice(0, 0)
+
+        slice.valid?.should == true
+        slice.get_string.should == ""
+      end
+
+      it "tracks whether its empty range exists in the source" do
+        @buffer = IO::Buffer.new(0)
+        slice = @buffer.slice(0, 0)
+
+        slice.valid?.should == true
+
+        @buffer.resize(1)
+        slice.valid?.should == false
+        -> { slice.get_string }.should.raise(IO::Buffer::InvalidatedError)
+
+        @buffer.resize(0)
+        slice.valid?.should == true
+        slice.get_string.should == ""
+      end
+
+      it "is false when its empty range no longer belongs to the source" do
+        @buffer = IO::Buffer.new(1)
+        slice = @buffer.slice(1, 0)
+
+        @buffer.resize(0)
+        slice.valid?.should == false
+      end
+    end
+
     context "when buffer is resized" do
       it "is false when slice becomes outside the buffer" do
         @buffer = IO::Buffer.new(4)
