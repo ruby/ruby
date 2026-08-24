@@ -843,6 +843,8 @@ class TestResolvDNS < Test::Unit::TestCase
           assert_raise(Resolv::ResolvTimeout) do
             requester.request(sender, 2)
           end
+          # The peer went away, so this connection cannot carry another request.
+          assert_equal(false, requester.reusable?)
         ensure
           requester.close
         end
@@ -1147,5 +1149,110 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
+  # A frame read that gives up part way through a frame leaves the stream
+  # between frame boundaries, so the retry has to start from a new connection.
+  def test_truncated_tcp_fallback_retries_on_a_new_connection
+    with_udp_and_tcp('127.0.0.1', 0) do |u, t|
+      _, server_port, _, server_address = u.addr
 
+      client_thread = Thread.new do
+        Resolv::DNS.open(nameserver_port: [[server_address, server_port]],
+                         raise_timeout_errors: true) do |dns|
+          dns.timeouts = [EnvUtil.apply_timeout_scale(1),
+                          EnvUtil.apply_timeout_scale(3)]
+          Timeout.timeout(EnvUtil.apply_timeout_scale(20)) do
+            dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+          end
+        end
+      end
+
+      udp_server_thread = Thread.new do
+        msg, (_, client_port, _, client_address) =
+          Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
+        id, word2, = msg.unpack('nnnnnn')
+        opcode = (word2 & 0x7800) >> 11
+        rd = (word2 & 0x0100) >> 8
+        qr = 1
+        tc = 1 # ask the client to retry over TCP
+        ra = 1
+        word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
+        u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
+      end
+
+      tcp_server_thread = Thread.new do
+        partial = accept_within_timeout(t)
+        begin
+          read_framed_query(partial)
+          partial.write([45].pack('n') << 'abcdef') # 6 bytes of a 45 byte message
+          complete = accept_within_timeout(t)
+          begin
+            complete.write(framed(reply_for_query(read_framed_query(complete), '192.0.2.1')))
+          ensure
+            complete.close
+          end
+        ensure
+          partial.close
+        end
+      end
+
+      result, = assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
+      assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
+    end
+  end
+
+  # A timeout with no bytes read leaves the stream on a frame boundary, so the
+  # retry keeps the connection.  The reply below only ever reaches the client if
+  # the second attempt reuses the socket the first one opened.
+  def test_truncated_tcp_fallback_keeps_the_connection_when_nothing_arrived
+    with_udp_and_tcp('127.0.0.1', 0) do |u, t|
+      _, server_port, _, server_address = u.addr
+      done = Thread::Queue.new
+
+      client_thread = Thread.new do
+        begin
+          Resolv::DNS.open(nameserver_port: [[server_address, server_port]],
+                           raise_timeout_errors: true) do |dns|
+            dns.timeouts = [EnvUtil.apply_timeout_scale(0.5),
+                            EnvUtil.apply_timeout_scale(5)]
+            Timeout.timeout(EnvUtil.apply_timeout_scale(20)) do
+              dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+            end
+          end
+        ensure
+          done.push(true)
+        end
+      end
+
+      udp_server_thread = Thread.new do
+        msg, (_, client_port, _, client_address) =
+          Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
+        id, word2, = msg.unpack('nnnnnn')
+        opcode = (word2 & 0x7800) >> 11
+        rd = (word2 & 0x0100) >> 8
+        qr = 1
+        tc = 1 # ask the client to retry over TCP
+        ra = 1
+        word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
+        u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
+      end
+
+      tcp_server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          query = read_framed_query(ct)
+          # Stay silent past the first interval, then answer on this connection.
+          # It has to stay open until the client is done: the retry resends the
+          # query, and closing with that still unread would discard the reply.
+          sleep EnvUtil.apply_timeout_scale(1)
+          ct.write(framed(reply_for_query(query, '192.0.2.1')))
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      result, = assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
+      assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
+    end
+  end
 end
