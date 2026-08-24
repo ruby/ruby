@@ -93,15 +93,9 @@ impl std::fmt::Display for InsnId {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
 pub struct BlockId(pub u32);
 
-impl IntoUsize for BlockId {
-    fn to_usize(self) -> usize {
-        self.0.to_usize()
-    }
-}
-
 impl From<BlockId> for usize {
     fn from(val: BlockId) -> Self {
-        val.to_usize()
+        val.0.to_usize()
     }
 }
 
@@ -109,6 +103,28 @@ impl From<usize> for BlockId {
     fn from(val: usize) -> Self {
         BlockId(val.try_into().expect("BlockId should fit in u32"))
     }
+}
+
+impl<T> std::ops::Index<BlockId> for [T] {
+    type Output = T;
+    #[inline]
+    fn index(&self, i: BlockId) -> &T { &self[usize::from(i)] }
+}
+
+impl<T> std::ops::IndexMut<BlockId> for [T] {
+    #[inline]
+    fn index_mut(&mut self, i: BlockId) -> &mut T { &mut self[usize::from(i)] }
+}
+
+impl<T> std::ops::Index<BlockId> for Vec<T> {
+    type Output = T;
+    #[inline]
+    fn index(&self, i: BlockId) -> &T { &self[usize::from(i)] }
+}
+
+impl<T> std::ops::IndexMut<BlockId> for Vec<T> {
+    #[inline]
+    fn index_mut(&mut self, i: BlockId) -> &mut T { &mut self[usize::from(i)] }
 }
 
 impl std::fmt::Display for BlockId {
@@ -3048,9 +3064,9 @@ impl Function {
         let is_param = matches!(insn, Insn::Param);
         let id = self.new_insn(insn);
         if is_param {
-            self.blocks[block.to_usize()].params.push(id);
+            self.blocks[block].params.push(id);
         } else {
-            self.blocks[block.to_usize()].insns.push(id);
+            self.blocks[block].insns.push(id);
         }
         id
     }
@@ -3190,7 +3206,7 @@ impl Function {
 
     // Add an instruction to an SSA block
     fn push_insn_id(&mut self, block: BlockId, insn_id: InsnId) -> InsnId {
-        self.blocks[block.to_usize()].insns.push(insn_id);
+        self.blocks[block].insns.push(insn_id);
         insn_id
     }
 
@@ -3281,7 +3297,7 @@ impl Function {
         // produces no value, and `make_equal_to` asserts `has_output()`. So the instruction stored
         // at this id is always the terminator itself, and reading it by reference matches what
         // `find` would return.
-        let terminator = &self.insns[*self.blocks[block.to_usize()].insns.last().unwrap()];
+        let terminator = &self.insns[*self.blocks[block].insns.last().unwrap()];
 
         let (first, second, rest): (Option<BlockId>, Option<BlockId>, &[BlockId]) = match terminator {
             Insn::CondBranch { if_true, if_false, .. } => (Some(if_true.target), Some(if_false.target), &[]),
@@ -3302,12 +3318,12 @@ impl Function {
 
     /// Return a reference to the Block at the given index.
     pub fn block(&self, block_id: BlockId) -> &Block {
-        &self.blocks[block_id.to_usize()]
+        &self.blocks[block_id]
     }
 
     /// Return a reference to the entry block.
     pub fn entry_block(&self) -> &Block {
-        &self.blocks[self.entry_block.to_usize()]
+        &self.blocks[self.entry_block]
     }
 
     /// Return the number of blocks
@@ -3655,7 +3671,7 @@ impl Function {
     /// Copy self.param_types to the param types of jit_entry_blocks.
     fn copy_param_types(&mut self) {
         for jit_entry_block in self.jit_entry_blocks.iter() {
-            let entry_params = self.blocks[jit_entry_block.to_usize()].params.iter();
+            let entry_params = self.blocks[*jit_entry_block].params.iter();
             let param_types = self.param_types.iter();
             assert!(
                 param_types.len() >= entry_params.len(),
@@ -3717,7 +3733,7 @@ impl Function {
         // includes reachable blocks. Any blocks not present in `rpo` default to `usize::MAX`.
         let mut rpo_order = vec![usize::MAX; self.blocks.len()];
         for (idx, &block_id) in rpo.iter().enumerate() {
-            rpo_order[block_id.to_usize()] = idx;
+            rpo_order[block_id] = idx;
         }
         loop {
             let mut changed = false;
@@ -3725,8 +3741,8 @@ impl Function {
             let mut num_instructions = 0;
             for (rpo_index, &block) in rpo.iter().enumerate() {
                 if !reachable.get(block) { continue; }
-                for i in 0..self.blocks[block.to_usize()].insns.len() {
-                    let insn_id = self.blocks[block.to_usize()].insns[i];
+                for i in 0..self.blocks[block].insns.len() {
+                    let insn_id = self.blocks[block].insns[i];
                     if self.insns[insn_id].counts_against_inlining_budget() {
                         num_instructions += 1;
                     }
@@ -3742,19 +3758,19 @@ impl Function {
                                 // params of `target` itself).
                                 let arg_types: Vec<Type> = if_true.args.iter().map(|a| self.type_of(*a)).collect();
                                 for (idx, arg_type) in arg_types.into_iter().enumerate() {
-                                    let param = self.blocks[if_true.target.to_usize()].params[idx];
+                                    let param = self.blocks[if_true.target].params[idx];
                                     changed |= set_type!(param, self.type_of(param).union(arg_type));
                                 }
-                                traversed_back_edge |= rpo_order[if_true.target.to_usize()] <= rpo_index;
+                                traversed_back_edge |= rpo_order[if_true.target] <= rpo_index;
                             }
                             if self.type_of(*val).could_be(Type::from_cbool(false)) {
                                 reachable.insert(if_false.target);
                                 let arg_types: Vec<Type> = if_false.args.iter().map(|a| self.type_of(*a)).collect();
                                 for (idx, arg_type) in arg_types.into_iter().enumerate() {
-                                    let param = self.blocks[if_false.target.to_usize()].params[idx];
+                                    let param = self.blocks[if_false.target].params[idx];
                                     changed |= set_type!(param, self.type_of(param).union(arg_type));
                                 }
-                                traversed_back_edge |= rpo_order[if_false.target.to_usize()] <= rpo_index;
+                                traversed_back_edge |= rpo_order[if_false.target] <= rpo_index;
                             }
                             continue;
                         }
@@ -3762,10 +3778,10 @@ impl Function {
                             reachable.insert(target);
                             let arg_types: Vec<Type> = args.iter().map(|a| self.type_of(*a)).collect();
                             for (idx, arg_type) in arg_types.into_iter().enumerate() {
-                                let param = self.blocks[target.to_usize()].params[idx];
+                                let param = self.blocks[target].params[idx];
                                 changed |= set_type!(param, self.type_of(param).union(arg_type));
                             }
-                            traversed_back_edge |= rpo_order[target.to_usize()] <= rpo_index;
+                            traversed_back_edge |= rpo_order[target] <= rpo_index;
                             continue;
                         }
                         Insn::Entries { targets } => {
@@ -4391,8 +4407,8 @@ impl Function {
         if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
             // Copy contents of tmp_block to block
             assert_ne!(block, tmp_block);
-            let insns = std::mem::take(&mut self.blocks[tmp_block.to_usize()].insns);
-            self.blocks[block.to_usize()].insns.extend(insns);
+            let insns = std::mem::take(&mut self.blocks[tmp_block].insns);
+            self.blocks[block].insns.extend(insns);
             self.count(block, Counter::inline_cfunc_optimized_send_count);
             if self.type_of(replacement).bit_equal(types::Any) {
                 // Not set yet; infer type
@@ -4460,8 +4476,8 @@ impl Function {
     /// Also try and inline constant caches, specialize object allocations, and more.
     fn type_specialize(&mut self) {
         for block in self.reverse_post_order() {
-            let old_insns = std::mem::take(&mut self.blocks[block.to_usize()].insns);
-            assert!(self.blocks[block.to_usize()].insns.is_empty());
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
+            assert!(self.blocks[block].insns.is_empty());
             for insn_id in old_insns {
                 let resolved = self.resolve(insn_id);
                 match resolved.insn(self) {
@@ -4893,8 +4909,8 @@ impl Function {
                                             if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
                                                 // Copy contents of tmp_block to block
                                                 assert_ne!(block, tmp_block);
-                                                let insns = std::mem::take(&mut fun.blocks[tmp_block.to_usize()].insns);
-                                                fun.blocks[block.to_usize()].insns.extend(insns);
+                                                let insns = std::mem::take(&mut fun.blocks[tmp_block].insns);
+                                                fun.blocks[block].insns.extend(insns);
                                                 fun.count(block, Counter::inline_cfunc_optimized_send_count);
                                                 fun.make_equal_to(send_insn_id, replacement);
                                                 if fun.type_of(replacement).bit_equal(types::Any) {
@@ -4960,8 +4976,8 @@ impl Function {
                                             if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
                                                 // Copy contents of tmp_block to block
                                                 assert_ne!(block, tmp_block);
-                                                let insns = std::mem::take(&mut fun.blocks[tmp_block.to_usize()].insns);
-                                                fun.blocks[block.to_usize()].insns.extend(insns);
+                                                let insns = std::mem::take(&mut fun.blocks[tmp_block].insns);
+                                                fun.blocks[block].insns.extend(insns);
                                                 fun.count(block, Counter::inline_cfunc_optimized_send_count);
                                                 fun.make_equal_to(send_insn_id, replacement);
                                                 if fun.type_of(replacement).bit_equal(types::Any) {
@@ -5242,8 +5258,8 @@ impl Function {
                                     if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
                                         // Copy contents of tmp_block to block
                                         assert_ne!(block, tmp_block);
-                                        let insns = std::mem::take(&mut self.blocks[tmp_block.to_usize()].insns);
-                                        self.blocks[block.to_usize()].insns.extend(insns);
+                                        let insns = std::mem::take(&mut self.blocks[tmp_block].insns);
+                                        self.blocks[block].insns.extend(insns);
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
                                         self.make_equal_to(insn_id, replacement);
                                         if self.type_of(replacement).bit_equal(types::Any) {
@@ -5292,8 +5308,8 @@ impl Function {
                                     if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
                                         // Copy contents of tmp_block to block
                                         assert_ne!(block, tmp_block);
-                                        let insns = std::mem::take(&mut self.blocks[tmp_block.to_usize()].insns);
-                                        self.blocks[block.to_usize()].insns.extend(insns);
+                                        let insns = std::mem::take(&mut self.blocks[tmp_block].insns);
+                                        self.blocks[block].insns.extend(insns);
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
                                         self.make_equal_to(insn_id, replacement);
                                         if self.type_of(replacement).bit_equal(types::Any) {
@@ -5470,14 +5486,14 @@ impl Function {
             // inlinable SendDirect in the same block still gets a chance.
             let mut search_start = 0;
             loop {
-                let Some(offset) = self.blocks[block.to_usize()].insns[search_start..].iter()
+                let Some(offset) = self.blocks[block].insns[search_start..].iter()
                     .position(|&id| self.is_send_direct(id))
                 else {
                     break;
                 };
                 let send_pos = search_start + offset;
 
-                let send_insn_id = self.blocks[block.to_usize()].insns[send_pos];
+                let send_insn_id = self.blocks[block].insns[send_pos];
                 let send = self.resolve(send_insn_id);
                 let Insn::SendDirect(data) = send.insn(self)
                 else {
@@ -5591,7 +5607,7 @@ impl Function {
                 // constants land in `block` at the correct position (after the
                 // pre-Send body, before the PushLightweightFrame and Jump we add
                 // last).
-                let tail = self.blocks[block.to_usize()].insns.split_off(send_pos);
+                let tail = self.blocks[block].insns.split_off(send_pos);
                 debug_assert!(self.is_send_direct(tail[0]));
 
                 let omitted_opt_num = opt_num - passed_opt_num;
@@ -5626,7 +5642,7 @@ impl Function {
                 //     same value back to the runtime frame so a resuming interpreter sees
                 //     the correct bitmask.
                 //   * any remaining non-parameter locals are nil-initialized.
-                let callee_body_params: Vec<InsnId> = self.blocks[callee_entry_body_block.to_usize()].params.clone();
+                let callee_body_params: Vec<InsnId> = self.blocks[callee_entry_body_block].params.clone();
 
                 // First param is self.
                 if !callee_body_params.is_empty() {
@@ -5667,7 +5683,7 @@ impl Function {
                 // Clear the callee body entry block's params since we've aliased
                 // them via make_equal_to rather than passing them as branch
                 // arguments. This keeps validation happy (the Jump passes 0 args).
-                self.blocks[callee_entry_body_block.to_usize()].params.clear();
+                self.blocks[callee_entry_body_block].params.clear();
 
                 // Set up the continuation block: a single Param merges all return
                 // values jumped in from the callee's leaves, then PopLightweightFrame
@@ -6066,8 +6082,8 @@ impl Function {
             return;
         }
         for block in self.reverse_post_order() {
-            let old_insns = std::mem::take(&mut self.blocks[block.to_usize()].insns);
-            assert!(self.blocks[block.to_usize()].insns.is_empty());
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
+            assert!(self.blocks[block].insns.is_empty());
             for insn_id in old_insns {
                 match self.resolve(insn_id).insn(self) {
                     &Insn::Send { state, reason: SendFallbackReason::SendNoProfiles, .. } => {
@@ -6123,7 +6139,7 @@ impl Function {
         }
 
         fn block_terminator(fun: &Function, block_id: BlockId) -> InsnId {
-            *fun.blocks[block_id.to_usize() as usize].insns().last().unwrap()
+            *fun.blocks[block_id].insns().last().unwrap()
         }
 
         macro_rules! edges_of {
@@ -6161,11 +6177,11 @@ impl Function {
         // We only need to update blocks that have params. (Blocks without params cannot be improved)
         let blocks_receiving_params: Vec<BlockId> = blocks.iter().copied()
             .filter(|&block_id|
-                self.blocks[block_id.to_usize()].params().len() != 0)
+                self.blocks[block_id].params().len() != 0)
             .collect();
 
         // Create a vec to represent trivial indices
-        let max_params = blocks.iter().copied().map(|id| self.blocks[id.to_usize()].params.len()).max().unwrap_or(0);
+        let max_params = blocks.iter().copied().map(|id| self.blocks[id].params.len()).max().unwrap_or(0);
         let mut trivial_indices: Vec<usize> = Vec::with_capacity(max_params);
 
         let mut changed = true;
@@ -6185,10 +6201,10 @@ impl Function {
                     for (i, param) in params.iter().enumerate() {
                         let param = self.find_id(*param);
                         // If the param is the same as passed into the block, it is a self loop and provides no new predecessor information.
-                        if param == self.find_id(self.blocks[block_id.to_usize()].params[i]) {
+                        if param == self.find_id(self.blocks[*block_id].params[i]) {
                             continue
                         }
-                        param_values[block_id.to_usize()][i].update(param);
+                        param_values[*block_id][i].update(param);
                     }
                 }
             }
@@ -6199,7 +6215,7 @@ impl Function {
             // 2. Remove trivial params from the basic block definition
             // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
             for block_id in &blocks_receiving_params {
-                let block_preds = &param_values[block_id.to_usize()];
+                let block_preds = &param_values[*block_id];
                 trivial_indices.clear();
                 for (idx, state) in block_preds.iter().enumerate() {
                     if let ParamValue::One(_) = state {
@@ -6210,13 +6226,13 @@ impl Function {
                 // Replace uses of the trivial params with the concretized value
                 for param_index in &trivial_indices {
                     if let ParamValue::One(insn_id) = block_preds[*param_index] {
-                        self.make_equal_to(self.blocks[block_id.to_usize()].params[*param_index], insn_id);
+                        self.make_equal_to(self.blocks[*block_id].params[*param_index], insn_id);
                         changed = true;
                     }
                 }
 
                 // Update the block
-                prune_vec_by_indices(&mut self.blocks[block_id.to_usize()].params, &trivial_indices);
+                prune_vec_by_indices(&mut self.blocks[*block_id].params, &trivial_indices);
 
                 // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
                 for jump_block_id in &blocks_sending_params {
@@ -6234,7 +6250,7 @@ impl Function {
     fn optimize_load_store(&mut self) {
         for block in self.reverse_post_order() {
             let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
-            let old_insns = std::mem::take(&mut self.blocks[block.to_usize()].insns);
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
             let mut new_insns = Vec::with_capacity(old_insns.len());
             for insn_id in old_insns {
                 let replacement_insn: InsnId = match self.resolve(insn_id).insn(self) {
@@ -6301,7 +6317,7 @@ impl Function {
                 };
                 new_insns.push(replacement_insn);
             }
-            self.blocks[block.to_usize()].insns = new_insns;
+            self.blocks[block].insns = new_insns;
         }
     }
 
@@ -6342,9 +6358,9 @@ impl Function {
         let mut rewrite_maps: Vec<Option<HashMap<InsnId, InsnId>>> = vec![None; self.blocks.len()];
         let dominators = Dominators::new(self);
         for &block in dominators.cfi.reverse_post_order() {
-            let mut rewrite_map = rewrite_maps[dominators.idom(block).to_usize()].clone().unwrap_or_else(|| HashMap::new());
-            for i in 0..self.blocks[block.to_usize()].insns.len() {
-                let insn_id = self.blocks[block.to_usize()].insns[i];
+            let mut rewrite_map = rewrite_maps[dominators.idom(block)].clone().unwrap_or_else(|| HashMap::new());
+            for i in 0..self.blocks[block].insns.len() {
+                let insn_id = self.blocks[block].insns[i];
                 let canonical_id = self.union_find.borrow().find_const(insn_id);
 
                 let union_find = &self.union_find;
@@ -6367,7 +6383,7 @@ impl Function {
                     _ => {}
                 }
             }
-            rewrite_maps[block.to_usize()] = Some(rewrite_map);
+            rewrite_maps[block] = Some(rewrite_map);
         }
 
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
@@ -6387,7 +6403,7 @@ impl Function {
         // This would require 1) fixpointing, 2) worklist, or 3) (slightly less powerful) calling a
         // function-level infer_types after each pruned branch.
         for block in self.reverse_post_order() {
-            let old_insns = std::mem::take(&mut self.blocks[block.to_usize()].insns);
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
             let mut new_insns = Vec::with_capacity(old_insns.len());
             for insn_id in old_insns {
                 let replacement_id = match self.resolve(insn_id).insn(self) {
@@ -6715,7 +6731,7 @@ impl Function {
                     break;
                 }
             }
-            self.blocks[block.to_usize()].insns = new_insns;
+            self.blocks[block].insns = new_insns;
         }
     }
 
@@ -6727,7 +6743,7 @@ impl Function {
         // Find all of the instructions that have side effects, are control instructions, or are
         // otherwise necessary to keep around
         for block_id in &rpo {
-            for insn_id in &self.blocks[block_id.to_usize()].insns {
+            for insn_id in &self.blocks[*block_id].insns {
                 if !&self.insns[*insn_id].is_elidable() {
                     worklist.push_back(*insn_id);
                 }
@@ -6745,12 +6761,12 @@ impl Function {
         }
         // Now remove all unnecessary instructions
         for block_id in &rpo {
-            self.blocks[block_id.to_usize()].insns.retain(|&insn_id| necessary.get(insn_id));
+            self.blocks[*block_id].insns.retain(|&insn_id| necessary.get(insn_id));
         }
     }
 
     fn absorb_dst_block(&mut self, num_in_edges: &[u32], block: BlockId) -> bool {
-        let Some(&terminator_id) = self.blocks[block.to_usize()].insns.last()
+        let Some(&terminator_id) = self.blocks[block].insns.last()
             else { return false };
         let &mut Insn::Jump(ref mut edge) = self.resolve(terminator_id).insn_mut(self)
             else { return false };
@@ -6758,7 +6774,7 @@ impl Function {
             // Can't absorb self
             return false;
         }
-        if num_in_edges[edge.target.to_usize()] != 1 {
+        if num_in_edges[edge.target] != 1 {
             // Can't absorb block if it's the target of more than one branch
             return false;
         }
@@ -6768,16 +6784,16 @@ impl Function {
         // Drop the borrow of edge, which drops the borrow of self, which allows us to mutate self
         // again.
         let _ = edge;
-        let params = std::mem::take(&mut self.blocks[target.to_usize()].params);
+        let params = std::mem::take(&mut self.blocks[target].params);
         assert_eq!(args.len(), params.len());
         for (arg, param) in args.iter().zip(params) {
             self.make_equal_to(param, *arg);
         }
         // Remove branch instruction
-        self.blocks[block.to_usize()].insns.pop();
+        self.blocks[block].insns.pop();
         // Move target instructions into block
-        let target_insns = std::mem::take(&mut self.blocks[target.to_usize()].insns);
-        self.blocks[block.to_usize()].insns.extend(target_insns);
+        let target_insns = std::mem::take(&mut self.blocks[target].insns);
+        self.blocks[block].insns.extend(target_insns);
         true
     }
 
@@ -6790,7 +6806,7 @@ impl Function {
         let mut num_in_edges = vec![0; self.blocks.len()];
         for block in self.reverse_post_order() {
             for target in self.successors(block) {
-                num_in_edges[target.to_usize()] += 1;
+                num_in_edges[target] += 1;
             }
         }
         let mut changed = false;
@@ -6798,7 +6814,7 @@ impl Function {
             let mut iter_changed = false;
             for block in self.reverse_post_order() {
                 // Ignore transient empty blocks
-                if self.blocks[block.to_usize()].insns.is_empty() { continue; }
+                if self.blocks[block].insns.is_empty() { continue; }
                 loop {
                     let absorbed = self.absorb_dst_block(&num_in_edges, block);
                     if !absorbed { break; }
@@ -6819,7 +6835,7 @@ impl Function {
     fn remove_redundant_patch_points(&mut self) {
         for block_id in self.reverse_post_order() {
             let mut seen = HashSet::new();
-            let insns = std::mem::take(&mut self.blocks[block_id.to_usize()].insns);
+            let insns = std::mem::take(&mut self.blocks[block_id].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
             for insn_id in insns {
                 // PatchPoint is never in union-find and it does not have operands, so fake a
@@ -6834,7 +6850,7 @@ impl Function {
                 }
                 new_insns.push(insn_id);
             }
-            self.blocks[block_id.to_usize()].insns = new_insns;
+            self.blocks[block_id].insns = new_insns;
         }
     }
 
@@ -6844,7 +6860,7 @@ impl Function {
     fn remove_duplicate_check_interrupts(&mut self) {
         for block_id in self.reverse_post_order() {
             let mut seen = false;
-            let insns = std::mem::take(&mut self.blocks[block_id.to_usize()].insns);
+            let insns = std::mem::take(&mut self.blocks[block_id].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
             for insn_id in insns {
                 let insn = &self.insns[insn_id];
@@ -6856,7 +6872,7 @@ impl Function {
                 }
                 new_insns.push(insn_id);
             }
-            self.blocks[block_id.to_usize()].insns = new_insns;
+            self.blocks[block_id].insns = new_insns;
         }
     }
 
@@ -6927,7 +6943,7 @@ impl Function {
             // First, find the (PushInlineFrame, PopInlineFrame) pairs to elide.
             let mut elided_pairs: Vec<(InsnId, InsnId)> = Vec::new();
             let mut pending_pushes: Vec<PendingPush> = Vec::new();
-            for &insn_id in &self.blocks[block_id.to_usize()].insns {
+            for &insn_id in &self.blocks[block_id].insns {
                 match self.find_ref(insn_id) {
                     Insn::PushInlineFrame { .. } => {
                         pending_pushes.push(PendingPush { push_id: insn_id, frame_observed: false });
@@ -6976,7 +6992,7 @@ impl Function {
                 rewrites.insert(push_id, replacement);
                 rewrites.insert(pop_id, None);
             }
-            self.blocks[block_id.to_usize()].insns.retain_mut(|insn_id| {
+            self.blocks[block_id].insns.retain_mut(|insn_id| {
                 match rewrites.get(insn_id) {
                     Some(Some(replacement)) => {
                         *insn_id = *replacement;
@@ -7071,8 +7087,8 @@ impl Function {
             .insert("id", id.0)
             .insert("loopDepth", loop_depth)
             .insert("attributes", Json::array(attributes))
-            .insert("predecessors", Json::array(predecessors.iter().map(|x| x.to_usize()).collect::<Vec<usize>>()))
-            .insert("successors", Json::array(successors.iter().map(|x| x.to_usize()).collect::<Vec<usize>>()))
+            .insert("predecessors", Json::array(predecessors.iter().map(|x| usize::from(*x)).collect::<Vec<usize>>()))
+            .insert("successors", Json::array(successors.iter().map(|x| usize::from(*x)).collect::<Vec<usize>>()))
             .insert("instructions", Json::array(instructions))
             .build()
     }
@@ -7108,7 +7124,7 @@ impl Function {
         // Push each block from the iteration in reverse post order to `hir_blocks`.
         for block_id in self.reverse_post_order() {
             // Create the block with instructions.
-            let block = &self.blocks[block_id.to_usize()];
+            let block = &self.blocks[block_id];
             let predecessors = cfi.predecessors(block_id);
             let successors = cfi.successors(block_id);
             let mut instructions = Vec::new();
@@ -7304,7 +7320,7 @@ impl Function {
     /// 3. Every block must have a terminator.
     fn validate_block_terminators_and_jumps(&self) -> Result<(), ValidationError> {
         let check_edge = |block_id: BlockId, edge: &BranchEdge| -> Result<(), ValidationError> {
-            let target_len = self.blocks[edge.target.to_usize()].params.len();
+            let target_len = self.blocks[edge.target].params.len();
             let args_len = edge.args.len();
             if target_len != args_len {
                 return Err(ValidationError::MismatchedBlockArity(block_id, target_len, args_len));
@@ -7313,7 +7329,7 @@ impl Function {
         };
 
         for block_id in self.reverse_post_order() {
-            let insns = &self.blocks[block_id.to_usize()].insns;
+            let insns = &self.blocks[block_id].insns;
             for (idx, insn_id) in insns.iter().enumerate() {
                 // No need for resolve(): we only look at edge targets/arity and terminators.
                 let insn = self.find_ref(*insn_id);
@@ -7359,27 +7375,27 @@ impl Function {
         // starts with nothing defined.
         for &block in &rpo {
             if block == self.entries_block {
-                assigned_in[block.to_usize()] = Some(InsnSet::with_capacity(self.insns.len()));
+                assigned_in[block] = Some(InsnSet::with_capacity(self.insns.len()));
             } else {
                 let mut all_ones = InsnSet::with_capacity(self.insns.len());
                 all_ones.insert_all();
-                assigned_in[block.to_usize()] = Some(all_ones);
+                assigned_in[block] = Some(all_ones);
             }
         }
         let mut worklist = VecDeque::with_capacity(self.num_blocks());
         worklist.push_back(self.entries_block);
         while let Some(block) = worklist.pop_front() {
-            let mut assigned = assigned_in[block.to_usize()].clone().unwrap();
-            for &param in &self.blocks[block.to_usize()].params {
+            let mut assigned = assigned_in[block].clone().unwrap();
+            for &param in &self.blocks[block].params {
                 assigned.insert(param);
             }
-            for &insn_id in &self.blocks[block.to_usize()].insns {
+            for &insn_id in &self.blocks[block].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
                 // No need for resolve(): we only look at jump targets here, and the
                 // operand check below resolves each operand itself.
                 let insn = self.find_ref(insn_id);
                 let mut propagate = |target: BlockId| -> Result<(), ValidationError> {
-                    let Some(block_in) = assigned_in[target.to_usize()].as_mut() else {
+                    let Some(block_in) = assigned_in[target].as_mut() else {
                         return Err(ValidationError::JumpTargetNotInRPO(target));
                     };
                     if block_in.intersect_with(&assigned) {
@@ -7407,11 +7423,11 @@ impl Function {
         }
         // Check that each instruction's operands are assigned
         for &block in &rpo {
-            let mut assigned = assigned_in[block.to_usize()].clone().unwrap();
-            for &param in &self.blocks[block.to_usize()].params {
+            let mut assigned = assigned_in[block].clone().unwrap();
+            for &param in &self.blocks[block].params {
                 assigned.insert(param);
             }
-            for &insn_id in &self.blocks[block.to_usize()].insns {
+            for &insn_id in &self.blocks[block].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
                 self.insns[insn_id].try_for_each_operand(|operand| {
                     let operand = self.union_find.borrow().find_const(operand);
@@ -7432,7 +7448,7 @@ impl Function {
     fn validate_insn_uniqueness(&self) -> Result<(), ValidationError> {
         let mut seen = InsnSet::with_capacity(self.insns.len());
         for block_id in self.reverse_post_order() {
-            for &insn_id in &self.blocks[block_id.to_usize()].insns {
+            for &insn_id in &self.blocks[block_id].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
                 if !seen.insert(insn_id) {
                     return Err(ValidationError::DuplicateInstruction(block_id, insn_id));
@@ -7794,7 +7810,7 @@ impl Function {
     /// Check that insn types match the expected types for each instruction.
     fn validate_types(&self) -> Result<(), ValidationError> {
         for block_id in self.reverse_post_order() {
-            for &insn_id in &self.blocks[block_id.to_usize()].insns {
+            for &insn_id in &self.blocks[block_id].insns {
                 self.validate_insn_type(insn_id)?;
             }
         }
@@ -7987,9 +8003,9 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                 continue;
             }
             write!(f, "{block_id}(")?;
-            if !fun.blocks[block_id.to_usize()].params.is_empty() {
+            if !fun.blocks[block_id].params.is_empty() {
                 let mut sep = "";
-                for param in &fun.blocks[block_id.to_usize()].params {
+                for param in &fun.blocks[block_id].params {
                     write!(f, "{sep}{param}")?;
                     let insn_type = fun.type_of(*param);
                     if !insn_type.is_subtype(types::Empty) {
@@ -7999,7 +8015,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                 }
             }
             writeln!(f, "):")?;
-            for insn_id in &fun.blocks[block_id.to_usize()].insns {
+            for insn_id in &fun.blocks[block_id].insns {
                 let insn = fun.find(*insn_id);
                 if !self.display_snapshot_and_tp_patchpoints &&
                     matches!(insn, Insn::Snapshot {..} | Insn::PatchPoint { invariant: Invariant::NoTracePoint, .. }) {
@@ -10741,13 +10757,13 @@ impl Dominators {
         // Map BlockId -> RPO index for O(1) lookup in intersect.
         let mut rpo_order = vec![usize::MAX; num_blocks];
         for (idx, &block) in rpo.iter().enumerate() {
-            rpo_order[block.to_usize()] = idx;
+            rpo_order[block] = idx;
         }
 
         // Initialize idom: root's idom is itself, everything else is undefined.
         let mut idoms = vec![IDOM_NONE; num_blocks];
         let root = f.entries_block;
-        idoms[root.to_usize()] = root;
+        idoms[root] = root;
 
         let mut changed = true;
         while changed {
@@ -10759,7 +10775,7 @@ impl Dominators {
                 let preds = cfi.predecessors(block);
                 let mut new_idom = IDOM_NONE;
                 for &p in preds {
-                    if idoms[p.to_usize()] != IDOM_NONE {
+                    if idoms[p] != IDOM_NONE {
                         new_idom = p;
                         break;
                     }
@@ -10769,13 +10785,13 @@ impl Dominators {
                 // Intersect with remaining processed predecessors.
                 for &p in preds {
                     if p == new_idom { continue; }
-                    if idoms[p.to_usize()] != IDOM_NONE {
+                    if idoms[p] != IDOM_NONE {
                         new_idom = Self::intersect(&idoms, &rpo_order, p, new_idom);
                     }
                 }
 
-                if idoms[block.to_usize()] != new_idom {
-                    idoms[block.to_usize()] = new_idom;
+                if idoms[block] != new_idom {
+                    idoms[block] = new_idom;
                     changed = true;
                 }
             }
@@ -10788,11 +10804,11 @@ impl Dominators {
     /// Uses RPO indices: a node with a *lower* RPO index is *higher* in the tree.
     fn intersect(idoms: &[BlockId], rpo_order: &[usize], mut b1: BlockId, mut b2: BlockId) -> BlockId {
         while b1 != b2 {
-            while rpo_order[b1.to_usize()] > rpo_order[b2.to_usize()] {
-                b1 = idoms[b1.to_usize()];
+            while rpo_order[b1] > rpo_order[b2] {
+                b1 = idoms[b1];
             }
-            while rpo_order[b2.to_usize()] > rpo_order[b1.to_usize()] {
-                b2 = idoms[b2.to_usize()];
+            while rpo_order[b2] > rpo_order[b1] {
+                b2 = idoms[b2];
             }
         }
         b1
@@ -10800,7 +10816,7 @@ impl Dominators {
 
     /// Return the immediate dominator of `block`.
     pub fn idom(&self, block: BlockId) -> BlockId {
-        self.idoms[block.to_usize()]
+        self.idoms[block]
     }
 
     /// Return true if `left` is dominated by `right`.
