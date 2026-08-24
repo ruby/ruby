@@ -8966,7 +8966,7 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
  *  If called without arguments, writes a newline.
  *  See {Line IO}[rdoc-ref:IO@Line+IO].
  *
- *  Note that each added newline is the character <tt>"\n"<//tt>,
+ *  Note that each added newline is the character <tt>"\n"</tt>,
  *  not the output record separator (<tt>$\\</tt>).
  *
  *  Treatment for each object:
