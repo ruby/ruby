@@ -509,6 +509,36 @@ RSpec.describe "bundle install with the cooldown setting" do
       expect(out).to match(/mid_gem.*2\.0\.0 \(cooldown \d+d, 1\.5\.0 out of cooldown\)/)
     end
 
+    it "shows the resolved version without cooldown notes in strict mode" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "mid_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            mid_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          mid_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "outdated --strict --cooldown 7 --parseable", artifice: "compact_index_cooldown", raise_on_error: false
+
+      # in strict mode "newest" is the resolved (cooldown-filtered) version
+      # itself, so the annotations have nothing to add
+      expect(out).to match(/mid_gem \(newest 1\.5\.0, installed 1\.0\.0/)
+      expect(out).not_to include("cooldown")
+    end
+
     it "shows no out-of-cooldown note when every version is inside the window" do
       gemfile <<-G
         source "https://gem.repo3"
