@@ -69,6 +69,18 @@ describe "IO::Buffer#free" do
     buffer.null?.should == true
   end
 
+  ruby_version_is "3.4" do
+    it "resets the buffer to a valid empty state" do
+      buffer = IO::Buffer.new(4)
+      buffer.free
+
+      buffer.null?.should == true
+      buffer.empty?.should == true
+      buffer.valid?.should == true
+      buffer.get_string.should == ""
+    end
+  end
+
   it "is disallowed while locked, raising IO::Buffer::LockedError" do
     buffer = IO::Buffer.new(4)
     buffer.locked do

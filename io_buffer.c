@@ -1667,22 +1667,23 @@ rb_io_buffer_locked(VALUE self)
  *  * for a buffer created from scratch: free memory.
  *  * for a buffer created from string: undo the association.
  *
- *  After the buffer is freed, no further operations can be performed on it.
+ *  After releasing any referenced memory, the buffer is reset to a valid,
+ *  empty, null state. It has no backing storage and its size is zero.
+ *  Zero-length operations remain valid, while operations requiring bytes fail
+ *  normal bounds checking.
  *
- *  You can resize a freed buffer to re-allocate it.
+ *  You can resize the buffer to allocate new storage.
  *
  *    buffer = IO::Buffer.for('test')
  *    buffer.free
  *    # => #<IO::Buffer 0x0000000000000000+0 NULL>
  *
- *    buffer.get_value(:U8, 0)
- *    # in `get_value': The buffer is not allocated! (IO::Buffer::AllocationError)
+ *    buffer.null?      # => true
+ *    buffer.empty?     # => true
+ *    buffer.valid?     # => true
+ *    buffer.get_string # => ""
  *
- *    buffer.get_string
- *    # in `get_string': The buffer is not allocated! (IO::Buffer::AllocationError)
- *
- *    buffer.null?
- *    # => true
+ *    buffer.get_value(:U8, 0) # raises ArgumentError
  */
 VALUE
 rb_io_buffer_free(VALUE self)
