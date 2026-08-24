@@ -30,6 +30,8 @@ env:
   # Work around transient crates.io download failures (curl HTTP/2 framing / partial transfer)
   CARGO_NET_RETRY: 10
   CARGO_HTTP_MULTIPLEXING: false
+  RUST_BACKTRACE: 1
+  ZJIT_RB_BUG: 1
 
 jobs:
   make:
@@ -60,8 +62,6 @@ jobs:
       RUN_OPTS: ${{ matrix.run_opts }}
       SPECOPTS: ${{ matrix.specopts }} -B../src/spec/zjit.mspec
       TESTOPTS: ${{ matrix.testopts }}
-      RUST_BACKTRACE: 1
-      ZJIT_RB_BUG: 1
 
     runs-on: macos-26
 
@@ -98,7 +98,7 @@ jobs:
           rustup install ${{ matrix.rust_version }} --profile minimal
           rustup default ${{ matrix.rust_version }}
 
-      - uses: taiki-e/install-action@5b4d68e2e660441203ab128a23676f1e4faf1532 # v2.86.3
+      - uses: taiki-e/install-action@ba47c86ac325773530516bb756137ac718732518 # v2.86.5
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}

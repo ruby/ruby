@@ -2220,7 +2220,7 @@ class Pathname    # * FileTest *
   # Pathname($stdin).blockdev?         # => false
   # ```
   #
-  # The returned value is OS-dependent; on Windows, almost always `false`.
+  # The returned value is filesystem-dependent; on Windows, always `false`.
   def blockdev?() FileTest.blockdev?(@path) end
 
   # :markup: markdown
@@ -2240,7 +2240,7 @@ class Pathname    # * FileTest *
   # Pathname('nosuch').chardev?       # => false
   # ```
   #
-  # The returned value is OS-dependent; on Windows, almost always `false`.
+  # The returned value is filesystem-dependent; on Windows, always `false`.
   def chardev?() FileTest.chardev?(@path) end
 
   # :markup: markdown
@@ -2351,6 +2351,22 @@ class Pathname    # * FileTest *
   # Pathname('lib').directory?       # => true
   # Pathname('README.md').directory? # => false
   # Pathname('nosuch').directory?    # => false
+  # Pathname($stdin).directory?      # => false
+  # ```
+  #
+  # Follows symbolic links:
+  #
+  # ```ruby
+  # target_pn = Pathname('doc')
+  # link_pn = Pathname('link')
+  # link_pn.make_symlink(target_pn)
+  # link_pn.directory?               # => true
+  # link_pn.delete
+  # target_pn = Pathname('README.md')
+  # link_pn = Pathname('link')
+  # link_pn.make_symlink(target_pn)
+  # link_pn.directory?               # => false
+  # link_pn.delete
   # ```
   #
   def directory?() FileTest.directory?(@path) end

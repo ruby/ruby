@@ -5,7 +5,7 @@
 static VALUE mJSON, eNestingError, eParserError, Encoding_UTF_8;
 static VALUE CNaN, CInfinity, CMinusInfinity, JSON_empty_string;
 
-static ID i_new, i_try_convert, i_encode, i_at_line, i_at_column;
+static ID i_new, i_try_convert, i_encode, i_at_line, i_at_column, i_at_json_path;
 #ifndef HAVE_RB_STR_TO_INTERNED_STR
 static ID i_uminus;
 #endif
@@ -651,11 +651,42 @@ static VALUE build_parse_error_message(const char *format, JSON_ParserState *sta
     return rb_enc_sprintf(enc_utf8, format, ptr);
 }
 
+static VALUE json_path_new(JSON_ParserState *state, VALUE duplicate_key)
+{
+    VALUE path = rb_ary_new_capa(state->current_nesting);
+
+    json_frame_stack *frames = state->frames;
+    rvalue_stack *values = state->value_stack;
+
+    for (long depth = 1; depth < frames->head; depth++) {
+        json_frame *frame = &frames->ptr[depth];
+
+        bool innermost = depth == frames->head - 1;
+        long child_head = innermost ? values->head : frames->ptr[depth + 1].value_stack_head;
+        long count = child_head - frame->value_stack_head;
+
+        if (frame->type == JSON_FRAME_ARRAY) {
+            rb_ary_push(path, LONG2NUM(frame->phase == JSON_PHASE_ARRAY_COMMA ? count - 1 : count));
+        } else if (innermost && !UNDEF_P(duplicate_key)) {
+            rb_ary_push(path, duplicate_key);
+        } else if (count & 1) {
+            rb_ary_push(path, values->ptr[child_head - 1]);
+        } else if (frame->phase == JSON_PHASE_OBJECT_COMMA && count >= 2) {
+            rb_ary_push(path, values->ptr[child_head - 2]);
+        } else {
+            break;
+        }
+    }
+
+    return path;
+}
+
 static VALUE parse_error_new(JSON_ParserState *state, VALUE message, long line, long column, bool eos)
 {
     VALUE exc = rb_exc_new_str(eParserError, message);
     rb_ivar_set(exc, i_at_line, LONG2NUM(line));
     rb_ivar_set(exc, i_at_column, LONG2NUM(column));
+    rb_ivar_set(exc, i_at_json_path, json_path_new(state, Qundef));
     return exc;
 }
 
@@ -1199,14 +1230,17 @@ NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE d
     );
 
     rb_str_concat(message, build_parse_error_message("", state));
+    VALUE exc;
     if (state->parser) { // line and columns can't be accurate in resumable
-        rb_exc_raise(parse_error_new(state, message, 0, 0, false));
+        exc = parse_error_new(state, message, 0, 0, false);
     } else {
         long line, column;
         cursor_position(state, &line, &column);
         rb_str_catf(message, " at line %ld column %ld", line, column);
-        rb_exc_raise(parse_error_new(state, message, line, column, false));
+        exc = parse_error_new(state, message, line, column, false);
     }
+    rb_ivar_set(exc, i_at_json_path, json_path_new(state, duplicate_key));
+    rb_exc_raise(exc);
 }
 
 NOINLINE(static) void json_on_duplicate_key(JSON_ParserState *state, JSON_ParserConfig *config, size_t count, const VALUE *pairs)
@@ -2122,6 +2156,12 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE src)
     // the rvalue stack.
     VALUE result = complete ? *rvalue_stack_peek(state->value_stack, 1) : Qundef;
 
+    if (complete) {
+        json_ensure_eof(state, config);
+    } else {
+        raise_eos_error("unexpected end of input", state);
+    }
+
     // This may be skipped in case of exception, but
     // it won't cause a leak.
     rvalue_stack_eagerly_release(value_stack_handle);
@@ -2129,12 +2169,6 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE src)
     RB_GC_GUARD(value_stack_handle);
     RB_GC_GUARD(frame_stack_handle);
     RB_GC_GUARD(Vsource);
-
-    if (complete) {
-        json_ensure_eof(state, config);
-    } else {
-        raise_eos_error("unexpected end of input", state);
-    }
 
     return result;
 }
@@ -2871,6 +2905,7 @@ void Init_parser(void)
     i_encode = rb_intern("encode");
     i_at_line = rb_intern("@line");
     i_at_column = rb_intern("@column");
+    i_at_json_path = rb_intern("@json_path");
 
     binary_encindex = rb_ascii8bit_encindex();
     utf8_encindex = rb_utf8_encindex();

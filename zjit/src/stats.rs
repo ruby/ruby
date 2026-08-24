@@ -258,6 +258,7 @@ make_counters! {
         send_fallback_send_cfunc_not_variadic,
         send_fallback_send_not_optimized_method_type_optimized,
         send_fallback_too_many_args_for_lir,
+        send_fallback_operand_too_large,
         send_fallback_send_bop_redefined,
         send_fallback_send_operands_not_fixnum,
         send_fallback_send_polymorphic_fallback,
@@ -682,6 +683,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendNotOptimizedMethodTypeOptimized(_)
                                                   => send_fallback_send_not_optimized_method_type_optimized,
         TooManyArgsForLir                         => send_fallback_too_many_args_for_lir,
+        OperandTooLarge                           => send_fallback_operand_too_large,
         SendBopRedefined                          => send_fallback_send_bop_redefined,
         SendOperandsNotFixnum                     => send_fallback_send_operands_not_fixnum,
         SendPolymorphicFallback                   => send_fallback_send_polymorphic_fallback,

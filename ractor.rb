@@ -382,7 +382,7 @@ class Ractor
     name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
     id   = __builtin_cexpr! %q{ UINT2NUM(rb_ractor_id(RACTOR_PTR(self))) }
     status = __builtin_cexpr! %q{
-      rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))
+      rb_str_new2(RACTOR_PTR(self)->status_ == ractor_terminated ? "terminated" : "running")
     }
     "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''} #{status}>"
   end

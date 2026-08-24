@@ -1015,7 +1015,8 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 VALUE *
 rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 {
-    VALUE *original_code = RUBY_ATOMIC_PTR_LOAD(ISEQ_BODY(iseq)->variable.original_iseq);
+    struct rb_iseq_variable *v = ISEQ_VARIABLE(iseq);
+    VALUE *original_code = v ? RUBY_ATOMIC_PTR_LOAD(v->original_iseq) : NULL;
 
     if (original_code) return original_code;
     original_code = ALLOC_N(VALUE, ISEQ_BODY(iseq)->iseq_size);
@@ -1037,7 +1038,8 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 
     /* Concurrent callers can each build a copy; publish only fully
      * translated code and keep the first one. */
-    VALUE *prev = ATOMIC_PTR_CAS(ISEQ_BODY(iseq)->variable.original_iseq,
+    v = rb_iseq_variable_ensure((rb_iseq_t *)iseq);
+    VALUE *prev = ATOMIC_PTR_CAS(v->original_iseq,
                                  NULL, original_code);
     if (prev) {
         SIZED_FREE_N(original_code, ISEQ_BODY(iseq)->iseq_size);
@@ -1530,7 +1532,7 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
                                     line_no, parent,
                                     isolated_depth ? isolated_depth + 1 : 0,
                                     type, ISEQ_COMPILE_DATA(iseq)->option,
-                                    ISEQ_BODY(iseq)->variable.script_lines);
+                                    ISEQ_SCRIPT_LINES(iseq));
     debugs("[new_child_iseq]< ---------------------------------------\n");
     return ret_iseq;
 }
@@ -1700,10 +1702,8 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     }
 
 #if VM_INSN_INFO_TABLE_IMPL == 2
-    if (ISEQ_BODY(iseq)->insns_info.succ_index_table == NULL) {
-        debugs("[compile step 7 (rb_iseq_insns_info_encode_positions)] \n");
-        rb_iseq_insns_info_encode_positions(iseq);
-    }
+    debugs("[compile step 7 (rb_iseq_insns_info_encode_positions)] \n");
+    rb_iseq_insns_info_encode_positions(iseq);
 #endif
 
     if (compile_debug > 1) {
@@ -2976,12 +2976,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     /* get rid of memory leak when REALLOC failed */
     body->insns_info.body = insns_info;
-    body->insns_info.positions = positions;
+    body->insns_info.positions_or_succ_index_table.positions = positions;
 
     SIZED_REALLOC_N(insns_info, struct iseq_insn_info_entry, insns_info_index, insns_info_size);
     body->insns_info.body = insns_info;
     SIZED_REALLOC_N(positions, unsigned int, insns_info_index, positions_size);
-    body->insns_info.positions = positions;
+    body->insns_info.positions_or_succ_index_table.positions = positions;
     body->insns_info.size = insns_info_index;
 
     return COMPILE_OK;
@@ -5406,7 +5406,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
      * - It contains key-value pairs.  So we need to take every two elements.
      *   We can assume that the length is always even.
      *
-     * - Merging is done by a method call (id_core_hash_merge_ptr).
+     * - Merging is done by a method call (id_core_hash_merge_bang_ptr).
      *   Sometimes we need to insert the receiver, so "anchor" is needed.
      *   In addition, a method call is much slower than concatarray.
      *   So it pays only when the subsequence is really long.
@@ -5436,7 +5436,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
             ADD_INSN1(ret, line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));  \
             ADD_INSN(ret, line_node, swap);                                                  \
             APPEND_LIST(ret, anchor);                                                   \
-            ADD_SEND(ret, line_node, id_core_hash_merge_ptr, INT2FIX(stack_len + 1));        \
+            ADD_SEND(ret, line_node, id_core_hash_merge_bang_ptr, INT2FIX(stack_len + 1));        \
         }                                                                               \
         INIT_ANCHOR(anchor);                                                            \
         first_chunk = stack_len = 0;                                                    \
@@ -5482,7 +5482,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
 
                     ADD_INSN1(ret, line_node, putobject, hash);
 
-                    ADD_SEND(ret, line_node, id_core_hash_merge_kwd, INT2FIX(2));
+                    ADD_SEND(ret, line_node, id_core_hash_merge_bang_kwd, INT2FIX(2));
                 }
                 RB_OBJ_WRITTEN(iseq, Qundef, hash);
             }
@@ -5556,7 +5556,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
 
                         NO_CHECK(COMPILE(ret, "keyword splat", kw));
 
-                        ADD_SEND(ret, line_node, id_core_hash_merge_kwd, INT2FIX(2));
+                        ADD_SEND(ret, line_node, id_core_hash_merge_bang_kwd, INT2FIX(2));
                     }
                 }
 
@@ -9447,7 +9447,7 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
                            rb_iseq_path(iseq), rb_iseq_realpath(iseq),
                            nd_line(line_node), NULL, 0,
                            ISEQ_TYPE_METHOD, ISEQ_COMPILE_DATA(iseq)->option,
-                           ISEQ_BODY(iseq)->variable.script_lines);
+                           ISEQ_SCRIPT_LINES(iseq));
     RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
 
     ALLOCV_END(idtmp);
@@ -10217,7 +10217,7 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
                 ADD_INSN1(args, node, putobject, ID2SYM(id));
                 ADD_GETLOCAL(args, node, idx, lvar_level);
             }
-            ADD_SEND(args, node, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
+            ADD_SEND(args, node, id_core_hash_merge_bang_ptr, INT2FIX(i * 2 + 1));
             flag |= VM_CALL_KW_SPLAT| VM_CALL_KW_SPLAT_MUT;
         }
         else if (local_body->param.flags.has_kwrest) {
@@ -13820,7 +13820,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, mandatory_only_iseq_index);
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(ci_entries_offset));
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(outer_variables_offset));
-    ibf_dump_write_small_value(dump, body->variable.flip_count);
+    ibf_dump_write_small_value(dump, ISEQ_FLIP_CNT(iseq));
     ibf_dump_write_small_value(dump, body->local_table_size);
     ibf_dump_write_small_value(dump, body->ivc_size);
     ibf_dump_write_small_value(dump, body->icvarc_size);
@@ -14012,10 +14012,12 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->ci_size = ci_size;
     load_body->insns_info.size = insns_info_size;
 
-    ISEQ_COVERAGE_SET(iseq, Qnil);
+    // variable is NULL from ZALLOC; only allocate if flip_count is non-zero.
     ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
-    load_body->variable.flip_count = variable_flip_count;
-    load_body->variable.script_lines = Qnil;
+    if (variable_flip_count) {
+        struct rb_iseq_variable *v = rb_iseq_variable_ensure(iseq);
+        v->flip_count = variable_flip_count;
+    }
 
     load_body->location.first_lineno = location_first_lineno;
     load_body->location.node_id = location_node_id;
@@ -14044,7 +14046,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->param.keyword        = ibf_load_param_keyword(load, param_keyword_offset);
     load_body->param.flags.has_kw   = (param_flags >> 4) & 1;
     load_body->insns_info.body      = ibf_load_insns_info_body(load, insns_info_body_offset, insns_info_size);
-    load_body->insns_info.positions = ibf_load_insns_info_positions(load, insns_info_positions_offset, insns_info_size);
+    load_body->insns_info.positions_or_succ_index_table.positions = ibf_load_insns_info_positions(load, insns_info_positions_offset, insns_info_size);
     load_body->local_table          = ibf_load_local_table(load, local_table_offset, local_table_size);
     load_body->lvar_states          = ibf_load_lvar_states(load, lvar_states_offset, local_table_size, load_body->local_table);
     ibf_load_catch_table(load, catch_table_offset, catch_table_size, iseq);
@@ -15240,8 +15242,13 @@ rb_iseq_dup_with_independent_caches(const rb_iseq_t *src_root)
         struct rb_iseq_constant_body *cb = ISEQ_BODY(copy);
         if (!cb->local_iseq) RB_OBJ_WRITE(copy, &cb->local_iseq, sb->local_iseq);
         RB_OBJ_WRITE(copy, &cb->location.pathobj, sb->location.pathobj);
-        RB_OBJ_WRITE(copy, &cb->variable.script_lines, sb->variable.script_lines);
-        ISEQ_COVERAGE_SET(copy, ISEQ_COVERAGE(src_root));
+        VALUE sl = ISEQ_SCRIPT_LINES(src_root);
+        VALUE cov = ISEQ_COVERAGE(src_root);
+        if (!NIL_P(sl) || !NIL_P(cov)) {
+            struct rb_iseq_variable *v = rb_iseq_variable_ensure(copy);
+            RB_OBJ_WRITE(copy, &v->script_lines, sl);
+            RB_OBJ_WRITE(copy, &v->coverage, cov);
+        }
 
         if (i == 0) {
             RB_OBJ_WRITE(copy, &cb->parent_iseq, sb->parent_iseq);

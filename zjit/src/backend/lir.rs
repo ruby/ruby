@@ -3228,7 +3228,7 @@ impl Assembler
         let exit_block = self.new_block_without_id("side_exits");
 
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
-        let mut compiled_exits: HashMap<SideExit, Label> = HashMap::new();
+        let mut compiled_exits: HashMap<SideExit, Label> = HashMap::with_capacity(targets.len());
 
         // Start a new perf range for side exits
         let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) {

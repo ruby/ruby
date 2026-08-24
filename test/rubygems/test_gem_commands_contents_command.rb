@@ -92,6 +92,47 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     assert_equal "", @ui.error
   end
 
+  def test_files_in_gem_with_glob_metacharacters_in_install_path
+    base_dir = File.join @tempdir, "dir[1]"
+    spec = util_spec "foo"
+    spec.loaded_from = File.join base_dir, "specifications", spec.spec_name
+
+    write_file File.join(spec.full_gem_path, "lib", "foo.rb")
+
+    files = @cmd.files_in_gem spec
+
+    assert_includes files, [spec.full_gem_path, "lib/foo.rb"]
+  end
+
+  def test_files_in_gem_lib_only_stays_inside_gem_dir_with_extensions
+    @cmd.options[:lib_only] = true
+
+    spec = util_spec "foo" do |s|
+      s.extensions = %w[ext/foo/extconf.rb]
+    end
+
+    write_file File.join(spec.full_gem_path, "lib", "foo.rb")
+    write_file File.join(spec.extension_dir, "foo.so")
+
+    files = @cmd.files_in_gem spec
+
+    assert_includes files, [spec.full_gem_path, "lib/foo.rb"]
+    files.each do |_prefix, relative|
+      refute File.absolute_path?(relative), "#{relative} escapes the gem directory"
+    end
+  end
+
+  def test_files_in_gem_lib_only_without_require_paths
+    @cmd.options[:lib_only] = true
+
+    spec = util_spec "foo"
+    spec.require_paths = []
+
+    write_file File.join(spec.full_gem_path, "lib", "foo.rb")
+
+    assert_empty @cmd.files_in_gem(spec)
+  end
+
   def test_execute_missing_single
     @cmd.options[:args] = %w[foo]
 

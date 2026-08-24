@@ -2265,9 +2265,11 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
 #if USE_DEBUG_COUNTER
     const struct rb_callcache *old_cc = cd->cc;
+    const rb_callable_method_entry_t *const old_cme = old_cc ? old_cc->cme_ : NULL;
 #endif
 
     const struct rb_callcache *cc = rb_vm_search_method_slowpath(cd->ci, klass);
+    const rb_callable_method_entry_t *const new_cme = vm_cc_cme(cc);
 
 #if OPT_INLINE_METHOD_CACHE
     cd->cc = cc;
@@ -2289,11 +2291,10 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     else if (old_cc == cc) {
         RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cc);
     }
-    else if (vm_cc_cme(old_cc) == vm_cc_cme(cc)) {
+    else if (old_cme == new_cme) {
         RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cme);
     }
-    else if (vm_cc_cme(old_cc) && vm_cc_cme(cc) &&
-             vm_cc_cme(old_cc)->def == vm_cc_cme(cc)->def) {
+    else if (old_cme && new_cme && old_cme->def == new_cme->def) {
         RB_DEBUG_COUNTER_INC(mc_inline_miss_same_def);
     }
     else {
@@ -2302,8 +2303,7 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 #endif
 #endif // OPT_INLINE_METHOD_CACHE
 
-    VM_ASSERT(vm_cc_cme(cc) == NULL ||
-              vm_cc_cme(cc)->called_id == vm_ci_mid(cd->ci));
+    if (new_cme) VM_ASSERT(new_cme->called_id == vm_ci_mid(cd->ci));
 
     return cc;
 }
@@ -5205,7 +5205,7 @@ block_proc_is_lambda(const VALUE procval)
 
     if (procval) {
         GetProcPtr(procval, proc);
-        return proc->is_lambda;
+        return proc->header.is_lambda;
     }
     else {
         return 0;
@@ -5497,8 +5497,8 @@ vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
         VALUE procval = VM_BH_TO_PROC(block_handler);
         rb_proc_t *po;
         GetProcPtr(procval, po);
-        if (po->is_refined) refined_procval = procval;
-        is_lambda = po->is_lambda;
+        if (po->header.is_refined) refined_procval = procval;
+        is_lambda = po->header.is_lambda;
         block_handler = vm_block_to_block_handler(&po->block);
     }
 

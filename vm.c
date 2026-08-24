@@ -1301,7 +1301,7 @@ vm_proc_create_from_captured(VALUE klass,
                              enum rb_block_type block_type,
                              int8_t is_from_method, int8_t is_lambda)
 {
-    VALUE procval = rb_proc_alloc(klass);
+    VALUE procval = rb_proc_alloc(klass, block_type);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
 
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), captured->ep));
@@ -1312,8 +1312,8 @@ vm_proc_create_from_captured(VALUE klass,
     rb_vm_block_ep_update(procval, &proc->block, captured->ep);
 
     vm_block_type_set(&proc->block, block_type);
-    proc->is_from_method = is_from_method;
-    proc->is_lambda = is_lambda;
+    proc->header.is_from_method = is_from_method;
+    proc->header.is_lambda = is_lambda;
 
     return procval;
 }
@@ -1341,14 +1341,14 @@ rb_vm_block_copy(VALUE obj, const struct rb_block *dst, const struct rb_block *s
 static VALUE
 proc_create(VALUE klass, const struct rb_block *block, int8_t is_from_method, int8_t is_lambda)
 {
-    VALUE procval = rb_proc_alloc(klass);
+    VALUE procval = rb_proc_alloc(klass, block->type);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
 
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), vm_block_ep(block)));
     rb_vm_block_copy(procval, &proc->block, block);
     vm_block_type_set(&proc->block, block->type);
-    proc->is_from_method = is_from_method;
-    proc->is_lambda = is_lambda;
+    proc->header.is_from_method = is_from_method;
+    proc->header.is_lambda = is_lambda;
 
     return procval;
 }
@@ -1366,14 +1366,14 @@ rb_proc_dup_0(VALUE self)
         procval = rb_func_proc_dup(self);
         break;
       default:
-        procval = proc_create(rb_obj_class(self), &src->block, src->is_from_method, src->is_lambda);
+        procval = proc_create(rb_obj_class(self), &src->block, src->header.is_from_method, src->header.is_lambda);
         break;
     }
 
-    if (src->is_refined) {
+    if (src->header.is_refined) {
         rb_proc_t *dst;
         GetProcPtr(procval, dst);
-        dst->is_refined = 1;
+        dst->header.is_refined = 1;
     }
 
     if (RB_OBJ_SHAREABLE_P(self)) RB_OBJ_SET_SHAREABLE(procval);
@@ -1403,7 +1403,7 @@ rb_proc_dup_with_iseq_and_recipe(VALUE self, const rb_iseq_t *iseq, VALUE recipe
     struct rb_block block = src->block;
     block.as.captured.code.iseq = iseq;
 
-    VALUE procval = proc_create(rb_obj_class(self), &block, src->is_from_method, src->is_lambda);
+    VALUE procval = proc_create(rb_obj_class(self), &block, src->header.is_from_method, src->header.is_lambda);
     rb_proc_set_refinements_recipe(procval, recipe);
 
     RB_GC_GUARD(self);
@@ -1587,19 +1587,19 @@ rb_proc_isolate_bang(VALUE self, VALUE replace_self)
     if (iseq) {
         rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
 
+        if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
+
         if (!UNDEF_P(replace_self)) {
             VM_ASSERT(rb_ractor_shareable_p(replace_self));
             RB_OBJ_WRITE(self, &proc->block.as.captured.self, replace_self);
         }
-
-        if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
         if (ISEQ_BODY(iseq)->outer_variables) {
             proc_shared_outer_variables(ISEQ_BODY(iseq)->outer_variables, true, "isolate a Proc");
         }
 
         proc_isolate_env(self, proc, Qfalse);
-        proc->is_isolated = TRUE;
+        proc->header.is_isolated = TRUE;
         RB_OBJ_WRITE(self, &proc->block.as.captured.self, Qnil);
     }
 
@@ -1623,11 +1623,11 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
     if (iseq) {
         rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
 
+        if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
+
         if (!UNDEF_P(replace_self)) {
             RB_OBJ_WRITE(self, &proc->block.as.captured.self, replace_self);
         }
-
-        if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
         if (!rb_ractor_shareable_p(vm_block_self(&proc->block))) {
             rb_raise(rb_eRactorIsolationError,
@@ -1643,7 +1643,7 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
         }
 
         proc_isolate_env(self, proc, read_only_variables);
-        proc->is_isolated = TRUE;
+        proc->header.is_isolated = TRUE;
     }
     else {
         const struct rb_block *block = vm_proc_block(self);
@@ -1896,9 +1896,9 @@ invoke_block_from_c_bh(rb_execution_context_t *ec, VALUE block_handler,
             VALUE procval = VM_BH_TO_PROC(block_handler);
             rb_proc_t *po;
             GetProcPtr(procval, po);
-            if (po->is_refined) cref = rb_proc_refinements_cref_for_call(procval);
+            if (po->header.is_refined) cref = rb_proc_refinements_cref_for_call(procval);
             if (force_blockarg == FALSE) {
-                is_lambda = po->is_lambda;
+                is_lambda = po->header.is_lambda;
             }
             block_handler = vm_block_to_block_handler(&po->block);
             goto again;
@@ -1999,7 +1999,7 @@ vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
                int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler,
                const rb_cref_t *cref)
 {
-    return invoke_block_from_c_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler, proc->is_lambda, cref, NULL);
+    return invoke_block_from_c_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler, proc->header.is_lambda, cref, NULL);
 }
 
 static VALUE
@@ -2018,7 +2018,7 @@ rb_vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc,
     VALUE self = vm_block_self(&proc->block);
     vm_block_handler_verify(passed_block_handler);
 
-    if (proc->is_from_method) {
+    if (proc->header.is_from_method) {
         return vm_invoke_bmethod(ec, proc, self, argc, argv, kw_splat, passed_block_handler, NULL);
     }
     else {
@@ -2033,7 +2033,7 @@ rb_vm_invoke_proc_with_self(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
 {
     vm_block_handler_verify(passed_block_handler);
 
-    if (proc->is_from_method) {
+    if (proc->header.is_from_method) {
         return vm_invoke_bmethod(ec, proc, self, argc, argv, kw_splat, passed_block_handler, NULL);
     }
     else {
@@ -4236,40 +4236,113 @@ m_core_set_postexe(VALUE self)
     return Qnil;
 }
 
-static VALUE core_hash_merge_kwd(VALUE hash, VALUE kw);
-
 static VALUE
-core_hash_merge(VALUE hash, long argc, const VALUE *argv)
+core_hash_merge(VALUE hash, long argc, const VALUE *argv, bool dup)
 {
-    Check_Type(hash, T_HASH);
-    VM_ASSERT(argc % 2 == 0);
-    rb_hash_bulk_insert(argc, argv, hash);
-    return hash;
+    if (NIL_P(hash)) {
+        hash = rb_cHash_empty_frozen;
+    }
+    else {
+        hash = rb_to_hash_type(hash);
+        Check_Type(hash, T_HASH);
+    }
+
+    return rb_hash_merge2_bulk(hash, argc, argv, dup);
 }
 
 static VALUE
 m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
 {
     VALUE hash = argv[0];
+    VM_ASSERT(argc % 2 == 1);
 
-    REWIND_CFP(hash = core_hash_merge(hash, argc-1, argv+1));
+    REWIND_CFP(hash = core_hash_merge(hash, argc - 1, argv + 1, true));
 
     return hash;
 }
 
-static int
-kwmerge_i(VALUE key, VALUE value, VALUE hash)
+static VALUE
+m_core_hash_merge_bang_ptr(int argc, VALUE *argv, VALUE recv)
 {
-    rb_hash_aset(hash, key, value);
-    return ST_CONTINUE;
+    VALUE hash = argv[0];
+    VM_ASSERT(argc % 2 == 1);
+
+    REWIND_CFP(hash = core_hash_merge(hash, argc - 1, argv + 1, false));
+
+    return hash;
+}
+
+static VALUE
+core_hash_merge_kwd(VALUE hash, VALUE kw, bool dup)
+{
+    kw = rb_to_hash_type(kw);
+    if (NIL_P(hash)) {
+        return dup ? rb_hash_resurrect(kw) : kw;
+    }
+    else {
+        hash = rb_to_hash_type(hash);
+        Check_Type(hash, T_HASH);
+        return rb_hash_merge2(hash, kw, dup);
+    }
 }
 
 static VALUE
 m_core_hash_merge_kwd(VALUE recv, VALUE hash, VALUE kw)
 {
-    if (!NIL_P(kw)) {
-        REWIND_CFP(hash = core_hash_merge_kwd(hash, kw));
+    // We don't own `hash` so we can't mutate it, nor just return it.
+    if (NIL_P(kw)) {
+        if (NIL_P(hash)) {
+            // If we knew that we're dealing with keyword arguments, and not a hash literal,
+            // we could return nil here.
+            return rb_hash_new();
+        }
+
+        hash = rb_hash_resurrect(hash);
     }
+    else {
+        REWIND_CFP(hash = core_hash_merge_kwd(hash, kw, true));
+    }
+    VM_ASSERT(CLASS_OF(hash));
+    return hash;
+}
+
+static VALUE
+m_core_hash_merge_bang_kwd(VALUE recv, VALUE hash, VALUE kw)
+{
+    // We own `hash` we should mutate it in place if possible.
+    if (NIL_P(kw)) {
+        if (NIL_P(hash)) {
+            hash = rb_hash_new();
+        }
+        else {
+            hash = rb_hash_resurrect(hash);
+        }
+    }
+    else {
+        REWIND_CFP(hash = core_hash_merge_kwd(hash, kw, false));
+    }
+    VM_ASSERT(CLASS_OF(hash));
+    return hash;
+}
+
+static VALUE
+core_hash_coerce(VALUE hash)
+{
+    if (NIL_P(hash)) {
+        return rb_hash_new();
+    }
+    VALUE new_hash = rb_to_hash_type(hash);
+    if (new_hash == hash) {
+        new_hash = rb_hash_dup(new_hash);
+    }
+    return new_hash;
+}
+
+static VALUE
+m_core_hash_coerce(VALUE recv, VALUE hash)
+{
+    REWIND_CFP(hash = core_hash_coerce(hash));
+    VM_ASSERT(CLASS_OF(hash));
     return hash;
 }
 
@@ -4289,13 +4362,6 @@ static VALUE
 m_core_ensure_shareable(VALUE recv, VALUE obj, VALUE name)
 {
     return rb_ractor_ensure_shareable(obj, name);
-}
-
-static VALUE
-core_hash_merge_kwd(VALUE hash, VALUE kw)
-{
-    rb_hash_foreach(rb_to_hash_type(kw), kwmerge_i, hash);
-    return hash;
 }
 
 extern VALUE *rb_gc_stack_start;
@@ -4466,7 +4532,10 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_undef_method, m_core_undef_method, 2);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
+    rb_define_method_id(klass, id_core_hash_merge_bang_ptr, m_core_hash_merge_bang_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
+    rb_define_method_id(klass, id_core_hash_merge_bang_kwd, m_core_hash_merge_bang_kwd, 2);
+    rb_define_method_id(klass, id_core_hash_coerce, m_core_hash_coerce, 1);
     rb_define_method_id(klass, id_core_raise, f_raise, -1);
     rb_define_method_id(klass, id_core_sprintf, f_sprintf, -1);
     rb_define_method_id(klass, idProc, f_proc, 0);

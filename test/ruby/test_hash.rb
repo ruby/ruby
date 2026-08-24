@@ -2107,6 +2107,36 @@ class TestHashOnly < Test::Unit::TestCase
     assert_equal(h2, h1)
   end
 
+  def test_replace_ar_with_st
+    # AR hash
+    h1 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7 }
+    # ST hash
+    h2 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9 }
+    # Replace AR hash with ST hash
+    h1.replace(h2)
+    assert_equal(h2, h1)
+  end
+
+  def test_replace_ar_with_ar
+    # AR hash
+    h1 = { a: 1, b: 2 }
+    # AR hash
+    h2 = { a: 1 }
+    # Replace AR hash with AR hash
+    h1.replace(h2)
+    assert_equal(h2, h1)
+  end
+
+  def test_replace_st_with_st
+    # ST hash
+    h1 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9 }
+    # ST hash
+    h2 = { a: 9, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9 }
+    # Replace ST hash with AR hash
+    h1.replace(h2)
+    assert_equal(h2, h1)
+  end
+
   def test_nil_to_h
     h = nil.to_h
     assert_equal({}, h)

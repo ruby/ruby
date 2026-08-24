@@ -836,6 +836,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 
 #if defined(USE_MN_THREADS) && USE_MN_THREADS
     if (th_has_coroutine(th)) {
+        // wait out any pending wake while th and its Ractor are still alive
+        rb_thread_wake_fence(th);
+
         // Run the coroutine thread's epilogue here, while th is still valid;
         // co_start then only makes the final transfer (see
         // coroutine_thread_terminated in thread_pthread_mn.c).
@@ -1506,26 +1509,12 @@ hrtime_update_expire(rb_hrtime_t *timeout, const rb_hrtime_t end)
 }
 COMPILER_WARNING_POP
 
+static int sleep_hrtime_until(rb_thread_t *th, rb_hrtime_t end, unsigned int fl);
+
 static int
 sleep_hrtime(rb_thread_t *th, rb_hrtime_t rel, unsigned int fl)
 {
-    enum rb_thread_status prev_status = th->status;
-    int woke;
-    rb_hrtime_t end = rb_hrtime_add(rb_hrtime_now(), rel);
-
-    th->status = THREAD_STOPPED;
-    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-    while (th->status == THREAD_STOPPED) {
-        native_sleep(th, &rel);
-        woke = vm_check_ints_blocking(th->ec);
-        if (woke && !(fl & SLEEP_SPURIOUS_CHECK))
-            break;
-        if (hrtime_update_expire(&rel, end))
-            break;
-        woke = 1;
-    }
-    th->status = prev_status;
-    return woke;
+    return sleep_hrtime_until(th, rb_hrtime_add(rb_hrtime_now(), rel), fl);
 }
 
 static int

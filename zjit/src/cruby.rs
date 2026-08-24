@@ -102,6 +102,7 @@ pub type RedefinitionFlag = u32;
 
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(dead_code)]
+#[allow(non_snake_case)] // bindgen names bitfield raw accessors like `type__raw`
 #[allow(clippy::all)] // warning meant to help with reading; not useful for generated code
 mod autogened {
     use super::*;

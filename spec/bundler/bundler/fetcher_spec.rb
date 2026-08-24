@@ -82,6 +82,11 @@ RSpec.describe Bundler::Fetcher do
           expect(fetcher.http_proxy).to be_nil
         end
       end
+      it "bypass proxy for every host when no_proxy is '*'" do
+        with_env_vars("HTTP_PROXY" => "http://proxy-example5.com", "NO_PROXY" => "*") do
+          expect(fetcher.http_proxy).to be_nil
+        end
+      end
     end
 
     def configured_connection

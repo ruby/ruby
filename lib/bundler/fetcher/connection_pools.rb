@@ -72,6 +72,9 @@ module Bundler
           env_proxy_for(uri)
         end
         return unless proxy
+        # NO_PROXY="*" bypasses the proxy for every host, which
+        # Gem::URI::Generic.use_proxy? does not understand.
+        return if no_proxy_env.strip == "*"
         return unless Gem::URI::Generic.use_proxy?(uri.hostname, nil, uri.port, no_proxy_env)
         proxy
       end
@@ -90,6 +93,10 @@ module Bundler
         configure_ssl(connection) if uri.scheme == "https"
         connection.open_timeout = @timeout
         connection.read_timeout = @timeout
+        # Stale connections are already resent by Gem::Request#perform_request,
+        # and Bundler::Retry retries whole requests, so the Gem::Net::HTTP
+        # level retry would only multiply the time spent on a timing out host.
+        connection.max_retries = 0
         connection.start
         connection
       end
