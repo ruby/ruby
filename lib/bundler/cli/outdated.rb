@@ -254,7 +254,7 @@ module Bundler
       remaining = cooldown_days_remaining(active_spec)
       if remaining
         adoptable = newest_out_of_cooldown(active_spec, current_spec)
-        spec_version += " (cooldown #{remaining}d#{", #{adoptable.version} available" if adoptable})"
+        spec_version += " (cooldown #{remaining}d#{", #{adoptable.version} out of cooldown" if adoptable})"
       end
       dependency = dependency.requirement if dependency
 

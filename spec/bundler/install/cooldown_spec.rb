@@ -506,7 +506,7 @@ RSpec.describe "bundle install with the cooldown setting" do
 
       bundle "outdated --cooldown 7", artifice: "compact_index_cooldown", raise_on_error: false
 
-      expect(out).to match(/mid_gem.*2\.0\.0 \(cooldown \d+d, 1\.5\.0 available\)/)
+      expect(out).to match(/mid_gem.*2\.0\.0 \(cooldown \d+d, 1\.5\.0 out of cooldown\)/)
     end
 
     it "shows no out-of-cooldown note when every version is inside the window" do
