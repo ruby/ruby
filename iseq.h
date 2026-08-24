@@ -58,41 +58,45 @@ typedef void (*rb_iseq_callback)(const rb_iseq_t *, void *);
 
 extern const ID rb_iseq_shared_exc_local_tbl[];
 
-#define ISEQ_COVERAGE(iseq)           ISEQ_BODY(iseq)->variable.coverage
-#define ISEQ_COVERAGE_SET(iseq, cov)  RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->variable.coverage, cov)
+/* Ensure body->variable is allocated, returning the struct. */
+struct rb_iseq_variable *rb_iseq_variable_ensure(rb_iseq_t *iseq);
+
+#define ISEQ_COVERAGE(iseq) \
+    (ISEQ_BODY(iseq)->variable ? ISEQ_BODY(iseq)->variable->coverage : Qnil)
+void rb_iseq_coverage_set(rb_iseq_t *iseq, VALUE cov);
+#define ISEQ_COVERAGE_SET(iseq, cov) rb_iseq_coverage_set(iseq, cov)
 #define ISEQ_LINE_COVERAGE(iseq)      RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_LINES)
 #define ISEQ_BRANCH_COVERAGE(iseq)    RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_BRANCHES)
 
-#define ISEQ_PC2BRANCHINDEX(iseq)         ISEQ_BODY(iseq)->variable.pc2branchindex
-#define ISEQ_PC2BRANCHINDEX_SET(iseq, h)  RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->variable.pc2branchindex, h)
+#define ISEQ_PC2BRANCHINDEX(iseq) \
+    (ISEQ_BODY(iseq)->variable ? ISEQ_BODY(iseq)->variable->pc2branchindex : Qnil)
+void rb_iseq_pc2branchindex_set(rb_iseq_t *iseq, VALUE h);
+#define ISEQ_PC2BRANCHINDEX_SET(iseq, h) rb_iseq_pc2branchindex_set(iseq, h)
 
-#define ISEQ_FLIP_CNT(iseq) ISEQ_BODY(iseq)->variable.flip_count
+#define ISEQ_FLIP_CNT(iseq) \
+    (ISEQ_BODY(iseq)->variable ? ISEQ_BODY(iseq)->variable->flip_count : 0)
+rb_snum_t rb_iseq_flip_cnt_increment(const rb_iseq_t *iseq);
+#define ISEQ_FLIP_CNT_INCREMENT(iseq) rb_iseq_flip_cnt_increment(iseq)
 
 #define ISEQ_FROZEN_STRING_LITERAL_ENABLED 1
 #define ISEQ_FROZEN_STRING_LITERAL_DISABLED 0
 #define ISEQ_FROZEN_STRING_LITERAL_UNSET -1
 
-static inline rb_snum_t
-ISEQ_FLIP_CNT_INCREMENT(const rb_iseq_t *iseq)
-{
-    rb_snum_t cnt = ISEQ_BODY(iseq)->variable.flip_count;
-    ISEQ_BODY(iseq)->variable.flip_count += 1;
-    return cnt;
-}
-
 static inline VALUE *
 ISEQ_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
 {
-    return ISEQ_BODY(iseq)->variable.original_iseq;
+    return ISEQ_BODY(iseq)->variable ? ISEQ_BODY(iseq)->variable->original_iseq : NULL;
 }
 
 static inline void
 ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
 {
-    VALUE *ptr = (VALUE *)ISEQ_BODY(iseq)->variable.original_iseq;
-    if (ptr) {
-        ISEQ_BODY(iseq)->variable.original_iseq = NULL;
-        SIZED_FREE_N(ptr, ISEQ_BODY(iseq)->iseq_size);
+    if (ISEQ_BODY(iseq)->variable) {
+        VALUE *ptr = ISEQ_BODY(iseq)->variable->original_iseq;
+        if (ptr) {
+            ISEQ_BODY(iseq)->variable->original_iseq = NULL;
+            SIZED_FREE_N(ptr, ISEQ_BODY(iseq)->iseq_size);
+        }
     }
 }
 

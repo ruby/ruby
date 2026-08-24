@@ -650,6 +650,14 @@ pub type rb_jit_func_t = ::std::option::Option<
     ) -> VALUE,
 >;
 #[repr(C)]
+pub struct rb_iseq_variable {
+    pub flip_count: rb_snum_t,
+    pub script_lines: VALUE,
+    pub coverage: VALUE,
+    pub pc2branchindex: VALUE,
+    pub original_iseq: *mut VALUE,
+}
+#[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_iseq_constant_body_rb_iseq_parameters {
     pub flags: rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1,
@@ -1273,16 +1281,8 @@ pub union rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1 {
     pub succ_index_table: *mut succ_index_table,
 }
 #[repr(C)]
-pub struct rb_iseq_constant_body__bindgen_ty_1 {
-    pub flip_count: rb_snum_t,
-    pub script_lines: VALUE,
-    pub coverage: VALUE,
-    pub pc2branchindex: VALUE,
-    pub original_iseq: *mut VALUE,
-}
-#[repr(C)]
 #[derive(Copy, Clone)]
-pub union rb_iseq_constant_body__bindgen_ty_2 {
+pub union rb_iseq_constant_body__bindgen_ty_1 {
     pub list: *mut iseq_bits_t,
     pub single: iseq_bits_t,
 }
