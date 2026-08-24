@@ -3994,6 +3994,9 @@ impl Function {
         let fallback_block = self.new_block(insn_idx);
         let join_block = self.new_block(insn_idx);
         let join_param = self.push_insn(join_block, Insn::Param);
+        // The join result may be used later in this type_specialize pass, before
+        // infer_types runs again. Both branches produce a Ruby value.
+        self.insn_types[join_param.to_usize()] = types::BasicObject;
         let edge = |target| BranchEdge { target, args: vec![] };
 
         // Compare the runtime array length with the profiled length before
