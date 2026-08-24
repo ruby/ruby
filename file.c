@@ -2246,12 +2246,29 @@ rb_file_file_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.zero?(file_name)   -> true or false
+ *   File.empty?(object) -> true or false
+ *   File.zero?(object) -> true or false
  *
- * Returns <code>true</code> if the named file exists and has
- * a zero size.
+ * Returns whether the given +object+, which may be a string path or an IO object,
+ * exists and is empty:
  *
- * _file_name_ can be an IO object.
+ *   filepath = 'foo'
+ *   File.empty?(filepath) # => false  # Entry does not exist.
+ *   File.write(filepath, '')
+ *   File.empty?(filepath) # => true   # File exists and is empty.
+ *   File.write(filepath, 'bar')
+ *   File.empty?(filepath) # => false  # File exists and is not empty.
+ *   File.delete(path)                 # Clean up.
+ *
+ *   dirpath = 'bar'
+ *   File.empty?(dirpath)  # => false  # Entry does not exist.
+ *   Dir.mkdir(dirpath)
+ *   File.empty?(dirpath)  # => false  # Directory exists and is not empty.
+ *   File.size(dirpath)    # => 4096   # (A directory is never empty.)
+ *   Dir.rmdir(dirpath)                # Clean up.
+ *
+ *   File.empty?($stdin)   # => true
+ *
  */
 
 static VALUE
