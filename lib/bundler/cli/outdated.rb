@@ -168,11 +168,14 @@ module Bundler
     end
 
     def matching_specs(active_spec, current_spec)
-      active_specs = active_spec.source.specs.search(current_spec.name).select {|spec| spec.installable_on_platform?(current_spec.platform) }.sort_by(&:version)
-      if !current_spec.version.prerelease? && !options[:pre] && active_specs.size > 1
-        active_specs.delete_if {|b| b.respond_to?(:version) && b.version.prerelease? }
+      @matching_specs ||= {}
+      @matching_specs[[current_spec.name, current_spec.platform]] ||= begin
+        active_specs = active_spec.source.specs.search(current_spec.name).select {|spec| spec.installable_on_platform?(current_spec.platform) }.sort_by(&:version)
+        if !current_spec.version.prerelease? && !options[:pre] && active_specs.size > 1
+          active_specs.delete_if {|b| b.respond_to?(:version) && b.version.prerelease? }
+        end
+        active_specs
       end
-      active_specs
     end
 
     # The newest version the cooldown setting would let bundler adopt right
