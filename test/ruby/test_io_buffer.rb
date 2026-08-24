@@ -23,6 +23,10 @@ class TestIOBuffer < Test::Unit::TestCase
     assert(value > 0, "Expected #{value} to be positive!")
   end
 
+  def test_version
+    assert_equal 3, IO::Buffer::VERSION
+  end
+
   def test_flags
     assert_equal 1, IO::Buffer::EXTERNAL
     assert_equal 2, IO::Buffer::INTERNAL
@@ -1129,7 +1133,7 @@ class TestIOBuffer < Test::Unit::TestCase
     input2.nonblock = false
     buffer = IO::Buffer.new(2)
 
-    thread1 = Thread.new {buffer.read(input1, 1, 0)}
+    thread1 = Thread.new {buffer.read(input1, 0, 1)}
     thread2 = Thread.new {buffer.read(input2, 1, 1)}
 
     Thread.pass until thread1.stop? && thread2.stop?
@@ -1178,18 +1182,31 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
-  def test_read_with_with_length
+  def test_read_with_length
     hello_world_tempfile do |io|
       buffer = IO::Buffer.new(128)
-      buffer.read(io, 5)
+      buffer.read(io, 0, 5)
       assert_equal "Hello", buffer.get_string(0, 5)
     end
   end
 
-  def test_read_with_with_offset
+  def test_read_returns_short_result
+    input, output = IO.pipe
+    input.nonblock = true
+    output.write("abc")
+
+    buffer = IO::Buffer.new(5)
+    assert_equal 3, buffer.read(input, 0, 5)
+    assert_equal "abc", buffer.get_string(0, 3)
+  ensure
+    input&.close
+    output&.close
+  end
+
+  def test_read_with_offset
     hello_world_tempfile do |io|
       buffer = IO::Buffer.new(128)
-      buffer.read(io, nil, 6)
+      buffer.read(io, 6)
       assert_equal "Hello", buffer.get_string(6, 5)
     end
   end
@@ -1198,7 +1215,7 @@ class TestIOBuffer < Test::Unit::TestCase
     hello_world_tempfile(100) do |io|
       buffer = IO::Buffer.new(1024)
       # Only read 24 bytes from the file, as we are starting at offset 1000 in the buffer.
-      assert_equal 24, buffer.read(io, 0, 1000)
+      assert_equal 24, buffer.read(io, 1000)
       assert_equal "Hello World", buffer.get_string(1000, 11)
     end
   end
@@ -1221,7 +1238,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     buffer = IO::Buffer.new(5)
     buffer.set_string("Hello")
-    buffer.write(io, 4, 1)
+    buffer.write(io, 1, 4)
 
     io.seek(0)
     assert_equal "ello", io.read(4)
@@ -1233,10 +1250,10 @@ class TestIOBuffer < Test::Unit::TestCase
     io = Tempfile.new
 
     assert_zero_length_io = proc do |buffer, offset = 0|
-      assert_equal 0, buffer.read(io, 0, offset)
-      assert_equal 0, buffer.pread(io, 0, 0, offset)
-      assert_equal 0, buffer.write(io, 0, offset)
-      assert_equal 0, buffer.pwrite(io, 0, 0, offset)
+      assert_equal 0, buffer.read(io, offset, 0)
+      assert_equal 0, buffer.pread(io, 0, offset, 0)
+      assert_equal 0, buffer.write(io, offset, 0)
+      assert_equal 0, buffer.pwrite(io, 0, offset, 0)
     end
 
     buffer = IO::Buffer.new(0)
@@ -1260,7 +1277,7 @@ class TestIOBuffer < Test::Unit::TestCase
     io.seek(0)
 
     buffer = IO::Buffer.new(128)
-    buffer.pread(io, 6, 5)
+    buffer.pread(io, 6, 0, 5)
 
     assert_equal "World", buffer.get_string(0, 5)
     assert_equal 0, io.tell
@@ -1274,7 +1291,7 @@ class TestIOBuffer < Test::Unit::TestCase
     io.seek(0)
 
     buffer = IO::Buffer.new(128)
-    buffer.pread(io, 6, 5, 6)
+    buffer.pread(io, 6, 6, 5)
 
     assert_equal "World", buffer.get_string(6, 5)
     assert_equal 0, io.tell
@@ -1287,7 +1304,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     buffer = IO::Buffer.new(128)
     buffer.set_string("World")
-    buffer.pwrite(io, 6, 5)
+    buffer.pwrite(io, 6, 0, 5)
 
     assert_equal 0, io.tell
 
@@ -1302,7 +1319,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     buffer = IO::Buffer.new(128)
     buffer.set_string("Hello World")
-    buffer.pwrite(io, 6, 5, 6)
+    buffer.pwrite(io, 6, 6, 5)
 
     assert_equal 0, io.tell
 

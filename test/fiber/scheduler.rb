@@ -371,116 +371,28 @@ end
 # This scheduler class implements `io_read` and `io_write` hooks which require
 # `IO::Buffer`.
 class IOBufferScheduler < Scheduler
-  EAGAIN = -Errno::EAGAIN::Errno
-
-  def io_read(io, buffer, length, offset)
-    total = 0
+  def io_read(io, buffer, offset, length)
     io.nonblock = true
 
-    while true
-      result = blocking{buffer.read(io, 0, offset)}
-
-      if result > 0
-        total += result
-        offset += result
-        break if total >= length
-      elsif result == 0
-        break
-      elsif result == EAGAIN
-        if length > 0
-          self.io_wait(io, IO::READABLE, nil)
-        else
-          return result
-        end
-      elsif result < 0
-        return result
-      end
-    end
-
-    return total
+    blocking{buffer.read(io, offset, length)}
   end
 
-  def io_write(io, buffer, length, offset)
-    total = 0
+  def io_write(io, buffer, offset, length)
     io.nonblock = true
 
-    while true
-      result = blocking{buffer.write(io, 0, offset)}
-
-      if result > 0
-        total += result
-        offset += result
-        break if total >= length
-      elsif result == 0
-        break
-      elsif result == EAGAIN
-        if length > 0
-          self.io_wait(io, IO::WRITABLE, nil)
-        else
-          return result
-        end
-      elsif result < 0
-        return result
-      end
-    end
-
-    return total
+    blocking{buffer.write(io, offset, length)}
   end
 
-  def io_pread(io, buffer, from, length, offset)
-    total = 0
+  def io_pread(io, buffer, from, offset, length)
     io.nonblock = true
 
-    while true
-      result = blocking{buffer.pread(io, from, 0, offset)}
-
-      if result > 0
-        total += result
-        offset += result
-        from += result
-        break if total >= length
-      elsif result == 0
-        break
-      elsif result == EAGAIN
-        if length > 0
-          self.io_wait(io, IO::READABLE, nil)
-        else
-          return result
-        end
-      elsif result < 0
-        return result
-      end
-    end
-
-    return total
+    blocking{buffer.pread(io, from, offset, length)}
   end
 
-  def io_pwrite(io, buffer, from, length, offset)
-    total = 0
+  def io_pwrite(io, buffer, from, offset, length)
     io.nonblock = true
 
-    while true
-      result = blocking{buffer.pwrite(io, from, 0, offset)}
-
-      if result > 0
-        total += result
-        offset += result
-        from += result
-        break if total >= length
-      elsif result == 0
-        break
-      elsif result == EAGAIN
-        if length > 0
-          self.io_wait(io, IO::WRITABLE, nil)
-        else
-          return result
-        end
-      elsif result < 0
-        return result
-      end
-    end
-
-    return total
+    blocking{buffer.pwrite(io, from, offset, length)}
   end
 
   def blocking(&block)
@@ -493,24 +405,24 @@ class IOScheduler < Scheduler
     @operations ||= []
   end
 
-  def io_write(io, buffer, length, offset)
+  def io_write(io, buffer, offset, length)
     descriptor = io.fileno
-    string = buffer.get_string
+    string = buffer.get_string(offset, length)
 
     self.operations << [:io_write, descriptor, string]
 
     Fiber.blocking do
-      buffer.write(io, 0, offset)
+      buffer.write(io, offset, length)
     end
   end
 end
 
 class IOErrorScheduler < Scheduler
-  def io_read(io, buffer, length, offset)
+  def io_read(io, buffer, offset, length)
     return -Errno::EBADF::Errno
   end
 
-  def io_write(io, buffer, length, offset)
+  def io_write(io, buffer, offset, length)
     return -Errno::EINVAL::Errno
   end
 end

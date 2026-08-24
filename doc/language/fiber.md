@@ -83,19 +83,37 @@ class Scheduler
   end
 
   # Read from the given io into the specified buffer.
-  # WARNING: Experimental hook! Do not use in production code!
   # @parameter io [IO] The io to read from.
   # @parameter buffer [IO::Buffer] The buffer to read into.
-  # @parameter length [Integer] The minimum amount to read.
-  def io_read(io, buffer, length)
+  # @parameter offset [Integer] The offset in the buffer to read to.
+  # @parameter length [Integer] The maximum amount to read in one operation.
+  def io_read(io, buffer, offset, length)
+  end
+
+  # Read from the given io at the specified position into the specified buffer.
+  # @parameter io [IO] The io to read from.
+  # @parameter buffer [IO::Buffer] The buffer to read into.
+  # @parameter from [Integer] The position in the io to read from.
+  # @parameter offset [Integer] The offset in the buffer to read to.
+  # @parameter length [Integer] The maximum amount to read in one operation.
+  def io_pread(io, buffer, from, offset, length)
   end
 
   # Write from the given buffer into the specified IO.
-  # WARNING: Experimental hook! Do not use in production code!
   # @parameter io [IO] The io to write to.
   # @parameter buffer [IO::Buffer] The buffer to write from.
-  # @parameter length [Integer] The minimum amount to write.
-  def io_write(io, buffer, length)
+  # @parameter offset [Integer] The offset in the buffer to write from.
+  # @parameter length [Integer] The maximum amount to write in one operation.
+  def io_write(io, buffer, offset, length)
+  end
+
+  # Write from the given buffer to the specified position in the given io.
+  # @parameter io [IO] The io to write to.
+  # @parameter buffer [IO::Buffer] The buffer to write from.
+  # @parameter from [Integer] The position in the io to write to.
+  # @parameter offset [Integer] The offset in the buffer to write from.
+  # @parameter length [Integer] The maximum amount to write in one operation.
+  def io_pwrite(io, buffer, from, offset, length)
   end
 
   # Sleep the current task for the specified duration, or forever if not
