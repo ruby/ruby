@@ -1565,10 +1565,19 @@ copy_compare_by_id(VALUE hash, VALUE basis)
     return hash;
 }
 
+static VALUE
+hash_new_capa(VALUE klass, size_t capa)
+{
+    return hash_init_capa(hash_alloc_capa(klass, 0, Qnil, capa, false), capa);
+}
+
 VALUE
 rb_hash_new_capa(long capa)
 {
-    return hash_init_capa(hash_alloc_capa(rb_cHash, 0, Qnil, capa, false), capa);
+    if (capa < 0) {
+        rb_raise(rb_eArgError, "negative hash size (or size too big)");
+    }
+    return hash_new_capa(rb_cHash, capa);
 }
 
 VALUE
@@ -1866,6 +1875,7 @@ rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifn
 }
 
 static VALUE rb_hash_to_a(VALUE hash);
+static VALUE hash_new_with_bulk_insert(VALUE klass, long argc, const VALUE *argv);
 
 /*
  *  call-seq:
@@ -1912,17 +1922,19 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     if (argc == 1) {
         tmp = rb_hash_s_try_convert(Qnil, argv[0]);
         if (!NIL_P(tmp)) {
-            if (!RHASH_EMPTY_P(tmp)  && rb_hash_compare_by_id_p(tmp)) {
+            if (RHASH_EMPTY_P(tmp)) {
+                return hash_new_capa(klass, 0);
+            }
+
+            if (rb_hash_compare_by_id_p(tmp)) {
                 /* hash_copy for non-empty hash will copy compare_by_identity
                    flag, but we don't want it copied. Work around by
                    converting hash to flattened array and using that. */
                 tmp = rb_hash_to_a(tmp);
             }
             else {
-                hash = hash_alloc(klass);
-                if (!RHASH_EMPTY_P(tmp))
-                    hash_copy(hash, tmp);
-                return hash;
+                hash = hash_alloc_capa(klass, 0, Qnil, RHASH_SIZE(tmp), false);
+                return hash_copy(hash, tmp);
             }
         }
         else {
@@ -1930,9 +1942,11 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
         }
 
         if (!NIL_P(tmp)) {
-            long i;
+            if (RARRAY_LEN(tmp) == 0) {
+                return hash_new_capa(klass, 0);
+            }
 
-            hash = hash_alloc(klass);
+            long i;
             for (i = 0; i < RARRAY_LEN(tmp); ++i) {
                 VALUE e = RARRAY_AREF(tmp, i);
                 VALUE v = rb_check_array_type(e);
@@ -1942,6 +1956,18 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
                     rb_raise(rb_eArgError, "wrong element type %s at %ld (expected array)",
                              rb_builtin_class_name(e), i);
                 }
+
+                if (i == 0) {
+                    switch (RARRAY_LEN(v)) {
+                      case 2:
+                        hash = hash_new_capa(klass, RARRAY_LEN(tmp));
+                        break;
+                      case 1:
+                        hash = hash_new_capa(klass, RARRAY_LEN(tmp) / 1);
+                        break;
+                    }
+                }
+
                 switch (RARRAY_LEN(v)) {
                   default:
                     rb_raise(rb_eArgError, "invalid number of elements (%ld for 1..2)",
@@ -1960,8 +1986,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
         rb_raise(rb_eArgError, "odd number of arguments for Hash");
     }
 
-    hash = hash_alloc(klass);
-    rb_hash_bulk_insert(argc, argv, hash);
+    hash = hash_new_with_bulk_insert(klass, argc, argv);
     hash_verify(hash);
     return hash;
 }
@@ -5224,12 +5249,18 @@ rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
     }
 }
 
+static VALUE
+hash_new_with_bulk_insert(VALUE klass, long argc, const VALUE *argv)
+{
+    VALUE val = hash_new_capa(klass, argc / 2);
+    rb_hash_bulk_insert(argc, argv, val);
+    return val;
+}
+
 VALUE
 rb_hash_new_with_bulk_insert(long argc, const VALUE *argv)
 {
-    VALUE val = rb_hash_new_capa(argc / 2);
-    rb_hash_bulk_insert(argc, argv, val);
-    return val;
+    return hash_new_with_bulk_insert(rb_cHash, argc, argv);
 }
 
 VALUE
