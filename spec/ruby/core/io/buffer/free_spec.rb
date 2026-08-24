@@ -81,6 +81,26 @@ describe "IO::Buffer#free" do
     end
   end
 
+  ruby_version_is "4.1" do
+    it "raises FrozenError without freeing a frozen buffer" do
+      buffer = IO::Buffer.new(4)
+      buffer.set_string("test")
+      buffer.freeze
+
+      -> { buffer.free }.should.raise(FrozenError)
+      buffer.null?.should == false
+      buffer.get_string.should == "test"
+    end
+
+    it "allows internal cleanup after a buffer is frozen inside .for" do
+      string = +"test"
+      buffer = IO::Buffer.for(string, &:freeze)
+
+      buffer.null?.should == true
+      (string << "!").should == "test!"
+    end
+  end
+
   it "is disallowed while locked, raising IO::Buffer::LockedError" do
     buffer = IO::Buffer.new(4)
     buffer.locked do

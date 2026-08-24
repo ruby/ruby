@@ -115,6 +115,18 @@ describe "IO::Buffer#resize" do
     @buffer.size.should == 1
   end
 
+  ruby_version_is "4.1" do
+    it "raises FrozenError without resizing a frozen buffer" do
+      buffer = IO::Buffer.new(4)
+      buffer.set_string("test")
+      buffer.freeze
+
+      -> { buffer.resize(8) }.should.raise(FrozenError)
+      buffer.size.should == 4
+      buffer.get_string.should == "test"
+    end
+  end
+
   it "always clears extra memory" do
     @buffer = IO::Buffer.new(4)
     @buffer.set_string("test")
