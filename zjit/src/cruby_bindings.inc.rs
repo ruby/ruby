@@ -410,7 +410,7 @@ pub type rb_atomic_t = ::std::os::raw::c_uint;
 #[repr(align(8))]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_id_table {
-    pub _bindgen_opaque_blob: [u64; 3usize],
+    pub _bindgen_opaque_blob: [u64; 5usize],
 }
 pub const imemo_env: imemo_type = 0;
 pub const imemo_cref: imemo_type = 1;

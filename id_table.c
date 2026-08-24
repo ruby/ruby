@@ -30,29 +30,36 @@ id2key(ID id)
    uses mark-bit on collisions - need extra 1 bit,
    ID is strictly 3 bits larger than rb_id_serial_t */
 
-typedef struct rb_id_item {
-    id_key_t key;
 #if SIZEOF_VALUE == 8
-    int      collision;
-#endif
-    VALUE    val;
-} item_t;
+#define COLLISION_TABLE_SIZE(capa) roomof((size_t)(capa), CHAR_BIT)
+#define ID_TABLE_ITEMS_SIZE(capa) \
+    ((sizeof(VALUE) + sizeof(id_key_t)) * (size_t)(capa) + COLLISION_TABLE_SIZE(capa))
 
-#if SIZEOF_VALUE == 8
-#define ITEM_GET_KEY(tbl, i) ((tbl)->items[i].key)
-#define ITEM_KEY_ISSET(tbl, i) ((tbl)->items && (tbl)->items[i].key)
-#define ITEM_COLLIDED(tbl, i) ((tbl)->items[i].collision)
-#define ITEM_SET_COLLIDED(tbl, i) ((tbl)->items[i].collision = 1)
+#define ITEM_GET_KEY(tbl, i) ((tbl)->keys[i])
+#define ITEM_KEY_ISSET(tbl, i) ((tbl)->items && (tbl)->keys[i])
+#define ITEM_COLLIDED(tbl, i) ((tbl)->collision_table[(i) / CHAR_BIT] & ((uint8_t)1 << ((i) % CHAR_BIT)))
+#define ITEM_SET_COLLIDED(tbl, i) ((tbl)->collision_table[(i) / CHAR_BIT] |= ((uint8_t)1 << ((i) % CHAR_BIT)))
+#define ITEM_VALUE(tbl, i) ((tbl)->items[i])
+
 static inline void
 ITEM_SET_KEY(struct rb_id_table *tbl, int i, id_key_t key)
 {
-    tbl->items[i].key = key;
+    tbl->keys[i] = key;
 }
 #else
+typedef struct rb_id_item {
+    id_key_t key;
+    VALUE    val;
+} item_t;
+
+#define ID_TABLE_ITEMS_SIZE(capa) (sizeof(item_t) * (size_t)(capa))
+
 #define ITEM_GET_KEY(tbl, i) ((tbl)->items[i].key >> 1)
 #define ITEM_KEY_ISSET(tbl, i) ((tbl)->items[i].key > 1)
 #define ITEM_COLLIDED(tbl, i) ((tbl)->items[i].key & 1)
 #define ITEM_SET_COLLIDED(tbl, i) ((tbl)->items[i].key |= 1)
+#define ITEM_VALUE(tbl, i) ((tbl)->items[i].val)
+
 static inline void
 ITEM_SET_KEY(struct rb_id_table *tbl, int i, id_key_t key)
 {
@@ -73,6 +80,19 @@ round_capa(int capa)
     return (capa + 1) << 2;
 }
 
+static void
+id_table_alloc_items(struct rb_id_table *tbl, int capa)
+{
+#if SIZEOF_VALUE == 8
+    /* The values, keys, and collision bitmap share a single allocation. */
+    tbl->items = ruby_xcalloc(1, ID_TABLE_ITEMS_SIZE(capa));
+    tbl->keys = (id_key_t *)(tbl->items + capa);
+    tbl->collision_table = (uint8_t *)(tbl->keys + capa);
+#else
+    tbl->items = ZALLOC_N(item_t, capa);
+#endif
+}
+
 struct rb_id_table *
 rb_id_table_init(struct rb_id_table *tbl, size_t s_capa)
 {
@@ -81,7 +101,7 @@ rb_id_table_init(struct rb_id_table *tbl, size_t s_capa)
     if (capa > 0) {
         capa = round_capa(capa);
         tbl->capa = (int)capa;
-        tbl->items = ZALLOC_N(item_t, capa);
+        id_table_alloc_items(tbl, capa);
     }
     return tbl;
 }
@@ -111,7 +131,10 @@ rb_id_table_clear(struct rb_id_table *tbl)
 {
     tbl->num = 0;
     tbl->used = 0;
-    MEMZERO(tbl->items, item_t, tbl->capa);
+    if (tbl->items) {
+        /* Values, keys, and collision bitmap live in one allocation. */
+        memset(tbl->items, 0, ID_TABLE_ITEMS_SIZE(tbl->capa));
+    }
 }
 
 size_t
@@ -123,7 +146,7 @@ rb_id_table_size(const struct rb_id_table *tbl)
 size_t
 rb_id_table_memsize(const struct rb_id_table *tbl)
 {
-    return sizeof(item_t) * tbl->capa + sizeof(struct rb_id_table);
+    return ID_TABLE_ITEMS_SIZE(tbl->capa) + sizeof(struct rb_id_table);
 }
 
 static int
@@ -161,7 +184,7 @@ hash_table_raw_insert(struct rb_id_table *tbl, id_key_t key, VALUE val)
         tbl->used++;
     }
     ITEM_SET_KEY(tbl, ix, key);
-    tbl->items[ix].val = val;
+    ITEM_VALUE(tbl, ix) = val;
 }
 
 static int
@@ -173,7 +196,7 @@ hash_delete_index(struct rb_id_table *tbl, int ix)
         }
         tbl->num--;
         ITEM_SET_KEY(tbl, ix, 0);
-        tbl->items[ix].val = 0;
+        ITEM_VALUE(tbl, ix) = 0;
         return TRUE;
     }
     else {
@@ -187,17 +210,17 @@ hash_table_extend(struct rb_id_table* tbl)
     if (tbl->used + (tbl->used >> 1) >= tbl->capa) {
         int new_cap = round_capa(tbl->num + (tbl->num >> 1));
         int i;
-        item_t* old;
-        struct rb_id_table tmp_tbl = {0, 0, 0};
+        void *old;
+        struct rb_id_table tmp_tbl = {0};
         if (new_cap < tbl->capa) {
             new_cap = round_capa(tbl->used + (tbl->used >> 1));
         }
         tmp_tbl.capa = new_cap;
-        tmp_tbl.items = ZALLOC_N(item_t, new_cap);
+        id_table_alloc_items(&tmp_tbl, new_cap);
         for (i = 0; i < tbl->capa; i++) {
             id_key_t key = ITEM_GET_KEY(tbl, i);
             if (key != 0) {
-                hash_table_raw_insert(&tmp_tbl, key, tbl->items[i].val);
+                hash_table_raw_insert(&tmp_tbl, key, ITEM_VALUE(tbl, i));
             }
         }
         old = tbl->items;
@@ -230,7 +253,7 @@ rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp)
     int index = hash_table_index(tbl, key);
 
     if (index >= 0) {
-        *valp = tbl->items[index].val;
+        *valp = ITEM_VALUE(tbl, index);
         return TRUE;
     }
     else {
@@ -244,7 +267,7 @@ rb_id_table_insert_key(struct rb_id_table *tbl, const id_key_t key, const VALUE 
     const int index = hash_table_index(tbl, key);
 
     if (index >= 0) {
-        tbl->items[index].val = val;
+        ITEM_VALUE(tbl, index) = val;
     }
     else {
         hash_table_extend(tbl);
@@ -275,7 +298,7 @@ rb_id_table_foreach(struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, v
     for (i=0; i<capa; i++) {
         if (ITEM_KEY_ISSET(tbl, i)) {
             const id_key_t key = ITEM_GET_KEY(tbl, i);
-            enum rb_id_table_iterator_result ret = (*func)(key2id(key), tbl->items[i].val, data);
+            enum rb_id_table_iterator_result ret = (*func)(key2id(key), ITEM_VALUE(tbl, i), data);
             RUBY_ASSERT(key != 0);
 
             if (ret == ID_TABLE_DELETE)
@@ -297,7 +320,7 @@ rb_id_table_foreach_values(struct rb_id_table *tbl, rb_id_table_foreach_values_f
 
     for (i=0; i<capa; i++) {
         if (ITEM_KEY_ISSET(tbl, i)) {
-            enum rb_id_table_iterator_result ret = (*func)(tbl->items[i].val, data);
+            enum rb_id_table_iterator_result ret = (*func)(ITEM_VALUE(tbl, i), data);
 
             if (ret == ID_TABLE_DELETE)
                 hash_delete_index(tbl, i);
@@ -314,12 +337,12 @@ rb_id_table_foreach_values_with_replace(struct rb_id_table *tbl, rb_id_table_for
 
     for (i = 0; i < capa; i++) {
         if (ITEM_KEY_ISSET(tbl, i)) {
-            enum rb_id_table_iterator_result ret = (*func)(tbl->items[i].val, data);
+            enum rb_id_table_iterator_result ret = (*func)(ITEM_VALUE(tbl, i), data);
 
             if (ret == ID_TABLE_REPLACE) {
-                VALUE val = tbl->items[i].val;
+                VALUE val = ITEM_VALUE(tbl, i);
                 ret = (*replace)(&val, data, TRUE);
-                tbl->items[i].val = val;
+                ITEM_VALUE(tbl, i) = val;
             }
 
             if (ret == ID_TABLE_STOP)
