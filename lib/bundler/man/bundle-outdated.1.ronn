@@ -79,9 +79,10 @@ are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
   the Latest column. When a version outside the window is newer than the
   installed one, the prose output also appends "newest out of cooldown
   X" and the table form becomes "(cooldown Nd, X out of cooldown)".
-  With `--filter-strict`, "newest" is already the cooldown-filtered
-  resolved version, so none of these annotations appear. See `cooldown`
-  in bundle-config(1).
+  With `--filter-strict` (or `--patch`, `--minor`, `--major`, which
+  imply it), "newest" is already the cooldown-filtered resolved version,
+  so none of these annotations appear. See `cooldown` in
+  bundle-config(1).
 
 ## PATCH LEVEL OPTIONS
 
