@@ -91,9 +91,9 @@ module Bundler
 
       def to_s
         begin
-          at = humanized_ref || current_branch
-
-          rev = "at #{at}@#{shortref_for_display(revision)}"
+          at = humanized_ref
+          at = "#{at}@" if at
+          rev = "at #{at}#{shortref_for_display(revision)}"
         rescue GitError
           ""
         end

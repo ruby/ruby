@@ -234,7 +234,7 @@ RSpec.describe "bundle update" do
       update_git "rails", "3.0", path: lib_path("rails"), gemspec: true
 
       bundle "update", all: true
-      expect(out).to include("Using rails 3.0 (was 2.3.2) from #{lib_path("rails")} (at main@#{revision_for(lib_path("rails"))[0..6]})")
+      expect(out).to include("Using rails 3.0 (was 2.3.2) from #{lib_path("rails")} (at #{revision_for(lib_path("rails"))[0..6]})")
     end
   end
 
