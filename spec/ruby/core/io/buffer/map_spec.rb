@@ -284,6 +284,42 @@ describe "IO::Buffer.map" do
   end
 
   context "with flags argument" do
+    ruby_version_is "4.1" do
+      it "allows the redundant MAPPED flag" do
+        @file = open_fixture
+        @buffer = IO::Buffer.map(@file, nil, 0, IO::Buffer::MAPPED)
+
+        @buffer.should.mapped?
+        @buffer.should.shared?
+      end
+
+      it "raises ArgumentError if INTERNAL is specified" do
+        @file = open_fixture
+        -> { IO::Buffer.map(@file, nil, 0, IO::Buffer::INTERNAL) }.should.raise(
+          ArgumentError,
+          "IO::Buffer::INTERNAL can't be used with IO::Buffer.map!"
+        )
+      end
+
+      it "raises ArgumentError if EXTERNAL is specified" do
+        @file = open_fixture
+        -> { IO::Buffer.map(@file, nil, 0, IO::Buffer::EXTERNAL) }.should.raise(
+          ArgumentError,
+          "IO::Buffer::EXTERNAL can't be used with IO::Buffer.map!"
+        )
+      end
+
+      it "raises ArgumentError if both SHARED and PRIVATE are specified" do
+        @file = open_fixture
+        flags = IO::Buffer::SHARED | IO::Buffer::PRIVATE
+
+        -> { IO::Buffer.map(@file, nil, 0, flags) }.should.raise(
+          ArgumentError,
+          "Flags can't include both IO::Buffer::SHARED and IO::Buffer::PRIVATE!"
+        )
+      end
+    end
+
     context "when READONLY flag is specified" do
       it "sets readonly flag on the buffer, allowing only reads" do
         @file = open_fixture

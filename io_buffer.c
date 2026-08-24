@@ -48,6 +48,9 @@ enum {
     // This is used to validate the flags given by the user.
     RB_IO_BUFFER_FLAGS_MASK = RB_IO_BUFFER_EXTERNAL | RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED | RB_IO_BUFFER_SHARED | RB_IO_BUFFER_PRIVATE | RB_IO_BUFFER_READONLY,
 
+    RB_IO_BUFFER_ALLOCATION_FLAGS = RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED,
+    RB_IO_BUFFER_MAPPING_FLAGS = RB_IO_BUFFER_SHARED | RB_IO_BUFFER_PRIVATE,
+
     RB_IO_BUFFER_DEBUG = 0,
 };
 
@@ -381,6 +384,24 @@ io_buffer_extract_flags(VALUE argument)
 
     // We deliberately ignore unknown flags. Any future flags which are exposed this way should be safe to ignore.
     return flags & RB_IO_BUFFER_FLAGS_MASK;
+}
+
+static inline enum rb_io_buffer_flags
+io_buffer_flags_for_map(enum rb_io_buffer_flags flags)
+{
+    if (flags & RB_IO_BUFFER_INTERNAL) {
+        rb_raise(rb_eArgError, "IO::Buffer::INTERNAL can't be used with IO::Buffer.map!");
+    }
+
+    if (flags & RB_IO_BUFFER_EXTERNAL) {
+        rb_raise(rb_eArgError, "IO::Buffer::EXTERNAL can't be used with IO::Buffer.map!");
+    }
+
+    if ((flags & RB_IO_BUFFER_MAPPING_FLAGS) == RB_IO_BUFFER_MAPPING_FLAGS) {
+        rb_raise(rb_eArgError, "Flags can't include both IO::Buffer::SHARED and IO::Buffer::PRIVATE!");
+    }
+
+    return flags;
 }
 
 // Extract an offset argument, which must be a non-negative integer.
@@ -821,6 +842,12 @@ rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags
  *  By default, the buffer is writable and expects the file to be writable.
  *  It is also shared, so several processes can use the same mapping.
  *
+ *  The mapping mode may be explicitly selected with IO::Buffer::SHARED or
+ *  IO::Buffer::PRIVATE, but the two flags are mutually exclusive.
+ *  IO::Buffer::MAPPED is accepted but redundant because this method always
+ *  creates a mapped buffer. IO::Buffer::INTERNAL and IO::Buffer::EXTERNAL
+ *  cannot be specified.
+ *
  *  You can pass IO::Buffer::READONLY in +flags+ argument to make a read-only buffer;
  *  this allows to work with files opened only for reading.
  *  Specifying IO::Buffer::PRIVATE in +flags+ creates a private mapping,
@@ -927,6 +954,7 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
     if (argc >= 4) {
         flags = io_buffer_extract_flags(argv[3]);
     }
+    flags = io_buffer_flags_for_map(flags);
 
     return rb_io_buffer_map(io, size, offset, flags);
 }
@@ -942,8 +970,49 @@ io_flags_for_size(size_t size)
     return RB_IO_BUFFER_INTERNAL;
 }
 
+static inline enum rb_io_buffer_flags
+io_buffer_flags_for_new(enum rb_io_buffer_flags flags, size_t size)
+{
+    if (size == 0) {
+        // A null buffer has no allocation and therefore no allocation flags:
+        return 0;
+    }
+
+    if (!(flags & RB_IO_BUFFER_ALLOCATION_FLAGS)) {
+        if (flags & RB_IO_BUFFER_MAPPING_FLAGS) {
+            // Mapping properties imply a mapped allocation:
+            flags |= RB_IO_BUFFER_MAPPED;
+        }
+        else {
+            // No explicit allocation mode was given, so infer one from size:
+            flags |= io_flags_for_size(size);
+        }
+    }
+
+    enum rb_io_buffer_flags allocation = flags & RB_IO_BUFFER_ALLOCATION_FLAGS;
+    RUBY_ASSERT(allocation != 0);
+
+    if (allocation == RB_IO_BUFFER_ALLOCATION_FLAGS) {
+        rb_raise(rb_eArgError, "Flags can't include both IO::Buffer::INTERNAL and IO::Buffer::MAPPED!");
+    }
+
+    if (flags & RB_IO_BUFFER_EXTERNAL) {
+        rb_raise(rb_eArgError, "IO::Buffer::EXTERNAL can't be used with IO::Buffer.new!");
+    }
+
+    if ((flags & RB_IO_BUFFER_MAPPING_FLAGS) && allocation != RB_IO_BUFFER_MAPPED) {
+        rb_raise(rb_eArgError, "IO::Buffer::SHARED and IO::Buffer::PRIVATE require IO::Buffer::MAPPED!");
+    }
+
+    if ((flags & RB_IO_BUFFER_MAPPING_FLAGS) == RB_IO_BUFFER_MAPPING_FLAGS) {
+        rb_raise(rb_eArgError, "Flags can't include both IO::Buffer::SHARED and IO::Buffer::PRIVATE!");
+    }
+
+    return flags;
+}
+
 /*
- *  call-seq: IO::Buffer.new([size = DEFAULT_SIZE, [flags = 0]]) -> io_buffer
+ *  call-seq: IO::Buffer.new([size = DEFAULT_SIZE, [flags]]) -> io_buffer
  *
  *  Create a new zero-filled IO::Buffer of +size+ bytes.
  *  By default, the buffer will be _internal_: directly allocated chunk
@@ -952,6 +1021,11 @@ io_flags_for_size(size_t size)
  *  virtual memory mechanism (anonymous +mmap+ on Unix, +VirtualAlloc+
  *  on Windows). The behavior can be forced by passing IO::Buffer::MAPPED
  *  as a second parameter.
+ *
+ *  IO::Buffer::SHARED and IO::Buffer::PRIVATE imply IO::Buffer::MAPPED and are
+ *  mutually exclusive. Otherwise, if +flags+ do not include an allocation
+ *  mode, IO::Buffer::INTERNAL or IO::Buffer::MAPPED is inferred from the
+ *  requested size. The two allocation modes are mutually exclusive.
  *
  *    buffer = IO::Buffer.new(4)
  *    # =>
@@ -985,9 +1059,7 @@ rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
     if (argc >= 2) {
         flags = io_buffer_extract_flags(argv[1]);
     }
-    else {
-        flags |= io_flags_for_size(size);
-    }
+    flags = io_buffer_flags_for_new(flags, size);
 
     io_buffer_initialize(self, buffer, NULL, size, flags, Qnil);
 
