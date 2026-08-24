@@ -670,6 +670,45 @@ class TestArray < Test::Unit::TestCase
     assert_equal(:ok, a.last)
   end
 
+  # Long enough that the array cannot be embedded, so `dup` shares the buffer
+  # instead of copying it.
+  SHARED_BUF_LEN = 200
+
+  def shared_buf_src
+    (0...SHARED_BUF_LEN).map {|i| "e#{i}"}
+  end
+
+  def test_concat_shared_longer_than_self
+    # `dup` makes both arrays share one buffer, so `b` and `a` start out with
+    # the same data pointer; `pop` then leaves `b` shorter than `a`.
+    src = shared_buf_src
+    a = @cls[*src]
+    b = a.dup
+    b.pop
+    assert_equal(src[0..-2] + src, b.concat(a))
+    GC.start
+    assert_equal(src.last, b.last)
+  end
+
+  def test_aset_shared_longer_than_self
+    src = shared_buf_src
+
+    a = @cls[*src]
+    b = a.dup
+    b.pop
+    b[0, 0] = a
+    assert_equal(src + src[0..-2], b)
+
+    a = @cls[*src]
+    c = a.dup
+    c.pop
+    c[5, 2] = a
+    assert_equal(src[0, 5] + src + src[0..-2][7..], c)
+
+    GC.start
+    assert_equal(src[0..-2].last, c.last)
+  end
+
   def test_count
     a = @cls[1, 2, 3, 1, 2]
     assert_equal(5, a.count)

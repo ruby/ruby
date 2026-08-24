@@ -2328,6 +2328,16 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
     {
         const VALUE *optr = RARRAY_CONST_PTR(ary);
         rofs = (rptr >= optr && rptr < optr + olen) ? rptr - optr : -1;
+        if (rofs != -1 && ARY_SHARED_P(ary) && rptr + rlen > optr + olen) {
+            /* The source overlaps the storage of ary, but reaches past ary's
+             * own elements: ary shares that storage with a longer array (see
+             * ary_make_shared).  Rebasing rptr onto the storage ary ends up
+             * with below would then read uninitialized slots, so give ary
+             * private storage now and keep reading from the shared storage,
+             * which the other array keeps alive. */
+            rb_ary_modify(ary);
+            rofs = -1;
+        }
     }
 
     if (beg >= olen) {
