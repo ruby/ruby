@@ -2123,7 +2123,7 @@ rb_hash_rehash(VALUE hash)
     }
     rb_hash_modify_check(hash);
     if (RHASH_AR_TABLE_P(hash)) {
-        tmp = hash_alloc(0);
+        tmp = hash_alloc_capa(0, 0, Qnil, RHASH_SIZE(hash), false);
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
 
         hash_ar_free_and_clear_table(hash);
