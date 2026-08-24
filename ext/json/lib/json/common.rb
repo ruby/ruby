@@ -142,7 +142,56 @@ module JSON
 
   # This exception is raised if a parser error occurs.
   class ParserError < JSONError
-    attr_reader :line, :column
+    # Line number where the parser encountered an error.
+    # Is <tt>nil</tt> when raised by JSON::ResumableParser.
+    attr_reader :line
+
+    # Column number where the parser encountered an error.
+    # Is <tt>nil</tt> when raised by JSON::ResumableParser.
+    attr_reader :column
+
+    # Returns a best effort JSONPath string representing where in the document
+    # the parser encountered an error:
+    #
+    #   begin
+    #     JSON.parse('{"articles": [ { "title": invalid } ]}')
+    #   rescue JSON::ParserError => error
+    #     error.json_path # => "$.articles[0].title"
+    #   end
+    def json_path
+      return @json_path if String === @json_path
+
+      if Array === @json_path
+        path = build_json_path(@json_path)
+        @json_path = path unless frozen?
+        return path
+      end
+    end
+
+    private
+
+    def build_json_path(segments)
+      error = false
+      path = segments.filter_map do |segment|
+        next if error
+
+        case segment
+        when Integer
+          "[#{segment}]"
+        when String, Symbol
+          if segment.match?(/\A[a-zA-Z\$\_][a-zA-Z\$\_0-9]*\z/)
+            ".#{segment}"
+          else
+            segment = segment.to_s.gsub(/["\\]/, { '"' => '\\"', '\\' => '\\\\' })
+            %{["#{segment}"]}
+          end
+        else
+          error = true
+          nil
+        end
+      end.join
+      "$#{path}".freeze
+    end
   end
 
   # This exception is raised if the nesting of parsed data structures is too
