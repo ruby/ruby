@@ -2095,6 +2095,12 @@ rb_io_buffer_compare(VALUE self, VALUE other)
         return RB_INT2NUM(1);
     }
 
+    if (size1 == 0) {
+        return RB_INT2NUM(0);
+    }
+
+    RUBY_ASSERT(ptr1 != NULL);
+    RUBY_ASSERT(ptr2 != NULL);
     return RB_INT2NUM(memcmp(ptr1, ptr2, size1));
 }
 
@@ -2808,6 +2814,10 @@ io_buffer_memmove(struct rb_io_buffer *buffer, size_t offset, const void *source
         rb_raise(rb_eArgError, "The computed source range exceeds the size of the source buffer!");
     }
 
+    if (length == 0) return;
+
+    RUBY_ASSERT(base != NULL);
+    RUBY_ASSERT(source_base != NULL);
     struct io_buffer_memmove_arguments arguments = {
         .destination = (unsigned char*)base+offset,
         .source = (unsigned char*)source_base+source_offset,
@@ -3072,6 +3082,9 @@ rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
 
     io_buffer_validate_range(buffer, offset, length);
 
+    if (length == 0) return;
+
+    RUBY_ASSERT(base != NULL);
     memset((char*)base + offset, value, length);
 }
 
@@ -3258,8 +3271,11 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
     size_t size;
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
-    base = (unsigned char*)base + offset;
     size = size - offset;
+    if (size == 0) return SIZET2NUM(0);
+
+    RUBY_ASSERT(base != NULL);
+    base = (unsigned char*)base + offset;
 
     struct io_buffer_read_internal_argument argument = {
         .descriptor = descriptor,
@@ -3280,7 +3296,8 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
  *  If +length+ is not given or +nil+, it defaults to the size of the buffer
  *  minus the offset, i.e. the entire buffer.
  *
- *  If +length+ is zero, exactly one <tt>read</tt> operation will occur.
+ *  If +length+ is zero, exactly one <tt>read</tt> operation will occur, unless
+ *  there is no available space in the buffer at +offset+.
  *
  *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
  *  buffer.
@@ -3376,8 +3393,11 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
     size_t size;
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
-    base = (unsigned char*)base + offset;
     size = size - offset;
+    if (size == 0) return SIZET2NUM(0);
+
+    RUBY_ASSERT(base != NULL);
+    base = (unsigned char*)base + offset;
 
     struct io_buffer_pread_internal_argument argument = {
         .descriptor = descriptor,
@@ -3400,7 +3420,8 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
  *  If +length+ is not given or +nil+, it defaults to the size of the buffer
  *  minus the offset, i.e. the entire buffer.
  *
- *  If +length+ is zero, exactly one <tt>pread</tt> operation will occur.
+ *  If +length+ is zero, exactly one <tt>pread</tt> operation will occur,
+ *  unless there is no available space in the buffer at +offset+.
  *
  *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
  *  buffer.
@@ -3497,8 +3518,11 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
-    base = (unsigned char*)base + offset;
     size = size - offset;
+    if (size == 0) return SIZET2NUM(0);
+
+    RUBY_ASSERT(base != NULL);
+    base = (const unsigned char*)base + offset;
 
     struct io_buffer_write_internal_argument argument = {
         .descriptor = descriptor,
@@ -3519,7 +3543,8 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
  *  If +length+ is not given or +nil+, it defaults to the size of the buffer
  *  minus the offset, i.e. the entire buffer.
  *
- *  If +length+ is zero, exactly one <tt>write</tt> operation will occur.
+ *  If +length+ is zero, exactly one <tt>write</tt> operation will occur,
+ *  unless there are no available bytes in the buffer at +offset+.
  *
  *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
  *  buffer.
@@ -3608,8 +3633,11 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
-    base = (unsigned char*)base + offset;
     size = size - offset;
+    if (size == 0) return SIZET2NUM(0);
+
+    RUBY_ASSERT(base != NULL);
+    base = (const unsigned char*)base + offset;
 
     struct io_buffer_pwrite_internal_argument argument = {
         .descriptor = descriptor,
@@ -3640,7 +3668,8 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
  *  If +length+ is not given or +nil+, it defaults to the size of the buffer
  *  minus the offset, i.e. the entire buffer.
  *
- *  If +length+ is zero, exactly one <tt>pwrite</tt> operation will occur.
+ *  If +length+ is zero, exactly one <tt>pwrite</tt> operation will occur,
+ *  unless there are no available bytes in the buffer at +offset+.
  *
  *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
  *  buffer.
@@ -4096,6 +4125,9 @@ io_buffer_bit_count(int argc, VALUE *argv, VALUE self)
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
+    if (length == 0) return SIZET2NUM(0);
+
+    RUBY_ASSERT(base != NULL);
     size_t count = memory_bit_count((const unsigned char *)base + offset, length);
 
     return SIZET2NUM(count);
