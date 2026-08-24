@@ -1318,14 +1318,14 @@ rb_io_buffer_size(VALUE self)
 /*
  *  call-seq: valid? -> true or false
  *
- *  Returns whether the buffer's recorded memory range currently exists within
- *  its source. A buffer which is not a slice is always valid, including a null
- *  buffer.
+ *  A buffer which is not a slice is always valid, including a null buffer.
+ *  Only slices can become invalid.
  *
- *  A slice can become invalid if its source is freed, transferred, shrunk past
- *  the slice, or reallocated at a different address. Validity is dynamic: if
- *  the source later contains the same address range again, the slice becomes
- *  valid again.
+ *  A slice is valid when its entire recorded memory range is contained within
+ *  its source's current memory range. It can become invalid if its source is
+ *  freed, transferred, shrunk past the slice, or reallocated at a different
+ *  address. Validity is dynamic: if the source later contains the same address
+ *  range again, the slice becomes valid again.
  *
  *  #valid?, #null? and #empty? describe independent properties. For example,
  *  an invalid slice can still have a non-null address and a non-zero size.
