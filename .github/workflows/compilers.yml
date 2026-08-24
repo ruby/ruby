@@ -62,7 +62,8 @@ jobs:
         with:
           name: compilation-source
           path: ${{ runner.temp }}/compilation-source.tar
-          compression-level: 0
+          compression-level: 5
+          overwrite: true
           retention-days: 1
 
   compile:
@@ -241,7 +242,7 @@ jobs:
       - name: Create empty source artifact
         run: touch compilation-source.empty
         working-directory: ${{ runner.temp }}
-        if: ${{ always() }}
+        if: ${{ needs.compile.result == 'success' }}
       - name: Shrink source artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -249,7 +250,7 @@ jobs:
           path: ${{ runner.temp }}/compilation-source.empty
           overwrite: true
           retention-days: 1
-        if: ${{ always() }}
+        if: ${{ needs.compile.result == 'success' }}
 
       - run: false
         working-directory:
