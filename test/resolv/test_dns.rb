@@ -943,4 +943,209 @@ class TestResolvDNS < Test::Unit::TestCase
       client_thread.join
     end
   end
+
+  def accept_within_timeout(t)
+    Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { t.accept }
+  end
+
+  # Reads one length prefixed DNS message from +sock+.
+  def read_framed_query(sock)
+    len_data = sock.read(2)
+    flunk('the client closed the connection before sending a query') unless len_data&.bytesize == 2
+    Resolv::DNS::Message.decode(sock.read(len_data.unpack('n')[0]))
+  end
+
+  # Builds the encoded reply answering +query+ with a single A record.
+  def reply_for_query(query, address)
+    reply = Resolv::DNS::Message.new(query.id)
+    reply.qr = 1
+    reply.rd = query.rd
+    reply.ra = 1
+    query.each_question do |name, typeclass|
+      reply.add_question(name, typeclass)
+      reply.add_answer(name, 3600, Resolv::DNS::Resource::IN::A.new(address))
+    end
+    reply.encode
+  end
+
+  def framed(encoded)
+    [encoded.bytesize].pack('n') << encoded
+  end
+
+  # Runs a TCP server which replies with +reply+ and then keeps the connection
+  # open until the client side is done, so that only the timeout can end the
+  # request.
+  def with_tcp_server_keeping_connection_open(reply)
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+      done = Thread::Queue.new
+
+      server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          ct.recv(512)
+          ct.write(reply)
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      client_thread = Thread.new do
+        begin
+          yield server_address, server_port
+        ensure
+          done.push(true)
+        end
+      end
+
+      assert_join_threads([client_thread, server_thread])
+    end
+  end
+
+  def request_over_tcp(server_address, server_port, tout)
+    requester = Resolv::DNS::Requester::TCP.new(server_address, server_port)
+    begin
+      msg = Resolv::DNS::Message.new
+      msg.add_question('example.org', Resolv::DNS::Resource::IN::A)
+      sender = requester.sender(msg, msg)
+      Timeout.timeout(EnvUtil.apply_timeout_scale(10)) do
+        requester.request(sender, EnvUtil.apply_timeout_scale(tout))
+      end
+    ensure
+      requester.close
+    end
+  end
+
+  def test_tcp_partial_length_prefix_kept_open
+    with_tcp_server_keeping_connection_open("\x00") do |server_address, server_port|
+      assert_raise(Resolv::ResolvTimeout) do
+        request_over_tcp(server_address, server_port, 0.5)
+      end
+    end
+  end
+
+  def test_tcp_partial_message_body_kept_open
+    reply = [10].pack('n') << '12345' # 5 bytes of a 10 byte message
+    with_tcp_server_keeping_connection_open(reply) do |server_address, server_port|
+      assert_raise(Resolv::ResolvTimeout) do
+        request_over_tcp(server_address, server_port, 0.5)
+      end
+    end
+  end
+
+  def test_tcp_complete_reply_kept_open
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+      done = Thread::Queue.new
+
+      server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          ct.write(framed(reply_for_query(read_framed_query(ct), '192.0.2.1')))
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      client_thread = Thread.new do
+        begin
+          reply, = request_over_tcp(server_address, server_port, 2)
+          assert_equal(1, reply.answer.length)
+          assert_equal('192.0.2.1', reply.answer[0][2].address.to_s)
+        ensure
+          done.push(true)
+        end
+      end
+
+      assert_join_threads([client_thread, server_thread])
+    end
+  end
+
+  def test_tcp_reply_arriving_in_two_chunks
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+      done = Thread::Queue.new
+
+      server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          reply = framed(reply_for_query(read_framed_query(ct), '192.0.2.1'))
+          ct.write(reply.byteslice(0, 6))
+          sleep EnvUtil.apply_timeout_scale(0.2)
+          ct.write(reply.byteslice(6..-1))
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      client_thread = Thread.new do
+        begin
+          reply, = request_over_tcp(server_address, server_port, 2)
+          assert_equal(1, reply.answer.length)
+          assert_equal('192.0.2.1', reply.answer[0][2].address.to_s)
+        ensure
+          done.push(true)
+        end
+      end
+
+      assert_join_threads([client_thread, server_thread])
+    end
+  end
+
+  def test_truncated_tcp_fallback_with_partial_message_body_kept_open
+    with_udp_and_tcp('127.0.0.1', 0) do |u, t|
+      _, server_port, _, server_address = u.addr
+      done = Thread::Queue.new
+
+      client_thread = Thread.new do
+        begin
+          dns = Resolv::DNS.new(nameserver_port: [[server_address, server_port]],
+                                raise_timeout_errors: true)
+          begin
+            dns.timeouts = EnvUtil.apply_timeout_scale(0.5)
+            assert_raise(Resolv::ResolvError) do
+              Timeout.timeout(EnvUtil.apply_timeout_scale(10)) do
+                dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+              end
+            end
+          ensure
+            dns.close
+          end
+        ensure
+          done.push(true)
+        end
+      end
+
+      udp_server_thread = Thread.new do
+        msg, (_, client_port, _, client_address) =
+          Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
+        id, word2, = msg.unpack('nnnnnn')
+        opcode = (word2 & 0x7800) >> 11
+        rd = (word2 & 0x0100) >> 8
+        qr = 1
+        tc = 1 # ask the client to retry over TCP
+        ra = 1
+        word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
+        u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
+      end
+
+      tcp_server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          ct.recv(512)
+          ct.write([10].pack('n') << '12345') # 5 bytes of a 10 byte message
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
+    end
+  end
+
+
 end
