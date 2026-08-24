@@ -90,6 +90,27 @@ class Gem::Cooldown
     end
   end
 
+  # Matches an ISO 8601 time zone designator at the end of a timestamp.
+  TIME_ZONE_SUFFIX = /(?:Z|z|[+-]\d{2}(?::?\d{2})?)\z/ # :nodoc:
+  private_constant :TIME_ZONE_SUFFIX
+
+  ##
+  # Parses a +created_at+ timestamp from the compact index.  A timestamp
+  # without a time zone offset is read as UTC, because reading it as local
+  # time would shift the cooldown window by the environment's offset.
+  # Returns nil for anything unparsable, so the cooldown fails open.
+
+  def self.parse_created_at(value)
+    return unless value.is_a?(String)
+
+    require "time"
+    begin
+      Time.iso8601(value.match?(TIME_ZONE_SUFFIX) ? value : "#{value}Z")
+    rescue ArgumentError
+      nil
+    end
+  end
+
   ##
   # Warns once per process that +source+ did not provide publish times, so
   # the cooldown cannot be applied to gems from it.

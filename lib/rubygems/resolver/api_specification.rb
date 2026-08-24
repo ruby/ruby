@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../cooldown"
+
 ##
 # Represents a specification retrieved via the Compact Index API.
 #
@@ -114,13 +116,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
 
   def parse_created_at(value)
     value = value.first if value.is_a?(Array)
-    return unless value.is_a?(String)
 
-    require "time"
-    begin
-      Time.iso8601(value)
-    rescue ArgumentError
-      nil
-    end
+    Gem::Cooldown.parse_created_at(value)
   end
 end
