@@ -567,6 +567,34 @@ RSpec.describe "bundle install with the cooldown setting" do
       expect(out).not_to include("out of cooldown")
     end
 
+    it "uses the singular form when one cooldown day remains" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "mid_gem", "1.0.0"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            mid_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          mid_gem (= 1.0.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      # mid_gem 2.0.0 is one day old, so a two-day window leaves one day
+      bundle "outdated --cooldown 2 --parseable", artifice: "compact_index_cooldown", raise_on_error: false
+
+      expect(out).to match(/mid_gem \(newest 2\.0\.0, installed 1\.0\.0.*in cooldown for 1 more day, newest out of cooldown 1\.5\.0\)/)
+    end
+
     it "leaves bundle outdated output untouched when cooldown is not enabled" do
       gemfile <<-G
         source "https://gem.repo3"
