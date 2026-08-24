@@ -1983,13 +1983,20 @@ rb_file_blockdev_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.chardev?(filepath) -> true or false
+ *   File.chardev?(object) -> true or false
  *
- * Returns +true+ if +filepath+ points to a character device, +false+ otherwise.
+ * Returns whether +object+ (a path or IO object)
+ * represents a character device (i.e., a sequential-access device):
  *
- *   File.chardev?($stdin)     # => true
- *   File.chardev?('t.txt')     # => false
+ *   File.chardev?('/dev/tty')     # => true
+ *   File.chardev?('/dev/null')    # => true
+ *   File.chardev?($stdin)         # => true
+ *   File.chardev?('/dev/nvme0n1') # => false
+ *   File.chardev?('/dev/loop0')   # => false
+ *   File.chardev?('nosuch')       # => false
  *
+ *
+ * The returned value is filesystem-dependent; on Windows, always +false+.
  */
 static VALUE
 rb_file_chardev_p(VALUE obj, VALUE fname)
