@@ -164,11 +164,26 @@ module Bundler
 
       return active_spec if strict
 
+      matching_specs(active_spec, current_spec).last
+    end
+
+    def matching_specs(active_spec, current_spec)
       active_specs = active_spec.source.specs.search(current_spec.name).select {|spec| spec.installable_on_platform?(current_spec.platform) }.sort_by(&:version)
       if !current_spec.version.prerelease? && !options[:pre] && active_specs.size > 1
         active_specs.delete_if {|b| b.respond_to?(:version) && b.version.prerelease? }
       end
-      active_specs.last
+      active_specs
+    end
+
+    # The newest version the cooldown setting would let bundler adopt right
+    # now, when the newest overall version is still inside the window. Only a
+    # version strictly between the installed one and the newest one is an
+    # adoptable update worth showing.
+    def newest_out_of_cooldown(active_spec, current_spec)
+      newest = matching_specs(active_spec, current_spec).reverse_each.find {|spec| cooldown_days_remaining(spec).nil? }
+      return unless newest
+      return if newest.version >= active_spec.version || newest.version <= current_spec.version
+      newest
     end
 
     def print_gems(gems_list)
@@ -214,7 +229,11 @@ module Bundler
       spec_outdated_info += ", released #{release_date}" unless release_date.empty?
 
       remaining = cooldown_days_remaining(active_spec)
-      spec_outdated_info += ", in cooldown for #{remaining} more day#{"s" if remaining > 1}" if remaining
+      if remaining
+        spec_outdated_info += ", in cooldown for #{remaining} more day#{"s" if remaining > 1}"
+        adoptable = newest_out_of_cooldown(active_spec, current_spec)
+        spec_outdated_info += ", newest out of cooldown #{adoptable.version}" if adoptable
+      end
 
       spec_outdated_info += ")"
 
@@ -233,7 +252,10 @@ module Bundler
       current_version = "#{current_spec.version}#{current_spec.git_version}"
       spec_version = "#{active_spec.version}#{active_spec.git_version}"
       remaining = cooldown_days_remaining(active_spec)
-      spec_version += " (cooldown #{remaining}d)" if remaining
+      if remaining
+        adoptable = newest_out_of_cooldown(active_spec, current_spec)
+        spec_version += " (cooldown #{remaining}d#{", #{adoptable.version} available" if adoptable})"
+      end
       dependency = dependency.requirement if dependency
 
       ret_val = [active_spec.name, current_version, spec_version, dependency.to_s, groups.to_s]
