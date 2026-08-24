@@ -3977,16 +3977,17 @@ impl Function {
         args
     }
 
-    /// Dispatch a caller splat to a fixed-length direct path, falling back to the
-    /// original Send when its length differs or ruby2_keywords semantics apply.
+    /// Dispatch a Send with a caller splat between a fixed-length direct path and
+    /// the original Send fallback. The callback generates the direct path after
+    /// the runtime length and ruby2_keywords checks have been connected.
     fn dispatch_caller_splat(
         &mut self,
         block: BlockId,
         caller_splat: CallerSplat,
         optimized_block: BlockId,
-        optimized_result: InsnId,
         send: &Insn,
         state: InsnId,
+        emit_optimized: impl FnOnce(&mut Function, BlockId) -> InsnId,
     ) -> (BlockId, InsnId) {
         // The fixed-length direct path and VM fallback produce the result of the
         // same Send, so route them through one join block.
@@ -4041,14 +4042,16 @@ impl Function {
             });
         }
 
+        // Generate the direct path only in the block selected by the checks above.
+        let optimized_result = emit_optimized(self, optimized_block);
+        self.push_insn(optimized_block, Insn::Jump(BranchEdge { target: join_block, args: vec![optimized_result] }));
+
         // Preserve the original splat Send on the fallback path so VM argument
         // setup handles lengths and keyword conversion that SendDirect cannot.
         self.count(fallback_block, Counter::complex_arg_pass_caller_splat);
         let fallback_result = self.push_insn(fallback_block, send.clone());
         self.set_dynamic_send_reason(fallback_result, ComplexArgPass);
         self.push_insn(fallback_block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
-
-        self.push_insn(optimized_block, Insn::Jump(BranchEdge { target: join_block, args: vec![optimized_result] }));
 
         (join_block, join_param)
     }
@@ -4813,8 +4816,9 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             };
 
-                            // Keep splat expansion and optimized-send guards on the path selected by
-                            // the runtime length check. Calls without a splat use the current block.
+                            // Start the direct path in a detached block so a failed singleton-class
+                            // assumption can discard it before caller-splat dispatch connects the CFG.
+                            // Calls without a splat use the current block directly.
                             let optimized_block = if caller_splat.is_some() {
                                 let insn_idx = self.frame_state(state).insn_idx() as u32;
                                 self.new_block(insn_idx)
@@ -4831,38 +4835,38 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
-                            if caller_splat.is_some() {
-                                // Count caller-splat executions that take this optimized path.
-                                // This is a feature-specific counter, not part of optimized_send_count.
-                                self.count(optimized_block, Counter::caller_splat_optimized);
-                            }
+                            let emit_optimized = move |function: &mut Function, optimized_block: BlockId| {
+                                if caller_splat.is_some() {
+                                    // Count caller-splat executions that take this optimized path.
+                                    // This is a feature-specific counter, not part of optimized_send_count.
+                                    function.count(optimized_block, Counter::caller_splat_optimized);
+                                }
 
-                            // Add PatchPoint for method redefinition
-                            self.push_insn(optimized_block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                                // Add PatchPoint for method redefinition
+                                function.push_insn(optimized_block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
 
-                            // Add GuardType for profiled receiver
-                            if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(optimized_block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
-                                self.insn_types[recv] = self.infer_type(recv);
-                            }
+                                // Add GuardType for profiled receiver
+                                let recv = if let Some(profiled_type) = profiled_type {
+                                    let recv = function.push_insn(optimized_block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
+                                    function.insn_types[recv] = function.infer_type(recv);
+                                    recv
+                                } else {
+                                    recv
+                                };
 
-                            let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
-                                self.emit_send_direct_args(optimized_block, call, &args, send_frame_state);
-                            let replacement = self.try_inline_send_direct(optimized_block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, block: send_block })));
-                            if let Some(caller_splat) = caller_splat {
-                                let (join_block, join_param) = self.dispatch_caller_splat(
-                                    block,
-                                    caller_splat,
-                                    optimized_block,
-                                    replacement,
-                                    &send,
-                                    state,
-                                );
-                                self.make_equal_to(insn_id, join_param);
+                                let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
+                                    function.emit_send_direct_args(optimized_block, call, &args, send_frame_state);
+                                function.try_inline_send_direct(optimized_block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, block: send_block })))
+                            };
+
+                            let replacement = if let Some(caller_splat) = caller_splat {
+                                let (join_block, join_param) = self.dispatch_caller_splat(block, caller_splat, optimized_block, &send, state, emit_optimized);
                                 block = join_block;
+                                join_param
                             } else {
-                                self.make_equal_to(insn_id, replacement);
-                            }
+                                emit_optimized(self, optimized_block)
+                            };
+                            self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
                             let proc = unsafe { rb_jit_get_proc_ptr(procv) };
