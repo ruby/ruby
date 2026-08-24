@@ -416,6 +416,16 @@ enum lvar_state {
     lvar_reassigned,
 };
 
+/* Lazily-allocated per-iseq variable data. NULL when unused (the common case:
+ * no coverage, no script_lines, no flip-flops, no disassembly). */
+struct rb_iseq_variable {
+    rb_snum_t flip_count;
+    VALUE script_lines;
+    VALUE coverage;
+    VALUE pc2branchindex;
+    VALUE *original_iseq;
+};
+
 struct rb_iseq_constant_body {
     enum rb_iseq_type type;
 
@@ -527,13 +537,7 @@ struct rb_iseq_constant_body {
     union iseq_inline_storage_entry *is_entries; /* [ TS_IVC | TS_ICVARC | TS_ISE | TS_IC ] */
     struct rb_call_data *call_data; //struct rb_call_data calls[ci_size];
 
-    struct {
-        rb_snum_t flip_count;
-        VALUE script_lines;
-        VALUE coverage;
-        VALUE pc2branchindex;
-        VALUE *original_iseq;
-    } variable;
+    struct rb_iseq_variable *variable;
 
     unsigned int local_table_size;
     unsigned int ic_size;     // Number of IC caches
