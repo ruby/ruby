@@ -427,9 +427,11 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_compare_zero_length
     buffer1 = IO::Buffer.new(0)
     buffer2 = IO::Buffer.new(1)
+    buffer3 = IO::Buffer.new(0)
 
     assert_negative buffer1 <=> buffer2
     assert_positive buffer2 <=> buffer1
+    assert_equal 0, buffer1 <=> buffer3
   end
 
   def test_slice
@@ -887,6 +889,13 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(ArgumentError) {buffer.clear(0, SIZE_MAX-7, 10)}
   end
 
+  def test_clear_zero_length
+    buffer = IO::Buffer.new(0)
+
+    assert_same buffer, buffer.clear
+    assert_predicate buffer, :empty?
+  end
+
   def test_invalidation
     input, output = IO.pipe
 
@@ -1016,6 +1025,31 @@ class TestIOBuffer < Test::Unit::TestCase
 
     io.seek(0)
     assert_equal "ello", io.read(4)
+  ensure
+    io.close!
+  end
+
+  def test_zero_length_io
+    io = Tempfile.new
+
+    assert_zero_length_io = proc do |buffer, offset = 0|
+      assert_equal 0, buffer.read(io, 0, offset)
+      assert_equal 0, buffer.pread(io, 0, 0, offset)
+      assert_equal 0, buffer.write(io, 0, offset)
+      assert_equal 0, buffer.pwrite(io, 0, 0, offset)
+    end
+
+    buffer = IO::Buffer.new(0)
+    assert_predicate buffer, :null?
+    assert_zero_length_io.call(buffer)
+
+    IO::Buffer.for("") do |buffer|
+      refute_predicate buffer, :null?
+      assert_zero_length_io.call(buffer)
+    end
+
+    buffer = IO::Buffer.new(8)
+    assert_zero_length_io.call(buffer, buffer.size)
   ensure
     io.close!
   end
