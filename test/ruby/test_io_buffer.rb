@@ -125,6 +125,74 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_new_invalid_flags
+    assert_raise(ArgumentError) do
+      IO::Buffer.new(128, IO::Buffer::EXTERNAL)
+    end
+
+    assert_raise(ArgumentError) do
+      IO::Buffer.new(128, IO::Buffer::INTERNAL | IO::Buffer::MAPPED)
+    end
+
+    assert_raise(ArgumentError) do
+      IO::Buffer.new(128, IO::Buffer::INTERNAL | IO::Buffer::SHARED)
+    end
+
+    assert_raise(ArgumentError) do
+      IO::Buffer.new(128, IO::Buffer::INTERNAL | IO::Buffer::PRIVATE)
+    end
+
+    assert_raise(ArgumentError) do
+      IO::Buffer.new(128, IO::Buffer::MAPPED | IO::Buffer::SHARED | IO::Buffer::PRIVATE)
+    end
+  end
+
+  def test_new_infers_allocation_mode_with_flags
+    internal = IO::Buffer.new(128, IO::Buffer::READONLY)
+    assert_predicate internal, :internal?
+    assert_predicate internal, :readonly?
+
+    mapped = IO::Buffer.new(IO::Buffer::PAGE_SIZE, IO::Buffer::READONLY)
+    assert_predicate mapped, :mapped?
+    assert_predicate mapped, :readonly?
+
+    shared = IO::Buffer.new(128, IO::Buffer::SHARED)
+    assert_predicate shared, :mapped?
+    assert_predicate shared, :shared?
+
+    private_buffer = IO::Buffer.new(128, IO::Buffer::PRIVATE)
+    assert_predicate private_buffer, :mapped?
+    assert_predicate private_buffer, :private?
+  end
+
+  def test_map_invalid_flags
+    File.open(__FILE__) do |file|
+      assert_raise(ArgumentError) do
+        IO::Buffer.map(file, nil, 0, IO::Buffer::INTERNAL)
+      end
+
+      assert_raise(ArgumentError) do
+        IO::Buffer.map(file, nil, 0, IO::Buffer::EXTERNAL)
+      end
+
+      assert_raise(ArgumentError) do
+        IO::Buffer.map(file, nil, 0, IO::Buffer::SHARED | IO::Buffer::PRIVATE)
+      end
+    end
+  end
+
+  def test_map_allows_redundant_mapped_flag
+    buffer = File.open(__FILE__) do |file|
+      IO::Buffer.map(file, nil, 0, IO::Buffer::MAPPED | IO::Buffer::READONLY)
+    end
+
+    assert_predicate buffer, :mapped?
+    assert_predicate buffer, :shared?
+    assert_predicate buffer, :readonly?
+  ensure
+    buffer&.free
+  end
+
   def test_file_mapped
     buffer = File.open(__FILE__) {|file| IO::Buffer.map(file, nil, 0, IO::Buffer::READONLY)}
     assert_equal File.size(__FILE__), buffer.size
