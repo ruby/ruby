@@ -1497,7 +1497,7 @@ hash_slot_size(size_t capa, bool frozen)
 }
 
 static VALUE
-hash_alloc_capa(VALUE klass, VALUE flags, VALUE ifnone, size_t size, bool frozen)
+hash_alloc(VALUE klass, VALUE flags, VALUE ifnone, size_t size, bool frozen)
 {
     VALUE hash = rb_newobj_of(klass, T_HASH | flags, hash_slot_size(size, frozen));
     rb_hash_set_ifnone(hash, ifnone);
@@ -1524,19 +1524,19 @@ hash_init_capa(VALUE hash, size_t size)
 static VALUE
 hash_hidden_new(size_t size)
 {
-    return hash_init_capa(hash_alloc_capa(0, 0, Qnil, size, false), size);
+    return hash_init_capa(hash_alloc(0, 0, Qnil, size, false), size);
+}
+
+static VALUE
+hash_alloc_capa(VALUE klass, size_t size)
+{
+    return hash_alloc(klass, 0, Qnil, size, false);
 }
 
 VALUE
 rb_hash_alloc_copy(VALUE klass, VALUE src)
 {
-    return hash_alloc_capa(klass, 0, Qnil, RHASH_SIZE(src), false);
-}
-
-static VALUE
-hash_alloc(VALUE klass)
-{
-    return hash_alloc_capa(klass, 0, Qnil, 0, false);
+    return hash_alloc_capa(klass, RHASH_SIZE(src));
 }
 
 #if USE_ZJIT
@@ -1553,7 +1553,7 @@ empty_hash_alloc(VALUE klass)
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, 0);
 
-    return hash_alloc(klass);
+    return hash_alloc_capa(klass, 0);
 }
 
 static VALUE
@@ -1568,7 +1568,7 @@ copy_compare_by_id(VALUE hash, VALUE basis)
 static VALUE
 hash_new_capa(VALUE klass, size_t capa)
 {
-    return hash_init_capa(hash_alloc_capa(klass, 0, Qnil, capa, false), capa);
+    return hash_init_capa(hash_alloc_capa(klass, capa), capa);
 }
 
 VALUE
@@ -1589,7 +1589,7 @@ rb_hash_new(void)
 VALUE
 rb_hash_alloc_fixed_size(VALUE klass, st_index_t size)
 {
-    return hash_init_capa(hash_alloc_capa(klass, 0, Qnil, size, true), size);
+    return hash_init_capa(hash_alloc(klass, 0, Qnil, size, true), size);
 }
 
 static VALUE
@@ -1635,7 +1635,7 @@ hash_copy(VALUE ret, VALUE hash)
 static VALUE
 hash_dup_with_compare_by_id(VALUE hash)
 {
-    VALUE dup = hash_alloc_capa(rb_cHash, 0, Qnil, RHASH_SIZE(hash), false);
+    VALUE dup = hash_alloc_capa(rb_cHash, RHASH_SIZE(hash));
     if (RHASH_ST_TABLE_P(hash)) {
         RHASH_SET_ST_FLAG(dup);
     }
@@ -1646,14 +1646,14 @@ hash_dup_with_compare_by_id(VALUE hash)
 static VALUE
 hash_dup(VALUE hash, VALUE klass, VALUE flags)
 {
-    VALUE dup = hash_alloc_capa(klass, flags, RHASH_IFNONE(hash), RHASH_SIZE(hash), false);
+    VALUE dup = hash_alloc(klass, flags, RHASH_IFNONE(hash), RHASH_SIZE(hash), false);
     return hash_copy(dup, hash);
 }
 
 static VALUE
 hash_dup_capa(VALUE hash, size_t capa)
 {
-    VALUE ret = hash_alloc_capa(rb_cHash, 0, Qnil, capa, false);
+    VALUE ret = hash_alloc_capa(rb_cHash, capa);
     if (capa > RHASH_AR_TABLE_MAX_SIZE) {
         RHASH_SET_ST_FLAG(ret);
     }
@@ -1933,7 +1933,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
                 tmp = rb_hash_to_a(tmp);
             }
             else {
-                hash = hash_alloc_capa(klass, 0, Qnil, RHASH_SIZE(tmp), false);
+                hash = hash_alloc_capa(klass, RHASH_SIZE(tmp));
                 return hash_copy(hash, tmp);
             }
         }
@@ -2123,7 +2123,7 @@ rb_hash_rehash(VALUE hash)
     }
     rb_hash_modify_check(hash);
     if (RHASH_AR_TABLE_P(hash)) {
-        tmp = hash_alloc_capa(0, 0, Qnil, RHASH_SIZE(hash), false);
+        tmp = hash_alloc_capa(0, RHASH_SIZE(hash));
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
 
         hash_ar_free_and_clear_table(hash);
@@ -2131,7 +2131,7 @@ rb_hash_rehash(VALUE hash)
     }
     else if (RHASH_ST_TABLE_P(hash)) {
         st_table *old_tab = RHASH_ST_TABLE(hash);
-        tmp = hash_alloc(0);
+        tmp = hash_alloc_capa(0, 0);
 
         hash_st_table_init(tmp, old_tab->type, old_tab->num_entries);
         tbl = RHASH_ST_TABLE(tmp);
@@ -4813,7 +4813,7 @@ rb_hash_compare_by_id(VALUE hash)
     else {
         // Slow path: Need to rehash the members of `self` into a new
         // `tmp` table using the new `identhash` compare/hash functions.
-        tmp = hash_alloc(0);
+        tmp = hash_alloc_capa(0, 0);
         hash_st_table_init(tmp, &identhash, RHASH_SIZE(hash));
         identtable = RHASH_ST_TABLE(tmp);
 
