@@ -30,6 +30,7 @@ VALUE rb_eIOBufferInvalidatedError;
 VALUE rb_eIOBufferMaskError;
 
 size_t RUBY_IO_BUFFER_PAGE_SIZE;
+size_t RUBY_IO_BUFFER_MAP_ALIGNMENT;
 size_t RUBY_IO_BUFFER_DEFAULT_SIZE;
 
 #ifdef _WIN32
@@ -818,6 +819,19 @@ rb_io_buffer_new_locked(void *base, size_t size, enum rb_io_buffer_flags flags)
 VALUE
 rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags)
 {
+    if (UNLIKELY(offset < 0)) {
+        rb_raise(rb_eArgError,
+                 "Offset (%" PRIsVALUE ") can't be negative!",
+                 OFFT2NUM(offset));
+    }
+
+    if (UNLIKELY((uintmax_t)offset % RUBY_IO_BUFFER_MAP_ALIGNMENT != 0)) {
+        rb_raise(rb_eArgError,
+                 "Offset (%" PRIsVALUE ") must be a multiple of IO::Buffer::MAP_ALIGNMENT (%" PRIuSIZE ")!",
+                 OFFT2NUM(offset),
+                 RUBY_IO_BUFFER_MAP_ALIGNMENT);
+    }
+
     VALUE instance = rb_io_buffer_type_allocate(rb_cIOBuffer);
 
     struct rb_io_buffer *buffer = get_io_buffer(instance);
@@ -835,9 +849,10 @@ rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags
  *  Create an IO::Buffer for reading from +file+ by memory-mapping the file.
  *  +file+ should be a +File+ instance, opened for reading or reading and writing.
  *
- *  Optional +size+ and +offset+ of mapping can be specified.
- *  Trying to map an empty file or specify +size+ of 0 will raise an error.
- *  Valid values for +offset+ are system-dependent.
+ *  Optional +size+ and +offset+ of mapping can be specified. The +offset+ must
+ *  be a multiple of IO::Buffer::MAP_ALIGNMENT. The +size+ does not need to be
+ *  aligned. Trying to map an empty file or specify +size+ of 0 will raise an
+ *  error.
  *
  *  By default, the buffer is writable and expects the file to be writable.
  *  It is also shared, so several processes can use the same mapping.
@@ -937,10 +952,9 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
             size = (size_t)(file_size - offset);
         }
         else if (UNLIKELY((size_t)(file_size - offset) < size)) {
-            size_t maximum_page_count =
-                (file_size - size) / RUBY_IO_BUFFER_PAGE_SIZE;
             size_t maximum_offset =
-                RUBY_IO_BUFFER_PAGE_SIZE * maximum_page_count;
+                (file_size - size) / RUBY_IO_BUFFER_MAP_ALIGNMENT *
+                RUBY_IO_BUFFER_MAP_ALIGNMENT;
             rb_raise(rb_eArgError,
                      "Offset (%" PRIsVALUE ") can't be larger than "
                      "%" PRIuSIZE " for requested size (%" PRIuSIZE ")",
@@ -4353,14 +4367,19 @@ Init_IO_Buffer(void)
     SYSTEM_INFO info;
     GetSystemInfo(&info);
     RUBY_IO_BUFFER_PAGE_SIZE = info.dwPageSize;
+    RUBY_IO_BUFFER_MAP_ALIGNMENT = info.dwAllocationGranularity;
 #else /* not WIN32 */
     RUBY_IO_BUFFER_PAGE_SIZE = sysconf(_SC_PAGESIZE);
+    RUBY_IO_BUFFER_MAP_ALIGNMENT = RUBY_IO_BUFFER_PAGE_SIZE;
 #endif
 
     RUBY_IO_BUFFER_DEFAULT_SIZE = io_buffer_default_size(RUBY_IO_BUFFER_PAGE_SIZE);
 
     /* The operating system page size. Used for efficient page-aligned memory allocations. */
     rb_define_const(rb_cIOBuffer, "PAGE_SIZE", SIZET2NUM(RUBY_IO_BUFFER_PAGE_SIZE));
+
+    /* The alignment required for file mapping offsets. Mapping sizes do not need to be aligned. */
+    rb_define_const(rb_cIOBuffer, "MAP_ALIGNMENT", SIZET2NUM(RUBY_IO_BUFFER_MAP_ALIGNMENT));
 
     /* The default buffer size, typically a (small) multiple of the PAGE_SIZE.
        Can be explicitly specified by setting the RUBY_IO_BUFFER_DEFAULT_SIZE
