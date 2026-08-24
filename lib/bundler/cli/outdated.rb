@@ -268,13 +268,17 @@ module Bundler
       ret_val
     end
 
-    def cooldown_days_remaining(spec, now = Time.now)
+    def cooldown_days_remaining(spec, now = cooldown_now)
       return nil unless spec.respond_to?(:created_at) && spec.created_at
       return nil unless spec.respond_to?(:remote) && spec.remote
       days = spec.remote.effective_cooldown
       return nil if days.nil? || days <= 0
       remaining = days - ((now - spec.created_at) / 86_400.0)
       remaining > 0 ? remaining.ceil : nil
+    end
+
+    def cooldown_now
+      @cooldown_now ||= Time.now
     end
 
     def check_for_deployment_mode!
