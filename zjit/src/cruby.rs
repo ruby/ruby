@@ -281,7 +281,7 @@ pub type IseqPtr = *const rb_iseq_t;
 /// Index of a YARV instruction within an ISEQ's bytecode array.
 pub type YarvInsnIdx = usize;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct ShapeId(pub u32);
 
  #[derive(PartialEq, Eq)]

@@ -372,6 +372,30 @@ impl std::fmt::Display for Const {
     }
 }
 
+impl std::hash::Hash for Const {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        use Const::*;
+        std::mem::discriminant(self).hash(state);
+        match self {
+            Value(val) => val.hash(state),
+            CBool(val) => val.hash(state),
+            CInt8(val) => val.hash(state),
+            CUInt8(val) => val.hash(state),
+            CInt16(val) => val.hash(state),
+            CUInt16(val) => val.hash(state),
+            CInt32(val) => val.hash(state),
+            CUInt32(val) => val.hash(state),
+            CAttrIndex(val) => val.hash(state),
+            CShape(val) => val.hash(state),
+            CInt64(val) => val.hash(state),
+            CUInt64(val) => val.hash(state),
+            // Hash the bits of the f64 to avoid issues with NaN and -0.0/+0.0
+            CDouble(val) => val.to_bits().hash(state),
+            CPtr(ptr) => ptr.hash(state),
+        }
+    }
+}
+
 impl Const {
     pub fn print<'a>(&'a self, ptr_map: &'a PtrPrintMap) -> ConstPrinter<'a> {
         ConstPrinter { inner: self, ptr_map }
@@ -1315,6 +1339,132 @@ pub enum Insn {
     /// a terminator, but don't ever expect the code to be executed.  This
     /// instruction should never be generated from iseq_to_hir
     Unreachable,
+}
+
+impl Insn {
+    fn is_numberable(&self) -> bool {
+        use Insn::*;
+        match self {
+            Const { .. } => true,
+            FixnumAdd { .. } => true,
+            FixnumSub { .. } => true,
+            FixnumMult { .. } => true,
+            FixnumDiv { .. } => true,
+            FixnumMod { .. } => true,
+            FixnumEq { .. } => true,
+            FixnumNeq { .. } => true,
+            FixnumLt { .. } => true,
+            FixnumLe { .. } => true,
+            FixnumGt { .. } => true,
+            FixnumGe { .. } => true,
+            FixnumAnd { .. } => true,
+            FixnumOr { .. } => true,
+            FixnumXor { .. } => true,
+            IsBitEqual { .. } => true,
+            IsBitNotEqual { .. } => true,
+            IntAnd { .. } => true,
+            IntOr { .. } => true,
+            Test { .. } => true,
+            LoadEC => true,
+            LoadSP => true,
+            UnboxFixnum { .. } => true,
+            BoxFixnum { .. } => true,
+            BoxBool { .. } => true,
+            IsBlockParamModified { .. } => true,
+            _ => false,
+        }
+    }
+}
+
+impl std::cmp::PartialEq for Insn {
+    fn eq(&self, other: &Self) -> bool {
+        use Insn::*;
+        match (self, other) {
+            (Const { val: val1 }, Const { val: val2 }) => val1 == val2,
+            (FixnumAdd { left: l1, right: r1, .. }, FixnumAdd { left: l2, right: r2, .. }) => l1 == l2 && r1 == r2,
+            (FixnumSub { left: l1, right: r1, .. }, FixnumSub { left: l2, right: r2, .. }) => l1 == l2 && r1 == r2,
+            (FixnumMult { left: l1, right: r1, .. }, FixnumMult { left: l2, right: r2, .. }) => l1 == l2 && r1 == r2,
+            (FixnumDiv { left: l1, right: r1, .. }, FixnumDiv { left: l2, right: r2, .. }) => l1 == l2 && r1 == r2,
+            (FixnumMod { left: l1, right: r1, .. }, FixnumMod { left: l2, right: r2, .. }) => l1 == l2 && r1 == r2,
+            (FixnumEq { left: l1, right: r1 }, FixnumEq { left: l2, right: r2 }) => l1 == l2 && r1 == r2,
+            (FixnumNeq { left: l1, right: r1 }, FixnumNeq { left: l2, right: r2 }) => l1 == l2 && r1 == r2,
+            (FixnumLt { left: l1, right: r1 }, FixnumLt { left: l2, right: r2 }) => l1 == l2 && r1 == r2,
+            (FixnumLe { left: l1, right: r1 }, FixnumLe { left: l2, right: r2 }) => l1 == l2 && r1 == r2,
+            (FixnumGt { left: l1, right: r1 }, FixnumGt { left: l2, right: r2 }) => l1 == l2 && r1 == r2,
+            (FixnumGe { left: l1, right: r1 }, FixnumGe { left: l2, right: r2 }) => l1 == l2 && r1 == r2,
+            (FixnumAnd { left: l1, right: r1 }, FixnumAnd { left: l2, right: r2 }) => l1 == l2 && r1 == r2,
+            (FixnumOr { left: l1, right: r1 }, FixnumOr { left: l2, right: r2 }) => l1 == l2 && r1 == r2,
+            (FixnumXor { left: l1, right: r1 }, FixnumXor { left: l2, right: r2 }) => l1 == l2 && r1 == r2,
+            (IsBitEqual { left: l1, right: r1 }, IsBitEqual { left: l2, right: r2 }) => l1 == l2 && r1 == r2,
+            (IsBitNotEqual { left: l1, right: r1 }, IsBitNotEqual { left: l2, right: r2 }) => l1 == l2 && r1 == r2,
+            (IntAnd { left: l1, right: r1 }, IntAnd { left: l2, right: r2 }) => l1 == l2 && r1 == r2,
+            (IntOr { left: l1, right: r1 }, IntOr { left: l2, right: r2 }) => l1 == l2 && r1 == r2,
+            (Test { val: v1 }, Test { val: v2 }) => v1 == v2,
+            (LoadEC, LoadEC) => true,
+            (LoadSP, LoadSP) => true,
+            (UnboxFixnum { val: v1 }, UnboxFixnum { val: v2 }) => v1 == v2,
+            (BoxFixnum { val: v1, .. }, BoxFixnum { val: v2, .. }) => v1 == v2,
+            (BoxBool { val: v1 }, BoxBool { val: v2 }) => v1 == v2,
+            (IsBlockParamModified { flags: f1 }, IsBlockParamModified { flags: f2 }) => f1 == f2,
+            _ => false,
+        }
+    }
+}
+
+impl std::cmp::Eq for Insn {}
+
+impl std::hash::Hash for Insn {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        use Insn::*;
+        std::mem::discriminant(self).hash(state);
+        assert!(self.is_numberable(), "Value numbering not implemented for {self}");
+        match self {
+            Const { val } => val.hash(state),
+            FixnumAdd { left, right, .. }
+            | FixnumSub { left, right, .. }
+            | FixnumMult { left, right, .. }
+            | FixnumDiv { left, right, .. }
+            | FixnumMod { left, right, .. }
+            | FixnumEq { left, right }
+            | FixnumNeq { left, right }
+            | FixnumLt { left, right }
+            | FixnumLe { left, right }
+            | FixnumGt { left, right }
+            | FixnumGe { left, right }
+            | FixnumAnd { left, right }
+            | FixnumOr { left, right }
+            | FixnumXor { left, right }
+            => {
+                left.hash(state);
+                right.hash(state);
+            }
+            IsBitEqual { left, right } => {
+                left.hash(state);
+                right.hash(state);
+            }
+            IsBitNotEqual { left, right } => {
+                left.hash(state);
+                right.hash(state);
+            }
+            IntAnd { left, right }
+            | IntOr { left, right }
+            => {
+                left.hash(state);
+                right.hash(state);
+            }
+            Test { val } => val.hash(state),
+            LoadEC => {}
+            LoadSP => {}
+            UnboxFixnum { val } => val.hash(state),
+            BoxFixnum { val, .. } => val.hash(state),
+            BoxBool { val } => val.hash(state),
+            // TODO(max): Add FixnumAref
+            IsBlockParamModified { flags } => flags.hash(state),
+            _ => {
+                unimplemented!("Hashing not implemented for {self}");
+            }
+        }
+    }
 }
 
 /// Macro that enumerates all operands of an Insn, dispatching to caller-provided
@@ -6305,18 +6455,16 @@ impl Function {
             .unwrap_or(insn_id)
     }
 
-    /// Canonicalize: rewrite each operand through union-find and a map of the most recent `Guard*`
-    /// for that value in the dominator tree. Forwards guarded values into branch-edge args (so
-    /// `infer_types` narrows merge-block parameters and `fold_constants` drops redundant CFG-join
-    /// guards) and ordinary in-block uses.
+    /// Global canonicalize: rewrite each operand through union-find and a map of the most recent
+    /// `Guard*` for that value. Forwards guarded values into branch-edge args (so `infer_types`
+    /// narrows merge-block parameters and `fold_constants` drops redundant CFG-join guards) and
+    /// ordinary in-block uses.
     ///
-    /// `Guard*` substitutions are unconditional for dominated uses: a guard's side-exit semantics
-    /// guarantee the substituted value type holds for every dominated use.
+    /// `Guard*` substitutions are unconditional: a guard's side-exit semantics guarantee the
+    /// substituted value type holds for every dominated use.
     ///
-    /// `RefineType` is intentionally skipped: as constructed in HIR build right now, its narrowing
-    /// is only valid on one branch arm, which would require dropping refine-derived rewrites at
-    /// each `IfTrue`/`IfFalse`. Cross-arm refine forwarding is left for a follow-up
-    /// dominator-scoped pass.
+    /// `RefineType` is intentionally skipped: its narrowing is only valid on one branch arm, which
+    /// would require dropping refine-derived rewrites at each `CondBranch`.
     ///
     /// Inspired by Cranelift's aegraph canonicalize step
     /// (<https://cfallin.org/blog/2026/04/09/aegraph/>).
@@ -6324,11 +6472,13 @@ impl Function {
         // TODO(max): Don't make so many maps. Instead, use either undo-redo or dominator numbering
         // information for dominator tree.
         let mut rewrite_maps: Vec<Option<HashMap<InsnId, InsnId>>> = vec![None; self.blocks.len()];
+        let mut value_numbers: Vec<Option<HashMap<Insn, InsnId>>> = vec![None; self.blocks.len()];
         let dominators = Dominators::new(self);
         for &block in dominators.cfi.reverse_post_order() {
-            let mut rewrite_map = rewrite_maps[dominators.idom(block).to_usize()].clone().unwrap_or_else(|| HashMap::new());
-            for i in 0..self.blocks[block.to_usize()].insns.len() {
-                let insn_id = self.blocks[block.to_usize()].insns[i];
+            let idom = dominators.idom(block);
+            let mut rewrite_map = rewrite_maps[idom.to_usize()].clone().unwrap_or_else(|| HashMap::new());
+            let mut value_number = value_numbers[idom.to_usize()].clone().unwrap_or_else(|| HashMap::new());
+            self.blocks[block.to_usize()].insns.retain(|&insn_id| {
                 let canonical_id = self.union_find.borrow().find_const(insn_id);
 
                 let union_find = &self.union_find;
@@ -6348,10 +6498,25 @@ impl Function {
                     | Insn::GuardLess      { left: src, .. } => {
                         rewrite_map.insert(*src, canonical_id);
                     }
-                    _ => {}
+                    _ => {
+                        if self.insns[canonical_id.to_usize()].is_numberable() {
+                            match value_number.entry(self.insns[canonical_id.to_usize()].clone()) {
+                                std::collections::hash_map::Entry::Occupied(entry) => {
+                                    rewrite_map.insert(canonical_id, *entry.get());
+                                    self.union_find.borrow_mut().make_equal_to(canonical_id, *entry.get());
+                                    return false;
+                                }
+                                std::collections::hash_map::Entry::Vacant(entry) => {
+                                    entry.insert(canonical_id);
+                                }
+                            }
+                        }
+                    }
                 }
-            }
+                true
+            });
             rewrite_maps[block.to_usize()] = Some(rewrite_map);
+            value_numbers[block.to_usize()] = Some(value_number);
         }
 
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
@@ -7228,6 +7393,8 @@ impl Function {
             run_pass!(optimize_load_store);
             run_pass!(canonicalize);
             run_pass!(fold_constants);
+            run_pass!(canonicalize);
+            run_pass!(remove_trivial_block_params);
             run_pass!(clean_cfg);
             run_pass!(remove_redundant_patch_points);
             run_pass!(remove_duplicate_check_interrupts);
