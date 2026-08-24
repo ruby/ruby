@@ -2307,7 +2307,7 @@ rb_ary_to_ary(VALUE obj)
 }
 
 static void
-rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen, int self_insert)
+ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen, int self_insert)
 {
     long olen;
 
@@ -2374,6 +2374,13 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen, int s
                                      MEMMOVE(ptr + beg, rptr, VALUE, rlen));
         }
     }
+}
+
+static void
+rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
+{
+    ary_splice(ary, beg, len, RARRAY_CONST_PTR(rpl), RARRAY_LEN(rpl), rpl == ary);
+    RB_GC_GUARD(rpl);
 }
 
 void
@@ -2463,9 +2470,7 @@ ary_aset_by_rb_ary_store(VALUE ary, long key, VALUE val)
 static VALUE
 ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
 {
-    VALUE rpl = rb_ary_to_ary(val);
-    rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR(rpl), RARRAY_LEN(rpl), ary == rpl);
-    RB_GC_GUARD(rpl);
+    rb_ary_splice(ary, beg, len, rb_ary_to_ary(val));
     return val;
 }
 
@@ -2694,7 +2699,7 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
         }
         pos++;
     }
-    rb_ary_splice(ary, pos, 0, argv + 1, argc - 1, FALSE);
+    ary_splice(ary, pos, 0, argv + 1, argc - 1, FALSE);
     return ary;
 }
 
@@ -4418,7 +4423,7 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
     }
     else {
         VALUE arg2 = rb_ary_new4(len, RARRAY_CONST_PTR(ary)+pos);
-        rb_ary_splice(ary, pos, len, 0, 0, FALSE);
+        ary_splice(ary, pos, len, 0, 0, FALSE);
         return arg2;
     }
 }
@@ -5263,11 +5268,9 @@ rb_ary_plus(VALUE x, VALUE y)
 static VALUE
 ary_append(VALUE x, VALUE y)
 {
-    long n = RARRAY_LEN(y);
-    if (n > 0) {
-        rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR(y), n, x == y);
+    if (RARRAY_LEN(y) > 0) {
+        rb_ary_splice(x, RARRAY_LEN(x), 0, y);
     }
-    RB_GC_GUARD(y);
     return x;
 }
 
