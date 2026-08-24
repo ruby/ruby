@@ -62,6 +62,20 @@ class TestGemUtil < Gem::TestCase
     assert_equal expected_paths.sort, files_with_relative_base.sort
   end
 
+  def test_glob_files_in_dir_with_leading_tilde_entries
+    FileUtils.mkdir_p "j"
+    FileUtils.touch File.join("j", "~")
+    FileUtils.touch File.join("j", "~k.rb")
+
+    expected_paths = [
+      File.join(@tempdir, "j", "~"),
+      File.join(@tempdir, "j", "~k.rb"),
+    ]
+
+    files = Gem::Util.glob_files_in_dir("*", File.join(@tempdir, "j"))
+    assert_equal expected_paths.sort, files.sort
+  end
+
   def test_correct_for_windows_path
     path = "/C:/WINDOWS/Temp/gems"
     assert_equal "C:/WINDOWS/Temp/gems", Gem::Util.correct_for_windows_path(path)
