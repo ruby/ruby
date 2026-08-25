@@ -2,6 +2,7 @@
 
 require_relative "helper"
 require "rubygems/config_file"
+require "rubygems/credential_store"
 
 class TestGemConfigFile < Gem::TestCase
   def setup
@@ -458,6 +459,349 @@ if you believe they were disclosed to a third party.
     stat = File.stat @cfg.credentials_path
 
     assert_equal 0o644, stat.mode & 0o644
+  end
+
+  def test_credential_store_defaults_to_false
+    refute @cfg.credential_store
+  end
+
+  def test_credential_store_from_gemrc
+    File.open @temp_conf, "w" do |fp|
+      fp.puts ":credential_store: true"
+    end
+
+    util_config_file %W[--config-file=#{@temp_conf}]
+
+    assert @cfg.credential_store
+  end
+
+  def test_credential_store_from_environment_variable
+    with_env(ENV.to_h.merge("RUBYGEMS_CREDENTIAL_STORE" => "true")) do
+      util_config_file
+    end
+
+    assert @cfg.credential_store
+  end
+
+  def test_credential_store_reads_every_boolean_spelling_from_either_source
+    %w[0 no off f n].each do |off|
+      ENV["RUBYGEMS_CREDENTIAL_STORE"] = off
+      assert_equal false, Gem::ConfigFile.new([]).credential_store, "#{off.inspect} from the environment"
+
+      File.open(@temp_conf, "w") {|fp| fp.puts ":credential_store: #{off}" }
+      assert_equal false, Gem::ConfigFile.new(["--config-file", @temp_conf]).credential_store, "#{off.inspect} from gemrc"
+    end
+
+    %w[1 yes on t y].each do |on|
+      ENV["RUBYGEMS_CREDENTIAL_STORE"] = on
+      assert_equal true, Gem::ConfigFile.new([]).credential_store, "#{on.inspect} from the environment"
+    end
+  ensure
+    ENV["RUBYGEMS_CREDENTIAL_STORE"] = nil
+  end
+
+  def test_credential_store_survives_an_undecodable_environment_variable
+    # Whatever locale the environment carries, the setting is compared against
+    # ASCII, and String#downcase would refuse these bytes outright. Windows
+    # rewrites an undecodable byte on its way through the environment, so what
+    # the setting has to carry through is whatever comes back out of it.
+    ENV["RUBYGEMS_CREDENTIAL_STORE"] = "\xff".dup.force_encoding("UTF-8")
+
+    assert_equal ENV["RUBYGEMS_CREDENTIAL_STORE"], Gem::ConfigFile.new([]).credential_store
+  ensure
+    ENV["RUBYGEMS_CREDENTIAL_STORE"] = nil
+  end
+
+  def test_credential_store_backend_name_from_gemrc
+    File.open @temp_conf, "w" do |fp|
+      fp.puts ":credential_store: 1password"
+    end
+
+    util_config_file %W[--config-file=#{@temp_conf}]
+
+    assert_equal "1password", @cfg.credential_store
+  end
+
+  def test_credential_store_backend_name_from_environment_variable
+    with_env(ENV.to_h.merge("RUBYGEMS_CREDENTIAL_STORE" => "1password")) do
+      util_config_file
+    end
+
+    assert_equal "1password", @cfg.credential_store
+  end
+
+  def test_credential_store_false_environment_variable_keeps_default
+    with_env(ENV.to_h.merge("RUBYGEMS_CREDENTIAL_STORE" => "false")) do
+      util_config_file
+    end
+
+    refute @cfg.credential_store
+  end
+
+  def test_rubygems_api_key_equals_with_credential_store_writes_to_store_and_clears_file
+    @cfg.credential_store = true
+
+    with_fake_credential_store do |store|
+      @cfg.rubygems_api_key = "x"
+
+      assert_equal "x", @cfg.rubygems_api_key
+      assert_equal "x", store.get(Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT)
+      # The plaintext key from credential_setup is removed once it is stored.
+      refute_includes load_yaml_file(@cfg.credentials_path).keys, :rubygems_api_key
+    end
+  end
+
+  def test_set_api_key_with_credential_store_writes_to_store_and_removes_plaintext
+    # A plaintext host key written before the store was enabled.
+    @cfg.set_api_key "https://example.org", "old"
+    assert_equal "old", load_yaml_file(@cfg.credentials_path)["https://example.org"]
+
+    @cfg.credential_store = true
+
+    with_fake_credential_store do |store|
+      @cfg.set_api_key "https://example.org", "new"
+
+      assert_equal "new", store.get("https://example.org")
+      refute_includes load_yaml_file(@cfg.credentials_path).keys, "https://example.org"
+    end
+  end
+
+  def test_rubygems_api_key_equals_warns_and_uses_file_when_store_write_fails
+    @cfg.credential_store = true
+    Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: nil)
+
+    use_ui @ui do
+      @cfg.rubygems_api_key = "x"
+    end
+
+    assert_match(/plain text/, @ui.error)
+    assert_equal "x", load_yaml_file(@cfg.credentials_path)[:rubygems_api_key]
+  ensure
+    Gem::CredentialStore.reset!
+  end
+
+  def test_named_backend_routes_reads_and_writes_to_the_store
+    @cfg.credential_store = "1password"
+
+    with_fake_credential_store do |store|
+      @cfg.rubygems_api_key = "x"
+
+      assert_equal "x", store.get(Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT)
+      assert_equal "x", @cfg.rubygems_api_key
+    end
+  end
+
+  def test_credential_store_api_key_for_only_checks_the_host_account
+    @cfg.credential_store = true
+
+    with_fake_credential_store do |store|
+      assert_nil @cfg.credential_store_api_key_for("https://example.org")
+
+      # The default account must not answer for another host, or a push to
+      # that host would send the RubyGems.org key.
+      store.set(Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT, "default-key")
+      assert_nil @cfg.credential_store_api_key_for("https://example.org")
+
+      store.set("https://example.org", "host-key")
+      assert_equal "host-key", @cfg.credential_store_api_key_for("https://example.org")
+    end
+  end
+
+  def test_credential_store_api_key_for_returns_nil_without_a_host
+    @cfg.credential_store = true
+
+    with_fake_credential_store do |store|
+      store.set("", "empty-account-key")
+
+      assert_nil @cfg.credential_store_api_key_for(nil)
+      assert_nil @cfg.credential_store_api_key_for("")
+    end
+  end
+
+  def test_clearing_the_api_key_removes_it_from_the_store
+    @cfg.credential_store = true
+
+    with_fake_credential_store do |store|
+      @cfg.rubygems_api_key = "stored-key"
+      @cfg.rubygems_api_key = nil
+
+      assert_nil store.get(Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT)
+      assert_nil Gem::ConfigFile.new([]).tap {|c| c.credential_store = true }.rubygems_api_key
+    end
+  ensure
+    @cfg.credential_store = false
+  end
+
+  def test_clearing_a_host_api_key_removes_it_from_the_store
+    @cfg.credential_store = true
+
+    with_fake_credential_store do |store|
+      @cfg.set_api_key "https://other.example", "host-key"
+      @cfg.set_api_key "https://other.example", ""
+
+      assert_nil store.get("https://other.example")
+    end
+  ensure
+    @cfg.credential_store = false
+  end
+
+  def test_rubygems_api_key_reads_the_store_in_a_later_process
+    @cfg.credential_store = true
+
+    with_fake_credential_store do
+      @cfg.rubygems_api_key = "stored-key"
+
+      # A fresh ConfigFile stands in for the next process: the plain text
+      # copy is gone from the credentials file, so only the store has it.
+      fresh = Gem::ConfigFile.new([])
+      fresh.credential_store = true
+
+      assert_equal "stored-key", fresh.rubygems_api_key
+    end
+  ensure
+    @cfg.credential_store = false
+  end
+
+  def test_credential_store_default_api_key_reads_the_default_account
+    @cfg.credential_store = true
+
+    with_fake_credential_store do |store|
+      assert_nil @cfg.credential_store_default_api_key
+
+      store.set(Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT, "default-key")
+      assert_equal "default-key", @cfg.credential_store_default_api_key
+    end
+  end
+
+  def test_credential_store_api_key_for_returns_nil_when_credential_store_disabled
+    with_fake_credential_store do |store|
+      store.set(Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT, "default-key")
+
+      assert_nil @cfg.credential_store_api_key_for("https://example.org")
+    end
+  end
+
+  def test_storing_an_api_key_warns_when_the_plain_text_copy_cannot_be_removed
+    pend "chmod is not enforced for the owner on Windows" if Gem.win_platform?
+    pend "running as root bypasses the write permission check" if Process.uid.zero?
+
+    @cfg.credential_store = true
+
+    File.write @cfg.credentials_path, @cfg.class.dump_with_rubygems_yaml(rubygems_api_key: "old")
+    File.chmod 0o400, @cfg.credentials_path
+
+    with_fake_credential_store do |store|
+      use_ui @ui do
+        @cfg.rubygems_api_key = "new"
+      end
+
+      assert_equal "new", store.get(Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT)
+      assert_match(/plain text copy .* could not be removed/, @ui.error)
+    end
+  ensure
+    File.chmod 0o600, @cfg.credentials_path if File.exist?(@cfg.credentials_path)
+  end
+
+  def test_falling_back_to_the_file_clears_the_stored_key
+    @cfg.credential_store = true
+
+    refusing = Class.new(Gem::FakeCredentialBackend) do
+      def refuse_writes!
+        @refusing = true
+      end
+
+      def set(service, account, secret)
+        return false if @refusing
+
+        super
+      end
+    end.new
+    refusing.set("rubygems", Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT, "stale")
+    refusing.refuse_writes!
+    Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: refusing)
+
+    use_ui(@ui) { @cfg.rubygems_api_key = "fresh" }
+
+    assert_nil refusing.get("rubygems", Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT)
+    assert_equal "fresh", @cfg.rubygems_api_key
+  ensure
+    Gem::CredentialStore.reset!
+    @cfg.credential_store = false
+  end
+
+  def test_unset_api_key_bang_removes_from_credential_store
+    @cfg.credential_store = true
+
+    with_fake_credential_store do |store|
+      @cfg.rubygems_api_key = "x"
+      assert_equal "x", store.get(Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT)
+
+      @cfg.unset_api_key!
+
+      assert_nil store.get(Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT)
+    end
+  end
+
+  def test_credential_store_account_agrees_with_the_credentials_file_key
+    # The two have to name the same host, or a key written under one spelling
+    # cannot be found under another. Loading only this file also proves the
+    # account derivation brings its own URI support along.
+    %w[https://gems.example.com/ https://gems.example.com gems__example__com].each do |spelling|
+      account = Gem::ConfigFile.credential_store_account(spelling)
+      key = Gem::ConfigFile.normalize_credentials_key(spelling)
+
+      assert_equal key, account, spelling
+    end
+
+    assert_equal "https://gems.example.com",
+                 Gem::ConfigFile.credential_store_account("https://user:secret@gems.example.com/")
+  end
+
+  def test_unset_api_key_bang_leaves_a_read_only_credentials_file_alone
+    pend "chmod not supported" if Gem.win_platform?
+    pend "running as root bypasses the write permission check" if Process.uid.zero?
+
+    # POSIX deletes a read-only file without protest when the directory is
+    # writable, so the refusal has to come from the code, as it always did.
+    FileUtils.mkdir_p File.dirname(@cfg.credentials_path)
+    FileUtils.touch @cfg.credentials_path
+    File.chmod 0o400, @cfg.credentials_path
+
+    _store_cleared, file_removed = @cfg.unset_api_key!
+
+    assert_equal false, file_removed
+    assert File.exist?(@cfg.credentials_path)
+  ensure
+    File.chmod 0o600, @cfg.credentials_path if File.exist?(@cfg.credentials_path)
+  end
+
+  def test_unset_api_key_bang_removes_every_host_from_credential_store
+    @cfg.credential_store = true
+
+    with_fake_credential_store do |store|
+      @cfg.rubygems_api_key = "x"
+      @cfg.set_api_key "https://other.example", "y"
+      assert_equal "x", store.get(Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT)
+      assert_equal "y", store.get("https://other.example")
+
+      @cfg.unset_api_key!
+
+      assert_nil store.get(Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT)
+      assert_nil store.get("https://other.example")
+    end
+  end
+
+  def test_rubygems_api_key_equals_falls_back_to_file_when_credential_store_unavailable
+    @cfg.credential_store = true
+
+    Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: nil)
+
+    @cfg.rubygems_api_key = "x"
+
+    assert_equal "x", @cfg.rubygems_api_key
+    assert_equal({ rubygems_api_key: "x" }, load_yaml_file(@cfg.credentials_path))
+  ensure
+    Gem::CredentialStore.reset!
   end
 
   def test_write

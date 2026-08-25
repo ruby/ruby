@@ -17,7 +17,9 @@ https://rubygems.org) and adds it to the index.
 The gem can be removed from the index and deleted from the server using the yank
 command.  For further discussion see the help for the yank command.
 
-The push command will use ~/.gem/credentials to authenticate to a server, but you can use the RubyGems environment variable GEM_HOST_API_KEY to set the api key to authenticate.
+The push command will use ~/.gem/credentials to authenticate to a server, but you can use the RubyGems environment variable GEM_HOST_API_KEY to set the api key to authenticate. If the :credential_store: gemrc option (or RUBYGEMS_CREDENTIAL_STORE environment variable) is set, the API key is stored in and read from the credential store it selects instead of ~/.gem/credentials.
+
+The API key to send is resolved in this order: the GEM_HOST_API_KEY environment variable, the --key option, the host's own key in the credential store (when :credential_store: is set), the host's own key in ~/.gem/credentials, then the default RubyGems.org key from either place. The first one found is used.
     EOF
   end
 
