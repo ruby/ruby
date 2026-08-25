@@ -6164,14 +6164,19 @@ impl Function {
         let max_params = blocks.iter().copied().map(|id| self.blocks[id].params.len()).max().unwrap_or(0);
         let mut trivial_indices: Vec<usize> = Vec::with_capacity(max_params);
 
+        // Prepare the initial param_values
+        for (row, block) in param_values.iter_mut().zip(&self.blocks) {
+            row.resize(block.params.len(), ParamValue::None);
+        }
+
         let mut changed = true;
 
         while changed {
             changed = false;
 
             for (row, block) in param_values.iter_mut().zip(&self.blocks) {
-                row.clear();
-                row.resize(block.params.len(), ParamValue::None);
+                row.truncate(block.params.len());
+                row.as_mut_slice().fill(ParamValue::None);
             }
 
             // Scan through each jump, collecting edges with params to analyze from CondBranch and Jump insns.
