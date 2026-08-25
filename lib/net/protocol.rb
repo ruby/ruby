@@ -209,7 +209,14 @@ module Net # :nodoc:
       offset = @rbuf_offset
       begin
         until idx = @rbuf.index(terminator, offset)
-          offset = @rbuf.bytesize
+          # Rewind by terminator.bytesize - 1 so that a terminator split
+          # across reads is not missed, however many reads it spans.
+          # @rbuf_offset is the floor for two reasons. A negative offset
+          # makes String#index search relative to the end of the buffer,
+          # skipping a match near its start. An offset below @rbuf_offset
+          # matches a terminator beginning inside bytes already returned
+          # to the caller, yielding a slice that does not end with one.
+          offset = [@rbuf.bytesize - terminator.bytesize + 1, @rbuf_offset].max
           rbuf_fill
         end
         return rbuf_consume(idx + terminator.bytesize - @rbuf_offset)
