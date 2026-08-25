@@ -47,12 +47,15 @@ class TestIOBuffer < Test::Unit::TestCase
 
     assert_equal "hello", Bug::IOBuffer.for_reading_get_string(string)
     assert_equal true, Bug::IOBuffer.for_reading_readonly?(string)
+    assert_equal true, Bug::IOBuffer.for_reading_locked?(string)
   end
 
   def test_internal_for_reading_with_io_buffer
     buffer = IO::Buffer.for("hello")
 
     assert_equal buffer.object_id, Bug::IOBuffer.for_reading_object_id(buffer)
+    assert_equal true, Bug::IOBuffer.for_reading_locked?(buffer)
+    refute_predicate buffer, :locked?
   end
 
   def test_internal_for_writing_with_string
@@ -62,6 +65,14 @@ class TestIOBuffer < Test::Unit::TestCase
 
     assert_equal "world", string
     assert_equal false, Bug::IOBuffer.for_writing_readonly?(string)
+    assert_equal true, Bug::IOBuffer.for_writing_locked?(string)
+  end
+
+  def test_internal_for_writing_with_io_buffer
+    buffer = IO::Buffer.new(5)
+
+    assert_equal true, Bug::IOBuffer.for_writing_locked?(buffer)
+    refute_predicate buffer, :locked?
   end
 
   def test_internal_for_writing_rejects_readonly_buffer
@@ -92,6 +103,46 @@ class TestIOBuffer < Test::Unit::TestCase
 
     string << "!"
     assert_equal "hello!", string
+  end
+
+  def test_internal_for_reading_unlocks_io_buffer_after_callback_exception
+    buffer = IO::Buffer.new(5)
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.for_reading_raise(buffer)
+    end
+
+    refute_predicate buffer, :locked?
+  end
+
+  def test_internal_for_writing_unlocks_io_buffer_after_callback_exception
+    buffer = IO::Buffer.new(5)
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.for_writing_raise(buffer)
+    end
+
+    refute_predicate buffer, :locked?
+  end
+
+  def test_internal_for_reading_preserves_existing_lock
+    buffer = IO::Buffer.new(5)
+    Bug::IOBuffer.lock(buffer)
+
+    assert_equal true, Bug::IOBuffer.for_reading_locked?(buffer)
+    assert_predicate buffer, :locked?
+  ensure
+    Bug::IOBuffer.unlock(buffer) if buffer&.locked?
+  end
+
+  def test_internal_for_writing_preserves_existing_lock
+    buffer = IO::Buffer.new(5)
+    Bug::IOBuffer.lock(buffer)
+
+    assert_equal true, Bug::IOBuffer.for_writing_locked?(buffer)
+    assert_predicate buffer, :locked?
+  ensure
+    Bug::IOBuffer.unlock(buffer) if buffer&.locked?
   end
 
   def test_internal_locked_for_reading
