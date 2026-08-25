@@ -104,6 +104,18 @@ enum rb_io_buffer_flags rb_io_buffer_get_bytes(VALUE self, void **base, size_t *
 void rb_io_buffer_get_bytes_for_reading(VALUE self, const void **base, size_t *size);
 void rb_io_buffer_get_bytes_for_writing(VALUE self, void **base, size_t *size);
 
+// Lock the backing allocation, invoke the callback with its readable bytes,
+// and automatically unlock it when the callback returns or raises. The bytes
+// are only valid for the duration of the callback. This protects the lifetime
+// of the allocation; it does not provide synchronization for its contents.
+VALUE rb_io_buffer_locked_for_reading(VALUE self, VALUE (*callback)(const void *base, size_t size, VALUE argument), VALUE argument);
+
+// Lock the backing allocation, invoke the callback with its writable bytes,
+// and automatically unlock it when the callback returns or raises. The bytes
+// are only valid for the duration of the callback. This protects the lifetime
+// of the allocation; it does not provide synchronization for its contents.
+VALUE rb_io_buffer_locked_for_writing(VALUE self, VALUE (*callback)(void *base, size_t size, VALUE argument), VALUE argument);
+
 VALUE rb_io_buffer_transfer(VALUE self);
 void rb_io_buffer_resize(VALUE self, size_t size);
 void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length);
