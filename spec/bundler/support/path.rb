@@ -307,7 +307,7 @@ module Spec
     def replace_changelog(version, dir:)
       changelog = File.expand_path("CHANGELOG-bundler.md", dir)
       contents = File.readlines(changelog)
-      contents = [contents[0], contents[1], "## #{version} (2100-01-01)\n", *contents[3..-1]].join
+      contents = [contents[0], contents[1], "## #{version} / 2100-01-01\n", *contents[3..-1]].join
       File.open(changelog, "w") {|f| f << contents }
     end
 
