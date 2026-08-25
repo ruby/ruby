@@ -25,7 +25,15 @@ next if bundled_gems&.all? {|pat| !File.fnmatch?(pat, n)}
 
 unless File.exist?("#{n}/.git")
   puts "retrieving #{color.notice(n)} ..."
-  system(*%W"git clone --depth=1 --no-tags #{u} #{n}") or abort
+  cloned = (1..3).any? do |retry_count|
+    system(*%W"git clone --depth=1 --no-tags #{u} #{n}") or begin
+      warn "Clone failed (attempt #{retry_count}/3)#{retry_count < 3 ? ", retrying..." : ", giving up."}"
+      FileUtils.rm_rf(n) if File.exist?(n)
+      sleep(retry_count * 5) if retry_count < 3
+      false
+    end
+  end
+  abort unless cloned
 end
 
 candidates = r ? [r] : ["v#{v}", v]
