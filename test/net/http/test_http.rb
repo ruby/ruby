@@ -1262,16 +1262,17 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
     end
     def write(_)
     end
-    def readline
+    def readuntil(terminator, ignore_eof = false, limit: nil)
+      raise "unexpected terminator #{terminator.dump}" unless terminator == "\n"
+      # A header read ends the headers at once. Every other read is the
+      # status line of a fresh attempt, which is what count measures.
+      return "" if ignore_eof
       @count += 1
       if @success_after && @success_after <= @count
-        "HTTP/1.1 200 OK"
+        "HTTP/1.1 200 OK\n"
       else
         raise Errno::ECONNRESET
       end
-    end
-    def readuntil(*_)
-      ""
     end
     def read_all(_)
     end

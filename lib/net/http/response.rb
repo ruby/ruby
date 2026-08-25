@@ -155,11 +155,17 @@ class Net::HTTPResponse
       res
     end
 
+    def read_line(sock, limit, ignore_eof = false)   #:nodoc: internal use only
+      sock.readuntil("\n", ignore_eof, limit: limit)
+    rescue Net::ReadLimitExceeded
+      raise Net::HTTPBadResponse, 'response line too long'
+    end
+
     private
     # :stopdoc:
 
     def read_status_line(sock)
-      str = sock.readline
+      str = read_line(sock, MAX_RESPONSE_HEADER_LENGTH).chop
       m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)(?:\s+(.*))?\z/in.match(str) or
         raise Net::HTTPBadResponse, "wrong status line: #{str.dump}"
       m.captures
@@ -175,7 +181,7 @@ class Net::HTTPResponse
       key = value = nil
       remaining = MAX_RESPONSE_HEADER_LENGTH
       while true
-        line = sock.readuntil("\n", true)
+        line = read_line(sock, MAX_RESPONSE_HEADER_LENGTH, true)
         remaining -= line.bytesize
         raise Net::HTTPBadResponse, 'response header too large' if remaining < 0
         line = line.sub(/\s+\z/, '')
@@ -630,7 +636,7 @@ class Net::HTTPResponse
   def read_chunked(dest, chunk_data_io) # :nodoc:
     total = 0
     while true
-      line = @socket.readline
+      line = self.class.read_line(@socket, MAX_RESPONSE_HEADER_LENGTH).chop
       hexlen = line.slice(/[0-9a-fA-F]+/) or
           raise Net::HTTPBadResponse, "wrong chunk size line: #{line}"
       len = hexlen.hex
@@ -642,7 +648,7 @@ class Net::HTTPResponse
         @socket.read 2   # \r\n
       end
     end
-    until @socket.readline.empty?
+    until self.class.read_line(@socket, MAX_RESPONSE_HEADER_LENGTH).chop.empty?
       # none
     end
   end

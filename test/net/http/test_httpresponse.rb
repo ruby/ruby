@@ -25,9 +25,10 @@ EOS
     count.times { |i| headers << "X-Pad-#{i}: #{big_value}\n" }
     headers << "\nhello\n"
     io = dummy_io(headers)
-    assert_raise(Net::HTTPBadResponse) do
+    e = assert_raise(Net::HTTPBadResponse) do
       Net::HTTPResponse.read_new(io)
     end
+    assert_equal 'response header too large', e.message
   end
 
   def test_response_header_within_limit
@@ -39,6 +40,40 @@ EOS
     io = dummy_io(headers)
     assert_nothing_raised do
       Net::HTTPResponse.read_new(io)
+    end
+  end
+
+  def test_status_line_too_long
+    io = endless_io("HTTP/1.1 200 ")
+    assert_raise(Net::HTTPBadResponse) do
+      Net::HTTPResponse.read_new(io)
+    end
+  end
+
+  def test_response_header_line_too_long
+    io = endless_io("HTTP/1.1 200 OK\nX-Foo: ")
+    assert_raise(Net::HTTPBadResponse) do
+      Net::HTTPResponse.read_new(io)
+    end
+  end
+
+  def test_chunk_size_line_too_long
+    io = endless_io("HTTP/1.1 200 OK\nTransfer-Encoding: chunked\n\n")
+    res = Net::HTTPResponse.read_new(io)
+    assert_raise(Net::HTTPBadResponse) do
+      res.reading_body io, true do
+        res.read_body
+      end
+    end
+  end
+
+  def test_chunk_trailer_line_too_long
+    io = endless_io("HTTP/1.1 200 OK\nTransfer-Encoding: chunked\n\n0\n")
+    res = Net::HTTPResponse.read_new(io)
+    assert_raise(Net::HTTPBadResponse) do
+      res.reading_body io, true do
+        res.read_body
+      end
     end
   end
 
@@ -774,5 +809,34 @@ private
     str = str.gsub(/\n/, "\r\n")
 
     Net::BufferedIO.new(StringIO.new(str))
+  end
+
+  # Yields the given prefix, then streams 'a' without EOF. Stops with an
+  # error well past the limit under test so that a regression fails the
+  # test instead of looping until the machine runs out of memory.
+  class EndlessDataIO
+    SAFETY_LIMIT = Net::HTTPResponse::MAX_RESPONSE_HEADER_LENGTH * 2
+
+    def initialize(prefix)
+      @buf = prefix.b
+      @served = 0
+    end
+
+    def read_nonblock(size, buf = nil, exception: false)
+      @served += size
+      raise "read #{@served} bytes without hitting the line limit" if
+        @served > SAFETY_LIMIT
+      @buf << 'a' * (size - @buf.bytesize) if @buf.bytesize < size
+      s = @buf.slice!(0, size)
+      buf ? buf.replace(s) : s
+    end
+
+    def closed?
+      false
+    end
+  end
+
+  def endless_io(prefix)
+    Net::BufferedIO.new(EndlessDataIO.new(prefix.gsub(/\n/, "\r\n")))
   end
 end
