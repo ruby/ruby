@@ -138,6 +138,11 @@ RSpec.configure do |config|
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["XDG_CACHE_HOME"] = nil
     ENV["GEMRC"] = nil
+    # Left set, these point the suite at the real OS credential store, where
+    # specs that configure a host credential would write into the developer's
+    # own keychain.
+    ENV["BUNDLE_CREDENTIAL_STORE"] = nil
+    ENV["RUBYGEMS_CREDENTIAL_STORE"] = nil
 
     # Prevent tests from modifying the user's global git config.
     # GIT_CONFIG_GLOBAL and GIT_CONFIG_NOSYSTEM are available since Git 2.32.

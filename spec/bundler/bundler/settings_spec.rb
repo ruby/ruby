@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "bundler/settings"
+require "rubygems/credential_store"
+require_relative "../support/fake_credential_backend"
 
 RSpec.describe Bundler::Settings do
   subject(:settings) { described_class.new(bundled_app) }
@@ -275,6 +277,409 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
       it "returns the configured credentials" do
         expect(settings.credentials_for(uri)).to eq(credentials)
       end
+    end
+
+    context "with credential_store enabled" do
+      let(:fake_store) { Gem::CredentialStore.new(backend: FakeCredentialBackend.new) }
+
+      before do
+        settings.set_local "credential_store", "true"
+        Gem::CredentialStore.instance = fake_store
+      end
+
+      after { Gem::CredentialStore.reset! }
+
+      it "returns nil when nothing is configured anywhere" do
+        expect(settings.credentials_for(uri)).to be_nil
+      end
+
+      it "round-trips credentials set under the full URL" do
+        settings.set_local "https://gemserver.example.org/", credentials
+
+        expect(settings.credentials_for(uri)).to eq(credentials)
+      end
+
+      it "round-trips credentials set under the hostname" do
+        settings.set_local "gemserver.example.org", credentials
+
+        expect(settings.credentials_for(uri)).to eq(credentials)
+      end
+
+      it "keeps a password in the source URL out of the store account" do
+        # The account reaches the backend as a command argument, where any
+        # other user on the machine can read it.
+        recorder = Class.new(FakeCredentialBackend) do
+          def accounts_seen
+            @accounts_seen ||= []
+          end
+
+          def get(service, account)
+            accounts_seen << account
+            super
+          end
+        end.new
+        Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: recorder)
+        settings.set_local "gemserver.example.org", credentials
+
+        with_auth = Gem::URI("https://someone:s3cr3t@gemserver.example.org")
+
+        expect(settings.credentials_for(with_auth)).to eq(credentials)
+        # key_for upcases, so compare without regard to case.
+        expect(recorder.accounts_seen).not_to be_empty
+        expect(recorder.accounts_seen.join.downcase).not_to include("s3cr3t")
+      end
+
+      it "matches a URL key regardless of a trailing slash, like the config file does" do
+        settings.set_local "https://gemserver.example.org", credentials
+
+        expect(settings.credentials_for(Gem::URI("https://gemserver.example.org/"))).to eq(credentials)
+      end
+
+      it "does not write the secret to the local config file" do
+        settings.set_local "gemserver.example.org", credentials
+
+        expect(settings.locations("gemserver.example.org")[:local]).to be_nil
+      end
+
+      it "prefers a credential given in the environment over the credential_store" do
+        settings.set_local "gemserver.example.org", credentials
+
+        ENV["BUNDLE_GEMSERVER__EXAMPLE__ORG"] = "ci:token"
+        env_settings = Bundler::Settings.new(bundled_app)
+
+        expect(env_settings.credentials_for(uri)).to eq("ci:token")
+      end
+
+      it "leaves the layer order alone for a host the store does not hold" do
+        # Written straight to the config file so the store never holds it.
+        # Resolution must then be exactly what it was before the store
+        # existed, with local beating env.
+        allow(settings).to receive(:active_credential_store).and_return(nil)
+        settings.set_local "other.example.org", "local:pass"
+        allow(settings).to receive(:active_credential_store).and_call_original
+
+        ENV["BUNDLE_OTHER__EXAMPLE__ORG"] = "env:pass"
+        env_settings = Bundler::Settings.new(bundled_app)
+
+        expect(env_settings.credentials_for(Gem::URI("https://other.example.org/"))).to eq("local:pass")
+      end
+
+      it "falls back to the credential_store when the environment has no entry" do
+        settings.set_local "gemserver.example.org", credentials
+
+        ENV["BUNDLE_OTHER__EXAMPLE__ORG"] = "ci:token"
+        env_settings = Bundler::Settings.new(bundled_app)
+
+        expect(env_settings.credentials_for(uri)).to eq(credentials)
+      end
+
+      it "prefers the credential_store over a stale local config value" do
+        # A plain-text credential left in the config file before the store
+        # was enabled, simulated by routing this one write to the file.
+        allow(settings).to receive(:active_credential_store).and_return(nil)
+        settings.set_local "gemserver.example.org", "stale:value"
+        allow(settings).to receive(:active_credential_store).and_call_original
+
+        settings.set_local "gemserver.example.org", credentials
+
+        expect(settings.credentials_for(uri)).to eq(credentials)
+      end
+    end
+
+    context "with a named credential_store backend" do
+      let(:fake_store) { Gem::CredentialStore.new(backend: FakeCredentialBackend.new) }
+
+      before do
+        settings.set_local "credential_store", "1password"
+        Gem::CredentialStore.instance = fake_store
+      end
+
+      after { Gem::CredentialStore.reset! }
+
+      it "round-trips credentials through the selected backend" do
+        settings.set_local "gemserver.example.org", credentials
+
+        expect(settings.credentials_for(uri)).to eq(credentials)
+      end
+    end
+
+    context "with a per-host credential_store backend" do
+      let(:host_backend) { FakeCredentialBackend.new }
+      let(:global_backend) { FakeCredentialBackend.new }
+      let(:service) { Bundler::Settings::CREDENTIAL_STORE_SERVICE }
+
+      before do
+        Gem::CredentialStore.register_backend("fake-host", host_backend)
+        Gem::CredentialStore.register_backend("fake-global", global_backend)
+        settings.set_local "credential_store", "fake-global"
+        settings.set_local "credential_store.gemserver.example.org", "fake-host"
+      end
+
+      after { Gem::CredentialStore.reset! }
+
+      it "reads the host's credentials from the backend selected for that host" do
+        host_backend.set(service, Bundler::Settings.key_for("gemserver.example.org"), credentials)
+
+        expect(settings.credentials_for(uri)).to eq(credentials)
+      end
+
+      it "does not chain to the global backend when the host's backend misses" do
+        global_backend.set(service, Bundler::Settings.key_for("gemserver.example.org"), credentials)
+
+        expect(settings.credentials_for(uri)).to be_nil
+      end
+
+      it "keeps other hosts on the globally selected backend" do
+        global_backend.set(service, Bundler::Settings.key_for("other.example.org"), credentials)
+
+        expect(settings.credentials_for(Gem::URI("https://other.example.org/"))).to eq(credentials)
+      end
+
+      it "writes a host credential to the backend selected for that host" do
+        settings.set_local "gemserver.example.org", credentials
+
+        expect(host_backend.get(service, Bundler::Settings.key_for("gemserver.example.org"))).to eq(credentials)
+        expect(global_backend.get(service, Bundler::Settings.key_for("gemserver.example.org"))).to be_nil
+      end
+
+      it "writes a URL-keyed credential to the backend selected for its host" do
+        settings.set_local "https://gemserver.example.org/", credentials
+
+        expect(host_backend.get(service, Bundler::Settings.key_for("https://gemserver.example.org/"))).to eq(credentials)
+      end
+
+      it "keeps a host on the config file when its store is set to false" do
+        settings.set_local "credential_store.gemserver.example.org", "false"
+
+        settings.set_local "gemserver.example.org", credentials
+
+        expect(settings.locations("gemserver.example.org")[:local]).to eq(credentials)
+        expect(settings.credentials_for(uri)).to eq(credentials)
+      end
+    end
+
+    context "with credential_store set to false" do
+      before { settings.set_local "credential_store", "false" }
+
+      it "does not consult a credential store" do
+        expect(Gem::CredentialStore).not_to receive(:for)
+        expect(settings.credentials_for(uri)).to be_nil
+      end
+    end
+
+    context "when the paired RubyGems has no credential store" do
+      before do
+        settings.set_local "credential_store", "true"
+        allow(settings).to receive(:require).and_call_original
+        allow(settings).to receive(:require).with("rubygems/credential_store").and_raise(LoadError)
+      end
+
+      it "warns once and falls back to the config file without raising" do
+        allow(Bundler.ui).to receive(:warn)
+
+        expect { settings.set_local "gemserver.example.org", "username:password" }.not_to raise_error
+        expect(settings.credentials_for(uri)).to eq("username:password")
+
+        expect(Bundler.ui).to have_received(:warn).once
+      end
+    end
+  end
+
+  describe "credential storage with credential_store enabled" do
+    let(:fake_store) { Gem::CredentialStore.new(backend: FakeCredentialBackend.new) }
+
+    before do
+      settings.set_local "credential_store", "true"
+      Gem::CredentialStore.instance = fake_store
+    end
+
+    after { Gem::CredentialStore.reset! }
+
+    it "writes a host credential to the credential_store instead of the local config file" do
+      settings.set_local "gemserver.example.org", "username:password"
+
+      expect(fake_store.get(Bundler::Settings.key_for("gemserver.example.org"))).to eq("username:password")
+      expect(settings.locations("gemserver.example.org")[:local]).to be_nil
+    end
+
+    it "leaves the credential_store alone for temporary settings" do
+      settings.set_local "gemserver.example.org", "username:password"
+      stored = Bundler::Settings.key_for("gemserver.example.org")
+
+      settings.temporary("gemserver.example.org" => "temp:value") do
+        # The temporary value must not be persisted to the OS store...
+        expect(fake_store.get(stored)).to eq("username:password")
+      end
+
+      # ...and restoring it must not delete the real credential either.
+      expect(fake_store.get(stored)).to eq("username:password")
+    end
+
+    it "names the host and the file it fell back to when the store write fails" do
+      Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: nil)
+      allow(Bundler.ui).to receive(:warn)
+
+      settings.set_local "gemserver.example.org", "username:password"
+
+      expect(Bundler.ui).to have_received(:warn).
+        with(%r{credential for gemserver\.example\.org .* #{Regexp.escape(bundled_app.to_s)}/config in plain text}m)
+    end
+
+    it "warns when the credential cannot be removed from the credential_store" do
+      # A usable backend that refuses to delete. A missing backend never held
+      # the credential, so that case must stay silent.
+      refusing = Class.new(FakeCredentialBackend) do
+        def delete(_service, _account)
+          false
+        end
+      end.new
+      Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: refusing)
+      allow(Bundler.ui).to receive(:warn)
+
+      settings.set_local "gemserver.example.org", nil
+
+      expect(Bundler.ui).to have_received(:warn).with(/Could not remove the credential for gemserver\.example\.org/)
+    end
+
+    it "says the store was unreachable rather than claiming a removal" do
+      # Nothing can be removed from a store that cannot be reached. Reporting
+      # a clean removal would be a lie, and reporting a failure would be one
+      # too, so the warning says which it is.
+      Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: nil)
+      allow(Bundler.ui).to receive(:warn)
+
+      settings.set_local "gemserver.example.org", nil
+
+      expect(Bundler.ui).to have_received(:warn).with(/enabled but unavailable/)
+      expect(Bundler.ui).not_to have_received(:warn).with(/Could not remove/)
+    end
+
+    it "removes the stored credential when the same host is set to a value it cannot store" do
+      settings.set_local "gemserver.example.org", "username:password"
+      expect(fake_store.get(Bundler::Settings.key_for("gemserver.example.org"))).to eq("username:password")
+
+      # A bare token has no colon, so it goes to the config file. The stored
+      # user:pass must not stay behind and keep winning in #credentials_for.
+      settings.set_local "gemserver.example.org", "baretoken"
+
+      expect(fake_store.get(Bundler::Settings.key_for("gemserver.example.org"))).to be_nil
+      expect(settings.credentials_for(Gem::URI("https://gemserver.example.org/"))).to eq("baretoken")
+    end
+
+    it "routes credential store warnings to Bundler.ui" do
+      # Bundler replaces Gem.ui with a Gem::SilentUI subclass, so a warning
+      # left on Gem.ui would never reach the user during a bundle command.
+      allow(Bundler.ui).to receive(:warn)
+      settings.set_local "gemserver.example.org", "username:password"
+
+      Gem::CredentialStore.warn_once "store trouble"
+
+      expect(Bundler.ui).to have_received(:warn).with("store trouble")
+    end
+
+    it "lists stored credentials by key" do
+      settings.set_local "gemserver.example.org", "username:password"
+
+      expect(settings.all_including_stored_credentials).to include("gemserver.example.org")
+    end
+
+    it "keeps stored credentials out of the hot-path key list" do
+      settings.set_local "gemserver.example.org", "username:password"
+
+      # #all is read per gem source and per download, and its keys go into
+      # the User-Agent, so the store must not be consulted there.
+      expect(settings.all).not_to include("gemserver.example.org")
+    end
+
+    it "omits stored credentials when the backend cannot enumerate them" do
+      # A resolver-style third-party backend has nothing to list.
+      no_list = Class.new(FakeCredentialBackend) do
+        undef_method :list
+      end.new
+      Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: no_list)
+
+      settings.set_local "gemserver.example.org", "username:password"
+
+      expect(settings.all_including_stored_credentials).not_to include("gemserver.example.org")
+      expect(settings.credential_stored?("gemserver.example.org")).to be true
+    end
+
+    it "reports a stored credential without revealing it" do
+      settings.set_local "gemserver.example.org", "username:password"
+
+      values = settings.pretty_values_for("gemserver.example.org")
+
+      expect(values).to include(/Set in the credential store, which is used ahead of the config files/)
+      expect(values.join).not_to include("password")
+      expect(settings.credential_stored?("gemserver.example.org")).to be true
+    end
+
+    it "does not claim a credential is stored when it is not" do
+      expect(settings.credential_stored?("gemserver.example.org")).to be false
+      expect(settings.credential_stored?("jobs")).to be false
+    end
+
+    it "leaves settings that are not host names in the config file" do
+      # ssl_client_cert is not on any known-settings list and a Windows path
+      # contains a colon, so a default-allow rule would move it into the
+      # store, and Settings#[] would then read it back as nil.
+      settings.set_local "ssl_client_cert", 'C:\certs\client.pem'
+      settings.set_local "user_agent", "MyCorp/1.0 (build: 123)"
+
+      expect(settings["ssl_client_cert"]).to eq('C:\certs\client.pem')
+      expect(settings["user_agent"]).to eq("MyCorp/1.0 (build: 123)")
+      expect(fake_store.get(Bundler::Settings.key_for("ssl_client_cert"))).to be_nil
+    end
+
+    it "stores a credential keyed by a host with a port" do
+      settings.set_local "my-registry.example.com:8080", "username:password"
+
+      expect(fake_store.get(Bundler::Settings.key_for("my-registry.example.com:8080"))).to eq("username:password")
+    end
+
+    it "does not route non-credential-shaped values to the credential_store" do
+      settings.set_local "jobs", "4"
+
+      expect(settings["jobs"]).to eq(4)
+    end
+
+    it "does not route the gem.push_key signing key path to the credential_store" do
+      settings.set_local "gem.push_key", "/path/to/key.pem"
+
+      expect(settings["gem.push_key"]).to eq("/path/to/key.pem")
+    end
+
+    it "falls back to the local config file and warns when the credential_store write fails" do
+      Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: nil)
+      allow(Bundler.ui).to receive(:warn)
+
+      settings.set_local "gemserver.example.org", "username:password"
+
+      expect(settings["gemserver.example.org"]).to eq("username:password")
+      expect(Bundler.ui).to have_received(:warn).once
+    end
+
+    it "removes a stale plaintext credential from the config file once it moves to the store" do
+      # written to the config file before the store took over
+      allow(settings).to receive(:active_credential_store).and_return(nil)
+      settings.set_local "gemserver.example.org", "old:secret"
+      expect(settings.locations("gemserver.example.org")[:local]).to eq("old:secret")
+      allow(settings).to receive(:active_credential_store).and_call_original
+
+      settings.set_local "gemserver.example.org", "new:secret"
+
+      expect(fake_store.get(Bundler::Settings.key_for("gemserver.example.org"))).to eq("new:secret")
+      expect(settings.locations("gemserver.example.org")[:local]).to be_nil
+    end
+
+    it "removes a credential_store-stored credential on unset" do
+      account = Bundler::Settings.key_for("gemserver.example.org")
+      settings.set_local "gemserver.example.org", "username:password"
+      expect(fake_store.get(account)).to eq("username:password")
+
+      settings.set_local "gemserver.example.org", nil
+
+      expect(fake_store.get(account)).to be_nil
     end
   end
 

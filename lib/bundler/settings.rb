@@ -62,6 +62,7 @@ module Bundler
       bin
       cache_path
       console
+      credential_store
       default_cli_command
       gem.ci
       gem.github_username
@@ -167,6 +168,28 @@ module Bundler
       keys
     end
 
+    ##
+    # #all plus the keys whose credential lives in the credential store. Kept
+    # apart from #all because that one is on the hot path (it is read per gem
+    # source and per download, and its keys are advertised in the User-Agent),
+    # while this one is for the commands that display settings.
+
+    def all_including_stored_credentials
+      keys = stored_credential_keys.map do |key|
+        key = key.delete_prefix("BUNDLE_")
+        key.gsub!("___", "-")
+        key.gsub!("__", ".")
+        key.downcase!
+        key
+      end
+
+      # The listing comes from the globally selected store, but a host can name
+      # its own, so keep only the keys the per-host lookup agrees are set.
+      keys.select! {|key| credential_stored?(key) }
+
+      all.union(keys).sort
+    end
+
     def local_overrides
       repos = {}
       all.each do |k|
@@ -185,6 +208,9 @@ module Bundler
     end
 
     def credentials_for(uri)
+      stored = credentials_from_store(uri)
+      return credentials_from_env(uri) || stored if stored
+
       self[uri.to_s] || self[uri.host]
     end
 
@@ -221,12 +247,43 @@ module Bundler
         locations << "Set via #{key}: #{printable_value(value, exposed_key).inspect}"
       end
 
+      if credential_stored?(exposed_key)
+        # The heading calls this a priority order, but a stored credential sits
+        # outside it and is used ahead of every config file.
+        locations << "Set in the credential store, which is used ahead of the config files"
+      end
+
       if value = @global_config[key]
         locations << "Set for the current user (#{global_config_file}): #{printable_value(value, exposed_key).inspect}"
       end
 
       return ["You have not configured a value for `#{exposed_key}`"] if locations.empty?
       locations
+    end
+
+    ##
+    # True when +name+'s credential lives in the credential store. The secret
+    # itself is never returned: callers only need to know the setting exists,
+    # since Settings#[] cannot see past the config files.
+
+    def credential_stored?(name)
+      raw_key = self.class.key_to_s(name)
+      return false unless credential_store_key?(raw_key)
+      return false unless store = active_credential_store(credential_host(raw_key))
+
+      !store.get(credential_account(raw_key)).nil?
+    end
+
+    ##
+    # The keys credentials are stored under, in the same encoding the config
+    # hashes use, so #all can fold them in. Empty when no store is enabled or
+    # when the backend cannot enumerate its entries, which is why
+    # bundle-config(1) warns that a third-party backend may not list.
+
+    def stored_credential_keys
+      return [] unless store = active_credential_store
+
+      Array(store.list)
     end
 
     def processor_count
@@ -355,7 +412,7 @@ module Bundler
 
     def is_string(name)
       name = self.class.key_to_s(name)
-      STRING_KEYS.include?(name) || name.start_with?("local.") || name.start_with?("mirror.") || name.start_with?("build.")
+      STRING_KEYS.include?(name) || name.start_with?("local.") || name.start_with?("mirror.") || name.start_with?("build.") || name.start_with?("credential_store.")
     end
 
     def to_bool(value)
@@ -385,6 +442,141 @@ module Bundler
       value.include?(":")
     end
 
+    ##
+    # The Gem::CredentialStore instance to use, or nil when the
+    # `credential_store` setting is off. The value is `true`/`"true"` for this
+    # platform's native backend or a backend name such as `"1password"`.
+    # Guarded by a cheap lookup so reading and writing settings costs nothing
+    # extra when the setting is disabled.
+
+    # Kept separate from RubyGems so gem signout does not remove Bundler's
+    # host credentials.
+    CREDENTIAL_STORE_SERVICE = "bundler"
+
+    def active_credential_store(host = nil)
+      spec = credential_store_spec(host)
+      return nil unless spec
+
+      store_class = credential_store_class
+      return nil unless store_class
+
+      store_class.for(spec, service: CREDENTIAL_STORE_SERVICE)
+    end
+
+    # A `credential_store.<host>` setting overrides the global one for that
+    # host only. There is no chain between backends.
+    def credential_store_spec(host = nil)
+      value = self["credential_store.#{host}"] if host
+      value = self[:credential_store] if value.nil?
+
+      # An environment variable can carry bytes String#downcase would reject.
+      case value.to_s.b.downcase
+      when "", "false", "0", "no", "off", "f", "n" then nil
+      when "true", "1", "yes", "on", "t", "y" then true
+      else value.to_s
+      end
+    end
+
+    def credential_store_class
+      return @credential_store_class if defined?(@credential_store_class)
+
+      @credential_store_class =
+        begin
+          require "rubygems/credential_store"
+          Gem::CredentialStore if Gem::CredentialStore.respond_to?(:for)
+        rescue LoadError
+          nil
+        end
+
+      if @credential_store_class.nil?
+        Bundler.ui.warn "The `credential_store` setting is set but this RubyGems does not provide a credential store. Falling back to the Bundler config file."
+      elsif @credential_store_class.respond_to?(:warn_handler=)
+        # Bundler replaces Gem.ui with a Gem::SilentUI subclass, which drops
+        # alert_warning, so every store warning would be lost.
+        @credential_store_class.warn_handler = ->(message) { Bundler.ui.warn(message) }
+      end
+
+      @credential_store_class
+    end
+
+    CREDENTIAL_URL_KEY = %r{\Ahttps?://}i
+    CREDENTIAL_HOST_KEY = /\A[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?\z/i
+
+    ##
+    # True for keys that name a host and can therefore hold a credential,
+    # like the ones set via `bundle config set gems.example.com user:pass`.
+    # Deliberately a positive test: a key this version does not recognize
+    # stays in the config file, where Settings#[] can read it back. Matching
+    # everything not on the known-settings lists would send values such as
+    # `ssl_client_cert` to the credential store, and they would then read
+    # back as nil because only #credentials_for consults the store.
+
+    def credential_store_key?(raw_key)
+      return false if is_bool(raw_key) || is_num(raw_key) || is_array(raw_key) || is_string(raw_key) || is_credential(raw_key)
+
+      CREDENTIAL_URL_KEY.match?(raw_key) || CREDENTIAL_HOST_KEY.match?(raw_key)
+    end
+
+    def remove_from_store(store, key)
+      unless store.available?
+        Bundler.ui.warn "The credential store is enabled but unavailable, so any credential it holds was left in place."
+        return true
+      end
+
+      store.delete(key)
+    end
+
+    # A write clears the plaintext only from the config file it targets, so a
+    # copy in the other scope comes back into use once the setting is off.
+    def warn_plaintext_in_other_scope(raw_key, key, hash)
+      other, other_file =
+        if hash.equal?(@local_config)
+          [@global_config, global_config_file]
+        else
+          [@local_config, @local_root.join("config")]
+        end
+
+      return unless other.key?(key)
+
+      # Deliberately not `bundle config unset`, which would clear the store as
+      # well and throw away the credential this write moved into it.
+      safe_key = self.class.remove_userinfo(raw_key)
+      Bundler.ui.warn "The credential for #{safe_key} moved into the credential store, but a plain text copy" \
+                      " remains in #{other_file}. Delete the #{key_for(safe_key)} entry from that file to finish the move."
+    end
+
+    def warn_unremoved_credential(raw_key)
+      Bundler.ui.warn "Could not remove the credential for #{self.class.remove_userinfo(raw_key)} from the credential store." \
+                      " It is still there. Remove it with your platform's credential manager."
+    end
+
+    # See Gem::ConfigFile.credential_store_account for why userinfo is dropped.
+    def credential_account(raw_key)
+      key_for(self.class.remove_userinfo(raw_key))
+    end
+
+    def credential_host(raw_key)
+      return raw_key unless CREDENTIAL_URL_KEY.match?(raw_key)
+
+      require_relative "vendored_uri"
+      Gem::URI(raw_key).host || raw_key
+    rescue Gem::URI::Error
+      raw_key
+    end
+
+    # The store stands in for the config file, so it must not override the
+    # environment, which already overrides that file. Consulted only when the
+    # store answered, so the layer order without a store is unchanged.
+    def credentials_from_env(uri)
+      @env_config[key_for(uri.to_s)] || @env_config[key_for(uri.host)]
+    end
+
+    def credentials_from_store(uri)
+      return nil unless store = active_credential_store(uri.host)
+
+      store.get(credential_account(uri.to_s)) || store.get(credential_account(uri.host))
+    end
+
     def to_array(value)
       return [] unless value
       value.tr(" ", ":").split(":").map(&:to_sym)
@@ -398,9 +590,29 @@ module Bundler
 
     def set_key(raw_key, value, hash, file)
       raw_key = self.class.key_to_s(raw_key)
-      value = array_to_s(value) if is_array(raw_key)
-
       key = key_for(raw_key)
+      account = credential_account(raw_key)
+
+      # #temporary passes a nil file, and storing its value would outlive the
+      # block while its restore pass deleted the real entry.
+      if file && credential_store_key?(raw_key) && (store = active_credential_store(credential_host(raw_key)))
+        if value.nil?
+          warn_unremoved_credential(raw_key) unless remove_from_store(store, account)
+        elsif value.is_a?(String) && is_userinfo(value)
+          if store.set(account, value)
+            value = nil
+            warn_plaintext_in_other_scope(raw_key, key, hash)
+          else
+            warn_unremoved_credential(raw_key) if store.available? && !store.delete(account)
+            Bundler.ui.warn "Could not write the credential for #{self.class.remove_userinfo(raw_key)} to the credential store," \
+                            " so it was written to #{file} in plain text."
+          end
+        else
+          warn_unremoved_credential(raw_key) unless remove_from_store(store, account)
+        end
+      end
+
+      value = array_to_s(value) if is_array(raw_key)
 
       return if hash[key] == value
 
@@ -529,6 +741,20 @@ module Bundler
       key.upcase!
 
       key.gsub(/\A([ #]*)/, '\1BUNDLE_')
+    end
+
+    def self.remove_userinfo(key)
+      return key unless CREDENTIAL_URL_KEY.match?(key)
+
+      require_relative "vendored_uri"
+      uri = Gem::URI(key)
+      return key unless uri.userinfo
+
+      uri = uri.dup
+      uri.user = uri.password = nil
+      uri.to_s
+    rescue Gem::URI::Error
+      key
     end
 
     # TODO: duplicates Rubygems#normalize_uri
