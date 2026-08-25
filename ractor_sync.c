@@ -536,8 +536,27 @@ ractor_add_port(rb_ractor_t *r, st_data_t id)
         // The table is full. Rebuild it outside of the ractor lock (mutators
         // are serialized by the per-ractor GVL) and swap it under the lock
         // to exclude the readers (other ractors).
-        st_table *const new_tab = st_copy(old_tab);
-        st_insert(new_tab, id, (st_data_t)rq);
+        st_table *new_tab;
+
+        // Those allocations can run a global GC, whose reap frees dead ports and
+        // drops them from old_tab; a copy taken across one would republish the
+        // freed queues.  Only the owner inserts into its own table, so a changed
+        // count means a reap ran.  Check after each allocation: st_copy fills the
+        // header before it allocates the entries, so a reap in between leaves the
+        // copy counting rows it does not have, which st_insert must not be given.
+        while (1) {
+            const st_index_t entries = st_table_size(old_tab);
+
+            new_tab = st_copy(old_tab);
+
+            if (st_table_size(old_tab) == entries) {
+                st_insert(new_tab, id, (st_data_t)rq);
+
+                if (st_table_size(old_tab) == entries) break;
+            }
+
+            st_free_table(new_tab);
+        }
 
         RACTOR_LOCK(r);
         {
