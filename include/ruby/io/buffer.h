@@ -21,7 +21,8 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 // WARNING: This entire interface is experimental and may change in the future!
 #define RB_IO_BUFFER_EXPERIMENTAL 1
 
-#define RUBY_IO_BUFFER_VERSION 2
+// Version 3: IO operations use single-transfer `(offset, length)` semantics.
+#define RUBY_IO_BUFFER_VERSION 3
 
 // The `IO::Buffer` class.
 RUBY_EXTERN VALUE rb_cIOBuffer;
@@ -107,11 +108,12 @@ VALUE rb_io_buffer_transfer(VALUE self);
 void rb_io_buffer_resize(VALUE self, size_t size);
 void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length);
 
-// The length is the minimum required length.
-VALUE rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset);
-VALUE rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset);
-VALUE rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset);
-VALUE rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset);
+// The length is the maximum transfer length. Each function performs one
+// logical IO operation and may return a short result.
+VALUE rb_io_buffer_read(VALUE self, VALUE io, size_t offset, size_t length);
+VALUE rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t length);
+VALUE rb_io_buffer_write(VALUE self, VALUE io, size_t offset, size_t length);
+VALUE rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t length);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

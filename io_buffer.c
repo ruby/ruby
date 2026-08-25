@@ -479,42 +479,10 @@ io_buffer_default_length(const struct rb_io_buffer *buffer, size_t offset)
     return buffer->size - offset;
 }
 
-// Extract the optional length and offset arguments, returning the buffer.
-// The length and offset are optional, but if they are provided, they must be
-// positive integers. If the length is not provided, the default length is
-// computed from the buffer size and offset. If the offset is not provided, it
-// defaults to zero.
-static inline struct rb_io_buffer *
-io_buffer_extract_length_offset(VALUE self, int argc, VALUE argv[], size_t *length, size_t *offset)
-{
-    struct rb_io_buffer *buffer = get_io_buffer(self);
-
-    if (argc >= 2 && !NIL_P(argv[1])) {
-        *offset = io_buffer_extract_offset(argv[1]);
-    }
-    else {
-        *offset = 0;
-    }
-
-    if (argc >= 1 && !NIL_P(argv[0])) {
-        *length = io_buffer_extract_length(argv[0]);
-    }
-    else {
-        *length = io_buffer_default_length(buffer, *offset);
-    }
-
-    return buffer;
-}
-
 // Extract the optional offset and length arguments, returning the buffer.
-// Similar to `io_buffer_extract_length_offset` but with the order of arguments
-// reversed.
-//
-// After much consideration, I decided to accept both forms.
-// The `(offset, length)` order is more natural when referring about data,
-// while the `(length, offset)` order is more natural when referring to
-// read/write operations. In many cases, with the latter form, `offset`
-// is usually not supplied.
+// The offset and length are optional, but if they are provided, they must be
+// positive integers. If the offset is not provided, it defaults to zero. If
+// the length is not provided, it defaults to the buffer size minus the offset.
 static inline struct rb_io_buffer *
 io_buffer_extract_offset_length(VALUE self, int argc, VALUE argv[], size_t *offset, size_t *length)
 {
@@ -3331,76 +3299,50 @@ io_buffer_blocking_region(VALUE io, struct rb_io_buffer *buffer, rb_blocking_fun
 struct io_buffer_read_internal_argument {
     // The file descriptor to read from:
     int descriptor;
-    // The base pointer to read from:
+    // The base pointer to read into:
     char *base;
-    // The size of the buffer:
-    size_t size;
-    // The minimum number of bytes to read:
+    // The maximum number of bytes to read:
     size_t length;
 };
 
 static VALUE
 io_buffer_read_internal(void *_argument)
 {
-    size_t total = 0;
     struct io_buffer_read_internal_argument *argument = _argument;
+    ssize_t result = read(argument->descriptor, argument->base, argument->length);
 
-    while (true) {
-        ssize_t result = read(argument->descriptor, argument->base, argument->size);
-
-        if (result < 0) {
-            return rb_fiber_scheduler_io_result(result, errno);
-        }
-        else if (result == 0) {
-            return rb_fiber_scheduler_io_result(total, 0);
-        }
-        else {
-            total += result;
-
-            if (total >= argument->length) {
-                return rb_fiber_scheduler_io_result(total, 0);
-            }
-
-            argument->base = argument->base + result;
-            argument->size = argument->size - result;
-        }
-    }
+    return rb_fiber_scheduler_io_result(result, errno);
 }
 
 VALUE
-rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
+rb_io_buffer_read(VALUE self, VALUE io, size_t offset, size_t length)
 {
     io = rb_io_get_io(io);
 
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+    io_buffer_validate_for_writing(buffer);
+    io_buffer_validate_range(buffer, offset, length);
+
+    if (length == 0) return SIZET2NUM(0);
+
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_read(scheduler, io, self, length, offset);
+        VALUE result = rb_fiber_scheduler_io_read(scheduler, io, self, offset, length);
 
         if (!UNDEF_P(result)) {
             return result;
         }
     }
 
-    struct rb_io_buffer *buffer = get_io_buffer(self);
-
-    io_buffer_validate_range(buffer, offset, length);
-
-    int descriptor = rb_io_descriptor(io);
-
-    void * base;
+    void *base;
     size_t size;
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
-    size = size - offset;
-    if (size == 0) return SIZET2NUM(0);
-
     RUBY_ASSERT(base != NULL);
-    base = (unsigned char*)base + offset;
 
     struct io_buffer_read_internal_argument argument = {
-        .descriptor = descriptor,
-        .base = base,
-        .size = size,
+        .descriptor = rb_io_descriptor(io),
+        .base = (char*)base + offset,
         .length = length,
     };
 
@@ -3408,26 +3350,22 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
 }
 
 /*
- *  call-seq: read(io, [length, [offset]]) -> read length or -errno
+ *  call-seq: read(io, [offset, [length]]) -> read length or -errno
  *
- *  Read at least +length+ bytes from the +io+, into the buffer starting at
- *  +offset+. If an error occurs, return <tt>-errno</tt>.
- *
- *  If +length+ is not given or +nil+, it defaults to the size of the buffer
- *  minus the offset, i.e. the entire buffer.
- *
- *  If +length+ is zero, exactly one <tt>read</tt> operation will occur, unless
- *  there is no available space in the buffer at +offset+.
+ *  Perform one read operation of at most +length+ bytes from +io+ into the
+ *  buffer starting at +offset+. A short read is a normal result. If an error
+ *  occurs, return <tt>-errno</tt>.
  *
  *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
- *  buffer.
+ *  buffer. If +length+ is not given, it defaults to the size of the buffer
+ *  minus the offset. A zero length is a no-op.
  *
  *    IO::Buffer.for('test') do |buffer|
  *      p buffer
  *      # =>
  *      # <IO::Buffer 0x00007fca40087c38+4 SLICE>
  *      # 0x00000000  74 65 73 74         test
- *      buffer.read(File.open('/dev/urandom', 'rb'), 2)
+ *      buffer.read(File.open('/dev/urandom', 'rb'), 0, 2)
  *      p buffer
  *      # =>
  *      # <IO::Buffer 0x00007f3bc65f2a58+4 EXTERNAL SLICE>
@@ -3441,110 +3379,79 @@ io_buffer_read(int argc, VALUE *argv, VALUE self)
 
     VALUE io = argv[0];
 
-    size_t length, offset;
-    io_buffer_extract_length_offset(self, argc-1, argv+1, &length, &offset);
+    size_t offset, length;
+    io_buffer_extract_offset_length(self, argc-1, argv+1, &offset, &length);
 
-    return rb_io_buffer_read(self, io, length, offset);
+    return rb_io_buffer_read(self, io, offset, length);
 }
 
 struct io_buffer_pread_internal_argument {
     // The file descriptor to read from:
     int descriptor;
-    // The base pointer to read from:
+    // The base pointer to read into:
     char *base;
-    // The size of the buffer:
-    size_t size;
-    // The minimum number of bytes to read:
+    // The maximum number of bytes to read:
     size_t length;
-    // The offset to read from:
-    off_t offset;
+    // The position to read from:
+    off_t from;
 };
 
 static VALUE
 io_buffer_pread_internal(void *_argument)
 {
-    size_t total = 0;
     struct io_buffer_pread_internal_argument *argument = _argument;
+    ssize_t result = pread(argument->descriptor, argument->base, argument->length, argument->from);
 
-    while (true) {
-        ssize_t result = pread(argument->descriptor, argument->base, argument->size, argument->offset);
-
-        if (result < 0) {
-            return rb_fiber_scheduler_io_result(result, errno);
-        }
-        else if (result == 0) {
-            return rb_fiber_scheduler_io_result(total, 0);
-        }
-        else {
-            total += result;
-
-            if (total >= argument->length) {
-                return rb_fiber_scheduler_io_result(total, 0);
-            }
-
-            argument->base = argument->base + result;
-            argument->size = argument->size - result;
-            argument->offset = argument->offset + result;
-        }
-    }
+    return rb_fiber_scheduler_io_result(result, errno);
 }
 
 VALUE
-rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset)
+rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t length)
 {
     io = rb_io_get_io(io);
 
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+    io_buffer_validate_for_writing(buffer);
+    io_buffer_validate_range(buffer, offset, length);
+
+    if (length == 0) return SIZET2NUM(0);
+
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, from, self, length, offset);
+        VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, from, self, offset, length);
 
         if (!UNDEF_P(result)) {
             return result;
         }
     }
 
-    struct rb_io_buffer *buffer = get_io_buffer(self);
-
-    io_buffer_validate_range(buffer, offset, length);
-
-    int descriptor = rb_io_descriptor(io);
-
-    void * base;
+    void *base;
     size_t size;
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
-    size = size - offset;
-    if (size == 0) return SIZET2NUM(0);
-
     RUBY_ASSERT(base != NULL);
-    base = (unsigned char*)base + offset;
 
     struct io_buffer_pread_internal_argument argument = {
-        .descriptor = descriptor,
-        .base = base,
-        .size = size,
+        .descriptor = rb_io_descriptor(io),
+        .base = (char*)base + offset,
         .length = length,
-        .offset = from,
+        .from = from,
     };
 
     return io_buffer_blocking_region(io, buffer, io_buffer_pread_internal, &argument);
 }
 
 /*
- *  call-seq: pread(io, from, [length, [offset]]) -> read length or -errno
+ *  call-seq: pread(io, from, [offset, [length]]) -> read length or -errno
  *
- *  Read at least +length+ bytes from the +io+ starting at the specified +from+
- *  position, into the buffer starting at +offset+. If an error occurs,
- *  return <tt>-errno</tt>.
- *
- *  If +length+ is not given or +nil+, it defaults to the size of the buffer
- *  minus the offset, i.e. the entire buffer.
- *
- *  If +length+ is zero, exactly one <tt>pread</tt> operation will occur,
- *  unless there is no available space in the buffer at +offset+.
+ *  Perform one read operation of at most +length+ bytes from +io+ at +from+
+ *  into the buffer starting at +offset+. A short read is a normal result and
+ *  the IO's current position is not modified. If an error occurs, return
+ *  <tt>-errno</tt>.
  *
  *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
- *  buffer.
+ *  buffer. If +length+ is not given, it defaults to the size of the buffer
+ *  minus the offset. A zero length is a no-op.
  *
  *    IO::Buffer.for('test') do |buffer|
  *      p buffer
@@ -3569,10 +3476,10 @@ io_buffer_pread(int argc, VALUE *argv, VALUE self)
     VALUE io = argv[0];
     rb_off_t from = NUM2OFFT(argv[1]);
 
-    size_t length, offset;
-    io_buffer_extract_length_offset(self, argc-2, argv+2, &length, &offset);
+    size_t offset, length;
+    io_buffer_extract_offset_length(self, argc-2, argv+2, &offset, &length);
 
-    return rb_io_buffer_pread(self, io, from, length, offset);
+    return rb_io_buffer_pread(self, io, from, offset, length);
 }
 
 struct io_buffer_write_internal_argument {
@@ -3580,74 +3487,47 @@ struct io_buffer_write_internal_argument {
     int descriptor;
     // The base pointer to write from:
     const char *base;
-    // The size of the buffer:
-    size_t size;
-    // The minimum length to write:
+    // The maximum number of bytes to write:
     size_t length;
 };
 
 static VALUE
 io_buffer_write_internal(void *_argument)
 {
-    size_t total = 0;
     struct io_buffer_write_internal_argument *argument = _argument;
+    ssize_t result = write(argument->descriptor, argument->base, argument->length);
 
-    while (true) {
-        ssize_t result = write(argument->descriptor, argument->base, argument->size);
-
-        if (result < 0) {
-            return rb_fiber_scheduler_io_result(result, errno);
-        }
-        else if (result == 0) {
-            return rb_fiber_scheduler_io_result(total, 0);
-        }
-        else {
-            total += result;
-
-            if (total >= argument->length) {
-                return rb_fiber_scheduler_io_result(total, 0);
-            }
-
-            argument->base = argument->base + result;
-            argument->size = argument->size - result;
-        }
-    }
+    return rb_fiber_scheduler_io_result(result, errno);
 }
 
 VALUE
-rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
+rb_io_buffer_write(VALUE self, VALUE io, size_t offset, size_t length)
 {
     io = rb_io_get_write_io(rb_io_get_io(io));
 
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+    io_buffer_validate_range(buffer, offset, length);
+
+    if (length == 0) return SIZET2NUM(0);
+
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_write(scheduler, io, self, length, offset);
+        VALUE result = rb_fiber_scheduler_io_write(scheduler, io, self, offset, length);
 
         if (!UNDEF_P(result)) {
             return result;
         }
     }
 
-    struct rb_io_buffer *buffer = get_io_buffer(self);
-
-    io_buffer_validate_range(buffer, offset, length);
-
-    int descriptor = rb_io_descriptor(io);
-
-    const void * base;
+    const void *base;
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
-    size = size - offset;
-    if (size == 0) return SIZET2NUM(0);
-
     RUBY_ASSERT(base != NULL);
-    base = (const unsigned char*)base + offset;
 
     struct io_buffer_write_internal_argument argument = {
-        .descriptor = descriptor,
-        .base = base,
-        .size = size,
+        .descriptor = rb_io_descriptor(io),
+        .base = (const char*)base + offset,
         .length = length,
     };
 
@@ -3655,22 +3535,18 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
 }
 
 /*
- *  call-seq: write(io, [length, [offset]]) -> written length or -errno
+ *  call-seq: write(io, [offset, [length]]) -> written length or -errno
  *
- *  Write at least +length+ bytes from the buffer starting at +offset+, into the +io+.
- *  If an error occurs, return <tt>-errno</tt>.
- *
- *  If +length+ is not given or +nil+, it defaults to the size of the buffer
- *  minus the offset, i.e. the entire buffer.
- *
- *  If +length+ is zero, exactly one <tt>write</tt> operation will occur,
- *  unless there are no available bytes in the buffer at +offset+.
+ *  Perform one write operation of at most +length+ bytes to +io+ from the
+ *  buffer starting at +offset+. A short write is a normal result. If an error
+ *  occurs, return <tt>-errno</tt>.
  *
  *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
- *  buffer.
+ *  buffer. If +length+ is not given, it defaults to the size of the buffer
+ *  minus the offset. A zero length is a no-op.
  *
  *    out = File.open('output.txt', 'wb')
- *    IO::Buffer.for('1234567').write(out, 3)
+ *    IO::Buffer.for('1234567').write(out, 0, 3)
  *
  *  This leads to +123+ being written into <tt>output.txt</tt>
  */
@@ -3681,10 +3557,10 @@ io_buffer_write(int argc, VALUE *argv, VALUE self)
 
     VALUE io = argv[0];
 
-    size_t length, offset;
-    io_buffer_extract_length_offset(self, argc-1, argv+1, &length, &offset);
+    size_t offset, length;
+    io_buffer_extract_offset_length(self, argc-1, argv+1, &offset, &length);
 
-    return rb_io_buffer_write(self, io, length, offset);
+    return rb_io_buffer_write(self, io, offset, length);
 }
 
 struct io_buffer_pwrite_internal_argument {
@@ -3692,113 +3568,73 @@ struct io_buffer_pwrite_internal_argument {
     int descriptor;
     // The base pointer to write from:
     const char *base;
-    // The size of the buffer:
-    size_t size;
-    // The minimum length to write:
+    // The maximum number of bytes to write:
     size_t length;
-    // The offset to write to:
-    off_t offset;
+    // The position to write to:
+    off_t from;
 };
 
 static VALUE
 io_buffer_pwrite_internal(void *_argument)
 {
-    size_t total = 0;
     struct io_buffer_pwrite_internal_argument *argument = _argument;
+    ssize_t result = pwrite(argument->descriptor, argument->base, argument->length, argument->from);
 
-    while (true) {
-        ssize_t result = pwrite(argument->descriptor, argument->base, argument->size, argument->offset);
-
-        if (result < 0) {
-            return rb_fiber_scheduler_io_result(result, errno);
-        }
-        else if (result == 0) {
-            return rb_fiber_scheduler_io_result(total, 0);
-        }
-        else {
-            total += result;
-
-            if (total >= argument->length) {
-                return rb_fiber_scheduler_io_result(total, 0);
-            }
-
-            argument->base = argument->base + result;
-            argument->size = argument->size - result;
-            argument->offset = argument->offset + result;
-        }
-    }
+    return rb_fiber_scheduler_io_result(result, errno);
 }
 
 VALUE
-rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset)
+rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t length)
 {
     io = rb_io_get_write_io(rb_io_get_io(io));
 
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+    io_buffer_validate_range(buffer, offset, length);
+
+    if (length == 0) return SIZET2NUM(0);
+
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, from, self, length, offset);
+        VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, from, self, offset, length);
 
         if (!UNDEF_P(result)) {
             return result;
         }
     }
 
-    struct rb_io_buffer *buffer = get_io_buffer(self);
-
-    io_buffer_validate_range(buffer, offset, length);
-
-    int descriptor = rb_io_descriptor(io);
-
-    const void * base;
+    const void *base;
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
-    size = size - offset;
-    if (size == 0) return SIZET2NUM(0);
-
     RUBY_ASSERT(base != NULL);
-    base = (const unsigned char*)base + offset;
 
     struct io_buffer_pwrite_internal_argument argument = {
-        .descriptor = descriptor,
-
-        // Move the base pointer to the offset:
-        .base = base,
-
-        // And the size to the length of buffer we want to read:
-        .size = size,
-
-        // And the length of the buffer we want to write:
+        .descriptor = rb_io_descriptor(io),
+        .base = (const char*)base + offset,
         .length = length,
-
-        // And the offset in the file we want to write from:
-        .offset = from,
+        .from = from,
     };
 
     return io_buffer_blocking_region(io, buffer, io_buffer_pwrite_internal, &argument);
 }
 
 /*
- *  call-seq: pwrite(io, from, [length, [offset]]) -> written length or -errno
+ *  call-seq: pwrite(io, from, [offset, [length]]) -> written length or -errno
  *
- *  Write at least +length+ bytes from the buffer starting at +offset+, into
- *  the +io+ starting at the specified +from+ position. If an error occurs,
- *  return <tt>-errno</tt>.
- *
- *  If +length+ is not given or +nil+, it defaults to the size of the buffer
- *  minus the offset, i.e. the entire buffer.
- *
- *  If +length+ is zero, exactly one <tt>pwrite</tt> operation will occur,
- *  unless there are no available bytes in the buffer at +offset+.
+ *  Perform one write operation of at most +length+ bytes to +io+ at +from+
+ *  from the buffer starting at +offset+. A short write is a normal result and
+ *  the IO's current position is not modified. If an error occurs, return
+ *  <tt>-errno</tt>.
  *
  *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
- *  buffer.
+ *  buffer. If +length+ is not given, it defaults to the size of the buffer
+ *  minus the offset. A zero length is a no-op.
  *
  *  If the +from+ position is beyond the end of the file, the gap will be
  *  filled with null (0 value) bytes.
  *
  *    out = File.open('output.txt', File::RDWR) # open for read/write, no truncation
- *    IO::Buffer.for('1234567').pwrite(out, 2, 3, 1)
+ *    IO::Buffer.for('1234567').pwrite(out, 2, 1, 3)
  *
  *  This leads to +234+ (3 bytes, starting from position 1) being written into
  *  <tt>output.txt</tt>, starting from file position 2.
@@ -3811,10 +3647,10 @@ io_buffer_pwrite(int argc, VALUE *argv, VALUE self)
     VALUE io = argv[0];
     rb_off_t from = NUM2OFFT(argv[1]);
 
-    size_t length, offset;
-    io_buffer_extract_length_offset(self, argc-2, argv+2, &length, &offset);
+    size_t offset, length;
+    io_buffer_extract_offset_length(self, argc-2, argv+2, &offset, &length);
 
-    return rb_io_buffer_pwrite(self, io, from, length, offset);
+    return rb_io_buffer_pwrite(self, io, from, offset, length);
 }
 
 static inline void
@@ -4460,6 +4296,9 @@ Init_IO_Buffer(void)
 #endif
 
     RUBY_IO_BUFFER_DEFAULT_SIZE = io_buffer_default_size(RUBY_IO_BUFFER_PAGE_SIZE);
+
+    /* The IO::Buffer interface version. */
+    rb_define_const(rb_cIOBuffer, "VERSION", INT2NUM(RUBY_IO_BUFFER_VERSION));
 
     /* The operating system page size. Used for efficient page-aligned memory allocations. */
     rb_define_const(rb_cIOBuffer, "PAGE_SIZE", SIZET2NUM(RUBY_IO_BUFFER_PAGE_SIZE));

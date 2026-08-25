@@ -50,6 +50,16 @@ Note: We're only listing outstanding class updates.
       binary representation of a non-negative integer (its population count).
       [[Feature #20163]]
 
+* IO::Buffer
+
+    * `read`, `write`, `pread`, and `pwrite` now perform one IO operation using
+      `(offset, length)`, where `length` is the maximum transfer size. Short
+      transfers are returned directly.
+
+    * The corresponding fiber scheduler hooks are no longer experimental and
+      now use the same `(offset, length)` argument order and single-operation
+      semantics.
+
 * Kernel
 
     * `Kernel#autoload_relative` and `Module#autoload_relative` are added.
