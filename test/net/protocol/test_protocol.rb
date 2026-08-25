@@ -239,9 +239,8 @@ class TestProtocol < Test::Unit::TestCase
 
   class FakeReadPartialIO
     def initialize(chunks)
-      # Binary, like the bytes a real IO hands back. String#b also copies,
-      # which matters because rbuf_fill clears a string read_nonblock
-      # returns without having been handed it as the buffer.
+      # Binary, like a real IO. String#b also copies, which matters
+      # because rbuf_fill clears a string it was not handed as the buffer.
       @chunks = chunks.map(&:b)
     end
 
@@ -295,8 +294,6 @@ class TestProtocol < Test::Unit::TestCase
   def test_readuntil_clamps_a_negative_rewind # https://github.com/ruby/net-protocol/pull/66
     fake_io = FakeReadPartialIO.new(["ab\n"])
     io = Net::BufferedIO.new(fake_io)
-    # Any buffer shorter than the terminator drives the rewind below zero,
-    # and String#index reads a negative offset as counting from the end.
     assert_equal "ab", io.readuntil("ab")
   end
 
@@ -304,8 +301,6 @@ class TestProtocol < Test::Unit::TestCase
     fake_io = FakeReadPartialIO.new(["ab\r\n\r", "\nc"])
     io = Net::BufferedIO.new(fake_io)
     assert_equal "ab\r", io.readuntil("\r")
-    # The terminator is longer than what is left unconsumed, so the rewind
-    # would reach back into the bytes readuntil already returned.
     assert_raise(EOFError) { io.readuntil("\r\n\r\n") }
   end
 

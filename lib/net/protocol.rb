@@ -240,13 +240,10 @@ module Net # :nodoc:
           if limit && rbuf_size > limit
             raise ReadLimitExceeded, "exceeded the #{limit} byte read limit"
           end
-          # Rewind by terminator.bytesize - 1 so that a terminator split
-          # across reads is not missed, however many reads it spans.
-          # @rbuf_offset is the floor for two reasons. A negative offset
-          # makes String#index search relative to the end of the buffer,
-          # skipping a match near its start. An offset below @rbuf_offset
-          # matches a terminator beginning inside bytes already returned
-          # to the caller, yielding a slice that does not end with one.
+          # Rewind so a terminator split across reads is still found. The
+          # floor guards two things. String#index reads a negative offset
+          # as counting from the end, and an offset below @rbuf_offset
+          # matches inside bytes already returned.
           offset = [@rbuf.bytesize - terminator.bytesize + 1, @rbuf_offset].max
           rbuf_fill
         end
