@@ -1275,7 +1275,7 @@ mark_load_arg(void *ptr)
         return;
     rb_mark_tbl(p->symbols);
     rb_mark_tbl(p->data);
-    rb_mark_tbl(p->partial_objects);
+    if (p->partial_objects) rb_mark_tbl(p->partial_objects);
     rb_mark_hash(p->compat_tbl);
 }
 
@@ -1658,7 +1658,9 @@ r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
         st_lookup(arg->compat_tbl, v, &real_obj);
     }
     st_insert(arg->data, num, real_obj);
-    st_insert(arg->partial_objects, (st_data_t)real_obj, Qtrue);
+    if (arg->partial_objects) {
+        st_insert(arg->partial_objects, (st_data_t)real_obj, Qtrue);
+    }
     return v;
 }
 
@@ -1693,9 +1695,11 @@ r_leave(VALUE v, struct load_arg *arg, bool partial)
 {
     v = r_fixup_compat(v, arg);
     if (!partial) {
-        st_data_t data;
-        st_data_t key = (st_data_t)v;
-        st_delete(arg->partial_objects, &key, &data);
+        if (arg->partial_objects) {
+            st_data_t data;
+            st_data_t key = (st_data_t)v;
+            st_delete(arg->partial_objects, &key, &data);
+        }
         if (arg->freeze) {
             if (RB_TYPE_P(v, T_MODULE) || RB_TYPE_P(v, T_CLASS)) {
                 // noop
@@ -1890,7 +1894,8 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
             rb_raise(rb_eArgError, "dump format error (unlinked)");
         }
         v = (VALUE)link;
-        if (!st_lookup(arg->partial_objects, (st_data_t)v, &link)) {
+        if (arg->partial_objects &&
+            !st_lookup(arg->partial_objects, (st_data_t)v, &link)) {
             if (arg->freeze && RB_TYPE_P(v, T_STRING)) {
                 v = rb_str_to_interned_str(v);
             }
@@ -2382,8 +2387,10 @@ clear_load_arg(struct load_arg *arg)
     arg->symbols = 0;
     st_free_table(arg->data);
     arg->data = 0;
-    st_free_table(arg->partial_objects);
-    arg->partial_objects = 0;
+    if (arg->partial_objects) {
+        st_free_table(arg->partial_objects);
+        arg->partial_objects = 0;
+    }
     if (arg->compat_tbl) {
         st_free_table(arg->compat_tbl);
         arg->compat_tbl = 0;
@@ -2413,7 +2420,7 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze)
     arg->offset = 0;
     arg->symbols = st_init_numtable();
     arg->data    = rb_init_identtable();
-    arg->partial_objects = rb_init_identtable();
+    arg->partial_objects = (RTEST(proc) || freeze) ? rb_init_identtable() : NULL;
     arg->compat_tbl = 0;
     arg->proc = 0;
     arg->readable = 0;
