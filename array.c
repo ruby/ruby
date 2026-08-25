@@ -6750,6 +6750,8 @@ rb_ary_count(int argc, VALUE *argv, VALUE ary)
     return LONG2NUM(n);
 }
 
+VALUE rb_ident_set_new(void);
+
 static VALUE
 flatten(VALUE ary, int level)
 {
@@ -6777,9 +6779,9 @@ flatten(VALUE ary, int level)
     rb_ary_push(stack, LONG2NUM(i + 1));
 
     if (level < 0) {
-        memo = rb_obj_hide(rb_ident_hash_new());
-        rb_hash_aset(memo, ary, Qtrue);
-        rb_hash_aset(memo, tmp, Qtrue);
+        memo = rb_obj_hide(rb_ident_set_new());
+        rb_set_add(memo, ary);
+        rb_set_add(memo, tmp);
     }
 
     ary = tmp;
@@ -6795,7 +6797,7 @@ flatten(VALUE ary, int level)
             tmp = rb_check_array_type(elt);
             if (RBASIC(result)->klass) {
                 if (RTEST(memo)) {
-                    rb_hash_clear(memo);
+                    rb_set_clear(memo);
                 }
                 rb_raise(rb_eRuntimeError, "flatten reentered");
             }
@@ -6804,11 +6806,11 @@ flatten(VALUE ary, int level)
             }
             else {
                 if (memo) {
-                    if (rb_hash_aref(memo, tmp) == Qtrue) {
-                        rb_hash_clear(memo);
+                    if (rb_set_lookup(memo, tmp)) {
+                        rb_set_clear(memo);
                         rb_raise(rb_eArgError, "tried to flatten recursive array");
                     }
-                    rb_hash_aset(memo, tmp, Qtrue);
+                    rb_set_add(memo, tmp);
                 }
                 rb_ary_push(stack, ary);
                 rb_ary_push(stack, LONG2NUM(i));
@@ -6820,7 +6822,7 @@ flatten(VALUE ary, int level)
             break;
         }
         if (memo) {
-            rb_hash_delete(memo, ary);
+            rb_set_delete(memo, ary);
         }
         tmp = rb_ary_pop(stack);
         i = NUM2LONG(tmp);
@@ -6828,7 +6830,7 @@ flatten(VALUE ary, int level)
     }
 
     if (memo) {
-        rb_hash_clear(memo);
+        rb_set_clear(memo);
     }
 
     RBASIC_SET_CLASS(result, rb_cArray);
