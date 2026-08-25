@@ -543,10 +543,20 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
     return clone;
 }
 
+VALUE
+rb_obj_alloc_copy(VALUE obj)
+{
+    VALUE klass = rb_obj_class(obj);
+    if (klass && RCLASS_COPY_ALLOCATOR(klass)) {
+        return RCLASS_COPY_ALLOCATOR(klass)(klass, obj);
+    }
+    return rb_obj_alloc(klass);
+}
+
 static VALUE
 mutable_obj_clone(VALUE obj, VALUE kwfreeze)
 {
-    VALUE clone = rb_obj_alloc(rb_obj_class(obj));
+    VALUE clone = rb_obj_alloc_copy(obj);
     return rb_obj_clone_setup(obj, clone, kwfreeze);
 }
 
@@ -608,21 +618,11 @@ rb_obj_dup_setup(VALUE obj, VALUE dup)
 VALUE
 rb_obj_dup(VALUE obj)
 {
-    VALUE dup;
-
     if (special_object_p(obj)) {
         return obj;
     }
 
-    switch (OBJ_BUILTIN_TYPE(obj)) {
-      case T_HASH:
-        dup = rb_hash_alloc_copy(rb_obj_class(obj), obj);
-        break;
-      default:
-        dup = rb_obj_alloc(rb_obj_class(obj));
-        break;
-    }
-
+    VALUE dup = rb_obj_alloc_copy(obj);
     return rb_obj_dup_setup(obj, dup);
 }
 
@@ -2220,7 +2220,7 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     }
     rb_class_set_super(klass, super);
     RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
-    RCLASS_SET_ALLOCATOR(klass, RCLASS_ALLOCATOR(super));
+    RCLASS_INHERIT_ALLOCATOR(klass, super);
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
     rb_mod_initialize_exec(klass);
@@ -2236,8 +2236,23 @@ rb_undefined_alloc(VALUE klass)
              klass);
 }
 
-static rb_alloc_func_t class_get_alloc_func(VALUE klass);
-static VALUE class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass);
+static rb_alloc_func_t
+class_get_alloc_func(VALUE klass)
+{
+    rb_alloc_func_t allocator;
+
+    if (!RCLASS_INITIALIZED_P(klass)) {
+        rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
+    }
+    if (RCLASS_SINGLETON_P(klass)) {
+        rb_raise(rb_eTypeError, "can't create instance of singleton class");
+    }
+    allocator = rb_get_alloc_func(klass);
+    if (!allocator) {
+        rb_undefined_alloc(klass);
+    }
+    return allocator;
+}
 
 /*
  *  call-seq:
@@ -2265,26 +2280,23 @@ static VALUE
 rb_class_alloc(VALUE klass)
 {
     RBIMPL_ASSERT_TYPE(klass, T_CLASS);
-    rb_alloc_func_t allocator = class_get_alloc_func(klass);
-    return class_call_alloc_func(allocator, klass);
-}
 
-static rb_alloc_func_t
-class_get_alloc_func(VALUE klass)
-{
-    rb_alloc_func_t allocator;
+    RUBY_DTRACE_CREATE_HOOK(OBJECT, rb_class2name(klass));
 
-    if (!RCLASS_INITIALIZED_P(klass)) {
-        rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
+    VALUE obj;
+
+    rb_copy_alloc_func_t copy_allocator = RCLASS_COPY_ALLOCATOR(klass);
+    if (copy_allocator) {
+        obj = copy_allocator(klass, Qundef);
     }
-    if (RCLASS_SINGLETON_P(klass)) {
-        rb_raise(rb_eTypeError, "can't create instance of singleton class");
+    else {
+        rb_alloc_func_t allocator = class_get_alloc_func(klass);
+        obj= allocator(klass);
     }
-    allocator = rb_get_alloc_func(klass);
-    if (!allocator) {
-        rb_undefined_alloc(klass);
-    }
-    return allocator;
+
+    RUBY_ASSERT(rb_obj_class(obj) == rb_class_real(klass));
+
+    return obj;
 }
 
 // Might return NULL.
@@ -2294,19 +2306,6 @@ rb_zjit_class_get_alloc_func(VALUE klass)
     assert(RCLASS_INITIALIZED_P(klass));
     assert(!RCLASS_SINGLETON_P(klass));
     return rb_get_alloc_func(klass);
-}
-
-static VALUE
-class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass)
-{
-    VALUE obj;
-
-    RUBY_DTRACE_CREATE_HOOK(OBJECT, rb_class2name(klass));
-
-    obj = (*allocator)(klass);
-
-    RUBY_ASSERT(rb_obj_class(obj) == rb_class_real(klass));
-    return obj;
 }
 
 VALUE

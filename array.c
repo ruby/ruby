@@ -716,13 +716,6 @@ ary_alloc_heap(VALUE klass)
 }
 
 static VALUE
-empty_ary_alloc(VALUE klass)
-{
-    RUBY_DTRACE_CREATE_HOOK(ARRAY, 0);
-    return ary_alloc_embed(klass, 0);
-}
-
-static VALUE
 ary_new(VALUE klass, long capa)
 {
     RUBY_ASSERT(ruby_thread_has_gvl_p());
@@ -751,6 +744,23 @@ ary_new(VALUE klass, long capa)
     }
 
     return ary;
+}
+
+static VALUE
+empty_ary_alloc2(VALUE klass, VALUE src)
+{
+    RUBY_DTRACE_CREATE_HOOK(ARRAY, 0);
+    if (UNDEF_P(src)) {
+        return ary_alloc_embed(klass, 0);
+    }
+    RUBY_ASSERT(RB_TYPE_P(src, T_ARRAY));
+    return ary_new(klass, RARRAY_LEN(src));
+}
+
+static VALUE
+empty_ary_alloc(VALUE klass)
+{
+    return empty_ary_alloc2(klass, Qundef);
 }
 
 VALUE
@@ -9034,7 +9044,7 @@ Init_Array(void)
     rb_cArray  = rb_define_class("Array", rb_cObject);
     rb_include_module(rb_cArray, rb_mEnumerable);
 
-    rb_define_alloc_func(rb_cArray, empty_ary_alloc);
+    rb_define_copy_alloc_func(rb_cArray, empty_ary_alloc2, empty_ary_alloc);
     rb_define_singleton_method(rb_cArray, "new", rb_ary_s_new, -1);
     rb_define_singleton_method(rb_cArray, "[]", rb_ary_s_create, -1);
     rb_define_singleton_method(rb_cArray, "try_convert", rb_ary_s_try_convert, 1);
