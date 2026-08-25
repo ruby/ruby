@@ -382,6 +382,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Const {
+    Empty,
     Value(VALUE),
     CBool(bool),
     CInt8(i8),
@@ -3517,6 +3518,7 @@ impl Function {
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. }
             | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn]),
+            Insn::Const { val: Const::Empty } => types::Empty,
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
             Insn::Const { val: Const::CInt8(val) } => Type::from_cint(types::CInt8, *val as i64),
@@ -6085,15 +6087,21 @@ impl Function {
         for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block].insns);
             assert!(self.blocks[block].insns.is_empty());
+            let mut empty = None;
             for insn_id in old_insns {
                 match self.resolve(insn_id).insn(self) {
                     &Insn::Send { state, reason: SendFallbackReason::SendNoProfiles, .. } => {
+                        empty = Some(self.push_insn(block, Insn::Const { val: Const::Empty }));
                         self.push_insn(block, Insn::SideExit { state, reason: Box::new(SideExitReason::NoProfileSend), recompile: Some(Recompile) });
                         self.push_insn(block, Insn::Unreachable);
-                        // Unreachable is a terminator; don't add remaining instructions
-                        break;
                     }
-                    _ => {
+                    insn => {
+                        if let Some(empty) = empty {
+                            if insn.has_output() {
+                                self.make_equal_to(insn_id, empty);
+                            }
+                            continue;
+                        }
                         self.push_insn_id(block, insn_id);
                     }
                 }
@@ -7767,6 +7775,7 @@ impl Function {
                     Const::CBool(_) => self.assert_subtype(insn_id, val, types::CBool),
                     Const::CDouble(_) => self.assert_subtype(insn_id, val, types::CDouble),
                     Const::CPtr(_) => self.assert_subtype(insn_id, val, types::CPtr),
+                    Const::Empty => unreachable!("Empty constant should not be used in GuardBitEquals"),
                 }
             }
             Insn::GuardAnyBitSet { val, mask, .. }

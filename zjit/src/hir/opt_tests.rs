@@ -6255,12 +6255,12 @@ mod hir_opt_tests {
           v50:ClassSubclass[Object@0x1078] = Const Value(VALUE(0x1078))
           v52:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Object@0x1078, new@0x1018, cme:0x1080)
-          v87:ObjectExact = ObjectAllocClass Object:VALUE(0x1078)
+          v88:ObjectExact = ObjectAllocClass Object:VALUE(0x1078)
           PatchPoint NoSingletonClass(Object@0x1078)
           PatchPoint MethodRedefined(Object@0x1078, initialize@0x10a8, cme:0x10b0)
           CheckInterrupts
           PopInlineFrame
-          Return v87
+          Return v88
         ");
     }
 

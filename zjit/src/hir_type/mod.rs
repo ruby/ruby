@@ -324,6 +324,7 @@ impl Type {
 
     pub fn from_const(val: Const) -> Type {
         match val {
+            Const::Empty => types::Empty,
             Const::Value(v) => Self::from_value(v),
             Const::CBool(v) => Self::from_cbool(v),
             Const::CInt8(v) => Self::from_cint(types::CInt8, v as i64),
