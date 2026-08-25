@@ -35,6 +35,7 @@ NetInstanceTest depending on external resources
 TestHTTPRequest depending on external resources
 TestSingletonNetHTTPResponse depending on external resources
 TestInstanceNetHTTPResponse depending on external resources
+test_URI_open(OpenURISingletonTest) depending on external resources
 
 test_TOPDIR(RbConfigSingletonTest) `TOPDIR` is `nil` during CI while RBS type is declared as `String`
 
