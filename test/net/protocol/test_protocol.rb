@@ -65,6 +65,115 @@ class TestProtocol < Test::Unit::TestCase
     end
   end
 
+  def test_readuntil_limit
+    io = Net::BufferedIO.new(StringIO.new("123\n45678\n".dup))
+    assert_equal "123\n", io.readuntil("\n", limit: 4)
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", limit: 4) }
+  end
+
+  # The limit measures the result, not the position of the terminator in
+  # the buffer, so bytes consumed by an earlier read must not count
+  # against it.
+  def test_readuntil_limit_ignores_already_consumed_bytes
+    io = Net::BufferedIO.new(StringIO.new("123\n45678\n".dup))
+    assert_equal "123\n", io.readuntil("\n", limit: 4)
+    assert_equal "45678\n", io.readuntil("\n", limit: 6)
+  end
+
+  def test_readuntil_limit_is_a_protocol_error
+    assert_operator Net::ReadLimitExceeded, :<, Net::ProtocolError
+  end
+
+  # Which of the two checks fires is decided by how the peer split its
+  # writes, so both have to report the same thing.
+  def test_readuntil_limit_message_does_not_depend_on_chunking
+    whole = Net::BufferedIO.new(StringIO.new("45678\n".dup))
+    split = Net::BufferedIO.new(FakeReadPartialIO.new(["45678", "\n"]))
+    messages = [whole, split].map do |io|
+      assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", limit: 4) }.message
+    end
+    assert_equal messages.first, messages.last
+    assert_match(/\b4\b/, messages.first)
+    assert_match(/limit/, messages.first)
+  end
+
+  def test_readuntil_limit_after_a_long_earlier_read
+    io = Net::BufferedIO.new(FakeReadPartialIO.new(["aaaaaaaaaa\nbc", "\n"]))
+    assert_equal "aaaaaaaaaa\n", io.readuntil("\n", limit: 11)
+    assert_equal "bc\n", io.readuntil("\n", limit: 3)
+  end
+
+  def test_readuntil_limit_rejects_values_that_are_not_a_positive_integer
+    { 0 => "0", -1 => "-1", false => "a non-Integer",
+      4.5 => "a non-Integer", "4" => "a non-Integer" }.each do |limit, expected|
+      io = Net::BufferedIO.new(StringIO.new("123\n".dup))
+      e = assert_raise(ArgumentError, "limit: #{limit.inspect}") do
+        io.readuntil("\n", limit: limit)
+      end
+      assert_equal "limit must be a positive Integer, got #{expected}", e.message
+    end
+
+    io = Net::BufferedIO.new(StringIO.new("123\n".dup))
+    assert_equal "123\n", io.readuntil("\n", limit: nil)
+  end
+
+  def test_readuntil_limit_counts_the_terminator
+    io = Net::BufferedIO.new(StringIO.new("1234\n".dup))
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", limit: 4) }
+
+    io = Net::BufferedIO.new(StringIO.new("1234\n".dup))
+    assert_equal "1234\n", io.readuntil("\n", limit: 5)
+  end
+
+  def test_readuntil_limit_consumes_nothing_when_it_raises
+    io = Net::BufferedIO.new(StringIO.new("45678\nrest\n".dup))
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", limit: 4) }
+    assert_equal "45678\n", io.readuntil("\n", limit: 6)
+    assert_equal "rest\n", io.readuntil("\n")
+  end
+
+  def test_readuntil_limit_ignore_eof
+    io = Net::BufferedIO.new(StringIO.new("abc".dup))
+    assert_equal "abc", io.readuntil("\n", true, limit: 10)
+  end
+
+  # The EOF path returns the buffer without consulting the limit, so
+  # only the loop's earlier check keeps it inside.
+  def test_readuntil_limit_bounds_what_ignore_eof_returns_at_eof
+    io = Net::BufferedIO.new(FakeReadPartialIO.new(["abcde"]))
+    assert_equal "abcde", io.readuntil("\n", true, limit: 5)
+
+    io = Net::BufferedIO.new(FakeReadPartialIO.new(["abcdef"]))
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", true, limit: 5) }
+  end
+
+  def test_readuntil_limit_applies_with_ignore_eof
+    io = Net::BufferedIO.new(StringIO.new("abcdefghij".dup))
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", true, limit: 5) }
+  end
+
+  # Never yields the terminator. Capping the reads makes a regression in
+  # the limit check fail instead of running the CI host out of memory.
+  class EndlessIO
+    MAX_READS = 2
+
+    def initialize
+      @reads = 0
+    end
+
+    def read_nonblock(size, buf = nil, exception: false)
+      @reads += 1
+      raise "readuntil ignored its limit: #{@reads} reads" if @reads > MAX_READS
+      s = ("a" * size).b
+      buf ? buf.replace(s) : s
+    end
+  end
+
+  def test_readuntil_limit_endless_stream
+    io = Net::BufferedIO.new(EndlessIO.new)
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", limit: 1024) }
+  end
+
   def test_write0_multibyte
     mockio = create_mockio(max: 1)
     io = Net::BufferedIO.new(mockio)
@@ -160,6 +269,14 @@ class TestProtocol < Test::Unit::TestCase
     io.read(5, reader)
     io.read(5, reader)
     assert_equal expected_chunks, actual_chunks
+  end
+
+  def test_readuntil_limit_with_a_terminator_spanning_chunks
+    io = Net::BufferedIO.new(FakeReadPartialIO.new(["abc\r", "\ndef\r\n"]))
+    assert_equal "abc\r\n", io.readuntil("\r\n", limit: 5)
+
+    io = Net::BufferedIO.new(FakeReadPartialIO.new(["abc\r", "\ndef\r\n"]))
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\r\n", limit: 4) }
   end
 
   def test_readuntil_terminator_spanning_chunks # https://github.com/ruby/net-protocol/pull/66
