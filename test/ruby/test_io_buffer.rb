@@ -973,6 +973,22 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_get_string_resolves_encoding_before_accessing_buffer
+    buffer = IO::Buffer.for("hello").dup
+    transferred = nil
+
+    encoding = Object.new
+    encoding.define_singleton_method(:to_str) do
+      transferred = buffer.transfer
+      buffer.resize(5)
+      buffer.set_string("world")
+      "UTF-8"
+    end
+
+    assert_equal "world", buffer.get_string(0, 5, encoding)
+    assert_equal "hello", transferred.get_string
+  end
+
   def test_zero_length_get_string
     buffer = IO::Buffer.new.slice(0, 0)
     assert_equal "", buffer.get_string
@@ -1080,6 +1096,23 @@ class TestIOBuffer < Test::Unit::TestCase
       buffer.set_values(format, 0, values)
       assert_equal values, buffer.values(data_type, 0, values.size), "Reading #{values} as #{format}."
     end
+  end
+
+  def test_set_value_coerces_value_before_accessing_buffer
+    buffer = IO::Buffer.for("hello").dup
+    transferred = nil
+
+    value = Object.new
+    value.define_singleton_method(:to_int) do
+      transferred = buffer.transfer
+      buffer.resize(5)
+      buffer.set_string("world")
+      "!".ord
+    end
+
+    assert_equal 1, buffer.set_value(:U8, 0, value)
+    assert_equal "!orld", buffer.get_string
+    assert_equal "hello", transferred.get_string
   end
 
   def test_each

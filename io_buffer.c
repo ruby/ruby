@@ -22,6 +22,7 @@
 #include "internal/string.h"
 #include "internal/io.h"
 #include "internal/io_buffer.h"
+#include "vm_core.h"
 
 VALUE rb_cIOBuffer;
 VALUE rb_eIOBufferLockedError;
@@ -1375,7 +1376,9 @@ rb_io_buffer_inspect(VALUE self)
             clamped = 1;
         }
 
+        RUBY_ASSERT_CRITICAL_SECTION_ENTER();
         io_buffer_hexdump(result, RB_IO_BUFFER_INSPECT_HEXDUMP_WIDTH, buffer->base, size, 0, 0);
+        RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
         if (clamped) {
             rb_str_catf(result, "\n(and %" PRIuSIZE " more bytes not printed)", buffer->size - size);
@@ -1942,7 +1945,12 @@ rb_io_buffer_hexdump(int argc, VALUE *argv, VALUE self)
     if (io_buffer_validate(buffer) && buffer->base) {
         result = rb_str_buf_new(io_buffer_hexdump_output_size(width, length, 1));
 
-        io_buffer_hexdump(result, width, buffer->base, offset+length, offset, 1);
+        const void *base;
+        size_t size;
+        RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+        io_buffer_get_bytes_for_reading(buffer, &base, &size);
+        io_buffer_hexdump(result, width, base, offset+length, offset, 1);
+        RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
     }
 
     return result;
@@ -2266,27 +2274,36 @@ io_buffer_resize(VALUE self, VALUE size)
 static VALUE
 rb_io_buffer_compare(VALUE self, VALUE other)
 {
+    struct rb_io_buffer *buffer1 = get_io_buffer(self);
+    struct rb_io_buffer *buffer2 = get_io_buffer(other);
+    io_buffer_validate_for_reading(buffer1);
+    io_buffer_validate_for_reading(buffer2);
+
     const void *ptr1, *ptr2;
     size_t size1, size2;
 
-    rb_io_buffer_get_bytes_for_reading(self, &ptr1, &size1);
-    rb_io_buffer_get_bytes_for_reading(other, &ptr2, &size2);
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_reading(buffer1, &ptr1, &size1);
+    io_buffer_get_bytes_for_reading(buffer2, &ptr2, &size2);
 
+    int result;
     if (size1 < size2) {
-        return RB_INT2NUM(-1);
+        result = -1;
     }
-
-    if (size1 > size2) {
-        return RB_INT2NUM(1);
+    else if (size1 > size2) {
+        result = 1;
     }
-
-    if (size1 == 0) {
-        return RB_INT2NUM(0);
+    else if (size1 == 0) {
+        result = 0;
     }
+    else {
+        RUBY_ASSERT(ptr1 != NULL);
+        RUBY_ASSERT(ptr2 != NULL);
+        result = memcmp(ptr1, ptr2, size1);
+    }
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
-    RUBY_ASSERT(ptr1 != NULL);
-    RUBY_ASSERT(ptr2 != NULL);
-    return RB_INT2NUM(memcmp(ptr1, ptr2, size1));
+    return RB_INT2NUM(result);
 }
 
 static void
@@ -2386,10 +2403,6 @@ ruby_swap128_int(rb_int128_t x)
     return conversion.int128;
 }
 
-#define IO_BUFFER_VALIDATE_TYPE_FOR_WRITING(buffer, base, size, offset, type) \
-    (io_buffer_get_bytes_for_writing(buffer, &(base), &(size)), \
-     io_buffer_validate_type(size, offset, sizeof(type)))
-
 #define IO_BUFFER_DECLARE_TYPE(name, type, endian, wrap, unwrap, swap) \
 static ID RB_IO_BUFFER_DATA_TYPE_##name; \
 \
@@ -2407,13 +2420,19 @@ io_buffer_read_##name(const void* base, size_t size, size_t *offset) \
 static void \
 io_buffer_write_##name(struct rb_io_buffer* buffer, size_t *offset, VALUE _value) \
 { \
-    void* base; size_t size; \
-    IO_BUFFER_VALIDATE_TYPE_FOR_WRITING(buffer, base, size, *offset, type); \
+    io_buffer_validate_for_writing(buffer); \
+    io_buffer_validate_type(buffer->size, *offset, sizeof(type)); \
+    /* Coercion can run Ruby code and modify the buffer, so validate again afterward. */ \
     type value = unwrap(_value); \
-    IO_BUFFER_VALIDATE_TYPE_FOR_WRITING(buffer, base, size, *offset, type); \
+    io_buffer_validate_for_writing(buffer); \
+    io_buffer_validate_type(buffer->size, *offset, sizeof(type)); \
+    void* base; size_t size; \
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER(); \
+    io_buffer_get_bytes_for_writing(buffer, &base, &size); \
     if (endian != RB_IO_BUFFER_HOST_ENDIAN) value = swap(value); \
     memcpy((char*)base + *offset, &value, sizeof(type)); \
     *offset += sizeof(type); \
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE(); \
 } \
 \
 enum { \
@@ -2591,13 +2610,21 @@ rb_io_buffer_get_value(const void* base, size_t size, ID buffer_type, size_t *of
 static VALUE
 io_buffer_get_value(VALUE self, VALUE type, VALUE _offset)
 {
-    const void *base;
-    size_t size;
+    ID buffer_type = TYPE_ID(type);
     size_t offset = io_buffer_extract_offset(_offset);
 
-    rb_io_buffer_get_bytes_for_reading(self, &base, &size);
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+    io_buffer_validate_for_reading(buffer);
+    io_buffer_validate_type(buffer->size, offset, io_buffer_buffer_type_size(buffer_type));
 
-    return rb_io_buffer_get_value(base, size, TYPE_ID(type), &offset);
+    const void *base;
+    size_t size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
+    VALUE result = rb_io_buffer_get_value(base, size, buffer_type, &offset);
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
+
+    return result;
 }
 
 /*
@@ -2615,21 +2642,37 @@ io_buffer_get_values(VALUE self, VALUE buffer_types, VALUE _offset)
 {
     size_t offset = io_buffer_extract_offset(_offset);
 
-    const void *base;
-    size_t size;
-    rb_io_buffer_get_bytes_for_reading(self, &base, &size);
-
     if (!RB_TYPE_P(buffer_types, T_ARRAY)) {
         rb_raise(rb_eArgError, "Argument buffer_types should be an array!");
     }
 
-    VALUE array = rb_ary_new_capa(RARRAY_LEN(buffer_types));
+    long count = RARRAY_LEN(buffer_types);
+    for (long i = 0; i < count; i++) {
+        TYPE_ID(rb_ary_entry(buffer_types, i));
+    }
 
-    for (long i = 0; i < RARRAY_LEN(buffer_types); i++) {
+    VALUE array = rb_ary_new_capa(count);
+
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+    io_buffer_validate_for_reading(buffer);
+
+    size_t end = offset;
+    for (long i = 0; i < count; i++) {
+        ID buffer_type = TYPE_ID(rb_ary_entry(buffer_types, i));
+        io_buffer_validate_type(buffer->size, end, io_buffer_buffer_type_size(buffer_type));
+        end += io_buffer_buffer_type_size(buffer_type);
+    }
+
+    const void *base;
+    size_t size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
+    for (long i = 0; i < count; i++) {
         VALUE type = rb_ary_entry(buffer_types, i);
         VALUE value = rb_io_buffer_get_value(base, size, TYPE_ID(type), &offset);
         rb_ary_push(array, value);
     }
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     return array;
 }
@@ -2751,11 +2794,6 @@ io_buffer_each(int argc, VALUE *argv, VALUE self)
 static VALUE
 io_buffer_values(int argc, VALUE *argv, VALUE self)
 {
-    const void *base;
-    size_t size;
-
-    rb_io_buffer_get_bytes_for_reading(self, &base, &size);
-
     ID buffer_type;
     if (argc >= 1) {
         buffer_type = TYPE_ID(argv[0]);
@@ -2764,15 +2802,47 @@ io_buffer_values(int argc, VALUE *argv, VALUE self)
         buffer_type = RB_IO_BUFFER_DATA_TYPE_U8;
     }
 
-    size_t offset, count;
-    io_buffer_extract_offset_count(buffer_type, size, argc-1, argv+1, &offset, &count);
+    size_t offset;
+    if (argc >= 2) {
+        offset = io_buffer_extract_offset(argv[1]);
+    }
+    else {
+        offset = 0;
+    }
+
+    size_t count;
+    if (argc >= 3) {
+        count = io_buffer_extract_count(argv[2]);
+    }
+    else {
+        struct rb_io_buffer *buffer = get_io_buffer(self);
+
+        if (offset > buffer->size) {
+            rb_raise(rb_eArgError, "The given offset is bigger than the buffer size!");
+        }
+
+        count = (buffer->size - offset) / io_buffer_buffer_type_size(buffer_type);
+    }
 
     VALUE array = rb_ary_new_capa(count);
 
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+    io_buffer_validate_for_reading(buffer);
+
+    size_t buffer_type_size = io_buffer_buffer_type_size(buffer_type);
+    if (offset > buffer->size || count > (buffer->size - offset) / buffer_type_size) {
+        rb_raise(rb_eArgError, "The requested values extend beyond the end of the buffer!");
+    }
+
+    const void *base;
+    size_t size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
     for (size_t i = 0; i < count; i++) {
         VALUE value = rb_io_buffer_get_value(base, size, buffer_type, &offset);
         rb_ary_push(array, value);
     }
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     return array;
 }
@@ -3252,13 +3322,6 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 3);
 
-    size_t offset, length;
-    struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
-
-    const void *base;
-    size_t size;
-    io_buffer_get_bytes_for_reading(buffer, &base, &size);
-
     rb_encoding *encoding;
     if (argc >= 3) {
         encoding = rb_find_encoding(argv[2]);
@@ -3267,11 +3330,21 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
         encoding = rb_ascii8bit_encoding();
     }
 
+    size_t offset, length;
+    struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
+
+    io_buffer_validate_for_reading(buffer);
     io_buffer_validate_range(buffer, offset, length);
 
+    const void *base;
+    size_t size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
     const char *data = base ? (const char*)base + offset : NULL;
+    VALUE result = rb_enc_str_new(data, length, encoding);
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
-    return rb_enc_str_new(data, length, encoding);
+    return result;
 }
 
 /*
@@ -3319,16 +3392,18 @@ rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    void *base;
-    size_t size;
-    io_buffer_get_bytes_for_writing(buffer, &base, &size);
-
+    io_buffer_validate_for_writing(buffer);
     io_buffer_validate_range(buffer, offset, length);
 
     if (length == 0) return;
 
+    void *base;
+    size_t size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_writing(buffer, &base, &size);
     RUBY_ASSERT(base != NULL);
     memset((char*)base + offset, value, length);
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 }
 
 /*
@@ -3839,23 +3914,24 @@ static VALUE
 io_buffer_and(VALUE self, VALUE mask)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
-
     struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
+
+    io_buffer_validate_for_reading(buffer);
+    io_buffer_validate_for_reading(mask_buffer);
+    io_buffer_check_mask_size(mask_buffer->size);
+
+    VALUE output = rb_io_buffer_new(NULL, buffer->size, io_flags_for_size(buffer->size));
+    struct rb_io_buffer *output_buffer = get_io_buffer(output);
 
     const void *base;
     size_t size;
-    io_buffer_get_bytes_for_reading(buffer, &base, &size);
-
     const void *mask_base;
     size_t mask_size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
     io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
-
-    io_buffer_check_mask_size(mask_size);
-
-    VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
-    struct rb_io_buffer *output_buffer = get_io_buffer(output);
-
     memory_and(output_buffer->base, base, size, mask_base, mask_size);
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     return output;
 }
@@ -3884,23 +3960,24 @@ static VALUE
 io_buffer_or(VALUE self, VALUE mask)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
-
     struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
+
+    io_buffer_validate_for_reading(buffer);
+    io_buffer_validate_for_reading(mask_buffer);
+    io_buffer_check_mask_size(mask_buffer->size);
+
+    VALUE output = rb_io_buffer_new(NULL, buffer->size, io_flags_for_size(buffer->size));
+    struct rb_io_buffer *output_buffer = get_io_buffer(output);
 
     const void *base;
     size_t size;
-    io_buffer_get_bytes_for_reading(buffer, &base, &size);
-
     const void *mask_base;
     size_t mask_size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
     io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
-
-    io_buffer_check_mask_size(mask_size);
-
-    VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
-    struct rb_io_buffer *output_buffer = get_io_buffer(output);
-
     memory_or(output_buffer->base, base, size, mask_base, mask_size);
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     return output;
 }
@@ -3929,23 +4006,24 @@ static VALUE
 io_buffer_xor(VALUE self, VALUE mask)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
-
     struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
+
+    io_buffer_validate_for_reading(buffer);
+    io_buffer_validate_for_reading(mask_buffer);
+    io_buffer_check_mask_size(mask_buffer->size);
+
+    VALUE output = rb_io_buffer_new(NULL, buffer->size, io_flags_for_size(buffer->size));
+    struct rb_io_buffer *output_buffer = get_io_buffer(output);
 
     const void *base;
     size_t size;
-    io_buffer_get_bytes_for_reading(buffer, &base, &size);
-
     const void *mask_base;
     size_t mask_size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
     io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
-
-    io_buffer_check_mask_size(mask_size);
-
-    VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
-    struct rb_io_buffer *output_buffer = get_io_buffer(output);
-
     memory_xor(output_buffer->base, base, size, mask_base, mask_size);
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     return output;
 }
@@ -3975,14 +4053,17 @@ io_buffer_not(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    const void *base;
-    size_t size;
-    io_buffer_get_bytes_for_reading(buffer, &base, &size);
+    io_buffer_validate_for_reading(buffer);
 
-    VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
+    VALUE output = rb_io_buffer_new(NULL, buffer->size, io_flags_for_size(buffer->size));
     struct rb_io_buffer *output_buffer = get_io_buffer(output);
 
+    const void *base;
+    size_t size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
     memory_not(output_buffer->base, base, size);
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     return output;
 }
@@ -4005,7 +4086,7 @@ io_buffer_check_overlaps(struct rb_io_buffer *a, struct rb_io_buffer *b)
 }
 
 static void
-memory_and_inplace(unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
+memory_and_inplace(unsigned char * restrict base, size_t size, const unsigned char * restrict mask, size_t mask_size)
 {
     for (size_t offset = 0; offset < size; offset += 1) {
         base[offset] &= mask[offset % mask_size];
@@ -4033,27 +4114,28 @@ static VALUE
 io_buffer_and_inplace(VALUE self, VALUE mask)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
-
     struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
 
+    io_buffer_validate_for_writing(buffer);
+    io_buffer_validate_for_reading(mask_buffer);
     io_buffer_check_mask_size(mask_buffer->size);
     io_buffer_check_overlaps(buffer, mask_buffer);
 
     void *base;
     size_t size;
-    io_buffer_get_bytes_for_writing(buffer, &base, &size);
-
     const void *mask_base;
     size_t mask_size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_writing(buffer, &base, &size);
     io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
-
-    memory_and_inplace(base, size, mask_buffer->base, mask_buffer->size);
+    memory_and_inplace(base, size, mask_base, mask_size);
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     return self;
 }
 
 static void
-memory_or_inplace(unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
+memory_or_inplace(unsigned char * restrict base, size_t size, const unsigned char * restrict mask, size_t mask_size)
 {
     for (size_t offset = 0; offset < size; offset += 1) {
         base[offset] |= mask[offset % mask_size];
@@ -4081,27 +4163,28 @@ static VALUE
 io_buffer_or_inplace(VALUE self, VALUE mask)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
-
     struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
 
+    io_buffer_validate_for_writing(buffer);
+    io_buffer_validate_for_reading(mask_buffer);
     io_buffer_check_mask_size(mask_buffer->size);
     io_buffer_check_overlaps(buffer, mask_buffer);
 
     void *base;
     size_t size;
-    io_buffer_get_bytes_for_writing(buffer, &base, &size);
-
     const void *mask_base;
     size_t mask_size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_writing(buffer, &base, &size);
     io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
-
-    memory_or_inplace(base, size, mask_buffer->base, mask_buffer->size);
+    memory_or_inplace(base, size, mask_base, mask_size);
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     return self;
 }
 
 static void
-memory_xor_inplace(unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
+memory_xor_inplace(unsigned char * restrict base, size_t size, const unsigned char * restrict mask, size_t mask_size)
 {
     for (size_t offset = 0; offset < size; offset += 1) {
         base[offset] ^= mask[offset % mask_size];
@@ -4129,21 +4212,22 @@ static VALUE
 io_buffer_xor_inplace(VALUE self, VALUE mask)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
-
     struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
 
+    io_buffer_validate_for_writing(buffer);
+    io_buffer_validate_for_reading(mask_buffer);
     io_buffer_check_mask_size(mask_buffer->size);
     io_buffer_check_overlaps(buffer, mask_buffer);
 
     void *base;
     size_t size;
-    io_buffer_get_bytes_for_writing(buffer, &base, &size);
-
     const void *mask_base;
     size_t mask_size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_writing(buffer, &base, &size);
     io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
-
-    memory_xor_inplace(base, size, mask_buffer->base, mask_buffer->size);
+    memory_xor_inplace(base, size, mask_base, mask_size);
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     return self;
 }
@@ -4178,11 +4262,14 @@ io_buffer_not_inplace(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
+    io_buffer_validate_for_writing(buffer);
+
     void *base;
     size_t size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
-
     memory_not_inplace(base, size);
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     return self;
 }
@@ -4230,16 +4317,18 @@ io_buffer_bit_count(int argc, VALUE *argv, VALUE self)
     size_t offset, length;
     struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
 
+    io_buffer_validate_for_reading(buffer);
     io_buffer_validate_range(buffer, offset, length);
-
-    const void *base;
-    size_t size;
-    io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
     if (length == 0) return SIZET2NUM(0);
 
+    const void *base;
+    size_t size;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
     RUBY_ASSERT(base != NULL);
     size_t count = memory_bit_count((const unsigned char *)base + offset, length);
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     return SIZET2NUM(count);
 }
