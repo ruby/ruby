@@ -1089,8 +1089,8 @@ ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket
     }
 }
 
-#if RBIMPL_COMPILER_SINCE(GCC, 15, 0, 0)
-/* GCC 15 produces false-positive -Wclobbered warnings after inlining
+#if RBIMPL_COMPILER_IS(GCC) && defined(__OPTIMIZE__)
+/* GCC produces false-positive -Wclobbered warnings after inlining
  * this function into ractor_basket_new(). */
 NOINLINE(static void ractor_basket_build_payload(rb_execution_context_t *ec, struct ractor_basket *b, VALUE obj, enum ractor_basket_type type, bool exc));
 #endif
