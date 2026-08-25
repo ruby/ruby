@@ -1004,7 +1004,7 @@ io_buffer_flags_for_new(enum rb_io_buffer_flags flags, size_t size)
     enum rb_io_buffer_flags allocation = flags & RB_IO_BUFFER_ALLOCATION_FLAGS;
     RUBY_ASSERT(allocation != 0);
 
-    if (allocation == RB_IO_BUFFER_ALLOCATION_FLAGS) {
+    if ((unsigned int)allocation == RB_IO_BUFFER_ALLOCATION_FLAGS) {
         rb_raise(rb_eArgError, "Flags can't include both IO::Buffer::INTERNAL and IO::Buffer::MAPPED!");
     }
 
