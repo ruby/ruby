@@ -47,6 +47,7 @@ require "rubygems/vendor/uri/lib/uri"
 require "zlib"
 require_relative "mock_gem_ui"
 require_relative "pem_utilities"
+require_relative "fake_credential_backend"
 
 # JRuby on Windows raises TypeError inside File.symlink (the wincode helper
 # trips on a nil path), so any test that exercises Gem::Installer's symlink
@@ -382,6 +383,9 @@ class Gem::TestCase < Test::Unit::TestCase
 
     ENV["GEM_VENDOR"] = nil
     ENV["GEMRC"] = nil
+    # Left set, this points the suite at the real OS credential store, where
+    # tests that clear an API key would delete the developer's own.
+    ENV["RUBYGEMS_CREDENTIAL_STORE"] = nil
     ENV["XDG_CACHE_HOME"] = nil
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["XDG_DATA_HOME"] = nil
@@ -592,6 +596,19 @@ class Gem::TestCase < Test::Unit::TestCase
 
   def credential_teardown
     FileUtils.rm_rf @temp_cred
+  end
+
+  ##
+  # Runs the block with Gem::CredentialStore.instance backed by an
+  # in-memory Gem::FakeCredentialBackend, so credential_store-enabled code paths
+  # can be exercised without touching a real OS credential store.
+
+  def with_fake_credential_store
+    require "rubygems/credential_store"
+    Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: Gem::FakeCredentialBackend.new)
+    yield Gem::CredentialStore.instance
+  ensure
+    Gem::CredentialStore.reset!
   end
 
   def common_installer_setup
