@@ -115,6 +115,14 @@ describe "IO::Buffer#resize" do
     @buffer.size.should == 1
   end
 
+  it "preserves read-only access when the allocation is replaced" do
+    @buffer = IO::Buffer.new(IO::Buffer::PAGE_SIZE, IO::Buffer::MAPPED | IO::Buffer::READONLY)
+    @buffer.resize(16)
+
+    @buffer.should.readonly?
+    -> { @buffer.set_string("test") }.should.raise(IO::Buffer::AccessError, "Buffer is not writable!")
+  end
+
   ruby_version_is "4.1" do
     it "raises FrozenError without resizing a frozen buffer" do
       buffer = IO::Buffer.new(4)
