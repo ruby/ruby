@@ -2864,6 +2864,29 @@ fn test_opt_minus_overflow() {
 }
 
 #[test]
+fn test_fixnum_lshift() {
+    assert_snapshot!(inspect("
+        def test(a) = a << 3
+        test(1) # profile opt_ltlt
+
+        [test(5), test(0), test(-5)]
+    "), @"[40, 0, -40]");
+}
+
+#[test]
+fn test_fixnum_lshift_overflow() {
+    assert_snapshot!(inspect("
+        def test(a) = a << 3
+        test(1) # profile opt_ltlt
+
+        r1 = test(1 << 60)
+        r2 = test(-(1 << 60))
+
+        [r1, r2]
+    "), @"[9223372036854775808, -9223372036854775808]");
+}
+
+#[test]
 fn test_opt_eq() {
     eval("
         def test(a, b) = a == b
