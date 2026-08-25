@@ -1728,6 +1728,7 @@ hash_dup_capa(VALUE hash, size_t capa)
     VALUE ret = hash_alloc_capa(rb_cHash, capa);
     if (capa > RHASH_AR_TABLE_MAX_SIZE) {
         RHASH_SET_ST_FLAG(ret);
+        RHASH_ST_CLEAR(ret); // Ensure the hash can be marked.
     }
     else {
         RUBY_ASSERT(RHASH_AR_TABLE_MAX_BOUND(ret) >= capa);
