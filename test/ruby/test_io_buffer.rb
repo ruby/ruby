@@ -94,6 +94,52 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "hello!", string
   end
 
+  def test_internal_locked_for_reading
+    buffer = IO::Buffer.for("hello")
+
+    assert_equal [true, 5, "h".ord], Bug::IOBuffer.locked_for_reading(buffer)
+    refute_predicate buffer, :locked?
+  end
+
+  def test_internal_locked_for_reading_unlocks_after_callback_exception
+    buffer = IO::Buffer.for("hello")
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.locked_for_reading_raise(buffer)
+    end
+
+    refute_predicate buffer, :locked?
+  end
+
+  def test_internal_locked_for_writing
+    buffer = IO::Buffer.new(5)
+    buffer.set_string("hello")
+
+    assert_equal true, Bug::IOBuffer.locked_for_writing(buffer)
+    assert_equal "xello", buffer.get_string
+    refute_predicate buffer, :locked?
+  end
+
+  def test_internal_locked_for_writing_rejects_readonly_buffer
+    buffer = IO::Buffer.for("hello")
+
+    assert_raise(IO::Buffer::AccessError) do
+      Bug::IOBuffer.locked_for_writing(buffer)
+    end
+
+    refute_predicate buffer, :locked?
+  end
+
+  def test_internal_locked_for_writing_unlocks_after_callback_exception
+    buffer = IO::Buffer.new(5)
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.locked_for_writing_raise(buffer)
+    end
+
+    refute_predicate buffer, :locked?
+  end
+
   def test_endian
     assert_equal 4, IO::Buffer::LITTLE_ENDIAN
     assert_equal 8, IO::Buffer::BIG_ENDIAN

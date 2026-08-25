@@ -1673,6 +1673,73 @@ rb_io_buffer_locked_ensure(VALUE self)
     return Qnil;
 }
 
+struct io_buffer_readable_bytes_arguments {
+    VALUE self;
+    VALUE (*callback)(const void *base, size_t size, VALUE argument);
+    VALUE argument;
+};
+
+static VALUE
+io_buffer_readable_bytes_call(VALUE _arguments)
+{
+    struct io_buffer_readable_bytes_arguments *arguments = (void *)_arguments;
+
+    const void *base;
+    size_t size;
+    rb_io_buffer_get_bytes_for_reading(arguments->self, &base, &size);
+
+    return arguments->callback(base, size, arguments->argument);
+}
+
+VALUE
+rb_io_buffer_locked_for_reading(VALUE self, VALUE (*callback)(const void *base, size_t size, VALUE argument), VALUE argument)
+{
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+    io_buffer_validate_for_reading(buffer);
+
+    struct io_buffer_readable_bytes_arguments arguments = {
+        .self = self,
+        .callback = callback,
+        .argument = argument,
+    };
+
+    rb_io_buffer_lock(self);
+    return rb_ensure(io_buffer_readable_bytes_call, (VALUE)&arguments, rb_io_buffer_locked_ensure, self);
+}
+
+struct io_buffer_writable_bytes_arguments {
+    VALUE self;
+    VALUE (*callback)(void *base, size_t size, VALUE argument);
+    VALUE argument;
+};
+
+static VALUE
+io_buffer_writable_bytes_call(VALUE _arguments)
+{
+    struct io_buffer_writable_bytes_arguments *arguments = (void *)_arguments;
+
+    void *base;
+    size_t size;
+    rb_io_buffer_get_bytes_for_writing(arguments->self, &base, &size);
+
+    return arguments->callback(base, size, arguments->argument);
+}
+
+VALUE
+rb_io_buffer_locked_for_writing(VALUE self, VALUE (*callback)(void *base, size_t size, VALUE argument), VALUE argument)
+{
+    get_io_buffer_for_writing(self);
+
+    struct io_buffer_writable_bytes_arguments arguments = {
+        .self = self,
+        .callback = callback,
+        .argument = argument,
+    };
+
+    rb_io_buffer_lock(self);
+    return rb_ensure(io_buffer_writable_bytes_call, (VALUE)&arguments, rb_io_buffer_locked_ensure, self);
+}
+
 /*
  *  call-seq: locked { ... }
  *
@@ -2891,13 +2958,11 @@ io_buffer_memmove_unblock(void *data)
 }
 
 static void
-io_buffer_memmove(struct rb_io_buffer *buffer, size_t offset, const void *source_base, size_t source_offset, size_t source_size, size_t length)
+io_buffer_memmove(void *base, size_t size, size_t offset, const void *source_base, size_t source_offset, size_t source_size, size_t length)
 {
-    void *base;
-    size_t size;
-    io_buffer_get_bytes_for_writing(buffer, &base, &size);
-
-    io_buffer_validate_range(buffer, offset, length);
+    if (size_sum_is_bigger_than(offset, length, size)) {
+        rb_raise(rb_eArgError, "Specified offset+length is bigger than the buffer size!");
+    }
 
     if (size_sum_is_bigger_than(source_offset, length, source_size)) {
         rb_raise(rb_eArgError, "The computed source range exceeds the size of the source buffer!");
@@ -2920,43 +2985,112 @@ io_buffer_memmove(struct rb_io_buffer *buffer, size_t offset, const void *source
     }
 }
 
-// (offset, length, source_offset) -> length
-static VALUE
-io_buffer_copy_from(struct rb_io_buffer *buffer, const void *source_base, size_t source_size, int argc, VALUE *argv)
+static void
+io_buffer_extract_copy_arguments(size_t source_size, int argc, VALUE *argv, size_t *offset, size_t *length, size_t *source_offset)
 {
-    size_t offset = 0;
-    size_t length;
-    size_t source_offset;
-
     // The offset we copy into the buffer:
     if (argc >= 1) {
-        offset = io_buffer_extract_offset(argv[0]);
+        *offset = io_buffer_extract_offset(argv[0]);
+    }
+    else {
+        *offset = 0;
     }
 
     // The offset we start from within the string:
     if (argc >= 3) {
-        source_offset = io_buffer_extract_offset(argv[2]);
+        *source_offset = io_buffer_extract_offset(argv[2]);
 
-        if (source_offset > source_size) {
+        if (*source_offset > source_size) {
             rb_raise(rb_eArgError, "The given source offset is bigger than the source itself!");
         }
     }
     else {
-        source_offset = 0;
+        *source_offset = 0;
     }
 
     // The length we are going to copy:
     if (argc >= 2 && !RB_NIL_P(argv[1])) {
-        length = io_buffer_extract_length(argv[1]);
+        *length = io_buffer_extract_length(argv[1]);
     }
     else {
         // Default to the source offset -> source size:
-        length = source_size - source_offset;
+        *length = source_size - *source_offset;
     }
+}
 
-    io_buffer_memmove(buffer, offset, source_base, source_offset, source_size, length);
+// (offset, length, source_offset) -> length
+static VALUE
+io_buffer_copy_from(struct rb_io_buffer *buffer, const void *source_base, size_t source_size, int argc, VALUE *argv)
+{
+    size_t offset, length, source_offset;
+    io_buffer_extract_copy_arguments(source_size, argc, argv, &offset, &length, &source_offset);
+
+    void *base;
+    size_t size;
+    io_buffer_get_bytes_for_writing(buffer, &base, &size);
+
+    io_buffer_memmove(base, size, offset, source_base, source_offset, source_size, length);
 
     return SIZET2NUM(length);
+}
+
+struct io_buffer_copy_arguments {
+    VALUE destination;
+    const void *source_base;
+    size_t source_size;
+    int argc;
+    VALUE *argv;
+};
+
+// This is the innermost callback for IO::Buffer#copy. At this point the source
+// is locked for reading and the destination is locked for writing, so both
+// pointers and sizes remain valid while arguments are extracted, ranges are
+// validated, and memmove potentially releases the GVL.
+static VALUE
+io_buffer_copy_to(void *base, size_t size, VALUE _arguments)
+{
+    struct io_buffer_copy_arguments *arguments = (void *)_arguments;
+
+    size_t offset, length, source_offset;
+    io_buffer_extract_copy_arguments(arguments->source_size, arguments->argc, arguments->argv, &offset, &length, &source_offset);
+
+    io_buffer_memmove(base, size, offset, arguments->source_base, source_offset, arguments->source_size, length);
+
+    return SIZET2NUM(length);
+}
+
+// This callback runs while the source is locked for reading. Retain its bytes
+// in the callback arguments, then enter the destination's writable scope. The
+// source scope remains active until that nested scope returns.
+static VALUE
+io_buffer_copy_from_readable(const void *base, size_t size, VALUE _arguments)
+{
+    struct io_buffer_copy_arguments *arguments = (void *)_arguments;
+
+    arguments->source_base = base;
+    arguments->source_size = size;
+
+    return rb_io_buffer_locked_for_writing(arguments->destination, io_buffer_copy_to, _arguments);
+}
+
+static VALUE
+io_buffer_initialize_copy_from(const void *base, size_t size, VALUE self)
+{
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    io_buffer_initialize(self, buffer, NULL, size, io_flags_for_size(size), Qnil);
+
+    struct io_buffer_copy_arguments arguments = {
+        .destination = self,
+        .source_base = base,
+        .source_size = size,
+        .argc = 0,
+        .argv = NULL,
+    };
+
+    // The source remains locked by the outer readable scope while the newly
+    // initialized destination is locked and populated by io_buffer_copy_to.
+    return rb_io_buffer_locked_for_writing(self, io_buffer_copy_to, (VALUE)&arguments);
 }
 
 /*
@@ -2979,18 +3113,7 @@ io_buffer_copy_from(struct rb_io_buffer *buffer, const void *source_base, size_t
 static VALUE
 rb_io_buffer_initialize_copy(VALUE self, VALUE source)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
-
-    const void *source_base;
-    size_t source_size;
-
-    rb_io_buffer_get_bytes_for_reading(source, &source_base, &source_size);
-
-    io_buffer_initialize(self, buffer, NULL, source_size, io_flags_for_size(source_size), Qnil);
-
-    VALUE result = io_buffer_copy_from(buffer, source_base, source_size, 0, NULL);
-    RB_GC_GUARD(source);
-    return result;
+    return rb_io_buffer_locked_for_reading(source, io_buffer_initialize_copy_from, self);
 }
 
 /*
@@ -3066,17 +3189,19 @@ io_buffer_copy(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 1, 4);
 
-    struct rb_io_buffer *buffer = get_io_buffer(self);
-
     VALUE source = argv[0];
-    const void *source_base;
-    size_t source_size;
+    struct io_buffer_copy_arguments arguments = {
+        .destination = self,
+        .argc = argc-1,
+        .argv = argv+1,
+    };
 
-    rb_io_buffer_get_bytes_for_reading(source, &source_base, &source_size);
-
-    VALUE result = io_buffer_copy_from(buffer, source_base, source_size, argc-1, argv+1);
-    RB_GC_GUARD(source);
-    return result;
+    // Lock the source first, then io_buffer_copy_from_readable nests the
+    // destination lock. The scoped helpers use rb_ensure, so the destination
+    // is unlocked before the source on both normal and exceptional returns.
+    // If both buffers share an allocation, its reference-counted lock is
+    // acquired and released twice.
+    return rb_io_buffer_locked_for_reading(source, io_buffer_copy_from_readable, (VALUE)&arguments);
 }
 
 /*
