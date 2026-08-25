@@ -2003,7 +2003,8 @@ io_buffer_resize_copy(VALUE self, struct rb_io_buffer *buffer, size_t size)
 {
     // Slow path:
     struct rb_io_buffer resized;
-    io_buffer_initialize(self, &resized, NULL, size, io_flags_for_size(size), Qnil);
+    enum rb_io_buffer_flags flags = io_flags_for_size(size) | (buffer->flags & RB_IO_BUFFER_READONLY);
+    io_buffer_initialize(self, &resized, NULL, size, flags, Qnil);
 
     if (buffer->base) {
         size_t preserve = buffer->size;
