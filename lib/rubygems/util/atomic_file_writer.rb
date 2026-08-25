@@ -45,47 +45,50 @@ module Gem
       flags = File::RDWR | File::CREAT | File::EXCL | File::BINARY
       flags |= File::SHARE_DELETE if defined?(File::SHARE_DELETE)
 
-      File.open(tmp_path, flags) do |temp_file|
+      renamed = false
+      temp_file = File.open(tmp_path, flags)
+
+      begin
         temp_file.binmode
         if old_stat
           # Set correct permissions on new file
           begin
-            File.chown(old_stat.uid, old_stat.gid, temp_file.path)
+            File.chown(old_stat.uid, old_stat.gid, tmp_path)
             # This operation will affect filesystem ACL's
-            File.chmod(old_stat.mode, temp_file.path)
+            File.chmod(old_stat.mode, tmp_path)
           rescue Errno::EPERM, Errno::EACCES
             # Changing file ownership failed, moving on.
           end
         end
 
         return_val = yield temp_file
-      rescue StandardError => error
-        begin
-          temp_file.close
-        rescue StandardError
-          nil
-        end
 
-        begin
-          File.unlink(temp_file.path)
-        rescue StandardError
-          nil
-        end
-
-        raise error
-      else
-        begin
-          File.rename(temp_file.path, file_name)
-        rescue StandardError
-          begin
-            File.unlink(temp_file.path)
-          rescue StandardError
-          end
-
-          raise
-        end
+        # Any data still buffered is handed to the filesystem on close, so a
+        # failing flush must surface while the destination is still intact.
+        # That means closing the temporary file before the rename. Note this
+        # does not fsync, so the write is atomic but not crash durable.
+        temp_file.close
+        File.rename(tmp_path, file_name)
+        renamed = true
 
         return_val
+      ensure
+        unless renamed
+          begin
+            temp_file.close
+          rescue StandardError
+            nil
+          ensure
+            # The unlink runs from an ensure so that a non-StandardError raised by
+            # the close above, a second Ctrl-C for instance, still reaches it. An
+            # interrupt landing on the unlink itself is not covered.
+            begin
+              File.unlink(tmp_path)
+            rescue StandardError
+              nil
+            end
+          end
+        end
       end
     end
 
