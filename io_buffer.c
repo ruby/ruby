@@ -584,6 +584,35 @@ struct io_buffer_for_callback_arguments {
     VALUE argument;
 };
 
+static VALUE rb_io_buffer_locked_ensure(VALUE self);
+
+struct io_buffer_for_locked_callback_arguments {
+    VALUE buffer;
+    VALUE (*callback)(VALUE, VALUE);
+    VALUE argument;
+};
+
+static VALUE
+io_buffer_for_locked_callback_call(VALUE _arguments)
+{
+    struct io_buffer_for_locked_callback_arguments *arguments = (void *)_arguments;
+
+    return arguments->callback(arguments->buffer, arguments->argument);
+}
+
+static VALUE
+io_buffer_for_locked_callback(VALUE buffer, VALUE (*callback)(VALUE, VALUE), VALUE argument)
+{
+    struct io_buffer_for_locked_callback_arguments arguments = {
+        .buffer = buffer,
+        .callback = callback,
+        .argument = argument,
+    };
+
+    rb_io_buffer_lock(buffer);
+    return rb_ensure(io_buffer_for_locked_callback_call, (VALUE)&arguments, rb_io_buffer_locked_ensure, buffer);
+}
+
 static VALUE
 io_buffer_for_callback_call(VALUE _arguments)
 {
@@ -596,7 +625,7 @@ io_buffer_for_callback_call(VALUE _arguments)
         arguments->locked = 1;
     }
 
-    return arguments->callback(arguments->instance, arguments->argument);
+    return io_buffer_for_locked_callback(arguments->instance, arguments->callback, arguments->argument);
 }
 
 static VALUE
@@ -619,7 +648,7 @@ VALUE
 rb_io_buffer_for_reading(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE), VALUE argument)
 {
     if (rb_obj_is_kind_of(string_or_buffer, rb_cIOBuffer)) {
-        return callback(string_or_buffer, argument);
+        return io_buffer_for_locked_callback(string_or_buffer, callback, argument);
     }
     else if (RB_TYPE_P(string_or_buffer, T_STRING)) {
         StringValue(string_or_buffer);
@@ -652,7 +681,7 @@ rb_io_buffer_for_writing(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE)
         if (io_buffer_readonly_p(buffer)) {
             rb_raise(rb_eArgError, "buffer is read-only");
         }
-        return callback(string_or_buffer, argument);
+        return io_buffer_for_locked_callback(string_or_buffer, callback, argument);
     }
     else if (RB_TYPE_P(string_or_buffer, T_STRING)) {
         StringValue(string_or_buffer);
