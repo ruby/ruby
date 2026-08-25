@@ -1089,6 +1089,45 @@ ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket
     }
 }
 
+#if RBIMPL_COMPILER_SINCE(GCC, 15, 0, 0)
+/* GCC 15 produces false-positive -Wclobbered warnings after inlining
+ * this function into ractor_basket_new(). */
+NOINLINE(static void ractor_basket_build_payload(rb_execution_context_t *ec, struct ractor_basket *b, VALUE obj, enum ractor_basket_type type, bool exc));
+#endif
+static void
+ractor_basket_build_payload(rb_execution_context_t *ec, struct ractor_basket *b, VALUE obj,
+                            enum ractor_basket_type type, bool exc)
+{
+    b->p.exception = exc;
+    if (type == basket_type_move) {
+        /* Serialize the graph into an off-heap courier; the sources become
+         * RactorMovedObject.  While in flight there is no GC object left for the
+         * sender's GC to mark, sweep or move.  The build publishes the courier into
+         * the basket as soon as it exists. */
+        rb_ractor_courier_build_move(obj, &b->p.courier);
+        b->type = type;
+        b->p.v = Qfalse;
+    }
+    else {
+        bool marshaled = false;
+        VALUE v = ractor_prepare_payload(ec, obj, &type, &marshaled, &b->p.courier);
+
+        if (type == basket_type_copy && marshaled) {
+            /* Take the dump off-heap: the sender's copy of it is ordinary garbage
+             * from here, so nothing of its heap is held while the message waits. */
+            size_t mlen = (size_t)RSTRING_LEN(v);
+            char *mbuf = ALLOC_N(char, mlen > 0 ? mlen : 1);
+            b->p.marshaled = marshaled;
+            b->p.mbuf = mbuf;
+            b->p.mlen = mlen;
+            memcpy(mbuf, RSTRING_PTR(v), mlen);
+            v = Qundef;
+        }
+        b->type = type;
+        b->p.v = v;
+    }
+}
+
 static struct ractor_basket *
 ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type type, bool exc)
 {
@@ -1099,46 +1138,17 @@ ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type
     struct ractor_basket *b = ractor_basket_alloc();
     ractor_off_queue_add(cr, b);
 
-    volatile VALUE v = Qfalse;
-    bool marshaled = false;
-    char *mbuf = NULL;
-    size_t mlen = 0;
-
     enum ruby_tag_type state;
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        if (type == basket_type_move) {
-            /* Serialize the graph into an off-heap courier; the sources become
-             * RactorMovedObject.  While in flight there is no GC object left for the
-             * sender's GC to mark, sweep or move.  The build publishes the courier into
-             * the basket as soon as it exists. */
-            rb_ractor_courier_build_move(obj, &b->p.courier);
-        }
-        else {
-            v = ractor_prepare_payload(ec, obj, &type, &marshaled, &b->p.courier);
-            if (type == basket_type_copy && marshaled) {
-                /* Take the dump off-heap: the sender's copy of it is ordinary garbage
-                 * from here, so nothing of its heap is held while the message waits. */
-                mlen = (size_t)RSTRING_LEN(v);
-                mbuf = ALLOC_N(char, mlen > 0 ? mlen : 1);
-                memcpy(mbuf, RSTRING_PTR(v), mlen);
-                v = Qundef;
-            }
-        }
+        ractor_basket_build_payload(ec, b, obj, type, exc);
     }
     EC_POP_TAG();
     if (state != TAG_NONE) {
-        ruby_xfree(mbuf);
         ractor_basket_free(b);   /* leaves the list and frees a courier already built */
         EC_JUMP_TAG(ec, state);
     }
 
-    b->type = type;
-    b->p.exception = exc;
-    b->p.v = v;
-    b->p.marshaled = marshaled;
-    b->p.mbuf = mbuf;
-    b->p.mlen = mlen;
     return b;
 }
 
