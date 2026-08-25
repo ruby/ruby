@@ -294,7 +294,11 @@ static ruby_gc_params_t gc_params = {
  *  enable to embed GC debugging information.
  */
 #ifndef GC_DEBUG
-#define GC_DEBUG 0
+# ifdef RUBY_DEVEL
+#   define GC_DEBUG 1
+# else
+#   define GC_DEBUG 0
+# endif
 #endif
 
 /* RGENGC_DEBUG:
@@ -305,11 +309,11 @@ static ruby_gc_params_t gc_params = {
  * 5: sweep
  */
 #ifndef RGENGC_DEBUG
-#ifdef RUBY_DEVEL
-#define RGENGC_DEBUG       -1
-#else
-#define RGENGC_DEBUG       0
-#endif
+# if GC_DEBUG
+#   define RGENGC_DEBUG       -1
+# else
+#   define RGENGC_DEBUG       0
+# endif
 #endif
 #if RGENGC_DEBUG < 0 && !defined(_MSC_VER)
 # define RGENGC_DEBUG_ENABLED(level) (-(RGENGC_DEBUG) >= (level) && ruby_rgengc_debug >= (level))
@@ -348,11 +352,7 @@ int ruby_rgengc_debug;
 #endif
 
 #ifndef VERIFY_FREE_SIZE
-#if RUBY_DEBUG
-#define VERIFY_FREE_SIZE 1
-#else
-#define VERIFY_FREE_SIZE 0
-#endif
+# define VERIFY_FREE_SIZE RUBY_DEBUG
 #endif
 
 #if VERIFY_FREE_SIZE
@@ -372,7 +372,11 @@ int ruby_rgengc_debug;
 # define MALLOC_ALLOCATED_SIZE 0
 #endif
 #ifndef MALLOC_ALLOCATED_SIZE_CHECK
-# define MALLOC_ALLOCATED_SIZE_CHECK 0
+# ifdef RUBY_DEVEL
+#   define MALLOC_ALLOCATED_SIZE_CHECK 1
+# else
+#   define MALLOC_ALLOCATED_SIZE_CHECK 0
+# endif
 #endif
 
 #ifndef GC_DEBUG_STRESS_TO_CLASS

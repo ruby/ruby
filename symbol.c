@@ -29,7 +29,7 @@
 #include "builtin.h"
 #include "ruby/internal/attr/nonstring.h"
 
-#if defined(SYMBOL_DEBUG) && (SYMBOL_DEBUG+0)
+#if (defined(SYMBOL_DEBUG) && (SYMBOL_DEBUG+0)) || defined(RUBY_DEVEL)
 # undef SYMBOL_DEBUG
 # define SYMBOL_DEBUG 1
 #else

@@ -3322,17 +3322,15 @@ timegm_noleapsecond(struct tm *tm)
                     DIV(tm_year+299,400))*86400;
 }
 
-#if 0
-#define DEBUG_FIND_TIME_NUMGUESS
-#define DEBUG_GUESSRANGE
+#ifdef RUBY_DEVEL
+# define DEBUG_FIND_TIME_NUMGUESS 1
+# define DEBUG_GUESSRANGE 1
+#else
+# define DEBUG_FIND_TIME_NUMGUESS 0
+# define DEBUG_GUESSRANGE 0
 #endif
 
-static const bool debug_guessrange =
-#ifdef DEBUG_GUESSRANGE
-    true;
-#else
-    false;
-#endif
+static const bool debug_guessrange = DEBUG_GUESSRANGE != 0;
 
 #define DEBUG_REPORT_GUESSRANGE \
     (debug_guessrange ? debug_report_guessrange(guess_lo, guess_hi) : (void)0)
@@ -3346,12 +3344,7 @@ debug_report_guessrange(time_t guess_lo, time_t guess_hi)
             guess_lo, guess_hi, guess_diff);
 }
 
-static const bool debug_find_time_numguess =
-#ifdef DEBUG_FIND_TIME_NUMGUESS
-    true;
-#else
-    false;
-#endif
+static const bool debug_find_time_numguess = DEBUG_FIND_TIME_NUMGUESS != 0;
 
 #define DEBUG_FIND_TIME_NUMGUESS_INC \
     (void)(debug_find_time_numguess && find_time_numguess++),

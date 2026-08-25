@@ -140,7 +140,11 @@ const ID rb_iseq_shared_exc_local_tbl[] = {idERROR_INFO};
  */
 
 #ifndef CPDEBUG
-#define CPDEBUG 0
+# ifdef RUBY_DEVEL
+#   define CPDEBUG -1
+# else
+#   define CPDEBUG 0
+# endif
 #endif
 
 #if CPDEBUG >= 0
