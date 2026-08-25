@@ -179,6 +179,46 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    offset. `rubygems.org` always sends one, but a third-party server
    that omits it would otherwise shift the cooldown window by the
    offset of whatever machine runs bundler.
+* `credential_store` (`BUNDLE_CREDENTIAL_STORE`):
+   Experimental: store and read host credentials (the values otherwise set
+   via `bundle config set <host> <user:pass>`) in a credential store instead
+   of the plain text config file. Set it to `true` to use the operating
+   system's native store (macOS Keychain, Linux Secret Service, Windows
+   Credential Manager) when one is available on this platform, or to the name
+   of a backend provided by a third-party gem, such as `1password`. Falls
+   back to the config file when the store is unavailable or fails, warning
+   that the credential was written in plain text. Defaults to false.
+   Credentials already written to the config file are not migrated
+   automatically; re-run `bundle config set <host> <user:pass>` with the
+   setting enabled to move each one into the store. Being experimental, the
+   name and behavior of this setting may change in a future release.
+
+   A credential kept in the store is never printed back. `bundle config get
+   <host>` and `bundle config list` name the key and say that its value lives
+   in the credential store. With `--parseable`, such a key is left out
+   entirely, since that output is meant to be read back by `bundle config
+   set`. A third-party backend is not required to enumerate what it holds, so
+   a credential kept in one may not be listed at all.
+
+   The store belongs to the machine's user, not to a project, so
+   `--local` and `--global` make no difference to where a credential is
+   kept. Setting a host's credential in one project changes it for every
+   project on the machine, and unsetting it there removes it everywhere.
+   Protecting the store itself is the operating system's job, or that of
+   whichever backend you selected.
+
+   A credential given in the environment, such as
+   `BUNDLE_GEMS__EXAMPLE__COM`, takes precedence over the stored one, so a
+   CI run can pass its own credentials without the store getting in the
+   way. The store takes precedence over the config file.
+
+   The store can also be selected per host with `credential_store.<host>`
+   (`BUNDLE_CREDENTIAL_STORE__<HOST>`), for example `bundle config set
+   credential_store.gems.example.com code_artifact`. That host then uses
+   only the named backend, with no chaining to the global one, while every
+   other host keeps following the global setting. Setting a host's value
+   to `false` keeps that one host on the config file even when a global
+   store is enabled.
 * `default_cli_command` (`BUNDLE_DEFAULT_CLI_COMMAND`):
    The command that running `bundle` without arguments should run. Defaults to
    `cli_help` since Bundler 4, but can also be `install` which was the previous
