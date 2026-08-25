@@ -1946,6 +1946,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
                 return hash_new_capa(klass, 0);
             }
 
+            hash = 0;
             long i;
             for (i = 0; i < RARRAY_LEN(tmp); ++i) {
                 VALUE e = RARRAY_AREF(tmp, i);
@@ -1976,6 +1977,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
                     val = RARRAY_AREF(v, 1);
                   case 1:
                     key = RARRAY_AREF(v, 0);
+                    ASSUME(hash);
                     rb_hash_aset(hash, key, val);
                 }
             }
