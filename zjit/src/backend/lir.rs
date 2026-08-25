@@ -1349,6 +1349,7 @@ impl Insn {
         self.is_jump() ||
             match self {
                 Insn::CRet(_) => true,
+                Insn::Abort => true,
                 _ => false
             }
     }

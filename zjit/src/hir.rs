@@ -1704,7 +1704,7 @@ impl Insn {
     /// Return true if the instruction ends a basic block and false otherwise.
     pub fn is_terminator(&self) -> bool {
         match self {
-            Insn::Unreachable | Insn::CondBranch { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => true,
+            Insn::Unreachable | Insn::CondBranch { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::Return { .. } | Insn::Throw { .. } => true,
             _ => false,
         }
     }
@@ -3387,6 +3387,7 @@ impl Function {
             return true;
         }
         self.push_insn(block, Insn::SideExit { state, reason: Box::new(SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop })), recompile: None });
+        self.push_insn(block, Insn::Unreachable);
         false
     }
 
@@ -6088,7 +6089,8 @@ impl Function {
                 match self.resolve(insn_id).insn(self) {
                     &Insn::Send { state, reason: SendFallbackReason::SendNoProfiles, .. } => {
                         self.push_insn(block, Insn::SideExit { state, reason: Box::new(SideExitReason::NoProfileSend), recompile: Some(Recompile) });
-                        // SideExit is a terminator; don't add remaining instructions
+                        self.push_insn(block, Insn::Unreachable);
+                        // Unreachable is a terminator; don't add remaining instructions
                         break;
                     }
                     _ => {
@@ -7851,6 +7853,7 @@ impl Function {
                 return Some((block, result));
             } else {
                 self.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(no_profile_reason), recompile: Some(Recompile) });
+                self.push_insn(block, Insn::Unreachable);
                 return None;
             }
         }
@@ -8861,6 +8864,7 @@ fn add_iseq_to_hir(
                         _ => {
                             // Unknown opcode; side-exit into the interpreter
                             fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledNewarraySend(method)), recompile: None });
+                            fun.push_insn(block, Insn::Unreachable);
                             break;  // End the block
                         }
                     };
@@ -8887,6 +8891,7 @@ fn add_iseq_to_hir(
                         x if x == ID!(include_p).0 => BOP_INCLUDE_P,
                         _ => {
                             fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledDuparraySend(method_id)), recompile: None });
+                            fun.push_insn(block, Insn::Unreachable);
                             break;
                         },
                     };
@@ -8934,10 +8939,12 @@ fn add_iseq_to_hir(
                         .map(|dist| TypeDistributionSummary::new(dist));
                     let Some(summary) = summary else {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SplatKwNotProfiled), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;  // End the block
                     };
                     if !summary.is_monomorphic() {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SplatKwPolymorphic), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;  // End the block
                     }
                     let ty = Type::from_profiled_type(summary.bucket(0));
@@ -8947,6 +8954,7 @@ fn add_iseq_to_hir(
                         fun.push_insn(block, Insn::GuardType { val: hash, guard_type: types::HashExact, state: exit_id, recompile: None })
                     } else {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SplatKwNotNilOrHash), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;  // End the block
                     };
                     state.stack_push(obj);
@@ -9106,6 +9114,7 @@ fn add_iseq_to_hir(
                     // In this case, we side exit to the interpreter.
                     if unsafe {(*rb_get_iseq_body_param_keyword(iseq)).num >= VM_KW_SPECIFIED_BITS_MAX.try_into().unwrap()} {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::TooManyKeywordParameters), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;
                     }
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -9656,6 +9665,7 @@ fn add_iseq_to_hir(
                             }
 
                             fun.push_insn(current_block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::BlockParamProxyProfileNotCovered), recompile: None });
+                            fun.push_insn(current_block, Insn::Unreachable);
                         }
                     }
 
@@ -9749,6 +9759,7 @@ fn add_iseq_to_hir(
                     if let Err(call_type) = unhandled_call_type(flags) {
                         // Can't handle the call type; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledCallType(call_type)), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;  // End the block
                     }
                     let argc = crate::profile::num_arguments_on_stack(cd);
@@ -9757,6 +9768,7 @@ fn add_iseq_to_hir(
                     // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
                     if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SendWhileTracing), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;
                     }
                     let args = state.stack_pop_n(argc as usize)?;
@@ -9847,6 +9859,7 @@ fn add_iseq_to_hir(
                     if let Err(call_type) = unhandled_call_type(flags) {
                         // Can't handle tailcall; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledCallType(call_type)), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;  // End the block
                     }
                     let argc = crate::profile::num_arguments_on_stack(cd);
@@ -9864,6 +9877,7 @@ fn add_iseq_to_hir(
                             && state::zjit_module_method_match_serial(ID!(induce_side_exit_bang), &state::INDUCE_SIDE_EXIT_SERIAL)
                         {
                             fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::DirectiveInduced), recompile: None });
+                            fun.push_insn(block, Insn::Unreachable);
                             break;  // End the block
                         }
                         if mid == ID!(induce_compile_failure_bang)
@@ -9883,6 +9897,7 @@ fn add_iseq_to_hir(
                     // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
                     if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SendWhileTracing), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;
                     }
 
@@ -9947,11 +9962,13 @@ fn add_iseq_to_hir(
                     if let Err(call_type) = unhandled_call_type(flags) {
                         // Can't handle tailcall; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledCallType(call_type)), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;  // End the block
                     }
                     // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
                     if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SendWhileTracing), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;
                     }
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
@@ -9985,11 +10002,13 @@ fn add_iseq_to_hir(
                     if let Err(call_type) = unhandled_call_type(flags) {
                         // Can't handle the call type; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledCallType(call_type)), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;  // End the block
                     }
                     // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
                     if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SendWhileTracing), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -10014,11 +10033,13 @@ fn add_iseq_to_hir(
                     if let Err(call_type) = unhandled_call_type(flags) {
                         // Can't handle tailcall; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledCallType(call_type)), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;  // End the block
                     }
                     // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
                     if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SendWhileTracing), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;
                     }
                     let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
@@ -10044,11 +10065,13 @@ fn add_iseq_to_hir(
                     if let Err(call_type) = unhandled_call_type(flags) {
                         // Can't handle tailcall; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledCallType(call_type)), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;  // End the block
                     }
                     // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
                     if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SendWhileTracing), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -10072,11 +10095,13 @@ fn add_iseq_to_hir(
                     if let Err(call_type) = unhandled_call_type(flags) {
                         // Can't handle tailcall; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledCallType(call_type)), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;  // End the block
                     }
                     // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
                     if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SendWhileTracing), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;
                     }
                     let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
@@ -10221,6 +10246,7 @@ fn add_iseq_to_hir(
                     if !fun.assume_single_ractor_mode(block, exit_id) {
                         // gen_getivar assumes single Ractor; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledYARVInsn(opcode)), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;  // End the block
                     }
                     let summary = fun.profile_summary(&profiles, self_param, exit_id);
@@ -10268,6 +10294,7 @@ fn add_iseq_to_hir(
                     if !fun.assume_single_ractor_mode(block, exit_id) {
                         // gen_setivar assumes single Ractor; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledYARVInsn(opcode)), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;  // End the block
                     }
                     let val = state.stack_pop()?;
@@ -10472,6 +10499,7 @@ fn add_iseq_to_hir(
                     if svar == 0 {
                         // TODO: Handle non-backref
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnknownSpecialVariable(key)), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         // End the block
                         break;
                     } else if svar & 0x01 != 0 {
@@ -10495,6 +10523,7 @@ fn add_iseq_to_hir(
                         //
                         // Unhandled opcode; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledYARVInsn(opcode)), recompile: None });
+                        fun.push_insn(block, Insn::Unreachable);
                         break;  // End the block
                     }
                     let val = state.stack_pop()?;
@@ -10513,6 +10542,7 @@ fn add_iseq_to_hir(
                 _ => {
                     // Unhandled opcode; side-exit into the interpreter
                     fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledYARVInsn(opcode)), recompile: None });
+                    fun.push_insn(block, Insn::Unreachable);
                     break;  // End the block
                 }
             }
