@@ -24,7 +24,7 @@ module Gem
       tmp_suffix = ".tmp.#{SecureRandom.hex}"
       dirname = File.dirname(file_name)
       basename = File.basename(file_name)
-      base_slice = basename.byteslice(0, 254 - tmp_suffix.bytesize)
+      base_slice = byteslice_at_char_boundary(basename, 254 - tmp_suffix.bytesize)
       tmp_path = File.join(dirname, ".#{base_slice}#{tmp_suffix}")
 
       # The temporary name is longer than the final one, so on Windows a
@@ -38,7 +38,7 @@ module Gem
         trim = [tmp_suffix.bytesize - (".tmp.".bytesize + 8), overflow].min
         tmp_suffix = tmp_suffix.byteslice(0, tmp_suffix.bytesize - trim)
         overflow -= trim
-        base_slice = base_slice.byteslice(0, [base_slice.bytesize - overflow, 0].max) if overflow > 0
+        base_slice = byteslice_at_char_boundary(base_slice, [base_slice.bytesize - overflow, 0].max) if overflow > 0
         tmp_path = File.join(dirname, ".#{base_slice}#{tmp_suffix}")
       end
 
@@ -88,5 +88,19 @@ module Gem
         return_val
       end
     end
+
+    # Returns the longest prefix of string that is at most max_bytesize bytes
+    # and ends on a character boundary. A string that is invalid in its own
+    # encoding would be cut back to its last valid prefix, discarding an
+    # unbounded part of the name, so it is sliced as raw bytes instead and can
+    # still be cut mid-character.
+    def self.byteslice_at_char_boundary(string, max_bytesize)
+      sliced = string.byteslice(0, max_bytesize)
+      if string.valid_encoding?
+        sliced = sliced.byteslice(0, sliced.bytesize - 1) until sliced.valid_encoding?
+      end
+      sliced
+    end
+    private_class_method :byteslice_at_char_boundary
   end
 end
