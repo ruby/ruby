@@ -5536,21 +5536,22 @@ static VALUE rb_file_dirname_n(VALUE fname, int n);
 
 /*
  *  call-seq:
- *     File.dirname(file_name, level = 1)  ->  dir_name
+ *    File.dirname(path, count = 1) -> string
  *
- *  Returns all components of the filename given in <i>file_name</i>
- *  except the last one (after first stripping trailing separators).
- *  The filename can be formed using both File::SEPARATOR and
- *  File::ALT_SEPARATOR as the separator when File::ALT_SEPARATOR is
- *  not <code>nil</code>.
+ *  Returns a string path containing all but the last +count+ components
+ *  of the given +path+:
  *
- *     File.dirname("/home/gumby/work/ruby.rb")   #=> "/home/gumby/work"
+ *    File.dirname('/usr/lib/linux')     # => "/usr/lib"
+ *    File.dirname('/usr')               # => "/"
+ *    File.dirname('/')                  # => "/"
+ *    File.dirname('lib/')               # => "."
+ *    File.dirname('nosuch')             # => "."
+ *    File.dirname('/usr/lib/linux', 2)  # => "/usr"
+ *    File.dirname('/usr/lib/linux', 20) # => "/"
+ *    File.dirname('/usr/lib/linux', 0)  # => "/usr/lib/linux"
  *
- *  If +level+ is given, removes the last +level+ components, not only
- *  one.
+ *  Components are delimited by File::SEPARATOR and, if non-+nil+, File::ALT_SEPARATOR.
  *
- *     File.dirname("/home/gumby/work/ruby.rb", 2) #=> "/home/gumby"
- *     File.dirname("/home/gumby/work/ruby.rb", 4) #=> "/"
  */
 
 static VALUE

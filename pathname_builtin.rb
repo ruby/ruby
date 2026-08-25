@@ -2045,6 +2045,8 @@ class Pathname    # * File *
   # Pathname('nosuch').basename         # => #<Pathname:nosuch>
   # ```
   #
+  # Components are delimited by File::SEPARATOR and, if non-+nil+, File::ALT_SEPARATOR.
+
   def dirname() self.class.new(File.dirname(@path)) end
 
   # :markup: markdown
