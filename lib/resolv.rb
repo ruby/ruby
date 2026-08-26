@@ -35,7 +35,7 @@ require 'rbconfig'
 class Resolv
 
   # The version string
-  VERSION = "0.7.1"
+  VERSION = "0.7.2"
 
   ##
   # Looks up the first IP address for +name+.
