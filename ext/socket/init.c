@@ -814,7 +814,7 @@ accept_blocking(void *data)
 }
 
 #ifdef RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_ACCEPT
-static VALUE rsock_s_accept_fiber_scheduler(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *length)
+static VALUE rsock_scheduler_socket_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *length)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler == Qnil) return Qundef;
@@ -852,7 +852,7 @@ rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
     int retry = 0, peer;
 
 #ifdef RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_ACCEPT
-    VALUE result = rsock_s_accept_fiber_scheduler(klass, io, sockaddr, len);
+    VALUE result = rsock_scheduler_socket_accept(klass, io, sockaddr, len);
     if (!UNDEF_P(result))
         return result;
 #endif
