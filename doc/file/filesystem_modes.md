@@ -149,17 +149,36 @@ File.chmod(07755, filepath)
 mode(filepath) # => "107755 -rwsr-sr-t"
 ```
 
-## File Type
+## \File Type
 
-| Octal    | Character | File Type         |
+The fifth- and sixth-from left octal digits in a mode represent a file type:
+
+| Octal    | Character | \File Type        |
 |----------|:---------:|-------------------|
-| `100000` |   `'-'`   | Regular file.     |
-| `040000` |   `'d'`   | Directory.        |
-| `120000` |   `'l'`   | Symbolic link.    |
-| `020000` |   `'c'`   | Character device. |
-| `060000` |   `'b'`   | Block device.     |
 | `010000` |   `'p'`   | Pipe.             |
+| `020000` |   `'c'`   | Character device. |
+| `040000` |   `'d'`   | Directory.        |
+| `060000` |   `'b'`   | Block device.     |
+| `100000` |   `'-'`   | Regular file.     |
+| `120000` |   `'l'`   | Symbolic link.    |
 | `140000` |   `'s'`   | Socket.           |
+
+Examples:
+
+```ruby
+File.mkfifo('/tmp/pipe', 0666)
+mode('/tmp/pipe')   # => "010664 prw-rw-r--"  # 01; pipe.
+mode('/dev/tty')    # => "020666 crw-rw-rw-"  # 02; character device.
+mode('doc/')        # => "040775 drwxrwxr-x"  # 04; directory.
+mode('/dev/loop0')  # => "060660 brw-rw----"  # 06; block device.
+mode('README.md')   # => "100664 -rw-rw-r--"  # 10; regular file.
+File.symlink('lib', '/tmp/link')
+mode('/tmp/link')   # => "120777 lrwxrwxrwx"  # 12; symbolic link.
+require 'socket'
+UNIXServer.new('/tmp/socket')
+mode('/tmp/socket') # => "140775 srwxrwxr-x"  # 14; socket.
+File.unlink('/tmp/pipe', '/tmp/link' ,'/tmp/socket')
+```
 
 ## Helper Method
 
