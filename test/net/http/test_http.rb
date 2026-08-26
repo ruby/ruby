@@ -1171,6 +1171,48 @@ class TestNetHTTPSwitchingProtocols < Test::Unit::TestCase
   end
 end
 
+class TestNetHTTPInformationalResponses < Test::Unit::TestCase
+  CONFIG = {
+    'host' => '127.0.0.1',
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+  }
+
+  include TestNetHTTPUtils
+
+  def mount_informational(count)
+    @server.mount('/info', proc {|req, res|
+      count.times { req.continue }
+      res.body = 'BODY'
+    })
+  end
+
+  def test_informational_responses
+    mount_informational 3
+    start {|http|
+      res = http.get('/info')
+      assert_equal('BODY', res.body)
+    }
+  end
+
+  def test_max_informational_responses
+    mount_informational Net::HTTPResponse::MAX_INFORMATIONAL_RESPONSES
+    start {|http|
+      res = http.get('/info')
+      assert_equal('BODY', res.body)
+    }
+  end
+
+  def test_too_many_informational_responses
+    mount_informational Net::HTTPResponse::MAX_INFORMATIONAL_RESPONSES + 1
+    start {|http|
+      assert_raise(Net::HTTPBadResponse) {
+        http.get('/info')
+      }
+    }
+  end
+end
+
 class TestNetHTTPKeepAlive < Test::Unit::TestCase
   CONFIG = {
     'host' => '127.0.0.1',

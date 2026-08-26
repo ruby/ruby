@@ -136,6 +136,10 @@ class Net::HTTPResponse
   # The maximum total size in bytes of the response header.
   MAX_RESPONSE_HEADER_LENGTH = 1024 * 1024 # 1 MiB
 
+  # The maximum number of informational (1xx) responses accepted before the
+  # final response.
+  MAX_INFORMATIONAL_RESPONSES = 100
+
   class << self
     # true if the response has a body.
     def body_permitted?
