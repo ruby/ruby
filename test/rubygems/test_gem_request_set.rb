@@ -354,6 +354,7 @@ ruby "0"
             a (1)
             b (1)
               a (~> 1.0)
+            b (3-x86_64-linux)
 
         PLATFORMS
           #{Gem::Platform::RUBY}
@@ -365,9 +366,23 @@ ruby "0"
 
     rs.load_gemdeps "gem.deps.rb"
 
+    assert_equal [dep("b")], rs.dependencies
+
     lock_set = rs.sets.find {|set| Gem::Resolver::LockSet === set }
     refute_nil lock_set, "LockSet should be created from GEM section"
-    assert_equal %w[a-1 b-1], lock_set.specs.map(&:full_name).sort
+    assert_equal %w[a-1 b-1 b-3], lock_set.specs.map(&:full_name).sort
+
+    expected = [
+      Gem::Platform::RUBY,
+      Gem::Platform::RUBY,
+      Gem::Platform.new("x86_64-linux"),
+    ]
+
+    assert_equal expected, lock_set.specs.sort_by(&:full_name).map(&:platform)
+
+    spec = lock_set.specs.find {|s| s.full_name == "b-1" }
+
+    assert_equal [dep("a", "~> 1.0")], spec.dependencies
   end
 
   def test_load_gemdeps_with_lockfile_git_section
@@ -383,7 +398,9 @@ ruby "0"
           remote: git://example/a.git
           revision: deadbeef
           specs:
-            a (1)
+            a (2)
+              b (>= 3)
+              c
 
         PLATFORMS
           #{Gem::Platform::RUBY}
@@ -395,9 +412,42 @@ ruby "0"
 
     rs.load_gemdeps "gem.deps.rb"
 
+    assert_equal [dep("a", "= 2")], rs.dependencies
+
     git_set = rs.sets.find {|set| Gem::Resolver::GitSet === set }
     refute_nil git_set, "GitSet should be created from GIT section"
-    assert_includes git_set.specs.keys, "a"
+    assert_equal %w[a-2], git_set.specs.values.map(&:full_name)
+
+    assert_equal [dep("b", ">= 3"), dep("c")],
+                 git_set.specs.values.first.dependencies
+  end
+
+  def test_load_gemdeps_with_lockfile_git_section_prerelease
+    rs = Gem::RequestSet.new
+
+    File.open "gem.deps.rb", "w" do |io|
+      io.puts 'gem "a", :git => "git://example/a.git"'
+    end
+
+    File.open "gem.deps.rb.lock", "w" do |io|
+      io.puts <<~LOCKFILE
+        GIT
+          remote: git://example/a.git
+          revision: deadbeef
+          specs:
+            a (1.0.0.pre1)
+
+        PLATFORMS
+          #{Gem::Platform::RUBY}
+
+        DEPENDENCIES
+          a!
+      LOCKFILE
+    end
+
+    rs.load_gemdeps "gem.deps.rb"
+
+    assert_equal [dep("a", "= 1.0.0.pre1")], rs.dependencies
   end
 
   def test_load_gemdeps_with_lockfile_path_section
@@ -426,9 +476,44 @@ ruby "0"
 
     rs.load_gemdeps "gem.deps.rb"
 
+    assert_equal [dep("a", "= 1")], rs.dependencies
+
     vendor_set = rs.sets.find {|set| Gem::Resolver::VendorSet === set }
     refute_nil vendor_set, "VendorSet should be created from PATH section"
     assert_equal %w[a-1], vendor_set.specs.values.map(&:full_name)
+  end
+
+  def test_load_gemdeps_with_lockfile_path_section_newer_than_lockfile
+    _, _, directory = vendor_gem "a", 2
+
+    rs = Gem::RequestSet.new
+
+    File.open "gem.deps.rb", "w" do |io|
+      io.puts "gem \"a\", :path => #{directory.inspect}"
+    end
+
+    File.open "gem.deps.rb.lock", "w" do |io|
+      io.puts <<~LOCKFILE
+        PATH
+          remote: #{directory}
+          specs:
+            a (1)
+
+        PLATFORMS
+          #{Gem::Platform::RUBY}
+
+        DEPENDENCIES
+          a!
+      LOCKFILE
+    end
+
+    rs.load_gemdeps "gem.deps.rb"
+
+    assert_equal [dep("a", "= 2")], rs.dependencies
+
+    vendor_set = rs.sets.find {|set| Gem::Resolver::VendorSet === set }
+    assert_equal %w[a-2], vendor_set.specs.values.map(&:full_name)
+    assert_equal %w[a-2], vendor_set.find_all(dep("a", "= 2")).map(&:full_name)
   end
 
   def test_load_gemdeps_with_missing_lockfile
