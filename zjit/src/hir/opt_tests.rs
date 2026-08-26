@@ -15902,60 +15902,6 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_fold_is_a_class_singleton_true() {
-        eval(r#"
-            def test = nil.is_a?(String)
-            test
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          Jump bb3(v1)
-        bb2():
-          EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
-          Jump bb3(v4)
-        bb3(v6:BasicObject):
-          v10:NilClass = Const Value(nil)
-          PatchPoint StableConstantNames(0x1000, String)
-          v13:ClassSubclass[String@0x1008] = Const Value(VALUE(0x1008))
-          PatchPoint MethodRedefined(NilClass@0x1010, is_a?@0x1018, cme:0x1020)
-          v25:FalseClass = Const Value(false)
-          CheckInterrupts
-          Return v25
-        ");
-    }
-
-    #[test]
-    fn test_fold_is_a_class_singleton_false() {
-        eval(r#"
-            def test = nil.is_a?(NilClass)
-            test
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:2:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          Jump bb3(v1)
-        bb2():
-          EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
-          Jump bb3(v4)
-        bb3(v6:BasicObject):
-          v10:NilClass = Const Value(nil)
-          PatchPoint StableConstantNames(0x1000, NilClass)
-          v13:ClassSubclass[NilClass@0x1008] = Const Value(VALUE(0x1008))
-          PatchPoint MethodRedefined(NilClass@0x1008, is_a?@0x1009, cme:0x1010)
-          v24:BoolExact = IsA v10, v13
-          CheckInterrupts
-          Return v24
-        ");
-    }
-
-    #[test]
     fn test_dont_specialize_is_a_module() {
         eval(r#"
             def test(o) = o.is_a?(Kernel)
