@@ -120,6 +120,44 @@ class TestFiberScheduler < Test::Unit::TestCase
     assert_equal "Scheduler must implement #fiber_interrupt", error.message
   end
 
+  def test_rejects_legacy_io_read_argument_order
+    scheduler = Scheduler.new
+
+    def scheduler.io_read(_io, _buffer, length, _offset)
+      length
+    end
+
+    error = assert_raise(ArgumentError) do
+      Fiber.set_scheduler scheduler
+    end
+
+    assert_equal(
+      "Scheduler#io_read uses the obsolete (io, buffer, length, offset) argument order; use (io, buffer, offset, length)",
+      error.message
+    )
+  ensure
+    scheduler&.close unless scheduler&.closed?
+  end
+
+  def test_rejects_legacy_io_write_argument_order
+    scheduler = Scheduler.new
+
+    def scheduler.io_write(_io, _buffer, length, _offset)
+      length
+    end
+
+    error = assert_raise(ArgumentError) do
+      Fiber.set_scheduler scheduler
+    end
+
+    assert_equal(
+      "Scheduler#io_write uses the obsolete (io, buffer, length, offset) argument order; use (io, buffer, offset, length)",
+      error.message
+    )
+  ensure
+    scheduler&.close unless scheduler&.closed?
+  end
+
   def test_current_scheduler
     thread = Thread.new do
       scheduler = Scheduler.new

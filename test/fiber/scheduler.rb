@@ -406,6 +406,8 @@ class IOScheduler < Scheduler
   end
 
   def io_write(io, buffer, offset, length)
+    return 0 if length == 0
+
     descriptor = io.fileno
     string = buffer.get_string(offset, length)
 

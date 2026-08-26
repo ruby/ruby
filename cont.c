@@ -2605,7 +2605,9 @@ rb_fiber_current_scheduler(VALUE klass)
  *  properly manage all non-finished fibers).
  *
  *  +scheduler+ can be an object of any class corresponding to Fiber::Scheduler. Its
- *  implementation is up to the user.
+ *  implementation is up to the user. If the scheduler implements +io_read+ or
+ *  +io_write+ using the obsolete <tt>(io, buffer, length, offset)</tt> argument
+ *  order, this method raises ArgumentError.
  *
  *  See also the "Non-blocking fibers" section in class docs.
  *

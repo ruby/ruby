@@ -10,6 +10,7 @@
 
 #include "vm_core.h"
 #include "eval_intern.h"
+#include "internal/io.h"
 #include "ruby/fiber/scheduler.h"
 #include "ruby/io.h"
 #include "ruby/io/buffer.h"
@@ -378,6 +379,129 @@ rb_fiber_scheduler_get(void)
     return thread->scheduler;
 }
 
+struct fiber_scheduler_io_order_probe {
+    VALUE scheduler;
+    VALUE io;
+    VALUE buffer;
+    ID operation;
+    int pipes[2];
+    char storage;
+};
+
+static VALUE
+fiber_scheduler_io_order_probe_ensure(VALUE _argument)
+{
+    struct fiber_scheduler_io_order_probe *probe = (void *)_argument;
+    int state = 0;
+
+    if (probe->buffer != Qnil) {
+        rb_io_buffer_free_locked(probe->buffer);
+        probe->buffer = Qnil;
+    }
+
+    if (probe->io != Qnil) {
+        rb_protect(rb_io_close, probe->io, &state);
+        probe->io = Qnil;
+    }
+
+    for (int index = 0; index < 2; index++) {
+        if (probe->pipes[index] >= 0) {
+            close(probe->pipes[index]);
+            probe->pipes[index] = -1;
+        }
+    }
+
+    if (state) rb_jump_tag(state);
+
+    return Qnil;
+}
+
+static VALUE
+fiber_scheduler_io_order_probe(VALUE _argument)
+{
+    struct fiber_scheduler_io_order_probe *probe = (void *)_argument;
+
+    if (rb_pipe(probe->pipes) < 0) {
+        rb_sys_fail("pipe");
+    }
+
+    enum rb_io_mode mode;
+    enum rb_io_buffer_flags flags;
+    int descriptor;
+
+    if (probe->operation == id_io_read) {
+        ssize_t result;
+
+        do {
+            result = write(probe->pipes[1], &probe->storage, 1);
+        } while (result < 0 && errno == EINTR);
+
+        if (result < 0) {
+            rb_sys_fail("write");
+        }
+        else if (result != 1) {
+            rb_raise(rb_eIOError, "Failed to prepare scheduler interface probe");
+        }
+
+        descriptor = probe->pipes[1];
+        probe->pipes[1] = -1;
+        close(descriptor);
+
+        descriptor = probe->pipes[0];
+        probe->pipes[0] = -1;
+        mode = FMODE_READABLE;
+        flags = 0;
+    }
+    else {
+        descriptor = probe->pipes[1];
+        probe->pipes[1] = -1;
+        mode = FMODE_WRITABLE;
+        flags = RB_IO_BUFFER_READONLY;
+    }
+
+    probe->io = rb_io_open_descriptor(rb_cIO, descriptor, mode, Qnil, Qnil, NULL);
+    probe->buffer = rb_io_buffer_new_locked(&probe->storage, 1, flags);
+
+    // In the current order, this is a zero-length operation at the end of the
+    // buffer and returns 0. In the obsolete order, it is a one-byte operation
+    // at offset 0 and returns 1.
+    VALUE arguments[] = {
+        probe->io, probe->buffer, INT2FIX(1), INT2FIX(0)
+    };
+
+    return rb_funcallv(probe->scheduler, probe->operation, 4, arguments);
+}
+
+static void
+verify_io_argument_order(VALUE scheduler, ID operation)
+{
+    // TODO: Remove this legacy argument-order check during the Ruby 4.2
+    // development cycle.
+    if (!rb_respond_to(scheduler, operation)) return;
+
+    struct fiber_scheduler_io_order_probe probe = {
+        .scheduler = scheduler,
+        .io = Qnil,
+        .buffer = Qnil,
+        .operation = operation,
+        .pipes = {-1, -1},
+        .storage = '0',
+    };
+
+    VALUE result = rb_ensure(
+        fiber_scheduler_io_order_probe, (VALUE)&probe,
+        fiber_scheduler_io_order_probe_ensure, (VALUE)&probe
+    );
+
+    if (result == INT2FIX(1)) {
+        rb_raise(
+            rb_eArgError,
+            "Scheduler#%s uses the obsolete (io, buffer, length, offset) argument order; use (io, buffer, offset, length)",
+            rb_id2name(operation)
+        );
+    }
+}
+
 static void
 verify_interface(VALUE scheduler)
 {
@@ -400,6 +524,9 @@ verify_interface(VALUE scheduler)
     if (!rb_respond_to(scheduler, id_fiber_interrupt)) {
         rb_raise(rb_eArgError, "Scheduler must implement #fiber_interrupt");
     }
+
+    verify_io_argument_order(scheduler, id_io_read);
+    verify_io_argument_order(scheduler, id_io_write);
 }
 
 static VALUE
