@@ -602,6 +602,10 @@ impl Type {
         if let Some(val) = self.exact_ruby_class() {
             return Some(val);
         }
+        // As in `ruby_object`, we ask not for the type but for a property of the values it
+        // describes. Empty is a subtype of every Type, so the scan below would report the first
+        // entry's class, but Empty describes no value and therefore no run-time class.
+        if self.is_subtype(types::Empty) { return None; }
         types::ExactBitsAndClass
             .iter()
             .find(|&(bits, _)| self.is_subtype(Type::from_bits(*bits)))
@@ -857,6 +861,18 @@ mod tests {
         assert_eq!(types::TrueClass.ruby_object(), Some(Qtrue));
         assert_eq!(Type::from_value(Qfalse).ruby_object(), Some(Qfalse));
         assert_eq!(types::FalseClass.ruby_object(), Some(Qfalse));
+    }
+
+    #[test]
+    fn empty_has_no_ruby_object() {
+        // Empty is a subtype of every type, but has no value.
+        assert_eq!(types::Empty.ruby_object(), None);
+        assert_eq!(types::Empty.fixnum_value(), None);
+        assert_eq!(types::Empty.runtime_exact_ruby_class(), None);
+        assert_eq!(types::Empty.cint64_value(), None);
+        assert_eq!(types::Empty.exact_ruby_class(), None);
+        assert_eq!(types::Empty.inexact_ruby_class(), None);
+        assert_eq!(types::Empty.builtin_type_equivalent(), None);
     }
 
     #[test]

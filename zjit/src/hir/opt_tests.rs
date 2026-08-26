@@ -1732,6 +1732,49 @@ mod hir_opt_tests {
         ");
     }
 
+    // `m`'s else branch is profiled with Fixnums, so it gets specialized to FixnumAdd. Once `m` is
+    // inlined into `test`, where `x` is known to be nil, that branch becomes statically
+    // unreachable: infer_types skips it and its instructions keep the `Empty` type. Later passes
+    // still walk the block, so `Empty` must not masquerade as a known Ruby object (`nil`) --
+    // folding FixnumAdd would then call `as_fixnum` on `nil` and panic.
+    #[test]
+    fn test_fixnum_add_in_unreachable_block_after_inlining() {
+        eval("
+            def m(x)
+              if x.nil?
+                0
+              else
+                x + 1
+              end
+            end
+            def test = m(nil)
+            m(1); m(2)
+            test; test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Object@0x1000, m@0x1008, cme:0x1010)
+          v20:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame :m, v20 (0x1038), num_args=1
+          PatchPoint MethodRedefined(NilClass@0x1060, nil?@0x1068, cme:0x1070)
+          v52:Fixnum[0] = Const Value(0)
+          CheckInterrupts
+          v84:Fixnum[0] = Const Value(0)
+          PopInlineFrame
+          Return v84
+        ");
+    }
+
     #[test]
     fn test_optimize_send_to_aliased_cfunc() {
         eval("
@@ -8671,11 +8714,11 @@ mod hir_opt_tests {
           v5:BasicObject = LoadArg :self@0
           Jump bb3(v5)
         bb3(v8:BasicObject):
-          v38:NilClass = Const Value(nil)
-          v40:NilClass = Const Value(nil)
-          v39:NilClass = Const Value(nil)
+          v35:NilClass = Const Value(nil)
+          v37:NilClass = Const Value(nil)
+          v36:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v40
+          Return v37
         ");
     }
 
