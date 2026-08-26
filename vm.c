@@ -3452,6 +3452,8 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_yjit_free_at_exit();
 #endif
         }
+
+        rb_box_unload_local_extensions();
     }
     RUBY_FREE_LEAVE("vm");
     return 0;
