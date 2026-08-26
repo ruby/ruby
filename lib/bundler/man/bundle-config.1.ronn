@@ -324,8 +324,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    the cached `.gem` files and the git mirrors. `git` removes the `.git`
    directory of every checked out git gem. `all` selects both. Everything
    removed is rebuilt by the next `bundle install`, so this is meant for
-   container images and other throwaway environments. Note that `bundle
-   pristine` cannot restore a gem whose cached `.gem` file was removed.
+   container images and other throwaway environments. `bundle install
+   --redownload` downloads a pruned gem again, and `bundle pristine` works once
+   it has.
 * `redirect` (`BUNDLE_REDIRECT`):
    The number of redirects allowed for network requests. Defaults to `5`.
 * `retry` (`BUNDLE_RETRY`):

@@ -50,6 +50,26 @@ RSpec.describe "the prune setting" do
       expect(the_bundle).to include_gems "myrack 1.0.0", "thin 1.0"
     end
 
+    it "downloads a pruned gem again when it is reinstalled" do
+      bundle "install", env: { "BUNDLE_PRUNE" => "cache" }
+      expect(vendored_gems("cache")).not_to exist
+
+      bundle "install --redownload"
+
+      expect(out).to include("Fetching myrack 1.0.0")
+      expect(vendored_gems("cache/myrack-1.0.0.gem")).to exist
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
+    it "prunes again after reinstalling with the setting still on" do
+      bundle "install", env: { "BUNDLE_PRUNE" => "cache" }
+
+      bundle "install --redownload", env: { "BUNDLE_PRUNE" => "cache" }
+
+      expect(vendored_gems("cache")).not_to exist
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
     it "warns about unknown categories and prunes the known ones" do
       bundle "install", env: { "BUNDLE_PRUNE" => "cache:ext" }
 
