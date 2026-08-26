@@ -29,6 +29,7 @@ module Bundler
       options["local"] = false if Bundler.settings[:cache_all_platforms]
       options["no-cache"] = true
       options["skip-prune"] = true
+      options["cache-archives"] = true
       Bundler::CLI::Install.new(options).run
     end
   end

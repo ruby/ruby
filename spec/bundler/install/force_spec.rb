@@ -36,6 +36,15 @@ RSpec.describe "bundle install" do
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
+    it "reinstalls from the cache when the lockfile carries other platforms" do
+      bundle :install
+      bundle "lock --add-platform x86_64-linux"
+      bundle :install, flag => true
+
+      expect(out).not_to include "Fetching gem metadata"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
     it "downloads the gem again when the cache no longer holds it" do
       bundle :install
       FileUtils.rm_rf(default_bundle_path("cache"))

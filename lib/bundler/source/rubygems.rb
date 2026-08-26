@@ -235,7 +235,7 @@ module Bundler
       end
 
       def cache(spec, custom_path = nil)
-        cached_path = Bundler.settings[:cache_all_platforms] ? fetch_gem_if_possible(spec) : cached_gem(spec)
+        cached_path = fetch_gem_if_possible(spec)
         raise GemNotFound, "Missing gem file '#{spec.file_name}'." unless cached_path
         return if File.dirname(cached_path) == Bundler.app_cache.to_s
         Bundler.ui.info "  * #{File.basename(cached_path)}"
@@ -473,13 +473,15 @@ module Bundler
       # An installed gem materializes without a remote, so a reinstall forced by
       # `--redownload` has to look the gem up in the remote index again before it
       # can download the archive that the cache no longer holds.
-      def refetch_gem(spec, previous_spec)
+      def refetch_gem(spec, previous_spec = nil)
         return unless @allow_remote
 
-        remote_spec = remote_specs.search(spec.name).find {|s| s.full_name == spec.full_name }
-        return unless remote_spec
+        remote_spec = remote_spec_for(spec)
+        return unless remote_spec && remote_spec.full_name == spec.full_name
 
-        fetch_gem(remote_spec, previous_spec)
+        path = fetch_gem(remote_spec, previous_spec)
+        spec.remote = remote_spec.remote
+        path
       end
 
       def fetch_gem(spec, previous_spec = nil)
