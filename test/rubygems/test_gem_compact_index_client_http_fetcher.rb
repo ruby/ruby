@@ -52,7 +52,10 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
       request = request_class.new(uri)
       yield request if block_given?
       @requests << [uri, request]
-      @responses.fetch(uri.to_s)
+      response = @responses.fetch(uri.to_s)
+      # A mapped exception stands in for a connection that never produced a response.
+      raise response if response.is_a?(Exception)
+      response
     end
   end
 
@@ -121,6 +124,45 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
 
     assert_match(%r{redirecting to non-https resource: http://mirror\.example/versions}, error.message)
     assert_equal 1, remote.requests.size
+  end
+
+  def test_call_wraps_connection_refused_in_fetch_error
+    fetcher, remote = fetcher_for(
+      "https://index.example/versions" => Errno::ECONNREFUSED.new("Connection refused")
+    )
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    assert_match(/Errno::ECONNREFUSED/, error.message)
+    assert_equal 1, remote.requests.size
+  end
+
+  def test_call_wraps_ssl_error_in_fetch_error
+    pend "OpenSSL is unavailable" unless Gem::HAVE_OPENSSL
+
+    fetcher, _remote = fetcher_for(
+      "https://index.example/versions" => OpenSSL::SSL::SSLError.new("certificate verify failed")
+    )
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    assert_match(/OpenSSL::SSL::SSLError/, error.message)
+  end
+
+  def test_call_wraps_socket_error_in_fetch_error
+    fetcher, _remote = fetcher_for(
+      "https://index.example/versions" => SocketError.new("getaddrinfo: Name or service not known")
+    )
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    assert_match(/SocketError/, error.message)
   end
 
   def test_call_follows_redirects_from_an_http_source
