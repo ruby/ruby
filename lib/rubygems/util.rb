@@ -92,6 +92,26 @@ module Gem::Util
   end
 
   ##
+  # Duplicates +obj+ without Marshal, which cannot resolve Gem:: constants from
+  # the root box under Ruby::Box (RUBY_BOX=1). Hashes and arrays are copied
+  # recursively, anything else with a plain +dup+, so an object's internals stay
+  # shared with the original, as are hash keys. Shared references are not
+  # preserved, and a cyclic +obj+ raises SystemStackError.
+
+  def self.deep_dup(obj) # :nodoc:
+    case obj
+    when Hash then obj.to_h {|k, v| [k, deep_dup(v)] }
+    when Array then obj.map {|e| deep_dup(e) }
+    else
+      begin
+        obj.dup
+      rescue TypeError
+        obj
+      end
+    end
+  end
+
+  ##
   # Corrects +path+ (usually returned by `Gem::URI.parse().path` on Windows), that
   # comes with a leading slash.
 

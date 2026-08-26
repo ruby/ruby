@@ -252,8 +252,8 @@ class Gem::ConfigFile
     @use_psych = ENV["RUBYGEMS_USE_PSYCH"] == "true" || DEFAULT_USE_PSYCH
     @credential_store = normalize_credential_store(ENV["RUBYGEMS_CREDENTIAL_STORE"], DEFAULT_CREDENTIAL_STORE)
 
-    operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
-    platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
+    operating_system_config = Gem::Util.deep_dup(OPERATING_SYSTEM_DEFAULTS)
+    platform_config = Gem::Util.deep_dup(PLATFORM_DEFAULTS)
     system_config = load_file SYSTEM_WIDE_CONFIG_FILE
     user_config = load_file config_file_name
 
