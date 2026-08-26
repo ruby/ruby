@@ -845,12 +845,13 @@ static VALUE rsock_scheduler_socket_accept(VALUE klass, VALUE io, struct sockadd
 
     *length = (socklen_t)rb_fiber_scheduler_socket_address_unpack(peer_address, sockaddr, (size_t)*length);
 
-    int fd = NUM2INT(peer);
+    int descriptor = NUM2INT(peer);
 
-    rb_update_max_fd(fd);
+    rb_fd_fix_cloexec(descriptor);
+    rsock_make_fd_nonblock(descriptor);
 
     if (!klass) return peer;
-    return rsock_init_sock(rb_obj_alloc(klass), fd);
+    return rsock_init_sock(rb_obj_alloc(klass), descriptor);
 }
 #endif
 

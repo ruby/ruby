@@ -509,7 +509,7 @@ class SocketIOScheduler < Scheduler
       connection, accepted_peer_address = socket_wrapper.accept
       peer_address.replace(accepted_peer_address.to_s)
       self.operations << [:socket_accept, descriptor, accepted_peer_address.to_s]
-      # Prevent connection from closing its file descriptor on GC; the C side will own it.
+      # Returning the descriptor transfers ownership to the C side.
       connection.autoclose = false
       connection.fileno
     end

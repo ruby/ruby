@@ -552,7 +552,9 @@ VALUE rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE des
  * @param[in]   peer_address  A mutable String to receive the peer's packed sockaddr.
  *                            The scheduler fills it by calling `peer_address.replace(packed_sockaddr)`.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_accept`.
- * @return      otherwise    What `scheduler.socket_accept` returns (peer fd or -errno).
+ * @return      otherwise    What `scheduler.socket_accept` returns (peer descriptor or -errno).
+ *                            Returning a nonnegative file descriptor transfers ownership to Ruby;
+ *                            the scheduler must not subsequently close it.
  */
 VALUE rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE socket, VALUE peer_address);
 

@@ -1127,8 +1127,14 @@ rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE destinati
  *  call #io_wait if the +socket+ is not ready (which will yield control to other
  *  fibers).
  *
- *  Expected to return the accepted fd if successful, or, in case of an error,
- *  <tt>-errno</tt> (negated number corresponding to system's error code).
+ *  Expected to return the accepted file descriptor if successful, or, in case
+ *  of an error, <tt>-errno</tt> (negated number corresponding to system's error
+ *  code).
+ *
+ *  Returning a nonnegative file descriptor transfers ownership to Ruby. The
+ *  scheduler must not subsequently close it. Ruby ensures that the descriptor
+ *  is nonblocking and close-on-exec, but implementations should set those flags
+ *  atomically when accepting the connection if the platform supports it.
  *
  *  The method should be considered _experimental_.
  */

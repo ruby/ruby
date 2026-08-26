@@ -15,6 +15,17 @@ class TestFiberScheduler < Test::Unit::TestCase
     end
   end
 
+  class UnnormalizedSocketAcceptScheduler < SocketIOScheduler
+    def socket_accept(socket, peer_address)
+      descriptor = super
+      connection = Socket.for_fd(descriptor)
+      connection.autoclose = false
+      connection.nonblock = false if connection.respond_to?(:nonblock=)
+      connection.close_on_exec = false if connection.respond_to?(:close_on_exec=)
+      return descriptor
+    end
+  end
+
   def test_fiber_without_scheduler
     # Cannot create fiber without scheduler.
     assert_raise RuntimeError do
@@ -711,7 +722,7 @@ class TestFiberScheduler < Test::Unit::TestCase
     addr = nil
 
     thread = Thread.new do
-      scheduler = SocketIOScheduler.new
+      scheduler = UnnormalizedSocketAcceptScheduler.new
       Fiber.set_scheduler scheduler
 
       Fiber.schedule do
@@ -727,11 +738,45 @@ class TestFiberScheduler < Test::Unit::TestCase
     ], operations
     assert_kind_of Socket, conn
     assert_equal client_addr.to_s, addr.to_s
+    assert_predicate conn, :nonblock? if conn.respond_to?(:nonblock?)
+    assert_predicate conn, :close_on_exec? if conn.respond_to?(:close_on_exec?)
   ensure
     thread.kill rescue nil
     server.close rescue nil
     client&.close rescue nil
     conn&.close rescue nil
+  end
+
+  def test_socket_sysaccept_normalizes_descriptor_flags
+    server = Socket.new(:INET, :STREAM, 0)
+    server.bind(Addrinfo.tcp('127.0.0.1', 0))
+    server.listen(5)
+
+    client = Socket.new(:INET, :STREAM, 0)
+    client.connect(server.connect_address)
+
+    descriptor = nil
+    peer_address = nil
+
+    thread = Thread.new do
+      scheduler = UnnormalizedSocketAcceptScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        descriptor, peer_address = server.sysaccept
+      end
+    end
+
+    thread.join
+    connection = Socket.for_fd(descriptor)
+    assert_equal client.local_address.to_s, peer_address.to_s
+    assert_predicate connection, :nonblock? if connection.respond_to?(:nonblock?)
+    assert_predicate connection, :close_on_exec? if connection.respond_to?(:close_on_exec?)
+  ensure
+    thread.kill rescue nil
+    server.close rescue nil
+    client&.close rescue nil
+    connection&.close rescue nil
   end
 
   def test_socket_accept_tcpserver
