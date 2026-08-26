@@ -431,7 +431,8 @@ RHASH_AR_TABLE_MAX_BOUND(VALUE h)
 #define RHASH_AR_TABLE_MISS RHASH_AR_TABLE_MAX_SIZE
 
 #define RHASH_AR_TABLE_REF(hash, n) (&RHASH_AR_TABLE(hash)->pairs[n])
-#define RHASH_AR_CLEARED_HINT 0xff
+#define RHASH_AR_CLEARED_HINT 0x00
+#define RHASH_AR_SUBSTITUTION_HINT 0x01
 
 static inline st_hash_t
 ar_do_hash(VALUE hash, st_data_t key)
@@ -445,7 +446,8 @@ ar_do_hash(VALUE hash, st_data_t key)
 static inline ar_hint_t
 ar_do_hash_hint(st_hash_t hash_value)
 {
-    return (ar_hint_t)hash_value;
+    ar_hint_t hint = (ar_hint_t)hash_value;
+    return hint == RHASH_AR_CLEARED_HINT ? RHASH_AR_SUBSTITUTION_HINT : hint;
 }
 
 static inline ar_hint_t
@@ -474,19 +476,10 @@ ar_clear_entry(VALUE hash, unsigned int index)
     ar_hint_set_hint(hash, index, RHASH_AR_CLEARED_HINT);
 }
 
-static inline int
+static inline bool
 ar_cleared_entry(VALUE hash, unsigned int index)
 {
-    if (ar_hint(hash, index) == RHASH_AR_CLEARED_HINT) {
-        /* RHASH_AR_CLEARED_HINT is only a hint, not mean cleared entry,
-         * so you need to check key == Qundef
-         */
-        ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, index);
-        return UNDEF_P(pair->key);
-    }
-    else {
-        return FALSE;
-    }
+    return ar_hint(hash, index) == RHASH_AR_CLEARED_HINT;
 }
 
 static inline void

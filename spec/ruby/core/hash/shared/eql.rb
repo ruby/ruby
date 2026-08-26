@@ -32,8 +32,8 @@ describe :hash_eql, shared: true do
     x.should_not_receive(:eql?)
     y.should_not_receive(:eql?)
 
-    x.should_receive(:hash).any_number_of_times.and_return(0)
-    y.should_receive(:hash).any_number_of_times.and_return(1)
+    x.should_receive(:hash).any_number_of_times.and_return(5)
+    y.should_receive(:hash).any_number_of_times.and_return(6)
 
     { x => 1 }.send(@method, { y => 1 }).should == false
   end
