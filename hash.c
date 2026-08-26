@@ -654,7 +654,7 @@ ar_hint_first_match(ar_hint_t needle, VALUE haystack)
 {
     // Common SWAR technique.
     // First XOR all bytes so that matching ones are set to 0x00.
-    VALUE search_mask = AR_HINT_BASE_MASK * needle;
+    VALUE search_mask = (VALUE)AR_HINT_BASE_MASK * needle;
     VALUE matches = haystack ^ search_mask;
 
     // Then turns 0x00 into 0x80, and any other bytes into 0x00.
