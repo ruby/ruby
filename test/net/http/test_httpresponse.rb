@@ -113,6 +113,64 @@ EOS
     assert_equal 'hello', body
   end
 
+  def test_read_body_invalid_content_length
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: abc5
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    assert_raise(Net::HTTPHeaderSyntaxError) do
+      res.reading_body io, true do
+        res.read_body
+      end
+    end
+  end
+
+  def test_read_body_multiple_different_content_length
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: 5
+Content-Length: 100
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    assert_raise(Net::HTTPHeaderSyntaxError) do
+      res.reading_body io, true do
+        res.read_body
+      end
+    end
+  end
+
+  def test_read_body_multiple_same_content_length
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: 5
+Content-Length: 5
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal 'hello', body
+  end
+
   def test_read_body_body_encoding_false
     body = "hello\u1234"
     io = dummy_io(<<EOS)

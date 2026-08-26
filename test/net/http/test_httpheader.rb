@@ -396,17 +396,53 @@ class HTTPHeaderTest < Test::Unit::TestCase
     try_content_length 500, '500'
     try_content_length 10000_0000_0000, '1000000000000'
     try_content_length 123, '  123'
-    try_content_length 1,   '1 23'
-    try_content_length 500, '(OK)500'
-    assert_raise(Net::HTTPHeaderSyntaxError, 'here is no digit, but') {
-      @c['content-length'] = 'no digit'
-      @c.content_length
-    }
+
+    # Same values in one Content-Length field are accepted.
+    # See: https://www.rfc-editor.org/rfc/rfc9110.html#section-8.6-13
+    try_content_length 5, '5, 5'
+
+    # Same values in multiple Content-Length fields are accepted.
+    # See: https://www.rfc-editor.org/rfc/rfc9110.html#section-8.6-13
+    @c.delete('content-length')
+    @c.add_field('content-length', '7')
+    @c.add_field('content-length', '7')
+    assert_equal 7, @c.content_length
   end
 
   def try_content_length(len, str)
     @c['content-length'] = str
     assert_equal len, @c.content_length
+  end
+
+  def test_content_length_invalid
+    try_invalid_content_length ''
+    try_invalid_content_length '1 23'
+    try_invalid_content_length '(OK)500'
+    try_invalid_content_length 'no digit'
+    try_invalid_content_length 'abc5'
+    try_invalid_content_length '5abc'
+    try_invalid_content_length '5, 6'
+
+    @c.delete('content-length')
+    @c.add_field('content-length', '7')
+    @c.add_field('content-length', '8')
+    assert_raise(Net::HTTPHeaderSyntaxError) {
+      @c.content_length
+    }
+
+    @c.delete('content-length')
+    @c.add_field('content-length', '5')
+    @c.add_field('content-length', '')
+    assert_raise(Net::HTTPHeaderSyntaxError) {
+      @c.content_length
+    }
+  end
+
+  def try_invalid_content_length(str)
+    @c['content-length'] = str
+    assert_raise(Net::HTTPHeaderSyntaxError, str) {
+      @c.content_length
+    }
   end
 
   def test_content_length=
