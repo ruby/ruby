@@ -166,12 +166,12 @@ udp_send_internal(VALUE v)
     for (res = arg->res->ai; res; res = res->ai_next) {
 #if defined(RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SEND) && defined(HAVE_RB_FIBER_SCHEDULER_SOCKET_ADDRESS_PACK)
         if (use_scheduler) {
-            VALUE destination = rb_fiber_scheduler_socket_address_pack(res->ai_addr, res->ai_addrlen);
+            VALUE destination_address = rb_fiber_scheduler_socket_address_pack(res->ai_addr, res->ai_addrlen);
             struct rsock_scheduler_socket_send_arguments arguments = {
                 .scheduler = scheduler,
                 .socket = fptr->self,
                 .flags = arg->sarg.flags,
-                .destination = destination,
+                .destination_address = destination_address,
             };
             VALUE result = rb_io_buffer_for_reading(arg->sarg.mesg, rsock_scheduler_socket_send, (VALUE)&arguments);
             if (UNDEF_P(result)) {

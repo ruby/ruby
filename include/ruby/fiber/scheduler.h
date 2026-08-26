@@ -510,11 +510,11 @@ VALUE rb_fiber_scheduler_fiber(VALUE scheduler, int argc, VALUE *argv, int kw_sp
  * @param[in]   buffer       The buffer to send from. The scheduler should send
  *                           at most `buffer.size` bytes.
  * @param[in]   flags        The flags to use for sending.
- * @param[in]   destination  Optional send destination.
+ * @param[in]   destination_address  Optional packed destination address.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_send`.
  * @return      otherwise    What `scheduler.socket_send` returns `[-errno, size]`.
  */
-VALUE rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE destination);
+VALUE rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE destination_address);
 
 /**
  * Non-blocking single recv operation from the passed Socket.
@@ -524,36 +524,36 @@ VALUE rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer
  * @param[in]   buffer       The buffer to receive into. The scheduler should
  *                           receive at most `buffer.size` bytes.
  * @param[in]   flags        The flags to use for receiving.
- * @param[in]   from         A mutable String to receive the source address into,
- *                           or Qnil if the source address is not needed.
- *                           The scheduler fills it by calling `from.replace(packed_sockaddr)`.
+ * @param[in]   source_address  A mutable String to receive the source address into,
+ *                              or Qnil if the source address is not needed.
+ *                              The scheduler fills it by calling `source_address.replace(packed_sockaddr)`.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_recv`.
  * @return      otherwise    What `scheduler.socket_recv` returns (received byte count or -errno).
  */
-VALUE rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE from);
+VALUE rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE source_address);
 
 /**
  * Non-blocking connect with the passed Socket to the given address.
  *
  * @param[in]   scheduler    Target scheduler.
  * @param[in]   socket       A socket object to connect.
- * @param[in]   address      A packed string containing the destination addrinfo.
+ * @param[in]   destination_address  A packed string containing the destination address.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_connect`.
  * @return      otherwise    What `scheduler.socket_connect` returns `[-errno, 0]`.
  */
-VALUE rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE address);
+VALUE rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE destination_address);
 
 /**
  * Non-blocking accept connection from the passed Socket.
  *
  * @param[in]   scheduler    Target scheduler.
  * @param[in]   socket       A socket object to accept connections on.
- * @param[in]   address      A mutable String to receive the peer's packed sockaddr.
- *                           The scheduler fills it by calling `address.replace(packed_sockaddr)`.
+ * @param[in]   peer_address  A mutable String to receive the peer's packed sockaddr.
+ *                            The scheduler fills it by calling `peer_address.replace(packed_sockaddr)`.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_accept`.
  * @return      otherwise    What `scheduler.socket_accept` returns (peer fd or -errno).
  */
-VALUE rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE socket, VALUE address);
+VALUE rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE socket, VALUE peer_address);
 
 /**
  * Non-blocking shutdown of the passed Socket.

@@ -112,7 +112,7 @@ VALUE
 rsock_scheduler_socket_send(VALUE buffer, VALUE _argument)
 {
     struct rsock_scheduler_socket_send_arguments *arguments = (struct rsock_scheduler_socket_send_arguments *)_argument;
-    return rb_fiber_scheduler_socket_send(arguments->scheduler, arguments->socket, buffer, arguments->flags, arguments->destination);
+    return rb_fiber_scheduler_socket_send(arguments->scheduler, arguments->socket, buffer, arguments->flags, arguments->destination_address);
 }
 #endif
 
@@ -182,7 +182,7 @@ struct rsock_scheduler_socket_recv_arguments {
     VALUE scheduler;
     VALUE socket;
     int flags;
-    VALUE from;
+    VALUE source_address;
 };
 
 static VALUE
@@ -190,7 +190,7 @@ rsock_scheduler_socket_recv(VALUE buffer, VALUE _argument)
 {
     struct rsock_scheduler_socket_recv_arguments *arguments = (struct rsock_scheduler_socket_recv_arguments *)_argument;
     return rb_fiber_scheduler_socket_recv(arguments->scheduler, arguments->socket, buffer,
-                                          arguments->flags, arguments->from);
+                                          arguments->flags, arguments->source_address);
 }
 #endif
 
@@ -280,16 +280,16 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
     if (scheduler != Qnil) {
 #endif
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
-        int need_address = (from == RECV_IP) || (from == RECV_SOCKET) || (from == RECV_UNIX);
+        int needs_source_address = (from == RECV_IP) || (from == RECV_SOCKET) || (from == RECV_UNIX);
 #else
-        int need_address = (from == RECV_IP) || (from == RECV_SOCKET);
+        int needs_source_address = (from == RECV_IP) || (from == RECV_SOCKET);
 #endif
-        VALUE from_address = need_address ? rb_str_new(0, 0) : Qnil;
+        VALUE source_address = needs_source_address ? rb_str_new(0, 0) : Qnil;
         struct rsock_scheduler_socket_recv_arguments arguments = {
             .scheduler = scheduler,
             .socket = socket,
             .flags = arg.flags,
-            .from = from_address,
+            .source_address = source_address,
         };
         rb_str_resize(str, buflen);
         VALUE result = rb_io_buffer_for_writing(str, rsock_scheduler_socket_recv, (VALUE)&arguments);
@@ -299,11 +299,11 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
 
             rb_str_set_len(str, NUM2LONG(result));
 
-            if (need_address) {
-                if (!NIL_P(from_address) && RSTRING_LEN(from_address) > 0) {
+            if (needs_source_address) {
+                if (!NIL_P(source_address) && RSTRING_LEN(source_address) > 0) {
                     return rsock_recvfrom_result(socket, fptr, str, from,
-                                                 (struct sockaddr *)RSTRING_PTR(from_address),
-                                                 (socklen_t)RSTRING_LEN(from_address), 1);
+                                                 (struct sockaddr *)RSTRING_PTR(source_address),
+                                                 (socklen_t)RSTRING_LEN(source_address), 1);
                 }
                 return rsock_recvfrom_result(socket, fptr, str, from, NULL, 0, 0);
             }
@@ -686,8 +686,8 @@ rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, V
 #ifdef RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_CONNECT
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE address = rb_fiber_scheduler_socket_address_pack(sockaddr, len);
-        VALUE result = rb_fiber_scheduler_socket_connect(scheduler, fptr->self, address);
+        VALUE destination_address = rb_fiber_scheduler_socket_address_pack(sockaddr, len);
+        VALUE result = rb_fiber_scheduler_socket_connect(scheduler, fptr->self, destination_address);
         if (!UNDEF_P(result)) {
             if (rb_fiber_scheduler_io_result_apply(result) < 0)
                 rb_sys_fail("connect(2)");
@@ -819,14 +819,14 @@ static VALUE rsock_s_accept_fiber_scheduler(VALUE klass, VALUE io, struct sockad
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler == Qnil) return Qundef;
 
-    VALUE address = rb_str_new(0, 0);
-    VALUE peer = rb_fiber_scheduler_socket_accept(scheduler, io, address);
+    VALUE peer_address = rb_str_new(0, 0);
+    VALUE peer = rb_fiber_scheduler_socket_accept(scheduler, io, peer_address);
     if (UNDEF_P(peer)) return Qundef;
 
     if (rb_fiber_scheduler_io_result_apply(peer) < 0)
         rb_sys_fail("accept(2)");
 
-    *length = (socklen_t)rb_fiber_scheduler_socket_address_unpack(address, sockaddr, (size_t)*length);
+    *length = (socklen_t)rb_fiber_scheduler_socket_address_unpack(peer_address, sockaddr, (size_t)*length);
 
     int fd = NUM2INT(peer);
 

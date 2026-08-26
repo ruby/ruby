@@ -612,7 +612,7 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE socket)
             .scheduler = scheduler,
             .socket = socket,
             .flags = NUM2INT(flags),
-            .destination = to,
+            .destination_address = to,
         };
         VALUE result = rb_io_buffer_for_reading(arg.mesg, rsock_scheduler_socket_send, (VALUE)&arguments);
         if (!UNDEF_P(result)) {

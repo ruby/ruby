@@ -398,7 +398,7 @@ struct rsock_scheduler_socket_send_arguments {
     VALUE scheduler;
     VALUE socket;
     int flags;
-    VALUE destination;
+    VALUE destination_address;
 };
 
 VALUE rsock_scheduler_socket_send(VALUE buffer, VALUE argument);

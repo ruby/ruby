@@ -966,7 +966,7 @@ rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buf
 
 /*
  *  Document-method: Fiber::Scheduler#socket_recv
- *  call-seq: socket_recv(socket, buffer, flags, from = nil) -> received length or -errno
+ *  call-seq: socket_recv(socket, buffer, flags, source_address = nil) -> received length or -errno
  *
  *  Invoked by Socket#recv or Socket#recvfrom to receive bytes from +socket+
  *  into a specified +buffer+ (see IO::Buffer).
@@ -979,10 +979,10 @@ rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buf
  *  The +flags+ argument is the flag bit mask provided to the OS for the recv(2)
  *  operation.
  *
- *  The +from+ argument is either nil (when the source address is not needed) or
+ *  The +source_address+ argument is either nil (when the source address is not needed) or
  *  a mutable String placeholder (when performing a recvfrom operation). When
  *  non-nil, the implementation must fill it with the source address by calling
- *  <tt>from.replace(packed_sockaddr)</tt>.
+ *  <tt>source_address.replace(packed_sockaddr)</tt>.
  *
  *  Suggested implementation should try to receive from +socket+ in a non-blocking
  *  manner and call #io_wait if the +socket+ is not ready (which will yield
@@ -1003,14 +1003,14 @@ fiber_scheduler_socket_recv(VALUE _argument) {
 }
 
 VALUE
-rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE from)
+rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE source_address)
 {
     if (!rb_respond_to(scheduler, id_socket_recv)) {
         return RUBY_Qundef;
     }
 
     VALUE arguments[] = {
-        scheduler, socket, buffer, INT2NUM(flags), from
+        scheduler, socket, buffer, INT2NUM(flags), source_address
     };
 
     if (rb_respond_to(scheduler, id_fiber_interrupt)) {
@@ -1022,13 +1022,13 @@ rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer, int 
 
 /*
  *  Document-method: Fiber::Scheduler#socket_send
- *  call-seq: socket_send(socket, buffer, flags, destination = nil) -> written length or -errno
+ *  call-seq: socket_send(socket, buffer, flags, destination_address = nil) -> written length or -errno
  *
  *  Invoked by Socket#send to send bytes to +socket+ from a specified +buffer+
  *  (see IO::Buffer) with the given +flags+.
  *
- *  The +destination+ argument is either nil or a packed sockaddr string denoting
- *  the destination address for connection-less sockets. If +destination+ is not
+ *  The +destination_address+ argument is either nil or a packed sockaddr string denoting
+ *  the destination address for connection-less sockets. If +destination_address+ is not
  *  nil, the method implementation should use the +sendto+ system call or
  *  equivalent to specify the destination address to the OS.
  *
@@ -1059,14 +1059,14 @@ fiber_scheduler_socket_send(VALUE _argument) {
 }
 
 VALUE
-rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE destination)
+rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE destination_address)
 {
     if (!rb_respond_to(scheduler, id_socket_send)) {
         return RUBY_Qundef;
     }
 
     VALUE arguments[] = {
-        scheduler, socket, buffer, INT2NUM(flags), destination
+        scheduler, socket, buffer, INT2NUM(flags), destination_address
     };
 
     if (rb_respond_to(scheduler, id_fiber_interrupt)) {
@@ -1078,11 +1078,11 @@ rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer, int 
 
 /*
  *  Document-method: Fiber::Scheduler#socket_connect
- *  call-seq: socket_connect(socket, address) -> 0 or -errno
+ *  call-seq: socket_connect(socket, destination_address) -> 0 or -errno
  *
- *  Invoked by Socket#connect to connect the given +socket+ to the given address.
+ *  Invoked by Socket#connect to connect the given +socket+ to the given destination address.
  *
- *  The +address+ argument is a packed sockaddr string.
+ *  The +destination_address+ argument is a packed sockaddr string.
  *
  *  Suggested implementation should try to connect in a non-blocking manner and
  *  call #io_wait if the +socket+ is not ready (which will yield control to other
@@ -1102,14 +1102,14 @@ fiber_scheduler_socket_connect(VALUE _argument) {
 }
 
 VALUE
-rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE address)
+rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE destination_address)
 {
     if (!rb_respond_to(scheduler, id_socket_connect)) {
         return RUBY_Qundef;
     }
 
     VALUE arguments[] = {
-        scheduler, socket, address
+        scheduler, socket, destination_address
     };
 
     if (rb_respond_to(scheduler, id_fiber_interrupt)) {
@@ -1121,14 +1121,14 @@ rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE address)
 
 /*
  *  Document-method: Fiber::Scheduler#socket_accept
- *  call-seq: socket_accept(socket, address) -> fd or -errno
+ *  call-seq: socket_accept(socket, peer_address) -> fd or -errno
  *
  *  Invoked by Socket#accept to accept an incoming connection on a socket
  *  listening for connections.
  *
- *  The +address+ argument is a mutable String placeholder that the implementation
+ *  The +peer_address+ argument is a mutable String placeholder that the implementation
  *  must fill with the peer's packed sockaddr by calling
- *  <tt>address.replace(packed_sockaddr)</tt>.
+ *  <tt>peer_address.replace(packed_sockaddr)</tt>.
  *
  *  Suggested implementation should try to accept in a non-blocking manner and
  *  call #io_wait if the +socket+ is not ready (which will yield control to other
@@ -1147,14 +1147,14 @@ fiber_scheduler_socket_accept(VALUE _argument) {
 }
 
 VALUE
-rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE socket, VALUE address)
+rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE socket, VALUE peer_address)
 {
     if (!rb_respond_to(scheduler, id_socket_accept)) {
         return RUBY_Qundef;
     }
 
     VALUE arguments[] = {
-        scheduler, socket, address
+        scheduler, socket, peer_address
     };
 
     if (rb_respond_to(scheduler, id_fiber_interrupt)) {

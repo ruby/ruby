@@ -426,19 +426,19 @@ class IOErrorScheduler < Scheduler
     return -Errno::EINVAL::Errno
   end
 
-  def socket_send(socket, buffer, flags, destination = nil)
+  def socket_send(socket, buffer, flags, destination_address = nil)
     return -Errno::ENOTCONN::Errno
   end
 
-  def socket_recv(socket, buffer, flags, from = nil)
+  def socket_recv(socket, buffer, flags, source_address = nil)
     return -Errno::ENOTSOCK::Errno
   end
 
-  def socket_connect(socket, address)
+  def socket_connect(socket, destination_address)
     return -Errno::EBADF::Errno
   end
 
-  def socket_accept(socket, address)
+  def socket_accept(socket, peer_address)
     return -Errno::ENOTSOCK::Errno
   end
 
@@ -452,33 +452,33 @@ class SocketIOScheduler < Scheduler
     @operations ||= []
   end
 
-  def socket_send(socket, buffer, flags, destination = nil)
+  def socket_send(socket, buffer, flags, destination_address = nil)
     descriptor = socket.fileno
     string = buffer.get_string
 
-    self.operations << [:socket_send, descriptor, string, flags, destination]
+    self.operations << [:socket_send, descriptor, string, flags, destination_address]
 
     Fiber.blocking do
-      if destination
-        socket.send(string, flags, destination)
+      if destination_address
+        socket.send(string, flags, destination_address)
       else
         socket.send(string, flags)
       end
     end
   end
 
-  def socket_recv(socket, buffer, flags, from = nil)
+  def socket_recv(socket, buffer, flags, source_address = nil)
     descriptor = socket.fileno
 
-    self.operations << [:socket_recv, descriptor, buffer.size, flags, !from.nil?]
+    self.operations << [:socket_recv, descriptor, buffer.size, flags, !source_address.nil?]
 
     Fiber.blocking do
-      if from
+      if source_address
         temp = Socket.for_fd(socket.fileno)
         temp.autoclose = false
         str, addrinfo = temp.recvfrom(buffer.size, flags)
         buffer.set_string(str)
-        from.replace(addrinfo.to_s)
+        source_address.replace(addrinfo.to_s)
         str.bytesize
       else
         str = socket.recv(buffer.size, flags)
@@ -488,18 +488,18 @@ class SocketIOScheduler < Scheduler
     end
   end
 
-  def socket_connect(socket, address)
+  def socket_connect(socket, destination_address)
     descriptor = socket.fileno
 
-    self.operations << [:socket_connect, descriptor, address]
-    addr2 = Addrinfo.new(address)
+    self.operations << [:socket_connect, descriptor, destination_address]
+    addr2 = Addrinfo.new(destination_address)
 
     Fiber.blocking do
       socket.connect(addr2.ip_address, addr2.ip_port)
     end
   end
 
-  def socket_accept(socket, address)
+  def socket_accept(socket, peer_address)
     descriptor = socket.fileno
 
     Fiber.blocking do
@@ -507,7 +507,7 @@ class SocketIOScheduler < Scheduler
       temp = Socket.for_fd(socket.fileno)
       temp.autoclose = false
       conn, peer_addrinfo = temp.accept
-      address.replace(peer_addrinfo.to_s)
+      peer_address.replace(peer_addrinfo.to_s)
       self.operations << [:socket_accept, descriptor, peer_addrinfo.to_s]
       # Prevent conn from closing its fd on GC; the C side will own the fd.
       conn.autoclose = false
