@@ -549,6 +549,69 @@ ruby "0"
     assert_equal %w[a-2], vendor_set.find_all(dep("a", "= 2")).map(&:full_name)
   end
 
+  def test_load_lockfile_does_not_load_plugins_for_a_plugin_source_section
+    require "bundler"
+    require "bundler/plugin"
+
+    plugin = File.join @tempdir, ".bundle", "plugin", "plugins", "example"
+    loaded = File.join @tempdir, "plugin-was-loaded"
+
+    FileUtils.mkdir_p File.join(plugin, "lib")
+
+    File.open File.join(@tempdir, "Gemfile"), "w" do |io|
+      io.puts 'source "https://rubygems.org"'
+    end
+
+    File.open File.join(plugin, "plugins.rb"), "w" do |io|
+      io.puts "File.write #{loaded.dump}, \"loaded\""
+      io.puts "class ExampleSource"
+      io.puts "  include Bundler::Plugin::API::Source"
+      io.puts "end"
+      io.puts 'Bundler::Plugin::API.source("example_type", ExampleSource)'
+    end
+
+    File.open File.join(@tempdir, ".bundle", "plugin", "index"), "w" do |io|
+      io.puts <<~INDEX
+        ---
+        commands:
+        hooks:
+        load_paths:
+          example:
+          - plugins/example/lib
+        plugin_paths:
+          example: plugins/example
+        sources:
+          example_type: example
+      INDEX
+    end
+
+    File.open "gem.deps.rb.lock", "w" do |io|
+      io.puts <<~LOCKFILE
+        PLUGIN SOURCE
+          remote: https://gems.example/
+          type: example_type
+          specs:
+            a (1)
+
+        PLATFORMS
+          #{Gem::Platform::RUBY}
+
+        DEPENDENCIES
+          a!
+      LOCKFILE
+    end
+
+    Bundler::Plugin.reset!
+
+    rs = Gem::RequestSet.new
+    rs.load_lockfile "gem.deps.rb.lock"
+
+    assert_path_not_exist loaded
+    assert_equal [dep("a")], rs.dependencies
+  ensure
+    Bundler::Plugin.reset!
+  end
+
   def test_load_lockfile_keeps_bundler_root_when_it_cannot_be_swapped
     require "bundler"
 

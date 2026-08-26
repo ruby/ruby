@@ -348,6 +348,14 @@ class Gem::RequestSet
     Bundler.instance_variable_set(:@root, Pathname.new(File.expand_path(File.dirname(lock_file))))
     root_swapped = true
 
+    # A PLUGIN SOURCE section otherwise sends Bundler::Plugin.from_lock looking
+    # for the plugin that handles it, which loads and runs that plugin's
+    # `plugins.rb`. Nothing here can use a plugin source anyway, so borrow the
+    # flag Bundler itself uses to keep lockfile parsing inert.
+    previous_gemfile_parse = Bundler::Plugin.instance_variable_get(:@gemfile_parse)
+    Bundler::Plugin.instance_variable_set(:@gemfile_parse, true)
+    gemfile_parse_swapped = true
+
     parser = Bundler::LockfileParser.new(File.read(lock_file), lockfile_path: lock_file)
 
     locked_versions = {}
@@ -410,6 +418,7 @@ class Gem::RequestSet
     end
   ensure
     Bundler.instance_variable_set(:@root, previous_root) if root_swapped
+    Bundler::Plugin.instance_variable_set(:@gemfile_parse, previous_gemfile_parse) if gemfile_parse_swapped
   end
 
   def pretty_print(q) # :nodoc:
