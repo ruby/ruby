@@ -346,6 +346,7 @@ class Gem::RequestSet
     # `gem install -g` lockfile can be parsed without a Bundler environment.
     previous_root = Bundler.instance_variable_get(:@root)
     Bundler.instance_variable_set(:@root, Pathname.new(File.expand_path(File.dirname(lock_file))))
+    root_swapped = true
 
     parser = Bundler::LockfileParser.new(File.read(lock_file), lockfile_path: lock_file)
 
@@ -408,7 +409,7 @@ class Gem::RequestSet
       gem dep.name, *requirements
     end
   ensure
-    Bundler.instance_variable_set(:@root, previous_root) if defined?(previous_root)
+    Bundler.instance_variable_set(:@root, previous_root) if root_swapped
   end
 
   def pretty_print(q) # :nodoc:

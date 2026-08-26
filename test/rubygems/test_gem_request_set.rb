@@ -549,6 +549,46 @@ ruby "0"
     assert_equal %w[a-2], vendor_set.find_all(dep("a", "= 2")).map(&:full_name)
   end
 
+  def test_load_lockfile_keeps_bundler_root_when_it_cannot_be_swapped
+    require "bundler"
+
+    previous_root = Bundler.instance_variable_get(:@root)
+    Bundler.instance_variable_set(:@root, Pathname.new(@tempdir))
+
+    rs = Gem::RequestSet.new
+    def rs.require(*)
+      raise LoadError
+    end
+
+    assert_raise LoadError do
+      rs.load_lockfile "gem.deps.rb.lock"
+    end
+
+    assert_equal Pathname.new(@tempdir), Bundler.instance_variable_get(:@root)
+  ensure
+    Bundler.instance_variable_set(:@root, previous_root)
+  end
+
+  def test_load_lockfile_restores_bundler_root_when_parsing_fails
+    require "bundler"
+
+    previous_root = Bundler.instance_variable_get(:@root)
+    Bundler.instance_variable_set(:@root, Pathname.new(File.join(@tempdir, "elsewhere")))
+
+    File.open "gem.deps.rb.lock", "w" do |io|
+      io.puts "<<<<<<< HEAD"
+    end
+
+    assert_raise Bundler::LockfileError do
+      Gem::RequestSet.new.load_lockfile "gem.deps.rb.lock"
+    end
+
+    assert_equal Pathname.new(File.join(@tempdir, "elsewhere")),
+                 Bundler.instance_variable_get(:@root)
+  ensure
+    Bundler.instance_variable_set(:@root, previous_root)
+  end
+
   def test_load_gemdeps_with_missing_lockfile
     rs = Gem::RequestSet.new
 
