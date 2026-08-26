@@ -3141,32 +3141,13 @@ find_destination(INSN *i)
 static int
 remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
-    LINK_ELEMENT *first = i, *end, *scan;
+    LINK_ELEMENT *first = i, *end, *scan, *pending_end = 0;
+    LABEL *pending = 0;
     int *unref_counts = 0, nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
 
     if (!i) return 0;
     unref_counts = ALLOCA_N(int, nlabels);
     MEMZERO(unref_counts, int, nlabels);
-
-    scan = i;
-    do {
-        LABEL *lab;
-        if (IS_INSN(scan)) {
-            if (IS_INSN_ID(scan, leave)) {
-                break;
-            }
-            else if ((lab = find_destination((INSN *)scan)) != 0) {
-                unref_counts[lab->label_no]++;
-            }
-        }
-        else if (IS_LABEL(scan)) {
-            lab = (LABEL *)scan;
-            if (lab->unremovable) return 0;
-        }
-        else if (IS_ADJUST(scan)) {
-            return 0;
-        }
-    } while ((scan = scan->next) != 0);
 
     end = i;
     scan = i;
@@ -3174,23 +3155,41 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
         LABEL *lab;
         if (IS_INSN(scan)) {
             if (IS_INSN_ID(scan, leave)) {
+                if (pending) break;
                 end = scan;
                 break;
+            }
+            else if ((lab = find_destination((INSN *)scan)) != 0) {
+                unref_counts[lab->label_no]++;
+                if (lab == pending && lab->refcnt <= unref_counts[lab->label_no]) {
+                    pending = 0;
+                }
             }
         }
         else if (IS_LABEL(scan)) {
             lab = (LABEL *)scan;
+            if (lab->unremovable) {
+                if (pending) break;
+                return 0;
+            }
             if (lab->refcnt > unref_counts[lab->label_no]) {
-                if (scan == first) return 0;
-                break;
+                if (pending) break;
+                pending = lab;
+                pending_end = (scan == first) ? 0 : end;
             }
             continue;
         }
         else if (IS_ADJUST(scan)) {
+            if (pending) break;
             return 0;
         }
-        end = scan;
+        if (!pending) end = scan;
     } while ((scan = scan->next) != 0);
+
+    if (pending) {
+        if (!pending_end) return 0;
+        end = pending_end;
+    }
     i = first;
     do {
         if (IS_INSN(i)) {
@@ -3652,30 +3651,22 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
          */
         INSN *nobj = (INSN *)get_destination_insn(iobj);
 
-        /* This is super nasty hack!!!
-         *
-         * This jump-jump optimization may ignore event flags of the jump
-         * instruction being skipped.  Actually, Line 2 TracePoint event
-         * is never fired in the following code:
+        /* This jump-jump optimization may ignore line events on the jump
+         * instruction being skipped.  For example, the Line 2 TracePoint
+         * event would otherwise never fire in the following code:
          *
          *   1: raise if 1 == 2
          *   2: while true
          *   3:   break
          *   4: end
          *
-         * This is critical for coverage measurement.  [Bug #15980]
-         *
-         * This is a stopgap measure: stop the jump-jump optimization if
-         * coverage measurement is enabled and if the skipped instruction
-         * has any event flag.
-         *
-         * Note that, still, TracePoint Line event does not occur on Line 2.
-         * This should be fixed in future.
+         * Do not skip a jump that carries a line event.  This applies even
+         * when coverage is disabled because TracePoint consumes the same
+         * event.  [Bug #15980]
          */
         int stop_optimization =
-            ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq) &&
             nobj->link.type == ISEQ_ELEMENT_INSN &&
-            nobj->insn_info.events;
+            (nobj->insn_info.events & (RUBY_EVENT_LINE | RUBY_EVENT_COVERAGE_LINE));
         if (!stop_optimization) {
             INSN *pobj = (INSN *)iobj->link.prev;
             int prev_dup = 0;

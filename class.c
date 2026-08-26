@@ -1128,6 +1128,13 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         rb_class_update_superclasses(clone);
     }
 
+    if (RB_TYPE_P(clone, T_CLASS)) {
+        VALUE super = RCLASS_SUPER(clone);
+        if (super && RB_TYPE_P(super, T_ICLASS)) {
+            class_switch_superclass(rb_class_superclass(clone), clone);
+        }
+    }
+
     return clone;
 }
 
@@ -1953,6 +1960,7 @@ rb_prepend_module(VALUE klass, VALUE module)
         VALUE klass_origin = RCLASS_ORIGIN(klass);
         struct rb_id_table *klass_m_tbl = RCLASS_M_TBL(klass);
         struct rb_id_table *klass_origin_m_tbl = RCLASS_M_TBL(klass_origin);
+        VALUE new_origins = 0;
         while (iclass) {
             /* During lazy sweeping, iclass->klass could be a dead object that
              * has not yet been swept. */
@@ -1967,12 +1975,22 @@ rb_prepend_module(VALUE klass, VALUE module)
                     RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(subclass));
                     RCLASS_WRITE_ORIGIN(subclass, origin);
                     RICLASS_SET_ORIGIN_SHARED_MTBL(origin);
+                    if (!new_origins) new_origins = rb_ary_hidden_new(1);
+                    rb_ary_push(new_origins, origin);
                 }
                 include_modules_at(subclass, subclass, module, FALSE);
             }
 
             iclass = iclass->next;
         }
+        /* Register after the loop. Registering during it would visit the
+         * new iclass and prepend module into it a second time. */
+        if (new_origins) {
+            for (long i = 0; i < RARRAY_LEN(new_origins); i++) {
+                rb_module_add_to_subclasses_list(klass, RARRAY_AREF(new_origins, i));
+            }
+        }
+        RB_GC_GUARD(new_origins);
     }
 }
 

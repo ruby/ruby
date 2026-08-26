@@ -1316,6 +1316,7 @@ set_i_xor(VALUE set, VALUE other)
         set_merge_enum_into(tmp, other);
         set_iter(tmp, set_xor_i, (st_data_t)new_set);
     }
+    set_compact_after_delete(set);
 
     return new_set;
 }
@@ -1362,6 +1363,7 @@ set_remove_enum_from(VALUE set, VALUE arg)
     else {
         rb_block_call(arg, enum_method_id(arg), 0, 0, set_remove_block, (VALUE)set);
     }
+    set_compact_after_delete(set);
 }
 
 /*
@@ -1471,6 +1473,7 @@ set_i_keep_if(VALUE set)
     rb_check_frozen(set);
 
     set_iter(set, set_keep_if_i, (st_data_t)RSET_TABLE(set));
+    set_compact_after_delete(set);
 
     return set;
 }
@@ -1492,6 +1495,7 @@ set_i_select(VALUE set)
     set_table *table = RSET_TABLE(set);
     size_t n = set_table_size(table);
     set_iter(set, set_keep_if_i, (st_data_t)table);
+    set_compact_after_delete(set);
 
     return (n == set_table_size(table)) ? Qnil : set;
 }
@@ -1526,6 +1530,7 @@ set_i_replace(VALUE set, VALUE other)
         set_table_clear(RSET_TABLE(set));
         set_merge_enum_into(set, other);
     }
+    set_compact_after_delete(set);
 
     return set;
 }

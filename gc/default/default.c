@@ -2214,6 +2214,12 @@ rb_gc_impl_obj_slot_size(VALUE obj)
     return GET_HEAP_PAGE(obj)->slot_size - RVALUE_OVERHEAD;
 }
 
+bool
+rb_gc_impl_pinned_p(void *objspace_ptr, VALUE obj)
+{
+    return RVALUE_PINNED((rb_objspace_t *)objspace_ptr, obj);
+}
+
 static inline size_t
 heap_slot_size(unsigned char pool_id)
 {

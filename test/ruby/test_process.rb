@@ -2719,6 +2719,31 @@ EOS
     end;
   end if Process.respond_to?(:_fork)
 
+  def test__fork_raisig_after_fork
+    assert_in_out_err([], "#{<<~"{#"}\n#{<<~'};'}", [], [/.*: exception during fork in child/, :*])
+    {#
+      module BadForkTracker
+        def _fork
+          pid = super
+          if pid == 0
+            raise "exception during fork in child"
+          end
+          pid
+        end
+      end
+
+      Process.singleton_class.prepend(BadForkTracker)
+
+      begin
+        fork do
+          puts "I'm child #{Process.pid} and I'm exiting"
+        end
+      rescue StandardError
+        puts "#{Process.pid} Received Error, Ignoring"
+      end
+    };
+  end if Process.respond_to?(:_fork)
+
   def test_warmup_promote_all_objects_to_oldgen
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     require 'objspace'

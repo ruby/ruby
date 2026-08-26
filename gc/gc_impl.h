@@ -86,6 +86,7 @@ GC_IMPL_FN void rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr);
 GC_IMPL_FN void rb_gc_impl_remove_weak(void *objspace_ptr, VALUE parent_obj, VALUE *ptr);
 // Compaction
 GC_IMPL_FN bool rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj);
+GC_IMPL_FN bool rb_gc_impl_pinned_p(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN VALUE rb_gc_impl_location(void *objspace_ptr, VALUE value);
 // Write barriers
 GC_IMPL_FN void rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b);

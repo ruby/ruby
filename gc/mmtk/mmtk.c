@@ -787,6 +787,13 @@ rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj)
     rb_bug("unimplemented");
 }
 
+bool
+rb_gc_impl_pinned_p(void *objspace_ptr, VALUE obj)
+{
+    /* MMTk tracks pinning separately */
+    return false;
+}
+
 VALUE
 rb_gc_impl_location(void *objspace_ptr, VALUE value)
 {

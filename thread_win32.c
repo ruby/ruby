@@ -589,35 +589,27 @@ rb_native_cond_destroy(rb_nativethread_cond_t *cond)
 }
 
 
-#define CHECK_ERR(expr) \
-    {if (!(expr)) {rb_bug("err: %lu - %s", GetLastError(), #expr);}}
-
-COMPILER_WARNING_PUSH
-#if __has_warning("-Wmaybe-uninitialized")
-COMPILER_WARNING_IGNORED(-Wmaybe-uninitialized)
+#if !defined(_WIN32_WINNT_WIN8) || _WIN32_WINNT < 0x602
+/* declared in processthreadsapi.h only when _WIN32_WINNT >= 0x0602,
+ * but exported from kernel32.dll since Windows 8 */
+WINBASEAPI VOID WINAPI GetCurrentThreadStackLimits(PULONG_PTR, PULONG_PTR);
 #endif
-static inline SIZE_T
-query_memory_basic_info(PMEMORY_BASIC_INFORMATION mi, void *local_in_parent_frame)
-{
-    return VirtualQuery(asan_get_real_stack_addr(local_in_parent_frame), mi, sizeof(*mi));
-}
-COMPILER_WARNING_POP
 
 static void
 native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {
-    MEMORY_BASIC_INFORMATION mi;
-    char *base, *end;
-    DWORD size, space;
+    ULONG_PTR low, high;
+    SIZE_T size, space;
 
-    CHECK_ERR(query_memory_basic_info(&mi, local_in_parent_frame));
-    base = mi.AllocationBase;
-    end = mi.BaseAddress;
-    end += mi.RegionSize;
-    size = end - base;
+    /* VirtualQuery against the current stack pointer may return a region
+     * that does not span the whole stack when the interpreter is
+     * initialized deep in the stack, which makes stack_check() misfire.
+     * [Bug #11438] */
+    GetCurrentThreadStackLimits(&low, &high);
+    size = high - low;
     space = size / 5;
     if (space > 1024*1024) space = 1024*1024;
-    th->ec->machine.stack_start = (VALUE *)end - 1;
+    th->ec->machine.stack_start = (VALUE *)high - 1;
     th->ec->machine.stack_maxsize = size - space;
 }
 

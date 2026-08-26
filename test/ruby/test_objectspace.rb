@@ -55,6 +55,29 @@ End
     EOS
   end
 
+  def test_id2ref_geniv_liveness
+    assert_in_out_err(["-W0", "-e", <<~'RUBY'], "", %w(:ok), [])
+      ObjectSpace._id2ref(Object.new.object_id)
+
+      strings1 = 10_000.times.map { String.new(capacity: 80) }
+      strings2 = 10_000.times.map { String.new(capacity: 80) }
+
+      object_ids1 = strings1.map(&:object_id)
+      strings1.clear
+      GC.start(immediate_sweep: false)
+
+      object_ids2 = strings2.map(&:object_id)
+
+      GC.start # finish previous sweep
+
+      strings2_round_trip = object_ids2.map { |id| ObjectSpace._id2ref(id) }
+      strings2.zip(strings2_round_trip).each do |str1, str2|
+        raise unless str1.equal?(str2)
+      end
+      p :ok
+    RUBY
+  end
+
   def test_id2ref_invalid_argument
     msg = /no implicit conversion/
     assert_raise_with_message(TypeError, msg) { EnvUtil.suppress_warning { ObjectSpace._id2ref(nil) } }
@@ -71,6 +94,12 @@ End
     # sure that the bottom 8 bits remain unchanged.
     msg = /is not a symbol id value/
     assert_raise_with_message(RangeError, msg) { EnvUtil.suppress_warning { ObjectSpace._id2ref(:a.object_id + 256) } }
+  end
+
+  def test_id2ref_invalid_object_id
+    invalid_id = Object.new.object_id + 1000
+    assert_raise_with_message(RangeError, "#{invalid_id} is not an id value") { EnvUtil.suppress_warning { ObjectSpace._id2ref(invalid_id) } }
+    assert_raise_with_message(RangeError, "#{2**80} is not an id value") { EnvUtil.suppress_warning { ObjectSpace._id2ref(2**80) } }
   end
 
   def test_count_objects
