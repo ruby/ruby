@@ -4,7 +4,11 @@ require "fiber"
 
 describe "Fiber.scheduler" do
   it "validates the scheduler for required methods" do
-    required_methods = [:block, :unblock, :kernel_sleep, :io_wait, :fiber_interrupt]
+    required_methods = [:block, :unblock, :kernel_sleep, :io_wait]
+    ruby_version_is "4.1" do
+      required_methods << :fiber_interrupt
+    end
+
     required_methods.each do |missing_method|
       scheduler = Object.new
       required_methods.difference([missing_method]).each do |method|
