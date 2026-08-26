@@ -144,6 +144,8 @@ rb_vm_cc_table_create(size_t capa)
     return rb_managed_id_table_create(&cc_table_type, capa);
 }
 
+static void vm_ccs_invalidate(struct rb_class_cc_entries *ccs);
+
 static enum rb_id_table_iterator_result
 vm_cc_table_dup_i(ID key, VALUE old_ccs_ptr, void *data)
 {
@@ -151,8 +153,13 @@ vm_cc_table_dup_i(ID key, VALUE old_ccs_ptr, void *data)
     struct rb_class_cc_entries *old_ccs = (struct rb_class_cc_entries *)old_ccs_ptr;
 
     if (METHOD_ENTRY_INVALIDATED(old_ccs->cme)) {
-        // Invalidated CME. This entry will be removed from the old table on
-        // the next GC mark, so it's unsafe (and undesirable) to copy
+        // At this point, old_ccs is valid and hasn't been freed.
+        // However once we allocate below, mark_cc_entry_i may free the entries
+        // If this is invalidated, we should avoid the copy, and invalidate the CCs
+        // since later we will CAS the new cc_table, disconnecting old_ccs and it
+        // may not be marked.
+        // We don't want to copy this anyways since it's invalidated.
+        vm_ccs_invalidate(old_ccs);
         return ID_TABLE_CONTINUE;
     }
 
@@ -191,6 +198,7 @@ vm_ccs_invalidate(struct rb_class_cc_entries *ccs)
 {
     for (int i=0; i<ccs->len; i++) {
         const struct rb_callcache *cc = ccs->entries[i].cc;
+        if (cc->klass == Qundef) continue; // already invalidated
         VM_ASSERT(!vm_cc_super_p(cc) && !vm_cc_refinement_p(cc));
         vm_cc_invalidate(cc);
     }
