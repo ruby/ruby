@@ -1253,21 +1253,21 @@ rb_fiber_scheduler_io_pwrite_memory(VALUE scheduler, VALUE io, rb_off_t from, co
 }
 
 VALUE
-rb_fiber_scheduler_socket_address_pack(const struct sockaddr *address, size_t size)
+rb_fiber_scheduler_socket_address_pack(const struct sockaddr *address, size_t address_length)
 {
-    return rb_str_new((const char *)address, (long)size);
+    return rb_str_new((const char *)address, (long)address_length);
 }
 
 size_t
-rb_fiber_scheduler_socket_address_unpack(VALUE buffer, struct sockaddr *address, size_t size)
+rb_fiber_scheduler_socket_address_unpack(VALUE packed_address, struct sockaddr *address, size_t address_capacity)
 {
-    long length = RSTRING_LEN(buffer);
-    if (length == 0) return 0;
-    if ((size_t)length > size) {
-        rb_raise(rb_eArgError, "sockaddr too large: %ld > %zu", length, size);
+    long address_length = RSTRING_LEN(packed_address);
+    if (address_length == 0) return 0;
+    if ((size_t)address_length > address_capacity) {
+        rb_raise(rb_eArgError, "sockaddr too large: %ld > %zu", address_length, address_capacity);
     }
-    memcpy(address, RSTRING_PTR(buffer), length);
-    return (size_t)length;
+    memcpy(address, RSTRING_PTR(packed_address), address_length);
+    return (size_t)address_length;
 }
 
 /*

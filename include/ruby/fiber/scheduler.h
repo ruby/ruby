@@ -570,20 +570,20 @@ VALUE rb_fiber_scheduler_socket_shutdown(VALUE scheduler, VALUE socket, int how)
  * Pack a struct sockaddr into a Ruby String for passing to a scheduler hook.
  *
  * @param[in]   address  Pointer to the sockaddr to pack.
- * @param[in]   size     Length of the sockaddr in bytes.
+ * @param[in]   address_length  Length of the sockaddr in bytes.
  * @return      A new String containing the raw bytes of the sockaddr.
  */
-VALUE rb_fiber_scheduler_socket_address_pack(const struct sockaddr *address, size_t size);
+VALUE rb_fiber_scheduler_socket_address_pack(const struct sockaddr *address, size_t address_length);
 
 /**
  * Unpack a Ruby String (filled by a scheduler hook) back into a C sockaddr buffer.
  *
- * @param[in]    buffer   The String returned by a scheduler hook.
- * @param[out]   address  The sockaddr buffer to copy into.
- * @param[in]    size     The maximum number of bytes to copy.
- * @return       The number of bytes copied, or 0 if `str` is empty.
+ * @param[in]    packed_address    The String returned by a scheduler hook.
+ * @param[out]   address           The sockaddr buffer to copy into.
+ * @param[in]    address_capacity  The maximum number of bytes to copy.
+ * @return       The number of bytes copied, or 0 if `packed_address` is empty.
  */
-size_t rb_fiber_scheduler_socket_address_unpack(VALUE buffer, struct sockaddr *address, size_t size);
+size_t rb_fiber_scheduler_socket_address_unpack(VALUE packed_address, struct sockaddr *address, size_t address_capacity);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
