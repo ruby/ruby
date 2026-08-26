@@ -161,7 +161,7 @@ The fifth- and sixth-from left octal digits in a mode represent a file type:
 | `060000` |   `'b'`   | Block device.     |
 | `100000` |   `'-'`   | Regular file.     |
 | `120000` |   `'l'`   | Symbolic link.    |
-| `140000` |   `'s'`   | Socket.           |
+| `140000` |   `'s'`   | \Socket.          |
 
 Examples:
 
