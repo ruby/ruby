@@ -2249,25 +2249,35 @@ rb_file_file_p(VALUE obj, VALUE fname)
  *   File.empty?(object) -> true or false
  *   File.zero?(object) -> true or false
  *
- * Returns whether the given +object+, which may be a string path or an IO object,
- * exists and is empty:
+ * Returns whether the given +object+ exists and has size zero.
  *
- *   filepath = 'foo'
- *   File.empty?(filepath) # => false  # Entry does not exist.
- *   File.write(filepath, '')
- *   File.empty?(filepath) # => true   # File exists and is empty.
- *   File.write(filepath, 'bar')
- *   File.empty?(filepath) # => false  # File exists and is not empty.
- *   File.delete(path)                 # Clean up.
+ * The given +object+ may be the path to a directory (possibly non-existent):
  *
- *   dirpath = 'bar'
- *   File.empty?(dirpath)  # => false  # Entry does not exist.
- *   Dir.mkdir(dirpath)
- *   File.empty?(dirpath)  # => false  # Directory exists and is not empty.
- *   File.size(dirpath)    # => 4096   # (A directory is never empty.)
- *   Dir.rmdir(dirpath)                # Clean up.
+ *    dirpath = 'foo'
+ *    File.empty?(dirpath)       # => false  # Directory does not exist.
+ *    dir = Dir.mkdir(dirpath)
+ *    # The directory size is filesystem-dependent;
+ *    # for a directory with no children, may or may not be zero.
+ *    File.size?(dirpath)        # => 4096
+ *    File.empty?(dirpath)       # => false
  *
- *   File.empty?($stdin)   # => true
+ * The given +object+ may be the path to a file (possibly non-existent):
+ *
+ *    filepath = File.join(dirpath, 't.tmp')
+ *    File.empty?(filepath)      # => false  # File does not exist.
+ *    File.write(filepath, '')
+ *    File.size(filepath)        # => 0
+ *    File.empty?(filepath)      # => true   # File exists; size zero.
+ *    File.size?(dirpath)        # => 4096
+ *    File.empty?(dirpath)       # => false
+ *    File.write(filepath, 'bar')
+ *    File.size(filepath)        # => 3
+ *    File.empty?(filepath)      # => false  # File exists; size non-zero.
+ *    FileUtils.rm_rf(dirpath)   # Clean up.
+ *
+ * The given +object+ may be an IO object:
+ *
+ *   File.empty?($stdin)         # => true
  *
  */
 
