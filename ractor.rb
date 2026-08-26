@@ -541,9 +541,9 @@ class Ractor
   # internal method
   def self._require feature # :nodoc:
     if main?
-      super feature
+      require(feature)
     else
-      Primitive.ractor_require feature
+      Primitive.ractor_require(feature)
     end
   end
 
@@ -552,17 +552,22 @@ class Ractor
 
     # internal method that is called when the first "Ractor.new" is called
     def _activated # :nodoc:
-      Kernel.prepend Module.new{|m|
-        m.set_temporary_name '<RactorRequire>'
-
-        def require feature # :nodoc: -- otherwise RDoc outputs it as a class method
+      return if defined?(@__ractor_require_alias_activated)
+      # Put this in Object so that it comes before Rubygems require (which
+      # may have code that is not ractor-safe). Gems that hijack require
+      # should define their require in the Kernel module.
+      Object.module_eval do
+        alias_method :__ractor_original_require, :require
+        def require(feature) # :nodoc:
           if Ractor.main?
             super
           else
-            Ractor._require feature
+            Ractor._require(feature)
           end
         end
-      }
+        private :require
+      end
+      @__ractor_require_alias_activated = true
     end
   end
 

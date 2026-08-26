@@ -354,6 +354,98 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # Ex: Rubygems redefines require before single-ractor mode is cancelled. The redefined require
+  # from a gem like rubygems should run in the main Ractor regardless of whether the gem is loaded
+  # before or after single ractor mode is cancelled.
+  #
+  # Uses assert_separately rather than assert_ractor: these tests must start out in single-ractor
+  # mode, and assert_ractor cancels it by creating a Ractor before the test body runs.
+  def test_redefined_require_before_single_ractor_mode_cancelled
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      refute defined?(Gem), "rubygems must not be loaded"
+      refute Object.private_method_defined?(:__ractor_original_require), "must still be in single-ractor mode"
+
+      require "tempfile"
+      require "pathname"
+      f = Tempfile.new(["file_to_require_from_ractor", ".rb"])
+      f.write("")
+      f.flush
+      old = $-w; $-w = nil
+      class << Ractor
+        alias __orig_ractor_require _require
+        def _require(feature)
+          (Ractor.current[:required] ||= []) << [self.inspect, __method__, feature.to_s]
+          __orig_ractor_require(feature)
+        end
+      end
+      module Kernel
+        alias some_original_require require
+        def require(feature)
+          (Ractor.current[:required] ||= []) << [self.inspect, __method__, feature.to_s]
+          some_original_require(feature)
+        end
+      end
+      $-w = old
+      result = Ractor.new(f.path) do |path|
+        require Pathname.new(path)
+        Ractor.current[:required]
+      end.value
+      assert_equal [["Ractor", :_require, f.path]], result
+      assert_equal ["nil", :require, f.path], Ractor.current[:required]&.first
+    RUBY
+  end
+
+  # Ex: Rubygems redefines require after single-ractor mode is cancelled. The redefined require
+  # from a gem like rubygems should run in the main Ractor regardless of whether the gem is loaded
+  # before or after single ractor mode is cancelled.
+  #
+  # Uses assert_separately rather than assert_ractor: these tests must start out in single-ractor
+  # mode, and assert_ractor cancels it by creating a Ractor before the test body runs.
+  def test_redefined_require_after_single_ractor_mode_cancelled
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      refute defined?(Gem), "rubygems must not be loaded"
+      refute Object.private_method_defined?(:__ractor_original_require), "must still be in single-ractor mode"
+
+      require "tempfile"
+      require "pathname"
+      f = Tempfile.new(["file_to_require_from_ractor", ".rb"])
+      f.write("")
+      f.flush
+      old = $-w; $-w = nil
+      class << Ractor
+        alias __orig_ractor_require _require
+        def _require(feature)
+          (Ractor.current[:required] ||= []) << [self.inspect, __method__, feature.to_s]
+          __orig_ractor_require(feature)
+        end
+      end
+      $-w = old
+      result = Ractor.new(f.path) do |path|
+        require Pathname.new(path)
+        Ractor.current[:required]
+      end.value
+      assert_equal [["Ractor", :_require, f.path]], result
+      assert_nil Ractor.current[:required]
+      old = $-w; $-w = nil
+      module Kernel
+        alias some_original_require require
+        def require(feature)
+          (Ractor.current[:required] ||= []) << [self.inspect, __method__, feature.to_s]
+          some_original_require(feature)
+        end
+      end
+      $-w = old
+      result = Ractor.new(f.path) do |path|
+        require Pathname.new(path)
+        Ractor.current[:required]
+      end.value
+      assert_equal [["Ractor", :_require, f.path]], result
+      assert_equal ["nil", :require, f.path], Ractor.current[:required]&.first
+    RUBY
+  end
+
   # [Bug #21398]
   def test_port_receive_dnt_with_port_send
     omit 'unstable on windows and macos-14' if RUBY_PLATFORM =~ /mswin|mingw|darwin/
