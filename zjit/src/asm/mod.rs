@@ -244,17 +244,13 @@ impl CodeBlock {
         // Keep track of the reference
         self.label_refs.push(LabelRef { pos: self.write_pos, label, num_bytes, encode: Box::new(encode) });
 
-        // Move past however many bytes the instruction takes up
-        if self.write_pos + num_bytes < self.mem_size {
-            // Reserve the bytes by writing them rather than by moving the cursor
-            // over them. Pages are mapped on first write, so a cursor bump alone
-            // leaves a page that cannot be mapped.
-            const RESERVED: [u8; 16] = [0; 16];
-            assert!(num_bytes <= RESERVED.len(), "label reference wants {num_bytes} bytes");
-            self.write_bytes(&RESERVED[..num_bytes]);
-        } else {
-            self.dropped_bytes = true; // retry emitting the Insn after next_page
-        }
+        // Move past however many bytes the instruction takes up.
+        // Reserve the bytes by writing them rather than by moving the cursor
+        // over them. Pages are mapped on first write, so a cursor bump alone
+        // leaves a page that cannot be mapped.
+        const RESERVED: [u8; 16] = [0; 16];
+        assert!(num_bytes <= RESERVED.len(), "label reference wants {num_bytes} bytes");
+        self.write_bytes(&RESERVED[..num_bytes]);
     }
 
     // Link internal label references
