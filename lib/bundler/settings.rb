@@ -29,6 +29,7 @@ module Bundler
       ignore_messages
       init_gems_rb
       inline
+      keep_outdated_cache
       lockfile_checksums
       no_build_extension
       no_install
@@ -95,6 +96,14 @@ module Bundler
       "BUNDLE_UPDATE_REQUIRES_ALL_FLAG" => false,
     }.freeze
 
+    ##
+    # Settings renamed in Bundler 4, mapping the current name to the one it
+    # replaced. The old name is still read, and goes away in Bundler 5.
+
+    RENAMED_KEYS = {
+      "keep_outdated_cache" => "no_prune",
+    }.freeze
+
     def initialize(root = nil)
       @root            = root
       @local_config    = load_config(local_config_file)
@@ -111,16 +120,7 @@ module Bundler
     end
 
     def [](name)
-      key = key_for(name)
-
-      value = nil
-      configs.each do |_, config|
-        value = config[key]
-        next if value.nil?
-        break
-      end
-
-      converted_value(value, name)
+      converted_value(configured_value(name), name)
     end
 
     def set_command_option(key, value)
@@ -396,6 +396,35 @@ module Bundler
 
     def value_for(name, config)
       converted_value(config[key_for(name)], name)
+    end
+
+    ##
+    # A renamed setting is resolved one level at a time rather than by looking
+    # for the current name everywhere first, so that the old name keeps the
+    # documented priority order: an old name set locally still beats a current
+    # name set globally.
+
+    def configured_value(name)
+      key = key_for(name)
+      old_name = RENAMED_KEYS[self.class.key_to_s(name)]
+      old_key = key_for(old_name) if old_name
+
+      configs.each do |_, config|
+        value = config[key]
+        return value unless value.nil?
+
+        next if old_key.nil?
+
+        value = config[old_key]
+        next if value.nil?
+
+        SharedHelpers.feature_deprecated! "The `#{old_name}` setting has been renamed to `#{name}` and will be " \
+                                          "removed in Bundler 5. Use `#{name}` instead."
+
+        return value
+      end
+
+      nil
     end
 
     def parent_setting_for(name)

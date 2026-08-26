@@ -136,6 +136,28 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
       end
     end
 
+    context "when the setting has been renamed" do
+      it "reads the value set under the old name" do
+        settings.set_local :no_prune, "true"
+
+        expect(settings[:keep_outdated_cache]).to be true
+      end
+
+      it "prefers the current name set at the same level" do
+        settings.set_local :no_prune, "true"
+        settings.set_local :keep_outdated_cache, "false"
+
+        expect(settings[:keep_outdated_cache]).to be false
+      end
+
+      it "prefers the old name set at a higher priority level" do
+        settings.set_global :keep_outdated_cache, "false"
+        settings.set_local :no_prune, "true"
+
+        expect(settings[:keep_outdated_cache]).to be true
+      end
+    end
+
     context "when it's not possible to create the settings directory" do
       it "raises an PermissionError with explanation" do
         settings_dir = settings.send(:local_config_file).dirname

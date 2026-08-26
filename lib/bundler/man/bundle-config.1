@@ -151,6 +151,8 @@ The store can also be selected per host with \fBcredential_store\.<host>\fR (\fB
 .IP "\(bu" 4
 \fBjobs\fR (\fBBUNDLE_JOBS\fR): The number of gems Bundler can download and install in parallel\. Defaults to the number of available processors\.
 .IP "\(bu" 4
+\fBkeep_outdated_cache\fR (\fBBUNDLE_KEEP_OUTDATED_CACHE\fR): Whether Bundler should leave outdated gems unpruned when caching\. Defaults to false\.
+.IP "\(bu" 4
 \fBlockfile\fR (\fBBUNDLE_LOCKFILE\fR): The path to the lockfile that bundler should use\. By default, Bundler adds \fB\.lock\fR to the end of the \fBgemfile\fR entry\. Can be set to \fBfalse\fR in the Gemfile to disable lockfile creation entirely (see gemfile(5))\.
 .IP "\(bu" 4
 \fBlockfile_checksums\fR (\fBBUNDLE_LOCKFILE_CHECKSUMS\fR): Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources\. Defaults to true\. Bundler's own checksum is only included when its \fB\.gem\fR file is cached, which may not be the case when Bundler is installed as a default gem\.
@@ -161,7 +163,7 @@ The store can also be selected per host with \fBcredential_store\.<host>\fR (\fB
 .IP "\(bu" 4
 \fBno_install_plugin\fR (\fBBUNDLE_NO_INSTALL_PLUGIN\fR): Whether Bundler should skip installing RubyGems plugins during installation\. When set, plugin files are not written to the plugins directory\. To install plugins later, unset this setting and run \fBbundle pristine <gem>\fR\.
 .IP "\(bu" 4
-\fBno_prune\fR (\fBBUNDLE_NO_PRUNE\fR): Whether Bundler should leave outdated gems unpruned when caching\.
+\fBno_prune\fR (\fBBUNDLE_NO_PRUNE\fR): Deprecated name for \fBkeep_outdated_cache\fR\. Each priority level is checked for \fBkeep_outdated_cache\fR and then for \fBno_prune\fR, and the first value found wins\. \fBno_prune\fR will be removed in Bundler 5\.
 .IP "\(bu" 4
 \fBonly\fR (\fBBUNDLE_ONLY\fR): A space\-separated list of groups to install only gems of the specified groups\. Please check carefully if you want to install also gems without a group, because they get put inside \fBdefault\fR group\. For example \fBonly test:default\fR will install all gems specified in test group and without one\.
 .IP "\(bu" 4

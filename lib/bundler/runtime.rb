@@ -148,7 +148,7 @@ module Bundler
         FileUtils.touch(File.expand_path("../.bundlecache", git_dir))
       end
 
-      prune_cache(cache_path) unless Bundler.settings[:no_prune]
+      prune_cache(cache_path) unless Bundler.settings[:keep_outdated_cache]
     end
 
     def prune_cache(cache_path)

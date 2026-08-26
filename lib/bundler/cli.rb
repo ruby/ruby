@@ -276,9 +276,11 @@ module Bundler
     method_option "with", type: :array, banner: "Include gems that are part of the specified named group (removed)."
     method_option "cooldown", type: :numeric, banner: "Only consider gem versions published at least N days ago. Use 0 to disable."
     def install
-      %w[clean deployment frozen no-prune path shebang without with].each do |option|
+      %w[clean deployment frozen path shebang without with].each do |option|
         remembered_flag_deprecation(option)
       end
+
+      remembered_flag_deprecation("no-prune", option_name: "keep_outdated_cache")
 
       print_remembered_flag_deprecation("--system", "path.system", "true") if ARGV.include?("--system")
 
@@ -473,9 +475,8 @@ module Bundler
       print_remembered_flag_deprecation("--all", "cache_all", "true") if ARGV.include?("--all")
       print_remembered_flag_deprecation("--no-all", "cache_all", "false") if ARGV.include?("--no-all")
 
-      %w[frozen no-prune].each do |option|
-        remembered_flag_deprecation(option)
-      end
+      remembered_flag_deprecation("frozen")
+      remembered_flag_deprecation("no-prune", option_name: "keep_outdated_cache")
 
       if flag_passed?("--path")
         removed_message =
