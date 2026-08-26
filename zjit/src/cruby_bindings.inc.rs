@@ -2450,8 +2450,6 @@ unsafe extern "C" {
         insn_idx: ::std::os::raw::c_uint,
         bare_insn: ruby_vminsn_type,
     );
-    pub fn rb_iseq_get_zjit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
-    pub fn rb_iseq_set_zjit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
     pub fn rb_zjit_print_exception();
     pub fn rb_zjit_singleton_class_p(klass: VALUE) -> bool;
     pub fn rb_zjit_defined_ivar(obj: VALUE, id: ID, pushval: VALUE) -> VALUE;
@@ -2579,6 +2577,8 @@ unsafe extern "C" {
         file: *const ::std::os::raw::c_char,
         line: ::std::os::raw::c_int,
     );
+    pub fn rb_iseq_get_jit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
+    pub fn rb_iseq_set_jit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
     pub fn rb_iseq_reset_jit_func(iseq: *const rb_iseq_t);
     pub fn rb_jit_get_page_size() -> u32;
     pub fn rb_jit_reserve_addr_space(mem_size: u32) -> *mut u8;

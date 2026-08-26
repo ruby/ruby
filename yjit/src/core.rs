@@ -1806,7 +1806,7 @@ impl IseqPayload {
 /// Get the payload for an iseq. For safety it's up to the caller to ensure the returned `&mut`
 /// upholds aliasing rules and that the argument is a valid iseq.
 pub fn get_iseq_payload(iseq: IseqPtr) -> Option<&'static mut IseqPayload> {
-    let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
+    let payload = unsafe { rb_iseq_get_jit_payload(iseq) };
     let payload: *mut IseqPayload = payload.cast();
     unsafe { payload.as_mut() }
 }
@@ -1816,7 +1816,7 @@ pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
     type VoidPtr = *mut c_void;
 
     let payload_non_null = unsafe {
-        let payload = rb_iseq_get_yjit_payload(iseq);
+        let payload = rb_iseq_get_jit_payload(iseq);
         if payload.is_null() {
             // Increment the compiled iseq count
             incr_counter!(compiled_iseq_count);
@@ -1827,7 +1827,7 @@ pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
             // We allocate in those cases anyways.
             let new_payload = IseqPayload::default();
             let new_payload = Box::into_raw(Box::new(new_payload));
-            rb_iseq_set_yjit_payload(iseq, new_payload as VoidPtr);
+            rb_iseq_set_jit_payload(iseq, new_payload as VoidPtr);
 
             new_payload
         } else {
@@ -1904,7 +1904,7 @@ pub extern "C" fn rb_yjit_iseq_free(iseq: IseqPtr) {
     iseq_free_invariants(iseq);
 
     let payload = {
-        let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
+        let payload = unsafe { rb_iseq_get_jit_payload(iseq) };
         if payload.is_null() {
             // Nothing to free.
             return;
@@ -2032,7 +2032,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
 /// This is a mirror of [rb_yjit_iseq_mark].
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
-    let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
+    let payload = unsafe { rb_iseq_get_jit_payload(iseq) };
     let payload = if payload.is_null() {
         // Nothing to update.
         return;
