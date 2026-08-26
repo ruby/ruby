@@ -3073,12 +3073,10 @@ thread_io_close_notify_all(VALUE _io)
         if (ec) {
             rb_thread_t *thread = ec->thread_ptr;
 
-            VALUE result = RUBY_Qundef;
             if (thread->scheduler != Qnil) {
-                result = rb_fiber_scheduler_fiber_interrupt(thread->scheduler, rb_fiberptr_self(ec->fiber_ptr), error);
+                rb_fiber_scheduler_fiber_interrupt(thread->scheduler, rb_fiberptr_self(ec->fiber_ptr), error);
             }
-
-            if (result == RUBY_Qundef) {
+            else {
                 // If the thread is not the current thread, we need to enqueue an error:
                 rb_threadptr_pending_interrupt_enque(thread, error);
                 rb_threadptr_interrupt(thread);

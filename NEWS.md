@@ -39,6 +39,11 @@ Note: We're only listing outstanding class updates.
       given names, raising `KeyError` for missing names unless a block is
       given. [[Feature #21781]]
 
+* Fiber::Scheduler
+
+    * The `fiber_interrupt` hook is now required. Schedulers which do not
+      implement it can no longer be installed with `Fiber.set_scheduler`.
+
 * Hash
 
     * `Hash.ruby2_keywords_hash?` and `Hash.ruby2_keywords_hash` are
