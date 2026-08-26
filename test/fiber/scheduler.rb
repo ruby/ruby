@@ -434,7 +434,7 @@ class IOErrorScheduler < Scheduler
     return -Errno::ENOTSOCK::Errno
   end
 
-  def socket_connect(socket, destination_address)
+  def socket_connect(socket, destination_address, timeout)
     return -Errno::EBADF::Errno
   end
 
@@ -488,10 +488,10 @@ class SocketIOScheduler < Scheduler
     end
   end
 
-  def socket_connect(socket, destination_address)
+  def socket_connect(socket, destination_address, timeout)
     descriptor = socket.fileno
 
-    self.operations << [:socket_connect, descriptor, destination_address]
+    self.operations << [:socket_connect, descriptor, destination_address, timeout]
     destination = Addrinfo.new(destination_address)
 
     Fiber.blocking do

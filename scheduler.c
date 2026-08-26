@@ -389,7 +389,7 @@ Init_Fiber_Scheduler(void)
     rb_define_method(rb_cFiberScheduler, "io_close", rb_fiber_scheduler_io_close, 1);
     rb_define_method(rb_cFiberScheduler, "socket_recv", rb_fiber_scheduler_socket_recv, 4);
     rb_define_method(rb_cFiberScheduler, "socket_send", rb_fiber_scheduler_socket_send, 4);
-    rb_define_method(rb_cFiberScheduler, "socket_connect", rb_fiber_scheduler_socket_connect, 2);
+    rb_define_method(rb_cFiberScheduler, "socket_connect", rb_fiber_scheduler_socket_connect, 3);
     rb_define_method(rb_cFiberScheduler, "socket_accept", rb_fiber_scheduler_socket_accept, 2);
     rb_define_method(rb_cFiberScheduler, "socket_shutdown", rb_fiber_scheduler_socket_shutdown, 2);
 #endif
@@ -1078,19 +1078,24 @@ rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer, int 
 
 /*
  *  Document-method: Fiber::Scheduler#socket_connect
- *  call-seq: socket_connect(socket, destination_address) -> 0 or -errno
+ *  call-seq: socket_connect(socket, destination_address, timeout) -> false, 0, or -errno
  *
  *  Invoked by Socket#connect to connect the given +socket+ to the given destination address.
  *
  *  The +destination_address+ argument is a packed sockaddr string.
  *
+ *  The +timeout+ is the maximum duration for the entire connection attempt,
+ *  or +nil+ if there is no timeout. Implementations which perform multiple
+ *  waits should calculate a monotonic deadline once and use the remaining
+ *  duration for each wait.
+ *
  *  Suggested implementation should try to connect in a non-blocking manner and
  *  call #io_wait if the +socket+ is not ready (which will yield control to other
  *  fibers).
  *
- *  Expected to return zero if connection is successful, or, in case of an
- *  error, <tt>-errno</tt> (negated number corresponding to system's error
- *  code).
+ *  Expected to return zero if connection is successful, +false+ if the supplied
+ *  timeout expires, or, in case of an error, <tt>-errno</tt> (negated number
+ *  corresponding to system's error code).
  *
  *  The method should be considered _experimental_.
  */
@@ -1098,18 +1103,18 @@ static VALUE
 fiber_scheduler_socket_connect(VALUE _argument) {
     VALUE *arguments = (VALUE*)_argument;
 
-    return rb_funcallv(arguments[0], id_socket_connect, 2, arguments + 1);
+    return rb_funcallv(arguments[0], id_socket_connect, 3, arguments + 1);
 }
 
 VALUE
-rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE destination_address)
+rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE destination_address, VALUE timeout)
 {
     if (!rb_respond_to(scheduler, id_socket_connect)) {
         return RUBY_Qundef;
     }
 
     VALUE arguments[] = {
-        scheduler, socket, destination_address
+        scheduler, socket, destination_address, timeout
     };
 
     if (rb_respond_to(scheduler, id_fiber_interrupt)) {

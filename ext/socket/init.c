@@ -564,6 +564,16 @@ rsock_socket(int domain, int type, int proto)
     return fd;
 }
 
+NORETURN(static void raise_connect_timeout(const struct sockaddr *sockaddr, int len));
+
+static void
+raise_connect_timeout(const struct sockaddr *sockaddr, int len)
+{
+    VALUE rai = rsock_addrinfo_new((struct sockaddr *)sockaddr, len, PF_UNSPEC, 0, 0, Qnil, Qnil);
+    VALUE address = rsock_addrinfo_inspect_sockaddr(rai);
+    rb_raise(rb_eIOTimeoutError, "user specified timeout for %" PRIsVALUE, address);
+}
+
 /* emulate blocking connect behavior on EINTR or non-blocking socket */
 static int
 wait_connectable(VALUE self, VALUE timeout, const struct sockaddr *sockaddr, int len)
@@ -607,9 +617,7 @@ wait_connectable(VALUE self, VALUE timeout, const struct sockaddr *sockaddr, int
     VALUE result = rb_io_wait(self, RB_INT2NUM(RUBY_IO_READABLE|RUBY_IO_WRITABLE), timeout);
 
     if (result == Qfalse) {
-        VALUE rai = rsock_addrinfo_new((struct sockaddr *)sockaddr, len, PF_UNSPEC, 0, 0, Qnil, Qnil);
-        VALUE addr_str = rsock_addrinfo_inspect_sockaddr(rai);
-        rb_raise(rb_eIOTimeoutError, "user specified timeout for %" PRIsVALUE, addr_str);
+        raise_connect_timeout(sockaddr, len);
     }
 
     int revents = RB_NUM2INT(result);
@@ -686,9 +694,18 @@ rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, V
 #ifdef RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_CONNECT
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
+        VALUE effective_timeout = timeout;
+        if (NIL_OR_UNDEF_P(effective_timeout)) {
+            effective_timeout = rb_io_timeout(fptr->self);
+        }
+
         VALUE destination_address = rb_fiber_scheduler_socket_address_pack(sockaddr, len);
-        VALUE result = rb_fiber_scheduler_socket_connect(scheduler, fptr->self, destination_address);
+        VALUE result = rb_fiber_scheduler_socket_connect(scheduler, fptr->self, destination_address, effective_timeout);
         if (!UNDEF_P(result)) {
+            if (result == Qfalse) {
+                raise_connect_timeout(sockaddr, len);
+            }
+
             if (rb_fiber_scheduler_io_result_apply(result) < 0)
                 rb_sys_fail("connect(2)");
 

@@ -6,6 +6,15 @@ require 'socket'
 require_relative 'scheduler'
 
 class TestFiberScheduler < Test::Unit::TestCase
+  class SocketConnectTimeoutScheduler < IOErrorScheduler
+    attr_reader :timeout
+
+    def socket_connect(socket, destination_address, timeout)
+      @timeout = timeout
+      return false
+    end
+  end
+
   def test_fiber_without_scheduler
     # Cannot create fiber without scheduler.
     assert_raise RuntimeError do
@@ -602,13 +611,63 @@ class TestFiberScheduler < Test::Unit::TestCase
 
     thread.join
     assert_equal [
-      [:socket_connect, s1.fileno, addr.to_s],
+      [:socket_connect, s1.fileno, addr.to_s, nil],
     ], operations
     assert_equal 0, result
   ensure
     thread.kill rescue nil
     s1.close rescue nil
     s2.close rescue nil
+  end
+
+  def test_socket_connect_uses_io_timeout
+    s1 = UDPSocket.new
+    s2 = UDPSocket.new
+    s1.timeout = 0.25
+    s2.bind('127.0.0.1', 0)
+    port = s2.addr[1]
+
+    scheduler = nil
+    error = nil
+
+    thread = Thread.new do
+      scheduler = SocketConnectTimeoutScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        s1.connect('127.0.0.1', port)
+      rescue => error
+      end
+    end
+
+    thread.join
+    assert_equal 0.25, scheduler.timeout
+    assert_kind_of IO::TimeoutError, error
+  ensure
+    thread.kill rescue nil
+    s1.close rescue nil
+    s2.close rescue nil
+  end
+
+  def test_socket_connect_uses_connect_timeout
+    scheduler = nil
+    error = nil
+
+    thread = Thread.new do
+      scheduler = SocketConnectTimeoutScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        TCPSocket.new('127.0.0.1', 1, connect_timeout: 0.25, fast_fallback: false)
+      rescue => error
+      end
+    end
+
+    thread.join
+    assert_equal 0.25, scheduler.timeout
+    assert_kind_of IO::TimeoutError, error
+  ensure
+    thread.kill rescue nil
   end
 
   def test_socket_connect_error

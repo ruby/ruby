@@ -538,10 +538,11 @@ VALUE rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer
  * @param[in]   scheduler    Target scheduler.
  * @param[in]   socket       A socket object to connect.
  * @param[in]   destination_address  A packed string containing the destination address.
+ * @param[in]   timeout      Maximum duration for the connection attempt, or Qnil.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_connect`.
- * @return      otherwise    What `scheduler.socket_connect` returns `[-errno, 0]`.
+ * @return      otherwise    What `scheduler.socket_connect` returns (`false`, `-errno`, or 0).
  */
-VALUE rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE destination_address);
+VALUE rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE destination_address, VALUE timeout);
 
 /**
  * Non-blocking accept connection from the passed Socket.
