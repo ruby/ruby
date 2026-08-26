@@ -73,6 +73,24 @@ module Prism
       assert_warning("{ a: 1, **{ a: 2 } }", "duplicated and overwritten")
     end
 
+    def test_duplicated_hash_key_splatted_literal_position
+      assert_warning("{ **{ a: 1 }, a: 2 }", "duplicated and overwritten", compare: false)
+      assert_warning("{ **{}, a: 1, **{ a: 2 } }", "duplicated and overwritten", compare: false)
+      assert_warning("{ **z, a: 1, **{ a: 1 } }", "duplicated and overwritten", compare: false)
+      assert_warning("foo(**{ a: 1 }, a: 2)", "duplicated and overwritten", compare: false)
+    end
+
+    def test_duplicated_hash_key_splatted_literal_nested
+      assert_warning("{ a: 1, **{ **{ a: 2 } } }", "duplicated and overwritten", compare: false)
+      assert_warning("{ a: 1,\n**{ a: 2,\n**{ a: 3 } } }", "on line 3", "on line 2", compare: false)
+    end
+
+    def test_duplicated_hash_key_splatted_expression
+      refute_warning("{ a: 1, **{ a: 2 }.dup }", compare: false)
+      refute_warning("{ a: 1, **({ a: 2 }) }", compare: false)
+      refute_warning("foo(a: 1, **{ a: 2 }.dup)", compare: false)
+    end
+
     def test_duplicated_when_clause
       assert_warning("case 1; when 1, 1; end", "when' clause")
     end

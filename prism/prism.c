@@ -13752,6 +13752,28 @@ parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
 }
 
 /**
+ * Append the warning for a hash key that is overwritten by a later occurrence.
+ */
+static void
+pm_hash_key_duplicated_warn(pm_parser_t *parser, const pm_node_t *duplicated, const pm_node_t *node) {
+    pm_buffer_t buffer = { 0 };
+    pm_static_literal_inspect(&buffer, &parser->line_offsets, parser->start, parser->start_line, parser->encoding, duplicated);
+
+    pm_diagnostic_list_append_format(
+        &parser->metadata_arena,
+        &parser->warning_list,
+        duplicated->location.start,
+        duplicated->location.length,
+        PM_WARN_DUPLICATED_HASH_KEY,
+        (int) pm_buffer_length(&buffer),
+        pm_buffer_value(&buffer),
+        pm_line_offset_list_line_column(&parser->line_offsets, PM_NODE_START(node), parser->start_line).line
+    );
+
+    pm_buffer_cleanup(&buffer);
+}
+
+/**
  * Add a node to a set of static literals that holds a set of hash keys. If the
  * node is a duplicate, then add an appropriate warning.
  */
@@ -13760,21 +13782,47 @@ pm_hash_key_static_literals_add(pm_parser_t *parser, pm_static_literals_t *liter
     const pm_node_t *duplicated = pm_static_literals_add(&parser->line_offsets, parser->start, parser->start_line, parser->encoding, literals, node, true);
 
     if (duplicated != NULL) {
-        pm_buffer_t buffer = { 0 };
-        pm_static_literal_inspect(&buffer, &parser->line_offsets, parser->start, parser->start_line, parser->encoding, duplicated);
+        pm_hash_key_duplicated_warn(parser, duplicated, node);
+    }
+}
 
-        pm_diagnostic_list_append_format(
-            &parser->metadata_arena,
-            &parser->warning_list,
-            duplicated->location.start,
-            duplicated->location.length,
-            PM_WARN_DUPLICATED_HASH_KEY,
-            (int) pm_buffer_length(&buffer),
-            pm_buffer_value(&buffer),
-            pm_line_offset_list_line_column(&parser->line_offsets, PM_NODE_START(node), parser->start_line).line
-        );
+/**
+ * Add the keys of a hash literal splatted directly into another hash with **
+ * to the outer hash's set of keys, as if they were written in place. A key
+ * whose previous occurrence starts at or past boundary (the start of the
+ * splatted hash) is still replaced but not warned about again: that pair was
+ * already warned about when the splatted hash was parsed.
+ */
+static void
+pm_hash_key_static_literals_merge(pm_parser_t *parser, pm_static_literals_t *literals, const pm_hash_node_t *hash, uint32_t boundary) {
+    const pm_node_list_t *elements = &hash->elements;
 
-        pm_buffer_cleanup(&buffer);
+    for (size_t index = 0; index < elements->size; index++) {
+        pm_node_t *element = elements->nodes[index];
+
+        switch (PM_NODE_TYPE(element)) {
+            case PM_ASSOC_NODE: {
+                pm_node_t *key = ((pm_assoc_node_t *) element)->key;
+                const pm_node_t *duplicated = pm_static_literals_add(&parser->line_offsets, parser->start, parser->start_line, parser->encoding, literals, key, true);
+
+                if (duplicated != NULL && PM_NODE_START(duplicated) < boundary) {
+                    pm_hash_key_duplicated_warn(parser, duplicated, key);
+                }
+
+                break;
+            }
+            case PM_ASSOC_SPLAT_NODE: {
+                const pm_node_t *value = ((pm_assoc_splat_node_t *) element)->value;
+
+                if (value != NULL && PM_NODE_TYPE_P(value, PM_HASH_NODE)) {
+                    pm_hash_key_static_literals_merge(parser, literals, (const pm_hash_node_t *) value, boundary);
+                }
+
+                break;
+            }
+            default:
+                break;
+        }
     }
 }
 
@@ -13816,15 +13864,14 @@ parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *nod
                 pm_token_t operator = parser->previous;
                 pm_node_t *value = NULL;
 
-                if (match1(parser, PM_TOKEN_BRACE_LEFT_HASH)) {
-                    // If we're about to parse a nested hash that is being
-                    // pushed into this hash directly with **, then we want the
-                    // inner hash to share the static literals with the outer
-                    // hash.
-                    parser->current_hash_keys = literals;
+                if (token_begins_expression_p(parser->current.type)) {
                     value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_SPLAT_HASH, (uint16_t) (depth + 1));
-                } else if (token_begins_expression_p(parser->current.type)) {
-                    value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_SPLAT_HASH, (uint16_t) (depth + 1));
+
+                    /* If the splatted value is itself a hash literal, its keys
+                     * become part of this hash for the duplicate key warning. */
+                    if (value != NULL && PM_NODE_TYPE_P(value, PM_HASH_NODE)) {
+                        pm_hash_key_static_literals_merge(parser, literals, (const pm_hash_node_t *) value, PM_NODE_START(value));
+                    }
                 } else {
                     pm_parser_scope_forwarding_keywords_check(parser, &operator);
                 }
@@ -19551,29 +19598,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES:
             return parse_parentheses(parser, binding_power, flags, depth);
         case PM_TOKEN_BRACE_LEFT_HASH: {
-            // If we were passed a current_hash_keys via the parser, then that
-            // means we're already parsing a hash and we want to share the set
-            // of hash keys with this inner hash we're about to parse for the
-            // sake of warnings. We'll set it to NULL after we grab it to make
-            // sure subsequent expressions don't use it. Effectively this is a
-            // way of getting around passing it to every call to
-            // parse_expression.
-            pm_static_literals_t *current_hash_keys = parser->current_hash_keys;
-            parser->current_hash_keys = NULL;
-
             parser_lex(parser);
 
             pm_token_t opening = parser->previous;
             pm_hash_node_t *node = pm_hash_node_create(parser, &opening);
 
             if (!match2(parser, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_EOF)) {
-                if (current_hash_keys != NULL) {
-                    parse_assocs(parser, current_hash_keys, UP(node), (uint16_t) (depth + 1));
-                } else {
-                    pm_static_literals_t hash_keys = { 0 };
-                    parse_assocs(parser, &hash_keys, UP(node), (uint16_t) (depth + 1));
-                    pm_static_literals_free(&hash_keys);
-                }
+                pm_static_literals_t hash_keys = { 0 };
+                parse_assocs(parser, &hash_keys, UP(node), (uint16_t) (depth + 1));
+                pm_static_literals_free(&hash_keys);
 
                 accept1(parser, PM_TOKEN_NEWLINE);
             }
