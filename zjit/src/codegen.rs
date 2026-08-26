@@ -1053,9 +1053,6 @@ fn gen_ccall_with_frame(
     gen_stack_overflow_check(jit, asm, function, state, state.stack_size());
 
     let args_with_recv_len = args.len() + 1;
-    if args_with_recv_len > C_ARG_OPNDS.len() {
-        unimplemented!("Passing C call arguments on the stack");
-    }
     let caller_stack_size = state.stack().len() - args_with_recv_len;
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
