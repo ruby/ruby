@@ -7,7 +7,7 @@
 #   if `revision` is not given, "v"+`version` or `version` will be used.
 
 minitest            6.0.6  https://github.com/minitest/minitest
-power_assert        3.0.1   https://github.com/ruby/power_assert
+power_assert        3.1.0   https://github.com/ruby/power_assert
 rake                13.4.2  https://github.com/ruby/rake
 test-unit           3.7.8   https://github.com/test-unit/test-unit
 rexml               3.4.4   https://github.com/ruby/rexml
