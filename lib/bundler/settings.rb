@@ -729,8 +729,8 @@ module Bundler
 
     def self.to_bool(value)
       case value
-      when String, Symbol
-        value.to_s.match?(/\A(false|f|no|n|0|)\z/i) ? false : true
+      when String
+        value.match?(/\A(false|f|no|n|0|)\z/i) ? false : true
       when nil, false
         false
       else

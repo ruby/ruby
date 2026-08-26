@@ -133,9 +133,15 @@ RSpec.describe "the prune setting" do
       bundle "install", env: { "BUNDLE_PRUNE" => "cache" }
 
       expect(err).to include("The `prune` setting was ignored")
-      expect(err).to include("bundle config set path")
+      expect(err).to include("bundle config set --local path")
       expect(Pathname.new(system_gem_path("cache"))).to exist
       expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
+    it "stays quiet when the setting reads as false" do
+      bundle "install", env: { "BUNDLE_PRUNE" => "0" }
+
+      expect(err).to be_empty
     end
   end
 
@@ -166,6 +172,18 @@ RSpec.describe "the prune setting" do
 
       bundle "exec ruby -e 'require \"foo\"; puts FOO'"
       expect(out).to eq("1.0")
+    end
+
+    it "leaves a locally overridden repository alone" do
+      gemfile <<-G
+        source "https://gem.repo1"
+
+        gem "foo", :git => "#{git_path}", :branch => "main"
+      G
+      bundle "config set local.foo #{lib_path("foo")}"
+      bundle "install", env: { "BUNDLE_PRUNE" => "git" }
+
+      expect(lib_path("foo/.git")).to exist
     end
 
     it "leaves checkouts that belong to another bundle alone" do

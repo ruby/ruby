@@ -235,27 +235,40 @@ module Bundler
     # from the lockfile. Gem contents are never touched.
     def prune(categories)
       categories = expand_prune_categories(categories)
+      return if categories.empty?
 
-      prune_download_cache if categories.include?(:cache)
+      # Without a bundle path the cache is shared with RubyGems, so it holds gem
+      # files Bundler never put there.
+      if Bundler.use_system_gems?
+        Bundler.ui.warn "The `prune` setting was ignored because this bundle installs into the system gem " \
+                        "directory, which Bundler shares with RubyGems. Run " \
+                        "`bundle config set --local path vendor/bundle` to prune.", wrap: true
+        return
+      end
+
+      # Git metadata first, because resolving a checkout's install path can need
+      # the mirror that pruning the cache removes.
       prune_git_metadata if categories.include?(:git)
+      prune_download_cache if categories.include?(:cache)
     end
 
     private
 
-    # Anything that is not a category name is read as a boolean, so
-    # `BUNDLE_PRUNE=1` selects every category and keeps doing so as categories
-    # are added. That way a tool can set the flag without tracking this list.
+    # Anything that is not a category name is read as a boolean with Bundler's
+    # usual vocabulary, so `BUNDLE_PRUNE=1` selects every category and keeps
+    # doing so as categories are added. That way a tool can set the flag without
+    # tracking this list.
     def expand_prune_categories(categories)
       Array(categories).flat_map do |category|
-        category = category.to_sym
-        next category if PRUNE_CATEGORIES.include?(category)
+        name = category.to_s
+        next name.to_sym if PRUNE_CATEGORIES.include?(name.to_sym)
 
-        Settings.to_bool(category) ? PRUNE_CATEGORIES : []
+        Settings.to_bool(name) ? PRUNE_CATEGORIES : []
       end.uniq
     end
 
     def prune_download_cache
-      cache_path = File.join(Gem.dir, "cache")
+      cache_path = File.join(Bundler.bundle_path, "cache")
       return unless File.exist?(cache_path)
 
       Bundler.ui.info "Removing the download cache at #{cache_path}"
@@ -265,7 +278,14 @@ module Bundler
     end
 
     def prune_git_metadata
-      git_dirs = @definition.spec_git_paths.map {|path| File.join(path, ".git") }.select {|dir| File.exist?(dir) }
+      owned = "#{Bundler.install_path}#{File::SEPARATOR}"
+      git_dirs = @definition.sources.git_sources.reject(&:local?).filter_map do |source|
+        install_path = source.install_path.to_s
+        next unless install_path.start_with?(owned)
+
+        git_dir = File.join(install_path, ".git")
+        git_dir if File.exist?(git_dir)
+      end
       return if git_dirs.empty?
 
       Bundler.ui.info "Removing git metadata from checked out git gems"
