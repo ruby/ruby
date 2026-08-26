@@ -474,16 +474,16 @@ class SocketIOScheduler < Scheduler
 
     Fiber.blocking do
       if source_address
-        temp = Socket.for_fd(socket.fileno)
-        temp.autoclose = false
-        str, addrinfo = temp.recvfrom(buffer.size, flags)
-        buffer.set_string(str)
-        source_address.replace(addrinfo.to_s)
-        str.bytesize
+        socket_wrapper = Socket.for_fd(socket.fileno)
+        socket_wrapper.autoclose = false
+        data, sender_address = socket_wrapper.recvfrom(buffer.size, flags)
+        buffer.set_string(data)
+        source_address.replace(sender_address.to_s)
+        data.bytesize
       else
-        str = socket.recv(buffer.size, flags)
-        buffer.set_string(str)
-        str.bytesize
+        data = socket.recv(buffer.size, flags)
+        buffer.set_string(data)
+        data.bytesize
       end
     end
   end
@@ -492,10 +492,10 @@ class SocketIOScheduler < Scheduler
     descriptor = socket.fileno
 
     self.operations << [:socket_connect, descriptor, destination_address]
-    addr2 = Addrinfo.new(destination_address)
+    destination = Addrinfo.new(destination_address)
 
     Fiber.blocking do
-      socket.connect(addr2.ip_address, addr2.ip_port)
+      socket.connect(destination.ip_address, destination.ip_port)
     end
   end
 
@@ -503,15 +503,15 @@ class SocketIOScheduler < Scheduler
     descriptor = socket.fileno
 
     Fiber.blocking do
-      # Use Socket.for_fd with autoclose=false so GC doesn't close sock's fd.
-      temp = Socket.for_fd(socket.fileno)
-      temp.autoclose = false
-      conn, peer_addrinfo = temp.accept
-      peer_address.replace(peer_addrinfo.to_s)
-      self.operations << [:socket_accept, descriptor, peer_addrinfo.to_s]
-      # Prevent conn from closing its fd on GC; the C side will own the fd.
-      conn.autoclose = false
-      conn.fileno
+      # Use Socket.for_fd with autoclose=false so GC doesn't close the socket's file descriptor.
+      socket_wrapper = Socket.for_fd(socket.fileno)
+      socket_wrapper.autoclose = false
+      connection, accepted_peer_address = socket_wrapper.accept
+      peer_address.replace(accepted_peer_address.to_s)
+      self.operations << [:socket_accept, descriptor, accepted_peer_address.to_s]
+      # Prevent connection from closing its file descriptor on GC; the C side will own it.
+      connection.autoclose = false
+      connection.fileno
     end
   end
 
