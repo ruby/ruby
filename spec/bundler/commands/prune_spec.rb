@@ -70,11 +70,17 @@ RSpec.describe "the prune setting" do
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
-    it "warns about unknown categories and prunes the known ones" do
-      bundle "install", env: { "BUNDLE_PRUNE" => "cache:ext" }
+    it "reads any value that is not a category as every category" do
+      bundle "install", env: { "BUNDLE_PRUNE" => "1" }
 
-      expect(err).to include("Unknown `prune` category ext")
+      expect(err).to be_empty
       expect(vendored_gems("cache")).not_to exist
+    end
+
+    it "reads a false value as unset" do
+      bundle "install", env: { "BUNDLE_PRUNE" => "0" }
+
+      expect(vendored_gems("cache/myrack-1.0.0.gem")).to exist
     end
 
     it "fills the app cache before pruning on bundle cache" do
@@ -83,6 +89,16 @@ RSpec.describe "the prune setting" do
 
       expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
       expect(vendored_gems("cache")).not_to exist
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
+    it "downloads the archives bundle cache needs after an earlier prune" do
+      bundle "install", env: { "BUNDLE_PRUNE" => "cache" }
+      expect(vendored_gems("cache")).not_to exist
+
+      bundle "cache"
+
+      expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
@@ -101,6 +117,25 @@ RSpec.describe "the prune setting" do
       bundle "clean --dry-run", env: { "BUNDLE_PRUNE" => "cache" }
 
       expect(vendored_gems("cache/myrack-1.0.0.gem")).to exist
+    end
+  end
+
+  describe "without a bundle path" do
+    before do
+      gemfile <<-G
+        source "https://gem.repo1"
+
+        gem "myrack"
+      G
+    end
+
+    it "refuses to prune the gem directory Bundler shares with RubyGems" do
+      bundle "install", env: { "BUNDLE_PRUNE" => "cache" }
+
+      expect(err).to include("The `prune` setting was ignored")
+      expect(err).to include("bundle config set path")
+      expect(Pathname.new(system_gem_path("cache"))).to exist
+      expect(the_bundle).to include_gems "myrack 1.0.0"
     end
   end
 
@@ -131,6 +166,17 @@ RSpec.describe "the prune setting" do
 
       bundle "exec ruby -e 'require \"foo\"; puts FOO'"
       expect(out).to eq("1.0")
+    end
+
+    it "leaves checkouts that belong to another bundle alone" do
+      stray = vendored_gems("bundler/gems/stray-0123456789ab")
+      stray.join(".git").mkpath
+      stray.join("stray.rb").write("")
+
+      bundle "install", env: { "BUNDLE_PRUNE" => "git" }
+
+      expect(checkout.join(".git")).not_to exist
+      expect(stray.join(".git")).to exist
     end
 
     it "removes the git mirror along with the download cache" do

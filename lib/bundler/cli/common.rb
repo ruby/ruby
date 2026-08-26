@@ -177,7 +177,17 @@ module Bundler
       return if options["skip-prune"]
 
       categories = Bundler.settings[:prune]
-      Bundler.load.prune(categories) unless categories.empty?
+      return if categories.empty?
+
+      # Without a bundle path the cache is shared with RubyGems, so it holds gem
+      # files Bundler never put there.
+      if Bundler.use_system_gems?
+        Bundler.ui.warn "The `prune` setting was ignored because this bundle installs into the system gem " \
+                        "directory, which Bundler shares with RubyGems. Run `bundle config set path <dir>` to prune."
+        return
+      end
+
+      Bundler.load.prune(categories)
     end
 
     def self.word_list(words)

@@ -318,15 +318,22 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `prefer_patch` (`BUNDLE_PREFER_PATCH`):
    Prefer updating only to next patch version during updates. Makes `bundle update` calls equivalent to `bundler update --patch`.
 * `prune` (`BUNDLE_PRUNE`):
-   A colon-separated list of Bundler-managed artifacts to delete after a
-   successful `bundle install` or `bundle update`, and on `bundle clean`.
-   `cache` removes the download cache under the bundle path, which holds both
-   the cached `.gem` files and the git mirrors. `git` removes the `.git`
-   directory of every checked out git gem. `all` selects both. Everything
-   removed is rebuilt by the next `bundle install`, so this is meant for
-   container images and other throwaway environments. `bundle install
-   --redownload` downloads a pruned gem again, and `bundle pristine` works once
-   it has.
+   A space-separated or `:`-separated list of Bundler-managed artifacts to
+   delete after a successful `bundle install`, `bundle update` or `bundle
+   cache`, and on `bundle clean`. `cache` removes the download cache under the
+   bundle path, which holds both the cached `.gem` files and the git mirrors.
+   `git` removes the `.git` directory of every checked out git gem. Any value
+   that is not a category name is read as a boolean, so `BUNDLE_PRUNE=1` selects
+   every category and keeps doing so as categories are added. This is meant for
+   container images and other throwaway
+   environments. **The setting only takes effect when a bundle path is set.**
+   Without one Bundler installs into the system gem directory, where the cache
+   is shared with RubyGems and holds gem files Bundler never put there, so
+   pruning is skipped with a warning. Set a path with `BUNDLE_PATH` or `bundle
+   config set path <dir>`. A pruned artifact comes back only when Bundler has to
+   install that gem again, so a later `bundle install` does not restore it on
+   its own. `bundle install --redownload` does, and `bundle pristine` works once
+   it has, though with `prune` still set the reinstall prunes again at the end.
 * `redirect` (`BUNDLE_REDIRECT`):
    The number of redirects allowed for network requests. Defaults to `5`.
 * `retry` (`BUNDLE_RETRY`):

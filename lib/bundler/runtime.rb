@@ -242,15 +242,15 @@ module Bundler
 
     private
 
+    # Anything that is not a category name is read as a boolean, so
+    # `BUNDLE_PRUNE=1` selects every category and keeps doing so as categories
+    # are added. That way a tool can set the flag without tracking this list.
     def expand_prune_categories(categories)
       Array(categories).flat_map do |category|
         category = category.to_sym
-        next PRUNE_CATEGORIES if category == :all
         next category if PRUNE_CATEGORIES.include?(category)
 
-        Bundler.ui.warn "Unknown `prune` category #{category}, ignoring it. " \
-                        "Valid categories are #{PRUNE_CATEGORIES.join(", ")}, and all."
-        []
+        Settings.to_bool(category) ? PRUNE_CATEGORIES : []
       end.uniq
     end
 
@@ -265,7 +265,7 @@ module Bundler
     end
 
     def prune_git_metadata
-      git_dirs = SharedHelpers.glob_files_in_dir("bundler/gems/*/.git", Gem.dir)
+      git_dirs = @definition.spec_git_paths.map {|path| File.join(path, ".git") }.select {|dir| File.exist?(dir) }
       return if git_dirs.empty?
 
       Bundler.ui.info "Removing git metadata from checked out git gems"
