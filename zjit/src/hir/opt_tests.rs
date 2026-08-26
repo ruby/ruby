@@ -21963,4 +21963,48 @@ mod hir_opt_tests {
           Return v19
         ");
     }
+
+    #[test]
+    fn test_same_constant_does_not_create_block_param() {
+        eval(r#"
+            def test(cond)
+              if cond
+                x = 1
+              else
+                x = 1
+              end
+              x
+            end
+
+            test(true)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :cond@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :cond@1
+          Jump bb3(v7, v8)
+        bb3(v11:BasicObject, v12:BasicObject):
+          v48:NilClass = Const Value(nil)
+          v18:CBool = Test v12
+          v19:Falsy = RefineType v12, Falsy
+          CondBranch v18, bb6(), bb4()
+        bb6():
+          v21:Truthy = RefineType v12, Truthy
+          Jump bb5(v21)
+        bb4():
+          Jump bb5(v19)
+        bb5(v38:BasicObject):
+          v49:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          Return v49
+        ");
+    }
 }
