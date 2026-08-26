@@ -2,12 +2,14 @@
 
 A filesystem entry has a _mode_ that specifies:
 
-- [Permissions](#permissions).
-- [Sticky bits](#sticky-bits).
-- [File type](#file-type).
+- [Permissions][permissions].
+- [Special bits][special bits].
+- [File type][file type].
 
-On this page, we use a [helper method](#helper-method) to display a mode
+On this page, we use a helper method to display a mode
 in a convenient form, showing the mode both as an octal integer and a string.
+If you're new to this page, it may be helpful
+to read about the [helper method][helper method] now.
 
 ## Permissions
 
@@ -19,10 +21,6 @@ A filesystem entry has permissions:
 
     - File: whether the file may be _executed_, and by what processes.
     - Directory: whether the directory may be _searched_, and by what processes.
-
-The permissions may be represented by an octal integer
-whose trailing three digits show the permissions, respectively,
-for the owner, the group, and world (meaning everyone else).
 
 For a method that actually creates a file in the underlying filesystem
 (as opposed to merely creating a File object), permissions may be specified;
@@ -100,7 +98,13 @@ The permissions in this table, applied to a directory, specify search permission
 | `775`  | `'rwxrwxr-x'` | Owner/group read-write-search; world read-search.         |
 | `777`  | `'rwxrwxrwx'` | Owner/group/world read-write-search; generally avoid.     |
 
-## Sticky Bits
+## Special Bits
+
+The fourth-from-left octal digit in a mode represents its special bits:
+
+- Its low-order bit (`1000`) shows whether the [sticky bit][sticky bit]  is set.
+- The next bit (`2000`) shows whether the [setuid bit][setuid bit] is set.
+- The next bit (`4000`) shows whether the [setgid bit][setgid bit] is set.
 
 | Octal   | Meaning                   |
 |:-------:|---------------------------|
@@ -112,6 +116,38 @@ The permissions in this table, applied to a directory, specify search permission
 | `5000`  | Setuid + sticky.          |
 | `6000`  | Setuid + setgid.          |
 | `7000`  | Setuid + setgid + sticky. |
+
+Examples:
+
+```ruby
+File.write(filepath, '')
+File.chmod(00644, filepath)
+mode(filepath) # => "100644 -rw-r--r--"  # No special bits set.
+File.chmod(01644, filepath)
+mode(filepath) # => "101644 -rw-r--r-T"  # 'T' shows that sticky bit is set.
+File.chmod(02644, filepath)
+mode(filepath) # => "102644 -rw-r-Sr--"  # 'S' shows that setuid bit is set.
+File.chmod(04644, filepath)
+mode(filepath) # => "104644 -rwSr--r--"  # 'S' shows that setgid bit is set.
+File.chmod(07644, filepath)
+mode(filepath) # => "107644 -rwSr-Sr-T"  # All set.
+```
+
+In each case, if the execute bit is also set,
+lowercase letters `'t'` and `'s'` are displayed instead of uppercase `'T'` and `'S'`:
+
+```ruby
+File.chmod(00755, filepath)
+mode(filepath) # => "100755 -rwxr-xr-x"
+File.chmod(01755, filepath)
+mode(filepath) # => "101755 -rwxr-xr-t"
+File.chmod(02755, filepath)
+mode(filepath) # => "102755 -rwxr-sr-x"
+File.chmod(04755, filepath)
+mode(filepath) # => "104755 -rwsr-xr-x"
+File.chmod(07755, filepath)
+mode(filepath) # => "107755 -rwsr-sr-t"
+```
 
 ## File Type
 
@@ -127,7 +163,29 @@ The permissions in this table, applied to a directory, specify search permission
 
 ## Helper Method
 
-On this page, we use a helper method to show the mode information for a given path.
+On this page, we use a helper method, `mode`, to show the mode information for a given path:
+
+```ruby
+mode('README.md') # => "0100664 -rw-rw-r--"
+mode('/etc')      # => "0040755 drwxr-xr-x"
+```
+
+In the returned value, the [permissions][permissions] are expressed both in:
+
+- The trailing three digits of the octal value (e.g., `755`, `644`).
+
+    - Third-from-left digit: owner permissions.
+    - Second-from-left digit: group permissions.
+    - Leftmost digit: world permissions.
+
+- The trailing nine characters of the string string value
+  (e.g., `'rwxr-xr-x'`, `'rw-r--r--'`).
+
+    - First three characters: owner permissions.
+    - Middle three characters: group permissions.
+    - Last three characters: world permissions.
+
+For the code-curious:
 
 ```ruby
 # Return a string containing the mode (octal digits and character string)
@@ -144,24 +202,11 @@ def mode(path)
 end
 ```
 
-Examples:
+[permissions]:   #permissions
+[special bits]:  #special-bits
+[file type]:     #file-type
+[helper method]: #helper-method
 
-```ruby
-mode('README.md') # => "0100664 -rw-rw-r--"
-mode('/etc')      # => "0040755 drwxr-xr-x"
-```
-
-In a value returned by helper method `mode`, the permissions are expressed both in:
-
-- The trailing three digits of the leading octal integer (e.g., `755`, `644`).
-
-    - Third-from-left digit: owner permissions.
-    - Second-from-left digit: group permissions.
-    - Leftmost digit: world permissions.
-
-- The trailing nine characters of the trailing string (e.g., `'rwxr-xr-x'`, `'rw-r--r--'`).
-
-    - First three characters: owner permissions.
-    - Middle three characters: group permissions.
-    - Last three characters: world permissions.
-
+[sticky bit]: https://en.wikipedia.org/wiki/Sticky_bit
+[setuid bit]: https://en.wikipedia.org/wiki/Setuid
+[setgid bit]: https://en.wikipedia.org/wiki/Setuid
