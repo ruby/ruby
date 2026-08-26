@@ -354,7 +354,10 @@ class Gem::RequestSet
     parser.specs.group_by(&:source).each do |source, specs|
       case source
       when Bundler::Source::Rubygems
-        remotes = source.remotes.map {|remote| Gem::Source.new(remote.to_s) }
+        # Bundler::Source::Rubygems stores remotes in reverse of the lockfile
+        # order (Bundler::Source::Rubygems#to_lock reverses them back), so
+        # restore the lockfile order here.
+        remotes = source.remotes.reverse.map {|remote| Gem::Source.new(remote.to_s) }
         remotes << Gem::Source.new(Gem::DEFAULT_HOST) if remotes.empty?
         lock_set = Gem::Resolver::LockSet.new(remotes)
         specs.each do |spec|

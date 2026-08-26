@@ -385,6 +385,39 @@ ruby "0"
     assert_equal [dep("a", "~> 1.0")], spec.dependencies
   end
 
+  def test_load_gemdeps_with_lockfile_gem_section_multiple_remotes
+    rs = Gem::RequestSet.new
+
+    File.open "gem.deps.rb", "w" do |io|
+      io.puts 'gem "a"'
+    end
+
+    File.open "gem.deps.rb.lock", "w" do |io|
+      io.puts <<~LOCKFILE
+        GEM
+          remote: https://gems.example/
+          remote: https://other.example/
+          specs:
+            a (2)
+
+        PLATFORMS
+          #{Gem::Platform::RUBY}
+
+        DEPENDENCIES
+          a
+      LOCKFILE
+    end
+
+    rs.load_gemdeps "gem.deps.rb"
+
+    lock_set = rs.sets.find {|set| Gem::Resolver::LockSet === set }
+    refute_nil lock_set, "LockSet should be created from GEM section"
+    assert_equal %w[a-2], lock_set.specs.map(&:full_name)
+
+    assert_equal %w[https://gems.example/ https://other.example/],
+                 lock_set.specs.flat_map {|s| s.sources.map {|src| src.uri.to_s } }
+  end
+
   def test_load_gemdeps_with_lockfile_git_section
     rs = Gem::RequestSet.new
 
