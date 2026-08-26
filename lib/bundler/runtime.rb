@@ -4,6 +4,8 @@ module Bundler
   class Runtime
     include SharedHelpers
 
+    PRUNE_CATEGORIES = [:cache, :git].freeze
+
     def initialize(root, definition)
       @root = root
       @definition = definition
@@ -229,7 +231,50 @@ module Bundler
       output
     end
 
+    # Removes the artifacts Bundler keeps for its own bookkeeping and can rebuild
+    # from the lockfile. Gem contents are never touched.
+    def prune(categories)
+      categories = expand_prune_categories(categories)
+
+      prune_download_cache if categories.include?(:cache)
+      prune_git_metadata if categories.include?(:git)
+    end
+
     private
+
+    def expand_prune_categories(categories)
+      Array(categories).flat_map do |category|
+        category = category.to_sym
+        next PRUNE_CATEGORIES if category == :all
+        next category if PRUNE_CATEGORIES.include?(category)
+
+        Bundler.ui.warn "Unknown `prune` category #{category}, ignoring it. " \
+                        "Valid categories are #{PRUNE_CATEGORIES.join(", ")}, and all."
+        []
+      end.uniq
+    end
+
+    def prune_download_cache
+      cache_path = File.join(Gem.dir, "cache")
+      return unless File.exist?(cache_path)
+
+      Bundler.ui.info "Removing the download cache at #{cache_path}"
+      SharedHelpers.filesystem_access(cache_path) do |p|
+        FileUtils.rm_rf(p)
+      end
+    end
+
+    def prune_git_metadata
+      git_dirs = SharedHelpers.glob_files_in_dir("bundler/gems/*/.git", Gem.dir)
+      return if git_dirs.empty?
+
+      Bundler.ui.info "Removing git metadata from checked out git gems"
+      git_dirs.each do |git_dir|
+        SharedHelpers.filesystem_access(git_dir) do |p|
+          FileUtils.rm_rf(p)
+        end
+      end
+    end
 
     def prune_gem_cache(resolve, cache_path)
       cached = SharedHelpers.glob_files_in_dir("*.gem", cache_path.to_s)

@@ -54,6 +54,7 @@ module Bundler
 
     ARRAY_KEYS = %w[
       only
+      prune
       with
       without
     ].freeze

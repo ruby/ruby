@@ -171,6 +171,12 @@ module Bundler
       clean
     end
 
+    # `bundle clean` prunes on its own, so this only covers installs that skip it.
+    def self.prune_after_install
+      categories = Bundler.settings[:prune]
+      Bundler.load.prune(categories) unless categories.empty?
+    end
+
     def self.word_list(words)
       if words.empty?
         return ""

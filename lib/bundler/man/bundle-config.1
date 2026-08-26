@@ -173,6 +173,8 @@ The store can also be selected per host with \fBcredential_store\.<host>\fR (\fB
 .IP "\(bu" 4
 \fBprefer_patch\fR (\fBBUNDLE_PREFER_PATCH\fR): Prefer updating only to next patch version during updates\. Makes \fBbundle update\fR calls equivalent to \fBbundler update \-\-patch\fR\.
 .IP "\(bu" 4
+\fBprune\fR (\fBBUNDLE_PRUNE\fR): A colon\-separated list of Bundler\-managed artifacts to delete after a successful \fBbundle install\fR or \fBbundle update\fR, and on \fBbundle clean\fR\. \fBcache\fR removes the download cache under the bundle path, which holds both the cached \fB\.gem\fR files and the git mirrors\. \fBgit\fR removes the \fB\.git\fR directory of every checked out git gem\. \fBall\fR selects both\. Everything removed is rebuilt by the next \fBbundle install\fR, so this is meant for container images and other throwaway environments\. Note that \fBbundle pristine\fR cannot restore a gem whose cached \fB\.gem\fR file was removed\.
+.IP "\(bu" 4
 \fBredirect\fR (\fBBUNDLE_REDIRECT\fR): The number of redirects allowed for network requests\. Defaults to \fB5\fR\.
 .IP "\(bu" 4
 \fBretry\fR (\fBBUNDLE_RETRY\fR): The number of times to retry failed network requests\. Defaults to \fB3\fR\.

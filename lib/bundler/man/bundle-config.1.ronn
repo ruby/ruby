@@ -317,6 +317,15 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Enable Bundler's experimental plugin system.
 * `prefer_patch` (`BUNDLE_PREFER_PATCH`):
    Prefer updating only to next patch version during updates. Makes `bundle update` calls equivalent to `bundler update --patch`.
+* `prune` (`BUNDLE_PRUNE`):
+   A colon-separated list of Bundler-managed artifacts to delete after a
+   successful `bundle install` or `bundle update`, and on `bundle clean`.
+   `cache` removes the download cache under the bundle path, which holds both
+   the cached `.gem` files and the git mirrors. `git` removes the `.git`
+   directory of every checked out git gem. `all` selects both. Everything
+   removed is rebuilt by the next `bundle install`, so this is meant for
+   container images and other throwaway environments. Note that `bundle
+   pristine` cannot restore a gem whose cached `.gem` file was removed.
 * `redirect` (`BUNDLE_REDIRECT`):
    The number of redirects allowed for network requests. Defaults to `5`.
 * `retry` (`BUNDLE_RETRY`):
