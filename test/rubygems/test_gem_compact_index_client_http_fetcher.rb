@@ -14,6 +14,16 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     alias_method :body, :fake_body
   end
 
+  class FakePartialContent < Gem::Net::HTTPPartialContent
+    def initialize(body)
+      super("1.1", "206", "Partial Content")
+      @fake_body = body
+    end
+
+    attr_reader :fake_body
+    alias_method :body, :fake_body
+  end
+
   class FakeRedirect < Gem::Net::HTTPFound
     def initialize(location)
       super("1.1", "302", "Found")
@@ -71,6 +81,19 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
 
     assert_equal "data", response.body
     assert_equal Gem::URI("https://index.example/info/a"), remote.requests.first.first
+  end
+
+  def test_call_returns_not_modified_responses
+    response = Gem::Net::HTTPNotModified.new("1.1", "304", "Not Modified")
+    fetcher, _remote = fetcher_for("https://index.example/versions" => response)
+
+    assert_same response, fetcher.call("versions")
+  end
+
+  def test_call_returns_partial_content_responses
+    fetcher, _remote = fetcher_for("https://index.example/versions" => FakePartialContent.new("tail"))
+
+    assert_equal "tail", fetcher.call("versions", "Range" => "bytes=10-").body
   end
 
   def test_call_applies_request_headers
