@@ -1,15 +1,62 @@
 # Filesystem Modes
 
-A filesystem entry has a _mode_ that specifies:
+A filesystem entry has an integer _mode_ that specifies:
 
 - [Permissions][permissions].
 - [Special bits][special bits].
 - [File type][file type].
 
+## Getting a Mode
+
+You can use method File::Stat#mode to get the mode of a filesystem entry.
+
+Each of these methods returns a File::Stat object for a given filesystem entry.
+The first three follow symbolic links; the others don't:
+
+- File::stat.
+- IO#stat.
+- Pathname#stat.
+- File::lstat.
+- File#lstat.
+- Pathname#lstat.
+
+Once you have the File::Stat object, you can fetch the mode for the entry:
+
+```ruby
+File.stat('README.md').mode.to_s(8) # => "100664"
+File.stat('doc/').mode.to_s(8)      # => "40775"
+```
+
 On this page, we use a helper method to display a mode
 in a convenient form, showing the mode both as an octal integer and a string.
 If you're new to this page, it may be helpful
 to read about the [helper method][helper method] now.
+
+## Setting a Mode
+
+The mode for an entry is initialized when the entry is created:
+
+```ruby
+filepath = '/tmp/t.txt'
+File.write(filepath, 'foo')
+mode(filepath) # => "100664 -rw-rw-r--"
+dirpath = '/tmp/bar'
+Dir.mkdir(dirpath)
+mode(dirpath)  # => "040775 drwxrwxr-x"
+File.unlink(filepath)
+Dir.rmdir(dirpath)
+```
+
+You can use one of these methods to change the [permissions][permissions]
+and [special bits][special bits] (but not the [file type][file type]):
+
+- File::chmod.
+- FileUtils::chmod.
+- FileUtils::chmod_R.
+- File#chmod.
+- Pathname#chmod.
+- FileUtils#chmod.
+- FileUtils#chmod_R.
 
 ## Permissions
 
