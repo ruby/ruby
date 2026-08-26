@@ -110,6 +110,65 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     assert_equal "data", fetcher.call("versions").body
   end
 
+  def test_call_rejects_https_to_http_redirect
+    fetcher, remote = fetcher_for(
+      "https://index.example/versions" => FakeRedirect.new("http://mirror.example/versions")
+    )
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    assert_match(%r{redirecting to non-https resource: http://mirror\.example/versions}, error.message)
+    assert_equal 1, remote.requests.size
+  end
+
+  def test_call_follows_redirects_from_an_http_source
+    remote = FakeRemoteFetcher.new(
+      "http://index.example/versions" => FakeRedirect.new("http://mirror.example/versions"),
+      "http://mirror.example/versions" => FakeResponse.new("data")
+    )
+    fetcher = Gem::CompactIndexClient::HTTPFetcher.new("http://index.example", remote)
+
+    assert_equal "data", fetcher.call("versions").body
+    assert_equal 2, remote.requests.size
+  end
+
+  def test_call_redacts_credentials_in_rejected_redirect
+    fetcher, _remote = fetcher_for(
+      "https://index.example/versions" => FakeRedirect.new("http://user:s3cr3t@mirror.example/versions")
+    )
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    refute_match(/s3cr3t/, error.message)
+    assert_match(%r{redirecting to non-https resource: http://user:REDACTED@mirror\.example/versions}, error.message)
+  end
+
+  def test_call_keeps_credentials_on_an_accepted_redirect
+    remote = FakeRemoteFetcher.new(
+      "https://user:s3cr3t@index.example/versions" => FakeRedirect.new("/v2/versions"),
+      "https://user:s3cr3t@index.example/v2/versions" => FakeResponse.new("data")
+    )
+    fetcher = Gem::CompactIndexClient::HTTPFetcher.new("https://user:s3cr3t@index.example", remote)
+
+    assert_equal "data", fetcher.call("versions").body
+    assert_equal "s3cr3t", remote.requests.last.first.password
+  end
+
+  def test_call_drops_credentials_on_a_cross_host_redirect
+    remote = FakeRemoteFetcher.new(
+      "https://user:s3cr3t@index.example/versions" => FakeRedirect.new("https://mirror.example/versions"),
+      "https://mirror.example/versions" => FakeResponse.new("data")
+    )
+    fetcher = Gem::CompactIndexClient::HTTPFetcher.new("https://user:s3cr3t@index.example", remote)
+
+    assert_equal "data", fetcher.call("versions").body
+    assert_nil remote.requests.last.first.userinfo
+  end
+
   def test_call_raises_after_too_many_redirects
     fetcher, _remote = fetcher_for(
       "https://index.example/versions" => FakeRedirect.new("https://index.example/versions")

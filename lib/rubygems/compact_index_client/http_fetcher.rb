@@ -40,7 +40,12 @@ class Gem::CompactIndexClient
         location = response["Location"]
         raise Gem::RemoteFetcher::FetchError.new("redirecting but no redirect location was given", uri) unless location
 
-        fetch(uri + location, headers, redirects_remaining - 1)
+        redirect = uri + location
+        if https?(uri) && !https?(redirect)
+          raise Gem::RemoteFetcher::FetchError.new("redirecting to non-https resource: #{Gem::Uri.redact(redirect)}", uri)
+        end
+
+        fetch(redirect, headers, redirects_remaining - 1)
       when Gem::Net::HTTPRangeNotSatisfiable
         raise Gem::RemoteFetcher::FetchError.new("bad response #{response.message} #{response.code}", uri) unless headers.key?("Range")
 
@@ -49,6 +54,10 @@ class Gem::CompactIndexClient
       else
         raise Gem::RemoteFetcher::FetchError.new("bad response #{response.message} #{response.code}", uri)
       end
+    end
+
+    def https?(uri)
+      uri.scheme == "https"
     end
   end
 end
