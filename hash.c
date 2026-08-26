@@ -422,18 +422,6 @@ RHASH_AR_TABLE_MAX_BOUND(VALUE h)
 #endif
 }
 
-static inline size_t
-ar_table_memsize(size_t capa)
-{
-    return offsetof(ar_table, pairs) + capa * sizeof(ar_table_pair);
-}
-
-static inline size_t
-ar_memsize(size_t capa)
-{
-    return sizeof(struct RHash) + ar_table_memsize(capa);
-}
-
 #define RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE (RHASH_AR_TABLE_MAX_SIZE + 1)
 #define RHASH_AR_TABLE_MISS RHASH_AR_TABLE_MAX_SIZE
 
@@ -1245,7 +1233,7 @@ ar_values(VALUE hash, st_data_t *values, st_index_t size)
 static ar_table*
 ar_copy(VALUE hash1, VALUE hash2)
 {
-    RUBY_ASSERT(rb_gc_obj_slot_size(hash1) >= ar_memsize(RHASH_SIZE(hash2)));
+    RUBY_ASSERT(rb_gc_obj_slot_size(hash1) >= RHASH_AR_SLOT_SIZE(RHASH_SIZE(hash2)));
     ar_table *new_tab = RHASH_AR_TABLE(hash1);
 
     unsigned int bound = RHASH_AR_TABLE_BOUND(hash2);
@@ -1541,19 +1529,16 @@ compact_after_delete(VALUE hash)
 static inline size_t
 hash_slot_size(size_t capa, bool frozen)
 {
-    const size_t st_size = sizeof(struct RHash) + sizeof(st_table);
-    if (capa > RHASH_AR_TABLE_MAX_SIZE) {
-        return st_size;
+    if (capa <= RHASH_AR_TABLE_MAX_SIZE) {
+        const size_t ar_size = RHASH_AR_SLOT_SIZE(capa);
+        // If the hash is immutable, we can allocate a slot with exactly as much space as needed.
+        // But if mutable, we must ensure we have enough space to transition to an st_table.
+        if (frozen || ar_size >= RHASH_ST_SLOT_SIZE) {
+            return ar_size;
+        }
     }
 
-    const size_t ar_size = ar_memsize(capa);
-    // If the hash is immutable, we can allocate a slot with exactly as much space as needed.
-    // But if mutable, we must ensure we have enough space to transition to an st_table.
-    if (frozen || ar_size >= st_size) {
-        return ar_size;
-    }
-
-    return st_size;
+    return RHASH_ST_SLOT_SIZE;
 }
 
 static VALUE

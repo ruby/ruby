@@ -209,4 +209,12 @@ RHASH_AR_TABLE_BOUND(VALUE h)
     return bound;
 }
 
+#define RHASH_ST_SLOT_SIZE (sizeof(struct RHash) + sizeof(st_table))
+
+static inline size_t
+RHASH_AR_SLOT_SIZE(size_t capa)
+{
+    return sizeof(struct RHash) + offsetof(ar_table, pairs) + capa * sizeof(ar_table_pair);
+}
+
 #endif /* INTERNAL_HASH_H */
