@@ -70,7 +70,7 @@ module Bundler
         require_relative "clean"
         Bundler::CLI::Clean.new(options).run
       else
-        CLI::Common.prune_after_install
+        CLI::Common.prune(options)
       end
 
       Bundler::CLI::Common.output_fund_metadata_summary

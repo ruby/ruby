@@ -15,7 +15,7 @@ module Bundler
 
       # Pruning last, because cleaning decides which cached .gem files are
       # stale by reading them.
-      Bundler.load.prune(Bundler.settings[:prune])
+      Bundler::CLI::Common.prune(options)
     end
 
     protected

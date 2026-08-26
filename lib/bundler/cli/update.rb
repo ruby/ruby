@@ -93,7 +93,7 @@ module Bundler
         require_relative "clean"
         Bundler::CLI::Clean.new(options).run
       else
-        CLI::Common.prune_after_install
+        CLI::Common.prune(options)
       end
 
       if locked_gems

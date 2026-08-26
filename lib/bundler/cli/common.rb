@@ -171,8 +171,11 @@ module Bundler
       clean
     end
 
-    # `bundle clean` prunes on its own, so this only covers installs that skip it.
-    def self.prune_after_install
+    # `bundle cache` copies the gem files out of the cache after installing, so
+    # it asks to be skipped here and prunes once it is done.
+    def self.prune(options = {})
+      return if options["skip-prune"]
+
       categories = Bundler.settings[:prune]
       Bundler.load.prune(categories) unless categories.empty?
     end

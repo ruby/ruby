@@ -77,6 +77,15 @@ RSpec.describe "the prune setting" do
       expect(vendored_gems("cache")).not_to exist
     end
 
+    it "fills the app cache before pruning on bundle cache" do
+      bundle_config "prune cache"
+      bundle "cache"
+
+      expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
+      expect(vendored_gems("cache")).not_to exist
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
     it "prunes on bundle clean" do
       bundle "install"
       expect(vendored_gems("cache/myrack-1.0.0.gem")).to exist
