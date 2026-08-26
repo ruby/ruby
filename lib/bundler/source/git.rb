@@ -30,6 +30,7 @@ module Bundler
 
         @copied     = false
         @local      = false
+        @cached_app_cache_path = nil
       end
 
       def remote!
@@ -277,6 +278,11 @@ module Bundler
 
         app_cache_path = app_cache_path(custom_path)
 
+        # When several gems share a single git source, this is called once per
+        # gem. Copying the repository is expensive for large repos, so skip it
+        # if we already populated this cache during the same command.
+        return if @cached_app_cache_path == app_cache_path
+
         migrate = try_migrate ? bare_repo?(app_cache_path) : false
 
         set_cache_path!(nil) if migrate
@@ -288,6 +294,8 @@ module Bundler
         git_proxy.checkout if migrate || requires_checkout?
         git_proxy.copy_to(app_cache_path, @submodules)
         serialize_gemspecs_in(app_cache_path)
+
+        @cached_app_cache_path = app_cache_path
       end
 
       def checkout
