@@ -1013,11 +1013,7 @@ rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer, int 
         scheduler, socket, buffer, INT2NUM(flags), source_address
     };
 
-    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
-        return rb_thread_io_blocking_operation(socket, fiber_scheduler_socket_recv, (VALUE)&arguments);
-    } else {
-        return fiber_scheduler_socket_recv((VALUE)&arguments);
-    }
+    return rb_thread_io_blocking_operation(socket, fiber_scheduler_socket_recv, (VALUE)&arguments);
 }
 
 /*
@@ -1069,11 +1065,7 @@ rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer, int 
         scheduler, socket, buffer, INT2NUM(flags), destination_address
     };
 
-    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
-        return rb_thread_io_blocking_operation(socket, fiber_scheduler_socket_send, (VALUE)&arguments);
-    } else {
-        return fiber_scheduler_socket_send((VALUE)&arguments);
-    }
+    return rb_thread_io_blocking_operation(socket, fiber_scheduler_socket_send, (VALUE)&arguments);
 }
 
 /*
@@ -1117,11 +1109,7 @@ rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE destinati
         scheduler, socket, destination_address, timeout
     };
 
-    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
-        return rb_thread_io_blocking_operation(socket, fiber_scheduler_socket_connect, (VALUE)&arguments);
-    } else {
-        return fiber_scheduler_socket_connect((VALUE)&arguments);
-    }
+    return rb_thread_io_blocking_operation(socket, fiber_scheduler_socket_connect, (VALUE)&arguments);
 }
 
 /*
@@ -1162,11 +1150,7 @@ rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE socket, VALUE peer_addre
         scheduler, socket, peer_address
     };
 
-    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
-        return rb_thread_io_blocking_operation(socket, fiber_scheduler_socket_accept, (VALUE)&arguments);
-    } else {
-        return fiber_scheduler_socket_accept((VALUE)&arguments);
-    }
+    return rb_thread_io_blocking_operation(socket, fiber_scheduler_socket_accept, (VALUE)&arguments);
 }
 
 /*
@@ -1202,11 +1186,7 @@ rb_fiber_scheduler_socket_shutdown(VALUE scheduler, VALUE socket, int how)
         scheduler, socket, INT2NUM(how)
     };
 
-    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
-        return rb_thread_io_blocking_operation(socket, fiber_scheduler_socket_shutdown, (VALUE)&arguments);
-    } else {
-        return fiber_scheduler_socket_shutdown((VALUE)&arguments);
-    }
+    return rb_thread_io_blocking_operation(socket, fiber_scheduler_socket_shutdown, (VALUE)&arguments);
 }
 
 VALUE
