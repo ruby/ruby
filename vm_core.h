@@ -572,18 +572,12 @@ struct rb_iseq_constant_body {
     rb_jit_func_t jit_exception;
     // Number of calls on jit_exec_exception()
     long unsigned jit_exception_calls;
+    void *jit_payload;
 #endif
 
 #if USE_YJIT
-    // YJIT stores some data on each iseq.
-    void *yjit_payload;
     // Used to estimate how frequently this ISEQ gets called
     uint64_t yjit_calls_at_interv;
-#endif
-
-#if USE_ZJIT
-    // ZJIT stores some data on each iseq.
-    void *zjit_payload;
 #endif
 
     // Hash of the source this iseq was compiled from, or 0 if it is

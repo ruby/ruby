@@ -474,13 +474,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
          * compile/invalidate). Iseqs are born shareable, so a multi-Ractor local GC
          * never traverses them. */
         const bool jit_payload_lock_p = rb_gc_multi_objspace_p();
-        bool jit_payload_p = false;
-# if USE_YJIT
-        if (body->yjit_payload != NULL) jit_payload_p = true;
-# endif
-# if USE_ZJIT
-        if (body->zjit_payload != NULL) jit_payload_p = true;
-# endif
+        bool jit_payload_p = body->jit_payload != NULL;
 #endif
         if (reference_updating) {
 #if USE_YJIT || USE_ZJIT
@@ -488,19 +482,19 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
                 if (jit_payload_lock_p) {
                     RB_VM_LOCKING_NO_BARRIER() {
 # if USE_YJIT
-                        rb_yjit_iseq_update_references(iseq);
+                        if (rb_yjit_enabled_p) rb_yjit_iseq_update_references(iseq);
 # endif
 # if USE_ZJIT
-                        rb_zjit_iseq_update_references(body->zjit_payload);
+                        if (rb_zjit_enabled_p) rb_zjit_iseq_update_references(body->jit_payload);
 # endif
                     }
                 }
                 else {
 # if USE_YJIT
-                    rb_yjit_iseq_update_references(iseq);
+                    if (rb_yjit_enabled_p) rb_yjit_iseq_update_references(iseq);
 # endif
 # if USE_ZJIT
-                    rb_zjit_iseq_update_references(body->zjit_payload);
+                    if (rb_zjit_enabled_p) rb_zjit_iseq_update_references(body->jit_payload);
 # endif
                 }
             }
@@ -514,19 +508,19 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
                     if (jit_payload_lock_p) {
                         RB_VM_LOCKING_NO_BARRIER() {
 # if USE_YJIT
-                            rb_yjit_iseq_mark(body->yjit_payload);
+                            if (rb_yjit_enabled_p) rb_yjit_iseq_mark(body->jit_payload);
 # endif
 # if USE_ZJIT
-                            rb_zjit_iseq_mark(body->zjit_payload);
+                            if (rb_zjit_enabled_p) rb_zjit_iseq_mark(body->jit_payload);
 # endif
                         }
                     }
                     else {
 # if USE_YJIT
-                        rb_yjit_iseq_mark(body->yjit_payload);
+                        if (rb_yjit_enabled_p) rb_yjit_iseq_mark(body->jit_payload);
 # endif
 # if USE_ZJIT
-                        rb_zjit_iseq_mark(body->zjit_payload);
+                        if (rb_zjit_enabled_p) rb_zjit_iseq_mark(body->jit_payload);
 # endif
                     }
                 }

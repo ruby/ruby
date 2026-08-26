@@ -242,7 +242,7 @@ fn main() {
         .allowlist_function("rb_object_shape_count")
         .allowlist_function("rb_ivar_get_at")
         .allowlist_function("rb_ivar_get_at_no_ractor_check")
-        .allowlist_function("rb_iseq_(get|set)_yjit_payload")
+        .allowlist_function("rb_iseq_(get|set)_jit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")
         .allowlist_function("rb_jit_reserve_addr_space")

@@ -193,29 +193,6 @@ rb_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
     ec->cfp->sp++;
 }
 
-// TODO(alan): consider using an opaque pointer for the payload rather than a void pointer
-void *
-rb_iseq_get_yjit_payload(const rb_iseq_t *iseq)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    if (ISEQ_BODY(iseq)) {
-        return ISEQ_BODY(iseq)->yjit_payload;
-    }
-    else {
-        // Body is NULL when constructing the iseq.
-        return NULL;
-    }
-}
-
-void
-rb_iseq_set_yjit_payload(const rb_iseq_t *iseq, void *payload)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
-    RUBY_ASSERT_ALWAYS(NULL == ISEQ_BODY(iseq)->yjit_payload);
-    ISEQ_BODY(iseq)->yjit_payload = payload;
-}
-
 // This is defined only as a named struct inside rb_iseq_constant_body.
 // By giving it a separate typedef, we make it nameable by rust-bindgen.
 // Bindgen's temp/anon name isn't guaranteed stable.
