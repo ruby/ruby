@@ -17,3 +17,4 @@ mod tests;
 
 pub mod lir;
 pub mod parcopy;
+pub mod regalloc_verify;

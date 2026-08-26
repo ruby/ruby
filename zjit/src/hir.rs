@@ -2549,12 +2549,12 @@ impl<'a> FunctionPrinter<'a> {
 /// call `find` whenever it is inspecting an instruction (or its operands). If not, this may result
 /// in missing optimizations.
 #[derive(Debug)]
-struct UnionFind<T: Copy + Into<usize>> {
+pub(crate) struct UnionFind<T: Copy + Into<usize>> {
     forwarded: Vec<T>,
 }
 
 impl<T: Copy + Into<usize> + PartialEq + std::convert::From<usize>> UnionFind<T> {
-    fn new() -> UnionFind<T> {
+    pub(crate) fn new() -> UnionFind<T> {
         UnionFind { forwarded: vec![] }
     }
 
@@ -2595,7 +2595,7 @@ impl<T: Copy + Into<usize> + PartialEq + std::convert::From<usize>> UnionFind<T>
     }
 
     /// Find the set representative for `insn` without doing path compression.
-    fn find_const(&self, insn: T) -> T {
+    pub(crate) fn find_const(&self, insn: T) -> T {
         let mut result = insn;
         loop {
             let found = self.at(result);

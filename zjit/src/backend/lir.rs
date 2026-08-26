@@ -2488,6 +2488,10 @@ impl Assembler
         use crate::backend::parcopy;
         use crate::backend::current::SCRATCH_REG;
 
+        // Built before the code below clears every edge's arguments.
+        let congruence = self.verify_regalloc()
+            .then(|| crate::backend::regalloc_verify::Congruence::build(self));
+
         // Count predecessors for each block
         let mut num_predecessors: HashMap<BlockId, usize> = HashMap::new();
         let block_order = self.block_order();
@@ -2652,7 +2656,32 @@ impl Assembler
             }
         }
 
-        self.rewrite_instructions(&block_order, intervals, regs);
+        // Verify the allocation while operands are still VRegs.
+        if let Some(congruence) = congruence {
+            self.check_regalloc(&congruence, intervals, regs);
+        }
+
+        self.rewrite_instructions(&self.block_order(), intervals, regs);
+    }
+
+    /// Whether to run the register allocator verifier. On by default in debug
+    /// builds, and available in release builds through `--zjit-verify-regalloc`.
+    fn verify_regalloc(&self) -> bool {
+        cfg!(debug_assertions) || get_option!(verify_regalloc)
+    }
+
+    /// Run the abstract interpreter over the allocated LIR and panic on the
+    /// first read it cannot justify. See [`crate::backend::regalloc_verify`].
+    fn check_regalloc(&self, congruence: &crate::backend::regalloc_verify::Congruence, intervals: &[Interval], regs: &RegPool) {
+        let Err(failures) = crate::backend::regalloc_verify::check_allocation(self, congruence, intervals, regs) else {
+            return;
+        };
+        let mut message = String::from("register allocation is not correct:\n");
+        for failure in &failures {
+            message.push_str(&format!("  {failure}\n"));
+        }
+        panic!("{message}\nLIR:\n{}\nintervals:\n{}",
+               lir_string(self), debug_intervals(self, intervals));
     }
 
     /// Handle caller-saved registers around CCall instructions.
@@ -2875,7 +2904,6 @@ impl Assembler
                     if survivors.is_empty() {
                         if call_result_live {
                             // No survivors to restore -- move result directly to output.
-                            let out = Self::rewritten_opnd(out, intervals, alloc_regs);
                             new_insns.push(Insn::Mov { dest: out, src: C_RET_OPND });
                             new_ids.push(None);
                         }
@@ -2899,7 +2927,6 @@ impl Assembler
 
                         if call_result_live {
                             // Move result from scratch to output AFTER all pops.
-                            let out = Self::rewritten_opnd(out, intervals, alloc_regs);
                             new_insns.push(Insn::Mov { dest: out, src: Opnd::Reg(SCRATCH_REG) });
                             new_ids.push(None);
                         }
@@ -2965,7 +2992,7 @@ impl Assembler
         }
     }
 
-    fn rewritten_opnd(mut opnd: Opnd, intervals: &[Interval], regs: &RegPool) -> Opnd {
+    pub(in crate::backend) fn rewritten_opnd(mut opnd: Opnd, intervals: &[Interval], regs: &RegPool) -> Opnd {
         Self::rewrite_opnd(&mut opnd, intervals, regs);
         opnd
     }

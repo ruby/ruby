@@ -99,6 +99,10 @@ pub struct Options {
     /// Turn off the HIR optimizer
     pub disable_hir_opt: bool,
 
+    /// Verify the register allocator's assignment with an abstract interpreter
+    /// after every allocation. Always on in debug builds.
+    pub verify_regalloc: bool,
+
     /// Dump initial High-level IR before optimization
     pub dump_hir_init: Option<DumpHIR>,
 
@@ -201,6 +205,7 @@ impl Default for Options {
             debug: false,
             disable: false,
             disable_hir_opt: false,
+            verify_regalloc: false,
             dump_hir_init: None,
             dump_hir_opt: None,
             dump_hir_graphviz: None,
@@ -531,6 +536,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("disable", "") => options.disable = true,
 
         ("disable-hir-opt", "") => options.disable_hir_opt = true,
+
+        ("verify-regalloc", "") => options.verify_regalloc = true,
 
         // --zjit-dump-hir dumps the actual input to the codegen, which is currently the same as --zjit-dump-hir-opt.
         ("dump-hir" | "dump-hir-opt", "") => options.dump_hir_opt = Some(DumpHIR::WithoutSnapshot),
